@@ -289,16 +289,16 @@ function restartGame() {
         }
         if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('restart-game-reset-ui-locks');
         if (typeof resetGameLifecycleForRestart === 'function') resetGameLifecycleForRestart('restart-game-lifecycle-reset');
-        game = null;
-        prevCoins = null;
+        GameRuntimeState.runtime.setGame(null);
+        GameRuntimeState.runtime.setPreviousCoins(null);
         winSoundPlayed = false;
-        undoState = null;
+        GameRuntimeState.runtime.setUndoState(null);
         resetFullLog();
         document.getElementById("gameScreen").style.display = "none";
         document.getElementById("titleScreen").style.display = "block";
         selectedCount = 2;
         playerSettings = [];
-        cpuPlayers = [];
+        GameRuntimeState.runtime.setCpuPlayers([]);
         document.getElementById("playerCount").textContent = 2;
         renderPlayerSettings();
         updateResumeButton();
@@ -311,13 +311,13 @@ function restartGame() {
 function init(playerCount) {
     cancelCpuSchedule('init-cancel-cpu');
     cancelDelayedHumanAction();
-    prevCoins = null;
+    GameRuntimeState.runtime.setPreviousCoins(null);
     stopConfetti();
     winSoundPlayed = false;
     cancelAutoSkip();
-    undoState = null;
+    GameRuntimeState.runtime.setUndoState(null);
     resetFullLog();
-    game = new GameManager(playerCount);
+    GameRuntimeState.runtime.setGame(new GameManager(playerCount));
     let selectedLandmarks = getEnabledLandmarkSelection();
     if (selectedLandmarks.size === 0) {
         selectedLandmarks = replaceEnabledLandmarkSelection(Player.landmarkNames());
@@ -355,7 +355,7 @@ function init(playerCount) {
                 : null
         );
     }
-    cpuPlayers = shuffledCpuPlayers;
+    GameRuntimeState.runtime.setCpuPlayers(shuffledCpuPlayers);
     game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
     render();
     scheduleCPU();
@@ -466,9 +466,9 @@ function _adoptLocalGameEngineShadowSnapshot(snapshot) {
     const runtime = adapter.hydrate(snapshot);
     const rebuilt = adapter.serialize(runtime);
     if (!GameEngineClientShadow.equalSnapshots(rebuilt, snapshot)) return false;
-    game = runtime.game;
+    GameRuntimeState.runtime.setGame(runtime.game);
     assignShopStockSnapshot(SHOP_STOCK, runtime.shopStock);
-    undoState = runtime.undoState;
+    GameRuntimeState.runtime.setUndoState(runtime.undoState);
     return true;
 }
 
@@ -1319,7 +1319,7 @@ function onSkip() {
         markMainCheckpoint('skip-confirmed', { scheduledPlayerIndex });
         if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN, scheduledPlayerIndex)) { markMainCheckpoint('skip-stale-action', { scheduledPlayerIndex }); return; }
         cancelAutoSkip();
-        undoState = null;
+        GameRuntimeState.runtime.setUndoState(null);
         const result = runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());
         markMainCheckpoint('skip-nextTurn-returned', { result });
     });

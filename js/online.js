@@ -3179,7 +3179,7 @@ function initSocket() {
                         clearReconnectFlag: () => {
                             setOnlineReconnectLegacyFlag(false);
                         },
-                        resetPreviousCoins: () => { prevCoins = null; },
+                        resetPreviousCoins: () => { GameRuntimeState.runtime.setPreviousCoins(null); },
                         setAppliedSequence: value => {
                             _onlineActionSequenceController.replace(value);
                         },
@@ -3209,7 +3209,7 @@ function initSocket() {
                 _onlineReconnectCompletionController.reset();
                 OnlineRuntimeState.runtime.setOnline(true);
                 setOnlineReconnectLegacyFlag(false);
-                prevCoins = null;
+                GameRuntimeState.runtime.setPreviousCoins(null);
                 _onlineActionSequenceController.replace(
                     restoreActivationPlan.restoredThroughSeq
                 );
@@ -3683,13 +3683,13 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     invalidateCpuScheduleChain();
     if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
     if (typeof cancelAutoSkip === 'function') cancelAutoSkip();
-    prevCoins = null;
-    undoState = null;
+    GameRuntimeState.runtime.setPreviousCoins(null);
+    GameRuntimeState.runtime.setUndoState(null);
     resetFullLog();
     if (typeof resetStatsRecorded === "function") {
         resetStatsRecorded();
     }
-    game = new GameManager(count);
+    GameRuntimeState.runtime.setGame(new GameManager(count));
     const selection = GameSelectionState.runtime.snapshot();
     const selectedLandmarks = selection.enabledLandmarks.length > 0
         ? selection.enabledLandmarks
@@ -3711,13 +3711,13 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     if (ps && ps.length > 0) {
         const orderedSettings = order.map(originalIndex => ps[originalIndex] || null);
         const opponentDifficulties = onlineCpuOpponentDifficultiesFromSettings(orderedSettings);
-        cpuPlayers = orderedSettings.map(s => {
+        GameRuntimeState.runtime.setCpuPlayers(orderedSettings.map(s => {
             return s && s.type === "cpu"
                 ? createOnlineCpuPlayer(s.difficulty, { expertPurpose: "live", playerCount: count, expertOpponentDifficulties: opponentDifficulties, rlModelId: s.rlModelId || s.modelId || null })
                 : null;
-        });
+        }));
     } else {
-        cpuPlayers = game.players.map(() => null);
+        GameRuntimeState.runtime.setCpuPlayers(game.players.map(() => null));
     }
 
     // myPlayerIndexをシャッフル後の位置に更新
@@ -3785,9 +3785,9 @@ function _adoptOnlineGameEngineShadowSnapshot(snapshot) {
     const runtime = _hydrateOnlineGameEngineShadowSnapshot(snapshot);
     const rebuilt = _serializeOnlineGameEngineShadowRuntime(runtime);
     if (!GameEngineClientShadow.equalSnapshots(rebuilt, snapshot)) return false;
-    game = runtime.game;
+    GameRuntimeState.runtime.setGame(runtime.game);
     assignShopStockSnapshot(SHOP_STOCK, runtime.shopStock);
-    undoState = runtime.undoState;
+    GameRuntimeState.runtime.setUndoState(runtime.undoState);
     return true;
 }
 
@@ -3817,12 +3817,12 @@ function applyAction(action, data) {
 
 function applyReplayedAction(action, data) {
     if (action === 'buildCard' || action === 'buildLandmark') {
-        undoState = buildOnlineUndoSnapshot();
+        GameRuntimeState.runtime.setUndoState(buildOnlineUndoSnapshot());
     }
     const shadow = _prepareOnlineGameEngineShadow(action, data);
     const applied = applyAction(action, data);
     if (action === 'undoBuild' || action === 'nextTurn') {
-        undoState = null;
+        GameRuntimeState.runtime.setUndoState(null);
     }
     _finishOnlineGameEngineShadow(shadow);
     return applied;
@@ -3841,7 +3841,7 @@ function restoreOnlineSnapshot(state) {
         readLandmarks: value => value || {},
         readLog: value => value || [],
         normalizeCurrentPlayerIndex: value => value || 0,
-        onUndoState: value => { undoState = value; },
+        onUndoState: value => { GameRuntimeState.runtime.setUndoState(value); },
     });
 }
 

@@ -342,7 +342,7 @@ function resumeGame(options = {}) {
                 replaceEnabledLandmarkSelection(plan.enabledLandmarks);
             },
             createAndHydrateGame(plan) {
-                game = new GameManager(plan.playerCount);
+                GameRuntimeState.runtime.setGame(new GameManager(plan.playerCount));
                 game.enabledLandmarks = getEnabledLandmarkSelection();
                 return GameSnapshot.hydrateMutableGameState({
                     game,
@@ -362,20 +362,20 @@ function resumeGame(options = {}) {
                 });
             },
             createCpuPlayers(plan) {
-                cpuPlayers = plan.map(entry => {
+                GameRuntimeState.runtime.setCpuPlayers(plan.map(entry => {
                     if (!entry) return null;
                     return typeof createCpuPlayer === "function"
                         ? createCpuPlayer(entry.difficulty, entry.options)
                         : new CPU(entry.difficulty, entry.options);
-                });
+                }));
             },
             resetPresentationState() {
-                prevCoins = null;
+                GameRuntimeState.runtime.setPreviousCoins(null);
                 winSoundPlayed = false;
             },
             cancelAutoSkip,
             clearUndo() {
-                undoState = null;
+                GameRuntimeState.runtime.setUndoState(null);
             },
             showGame() {
                 document.getElementById("titleScreen").style.display = "none";
@@ -440,7 +440,9 @@ function isValidSavedGameState(state) {
 }
 
 function saveUndoState() {
-    undoState = GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
+    GameRuntimeState.runtime.setUndoState(
+        GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER)
+    );
 }
 
 function restoreUndoSnapshot(state) {
@@ -458,8 +460,8 @@ function restoreUndoSnapshot(state) {
         ),
     });
     if (!hydrated) return false;
-    undoState = null;
-    prevCoins = null;
+    GameRuntimeState.runtime.setUndoState(null);
+    GameRuntimeState.runtime.setPreviousCoins(null);
     cancelAutoSkip();
     return true;
 }

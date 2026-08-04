@@ -311,7 +311,7 @@ function renderActiveGameState(current) {
             showCoinAnimation(playerIndex, diff);
         },
         setPreviousCoins(coins) {
-            prevCoins = coins;
+            GameRuntimeState.runtime.setPreviousCoins(coins);
         },
         renderBuildMenu() {
             renderBuildMenu();

@@ -35,13 +35,14 @@ function loadOnlineRuntime(options = {}) {
     loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameEngineRuntimeAdapter.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js', 'js/gameEngine.js', 'js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
+    loadScript(context, 'js/gameRuntimeState.js');
 
     // online.js が参照するグローバルをモック
     vm.runInContext(`
         // DOM・通信不要のモック
-        let game = null;
+        game = null;
         const SHOP_STOCK = {};
-        let cpuPlayers = [];
+        cpuPlayers = [];
         let enabledCards = new Set();
         let enabledLandmarks = new Set();
         function replaceEnabledCardSelection(values) {
@@ -64,8 +65,8 @@ function loadOnlineRuntime(options = {}) {
                 },
             },
         };
-        let prevCoins = null;
-        let undoState = null;
+        prevCoins = null;
+        undoState = null;
         let cpuScheduleInvalidationCount = 0;
         function invalidateCpuScheduleChain() { return ++cpuScheduleInvalidationCount; }
         let statsResetCount = 0;

@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const GameRuntimeState = require('../js/gameRuntimeState');
 const { runTest } = require('./helpers/test-utils');
 
@@ -58,4 +60,15 @@ runTest('game runtime compatibility globalsは既存値を保持して双方向�
     assert.deepStrictEqual(controller.read('undoState'), { marker: true });
     assert.deepStrictEqual(root.prevCoins, [5]);
     assert.strictEqual(Object.keys(root).includes('game'), false);
+});
+
+runTest('live game production writersはnamed runtime operationだけを使う', () => {
+    const assignment = new RegExp(
+        String.raw`^\s*(${GameRuntimeState.fields.join('|')})\s*=`,
+        'm'
+    );
+    for (const file of ['main.js', 'online.js', 'storage.js', 'ui.js']) {
+        const source = fs.readFileSync(path.join(__dirname, '..', 'js', file), 'utf8');
+        assert.strictEqual(assignment.test(source), false, file);
+    }
 });
