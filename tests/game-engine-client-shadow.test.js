@@ -4,6 +4,18 @@ const assert = require('assert');
 const GameEngineClientShadow = require('../js/gameEngineClientShadow');
 const { runTest } = require('./helpers/test-utils');
 
+runTest('client Engine shadow outcome controllerは最後の診断結果を単独所有する', () => {
+    const first = Object.freeze({ report: { status: 'matched' } });
+    const controller = GameEngineClientShadow.createOutcomeController();
+
+    assert.strictEqual(controller.get(), null);
+    assert.strictEqual(controller.set(first), first);
+    assert.strictEqual(controller.get(), first);
+    assert.strictEqual(controller.reset(), null);
+    assert.ok(Object.isFrozen(controller));
+    assert.strictEqual(GameEngineClientShadow.createOutcomeController(first).get(), first);
+});
+
 runTest('client Engine shadowは無効時にtransitionを実行しない', () => {
     let calls = 0;
     const prepared = GameEngineClientShadow.prepare({

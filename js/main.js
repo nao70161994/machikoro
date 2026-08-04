@@ -394,7 +394,7 @@ function markMainCheckpoint(event, details = {}) {
     }
 }
 
-let _lastLocalGameEngineShadowOutcome = null;
+const _localGameEngineShadowOutcomeController = GameEngineClientShadow.createOutcomeController();
 
 function isLocalGameEngineShadowEnabled() {
     return typeof window !== 'undefined' &&
@@ -479,7 +479,7 @@ function _finishLocalGameEngineShadow(prepared) {
         authorityEnabled: isLocalGameEngineAuthorityEnabled(),
         adoptSnapshot: _adoptLocalGameEngineShadowSnapshot,
     });
-    _lastLocalGameEngineShadowOutcome = outcome;
+    _localGameEngineShadowOutcomeController.set(outcome);
     return outcome;
 }
 

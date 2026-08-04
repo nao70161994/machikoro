@@ -20,6 +20,24 @@ const GameEngineClientShadow = (() => {
         }
     }
 
+    function createOutcomeController(initialOutcome = null) {
+        let outcome = initialOutcome;
+
+        return Object.freeze({
+            get() {
+                return outcome;
+            },
+            set(value) {
+                outcome = value;
+                return outcome;
+            },
+            reset() {
+                outcome = null;
+                return outcome;
+            },
+        });
+    }
+
     function prepare(options) {
         if (!options || options.enabled !== true) return null;
         let transition;
@@ -75,7 +93,7 @@ const GameEngineClientShadow = (() => {
         return Object.freeze({ report, authority: decision });
     }
 
-    return Object.freeze({ equalSnapshots, prepare, finish });
+    return Object.freeze({ equalSnapshots, createOutcomeController, prepare, finish });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameEngineClientShadow;

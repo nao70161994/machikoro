@@ -378,7 +378,7 @@ function loadIntegrationRuntime(options = {}) {
         setPlayerSettings(value) { context.__tmpPlayerSettings = value; vm.runInContext('playerSettings = __tmpPlayerSettings', context); delete context.__tmpPlayerSettings; },
         getGame() { return vm.runInContext('game', context); },
         getLocalGameEngineSnapshot() { return vm.runInContext('_buildLocalGameEngineSnapshot()', context); },
-        getLocalGameEngineShadowOutcome() { return vm.runInContext('_lastLocalGameEngineShadowOutcome', context); },
+        getLocalGameEngineShadowOutcome() { return vm.runInContext('_localGameEngineShadowOutcomeController.get()', context); },
         runLocalEngineAction(action, data) {
             context.__tmpLocalEngineAction = action;
             context.__tmpLocalEngineData = data;
