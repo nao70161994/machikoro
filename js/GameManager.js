@@ -559,9 +559,10 @@ class GameManager {
                 effect: card.effect,
                 effects: CARD_EFFECTS,
                 income: () => GameManager.calcCardIncome(card, current, this),
-                hasRenovationTarget: () => Object.entries(current.landmarks)
-                    .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
-                    .length > 0,
+                hasRenovationTarget: () => GamePendingResolutionPolicy.hasRenovationTarget({
+                    landmarks: current.landmarks,
+                    excludedLandmark: LANDMARK_NAMES.YAKUSHO,
+                }),
             });
             if (plan.kind === GameCardActivationPolicy.greenActivationKinds.WINERY) {
                 if (plan.amount > 0) {
@@ -882,9 +883,10 @@ class GameManager {
         // 残りの改装屋発動回数があっても建設済みランドマークがなければスキップ
         while (this.pendingRenovation > 0) {
             if (!GameManager.canResolvePendingField(this, 'pendingRenovation')) break;
-            const builtLandmarks = Object.entries(current.landmarks)
-                .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO);
-            if (builtLandmarks.length > 0) break;
+            if (GamePendingResolutionPolicy.hasRenovationTarget({
+                landmarks: current.landmarks,
+                excludedLandmark: LANDMARK_NAMES.YAKUSHO,
+            })) break;
             this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋：建設済みランドマークがないため不発`);
             if (!this._consumePendingAction('pendingRenovation')) break;
         }

@@ -79,6 +79,14 @@ const GamePendingResolutionPolicy = (() => {
         );
     }
 
+    function hasRenovationTarget(facts = {}) {
+        const landmarks = readFact(facts.landmarks) || {};
+        const excludedLandmark = readFact(facts.excludedLandmark);
+        return Object.entries(landmarks)
+            .filter(([name, built]) => built && name !== excludedLandmark)
+            .length > 0;
+    }
+
     function hasCleaningTarget(facts = {}) {
         const players = readFact(facts.players) || [];
         return players.some(player =>
@@ -114,6 +122,7 @@ const GamePendingResolutionPolicy = (() => {
         planRenovationTarget,
         resolveMinorCardRef,
         hasBusinessExchange,
+        hasRenovationTarget,
         hasCleaningTarget,
         hasPendingAction,
         completionTransition,

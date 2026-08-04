@@ -169,3 +169,20 @@ runTest('pending card参照解決は欠落playerでrefやcard分類を読まな�
     assert.strictEqual(result, null);
     assert.deepStrictEqual(trace, ['cards']);
 });
+
+runTest('pending resolution policyは除外対象以外の建設済みlandmarkを改装対象にする', () => {
+    const landmarks = Object.freeze({ 役所: true, 駅: false, 港: true });
+    assert.strictEqual(GamePendingResolutionPolicy.hasRenovationTarget({
+        landmarks,
+        excludedLandmark: '役所',
+    }), true);
+    assert.strictEqual(GamePendingResolutionPolicy.hasRenovationTarget({
+        landmarks: { 役所: true, 駅: false },
+        excludedLandmark: '役所',
+    }), false);
+    assert.strictEqual(GamePendingResolutionPolicy.hasRenovationTarget({
+        landmarks: null,
+        excludedLandmark: '役所',
+    }), false);
+    assert.deepStrictEqual(landmarks, { 役所: true, 駅: false, 港: true });
+});
