@@ -1,6 +1,33 @@
 'use strict';
 
 const UiEventDelegation = (() => {
+    const BINDINGS = Object.freeze({
+        STATIC: 'static',
+        DELEGATED: 'delegated',
+    });
+
+    function createBindingController() {
+        const state = Object.fromEntries(Object.values(BINDINGS).map(name => [name, false]));
+
+        function assertName(name) {
+            if (!Object.prototype.hasOwnProperty.call(state, name)) {
+                throw new TypeError('unknown UI binding: ' + name);
+            }
+        }
+        function isBound(name) {
+            assertName(name);
+            return state[name];
+        }
+        function markBound(name) {
+            assertName(name);
+            state[name] = true;
+            return snapshot();
+        }
+        function snapshot() { return Object.freeze(Object.assign({}, state)); }
+
+        return Object.freeze({ isBound, markBound, snapshot });
+    }
+
     function datasetKey(attributeName) {
         return attributeName
             .replace(/^data-/, '')
@@ -83,6 +110,8 @@ const UiEventDelegation = (() => {
     }
 
     return Object.freeze({
+        BINDINGS,
+        createBindingController,
         datasetKey,
         elementFromEvent,
         isKeyboardActivationKey,

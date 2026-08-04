@@ -999,8 +999,7 @@ function onSkipReroll() {
     runLocalOrSendOnline('skipReroll', {}, () => game.skipReroll());
 }
 
-let delegatedUiHandlersBound = false;
-let staticUiHandlersBound = false;
+const uiEventBindingController = UiEventDelegation.createBindingController();
 
 function actionButtonFromEvent(event) {
     return UiEventDelegation.elementFromEvent(event, 'data-action');
@@ -1111,13 +1110,13 @@ function handleStaticUiKeydown(event) {
 }
 
 function bindStaticUiHandlers() {
-    if (staticUiHandlersBound) return;
+    if (uiEventBindingController.isBound(UiEventDelegation.BINDINGS.STATIC)) return;
     if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
     document.addEventListener('click', handleStaticUiClick);
     document.addEventListener('input', handleStaticUiInput);
     document.addEventListener('change', handleStaticUiChange);
     document.addEventListener('keydown', handleStaticUiKeydown);
-    staticUiHandlersBound = true;
+    uiEventBindingController.markBound(UiEventDelegation.BINDINGS.STATIC);
 }
 
 function handleDiceChoiceClick(event) {
@@ -1179,7 +1178,7 @@ function handlePlayerPanelClick(event) {
 }
 
 function bindDelegatedUiHandlers() {
-    if (delegatedUiHandlersBound) return;
+    if (uiEventBindingController.isBound(UiEventDelegation.BINDINGS.DELEGATED)) return;
     const diceChoose = document.getElementById('diceChoose');
     const pendingMenu = document.getElementById('pendingMenu');
     const buildMenu = document.getElementById('buildMenu');
@@ -1189,7 +1188,7 @@ function bindDelegatedUiHandlers() {
     if (buildMenu && typeof buildMenu.addEventListener === 'function') buildMenu.addEventListener('click', handleBuildMenuClick);
     if (players && typeof players.addEventListener === 'function') players.addEventListener('click', handlePlayerPanelClick);
     bindStaticUiHandlers();
-    delegatedUiHandlersBound = true;
+    uiEventBindingController.markBound(UiEventDelegation.BINDINGS.DELEGATED);
 }
 
 function onResolveHarbor(useBonus) {

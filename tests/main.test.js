@@ -454,6 +454,13 @@ runTest('delayed human action schedule stateはcontrollerだけが所有する',
     assert.ok(source.includes('DelayedHumanActionPolicy.createScheduleController()'));
 });
 
+runTest('main UI handler binding stateはdelegation controllerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
+    assert.strictEqual(source.includes('let delegatedUiHandlersBound'), false);
+    assert.strictEqual(source.includes('let staticUiHandlersBound'), false);
+    assert.ok(source.includes('UiEventDelegation.createBindingController()'));
+});
+
 runTest('main storage helperは共通facadeでget/removeと例外fallbackを維持する', () => {
     const rt = loadMainRuntime();
     rt.localStorage.setItem('testKey', 'value');

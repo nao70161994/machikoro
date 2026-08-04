@@ -2,6 +2,22 @@ const assert = require('assert');
 const UiEventDelegation = require('../js/uiEventDelegation');
 const { runTest } = require('./helpers/test-utils');
 
+runTest('ui event delegation binding controllerはstatic/delegated登録stateを単独所有する', () => {
+    const controller = UiEventDelegation.createBindingController();
+    assert.deepStrictEqual(controller.snapshot(), { static: false, delegated: false });
+    assert.strictEqual(controller.isBound(UiEventDelegation.BINDINGS.STATIC), false);
+    assert.deepStrictEqual(controller.markBound(UiEventDelegation.BINDINGS.STATIC), {
+        static: true,
+        delegated: false,
+    });
+    assert.strictEqual(controller.isBound(UiEventDelegation.BINDINGS.DELEGATED), false);
+    controller.markBound(UiEventDelegation.BINDINGS.DELEGATED);
+    assert.deepStrictEqual(controller.snapshot(), { static: true, delegated: true });
+    assert.throws(() => controller.isBound('unknown'), /unknown UI binding/);
+    assert.ok(Object.isFrozen(controller));
+    assert.ok(Object.isFrozen(controller.snapshot()));
+});
+
 runTest('ui event delegationはdata属性名をdataset keyへ変換する', () => {
     assert.strictEqual(UiEventDelegation.datasetKey('data-action'), 'action');
     assert.strictEqual(UiEventDelegation.datasetKey('data-ui-action'), 'uiAction');
