@@ -58,6 +58,17 @@ const GamePendingResolutionPolicy = (() => {
         return result(true);
     }
 
+    function resolveMinorCardRef(facts = {}) {
+        const cards = readFact(facts.cards);
+        if (!Array.isArray(cards)) return null;
+        const ref = readFact(facts.ref);
+        if (Number.isInteger(ref)) {
+            const card = cards[ref];
+            return card && !facts.isMajor(card) ? card : null;
+        }
+        return cards.find(card => card.name === ref && !facts.isMajor(card)) || null;
+    }
+
     function hasBusinessExchange(facts = {}) {
         const players = readFact(facts.players) || [];
         const currentPlayerIndex = readFact(facts.currentPlayerIndex);
@@ -101,6 +112,7 @@ const GamePendingResolutionPolicy = (() => {
         planOtherPlayerTarget,
         planCleaningTarget,
         planRenovationTarget,
+        resolveMinorCardRef,
         hasBusinessExchange,
         hasCleaningTarget,
         hasPendingAction,

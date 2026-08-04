@@ -154,12 +154,11 @@ class GameManager {
     }
 
     _resolveCardRef(player, ref) {
-        if (!player) return null;
-        if (Number.isInteger(ref)) {
-            const card = player.cards[ref];
-            return (card && card.category !== CARD_CATEGORIES.MAJOR) ? card : null;
-        }
-        return player.cards.find(c => c.name === ref && c.category !== CARD_CATEGORIES.MAJOR) || null;
+        return GamePendingResolutionPolicy.resolveMinorCardRef({
+            cards: () => player && player.cards,
+            ref,
+            isMajor: card => card.category === CARD_CATEGORIES.MAJOR,
+        });
     }
 
     _hasBusinessExchange(currentPlayerIndex) {

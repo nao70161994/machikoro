@@ -143,3 +143,29 @@ runTest('pending resolution policyは最初の休業可能なminor cardで走査
     assert.strictEqual(result, true);
     assert.deepStrictEqual(trace.map(entry => entry[0]), ['major', 'major', 'dormant', 'major', 'dormant']);
 });
+
+runTest('pending resolution policyはindexまたは名前からminor card参照を解決する', () => {
+    const cards = [
+        { name: '麦畑', major: false },
+        { name: 'テレビ局', major: true },
+        { name: '麦畑', major: false },
+    ];
+    const isMajor = card => card.major;
+    assert.strictEqual(GamePendingResolutionPolicy.resolveMinorCardRef({ cards, ref: 0, isMajor }), cards[0]);
+    assert.strictEqual(GamePendingResolutionPolicy.resolveMinorCardRef({ cards, ref: '麦畑', isMajor }), cards[0]);
+    assert.strictEqual(GamePendingResolutionPolicy.resolveMinorCardRef({ cards, ref: 1, isMajor }), null);
+    assert.strictEqual(GamePendingResolutionPolicy.resolveMinorCardRef({ cards, ref: 'テレビ局', isMajor }), null);
+    assert.strictEqual(GamePendingResolutionPolicy.resolveMinorCardRef({ cards, ref: 9, isMajor }), null);
+    assert.strictEqual(GamePendingResolutionPolicy.resolveMinorCardRef({ cards: null, ref: 0, isMajor }), null);
+});
+
+runTest('pending card参照解決は欠落playerでrefやcard分類を読まない', () => {
+    const trace = [];
+    const result = GamePendingResolutionPolicy.resolveMinorCardRef({
+        cards() { trace.push('cards'); return null; },
+        ref() { throw new Error('ref must stay lazy'); },
+        isMajor() { throw new Error('classification must stay lazy'); },
+    });
+    assert.strictEqual(result, null);
+    assert.deepStrictEqual(trace, ['cards']);
+});
