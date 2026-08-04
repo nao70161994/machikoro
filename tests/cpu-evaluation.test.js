@@ -1248,6 +1248,75 @@ runTest('CPU本体のstrong色役割補正wrapperは短絡順を保ってpure ev
     assert.strictEqual(endgameCalls, 1);
 });
 
+runTest('CPU evaluation はCleaning価値特徴量を既存走査順でfrozen投影する', () => {
+    const calls = [];
+    const selfCard = { id: 'self', name: 'パン屋' };
+    const otherCard = { id: 'other', name: 'パン屋' };
+    const skippedCard = { id: 'skip', name: 'コンビニ' };
+    const dormantCard = { id: 'dormant', name: 'パン屋' };
+    const current = { id: 'current', cards: [selfCard, skippedCard] };
+    const opponent = { id: 'opponent', cards: [otherCard, dormantCard] };
+    const features = CPUEvaluation.expertV2SimpleCleaningFeatures(
+        'パン屋',
+        current,
+        [current, opponent],
+        {
+            minorCards(player) {
+                calls.push('cards:' + player.id);
+                return player.cards;
+            },
+            isDormant(player, card) {
+                calls.push('dormant:' + player.id + ':' + card.id);
+                return card === dormantCard;
+            },
+            ownedCardValue(card, player) {
+                calls.push('value:' + player.id + ':' + card.id);
+                return card === selfCard ? 0.1 : 4;
+            },
+        }
+    );
+
+    assert.deepStrictEqual(features, { opponentValue: 4, selfValue: 0.2 });
+    assert.ok(Object.isFrozen(features));
+    assert.strictEqual(CPUEvaluation.expertV2SimpleCleaningScore(features), 3.76);
+    assert.deepStrictEqual(calls, [
+        'cards:current', 'dormant:current:self', 'value:current:self',
+        'cards:opponent', 'dormant:opponent:other', 'value:opponent:other',
+        'dormant:opponent:dormant',
+    ]);
+});
+
+runTest('CPU本体のCleaning価値wrapperはpure featureと既存callback順を維持する', () => {
+    const { CPU } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const calls = [];
+    const selfCard = { id: 'self', name: 'パン屋' };
+    const otherCard = { id: 'other', name: 'パン屋' };
+    const current = {
+        getMinorCards() { calls.push('cards:self'); return [selfCard]; },
+        isDormant(card) { calls.push('dormant:self:' + card.id); return false; },
+    };
+    const opponent = {
+        getMinorCards() { calls.push('cards:other'); return [otherCard]; },
+        isDormant(card) { calls.push('dormant:other:' + card.id); return false; },
+    };
+    const game = {
+        players: [current, opponent],
+        currentPlayer() { calls.push('current'); return current; },
+    };
+    cpu._ownedCardValue = (card, runtime, player) => {
+        calls.push('value:' + (player === current ? 'self' : 'other') + ':' + card.id);
+        assert.strictEqual(runtime, game);
+        return player === current ? 2 : 5;
+    };
+
+    assert.strictEqual(cpu._scoreExpertV2SimpleCleaningValue(game, 'パン屋'), 2.6);
+    assert.deepStrictEqual(calls, [
+        'current', 'cards:self', 'dormant:self:self', 'value:self:self',
+        'cards:other', 'dormant:other:other', 'value:other:other',
+    ]);
+});
+
 runTest('CPU evaluation はstrongランドマーク閾値特徴量を既存読取順でfrozen投影する', () => {
     const effects = { FRENCHR: 'french', MEMBERBAR: 'member' };
     const calls = [];

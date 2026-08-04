@@ -74,6 +74,24 @@ const CPUEvaluation = Object.freeze({
         return bonus;
     },
 
+    expertV2SimpleCleaningFeatures(name, current, players, dependencies) {
+        let opponentValue = 0;
+        let selfValue = 0;
+        for (const player of players) {
+            for (const card of dependencies.minorCards(player)) {
+                if (card.name !== name || dependencies.isDormant(player, card)) continue;
+                const value = Math.max(0.2, dependencies.ownedCardValue(card, player));
+                if (player === current) selfValue += value;
+                else opponentValue += value;
+            }
+        }
+        return Object.freeze({ opponentValue, selfValue });
+    },
+
+    expertV2SimpleCleaningScore(features) {
+        return features.opponentValue - features.selfValue * 1.2;
+    },
+
     purchasePlanValue(facts = {}) {
         const landmarkValue = facts.bestLandmark
             ? facts.bestLandmark.urgency * 2.4 +

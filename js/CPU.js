@@ -1270,17 +1270,17 @@ class CPU {
 
     _scoreExpertV2SimpleCleaningValue(game, name) {
         const current = game.currentPlayer();
-        let opponentValue = 0;
-        let selfValue = 0;
-        for (const player of game.players) {
-            for (const card of player.getMinorCards()) {
-                if (card.name !== name || player.isDormant(card)) continue;
-                const value = Math.max(0.2, this._ownedCardValue(card, game, player));
-                if (player === current) selfValue += value;
-                else opponentValue += value;
+        const features = CPUEvaluation.expertV2SimpleCleaningFeatures(
+            name,
+            current,
+            game.players,
+            {
+                minorCards: player => player.getMinorCards(),
+                isDormant: (player, card) => player.isDormant(card),
+                ownedCardValue: (card, player) => this._ownedCardValue(card, game, player),
             }
-        }
-        return opponentValue - selfValue * 1.2;
+        );
+        return CPUEvaluation.expertV2SimpleCleaningScore(features);
     }
 
     chooseMoverMove(game) {
