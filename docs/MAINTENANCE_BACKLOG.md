@@ -604,3 +604,12 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event
 - Scoped gates now cover 216 ESLint maintenance files and 215 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect timing, dice outcome/log order, UI presentation, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 61 architecture boundaries
+
+- `OnlineRuntimeState.runtime` is now the sole mutable owner of the ten cross-script online session fields: Socket reference, online/host/replay/reconnect flags, player indices/name, room ID, and reconnect token. Existing identifiers are non-enumerable getter/setter projections, so main/storage/UI/app-shell behavior and assignment order remain unchanged while raw declarations are removed from `online.js`.
+- `OnlineSetupState.createController()` now owns online room-creation player count, player settings, and CPU speed. `online.js` retains DOM rendering, RL preload, Socket effects, and payload construction, but reads detached snapshots and updates state only through the controller.
+- `GameSetupState.runtime` now owns selected local player count, shared player settings, and gameplay CPU speed across main, restore, and online start/rejoin. Existing identifiers remain compatibility projections with the same in-place settings-array behavior; three writable declarations were removed from `main.js`.
+- The next online-state step is to replace compatibility-field assignment groups with named controller transitions and reconnect events. Removing the projections before all cross-script consumers migrate remains deferred. Scoped gates now cover 219 ESLint maintenance files and 218 checkJs runtime files; whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect/Socket callback order, room setup behavior, UI presentation, or PWA/SW behavior changed.

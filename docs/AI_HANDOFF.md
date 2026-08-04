@@ -826,3 +826,12 @@ Test index:
 - Reroll reset belongs to `GameDicePolicy.rerollResetState()`. Keep RNG, mutable effects, and old/new dice log composition in `GameManager` after the reset plan is applied.
 - Scoped gates are 216 ESLint maintenance files and 215 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 61 handoff (2026-08-04)
+
+- Online session fields belong exclusively to `OnlineRuntimeState.runtime`. Do not add `let socket`, `let isOnlineGame`, host/player/room/token fields, or replay/reconnect flags back to `online.js`; compatibility names are controller-backed projections for cross-script migration.
+- Online room-creation count/settings/speed belong to `OnlineSetupState`. Use controller snapshots for render, RL readiness, preload, and create payloads; do not recreate parallel setup variables.
+- Local/shared player count/settings/CPU speed belong to `GameSetupState.runtime`. Preserve the compatibility array's in-place update behavior until main, storage, online, and app-shell consumers all use named transitions.
+- A future transition should add named session operations (join, activate, rejoin, leave/reset) and then remove compatibility setters. Do not collapse these effects before Socket callback and storage ordering contracts exist.
+- Scoped gates are 219 ESLint maintenance files and 218 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

@@ -780,3 +780,11 @@ Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. 
 3. Reroll-start state now comes from an immutable dice-policy plan while GameManager remains the RNG, mutation, and log-effect adapter.
 
 Scoped gates now cover 216 ESLint maintenance files and 215 checkJs runtime files. Rules, CPU strength/RNG, protocol/schema, persistence, reconnect behavior, UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 61 boundary update
+
+1. Ten cross-script online session fields now have one controller owner with compatibility projections, preparing explicit named lifecycle transitions without a callback-order cutover.
+2. Online room-creation state now has a detached-snapshot controller, separating UI state from DOM, RL preload, and Socket effects.
+3. Shared local/game setup state now has one controller owner across main, restore, and online flows instead of three declarations in the composition script.
+
+Scoped gates now cover 219 ESLint maintenance files and 218 checkJs runtime files. Rules, CPU strength/RNG, protocol/schema, persistence, reconnect and Socket ordering, UI behavior, and PWA defaults are unchanged.
