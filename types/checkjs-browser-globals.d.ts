@@ -119,6 +119,7 @@ interface Window {
     AppShellRuntimeEffects: unknown;
     AppShellObservationRuntime: unknown;
     CrashScreen: unknown;
+    AppShellCrashRuntime: unknown;
     UiWinner: unknown;
     UiWinnerEffects: unknown;
     UiRenderRuntime: unknown;

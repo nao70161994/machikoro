@@ -360,48 +360,29 @@ if (typeof window !== 'undefined') {
 }
 
 // ===== クラッシュ回復 =====
-const crashScreenController = CrashScreen.createController();
-
-function trapCrashScreenFocus(event) {
-    const crashState = crashScreenController.snapshot();
-    if (!crashState.shown || event.key !== 'Tab') return;
-    const el = document.getElementById('crashScreen');
-    const focusables = CrashScreenEffects.focusableElements(el);
-    const plan = CrashScreen.focusTrapPlan({
-        shown: crashState.shown,
-        key: event.key,
-        shiftKey: event.shiftKey,
-        focusableCount: focusables.length,
-        activeIndex: focusables.indexOf(document.activeElement),
-    });
-    CrashScreenEffects.applyFocusTrap(plan, event, el, focusables);
-}
+const appShellCrashRuntime = AppShellCrashRuntime.createRuntime({
+    addKeydownListener: handler => {
+        if (typeof document.addEventListener === 'function') document.addEventListener('keydown', handler, true);
+    },
+    cancelCpu: appShellRuntimeEffects.cancelCpu,
+    controller: CrashScreen.createController(),
+    effects: CrashScreenEffects,
+    getActiveElement: () => document.activeElement,
+    getElementById: id => document.getElementById(id),
+    policy: CrashScreen,
+    readSavedGame: () => safeAppShellStorageGet('savedGame'),
+    removeKeydownListener: handler => {
+        if (typeof document.removeEventListener === 'function') document.removeEventListener('keydown', handler, true);
+    },
+    resumeGame: appShellRuntimeEffects.resumeGame,
+});
 
 function showCrashScreen(err) {
-    const transition = crashScreenController.show();
-    if (!transition.changed) return;
-    appShellRuntimeEffects.cancelCpu('game-lifecycle-reset-cpu');
-    const el = document.getElementById('crashScreen');
-    if (!el) return;
-    const view = CrashScreen.buildView(err, safeAppShellStorageGet('savedGame'));
-    const elements = {
-        screen: el,
-        message: document.getElementById('crashMessage'),
-        resumeButton: document.getElementById('crashResumeBtn'),
-        reloadButton: el.querySelector && el.querySelector('[data-ui-action="reloadPage"]'),
-    };
-    CrashScreenEffects.applyView(elements, view);
-    if (typeof document.addEventListener === 'function') {
-        document.addEventListener('keydown', trapCrashScreenFocus, true);
-    }
-    CrashScreenEffects.focusInitial(elements, view.initialFocus);
+    return appShellCrashRuntime.show(err);
 }
 
 function crashResume() {
-    crashScreenController.hide();
-    if (typeof document.removeEventListener === 'function') document.removeEventListener('keydown', trapCrashScreenFocus, true);
-    CrashScreenEffects.hide(document.getElementById('crashScreen'));
-    appShellRuntimeEffects.resumeGame();
+    return appShellCrashRuntime.resume();
 }
 
 // ===== オフライン検知 =====
