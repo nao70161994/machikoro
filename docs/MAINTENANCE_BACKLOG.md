@@ -643,3 +643,12 @@ No game rule, Airport amount/log, CPU heuristic/choice/RNG, save/localStorage sh
 - Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect/Socket callback order, UI presentation, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 65 architecture boundaries
+
+- Actual browser globals projected by `UiWinner.streakRuntime` are now getter-only. Winner recording and replacement remain named operations; isolated Node/VM fixtures retain writable bindings. Persistence keys, write order, and winner presentation are unchanged.
+- `RLModelCatalog` is now the frozen shared source for distributed RL model metadata and allowed server model IDs. `RLModelPortfolio` and `server.js` consume the same definitions; model IDs, paths, player ranges, registry adoption, and runtime selection are unchanged.
+- `CPUEvaluation.strongLandmarkUrgencyFeatures()` now owns the pure board-to-feature projection used by strong landmark urgency scoring. `CPU.js` retains live dependency adaptation, and the existing score function, coefficients, branch order, and RNG behavior are unchanged.
+- Scoped gates now cover 221 ESLint maintenance files and 220 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice/RNG, RL model or adoption policy, save/localStorage shape, Socket.IO event/payload, reconnect ordering, winner/UI presentation, or PWA/SW behavior changed.

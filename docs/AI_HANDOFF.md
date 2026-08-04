@@ -860,3 +860,10 @@ Test index:
 - `GameSetupState.playerSettings` still exposes a live compatibility array for existing readers. Do not make that projection read-only or detached until main/storage/online/UI consumers and editing semantics are contract-covered.
 - Winner streak compatibility projections remain a separate audit; do not combine their removal with winner DOM or persistence changes.
 - Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Continue with at most three independent themes and one batch-level integration gate/push/CI.
+
+## Batch 65 handoff (2026-08-04)
+
+- Winner streak compatibility globals are read-only in an actual browser. Update winner state only through `UiWinner.streakRuntime.replace()` or `recordWinner()`; writable bindings exist only for isolated Node/VM fixture compatibility.
+- Distributed RL model definitions belong to `RLModelCatalog`. Keep `RLModelPortfolio` and server admission derived from that catalog, preserve the catalog-before-portfolio script order, and include the catalog in the Service Worker asset contract.
+- Strong-landmark board feature assembly belongs to `CPUEvaluation.strongLandmarkUrgencyFeatures()`. Preserve card traversal, stable-income evaluation timing, tuna-boat count calls, coefficients, branch order, and all RNG points; require fixed-decision and 2–10-player self-play parity for changes.
+- Scoped gates are 221 ESLint maintenance files and 220 checkJs runtime files. Continue with at most three independent themes and one batch-level integration gate/push/CI.

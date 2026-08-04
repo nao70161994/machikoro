@@ -812,3 +812,11 @@ Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. 
 3. Online-session compatibility globals are read-only in the actual browser, leaving named lifecycle transitions as the production write authority.
 
 Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Rules, CPU strength/RNG, authority defaults, schema/protocol, persistence formats, reconnect/Socket ordering, UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 65 boundary update
+
+1. Winner-streak compatibility projections are read-only in the actual browser, leaving named runtime operations as the production mutation authority.
+2. RL distribution metadata and server model-ID admission now derive from one frozen client/server catalog without changing the adopted portfolio.
+3. Strong landmark urgency feature extraction now belongs to the pure CPU evaluator while `CPU.js` remains the live-game adapter.
+
+Scoped gates now cover 221 ESLint maintenance files and 220 checkJs runtime files. Rules, CPU strength/RNG, RL models/adoption, authority defaults, schema/protocol, persistence formats, reconnect behavior, winner/UI behavior, and PWA defaults are unchanged.
