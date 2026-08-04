@@ -149,6 +149,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineRestoreActivation.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineLobbyRequestState.js');
+    loadScript(context, 'js/onlineHostlessRestoreState.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineActionSequence.js');
     loadScript(context, 'js/onlineActionLog.js');
@@ -293,7 +294,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
             if (typeof v.onlineActionInFlight !== 'undefined') onlineActionInFlight = v.onlineActionInFlight;
-            if (typeof v.hostlessRestorePending !== 'undefined') _hostlessRestorePending = v.hostlessRestorePending;
+            if (typeof v.hostlessRestorePending !== 'undefined') _hostlessRestoreState.setPending(v.hostlessRestorePending);
             if (typeof v.onlineGameSchemaSelection !== 'undefined') onlineGameSchemaSelection = v.onlineGameSchemaSelection;
             if (typeof v.myRoomId !== 'undefined') myRoomId = v.myRoomId;
             if (typeof v.myOriginalPlayerIndex !== 'undefined') myOriginalPlayerIndex = v.myOriginalPlayerIndex;
@@ -303,7 +304,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineLobbyState = () => onlineLobbyRequestController.snapshot();
         this.isOnlineReconnectInputBlocked = isOnlineReconnectInputBlocked;
         this.setOnlineReconnectLegacyFlag = setOnlineReconnectLegacyFlag;
-        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestorePending });
+        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestoreState.isPending() });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
     context.elements = elements;

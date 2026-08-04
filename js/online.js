@@ -150,7 +150,7 @@ let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
 let _rejoinRetryDeadline = 0;
 let _rejoinRetryExhausted = false;
-let _hostlessRestorePending = false;
+const _hostlessRestoreState = OnlineHostlessRestoreState.createController();
 let _onlineRestoreGeneration = 0;
 let _onlineRestoreInProgress = false;
 let _onlineRestoreEventQueue = [];
@@ -1072,7 +1072,7 @@ function _clearRejoinRetry() {
 }
 
 function _finishRejoinRetryTimeout() {
-    if (_hostlessRestorePending) return true;
+    if (_hostlessRestoreState.isPending()) return true;
     if (_requestHostlessRestore()) {
         const waitingEl = document.getElementById("onlineStatus");
         if (waitingEl) {
@@ -1921,7 +1921,7 @@ function resetOnlineState() {
             _clearPendingOutboundAction(currentPlan.roomIdBeforeReset);
         },
         clearRejoinRetry() { _clearRejoinRetry(); },
-        clearHostlessPending() { _hostlessRestorePending = false; },
+        clearHostlessPending() { _hostlessRestoreState.clear(); },
         incrementRestoreGeneration() { _incrementOnlineRestoreGeneration(); },
         clearRestoreInProgress() { _finishOnlineRestore(); },
         clearRestoreQueue() { _clearOnlineRestoreEventQueue(); },
@@ -2685,7 +2685,7 @@ function initSocket() {
         }
         onlineGameSchemaSelection = gameSchema || null;
         _clearRejoinRetry();
-        _hostlessRestorePending = false;
+        _hostlessRestoreState.clear();
         _clearOnlineRestoreQuarantine();
         const startGeneration = _incrementOnlineRestoreGeneration();
         _startOnlineRestore();
@@ -2967,7 +2967,7 @@ function initSocket() {
         });
         _replaceOnlineRestoreEventQueue(carrySelection.transition.queue);
         _clearRejoinRetry();
-        _hostlessRestorePending = false;
+        _hostlessRestoreState.clear();
         const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
         const replayActionLog = _normalizeOnlineActionLog(actionLog);
         const restoredThroughSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
@@ -3452,7 +3452,7 @@ function initSocket() {
         if (roomId && roomId !== myRoomId) return;
         const el = document.getElementById("onlineStatus");
         if (reason === 'host-restored') {
-            _hostlessRestorePending = false;
+            _hostlessRestoreState.clear();
             _clearRejoinRetry();
             setOnlineReconnectLegacyFlag(true);
             if (el) el.textContent = '♻️ 元のホストが復元しました。再接続しています...';
@@ -3483,7 +3483,7 @@ function initSocket() {
             'room-exists',
         ]);
         if (!terminalReasons.has(reason)) return;
-        _hostlessRestorePending = false;
+        _hostlessRestoreState.clear();
         _markOnlineRejoinAttemptExhausted();
         setOnlineReconnectLegacyFlag(true);
         _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED);
@@ -3495,7 +3495,7 @@ function initSocket() {
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_APPROVED, ({ roomId, hostPlayerIndex }) => {
         if (roomId !== myRoomId) return;
-        _hostlessRestorePending = false;
+        _hostlessRestoreState.clear();
         if (hostPlayerIndex === myOriginalPlayerIndex) return;
         _clearRejoinRetry();
         setOnlineReconnectLegacyFlag(true);
@@ -4037,14 +4037,13 @@ function _onlineHostlessRestoreIdentity() {
 }
 
 function _requestHostlessRestore() {
-    if (!socket || socket.connected === false || _hostlessRestorePending) return false;
+    if (!socket || socket.connected === false || _hostlessRestoreState.isPending()) return false;
     const bundle = _readLocalRestoreBundle();
     const payload = OnlinePayload.buildHostlessRestoreRequest(
         bundle,
         _onlineHostlessRestoreIdentity()
     );
-    if (!payload) return false;
-    _hostlessRestorePending = true;
+    if (!payload || !_hostlessRestoreState.tryBegin(true)) return false;
     setOnlineReconnectLegacyFlag(true);
     socket.emit(OnlinePayload.hostlessRestoreEvents.REQUEST, payload);
     return true;
