@@ -62,6 +62,7 @@ interface Window {
     GameSchemaNegotiation: unknown;
     GameSchemaCodec: unknown;
     OnlineRetryPolicy: unknown;
+    OnlineClientEffects: unknown;
     OnlineSocketRegistry: unknown;
     OnlinePlayerSettings: unknown;
     OnlineActionLog: unknown;
@@ -114,6 +115,7 @@ interface Window {
     UiWinnerEffects: unknown;
     UiRenderRuntime: unknown;
     LifecycleNotify: unknown;
+    LifecycleRuntime: unknown;
     LifecycleTransport: unknown;
     ClientReportingTransport: unknown;
     ClientEventRuntime: unknown;
