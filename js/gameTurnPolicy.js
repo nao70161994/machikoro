@@ -70,6 +70,28 @@ const GameTurnPolicy = (() => {
         return (currentPlayerIndex + 1) % playerCount;
     }
 
+    const turnAdvanceKinds = Object.freeze({
+        REPEAT: 'repeat',
+        NEXT_PLAYER: 'next-player',
+    });
+
+    function turnAdvancePlan(facts = {}) {
+        const repeatTurn = shouldRepeatAmusementParkTurn(facts);
+        const resetOptions = Object.freeze({
+            clearLog: true,
+            clearDice: !repeatTurn,
+        });
+        return Object.freeze({
+            kind: repeatTurn ? turnAdvanceKinds.REPEAT : turnAdvanceKinds.NEXT_PLAYER,
+            playerIndex: repeatTurn
+                ? facts.currentPlayerIndex
+                : nextPlayerIndex(facts.currentPlayerIndex, facts.playerCount),
+            turnCountDelta: repeatTurn ? 0 : 1,
+            phase: facts.rollPhase,
+            resetOptions,
+        });
+    }
+
     const nextTurnRejectionReasons = Object.freeze({
         WRONG_PHASE: 'wrong-phase',
         WINNER_DECIDED: 'winner-decided',
@@ -149,6 +171,8 @@ const GameTurnPolicy = (() => {
         winnerIndex,
         shouldRepeatAmusementParkTurn,
         nextPlayerIndex,
+        turnAdvanceKinds,
+        turnAdvancePlan,
         nextTurnRejectionReasons,
         planNextTurnAdmission,
         shouldAwardAirportBonus,

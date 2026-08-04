@@ -1026,22 +1026,23 @@ class GameManager {
     }
 
     _doNextTurn() {
-        if (GameTurnPolicy.shouldRepeatAmusementParkTurn(this)) {
+        const plan = GameTurnPolicy.turnAdvancePlan({
+            hadAmusementParkAtRoll: this.hadAmusementParkAtRoll,
+            lastDice1: this.lastDice1,
+            lastDice2: this.lastDice2,
+            currentPlayerIndex: this.currentPlayerIndex,
+            playerCount: this.players.length,
+            rollPhase: GAME_PHASES.ROLL,
+        });
+        this.currentPlayerIndex = plan.playerIndex;
+        this.turnCount += plan.turnCountDelta;
         /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
-            this.phase = GAME_PHASES.ROLL;
-            this.resetTurnState({ clearLog: true });
+        this.phase = plan.phase;
+        this.resetTurnState(plan.resetOptions);
+        if (plan.kind === GameTurnPolicy.turnAdvanceKinds.REPEAT) {
             this.addLog(LOG_TYPES.SYSTEM, `🎡 遊園地効果！ゾロ目でもう一度ターン`);
             return;
         }
-        this.currentPlayerIndex = GameTurnPolicy.nextPlayerIndex(
-            this.currentPlayerIndex,
-            this.players.length
-        );
-        this.turnCount++;
-        /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
-        this.phase = GAME_PHASES.ROLL;
-        this.resetTurnState({ clearLog: true, clearDice: true });
-
         this.addLog(LOG_TYPES.SYSTEM, `👤 ${this.currentPlayer().name}のターン`);
     }
 

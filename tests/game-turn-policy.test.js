@@ -213,3 +213,39 @@ runTest('turn policyはturn resetの条件付きfieldと固定結果をpure plan
     assert.ok(Object.isFrozen(cleared));
     assert.ok(Object.isFrozen(cleared.pending));
 });
+
+runTest('turn policyは遊園地継続と次player進行を一つのdetached planにする', () => {
+    const repeat = GameTurnPolicy.turnAdvancePlan({
+        hadAmusementParkAtRoll: true,
+        lastDice1: 4,
+        lastDice2: 4,
+        currentPlayerIndex: 2,
+        playerCount: 4,
+        rollPhase: 'roll',
+    });
+    assert.deepStrictEqual(repeat, {
+        kind: 'repeat',
+        playerIndex: 2,
+        turnCountDelta: 0,
+        phase: 'roll',
+        resetOptions: { clearLog: true, clearDice: false },
+    });
+    const advance = GameTurnPolicy.turnAdvancePlan({
+        hadAmusementParkAtRoll: false,
+        lastDice1: 4,
+        lastDice2: 4,
+        currentPlayerIndex: 3,
+        playerCount: 4,
+        rollPhase: 'roll',
+    });
+    assert.deepStrictEqual(advance, {
+        kind: 'next-player',
+        playerIndex: 0,
+        turnCountDelta: 1,
+        phase: 'roll',
+        resetOptions: { clearLog: true, clearDice: true },
+    });
+    assert.ok(Object.isFrozen(repeat));
+    assert.ok(Object.isFrozen(repeat.resetOptions));
+    assert.ok(Object.isFrozen(GameTurnPolicy.turnAdvanceKinds));
+});
