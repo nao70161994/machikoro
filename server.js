@@ -63,6 +63,7 @@ const makeRestoredRoom = require('./server/restoredRoom');
 const makeRestoredRoomRuntime = require('./server/restoredRoomRuntime');
 const makeExistingRoomRestoreRuntime = require('./server/existingRoomRestoreRuntime');
 const makeNewRoomRestoreRuntime = require('./server/newRoomRestoreRuntime');
+const makeRecreateRoomRuntime = require('./server/recreateRoomRuntime');
 const {
     existingRoomRejoinEffectAuthorityEnabled,
     executeExistingRoomRejoin,
@@ -993,52 +994,17 @@ const newRoomRestoreRuntime = makeNewRoomRestoreRuntime({
     },
 });
 
+const recreateRoomRuntime = makeRecreateRoomRuntime({
+    planAdmission: planRestoreAdmission,
+    emitAppError,
+    hasRoom: hasOwnRoom,
+    roomForId: roomId => rooms[roomId],
+    existingRoomRuntime: existingRoomRestoreRuntime,
+    newRoomRuntime: newRoomRestoreRuntime,
+});
+
 function handleRecreateRoom(socket, payload = {}, options = {}) {
-    const admission = planRestoreAdmission(payload, options);
-    if (admission.ok !== true) {
-        emitAppError(socket, admission.errorMessage);
-        return admission.result;
-    }
-    const {
-        approvedHostless,
-        roomId,
-        playerIndex,
-        playerName,
-        reconnectToken,
-        canonicalRecord,
-        clientSnapshotTrusted,
-        replayStateSnapshot,
-    } = admission;
-    let { gameStartPayload, stateSnapshot, actionLog } = admission;
-    if (hasOwnRoom(roomId)) {
-        const room = rooms[roomId];
-        const existingRoomResult = existingRoomRestoreRuntime.handle({
-            socket,
-            room,
-            roomId,
-            playerIndex,
-            playerName,
-            reconnectToken,
-            admissionInput: {
-                room,
-                roomId,
-                playerIndex,
-                playerName,
-                reconnectToken,
-                actionLog,
-                replayStateSnapshot,
-                canonicalRecord,
-                gameStartPayload,
-                clientSnapshotTrusted,
-            },
-        });
-        if (existingRoomResult.handled) return;
-    }
-    return newRoomRestoreRuntime.handle({
-        socket,
-        admission,
-        candidateCount: options.candidateCount,
-    });
+    return recreateRoomRuntime.handle(socket, payload, options);
 }
 
 // ===== Snapshot limits and restore payload guards =====

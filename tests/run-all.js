@@ -52,6 +52,7 @@ const TEST_GROUPS = {
         'rejoin-socket-handler.test.js',
         'action-socket-handler.test.js',
         'recreate-socket-handler.test.js',
+        'recreate-room-runtime.test.js',
         'restore-admission.test.js',
         'existing-room-rejoin.test.js',
         'restore-replay-admission.test.js',
