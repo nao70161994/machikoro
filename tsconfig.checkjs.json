@@ -172,6 +172,7 @@
     "js/localGameStart.js",
     "js/localGameStartRuntime.js",
     "js/localGameInitializer.js",
+    "js/localGameRestartRuntime.js",
     "js/pageActivationPolicy.js",
     "js/clientStorage.js",
     "js/appShellStorage.js",

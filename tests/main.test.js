@@ -415,6 +415,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(localGameStartRuntimeSource, context, { filename: 'js/localGameStartRuntime.js' });
     const localGameInitializerSource = fs.readFileSync(path.join(__dirname, '..', 'js/localGameInitializer.js'), 'utf8');
     vm.runInContext(localGameInitializerSource, context, { filename: 'js/localGameInitializer.js' });
+    const localGameRestartRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/localGameRestartRuntime.js'), 'utf8');
+    vm.runInContext(localGameRestartRuntimeSource, context, { filename: 'js/localGameRestartRuntime.js' });
     const autoSkipPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/autoSkipPolicy.js'), 'utf8');
     vm.runInContext(autoSkipPolicySource, context, { filename: 'js/autoSkipPolicy.js' });
     const pageActivationPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/pageActivationPolicy.js'), 'utf8');
@@ -2221,6 +2223,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'js/localGameStart.js',
         'js/localGameStartRuntime.js',
         'js/localGameInitializer.js',
+        'js/localGameRestartRuntime.js',
         'js/storedOnlineReconnect.js',
         'js/onlinePlayerSettings.js',
         'js/uiLogDisplay.js',
@@ -2447,7 +2450,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/localPlayerSettings.js', 'js/main.js');
     assertBefore('js/localGameStart.js', 'js/localGameStartRuntime.js');
     assertBefore('js/localGameStartRuntime.js', 'js/localGameInitializer.js');
-    assertBefore('js/localGameInitializer.js', 'js/main.js');
+    assertBefore('js/localGameInitializer.js', 'js/localGameRestartRuntime.js');
+    assertBefore('js/localGameRestartRuntime.js', 'js/main.js');
     assertBefore('js/pageActivationPolicy.js', 'js/main.js');
     assertBefore('js/delayedHumanActionPolicy.js', 'js/main.js');
     assertBefore('js/cpuSchedulerState.js', 'js/main.js');

@@ -198,42 +198,44 @@ function startGame() {
     return localGameStartRuntime.start();
 }
 
-function restartGame() {
-    showConfirm("最初からやり直しますか？\n現在のゲームは終了します", () => {
-        markMainCheckpoint('restart-game-confirmed-start');
-        safeMainStorageRemove('savedGame');
-        if (typeof clearOnlineSessionStorage === 'function') clearOnlineSessionStorage();
-        else {
-            ['onlineSession', 'onlineGameStart', 'onlineActionLog', 'onlineStateSnapshot', 'onlinePendingAction'].forEach(safeMainStorageRemove);
-        }
-        cancelCpuSchedule('restart-game-cancel-cpu');
-        cancelDelayedHumanAction();
-        cancelAutoSkip();
-        stopConfetti();
+const localGameRestartRuntime = LocalGameRestartRuntime.createRuntime({
+    cancelAutoSkip: () => cancelAutoSkip(),
+    cancelCpuSchedule: reason => cancelCpuSchedule(reason),
+    cancelDelayedHumanAction: () => cancelDelayedHumanAction(),
+    checkpoint: event => markMainCheckpoint(event),
+    document,
+    drawSkyline: () => drawCitySkyline(),
+    gameRuntime: GameRuntimeState.runtime,
+    getClearOnlineSessionStorage: () => typeof clearOnlineSessionStorage === 'function'
+        ? clearOnlineSessionStorage
+        : null,
+    refreshPwaUpdateState() {
+        if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
+    },
+    removeStorage: key => safeMainStorageRemove(key),
+    renderPlayerSettings: () => renderPlayerSettings(),
+    resetFullLog: () => resetFullLog(),
+    resetLifecycle(reason) {
+        if (typeof resetGameLifecycleForRestart === 'function') resetGameLifecycleForRestart(reason);
+    },
+    resetOnline() {
         if (typeof resetOnlineState === 'function') resetOnlineState();
         else {
-            try {
-                OnlineRuntimeState.runtime.setOnline(false);
-            } catch (_) {}
+            try { OnlineRuntimeState.runtime.setOnline(false); } catch (_) {}
         }
-        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('restart-game-reset-ui-locks');
-        if (typeof resetGameLifecycleForRestart === 'function') resetGameLifecycleForRestart('restart-game-lifecycle-reset');
-        GameRuntimeState.runtime.setGame(null);
-        GameRuntimeState.runtime.setPreviousCoins(null);
-        winSoundPlayed = false;
-        GameRuntimeState.runtime.setUndoState(null);
-        resetFullLog();
-        document.getElementById("gameScreen").style.display = "none";
-        document.getElementById("titleScreen").style.display = "block";
-        GameSetupState.runtime.replace({ selectedCount: 2, playerSettings: [] });
-        GameRuntimeState.runtime.setCpuPlayers([]);
-        document.getElementById("playerCount").textContent = 2;
-        renderPlayerSettings();
-        updateResumeButton();
-        drawCitySkyline();
-        if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
-        markMainCheckpoint('restart-game-confirmed-complete');
-    });
+    },
+    resetUiLocks(reason) {
+        if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset(reason);
+    },
+    setWinSoundPlayed(value) { winSoundPlayed = value; },
+    setupRuntime: GameSetupState.runtime,
+    showConfirm: (message, callback) => showConfirm(message, callback),
+    stopConfetti: () => stopConfetti(),
+    updateResumeButton: () => updateResumeButton(),
+});
+
+function restartGame() {
+    return localGameRestartRuntime.restart();
 }
 
 const localGameInitializer = LocalGameInitializer.createRuntime({

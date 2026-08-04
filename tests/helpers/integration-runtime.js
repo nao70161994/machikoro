@@ -245,6 +245,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/localGameStart.js',
         'js/localGameStartRuntime.js',
         'js/localGameInitializer.js',
+        'js/localGameRestartRuntime.js',
         'js/autoSkipPolicy.js',
         'js/pageActivationPolicy.js',
         'js/delayedHumanActionPolicy.js',
