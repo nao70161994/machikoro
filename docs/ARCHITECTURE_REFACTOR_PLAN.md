@@ -732,3 +732,11 @@ Main CPU scheduler ownership remains deferred until cross-runtime token invalida
 3. Delayed roll/select pending, token, immutable action snapshot, and timer state now have one controller owner while visibility effects, RNG, admission, and online/local dispatch stay in `main.js`.
 
 The cross-runtime CPU scheduler token remains deferred for an explicit effect-order migration. Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, RNG, protocol/schema, persistence, reconnect behavior, UI timing, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 54 boundary update
+
+1. Local-resume pending now has only the existing generation-aware preload controller as mutable owner; storage rendering and Promise effects remain adapters.
+2. Static/delegated UI listener binding now has one controller owner while registration effects and success-after-registration ordering remain in `main.js`.
+3. Online create/join pending now has only the generation/timer-aware lobby controller as mutable owner; legacy browser names remain read-only projections for unchanged PWA deferral.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, protocol/schema, persistence, lobby timing, browser-global read compatibility, and PWA defaults are unchanged.

@@ -541,3 +541,12 @@ No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol,
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, RNG point, save/localStorage shape, Socket.IO protocol, reconnect timing, UI timing, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 54 architecture boundaries
+
+- `LocalResumePreloadState` is now the sole owner of local-resume pending state; the duplicate `storage.js` projection was removed. `storage.js` retains repository reads, RL preload Promise effects, button rendering, and generation-gated continuation.
+- `UiEventDelegation.createBindingController()` now owns static and delegated UI-handler binding state. `main.js` retains listener registration and marks each binding only after the existing registrations complete, preserving retry behavior after missing DOM APIs.
+- `OnlineLobbyRequestState` is now the sole mutable owner of create/join pending state; duplicate `online.js` booleans were removed. Existing `onlineCreateRoomPending` / `onlineJoinRoomPending` browser names remain read-only controller projections for PWA update deferral compatibility.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, lobby timeout/callback order, PWA update deferral, or production rollout default changed.

@@ -767,3 +767,12 @@ Test index:
 - The main CPU scheduler token still crosses `main.js`, `online.js`, `storage.js`, and `appShell.js`; do not migrate one writer in isolation.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 54 handoff (2026-08-04)
+
+- Local-resume pending belongs exclusively to `LocalResumePreloadState`; read it from a controller snapshot and keep generation-gated Promise completion. Do not reintroduce a `storage.js` projection boolean.
+- Static/delegated handler binding belongs to `UiEventDelegation.createBindingController()`. Mark a binding only after all existing listener registration effects for that group complete.
+- Online create/join pending belongs exclusively to `OnlineLobbyRequestState`. Keep `onlineCreateRoomPending` and `onlineJoinRoomPending` as read-only browser compatibility getters because the inline PWA update flow reads them.
+- Preserve the 15-second lobby timeout, generation checks, timer cancellation, readiness rendering, and create/join Socket payloads.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
