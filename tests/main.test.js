@@ -409,6 +409,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(gameSetupStateSource, context, { filename: 'js/gameSetupState.js' });
     const gameRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameRuntimeState.js'), 'utf8');
     vm.runInContext(gameRuntimeStateSource, context, { filename: 'js/gameRuntimeState.js' });
+    const uiTutorialSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTutorialSettings.js'), 'utf8');
+    vm.runInContext(uiTutorialSettingsSource, context, { filename: 'js/uiTutorialSettings.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
     vm.runInContext(mainSource, context, { filename: 'js/main.js' });
     vm.runInContext(`
@@ -459,6 +461,13 @@ function loadMainRuntime(options = {}) {
     context.__test.elements = elements;
     return context;
 }
+
+runTest('tutorial globalsはUiTutorialSettings runtimeだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    for (const field of require('../js/uiTutorialSettings').stateFields) {
+        assert.strictEqual(new RegExp(`^let ${field}\\b`, 'm').test(source), false, field);
+    }
+});
 
 runTest('game runtime globalsはGameRuntimeStateだけが所有する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');

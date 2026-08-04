@@ -15,6 +15,72 @@ const UiTutorialSettings = (() => {
         return level === 'advanced' ? 'advanced' : 'beginner';
     }
 
+    const stateFields = Object.freeze(['tutorialEnabled', 'tutorialLevel']);
+
+    function createController(initial = {}) {
+        const state = {
+            tutorialEnabled: Object.prototype.hasOwnProperty.call(initial, 'tutorialEnabled')
+                ? !!initial.tutorialEnabled
+                : true,
+            tutorialLevel: normalizeLevel(initial.tutorialLevel),
+        };
+
+        function snapshot() {
+            return Object.freeze({
+                tutorialEnabled: state.tutorialEnabled,
+                tutorialLevel: state.tutorialLevel,
+            });
+        }
+
+        function setEnabled(value) {
+            state.tutorialEnabled = !!value;
+            return snapshot();
+        }
+
+        function setLevel(value) {
+            state.tutorialLevel = normalizeLevel(value);
+            return snapshot();
+        }
+
+        function replace(values = {}) {
+            if (Object.prototype.hasOwnProperty.call(values, 'tutorialEnabled')) {
+                state.tutorialEnabled = !!values.tutorialEnabled;
+            }
+            if (Object.prototype.hasOwnProperty.call(values, 'tutorialLevel')) {
+                state.tutorialLevel = normalizeLevel(values.tutorialLevel);
+            }
+            return snapshot();
+        }
+
+        function bindGlobals(root) {
+            if (!root || (typeof root !== 'object' && typeof root !== 'function')) return false;
+            Object.defineProperties(root, {
+                tutorialEnabled: {
+                    configurable: true,
+                    enumerable: false,
+                    get: () => state.tutorialEnabled,
+                    set: value => { setEnabled(value); },
+                },
+                tutorialLevel: {
+                    configurable: true,
+                    enumerable: false,
+                    get: () => state.tutorialLevel,
+                    set: value => { setLevel(value); },
+                },
+            });
+            return true;
+        }
+
+        return Object.freeze({ snapshot, setEnabled, setLevel, replace, bindGlobals });
+    }
+
+    function currentGlobals(root) {
+        if (!root || (typeof root !== 'object' && typeof root !== 'function')) return {};
+        return Object.fromEntries(stateFields
+            .filter(field => typeof root[field] !== 'undefined')
+            .map(field => [field, root[field]]));
+    }
+
     function planEnabledChange(enabled) {
         const nextEnabled = !!enabled;
         return Object.freeze({
@@ -54,8 +120,15 @@ const UiTutorialSettings = (() => {
         renderTutorial();
     }
 
+    const root = typeof globalThis !== 'undefined' ? globalThis : null;
+    const runtime = createController(currentGlobals(root));
+    if (root) runtime.bindGlobals(root);
+
     return Object.freeze({
         CHANGE_TYPES,
+        stateFields,
+        createController,
+        runtime,
         executeChange,
         normalizeLevel,
         planEnabledChange,

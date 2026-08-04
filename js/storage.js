@@ -526,8 +526,12 @@ function loadSettings() {
                     : ((parseInt(values.cpuSpeed, 10) / 1000) + '秒');
             }
         }
-        tutorialEnabled = values.tutorialEnabled;
-        tutorialLevel = values.tutorialLevel;
+        if (typeof UiTutorialSettings !== 'undefined' && UiTutorialSettings.runtime) {
+            UiTutorialSettings.runtime.replace(values);
+        } else {
+            tutorialEnabled = values.tutorialEnabled;
+            tutorialLevel = values.tutorialLevel;
+        }
     });
     syncTutorialControls();
     renderPlayerSettings();

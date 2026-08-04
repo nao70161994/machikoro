@@ -64,3 +64,36 @@ runTest('tutorial settings runtimeはlevel setterを選び依存不足をeffect�
     ), /renderTutorial must be a function/);
     assert.deepStrictEqual(rejectedCalls, []);
 });
+
+runTest('tutorial settings controllerは値を正規化してfrozen snapshotへ投影する', () => {
+    const controller = UiTutorialSettings.createController({
+        tutorialEnabled: 0,
+        tutorialLevel: 'advanced',
+    });
+    assert.deepStrictEqual(controller.snapshot(), {
+        tutorialEnabled: false,
+        tutorialLevel: 'advanced',
+    });
+    assert.ok(Object.isFrozen(controller.snapshot()));
+    controller.setEnabled('yes');
+    controller.setLevel('invalid');
+    assert.deepStrictEqual(controller.snapshot(), {
+        tutorialEnabled: true,
+        tutorialLevel: 'beginner',
+    });
+});
+
+runTest('tutorial settings compatibility globalsは既存値を保持して単一controllerへ投影する', () => {
+    const root = { tutorialEnabled: false, tutorialLevel: 'advanced' };
+    const controller = UiTutorialSettings.createController(root);
+    assert.strictEqual(controller.bindGlobals(root), true);
+    assert.strictEqual(root.tutorialEnabled, false);
+    assert.strictEqual(root.tutorialLevel, 'advanced');
+    root.tutorialEnabled = true;
+    root.tutorialLevel = 'invalid';
+    assert.deepStrictEqual(controller.snapshot(), {
+        tutorialEnabled: true,
+        tutorialLevel: 'beginner',
+    });
+    assert.strictEqual(Object.keys(root).includes('tutorialEnabled'), false);
+});

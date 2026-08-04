@@ -21,8 +21,10 @@ const delayedHumanActionController = DelayedHumanActionPolicy.createScheduleCont
 const localGameStartPendingController = LocalGameStart.createPendingController();
 
 // 取り消し状態は GameRuntimeState が所有する。
-let tutorialEnabled = safeMainStorageGet('tutorialEnabled') !== 'false';
-let tutorialLevel = safeMainStorageGet('tutorialLevel', 'beginner') || 'beginner';
+UiTutorialSettings.runtime.replace({
+    tutorialEnabled: safeMainStorageGet('tutorialEnabled') !== 'false',
+    tutorialLevel: safeMainStorageGet('tutorialLevel', 'beginner') || 'beginner',
+});
 
 // CPU進行チェーン制御
 const cpuSchedulerStateController = CpuSchedulerState.createController();

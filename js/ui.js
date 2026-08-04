@@ -92,8 +92,8 @@ function renderTutorial() {
 
 function applyTutorialSettingChange(plan) {
     UiTutorialSettings.executeChange(plan, {
-        setEnabled(value) { tutorialEnabled = value; },
-        setLevel(value) { tutorialLevel = value; },
+        setEnabled(value) { UiTutorialSettings.runtime.setEnabled(value); },
+        setLevel(value) { UiTutorialSettings.runtime.setLevel(value); },
         persist: safeUiStorageSet,
         syncControls: syncTutorialControls,
         renderTutorial,
