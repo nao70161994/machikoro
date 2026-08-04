@@ -358,6 +358,22 @@ function seedHostlessRestoreBundle(runtime, overrides = {}) {
     };
 }
 
+runTest('online lobby pendingはcontrollerだけが所有しlegacy globalをread-only投影する', () => {
+    const context = loadOnlineRuntime();
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+    assert.strictEqual(source.includes('let onlineCreateRoomPending'), false);
+    assert.strictEqual(source.includes('let onlineJoinRoomPending'), false);
+    assert.strictEqual(context.window.onlineCreateRoomPending, false);
+    assert.strictEqual(context.window.onlineJoinRoomPending, false);
+    context.setOnlineCreateRoomPending(true);
+    assert.strictEqual(context.window.onlineCreateRoomPending, true);
+    context.setOnlineJoinRoomPending(true);
+    assert.strictEqual(context.window.onlineJoinRoomPending, true);
+    context.finishOnlineLobbyRequest();
+    assert.strictEqual(context.window.onlineCreateRoomPending, false);
+    assert.strictEqual(context.window.onlineJoinRoomPending, false);
+});
+
 runTest('hostless retry exhaustionは対応clientだけ軽量requestへ移行する', () => {
     const runtime = loadOnlineRuntime();
     seedHostlessRestoreBundle(runtime);

@@ -3,8 +3,18 @@ let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
 const onlineLobbyRequestController = OnlineLobbyRequestState.createController();
-let onlineCreateRoomPending = false;
-let onlineJoinRoomPending = false;
+if (typeof window !== 'undefined' && typeof Object.defineProperties === 'function') {
+    Object.defineProperties(window, {
+        onlineCreateRoomPending: {
+            configurable: true,
+            get: () => onlineLobbyRequestController.snapshot().createPending,
+        },
+        onlineJoinRoomPending: {
+            configurable: true,
+            get: () => onlineLobbyRequestController.snapshot().joinPending,
+        },
+    });
+}
 const ONLINE_LOBBY_REQUEST_TIMEOUT_MS = 15000;
 let onlineSocketUnavailableReported = false;
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
@@ -3606,17 +3616,11 @@ function updateOnlineRlModelReadinessUi() {
     const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineCreateSubmitButton') : null;
     const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineRlModelStatus') : null;
     if (btn) {
-        const view = OnlinePlayerSettings.createButtonView(state, onlineCreateRoomPending);
+        const view = OnlinePlayerSettings.createButtonView(state, onlineLobbyRequestController.snapshot().createPending);
         btn.disabled = view.disabled;
         btn.textContent = view.textContent;
     }
     if (status) status.textContent = onlineRlModelStatusMessage(state);
-    return state;
-}
-
-function syncOnlineLobbyRequestProjection(state = onlineLobbyRequestController.snapshot()) {
-    onlineCreateRoomPending = state.createPending;
-    onlineJoinRoomPending = state.joinPending;
     return state;
 }
 
@@ -3625,14 +3629,14 @@ function renderOnlineJoinRoomPending() {
         ? document.getElementById('onlineJoinSubmitButton')
         : null;
     if (btn) {
-        const view = OnlinePlayerSettings.joinButtonView(onlineJoinRoomPending);
+        const view = OnlinePlayerSettings.joinButtonView(onlineLobbyRequestController.snapshot().joinPending);
         btn.disabled = view.disabled;
         btn.textContent = view.textContent;
     }
 }
 
 function setOnlineJoinRoomPending(pending) {
-    syncOnlineLobbyRequestProjection(onlineLobbyRequestController.setJoinPending(pending));
+    onlineLobbyRequestController.setJoinPending(pending);
     renderOnlineJoinRoomPending();
 }
 
@@ -3640,7 +3644,6 @@ function finishOnlineLobbyRequest(kind = '') {
     const transition = onlineLobbyRequestController.finish(kind);
     if (!transition.finished) return false;
     if (transition.timer) clearTimeout(transition.timer);
-    syncOnlineLobbyRequestProjection(transition.state);
     updateOnlineRlModelReadinessUi();
     renderOnlineJoinRoomPending();
     return true;
@@ -3649,7 +3652,6 @@ function finishOnlineLobbyRequest(kind = '') {
 function beginOnlineLobbyRequest(kind) {
     const transition = onlineLobbyRequestController.begin(kind);
     if (transition.replacedTimer) clearTimeout(transition.replacedTimer);
-    syncOnlineLobbyRequestProjection(transition.state);
     updateOnlineRlModelReadinessUi();
     renderOnlineJoinRoomPending();
     const timer = setTimeout(() => {
@@ -3663,7 +3665,7 @@ function beginOnlineLobbyRequest(kind) {
 }
 
 function setOnlineCreateRoomPending(pending) {
-    syncOnlineLobbyRequestProjection(onlineLobbyRequestController.setCreatePending(pending));
+    onlineLobbyRequestController.setCreatePending(pending);
     updateOnlineRlModelReadinessUi();
 }
 
@@ -3716,7 +3718,7 @@ function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onli
 }
 
 function showCreateRoom() {
-    if (onlineCreateRoomPending) return;
+    if (onlineLobbyRequestController.snapshot().createPending) return;
     const name = document.getElementById("playerNameInput").value.trim();
     if (!name) { showNotice("名前を入力してください"); return; }
     const createPlayerCount = onlineSelectedCount;
@@ -3753,7 +3755,7 @@ function showCreateRoom() {
 }
 
 function joinRoom() {
-    if (onlineJoinRoomPending) return;
+    if (onlineLobbyRequestController.snapshot().joinPending) return;
     const name = document.getElementById("playerNameInput").value.trim();
     const roomId = document.getElementById("roomIdInput").value.trim().toUpperCase();
     if (!name) { showNotice("名前を入力してください"); return; }
