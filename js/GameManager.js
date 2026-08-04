@@ -1017,8 +1017,12 @@ class GameManager {
             this.addLog(LOG_TYPES.GAIN, `✈️ 空港効果！建設なしで+10コイン`);
         }
         // ITベンチャー：任意で積立
-        const itCard = current.cards.find(c => c.effect === CARD_EFFECTS.ITSTARTUP && !current.isDormant(c));
-        const continuation = GameTurnPolicy.planNextTurnContinuation({ hasActiveItStartup: !!itCard });
+        const hasActiveItStartup = GameTurnPolicy.hasActiveCardEffect(
+            current.cards,
+            CARD_EFFECTS.ITSTARTUP,
+            card => current.isDormant(card)
+        );
+        const continuation = GameTurnPolicy.planNextTurnContinuation({ hasActiveItStartup });
         if (continuation.startPendingIt) {
             this.pendingIT = true;
             this.phase = GAME_PHASES.PENDING;

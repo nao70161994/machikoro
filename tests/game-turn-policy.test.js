@@ -249,3 +249,23 @@ runTest('turn policyは遊園地継続と次player進行を一つのdetached pla
     assert.ok(Object.isFrozen(repeat.resetOptions));
     assert.ok(Object.isFrozen(GameTurnPolicy.turnAdvanceKinds));
 });
+
+runTest('turn policyは入力順で最初の有効なcard effectを検出する', () => {
+    const trace = [];
+    const cards = [
+        { id: 'other', effect: 'other' },
+        { id: 'dormant', effect: 'it' },
+        { id: 'active', effect: 'it' },
+        { id: 'unread', effect: 'it' },
+    ];
+    assert.strictEqual(GameTurnPolicy.hasActiveCardEffect(cards, 'it', card => {
+        trace.push(card.id);
+        if (card.id === 'unread') throw new Error('must stay short-circuited');
+        return card.id === 'dormant';
+    }), true);
+    assert.deepStrictEqual(trace, ['dormant', 'active']);
+    assert.strictEqual(GameTurnPolicy.hasActiveCardEffect(null, 'it', () => false), false);
+    assert.strictEqual(GameTurnPolicy.hasActiveCardEffect(cards, 'missing', () => {
+        throw new Error('non-matching effects must not read dormancy');
+    }), false);
+});

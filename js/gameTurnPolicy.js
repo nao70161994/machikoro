@@ -115,6 +115,13 @@ const GameTurnPolicy = (() => {
         return !readFact(facts.builtThisTurn) && readFact(facts.hasAirport) === true;
     }
 
+    function hasActiveCardEffect(cards, effect, isDormant) {
+        const candidates = Array.isArray(cards) ? cards : [];
+        return candidates.some(card =>
+            card && card.effect === effect && !isDormant(card)
+        );
+    }
+
     function planNextTurnContinuation(facts = {}) {
         const startPendingIt = readFact(facts.hasActiveItStartup) === true;
         return Object.freeze({
@@ -176,6 +183,7 @@ const GameTurnPolicy = (() => {
         nextTurnRejectionReasons,
         planNextTurnAdmission,
         shouldAwardAirportBonus,
+        hasActiveCardEffect,
         planNextTurnContinuation,
         itResolutionOutcomes,
         planItResolution,
