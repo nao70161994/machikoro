@@ -289,7 +289,8 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.socket !== 'undefined') socket = v.socket;
             if (typeof v.isOnlineGame !== 'undefined') isOnlineGame = v.isOnlineGame;
             if (typeof v.isReplaying !== 'undefined') isReplaying = v.isReplaying;
-            if (typeof v.onlineRestoreInProgress !== 'undefined') _onlineRestoreInProgress = v.onlineRestoreInProgress;
+            if (v.onlineRestoreInProgress === true) _startOnlineRestore();
+            if (v.onlineRestoreInProgress === false) _finishOnlineRestore();
             if (v.rejoinRetryExhausted === true) _markOnlineRejoinAttemptExhausted();
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
@@ -517,11 +518,14 @@ runTest('online restore queueは生の状態accessをowner関数へ集約する'
 
 runTest('online restore lifecycleはgeneration・進行・隔離の書き込みをcontroller境界へ集約する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
-    assert.strictEqual((source.match(/_onlineRestoreGeneration\s*=(?!=)/g) || []).length, 2);
-    assert.strictEqual((source.match(/_onlineRestoreInProgress\s*=(?!=)/g) || []).length, 2);
-    assert.strictEqual((source.match(/_onlineRestoreQuarantined\s*=(?!=)/g) || []).length, 2);
-    assert.strictEqual((source.match(/_flushingOnlineRestoreEvents\s*=(?!=)/g) || []).length, 2);
-    assert.strictEqual((source.match(/(?:\+\+_onlineRestoreGeneration|_onlineRestoreGeneration\+\+)/g) || []).length, 0);
+    assert.ok(!source.includes('_onlineRestoreGeneration'));
+    assert.ok(!source.includes('_onlineRestoreInProgress'));
+    assert.ok(!source.includes('_onlineRestoreQuarantined'));
+    assert.ok(!source.includes('_flushingOnlineRestoreEvents'));
+    assert.ok(source.includes('_onlineRestoreLifecycleController.getGeneration()'));
+    assert.ok(source.includes('_onlineRestoreLifecycleController.isInProgress()'));
+    assert.ok(source.includes('_onlineRestoreLifecycleController.isQuarantined()'));
+    assert.ok(source.includes('_onlineRestoreLifecycleController.isFlushing()'));
     assert.ok(source.includes('function _incrementOnlineRestoreGeneration()'));
     assert.ok(source.includes('function _startOnlineRestore()'));
     assert.ok(source.includes('function _finishOnlineRestore()'));

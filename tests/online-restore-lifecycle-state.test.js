@@ -20,6 +20,10 @@ function testInitialStateIsNormalizedAndFrozen() {
 function testTransitionsPreserveIndependentDimensions() {
     const controller = OnlineRestoreLifecycleState.createController();
 
+    assert.strictEqual(controller.getGeneration(), 0);
+    assert.strictEqual(controller.isInProgress(), false);
+    assert.strictEqual(controller.isQuarantined(), false);
+    assert.strictEqual(controller.isFlushing(), false);
     assert.deepStrictEqual(controller.incrementGeneration(), {
         generation: 1,
         inProgress: false,
@@ -32,6 +36,8 @@ function testTransitionsPreserveIndependentDimensions() {
         quarantined: false,
         flushing: false,
     });
+    assert.strictEqual(controller.getGeneration(), 1);
+    assert.strictEqual(controller.isInProgress(), true);
     assert.deepStrictEqual(controller.quarantine(), {
         generation: 1,
         inProgress: true,

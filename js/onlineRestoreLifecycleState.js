@@ -15,6 +15,10 @@ function createOnlineRestoreLifecycleController(initialState = {}) {
     }
 
     return Object.freeze({
+        getGeneration() { return generation; },
+        isInProgress() { return inProgress; },
+        isQuarantined() { return quarantined; },
+        isFlushing() { return flushing; },
         snapshot,
         incrementGeneration() {
             generation += 1;

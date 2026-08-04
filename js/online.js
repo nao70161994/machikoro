@@ -149,8 +149,6 @@ const onlineSchemaSelectionController = OnlineSchemaTransport.createSelectionCon
 let _rejoinRetryTimer = null;
 let _rejoinRetryDeadline = 0;
 const _hostlessRestoreState = OnlineHostlessRestoreState.createController();
-let _onlineRestoreGeneration = 0;
-let _onlineRestoreInProgress = false;
 let _onlineRestoreEventQueue = [];
 const _onlineRestoreEventQueueStore = typeof OnlineRestoreQueueState !== 'undefined' &&
     typeof OnlineRestoreQueueState.createStore === 'function'
@@ -360,51 +358,34 @@ let _lastOnlineRestoreActivationEffectSelection = Object.freeze({
     fallbackReason: '',
 });
 const _onlineActionSequenceController = OnlineActionSequence.createController();
-let _flushingOnlineRestoreEvents = false;
-let _onlineRestoreQuarantined = false;
-const _onlineRestoreLifecycleController = OnlineRestoreLifecycleState.createController({
-    generation: _onlineRestoreGeneration,
-    inProgress: _onlineRestoreInProgress,
-    quarantined: _onlineRestoreQuarantined,
-    flushing: _flushingOnlineRestoreEvents,
-});
-
-function _applyOnlineRestoreLifecycleState(state) {
-    _onlineRestoreGeneration = state.generation;
-    _onlineRestoreInProgress = state.inProgress;
-    _onlineRestoreQuarantined = state.quarantined;
-    _flushingOnlineRestoreEvents = state.flushing;
-    return state;
-}
+const _onlineRestoreLifecycleController = OnlineRestoreLifecycleState.createController();
 
 function _incrementOnlineRestoreGeneration() {
-    return _applyOnlineRestoreLifecycleState(
-        _onlineRestoreLifecycleController.incrementGeneration()
-    ).generation;
+    return _onlineRestoreLifecycleController.incrementGeneration().generation;
 }
 
 function _startOnlineRestore() {
-    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.startRestore());
+    _onlineRestoreLifecycleController.startRestore();
 }
 
 function _finishOnlineRestore() {
-    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.finishRestore());
+    _onlineRestoreLifecycleController.finishRestore();
 }
 
 function _quarantineOnlineRestore() {
-    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.quarantine());
+    _onlineRestoreLifecycleController.quarantine();
 }
 
 function _clearOnlineRestoreQuarantine() {
-    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.clearQuarantine());
+    _onlineRestoreLifecycleController.clearQuarantine();
 }
 
 function _startOnlineRestoreFlush() {
-    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.startFlush());
+    _onlineRestoreLifecycleController.startFlush();
 }
 
 function _finishOnlineRestoreFlush() {
-    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.finishFlush());
+    _onlineRestoreLifecycleController.finishFlush();
 }
 
 const _pendingOutboundState = OnlinePendingOutboundState.createController({
@@ -460,7 +441,7 @@ function _onlineReconnectObservationFlags() {
         failed: _onlineRejoinAttemptController.isExhausted(),
         completed: _onlineReconnectCompletionController.isCompleted(),
         replaying: isReplaying,
-        restoring: _onlineRestoreInProgress,
+        restoring: _onlineRestoreLifecycleController.isInProgress(),
         rejoining: isReconnectingOnline && connected,
         connecting: isReconnectingOnline && !connected,
         active: isOnlineGame,
@@ -1396,7 +1377,7 @@ function _runOnlineActionApplyFailureEffectsLegacy(error) {
     console.error(error);
     setOnlineReconnectLegacyFlag(true);
     cpuScheduleToken++;
-    if (!_flushingOnlineRestoreEvents && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
+    if (!_onlineRestoreLifecycleController.isFlushing() && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
     return false;
 }
 
@@ -1407,7 +1388,7 @@ function _runOnlineActionApplyFailureEffects(error, planSelection, enabled, reco
         return _runOnlineActionApplyFailureEffectsLegacy(error);
     }
     return OnlineActionApplyFailure.execute(
-        { requestRejoin: !_flushingOnlineRestoreEvents },
+        { requestRejoin: !_onlineRestoreLifecycleController.isFlushing() },
         {
             reportError: () => console.error(error),
             markReconnecting: () => setOnlineReconnectLegacyFlag(true),
@@ -1441,7 +1422,7 @@ function _runOnlineActionGapEffectsLegacy(statusMessage) {
         if (el) el.textContent = statusMessage;
     }
     if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
-    return !_flushingOnlineRestoreEvents;
+    return !_onlineRestoreLifecycleController.isFlushing();
 }
 
 function _runOnlineActionGapEffects(statusMessage, planSelection, enabled, recordSelection) {
@@ -1452,7 +1433,7 @@ function _runOnlineActionGapEffects(statusMessage, planSelection, enabled, recor
     }
     return OnlineActionGap.execute(
         {
-            result: !_flushingOnlineRestoreEvents,
+            result: !_onlineRestoreLifecycleController.isFlushing(),
             statusMessage,
         },
         {
@@ -1488,7 +1469,7 @@ function _runOnlineActionNoGameEffectsLegacy(statusMessage, requestRejoin) {
     const el = document.getElementById("onlineStatus");
     if (el) el.textContent = statusMessage;
     if (requestRejoin) _emitOnlineRejoinRequest();
-    return !_flushingOnlineRestoreEvents;
+    return !_onlineRestoreLifecycleController.isFlushing();
 }
 
 function _runOnlineActionNoGameEffects(statusMessage, requestRejoin, planSelection, enabled, recordSelection) {
@@ -1500,7 +1481,7 @@ function _runOnlineActionNoGameEffects(statusMessage, requestRejoin, planSelecti
     return OnlineActionNoGame.execute(
         {
             requestRejoin,
-            result: !_flushingOnlineRestoreEvents,
+            result: !_onlineRestoreLifecycleController.isFlushing(),
             statusMessage,
         },
         {
@@ -1533,7 +1514,7 @@ function _runOnlineActionCommitEffectsLegacy(action, data, seq, logOptions, clea
     _setLastAppliedOnlineActionSeq(seq);
     _saveActionLog(action, data, logOptions);
     if (clearPending) _clearPendingOutboundAction();
-    if (!_flushingOnlineRestoreEvents) {
+    if (!_onlineRestoreLifecycleController.isFlushing()) {
         render();
         scheduleCPU();
     }
@@ -1552,7 +1533,7 @@ function _runOnlineActionCommitEffects(
         {
             alreadyApplied,
             clearPending,
-            render: !_flushingOnlineRestoreEvents,
+            render: !_onlineRestoreLifecycleController.isFlushing(),
         },
         {
             setSequence: () => _setLastAppliedOnlineActionSeq(seq),
@@ -1568,7 +1549,7 @@ function _legacyOnlineSocketConnectPlan() {
     const el = document.getElementById("onlineStatus");
     return Object.freeze({
         clearWaitingStatus: !!(el && el.textContent.startsWith('⏳')),
-        requestRejoin: !!((isOnlineGame || isReconnectingOnline || _onlineRestoreInProgress) &&
+        requestRejoin: !!((isOnlineGame || isReconnectingOnline || _onlineRestoreLifecycleController.isInProgress()) &&
             myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken),
     });
 }
@@ -1587,7 +1568,7 @@ function _onlineSocketConnectPlanSelection() {
         waitingStatus: !!(el && el.textContent.startsWith('⏳')),
         onlineActive: isOnlineGame,
         reconnecting: isReconnectingOnline,
-        restoreInProgress: _onlineRestoreInProgress,
+        restoreInProgress: _onlineRestoreLifecycleController.isInProgress(),
         hasRoomId: !!myRoomId,
         originalPlayerIndex: myOriginalPlayerIndex,
         hasPlayerName: !!myPlayerName,
@@ -1649,8 +1630,8 @@ function _runOnlineSocketConnectEffects() {
 
 function _legacyOnlineSocketDisconnectPlan() {
     return Object.freeze({
-        active: isOnlineGame || _onlineRestoreInProgress,
-        abortRestore: _onlineRestoreInProgress,
+        active: isOnlineGame || _onlineRestoreLifecycleController.isInProgress(),
+        abortRestore: _onlineRestoreLifecycleController.isInProgress(),
     });
 }
 
@@ -1668,7 +1649,7 @@ function _onlineSocketDisconnectPlanSelection() {
     const stateReady = stateSelection.source === 'event';
     const selected = OnlineSocketDisconnect.selectPlan({
         onlineActive: isOnlineGame,
-        restoreInProgress: _onlineRestoreInProgress,
+        restoreInProgress: _onlineRestoreLifecycleController.isInProgress(),
     }, legacyPlan, {
         authorityEnabled: requested && stateReady,
     });
@@ -2271,8 +2252,8 @@ function _clearOnlineRestoreEventQueue() {
 }
 
 function _queueOnlineEventDuringRestore(type, payload) {
-    if (!_onlineRestoreInProgress && !_onlineRestoreQuarantined) return false;
-    const event = { type, payload, generation: _onlineRestoreGeneration };
+    if (!_onlineRestoreLifecycleController.isInProgress() && !_onlineRestoreLifecycleController.isQuarantined()) return false;
+    const event = { type, payload, generation: _onlineRestoreLifecycleController.getGeneration() };
     const queue = _readOnlineRestoreEventQueue();
     const overflow = queue.length >= ONLINE_RESTORE_EVENT_QUEUE_LIMIT;
     const legacyTransition = Object.freeze({
@@ -2294,7 +2275,7 @@ function _queueOnlineEventDuringRestore(type, payload) {
         fallbackReason: selection.fallbackReason,
     }));
     if (selection.transition.overflow) {
-        _abortOnlineRestore(_onlineRestoreGeneration, '復元中の操作が多すぎるため、状態を再同期しています...', []);
+        _abortOnlineRestore(_onlineRestoreLifecycleController.getGeneration(), '復元中の操作が多すぎるため、状態を再同期しています...', []);
         return true;
     }
     if (selection.source === 'pure-transition') {
@@ -2308,7 +2289,7 @@ function _queueOnlineEventDuringRestore(type, payload) {
 
 function _legacyOnlineRestoreAbortPlan(generation, statusMessage, queuedEvents = null) {
     return Object.freeze({
-        abort: generation === _onlineRestoreGeneration,
+        abort: generation === _onlineRestoreLifecycleController.getGeneration(),
         statusMessage,
         queuedEvents: Array.isArray(queuedEvents) ? queuedEvents : [],
     });
@@ -2324,7 +2305,7 @@ function _onlineRestoreAbortPlanSelection(generation, statusMessage, queuedEvent
     const stateReady = stateSelection.source === 'event';
     const selected = OnlinePayload.selectRestoreAbortPlan(
         generation,
-        _onlineRestoreGeneration,
+        _onlineRestoreLifecycleController.getGeneration(),
         statusMessage,
         queuedEvents,
         legacyPlan,
@@ -2443,7 +2424,7 @@ function _executeOnlineRestoreQueuePlan(flushSelection, handlers) {
 }
 
 function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
-    if (generation !== _onlineRestoreGeneration) return false;
+    if (generation !== _onlineRestoreLifecycleController.getGeneration()) return false;
     const legacyDrainTransition = Object.freeze({
         overflow: false,
         queue: [],
@@ -2695,7 +2676,7 @@ function initSocket() {
         }, hostPlayerIndex, hostEpoch);
         if (gameSchema) gameStartPayload.gameSchema = gameSchema;
         const startOnlineGame = () => {
-            if (startGeneration !== _onlineRestoreGeneration) return;
+            if (startGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
             _onlineReconnectCompletionController.reset();
             isOnlineGame = true;
             _setOnlineHostState(hostPlayerIndex);
@@ -2735,7 +2716,7 @@ function initSocket() {
         if (preload && typeof preload.then === "function") {
             document.getElementById("onlineStatus").textContent = '深層学習AIモデルを読み込んでいます。';
             preload.then(startOnlineGame).catch(error => {
-                if (startGeneration !== _onlineRestoreGeneration) return;
+                if (startGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
                 console.error(error);
                 isOnlineGame = false;
                 _setOnlineActionInFlight(false);
@@ -2923,7 +2904,7 @@ function initSocket() {
             return;
         }
         onlineSchemaSelectionController.set(gameStartPayload.gameSchema);
-        const shouldCarryRestoreEvents = _onlineRestoreInProgress || _onlineRestoreQuarantined;
+        const shouldCarryRestoreEvents = _onlineRestoreLifecycleController.isInProgress() || _onlineRestoreLifecycleController.isQuarantined();
         const carriedEvents = shouldCarryRestoreEvents ? _readOnlineRestoreEventQueue().slice() : [];
         const restoreGeneration = _incrementOnlineRestoreGeneration();
         _startOnlineRestore();
@@ -3173,7 +3154,7 @@ function initSocket() {
         };
 
         const restoreOnlineGame = () => {
-            if (restoreGeneration !== _onlineRestoreGeneration) return;
+            if (restoreGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
             persistRejoinBundle();
             document.getElementById("titleScreen").style.display = "none";
             document.getElementById("gameScreen").style.display = "block";
@@ -3405,7 +3386,7 @@ function initSocket() {
         if (preload && typeof preload.then === "function") {
             document.getElementById("onlineStatus").textContent = '深層学習AIモデルを読み込んでいます。';
             preload.then(restoreOnlineGame).catch(error => {
-                if (restoreGeneration !== _onlineRestoreGeneration) return;
+                if (restoreGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
                 console.error(error);
                 _abortOnlineRestore(restoreGeneration, "深層学習AIモデルを読み込めませんでした。再接続して再試行します。");
             });
