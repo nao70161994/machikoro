@@ -1982,3 +1982,47 @@ runTest('CPU evaluation のexpert normal寄せ判定は既存fact順と短絡を
     }), false);
     assert.deepStrictEqual(trace, []);
 });
+
+runTest('CPU evaluation はexpert自己レース優先時の妨害倍率表をpureに固定する', () => {
+    const evaluate = (overrides = {}) => CPUEvaluation.expertDisruptionScale({
+        gameAvailable: true,
+        difficulty: 'expert',
+        selfRacePriority: true,
+        focusIndex: null,
+        currentPlayerIndex: 2,
+        myDistance: () => 5,
+        bestOpponentDistance: () => 6,
+        remainingLandmarkCount: () => 2,
+        ...overrides,
+    });
+    assert.strictEqual(evaluate(), 0.3);
+    assert.strictEqual(evaluate({ remainingLandmarkCount: () => 3 }), 0.5);
+    assert.strictEqual(evaluate({ myDistance: () => 5.75 }), 0.5);
+    assert.strictEqual(evaluate({ myDistance: () => 5.75, remainingLandmarkCount: () => 3 }), 0.75);
+    assert.strictEqual(evaluate({ myDistance: () => 7 }), 1);
+    assert.strictEqual(evaluate({ difficulty: 'strong' }), 1);
+    assert.strictEqual(evaluate({ selfRacePriority: false }), 1);
+    assert.strictEqual(evaluate({ gameAvailable: false }), 1);
+});
+
+runTest('CPU evaluation の妨害倍率はplayer選択と既存fact短絡順を維持する', () => {
+    const trace = [];
+    const result = CPUEvaluation.expertDisruptionScale({
+        gameAvailable: true,
+        difficulty: 'expert',
+        selfRacePriority() { trace.push('flag'); return true; },
+        focusIndex: 3,
+        currentPlayerIndex: 1,
+        myDistance(index) { trace.push(['mine', index]); return 8; },
+        bestOpponentDistance(index) { trace.push(['opponent', index]); return 7; },
+        remainingLandmarkCount() { throw new Error('remaining must stay lazy'); },
+    });
+    assert.strictEqual(result, 1);
+    assert.deepStrictEqual(trace, ['flag', ['mine', 3], ['opponent', 3]]);
+
+    assert.strictEqual(CPUEvaluation.expertDisruptionScale({
+        gameAvailable: false,
+        difficulty: 'expert',
+        selfRacePriority() { throw new Error('flag must stay lazy'); },
+    }), 1);
+});

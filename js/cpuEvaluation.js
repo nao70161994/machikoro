@@ -46,6 +46,23 @@ const CPUEvaluation = Object.freeze({
         return score;
     },
 
+    expertDisruptionScale(facts = {}) {
+        if (!facts.gameAvailable || facts.difficulty !== 'expert') return 1;
+        const selfRacePriority = typeof facts.selfRacePriority === 'function'
+            ? facts.selfRacePriority()
+            : facts.selfRacePriority;
+        if (!selfRacePriority) return 1;
+        const playerIndex = facts.focusIndex == null ? facts.currentPlayerIndex : facts.focusIndex;
+        const myDistance = facts.myDistance(playerIndex);
+        const bestOpponentDistance = facts.bestOpponentDistance(playerIndex);
+        if (myDistance > bestOpponentDistance) return 1;
+        const remainingLandmarkCount = facts.remainingLandmarkCount(playerIndex);
+        if (myDistance + 0.5 <= bestOpponentDistance) {
+            return remainingLandmarkCount <= 2 ? 0.3 : 0.5;
+        }
+        return remainingLandmarkCount <= 2 ? 0.5 : 0.75;
+    },
+
     expertCrowdNormalPlan(facts = {}) {
         if (facts.difficulty !== 'expert') return false;
         const playerCount = typeof facts.playerCount === 'function'

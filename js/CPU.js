@@ -341,16 +341,17 @@ class CPU {
     }
 
     _expertDisruptionScale(game, focusIndex = null) {
-        if (!game || this.difficulty !== "expert" || !this._expertFlagEnabled("selfRacePriority")) return 1;
-        const playerIndex = focusIndex == null ? game.currentPlayerIndex : focusIndex;
-        const myDistance = this._estimateWinDistance(game.players[playerIndex], game);
-        const bestOpponentDistance = this._bestOpponentWinDistance(game, playerIndex);
-        if (myDistance > bestOpponentDistance) return 1;
-        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !game.players[playerIndex].landmarks[name]).length;
-        if (myDistance + 0.5 <= bestOpponentDistance) {
-            return remainingLandmarks <= 2 ? 0.3 : 0.5;
-        }
-        return remainingLandmarks <= 2 ? 0.5 : 0.75;
+        return CPUEvaluation.expertDisruptionScale({
+            gameAvailable: !!game,
+            difficulty: this.difficulty,
+            selfRacePriority: () => this._expertFlagEnabled("selfRacePriority"),
+            focusIndex,
+            currentPlayerIndex: game && game.currentPlayerIndex,
+            myDistance: playerIndex => this._estimateWinDistance(game.players[playerIndex], game),
+            bestOpponentDistance: playerIndex => this._bestOpponentWinDistance(game, playerIndex),
+            remainingLandmarkCount: playerIndex => [...game.enabledLandmarks]
+                .filter(name => !game.players[playerIndex].landmarks[name]).length,
+        });
     }
 
     _closestLandmarkShortfall(player, game) {
