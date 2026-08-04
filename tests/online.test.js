@@ -181,6 +181,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineRetryPolicy.js');
     loadScript(context, 'js/onlineSchemaTransport.js');
     loadScript(context, 'js/onlineRuntimeState.js');
+    loadScript(context, 'js/onlineSetupState.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート
@@ -270,8 +271,8 @@ function loadOnlineRuntime(options = {}) {
         this.renderOnlinePlayerSettings = renderOnlinePlayerSettings;
         this.onChangeOnlinePlayerType = onChangeOnlinePlayerType;
         this.showCreateRoom = showCreateRoom;
-        this.setOnlineSelectedCount = (value) => { onlineSelectedCount = value; };
-        this.setOnlinePlayerSettings = (value) => { onlinePlayerSettings = value; };
+        this.setOnlineSelectedCount = (value) => { onlineSetupStateController.setSelectedCount(value); };
+        this.setOnlinePlayerSettings = (value) => { onlineSetupStateController.replaceSettings(value); };
         this._saveActionLog = _saveActionLog;
         this._readOnlineActionLog = _readOnlineActionLog;
         this._readOnlineGameStartPayload = _readOnlineGameStartPayload;
@@ -386,6 +387,14 @@ runTest('online session globalsはOnlineRuntimeStateだけが所有する', () =
     for (const field of require('../js/onlineRuntimeState').fields) {
         assert.strictEqual(new RegExp(`^let ${field}\\b`, 'm').test(source), false, field);
     }
+});
+
+runTest('online setup stateはcontrollerだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+    assert.strictEqual(source.includes('let onlineSelectedCount'), false);
+    assert.strictEqual(source.includes('let onlinePlayerSettings'), false);
+    assert.strictEqual(source.includes('let onlineCpuSpeed'), false);
+    assert.ok(source.includes('OnlineSetupState.createController()'));
 });
 
 runTest('online rejoin timer stateはretry controllerだけが所有する', () => {

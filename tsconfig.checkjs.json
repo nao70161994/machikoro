@@ -20,6 +20,7 @@
     "js/Player.js",
     "js/gameSelectionState.js",
     "js/onlineRuntimeState.js",
+    "js/onlineSetupState.js",
     "js/CPU.js",
     "js/GameManager.js",
     "js/pendingActionQueue.js",

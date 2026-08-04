@@ -26,7 +26,7 @@ function assertDependencyOrder(file, dependencies) {
 runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み込む', () => {
     const cases = [
         ['index.html', [
-            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/onlineRuntimeState.js', 'js/online.js'],
+            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/onlineRuntimeState.js', 'js/onlineSetupState.js', 'js/online.js'],
             ['js/gameSelectionState.js', 'js/ui.js'],
             ['js/gameSelectionState.js', 'js/storage.js'],
             ['js/gameSelectionState.js', 'js/main.js'],
@@ -183,7 +183,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/integration-runtime.js', [
-            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/onlineRuntimeState.js', 'js/online.js'],
+            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/onlineRuntimeState.js', 'js/onlineSetupState.js', 'js/online.js'],
             ['js/gameSelectionState.js', 'js/ui.js'],
             ['js/gameSelectionState.js', 'js/storage.js'],
             ['js/gameSelectionState.js', 'js/main.js'],

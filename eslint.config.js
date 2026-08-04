@@ -15,6 +15,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/Player.js',
     'js/gameSelectionState.js',
     'js/onlineRuntimeState.js',
+    'js/onlineSetupState.js',
     'js/RLCPU.js',
     'js/RLModelPortfolio.js',
     'js/adSlots.js',

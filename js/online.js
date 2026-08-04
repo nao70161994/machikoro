@@ -1,7 +1,5 @@
 // オンライン対戦（タイトル画面設定）
-let onlineSelectedCount = 2;
-let onlinePlayerSettings = [];
-let onlineCpuSpeed = 1500;
+const onlineSetupStateController = OnlineSetupState.createController();
 const onlineLobbyRequestController = OnlineLobbyRequestState.createController();
 if (typeof window !== 'undefined' && typeof Object.defineProperties === 'function') {
     Object.defineProperties(window, {
@@ -105,8 +103,8 @@ function buildOnlineRejoinPayload(session) {
 }
 
 function changeOnlineCount(delta) {
-    onlineSelectedCount = Math.min(10, Math.max(2, onlineSelectedCount + delta));
-    document.getElementById("onlinePlayerCount").textContent = onlineSelectedCount;
+    const state = onlineSetupStateController.changeCount(delta);
+    document.getElementById("onlinePlayerCount").textContent = state.selectedCount;
     renderOnlinePlayerSettings();
     preloadOnlineRlModelsInBackground('online-player-count-preload');
 }
@@ -116,23 +114,22 @@ function getOnlineRlCpuSettingNote(playerCount) {
 }
 
 function renderOnlinePlayerSettings() {
-    onlinePlayerSettings = Array.from(OnlinePlayerSettings.normalizeSettings(
-        onlinePlayerSettings,
-        onlineSelectedCount
+    let state = onlineSetupStateController.snapshot();
+    state = onlineSetupStateController.replaceSettings(OnlinePlayerSettings.normalizeSettings(
+        state.playerSettings,
+        state.selectedCount
     ));
     document.getElementById("onlinePlayerSettings").innerHTML = OnlinePlayerSettings.buildSettingsHtml(
-        onlinePlayerSettings,
-        onlineSelectedCount
+        state.playerSettings,
+        state.selectedCount
     );
     updateOnlineRlModelReadinessUi();
 }
 
 function onChangeOnlinePlayerType(index, value) {
-    if (value === "human") {
-        onlinePlayerSettings[index] = { type: "human", difficulty: "normal" };
-    } else {
-        onlinePlayerSettings[index] = { type: "cpu", difficulty: value };
-    }
+    onlineSetupStateController.updateSetting(index, value === "human"
+        ? { type: "human", difficulty: "normal" }
+        : { type: "cpu", difficulty: value });
     updateOnlineRlModelReadinessUi();
     if (value === "rl") preloadOnlineRlModelsInBackground('online-rl-selected-preload');
 }
@@ -3485,11 +3482,11 @@ function handleAppError(msg) {
     document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
 }
 
-function snapshotOnlinePlayerSettings(playerCount = onlineSelectedCount) {
-    return OnlinePlayerSettings.snapshot(onlinePlayerSettings, playerCount);
+function snapshotOnlinePlayerSettings(playerCount = onlineSetupStateController.snapshot().selectedCount) {
+    return OnlinePlayerSettings.snapshot(onlineSetupStateController.snapshot().playerSettings, playerCount);
 }
 
-function hasOnlineRlCpuSetting(playerCount = onlineSelectedCount, settings = onlinePlayerSettings) {
+function hasOnlineRlCpuSetting(playerCount = onlineSetupStateController.snapshot().selectedCount, settings = onlineSetupStateController.snapshot().playerSettings) {
     return OnlinePlayerSettings.hasRlCpu(settings, playerCount);
 }
 
@@ -3497,7 +3494,7 @@ function canPreloadOnlineRlModels() {
     return typeof RLModelPortfolio !== "undefined" && typeof RLModelPortfolio.preloadEligibleModels === "function";
 }
 
-function onlineRlModelLoadState(playerCount = onlineSelectedCount) {
+function onlineRlModelLoadState(playerCount = onlineSetupStateController.snapshot().selectedCount) {
     const usesRl = hasOnlineRlCpuSetting(playerCount);
     if (!usesRl) return OnlinePlayerSettings.rlModelLoadState({ usesRl: false, playerCount });
     const loaderAvailable = canPreloadOnlineRlModels();
@@ -3515,7 +3512,7 @@ function onlineRlModelStatusMessage(state) {
 }
 
 function updateOnlineRlModelReadinessUi() {
-    const state = onlineRlModelLoadState(onlineSelectedCount);
+    const state = onlineRlModelLoadState(onlineSetupStateController.snapshot().selectedCount);
     const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineCreateSubmitButton') : null;
     const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineRlModelStatus') : null;
     if (btn) {
@@ -3578,17 +3575,18 @@ function preloadOnlineRlModelsForSettings(playerCount, settings) {
     return RLModelPortfolio.preloadEligibleModels(playerCount, { attempts: 3 });
 }
 
-function preloadOnlineRlModelsForCreate(playerCount, settings = onlinePlayerSettings) {
+function preloadOnlineRlModelsForCreate(playerCount, settings = onlineSetupStateController.snapshot().playerSettings) {
     return preloadOnlineRlModelsForSettings(playerCount, settings);
 }
 
 function preloadOnlineRlModelsInBackground(reason = 'online-rl-background-preload') {
-    if (!hasOnlineRlCpuSetting(onlineSelectedCount) || !canPreloadOnlineRlModels()) {
+    const setup = onlineSetupStateController.snapshot();
+    if (!hasOnlineRlCpuSetting(setup.selectedCount, setup.playerSettings) || !canPreloadOnlineRlModels()) {
         updateOnlineRlModelReadinessUi();
         return null;
     }
     updateOnlineRlModelReadinessUi();
-    const preload = RLModelPortfolio.preloadEligibleModels(onlineSelectedCount, { attempts: 3, retryDelayMs: 0 });
+    const preload = RLModelPortfolio.preloadEligibleModels(setup.selectedCount, { attempts: 3, retryDelayMs: 0 });
     if (preload && typeof preload.then === "function") {
         preload.then(() => updateOnlineRlModelReadinessUi()).catch(error => {
             if (typeof console !== 'undefined' && typeof console.warn === 'function') console.warn(reason, error);
@@ -3599,9 +3597,9 @@ function preloadOnlineRlModelsInBackground(reason = 'online-rl-background-preloa
     return preload;
 }
 
-function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onlinePlayerSettings) {
+function emitCreateRoom(name, playerCount = onlineSetupStateController.snapshot().selectedCount, settings = onlineSetupStateController.snapshot().playerSettings) {
     myPlayerName = name;
-    onlineCpuSpeed = parseInt(document.getElementById("onlineCpuSpeed").value);
+    const setup = onlineSetupStateController.setCpuSpeed(parseInt(document.getElementById("onlineCpuSpeed").value));
     if (!initSocket()) return;
     beginOnlineLobbyRequest('create');
     isRoomHost = true;
@@ -3610,7 +3608,7 @@ function emitCreateRoom(name, playerCount = onlineSelectedCount, settings = onli
         playerName: name,
         playerCount,
         playerSettings: freezeOnlinePlayerSettings(settings, playerCount),
-        cpuSpeed: onlineCpuSpeed,
+        cpuSpeed: setup.cpuSpeed,
         enabledCards: [...selection.enabledCards],
         enabledLandmarks: [...selection.enabledLandmarks],
         clientVersion: getClientVersion(),
@@ -3625,8 +3623,9 @@ function showCreateRoom() {
     if (onlineLobbyRequestController.snapshot().createPending) return;
     const name = document.getElementById("playerNameInput").value.trim();
     if (!name) { showNotice("名前を入力してください"); return; }
-    const createPlayerCount = onlineSelectedCount;
-    const createPlayerSettings = snapshotOnlinePlayerSettings(createPlayerCount);
+    const setup = onlineSetupStateController.snapshot();
+    const createPlayerCount = setup.selectedCount;
+    const createPlayerSettings = OnlinePlayerSettings.snapshot(setup.playerSettings, createPlayerCount);
     const state = updateOnlineRlModelReadinessUi();
     if (state.status === 'loading') {
         showNotice("深層学習AIモデルを読み込んでいます。");
