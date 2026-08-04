@@ -70,7 +70,113 @@ const ClientEventRuntime = (() => {
         return updateOnlineStatus;
     }
 
-    return Object.freeze({ bindingKeys, createBindingController, bindCrashHandlers, bindOnlineStatusHandlers });
+    function createShellBindings(options = {}) {
+        const {
+            bindingController,
+            checkFreezeWatchdog,
+            consoleErrorInput,
+            freezeWatchdogIntervalMs,
+            getConsole,
+            pwaInstallController,
+            reportClientError,
+            resizeHandler,
+            setIntervalFn,
+            showCrashScreen,
+            unhandledRejectionInput,
+            updateOnlineStatus,
+            windowErrorInput,
+            windowTarget,
+        } = options;
+        requireWindowTarget(windowTarget);
+        if (!bindingController || typeof bindingController.isBound !== 'function' ||
+                typeof bindingController.markBound !== 'function') {
+            throw new TypeError('bindingController is required');
+        }
+        for (const [name, effect] of Object.entries({
+            checkFreezeWatchdog,
+            consoleErrorInput,
+            getConsole,
+            reportClientError,
+            resizeHandler,
+            showCrashScreen,
+            unhandledRejectionInput,
+            updateOnlineStatus,
+            windowErrorInput,
+        })) {
+            if (typeof effect !== 'function') throw new TypeError(`${name} is required`);
+        }
+        if (!pwaInstallController || typeof pwaInstallController.bindInstallHandlers !== 'function') {
+            throw new TypeError('pwaInstallController is required');
+        }
+
+        function handleWindowErrorEvent(event) {
+            reportClientError(windowErrorInput(event));
+            showCrashScreen(event && (event.error || event.message));
+        }
+
+        function handleWindowUnhandledRejection(event) {
+            reportClientError(unhandledRejectionInput(event));
+            showCrashScreen(event && event.reason);
+        }
+
+        function bindConsoleErrorReporting() {
+            if (bindingController.isBound(bindingKeys.CONSOLE_ERROR)) return false;
+            const consoleTarget = getConsole();
+            if (!consoleTarget || typeof consoleTarget.error !== 'function') return false;
+            const originalConsoleError = consoleTarget.error.bind(consoleTarget);
+            consoleTarget.error = (...args) => {
+                originalConsoleError(...args);
+                reportClientError(consoleErrorInput(args));
+            };
+            bindingController.markBound(bindingKeys.CONSOLE_ERROR);
+            return true;
+        }
+
+        function bindCrashReporting() {
+            if (bindingController.isBound(bindingKeys.CLIENT_ERROR_REPORTING)) return false;
+            bindCrashHandlers({ windowTarget, handleWindowErrorEvent, handleWindowUnhandledRejection });
+            bindConsoleErrorReporting();
+            bindingController.markBound(bindingKeys.CLIENT_ERROR_REPORTING);
+            return true;
+        }
+
+        function bindOnlineStatus() {
+            if (bindingController.isBound(bindingKeys.ONLINE_STATUS)) {
+                updateOnlineStatus();
+                return false;
+            }
+            bindOnlineStatusHandlers({ windowTarget, updateOnlineStatus });
+            bindingController.markBound(bindingKeys.ONLINE_STATUS);
+            return true;
+        }
+
+        function bindMainViewResize() {
+            if (bindingController.isBound(bindingKeys.MAIN_VIEW_RESIZE)) return false;
+            windowTarget.addEventListener('resize', resizeHandler);
+            bindingController.markBound(bindingKeys.MAIN_VIEW_RESIZE);
+            return true;
+        }
+
+        function startFreezeWatchdog() {
+            if (bindingController.isBound(bindingKeys.FREEZE_WATCHDOG) || typeof setIntervalFn !== 'function') return false;
+            bindingController.markBound(bindingKeys.FREEZE_WATCHDOG);
+            setIntervalFn(checkFreezeWatchdog, freezeWatchdogIntervalMs);
+            return true;
+        }
+
+        return Object.freeze({
+            bindConsoleErrorReporting,
+            bindCrashReporting,
+            bindMainViewResize,
+            bindOnlineStatus,
+            bindPwaInstallHandlers: () => pwaInstallController.bindInstallHandlers(),
+            handleWindowErrorEvent,
+            handleWindowUnhandledRejection,
+            startFreezeWatchdog,
+        });
+    }
+
+    return Object.freeze({ bindingKeys, createBindingController, bindCrashHandlers, bindOnlineStatusHandlers, createShellBindings });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = ClientEventRuntime;

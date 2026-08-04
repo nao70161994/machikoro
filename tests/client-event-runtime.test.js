@@ -85,3 +85,69 @@ runTest('client event binding controllerは名前付きbind状態を一箇所で
     assert.ok(Object.isFrozen(controller.snapshot().boundKeys));
     assert.ok(Object.isFrozen(keys));
 });
+
+
+function createShellHarness() {
+    const calls = [];
+    const listeners = {};
+    const consoleTarget = { error: (...args) => calls.push(['console', ...args]) };
+    const bindingController = ClientEventRuntime.createBindingController();
+    const windowTarget = {
+        addEventListener(event, handler) { calls.push(['add', event]); listeners[event] = handler; },
+    };
+    const runtime = ClientEventRuntime.createShellBindings({
+        bindingController,
+        checkFreezeWatchdog: () => calls.push(['watchdog']),
+        consoleErrorInput: args => ({ kind: 'console', args }),
+        freezeWatchdogIntervalMs: 1000,
+        getConsole: () => consoleTarget,
+        pwaInstallController: { bindInstallHandlers: () => { calls.push(['pwa']); return 'pwa-result'; } },
+        reportClientError: input => calls.push(['report', input]),
+        resizeHandler: () => calls.push(['resize']),
+        setIntervalFn: (handler, delay) => calls.push(['interval', handler, delay]),
+        showCrashScreen: error => calls.push(['crash', error]),
+        unhandledRejectionInput: event => ({ kind: 'rejection', event }),
+        updateOnlineStatus: () => calls.push(['online-status']),
+        windowErrorInput: event => ({ kind: 'error', event }),
+        windowTarget,
+    });
+    return { bindingController, calls, consoleTarget, listeners, runtime };
+}
+
+runTest('client shell bindingsはcrashとconsole reportingを一度だけ登録する', () => {
+    const harness = createShellHarness();
+    assert.strictEqual(harness.runtime.bindCrashReporting(), true);
+    assert.strictEqual(harness.runtime.bindCrashReporting(), false);
+    const error = new Error('boom');
+    harness.listeners.error({ error });
+    harness.consoleTarget.error('console-boom');
+    assert.deepStrictEqual(harness.calls.slice(0, 4), [
+        ['add', 'error'], ['add', 'unhandledrejection'],
+        ['report', { kind: 'error', event: { error } }], ['crash', error],
+    ]);
+    assert.deepStrictEqual(harness.calls.slice(-2), [
+        ['console', 'console-boom'],
+        ['report', { kind: 'console', args: ['console-boom'] }],
+    ]);
+});
+
+runTest('client shell bindingsはonline・resize・watchdog・PWAの既存binding契約を所有する', () => {
+    const harness = createShellHarness();
+    assert.strictEqual(harness.runtime.bindOnlineStatus(), true);
+    assert.strictEqual(harness.runtime.bindOnlineStatus(), false);
+    assert.strictEqual(harness.runtime.bindMainViewResize(), true);
+    assert.strictEqual(harness.runtime.bindMainViewResize(), false);
+    assert.strictEqual(harness.runtime.startFreezeWatchdog(), true);
+    assert.strictEqual(harness.runtime.startFreezeWatchdog(), false);
+    assert.strictEqual(harness.runtime.bindPwaInstallHandlers(), 'pwa-result');
+    assert.deepStrictEqual(harness.calls.map(call => call[0]), [
+        'add', 'add', 'online-status', 'online-status', 'add', 'interval', 'pwa',
+    ]);
+    assert.strictEqual(harness.calls[5][2], 1000);
+});
+
+runTest('client shell bindingsは不完全な必須配線を初期化時に拒否する', () => {
+    assert.throws(() => ClientEventRuntime.createShellBindings({
+        windowTarget: { addEventListener() {} },
+    }), /bindingController is required/);
+});

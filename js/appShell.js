@@ -890,51 +890,45 @@ function pwaInstallDismiss() {
     return _pwaInstallController.dismissInstall();
 }
 
-function handleWindowErrorEvent(e) {
-    reportClientError(ClientReporting.windowErrorInput(e));
-    showCrashScreen(e?.error || e?.message);
+const appShellEventBindings = ClientEventRuntime.createShellBindings({
+    bindingController: clientEventBindingController,
+    checkFreezeWatchdog,
+    consoleErrorInput: ClientReporting.consoleErrorInput,
+    freezeWatchdogIntervalMs: FREEZE_WATCHDOG_INTERVAL_MS,
+    getConsole: () => typeof console !== 'undefined' ? console : null,
+    pwaInstallController: _pwaInstallController,
+    reportClientError,
+    resizeHandler: appShellRuntimeEffects.drawCitySkyline,
+    setIntervalFn: typeof setInterval === 'function' ? setInterval : null,
+    showCrashScreen,
+    unhandledRejectionInput: ClientReporting.unhandledRejectionInput,
+    updateOnlineStatus: updateOnlineTabState,
+    windowErrorInput: ClientReporting.windowErrorInput,
+    windowTarget: window,
+});
+
+function handleWindowErrorEvent(event) {
+    return appShellEventBindings.handleWindowErrorEvent(event);
 }
 
-function handleWindowUnhandledRejection(e) {
-    reportClientError(ClientReporting.unhandledRejectionInput(e));
-    showCrashScreen(e?.reason);
+function handleWindowUnhandledRejection(event) {
+    return appShellEventBindings.handleWindowUnhandledRejection(event);
 }
 
 function bindConsoleErrorReporting() {
-    if (clientEventBindingController.isBound(clientEventBindingKeys.CONSOLE_ERROR) || typeof console === 'undefined' || typeof console.error !== 'function') return;
-    const originalConsoleError = console.error.bind(console);
-    console.error = (...args) => {
-        originalConsoleError(...args);
-        reportClientError(ClientReporting.consoleErrorInput(args));
-    };
-    clientEventBindingController.markBound(clientEventBindingKeys.CONSOLE_ERROR);
+    return appShellEventBindings.bindConsoleErrorReporting();
 }
 
 function bindCrashHandlers() {
-    if (clientEventBindingController.isBound(clientEventBindingKeys.CLIENT_ERROR_REPORTING)) return;
-    ClientEventRuntime.bindCrashHandlers({
-        windowTarget: window,
-        handleWindowErrorEvent,
-        handleWindowUnhandledRejection,
-    });
-    bindConsoleErrorReporting();
-    clientEventBindingController.markBound(clientEventBindingKeys.CLIENT_ERROR_REPORTING);
+    return appShellEventBindings.bindCrashReporting();
 }
 
 function bindOnlineStatusHandlers() {
-    if (clientEventBindingController.isBound(clientEventBindingKeys.ONLINE_STATUS)) {
-        updateOnlineTabState();
-        return;
-    }
-    ClientEventRuntime.bindOnlineStatusHandlers({
-        windowTarget: window,
-        updateOnlineStatus: updateOnlineTabState,
-    });
-    clientEventBindingController.markBound(clientEventBindingKeys.ONLINE_STATUS);
+    return appShellEventBindings.bindOnlineStatus();
 }
 
 function bindPwaInstallHandlers() {
-    return _pwaInstallController.bindInstallHandlers();
+    return appShellEventBindings.bindPwaInstallHandlers();
 }
 
 function freezeWatchdogStateKey(snapshot) {
@@ -1318,9 +1312,7 @@ function checkFreezeWatchdog() {
 }
 
 function startFreezeWatchdog() {
-    if (clientEventBindingController.isBound(clientEventBindingKeys.FREEZE_WATCHDOG) || typeof setInterval !== 'function') return;
-    clientEventBindingController.markBound(clientEventBindingKeys.FREEZE_WATCHDOG);
-    setInterval(checkFreezeWatchdog, FREEZE_WATCHDOG_INTERVAL_MS);
+    return appShellEventBindings.startFreezeWatchdog();
 }
 
 function sendDebugClientErrorReport(message = 'manual client error test') {
@@ -1346,10 +1338,7 @@ function initMainView() {
     appShellRuntimeEffects.preloadOnlineRlModels('init-main-online-rl-preload');
     appShellRuntimeEffects.updateResumeButton();
     appShellRuntimeEffects.drawCitySkyline();
-    if (!clientEventBindingController.isBound(clientEventBindingKeys.MAIN_VIEW_RESIZE)) {
-        window.addEventListener("resize", appShellRuntimeEffects.drawCitySkyline);
-        clientEventBindingController.markBound(clientEventBindingKeys.MAIN_VIEW_RESIZE);
-    }
+    appShellEventBindings.bindMainViewResize();
     bindCrashHandlers();
     bindOnlineStatusHandlers();
     bindPwaInstallHandlers();
