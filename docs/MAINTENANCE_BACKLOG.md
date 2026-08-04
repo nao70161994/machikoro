@@ -586,3 +586,12 @@ No game rule, CPU heuristic/choice, RNG point, save/localStorage shape, Socket.I
 - Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect timing/effect order, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 59 architecture boundaries
+
+- `CpuSchedulerState.createController()` is now the sole mutable owner of CPU schedule token, pending token, and lease deadline. `main.js` retains timeout/CPU-step effects; `online.js` and `storage.js` invalidate through the shared adapter, and `appShell.js` reads a snapshot for diagnostics. Token increments, cancel semantics, callback admission, and scheduler timing are unchanged.
+- The existing turn-state, turn-announcer timer, and build-filter controllers are now eagerly constructed in `ui.js`. Their constructors are side-effect free; reset timing, timers, DOM effects, and browser-global APIs are unchanged.
+- Card and landmark selection replacement now passes through `replaceEnabledCardSelection()` and `replaceEnabledLandmarkSelection()`, keeping the compatibility `Set` projections and `UiCardSelect` controller synchronized across local start, online start/rejoin, restore, and modal application. A static contract rejects new direct replacement writers in `main.js`, `online.js`, and `storage.js`.
+- Full removal of the card/landmark compatibility `Set` projections remains deferred until reads can move behind a neutral runtime boundary without changing script order. Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files; whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect/CPU scheduling timing, UI presentation, PWA/SW behavior, or production rollout default changed.

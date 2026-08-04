@@ -808,3 +808,12 @@ Test index:
 - Card/landmark selection and the main CPU scheduler still cross multiple browser scripts. Do not move one ambient writer in isolation; first define a compatibility projection and effect-order contract spanning every writer.
 - Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 59 handoff (2026-08-04)
+
+- CPU scheduling token, pending token, and lease deadline belong exclusively to `CpuSchedulerState.createController()`. Preserve the distinction between invalidate (token only) and cancel (token plus pending/lease clear), and keep timeout/CPU effects in `main.js`.
+- Turn-state, turn-announcer timer, and build-filter controllers are eager, side-effect-free UI state owners. Do not reintroduce nullable controller projections or lazy getters.
+- Replace complete card/landmark selections only through `replaceEnabledCardSelection()` and `replaceEnabledLandmarkSelection()`. The compatibility `Set` values and card-select controller must change together for local start, online start/rejoin, restore, and modal flows.
+- The next selection-state step is a neutral runtime owner for reads and projections; do not remove compatibility globals or alter `index.html` script order piecemeal.
+- Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

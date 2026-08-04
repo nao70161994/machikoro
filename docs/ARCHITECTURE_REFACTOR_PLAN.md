@@ -764,3 +764,11 @@ Scoped gates are now 215 ESLint maintenance files and 214 checkJs runtime files.
 3. The last local Engine shadow outcome now belongs to the shared client-shadow controller while snapshot adaptation, mutable fallback, and adoption remain in the local runtime adapter.
 
 Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Rules, CPU strength, authority defaults, protocol/schema, persistence, reconnect behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 59 boundary update
+
+1. CPU scheduler token, pending token, and lease deadline now have one controller owner across main, online, storage, and app-shell diagnostics; scheduling effects and exact invalidation/cancel behavior remain unchanged.
+2. Three existing UI transient controllers are now eager, side-effect-free owners, removing nullable lifecycle branches without changing timers or DOM effects.
+3. Complete card/landmark selection writes now use one synchronized UI boundary across local, online, restore, and modal paths. Compatibility reads remain until a neutral runtime owner can replace them safely.
+
+Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Rules, CPU strength/RNG, protocol/schema, persistence, reconnect and CPU timing, UI behavior, and PWA defaults are unchanged.
