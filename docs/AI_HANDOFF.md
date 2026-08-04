@@ -635,3 +635,12 @@ Test index:
 - Pending outbound in-memory ownership belongs to `OnlinePendingOutboundState`; storage dual-write/fallback, normalization, session checks, ACKs, reconnect, and Socket effects remain in `online.js` and existing helpers. Preserve roomless legacy entries by hydrating them under the current-room fallback key.
 - Client-error dedupe key/time belongs to `ClientReporting.createAdmissionController()`. Keep the 10-second app-shell suppression interval, suppressed checkpoint, report key, and transport sequence unchanged.
 - Scoped gates are 209 ESLint maintenance files and 208 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+
+## Batch 38 handoff (2026-08-04)
+
+- Card/landmark build outcome data belongs to `GameBuildPolicy.cardBuildTransition()` / `landmarkBuildTransition()`. Keep live mutation, card cloning, Loan Office logging, and structured build logs in `GameManager`; preserve their current order.
+- Existing-room recreate admission and rejoin effect sequencing belong to `ExistingRoomRestoreRuntime`. Keep default-OFF effect authority and the legacy fallback until an explicit rollout decision; do not change reconnect identity, host reselection persistence, or Socket event payloads through this boundary.
+- Card-select modal interaction state belongs to `UiCardSelect.createSelectionController()`. Because online/local restore still writes legacy Sets, synchronize the controller from globals before an interaction and project its immutable snapshot back afterward.
+- Scoped gates are 210 ESLint maintenance files and 209 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with small rollbackable themes, focused checks per theme, one batch-end `test:batch`, one push, and one exact-HEAD CI check.

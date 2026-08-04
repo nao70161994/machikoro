@@ -600,3 +600,13 @@ This batch advances the shared rule transition, explicit online state, and thin-
 3. Client-report suppression state now has one controller with an injected clock. Report projection, persistence checkpoints, and HTTP delivery remain independently testable boundaries.
 
 These changes reduce three giant-runtime responsibilities without authority cutovers. Scoped gates are 209 ESLint maintenance files and 208 checkJs runtime files; compatibility and rollout defaults are unchanged.
+
+
+## 2026-08-04 Batch 38 boundary update
+
+1. Successful card and landmark builds now have detached result plans. Admission and outcome data are pure, while `GameManager` remains the sole live mutation/log/clone executor.
+2. Existing-room recreate handling now has a dedicated runtime boundary. It owns admission branching and exact rejoin effect sequencing while `server.js` only injects room, identity, persistence, Socket, and clock adapters.
+3. Card-select modal state now has a detached controller with immutable snapshots. Legacy global Sets remain compatibility projections because online and local restore still replace them; each modal interaction synchronizes before applying the controller transition.
+4. The extracted server runtime entered ESLint and checkJs in the same batch. Scoped gates are 210 ESLint maintenance files and 209 checkJs runtime files.
+
+No authority flag was enabled and no rule, protocol, persistence, reconnect timing, UI presentation, or PWA behavior changed.

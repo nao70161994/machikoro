@@ -392,3 +392,13 @@ These are deterministic rule-transition, explicit online state ownership, and se
 - Scoped gates now cover 209 ESLint maintenance files and 208 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 This batch advances reproducible CPU simulation, explicit online state ownership, and a thinner app-shell without changing CPU choices/RNG, storage keys or payloads, Socket events, reporting payloads, PWA behavior, or authority defaults.
+
+
+## 2026-08-04 Batch 38 architecture boundaries
+
+- `GameBuildPolicy` now owns frozen card and landmark build-result transitions after its existing admission plans. `GameManager` retains live player/card/landmark mutation, clone identity, Loan Office log order, and public rule methods; focused and shared-Engine regressions preserve outcomes.
+- `server/existingRoomRestoreRuntime.js` now owns existing-room restore admission, replace pass-through, legacy rejoin fallback, and optional effect-authority dispatch. `server.js` remains the composition root; reconnect identity, host reselection, persistence, `rejoinData` / `playerRejoined` event names, payloads, and default-OFF authority behavior are unchanged.
+- `UiCardSelect.createSelectionController()` now owns detached card/landmark selection state for modal interactions. `ui.js` keeps compatibility projections for save/online restore writers, DOM rendering, and browser-global APIs; required cards, the one-landmark minimum, selection order, and render timing are unchanged.
+- The new server runtime is explicitly covered by both scoped gates. Current scope is 210 ESLint maintenance files and 209 checkJs runtime files; whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+This batch advances deterministic rule transitions, a thinner server composition root, and explicit UI state ownership without changing rules, CPU strength, save/localStorage formats, Socket.IO protocol, reconnect rollout defaults, or PWA/SW behavior.
