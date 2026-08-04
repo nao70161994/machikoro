@@ -474,7 +474,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ]],
         ['tests/main.test.js', [
             ['js/actionContract.js', 'js/actionUiRegistry.js'],
-            ['js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js', 'js/main.js'],
+            ['js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js', 'js/localGameEngineRuntime.js', 'js/main.js'],
             ['js/clientStorage.js', 'js/appShellStorage.js'],
             ['js/appShellStorage.js', 'js/appShell.js'],
             ['js/clientCheckpoint.js', 'js/appShell.js'],

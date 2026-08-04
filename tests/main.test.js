@@ -383,10 +383,18 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(appShellCrashRuntimeSource, context, { filename: 'js/appShellCrashRuntime.js' });
     const actionContractSource = fs.readFileSync(path.join(__dirname, '..', 'js/actionContract.js'), 'utf8');
     vm.runInContext(actionContractSource, context, { filename: 'js/actionContract.js' });
+    const gameSnapshotSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameSnapshot.js'), 'utf8');
+    vm.runInContext(gameSnapshotSource, context, { filename: 'js/gameSnapshot.js' });
+    const gameEngineRuntimeAdapterSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameEngineRuntimeAdapter.js'), 'utf8');
+    vm.runInContext(gameEngineRuntimeAdapterSource, context, { filename: 'js/gameEngineRuntimeAdapter.js' });
+    const gameEngineDeterminismSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameEngineDeterminism.js'), 'utf8');
+    vm.runInContext(gameEngineDeterminismSource, context, { filename: 'js/gameEngineDeterminism.js' });
     const gameEngineAuthoritySource = fs.readFileSync(path.join(__dirname, '..', 'js/gameEngineAuthority.js'), 'utf8');
     vm.runInContext(gameEngineAuthoritySource, context, { filename: 'js/gameEngineAuthority.js' });
     const gameEngineClientShadowSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameEngineClientShadow.js'), 'utf8');
     vm.runInContext(gameEngineClientShadowSource, context, { filename: 'js/gameEngineClientShadow.js' });
+    const localGameEngineRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/localGameEngineRuntime.js'), 'utf8');
+    vm.runInContext(localGameEngineRuntimeSource, context, { filename: 'js/localGameEngineRuntime.js' });
     const cpuActionProposalSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuActionProposal.js'), 'utf8');
     vm.runInContext(cpuActionProposalSource, context, { filename: 'js/cpuActionProposal.js' });
     const cpuPendingResolutionSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuPendingResolution.js'), 'utf8');

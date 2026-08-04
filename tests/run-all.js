@@ -92,6 +92,7 @@ const TEST_GROUPS = {
         'game-engine-authority.test.js',
         'game-engine-client-shadow.test.js',
         'game-engine-determinism.test.js',
+        'local-game-engine-runtime.test.js',
         'game-engine-local-shadow.test.js',
         'game-engine-runtime-adapter.test.js',
         'game-schema-shadow-parity.test.js',

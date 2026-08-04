@@ -18,8 +18,10 @@ function symmetricSettings() {
 runTest('local Engine shadow outcomeはclient shadow controllerだけが所有する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
     assert.strictEqual(source.includes('_lastLocalGameEngineShadowOutcome'), false);
-    assert.ok(source.includes('GameEngineClientShadow.createOutcomeController()'));
-    assert.ok(source.includes('_localGameEngineShadowOutcomeController.set(outcome)'));
+    const runtimeSource = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/localGameEngineRuntime.js'), 'utf8');
+    assert.ok(source.includes('LocalGameEngineRuntime.createRuntime'));
+    assert.ok(runtimeSource.includes('clientShadow.createOutcomeController()'));
+    assert.ok(runtimeSource.includes('outcomeController.set(outcome)'));
 });
 
 runTest('local Engine shadowはproduction未注入時にmutable game identityを維持する', () => {

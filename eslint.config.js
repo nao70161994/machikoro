@@ -63,6 +63,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/gameEngineDeterminism.js',
     'js/gameEngineAuthority.js',
     'js/gameEngineClientShadow.js',
+    'js/localGameEngineRuntime.js',
     'js/gameEngineRuntimeAdapter.js',
     'js/gameSnapshot.js',
     'js/localSaveRepository.js',

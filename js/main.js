@@ -271,33 +271,6 @@ function init(playerCount) {
     return localGameInitializer.initialize(playerCount);
 }
 
-// CPUアクションをローカル・オンライン両対応で実行
-function cpuDo(action, data, fallback) {
-    const currentGame = mainGameRuntimeSnapshot().game;
-    const proposal = typeof CPUActionProposal !== 'undefined'
-        ? CPUActionProposal.create(action, data)
-        : null;
-    if (!proposal) return false;
-    if (mainOnlineRuntimeSnapshot().isOnlineGame) {
-        sendAction(proposal.action, proposal.data);
-        return;
-    }
-    const shadow = _prepareLocalGameEngineShadow(proposal.action, proposal.data);
-    if (typeof GameEngine !== 'undefined' &&
-            typeof GameEngine.applyMutableAction === 'function') {
-        GameEngine.applyMutableAction({
-            game: currentGame,
-            action: proposal.action,
-            data: proposal.data,
-        });
-    } else {
-        fallback();
-    }
-    _finishLocalGameEngineShadow(shadow);
-    render();
-    scheduleCPU();
-}
-
 function markMainCheckpoint(event, details = {}) {
     try {
         if (typeof markClientFlowCheckpoint === 'function') markClientFlowCheckpoint(event, details);
@@ -305,8 +278,6 @@ function markMainCheckpoint(event, details = {}) {
         // Diagnostics must never interrupt the CPU scheduler or a player action.
     }
 }
-
-const _localGameEngineShadowOutcomeController = GameEngineClientShadow.createOutcomeController();
 
 function isLocalGameEngineShadowEnabled() {
     return typeof window !== 'undefined' &&
@@ -318,103 +289,54 @@ function isLocalGameEngineAuthorityEnabled() {
         window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED === true;
 }
 
-function _createLocalGameEngineRuntimeAdapter() {
-    const currentGame = mainGameRuntimeSnapshot().game;
-    return GameEngineRuntimeAdapter.create({
-        createGame: playerCount => new GameManager(playerCount),
-        enabledLandmarks: currentGame && currentGame.enabledLandmarks
-            ? currentGame.enabledLandmarks
-            : Player.landmarkNames(),
-        landmarkNames: Player.landmarkNames,
-        createCardByName,
-        assignShopStockSnapshot,
-        decrementShopStock,
-        pendingActionsFor: GameManager.serializedPendingActionsFor,
-        logLimit: Number.MAX_SAFE_INTEGER,
-    });
-}
+const localGameEngineRuntime = LocalGameEngineRuntime.createRuntime({
+    actionProposal: CPUActionProposal,
+    adapterOptions() {
+        const currentGame = mainGameRuntimeSnapshot().game;
+        return {
+            createGame: playerCount => new GameManager(playerCount),
+            enabledLandmarks: currentGame && currentGame.enabledLandmarks
+                ? currentGame.enabledLandmarks
+                : Player.landmarkNames(),
+            landmarkNames: Player.landmarkNames,
+            createCardByName,
+            assignShopStockSnapshot,
+            decrementShopStock,
+            pendingActionsFor: GameManager.serializedPendingActionsFor,
+            logLimit: Number.MAX_SAFE_INTEGER,
+        };
+    },
+    assignShopStock: (target, snapshot) => assignShopStockSnapshot(target, snapshot),
+    checkpoint: markMainCheckpoint,
+    clientShadow: GameEngineClientShadow,
+    determinism: GameEngineDeterminism,
+    getEngine: () => typeof GameEngine !== 'undefined' ? GameEngine : null,
+    gameRuntime: GameRuntimeState.runtime,
+    getGameState: mainGameRuntimeSnapshot,
+    getOnlineState: mainOnlineRuntimeSnapshot,
+    isAuthorityEnabled: isLocalGameEngineAuthorityEnabled,
+    isShadowEnabled: isLocalGameEngineShadowEnabled,
+    pendingActionsFor: GameManager.serializedPendingActionsFor,
+    render: () => render(),
+    runtimeAdapter: GameEngineRuntimeAdapter,
+    scheduleCpu: () => scheduleCPU(),
+    sendAction: (action, data) => sendAction(action, data),
+    shopStock: SHOP_STOCK,
+    snapshot: GameSnapshot,
+    stationName: LANDMARK_NAMES.STATION,
+});
+const _localGameEngineShadowOutcomeController = localGameEngineRuntime.outcomeController;
 
-function _buildLocalGameEngineSnapshot() {
-    const gameState = mainGameRuntimeSnapshot();
-    return GameSnapshot.serializeGameState(gameState.game, SHOP_STOCK, {
-        undoState: gameState.undoState,
-        actionSeq: 0,
-        logLimit: Number.MAX_SAFE_INTEGER,
-        pendingActionsFor: GameManager.serializedPendingActionsFor,
-    });
+function cpuDo(action, data, fallback) {
+    return localGameEngineRuntime.runCpu(action, data, fallback);
 }
-
-function _prepareLocalGameEngineShadow(action, data) {
-    if (!isLocalGameEngineShadowEnabled() ||
-            typeof GameEngineClientShadow === 'undefined' ||
-            typeof GameEngineRuntimeAdapter === 'undefined' ||
-            typeof GameEngineDeterminism === 'undefined') return null;
-    const snapshot = _buildLocalGameEngineSnapshot();
-    if (!GameEngineDeterminism.isResolved({
-        action,
-        data,
-        snapshot,
-        stationName: LANDMARK_NAMES.STATION,
-    })) return null;
-    return GameEngineClientShadow.prepare({
-        enabled: true,
-        action,
-        data,
-        snapshot,
-        transition(sourceSnapshot, shadowAction, shadowData) {
-            const adapter = _createLocalGameEngineRuntimeAdapter();
-            return GameEngine.transitionSnapshot({
-                snapshot: sourceSnapshot,
-                action: shadowAction,
-                data: shadowData,
-                hydrate: adapter.hydrate,
-                serialize: adapter.serialize,
-            });
-        },
-    });
-}
-
-function _adoptLocalGameEngineShadowSnapshot(snapshot) {
-    const adapter = _createLocalGameEngineRuntimeAdapter();
-    const runtime = adapter.hydrate(snapshot);
-    const rebuilt = adapter.serialize(runtime);
-    if (!GameEngineClientShadow.equalSnapshots(rebuilt, snapshot)) return false;
-    GameRuntimeState.runtime.setGame(runtime.game);
-    assignShopStockSnapshot(SHOP_STOCK, runtime.shopStock);
-    GameRuntimeState.runtime.setUndoState(runtime.undoState);
-    return true;
-}
-
-function _finishLocalGameEngineShadow(prepared) {
-    if (!prepared) return null;
-    const outcome = GameEngineClientShadow.finish({
-        prepared,
-        liveSnapshot: _buildLocalGameEngineSnapshot(),
-        authorityEnabled: isLocalGameEngineAuthorityEnabled(),
-        adoptSnapshot: _adoptLocalGameEngineShadowSnapshot,
-    });
-    _localGameEngineShadowOutcomeController.set(outcome);
-    return outcome;
-}
-
+function _createLocalGameEngineRuntimeAdapter() { return localGameEngineRuntime.createAdapter(); }
+function _buildLocalGameEngineSnapshot() { return localGameEngineRuntime.buildSnapshot(); }
+function _prepareLocalGameEngineShadow(action, data) { return localGameEngineRuntime.prepare(action, data); }
+function _adoptLocalGameEngineShadowSnapshot(snapshot) { return localGameEngineRuntime.adopt(snapshot); }
+function _finishLocalGameEngineShadow(prepared) { return localGameEngineRuntime.finish(prepared); }
 function runLocalOrSendOnline(action, data, fallback) {
-    const onlineState = mainOnlineRuntimeSnapshot();
-    markMainCheckpoint('action-start', { action, isOnlineGame: onlineState.isOnlineGame });
-    if (onlineState.isOnlineGame) {
-        const sent = sendAction(action, data);
-        markMainCheckpoint('action-online-send', { action, sent });
-        return sent;
-    }
-    const shadow = _prepareLocalGameEngineShadow(action, data);
-    const result = fallback();
-    markMainCheckpoint('action-local-applied', { action, result });
-    _finishLocalGameEngineShadow(shadow);
-    if (result === false) return false;
-    render();
-    markMainCheckpoint('action-rendered', { action });
-    scheduleCPU();
-    markMainCheckpoint('action-scheduleCPU-returned', { action });
-    return true;
+    return localGameEngineRuntime.runHuman(action, data, fallback);
 }
 
 const MAIN_ACTIONS = (typeof GAME_ACTIONS !== 'undefined') ? GAME_ACTIONS : Object.freeze({
