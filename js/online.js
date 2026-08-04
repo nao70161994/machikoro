@@ -158,22 +158,37 @@ const _onlineRestoreEventQueueStore = typeof OnlineRestoreQueueState !== 'undefi
     typeof OnlineRestoreQueueState.createStore === 'function'
     ? OnlineRestoreQueueState.createStore([])
     : null;
-let _lastOnlineRestoreQueueStoreSelection = Object.freeze({
+const _onlineRestoreQueueDiagnosticKeys = typeof OnlineRestoreQueueState !== 'undefined' &&
+    OnlineRestoreQueueState.diagnosticKeys
+    ? OnlineRestoreQueueState.diagnosticKeys
+    : Object.freeze({
+        STORE_READ: 'store-read',
+        STORE_WRITE: 'store-write',
+        STATE: 'state',
+        EFFECT: 'effect',
+        PLAN: 'plan',
+    });
+const _initialOnlineRestoreQueueDiagnosticSelection = () => Object.freeze({
     source: 'none',
     matched: true,
     fallbackReason: '',
 });
-let _lastOnlineRestoreQueueStoreWriteSelection = Object.freeze({
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastOnlineRestoreQueueStateSelection = Object.freeze({
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastOnlineRestoreQueueEffectSelection = null;
+const _onlineRestoreQueueDiagnostics = typeof OnlineRestoreQueueState !== 'undefined' &&
+    typeof OnlineRestoreQueueState.createDiagnosticController === 'function'
+    ? OnlineRestoreQueueState.createDiagnosticController({
+        [_onlineRestoreQueueDiagnosticKeys.STORE_READ]: _initialOnlineRestoreQueueDiagnosticSelection(),
+        [_onlineRestoreQueueDiagnosticKeys.STORE_WRITE]: _initialOnlineRestoreQueueDiagnosticSelection(),
+        [_onlineRestoreQueueDiagnosticKeys.STATE]: _initialOnlineRestoreQueueDiagnosticSelection(),
+        [_onlineRestoreQueueDiagnosticKeys.EFFECT]: null,
+        [_onlineRestoreQueueDiagnosticKeys.PLAN]: _initialOnlineRestoreQueueDiagnosticSelection(),
+    })
+    : (() => {
+        const state = Object.create(null);
+        return Object.freeze({
+            read: key => Object.prototype.hasOwnProperty.call(state, key) ? state[key] : null,
+            write(key, value) { state[key] = value; return value; },
+        });
+    })();
 let _lastOnlineGameEngineShadowOutcome = Object.freeze({
     report: null,
     authority: Object.freeze({ authority: 'mutable', reason: 'disabled' }),
@@ -456,12 +471,6 @@ function _resetOnlineRejoinAttempt() {
     );
 }
 
-let _lastOnlineRestoreQueuePlanSelection = Object.freeze({
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-
 function _onlineReconnectObservationFlags() {
     const connected = !!socket && socket.connected !== false;
     return {
@@ -588,23 +597,23 @@ function getOnlineGameEngineShadowOutcome() {
 }
 
 function getOnlineRestoreQueuePlanSelection() {
-    return _lastOnlineRestoreQueuePlanSelection;
+    return _onlineRestoreQueueDiagnostics.read(_onlineRestoreQueueDiagnosticKeys.PLAN);
 }
 
 function getOnlineRestoreQueueEffectSelection() {
-    return _lastOnlineRestoreQueueEffectSelection;
+    return _onlineRestoreQueueDiagnostics.read(_onlineRestoreQueueDiagnosticKeys.EFFECT);
 }
 
 function getOnlineRestoreQueueStateSelection() {
-    return _lastOnlineRestoreQueueStateSelection;
+    return _onlineRestoreQueueDiagnostics.read(_onlineRestoreQueueDiagnosticKeys.STATE);
 }
 
 function getOnlineRestoreQueueStoreSelection() {
-    return _lastOnlineRestoreQueueStoreSelection;
+    return _onlineRestoreQueueDiagnostics.read(_onlineRestoreQueueDiagnosticKeys.STORE_READ);
 }
 
 function getOnlineRestoreQueueStoreWriteSelection() {
-    return _lastOnlineRestoreQueueStoreWriteSelection;
+    return _onlineRestoreQueueDiagnostics.read(_onlineRestoreQueueDiagnosticKeys.STORE_WRITE);
 }
 
 function getOnlineReconnectCleanupEffectSelection() {
@@ -2173,20 +2182,20 @@ function _readOnlineRestoreEventQueue() {
             matched: false,
             fallbackReason: requested ? 'restore-queue-store-helper-unavailable' : '',
         });
-    _lastOnlineRestoreQueueStoreSelection = Object.freeze({
+    _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STORE_READ, Object.freeze({
         source: selection.source,
         matched: selection.matched,
         fallbackReason: selection.fallbackReason,
-    });
+    }));
     return selection.queue;
 }
 
 function _recordOnlineRestoreQueueStoreWriteSelection(selection) {
-    _lastOnlineRestoreQueueStoreWriteSelection = Object.freeze({
+    _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STORE_WRITE, Object.freeze({
         source: selection.source,
         matched: selection.matched,
         fallbackReason: selection.fallbackReason,
-    });
+    }));
     return selection;
 }
 
@@ -2267,11 +2276,11 @@ function _clearOnlineRestoreEventQueue() {
         ? OnlineRestoreQueueState.planClear()
         : null;
     const selection = _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransition);
-    _lastOnlineRestoreQueueStateSelection = Object.freeze({
+    _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STATE, Object.freeze({
         source: selection.source,
         matched: selection.matched,
         fallbackReason: selection.fallbackReason,
-    });
+    }));
     _replaceOnlineRestoreEventQueue(
         selection.source === 'pure-transition' ? selection.transition.queue : []
     );
@@ -2296,11 +2305,11 @@ function _queueOnlineEventDuringRestore(type, payload) {
         )
         : null;
     const selection = _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransition);
-    _lastOnlineRestoreQueueStateSelection = Object.freeze({
+    _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STATE, Object.freeze({
         source: selection.source,
         matched: selection.matched,
         fallbackReason: selection.fallbackReason,
-    });
+    }));
     if (selection.transition.overflow) {
         _abortOnlineRestore(_onlineRestoreGeneration, '復元中の操作が多すぎるため、状態を再同期しています...', []);
         return true;
@@ -2439,12 +2448,12 @@ function _executeOnlineRestoreQueuePlan(flushSelection, handlers) {
     const helperAvailable = typeof OnlineRestoreQueue !== 'undefined' &&
         typeof OnlineRestoreQueue.executePlan === 'function';
     const usePureExecutor = authorityEnabled && purePlanReady && helperAvailable;
-    _lastOnlineRestoreQueueEffectSelection = Object.freeze({
+    _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.EFFECT, Object.freeze({
         source: usePureExecutor ? 'pure-executor' : (authorityEnabled ? 'legacy-fallback' : 'legacy'),
         fallbackReason: usePureExecutor || !authorityEnabled
             ? ''
             : (!purePlanReady ? 'queue-plan-not-authoritative' : 'executor-unavailable'),
-    });
+    }));
     return usePureExecutor
         ? OnlineRestoreQueue.executePlan(flushSelection.plan, handlers)
         : _legacyExecuteOnlineRestoreQueuePlan(flushSelection.plan, handlers);
@@ -2465,11 +2474,11 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
         pureDrainTransition,
         legacyDrainTransition
     );
-    _lastOnlineRestoreQueueStateSelection = Object.freeze({
+    _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STATE, Object.freeze({
         source: drainSelection.source,
         matched: drainSelection.matched,
         fallbackReason: drainSelection.fallbackReason,
-    });
+    }));
     const queuedEvents = drainSelection.transition.drainedQueue;
     _replaceOnlineRestoreEventQueue(
         drainSelection.source === 'pure-transition' ? drainSelection.transition.queue : []
@@ -2482,11 +2491,11 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
             generation,
             restoredThroughSeq
         );
-        _lastOnlineRestoreQueuePlanSelection = Object.freeze({
+        _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.PLAN, Object.freeze({
             source: flushSelection.source,
             matched: flushSelection.matched,
             fallbackReason: flushSelection.fallbackReason,
-        });
+        }));
         const execution = _executeOnlineRestoreQueuePlan(flushSelection, handlers);
         if (!execution.ok) {
             const legacyFailureTransition = Object.freeze({
@@ -2501,11 +2510,11 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
                 pureFailureTransition,
                 legacyFailureTransition
             );
-            _lastOnlineRestoreQueueStateSelection = Object.freeze({
+            _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STATE, Object.freeze({
                 source: failureSelection.source,
                 matched: failureSelection.matched,
                 fallbackReason: failureSelection.fallbackReason,
-            });
+            }));
             _abortOnlineRestore(
                 generation,
                 '操作の適用に失敗したため、状態を再同期しています...',
@@ -2960,11 +2969,11 @@ function initSocket() {
             pureCarryTransition,
             legacyCarryTransition
         );
-        _lastOnlineRestoreQueueStateSelection = Object.freeze({
+        _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STATE, Object.freeze({
             source: carrySelection.source,
             matched: carrySelection.matched,
             fallbackReason: carrySelection.fallbackReason,
-        });
+        }));
         _replaceOnlineRestoreEventQueue(carrySelection.transition.queue);
         _clearRejoinRetry();
         _hostlessRestoreState.clear();

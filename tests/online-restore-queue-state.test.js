@@ -135,3 +135,22 @@ runTest('restore queue state authorityは完全一致時だけpure transitionを
     assert.strictEqual(drainedMismatch.source, 'legacy-fallback');
     assert.strictEqual(Object.isFrozen(OnlineRestoreQueueState), true);
 });
+
+runTest('restore queue diagnostic controllerは5種の選択結果を一箇所で所有する', () => {
+    const keys = OnlineRestoreQueueState.diagnosticKeys;
+    const initial = Object.freeze({ source: 'none' });
+    const controller = OnlineRestoreQueueState.createDiagnosticController({
+        [keys.STORE_READ]: initial,
+    });
+    assert.strictEqual(controller.read(keys.STORE_READ), initial);
+    assert.strictEqual(controller.read(keys.EFFECT), null);
+    const selected = Object.freeze({ source: 'pure-plan', matched: true });
+    assert.strictEqual(controller.write(keys.PLAN, selected), selected);
+    assert.strictEqual(controller.read(keys.PLAN), selected);
+    assert.strictEqual(controller.snapshot()[keys.PLAN], selected);
+    assert.throws(() => controller.read('unknown'), /unknown restore queue diagnostic key/);
+    assert.throws(() => controller.write('unknown', {}), /unknown restore queue diagnostic key/);
+    assert.ok(Object.isFrozen(keys));
+    assert.ok(Object.isFrozen(controller));
+    assert.ok(Object.isFrozen(controller.snapshot()));
+});

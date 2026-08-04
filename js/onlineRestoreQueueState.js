@@ -28,6 +28,37 @@ function createRestoreQueueStore(initialQueue = []) {
     });
 }
 
+const RESTORE_QUEUE_DIAGNOSTIC_KEYS = Object.freeze({
+    STORE_READ: 'store-read',
+    STORE_WRITE: 'store-write',
+    STATE: 'state',
+    EFFECT: 'effect',
+    PLAN: 'plan',
+});
+
+function createRestoreQueueDiagnosticController(initial = {}) {
+    const state = { ...initial };
+
+    function read(key) {
+        if (!Object.values(RESTORE_QUEUE_DIAGNOSTIC_KEYS).includes(key)) {
+            throw new TypeError(`unknown restore queue diagnostic key: ${key}`);
+        }
+        return Object.prototype.hasOwnProperty.call(state, key) ? state[key] : null;
+    }
+
+    function write(key, value) {
+        read(key);
+        state[key] = value;
+        return value;
+    }
+
+    function snapshot() {
+        return Object.freeze({ ...state });
+    }
+
+    return Object.freeze({ read, write, snapshot });
+}
+
 function selectRestoreQueueRead(storeQueue, legacyQueue, options = {}) {
     const matched = sameRestoreQueue(storeQueue, legacyQueue);
     const enabled = options.authorityEnabled === true;
@@ -118,6 +149,8 @@ function selectRestoreQueueTransition(pureTransition, legacyTransition, options 
 }
 
 const OnlineRestoreQueueState = Object.freeze({
+    diagnosticKeys: RESTORE_QUEUE_DIAGNOSTIC_KEYS,
+    createDiagnosticController: createRestoreQueueDiagnosticController,
     sameQueue: sameRestoreQueue,
     createStore: createRestoreQueueStore,
     selectRead: selectRestoreQueueRead,
