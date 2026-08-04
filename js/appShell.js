@@ -1197,53 +1197,19 @@ function recoverStaleModalUiLock(snapshot) {
     return true;
 }
 
+const appShellAsyncRecovery = UiWatchdogAsyncRecovery.createRuntime({
+    buildSnapshot: buildClientRuntimeSnapshot,
+    checkpoint: markClientFlowCheckpoint,
+    compactSnapshot: compactSnapshotForUiTrace,
+    runtimeEffects: appShellRuntimeEffects,
+});
+
 function recoverCpuTurnStall(snapshot) {
-    if (!snapshot || !snapshot.isCpuTurn || snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return false;
-    if (snapshot.isOnlineGame && !snapshot.isRoomHost) return false;
-    try {
-        const scheduled = appShellRuntimeEffects.scheduleCpu('watchdog-cpu-turn-stall');
-        if (scheduled.source === 'scheduler') {
-            const health = scheduled.health;
-            const recovered = !!(health && health.stepScheduled);
-            const after = buildClientRuntimeSnapshot('cpu-turn-stall-recovery-after');
-            markClientFlowCheckpoint('freeze-watchdog-cpu-reschedule', {
-                recovered,
-                schedulerHealth: health || null,
-                before: compactSnapshotForUiTrace(snapshot),
-                after: compactSnapshotForUiTrace(after),
-            });
-            return recovered;
-        }
-        if (scheduled.source === 'none') return false;
-    } catch (_) {
-        return false;
-    }
-    const after = buildClientRuntimeSnapshot('cpu-turn-stall-recovery-after');
-    const recovered = !!after.cpuStepScheduled;
-    markClientFlowCheckpoint('freeze-watchdog-cpu-reschedule', {
-        recovered,
-        before: compactSnapshotForUiTrace(snapshot),
-        after: compactSnapshotForUiTrace(after),
-    });
-    return recovered;
+    return appShellAsyncRecovery.recoverCpuTurnStall(snapshot);
 }
 
 function recoverOnlineActionInFlightStall(snapshot) {
-    if (!snapshot || !snapshot.onlineActionInFlight) return false;
-    try {
-        const timeout = appShellRuntimeEffects.handleOnlineActionTimeout();
-        if (!timeout.available) return false;
-        const recovered = timeout.value;
-        markClientFlowCheckpoint('freeze-watchdog-online-action-resync', {
-            recovered: !!recovered,
-            onlineActionInFlightAt: snapshot.onlineActionInFlightAt || null,
-            before: compactSnapshotForUiTrace(snapshot),
-            after: compactSnapshotForUiTrace(buildClientRuntimeSnapshot('online-action-stall-recovery-after')),
-        });
-        return !!recovered;
-    } catch (_) {
-        return false;
-    }
+    return appShellAsyncRecovery.recoverOnlineActionInFlightStall(snapshot);
 }
 
 function freezeRecoveryHandlers() {
