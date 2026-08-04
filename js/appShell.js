@@ -32,6 +32,12 @@ const clientErrorAdmissionController = ClientReporting.createAdmissionController
 const postBuildUiStabilizerBatch = UiWatchdogMonitor.createPendingBatchController();
 
 const truncateClientErrorField = ClientReporting.truncateField;
+const appShellDomSnapshot = UiDomSnapshot.createRuntime({
+    getDocument: () => typeof document !== 'undefined' ? document : null,
+    getComputedStyle: element => typeof window !== 'undefined' && typeof window.getComputedStyle === 'function'
+        ? window.getComputedStyle(element) : null,
+    truncateText: truncateClientErrorField,
+});
 
 function safeClientErrorUrl() {
     return ClientReporting.clientUrl(
@@ -51,49 +57,11 @@ function safeClientErrorContext() {
 }
 
 function elementHasBlockingAncestor(id, el) {
-    try {
-        if (el && typeof el.closest === 'function' && el.closest('[inert], [aria-hidden="true"]')) return true;
-    } catch (_) {}
-    if (['btnRoll', 'btnSkip', 'btnReroll', 'diceChoose', 'buildMenu'].includes(id)) {
-        const gameScreen = typeof document !== 'undefined' && document.getElementById ? document.getElementById('gameScreen') : null;
-        if (gameScreen && (gameScreen.inert || (typeof gameScreen.getAttribute === 'function' && gameScreen.getAttribute('aria-hidden') === 'true'))) return true;
-        if (gameScreen && gameScreen.style && gameScreen.style.display === 'none') return true;
-    }
-    return false;
+    return appShellDomSnapshot.hasBlockingAncestor(id, el);
 }
 
 function childInteractiveState(el) {
-    if (!el || typeof el.querySelectorAll !== 'function') return { total: 0, usable: 0 };
-    let children = [];
-    try {
-        children = Array.from(el.querySelectorAll('button, [role="button"], [data-action], [data-ui-action], input, select, textarea, a[href]') || []);
-    } catch (_) {
-        return { total: 0, usable: 0 };
-    }
-    let usable = 0;
-    children.forEach(child => {
-        if (!child || child.disabled || child.hidden || child.inert) return;
-        const style = child.style || {};
-        let computedDisplay = '';
-        let computedVisibility = '';
-        let computedPointerEvents = '';
-        try {
-            if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
-                const computed = window.getComputedStyle(child);
-                computedDisplay = computed && computed.display || '';
-                computedVisibility = computed && computed.visibility || '';
-                computedPointerEvents = computed && computed.pointerEvents || '';
-            }
-        } catch (_) {}
-        if (style.display === 'none' || computedDisplay === 'none') return;
-        if (style.visibility === 'hidden' || computedVisibility === 'hidden') return;
-        if (style.pointerEvents === 'none' || computedPointerEvents === 'none') return;
-        try {
-            if (typeof child.closest === 'function' && child.closest('[inert], [aria-hidden="true"]')) return;
-        } catch (_) {}
-        usable++;
-    });
-    return { total: children.length, usable };
+    return appShellDomSnapshot.interactiveState(el);
 }
 
 function hasBuildableCardCandidate() {
@@ -161,62 +129,15 @@ function expectedChildActionsForEntry(snapshot, entry) {
 }
 
 function isInteractiveChildUsable(child) {
-    if (!child || child.disabled || child.hidden || child.inert) return false;
-    const style = child.style || {};
-    let computedDisplay = '';
-    let computedVisibility = '';
-    let computedPointerEvents = '';
-    try {
-        if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
-            const computed = window.getComputedStyle(child);
-            computedDisplay = computed && computed.display || '';
-            computedVisibility = computed && computed.visibility || '';
-            computedPointerEvents = computed && computed.pointerEvents || '';
-        }
-    } catch (_) {}
-    if (style.display === 'none' || computedDisplay === 'none') return false;
-    if (style.visibility === 'hidden' || computedVisibility === 'hidden') return false;
-    if (style.pointerEvents === 'none' || computedPointerEvents === 'none') return false;
-    try {
-        if (typeof child.closest === 'function' && child.closest('[inert], [aria-hidden="true"]')) return false;
-    } catch (_) {}
-    return true;
+    return appShellDomSnapshot.isInteractiveElementUsable(child);
 }
 
 function childInteractiveStateForSpec(el, spec) {
-    if (!el || !spec || typeof el.querySelectorAll !== 'function') return { total: 0, usable: 0 };
-    let children = [];
-    try {
-        children = Array.from(el.querySelectorAll(spec.selector) || []);
-    } catch (_) {
-        children = [];
-    }
-    if (children.length <= 0 && typeof el.innerHTML === 'string' && el.innerHTML) {
-        let total = 0;
-        let usableFromHtml = 0;
-        (spec.actions || []).forEach(action => {
-            const escaped = String(action).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const re = new RegExp("<[^>]+data-action=[\"']" + escaped + "[\"'][^>]*>", 'g');
-            const matches = el.innerHTML.match(re) || [];
-            total += matches.length;
-            usableFromHtml += matches.filter(tag => !/\sdisabled(?:\s|=|>|$)/i.test(tag)).length;
-        });
-        return { total, usable: usableFromHtml };
-    }
-    let usable = 0;
-    children.forEach(child => {
-        if (isInteractiveChildUsable(child)) usable++;
-    });
-    return { total: children.length, usable };
+    return appShellDomSnapshot.interactiveStateForSpec(el, spec);
 }
 
 function childInteractiveStateForActions(el, actions) {
-    const expected = new Set(actions || []);
-    if (!expected.size) return { total: 0, usable: 0 };
-    return childInteractiveStateForSpec(el, {
-        actions: Array.from(expected),
-        selector: Array.from(expected).map(action => '[data-action="' + String(action) + '"]').join(', '),
-    });
+    return appShellDomSnapshot.interactiveStateForActions(el, actions);
 }
 
 function compactActionChildStates(snapshot) {
@@ -235,46 +156,11 @@ function compactActionChildStates(snapshot) {
 }
 
 function safeElementSnapshot(id) {
-    const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
-    if (!el) return null;
-    let computedPointerEvents = '';
-    let computedDisplay = '';
-    let computedVisibility = '';
-    try {
-        if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
-            const style = window.getComputedStyle(el);
-            computedPointerEvents = style && style.pointerEvents || '';
-            computedDisplay = style && style.display || '';
-            computedVisibility = style && style.visibility || '';
-        }
-    } catch (_) {}
-    const ancestorBlocked = elementHasBlockingAncestor(id, el);
-    const childState = childInteractiveState(el);
-    return {
-        id,
-        display: el.style ? el.style.display || '' : '',
-        computedDisplay,
-        visibility: el.style ? el.style.visibility || '' : '',
-        computedVisibility,
-        pointerEvents: el.style ? el.style.pointerEvents || '' : '',
-        computedPointerEvents,
-        disabled: !!el.disabled,
-        hidden: !!el.hidden,
-        inert: !!el.inert,
-        ancestorBlocked,
-        ariaHidden: typeof el.getAttribute === 'function' ? el.getAttribute('aria-hidden') : null,
-        className: el.className || '',
-        htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
-        totalInteractiveChildren: childState.total,
-        usableInteractiveChildren: childState.usable,
-        text: typeof el.textContent === 'string' ? truncateClientErrorField(el.textContent, 120) : '',
-    };
+    return appShellDomSnapshot.snapshotById(id);
 }
 
 function visibleElement(id) {
-    const snapshot = safeElementSnapshot(id);
-    if (!snapshot) return false;
-    return snapshot.display !== 'none' && snapshot.computedDisplay !== 'none' && snapshot.visibility !== 'hidden' && snapshot.computedVisibility !== 'hidden' && !snapshot.hidden;
+    return appShellDomSnapshot.isVisibleById(id);
 }
 
 function visibleModalIds() {

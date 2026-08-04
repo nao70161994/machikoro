@@ -107,6 +107,7 @@ interface Window {
     AutoSkipPolicy: unknown;
     UiTurnAnnouncer: unknown;
     UiWatchdog: unknown;
+    UiDomSnapshot: unknown;
     CrashScreen: unknown;
     UiWinner: unknown;
     UiWinnerEffects: unknown;

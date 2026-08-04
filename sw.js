@@ -145,6 +145,7 @@ const STATIC_ASSETS = [
   '/js/lifecycleTransport.js',
   '/js/clientEventRuntime.js',
   '/js/uiWatchdog.js',
+  '/js/uiDomSnapshot.js',
   '/js/uiWatchdogMonitor.js',
   '/js/uiWatchdogReporting.js',
   '/js/clientRuntimeSnapshot.js',
