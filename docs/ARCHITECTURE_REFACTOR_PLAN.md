@@ -668,3 +668,11 @@ Scoped gates now cover 214 ESLint maintenance files and 213 checkJs runtime file
 4. Full `nextTurn` airport/IT orchestration remains deferred until a plan can preserve the existing Airport effect/log before IT-card read boundary.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. No rule, CPU tuning, protocol/schema, persistence, event ordering, UI, or PWA behavior changed.
+
+## 2026-08-04 Batch 46 boundary update
+
+1. Purple-card target availability now belongs to the pending-resolution policy, with current-player-first and player/card short-circuit order directly fixed by contracts.
+2. Expert four-player normal-plan selection now belongs to the pure CPU evaluator; runtime feature lookup remains an adapter and fixed-decision/self-play parity proves unchanged strength.
+3. Active-game previous-player display state now has one immutable-snapshot controller owner; view and DOM effects remain separate and preserve their existing order.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU tuning/choices, authority, protocol/schema, persistence, UI presentation, and PWA defaults are unchanged.

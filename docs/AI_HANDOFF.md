@@ -701,3 +701,11 @@ Test index:
 - App-shell binding state belongs to `ClientEventRuntime.createBindingController()` and its frozen keys. Mark a binding only after its existing effect succeeds; repeated online-status binding calls must still refresh the current status.
 - Do not combine Airport and IT Startup `nextTurn` facts into a pre-effect plan: legacy order awards/logs Airport income before reading the active IT card. Introduce an explicit staged plan if this boundary is revisited.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+## Batch 46 handoff (2026-08-04)
+
+- Business-exchange and Cleaning Company target-availability traversal belongs to `GamePendingResolutionPolicy`. Preserve current-player-first and nested player/card short-circuit order; `GameManager` retains mutation, logs, pending queue, card identity, and dormancy behavior.
+- Expert four-player normal-plan admission belongs to `CPUEvaluation.expertCrowdNormalPlan()`. Preserve the exact `remaining > 1 || stableIncome < 10` thresholds and fact order, and require fixed-decision plus 2–10-player self-play parity for changes.
+- Previous-player index for active-game turn presentation belongs to `UiGameStatusEffects.createTurnStateController()`. Keep controller initialization lazy for partial UI runtimes; `ui.js` remains responsible for view construction, DOM effects, and reset orchestration.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

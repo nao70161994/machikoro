@@ -467,3 +467,12 @@ No game rule, CPU strength, save/localStorage format, Action/Snapshot schema, So
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No CPU heuristic or decision, game rule, save/localStorage format, Socket.IO protocol, reconnect authority/timing, listener order, UI rendering behavior, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 46 architecture boundaries
+
+- `GamePendingResolutionPolicy.hasBusinessExchange()` and `hasCleaningTarget()` now own the pure, short-circuiting target-availability traversal used by purple-card admission. `GameManager` remains the domain-object adapter and retains activation order, pending mutation, exact logs, card identity, and dormancy semantics.
+- `CPUEvaluation.expertCrowdNormalPlan()` now owns the expert four-player normal-leaning predicate. `CPU.js` retains current-player, remaining-landmark, and stable-income feature adaptation; fact order, every threshold, fixed decisions, and the complete 2–10-player self-play baseline are unchanged.
+- `UiGameStatusEffects.createTurnStateController()` now owns the previous-player index used for turn-announcer admission. `ui.js` retains active-game view construction, DOM/effect execution, reset timing, and browser-global APIs. Lazy controller creation preserves partial UI runtimes.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/decision, save/localStorage format, Socket.IO protocol, reconnect authority/timing, UI rendering order, or PWA/SW behavior changed.
