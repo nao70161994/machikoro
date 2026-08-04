@@ -178,6 +178,7 @@ const TEST_GROUPS = {
         'delayed-human-action-policy.test.js',
         'page-activation-runtime.test.js',
         'cpu-scheduler-state.test.js',
+        'cpu-turn-scheduler-runtime.test.js',
         'cpu-turn-strategy.test.js',
         'local-action-policy.test.js',
         'ui-event-delegation.test.js',

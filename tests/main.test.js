@@ -439,6 +439,8 @@ function loadMainRuntime(options = {}) {
     const cpuTuningSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuTuning.js'), 'utf8');
     vm.runInContext(cpuTuningSource, context, { filename: 'js/cpuTuning.js' });
     vm.runInContext(cpuSchedulerStateSource, context, { filename: 'js/cpuSchedulerState.js' });
+    const cpuTurnSchedulerRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuTurnSchedulerRuntime.js'), 'utf8');
+    vm.runInContext(cpuTurnSchedulerRuntimeSource, context, { filename: 'js/cpuTurnSchedulerRuntime.js' });
     vm.runInContext(cpuTurnStrategySource, context, { filename: 'js/cpuTurnStrategy.js' });
     vm.runInContext(localActionPolicySource, context, { filename: 'js/localActionPolicy.js' });
     const uiEventDelegationSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiEventDelegation.js'), 'utf8');
@@ -549,7 +551,9 @@ runTest('CPU scheduler runtime stateはcontrollerだけが所有する', () => {
         assert.ok(!source.includes('let cpuStepScheduledUntil'));
         assert.ok(!source.includes('let cpuPendingStepToken'));
     }
-    assert.ok(mainSource.includes('CpuSchedulerState.createController()'));
+    const schedulerRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuTurnSchedulerRuntime.js'), 'utf8');
+    assert.ok(mainSource.includes('CpuTurnSchedulerRuntime.createRuntime'));
+    assert.ok(schedulerRuntimeSource.includes('policy.createController()'));
     assert.ok(mainSource.includes('function invalidateCpuScheduleChain()'));
     assert.ok(onlineSource.includes('invalidateCpuSchedule: () => typeof invalidateCpuScheduleChain'));
     assert.ok(onlineSource.includes('onlineClientEffects.invalidateCpuSchedule()'));
@@ -2473,7 +2477,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/pageActivationPolicy.js', 'js/main.js');
     assertBefore('js/delayedHumanActionPolicy.js', 'js/pageActivationRuntime.js');
     assertBefore('js/pageActivationRuntime.js', 'js/main.js');
-    assertBefore('js/cpuSchedulerState.js', 'js/main.js');
+    assertBefore('js/cpuSchedulerState.js', 'js/cpuTurnSchedulerRuntime.js');
+    assertBefore('js/cpuTurnSchedulerRuntime.js', 'js/main.js');
     assertBefore('js/cpuTurnStrategy.js', 'js/main.js');
     assertBefore('js/localActionPolicy.js', 'js/main.js');
     assertBefore('js/uiEventDelegation.js', 'js/mainUiEventRuntime.js');

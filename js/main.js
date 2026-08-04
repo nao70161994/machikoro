@@ -39,33 +39,30 @@ UiTutorialSettings.runtime.replace({
 });
 
 // CPU進行チェーン制御
-const cpuSchedulerStateController = CpuSchedulerState.createController();
+const cpuTurnSchedulerRuntime = CpuTurnSchedulerRuntime.createRuntime({
+    checkpoint: (event, details) => markMainCheckpoint(event, details),
+    console: typeof console !== 'undefined' ? console : null,
+    gamePhases: GAME_PHASES,
+    getActionFlightState: () => mainOnlineActionFlightState(),
+    getCpuSpeed: () => gameSetupSnapshot().cpuSpeed,
+    getGameState: mainGameRuntimeSnapshot,
+    getOnlineState: mainOnlineRuntimeSnapshot,
+    getPhaseHandlers: () => CPU_PHASE_HANDLERS,
+    isReconnectBlocked: () => isMainOnlineReconnectInputBlocked(),
+    now: () => Date.now(),
+    policy: CpuSchedulerState,
+    setTimeout: (callback, delay) => setTimeout(callback, delay),
+    unlockHumanTurn(reason) {
+        if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn(reason);
+    },
+});
+const cpuSchedulerStateController = cpuTurnSchedulerRuntime.controller;
 
-function invalidateCpuScheduleChain() {
-    return cpuSchedulerStateController.invalidate().scheduleToken;
-}
-
-function cancelCpuSchedule(reason = 'cpu-schedule-cancel') {
-    const state = cpuSchedulerStateController.cancel();
-    try {
-        if (typeof markMainCheckpoint === 'function') {
-            markMainCheckpoint(reason, { cpuScheduleToken: state.scheduleToken });
-        }
-    } catch (_) {}
-    return state.scheduleToken;
-}
-
-function markCpuStepScheduled(delay, leaseMs = 1500) {
-    return cpuSchedulerStateController.markScheduled(Date.now(), delay, leaseMs).scheduledUntil;
-}
-
-function refreshCpuStepScheduleLease(leaseMs = 1500) {
-    return cpuSchedulerStateController.refreshLease(Date.now(), leaseMs).scheduledUntil;
-}
-
-function isCpuStepScheduledNow() {
-    return cpuSchedulerStateController.isStepScheduled();
-}
+function invalidateCpuScheduleChain() { return cpuTurnSchedulerRuntime.invalidate(); }
+function cancelCpuSchedule(reason = 'cpu-schedule-cancel') { return cpuTurnSchedulerRuntime.cancel(reason); }
+function markCpuStepScheduled(delay, leaseMs = 1500) { return cpuTurnSchedulerRuntime.markScheduled(delay, leaseMs); }
+function refreshCpuStepScheduleLease(leaseMs = 1500) { return cpuTurnSchedulerRuntime.refreshLease(leaseMs); }
+function isCpuStepScheduledNow() { return cpuTurnSchedulerRuntime.isStepScheduled(); }
 
 function escapeAttribute(value) {
     return LocalPlayerSettings.escapeAttribute(value);
@@ -367,17 +364,6 @@ function canRunAction(action) {
     return true;
 }
 
-function queueCPUStep(token, delay, fn) {
-    markCpuStepScheduled(delay);
-    cpuSchedulerStateController.setPendingToken(token);
-    setTimeout(() => {
-        if (!cpuSchedulerStateController.isCurrent(token)) return;
-        cpuSchedulerStateController.clearPendingToken();
-        refreshCpuStepScheduleLease();
-        fn();
-    }, delay);
-}
-
 function chooseCpuPendingAction(cpu) {
     return CPUPendingResolution.choosePendingAction(
         mainGameRuntimeSnapshot().game,
@@ -398,16 +384,6 @@ function chooseCpuTurnAction(stepName, cpu) {
 
 // フェーズごとの CPU ハンドラテーブル。
 // 新フェーズを追加するときはここに1エントリ追加するだけでよい。
-function shouldRunCpuPhaseStep(stepName) {
-    const currentGame = mainGameRuntimeSnapshot().game;
-    return CpuSchedulerState.shouldRunPhaseStep(stepName, {
-        hasGame: !!currentGame,
-        phase: currentGame && currentGame.phase,
-        pendingIT: !!(currentGame && currentGame.pendingIT),
-        builtThisTurn: !!(currentGame && currentGame.builtThisTurn),
-    }, GAME_PHASES);
-}
-
 const CPU_PHASE_HANDLERS = [
     {
         name: "roll",
@@ -533,153 +509,11 @@ function mainOnlineActionFlightState() {
     };
 }
 
-function cpuScheduleBlockedReason() {
-    const onlineState = mainOnlineRuntimeSnapshot();
-    const online = onlineState.isOnlineGame;
-    const transportReason = CpuSchedulerState.blockedReason({
-        isReplaying: onlineState.isReplaying,
-        isOnlineGame: online,
-        isRoomHost: onlineState.isRoomHost,
-        isReconnecting: online ? isMainOnlineReconnectInputBlocked() : false,
-        onlineActionInFlight: online && mainOnlineActionFlightState().inFlight,
-        socketConnected: !online || (!!onlineState.socket && onlineState.socket.connected !== false),
-        hasGame: true,
-        isCpuTurn: true,
-    });
-    if (transportReason) return transportReason;
-    const gameState = mainGameRuntimeSnapshot();
-    const currentGame = gameState.game;
-    const currentPlayerIndex = currentGame ? currentGame.currentPlayerIndex : null;
-    return CpuSchedulerState.blockedReason({
-        hasGame: !!currentGame,
-        hasWinner: !!(currentGame && currentGame.checkWinner && currentGame.checkWinner()),
-        isCpuTurn: !!(currentGame && Array.isArray(gameState.cpuPlayers) && gameState.cpuPlayers[currentPlayerIndex]),
-    });
-}
-
-function currentCpuTurnSchedulerHealth() {
-    const blockedReason = cpuScheduleBlockedReason();
-    const gameState = mainGameRuntimeSnapshot();
-    const currentGame = gameState.game;
-    const currentPlayerIndex = currentGame ? currentGame.currentPlayerIndex : null;
-    const schedulerState = cpuSchedulerStateController.snapshot();
-    return CpuSchedulerState.buildHealth({
-        scheduleToken: schedulerState.scheduleToken,
-        pendingToken: schedulerState.pendingToken,
-        scheduledUntil: schedulerState.scheduledUntil,
-        now: Date.now(),
-        isCpuTurn: !!(currentGame && Array.isArray(gameState.cpuPlayers) && gameState.cpuPlayers[currentPlayerIndex]),
-        currentPlayerIndex,
-        blockedReason,
-    });
-}
-
-function scheduleCpuTurn(reason = 'scheduleCPU') {
-    const onlineState = mainOnlineRuntimeSnapshot();
-    const gameState = mainGameRuntimeSnapshot();
-    const currentGame = gameState.game;
-    markMainCheckpoint('scheduleCPU-enter', {
-        reason,
-        isReplaying: onlineState.isReplaying,
-        isOnlineGame: onlineState.isOnlineGame,
-        isRoomHost: onlineState.isRoomHost,
-    });
-    if (onlineState.isReplaying) { markMainCheckpoint('scheduleCPU-skip-replaying'); return currentCpuTurnSchedulerHealth(); }
-    if (onlineState.isOnlineGame && !onlineState.isRoomHost) { markMainCheckpoint('scheduleCPU-skip-non-host'); return currentCpuTurnSchedulerHealth(); }
-    if (onlineState.isOnlineGame && (
-        isMainOnlineReconnectInputBlocked() ||
-        mainOnlineActionFlightState().inFlight ||
-        (!onlineState.socket || onlineState.socket.connected === false)
-    )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: mainOnlineActionFlightState().inFlight }); return currentCpuTurnSchedulerHealth(); }
-    if (!currentGame || currentGame.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return currentCpuTurnSchedulerHealth(); }
-    const ci = currentGame.currentPlayerIndex;
-    if (!gameState.cpuPlayers[ci]) {
-        markMainCheckpoint('scheduleCPU-skip-human-turn', { currentPlayerIndex: ci });
-        if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn('scheduleCPU-human-turn-unlock');
-        return currentCpuTurnSchedulerHealth();
-    }
-    const cpu = gameState.cpuPlayers[ci];
-    const token = invalidateCpuScheduleChain();
-    let stepIndex = 0;
-
-    function runNextStep() {
-        const currentToken = cpuSchedulerStateController.snapshot().scheduleToken;
-        markMainCheckpoint('scheduleCPU-step-enter', { token, stepIndex, currentToken });
-        if (!cpuSchedulerStateController.isCurrent(token)) {
-            markMainCheckpoint('scheduleCPU-step-stale', { token, currentToken });
-            return;
-        }
-        if (stepIndex >= CPU_PHASE_HANDLERS.length) {
-            queueCPUStep(token, 500, () => {
-                const latestGame = mainGameRuntimeSnapshot().game;
-                if (latestGame && !latestGame.checkWinner()) scheduleCPU();
-            });
-            return;
-        }
-        const step = CPU_PHASE_HANDLERS[stepIndex++];
-        if (!shouldRunCpuPhaseStep(step.name)) {
-            const latestGame = mainGameRuntimeSnapshot().game;
-            markMainCheckpoint('scheduleCPU-step-skip-phase', {
-                step: step.name,
-                phase: latestGame && latestGame.phase || '',
-                pendingIT: !!(latestGame && latestGame.pendingIT),
-            });
-            runNextStep();
-            return;
-        }
-        queueCPUStep(token, gameSetupSnapshot().cpuSpeed, () => {
-            const stepOnlineState = mainOnlineRuntimeSnapshot();
-            if (stepOnlineState.isReplaying) return;
-            if (stepOnlineState.isOnlineGame && !stepOnlineState.isRoomHost) return;
-            if (stepOnlineState.isOnlineGame && (
-                isMainOnlineReconnectInputBlocked() ||
-                mainOnlineActionFlightState().inFlight ||
-                (!stepOnlineState.socket || stepOnlineState.socket.connected === false)
-            )) return;
-            const stepGameState = mainGameRuntimeSnapshot();
-            const stepGame = stepGameState.game;
-            if (!stepGame || stepGame.checkWinner()) return;
-            if (!stepGameState.cpuPlayers[stepGame.currentPlayerIndex]) return;
-            markMainCheckpoint('scheduleCPU-step-run', { step: step.name });
-            let stepResult;
-            try {
-                stepResult = step.run(cpu);
-            } catch (error) {
-                console.error('[cpu] phase step failed:', step.name, error);
-                markMainCheckpoint('scheduleCPU-step-error', { step: step.name, message: error && error.message || String(error) });
-                if (mainOnlineRuntimeSnapshot().isOnlineGame) return;
-                if (step.name === 'build' && stepGame.phase === GAME_PHASES.BUILD && !stepGame.builtThisTurn) {
-                    stepGame.nextTurn();
-                }
-                runNextStep();
-                return;
-            }
-            markMainCheckpoint('scheduleCPU-step-result', { step: step.name, stepResult });
-            if (stepResult === false) return;
-            runNextStep();
-        });
-    }
-
-    runNextStep();
-    return currentCpuTurnSchedulerHealth();
-}
-
-const cpuTurnScheduler = Object.freeze({
-    schedule(reason = 'cpu-turn-scheduler-schedule') {
-        return scheduleCpuTurn(reason);
-    },
-    cancel(reason = 'cpu-turn-scheduler-cancel') {
-        cancelCpuSchedule(reason);
-        return currentCpuTurnSchedulerHealth();
-    },
-    getHealth() {
-        return currentCpuTurnSchedulerHealth();
-    },
-});
-
-function scheduleCPU() {
-    return cpuTurnScheduler.schedule('scheduleCPU');
-}
+function cpuScheduleBlockedReason() { return cpuTurnSchedulerRuntime.blockedReason(); }
+function currentCpuTurnSchedulerHealth() { return cpuTurnSchedulerRuntime.health(); }
+function scheduleCpuTurn(reason = 'scheduleCPU') { return cpuTurnSchedulerRuntime.schedule(reason); }
+const cpuTurnScheduler = cpuTurnSchedulerRuntime.facade;
+function scheduleCPU() { return cpuTurnScheduler.schedule('scheduleCPU'); }
 
 const pageActivationRuntime = PageActivationRuntime.createRuntime({
     canRunHumanAction: (action, playerIndex) => canRunHumanAction(action, playerIndex),
