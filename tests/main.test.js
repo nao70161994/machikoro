@@ -411,6 +411,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(gameRuntimeStateSource, context, { filename: 'js/gameRuntimeState.js' });
     const uiTutorialSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTutorialSettings.js'), 'utf8');
     vm.runInContext(uiTutorialSettingsSource, context, { filename: 'js/uiTutorialSettings.js' });
+    const uiWinnerSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWinner.js'), 'utf8');
+    vm.runInContext(uiWinnerSource, context, { filename: 'js/uiWinner.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
     vm.runInContext(mainSource, context, { filename: 'js/main.js' });
     vm.runInContext(`
@@ -461,6 +463,12 @@ function loadMainRuntime(options = {}) {
     context.__test.elements = elements;
     return context;
 }
+
+runTest('winner streak globalsはUiWinner controllerだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    assert.strictEqual(/^let winStreak\b/m.test(source), false);
+    assert.strictEqual(/^let lastWinnerName\b/m.test(source), false);
+});
 
 runTest('tutorial globalsはUiTutorialSettings runtimeだけが所有する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');

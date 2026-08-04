@@ -49,3 +49,29 @@ runTest('ui winnerは不正inputを空HTMLへfail closedにする', () => {
     assert.strictEqual(UiWinner.buildWinnerScreenHtml(), '');
     assert.strictEqual(UiWinner.buildWinnerStatsRows(null, null, escapeHtml), '');
 });
+
+runTest('ui winner streak controllerは同一勝者を加算し別勝者でresetする', () => {
+    const controller = UiWinner.createStreakController({
+        winStreak: 2,
+        lastWinnerName: 'Alice',
+    });
+    const continued = controller.recordWinner('Alice');
+    assert.deepStrictEqual(continued, { winStreak: 3, lastWinnerName: 'Alice' });
+    assert.ok(Object.isFrozen(continued));
+    assert.deepStrictEqual(controller.recordWinner('Bob'), {
+        winStreak: 1,
+        lastWinnerName: 'Bob',
+    });
+});
+
+runTest('ui winner streak compatibility globalsは既存値を保持してcontrollerへ投影する', () => {
+    const root = { winStreak: 4, lastWinnerName: 'Alice' };
+    const controller = UiWinner.createStreakController(root);
+    assert.strictEqual(controller.bindGlobals(root), true);
+    assert.strictEqual(root.winStreak, 4);
+    assert.strictEqual(root.lastWinnerName, 'Alice');
+    root.winStreak = 5;
+    controller.replace({ lastWinnerName: 'Bob' });
+    assert.deepStrictEqual(controller.snapshot(), { winStreak: 5, lastWinnerName: 'Bob' });
+    assert.strictEqual(Object.keys(root).includes('winStreak'), false);
+});

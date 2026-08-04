@@ -12,8 +12,10 @@ function safeMainStorageRemove(key) {
 }
 
 // 連勝記録
-let winStreak = parseInt(safeMainStorageGet('winStreak', '0') || '0');
-let lastWinnerName = safeMainStorageGet('lastWinnerName', '') || '';
+UiWinner.streakRuntime.replace({
+    winStreak: parseInt(safeMainStorageGet('winStreak', '0') || '0'),
+    lastWinnerName: safeMainStorageGet('lastWinnerName', '') || '',
+});
 
 // オートスキップ
 const autoSkipScheduleController = AutoSkipPolicy.createScheduleController();

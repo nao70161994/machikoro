@@ -176,11 +176,11 @@ function clearOnlineSessionAfterWin() {
 function renderWinnerState(winner) {
     const winnerIdx = game.players.indexOf(winner);
     const isCPUWinner = !!currentCpuPlayerAt(winnerIdx);
+    let streakState = UiWinner.streakRuntime.snapshot();
     if (!winSoundPlayed) {
-        if (winner.name === lastWinnerName) winStreak++;
-        else { winStreak = 1; lastWinnerName = winner.name; }
-        safeUiStorageSet('winStreak', winStreak);
-        safeUiStorageSet('lastWinnerName', lastWinnerName);
+        streakState = UiWinner.streakRuntime.recordWinner(winner.name);
+        safeUiStorageSet('winStreak', streakState.winStreak);
+        safeUiStorageSet('lastWinnerName', streakState.lastWinnerName);
     }
     let resultAdSlot = '';
     try {
@@ -193,7 +193,7 @@ function renderWinnerState(winner) {
         players: game.players,
         isCpuWinner: isCPUWinner,
         turnCount: game.turnCount,
-        winStreak,
+        winStreak: streakState.winStreak,
         resultAdSlot,
         escapeHtml,
     });
