@@ -152,6 +152,7 @@ const STATIC_ASSETS = [
   '/js/uiDomSnapshot.js',
   '/js/uiRecoveryEffects.js',
   '/js/uiWatchdogAsyncRecovery.js',
+  '/js/uiWatchdogRecoveryRuntime.js',
   '/js/appShellRuntimeEffects.js',
   '/js/appShellObservationRuntime.js',
   '/js/uiWatchdogMonitor.js',

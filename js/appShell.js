@@ -708,266 +708,52 @@ function classifyUiInteractabilityCause(issue, snapshot) {
     return UiWatchdog.classifyInteractabilityCause(issue, snapshot);
 }
 
-function syncAllowedActionContainersForRender(snapshot, issues = null) {
-    const activeBlockingModal = hasActiveBlockingModal(snapshot);
-    if (!UiWatchdog.canRecoverActionContainers(snapshot, activeBlockingModal)) return false;
-    const entries = expectedActionContainerEntries(snapshot).map(entry => ({
-        action: entry.action,
-        spec: entry.spec,
-        usable: isActionContainerUiUsable(snapshot, entry),
-    }));
-    const plan = UiWatchdog.actionContainerRecoveryPlan(snapshot, {
-        activeBlockingModal,
-        issues,
-        entries,
-    });
-    let changed = false;
-    for (const entry of plan) {
-        changed = clearActionContainerForRecovery(entry.spec) || changed;
-        changed = clearExpectedActionChildrenForRecovery(snapshot, entry) || changed;
-        if (entry.action === 'undoBuild') changed = ensurePostBuildUndoButtonForRecovery(snapshot) || changed;
-    }
-    return changed;
-}
-
-function syncUiInteractabilityAfterRender(reason = 'render-sync') {
-    const before = buildClientRuntimeSnapshot(reason);
-    const planInput = {
-        activeBlockingModal: hasActiveBlockingModal(before),
-        humanFreezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED,
-    };
-    const eligibility = UiWatchdog.renderInteractabilitySyncPlan(before, planInput);
-    if (!eligibility.eligible) return false;
-    const plan = UiWatchdog.renderInteractabilitySyncPlan(before, {
-        ...planInput,
-        issues: validateUiInteractability(before),
-    });
-    if (!plan.shouldSync) return false;
-    const issues = plan.issues;
-    let changed = clearGameScreenLockIfNoActiveModal(before, reason + '-game-screen');
-    changed = syncAllowedActionContainersForRender(before, issues) || changed;
-    changed = clearUiInteractabilityIssueTargets(issues) || changed;
-    const after = buildClientRuntimeSnapshot(reason + '-after');
-    markClientFlowCheckpoint('ui-render-interactability-sync', {
-        reason,
-        changed,
-        rootCauses: issues.map(issue => classifyUiInteractabilityCause(issue, before)),
-        issues: issues.map(compactIssueForTrace),
-        before: compactSnapshotForUiTrace(before),
-        after: compactSnapshotForUiTrace(after),
-    });
-    return changed;
-}
-
-function recoverPostBuildUiFreeze(snapshot) {
-    if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn) return false;
-    if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    clearUiLocks('freeze-watchdog-post-build-unlock', snapshot);
-    try {
-        appShellRuntimeEffects.render();
-    } catch (_) {}
-    try {
-        appShellRuntimeEffects.renderBuildMenu();
-    } catch (_) {}
-    let afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-render');
-    let issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
-    recoverAllowedActionContainers(afterRender, issues);
-    ensurePostBuildUndoButtonForRecovery(afterRender);
-    clearUiLocks('freeze-watchdog-post-build-after-render-unlock', afterRender);
-    try {
-        appShellRuntimeEffects.renderBuildMenu();
-    } catch (_) {}
-    afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-second-render');
-    issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
-    recoverAllowedActionContainers(afterRender, issues);
-    ensurePostBuildUndoButtonForRecovery(afterRender);
-    const afterRecovery = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-recovery');
-    const recovered = classifyLikelyFreeze(afterRecovery) !== FREEZE_KINDS.POST_BUILD_UI_BLOCKED;
-    if (recovered) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.POST_BUILD_UI_BLOCKED });
-    return recovered;
-}
-
-function ensurePostBuildUndoButtonForRecovery(snapshot) {
-    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
-    if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn || !allowed.includes('undoBuild')) return false;
-    try {
-        if (!appShellGameRuntimeSnapshot().undoState) return false;
-    } catch (_) {
-        return false;
-    }
-    const ensured = appShellRecoveryEffects.ensureHtmlChildren(
-        'buildMenu',
-        '[data-action="undoBuild"]',
-        '<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>',
-        /data-action=["']undoBuild["']/
-    );
-    let changed = ensured.changed;
-    ensured.elements.forEach(child => {
-        changed = appShellRecoveryEffects.releaseInteractionLock(child, { enable: true }) || changed;
-    });
-    if (changed) markClientFlowCheckpoint('post-build-undo-button-recovered', { action: 'undoBuild' });
-    return changed;
-}
-
-function clearActionContainerForRecovery(spec) {
-    if (!spec || !spec.targetId) return false;
-    let changed = false;
-    [spec.modalId, spec.targetId].filter(Boolean).forEach(id => {
-        changed = appShellRecoveryEffects.releaseInteractionLockById(id, {
-            enable: id === spec.targetId,
-            displayValue: id === 'diceChoose' ? 'block' : '',
-            pointerEventsValue: id === 'pendingMenu' ? 'auto' : '',
-        }) || changed;
-    });
-    return changed;
-}
-
-function clearExpectedActionChildrenForRecovery(snapshot, entry) {
-    const spec = entry && entry.spec;
-    const childSpec = expectedChildSpecForEntry(snapshot, entry);
-    if (!spec || !childSpec || !spec.targetId) return false;
-    let changed = false;
-    appShellRecoveryEffects.queryAll(spec.targetId, childSpec.selector).forEach(child => {
-        changed = appShellRecoveryEffects.releaseInteractionLock(child, { enable: true }) || changed;
-    });
-    return changed;
-}
-
-function recoverAllowedActionContainers(snapshot, issues = null) {
-    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    if (hasActiveBlockingModal(snapshot) && !expectedPendingActions(snapshot).length) return false;
-    const issueActions = new Set((issues || [])
-        .filter(issue => issue && issue.kind === 'allowed-action-container-not-clickable' && issue.action)
-        .map(issue => issue.action));
-    let changed = false;
-    for (const entry of expectedActionContainerEntries(snapshot)) {
-        if (issueActions.size && !issueActions.has(entry.action)) continue;
-        if (isActionContainerUiUsable(snapshot, entry)) continue;
-        changed = clearActionContainerForRecovery(entry.spec) || changed;
-        changed = clearExpectedActionChildrenForRecovery(snapshot, entry) || changed;
-        if (entry.action === 'undoBuild') changed = ensurePostBuildUndoButtonForRecovery(snapshot) || changed;
-    }
-    return changed || issueActions.size > 0;
-}
-
-function recoverPendingUiLock(snapshot) {
-    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    const issues = validateUiInteractability(snapshot).filter(issue => issue.action && issue.action.startsWith('resolve'));
-    const changed = recoverAllowedActionContainers(snapshot, issues);
-    try {
-        appShellRuntimeEffects.render();
-    } catch (_) {}
-    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.PENDING_UI_LOCKED, issues });
-    return changed;
-}
-
-function clearUiInteractabilityIssueTargets(issues) {
-    let changed = false;
-    (issues || []).forEach(issue => {
-        if (!issue || !issue.target || issue.target === 'body') return;
-        changed = appShellRecoveryEffects.releaseInteractionLockById(issue.target, {
-            enable: issue.reason === 'disabled-mismatch',
-            forceDisplay: issue.target !== 'gameScreen' && issue.reason === 'parent-display-none',
-            restoreDisplay: issue.target !== 'gameScreen',
-        }) || changed;
-    });
-    return changed;
-}
-
-function recoverHumanUiLock(snapshot) {
-    if (!snapshot || !isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    if (hasActiveBlockingModal(snapshot) && !expectedPendingActions(snapshot).length) return false;
-    const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
-    const changed = recoverAllowedActionContainers(snapshot, issues) || clearUiInteractabilityIssueTargets(issues);
-    clearUiLocks('freeze-watchdog-human-turn-unlock', snapshot);
-    try {
-        appShellRuntimeEffects.render();
-    } catch (_) {}
-    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED, issues });
-    return changed || issues.length > 0;
-}
-
-function recoverModalUiLock(snapshot) {
-    const issues = validateUiInteractability(snapshot).filter(issue => issue.freezeKind === FREEZE_KINDS.MODAL_UI_LOCKED);
-    if (!issues.length) return false;
-    let changed = false;
-    issues.forEach(issue => {
-        changed = appShellRecoveryEffects.releaseInteractionLockById(issue.target, {
-            reveal: false,
-            clearAriaHidden: false,
-            restoreDisplay: false,
-            pointerEventsValue: 'auto',
-        }) || changed;
-    });
-    if (changed) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED, issues });
-    return changed;
-}
-
-function recoverStaleModalUiLock(snapshot) {
-    const closed = closeStaleBlockingModals(snapshot, 'freeze-watchdog-stale-modal');
-    if (!closed) return false;
-    clearUiLocks('freeze-watchdog-stale-modal-unlock', snapshot);
-    try {
-        appShellRuntimeEffects.render();
-    } catch (_) {}
-    markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.STALE_MODAL_UI_LOCKED });
-    return true;
-}
-
 const appShellAsyncRecovery = UiWatchdogAsyncRecovery.createRuntime({
     buildSnapshot: buildClientRuntimeSnapshot,
     checkpoint: markClientFlowCheckpoint,
     compactSnapshot: compactSnapshotForUiTrace,
     runtimeEffects: appShellRuntimeEffects,
 });
+const appShellRecoveryRuntime = UiWatchdogRecoveryRuntime.createRuntime({
+    appShellAsyncRecovery,
+    appShellGameRuntimeSnapshot,
+    appShellRecoveryEffects,
+    appShellRuntimeEffects,
+    buildClientRuntimeSnapshot,
+    classifyLikelyFreeze,
+    classifyUiInteractabilityCause,
+    clearGameScreenLockIfNoActiveModal,
+    clearUiLocks,
+    closeStaleBlockingModals,
+    compactIssueForTrace,
+    compactSnapshotForUiTrace,
+    expectedActionContainerEntries,
+    expectedChildSpecForEntry,
+    expectedPendingActions,
+    freezeKinds: FREEZE_KINDS,
+    hasActiveBlockingModal,
+    isActionContainerUiUsable,
+    isHumanTurnSnapshot,
+    isOnlineUiBlockedSnapshot,
+    markClientFlowCheckpoint,
+    recentClientCheckpointsForTrace,
+    uiWatchdog: UiWatchdog,
+    validateUiInteractability,
+});
 
-function recoverCpuTurnStall(snapshot) {
-    return appShellAsyncRecovery.recoverCpuTurnStall(snapshot);
-}
+const syncAllowedActionContainersForRender = appShellRecoveryRuntime.syncAllowedActionContainersForRender;
+const clearUiInteractabilityIssueTargets = appShellRecoveryRuntime.clearUiInteractabilityIssueTargets;
 
-function recoverOnlineActionInFlightStall(snapshot) {
-    return appShellAsyncRecovery.recoverOnlineActionInFlightStall(snapshot);
-}
-
-function freezeRecoveryHandlers() {
-    return {
-        [FREEZE_KINDS.POST_BUILD_UI_BLOCKED]: recoverPostBuildUiFreeze,
-        [FREEZE_KINDS.HUMAN_TURN_UI_LOCKED]: recoverHumanUiLock,
-        [FREEZE_KINDS.PENDING_UI_LOCKED]: recoverPendingUiLock,
-        [FREEZE_KINDS.STALE_MODAL_UI_LOCKED]: recoverStaleModalUiLock,
-        [FREEZE_KINDS.CPU_TURN_STALLED]: recoverCpuTurnStall,
-        [FREEZE_KINDS.ONLINE_ACTION_IN_FLIGHT_STALLED]: recoverOnlineActionInFlightStall,
-        [FREEZE_KINDS.MODAL_UI_LOCKED]: recoverModalUiLock,
-    };
-}
-
-function recoverFreezeKind(freezeKind, snapshot) {
-    const handler = UiWatchdog.selectRecoveryHandler(
-        freezeKind,
-        freezeRecoveryHandlers(),
-        FREEZE_KINDS
-    );
-    return handler ? handler(snapshot) : false;
+function syncUiInteractabilityAfterRender(reason = 'render-sync') {
+    return appShellRecoveryRuntime.syncUiInteractabilityAfterRender(reason);
 }
 
 function recoverUiInteractability(snapshot) {
-    const before = snapshot || buildClientRuntimeSnapshot('ui-recovery-before');
-    const freezeKind = classifyLikelyFreeze(before);
-    if (!freezeKind) return false;
-    const issues = validateUiInteractability(before).filter(issue => issue && issue.freezeKind);
-    const recovered = recoverFreezeKind(freezeKind, before);
-    if (recovered) {
-        const after = buildClientRuntimeSnapshot('ui-recovery-after');
-        markClientFlowCheckpoint('ui-interactability-recovery-fired', {
-            freezeKind,
-            rootCauses: issues.map(issue => classifyUiInteractabilityCause(issue, before)),
-            issues: issues.map(compactIssueForTrace),
-            before: compactSnapshotForUiTrace(before),
-            after: compactSnapshotForUiTrace(after),
-            recentCheckpoints: recentClientCheckpointsForTrace(),
-        });
-    }
-    return recovered;
+    return appShellRecoveryRuntime.recoverUiInteractability(snapshot);
+}
+
+function recoverFreezeKind(freezeKind, snapshot) {
+    return appShellRecoveryRuntime.recoverFreezeKind(freezeKind, snapshot);
 }
 
 function freezeIssueDedupeSignature(snapshot) {

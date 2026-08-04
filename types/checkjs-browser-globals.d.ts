@@ -113,6 +113,7 @@ interface Window {
     UiDomSnapshot: unknown;
     UiRecoveryEffects: unknown;
     UiWatchdogAsyncRecovery: unknown;
+    UiWatchdogRecoveryRuntime: unknown;
     AppShellRuntimeEffects: unknown;
     AppShellObservationRuntime: unknown;
     CrashScreen: unknown;
