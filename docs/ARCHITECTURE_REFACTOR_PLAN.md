@@ -914,3 +914,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `UiWatchdogRuntime` is the explicit application layer for watchdog classification, monitor decisions, recovery dispatch, diagnostic persistence, and reporting; `UiWatchdog`, `UiWatchdogMonitor`, `UiWatchdogReporting`, and `UiWatchdogRecoveryRuntime` retain their narrower policy/state/effect roles.
 2. Runtime dependencies are injected, including a late resolver for online ACK timeout policy, so classic-script load order and isolated online test assembly remain valid.
 3. `appShell.js` is reduced to browser composition and compatibility callbacks for this flow. Unit, main, integration, PWA, release, lint, and checkJs gates preserve the existing thresholds, report/recovery order, and externally visible behavior.
+
+## 2026-08-05 Batch 80 boundary update
+
+1. `AppShellUiLockRuntime` is the browser application layer for modal and shell-lock recovery, game-reset cleanup, post-build stabilization, and human-turn unlock synchronization. It composes `UiWatchdog` policy with `UiRecoveryEffects`, render effects, monitor state, and captured snapshots.
+2. Cross-script functions `resetUiLocksForGameReset`, `schedulePostBuildUiStabilizer`, and `unlockUiForHumanTurn` remain app-shell compatibility delegates, preserving consumers in main, UI, online, and storage code.
+3. Unit, main, integration, PWA, release, lint, and checkJs gates preserve modal/focus state, timer values, effect ordering, and recovery outcomes without changing gameplay or externally visible contracts.

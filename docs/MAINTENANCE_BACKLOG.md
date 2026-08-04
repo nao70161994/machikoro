@@ -754,3 +754,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `OnlineRetryPolicy` remains late-resolved so production and isolated online runtimes preserve their classic-script load behavior. `appShell.js` retains dependency composition plus the established `classifyLikelyFreeze` and watchdog callback entry points; its size decreased from 855 to 775 lines.
 - Focused contracts fix report/recovery/storage ordering, duplicate-report recovery, timeout resolution, and fail-fast dependencies. Main and integration coverage preserve Safari CPU stall, online ACK stall, pending/modal locks, and report payload behavior. Scoped gates now cover 232 ESLint maintenance files and 231 checkJs runtime files.
 - Rules, CPU decisions/RNG, scheduler thresholds, online ACK/reconnect behavior, protocol, persistence formats, report schema, UI recovery, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 80 app-shell UI lock runtime
+
+- `js/appShellUiLockRuntime.js` now owns modal-state projection, stale confirm/pending cleanup, shell/game-screen lock clearing, game-reset lock cleanup, post-build next-turn stabilization, and human-turn unlock/render synchronization through injected watchdog policy and DOM/runtime effects.
+- `appShell.js` retains classic-script dependency resolution and compatibility entry points used by `main.js`, `ui.js`, `online.js`, and `storage.js`. Its size decreased from 775 to 650 lines; the 280-line UI lock owner is independently linted, type-checked, and unit-tested.
+- Focused tests fix stale-confirm cleanup, the unchanged `[0, 250, 1500, 3500]` post-build schedule, and human-turn render/action-lock ordering. Existing integration coverage preserves pending/modal/accessibility recovery and online/CPU freeze behavior. Scoped gates now cover 233 ESLint maintenance files and 232 checkJs runtime files.
+- UI text, modal/focus semantics, game rules, CPU decisions/RNG, scheduler policy, online protocol/reconnect, persistence, reports, and PWA/SW behavior are unchanged.

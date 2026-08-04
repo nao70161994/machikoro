@@ -972,3 +972,10 @@ Test index:
 - Keep `OnlineRetryPolicy` late-resolved through the runtime dependency because isolated integration runtimes may load online modules after `appShell.js`.
 - `appShell.js` keeps `classifyLikelyFreeze` and `checkFreezeWatchdog` as compatibility callbacks; recovery sequencing belongs to `UiWatchdogRecoveryRuntime`/`UiWatchdogAsyncRecovery`, while report effect ordering remains in `UiWatchdogReporting`.
 - Scoped gates cover 232 ESLint files and 231 checkJs runtimes; `appShell.js` is now 775 lines and remains the browser composition root.
+
+## Batch 80 handoff (2026-08-05)
+
+- Modal snapshot/open/stale decisions, shell-lock clearing, game-reset cleanup, post-build stabilization, and human-turn unlock orchestration belong to `AppShellUiLockRuntime`; keep DOM mutations in `UiRecoveryEffects` and policy predicates in `UiWatchdog`.
+- Preserve the app-shell compatibility delegates `resetUiLocksForGameReset`, `schedulePostBuildUiStabilizer`, and `unlockUiForHumanTurn`; `main.js`, `ui.js`, `online.js`, and `storage.js` resolve them as classic-script globals.
+- Modal close functions and mutable accessibility state remain late-resolved effects because `ui.js` loads after `appShell.js`. Do not capture them during runtime creation.
+- Scoped gates cover 233 ESLint files and 232 checkJs runtimes; `appShell.js` is now 650 lines and remains the browser composition root.
