@@ -359,6 +359,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiWatchdogAsyncRecoverySource, context, { filename: 'js/uiWatchdogAsyncRecovery.js' });
     const uiWatchdogRecoveryRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdogRecoveryRuntime.js'), 'utf8');
     vm.runInContext(uiWatchdogRecoveryRuntimeSource, context, { filename: 'js/uiWatchdogRecoveryRuntime.js' });
+    const appShellUiLockRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellUiLockRuntime.js'), 'utf8');
+    vm.runInContext(appShellUiLockRuntimeSource, context, { filename: 'js/appShellUiLockRuntime.js' });
     const appShellRuntimeEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellRuntimeEffects.js'), 'utf8');
     vm.runInContext(appShellRuntimeEffectsSource, context, { filename: 'js/appShellRuntimeEffects.js' });
     const appShellObservationRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellObservationRuntime.js'), 'utf8');
@@ -2413,6 +2415,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiRecoveryEffects.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogAsyncRecovery.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogRecoveryRuntime.js', 'js/appShell.js');
+    assertBefore('js/appShellUiLockRuntime.js', 'js/appShell.js');
     assertBefore('js/appShellRuntimeEffects.js', 'js/appShell.js');
     assertBefore('js/appShellObservationRuntime.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogMonitor.js', 'js/appShell.js');

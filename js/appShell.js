@@ -190,223 +190,98 @@ function hasUsablePendingAction(snapshot) {
 function isOnlineUiBlockedSnapshot(snapshot) {
     return UiWatchdog.isOnlineUiBlockedSnapshot(snapshot);
 }
-function resetAccessibleModalStateForRecovery() {
-    try { if (typeof activeModalId !== 'undefined') activeModalId = null; } catch (_) {}
-    try { if (typeof lastModalFocus !== 'undefined') lastModalFocus = null; } catch (_) {}
-    try { if (typeof modalInertRestore !== 'undefined') modalInertRestore = []; } catch (_) {}
-}
-
-function resetFreezeWatchdogState(reason = 'watchdog-reset') {
-    freezeWatchdogMonitor.reset();
-    safeAppShellStorageRemove('machikoroFreezeSnapshot');
-    markClientFlowCheckpoint(reason);
-}
-
-function clearShellElementLock(id) {
-    return appShellRecoveryEffects.clearShellLock(id);
-}
-
-function resetUiLocksForGameReset(reason = 'game-reset') {
-    resetAccessibleModalStateForRecovery();
-    try {
-        const root = typeof window !== 'undefined' ? window : globalThis;
-        if (root) root.__machikoroConfirmModalOpen = false;
-    } catch (_) {}
-    ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal']
-        .forEach(id => appShellRecoveryEffects.hide(id));
-    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(clearShellElementLock);
-    appShellRecoveryEffects.removeBodyModalOpen();
-    resetFreezeWatchdogState(reason + '-watchdog');
-    markClientFlowCheckpoint(reason, { recovery: 'game-reset-ui-locks' });
-}
-
-function modalSnapshotFromRuntime(snapshot, id) {
-    if (snapshot && snapshot.ui) {
-        if (id === 'confirmModal') return snapshot.ui.confirmModal;
-        if (id === 'pendingModal') return snapshot.ui.pendingModal;
-    }
-    return safeElementSnapshot(id);
-}
-
-function explicitModalOpenFromSnapshot(snapshot, id) {
-    return UiWatchdog.isExplicitModalOpen(modalSnapshotFromRuntime(snapshot, id));
-}
-
-function confirmModalOpenFromSnapshot(snapshot) {
-    return explicitModalOpenFromSnapshot(snapshot, 'confirmModal');
-}
-
-function isConfirmModalAwaitingUserChoice() {
-    try {
-        const root = typeof window !== 'undefined' ? window : globalThis;
-        return !!(root && root.__machikoroConfirmModalOpen === true);
-    } catch (_) {
-        return false;
-    }
-}
-
-function isStaleConfirmModalSnapshot(snapshot) {
-    return UiWatchdog.isStaleConfirmModalSnapshot(snapshot, {
-        confirmOpen: confirmModalOpenFromSnapshot(snapshot),
-        awaitingChoice: isConfirmModalAwaitingUserChoice(),
-    });
-}
-
-function activeBlockingModalIds(snapshot) {
-    return Array.isArray(snapshot && snapshot.visibleModals)
-        ? snapshot.visibleModals.filter(id => id !== 'pendingModal' && explicitModalOpenFromSnapshot(snapshot, id) && (id !== 'confirmModal' || !isStaleConfirmModalSnapshot(snapshot)))
-        : [];
-}
-
-function hasActiveBlockingModal(snapshot) {
-    return activeBlockingModalIds(snapshot).length > 0;
-}
-
-function isStalePendingModalSnapshot(snapshot) {
-    return UiWatchdog.isStalePendingModalSnapshot(
-        snapshot,
-        explicitModalOpenFromSnapshot(snapshot, 'pendingModal')
-    );
-}
-
-function clearElementModalLock(id) {
-    return appShellRecoveryEffects.clearModalLock(id);
-}
-
-function isActiveGameScreenRecoverySnapshot(snapshot) {
-    return UiWatchdog.isActiveGameScreenRecoverySnapshot(snapshot);
-}
-
-function shouldRestoreGameScreenDisplay(snapshot) {
-    return UiWatchdog.shouldRestoreGameScreenDisplay(snapshot);
-}
-
-function clearGameScreenLockIfNoActiveModal(snapshot, reason = 'game-screen-lock-recovery') {
-    if (hasActiveBlockingModal(snapshot)) return false;
-    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
-    const expected = expectedPrimaryActions(snapshot || {});
-    const expectedPending = expectedPendingActions(snapshot || {});
-    if (!allowed.includes('nextTurn') && !expected.length && !expectedPending.length) return false;
-    let changed = clearElementModalLock('gameScreen');
-    if (shouldRestoreGameScreenDisplay(snapshot)) {
-        changed = appShellRecoveryEffects.restoreDisplay('gameScreen') || changed;
-    }
-    if (changed) markClientFlowCheckpoint(reason, { recovery: 'orphan-game-screen-lock' });
-    return changed;
-}
-
-function forceClearModalLocksForRecovery(snapshot = null) {
-    if (hasActiveBlockingModal(snapshot)) return false;
-    let changed = false;
-    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner'].forEach(id => {
-        changed = clearElementModalLock(id) || changed;
-    });
-    changed = appShellRecoveryEffects.removeBodyModalOpen() || changed;
-    return changed;
-}
-
-function forceClearStaleModalLocksForRecovery() {
-    ['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner']
-        .forEach(id => appShellRecoveryEffects.forceClearModalLock(id));
-    appShellRecoveryEffects.removeBodyModalOpen();
-}
-
-function closeStaleConfirmModal(snapshot, reason = 'stale-confirm-recovery') {
-    if (!isStaleConfirmModalSnapshot(snapshot)) return false;
-    const confirmModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('confirmModal') : null;
-    if (!confirmModal) return false;
-    try {
+const appShellUiLockRuntime = AppShellUiLockRuntime.createRuntime({
+    buildSnapshot: buildClientRuntimeSnapshot,
+    checkpoint: markClientFlowCheckpoint,
+    clearInteractabilityIssueTargets: issues => clearUiInteractabilityIssueTargets(issues),
+    closeConfirmModal() {
         if (typeof closeConfirmModal === 'function') closeConfirmModal(false);
         else if (typeof closeAccessibleModal === 'function') closeAccessibleModal('confirmModal', { restoreFocus: false });
         else appShellRecoveryEffects.hide('confirmModal');
-    } catch (_) {
-        appShellRecoveryEffects.hide('confirmModal');
-    }
-    forceClearStaleModalLocksForRecovery();
-    resetAccessibleModalStateForRecovery();
-    markClientFlowCheckpoint(reason, { modal: 'confirmModal' });
-    return true;
+    },
+    expectedPendingActions,
+    expectedPrimaryActions,
+    freezeKinds: FREEZE_KINDS,
+    getConfirmAwaitingChoice() {
+        try {
+            const root = typeof window !== 'undefined' ? window : globalThis;
+            return !!(root && root.__machikoroConfirmModalOpen === true);
+        } catch (_) {
+            return false;
+        }
+    },
+    getElementById: id => typeof document !== 'undefined' && document.getElementById
+        ? document.getElementById(id) : null,
+    getRoot: () => typeof window !== 'undefined' ? window : globalThis,
+    isHumanTurnSnapshot,
+    isOnlineUiBlockedSnapshot,
+    monitor: freezeWatchdogMonitor,
+    postBuildBatch: postBuildUiStabilizerBatch,
+    recoveryEffects: appShellRecoveryEffects,
+    removeFreezeSnapshot: () => safeAppShellStorageRemove('machikoroFreezeSnapshot'),
+    resetAccessibleModalState() {
+        try { if (typeof activeModalId !== 'undefined') activeModalId = null; } catch (_) {}
+        try { if (typeof lastModalFocus !== 'undefined') lastModalFocus = null; } catch (_) {}
+        try { if (typeof modalInertRestore !== 'undefined') modalInertRestore = []; } catch (_) {}
+    },
+    runtimeEffects: appShellRuntimeEffects,
+    setTimeoutFn: typeof setTimeout === 'function' ? setTimeout : null,
+    snapshotElement: id => safeElementSnapshot(id),
+    syncAllowedActionContainers: (snapshot, issues) => syncAllowedActionContainersForRender(snapshot, issues),
+    uiWatchdog: UiWatchdog,
+    validateInteractability: validateUiInteractability,
+});
+
+function resetUiLocksForGameReset(reason = 'game-reset') {
+    return appShellUiLockRuntime.resetForGame(reason);
+}
+
+function modalSnapshotFromRuntime(snapshot, id) {
+    return appShellUiLockRuntime.modalSnapshot(snapshot, id);
+}
+
+function confirmModalOpenFromSnapshot(snapshot) {
+    return appShellUiLockRuntime.confirmModalOpen(snapshot);
+}
+
+function isConfirmModalAwaitingUserChoice() {
+    return appShellUiLockRuntime.isConfirmAwaitingUserChoice();
+}
+
+function isStaleConfirmModalSnapshot(snapshot) {
+    return appShellUiLockRuntime.isStaleConfirmModal(snapshot);
+}
+
+function activeBlockingModalIds(snapshot) {
+    return appShellUiLockRuntime.activeBlockingModalIds(snapshot);
+}
+
+function hasActiveBlockingModal(snapshot) {
+    return appShellUiLockRuntime.hasActiveBlockingModal(snapshot);
+}
+
+function isStalePendingModalSnapshot(snapshot) {
+    return appShellUiLockRuntime.isStalePendingModal(snapshot);
+}
+
+function clearGameScreenLockIfNoActiveModal(snapshot, reason = 'game-screen-lock-recovery') {
+    return appShellUiLockRuntime.clearGameScreenLock(snapshot, reason);
 }
 
 function closeStaleBlockingModals(snapshot, reason = 'ui-unlock') {
-    let closed = closeStaleConfirmModal(snapshot, reason + '-confirm');
-    const pendingModal = typeof document !== 'undefined' && document.getElementById ? document.getElementById('pendingModal') : null;
-    if (pendingModal && pendingModal.style && isStalePendingModalSnapshot(snapshot)) {
-        appShellRecoveryEffects.hide('pendingModal');
-        appShellRecoveryEffects.clearPointerEvents('pendingMenu');
-        closed = true;
-    }
-    if (closed) resetAccessibleModalStateForRecovery();
-    return closed;
+    return appShellUiLockRuntime.closeStaleBlockingModals(snapshot, reason);
 }
 
 function clearUiLocks(reason = 'ui-unlock', snapshot = null) {
-    closeStaleBlockingModals(snapshot, reason);
-    const changed = forceClearModalLocksForRecovery(snapshot);
-    clearGameScreenLockIfNoActiveModal(snapshot, reason + '-game-screen');
-    if (changed || !hasActiveBlockingModal(snapshot)) markClientFlowCheckpoint(reason);
-}
-
-function isPostBuildNextTurnSnapshot(snapshot) {
-    return UiWatchdog.isPostBuildNextTurnSnapshot(snapshot, hasActiveBlockingModal(snapshot));
-}
-
-function stabilizePostBuildNextTurnUi(reason = 'post-build-ui-stabilizer') {
-    const snapshot = buildClientRuntimeSnapshot(reason);
-    if (!isPostBuildNextTurnSnapshot(snapshot)) return false;
-    const btnSkip = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnSkip') : null;
-    if (!btnSkip) return false;
-    let changed = false;
-    if (btnSkip.disabled) {
-        btnSkip.disabled = false;
-        changed = true;
-    }
-    if (btnSkip.textContent !== '建設完了・ターン終了') {
-        btnSkip.textContent = '建設完了・ターン終了';
-        changed = true;
-    }
-    changed = clearGameScreenLockIfNoActiveModal(snapshot, reason + '-game-screen') || changed;
-    if (changed) markClientFlowCheckpoint(reason, { recovery: 'post-build-next-turn-ui' });
-    return changed;
+    return appShellUiLockRuntime.clearUiLocks(reason, snapshot);
 }
 
 function schedulePostBuildUiStabilizer(reason = 'post-build-ui-stabilizer') {
-    if (postBuildUiStabilizerBatch.snapshot().pending) return false;
-    const snapshot = buildClientRuntimeSnapshot(reason + '-schedule');
-    if (!isPostBuildNextTurnSnapshot(snapshot)) return false;
-    const delays = [0, 250, 1500, 3500];
-    if (!postBuildUiStabilizerBatch.begin(delays.length)) return false;
-    const run = () => {
-        stabilizePostBuildNextTurnUi(reason);
-        postBuildUiStabilizerBatch.complete();
-    };
-    try {
-        if (typeof setTimeout === 'function') delays.forEach(delay => setTimeout(run, delay));
-        else while (postBuildUiStabilizerBatch.snapshot().pending) run();
-    } catch (_) {
-        while (postBuildUiStabilizerBatch.snapshot().pending) run();
-    }
-    return true;
+    return appShellUiLockRuntime.schedulePostBuildUiStabilizer(reason);
 }
 
 function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
-    const snapshot = buildClientRuntimeSnapshot(reason);
-    if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
-    if (!expectedPrimaryActions(snapshot).length) return false;
-    if (hasActiveBlockingModal(snapshot)) return false;
-    clearUiLocks(reason + '-before-render', snapshot);
-    try { appShellRuntimeEffects.render(); } catch (_) {}
-    const afterRender = buildClientRuntimeSnapshot(reason + '-after-render');
-    if (!isHumanTurnSnapshot(afterRender) || isOnlineUiBlockedSnapshot(afterRender)) return false;
-    if (hasActiveBlockingModal(afterRender)) return false;
-    const issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
-    let changed = clearGameScreenLockIfNoActiveModal(afterRender, reason + '-game-screen');
-    changed = syncAllowedActionContainersForRender(afterRender, issues) || changed;
-    changed = clearUiInteractabilityIssueTargets(issues) || changed;
-    clearUiLocks(reason + '-after-render', afterRender);
-    if (changed) markClientFlowCheckpoint(reason + '-after-render-sync');
-    markClientFlowCheckpoint(reason);
-    return true;
+    return appShellUiLockRuntime.unlockUiForHumanTurn(reason);
 }
 
 function safeAppShellStorageGet(key, fallback = null) {
