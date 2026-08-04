@@ -39,7 +39,8 @@ runTest('game runtime stateはnamed updateとhydrate順の単一ownerになる',
     assert.strictEqual(snapshot.undoState, hydrated.undoState);
     assert.strictEqual(snapshot.cpuPlayers, cpuPlayers);
     assert.deepStrictEqual(snapshot.prevCoins, [1, 2]);
-    assert.strictEqual(controller.write('unknown', 1), false);
+    assert.strictEqual(controller.read('unknown'), undefined);
+    assert.strictEqual(controller.write, undefined);
 });
 
 runTest('game runtime compatibility globalsは既存値を保持して双方向投影する', () => {
@@ -60,6 +61,19 @@ runTest('game runtime compatibility globalsは既存値を保持して双方向�
     assert.deepStrictEqual(controller.read('undoState'), { marker: true });
     assert.deepStrictEqual(root.prevCoins, [5]);
     assert.strictEqual(Object.keys(root).includes('game'), false);
+});
+
+runTest('game runtime compatibility globalsは製品向けread-only投影を選べる', () => {
+    const game = { phase: 'roll' };
+    const root = {};
+    const controller = GameRuntimeState.createController({ game });
+    assert.strictEqual(controller.bindGlobals(root, { writable: false }), true);
+    assert.strictEqual(root.game, game);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'game').set, undefined);
+    assert.throws(() => { root.game = { phase: 'build' }; }, TypeError);
+    const replacement = { phase: 'pending' };
+    controller.setGame(replacement);
+    assert.strictEqual(root.game, replacement);
 });
 
 runTest('live game production writersはnamed runtime operationだけを使う', () => {
