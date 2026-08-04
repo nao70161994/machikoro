@@ -684,3 +684,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Post-build stabilizer batch state now has one controller owner; app-shell remains the scheduler and DOM recovery effect boundary with unchanged delays.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, UI recovery, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 48 boundary update
+
+1. Restore-queue shadow/authority diagnostic selections now have one named controller owner while online transport, queue effects, flags, and fallback remain independent.
+2. Renovation target availability now belongs to the pending rule policy and is shared by activation and consecutive-pending completion.
+3. Expert lookahead terminal scoring now belongs to the pure CPU evaluator with lazy flag-specific facts and deterministic opponent order.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority rollout, protocol/schema, persistence, reconnect behavior, and PWA defaults are unchanged.

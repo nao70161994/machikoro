@@ -717,3 +717,11 @@ Test index:
 - Post-build stabilizer pending and remaining-task state belongs to `UiWatchdogMonitor.createPendingBatchController()`. Keep its controller private to app-shell orchestration and preserve the 0/250/1500/3500 ms effect schedule and fallback loop.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 48 handoff (2026-08-04)
+
+- Restore-queue diagnostic selection state belongs to `OnlineRestoreQueueState.createDiagnosticController()` and its frozen five-key registry. Keep actual queue/store ownership, authority flags, transition/effect execution, public getters, and the module-unavailable fallback in their current boundaries.
+- Renovation target availability belongs to `GamePendingResolutionPolicy.hasRenovationTarget()`. Preserve the excluded City Hall landmark and use the same query for activation and consecutive pending skips.
+- Expert lookahead terminal score composition belongs to `CPUEvaluation.lookaheadTerminalHeuristic()`. Preserve focus/best distance reads, race flag/facts, threat flag, player-index traversal, and threat-before-distance callback order; require fixed-decision and 2–10-player self-play parity for changes.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

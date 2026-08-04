@@ -485,3 +485,12 @@ No game rule, CPU heuristic/decision, save/localStorage format, Socket.IO protoc
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage format, Socket.IO protocol, reconnect authority/timing, UI recovery timing, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 48 architecture boundaries
+
+- `OnlineRestoreQueueState.createDiagnosticController()` now owns the five restore-queue store-read/store-write/state/effect/plan selection results. `online.js` retains shadow comparison, feature flags, queue/store mutation, replay execution, public diagnostic getters, and a module-unavailable legacy fallback; wire/storage/reconnect behavior is unchanged.
+- `GamePendingResolutionPolicy.hasRenovationTarget()` now owns the shared built-landmark target query used both when Renovation Company activates and when consecutive pending activations are skipped. `GameManager` retains landmark identity adaptation, pending mutation, logs, and phase authority.
+- `CPUEvaluation.lookaheadTerminalHeuristic()` now owns expert lookahead terminal score composition, including race-focus and per-opponent threat deductions. `CPU.js` remains the feature adapter; flag/fact order, opponent traversal, all coefficients, fixed decisions, and the full 2–10-player self-play baseline are unchanged.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, reconnect authority/timing, PWA/SW behavior, or production rollout default changed.
