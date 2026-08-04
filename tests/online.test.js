@@ -386,7 +386,8 @@ function seedHostlessRestoreBundle(runtime, overrides = {}) {
 runTest('online session globalsはOnlineRuntimeStateだけが所有する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
     for (const field of require('../js/onlineRuntimeState').fields) {
-        assert.strictEqual(new RegExp(`^let ${field}\\b`, 'm').test(source), false, field);
+        assert.strictEqual(new RegExp(`^let ${field}\b`, 'm').test(source), false, field);
+        assert.strictEqual(new RegExp(`^\s*${field}\s*=`, 'm').test(source), false, field);
     }
 });
 
@@ -717,7 +718,7 @@ runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す'
     assert.strictEqual(snapshot.history.slice(-1)[0].projectionMatched, true);
 });
 
-runTest('online.jsのlegacy reconnect書き込みは単一setterでboolean契約を維持する', () => {
+runTest('online.jsのreconnect書き込みはruntime transitionでboolean契約を維持する', () => {
     const localRt = loadOnlineRuntime();
     assert.strictEqual(localRt.setOnlineReconnectLegacyFlag('true'), false);
     assert.strictEqual(localRt.getOnlineState().isReconnectingOnline, false);
@@ -729,7 +730,9 @@ runTest('online.jsのlegacy reconnect書き込みは単一setterでboolean契約
     const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
     assert.strictEqual((onlineSource.match(/isReconnectingOnline = true;/g) || []).length, 0);
     assert.strictEqual((onlineSource.match(/isReconnectingOnline = false;/g) || []).length, 0);
-    assert.ok(onlineSource.includes('isReconnectingOnline = value === true;'));
+    assert.ok(onlineSource.includes(
+        'OnlineRuntimeState.runtime.setReconnecting(value).isReconnectingOnline'
+    ));
 });
 
 runTest('online.jsのreconnect観測状態は完了とresetを区別する', () => {

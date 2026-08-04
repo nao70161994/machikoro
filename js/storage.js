@@ -32,6 +32,9 @@ function setStorageOnlineReconnectLegacyFlag(value) {
     if (typeof setOnlineReconnectLegacyFlag === 'function') {
         return setOnlineReconnectLegacyFlag(value);
     }
+    if (typeof OnlineRuntimeState !== 'undefined' && OnlineRuntimeState.runtime) {
+        return OnlineRuntimeState.runtime.setReconnecting(value).isReconnectingOnline;
+    }
     isReconnectingOnline = value === true;
     return isReconnectingOnline;
 }
@@ -222,6 +225,10 @@ function reconnectOnline() {
                 if (typeof _clearRejoinRetry === 'function') _clearRejoinRetry();
             },
             setRuntime(value) {
+                if (typeof OnlineRuntimeState !== 'undefined' && OnlineRuntimeState.runtime) {
+                    OnlineRuntimeState.runtime.restoreIdentity(value);
+                    return;
+                }
                 isRoomHost = value.isRoomHost;
                 myPlayerName = value.playerName;
                 myRoomId = value.roomId;

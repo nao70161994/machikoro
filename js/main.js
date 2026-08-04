@@ -285,7 +285,9 @@ function restartGame() {
         stopConfetti();
         if (typeof resetOnlineState === 'function') resetOnlineState();
         else {
-            try { isOnlineGame = false; } catch (_) {}
+            try {
+                OnlineRuntimeState.runtime.setOnline(false);
+            } catch (_) {}
         }
         if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('restart-game-reset-ui-locks');
         if (typeof resetGameLifecycleForRestart === 'function') resetGameLifecycleForRestart('restart-game-lifecycle-reset');

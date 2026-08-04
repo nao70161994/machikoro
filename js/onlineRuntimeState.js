@@ -16,6 +16,7 @@ const OnlineRuntimeState = (() => {
     const fields = Object.freeze(Object.keys(defaults));
 
     function createController(initial = {}) {
+        /** @type {Record<string, any>} */
         const state = Object.assign({}, defaults, initial);
 
         function snapshot() {
@@ -31,6 +32,89 @@ const OnlineRuntimeState = (() => {
             if (!fields.includes(field)) return false;
             state[field] = value;
             return true;
+        }
+
+        function setSocket(value) {
+            state.socket = value;
+            return snapshot();
+        }
+
+        function setOnline(value) {
+            state.isOnlineGame = value === true;
+            return snapshot();
+        }
+
+        function setHost(value) {
+            state.isRoomHost = value === true;
+            return snapshot();
+        }
+
+        function setReplaying(value) {
+            state.isReplaying = value === true;
+            return snapshot();
+        }
+
+        function setReconnecting(value) {
+            state.isReconnectingOnline = value === true;
+            return snapshot();
+        }
+
+        function acceptRoom(identity = {}) {
+            state.myOriginalPlayerIndex = identity.playerIndex;
+            state.myPlayerIndex = identity.playerIndex;
+            state.myRoomId = identity.roomId;
+            state.reconnectToken = identity.reconnectToken;
+            return snapshot();
+        }
+
+        function restoreIdentity(identity = {}) {
+            state.isRoomHost = identity.isRoomHost;
+            state.myPlayerName = identity.playerName;
+            state.myRoomId = identity.roomId;
+            state.myOriginalPlayerIndex = identity.originalPlayerIndex;
+            state.myPlayerIndex = identity.playerIndex;
+            state.reconnectToken = identity.reconnectToken;
+            return snapshot();
+        }
+
+        function setPlayerIndexes(originalPlayerIndex, playerIndex = originalPlayerIndex) {
+            state.myOriginalPlayerIndex = originalPlayerIndex;
+            state.myPlayerIndex = playerIndex;
+            return snapshot();
+        }
+
+        function setCurrentPlayerIndex(playerIndex) {
+            state.myPlayerIndex = playerIndex;
+            return snapshot();
+        }
+
+        function setPlayerName(playerName) {
+            state.myPlayerName = playerName;
+            return snapshot();
+        }
+
+        function clearPlayerIndexes() {
+            return setPlayerIndexes(-1, -1);
+        }
+
+        function clearRoom() {
+            state.myRoomId = null;
+            return snapshot();
+        }
+
+        function clearReconnectToken() {
+            state.reconnectToken = '';
+            return snapshot();
+        }
+
+        function clearIdentity() {
+            state.isRoomHost = false;
+            state.myPlayerIndex = -1;
+            state.myOriginalPlayerIndex = -1;
+            state.myPlayerName = '';
+            state.myRoomId = null;
+            state.reconnectToken = '';
+            return snapshot();
         }
 
         function reset() {
@@ -50,7 +134,27 @@ const OnlineRuntimeState = (() => {
             return true;
         }
 
-        return Object.freeze({ snapshot, read, write, reset, bindGlobals });
+        return Object.freeze({
+            snapshot,
+            read,
+            write,
+            setSocket,
+            setOnline,
+            setHost,
+            setReplaying,
+            setReconnecting,
+            acceptRoom,
+            restoreIdentity,
+            setPlayerIndexes,
+            setCurrentPlayerIndex,
+            setPlayerName,
+            clearPlayerIndexes,
+            clearRoom,
+            clearReconnectToken,
+            clearIdentity,
+            reset,
+            bindGlobals,
+        });
     }
 
     const runtime = createController();

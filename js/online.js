@@ -137,8 +137,7 @@ function onChangeOnlinePlayerType(index, value) {
 // オンライン対戦（セッション状態）は OnlineRuntimeState が所有する。
 
 function setOnlineReconnectLegacyFlag(value) {
-    isReconnectingOnline = value === true;
-    return isReconnectingOnline;
+    return OnlineRuntimeState.runtime.setReconnecting(value).isReconnectingOnline;
 }
 const onlineSchemaSelectionController = OnlineSchemaTransport.createSelectionController();
 const _hostlessRestoreState = OnlineHostlessRestoreState.createController();
@@ -1740,7 +1739,7 @@ function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
         return _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch);
     }
     return OnlineHostChanged.execute(planSelection.plan, {
-        setHostState: isHost => { isRoomHost = isHost === true; },
+        setHostState: isHost => { OnlineRuntimeState.runtime.setHost(isHost); },
         addHostLog: () => {
             game && game.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
         },
@@ -1819,7 +1818,7 @@ function markOnlineGameFinished() {
     const plan = OnlineSessionLifecycle.completedPlan();
     OnlineSessionLifecycle.execute(plan, {
         markCompleted() { _onlineReconnectCompletionController.markCompleted(); },
-        leaveOnlineGame() { isOnlineGame = false; },
+        leaveOnlineGame() { OnlineRuntimeState.runtime.setOnline(false); },
         clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
         clearActionInFlight() { _setOnlineActionInFlight(false); },
         clearRejoinRetry() { _clearRejoinRetry(); },
@@ -1842,18 +1841,18 @@ function resetOnlineState() {
         finishLobbyRequest() { finishOnlineLobbyRequest(); },
         incrementCpuScheduleToken() { invalidateCpuScheduleChain(); },
         disconnectSocket() {
-            if (socket) { socket.disconnect(); socket = null; }
+            if (socket) {
+                socket.disconnect();
+                OnlineRuntimeState.runtime.setSocket(null);
+            }
         },
-        leaveOnlineGame() { isOnlineGame = false; },
-        clearHost() { isRoomHost = false; },
-        clearPlayerIndexes() {
-            myPlayerIndex = -1;
-            myOriginalPlayerIndex = -1;
-        },
-        clearRoom() { myRoomId = null; },
-        clearReconnectToken() { reconnectToken = ''; },
+        leaveOnlineGame() { OnlineRuntimeState.runtime.setOnline(false); },
+        clearHost() { OnlineRuntimeState.runtime.setHost(false); },
+        clearPlayerIndexes() { OnlineRuntimeState.runtime.clearPlayerIndexes(); },
+        clearRoom() { OnlineRuntimeState.runtime.clearRoom(); },
+        clearReconnectToken() { OnlineRuntimeState.runtime.clearReconnectToken(); },
         clearSchemaSelection() { onlineSchemaSelectionController.clear(); },
-        clearReplayFlag() { isReplaying = false; },
+        clearReplayFlag() { OnlineRuntimeState.runtime.setReplaying(false); },
         clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
         clearActionInFlight() { _setOnlineActionInFlight(false); },
         clearPendingOutboundAction(currentPlan) {
@@ -2467,8 +2466,9 @@ function _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch) {
 }
 
 function _setOnlineHostState(hostPlayerIndex) {
-    isRoomHost = Number.isInteger(hostPlayerIndex) && hostPlayerIndex === myOriginalPlayerIndex;
-    return isRoomHost;
+    return OnlineRuntimeState.runtime.setHost(
+        Number.isInteger(hostPlayerIndex) && hostPlayerIndex === myOriginalPlayerIndex
+    ).isRoomHost;
 }
 
 function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
@@ -2518,7 +2518,7 @@ function initSocket() {
         }
         return false;
     }
-    socket = io();
+    OnlineRuntimeState.runtime.setSocket(io());
     const hostlessEvents = OnlinePayload.hostlessRestoreEvents;
     const socketEvents = OnlineSocketRegistry.createBinder(socket, {
         hostlessCollect: hostlessEvents.COLLECT,
@@ -2530,10 +2530,11 @@ function initSocket() {
 
     socketEvents.on(OnlineSocketRegistry.keys.ROOM_CREATED, ({ roomId, playerIndex, reconnectToken: token }) => {
         finishOnlineLobbyRequest('create');
-        myOriginalPlayerIndex = playerIndex;
-        myPlayerIndex = playerIndex;
-        myRoomId = roomId;
-        reconnectToken = token;
+        OnlineRuntimeState.runtime.acceptRoom({
+            playerIndex,
+            roomId,
+            reconnectToken: token,
+        });
         saveOnlineSession();
         document.getElementById("onlineStatus").innerHTML = `
             <div>ルームを作成しました！</div>
@@ -2543,10 +2544,11 @@ function initSocket() {
 
     socketEvents.on(OnlineSocketRegistry.keys.ROOM_JOINED, ({ roomId, playerIndex, reconnectToken: token }) => {
         finishOnlineLobbyRequest('join');
-        myOriginalPlayerIndex = playerIndex;
-        myPlayerIndex = playerIndex;
-        myRoomId = roomId;
-        reconnectToken = token;
+        OnlineRuntimeState.runtime.acceptRoom({
+            playerIndex,
+            roomId,
+            reconnectToken: token,
+        });
         saveOnlineSession();
         document.getElementById("onlineStatus").textContent = `ルーム ${roomId} に参加しました！`;
     });
@@ -2584,7 +2586,7 @@ function initSocket() {
         const startOnlineGame = () => {
             if (startGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
             _onlineReconnectCompletionController.reset();
-            isOnlineGame = true;
+            OnlineRuntimeState.runtime.setOnline(true);
             _setOnlineHostState(hostPlayerIndex);
             cpuSpeed = cs || 1500;
             if (ec) replaceEnabledCardSelection(ec);
@@ -2624,7 +2626,7 @@ function initSocket() {
             preload.then(startOnlineGame).catch(error => {
                 if (startGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
                 console.error(error);
-                isOnlineGame = false;
+                OnlineRuntimeState.runtime.setOnline(false);
                 _setOnlineActionInFlight(false);
                 _abortOnlineRestore(startGeneration, "深層学習AIモデルを読み込めませんでした。再接続して再試行します。");
             });
@@ -3018,8 +3020,7 @@ function initSocket() {
             cpuSpeed = plan.cpuSpeed;
             if (plan.updateEnabledCards) replaceEnabledCardSelection(plan.enabledCards);
             replaceEnabledLandmarkSelection(plan.enabledLandmarks);
-            myOriginalPlayerIndex = plan.playerIndex;
-            myPlayerIndex = plan.playerIndex;
+            OnlineRuntimeState.runtime.setPlayerIndexes(plan.playerIndex);
             _setOnlineHostState(plan.hostPlayerIndex);
             persistRestoreBundle();
             saveOnlineSession();
@@ -3046,8 +3047,7 @@ function initSocket() {
                 setEnabledCards: values => { replaceEnabledCardSelection(values); },
                 setEnabledLandmarks: values => { replaceEnabledLandmarkSelection(values); },
                 setPlayerIndices: value => {
-                    myOriginalPlayerIndex = value;
-                    myPlayerIndex = value;
+                    OnlineRuntimeState.runtime.setPlayerIndexes(value);
                 },
                 setHostState: value => _setOnlineHostState(value),
                 persistRestoreBundle,
@@ -3095,7 +3095,7 @@ function initSocket() {
                 // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
                 if (restoreReplayUsesExecutor) {
                     OnlineRestoreReplay.execute(restoreReplayPlan, {
-                        setReplaying: value => { isReplaying = value === true; },
+                        setReplaying: value => { OnlineRuntimeState.runtime.setReplaying(value); },
                         observeReplayStarted: () => {
                             _observeOnlineReconnectEvent(
                                 OnlineReconnectState.events.REPLAY_STARTED
@@ -3119,7 +3119,7 @@ function initSocket() {
                         },
                     });
                 } else {
-                    isReplaying = true;
+                    OnlineRuntimeState.runtime.setReplaying(true);
                     _observeOnlineReconnectEvent(OnlineReconnectState.events.REPLAY_STARTED);
                     _applyOnlineReconnectLifecycleStatusEffectAuthority(
                         OnlineReconnectState.events.REPLAY_STARTED
@@ -3147,7 +3147,7 @@ function initSocket() {
                 document.getElementById("onlineStatus").textContent = '❌ 復元データの再生に失敗しました。再接続してください。';
                 setOnlineReconnectLegacyFlag(true);
             } finally {
-                if (!restoreReplayUsesExecutor) isReplaying = false;
+                if (!restoreReplayUsesExecutor) OnlineRuntimeState.runtime.setReplaying(false);
             }
             if (!restoredOk) {
                 _abortOnlineRestore(restoreGeneration, "復元データの再生に失敗しました。再接続して再試行します。");
@@ -3175,7 +3175,7 @@ function initSocket() {
                         resetReconnectCompleted: () => {
                             _onlineReconnectCompletionController.reset();
                         },
-                        activateOnlineGame: () => { isOnlineGame = true; },
+                        activateOnlineGame: () => { OnlineRuntimeState.runtime.setOnline(true); },
                         clearReconnectFlag: () => {
                             setOnlineReconnectLegacyFlag(false);
                         },
@@ -3207,7 +3207,7 @@ function initSocket() {
                 if (!activationResult.result) return;
             } else {
                 _onlineReconnectCompletionController.reset();
-                isOnlineGame = true;
+                OnlineRuntimeState.runtime.setOnline(true);
                 setOnlineReconnectLegacyFlag(false);
                 prevCoins = null;
                 _onlineActionSequenceController.replace(
@@ -3428,7 +3428,7 @@ function _runOnlineReconnectTerminalCleanupLegacy() {
     updateResumeButton();
     if (socket) {
         socket.disconnect();
-        socket = null;
+        OnlineRuntimeState.runtime.setSocket(null);
     }
 }
 
@@ -3448,7 +3448,7 @@ function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
         disconnectSocket: () => {
             if (socket) {
                 socket.disconnect();
-                socket = null;
+                OnlineRuntimeState.runtime.setSocket(null);
             }
         },
     });
@@ -3598,11 +3598,11 @@ function preloadOnlineRlModelsInBackground(reason = 'online-rl-background-preloa
 }
 
 function emitCreateRoom(name, playerCount = onlineSetupStateController.snapshot().selectedCount, settings = onlineSetupStateController.snapshot().playerSettings) {
-    myPlayerName = name;
+    OnlineRuntimeState.runtime.setPlayerName(name);
     const setup = onlineSetupStateController.setCpuSpeed(parseInt(document.getElementById("onlineCpuSpeed").value));
     if (!initSocket()) return;
     beginOnlineLobbyRequest('create');
-    isRoomHost = true;
+    OnlineRuntimeState.runtime.setHost(true);
     const selection = GameSelectionState.runtime.snapshot();
     const createPayload = {
         playerName: name,
@@ -3663,8 +3663,8 @@ function joinRoom() {
     const roomId = document.getElementById("roomIdInput").value.trim().toUpperCase();
     if (!name) { showNotice("名前を入力してください"); return; }
     if (roomId.length !== 6) { showNotice("ルームIDは6文字です"); return; }
-    myPlayerName = name;
-    isRoomHost = false;
+    OnlineRuntimeState.runtime.setPlayerName(name);
+    OnlineRuntimeState.runtime.setHost(false);
     if (!initSocket()) return;
     beginOnlineLobbyRequest('join');
     const joinPayload = {
@@ -3722,8 +3722,10 @@ function initOnlineGame(playerNames, ps, playerOrder) {
 
     // myPlayerIndexをシャッフル後の位置に更新
     // order[i] === 元のindex なので、自分の元indexがorderの何番目かを探す
-    myPlayerIndex = order.indexOf(myOriginalPlayerIndex);
-    if (myPlayerIndex === -1) myPlayerIndex = 0; // 見つからない場合はホスト
+    const orderedPlayerIndex = order.indexOf(myOriginalPlayerIndex);
+    OnlineRuntimeState.runtime.setCurrentPlayerIndex(
+        orderedPlayerIndex === -1 ? 0 : orderedPlayerIndex
+    ); // 見つからない場合はホスト
 
     game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
     render();
