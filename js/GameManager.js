@@ -595,17 +595,18 @@ class GameManager {
         }
 
         // 貸金業：自分のターンに5か6が出たら枚数×2コイン支払い
-        if (dice === 5 || dice === 6) {
-            const loanCount = current.cards.filter(c =>
+        const loanRepayment = GameCardActivationPolicy.loanRepaymentPlan({
+            dice,
+            loanCount: () => current.cards.filter(c =>
                 c.effect === CARD_EFFECTS.LOAN &&
                 !current.isDormant(c) &&
                 !revivedCards.has(c)
-            ).length;
-            if (loanCount > 0) {
-                const pay = Math.min(loanCount * 2, current.coins);
-                current.coins -= pay;
-                this.addLog(LOG_TYPES.LOSE, `💳 貸金業×${loanCount}：${pay}コイン支払い`);
-            }
+            ).length,
+            coins: current.coins,
+        });
+        if (loanRepayment.active) {
+            current.coins -= loanRepayment.amount;
+            this.addLog(LOG_TYPES.LOSE, `💳 貸金業×${loanRepayment.loanCount}：${loanRepayment.amount}コイン支払い`);
         }
     }
 

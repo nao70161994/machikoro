@@ -1661,6 +1661,20 @@ runTest('公園はコインを全員に均等分配する', () => {
     assert.strictEqual(game.players[2].coins, 6);
 });
 
+runTest('貸金業の支払いはactivation policy計画を同じcoin/log結果へ適用する', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.cards = [createCardByName('貸金業'), createCardByName('貸金業')];
+    current.dormantCards = [];
+    current.coins = 3;
+
+    game._processGreen(current, 5);
+
+    assert.strictEqual(current.coins, 0);
+    assert.strictEqual(game.log[game.log.length - 1].type, LOG_TYPES.LOSE);
+    assert.strictEqual(game.log[game.log.length - 1].message, '💳 貸金業×2：3コイン支払い');
+});
+
 if (process.exitCode) {
     throw new Error('GameManagerテストで失敗が発生しました');
 }

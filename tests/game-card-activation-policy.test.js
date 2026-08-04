@@ -213,3 +213,29 @@ runTest('card activation policyは紫カードkind確定後だけ対象factを�
     GameCardActivationPolicy.purpleActivationPlan({ ...facts, effect: effects.CLEANING });
     assert.deepStrictEqual(reads, ['business', 'cleaning']);
 });
+
+runTest('card activation policyは貸金業の支払額を5・6と所持金上限からpureに計画する', () => {
+    assert.deepStrictEqual(GameCardActivationPolicy.loanRepaymentPlan({
+        dice: 5,
+        loanCount: 3,
+        coins: 10,
+    }), { active: true, loanCount: 3, amount: 6 });
+    assert.deepStrictEqual(GameCardActivationPolicy.loanRepaymentPlan({
+        dice: 6,
+        loanCount: 3,
+        coins: 4,
+    }), { active: true, loanCount: 3, amount: 4 });
+    assert.deepStrictEqual(GameCardActivationPolicy.loanRepaymentPlan({
+        dice: 6,
+        loanCount: 0,
+        coins: 4,
+    }), { active: false, loanCount: 0, amount: 0 });
+});
+
+runTest('card activation policyは5・6以外で貸金業枚数を読まない', () => {
+    assert.deepStrictEqual(GameCardActivationPolicy.loanRepaymentPlan({
+        dice: 4,
+        loanCount() { throw new Error('loan count must stay lazy'); },
+        coins: 10,
+    }), { active: false, loanCount: 0, amount: 0 });
+});

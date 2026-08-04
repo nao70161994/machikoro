@@ -139,6 +139,23 @@ function greenActivationPlan(facts = {}) {
     return plan(greenActivationKinds.NORMAL, { amount });
 }
 
+function loanRepaymentPlan(facts = {}) {
+    if (facts.dice !== 5 && facts.dice !== 6) {
+        return Object.freeze({ active: false, loanCount: 0, amount: 0 });
+    }
+    const loanCount = typeof facts.loanCount === 'function'
+        ? facts.loanCount()
+        : facts.loanCount;
+    if (!Number.isInteger(loanCount) || loanCount <= 0) {
+        return Object.freeze({ active: false, loanCount: 0, amount: 0 });
+    }
+    return Object.freeze({
+        active: true,
+        loanCount,
+        amount: Math.min(loanCount * 2, facts.coins),
+    });
+}
+
 const purpleActivationKinds = Object.freeze({
     STADIUM: 'stadium',
     TV: 'tv',
@@ -194,6 +211,7 @@ const GameCardActivationPolicy = Object.freeze({
     blueIncomePlan,
     greenActivationKinds,
     greenActivationPlan,
+    loanRepaymentPlan,
     purpleActivationKinds,
     purpleActivationPlan,
 });
