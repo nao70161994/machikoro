@@ -374,3 +374,12 @@ Continue batch-by-batch re-auditing for small contract-first boundaries. The kno
 - `js/uiWatchdogReporting.js` now owns checkpoint → recovery → snapshot storage → client-report ordering and message construction. `appShell.js` retains freeze observation/classification, live recovery handlers, storage/report adapters, and watchdog scheduling.
 - Scoped gates now cover 206 ESLint maintenance files and 205 checkJs runtime files. The same five side-effect runtimes remain excluded as whole files while typed boundaries continue moving out.
 - No game result, CPU strength, save/localStorage format, Socket.IO protocol, reconnect authority/default, watchdog recovery classification, or PWA/SW cache policy changed.
+
+## 2026-08-04 Batch 36 architecture boundaries
+
+- `js/gamePendingTransition.js` now owns detached outcome plans for TV coin transfer, Business Center exchange indexes/dormancy inheritance, Cleaning target enumeration, Mover transfer/reward, and Renovation reward. `GameManager` retains admission, live object mutation, pending queue consumption, phase changes, and structured logs in their original order.
+- `OnlineRetryPolicy.createRejoinAttemptController()` is the sole write owner for rejoin attempt count and exhaustion. `online.js` keeps compatibility projections for existing diagnostics while timer/callback/Socket/retry behavior, the 8-attempt limit, and production authority defaults remain unchanged.
+- `server/runtimeLimits.js` is the frozen contract for action-log, room-lifecycle, Socket/restore payload, client-error, and game-lifecycle limits. `server.js` remains the composition and public-export layer; every numeric limit and rejection boundary is unchanged.
+- Scoped gates now cover 208 ESLint maintenance files and 207 checkJs runtime files. Whole-file client exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+These are deterministic rule-transition, explicit online state ownership, and server configuration boundaries. They do not change game rules, CPU policy/strength, Action/Snapshot/save schemas, localStorage keys, Socket.IO events/payloads, reconnect timing, PWA/SW behavior, or rollout defaults.

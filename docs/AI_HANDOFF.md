@@ -621,3 +621,10 @@ Test index:
 - Watchdog checkpoint → recovery → storage → report ordering belongs to `UiWatchdogReporting`. `appShell.js` owns classification, recovery handlers, adapters, and scheduling. Preserve report key, message, stack construction timing, and recovery-before-serialization semantics.
 - Scoped gates are 206 ESLint maintenance files and 205 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`; continue extracting typed boundaries instead of adding ambient declarations.
 - Keep batches at no more than three rollbackable themes, with focused checks per theme and one batch-end `test:batch`, push, and exact-HEAD CI check.
+
+## Batch 36 handoff (2026-08-04)
+
+- Pending TV/Business/Cleaning/Mover/Renovation outcome data belongs to `GamePendingTransition`; `GamePendingResolutionPolicy` still owns admission, and `GameManager` owns mutation, logs, queue consumption, and phase authority. Preserve player/card traversal order and card identity when extending it.
+- Rejoin attempt count/exhaustion writes belong to `OnlineRetryPolicy.createRejoinAttemptController()`. Keep `_rejoinRetryCount` and `_rejoinRetryExhausted` as compatibility projections only; do not bypass the semantic controller helpers.
+- Server action-log, room, payload, and reporting limits belong to `server/runtimeLimits.js`. Keep `server.js` named exports compatible and change a limit only as an explicit behavior/security decision with boundary tests.
+- Scoped gates are 208 ESLint maintenance files and 207 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.

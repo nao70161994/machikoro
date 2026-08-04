@@ -584,3 +584,11 @@ Scoped gates now cover 204 ESLint maintenance files and 203 checkJs runtime file
 3. Watchdog reporting now has an explicit ordered effect executor. Freeze classification and recovery implementation remain in app-shell/watchdog policy, while report persistence and notification order are directly contract-tested.
 
 Scoped gates now cover 206 ESLint maintenance files and 205 checkJs runtime files. Authority, protocol/schema, persistence format, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 36 boundary update
+
+1. Pending effect outcomes now have a detached transition representation. Target admission and all live mutations remain in `GameManager`, while transfers, selected indexes, dormancy inheritance, target enumeration, and fixed rewards are deterministic data that can move with the shared Engine.
+2. Rejoin attempt count and exhaustion now have one controller owner. Legacy globals are diagnostic projections; timer, callback, event, Socket, and retry-policy boundaries keep their existing owners and defaults.
+3. Server operational limits now have one immutable configuration contract. Server composition injects the same values into room lifecycle, payload validation, reporting admission, mirror compaction, and public test exports.
+
+This batch advances the shared rule transition, explicit online state, and thin-server goals without activating schema/reconnect authority or changing any compatibility surface. Scoped gates are 208 ESLint maintenance files and 207 checkJs runtime files.
