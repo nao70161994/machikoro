@@ -703,10 +703,10 @@ class GameManager {
             return false;
         }
         if (!current || !target) return false;
-        const steal = Math.min(5, target.coins);
-        target.coins -= steal;
-        current.coins += steal;
-        this.addLog(LOG_TYPES.SPECIAL, `📺 ${target.name}から${steal}コイン奪いました`);
+        const transition = GamePendingTransition.tvTransferPlan(current.coins, target.coins);
+        target.coins = transition.targetCoins;
+        current.coins = transition.actorCoins;
+        this.addLog(LOG_TYPES.SPECIAL, `📺 ${target.name}から${transition.transfer}コイン奪いました`);
         this._consumePendingAction('pendingTV');
         this._checkPending();
         return true;
@@ -739,16 +739,22 @@ class GameManager {
         const myCard = this._resolveCardRef(current, myCardRef);
         const theirCard = this._resolveCardRef(target, theirCardRef);
         if (!myCard || !theirCard) { this.addLog(LOG_TYPES.ERROR, `❌ 交換できない施設です`); return false; }
-        const myCardWasDormant = current.isDormant(myCard);
-        const theirCardWasDormant = target.isDormant(theirCard);
-        current.revive(myCard);
-        target.revive(theirCard);
-        current.cards.splice(current.cards.indexOf(myCard), 1);
-        target.cards.splice(target.cards.indexOf(theirCard), 1);
-        current.cards.push(theirCard);
-        target.cards.push(myCard);
-        if (theirCardWasDormant) current.makeDormant(theirCard);
-        if (myCardWasDormant) target.makeDormant(myCard);
+        const exchange = GamePendingTransition.businessExchangePlan(
+            current.cards,
+            target.cards,
+            myCard,
+            theirCard,
+            { actor: current.isDormant(myCard), target: target.isDormant(theirCard) }
+        );
+        if (!exchange) { this.addLog(LOG_TYPES.ERROR, `❌ 交換できない施設です`); return false; }
+        current.revive(exchange.actorCard);
+        target.revive(exchange.targetCard);
+        current.cards.splice(exchange.actorCardIndex, 1);
+        target.cards.splice(exchange.targetCardIndex, 1);
+        current.cards.push(exchange.targetCard);
+        target.cards.push(exchange.actorCard);
+        if (exchange.actorReceivesDormant) current.makeDormant(exchange.targetCard);
+        if (exchange.targetReceivesDormant) target.makeDormant(exchange.actorCard);
         this.addLog(LOG_TYPES.SPECIAL, `🔄 ${myCard.name} ⇔ ${target.name}の${theirCard.name} を交換しました`);
         this._consumePendingAction('pendingBusiness');
         this._checkPending();
@@ -770,18 +776,18 @@ class GameManager {
         });
         if (!plan.ok) return false;
         const current = this.currentPlayer();
-        let count = 0;
-        for (const p of this.players) {
-            for (const card of p.cards) {
-                if (card.name === cardName && card.category !== CARD_CATEGORIES.MAJOR && !p.isDormant(card)) {
-                    p.makeDormant(card);
-                    count++;
-                }
-            }
+        const cleaning = GamePendingTransition.cleaningPlan(
+            this.players,
+            cardName,
+            CARD_CATEGORIES.MAJOR,
+            (player, card) => player.isDormant(card)
+        );
+        for (const target of cleaning.targets) {
+            this.players[target.playerIndex].makeDormant(target.card);
         }
-        if (count <= 0) return false;
-        current.coins += count;
-        this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${count}軒を休業 → +${count}コイン`);
+        if (cleaning.reward <= 0) return false;
+        current.coins += cleaning.reward;
+        this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${cleaning.reward}軒を休業 → +${cleaning.reward}コイン`);
         this._consumePendingAction('pendingCleaning');
         this._checkPending();
         return true;
@@ -813,12 +819,18 @@ class GameManager {
         if (!current || !target) return false;
         const myCard = this._resolveCardRef(current, myCardRef);
         if (!myCard) { this.addLog(LOG_TYPES.ERROR, `❌ 渡せない施設です`); return false; }
-        const myCardWasDormant = current.isDormant(myCard);
-        current.revive(myCard);
-        current.cards.splice(current.cards.indexOf(myCard), 1);
-        target.cards.push(myCard);
-        if (myCardWasDormant) target.makeDormant(myCard);
-        current.coins += 4;
+        const transition = GamePendingTransition.moverPlan(
+            current.coins,
+            current.cards,
+            myCard,
+            current.isDormant(myCard)
+        );
+        if (!transition) { this.addLog(LOG_TYPES.ERROR, `❌ 渡せない施設です`); return false; }
+        current.revive(transition.card);
+        current.cards.splice(transition.cardIndex, 1);
+        target.cards.push(transition.card);
+        if (transition.dormant) target.makeDormant(transition.card);
+        current.coins = transition.actorCoins;
         this.addLog(LOG_TYPES.SPECIAL, `🚚 ${myCard.name}を${target.name}に渡して+4コイン`);
         this._consumePendingAction('pendingMover');
         this._checkPending();
@@ -845,8 +857,10 @@ class GameManager {
             return false;
         }
         if (!current) return false;
-        current.landmarks[landmarkName] = false;
-        current.coins += 8;
+        const transition = GamePendingTransition.renovationPlan(current.coins, current.landmarks, landmarkName);
+        if (!transition) return false;
+        current.landmarks[transition.landmarkName] = false;
+        current.coins = transition.actorCoins;
         this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+8コイン`);
         this._consumePendingAction('pendingRenovation');
 

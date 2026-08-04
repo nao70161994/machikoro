@@ -5,6 +5,7 @@ declare var GameDicePolicy: typeof import("../js/gameDicePolicy");
 declare var GameCardActivationPolicy: typeof import("../js/gameCardActivationPolicy");
 declare var GameBuildPolicy: typeof import("../js/gameBuildPolicy");
 declare var GameCoinTransaction: typeof import("../js/gameCoinTransaction");
+declare var GamePendingTransition: typeof import("../js/gamePendingTransition");
 declare var GamePendingResolutionPolicy: typeof import("../js/gamePendingResolutionPolicy");
 declare var OnlineSocketRegistry: typeof import("../js/onlineSocketRegistry");
 declare var ClientEventRuntime: typeof import("../js/clientEventRuntime");
@@ -45,6 +46,7 @@ interface Window {
     GameCardActivationPolicy: unknown;
     GameBuildPolicy: unknown;
     GameCoinTransaction: unknown;
+    GamePendingTransition: unknown;
     GamePendingResolutionPolicy: unknown;
     CPUBusinessMoves: unknown;
     AD_SLOT_CONFIGS: unknown;

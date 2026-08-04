@@ -14,6 +14,7 @@ const GAME_RUNTIME_SOURCE_FILES = Object.freeze([
     'js/gameCardActivationPolicy.js',
     'js/gameBuildPolicy.js',
     'js/gameCoinTransaction.js',
+    'js/gamePendingTransition.js',
     'js/gamePendingResolutionPolicy.js',
     'js/GameManager.js',
 ]);

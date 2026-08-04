@@ -26,7 +26,7 @@ function assertDependencyOrder(file, dependencies) {
 runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み込む', () => {
     const cases = [
         ['index.html', [
-            ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
+            ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBusinessMoves.js', 'js/CPU.js'],
@@ -148,7 +148,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/citySkyline.js', 'js/main.js'],
         ]],
         ['scripts/selfplay.js', [
-            ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
+            ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
             ['js/actionContract.js', 'js/gameEngine.js'],
             ['js/gameSnapshot.js', 'js/gameEngine.js'],
             ['js/gameSchemaCodec.js', 'js/gameEngine.js'],
@@ -162,7 +162,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/runtime-loaders.js', [
-            ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
+            ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
             ['js/actionContract.js', 'js/gameEngine.js'],
             ['js/gameSnapshot.js', 'js/gameEngine.js'],
             ['js/gameSchemaCodec.js', 'js/gameEngine.js'],
@@ -176,7 +176,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/integration-runtime.js', [
-            ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
+            ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
             ['js/cpuBusinessMoves.js', 'js/CPU.js'],
