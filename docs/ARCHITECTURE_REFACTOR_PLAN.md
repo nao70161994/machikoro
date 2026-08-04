@@ -708,3 +708,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Multiplayer leader and Cleaning bonus aggregation now belongs to the pure CPU evaluator with exact two-pass callback order and fixed-decision/self-play parity.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, reconnect effects, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 51 boundary update
+
+1. Restore generation/progress/quarantine/flush now have one lifecycle-controller owner while online queue, Socket, replay, and abort effects remain unchanged.
+2. Strong choice score coefficient composition now belongs to the pure CPU evaluator while feature acquisition, profiling, cache, and tuning adaptation stay in `CPU.js`.
+3. Pending-modal reentrancy state now belongs to an effect controller; modal admission policy and DOM effects remain in `ui.js` with unchanged order.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, UI presentation, and PWA defaults are unchanged.

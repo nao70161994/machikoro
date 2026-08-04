@@ -512,3 +512,12 @@ No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol,
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, reconnect timing/effects, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 51 architecture boundaries
+
+- `OnlineRestoreLifecycleState.createController()` now exclusively owns restore generation, in-progress, quarantine, and flush state; four parallel compatibility variables were removed. `online.js` retains queue effects, Socket callbacks, replay/abort ordering, and reconnect authority.
+- `CPUEvaluation.strongChoiceScore()` now owns strong position-score coefficient composition. `CPU.js` retains feature acquisition, profiling labels/order, cache access, and tuning; fixed decisions and the complete 2–10-player self-play baseline are unchanged.
+- `UiPendingEffects.createUpdateController()` now exclusively owns pending-modal update reentrancy state. `ui.js` retains blocking-modal policy, violation reporting, HTML assignment, and DOM interaction order.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, reconnect timing/effects, modal presentation, PWA/SW behavior, or production rollout default changed.

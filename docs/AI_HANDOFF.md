@@ -741,3 +741,11 @@ Test index:
 - Multiplayer threat-ratio bonuses belong to `CPUEvaluation.crowdLeaderBonus()` and `crowdCleaningBonus()`. Preserve current-player exclusion, max-threat first pass, second-pass threat/card reads, and all weights; require fixed-decision and 2–10-player self-play parity for changes.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 51 handoff (2026-08-04)
+
+- Restore generation, in-progress, quarantine, and flushing state belong exclusively to `OnlineRestoreLifecycleState.createController()`. Do not reintroduce parallel variables; preserve queue, Socket callback, replay, and abort effect ordering in `online.js`.
+- Strong choice score composition belongs to `CPUEvaluation.strongChoiceScore()`. Preserve the exact coefficients and keep feature acquisition/profiling order in `CPU.js`; require fixed-decision and 2–10-player self-play parity for changes.
+- Pending-modal update reentrancy belongs to `UiPendingEffects.createUpdateController()`. Preserve the pre-controller blocking-modal denial path and the HTML-before-interaction DOM effect order in `ui.js`.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
