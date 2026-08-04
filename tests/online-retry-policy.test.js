@@ -274,8 +274,12 @@ runTest('online action flight controllerはtimer不在でもflight時刻を保�
 runTest('online retry attempt controllerは回数と上限到達を一つのstateとして所有する', () => {
     const controller = OnlineRetryPolicy.createRejoinAttemptController();
     assert.deepStrictEqual(controller.snapshot(), { attemptCount: 0, exhausted: false });
+    assert.strictEqual(controller.getAttemptCount(), 0);
+    assert.strictEqual(controller.isExhausted(), false);
     assert.deepStrictEqual(controller.setAttemptCount(3), { attemptCount: 3, exhausted: false });
+    assert.strictEqual(controller.getAttemptCount(), 3);
     assert.deepStrictEqual(controller.markExhausted(), { attemptCount: 3, exhausted: true });
+    assert.strictEqual(controller.isExhausted(), true);
     assert.deepStrictEqual(controller.reset(), { attemptCount: 0, exhausted: false });
     assert.strictEqual(Object.isFrozen(controller.snapshot()), true);
     assert.throws(() => controller.setAttemptCount(-1), /non-negative integer/);

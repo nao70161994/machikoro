@@ -146,10 +146,8 @@ function setOnlineReconnectLegacyFlag(value) {
 let onlineActionInFlight = false;
 let onlineActionInFlightAt = 0;
 const onlineSchemaSelectionController = OnlineSchemaTransport.createSelectionController();
-let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
 let _rejoinRetryDeadline = 0;
-let _rejoinRetryExhausted = false;
 const _hostlessRestoreState = OnlineHostlessRestoreState.createController();
 let _onlineRestoreGeneration = 0;
 let _onlineRestoreInProgress = false;
@@ -431,10 +429,7 @@ const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 const _onlineReconnectController = OnlineReconnectState.createController();
-const _onlineRejoinAttemptController = OnlineRetryPolicy.createRejoinAttemptController({
-    attemptCount: _rejoinRetryCount,
-    exhausted: _rejoinRetryExhausted,
-});
+const _onlineRejoinAttemptController = OnlineRetryPolicy.createRejoinAttemptController();
 const _onlineRejoinTimerController = OnlineRetryPolicy.createRejoinTimerController({
     setTimer: typeof setTimeout === 'function' ? setTimeout : null,
     clearTimer: typeof clearTimeout === 'function' ? clearTimeout : null,
@@ -447,34 +442,22 @@ const _onlineActionFlightController = OnlineRetryPolicy.createActionFlightContro
 });
 const _onlineReconnectCompletionController = OnlineReconnectState.createCompletionController();
 
-function _syncOnlineRejoinAttemptCompatibilityState(snapshot) {
-    _rejoinRetryCount = snapshot.attemptCount;
-    _rejoinRetryExhausted = snapshot.exhausted;
-    return snapshot;
-}
-
 function _setOnlineRejoinAttemptCount(value) {
-    return _syncOnlineRejoinAttemptCompatibilityState(
-        _onlineRejoinAttemptController.setAttemptCount(value)
-    );
+    return _onlineRejoinAttemptController.setAttemptCount(value);
 }
 
 function _markOnlineRejoinAttemptExhausted() {
-    return _syncOnlineRejoinAttemptCompatibilityState(
-        _onlineRejoinAttemptController.markExhausted()
-    );
+    return _onlineRejoinAttemptController.markExhausted();
 }
 
 function _resetOnlineRejoinAttempt() {
-    return _syncOnlineRejoinAttemptCompatibilityState(
-        _onlineRejoinAttemptController.reset()
-    );
+    return _onlineRejoinAttemptController.reset();
 }
 
 function _onlineReconnectObservationFlags() {
     const connected = !!socket && socket.connected !== false;
     return {
-        failed: _rejoinRetryExhausted,
+        failed: _onlineRejoinAttemptController.isExhausted(),
         completed: _onlineReconnectCompletionController.isCompleted(),
         replaying: isReplaying,
         restoring: _onlineRestoreInProgress,
@@ -1111,13 +1094,13 @@ function _handleOnlineRejoinResponseTimeout() {
     if (_isOnlineReconnectCallbackAuthorityActive()) {
         const decision = OnlineRetryPolicy.rejoinTimeoutDecision(
             isReconnectingOnline,
-            _rejoinRetryCount
+            _onlineRejoinAttemptController.getAttemptCount()
         );
         if (decision === OnlineRetryPolicy.timeoutDecisions.IGNORE) return;
         shouldExhaust = decision === OnlineRetryPolicy.timeoutDecisions.EXHAUST;
     } else {
         if (!isReconnectingOnline) return;
-        shouldExhaust = OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount);
+        shouldExhaust = OnlineRetryPolicy.isRejoinExhausted(_onlineRejoinAttemptController.getAttemptCount());
     }
     if (shouldExhaust) {
         _finishRejoinRetryTimeout();
@@ -1128,7 +1111,7 @@ function _handleOnlineRejoinResponseTimeout() {
 }
 
 function _armOnlineRejoinResponseTimeout() {
-    if (_hasOnlineRejoinTimer() || _rejoinRetryExhausted || typeof setTimeout !== 'function') return true;
+    if (_hasOnlineRejoinTimer() || _onlineRejoinAttemptController.isExhausted() || typeof setTimeout !== 'function') return true;
     if (_isOnlineReconnectTimerAuthorityActive()) {
         return _onlineRejoinTimerController.arm(
             _handleOnlineRejoinResponseTimeout,
@@ -1166,15 +1149,15 @@ function _legacyOnlineRejoinRequestPlan(session) {
     let decision = decisions.REJECT;
     if (socket && session.roomId && !(session.playerIndex < 0) && session.playerName && session.reconnectToken) {
         if (socket.connected === false) decision = decisions.WAIT_FOR_SOCKET;
-        else if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) decision = decisions.EXHAUST;
+        else if (OnlineRetryPolicy.isRejoinExhausted(_onlineRejoinAttemptController.getAttemptCount())) decision = decisions.EXHAUST;
         else decision = decisions.EMIT;
     }
     return Object.freeze({
         decision,
         result: decision !== decisions.REJECT,
         nextAttemptCount: decision === decisions.EMIT
-            ? _rejoinRetryCount + 1
-            : _rejoinRetryCount,
+            ? _onlineRejoinAttemptController.getAttemptCount() + 1
+            : _onlineRejoinAttemptController.getAttemptCount(),
     });
 }
 
@@ -1193,7 +1176,7 @@ function _onlineReconnectRequestPlanSelection(session) {
         playerName: session.playerName,
         reconnectToken: session.reconnectToken,
         socketConnected: socket && socket.connected,
-        attemptCount: _rejoinRetryCount,
+        attemptCount: _onlineRejoinAttemptController.getAttemptCount(),
     }, legacyPlan, {
         authorityEnabled: requested && stateReady,
     });
@@ -1266,7 +1249,7 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
 }
 
 function resumeOnlineReconnectAfterPageActivation() {
-    if (!isReconnectingOnline || _rejoinRetryExhausted) return false;
+    if (!isReconnectingOnline || _onlineRejoinAttemptController.isExhausted()) return false;
     if (!socket || socket.connected === false) return false;
     if (_hasOnlineRejoinTimer() && _onlineRejoinTimerDeadline() > Date.now()) return false;
     _clearOnlineRejoinTimer();
@@ -4094,8 +4077,8 @@ function _sendRecreateRoomFromBundle(bundle) {
 }
 
 function _scheduleRejoinRetry() {
-    if (OnlineRetryPolicy.isRejoinExhausted(_rejoinRetryCount)) return _finishRejoinRetryTimeout();
+    if (OnlineRetryPolicy.isRejoinExhausted(_onlineRejoinAttemptController.getAttemptCount())) return _finishRejoinRetryTimeout();
     const el = document.getElementById("onlineStatus");
-    if (el) el.textContent = OnlineRetryPolicy.rejoinWaitingMessage(_rejoinRetryCount);
+    if (el) el.textContent = OnlineRetryPolicy.rejoinWaitingMessage(_onlineRejoinAttemptController.getAttemptCount());
     return _armOnlineRejoinResponseTimeout();
 }

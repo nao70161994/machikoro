@@ -193,7 +193,14 @@ function createRejoinAttemptController(initial = {}) {
         return snapshot();
     }
 
-    return Object.freeze({ snapshot, reset, setAttemptCount, markExhausted });
+    return Object.freeze({
+        getAttemptCount() { return attemptCount; },
+        isExhausted() { return exhausted; },
+        snapshot,
+        reset,
+        setAttemptCount,
+        markExhausted,
+    });
 }
 
 function createActionFlightController(options = {}) {
