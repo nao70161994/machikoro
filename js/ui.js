@@ -723,6 +723,9 @@ function showTurnAnnouncer(name, isCPU) {
     const view = UiTurnAnnouncer.buildView(name, isCPU);
     el.style.display = view.display;
     text.textContent = view.text;
+    if (!turnAnnouncerTimerController) {
+        turnAnnouncerTimerController = UiTurnAnnouncer.createTimerController();
+    }
     turnAnnouncerTimerController.start(view, {
         beginHide() { el.classList.add("hiding"); },
         finishHide() {
@@ -788,7 +791,7 @@ function applyCardSelectStateSnapshot() {
 }
 const logHistoryController = UiLogDisplay.createHistoryController();
 let prevPlayerIndex = -1;
-const turnAnnouncerTimerController = UiTurnAnnouncer.createTimerController();
+let turnAnnouncerTimerController = null;
 let cardFilter = '';
 let activeModalId = null;
 let lastModalFocus = null;
