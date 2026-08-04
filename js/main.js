@@ -15,6 +15,10 @@ function gameSetupSnapshot() {
     return GameSetupState.runtime.snapshot();
 }
 
+function mainOnlineRuntimeSnapshot() {
+    return OnlineRuntimeState.runtime.snapshot();
+}
+
 // 連勝記録
 UiWinner.streakRuntime.replace({
     winStreak: parseInt(safeMainStorageGet('winStreak', '0') || '0'),
@@ -391,7 +395,7 @@ function cpuDo(action, data, fallback) {
         ? CPUActionProposal.create(action, data)
         : null;
     if (!proposal) return false;
-    if (isOnlineGame) {
+    if (mainOnlineRuntimeSnapshot().isOnlineGame) {
         sendAction(proposal.action, proposal.data);
         return;
     }
@@ -509,8 +513,9 @@ function _finishLocalGameEngineShadow(prepared) {
 }
 
 function runLocalOrSendOnline(action, data, fallback) {
-    markMainCheckpoint('action-start', { action, isOnlineGame });
-    if (isOnlineGame) {
+    const onlineState = mainOnlineRuntimeSnapshot();
+    markMainCheckpoint('action-start', { action, isOnlineGame: onlineState.isOnlineGame });
+    if (onlineState.isOnlineGame) {
         const sent = sendAction(action, data);
         markMainCheckpoint('action-online-send', { action, sent });
         return sent;
@@ -661,7 +666,7 @@ const CPU_PHASE_HANDLERS = [
                 ? cpu.executeBuildAction(proposal, game, SHOP_STOCK)
                 : cpu.build(game, SHOP_STOCK);
             if (buildResult === false) {
-                if (isOnlineGame) return false;
+                if (mainOnlineRuntimeSnapshot().isOnlineGame) return false;
                 if (!game.builtThisTurn) {
                     markMainCheckpoint('scheduleCPU-build-failed-pass');
                     game.nextTurn();
@@ -694,7 +699,7 @@ function isMainOnlineReconnectInputBlocked() {
     if (typeof isOnlineReconnectInputBlocked === 'function') {
         return isOnlineReconnectInputBlocked();
     }
-    return typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline;
+    return mainOnlineRuntimeSnapshot().isReconnectingOnline;
 }
 
 function mainOnlineActionFlightState() {
@@ -708,14 +713,15 @@ function mainOnlineActionFlightState() {
 }
 
 function cpuScheduleBlockedReason() {
-    const online = typeof isOnlineGame !== 'undefined' && isOnlineGame;
+    const onlineState = mainOnlineRuntimeSnapshot();
+    const online = onlineState.isOnlineGame;
     const transportReason = CpuSchedulerState.blockedReason({
-        isReplaying: typeof isReplaying !== 'undefined' && isReplaying,
+        isReplaying: onlineState.isReplaying,
         isOnlineGame: online,
-        isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
+        isRoomHost: onlineState.isRoomHost,
         isReconnecting: online ? isMainOnlineReconnectInputBlocked() : false,
         onlineActionInFlight: online && mainOnlineActionFlightState().inFlight,
-        socketConnected: !online || (typeof socket !== 'undefined' && !!socket && socket.connected !== false),
+        socketConnected: !online || (!!onlineState.socket && onlineState.socket.connected !== false),
         hasGame: true,
         isCpuTurn: true,
     });
@@ -744,18 +750,19 @@ function currentCpuTurnSchedulerHealth() {
 }
 
 function scheduleCpuTurn(reason = 'scheduleCPU') {
+    const onlineState = mainOnlineRuntimeSnapshot();
     markMainCheckpoint('scheduleCPU-enter', {
         reason,
-        isReplaying: typeof isReplaying !== 'undefined' ? isReplaying : null,
-        isOnlineGame: typeof isOnlineGame !== 'undefined' ? isOnlineGame : null,
-        isRoomHost: typeof isRoomHost !== 'undefined' ? isRoomHost : null,
+        isReplaying: onlineState.isReplaying,
+        isOnlineGame: onlineState.isOnlineGame,
+        isRoomHost: onlineState.isRoomHost,
     });
-    if (isReplaying) { markMainCheckpoint('scheduleCPU-skip-replaying'); return currentCpuTurnSchedulerHealth(); }
-    if (isOnlineGame && !isRoomHost) { markMainCheckpoint('scheduleCPU-skip-non-host'); return currentCpuTurnSchedulerHealth(); }
-    if (isOnlineGame && (
+    if (onlineState.isReplaying) { markMainCheckpoint('scheduleCPU-skip-replaying'); return currentCpuTurnSchedulerHealth(); }
+    if (onlineState.isOnlineGame && !onlineState.isRoomHost) { markMainCheckpoint('scheduleCPU-skip-non-host'); return currentCpuTurnSchedulerHealth(); }
+    if (onlineState.isOnlineGame && (
         isMainOnlineReconnectInputBlocked() ||
         mainOnlineActionFlightState().inFlight ||
-        (typeof socket === 'undefined' || !socket || socket.connected === false)
+        (!onlineState.socket || onlineState.socket.connected === false)
     )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: mainOnlineActionFlightState().inFlight }); return currentCpuTurnSchedulerHealth(); }
     if (!game || game.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return currentCpuTurnSchedulerHealth(); }
     const ci = game.currentPlayerIndex;
@@ -786,12 +793,13 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
             return;
         }
         queueCPUStep(token, gameSetupSnapshot().cpuSpeed, () => {
-            if (isReplaying) return;
-            if (isOnlineGame && !isRoomHost) return;
-            if (isOnlineGame && (
+            const stepOnlineState = mainOnlineRuntimeSnapshot();
+            if (stepOnlineState.isReplaying) return;
+            if (stepOnlineState.isOnlineGame && !stepOnlineState.isRoomHost) return;
+            if (stepOnlineState.isOnlineGame && (
                 isMainOnlineReconnectInputBlocked() ||
                 mainOnlineActionFlightState().inFlight ||
-                (typeof socket === 'undefined' || !socket || socket.connected === false)
+                (!stepOnlineState.socket || stepOnlineState.socket.connected === false)
             )) return;
             if (!game || game.checkWinner()) return;
             if (!cpuPlayers[game.currentPlayerIndex]) return;
@@ -802,7 +810,7 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
             } catch (error) {
                 console.error('[cpu] phase step failed:', step.name, error);
                 markMainCheckpoint('scheduleCPU-step-error', { step: step.name, message: error && error.message || String(error) });
-                if (isOnlineGame) return;
+                if (mainOnlineRuntimeSnapshot().isOnlineGame) return;
                 if (step.name === 'build' && game.phase === GAME_PHASES.BUILD && !game.builtThisTurn) {
                     game.nextTurn();
                 }
@@ -944,7 +952,8 @@ function bindCpuResumeScheduler() {
 
 function canRunLocalHumanAction(expectedPlayerIndex = null) {
     if (!game || game.checkWinner()) return false;
-    const online = typeof isOnlineGame !== 'undefined' && isOnlineGame;
+    const onlineState = mainOnlineRuntimeSnapshot();
+    const online = onlineState.isOnlineGame;
     return LocalActionPolicy.canRunHumanAction({
         hasGame: true,
         hasWinner: false,
@@ -952,10 +961,10 @@ function canRunLocalHumanAction(expectedPlayerIndex = null) {
         currentPlayerIndex: game.currentPlayerIndex,
         isCpuTurn: !!cpuPlayers[game.currentPlayerIndex],
         isOnlineGame: online,
-        myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
+        myPlayerIndex: onlineState.myPlayerIndex,
         isReconnecting: online ? isMainOnlineReconnectInputBlocked() : false,
         onlineActionInFlight: online && mainOnlineActionFlightState().inFlight,
-        socketConnected: !online || (typeof socket !== 'undefined' && !!socket && socket.connected !== false),
+        socketConnected: !online || (!!onlineState.socket && onlineState.socket.connected !== false),
     });
 }
 
@@ -980,7 +989,7 @@ function onRoll() {
         const scheduledPlayerIndex = game.currentPlayerIndex;
         updateDiceDisplay(null, true);
         scheduleDelayedHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex, () => {
-            if (isOnlineGame) {
+            if (mainOnlineRuntimeSnapshot().isOnlineGame) {
                 runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => game.rollDice(null, null));
                 return;
             }
@@ -998,7 +1007,7 @@ function onSelectDiceCount(useTwo) {
     const scheduledPlayerIndex = game.currentPlayerIndex;
     updateDiceDisplay(null, true);
     scheduleDelayedHumanAction(MAIN_ACTIONS.SELECT_DICE, scheduledPlayerIndex, () => {
-        if (isOnlineGame) {
+        if (mainOnlineRuntimeSnapshot().isOnlineGame) {
             runLocalOrSendOnline('selectDice', { useTwo, diceCount: useTwo ? 2 : 1 },
                 () => game.selectDiceCount(useTwo, 1, useTwo ? 1 : 0, null));
             return;
@@ -1013,7 +1022,7 @@ function onSelectDiceCount(useTwo) {
 
 function onReroll() {
     if (!canRunHumanAction(MAIN_ACTIONS.REROLL_DICE)) return;
-    if (isOnlineGame) {
+    if (mainOnlineRuntimeSnapshot().isOnlineGame) {
         runLocalOrSendOnline('rerollDice', {}, () => game.rerollDice(1, null));
         return;
     }
@@ -1278,7 +1287,7 @@ function onBuildCard(name) {
         if (getShopStockCount(SHOP_STOCK, card) <= 0) { traceBuildFlow('card-out-of-stock', { cardName: name }); return; }
         saveUndoState();
         cancelAutoSkip();
-        if (isOnlineGame) {
+        if (mainOnlineRuntimeSnapshot().isOnlineGame) {
             const sent = sendAction('buildCard', { cardName: name });
             traceBuildFlow('card-online-send', { cardName: name, sent });
             return;
@@ -1308,7 +1317,7 @@ function onBuildLandmark(name) {
         if (!canRunHumanAction(MAIN_ACTIONS.BUILD_LANDMARK, scheduledPlayerIndex)) { traceBuildFlow('landmark-stale-action', { landmarkName: name, scheduledPlayerIndex }); return; }
         saveUndoState();
         cancelAutoSkip();
-        if (isOnlineGame) {
+        if (mainOnlineRuntimeSnapshot().isOnlineGame) {
             const sent = sendAction('buildLandmark', { name });
             traceBuildFlow('landmark-online-send', { landmarkName: name, sent });
             return;
@@ -1394,7 +1403,8 @@ function checkAutoSkip() {
     if (!game || game.checkWinner()) return;
     if (game.phase !== GAME_PHASES.BUILD) { cancelAutoSkip(); return; }
     if (cpuPlayers[game.currentPlayerIndex]) return;
-    if (isOnlineGame && game.currentPlayerIndex !== myPlayerIndex) return;
+    const onlineState = mainOnlineRuntimeSnapshot();
+    if (onlineState.isOnlineGame && game.currentPlayerIndex !== onlineState.myPlayerIndex) return;
     if (game.pendingRenovation > 0) return;
     if (game.builtThisTurn) { cancelAutoSkip(); return; }
 
