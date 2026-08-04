@@ -929,3 +929,11 @@ Test index:
 - `OnlineClientEffects` deliberately resolves functions lazily because `online.js` loads before UI/main in the classic-script order. Do not eagerly capture those functions or reorder UI/main ahead of online.
 - Scoped gates cover 225 ESLint files and 224 checkJs runtimes. The five large side-effect files remain excluded as whole files; continue reducing real dependencies before expanding their lint/type scope.
 - Continue in macro batches with a few substantive boundaries, targeted tests per theme, then one `npm run test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 74 handoff (2026-08-05)
+
+- Keep watchdog recovery decisions, effect ordering, render retries, checkpoints, CPU scheduling, and online resync in `appShell.js`; add reusable DOM unlock/query/insertion mechanics to `UiRecoveryEffects` instead of duplicating attribute/style mutations.
+- `online.js` must not call `document.getElementById`. Route status, lobby button, input, settings HTML, and title/game-screen operations through `onlineDomEffects`; extend its frozen ID registry and direct tests when a new online element is needed.
+- `OnlineDomEffects` is a DOM adapter only. Do not move Socket callbacks, reconnect state, restore authority, storage, protocol payloads, or lobby request state into it.
+- Scoped gates cover 226 ESLint files and 225 checkJs runtimes. The five orchestration files remain whole-file exclusions; continue removing real dependencies rather than declaring broad ambient globals.
+- Continue with macro batches: a few substantive boundaries, focused checks, then one `npm run test:batch`, one push, and one exact-HEAD CI check.

@@ -878,3 +878,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. Online orchestration now reaches main/UI side effects through `OnlineClientEffects`, replacing repeated ambient calls with one late-bound named adapter while preserving optional UI-lock/lifecycle hooks and required render/scheduler/notice contracts.
 2. Lifecycle notification orchestration moved from `appShell.js` to `LifecycleRuntime`; policy, storage, game/online/setup snapshots, transport, clock/randomness, and checkpoints are injected. App-shell public globals remain compatibility wrappers.
 3. The new boundaries are linted, type-checked, unit-tested, integration-tested, and present in the production/PWA load-order contract. No rule, CPU, wire, save, reconnect, lifecycle-notification, UI, or PWA behavior changed.
+
+## 2026-08-05 Batch 74 boundary update
+
+1. Watchdog recovery policy and DOM effects are now separated more sharply: `appShell.js` chooses the recovery target and order, while `UiRecoveryEffects` performs reusable element querying, Undo insertion, and interaction-lock mutation.
+2. `OnlineDomEffects` is the sole direct DOM access boundary for `online.js`, covering status, lobby controls, inputs, settings HTML, and game-screen activation. Online protocol/state/replay code no longer performs element lookup or mutation directly.
+3. Both boundaries are exercised by focused contracts plus watchdog integration, online, PWA, release, lint, and checkJs gates. No game, CPU, persistence, protocol, reconnect, presentation, or PWA contract changed.
