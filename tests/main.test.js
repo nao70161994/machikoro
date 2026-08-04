@@ -161,6 +161,14 @@ function loadMainRuntime(options = {}) {
         io() { return { on() {}, emit() {}, disconnect() {} }; },
         enabledCards: new Set(),
         enabledLandmarks: new Set(),
+        replaceEnabledCardSelection(values) {
+            context.enabledCards = new Set(values);
+            return context.enabledCards;
+        },
+        replaceEnabledLandmarkSelection(values) {
+            context.enabledLandmarks = new Set(values);
+            return context.enabledLandmarks;
+        },
         isOnlineGame: false,
         isReplaying: false,
         ...(typeof options.onlineReconnectInputBlocked === 'boolean' ? {

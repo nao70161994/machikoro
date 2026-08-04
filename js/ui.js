@@ -781,6 +781,18 @@ const cardSelectState = UiCardSelect.createSelectionController({
     enabledLandmarks,
 });
 
+function replaceEnabledCardSelection(values) {
+    enabledCards = new Set(values);
+    cardSelectState.replaceCards(enabledCards);
+    return enabledCards;
+}
+
+function replaceEnabledLandmarkSelection(values) {
+    enabledLandmarks = new Set(values);
+    cardSelectState.replaceLandmarks(enabledLandmarks);
+    return enabledLandmarks;
+}
+
 function syncCardSelectStateFromGlobals() {
     cardSelectState.replaceCards(enabledCards);
     return cardSelectState.replaceLandmarks(enabledLandmarks);
@@ -788,8 +800,8 @@ function syncCardSelectStateFromGlobals() {
 
 function applyCardSelectStateSnapshot() {
     const snapshot = cardSelectState.snapshot();
-    enabledCards = new Set(snapshot.enabledCards);
-    enabledLandmarks = new Set(snapshot.enabledLandmarks);
+    replaceEnabledCardSelection(snapshot.enabledCards);
+    replaceEnabledLandmarkSelection(snapshot.enabledLandmarks);
 }
 const logHistoryController = UiLogDisplay.createHistoryController();
 const activeGameTurnStateController = UiGameStatusEffects.createTurnStateController();

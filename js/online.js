@@ -2600,8 +2600,8 @@ function initSocket() {
             isOnlineGame = true;
             _setOnlineHostState(hostPlayerIndex);
             cpuSpeed = cs || 1500;
-            if (ec) enabledCards = new Set(ec);
-            enabledLandmarks = new Set((el && el.length > 0) ? el : Player.landmarkNames());
+            if (ec) replaceEnabledCardSelection(ec);
+            replaceEnabledLandmarkSelection((el && el.length > 0) ? el : Player.landmarkNames());
             try {
                 _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
                 _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
@@ -3029,8 +3029,8 @@ function initSocket() {
             if (plan.clearPendingOutboundAction) _clearPendingOutboundAction();
             _clearRejoinRetry();
             cpuSpeed = plan.cpuSpeed;
-            if (plan.updateEnabledCards) enabledCards = new Set(plan.enabledCards);
-            enabledLandmarks = new Set(plan.enabledLandmarks);
+            if (plan.updateEnabledCards) replaceEnabledCardSelection(plan.enabledCards);
+            replaceEnabledLandmarkSelection(plan.enabledLandmarks);
             myOriginalPlayerIndex = plan.playerIndex;
             myPlayerIndex = plan.playerIndex;
             _setOnlineHostState(plan.hostPlayerIndex);
@@ -3056,8 +3056,8 @@ function initSocket() {
                 clearPendingOutboundAction: () => _clearPendingOutboundAction(),
                 clearRetry: () => _clearRejoinRetry(),
                 setCpuSpeed: value => { cpuSpeed = value; },
-                setEnabledCards: values => { enabledCards = new Set(values); },
-                setEnabledLandmarks: values => { enabledLandmarks = new Set(values); },
+                setEnabledCards: values => { replaceEnabledCardSelection(values); },
+                setEnabledLandmarks: values => { replaceEnabledLandmarkSelection(values); },
                 setPlayerIndices: value => {
                     myOriginalPlayerIndex = value;
                     myPlayerIndex = value;

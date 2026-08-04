@@ -182,6 +182,21 @@ runTest('ui transient stateはeager controllerだけが所有する', () => {
     assert.ok(source.includes('UiBuildMenu.createFilterController()'));
 });
 
+runTest('card selection replacementはuiの共通境界だけが所有する', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const readSource = file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+    const uiSource = readSource('js/ui.js');
+
+    assert.ok(uiSource.includes('function replaceEnabledCardSelection(values)'));
+    assert.ok(uiSource.includes('function replaceEnabledLandmarkSelection(values)'));
+    for (const file of ['js/main.js', 'js/online.js', 'js/storage.js']) {
+        const source = readSource(file);
+        assert.strictEqual(/^\s*enabledCards\s*=\s*new Set\b/m.test(source), false, file);
+        assert.strictEqual(/^\s*enabledLandmarks\s*=\s*new Set\b/m.test(source), false, file);
+    }
+});
+
 runTest('ui modal runtime stateはpolicy controllerだけが所有する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/ui.js'), 'utf8');
     assert.strictEqual(source.includes('let activeModalId'), false);

@@ -44,6 +44,14 @@ function loadOnlineRuntime(options = {}) {
         let cpuPlayers = [];
         let enabledCards = new Set();
         let enabledLandmarks = new Set();
+        function replaceEnabledCardSelection(values) {
+            enabledCards = new Set(values);
+            return enabledCards;
+        }
+        function replaceEnabledLandmarkSelection(values) {
+            enabledLandmarks = new Set(values);
+            return enabledLandmarks;
+        }
         let prevCoins = null;
         let undoState = null;
         let cpuScheduleInvalidationCount = 0;

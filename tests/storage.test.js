@@ -75,6 +75,14 @@ function loadStorageRuntime(options = {}) {
         SHOP_STOCK: {},
         enabledCards: new Set(['麦畑']),
         enabledLandmarks: new Set(['駅', 'ショッピングモール']),
+        replaceEnabledCardSelection(values) {
+            context.enabledCards = new Set(values);
+            return context.enabledCards;
+        },
+        replaceEnabledLandmarkSelection(values) {
+            context.enabledLandmarks = new Set(values);
+            return context.enabledLandmarks;
+        },
         cpuPlayers: [],
         cpuSpeed: 1500,
         selectedCount: 2,

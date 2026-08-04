@@ -321,7 +321,7 @@ function init(playerCount) {
     undoState = null;
     resetFullLog();
     game = new GameManager(playerCount);
-    if (enabledLandmarks.size === 0) enabledLandmarks = new Set(Player.landmarkNames());
+    if (enabledLandmarks.size === 0) replaceEnabledLandmarkSelection(Player.landmarkNames());
     game.enabledLandmarks = new Set(enabledLandmarks);
     for (const card of CARDS) {
         setShopStockCount(SHOP_STOCK, card, enabledCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0);

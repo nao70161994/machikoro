@@ -330,8 +330,8 @@ function resumeGame(options = {}) {
             },
             applySettings(plan) {
                 cpuSpeed = plan.cpuSpeed;
-                if (plan.enabledCards) enabledCards = new Set(plan.enabledCards);
-                enabledLandmarks = new Set(plan.enabledLandmarks);
+                if (plan.enabledCards) replaceEnabledCardSelection(plan.enabledCards);
+                replaceEnabledLandmarkSelection(plan.enabledLandmarks);
             },
             createAndHydrateGame(plan) {
                 game = new GameManager(plan.playerCount);
