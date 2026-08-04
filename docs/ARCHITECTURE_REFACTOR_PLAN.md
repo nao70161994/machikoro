@@ -576,3 +576,11 @@ These changes deepen rule-policy, online-state, and CPU-evaluation ownership wit
 4. A direct whole-file `storage.js` checkJs trial produced more than 100 ambient-global errors. The migration therefore continues by extracting typed runtime boundaries instead of declaring globals merely to silence the checker.
 
 Scoped gates now cover 204 ESLint maintenance files and 203 checkJs runtime files. Production authority and compatibility defaults are unchanged.
+
+## 2026-08-04 Batch 35 boundary update
+
+1. Red-card activation now has a detached domain plan for conditional admission, activation kind, and requested transfer. Opponent/card traversal and capped sequential mutation remain in the rule engine.
+2. Local save now passes through a typed runtime boundary: pure admission preserves no-game → online → winner order, then an explicit executor contains only serializer/repository failures. Wire shape and repository policy remain outside it.
+3. Watchdog reporting now has an explicit ordered effect executor. Freeze classification and recovery implementation remain in app-shell/watchdog policy, while report persistence and notification order are directly contract-tested.
+
+Scoped gates now cover 206 ESLint maintenance files and 205 checkJs runtime files. Authority, protocol/schema, persistence format, and PWA defaults are unchanged.

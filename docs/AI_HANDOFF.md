@@ -613,3 +613,11 @@ Test index:
 - Local resume RL preload generation/pending state belongs to `LocalResumePreloadState`. `storage.js` may project pending state to the button, but stale Promise completion must pass `finish(generation)` before resume or error effects.
 - Do not add broad ambient declarations to place `storage.js` in checkJs. Its direct trial exposed more than 100 global-coupling errors; extract typed adapters/controllers first. Scoped gates are 204 ESLint maintenance files and 203 checkJs runtime files, with the same five side-effect runtimes excluded as whole files.
 - Continue with at most three rollbackable themes, focused checks per theme, and one batch-end `test:batch`, push, and exact-HEAD CI check.
+
+## 2026-08-04 Batch 35 handoff
+
+- Red-card admission/kind/requested amount belongs to `GameCardActivationPolicy.redActivationPlan()`. Keep landmark/coin/category facts lazy. `GameManager` owns opponent and card order, revival, capped transfer application, balances, and logs.
+- Local-save admission and serialize/save exception containment belong to `LocalSaveRuntime`. Keep winner lookup after no-game/online short circuits and do not move payload fields or repository version policy into this executor.
+- Watchdog checkpoint → recovery → storage → report ordering belongs to `UiWatchdogReporting`. `appShell.js` owns classification, recovery handlers, adapters, and scheduling. Preserve report key, message, stack construction timing, and recovery-before-serialization semantics.
+- Scoped gates are 206 ESLint maintenance files and 205 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`; continue extracting typed boundaries instead of adding ambient declarations.
+- Keep batches at no more than three rollbackable themes, with focused checks per theme and one batch-end `test:batch`, push, and exact-HEAD CI check.

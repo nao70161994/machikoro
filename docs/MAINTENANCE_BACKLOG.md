@@ -366,3 +366,11 @@ Continue batch-by-batch re-auditing for small contract-first boundaries. The kno
 - `js/localResumePreloadState.js` now owns RL preload pending state, generation, and stale-completion rejection. `storage.js` projects pending state to the existing resume button and retains repository reads, RL model calls, hydration, notices, and resume effects. Script/PWA cache order is contract-checked.
 - Scoped gates now cover 204 ESLint maintenance files and 203 checkJs runtime files. Whole-file `storage.js` checkJs remains deferred: direct admission exposes more than 100 ambient browser-global errors, so future progress must move typed boundaries out rather than add suppressing ambient declarations.
 - No game result, CPU strength, save/localStorage format, Socket.IO protocol, reconnect authority/default, or PWA/SW cache policy changed.
+
+## 2026-08-04 Batch 35 architecture boundaries
+
+- `GameCardActivationPolicy.redActivationPlan()` now owns frozen Harbor Sushi, French Restaurant, Members Bar, and ordinary red-card admission/kind/requested-amount decisions. Landmark, coin, and Mall category facts remain lazy. `GameManager` retains opponent/card order, revival, balance-capped collection, mutation, and exact logs.
+- `js/localSaveRuntime.js` now owns local-save admission and the serialize → repository-save exception boundary. `storage.js` retains live game/settings adapters and the exact legacy payload fields; winner lookup still occurs after no-game/online short circuits and outside the swallowed persistence-error boundary.
+- `js/uiWatchdogReporting.js` now owns checkpoint → recovery → snapshot storage → client-report ordering and message construction. `appShell.js` retains freeze observation/classification, live recovery handlers, storage/report adapters, and watchdog scheduling.
+- Scoped gates now cover 206 ESLint maintenance files and 205 checkJs runtime files. The same five side-effect runtimes remain excluded as whole files while typed boundaries continue moving out.
+- No game result, CPU strength, save/localStorage format, Socket.IO protocol, reconnect authority/default, watchdog recovery classification, or PWA/SW cache policy changed.
