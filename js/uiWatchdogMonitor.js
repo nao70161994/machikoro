@@ -7,6 +7,27 @@ const UiWatchdogMonitor = (() => {
         REPORT_AND_RECOVER: 'report-and-recover',
     });
 
+    function createPendingBatchController() {
+        let remaining = 0;
+
+        function snapshot() {
+            return Object.freeze({ pending: remaining > 0, remaining });
+        }
+
+        function begin(taskCount) {
+            if (remaining > 0) return false;
+            remaining = Number.isInteger(taskCount) && taskCount > 0 ? taskCount : 0;
+            return remaining > 0;
+        }
+
+        function complete() {
+            if (remaining > 0) remaining--;
+            return snapshot();
+        }
+
+        return Object.freeze({ snapshot, begin, complete });
+    }
+
     function create(options = {}) {
         const thresholdMs = Number.isFinite(options.thresholdMs) ? options.thresholdMs : 5000;
         const reportSuppressMs = Number.isFinite(options.reportSuppressMs)
@@ -55,7 +76,7 @@ const UiWatchdogMonitor = (() => {
         return Object.freeze({ reset, observeProgress, decideReport, snapshot });
     }
 
-    return Object.freeze({ ACTIONS, create });
+    return Object.freeze({ ACTIONS, createPendingBatchController, create });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiWatchdogMonitor;

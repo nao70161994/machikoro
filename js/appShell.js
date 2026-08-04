@@ -29,7 +29,7 @@ const clientErrorAdmissionController = ClientReporting.createAdmissionController
     suppressMs: CLIENT_ERROR_REPORT_SUPPRESS_MS,
     now: () => Date.now(),
 });
-let _postBuildUiStabilizerPending = false;
+const postBuildUiStabilizerBatch = UiWatchdogMonitor.createPendingBatchController();
 
 const truncateClientErrorField = ClientReporting.truncateField;
 
@@ -766,22 +766,20 @@ function stabilizePostBuildNextTurnUi(reason = 'post-build-ui-stabilizer') {
 }
 
 function schedulePostBuildUiStabilizer(reason = 'post-build-ui-stabilizer') {
-    if (_postBuildUiStabilizerPending) return false;
+    if (postBuildUiStabilizerBatch.snapshot().pending) return false;
     const snapshot = buildClientRuntimeSnapshot(reason + '-schedule');
     if (!isPostBuildNextTurnSnapshot(snapshot)) return false;
-    _postBuildUiStabilizerPending = true;
     const delays = [0, 250, 1500, 3500];
-    let remaining = delays.length;
+    if (!postBuildUiStabilizerBatch.begin(delays.length)) return false;
     const run = () => {
         stabilizePostBuildNextTurnUi(reason);
-        remaining--;
-        if (remaining <= 0) _postBuildUiStabilizerPending = false;
+        postBuildUiStabilizerBatch.complete();
     };
     try {
         if (typeof setTimeout === 'function') delays.forEach(delay => setTimeout(run, delay));
-        else while (remaining > 0) run();
+        else while (postBuildUiStabilizerBatch.snapshot().pending) run();
     } catch (_) {
-        while (remaining > 0) run();
+        while (postBuildUiStabilizerBatch.snapshot().pending) run();
     }
     return true;
 }

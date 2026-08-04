@@ -51,3 +51,17 @@ assert.deepStrictEqual(monitor.observeProgress('', 80000), {
 });
 
 console.log('ui-watchdog-monitor.test.js passed');
+
+const batch = UiWatchdogMonitor.createPendingBatchController();
+assert.deepStrictEqual(batch.snapshot(), { pending: false, remaining: 0 });
+assert.strictEqual(batch.begin(4), true);
+assert.strictEqual(batch.begin(2), false);
+assert.deepStrictEqual(batch.complete(), { pending: true, remaining: 3 });
+batch.complete();
+batch.complete();
+assert.deepStrictEqual(batch.complete(), { pending: false, remaining: 0 });
+assert.deepStrictEqual(batch.complete(), { pending: false, remaining: 0 });
+assert.strictEqual(batch.begin(0), false);
+assert.ok(Object.isFrozen(batch));
+assert.ok(Object.isFrozen(batch.snapshot()));
+console.log('ui-watchdog pending batch controller passed');
