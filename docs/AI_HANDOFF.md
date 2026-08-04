@@ -817,3 +817,12 @@ Test index:
 - The next selection-state step is a neutral runtime owner for reads and projections; do not remove compatibility globals or alter `index.html` script order piecemeal.
 - Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 60 handoff (2026-08-04)
+
+- Enabled card/landmark selection belongs exclusively to `GameSelectionState.runtime`. Use detached `snapshot()`, `cards()`, or `landmarks()` reads and the existing replacement functions; do not recreate ambient mutable `enabledCards` / `enabledLandmarks` globals.
+- `UiCardSelect.createSelectionController()` is a modal-edit draft, not persistent authority. Synchronize it from `GameSelectionState.runtime` when rendering and apply its snapshot through the neutral replacement boundary.
+- Landmark-saving admission belongs to `CPUEvaluation.shouldHoldForLandmark()`. Preserve enabled/built/cost/shortfall/urgency read order, urgency-first then shortfall tie selection, `urgency >= 6`, and the exact `1.2` threshold; require fixed-decision and CPU parity checks for changes.
+- Reroll reset belongs to `GameDicePolicy.rerollResetState()`. Keep RNG, mutable effects, and old/new dice log composition in `GameManager` after the reset plan is applied.
+- Scoped gates are 216 ESLint maintenance files and 215 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

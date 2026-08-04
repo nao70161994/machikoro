@@ -772,3 +772,11 @@ Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. 
 3. Complete card/landmark selection writes now use one synchronized UI boundary across local, online, restore, and modal paths. Compatibility reads remain until a neutral runtime owner can replace them safely.
 
 Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Rules, CPU strength/RNG, protocol/schema, persistence, reconnect and CPU timing, UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 60 boundary update
+
+1. Enabled card/landmark selection now has one neutral runtime owner, and the four consumer runtimes no longer share writable compatibility sets. UI selection state is explicitly a modal draft.
+2. CPU landmark-saving selection now belongs to the pure evaluator while live feature adaptation stays in the strategy runtime.
+3. Reroll-start state now comes from an immutable dice-policy plan while GameManager remains the RNG, mutation, and log-effect adapter.
+
+Scoped gates now cover 216 ESLint maintenance files and 215 checkJs runtime files. Rules, CPU strength/RNG, protocol/schema, persistence, reconnect behavior, UI behavior, and PWA defaults are unchanged.

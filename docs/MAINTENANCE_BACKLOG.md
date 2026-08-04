@@ -595,3 +595,12 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event
 - Full removal of the card/landmark compatibility `Set` projections remains deferred until reads can move behind a neutral runtime boundary without changing script order. Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files; whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect/CPU scheduling timing, UI presentation, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 60 architecture boundaries
+
+- `GameSelectionState.runtime` is now the sole mutable owner of enabled card and landmark selection. The ambient `enabledCards` / `enabledLandmarks` compatibility globals were removed; local start, online create/start/rejoin, save/restore, tutorial/build/player views, and the card-select modal consume detached snapshots or sets through the neutral boundary. The modal controller remains a draft only, and production/PWA load order is contract-tested.
+- `CPUEvaluation.shouldHoldForLandmark()` now owns landmark-saving candidate traversal, urgency/shortfall tie order, and the final threshold. `CPU.js` only adapts live game/player facts; lazy eligibility reads, every numeric threshold, fixed decisions, and the CPU test suite are unchanged.
+- `GameDicePolicy.rerollResetState()` now owns the immutable reroll-start transition for used-reroll, dice reset, empty log, and roll phase. `GameManager` retains admission, RNG, mutable application, reroll execution, and exact result-log order.
+- Scoped gates now cover 216 ESLint maintenance files and 215 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect timing, dice outcome/log order, UI presentation, or PWA/SW behavior changed.
