@@ -1160,6 +1160,27 @@ runTest('addLogエントリが{type,message}構造を持ちLOG_TYPESの値を使
 
 // ===== processIncome / 収入計算 =====
 
+runTest('複数の会員制BARはカード順に残高上限まで徴収する', () => {
+    const game = new GameManager(2);
+    const current = game.players[0];
+    const opponent = game.players[1];
+    current.coins = 5;
+    current.landmarks['駅'] = true;
+    current.landmarks['ショッピングモール'] = true;
+    current.landmarks['遊園地'] = true;
+    opponent.coins = 1;
+    opponent.cards = [createCardByName('会員制BAR'), createCardByName('会員制BAR')];
+
+    game._processRed(current, 0, 12);
+
+    assert.strictEqual(current.coins, 0);
+    assert.strictEqual(opponent.coins, 6);
+    assert.deepStrictEqual(Array.from(game.log, entry => entry.message), [
+        '🍸 プレイヤー2の会員制BAR発動 → 5コイン全奪取',
+        '🍸 プレイヤー2の会員制BAR発動 → 0コイン全奪取',
+    ]);
+});
+
 runTest('青カード（麦畑）がダイス1で全プレイヤーに収入をもたらす', () => {
     const game = new GameManager(2);
     const coins0 = game.players[0].coins;

@@ -457,6 +457,7 @@ class GameManager {
             if (i === ci) continue;
             const other = this.players[i];
             const revivedCards = this._reviveDormantCardsForDice(other, dice, card => card.color === "red");
+            const activations = [];
             for (const card of other.cards) {
                 if (revivedCards.has(card)) continue;
                 if (other.isDormant(card)) continue;
@@ -464,33 +465,39 @@ class GameManager {
                 if (card.effect === CARD_EFFECTS.HARBOR_RED && !other.landmarks[LANDMARK_NAMES.HARBOR]) continue;
 
                 if (card.effect === CARD_EFFECTS.FRENCHR) {
-                    const built = current.builtLandmarkCount();
-                    if (built < 2) continue;
-                    const steal = Math.min(card.income, current.coins);
-                    current.coins -= steal;
-                    other.coins += steal;
-                    this.addLog(LOG_TYPES.LOSE, `🍽️ ${other.name}の高級フレンチ発動 → ${steal}コイン獲得`);
+                    if (current.builtLandmarkCount() < 2) continue;
+                    activations.push({ card, kind: 'french', requested: card.income });
                     continue;
                 }
 
                 if (card.effect === CARD_EFFECTS.MEMBERBAR) {
-                    const built = current.builtLandmarkCount();
-                    if (built < 3) continue;
-                    const steal = current.coins;
-                    current.coins = 0;
-                    other.coins += steal;
-                    this.addLog(LOG_TYPES.LOSE, `🍸 ${other.name}の会員制BAR発動 → ${steal}コイン全奪取`);
+                    if (current.builtLandmarkCount() < 3) continue;
+                    activations.push({ card, kind: 'member-bar', requested: current.coins });
                     continue;
                 }
 
                 let amount = card.income;
                 if (other.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
                     isCardInCategoryGroup(card, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP)) amount += 1;
-                amount = Math.min(amount, current.coins);
-                current.coins -= amount;
-                other.coins += amount;
-                this.addLog(LOG_TYPES.LOSE, `💸 ${other.name}の${card.name}発動 → ${amount}コイン獲得`);
+                activations.push({ card, kind: 'normal', requested: amount });
             }
+
+            const plan = GameCoinTransaction.sequentialCollectionPlan(
+                current.coins,
+                activations.map(activation => activation.requested)
+            );
+            current.coins = plan.remaining;
+            other.coins += plan.total;
+            activations.forEach((activation, index) => {
+                const transfer = plan.transfers[index];
+                if (activation.kind === 'french') {
+                    this.addLog(LOG_TYPES.LOSE, `🍽️ ${other.name}の高級フレンチ発動 → ${transfer}コイン獲得`);
+                } else if (activation.kind === 'member-bar') {
+                    this.addLog(LOG_TYPES.LOSE, `🍸 ${other.name}の会員制BAR発動 → ${transfer}コイン全奪取`);
+                } else {
+                    this.addLog(LOG_TYPES.LOSE, `💸 ${other.name}の${activation.card.name}発動 → ${transfer}コイン獲得`);
+                }
+            });
         }
     }
 

@@ -35,3 +35,22 @@ runTest('coin transactionは不正なshapeを副作用前に拒否する', () =>
     assert.throws(() => GameCoinTransaction.collectionPlan([1], 2, [0]), /receiverIndex/);
     assert.throws(() => GameCoinTransaction.equalDistributionPlan([], 0), /non-empty/);
 });
+
+runTest('coin transactionは同一playerへの連続徴収を入力順と残高上限で計画する', () => {
+    const plan = GameCoinTransaction.sequentialCollectionPlan(5, [2, 5, 1]);
+    assert.deepStrictEqual(plan, {
+        remaining: 0,
+        transfers: [2, 3, 0],
+        total: 5,
+    });
+    assert.strictEqual(Object.isFrozen(plan), true);
+    assert.strictEqual(Object.isFrozen(plan.transfers), true);
+});
+
+runTest('coin transactionは空の連続徴収をidentity planにする', () => {
+    assert.deepStrictEqual(GameCoinTransaction.sequentialCollectionPlan(7, []), {
+        remaining: 7,
+        transfers: [],
+        total: 0,
+    });
+});

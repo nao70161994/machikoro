@@ -53,9 +53,27 @@ const GameCoinTransaction = (() => {
         });
     }
 
+    function sequentialCollectionPlan(available, requestedAmounts) {
+        if (!Number.isFinite(available) || !Array.isArray(requestedAmounts)) {
+            throw new TypeError('available and requestedAmounts are required');
+        }
+        let remaining = available;
+        const transfers = requestedAmounts.map(requested => {
+            const transfer = Math.min(requested || 0, remaining);
+            remaining -= transfer;
+            return transfer;
+        });
+        return Object.freeze({
+            remaining,
+            transfers: Object.freeze(transfers),
+            total: available - remaining,
+        });
+    }
+
     return Object.freeze({
         collectionPlan,
         equalDistributionPlan,
+        sequentialCollectionPlan,
     });
 })();
 
