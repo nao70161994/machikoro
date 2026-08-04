@@ -58,10 +58,54 @@ function blueIncomePlan(facts = {}) {
     });
 }
 
+const greenActivationKinds = Object.freeze({
+    WINERY: 'winery',
+    MOVER: 'mover',
+    LOAN: 'loan',
+    RENOVATION: 'renovation',
+    NORMAL: 'normal',
+});
+
+function greenActivationPlan(facts = {}) {
+    const plan = (kind, options = {}) => Object.freeze({
+        kind,
+        amount: options.amount || 0,
+        pendingField: options.pendingField || '',
+        shouldDormant: options.shouldDormant === true,
+        hasTarget: options.hasTarget === true,
+    });
+    if (facts.effect === facts.effects.WINERY) {
+        const amount = typeof facts.income === 'function' ? facts.income() : facts.income;
+        return plan(greenActivationKinds.WINERY, {
+            amount,
+            shouldDormant: amount > 0,
+        });
+    }
+    if (facts.effect === facts.effects.MOVER) {
+        return plan(greenActivationKinds.MOVER, { pendingField: 'pendingMover' });
+    }
+    if (facts.effect === facts.effects.LOAN) {
+        return plan(greenActivationKinds.LOAN);
+    }
+    if (facts.effect === facts.effects.RENOVATION) {
+        const hasTarget = typeof facts.hasRenovationTarget === 'function'
+            ? facts.hasRenovationTarget()
+            : facts.hasRenovationTarget;
+        return plan(greenActivationKinds.RENOVATION, {
+            pendingField: hasTarget ? 'pendingRenovation' : '',
+            hasTarget,
+        });
+    }
+    const amount = typeof facts.income === 'function' ? facts.income() : facts.income;
+    return plan(greenActivationKinds.NORMAL, { amount });
+}
+
 const GameCardActivationPolicy = Object.freeze({
     eligibleDormantCards,
     blueIncomeKinds,
     blueIncomePlan,
+    greenActivationKinds,
+    greenActivationPlan,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameCardActivationPolicy;

@@ -70,3 +70,65 @@ runTest('card activation policyはマグロdiceを港条件通過後だけ評価
     assert.strictEqual(reads, 1);
     assert.strictEqual(Object.isFrozen(plan.dice), true);
 });
+
+runTest('card activation policyは緑カードの収入・pending・休業をdetached planにする', () => {
+    const effects = {
+        WINERY: 'winery',
+        MOVER: 'mover',
+        LOAN: 'loan',
+        RENOVATION: 'renovation',
+    };
+    assert.deepStrictEqual(GameCardActivationPolicy.greenActivationPlan({
+        effect: effects.WINERY, effects, income: 6,
+    }), {
+        kind: 'winery', amount: 6, pendingField: '', shouldDormant: true, hasTarget: false,
+    });
+    assert.deepStrictEqual(GameCardActivationPolicy.greenActivationPlan({
+        effect: effects.MOVER, effects,
+    }), {
+        kind: 'mover', amount: 0, pendingField: 'pendingMover',
+        shouldDormant: false, hasTarget: false,
+    });
+    assert.deepStrictEqual(GameCardActivationPolicy.greenActivationPlan({
+        effect: effects.RENOVATION, effects, hasRenovationTarget: true,
+    }), {
+        kind: 'renovation', amount: 0, pendingField: 'pendingRenovation',
+        shouldDormant: false, hasTarget: true,
+    });
+    assert.deepStrictEqual(GameCardActivationPolicy.greenActivationPlan({
+        effect: 'normal', effects, income: 4,
+    }), {
+        kind: 'normal', amount: 4, pendingField: '', shouldDormant: false, hasTarget: false,
+    });
+});
+
+runTest('card activation policyは緑カードkind確定後だけ必要なfactを読む', () => {
+    const effects = {
+        WINERY: 'winery',
+        MOVER: 'mover',
+        LOAN: 'loan',
+        RENOVATION: 'renovation',
+    };
+    let incomeReads = 0;
+    let targetReads = 0;
+    const facts = {
+        effects,
+        income: () => { incomeReads++; return 3; },
+        hasRenovationTarget: () => { targetReads++; return false; },
+    };
+
+    GameCardActivationPolicy.greenActivationPlan({ ...facts, effect: effects.MOVER });
+    GameCardActivationPolicy.greenActivationPlan({ ...facts, effect: effects.LOAN });
+    assert.deepStrictEqual({ incomeReads, targetReads }, { incomeReads: 0, targetReads: 0 });
+
+    const renovation = GameCardActivationPolicy.greenActivationPlan({
+        ...facts, effect: effects.RENOVATION,
+    });
+    assert.strictEqual(renovation.hasTarget, false);
+    assert.deepStrictEqual({ incomeReads, targetReads }, { incomeReads: 0, targetReads: 1 });
+
+    const normal = GameCardActivationPolicy.greenActivationPlan({ ...facts, effect: 'normal' });
+    assert.strictEqual(normal.amount, 3);
+    assert.deepStrictEqual({ incomeReads, targetReads }, { incomeReads: 1, targetReads: 1 });
+    assert.strictEqual(Object.isFrozen(normal), true);
+});

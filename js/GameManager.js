@@ -539,39 +539,41 @@ class GameManager {
             if (current.isDormant(card)) continue;
             if (card.color !== "green" || !card.diceNums.includes(dice)) continue;
 
-            // 副作用を持つカードは先に処理して continue
-            if (card.effect === CARD_EFFECTS.WINERY) {
-                const amount = GameManager.calcCardIncome(card, current, this);
-                if (amount > 0) {
-                    current.coins += amount;
-                    this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${amount}コイン`);
-                    current.makeDormant(card);
+            const plan = GameCardActivationPolicy.greenActivationPlan({
+                effect: card.effect,
+                effects: CARD_EFFECTS,
+                income: () => GameManager.calcCardIncome(card, current, this),
+                hasRenovationTarget: () => Object.entries(current.landmarks)
+                    .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO)
+                    .length > 0,
+            });
+            if (plan.kind === GameCardActivationPolicy.greenActivationKinds.WINERY) {
+                if (plan.amount > 0) {
+                    current.coins += plan.amount;
+                    this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${plan.amount}コイン`);
+                    if (plan.shouldDormant) current.makeDormant(card);
                     this.addLog(LOG_TYPES.SPECIAL, `💤 ワイナリーが休業`);
                 }
                 continue;
             }
-            if (card.effect === CARD_EFFECTS.MOVER) {
-                this._enqueuePendingAction('pendingMover');
+            if (plan.kind === GameCardActivationPolicy.greenActivationKinds.MOVER) {
+                this._enqueuePendingAction(plan.pendingField);
                 this.addLog(LOG_TYPES.SPECIAL, `🚚 引越し屋発動 → 渡す施設を選んでください`);
                 continue;
             }
-            if (card.effect === CARD_EFFECTS.LOAN) continue;
-            if (card.effect === CARD_EFFECTS.RENOVATION) {
-                const builtLandmarks = Object.entries(current.landmarks)
-                    .filter(([name, built]) => built && name !== LANDMARK_NAMES.YAKUSHO);
-                if (builtLandmarks.length > 0) {
-                    this._enqueuePendingAction('pendingRenovation');
+            if (plan.kind === GameCardActivationPolicy.greenActivationKinds.LOAN) continue;
+            if (plan.kind === GameCardActivationPolicy.greenActivationKinds.RENOVATION) {
+                if (plan.hasTarget) {
+                    this._enqueuePendingAction(plan.pendingField);
                     this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋発動 → 戻すランドマークを選んでください`);
                 } else {
                     this.addLog(LOG_TYPES.SPECIAL, `🔨 改装屋：建設済みランドマークがないため不発`);
                 }
                 continue;
             }
-
-            const amount = GameManager.calcCardIncome(card, current, this);
-            if (amount > 0) {
-                current.coins += amount;
-                this.addLog(LOG_TYPES.GAIN, `🏪 ${card.name}発動 → +${amount}コイン`);
+            if (plan.amount > 0) {
+                current.coins += plan.amount;
+                this.addLog(LOG_TYPES.GAIN, `🏪 ${card.name}発動 → +${plan.amount}コイン`);
             }
         }
 
