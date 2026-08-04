@@ -64,6 +64,7 @@ interface Window {
     OnlineRetryPolicy: unknown;
     OnlineClientEffects: unknown;
     OnlineDomEffects: unknown;
+    OnlineSocketEffects: unknown;
     OnlineSocketRegistry: unknown;
     OnlinePlayerSettings: unknown;
     OnlineActionLog: unknown;

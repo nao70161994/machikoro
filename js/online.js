@@ -32,6 +32,10 @@ const onlineClientEffects = OnlineClientEffects.createFromResolver(name => {
 const onlineDomEffects = OnlineDomEffects.createRuntime({
     getDocument: () => typeof document !== 'undefined' ? document : null,
 });
+const onlineSocketEffects = OnlineSocketEffects.createRuntime({
+    getSocket: () => onlineSessionSnapshot().socket,
+    hostlessEvents: OnlinePayload.hostlessRestoreEvents,
+});
 
 function onlineGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
@@ -1166,7 +1170,7 @@ function _onlineReconnectRequestEffectAuthoritySelection(planSelection) {
 }
 
 function _emitOnlineRejoinSocket(session) {
-    onlineSessionSnapshot().socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
+    onlineSocketEffects.rejoinRoom(buildOnlineRejoinPayload(session));
 }
 
 function _runOnlineReconnectRequestEffectsLegacy(plan, session) {
@@ -3286,11 +3290,11 @@ function initSocket() {
                 OnlinePendingResend.execute(pendingResendPlan, {
                     clearPendingOutboundAction: () => _clearPendingOutboundAction(),
                     setActionFlight: () => _setOnlineActionInFlight(true),
-                    emitAction: pending => pendingSocket.emit('gameAction', {
+                    emitAction: pending => onlineSocketEffects.gameAction({
                         action: pending.action,
                         data: pending.data,
                         clientActionId: pending.clientActionId,
-                    }),
+                    }, pendingSocket),
                 });
                 return;
             }
@@ -3300,11 +3304,11 @@ function initSocket() {
             }
             if (pendingResendPlan.decision === pendingResendDecisions.RESEND) {
                 _setOnlineActionInFlight(true);
-                pendingSocket.emit('gameAction', {
+                onlineSocketEffects.gameAction({
                     action: pendingResendPlan.pending.action,
                     data: pendingResendPlan.pending.data,
                     clientActionId: pendingResendPlan.pending.clientActionId,
-                });
+                }, pendingSocket);
             }
         };
         const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
@@ -3335,10 +3339,10 @@ function initSocket() {
         const respond = approved => {
             const responseSocket = onlineSessionSnapshot().socket;
             if (!responseSocket || responseSocket.connected === false) return;
-            responseSocket.emit(hostlessEvents.CONFIRM, {
+            onlineSocketEffects.confirmHostlessRestore({
                 roomId,
                 approved: approved === true,
-            });
+            }, responseSocket);
         };
         if (typeof showConfirm !== 'function' ||
                 showConfirm(message, () => respond(true), () => respond(false)) !== true) {
@@ -3629,7 +3633,7 @@ function emitCreateRoom(name, playerCount = onlineSetupStateController.snapshot(
         clientVersion: getClientVersion(),
         hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
     };
-    onlineSessionSnapshot().socket.emit('createRoom', OnlinePayload.withGameSchemaCapabilities(
+    onlineSocketEffects.createRoom(OnlinePayload.withGameSchemaCapabilities(
         createPayload, getGameSchemaCapabilitiesForTransport()
     ));
 }
@@ -3687,7 +3691,7 @@ function joinRoom() {
         clientVersion: getClientVersion(),
         hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
     };
-    onlineSessionSnapshot().socket.emit('joinRoom', OnlinePayload.withGameSchemaCapabilities(
+    onlineSocketEffects.joinRoom(OnlinePayload.withGameSchemaCapabilities(
         joinPayload, getGameSchemaCapabilitiesForTransport()
     ));
 }
@@ -3875,7 +3879,7 @@ function sendAction(action, data = {}) {
             _clearPendingOutboundAction();
             return false;
         }
-        session.socket.emit('gameAction', encodedWire.value);
+        onlineSocketEffects.gameAction(encodedWire.value, session.socket);
         return true;
     }
     return !session.isOnlineGame;
@@ -3946,7 +3950,7 @@ function _requestHostlessRestore() {
     );
     if (!payload || !_hostlessRestoreState.tryBegin(true)) return false;
     setOnlineReconnectLegacyFlag(true);
-    currentSocket.emit(OnlinePayload.hostlessRestoreEvents.REQUEST, payload);
+    onlineSocketEffects.requestHostlessRestore(payload, currentSocket);
     return true;
 }
 
@@ -3961,7 +3965,7 @@ function _submitHostlessRestoreCandidate(generation) {
         _onlineHostlessRestoreIdentity()
     );
     if (!payload || !currentSocket || currentSocket.connected === false) return false;
-    currentSocket.emit(OnlinePayload.hostlessRestoreEvents.CANDIDATE, payload);
+    onlineSocketEffects.submitHostlessRestoreCandidate(payload, currentSocket);
     return true;
 }
 
@@ -3982,7 +3986,7 @@ function _sendRecreateRoomFromBundle(bundle) {
         onlineDomEffects.setStatusText('❌ 復元payloadのschema変換に失敗しました');
         return false;
     }
-    session.socket.emit('recreateRoom', encoded.value);
+    onlineSocketEffects.recreateRoom(encoded.value);
     return true;
 }
 

@@ -218,6 +218,17 @@ runTest('online DOM read/writeは単一effect runtimeを経由する', () => {
     assert.ok(source.includes('onlineDomEffects.applyButtonView'));
 });
 
+runTest('online Socket送信は単一effect runtimeを経由する', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    assert.ok(source.includes('OnlineSocketEffects.createRuntime'));
+    assert.strictEqual(source.includes('.emit('), false);
+    assert.ok(source.includes('onlineSocketEffects.gameAction'));
+    assert.ok(source.includes('onlineSocketEffects.rejoinRoom'));
+    assert.ok(source.includes('onlineSocketEffects.recreateRoom'));
+});
+
 runTest('mainはonline sessionをruntime snapshot境界から読む', () => {
     const fs = require('fs');
     const path = require('path');

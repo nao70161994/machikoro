@@ -2380,7 +2380,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/storedOnlineReconnect.js', 'js/storage.js');
     assertBefore('js/onlineSchemaTransport.js', 'js/onlineClientEffects.js');
     assertBefore('js/onlineClientEffects.js', 'js/onlineDomEffects.js');
-    assertBefore('js/onlineDomEffects.js', 'js/online.js');
+    assertBefore('js/onlineDomEffects.js', 'js/onlineSocketEffects.js');
+    assertBefore('js/onlineSocketEffects.js', 'js/online.js');
     assertBefore('js/storage.js', 'js/appShell.js');
     assertBefore('js/clientStorage.js', 'js/appShellStorage.js');
     assertBefore('js/clientStorage.js', 'js/storage.js');

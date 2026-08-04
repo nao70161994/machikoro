@@ -315,6 +315,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineSchemaTransport.js');
         files.push('js/onlineClientEffects.js');
         files.push('js/onlineDomEffects.js');
+        files.push('js/onlineSocketEffects.js');
         files.push('js/online.js');
     }
     files.push('js/main.js');

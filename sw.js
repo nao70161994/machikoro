@@ -102,6 +102,7 @@ const STATIC_ASSETS = [
   '/js/onlineSchemaTransport.js',
   '/js/onlineClientEffects.js',
   '/js/onlineDomEffects.js',
+  '/js/onlineSocketEffects.js',
   '/js/online.js',
   '/js/uiNotice.js',
   '/js/uiLogDisplay.js',
