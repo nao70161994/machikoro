@@ -2466,33 +2466,37 @@ class CPU {
     }
 
     _exchangeReceivedCardValue(card, game, player) {
-        if (card.effect === CARD_EFFECTS.LOAN) {
-            const nextCopyOrdinal = player.countCard("貸金業") + 1;
-            return this._estimateLoanBurdenValue(player, nextCopyOrdinal);
-        }
-        if (card.effect === CARD_EFFECTS.RENOVATION) {
-            const nextCopyOrdinal = player.countCard("改装屋") + 1;
-            return this._estimateRenovationValue(game, player, nextCopyOrdinal);
-        }
-        let baseValue;
-        if (card.color === "blue" || card.color === "green") {
-            baseValue = GameManager.calcCardIncome(card, player, game);
-        }
-        else if (card.color === "red") {
-            baseValue = card.income;
-        }
-        else {
-            baseValue = card.income || card.cost || 0;
-        }
-        return this._strongSoftCapValue(baseValue) * this._cardDiceFreq(card, game, player) + card.cost * 1.4;
+        return CPUEvaluation.receivedCardValue(card, CARD_EFFECTS, {
+            loanValue: () => {
+                const nextCopyOrdinal = player.countCard("貸金業") + 1;
+                return this._estimateLoanBurdenValue(player, nextCopyOrdinal);
+            },
+            renovationValue: () => {
+                const nextCopyOrdinal = player.countCard("改装屋") + 1;
+                return this._estimateRenovationValue(game, player, nextCopyOrdinal);
+            },
+            baseValue: () => {
+                if (card.color === "blue" || card.color === "green") {
+                    return GameManager.calcCardIncome(card, player, game);
+                }
+                if (card.color === "red") return card.income;
+                return card.income || card.cost || 0;
+            },
+            softCap: value => this._strongSoftCapValue(value),
+            diceFrequency: () => this._cardDiceFreq(card, game, player),
+        });
     }
 
     _exchangeOwnedCardValue(card, game, player) {
-        let value = this._exchangeReceivedCardValue(card, game, player);
-        if (player.isDormant(card)) value *= 0.35;
-        if (card.color === "red") value += 1.5;
-        value += this._cardDependencyValue(card, player, game);
-        return value;
+        return CPUEvaluation.ownedCardValue(
+            this._exchangeReceivedCardValue(card, game, player),
+            card,
+            {
+                dormant: player.isDormant(card),
+                purpleBonus: 0,
+                dependencyValue: this._cardDependencyValue(card, player, game),
+            }
+        );
     }
 
     _opponentDilutionFactor(game) {
@@ -2501,41 +2505,31 @@ class CPU {
     }
 
     _receivedCardValue(card, game, player) {
-        if (card.effect === CARD_EFFECTS.LOAN) {
-            const nextCopyOrdinal = player.countCard("貸金業") + 1;
-            return this._estimateLoanBurdenValue(player, nextCopyOrdinal);
-        }
-        if (card.effect === CARD_EFFECTS.RENOVATION) {
-            const nextCopyOrdinal = player.countCard("改装屋") + 1;
-            return this._estimateRenovationValue(game, player, nextCopyOrdinal);
-        }
-        let baseValue;
-        switch (card.effect) {
-            case CARD_EFFECTS.BUSINESS:
-                baseValue = this._strongSoftCapValue(3.5);
-                break;
-            case CARD_EFFECTS.CLEANING:
-                baseValue = this._strongSoftCapValue(3);
-                break;
-            case CARD_EFFECTS.MOVER:
-                baseValue = this._strongSoftCapValue(2.5);
-                break;
-            case CARD_EFFECTS.PARK:
-                baseValue = this._strongSoftCapValue(1.5);
-                break;
-            default:
+        return CPUEvaluation.receivedCardValue(card, CARD_EFFECTS, {
+            loanValue: () => {
+                const nextCopyOrdinal = player.countCard("貸金業") + 1;
+                return this._estimateLoanBurdenValue(player, nextCopyOrdinal);
+            },
+            renovationValue: () => {
+                const nextCopyOrdinal = player.countCard("改装屋") + 1;
+                return this._estimateRenovationValue(game, player, nextCopyOrdinal);
+            },
+            specialEffectBaseValues: {
+                [CARD_EFFECTS.BUSINESS]: 3.5,
+                [CARD_EFFECTS.CLEANING]: 3,
+                [CARD_EFFECTS.MOVER]: 2.5,
+                [CARD_EFFECTS.PARK]: 1.5,
+            },
+            baseValue: () => {
                 if (card.color === "blue" || card.color === "green") {
-                    baseValue = this._strongSoftCapValue(GameManager.calcCardIncome(card, player, game));
-                    break;
+                    return GameManager.calcCardIncome(card, player, game);
                 }
-                if (card.color === "red") {
-                    baseValue = this._strongSoftCapValue(card.income);
-                    break;
-                }
-                baseValue = this._strongSoftCapValue(card.income || card.cost || 0);
-                break;
-        }
-        return baseValue * this._cardDiceFreq(card, game, player) + card.cost * 1.4;
+                if (card.color === "red") return card.income;
+                return card.income || card.cost || 0;
+            },
+            softCap: value => this._strongSoftCapValue(value),
+            diceFrequency: () => this._cardDiceFreq(card, game, player),
+        });
     }
 
     _cardDependencyValue(card, player, game) {
@@ -2562,12 +2556,15 @@ class CPU {
             if (player.isDormant(card)) value *= 0.35;
             return value;
         }
-        let value = this._receivedCardValue(card, game, player);
-        if (player.isDormant(card)) value *= 0.35;
-        if (card.color === "red") value += 1.5;
-        if (card.color === "purple") value += 2;
-        value += this._cardDependencyValue(card, player, game);
-        return value;
+        return CPUEvaluation.ownedCardValue(
+            this._receivedCardValue(card, game, player),
+            card,
+            {
+                dormant: player.isDormant(card),
+                purpleBonus: 2,
+                dependencyValue: this._cardDependencyValue(card, player, game),
+            }
+        );
     }
 
     _builtLandmarkValue(name, current, game) {

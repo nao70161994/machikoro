@@ -919,6 +919,25 @@ const CPUEvaluation = Object.freeze({
         if (Number.isFinite(deltaEv) && deltaEv > 0.45) return 0;
         return current.countCard(card.name) >= 3 ? 0.75 : 0.45;
     },
+    receivedCardValue(card, effects, options) {
+        if (card.effect === effects.LOAN) return options.loanValue();
+        if (card.effect === effects.RENOVATION) return options.renovationValue();
+        const specialValues = options.specialEffectBaseValues || {};
+        const baseValue = Object.prototype.hasOwnProperty.call(specialValues, card.effect)
+            ? specialValues[card.effect]
+            : options.baseValue();
+        return options.softCap(baseValue) * options.diceFrequency() + card.cost * 1.4;
+    },
+
+    ownedCardValue(receivedValue, card, options) {
+        let value = receivedValue;
+        if (options.dormant === true) value *= 0.35;
+        if (card.color === 'red') value += 1.5;
+        if (card.color === 'purple') value += options.purpleBonus || 0;
+        value += options.dependencyValue;
+        return value;
+    },
+
     isProgressIncomeCard(card, player, effects) {
         if (!card || !player || player.isDormant(card)) return false;
         if (card.color !== 'blue' && card.color !== 'green') return false;

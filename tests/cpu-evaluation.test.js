@@ -3,6 +3,45 @@ const { CPUEvaluation } = require('../js/cpuEvaluation');
 const { runTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
+runTest('CPU evaluation は受取カード価値のeffect dispatchと算術順をpureに維持する', () => {
+    const effects = { LOAN: 'loan', RENOVATION: 'renovation', BUSINESS: 'business' };
+    const calls = [];
+    const options = {
+        loanValue: () => { calls.push('loan'); return -4; },
+        renovationValue: () => { calls.push('renovation'); return 3; },
+        specialEffectBaseValues: { business: 3.5 },
+        baseValue: () => { calls.push('base'); return 4; },
+        softCap: value => { calls.push(['cap', value]); return value - 1; },
+        diceFrequency: () => { calls.push('dice'); return 2; },
+    };
+
+    assert.strictEqual(CPUEvaluation.receivedCardValue({ effect: 'loan' }, effects, options), -4);
+    assert.deepStrictEqual(calls, ['loan']);
+    calls.length = 0;
+    assert.strictEqual(CPUEvaluation.receivedCardValue({
+        effect: 'business', cost: 2,
+    }, effects, options), 7.8);
+    assert.deepStrictEqual(calls, [['cap', 3.5], 'dice']);
+    calls.length = 0;
+    assert.strictEqual(CPUEvaluation.receivedCardValue({
+        effect: 'normal', cost: 1,
+    }, effects, options), 7.4);
+    assert.deepStrictEqual(calls, ['base', ['cap', 4], 'dice']);
+});
+
+runTest('CPU evaluation は所有カードの休業・色・依存補正を同じ加算順で適用する', () => {
+    assert.strictEqual(CPUEvaluation.ownedCardValue(10, { color: 'red' }, {
+        dormant: true,
+        purpleBonus: 2,
+        dependencyValue: 4,
+    }), 9);
+    assert.strictEqual(CPUEvaluation.ownedCardValue(10, { color: 'purple' }, {
+        dormant: false,
+        purpleBonus: 2,
+        dependencyValue: 4,
+    }), 16);
+});
+
 runTest('CPU evaluation は進行収入カードの色・休業・特殊effect契約を判定する', () => {
     const effects = {
         LOAN: 'loan',
