@@ -270,3 +270,25 @@ runTest('online action flight controllerはtimer不在でもflight時刻を保�
         timeoutPending: false,
     });
 });
+
+runTest('online retry attempt controllerは回数と上限到達を一つのstateとして所有する', () => {
+    const controller = OnlineRetryPolicy.createRejoinAttemptController();
+    assert.deepStrictEqual(controller.snapshot(), { attemptCount: 0, exhausted: false });
+    assert.deepStrictEqual(controller.setAttemptCount(3), { attemptCount: 3, exhausted: false });
+    assert.deepStrictEqual(controller.markExhausted(), { attemptCount: 3, exhausted: true });
+    assert.deepStrictEqual(controller.reset(), { attemptCount: 0, exhausted: false });
+    assert.strictEqual(Object.isFrozen(controller.snapshot()), true);
+    assert.throws(() => controller.setAttemptCount(-1), /non-negative integer/);
+    assert.throws(() => controller.setAttemptCount(1.5), /non-negative integer/);
+});
+
+runTest('online retry attempt controllerは明示した初期stateを正規化する', () => {
+    assert.deepStrictEqual(
+        OnlineRetryPolicy.createRejoinAttemptController({ attemptCount: 7, exhausted: true }).snapshot(),
+        { attemptCount: 7, exhausted: true }
+    );
+    assert.deepStrictEqual(
+        OnlineRetryPolicy.createRejoinAttemptController({ attemptCount: -1, exhausted: 'yes' }).snapshot(),
+        { attemptCount: 0, exhausted: false }
+    );
+});

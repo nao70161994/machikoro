@@ -416,6 +416,10 @@ const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
 const _onlineReconnectController = OnlineReconnectState.createController();
+const _onlineRejoinAttemptController = OnlineRetryPolicy.createRejoinAttemptController({
+    attemptCount: _rejoinRetryCount,
+    exhausted: _rejoinRetryExhausted,
+});
 const _onlineRejoinTimerController = OnlineRetryPolicy.createRejoinTimerController({
     setTimer: typeof setTimeout === 'function' ? setTimeout : null,
     clearTimer: typeof clearTimeout === 'function' ? clearTimeout : null,
@@ -427,6 +431,31 @@ const _onlineActionFlightController = OnlineRetryPolicy.createActionFlightContro
     now: () => Date.now(),
 });
 let _onlineReconnectCompleted = false;
+
+function _syncOnlineRejoinAttemptCompatibilityState(snapshot) {
+    _rejoinRetryCount = snapshot.attemptCount;
+    _rejoinRetryExhausted = snapshot.exhausted;
+    return snapshot;
+}
+
+function _setOnlineRejoinAttemptCount(value) {
+    return _syncOnlineRejoinAttemptCompatibilityState(
+        _onlineRejoinAttemptController.setAttemptCount(value)
+    );
+}
+
+function _markOnlineRejoinAttemptExhausted() {
+    return _syncOnlineRejoinAttemptCompatibilityState(
+        _onlineRejoinAttemptController.markExhausted()
+    );
+}
+
+function _resetOnlineRejoinAttempt() {
+    return _syncOnlineRejoinAttemptCompatibilityState(
+        _onlineRejoinAttemptController.reset()
+    );
+}
+
 let _lastOnlineRestoreQueuePlanSelection = Object.freeze({
     source: 'none',
     matched: true,
@@ -826,6 +855,7 @@ function getOnlineReconnectStateSnapshot() {
         authority: _onlineReconnectAuthoritySelection(),
         effectAuthority: _onlineReconnectEffectSelection(isReconnectingOnline),
         timerAuthority: _onlineReconnectTimerAuthoritySelection(),
+        rejoinAttempt: _onlineRejoinAttemptController.snapshot(),
         callbackAuthority: _onlineReconnectCallbackAuthoritySelection(),
         cleanupAuthority: _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline),
         cleanupEffectAuthority: getOnlineReconnectCleanupEffectSelection(),
@@ -1037,8 +1067,7 @@ function _clearOnlineRejoinTimer() {
 }
 
 function _clearRejoinRetry() {
-    _rejoinRetryCount = 0;
-    _rejoinRetryExhausted = false;
+    _resetOnlineRejoinAttempt();
     _clearOnlineRejoinTimer();
 }
 
@@ -1052,7 +1081,7 @@ function _finishRejoinRetryTimeout() {
         return true;
     }
     _clearOnlineRejoinTimer();
-    _rejoinRetryExhausted = true;
+    _markOnlineRejoinAttemptExhausted();
     const retryExhaustedMessage = '❌ 再接続がタイムアウトしました。再接続をやり直すか、タイトルへ戻ってください。';
     // Canonical state is unknown. Keep all game input and host CPU blocked.
     setOnlineReconnectLegacyFlag(true);
@@ -1182,7 +1211,7 @@ function _emitOnlineRejoinSocket(session) {
 
 function _runOnlineReconnectRequestEffectsLegacy(plan, session) {
     _clearOnlineRejoinTimer();
-    _rejoinRetryCount = plan.nextAttemptCount;
+    _setOnlineRejoinAttemptCount(plan.nextAttemptCount);
     _emitOnlineRejoinSocket(session);
     _armOnlineRejoinResponseTimeout();
 }
@@ -1196,7 +1225,7 @@ function _runOnlineReconnectRequestEffects(planSelection, session) {
     }
     OnlineReconnectRequest.execute(planSelection.plan, {
         clearTimer: () => _clearOnlineRejoinTimer(),
-        setAttemptCount: value => { _rejoinRetryCount = value; },
+        setAttemptCount: value => { _setOnlineRejoinAttemptCount(value); },
         emitRejoin: () => _emitOnlineRejoinSocket(session),
         armTimer: () => _armOnlineRejoinResponseTimeout(),
     });
@@ -3460,7 +3489,7 @@ function initSocket() {
         ]);
         if (!terminalReasons.has(reason)) return;
         _hostlessRestorePending = false;
-        _rejoinRetryExhausted = true;
+        _markOnlineRejoinAttemptExhausted();
         setOnlineReconnectLegacyFlag(true);
         _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED);
         if (el) {

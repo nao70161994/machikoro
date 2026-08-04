@@ -164,6 +164,38 @@ function createRejoinTimerController(options = {}) {
     });
 }
 
+function createRejoinAttemptController(initial = {}) {
+    let attemptCount = Number.isInteger(initial.attemptCount) && initial.attemptCount >= 0
+        ? initial.attemptCount
+        : 0;
+    let exhausted = initial.exhausted === true;
+
+    function snapshot() {
+        return Object.freeze({ attemptCount, exhausted });
+    }
+
+    function reset() {
+        attemptCount = 0;
+        exhausted = false;
+        return snapshot();
+    }
+
+    function setAttemptCount(value) {
+        if (!Number.isInteger(value) || value < 0) {
+            throw new TypeError('attemptCount must be a non-negative integer');
+        }
+        attemptCount = value;
+        return snapshot();
+    }
+
+    function markExhausted() {
+        exhausted = true;
+        return snapshot();
+    }
+
+    return Object.freeze({ snapshot, reset, setAttemptCount, markExhausted });
+}
+
 function createActionFlightController(options = {}) {
     const setTimer = typeof options.setTimer === 'function' ? options.setTimer : null;
     const clearTimer = typeof options.clearTimer === 'function' ? options.clearTimer : null;
@@ -233,6 +265,7 @@ const OnlineRetryPolicy = Object.freeze({
     timeoutDecisions: REJOIN_TIMEOUT_DECISIONS,
     rejoinTimeoutDecision,
     createRejoinTimerController,
+    createRejoinAttemptController,
     createActionFlightController,
     actionAckAgeMs,
     isActionAckTimedOut,

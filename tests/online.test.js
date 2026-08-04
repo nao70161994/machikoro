@@ -287,7 +287,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.isOnlineGame !== 'undefined') isOnlineGame = v.isOnlineGame;
             if (typeof v.isReplaying !== 'undefined') isReplaying = v.isReplaying;
             if (typeof v.onlineRestoreInProgress !== 'undefined') _onlineRestoreInProgress = v.onlineRestoreInProgress;
-            if (typeof v.rejoinRetryExhausted !== 'undefined') _rejoinRetryExhausted = v.rejoinRetryExhausted;
+            if (v.rejoinRetryExhausted === true) _markOnlineRejoinAttemptExhausted();
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
             if (typeof v.onlineActionInFlight !== 'undefined') onlineActionInFlight = v.onlineActionInFlight;
@@ -575,6 +575,10 @@ runTest('online.jsのreconnect観測状態は既存booleanの優先順位を維�
     localRt.setOnlineState({ rejoinRetryExhausted: true });
     const failedState = localRt.getOnlineState();
     assert.strictEqual(failedState.reconnectState, 'failed');
+    assert.deepStrictEqual({ ...failedState.reconnectStateSnapshot.rejoinAttempt }, {
+        attemptCount: 0,
+        exhausted: true,
+    });
     assert.strictEqual(failedState.reconnectStateSnapshot.invalidTransitionCount, 0);
     assert.deepStrictEqual(
         Array.from(failedState.reconnectStateSnapshot.history.slice(-6), entry => entry.to),
