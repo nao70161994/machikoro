@@ -36,11 +36,11 @@ function setStorageOnlineReconnectLegacyFlag(value) {
     return isReconnectingOnline;
 }
 
+const localResumePreloadController = LocalResumePreloadState.create();
 let localResumePending = false;
-let localResumeGeneration = 0;
 
-function setLocalResumePending(pending) {
-    localResumePending = pending === true;
+function applyLocalResumePreloadState(state) {
+    localResumePending = state.pending;
     const button = typeof document !== 'undefined' && document.getElementById
         ? document.getElementById('btnResume')
         : null;
@@ -49,6 +49,22 @@ function setLocalResumePending(pending) {
         button.disabled = view.disabled;
         button.textContent = view.textContent;
     }
+}
+
+function setLocalResumePending(pending) {
+    applyLocalResumePreloadState(localResumePreloadController.setPending(pending));
+}
+
+function startLocalResumePreload() {
+    const state = localResumePreloadController.start();
+    applyLocalResumePreloadState(state);
+    return state.generation;
+}
+
+function finishLocalResumePreload(generation) {
+    const result = localResumePreloadController.finish(generation);
+    if (result.accepted) applyLocalResumePreloadState(result.state);
+    return result.accepted;
 }
 
 const STORAGE_ONLINE_SESSION_KEY = typeof ONLINE_SESSION_STORAGE_KEY !== 'undefined'
@@ -274,16 +290,13 @@ function resumeGame(options = {}) {
         if (decision.kind === LocalResumePolicy.DECISIONS.PRELOAD_RL) {
             const preload = RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
             if (preload && typeof preload.then === 'function') {
-                const resumeGeneration = ++localResumeGeneration;
-                setLocalResumePending(true);
+                const resumeGeneration = startLocalResumePreload();
                 showNotice("深層学習AIモデルを読み込んでいます。");
                 preload.then(() => {
-                    if (resumeGeneration !== localResumeGeneration) return;
-                    setLocalResumePending(false);
+                    if (!finishLocalResumePreload(resumeGeneration)) return;
                     resumeGame({ fromPreload: true, skipRlPreload: true });
                 }).catch(error => {
-                    if (resumeGeneration !== localResumeGeneration) return;
-                    setLocalResumePending(false);
+                    if (!finishLocalResumePreload(resumeGeneration)) return;
                     console.error(error);
                     showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度再開してください。");
                 });

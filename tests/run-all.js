@@ -147,6 +147,7 @@ const TEST_GROUPS = {
         'saved-game-validation.test.js',
         'storage-settings.test.js',
         'local-resume-policy.test.js',
+        'local-resume-preload-state.test.js',
         'local-resume-view.test.js',
         'stored-online-reconnect.test.js',
         'storage.test.js',

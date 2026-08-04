@@ -2239,6 +2239,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/savedGameValidation.js', 'js/storage.js');
     assertBefore('js/storageSettings.js', 'js/storage.js');
     assertBefore('js/localResumePolicy.js', 'js/storage.js');
+    assertBefore('js/localResumePreloadState.js', 'js/storage.js');
     assertBefore('js/localResumeView.js', 'js/storage.js');
     assertBefore('js/storedOnlineReconnect.js', 'js/storage.js');
     assertBefore('js/onlineSchemaTransport.js', 'js/online.js');
