@@ -1000,3 +1000,9 @@ Test index:
 - `ClientEventRuntime` still owns listener registration; `AppShellStartupRuntime` only sequences its named methods with `AppShellRuntimeEffects`.
 - Whole-file app-shell checkJs is not ready: the latest audit reports 102 ambient classic-script references. Continue removing dependencies instead of declaring them globally.
 - Scoped gates cover 236 ESLint files and 235 checkJs runtimes; `appShell.js` is 578 lines.
+
+## Batch 84 handoff (2026-08-05)
+
+- `tests/game-schema-shadow-parity.test.js` now covers Stadium transfers from every opponent, including zero/one-coin partial payments.
+- Preserve the 2/3/5/10-player and independent action/snapshot v0/v1 matrix when extending this fixture set.
+- No production authority flag or runtime path changed; authority rollout remains a separate human-controlled decision.

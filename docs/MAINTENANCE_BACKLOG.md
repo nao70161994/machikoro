@@ -782,3 +782,9 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `appShell.js` retains classic-script dependency composition and compatibility delegates. Focused contracts fix startup effect order, preload reasons, online projection, and PWA method forwarding. Scoped gates now cover 236 ESLint maintenance files and 235 checkJs runtime files.
 - Whole-file checkJs admission for `appShell.js` remains deferred after an explicit audit found 102 ambient classic-script references; these must be removed through real boundaries rather than hidden with broad declarations.
 - Startup order, online/offline presentation, PWA prompts, game rules, CPU behavior, protocol, reconnect, and persistence are unchanged.
+
+## 2026-08-05 Batch 84 Engine shadow parity expansion
+
+- The deterministic Engine shadow matrix now covers Stadium income across every opponent when some opponents cannot pay the full two coins.
+- The fixture runs for 2, 3, 5, and 10 players across independent action/snapshot schema v0/v1 selections, fixing both multiplayer iteration and partial-payment semantics before any authority rollout.
+- This is test-only: game rules, CPU behavior/RNG, save formats, online protocol/reconnect, localStorage, and PWA/SW behavior are unchanged.

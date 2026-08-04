@@ -938,3 +938,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `AppShellStartupRuntime` owns online availability, PWA delegation, and main-view startup orchestration through injected view/effect/controllers.
 2. `appShell.js` remains the composition and compatibility surface; startup policy/effect order no longer lives inline.
 3. Whole-file app-shell checkJs still reports 102 ambient classic-script references, so typed-boundary extraction continues instead of adding suppressing ambient declarations.
+
+## 2026-08-05 Batch 84 parity update
+
+1. Engine shadow parity now includes Stadium's multi-opponent transfer with insufficient payer balances.
+2. The same trace is checked for 2/3/5/10 players and every independent action/snapshot schema v0/v1 pairing.
+3. Production authority remains unchanged and default-OFF; this batch only expands the rollout safety contract.
