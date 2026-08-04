@@ -57,6 +57,78 @@ const CpuSchedulerState = (() => {
         };
     }
 
+    function createController(initial = {}) {
+        let scheduleToken = Number.isInteger(initial.scheduleToken) ? initial.scheduleToken : 0;
+        let pendingToken = Number.isInteger(initial.pendingToken) ? initial.pendingToken : null;
+        let scheduledUntilValue = Number.isFinite(initial.scheduledUntil) ? initial.scheduledUntil : 0;
+
+        function snapshot() {
+            return Object.freeze({
+                scheduleToken,
+                pendingToken,
+                scheduledUntil: scheduledUntilValue,
+            });
+        }
+
+        function invalidate() {
+            scheduleToken++;
+            return snapshot();
+        }
+
+        function cancel() {
+            scheduleToken++;
+            pendingToken = null;
+            scheduledUntilValue = 0;
+            return snapshot();
+        }
+
+        function markScheduled(now, delay, leaseMs = 1500) {
+            scheduledUntilValue = scheduledUntil(now, delay, leaseMs);
+            return snapshot();
+        }
+
+        function refreshLease(now, leaseMs = 1500) {
+            scheduledUntilValue = refreshedUntil(now, leaseMs);
+            return snapshot();
+        }
+
+        function setPendingToken(token) {
+            pendingToken = token;
+            return snapshot();
+        }
+
+        function clearPendingToken() {
+            pendingToken = null;
+            return snapshot();
+        }
+
+        function isCurrent(token) {
+            return token === scheduleToken;
+        }
+
+        function isStepScheduled() {
+            return tokenIsScheduled(pendingToken, scheduleToken);
+        }
+
+        function expireLease(deadline = 0) {
+            scheduledUntilValue = Number.isFinite(deadline) ? deadline : 0;
+            return snapshot();
+        }
+
+        return Object.freeze({
+            snapshot,
+            invalidate,
+            cancel,
+            markScheduled,
+            refreshLease,
+            setPendingToken,
+            clearPendingToken,
+            isCurrent,
+            isStepScheduled,
+            expireLease,
+        });
+    }
+
     return Object.freeze({
         waitDuration,
         scheduledUntil,
@@ -65,6 +137,7 @@ const CpuSchedulerState = (() => {
         blockedReason,
         shouldRunPhaseStep,
         buildHealth,
+        createController,
     });
 })();
 

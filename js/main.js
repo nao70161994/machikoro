@@ -32,32 +32,32 @@ let tutorialEnabled = safeMainStorageGet('tutorialEnabled') !== 'false';
 let tutorialLevel = safeMainStorageGet('tutorialLevel', 'beginner') || 'beginner';
 
 // CPU進行チェーン制御
-let cpuScheduleToken = 0;
-let cpuStepScheduledUntil = 0;
-let cpuPendingStepToken = null;
+const cpuSchedulerStateController = CpuSchedulerState.createController();
+
+function invalidateCpuScheduleChain() {
+    return cpuSchedulerStateController.invalidate().scheduleToken;
+}
 
 function cancelCpuSchedule(reason = 'cpu-schedule-cancel') {
-    cpuScheduleToken++;
-    cpuStepScheduledUntil = 0;
-    cpuPendingStepToken = null;
+    const state = cpuSchedulerStateController.cancel();
     try {
-        if (typeof markMainCheckpoint === 'function') markMainCheckpoint(reason, { cpuScheduleToken });
+        if (typeof markMainCheckpoint === 'function') {
+            markMainCheckpoint(reason, { cpuScheduleToken: state.scheduleToken });
+        }
     } catch (_) {}
-    return cpuScheduleToken;
+    return state.scheduleToken;
 }
 
 function markCpuStepScheduled(delay, leaseMs = 1500) {
-    cpuStepScheduledUntil = CpuSchedulerState.scheduledUntil(Date.now(), delay, leaseMs);
-    return cpuStepScheduledUntil;
+    return cpuSchedulerStateController.markScheduled(Date.now(), delay, leaseMs).scheduledUntil;
 }
 
 function refreshCpuStepScheduleLease(leaseMs = 1500) {
-    cpuStepScheduledUntil = CpuSchedulerState.refreshedUntil(Date.now(), leaseMs);
-    return cpuStepScheduledUntil;
+    return cpuSchedulerStateController.refreshLease(Date.now(), leaseMs).scheduledUntil;
 }
 
 function isCpuStepScheduledNow() {
-    return CpuSchedulerState.tokenIsScheduled(cpuPendingStepToken, cpuScheduleToken);
+    return cpuSchedulerStateController.isStepScheduled();
 }
 
 function escapeAttribute(value) {
@@ -531,10 +531,10 @@ function canRunAction(action) {
 
 function queueCPUStep(token, delay, fn) {
     markCpuStepScheduled(delay);
-    cpuPendingStepToken = token;
+    cpuSchedulerStateController.setPendingToken(token);
     setTimeout(() => {
-        if (token !== cpuScheduleToken) return;
-        cpuPendingStepToken = null;
+        if (!cpuSchedulerStateController.isCurrent(token)) return;
+        cpuSchedulerStateController.clearPendingToken();
         refreshCpuStepScheduleLease();
         fn();
     }, delay);
@@ -706,10 +706,11 @@ function cpuScheduleBlockedReason() {
 function currentCpuTurnSchedulerHealth() {
     const blockedReason = cpuScheduleBlockedReason();
     const currentPlayerIndex = game ? game.currentPlayerIndex : null;
+    const schedulerState = cpuSchedulerStateController.snapshot();
     return CpuSchedulerState.buildHealth({
-        scheduleToken: cpuScheduleToken,
-        pendingToken: cpuPendingStepToken,
-        scheduledUntil: cpuStepScheduledUntil,
+        scheduleToken: schedulerState.scheduleToken,
+        pendingToken: schedulerState.pendingToken,
+        scheduledUntil: schedulerState.scheduledUntil,
         now: Date.now(),
         isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]),
         currentPlayerIndex,
@@ -739,12 +740,16 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
         return currentCpuTurnSchedulerHealth();
     }
     const cpu = cpuPlayers[ci];
-    const token = ++cpuScheduleToken;
+    const token = invalidateCpuScheduleChain();
     let stepIndex = 0;
 
     function runNextStep() {
-        markMainCheckpoint('scheduleCPU-step-enter', { token, stepIndex, currentToken: cpuScheduleToken });
-        if (token !== cpuScheduleToken) { markMainCheckpoint('scheduleCPU-step-stale', { token, currentToken: cpuScheduleToken }); return; }
+        const currentToken = cpuSchedulerStateController.snapshot().scheduleToken;
+        markMainCheckpoint('scheduleCPU-step-enter', { token, stepIndex, currentToken });
+        if (!cpuSchedulerStateController.isCurrent(token)) {
+            markMainCheckpoint('scheduleCPU-step-stale', { token, currentToken });
+            return;
+        }
         if (stepIndex >= CPU_PHASE_HANDLERS.length) {
             queueCPUStep(token, 500, () => { if (!game.checkWinner()) scheduleCPU(); });
             return;

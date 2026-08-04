@@ -97,3 +97,65 @@ runTest('CPU scheduler phase eligibilityは既存phase・pending・built条件�
     assert.strictEqual(CpuSchedulerState.shouldRunPhaseStep('unknown', { hasGame: true }, phases), true);
     assert.strictEqual(CpuSchedulerState.shouldRunPhaseStep('unknown', { hasGame: false }, phases), false);
 });
+
+runTest('CPU scheduler controllerはtoken・pending・leaseを一つの状態として所有する', () => {
+    const controller = CpuSchedulerState.createController({
+        scheduleToken: 4,
+        pendingToken: 4,
+        scheduledUntil: 900,
+    });
+    assert.deepStrictEqual(controller.snapshot(), {
+        scheduleToken: 4,
+        pendingToken: 4,
+        scheduledUntil: 900,
+    });
+    assert.strictEqual(controller.isCurrent(4), true);
+    assert.strictEqual(controller.isStepScheduled(), true);
+
+    const invalidated = controller.invalidate();
+    assert.deepStrictEqual(invalidated, {
+        scheduleToken: 5,
+        pendingToken: 4,
+        scheduledUntil: 900,
+    });
+    assert.strictEqual(controller.isCurrent(4), false);
+    assert.strictEqual(controller.isStepScheduled(), false);
+
+    controller.markScheduled(1000, 600, 1500);
+    controller.setPendingToken(5);
+    assert.deepStrictEqual(controller.snapshot(), {
+        scheduleToken: 5,
+        pendingToken: 5,
+        scheduledUntil: 3100,
+    });
+    controller.refreshLease(2000, 1500);
+    assert.strictEqual(controller.snapshot().scheduledUntil, 3500);
+    controller.clearPendingToken();
+    assert.strictEqual(controller.snapshot().pendingToken, null);
+
+    const cancelled = controller.cancel();
+    assert.deepStrictEqual(cancelled, {
+        scheduleToken: 6,
+        pendingToken: null,
+        scheduledUntil: 0,
+    });
+    assert.ok(Object.isFrozen(controller));
+    assert.ok(Object.isFrozen(controller.snapshot()));
+});
+
+runTest('CPU scheduler controllerは初期値とlease期限の不正値を安全に正規化する', () => {
+    const controller = CpuSchedulerState.createController({
+        scheduleToken: 'bad',
+        pendingToken: 'bad',
+        scheduledUntil: Infinity,
+    });
+    assert.deepStrictEqual(controller.snapshot(), {
+        scheduleToken: 0,
+        pendingToken: null,
+        scheduledUntil: 0,
+    });
+    controller.expireLease(123);
+    assert.strictEqual(controller.snapshot().scheduledUntil, 123);
+    controller.expireLease(Infinity);
+    assert.strictEqual(controller.snapshot().scheduledUntil, 0);
+});

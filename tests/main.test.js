@@ -417,13 +417,13 @@ function loadMainRuntime(options = {}) {
                 autoSkipScheduleController.setTimer(timeout);
             },
             getAutoSkipPending: () => autoSkipScheduleController.isPending(),
-            getCpuScheduleToken: () => cpuScheduleToken,
+            getCpuScheduleToken: () => cpuSchedulerStateController.snapshot().scheduleToken,
             getCpuSchedulerHealth: () => cpuTurnScheduler.getHealth(),
             scheduleCpuTurn: (reason) => cpuTurnScheduler.schedule(reason),
             canRunLocalHumanAction: (expectedPlayerIndex) => canRunLocalHumanAction(expectedPlayerIndex),
             isMainOnlineReconnectInputBlocked: () => isMainOnlineReconnectInputBlocked(),
             cancelCpuSchedule: (reason) => cpuTurnScheduler.cancel(reason),
-            expireCpuScheduleLease: () => { cpuStepScheduledUntil = 0; },
+            expireCpuScheduleLease: () => { cpuSchedulerStateController.expireLease(0); },
             expireDelayedHumanAction: () => { delayedHumanActionController.updateDeadline(0); },
             getDelayedHumanActionPending: () => delayedHumanActionController.isPending(),
             setPageHiddenAt: (value) => { pageActivationLifecycleController.setHiddenAt(value); },
@@ -435,6 +435,25 @@ function loadMainRuntime(options = {}) {
     context.__test.elements = elements;
     return context;
 }
+
+runTest('CPU scheduler runtime stateはcontrollerだけが所有する', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+    const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js/storage.js'), 'utf8');
+    const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
+    for (const source of [mainSource, onlineSource, storageSource, appShellSource]) {
+        assert.ok(!source.includes('let cpuScheduleToken'));
+        assert.ok(!source.includes('let cpuStepScheduledUntil'));
+        assert.ok(!source.includes('let cpuPendingStepToken'));
+    }
+    assert.ok(mainSource.includes('CpuSchedulerState.createController()'));
+    assert.ok(mainSource.includes('function invalidateCpuScheduleChain()'));
+    assert.ok(onlineSource.includes('invalidateCpuScheduleChain()'));
+    assert.ok(storageSource.includes('invalidateCpuScheduleChain()'));
+    assert.ok(appShellSource.includes('cpuSchedulerStateController.snapshot()'));
+});
 
 runTest('main page activation stateはlifecycle controllerだけが所有する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');

@@ -450,16 +450,16 @@ function buildClientRuntimeSnapshot(reason = '') {
                 scheduledUntil: Number.isFinite(health.scheduledUntil) ? health.scheduledUntil : 0,
                 stepScheduled: !!health.stepScheduled,
             };
-        } else {
-            const scheduledUntil = typeof cpuStepScheduledUntil !== 'undefined' ? cpuStepScheduledUntil : 0;
-            cpuStepScheduled = !!(isCpuTurn && typeof isCpuStepScheduledNow === 'function' &&
-                isCpuStepScheduledNow() && Date.now() < scheduledUntil);
-            cpuSchedulerHealth = isCpuTurn ? {
+        } else if (isCpuTurn && typeof cpuSchedulerStateController !== 'undefined') {
+            const state = cpuSchedulerStateController.snapshot();
+            cpuStepScheduled = cpuSchedulerStateController.isStepScheduled() &&
+                Date.now() < state.scheduledUntil;
+            cpuSchedulerHealth = {
                 blockedReason: '',
-                token: typeof cpuScheduleToken !== 'undefined' && Number.isInteger(cpuScheduleToken) ? cpuScheduleToken : null,
-                scheduledUntil: Number.isFinite(scheduledUntil) ? scheduledUntil : 0,
+                token: Number.isInteger(state.scheduleToken) ? state.scheduleToken : null,
+                scheduledUntil: Number.isFinite(state.scheduledUntil) ? state.scheduledUntil : 0,
                 stepScheduled: cpuStepScheduled,
-            } : null;
+            };
         }
     } catch (_) {}
     let hasWinner = false;
@@ -1091,7 +1091,6 @@ function showCrashScreen(err) {
     if (!transition.changed) return;
     if (typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.cancel === 'function') cpuTurnScheduler.cancel('game-lifecycle-reset-cpu');
     else if (typeof cancelCpuSchedule === 'function') cancelCpuSchedule('game-lifecycle-reset-cpu');
-    else cpuScheduleToken++; // CPUループを停止
     const el = document.getElementById('crashScreen');
     if (!el) return;
     const view = CrashScreen.buildView(err, safeAppShellStorageGet('savedGame'));

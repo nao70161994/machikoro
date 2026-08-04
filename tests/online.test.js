@@ -46,7 +46,8 @@ function loadOnlineRuntime(options = {}) {
         let enabledLandmarks = new Set();
         let prevCoins = null;
         let undoState = null;
-        let cpuScheduleToken = 0;
+        let cpuScheduleInvalidationCount = 0;
+        function invalidateCpuScheduleChain() { return ++cpuScheduleInvalidationCount; }
         let statsResetCount = 0;
         let renderCount = 0;
         let scheduleCount = 0;

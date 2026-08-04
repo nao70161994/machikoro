@@ -1058,7 +1058,7 @@ function _finishRejoinRetryTimeout() {
         OnlineReconnectState.events.RETRY_EXHAUSTED,
         retryExhaustedMessage
     );
-    cpuScheduleToken++;
+    invalidateCpuScheduleChain();
     try { if (typeof render === 'function') render(); } catch (_) {}
     return false;
 }
@@ -1266,7 +1266,7 @@ function _runOnlineActionTimeoutEffectsLegacy(plan) {
     _setOnlineActionInFlight(false);
     if (plan.decision === decisions.CLEAR_ONLY) return false;
     setOnlineReconnectLegacyFlag(true);
-    cpuScheduleToken++;
+    invalidateCpuScheduleChain();
     const el = document.getElementById("onlineStatus");
     if (el) el.textContent = '⚠️ サーバー応答がタイムアウトしました。状態を再同期しています...';
     return _emitOnlineRejoinRequest();
@@ -1281,7 +1281,7 @@ function _runOnlineActionTimeoutEffects(planSelection) {
     return OnlineActionTimeout.execute(planSelection.plan, {
         clearActionFlight: () => _setOnlineActionInFlight(false),
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
-        invalidateCpuSchedule: () => { cpuScheduleToken++; },
+        invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
         updateStatus: message => {
             const el = document.getElementById("onlineStatus");
             if (el) el.textContent = message;
@@ -1355,7 +1355,7 @@ function _onlineActionApplyFailureEffectAuthoritySelection(planSelection, enable
 function _runOnlineActionApplyFailureEffectsLegacy(error) {
     console.error(error);
     setOnlineReconnectLegacyFlag(true);
-    cpuScheduleToken++;
+    invalidateCpuScheduleChain();
     if (!_onlineRestoreLifecycleController.isFlushing() && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
     return false;
 }
@@ -1371,7 +1371,7 @@ function _runOnlineActionApplyFailureEffects(error, planSelection, enabled, reco
         {
             reportError: () => console.error(error),
             markReconnecting: () => setOnlineReconnectLegacyFlag(true),
-            invalidateCpuSchedule: () => { cpuScheduleToken++; },
+            invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
             requestRejoin: () => _emitOnlineRejoinRequest(),
             scheduleRetry: () => _scheduleRejoinRetry(),
         }
@@ -1395,7 +1395,7 @@ function _onlineActionGapEffectAuthoritySelection(planSelection, enabled) {
 
 function _runOnlineActionGapEffectsLegacy(statusMessage) {
     setOnlineReconnectLegacyFlag(true);
-    cpuScheduleToken++;
+    invalidateCpuScheduleChain();
     if (statusMessage !== null) {
         const el = document.getElementById("onlineStatus");
         if (el) el.textContent = statusMessage;
@@ -1417,7 +1417,7 @@ function _runOnlineActionGapEffects(statusMessage, planSelection, enabled, recor
         },
         {
             markReconnecting: () => setOnlineReconnectLegacyFlag(true),
-            invalidateCpuSchedule: () => { cpuScheduleToken++; },
+            invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
             updateStatus: message => {
                 const el = document.getElementById("onlineStatus");
                 if (el) el.textContent = message;
@@ -1665,7 +1665,7 @@ function _runOnlineSocketDisconnectEffectsLegacy(plan) {
     }
     setOnlineReconnectLegacyFlag(true);
     _setOnlineActionInFlight(false);
-    cpuScheduleToken++;
+    invalidateCpuScheduleChain();
     _observeOnlineReconnectEvent(OnlineReconnectState.events.SOCKET_DISCONNECTED);
     _applyOnlineReconnectStatusEffectAuthority(
         OnlineReconnectState.events.SOCKET_DISCONNECTED,
@@ -1690,7 +1690,7 @@ function _runOnlineSocketDisconnectEffects() {
         clearRestoreQueue: () => { _clearOnlineRestoreEventQueue(); },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         clearActionFlight: () => _setOnlineActionInFlight(false),
-        invalidateCpuSchedule: () => { cpuScheduleToken++; },
+        invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
         observeDisconnect: () => _observeOnlineReconnectEvent(
             OnlineReconnectState.events.SOCKET_DISCONNECTED
         ),
@@ -1738,7 +1738,7 @@ function _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch) {
         render();
         scheduleCPU();
     } else {
-        cpuScheduleToken++;
+        invalidateCpuScheduleChain();
     }
     _persistOnlineHostState(newHostPlayerIndex, hostEpoch);
     return true;
@@ -1759,7 +1759,7 @@ function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
         },
         render: () => render(),
         scheduleCpu: () => scheduleCPU(),
-        invalidateCpuSchedule: () => { cpuScheduleToken++; },
+        invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
         persistHostState: () => _persistOnlineHostState(newHostPlayerIndex, hostEpoch),
     }).result;
 }
@@ -1853,7 +1853,7 @@ function resetOnlineState() {
             });
         },
         finishLobbyRequest() { finishOnlineLobbyRequest(); },
-        incrementCpuScheduleToken() { cpuScheduleToken++; },
+        incrementCpuScheduleToken() { invalidateCpuScheduleChain(); },
         disconnectSocket() {
             if (socket) { socket.disconnect(); socket = null; }
         },
@@ -3036,7 +3036,7 @@ function initSocket() {
             _setOnlineHostState(plan.hostPlayerIndex);
             persistRestoreBundle();
             saveOnlineSession();
-            cpuScheduleToken++;
+            invalidateCpuScheduleChain();
             if (plan.resetUiLocks) {
                 resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
             }
@@ -3065,7 +3065,7 @@ function initSocket() {
                 setHostState: value => _setOnlineHostState(value),
                 persistRestoreBundle,
                 saveSession: () => saveOnlineSession(),
-                invalidateCpuSchedule: () => { cpuScheduleToken++; },
+                invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
                 resetUiLocks: () => {
                     resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
                 },
@@ -3483,7 +3483,7 @@ function handleAppError(msg) {
     if (msg === '無効な操作です' && isOnlineGame && socket && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
         _clearPendingOutboundActionForCurrentSession({ requireExplicitRoomId: true });
         setOnlineReconnectLegacyFlag(true);
-        cpuScheduleToken++;
+        invalidateCpuScheduleChain();
         document.getElementById("onlineStatus").textContent = '⚠️ 操作がサーバーで拒否されました。状態を再同期しています...';
         _emitOnlineRejoinRequest();
         return;
@@ -3690,7 +3690,7 @@ function joinRoom() {
 
 function initOnlineGame(playerNames, ps, playerOrder) {
     const count = playerNames.length;
-    cpuScheduleToken++;
+    invalidateCpuScheduleChain();
     if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
     if (typeof cancelAutoSkip === 'function') cancelAutoSkip();
     prevCoins = null;
@@ -3852,7 +3852,7 @@ function sendAction(action, data = {}) {
     if (isOnlineGame && socket) {
         if (isOnlineReconnectInputBlocked() || _onlineActionFlightController.isInFlight() || socket.connected === false) return false;
         _setOnlineActionInFlight(true);
-        cpuScheduleToken++;
+        invalidateCpuScheduleChain();
         const pending = _savePendingOutboundAction(action, data);
         const encodedWire = encodeOnlineGameSchemaAction({ action, data, clientActionId: pending.clientActionId });
         if (!encodedWire.ok) {

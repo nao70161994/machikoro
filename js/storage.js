@@ -313,7 +313,7 @@ function resumeGame(options = {}) {
         );
         const runtimeResult = LocalResumePolicy.executeRuntime(runtimePlan, {
             invalidateCpuSchedule() {
-                cpuScheduleToken++;
+                invalidateCpuScheduleChain();
             },
             cancelDelayedHumanAction() {
                 if (typeof globalThis.cancelDelayedHumanAction === 'function') {

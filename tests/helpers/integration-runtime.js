@@ -435,7 +435,7 @@ function loadIntegrationRuntime(options = {}) {
         setCpuPlayers(value) { context.__tmpCpuPlayers = value; vm.runInContext('cpuPlayers = __tmpCpuPlayers', context); delete context.__tmpCpuPlayers; },
         cancelCpuSchedule(reason = 'test-cancel-cpu') { return vm.runInContext(`typeof cpuTurnScheduler !== 'undefined' ? cpuTurnScheduler.cancel(${JSON.stringify(reason)}) : null`, context); },
         scheduleCpuTurn(reason = 'test-schedule-cpu') { return vm.runInContext(`typeof cpuTurnScheduler !== 'undefined' ? cpuTurnScheduler.schedule(${JSON.stringify(reason)}) : null`, context); },
-        expireCpuScheduleLease() { return vm.runInContext('cpuStepScheduledUntil = Date.now() - 1', context); },
+        expireCpuScheduleLease() { return vm.runInContext('cpuSchedulerStateController.expireLease(Date.now() - 1)', context); },
         getCpuSchedulerHealth() { return vm.runInContext(`typeof cpuTurnScheduler !== 'undefined' ? cpuTurnScheduler.getHealth() : null`, context); },
         setUndoState(value) { context.__tmpUndoState = value; vm.runInContext('undoState = __tmpUndoState', context); delete context.__tmpUndoState; },
         setOnlineState(value) {
