@@ -12,6 +12,16 @@ const dynamicEvents = Object.freeze({
     appError: 'appError',
 });
 
+runTest('online socket registryは欠落診断を一度だけclaimする', () => {
+    const controller = OnlineSocketRegistry.createUnavailableReportController();
+    assert.deepStrictEqual(controller.snapshot(), { reported: false });
+    assert.strictEqual(controller.claim(), true);
+    assert.strictEqual(controller.claim(), false);
+    assert.deepStrictEqual(controller.snapshot(), { reported: true });
+    assert.ok(Object.isFrozen(controller));
+    assert.ok(Object.isFrozen(controller.snapshot()));
+});
+
 runTest('online socket registryは全eventを既存順で一度ずつ登録する', () => {
     const calls = [];
     const binder = OnlineSocketRegistry.createBinder({

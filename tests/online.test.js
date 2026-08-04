@@ -941,6 +941,12 @@ runTest('joinRoom はSocket.IO script未読込時に送信せずhost状態を落
     assert.strictEqual(localRt.elements.onlineStatus.textContent, '❌ オンライン機能を読み込めませんでした。サーバーURLから開き直してください。');
 });
 
+runTest('Socket.IO欠落通知stateはregistry controllerだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+    assert.strictEqual(source.includes('let onlineSocketUnavailableReported'), false);
+    assert.ok(source.includes('OnlineSocketRegistry.createUnavailableReportController()'));
+});
+
 runTest('initSocket はSocket.IO script未読込時に診断を送る', () => {
     const localRt = loadOnlineRuntime({ withoutIo: true });
 

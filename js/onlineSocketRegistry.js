@@ -58,6 +58,19 @@ const OnlineSocketRegistry = (() => {
         return names;
     }
 
+    function createUnavailableReportController() {
+        let reported = false;
+
+        function claim() {
+            if (reported) return false;
+            reported = true;
+            return true;
+        }
+        function snapshot() { return Object.freeze({ reported }); }
+
+        return Object.freeze({ claim, snapshot });
+    }
+
     function createBinder(socket, dynamicEvents = {}) {
         if (!socket || typeof socket.on !== 'function') {
             throw new TypeError('socket.on is required');
@@ -87,7 +100,7 @@ const OnlineSocketRegistry = (() => {
         });
     }
 
-    return Object.freeze({ keys, order, staticEventNames, eventNames, createBinder });
+    return Object.freeze({ keys, order, staticEventNames, eventNames, createUnavailableReportController, createBinder });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = OnlineSocketRegistry;

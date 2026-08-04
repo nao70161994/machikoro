@@ -16,7 +16,7 @@ if (typeof window !== 'undefined' && typeof Object.defineProperties === 'functio
     });
 }
 const ONLINE_LOBBY_REQUEST_TIMEOUT_MS = 15000;
-let onlineSocketUnavailableReported = false;
+const onlineSocketUnavailableReportController = OnlineSocketRegistry.createUnavailableReportController();
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
 
 function createOnlineCpuPlayer(difficulty, options = {}) {
@@ -2599,8 +2599,7 @@ function initSocket() {
         showNotice(message);
         const el = document.getElementById("onlineStatus");
         if (el) el.textContent = `❌ ${message}`;
-        if (!onlineSocketUnavailableReported) {
-            onlineSocketUnavailableReported = true;
+        if (onlineSocketUnavailableReportController.claim()) {
             if (typeof markClientFlowCheckpoint === 'function') {
                 markClientFlowCheckpoint('socket-io-unavailable', {
                     href: typeof location !== 'undefined' && location.href ? location.href : '',
