@@ -974,3 +974,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `MainUiEventRuntime` is the application boundary over pure `UiEventDelegation`, owning listener state, event-to-command dispatch, and UI-only fallback effects.
 2. `main.js` now supplies late-resolved named game/UI effects and keeps compatibility handlers; event parsing and registration no longer depend directly on gameplay functions.
 3. Contracts preserve all command families, dataset argument conversion, keyboard activation, container bindings, Business Center button context, and PWA fallback behavior.
+
+## 2026-08-05 Batch 90 boundary update
+
+1. `LocalGameEngineRuntime` is the local application boundary over shared Engine, Snapshot, runtime adapter, determinism, and client-shadow policy.
+2. Human and CPU actions now share one route for online dispatch versus local mutable execution plus optional shadow/parity/authority adoption; `main.js` keeps compatibility delegates and domain dependency composition.
+3. Engine lookup remains late-bound for legacy fallback and test replacement. Default-OFF authority, resolved-random admission, adapter hydration parity, checkpoint order, and mutable identity are contract-covered.

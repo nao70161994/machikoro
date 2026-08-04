@@ -823,3 +823,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains a late-resolved effect registry and compatibility handler delegates; its size decreased from 1,319 to 1,174 lines. UI command interpretation and binding state no longer sit beside game-action implementation.
 - Focused contracts preserve command arguments, listener single-binding, reload fallback, and the existing four delegated containers; main/integration contracts retain every static, dice, pending, build, player, keyboard, and PWA path. Scoped gates now cover 241 ESLint maintenance files and 240 checkJs runtime files.
 - Game actions, selectors/data attributes, modal behavior, CPU/RNG, online protocol, persistence, and PWA update semantics are unchanged.
+
+## 2026-08-05 Batch 90 local Game Engine runtime
+
+- `js/localGameEngineRuntime.js` now owns local human/CPU action routing, online-send branching, mutable fallback application, snapshot serialization, runtime adapter construction, determinism admission, shadow transition, parity finish/outcome state, and authority snapshot adoption.
+- `main.js` retains injected game/domain adapters and compatibility delegates; its size decreased from 1,174 to 1,096 lines. Shared Engine rollout mechanics no longer sit inline with CPU scheduling and UI actions.
+- Focused and full local-shadow contracts preserve online send-only behavior, checkpoint/render/schedule order, unresolved-random rejection, all deterministic action parity, build/Undo, mutable identity under default-OFF, and late-bound Engine replacement/fallback. Scoped gates now cover 242 ESLint maintenance files and 241 checkJs runtime files.
+- Production flags remain absent/default-OFF. Rules, CPU decisions/RNG, Action/Snapshot formats, online protocol, persistence, and PWA behavior are unchanged.

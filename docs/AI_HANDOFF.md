@@ -1036,3 +1036,9 @@ Test index:
 - Main-page event targeting, command dispatch, listener ownership, speed labels, and PWA UI fallbacks belong to `MainUiEventRuntime`; keep data parsing in `UiEventDelegation`.
 - Add new commands through the runtime family map and `resolveMainUiEffect`, preserving late resolution for functions defined after `main.js` such as PWA update helpers.
 - The runtime is linted and checkJs-covered; `main.js` is 1,174 lines. Game behavior, CPU/RNG, online, persistence, modal, and PWA semantics are unchanged.
+
+## Batch 90 handoff (2026-08-05)
+
+- Local Action routing, Engine snapshot/adapter creation, shadow comparison, outcome ownership, and optional authority adoption belong to `LocalGameEngineRuntime`; keep `main.js` wrappers for existing action/build/Undo callers.
+- Preserve late-bound `getEngine`, default-OFF flags, determinism admission before transition, hydrate→serialize equality before adoption, and human checkpoint/render/schedule order.
+- The runtime is linted and checkJs-covered; `main.js` is 1,096 lines. Rules, CPU/RNG, schemas, online protocol, persistence, and PWA behavior are unchanged.
