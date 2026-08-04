@@ -788,3 +788,11 @@ Scoped gates now cover 216 ESLint maintenance files and 215 checkJs runtime file
 3. Shared local/game setup state now has one controller owner across main, restore, and online flows instead of three declarations in the composition script.
 
 Scoped gates now cover 219 ESLint maintenance files and 218 checkJs runtime files. Rules, CPU strength/RNG, protocol/schema, persistence, reconnect and Socket ordering, UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 62 boundary update
+
+1. Online session mutation now passes through named controller transitions for connection, identity, role, replay, and reconnect state while existing Socket callbacks and storage effects retain their exact order.
+2. Live client game references now have one neutral runtime owner across local, online, restore, UI, and app-shell consumers. This is an adapter-state boundary and does not compete with the deterministic Engine or serialized Snapshot schemas.
+3. Tutorial preference state now has one controller owner integrated with the existing transition/effect contract and unchanged storage wire values.
+
+Scoped gates now cover 220 ESLint maintenance files and 219 checkJs runtime files. Rules, CPU strength/RNG, authority defaults, schema/protocol, persistence formats, reconnect behavior, UI behavior, and PWA defaults are unchanged.

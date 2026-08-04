@@ -835,3 +835,12 @@ Test index:
 - A future transition should add named session operations (join, activate, rejoin, leave/reset) and then remove compatibility setters. Do not collapse these effects before Socket callback and storage ordering contracts exist.
 - Scoped gates are 219 ESLint maintenance files and 218 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 62 handoff (2026-08-04)
+
+- Use `OnlineRuntimeState.runtime` named transitions for all production session writes. Do not reintroduce direct assignments in `online.js`; room acceptance and stored-session restoration have distinct operations because their field sets and ordering differ. Compatibility setters are temporary projections, not a second owner.
+- Live `game`, `cpuPlayers`, `prevCoins`, and `undoState` references belong to `GameRuntimeState.runtime`. Its frozen snapshot only freezes the envelope: it deliberately preserves live object and array identity. Do not treat it as a serializable Game Engine snapshot or canonical authority.
+- Tutorial enabled/level state belongs to `UiTutorialSettings.runtime`. Preserve the `tutorialEnabled` / `tutorialLevel` storage keys and exact state → persistence → control sync → tutorial render sequence.
+- A future batch may migrate remaining live-game assignments to named operations and make compatibility projections read-only only after main, online, storage, UI, app-shell, isolated runtimes, and inline PWA consumers are contract-covered.
+- Scoped gates are 220 ESLint maintenance files and 219 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

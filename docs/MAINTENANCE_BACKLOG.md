@@ -613,3 +613,13 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event
 - The next online-state step is to replace compatibility-field assignment groups with named controller transitions and reconnect events. Removing the projections before all cross-script consumers migrate remains deferred. Scoped gates now cover 219 ESLint maintenance files and 218 checkJs runtime files; whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect/Socket callback order, room setup behavior, UI presentation, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 62 architecture boundaries
+
+- `OnlineRuntimeState.runtime` now exposes named session transitions for Socket, online/host/replay/reconnect flags, accepted-room identity, restored identity, player-order projection, and reset fields. Production `online.js`, `storage.js`, and `main.js` writes use these operations; compatibility property setters remain only as a temporary cross-script surface.
+- `GameRuntimeState.runtime` is now the sole mutable owner of the live `game`, `cpuPlayers`, `prevCoins`, and `undoState` references. Its snapshot is a frozen reference envelope, not a second Game Engine state or a detached canonical snapshot; GameManager, CPU objects, hydration, and UI effects keep their existing authority and object identity.
+- Tutorial enabled/level values now belong to `UiTutorialSettings.runtime`. Main initialization, stored-setting restore, and UI setting changes use the controller while the existing localStorage keys, string values, normalization, and state → persist → controls → render order remain unchanged.
+- The next safe state step is to replace remaining live-game compatibility assignments with named install/reset/undo operations and then audit whether compatibility setters can become read-only. This must not merge Game Engine authority, hydration, CPU scheduling, Undo effects, or render effects into the state container.
+- Scoped gates now cover 220 ESLint maintenance files and 219 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect or Socket callback order, Game Engine authority, UI presentation, or PWA/SW behavior changed.
