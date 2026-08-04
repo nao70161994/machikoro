@@ -236,62 +236,38 @@ function restartGame() {
     });
 }
 
+const localGameInitializer = LocalGameInitializer.createRuntime({
+    cancelAutoSkip: () => cancelAutoSkip(),
+    cancelCpuSchedule: reason => cancelCpuSchedule(reason),
+    cancelDelayedHumanAction: () => cancelDelayedHumanAction(),
+    cards: CARDS,
+    cpuLabel: difficulty => getLocalCpuLabel(difficulty),
+    createCpu: (difficulty, options) => createCpuPlayer(difficulty, options),
+    createGame: playerCount => new GameManager(playerCount),
+    gameRuntime: GameRuntimeState.runtime,
+    getEnabledCards: () => getEnabledCardSelection(),
+    getEnabledLandmarks: () => getEnabledLandmarkSelection(),
+    initialCardStock: (card, playerCount) => getInitialCardStock(card, playerCount),
+    landmarkNames: () => Player.landmarkNames(),
+    logTypes: LOG_TYPES,
+    normalizePlayerName: (name, index) => normalizeLocalPlayerName(name, index),
+    normalizePlayerSetting: (setting, index, playerCount) =>
+        normalizeLocalPlayerSetting(setting, index, playerCount),
+    opponentDifficulties: settings => cpuOpponentDifficultiesFromSettings(settings),
+    random: () => Math.random(),
+    render: () => render(),
+    replaceEnabledLandmarks: values => replaceEnabledLandmarkSelection(values),
+    resetFullLog: () => resetFullLog(),
+    scheduleCpu: () => scheduleCPU(),
+    setShopStockCount,
+    setWinSoundPlayed(value) { winSoundPlayed = value; },
+    setupRuntime: GameSetupState.runtime,
+    shopStock: SHOP_STOCK,
+    stopConfetti: () => stopConfetti(),
+});
+
 function init(playerCount) {
-    cancelCpuSchedule('init-cancel-cpu');
-    cancelDelayedHumanAction();
-    GameRuntimeState.runtime.setPreviousCoins(null);
-    stopConfetti();
-    winSoundPlayed = false;
-    cancelAutoSkip();
-    GameRuntimeState.runtime.setUndoState(null);
-    resetFullLog();
-    const initializedGameState = GameRuntimeState.runtime.setGame(new GameManager(playerCount));
-    const currentGame = initializedGameState.game;
-    let selectedLandmarks = getEnabledLandmarkSelection();
-    if (selectedLandmarks.size === 0) {
-        selectedLandmarks = replaceEnabledLandmarkSelection(Player.landmarkNames());
-    }
-    const selectedCards = getEnabledCardSelection();
-    currentGame.enabledLandmarks = new Set(selectedLandmarks);
-    for (const card of CARDS) {
-        setShopStockCount(SHOP_STOCK, card, selectedCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0);
-    }
-    const setup = gameSetupSnapshot();
-    const normalizedSetup = GameSetupState.runtime.setPlayerSettings(
-        Array.from({ length: playerCount }, (_, index) =>
-            normalizeLocalPlayerSetting(setup.playerSettings[index], index, playerCount)
-        )
-    );
-    const normalizedSettings = normalizedSetup.playerSettings;
-
-    // ターン順をランダムにシャッフル
-    const order = normalizedSettings.map((_, i) => i);
-    for (let i = order.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [order[i], order[j]] = [order[j], order[i]];
-    }
-
-    const shuffledSettings = order.map(originalIndex => normalizedSettings[originalIndex] || {});
-    const opponentDifficulties = cpuOpponentDifficultiesFromSettings(shuffledSettings);
-
-    // プレイヤー名とCPU設定をシャッフル順に再設定
-    const shuffledCpuPlayers = [];
-    for (let i = 0; i < playerCount; i++) {
-        const originalIndex = order[i];
-        const setting = shuffledSettings[i];
-        currentGame.players[i].name = setting.type === "cpu"
-            ? getLocalCpuLabel(setting.difficulty)
-            : normalizeLocalPlayerName(setting.name, originalIndex);
-        shuffledCpuPlayers.push(
-            setting.type === "cpu"
-                ? createCpuPlayer(setting.difficulty, { expertPurpose: "live", playerCount, expertOpponentDifficulties: opponentDifficulties })
-                : null
-        );
-    }
-    GameRuntimeState.runtime.setCpuPlayers(shuffledCpuPlayers);
-    currentGame.addLog(LOG_TYPES.SYSTEM, `👤 ${currentGame.currentPlayer().name}のターン`);
-    render();
-    scheduleCPU();
+    return localGameInitializer.initialize(playerCount);
 }
 
 // CPUアクションをローカル・オンライン両対応で実行

@@ -171,6 +171,7 @@ const STATIC_ASSETS = [
   '/js/localPlayerSettings.js',
   '/js/localGameStart.js',
   '/js/localGameStartRuntime.js',
+  '/js/localGameInitializer.js',
   '/js/autoSkipPolicy.js',
   '/js/pageActivationPolicy.js',
   '/js/delayedHumanActionPolicy.js',

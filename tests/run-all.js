@@ -170,6 +170,7 @@ const TEST_GROUPS = {
         'local-player-settings.test.js',
         'local-game-start.test.js',
         'local-game-start-runtime.test.js',
+        'local-game-initializer.test.js',
         'auto-skip-policy.test.js',
         'page-activation-policy.test.js',
         'delayed-human-action-policy.test.js',
