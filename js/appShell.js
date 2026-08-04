@@ -1075,37 +1075,15 @@ function ensurePostBuildUndoButtonForRecovery(snapshot) {
     } catch (_) {
         return false;
     }
-    const buildMenu = typeof document !== 'undefined' && document.getElementById ? document.getElementById('buildMenu') : null;
-    if (!buildMenu) return false;
-    let children = [];
-    try {
-        if (typeof buildMenu.querySelectorAll === 'function') children = Array.from(buildMenu.querySelectorAll('[data-action="undoBuild"]') || []);
-    } catch (_) {
-        children = [];
-    }
-    let changed = false;
-    if (!children.length && typeof buildMenu.innerHTML === 'string' && !/data-action=["']undoBuild["']/.test(buildMenu.innerHTML)) {
-        const undoHtml = '<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>';
-        if (typeof buildMenu.insertAdjacentHTML === 'function') buildMenu.insertAdjacentHTML('afterbegin', undoHtml);
-        else buildMenu.innerHTML = undoHtml + buildMenu.innerHTML;
-        changed = true;
-        try {
-            if (typeof buildMenu.querySelectorAll === 'function') children = Array.from(buildMenu.querySelectorAll('[data-action="undoBuild"]') || []);
-        } catch (_) {
-            children = [];
-        }
-    }
-    children.forEach(child => {
-        if (!child) return;
-        if (child.disabled) { child.disabled = false; changed = true; }
-        if (child.hidden) { child.hidden = false; changed = true; }
-        if (child.inert) { child.inert = false; changed = true; }
-        if (typeof child.removeAttribute === 'function' && child.getAttribute && child.getAttribute('aria-hidden') !== null) {
-            child.removeAttribute('aria-hidden');
-            changed = true;
-        }
-        if (child.style && child.style.display === 'none') { child.style.display = ''; changed = true; }
-        if (child.style && child.style.pointerEvents === 'none') { child.style.pointerEvents = ''; changed = true; }
+    const ensured = appShellRecoveryEffects.ensureHtmlChildren(
+        'buildMenu',
+        '[data-action="undoBuild"]',
+        '<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>',
+        /data-action=["']undoBuild["']/
+    );
+    let changed = ensured.changed;
+    ensured.elements.forEach(child => {
+        changed = appShellRecoveryEffects.releaseInteractionLock(child, { enable: true }) || changed;
     });
     if (changed) markClientFlowCheckpoint('post-build-undo-button-recovered', { action: 'undoBuild' });
     return changed;
@@ -1115,23 +1093,11 @@ function clearActionContainerForRecovery(spec) {
     if (!spec || !spec.targetId) return false;
     let changed = false;
     [spec.modalId, spec.targetId].filter(Boolean).forEach(id => {
-        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
-        if (!el) return;
-        if (el.hidden) { el.hidden = false; changed = true; }
-        if (id === spec.targetId && el.disabled) { el.disabled = false; changed = true; }
-        if (el.inert) { el.inert = false; changed = true; }
-        if (typeof el.removeAttribute === 'function' && el.getAttribute && el.getAttribute('aria-hidden') !== null) {
-            el.removeAttribute('aria-hidden');
-            changed = true;
-        }
-        if (el.style && el.style.display === 'none') {
-            el.style.display = id === 'diceChoose' ? 'block' : '';
-            changed = true;
-        }
-        if (el.style && el.style.pointerEvents === 'none') {
-            el.style.pointerEvents = id === 'pendingMenu' ? 'auto' : '';
-            changed = true;
-        }
+        changed = appShellRecoveryEffects.releaseInteractionLockById(id, {
+            enable: id === spec.targetId,
+            displayValue: id === 'diceChoose' ? 'block' : '',
+            pointerEventsValue: id === 'pendingMenu' ? 'auto' : '',
+        }) || changed;
     });
     return changed;
 }
@@ -1140,26 +1106,9 @@ function clearExpectedActionChildrenForRecovery(snapshot, entry) {
     const spec = entry && entry.spec;
     const childSpec = expectedChildSpecForEntry(snapshot, entry);
     if (!spec || !childSpec || !spec.targetId) return false;
-    const parent = typeof document !== 'undefined' && document.getElementById ? document.getElementById(spec.targetId) : null;
-    if (!parent || typeof parent.querySelectorAll !== 'function') return false;
-    let children = [];
-    try {
-        children = Array.from(parent.querySelectorAll(childSpec.selector) || []);
-    } catch (_) {
-        children = [];
-    }
     let changed = false;
-    children.forEach(child => {
-        if (!child) return;
-        if (child.disabled) { child.disabled = false; changed = true; }
-        if (child.hidden) { child.hidden = false; changed = true; }
-        if (child.inert) { child.inert = false; changed = true; }
-        if (typeof child.removeAttribute === 'function' && child.getAttribute && child.getAttribute('aria-hidden') !== null) {
-            child.removeAttribute('aria-hidden');
-            changed = true;
-        }
-        if (child.style && child.style.display === 'none') { child.style.display = ''; changed = true; }
-        if (child.style && child.style.pointerEvents === 'none') { child.style.pointerEvents = ''; changed = true; }
+    appShellRecoveryEffects.queryAll(spec.targetId, childSpec.selector).forEach(child => {
+        changed = appShellRecoveryEffects.releaseInteractionLock(child, { enable: true }) || changed;
     });
     return changed;
 }
@@ -1196,23 +1145,11 @@ function clearUiInteractabilityIssueTargets(issues) {
     let changed = false;
     (issues || []).forEach(issue => {
         if (!issue || !issue.target || issue.target === 'body') return;
-        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(issue.target) : null;
-        if (!el) return;
-        if (el.hidden) { el.hidden = false; changed = true; }
-        if (issue.reason === 'disabled-mismatch' && el.disabled) { el.disabled = false; changed = true; }
-        if (el.inert) { el.inert = false; changed = true; }
-        if (typeof el.removeAttribute === 'function' && el.getAttribute && el.getAttribute('aria-hidden') !== null) {
-            el.removeAttribute('aria-hidden');
-            changed = true;
-        }
-        if (issue.target !== 'gameScreen' && el.style && (issue.reason === 'parent-display-none' || el.style.display === 'none')) {
-            el.style.display = '';
-            changed = true;
-        }
-        if (el.style && el.style.pointerEvents === 'none') {
-            el.style.pointerEvents = '';
-            changed = true;
-        }
+        changed = appShellRecoveryEffects.releaseInteractionLockById(issue.target, {
+            enable: issue.reason === 'disabled-mismatch',
+            forceDisplay: issue.target !== 'gameScreen' && issue.reason === 'parent-display-none',
+            restoreDisplay: issue.target !== 'gameScreen',
+        }) || changed;
     });
     return changed;
 }
@@ -1235,10 +1172,12 @@ function recoverModalUiLock(snapshot) {
     if (!issues.length) return false;
     let changed = false;
     issues.forEach(issue => {
-        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(issue.target) : null;
-        if (!el) return;
-        if (el.inert) { el.inert = false; changed = true; }
-        if (el.style && el.style.pointerEvents === 'none') { el.style.pointerEvents = 'auto'; changed = true; }
+        changed = appShellRecoveryEffects.releaseInteractionLockById(issue.target, {
+            reveal: false,
+            clearAriaHidden: false,
+            restoreDisplay: false,
+            pointerEventsValue: 'auto',
+        }) || changed;
     });
     if (changed) markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.MODAL_UI_LOCKED, issues });
     return changed;
