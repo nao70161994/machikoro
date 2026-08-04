@@ -910,197 +910,52 @@ function onSkipReroll() {
     runLocalOrSendOnline('skipReroll', {}, () => currentGame.skipReroll());
 }
 
-const uiEventBindingController = UiEventDelegation.createBindingController();
-
-function actionButtonFromEvent(event) {
-    return UiEventDelegation.elementFromEvent(event, 'data-action');
-}
-
-function uiActionElementFromEvent(event, attributeName) {
-    return UiEventDelegation.elementFromEvent(event, attributeName);
-}
-
-function reloadCurrentPage() {
-    if (typeof window !== 'undefined' && window.location && typeof window.location.reload === 'function') {
-        window.location.reload();
-    } else if (typeof location !== 'undefined' && typeof location.reload === 'function') {
-        location.reload();
-    }
-}
-
-function staticUiCommandEffects() {
-    return {
-        showRules: (...args) => showRules(...args),
-        showCardSelect: (...args) => showCardSelect(...args),
-        reconnectOnline: (...args) => reconnectOnline(...args),
-        deleteOnlineSession: (...args) => deleteOnlineSession(...args),
-        switchTab: (...args) => switchTab(...args),
-        changeCount: (...args) => changeCount(...args),
-        startGame: (...args) => startGame(...args),
-        resumeGame: (...args) => resumeGame(...args),
-        deleteSavedGame: (...args) => deleteSavedGame(...args),
-        switchOnlineTab: (...args) => switchOnlineTab(...args),
-        changeOnlineCount: (...args) => changeOnlineCount(...args),
-        showCreateRoom: (...args) => showCreateRoom(...args),
-        joinRoom: (...args) => joinRoom(...args),
-        toggleTutorial: (...args) => toggleTutorial(...args),
-        cycleTutorialLevel: (...args) => cycleTutorialLevel(...args),
-        onRoll: (...args) => onRoll(...args),
-        onReroll: (...args) => onReroll(...args),
-        onSkip: (...args) => onSkip(...args),
-        toggleLog: (...args) => toggleLog(...args),
-        restartGame: (...args) => restartGame(...args),
-        closeRules: (...args) => closeRules(...args),
-        closeCardDetail: (...args) => closeCardDetail(...args),
-        hideNotice: (...args) => hideNotice(...args),
-        reloadPage: (...args) => reloadCurrentPage(...args),
-        crashResume: (...args) => crashResume(...args),
-        pwaApplyUpdate() {
-            if (typeof pwaApplyUpdate === 'function') pwaApplyUpdate();
-            else reloadCurrentPage();
-        },
-        hidePwaUpdateBanner() {
-            if (typeof shouldKeepPwaUpdateBannerVisible === 'function' && shouldKeepPwaUpdateBannerVisible()) return;
-            const banner = document.getElementById('pwaUpdateBanner');
-            if (banner) banner.style.display = 'none';
-            if (typeof maybeShowPwaInstallBanner === 'function') maybeShowPwaInstallBanner();
-            else {
-                const installBanner = document.getElementById('pwaInstallBanner');
-                const stillVisible = installBanner && installBanner.style.display === 'block';
-                if (!stillVisible && document.body && document.body.classList) document.body.classList.remove('pwa-banner-open');
-            }
-        },
-        pwaInstallPrompt: (...args) => pwaInstallPrompt(...args),
-        pwaInstallDismiss: (...args) => pwaInstallDismiss(...args),
+function resolveMainUiEffect(name) {
+    const aliases = {
+        toggleTutorialEnabled: 'onToggleTutorial',
+        tutorialLevel: 'onChangeTutorialLevel',
+        localPlayerType: 'onChangePlayerType',
+        onlinePlayerType: 'onChangeOnlinePlayerType',
+        selectDiceCount: 'onSelectDiceCount',
+        rerollDice: 'onReroll',
+        skipReroll: 'onSkipReroll',
+        resolveHarbor: 'onResolveHarbor',
+        resolveTV: 'onResolveTV',
+        resolveBusiness: 'onResolveBusiness',
+        resolveCleaning: 'onResolveCleaning',
+        resolveMover: 'onResolveMover',
+        resolveRenovation: 'onResolveRenovation',
+        resolveIT: 'onResolveIT',
+        buildCard: 'onBuildCard',
+        buildLandmark: 'onBuildLandmark',
+        undoBuild: 'doUndo',
     };
+    const root = typeof globalThis !== 'undefined' ? globalThis : window;
+    if (name === 'selectBusinessCard') {
+        return (button, inputId) => root.bcSelectCard(button, inputId);
+    }
+    const effect = root[aliases[name] || name];
+    return typeof effect === 'function' ? effect : (name === 'location' ? root.location : null);
 }
 
-function handleStaticUiClick(event) {
-    const element = uiActionElementFromEvent(event, 'data-ui-action');
-    if (!element || element.disabled) return;
-    const command = UiEventDelegation.commandFromElement(element, 'static');
-    if (!command) return;
-    if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    UiEventDelegation.executeCommand(command, staticUiCommandEffects());
-}
+const mainUiEventRuntime = MainUiEventRuntime.createRuntime({
+    delegation: UiEventDelegation,
+    document,
+    formatCpuSpeedLabel,
+    getWindow: () => typeof window !== 'undefined' ? window : null,
+    resolveEffect: resolveMainUiEffect,
+});
 
-function handleStaticUiInput(event) {
-    const element = uiActionElementFromEvent(event, 'data-ui-input');
-    const command = UiEventDelegation.commandFromElement(element, 'input');
-    if (!command) return;
-    UiEventDelegation.executeCommand(command, {
-        cpuSpeed(value) {
-            const label = document.getElementById('speedLabel');
-            if (label) label.textContent = formatCpuSpeedLabel(value);
-        },
-        onlineCpuSpeed(value) {
-            const label = document.getElementById('onlineSpeedLabel');
-            if (label) label.textContent = formatCpuSpeedLabel(value);
-        },
-        localPlayerName: (...args) => onChangePlayerName(...args),
-    });
-}
-
-function handleStaticUiChange(event) {
-    const element = uiActionElementFromEvent(event, 'data-ui-change');
-    const command = UiEventDelegation.commandFromElement(element, 'change');
-    if (!command) return;
-    UiEventDelegation.executeCommand(command, {
-        toggleTutorialEnabled: (...args) => onToggleTutorial(...args),
-        tutorialLevel: (...args) => onChangeTutorialLevel(...args),
-        localPlayerType: (...args) => onChangePlayerType(...args),
-        onlinePlayerType: (...args) => onChangeOnlinePlayerType(...args),
-    });
-}
-
-function handleStaticUiKeydown(event) {
-    if (!UiEventDelegation.isKeyboardActivationKey(event)) return;
-    const element = uiActionElementFromEvent(event, 'data-ui-action');
-    if (!UiEventDelegation.isEnabledRoleButton(element)) return;
-    handleStaticUiClick(event);
-}
-
-function bindStaticUiHandlers() {
-    if (uiEventBindingController.isBound(UiEventDelegation.BINDINGS.STATIC)) return;
-    if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
-    document.addEventListener('click', handleStaticUiClick);
-    document.addEventListener('input', handleStaticUiInput);
-    document.addEventListener('change', handleStaticUiChange);
-    document.addEventListener('keydown', handleStaticUiKeydown);
-    uiEventBindingController.markBound(UiEventDelegation.BINDINGS.STATIC);
-}
-
-function handleDiceChoiceClick(event) {
-    const button = actionButtonFromEvent(event);
-    if (!button || button.disabled) return;
-    const command = UiEventDelegation.commandFromElement(button, 'dice');
-    if (!command) return;
-    if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    UiEventDelegation.executeCommand(command, {
-        selectDiceCount: onSelectDiceCount,
-        rerollDice: (...args) => onReroll(...args),
-        skipReroll: onSkipReroll,
-        resolveHarbor: onResolveHarbor,
-    });
-}
-
-function handlePendingActionClick(event) {
-    const button = actionButtonFromEvent(event);
-    if (!button || button.disabled) return;
-    const command = UiEventDelegation.commandFromElement(button, 'pending');
-    if (!command) return;
-    if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    UiEventDelegation.executeCommand(command, {
-        selectBusinessCard: inputId => bcSelectCard(button, inputId),
-        resolveTV: onResolveTV,
-        resolveBusiness: onResolveBusiness,
-        resolveCleaning: onResolveCleaning,
-        resolveMover: onResolveMover,
-        resolveRenovation: onResolveRenovation,
-        resolveIT: onResolveIT,
-    });
-}
-
-function handleBuildMenuClick(event) {
-    const button = actionButtonFromEvent(event);
-    if (!button || button.disabled) return;
-    const command = UiEventDelegation.commandFromElement(button, 'build');
-    if (!command) return;
-    if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    UiEventDelegation.executeCommand(command, {
-        buildCard: onBuildCard,
-        buildLandmark: onBuildLandmark,
-        showCardDetail: (...args) => showCardDetail(...args),
-        showLandmarkDetail: (...args) => showCardDetail(...args),
-        setCardFilter: (...args) => setCardFilter(...args),
-        undoBuild: (...args) => doUndo(...args),
-    });
-}
-
-function handlePlayerPanelClick(event) {
-    const button = actionButtonFromEvent(event);
-    if (!button || button.disabled) return;
-    const command = UiEventDelegation.commandFromElement(button, 'player');
-    if (!command || command.name !== 'showCardDetail') return;
-    if (event && typeof event.preventDefault === 'function') event.preventDefault();
-    UiEventDelegation.executeCommand(command, {
-        showCardDetail: (...args) => showCardDetail(...args),
-    });
-}
-
-function bindDelegatedUiHandlers() {
-    if (uiEventBindingController.isBound(UiEventDelegation.BINDINGS.DELEGATED)) return;
-    const diceChoose = document.getElementById('diceChoose');
-    const pendingMenu = document.getElementById('pendingMenu');
-    const buildMenu = document.getElementById('buildMenu');
-    const players = document.getElementById('players');
-    if (diceChoose && typeof diceChoose.addEventListener === 'function') diceChoose.addEventListener('click', handleDiceChoiceClick);
-    if (pendingMenu && typeof pendingMenu.addEventListener === 'function') pendingMenu.addEventListener('click', handlePendingActionClick);
-    if (buildMenu && typeof buildMenu.addEventListener === 'function') buildMenu.addEventListener('click', handleBuildMenuClick);
-    if (players && typeof players.addEventListener === 'function') players.addEventListener('click', handlePlayerPanelClick);
-    bindStaticUiHandlers();
-    uiEventBindingController.markBound(UiEventDelegation.BINDINGS.DELEGATED);
-}
+function handleStaticUiClick(event) { return mainUiEventRuntime.handleStaticClick(event); }
+function handleStaticUiInput(event) { return mainUiEventRuntime.handleStaticInput(event); }
+function handleStaticUiChange(event) { return mainUiEventRuntime.handleStaticChange(event); }
+function handleStaticUiKeydown(event) { return mainUiEventRuntime.handleStaticKeydown(event); }
+function bindStaticUiHandlers() { return mainUiEventRuntime.bindStatic(); }
+function handleDiceChoiceClick(event) { return mainUiEventRuntime.handleDiceClick(event); }
+function handlePendingActionClick(event) { return mainUiEventRuntime.handlePendingClick(event); }
+function handleBuildMenuClick(event) { return mainUiEventRuntime.handleBuildClick(event); }
+function handlePlayerPanelClick(event) { return mainUiEventRuntime.handlePlayerClick(event); }
+function bindDelegatedUiHandlers() { return mainUiEventRuntime.bindDelegated(); }
 
 function onResolveHarbor(useBonus) {
     if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_HARBOR)) return;

@@ -167,7 +167,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuSchedulerState.js', 'js/main.js'],
             ['js/cpuTurnStrategy.js', 'js/main.js'],
             ['js/localActionPolicy.js', 'js/main.js'],
-            ['js/uiEventDelegation.js', 'js/main.js'],
+            ['js/uiEventDelegation.js', 'js/mainUiEventRuntime.js', 'js/main.js'],
             ['js/citySkyline.js', 'js/main.js'],
         ]],
         ['scripts/selfplay.js', [
@@ -251,7 +251,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuSchedulerState.js', 'js/main.js'],
             ['js/cpuTurnStrategy.js', 'js/main.js'],
             ['js/localActionPolicy.js', 'js/main.js'],
-            ['js/uiEventDelegation.js', 'js/main.js'],
+            ['js/uiEventDelegation.js', 'js/mainUiEventRuntime.js', 'js/main.js'],
             ['js/citySkyline.js', 'js/main.js'],
             ['js/localSaveRepository.js', 'js/storage.js'],
             ['js/localSaveRuntime.js', 'js/storage.js'],
@@ -509,7 +509,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuSchedulerState.js', 'js/main.js'],
             ['js/cpuTurnStrategy.js', 'js/main.js'],
             ['js/localActionPolicy.js', 'js/main.js'],
-            ['js/uiEventDelegation.js', 'js/main.js'],
+            ['js/uiEventDelegation.js', 'js/mainUiEventRuntime.js', 'js/main.js'],
             ['js/citySkyline.js', 'js/main.js'],
         ]]
     ];

@@ -254,6 +254,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/cpuTurnStrategy.js',
         'js/localActionPolicy.js',
         'js/uiEventDelegation.js',
+        'js/mainUiEventRuntime.js',
         'js/citySkyline.js',
         'js/savedGameValidation.js',
         'js/storageSettings.js',

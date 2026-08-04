@@ -435,6 +435,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(localActionPolicySource, context, { filename: 'js/localActionPolicy.js' });
     const uiEventDelegationSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiEventDelegation.js'), 'utf8');
     vm.runInContext(uiEventDelegationSource, context, { filename: 'js/uiEventDelegation.js' });
+    const mainUiEventRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/mainUiEventRuntime.js'), 'utf8');
+    vm.runInContext(mainUiEventRuntimeSource, context, { filename: 'js/mainUiEventRuntime.js' });
     const citySkylineSource = fs.readFileSync(path.join(__dirname, '..', 'js/citySkyline.js'), 'utf8');
     vm.runInContext(citySkylineSource, context, { filename: 'js/citySkyline.js' });
     const uiPlayerDisplaySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiPlayerDisplay.js'), 'utf8');
@@ -589,7 +591,9 @@ runTest('main UI handler binding stateはdelegation controllerだけが所有す
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
     assert.strictEqual(source.includes('let delegatedUiHandlersBound'), false);
     assert.strictEqual(source.includes('let staticUiHandlersBound'), false);
-    assert.ok(source.includes('UiEventDelegation.createBindingController()'));
+    const runtimeSource = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/mainUiEventRuntime.js'), 'utf8');
+    assert.ok(source.includes('MainUiEventRuntime.createRuntime'));
+    assert.ok(runtimeSource.includes('delegation.createBindingController()'));
 });
 
 runTest('main storage helperは共通facadeでget/removeと例外fallbackを維持する', () => {
@@ -2464,7 +2468,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/cpuSchedulerState.js', 'js/main.js');
     assertBefore('js/cpuTurnStrategy.js', 'js/main.js');
     assertBefore('js/localActionPolicy.js', 'js/main.js');
-    assertBefore('js/uiEventDelegation.js', 'js/main.js');
+    assertBefore('js/uiEventDelegation.js', 'js/mainUiEventRuntime.js');
+    assertBefore('js/mainUiEventRuntime.js', 'js/main.js');
     assertBefore('js/citySkyline.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');
 });
@@ -2622,7 +2627,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('function shouldKeepPwaUpdateBannerVisible()'));
     assert.ok(html.includes('window.shouldKeepPwaUpdateBannerVisible = shouldKeepPwaUpdateBannerVisible;'));
     assert.ok(html.includes('(_versionMismatchDetected || !!_waitingSW) && _isOnlineFlowActive()'));
-    assert.ok(mainSource.includes("shouldKeepPwaUpdateBannerVisible()"));
+    const mainUiEventRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/mainUiEventRuntime.js'), 'utf8');
+    assert.ok(mainUiEventRuntimeSource.includes("resolveEffect('shouldKeepPwaUpdateBannerVisible')"));
     assert.ok(html.includes('checkOnlineDelivery();'));
     assert.ok(html.includes('window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;'));
     assert.ok(html.includes('window.refreshPwaUpdateState = refreshPwaUpdateState;'));
