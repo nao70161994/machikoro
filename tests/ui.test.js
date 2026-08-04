@@ -170,6 +170,18 @@ runTest('ui pending modal更新stateはeffect controllerだけが所有する', 
     assert.ok(source.includes('pendingModalUpdateController.run('));
 });
 
+runTest('ui transient stateはeager controllerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/ui.js'), 'utf8');
+    assert.ok(!source.includes('let activeGameTurnStateController'));
+    assert.ok(!source.includes('let turnAnnouncerTimerController'));
+    assert.ok(!source.includes('let buildMenuFilterController'));
+    assert.ok(!source.includes('getActiveGameTurnStateController'));
+    assert.ok(!source.includes('getBuildMenuFilterController'));
+    assert.ok(source.includes('UiGameStatusEffects.createTurnStateController()'));
+    assert.ok(source.includes('UiTurnAnnouncer.createTimerController()'));
+    assert.ok(source.includes('UiBuildMenu.createFilterController()'));
+});
+
 runTest('ui modal runtime stateはpolicy controllerだけが所有する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/ui.js'), 'utf8');
     assert.strictEqual(source.includes('let activeModalId'), false);

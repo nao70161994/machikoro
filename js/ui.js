@@ -252,7 +252,7 @@ function renderActiveGameState(current) {
         phase: game.phase,
         rollPhase: GAME_PHASES.ROLL,
         currentPlayerIndex: game.currentPlayerIndex,
-        previousPlayerIndex: getActiveGameTurnStateController().snapshot().previousPlayerIndex,
+        previousPlayerIndex: activeGameTurnStateController.snapshot().previousPlayerIndex,
         isReplaying,
         currentName: current.name,
         isCpuTurn: isCPUTurn,
@@ -273,7 +273,7 @@ function renderActiveGameState(current) {
             showTurnAnnouncer(name, isCpuTurn);
         },
         setPreviousPlayerIndex(playerIndex) {
-            getActiveGameTurnStateController().set(playerIndex);
+            activeGameTurnStateController.set(playerIndex);
         },
         setRollDisabled(disabled) {
             document.getElementById("btnRoll").disabled = disabled;
@@ -602,21 +602,14 @@ function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
     return UiBuildMenu.renderLandmarkBuildButton({ name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji });
 }
 
-function getBuildMenuFilterController() {
-    if (!buildMenuFilterController) {
-        buildMenuFilterController = UiBuildMenu.createFilterController();
-    }
-    return buildMenuFilterController;
-}
-
 function buildCardFilterBarHtml() {
-    return UiBuildMenu.buildCardFilterBarHtml(getBuildMenuFilterController().get());
+    return UiBuildMenu.buildCardFilterBarHtml(buildMenuFilterController.get());
 }
 
 function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
     return UiBuildMenu.buildVisibleCardButtonsHtml({
         cards: CARDS,
-        cardFilter: getBuildMenuFilterController().get(),
+        cardFilter: buildMenuFilterController.get(),
         enabledCards,
         shopStock: SHOP_STOCK,
         current,
@@ -709,7 +702,7 @@ function renderBuildMenu() {
 }
 
 function setCardFilter(color) {
-    const transition = getBuildMenuFilterController().set(color);
+    const transition = buildMenuFilterController.set(color);
     if (transition.shouldRender) renderBuildMenu();
 }
 
@@ -735,9 +728,6 @@ function showTurnAnnouncer(name, isCPU) {
     const view = UiTurnAnnouncer.buildView(name, isCPU);
     el.style.display = view.display;
     text.textContent = view.text;
-    if (!turnAnnouncerTimerController) {
-        turnAnnouncerTimerController = UiTurnAnnouncer.createTimerController();
-    }
     turnAnnouncerTimerController.start(view, {
         beginHide() { el.classList.add("hiding"); },
         finishHide() {
@@ -802,16 +792,9 @@ function applyCardSelectStateSnapshot() {
     enabledLandmarks = new Set(snapshot.enabledLandmarks);
 }
 const logHistoryController = UiLogDisplay.createHistoryController();
-let activeGameTurnStateController = null;
-let turnAnnouncerTimerController = null;
-
-function getActiveGameTurnStateController() {
-    if (!activeGameTurnStateController) {
-        activeGameTurnStateController = UiGameStatusEffects.createTurnStateController();
-    }
-    return activeGameTurnStateController;
-}
-let buildMenuFilterController = null;
+const activeGameTurnStateController = UiGameStatusEffects.createTurnStateController();
+const turnAnnouncerTimerController = UiTurnAnnouncer.createTimerController();
+const buildMenuFilterController = UiBuildMenu.createFilterController();
 const modalRuntimeController = UiModalPolicy.createRuntimeController();
 
 const MODAL_INERT_ROOT_IDS = UiModalPolicy.inertRootIds;
@@ -932,7 +915,7 @@ function compareCardNamesForDisplay(a, b) {
     return UiCardOrder.compareCardNamesForDisplay(a, b, CARDS, CARD_COLOR_ORDER);
 }
 
-function resetFullLog() { logHistoryController.reset(); if (activeGameTurnStateController) activeGameTurnStateController.reset(); if (buildMenuFilterController) buildMenuFilterController.clear(); }
+function resetFullLog() { logHistoryController.reset(); activeGameTurnStateController.reset(); buildMenuFilterController.clear(); }
 
 function isVisibleFocusableElement(el) {
     if (!el || el.disabled || el.hidden || el.getAttribute('aria-hidden') === 'true') return false;
