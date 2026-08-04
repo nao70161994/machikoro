@@ -52,20 +52,21 @@ const UiTutorialSettings = (() => {
             return snapshot();
         }
 
-        function bindGlobals(root) {
+        function bindGlobals(root, options = {}) {
             if (!root || (typeof root !== 'object' && typeof root !== 'function')) return false;
+            const writable = options.writable !== false;
             Object.defineProperties(root, {
                 tutorialEnabled: {
                     configurable: true,
                     enumerable: false,
                     get: () => state.tutorialEnabled,
-                    set: value => { setEnabled(value); },
+                    set: writable ? value => { setEnabled(value); } : undefined,
                 },
                 tutorialLevel: {
                     configurable: true,
                     enumerable: false,
                     get: () => state.tutorialLevel,
-                    set: value => { setLevel(value); },
+                    set: writable ? value => { setLevel(value); } : undefined,
                 },
             });
             return true;
@@ -121,8 +122,9 @@ const UiTutorialSettings = (() => {
     }
 
     const root = typeof globalThis !== 'undefined' ? globalThis : null;
+    const browserRoot = typeof window !== 'undefined' ? window : null;
     const runtime = createController(currentGlobals(root));
-    if (root) runtime.bindGlobals(root);
+    if (root) runtime.bindGlobals(root, { writable: !browserRoot || browserRoot !== root });
 
     return Object.freeze({
         CHANGE_TYPES,

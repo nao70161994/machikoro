@@ -67,13 +67,14 @@ const GameSetupState = (() => {
             return snapshot();
         }
 
-        function bindGlobals(root) {
+        function bindGlobals(root, options = {}) {
             if (!root || (typeof root !== 'object' && typeof root !== 'function')) return false;
+            const writable = options.writable !== false;
             Object.defineProperties(root, Object.fromEntries(fields.map(field => [field, {
                 configurable: true,
                 enumerable: false,
                 get: () => read(field),
-                set: value => { write(field, value); },
+                set: writable ? value => { write(field, value); } : undefined,
             }])));
             return true;
         }
@@ -92,8 +93,10 @@ const GameSetupState = (() => {
         });
     }
 
+    const root = typeof globalThis !== 'undefined' ? globalThis : null;
+    const browserRoot = typeof window !== 'undefined' ? window : null;
     const runtime = createController();
-    if (typeof globalThis !== 'undefined') runtime.bindGlobals(globalThis);
+    if (root) runtime.bindGlobals(root, { writable: !browserRoot || browserRoot !== root });
     return Object.freeze({ fields, createController, runtime });
 })();
 

@@ -97,3 +97,18 @@ runTest('tutorial settings compatibility globalsは既存値を保持して単�
     });
     assert.strictEqual(Object.keys(root).includes('tutorialEnabled'), false);
 });
+
+runTest('tutorial settings compatibility globalsは製品向けread-only投影を選べる', () => {
+    const controller = UiTutorialSettings.createController({
+        tutorialEnabled: false,
+        tutorialLevel: 'advanced',
+    });
+    const root = {};
+    assert.strictEqual(controller.bindGlobals(root, { writable: false }), true);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'tutorialEnabled').set, undefined);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'tutorialLevel').set, undefined);
+    controller.setEnabled(true);
+    controller.setLevel('beginner');
+    assert.strictEqual(root.tutorialEnabled, true);
+    assert.strictEqual(root.tutorialLevel, 'beginner');
+});

@@ -80,3 +80,18 @@ runTest('game setup compatibility globalsは単一controllerへ双方向投影�
     });
     assert.strictEqual(Object.keys(root).includes('selectedCount'), false);
 });
+
+runTest('game setup compatibility globalsは製品向けread-only投影を選べる', () => {
+    const controller = GameSetupState.createController({
+        selectedCount: 3,
+        playerSettings: [{ type: 'human' }],
+        cpuSpeed: 900,
+    });
+    const root = {};
+    assert.strictEqual(controller.bindGlobals(root, { writable: false }), true);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'selectedCount').set, undefined);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'playerSettings').set, undefined);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'cpuSpeed').set, undefined);
+    controller.setSelectedCount(4);
+    assert.strictEqual(root.selectedCount, 4);
+});
