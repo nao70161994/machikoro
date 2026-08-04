@@ -32,7 +32,6 @@ UiWinner.streakRuntime.replace({
 // オートスキップ
 const autoSkipScheduleController = AutoSkipPolicy.createScheduleController();
 const delayedHumanActionController = DelayedHumanActionPolicy.createScheduleController();
-const localGameStartPendingController = LocalGameStart.createPendingController();
 
 // 取り消し状態は GameRuntimeState が所有する。
 UiTutorialSettings.runtime.replace({
@@ -110,192 +109,93 @@ function formatCpuSpeedLabel(value) {
     return LocalPlayerSettings.formatCpuSpeedLabel(value);
 }
 
+const localGameStartRuntime = LocalGameStartRuntime.createRuntime({
+    console: typeof console !== 'undefined' ? console : null,
+    document,
+    getPortfolio: () => typeof RLModelPortfolio !== 'undefined' ? RLModelPortfolio : null,
+    initializeGame: playerCount => init(playerCount),
+    notifyLifecycleStart() {
+        if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
+    },
+    playerSettings: LocalPlayerSettings,
+    resetOnline() {
+        if (typeof resetOnlineState === 'function') resetOnlineState();
+    },
+    resetStats: () => resetStatsRecorded(),
+    resetUiLocks() {
+        if (typeof resetUiLocksForGameReset === 'function') {
+            resetUiLocksForGameReset('start-game-reset-ui-locks');
+        }
+    },
+    saveSettings: () => saveSettings(),
+    setupRuntime: GameSetupState.runtime,
+    showNotice: message => showNotice(message),
+    startPolicy: LocalGameStart,
+});
 function changeCount(delta) {
-    const setup = gameSetupSnapshot();
-    const next = GameSetupState.runtime.setSelectedCount(
-        Math.min(10, Math.max(2, setup.selectedCount + delta))
-    );
-    document.getElementById("playerCount").textContent = next.selectedCount;
-    renderPlayerSettings();
-    preloadLocalRlModelsInBackground('local-player-count-preload');
-    saveSettings();
+    return localGameStartRuntime.changeCount(delta);
 }
 
 function renderPlayerSettings() {
-    const setup = gameSetupSnapshot();
-    const normalized = GameSetupState.runtime.setPlayerSettings(
-        LocalPlayerSettings.normalizeSettings(setup.playerSettings, setup.selectedCount)
-    );
-    document.getElementById("playerSettings").innerHTML = LocalPlayerSettings.buildSettingsHtml(
-        normalized.playerSettings,
-        normalized.selectedCount
-    );
-    updateLocalRlModelReadinessUi();
+    return localGameStartRuntime.renderPlayerSettings();
 }
 
 function onChangePlayerType(index, value) {
-    const settings = gameSetupSnapshot().playerSettings;
-    if (value === "human") {
-        GameSetupState.runtime.setPlayerSetting(index, {
-            type: "human",
-            difficulty: "normal",
-            name: normalizeLocalPlayerName(settings[index]?.name, index),
-        });
-    } else {
-        GameSetupState.runtime.setPlayerSetting(index, {
-            type: "cpu",
-            difficulty: value,
-            name: normalizeLocalPlayerName(settings[index]?.name, index),
-        });
-    }
-    renderPlayerSettings();
-    if (value === "rl") preloadLocalRlModelsInBackground('local-rl-selected-preload');
-    saveSettings();
+    return localGameStartRuntime.changePlayerType(index, value);
 }
 
 function onChangePlayerName(index, value) {
-    if (!gameSetupSnapshot().playerSettings[index]) {
-        GameSetupState.runtime.setPlayerSetting(index, {
-            type: "human",
-            difficulty: "normal",
-            name: defaultLocalPlayerName(index),
-        });
-    }
-    GameSetupState.runtime.setPlayerName(index, value);
-    saveSettings();
+    return localGameStartRuntime.changePlayerName(index, value);
 }
 
 function hasRlCpuSetting(settings, playerCount) {
-    return LocalPlayerSettings.hasRlCpu(settings, playerCount);
+    return localGameStartRuntime.hasRlCpuSetting(settings, playerCount);
 }
 
 function snapshotLocalPlayerSettings(playerCount = gameSetupSnapshot().selectedCount) {
-    return LocalPlayerSettings.snapshot(gameSetupSnapshot().playerSettings, playerCount);
+    return localGameStartRuntime.snapshotPlayerSettings(playerCount);
 }
 
-function hasLocalRlCpuSetting(playerCount = gameSetupSnapshot().selectedCount, settings = gameSetupSnapshot().playerSettings) {
-    return hasRlCpuSetting(settings, playerCount);
+function hasLocalRlCpuSetting(
+    playerCount = gameSetupSnapshot().selectedCount,
+    settings = gameSetupSnapshot().playerSettings
+) {
+    return localGameStartRuntime.hasLocalRlCpuSetting(playerCount, settings);
 }
 
 function canPreloadRlModels() {
-    return typeof RLModelPortfolio !== "undefined" && typeof RLModelPortfolio.preloadEligibleModels === "function";
+    return localGameStartRuntime.canPreloadRlModels();
 }
 
 function localRlModelLoadState(playerCount = gameSetupSnapshot().selectedCount) {
-    if (!hasLocalRlCpuSetting(playerCount)) return { status: 'unused', ready: 0, total: 0, errors: [] };
-    if (!canPreloadRlModels()) return { status: 'failed', ready: 0, total: 0, errors: ['RL model loader is not available'] };
-    if (typeof RLModelPortfolio.eligibleLoadState === "function") return RLModelPortfolio.eligibleLoadState(playerCount);
-    return { status: 'idle', ready: 0, total: 1, errors: [] };
+    return localGameStartRuntime.modelLoadState(playerCount);
 }
 
 function localRlModelStatusMessage(state) {
-    return LocalPlayerSettings.rlModelStatusMessage(state);
+    return localGameStartRuntime.modelStatusMessage(state);
 }
 
 function updateLocalRlModelReadinessUi() {
-    const state = localRlModelLoadState(gameSetupSnapshot().selectedCount);
-    const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnStart') : null;
-    const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('localRlModelStatus') : null;
-    if (btn) {
-        const view = LocalPlayerSettings.startButtonView(state, localGameStartPendingController.isPending());
-        btn.disabled = view.disabled;
-        btn.textContent = view.textContent;
-    }
-    if (status) status.textContent = localRlModelStatusMessage(state);
-    return state;
+    return localGameStartRuntime.updateReadinessUi();
 }
 
 function preloadLocalRlModelsForStart(playerCount, settings = gameSetupSnapshot().playerSettings) {
-    if (!hasLocalRlCpuSetting(playerCount, settings)) return null;
-    if (!canPreloadRlModels()) return Promise.reject(new Error("RL model loader is not available"));
-    return RLModelPortfolio.preloadEligibleModels(playerCount, { attempts: 3 });
+    return localGameStartRuntime.preloadForStart(playerCount, settings);
 }
 
 function preloadLocalRlModelsInBackground(reason = 'local-rl-background-preload') {
-    const setup = gameSetupSnapshot();
-    if (!hasLocalRlCpuSetting(setup.selectedCount, setup.playerSettings) || !canPreloadRlModels()) {
-        updateLocalRlModelReadinessUi();
-        return null;
-    }
-    updateLocalRlModelReadinessUi();
-    const preload = RLModelPortfolio.preloadEligibleModels(setup.selectedCount, { attempts: 3, retryDelayMs: 0 });
-    if (preload && typeof preload.then === "function") {
-        preload.then(() => updateLocalRlModelReadinessUi()).catch(error => {
-            if (typeof console !== 'undefined' && typeof console.warn === 'function') console.warn(reason, error);
-            updateLocalRlModelReadinessUi();
-        });
-    }
-    updateLocalRlModelReadinessUi();
-    return preload;
+    return localGameStartRuntime.preloadInBackground(reason);
 }
 
-function startGameNow(playerCount = gameSetupSnapshot().selectedCount, settings = gameSetupSnapshot().playerSettings) {
-    const plan = LocalGameStart.runtimePlan(
-        playerCount,
-        settings,
-        parseInt(document.getElementById("cpuSpeed").value)
-    );
-    LocalGameStart.execute(plan, {
-        setRuntime(value) {
-            GameSetupState.runtime.replace({
-                selectedCount: value.playerCount,
-                playerSettings: Array.from(value.playerSettings, setting => Object.assign({}, setting)),
-                cpuSpeed: value.cpuSpeed,
-            });
-        },
-        saveSettings,
-        resetStats: resetStatsRecorded,
-        resetOnline() {
-            if (typeof resetOnlineState === 'function') resetOnlineState();
-        },
-        resetUiLocks() {
-            if (typeof resetUiLocksForGameReset === 'function') {
-                resetUiLocksForGameReset('start-game-reset-ui-locks');
-            }
-        },
-        showGame() {
-            document.getElementById("titleScreen").style.display = "none";
-            document.getElementById("gameScreen").style.display = "block";
-        },
-        initializeGame: init,
-        notifyLifecycleStart() {
-            if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
-        },
-    });
+function startGameNow(
+    playerCount = gameSetupSnapshot().selectedCount,
+    settings = gameSetupSnapshot().playerSettings
+) {
+    return localGameStartRuntime.startNow(playerCount, settings);
 }
 
 function startGame() {
-    if (LocalGameStart.initialDecision({ startPending: localGameStartPendingController.isPending() }) ===
-            LocalGameStart.REQUEST_DECISIONS.IGNORE_PENDING) return;
-    const setup = gameSetupSnapshot();
-    const startPlayerCount = setup.selectedCount;
-    const startPlayerSettings = LocalPlayerSettings.snapshot(setup.playerSettings, startPlayerCount);
-    const state = updateLocalRlModelReadinessUi();
-    if (LocalGameStart.initialDecision({ loadStatus: state.status }) ===
-            LocalGameStart.REQUEST_DECISIONS.WAIT_LOADING) {
-        showNotice("深層学習AIモデルを読み込んでいます。");
-        return;
-    }
-    const preload = preloadLocalRlModelsForStart(startPlayerCount, startPlayerSettings);
-    if (LocalGameStart.preloadDecision(preload) === LocalGameStart.REQUEST_DECISIONS.PRELOAD) {
-        localGameStartPendingController.begin();
-        updateLocalRlModelReadinessUi();
-        showNotice("深層学習AIモデルを読み込んでいます。");
-        preload
-            .then(() => {
-                localGameStartPendingController.finish();
-                updateLocalRlModelReadinessUi();
-                startGameNow(startPlayerCount, startPlayerSettings);
-            })
-            .catch(error => {
-                localGameStartPendingController.finish();
-                console.error(error);
-                updateLocalRlModelReadinessUi();
-                showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度開始してください。");
-            });
-        return;
-    }
-    startGameNow();
+    return localGameStartRuntime.start();
 }
 
 function restartGame() {

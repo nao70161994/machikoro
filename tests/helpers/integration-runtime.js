@@ -243,6 +243,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/appShell.js',
         'js/localPlayerSettings.js',
         'js/localGameStart.js',
+        'js/localGameStartRuntime.js',
         'js/autoSkipPolicy.js',
         'js/pageActivationPolicy.js',
         'js/delayedHumanActionPolicy.js',

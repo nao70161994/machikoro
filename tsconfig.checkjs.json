@@ -170,6 +170,7 @@
     "js/lifecycleTransport.js",
     "js/localPlayerSettings.js",
     "js/localGameStart.js",
+    "js/localGameStartRuntime.js",
     "js/pageActivationPolicy.js",
     "js/clientStorage.js",
     "js/appShellStorage.js",

@@ -79,6 +79,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/lifecycleTransport.js',
     'js/localPlayerSettings.js',
     'js/localGameStart.js',
+    'js/localGameStartRuntime.js',
     'js/pageActivationPolicy.js',
     'js/onlinePayload.js',
     'js/onlineRestoreQueueState.js',
