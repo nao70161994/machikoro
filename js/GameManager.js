@@ -509,27 +509,24 @@ class GameManager {
                 if (p.isDormant(card)) continue;
                 if (card.color !== "blue" || !card.diceNums.includes(dice)) continue;
 
-                if (card.effect === CARD_EFFECTS.CORNFIELD) {
-                    const built = p.builtLandmarkCount();
-                    if (built > 1) continue;
-                    p.coins += card.income;
-                    this.addLog(LOG_TYPES.GAIN, `🌽 ${p.name}のコーン畑発動 → +${card.income}コイン`);
-                    continue;
-                }
-                if (card.effect === CARD_EFFECTS.HARBOR) {
-                    if (!p.landmarks[LANDMARK_NAMES.HARBOR]) continue;
-                    p.coins += card.income;
-                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${card.income}コイン`);
-                } else if (card.effect === CARD_EFFECTS.TUNA) {
-                    if (!p.landmarks[LANDMARK_NAMES.HARBOR]) continue;
-                    const t1 = tunaDice ? tunaDice[0] : rollRandomDie();
-                    const t2 = tunaDice ? tunaDice[1] : rollRandomDie();
-                    const earn = t1 + t2;
-                    p.coins += earn;
-                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}のマグロ漁船発動 → 🎲${t1}+${t2}=${earn}コイン`);
+                const plan = GameCardActivationPolicy.blueIncomePlan({
+                    effect: card.effect,
+                    effects: CARD_EFFECTS,
+                    income: card.income,
+                    builtLandmarkCount: () => p.builtLandmarkCount(),
+                    hasHarbor: !!p.landmarks[LANDMARK_NAMES.HARBOR],
+                    tunaDice: () => tunaDice || [rollRandomDie(), rollRandomDie()],
+                });
+                if (!plan.active) continue;
+                p.coins += plan.amount;
+                if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.CORNFIELD) {
+                    this.addLog(LOG_TYPES.GAIN, `🌽 ${p.name}のコーン畑発動 → +${plan.amount}コイン`);
+                } else if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.HARBOR) {
+                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${plan.amount}コイン`);
+                } else if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.TUNA) {
+                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}のマグロ漁船発動 → 🎲${plan.dice[0]}+${plan.dice[1]}=${plan.amount}コイン`);
                 } else {
-                    p.coins += card.income;
-                    this.addLog(LOG_TYPES.GAIN, `🌾 ${p.name}の${card.name}発動 → +${card.income}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🌾 ${p.name}の${card.name}発動 → +${plan.amount}コイン`);
                 }
             }
         }
