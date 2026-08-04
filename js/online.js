@@ -2524,7 +2524,7 @@ function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
 
 // オンライン対戦（Socket.IO）
 function initSocket() {
-    if (socket) return true;
+    if (onlineSessionSnapshot().socket) return true;
     if (typeof io !== 'function') {
         const message = 'オンライン機能を読み込めませんでした。サーバーURLから開き直してください。';
         showNotice(message);
@@ -2548,9 +2548,10 @@ function initSocket() {
         }
         return false;
     }
-    OnlineRuntimeState.runtime.setSocket(io());
+    const connectedSession = OnlineRuntimeState.runtime.setSocket(io());
+    const currentSocket = connectedSession.socket;
     const hostlessEvents = OnlinePayload.hostlessRestoreEvents;
-    const socketEvents = OnlineSocketRegistry.createBinder(socket, {
+    const socketEvents = OnlineSocketRegistry.createBinder(currentSocket, {
         hostlessCollect: hostlessEvents.COLLECT,
         hostlessConfirmation: hostlessEvents.CONFIRMATION,
         hostlessStatus: hostlessEvents.STATUS,
@@ -2584,8 +2585,9 @@ function initSocket() {
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.PLAYER_LIST, (players) => {
+        const roomId = onlineSessionSnapshot().myRoomId;
         document.getElementById("onlineStatus").innerHTML = `
-            <div class="room-id-display">${myRoomId}</div>
+            <div class="room-id-display">${roomId}</div>
             <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
     });
 
@@ -2884,7 +2886,7 @@ function initSocket() {
         const restoredThroughSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
         const localBundle = _readLocalRestoreBundle();
         const ownsLocalHostBundle = !!localBundle &&
-            localBundle.gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex;
+            localBundle.gameStartPayload.hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex;
         const localRank = ownsLocalHostBundle
             ? _onlineRestoreRank(
                 localBundle.gameStartPayload,
@@ -2896,7 +2898,7 @@ function initSocket() {
             ? _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog)
             : null;
         const canOfferLocalHostBundle = ownsLocalHostBundle &&
-            (hostPlayerIndex === myOriginalPlayerIndex ||
+            (hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex ||
                 localRank.hostEpoch > localOfferServerRank.hostEpoch);
         const shouldOfferLocalHostBundle = canOfferLocalHostBundle &&
             _isOnlineRestoreRankNewer(localRank, localOfferServerRank);
@@ -2915,7 +2917,7 @@ function initSocket() {
         _onlineDiagnosticSelections.localHostRestoreOfferPlanSelection =
             OnlineRestoreRank.selectLocalHostRestoreOfferPlan(
                 localBundle,
-                myOriginalPlayerIndex,
+                onlineSessionSnapshot().myOriginalPlayerIndex,
                 hostPlayerIndex,
                 localRank,
                 localOfferServerRank,
@@ -3265,8 +3267,9 @@ function initSocket() {
                     _readPendingOutboundActionForCurrentSession(),
                     pendingBeforeRejoin
                 );
+            const pendingSocket = onlineSessionSnapshot().socket;
             const pendingResendEligible = currentPendingMatches &&
-                !!socket && socket.connected !== false;
+                !!pendingSocket && pendingSocket.connected !== false;
             const pendingResendAllowed = pendingResendEligible &&
                 _canResendPendingOutboundAction(pendingBeforeRejoin);
             const pendingResendDecisions = OnlinePendingResend.decisions;
@@ -3282,7 +3285,7 @@ function initSocket() {
                 pending: pendingBeforeRejoin,
                 acceptedPending: acceptedPendingReconciliation,
                 currentPendingMatches,
-                socketConnected: !!socket && socket.connected !== false,
+                socketConnected: !!pendingSocket && pendingSocket.connected !== false,
                 canResend: pendingResendAllowed,
             }, legacyPendingResendPlan, {
                 authorityEnabled: isOnlinePendingResendPlanAuthorityEnabled(),
@@ -3297,7 +3300,7 @@ function initSocket() {
                 OnlinePendingResend.execute(pendingResendPlan, {
                     clearPendingOutboundAction: () => _clearPendingOutboundAction(),
                     setActionFlight: () => _setOnlineActionInFlight(true),
-                    emitAction: pending => socket.emit('gameAction', {
+                    emitAction: pending => pendingSocket.emit('gameAction', {
                         action: pending.action,
                         data: pending.data,
                         clientActionId: pending.clientActionId,
@@ -3311,7 +3314,7 @@ function initSocket() {
             }
             if (pendingResendPlan.decision === pendingResendDecisions.RESEND) {
                 _setOnlineActionInFlight(true);
-                socket.emit('gameAction', {
+                pendingSocket.emit('gameAction', {
                     action: pendingResendPlan.pending.action,
                     data: pendingResendPlan.pending.data,
                     clientActionId: pendingResendPlan.pending.clientActionId,
@@ -3332,7 +3335,7 @@ function initSocket() {
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_COLLECT, ({ roomId, generation }) => {
-        if (roomId !== myRoomId) return;
+        if (roomId !== onlineSessionSnapshot().myRoomId) return;
         const el = document.getElementById("onlineStatus");
         if (el) el.textContent = '♻️ 参加者間の復元データ一致を確認しています...';
         if (!_submitHostlessRestoreCandidate(generation) && el) {
@@ -3341,12 +3344,13 @@ function initSocket() {
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_CONFIRMATION, ({ roomId, candidateCount }) => {
-        if (roomId !== myRoomId) return;
+        if (roomId !== onlineSessionSnapshot().myRoomId) return;
         const message =
             `${candidateCount || 0}人の参加者データが完全一致しました。あなたを新しいホストとして暫定復元しますか？`;
         const respond = approved => {
-            if (!socket || socket.connected === false) return;
-            socket.emit(hostlessEvents.CONFIRM, {
+            const responseSocket = onlineSessionSnapshot().socket;
+            if (!responseSocket || responseSocket.connected === false) return;
+            responseSocket.emit(hostlessEvents.CONFIRM, {
                 roomId,
                 approved: approved === true,
             });
@@ -3358,7 +3362,7 @@ function initSocket() {
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_STATUS, ({ roomId, reason, stage, candidateCount }) => {
-        if (roomId && roomId !== myRoomId) return;
+        if (roomId && roomId !== onlineSessionSnapshot().myRoomId) return;
         const el = document.getElementById("onlineStatus");
         if (reason === 'host-restored') {
             _hostlessRestoreState.clear();
@@ -3403,9 +3407,10 @@ function initSocket() {
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_APPROVED, ({ roomId, hostPlayerIndex }) => {
-        if (roomId !== myRoomId) return;
+        const session = onlineSessionSnapshot();
+        if (roomId !== session.myRoomId) return;
         _hostlessRestoreState.clear();
-        if (hostPlayerIndex === myOriginalPlayerIndex) return;
+        if (hostPlayerIndex === session.myOriginalPlayerIndex) return;
         _clearRejoinRetry();
         setOnlineReconnectLegacyFlag(true);
         const el = document.getElementById("onlineStatus");
@@ -3414,7 +3419,7 @@ function initSocket() {
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.PLAYER_REJOINED, ({ playerIndex, playerName }) => {
-        if (playerIndex !== myOriginalPlayerIndex) {
+        if (playerIndex !== onlineSessionSnapshot().myOriginalPlayerIndex) {
             const currentGame = onlineGameRuntimeSnapshot().game;
             currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `🔌 ${playerName}が再接続しました`);
         }
@@ -3453,13 +3458,14 @@ function initSocket() {
 }
 
 function _runOnlineReconnectTerminalCleanupLegacy() {
+    const currentSocket = onlineSessionSnapshot().socket;
     _clearPendingOutboundActionForCurrentSession();
     setOnlineReconnectLegacyFlag(false);
     _removeOnlineSessionStorageItem();
     _clearOnlineRestoreBundle();
     updateResumeButton();
-    if (socket) {
-        socket.disconnect();
+    if (currentSocket) {
+        currentSocket.disconnect();
         OnlineRuntimeState.runtime.setSocket(null);
     }
 }
@@ -3478,8 +3484,9 @@ function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
         clearRestoreBundle: () => _clearOnlineRestoreBundle(),
         updateResumeButton: () => updateResumeButton(),
         disconnectSocket: () => {
-            if (socket) {
-                socket.disconnect();
+            const currentSocket = onlineSessionSnapshot().socket;
+            if (currentSocket) {
+                currentSocket.disconnect();
                 OnlineRuntimeState.runtime.setSocket(null);
             }
         },
@@ -3488,18 +3495,20 @@ function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
 }
 
 function handleAppError(msg) {
+    const session = onlineSessionSnapshot();
     finishOnlineLobbyRequest();
     _setOnlineActionInFlight(false);
     setOnlineCreateRoomPending(false);
-    if (msg === 'ROOM_NOT_FOUND' && isReconnectingOnline) {
-        if (isRoomHost) {
+    if (msg === 'ROOM_NOT_FOUND' && session.isReconnectingOnline) {
+        if (session.isRoomHost) {
             if (!_tryRestoreRoom()) _scheduleRejoinRetry();
         } else {
             _scheduleRejoinRetry();
         }
         return;
     }
-    if (msg === '無効な操作です' && isOnlineGame && socket && myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken) {
+    if (msg === '無効な操作です' && session.isOnlineGame && session.socket && session.myRoomId &&
+            session.myOriginalPlayerIndex >= 0 && session.myPlayerName && session.reconnectToken) {
         _clearPendingOutboundActionForCurrentSession({ requireExplicitRoomId: true });
         setOnlineReconnectLegacyFlag(true);
         invalidateCpuScheduleChain();
@@ -3507,7 +3516,7 @@ function handleAppError(msg) {
         _emitOnlineRejoinRequest();
         return;
     }
-    const cleanupSelection = _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline);
+    const cleanupSelection = _onlineReconnectCleanupAuthoritySelection(session.isReconnectingOnline);
     if (cleanupSelection.cleanup) {
         _runOnlineReconnectTerminalCleanup(cleanupSelection);
     }
@@ -3646,7 +3655,7 @@ function emitCreateRoom(name, playerCount = onlineSetupStateController.snapshot(
         clientVersion: getClientVersion(),
         hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
     };
-    socket.emit('createRoom', OnlinePayload.withGameSchemaCapabilities(
+    onlineSessionSnapshot().socket.emit('createRoom', OnlinePayload.withGameSchemaCapabilities(
         createPayload, getGameSchemaCapabilitiesForTransport()
     ));
 }
@@ -3705,7 +3714,7 @@ function joinRoom() {
         clientVersion: getClientVersion(),
         hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
     };
-    socket.emit('joinRoom', OnlinePayload.withGameSchemaCapabilities(
+    onlineSessionSnapshot().socket.emit('joinRoom', OnlinePayload.withGameSchemaCapabilities(
         joinPayload, getGameSchemaCapabilitiesForTransport()
     ));
 }
@@ -3755,7 +3764,7 @@ function initOnlineGame(playerNames, ps, playerOrder) {
 
     // myPlayerIndexをシャッフル後の位置に更新
     // order[i] === 元のindex なので、自分の元indexがorderの何番目かを探す
-    const orderedPlayerIndex = order.indexOf(myOriginalPlayerIndex);
+    const orderedPlayerIndex = order.indexOf(onlineSessionSnapshot().myOriginalPlayerIndex);
     OnlineRuntimeState.runtime.setCurrentPlayerIndex(
         orderedPlayerIndex === -1 ? 0 : orderedPlayerIndex
     ); // 見つからない場合はホスト
@@ -3881,8 +3890,9 @@ function restoreOnlineSnapshot(state) {
 }
 
 function sendAction(action, data = {}) {
-    if (isOnlineGame && socket) {
-        if (isOnlineReconnectInputBlocked() || _onlineActionFlightController.isInFlight() || socket.connected === false) return false;
+    const session = onlineSessionSnapshot();
+    if (session.isOnlineGame && session.socket) {
+        if (isOnlineReconnectInputBlocked() || _onlineActionFlightController.isInFlight() || session.socket.connected === false) return false;
         _setOnlineActionInFlight(true);
         invalidateCpuScheduleChain();
         const pending = _savePendingOutboundAction(action, data);
@@ -3892,10 +3902,10 @@ function sendAction(action, data = {}) {
             _clearPendingOutboundAction();
             return false;
         }
-        socket.emit('gameAction', encodedWire.value);
+        session.socket.emit('gameAction', encodedWire.value);
         return true;
     }
-    return !isOnlineGame;
+    return !session.isOnlineGame;
 }
 
 function _tryRestoreRoom() {
@@ -3911,7 +3921,7 @@ function _tryRestoreRoom() {
             document.getElementById("onlineStatus").textContent = '❌ 古い復元データのため再接続できません';
             return;
         }
-        const isStoredHost = gameStartPayload.hostPlayerIndex === myOriginalPlayerIndex;
+        const isStoredHost = gameStartPayload.hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex;
         if (!isStoredHost) return false;
         const restoreAudit = _readOnlineRestoreAudit();
         const stateSnapshot = restoreAudit ? _readOnlineStateSnapshot() : null;
@@ -3944,16 +3954,18 @@ function _readLocalRestoreBundle() {
 }
 
 function _onlineHostlessRestoreIdentity() {
+    const session = onlineSessionSnapshot();
     return {
-        roomId: myRoomId,
-        playerIndex: myOriginalPlayerIndex,
-        playerName: myPlayerName,
-        reconnectToken,
+        roomId: session.myRoomId,
+        playerIndex: session.myOriginalPlayerIndex,
+        playerName: session.myPlayerName,
+        reconnectToken: session.reconnectToken,
     };
 }
 
 function _requestHostlessRestore() {
-    if (!socket || socket.connected === false || _hostlessRestoreState.isPending()) return false;
+    const currentSocket = onlineSessionSnapshot().socket;
+    if (!currentSocket || currentSocket.connected === false || _hostlessRestoreState.isPending()) return false;
     const bundle = _readLocalRestoreBundle();
     const payload = OnlinePayload.buildHostlessRestoreRequest(
         bundle,
@@ -3961,11 +3973,12 @@ function _requestHostlessRestore() {
     );
     if (!payload || !_hostlessRestoreState.tryBegin(true)) return false;
     setOnlineReconnectLegacyFlag(true);
-    socket.emit(OnlinePayload.hostlessRestoreEvents.REQUEST, payload);
+    currentSocket.emit(OnlinePayload.hostlessRestoreEvents.REQUEST, payload);
     return true;
 }
 
 function _submitHostlessRestoreCandidate(generation) {
+    const currentSocket = onlineSessionSnapshot().socket;
     const bundle = _readLocalRestoreBundle();
     if (!bundle || bundle.gameStartPayload.hostlessRestoreGeneration !== generation) {
         return false;
@@ -3974,29 +3987,30 @@ function _submitHostlessRestoreCandidate(generation) {
         bundle,
         _onlineHostlessRestoreIdentity()
     );
-    if (!payload || !socket || socket.connected === false) return false;
-    socket.emit(OnlinePayload.hostlessRestoreEvents.CANDIDATE, payload);
+    if (!payload || !currentSocket || currentSocket.connected === false) return false;
+    currentSocket.emit(OnlinePayload.hostlessRestoreEvents.CANDIDATE, payload);
     return true;
 }
 
 function _sendRecreateRoomFromBundle(bundle) {
+    const session = onlineSessionSnapshot();
     const payload = {
-        roomId: myRoomId,
+        roomId: session.myRoomId,
         gameStartPayload: bundle.gameStartPayload,
         stateSnapshot: bundle.stateSnapshot,
         actionLog: bundle.actionLog,
         restoreAudit: bundle.restoreAudit,
-        playerIndex: myOriginalPlayerIndex,
-        playerName: myPlayerName,
-        reconnectToken,
+        playerIndex: session.myOriginalPlayerIndex,
+        playerName: session.myPlayerName,
+        reconnectToken: session.reconnectToken,
     };
     const encoded = encodeOnlineRecreateRoomPayload(payload);
-    if (!encoded.ok || !socket || socket.connected === false) {
+    if (!encoded.ok || !session.socket || session.socket.connected === false) {
         const status = typeof document !== 'undefined' ? document.getElementById('onlineStatus') : null;
         if (status) status.textContent = '❌ 復元payloadのschema変換に失敗しました';
         return false;
     }
-    socket.emit('recreateRoom', encoded.value);
+    session.socket.emit('recreateRoom', encoded.value);
     return true;
 }
 

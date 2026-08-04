@@ -173,6 +173,26 @@ runTest('online reconnectとsession保存はruntime snapshot境界から読む',
     }
 });
 
+runTest('online Socketとaction処理はruntime snapshot境界から読む', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    for (const pattern of [
+        'if (socket)',
+        'createBinder(socket',
+        '${myRoomId}',
+        '=== myOriginalPlayerIndex',
+        '!!socket &&',
+        '\n        socket.emit(',
+        'if (isOnlineGame',
+        'return !isOnlineGame',
+        "cleanupAuthoritySelection(isReconnectingOnline)",
+        'order.indexOf(myOriginalPlayerIndex)',
+    ]) {
+        assert.strictEqual(source.includes(pattern), false, pattern);
+    }
+});
+
 runTest('mainはonline sessionをruntime snapshot境界から読む', () => {
     const fs = require('fs');
     const path = require('path');
