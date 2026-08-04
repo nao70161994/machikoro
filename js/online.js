@@ -29,6 +29,9 @@ const onlineClientEffects = OnlineClientEffects.createFromResolver(name => {
     const resolveEffect = onlineClientEffectResolvers[name];
     return typeof resolveEffect === 'function' ? resolveEffect() : null;
 });
+const onlineDomEffects = OnlineDomEffects.createRuntime({
+    getDocument: () => typeof document !== 'undefined' ? document : null,
+});
 
 function onlineGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
@@ -125,7 +128,7 @@ function buildOnlineRejoinPayload(session) {
 
 function changeOnlineCount(delta) {
     const state = onlineSetupStateController.changeCount(delta);
-    document.getElementById("onlinePlayerCount").textContent = state.selectedCount;
+    onlineDomEffects.setText(OnlineDomEffects.ids.playerCount, state.selectedCount);
     renderOnlinePlayerSettings();
     preloadOnlineRlModelsInBackground('online-player-count-preload');
 }
@@ -140,9 +143,9 @@ function renderOnlinePlayerSettings() {
         state.playerSettings,
         state.selectedCount
     ));
-    document.getElementById("onlinePlayerSettings").innerHTML = OnlinePlayerSettings.buildSettingsHtml(
-        state.playerSettings,
-        state.selectedCount
+    onlineDomEffects.setHtml(
+        OnlineDomEffects.ids.playerSettings,
+        OnlinePlayerSettings.buildSettingsHtml(state.playerSettings, state.selectedCount)
     );
     updateOnlineRlModelReadinessUi();
 }
@@ -763,15 +766,13 @@ function _applyOnlineReconnectStatusEffectAuthority(event, legacyMessage) {
         legacyMessage,
         { statusEffectAuthorityEnabled: isOnlineReconnectStatusEffectAuthorityEnabled() }
     );
-    const el = document.getElementById('onlineStatus');
-    if (el) el.textContent = selection.message;
+    onlineDomEffects.setStatusText(selection.message);
     return selection;
 }
 
 function _applyOnlineReconnectLifecycleStatusEffectAuthority(event) {
     if (!isOnlineReconnectStatusEffectAuthorityEnabled()) return null;
-    const el = document.getElementById('onlineStatus');
-    const legacyMessage = el && typeof el.textContent === 'string' ? el.textContent : '';
+    const legacyMessage = onlineDomEffects.statusText();
     return _applyOnlineReconnectStatusEffectAuthority(event, legacyMessage);
 }
 
@@ -1050,10 +1051,7 @@ function _clearRejoinRetry() {
 function _finishRejoinRetryTimeout() {
     if (_hostlessRestoreState.isPending()) return true;
     if (_requestHostlessRestore()) {
-        const waitingEl = document.getElementById("onlineStatus");
-        if (waitingEl) {
-            waitingEl.textContent = '⏳ 元のホストを60秒待機後、参加者データの一致確認を開始します...';
-        }
+        onlineDomEffects.setStatusText('⏳ 元のホストを60秒待機後、参加者データの一致確認を開始します...');
         return true;
     }
     _clearOnlineRejoinTimer();
@@ -1281,8 +1279,7 @@ function _runOnlineActionTimeoutEffectsLegacy(plan) {
     if (plan.decision === decisions.CLEAR_ONLY) return false;
     setOnlineReconnectLegacyFlag(true);
     onlineClientEffects.invalidateCpuSchedule();
-    const el = document.getElementById("onlineStatus");
-    if (el) el.textContent = '⚠️ サーバー応答がタイムアウトしました。状態を再同期しています...';
+    onlineDomEffects.setStatusText('⚠️ サーバー応答がタイムアウトしました。状態を再同期しています...');
     return _emitOnlineRejoinRequest();
 }
 
@@ -1296,10 +1293,7 @@ function _runOnlineActionTimeoutEffects(planSelection) {
         clearActionFlight: () => _setOnlineActionInFlight(false),
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
-        updateStatus: message => {
-            const el = document.getElementById("onlineStatus");
-            if (el) el.textContent = message;
-        },
+        updateStatus: message => { onlineDomEffects.setStatusText(message); },
         requestRejoin: () => _emitOnlineRejoinRequest(),
     }).result;
 }
@@ -1410,10 +1404,7 @@ function _onlineActionGapEffectAuthoritySelection(planSelection, enabled) {
 function _runOnlineActionGapEffectsLegacy(statusMessage) {
     setOnlineReconnectLegacyFlag(true);
     onlineClientEffects.invalidateCpuSchedule();
-    if (statusMessage !== null) {
-        const el = document.getElementById("onlineStatus");
-        if (el) el.textContent = statusMessage;
-    }
+    if (statusMessage !== null) onlineDomEffects.setStatusText(statusMessage);
     if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
     return !_onlineRestoreLifecycleController.isFlushing();
 }
@@ -1432,10 +1423,7 @@ function _runOnlineActionGapEffects(statusMessage, planSelection, enabled, recor
         {
             markReconnecting: () => setOnlineReconnectLegacyFlag(true),
             invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
-            updateStatus: message => {
-                const el = document.getElementById("onlineStatus");
-                if (el) el.textContent = message;
-            },
+            updateStatus: message => { onlineDomEffects.setStatusText(message); },
             requestRejoin: () => _emitOnlineRejoinRequest(),
             scheduleRetry: () => _scheduleRejoinRetry(),
         }
@@ -1459,8 +1447,7 @@ function _onlineActionNoGameEffectAuthoritySelection(planSelection, enabled) {
 
 function _runOnlineActionNoGameEffectsLegacy(statusMessage, requestRejoin) {
     setOnlineReconnectLegacyFlag(true);
-    const el = document.getElementById("onlineStatus");
-    if (el) el.textContent = statusMessage;
+    onlineDomEffects.setStatusText(statusMessage);
     if (requestRejoin) _emitOnlineRejoinRequest();
     return !_onlineRestoreLifecycleController.isFlushing();
 }
@@ -1479,10 +1466,7 @@ function _runOnlineActionNoGameEffects(statusMessage, requestRejoin, planSelecti
         },
         {
             markReconnecting: () => setOnlineReconnectLegacyFlag(true),
-            updateStatus: message => {
-                const el = document.getElementById("onlineStatus");
-                if (el) el.textContent = message;
-            },
+            updateStatus: message => { onlineDomEffects.setStatusText(message); },
             requestRejoin: () => _emitOnlineRejoinRequest(),
         }
     ).result;
@@ -1540,9 +1524,8 @@ function _runOnlineActionCommitEffects(
 
 function _legacyOnlineSocketConnectPlan() {
     const session = onlineSessionSnapshot();
-    const el = document.getElementById("onlineStatus");
     return Object.freeze({
-        clearWaitingStatus: !!(el && el.textContent.startsWith('⏳')),
+        clearWaitingStatus: onlineDomEffects.isStatusWaiting(),
         requestRejoin: !!((session.isOnlineGame || session.isReconnectingOnline || _onlineRestoreLifecycleController.isInProgress()) &&
             session.myRoomId && session.myOriginalPlayerIndex >= 0 && session.myPlayerName && session.reconnectToken),
     });
@@ -1558,9 +1541,8 @@ function _onlineSocketConnectPlanSelection() {
     );
     const stateReady = stateSelection.source === 'event' &&
         stateSelection.state === OnlineReconnectState.states.CONNECTING;
-    const el = document.getElementById("onlineStatus");
     const selected = OnlineSocketConnect.selectPlan({
-        waitingStatus: !!(el && el.textContent.startsWith('⏳')),
+        waitingStatus: onlineDomEffects.isStatusWaiting(),
         onlineActive: session.isOnlineGame,
         reconnecting: session.isReconnectingOnline,
         restoreInProgress: _onlineRestoreLifecycleController.isInProgress(),
@@ -1596,8 +1578,7 @@ function _onlineSocketConnectEffectAuthoritySelection(planSelection) {
 }
 
 function _runOnlineSocketConnectEffectsLegacy(plan) {
-    const el = document.getElementById("onlineStatus");
-    if (plan.clearWaitingStatus && el) el.textContent = '';
+    if (plan.clearWaitingStatus) onlineDomEffects.setStatusText('');
     if (plan.requestRejoin) {
         setOnlineReconnectLegacyFlag(true);
         _emitOnlineRejoinRequest();
@@ -1614,10 +1595,7 @@ function _runOnlineSocketConnectEffects() {
         return _runOnlineSocketConnectEffectsLegacy(planSelection.plan);
     }
     return OnlineSocketConnect.execute(planSelection.plan, {
-        clearWaitingStatus: () => {
-            const el = document.getElementById("onlineStatus");
-            if (el) el.textContent = '';
-        },
+        clearWaitingStatus: () => { onlineDomEffects.setStatusText(''); },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         requestRejoin: () => _emitOnlineRejoinRequest(),
     }).result;
@@ -2281,8 +2259,7 @@ function _runOnlineRestoreAbortEffectsLegacy(plan) {
     _quarantineOnlineRestore();
     _replaceOnlineRestoreEventQueue(plan.queuedEvents);
     setOnlineReconnectLegacyFlag(true);
-    const el = document.getElementById("onlineStatus");
-    if (el && plan.statusMessage) el.textContent = plan.statusMessage;
+    if (plan.statusMessage) onlineDomEffects.setStatusText(plan.statusMessage);
     if (!_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
 }
 
@@ -2299,8 +2276,7 @@ function _runOnlineRestoreAbortEffects(planSelection) {
         replaceQueue: queue => { _replaceOnlineRestoreEventQueue(queue); },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         updateStatus: message => {
-            const el = document.getElementById("onlineStatus");
-            if (el && message) el.textContent = message;
+            if (message) onlineDomEffects.setStatusText(message);
         },
         requestRejoin: () => _emitOnlineRejoinRequest(),
         scheduleRetry: () => _scheduleRejoinRetry(),
@@ -2541,8 +2517,7 @@ function initSocket() {
     if (typeof io !== 'function') {
         const message = 'オンライン機能を読み込めませんでした。サーバーURLから開き直してください。';
         onlineClientEffects.showNotice(message);
-        const el = document.getElementById("onlineStatus");
-        if (el) el.textContent = `❌ ${message}`;
+        onlineDomEffects.setStatusText(`❌ ${message}`);
         if (onlineSocketUnavailableReportController.claim()) {
             if (typeof markClientFlowCheckpoint === 'function') {
                 markClientFlowCheckpoint('socket-io-unavailable', {
@@ -2580,10 +2555,10 @@ function initSocket() {
             reconnectToken: token,
         });
         saveOnlineSession();
-        document.getElementById("onlineStatus").innerHTML = `
+        onlineDomEffects.setStatusHtml(`
             <div>ルームを作成しました！</div>
             <div class="room-id-display">${roomId}</div>
-            <div class="waiting-players">プレイヤーを待っています...</div>`;
+            <div class="waiting-players">プレイヤーを待っています...</div>`);
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.ROOM_JOINED, ({ roomId, playerIndex, reconnectToken: token }) => {
@@ -2594,19 +2569,19 @@ function initSocket() {
             reconnectToken: token,
         });
         saveOnlineSession();
-        document.getElementById("onlineStatus").textContent = `ルーム ${roomId} に参加しました！`;
+        onlineDomEffects.setStatusText(`ルーム ${roomId} に参加しました！`);
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.PLAYER_LIST, (players) => {
         const roomId = onlineSessionSnapshot().myRoomId;
-        document.getElementById("onlineStatus").innerHTML = `
+        onlineDomEffects.setStatusHtml(`
             <div class="room-id-display">${roomId}</div>
-            <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`;
+            <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`);
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.GAME_START, ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq, hostlessRestoreCapabilities, hostlessRestoreGeneration, hostlessRestoreCount, gameSchema }) => {
         if (!acceptsNegotiatedGameSchema(gameSchema)) {
-            document.getElementById("onlineStatus").textContent = 'ゲーム状態のschema versionに対応していません。アプリを更新してください。';
+            onlineDomEffects.setStatusText('ゲーム状態のschema versionに対応していません。アプリを更新してください。');
             return;
         }
         onlineSchemaSelectionController.set(gameSchema);
@@ -2644,8 +2619,7 @@ function initSocket() {
             } catch(e) {}
             saveOnlineSession();
             onlineClientEffects.resetUiLocks('online-game-start-reset-ui-locks');
-            document.getElementById("titleScreen").style.display = "none";
-            document.getElementById("gameScreen").style.display = "block";
+            onlineDomEffects.showGame();
             initOnlineGame(playerNames, ps, playerOrder);
             onlineClientEffects.notifyLifecycleStart();
             // バージョン不一致チェック（initOnlineGame後にgameが初期化されてから）
@@ -2667,7 +2641,7 @@ function initSocket() {
         };
         const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
         if (preload && typeof preload.then === "function") {
-            document.getElementById("onlineStatus").textContent = '深層学習AIモデルを読み込んでいます。';
+            onlineDomEffects.setStatusText('深層学習AIモデルを読み込んでいます。');
             preload.then(startOnlineGame).catch(error => {
                 if (startGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
                 console.error(error);
@@ -2844,8 +2818,9 @@ function initSocket() {
     socketEvents.on(OnlineSocketRegistry.keys.REJOIN_DATA, rejoinPayload => {
         const decodedSnapshotPayload = decodeOnlineGameSchemaSnapshotPayload(rejoinPayload);
         if (!decodedSnapshotPayload.ok) {
-            document.getElementById("onlineStatus").textContent =
-                '復元データのSnapshot schema versionに対応していません。再接続してください。';
+            onlineDomEffects.setStatusText(
+                '復元データのSnapshot schema versionに対応していません。再接続してください。'
+            );
             return;
         }
         const {
@@ -2853,7 +2828,7 @@ function initSocket() {
             playerIndex, hostPlayerIndex, hostEpoch, restoreAudit, provisionalRestore,
         } = decodedSnapshotPayload.value;
         if (!gameStartPayload || !acceptsNegotiatedGameSchema(gameStartPayload.gameSchema)) {
-            document.getElementById("onlineStatus").textContent = '復元データのschema versionに対応していません。アプリを更新してください。';
+            onlineDomEffects.setStatusText('復元データのschema versionに対応していません。アプリを更新してください。');
             return;
         }
         onlineSchemaSelectionController.set(gameStartPayload.gameSchema);
@@ -2939,8 +2914,7 @@ function initSocket() {
             );
         if (_onlineDiagnosticSelections.localHostRestoreOfferPlanSelection.plan.offer) {
             setOnlineReconnectLegacyFlag(true);
-            document.getElementById("onlineStatus").textContent =
-                '♻️ より新しいローカル復元データをサーバーへ送信しています...';
+            onlineDomEffects.setStatusText('♻️ より新しいローカル復元データをサーバーへ送信しています...');
             _sendRecreateRoomFromBundle(
                 _onlineDiagnosticSelections.localHostRestoreOfferPlanSelection.plan.bundle
             );
@@ -3107,8 +3081,7 @@ function initSocket() {
         const restoreOnlineGame = () => {
             if (restoreGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
             persistRejoinBundle();
-            document.getElementById("titleScreen").style.display = "none";
-            document.getElementById("gameScreen").style.display = "block";
+            onlineDomEffects.showGame();
 
             const legacyRestoreReplayPlan = Object.freeze({
                 playerNames,
@@ -3189,7 +3162,7 @@ function initSocket() {
                 }
                 restoredOk = true;
             } catch (e) {
-                document.getElementById("onlineStatus").textContent = '❌ 復元データの再生に失敗しました。再接続してください。';
+                onlineDomEffects.setStatusText('❌ 復元データの再生に失敗しました。再接続してください。');
                 setOnlineReconnectLegacyFlag(true);
             } finally {
                 if (!restoreReplayUsesExecutor) OnlineRuntimeState.runtime.setReplaying(false);
@@ -3336,7 +3309,7 @@ function initSocket() {
         };
         const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
         if (preload && typeof preload.then === "function") {
-            document.getElementById("onlineStatus").textContent = '深層学習AIモデルを読み込んでいます。';
+            onlineDomEffects.setStatusText('深層学習AIモデルを読み込んでいます。');
             preload.then(restoreOnlineGame).catch(error => {
                 if (restoreGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
                 console.error(error);
@@ -3349,10 +3322,9 @@ function initSocket() {
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_COLLECT, ({ roomId, generation }) => {
         if (roomId !== onlineSessionSnapshot().myRoomId) return;
-        const el = document.getElementById("onlineStatus");
-        if (el) el.textContent = '♻️ 参加者間の復元データ一致を確認しています...';
-        if (!_submitHostlessRestoreCandidate(generation) && el) {
-            el.textContent = '❌ 復元候補の世代が一致しません。保存データは削除されていません。';
+        onlineDomEffects.setStatusText('♻️ 参加者間の復元データ一致を確認しています...');
+        if (!_submitHostlessRestoreCandidate(generation)) {
+            onlineDomEffects.setStatusText('❌ 復元候補の世代が一致しません。保存データは削除されていません。');
         }
     });
 
@@ -3376,22 +3348,22 @@ function initSocket() {
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_STATUS, ({ roomId, reason, stage, candidateCount }) => {
         if (roomId && roomId !== onlineSessionSnapshot().myRoomId) return;
-        const el = document.getElementById("onlineStatus");
         if (reason === 'host-restored') {
             _hostlessRestoreState.clear();
             _clearRejoinRetry();
             setOnlineReconnectLegacyFlag(true);
-            if (el) el.textContent = '♻️ 元のホストが復元しました。再接続しています...';
+            onlineDomEffects.setStatusText('♻️ 元のホストが復元しました。再接続しています...');
             _emitOnlineRejoinRequest();
             return;
         }
         if (reason === 'waiting-for-host') {
-            if (el) el.textContent = '⏳ 元のホストの復元を60秒待っています...';
+            onlineDomEffects.setStatusText('⏳ 元のホストの復元を60秒待っています...');
             return;
         }
         if (stage === 'confirming' && reason === 'quorum-ready') {
-            if (el) el.textContent =
-                `⏳ ${candidateCount || 0}人の候補が一致しました。ホスト承認を待っています...`;
+            onlineDomEffects.setStatusText(
+                `⏳ ${candidateCount || 0}人の候補が一致しました。ホスト承認を待っています...`
+            );
             return;
         }
         const terminalReasons = new Set([
@@ -3413,10 +3385,10 @@ function initSocket() {
         _markOnlineRejoinAttemptExhausted();
         setOnlineReconnectLegacyFlag(true);
         _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED);
-        if (el) {
-            el.textContent = '❌ ' + OnlinePayload.hostlessRestoreStatusMessage(reason) +
-                ' 再接続をやり直すか、タイトル画面から保存データを明示的に破棄できます。';
-        }
+        onlineDomEffects.setStatusText(
+            '❌ ' + OnlinePayload.hostlessRestoreStatusMessage(reason) +
+            ' 再接続をやり直すか、タイトル画面から保存データを明示的に破棄できます。'
+        );
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_APPROVED, ({ roomId, hostPlayerIndex }) => {
@@ -3426,8 +3398,7 @@ function initSocket() {
         if (hostPlayerIndex === session.myOriginalPlayerIndex) return;
         _clearRejoinRetry();
         setOnlineReconnectLegacyFlag(true);
-        const el = document.getElementById("onlineStatus");
-        if (el) el.textContent = '♻️ 暫定復元したルームへ再接続しています...';
+        onlineDomEffects.setStatusText('♻️ 暫定復元したルームへ再接続しています...');
         _emitOnlineRejoinRequest();
     });
 
@@ -3461,8 +3432,7 @@ function initSocket() {
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.CONNECT_ERROR, () => {
-        document.getElementById("onlineStatus").textContent =
-            '⏳ サーバーに接続中です。初回は起動に30秒ほどかかる場合があります...';
+        onlineDomEffects.setStatusText('⏳ サーバーに接続中です。初回は起動に30秒ほどかかる場合があります...');
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.APP_ERROR, handleAppError);
@@ -3525,7 +3495,7 @@ function handleAppError(msg) {
         _clearPendingOutboundActionForCurrentSession({ requireExplicitRoomId: true });
         setOnlineReconnectLegacyFlag(true);
         onlineClientEffects.invalidateCpuSchedule();
-        document.getElementById("onlineStatus").textContent = '⚠️ 操作がサーバーで拒否されました。状態を再同期しています...';
+        onlineDomEffects.setStatusText('⚠️ 操作がサーバーで拒否されました。状態を再同期しています...');
         _emitOnlineRejoinRequest();
         return;
     }
@@ -3533,7 +3503,7 @@ function handleAppError(msg) {
     if (cleanupSelection.cleanup) {
         _runOnlineReconnectTerminalCleanup(cleanupSelection);
     }
-    document.getElementById("onlineStatus").textContent = `❌ ${msg}`;
+    onlineDomEffects.setStatusText(`❌ ${msg}`);
 }
 
 function snapshotOnlinePlayerSettings(playerCount = onlineSetupStateController.snapshot().selectedCount) {
@@ -3567,26 +3537,18 @@ function onlineRlModelStatusMessage(state) {
 
 function updateOnlineRlModelReadinessUi() {
     const state = onlineRlModelLoadState(onlineSetupStateController.snapshot().selectedCount);
-    const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineCreateSubmitButton') : null;
-    const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('onlineRlModelStatus') : null;
-    if (btn) {
-        const view = OnlinePlayerSettings.createButtonView(state, onlineLobbyRequestController.snapshot().createPending);
-        btn.disabled = view.disabled;
-        btn.textContent = view.textContent;
-    }
-    if (status) status.textContent = onlineRlModelStatusMessage(state);
+    const view = OnlinePlayerSettings.createButtonView(
+        state,
+        onlineLobbyRequestController.snapshot().createPending
+    );
+    onlineDomEffects.applyButtonView(OnlineDomEffects.ids.createButton, view);
+    onlineDomEffects.setText(OnlineDomEffects.ids.rlStatus, onlineRlModelStatusMessage(state));
     return state;
 }
 
 function renderOnlineJoinRoomPending() {
-    const btn = typeof document !== 'undefined' && document.getElementById
-        ? document.getElementById('onlineJoinSubmitButton')
-        : null;
-    if (btn) {
-        const view = OnlinePlayerSettings.joinButtonView(onlineLobbyRequestController.snapshot().joinPending);
-        btn.disabled = view.disabled;
-        btn.textContent = view.textContent;
-    }
+    const view = OnlinePlayerSettings.joinButtonView(onlineLobbyRequestController.snapshot().joinPending);
+    onlineDomEffects.applyButtonView(OnlineDomEffects.ids.joinButton, view);
 }
 
 function setOnlineJoinRoomPending(pending) {
@@ -3611,8 +3573,7 @@ function beginOnlineLobbyRequest(kind) {
     const timer = setTimeout(() => {
         if (!onlineLobbyRequestController.isCurrent(kind, transition.generation)) return;
         finishOnlineLobbyRequest(kind);
-        const status = document.getElementById('onlineStatus');
-        if (status) status.textContent = '⚠️ サーバー応答がありません。もう一度お試しください。';
+        onlineDomEffects.setStatusText('⚠️ サーバー応答がありません。もう一度お試しください。');
         onlineClientEffects.showNotice('サーバー応答がタイムアウトしました。通信状態を確認してもう一度お試しください。');
     }, ONLINE_LOBBY_REQUEST_TIMEOUT_MS);
     onlineLobbyRequestController.attachTimer(kind, transition.generation, timer);
@@ -3653,7 +3614,7 @@ function preloadOnlineRlModelsInBackground(reason = 'online-rl-background-preloa
 
 function emitCreateRoom(name, playerCount = onlineSetupStateController.snapshot().selectedCount, settings = onlineSetupStateController.snapshot().playerSettings) {
     OnlineRuntimeState.runtime.setPlayerName(name);
-    const setup = onlineSetupStateController.setCpuSpeed(parseInt(document.getElementById("onlineCpuSpeed").value));
+    const setup = onlineSetupStateController.setCpuSpeed(parseInt(onlineDomEffects.inputValue(OnlineDomEffects.ids.cpuSpeed)));
     if (!initSocket()) return;
     beginOnlineLobbyRequest('create');
     OnlineRuntimeState.runtime.setHost(true);
@@ -3675,7 +3636,7 @@ function emitCreateRoom(name, playerCount = onlineSetupStateController.snapshot(
 
 function showCreateRoom() {
     if (onlineLobbyRequestController.snapshot().createPending) return;
-    const name = document.getElementById("playerNameInput").value.trim();
+    const name = onlineDomEffects.inputValue(OnlineDomEffects.ids.playerName).trim();
     if (!name) { onlineClientEffects.showNotice("名前を入力してください"); return; }
     const setup = onlineSetupStateController.snapshot();
     const createPlayerCount = setup.selectedCount;
@@ -3688,11 +3649,10 @@ function showCreateRoom() {
     const preload = preloadOnlineRlModelsForCreate(createPlayerCount, createPlayerSettings);
     if (preload && typeof preload.then === "function") {
         setOnlineCreateRoomPending(true);
-        const btn = document.getElementById("onlineCreateSubmitButton");
-        if (btn) {
-            btn.disabled = true;
-            btn.textContent = "モデル読み込み中";
-        }
+        onlineDomEffects.applyButtonView(OnlineDomEffects.ids.createButton, {
+            disabled: true,
+            textContent: 'モデル読み込み中',
+        });
         onlineClientEffects.showNotice("深層学習AIモデルを読み込んでいます。");
         preload
             .then(() => {
@@ -3713,8 +3673,8 @@ function showCreateRoom() {
 
 function joinRoom() {
     if (onlineLobbyRequestController.snapshot().joinPending) return;
-    const name = document.getElementById("playerNameInput").value.trim();
-    const roomId = document.getElementById("roomIdInput").value.trim().toUpperCase();
+    const name = onlineDomEffects.inputValue(OnlineDomEffects.ids.playerName).trim();
+    const roomId = onlineDomEffects.inputValue(OnlineDomEffects.ids.roomId).trim().toUpperCase();
     if (!name) { onlineClientEffects.showNotice("名前を入力してください"); return; }
     if (roomId.length !== 6) { onlineClientEffects.showNotice("ルームIDは6文字です"); return; }
     OnlineRuntimeState.runtime.setPlayerName(name);
@@ -3925,13 +3885,13 @@ function _tryRestoreRoom() {
     try {
         const gameStartPayload = _readOnlineGameStartPayload();
         if (!gameStartPayload) {
-            document.getElementById("onlineStatus").textContent = '❌ 復元データが見つかりません';
+            onlineDomEffects.setStatusText('❌ 復元データが見つかりません');
             return;
         }
         if (gameStartPayload.schemaVersion !== ONLINE_RESTORE_SCHEMA_VERSION ||
                 !Array.isArray(gameStartPayload.reconnectTokenHashes)) {
             _clearOnlineRestoreBundle();
-            document.getElementById("onlineStatus").textContent = '❌ 古い復元データのため再接続できません';
+            onlineDomEffects.setStatusText('❌ 古い復元データのため再接続できません');
             return;
         }
         const isStoredHost = gameStartPayload.hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex;
@@ -3939,7 +3899,7 @@ function _tryRestoreRoom() {
         const restoreAudit = _readOnlineRestoreAudit();
         const stateSnapshot = restoreAudit ? _readOnlineStateSnapshot() : null;
         const actionLog = _readOnlineActionLog();
-        document.getElementById("onlineStatus").textContent = '♻️ サーバー再起動を検知。ゲームを復元中...';
+        onlineDomEffects.setStatusText('♻️ サーバー再起動を検知。ゲームを復元中...');
         return _sendRecreateRoomFromBundle({
             gameStartPayload,
             stateSnapshot,
@@ -3947,7 +3907,7 @@ function _tryRestoreRoom() {
             restoreAudit,
         });
     } catch(e) {
-        document.getElementById("onlineStatus").textContent = '❌ 復元に失敗しました';
+        onlineDomEffects.setStatusText('❌ 復元に失敗しました');
         return false;
     }
 }
@@ -4019,8 +3979,7 @@ function _sendRecreateRoomFromBundle(bundle) {
     };
     const encoded = encodeOnlineRecreateRoomPayload(payload);
     if (!encoded.ok || !session.socket || session.socket.connected === false) {
-        const status = typeof document !== 'undefined' ? document.getElementById('onlineStatus') : null;
-        if (status) status.textContent = '❌ 復元payloadのschema変換に失敗しました';
+        onlineDomEffects.setStatusText('❌ 復元payloadのschema変換に失敗しました');
         return false;
     }
     session.socket.emit('recreateRoom', encoded.value);
@@ -4029,7 +3988,8 @@ function _sendRecreateRoomFromBundle(bundle) {
 
 function _scheduleRejoinRetry() {
     if (OnlineRetryPolicy.isRejoinExhausted(_onlineRejoinAttemptController.getAttemptCount())) return _finishRejoinRetryTimeout();
-    const el = document.getElementById("onlineStatus");
-    if (el) el.textContent = OnlineRetryPolicy.rejoinWaitingMessage(_onlineRejoinAttemptController.getAttemptCount());
+    onlineDomEffects.setStatusText(
+        OnlineRetryPolicy.rejoinWaitingMessage(_onlineRejoinAttemptController.getAttemptCount())
+    );
     return _armOnlineRejoinResponseTimeout();
 }

@@ -207,6 +207,17 @@ runTest('online client effectは単一adapter境界から呼び出す', () => {
     }
 });
 
+runTest('online DOM read/writeは単一effect runtimeを経由する', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    assert.ok(source.includes('OnlineDomEffects.createRuntime'));
+    assert.strictEqual(source.includes('document.getElementById'), false);
+    assert.ok(source.includes('onlineDomEffects.setStatusText'));
+    assert.ok(source.includes('onlineDomEffects.showGame()'));
+    assert.ok(source.includes('onlineDomEffects.applyButtonView'));
+});
+
 runTest('mainはonline sessionをruntime snapshot境界から読む', () => {
     const fs = require('fs');
     const path = require('path');

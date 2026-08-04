@@ -63,6 +63,7 @@ interface Window {
     GameSchemaCodec: unknown;
     OnlineRetryPolicy: unknown;
     OnlineClientEffects: unknown;
+    OnlineDomEffects: unknown;
     OnlineSocketRegistry: unknown;
     OnlinePlayerSettings: unknown;
     OnlineActionLog: unknown;

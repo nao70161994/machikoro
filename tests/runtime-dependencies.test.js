@@ -97,7 +97,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineReconnectState.js', 'js/online.js'],
             ['js/onlineRuntimeFlags.js', 'js/online.js'],
             ['js/onlineDiagnosticState.js', 'js/online.js'],
-            ['js/onlineSchemaTransport.js', 'js/online.js'],
+            ['js/onlineSchemaTransport.js', 'js/onlineClientEffects.js', 'js/onlineDomEffects.js', 'js/online.js'],
             ['js/onlineRetryPolicy.js', 'js/online.js'],
             ['js/clientStorage.js', 'js/ui.js'],
             ['js/uiLogDisplay.js', 'js/ui.js'],
@@ -322,7 +322,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineReconnectState.js', 'js/online.js'],
             ['js/onlineRuntimeFlags.js', 'js/online.js'],
             ['js/onlineDiagnosticState.js', 'js/online.js'],
-            ['js/onlineSchemaTransport.js', 'js/online.js'],
+            ['js/onlineSchemaTransport.js', 'js/onlineClientEffects.js', 'js/onlineDomEffects.js', 'js/online.js'],
             ['js/onlineRetryPolicy.js', 'js/online.js'],
         ]],
         ['tests/stats.test.js', [
@@ -404,7 +404,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineReconnectState.js', 'js/online.js'],
             ['js/onlineRuntimeFlags.js', 'js/online.js'],
             ['js/onlineDiagnosticState.js', 'js/online.js'],
-            ['js/onlineSchemaTransport.js', 'js/online.js'],
+            ['js/onlineSchemaTransport.js', 'js/onlineClientEffects.js', 'js/onlineDomEffects.js', 'js/online.js'],
             ['js/onlineRetryPolicy.js', 'js/online.js'],
         ]],
         ['tests/release-e2e.test.js', [
