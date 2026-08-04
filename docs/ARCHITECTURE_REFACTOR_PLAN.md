@@ -550,3 +550,12 @@ These are domain-transition, transaction, and online-state boundaries rather tha
 4. Pending modal rendering now follows view → effect → orchestrator: `UiPendingMenu` computes style state, `UiPendingEffects` applies it, and `ui.js` owns admission/live DOM/content flow.
 
 These are rule-transaction, CPU-evaluation, server-composition, and UI view/effect boundaries rather than effect-only extraction. Scoped gates now cover 201 ESLint maintenance files and 200 checkJs runtime files; production authority and compatibility defaults are unchanged.
+
+## 2026-08-04 Batch 32 boundary update
+
+1. Blue-card income now has a detached activation plan. The plan describes eligibility, amount, result kind, and Tuna dice while the mutable runtime continues to own revival, rule ordering, RNG provision, balance changes, and logs. Lazy facts prevent Harbor/Tuna-only reads from leaking into other card paths.
+2. Online restore lifecycle now has one state owner for generation invalidation, active restoration, and quarantine. Compatibility booleans remain read projections for existing diagnostics and reconnect planning, while all production writes pass through semantic controller transitions.
+3. Crash recovery now has an explicit view/effect/orchestrator split. Pure error/focus decisions remain in `CrashScreen`, DOM mutations live in `CrashScreenEffects`, and app-shell retains lifecycle cancellation, event wiring, persistence lookup, and resume control.
+4. The card effect omission contract now recognizes injected rule-policy references as explicit ownership alongside direct `GameManager` references, without weakening the requirement that every non-normal effect has both rule and CPU coverage.
+
+These are rule-policy, online-state, UI-effect, and contract boundaries selected across distinct architectural layers. Scoped gates now cover 203 ESLint maintenance files and 202 checkJs runtime files; rules, protocol/schema, persistence, reconnect defaults, and PWA behavior remain unchanged.

@@ -588,3 +588,12 @@ Test index:
 - Pending modal interaction styles are computed by `UiPendingMenu` and applied by `UiPendingEffects`; `ui.js` owns blocking-modal checks, content writes, re-entry state, and violation reporting. Preserve modal → inner → content application order.
 - Current scoped gate is 201 ESLint maintenance files / 200 checkJs runtime files. Remaining checkJs exclusions stay `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue 3–5-theme batches across shared Engine, CPU strategy, online state, server composition, UI state/view, and contracts. Keep one theme per commit, one docs commit, one `test:batch`, one push, and exact-HEAD CI per batch.
+
+## 2026-08-04 Batch 32 handoff
+
+- Blue-card activation amount/kind belongs to `GameCardActivationPolicy.blueIncomePlan()`. Preserve lazy built-landmark and Tuna-dice reads; `GameManager` remains the owner of revival, color/dice admission, RNG, live coin mutation, logs, and red → blue → green → purple ordering.
+- Restore generation, in-progress, and quarantine writes belong to `OnlineRestoreLifecycleState`. Existing globals in `online.js` are compatibility projections only. Preserve GAME_START and REJOIN_DATA call order when extending the controller; do not fold queue, retry, reconnect authority, storage, or Socket transport into it.
+- Crash-screen view/focus decisions belong to `CrashScreen`, DOM application belongs to `CrashScreenEffects`, and CPU cancellation/listener lifecycle/saved-game lookup/resume dispatch belong to `appShell.js`. Keep `showCrashScreen`, `crashResume`, and browser-global names compatible.
+- Card rule registration checks intentionally scan both direct `GameManager` constants and injected `facts.effects.*` references in `GameCardActivationPolicy`. Add a delegated rule owner explicitly rather than weakening or deleting the omission assertion.
+- Current scoped gate is 203 ESLint maintenance files / 202 checkJs runtime files. Remaining checkJs exclusions stay `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with 3–5 independently rollbackable themes chosen across domain policy, shared Engine, CPU strategy, online state, server composition, UI state/view/effect, and contracts. Keep one theme per commit, one docs commit, one `test:batch`, one push, and exact-HEAD CI per batch.
