@@ -541,3 +541,12 @@ These are test-orchestration, domain-policy, dependency-contract, and CPU-strate
 3. Online ACK-flight state now has one controller for flag/time/timer lifecycle. Compatibility globals are projections for existing diagnostics; transport, retry decisions, reconnect state-machine effects, and storage remain with `online.js`.
 
 These are domain-transition, transaction, and online-state boundaries rather than effect-only extraction. Scoped gates now cover 200 ESLint maintenance files and 199 checkJs runtime files. Authority defaults, protocol/schema formats, persistence, CPU policy, and PWA behavior remain unchanged.
+
+## 2026-08-04 Batch 31 boundary update
+
+1. Red-card payment order now has a detached sequential transaction plan. Activation eligibility and per-opponent effect/log ordering remain in `GameManager`, while available-balance exhaustion and per-card transfer amounts are deterministic data suitable for the shared Engine.
+2. CPU turn-value evaluation now separates live focus/cache adaptation from pure dice-distribution aggregation. The policy preserves the exact one-die and Station two-dice weights and callback order, moving another scoring primitive out of the strategy orchestrator without changing choices.
+3. Hostless approval is now an injected server composition boundary over existing restore authority. Room normalization, absence short-circuit, approval metadata, failure reason, and provisional success are directly testable without Socket or global room mutation in the helper.
+4. Pending modal rendering now follows view → effect → orchestrator: `UiPendingMenu` computes style state, `UiPendingEffects` applies it, and `ui.js` owns admission/live DOM/content flow.
+
+These are rule-transaction, CPU-evaluation, server-composition, and UI view/effect boundaries rather than effect-only extraction. Scoped gates now cover 201 ESLint maintenance files and 200 checkJs runtime files; production authority and compatibility defaults are unchanged.

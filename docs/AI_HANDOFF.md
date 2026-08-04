@@ -579,3 +579,12 @@ Test index:
 - ACK-flight flag, start time, and timeout handle belong to `OnlineRetryPolicy.createActionFlightController()`. `onlineActionInFlight` and `onlineActionInFlightAt` remain compatibility projections consumed by app-shell diagnostics. Keep the 15-second timeout, pending outbound storage, ACK matching, reconnect effects, and Socket.IO protocol unchanged.
 - Current scoped gate is 200 ESLint maintenance files / 199 checkJs runtime files. The remaining checkJs exclusions are `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with 3–5 independently rollbackable themes selected across domain transitions, shared Engine, CPU strategy, online state, server composition, UI state/view, and contracts. Use one theme per commit, one docs commit, one `test:batch`, one push, and exact-HEAD CI per batch.
+
+## 2026-08-04 Batch 31 handoff
+
+- Ordered red-card balance exhaustion belongs to `GameCoinTransaction.sequentialCollectionPlan()`. Preserve per-opponent revival → activation/log ordering in `GameManager`; conditional activation and Mall/Harbor/landmark facts are not transaction concerns.
+- One-die/Station two-dice turn-score aggregation belongs to `CPUEvaluation.turnScorePair()`. `CPU._estimatePlayerTurnScorePair()` must restore `currentPlayerIndex` in `finally` and keep its signature cache. Any extension requires callback-order, fixed-decision, and self-play parity.
+- Hostless approval composition belongs to `server/hostlessRestoreApproval.js`. It does not own candidate ranking, audit, recreate logic, room mutation, or Socket delivery. Keep `approvedHostless`, `candidateCount`, failure reasons, and provisional confirmation stable.
+- Pending modal interaction styles are computed by `UiPendingMenu` and applied by `UiPendingEffects`; `ui.js` owns blocking-modal checks, content writes, re-entry state, and violation reporting. Preserve modal → inner → content application order.
+- Current scoped gate is 201 ESLint maintenance files / 200 checkJs runtime files. Remaining checkJs exclusions stay `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue 3–5-theme batches across shared Engine, CPU strategy, online state, server composition, UI state/view, and contracts. Keep one theme per commit, one docs commit, one `test:batch`, one push, and exact-HEAD CI per batch.
