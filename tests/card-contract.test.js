@@ -54,6 +54,10 @@ runTest('card contract はincome metadataとrule handlerを双方向に固定す
 
 runTest('card contract はnon-generic effectのrule処理とCPU参照を要求する', () => {
     const gameManagerSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'GameManager.js'), 'utf8');
+    const cardActivationPolicySource = fs.readFileSync(
+        path.join(__dirname, '..', 'js', 'gameCardActivationPolicy.js'),
+        'utf8'
+    );
     const cpuSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'CPU.js'), 'utf8');
     const cpuEvaluationSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'cpuEvaluation.js'), 'utf8');
     const explicitRuleEffects = effectValues.filter(effect => {
@@ -64,7 +68,11 @@ runTest('card contract はnon-generic effectのrule処理とCPU参照を要求�
 
     for (const effect of explicitRuleEffects) {
         const constant = `CARD_EFFECTS.${effectKeyByValue[effect]}`;
-        assert.ok(gameManagerSource.includes(constant), `GameManager rule reference missing: ${constant}`);
+        const injectedConstant = `facts.effects.${effectKeyByValue[effect]}`;
+        assert.ok(
+            gameManagerSource.includes(constant) || cardActivationPolicySource.includes(injectedConstant),
+            `rule reference missing: ${constant}/${injectedConstant}`
+        );
     }
     for (const effect of cpuEffects) {
         const constant = `CARD_EFFECTS.${effectKeyByValue[effect]}`;
