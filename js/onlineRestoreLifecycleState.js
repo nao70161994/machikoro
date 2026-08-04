@@ -8,9 +8,10 @@ function createOnlineRestoreLifecycleController(initialState = {}) {
     let generation = normalizeRestoreGeneration(initialState.generation);
     let inProgress = initialState.inProgress === true;
     let quarantined = initialState.quarantined === true;
+    let flushing = initialState.flushing === true;
 
     function snapshot() {
-        return Object.freeze({ generation, inProgress, quarantined });
+        return Object.freeze({ generation, inProgress, quarantined, flushing });
     }
 
     return Object.freeze({
@@ -33,6 +34,14 @@ function createOnlineRestoreLifecycleController(initialState = {}) {
         },
         clearQuarantine() {
             quarantined = false;
+            return snapshot();
+        },
+        startFlush() {
+            flushing = true;
+            return snapshot();
+        },
+        finishFlush() {
+            flushing = false;
             return snapshot();
         },
     });

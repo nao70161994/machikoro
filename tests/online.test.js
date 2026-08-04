@@ -517,12 +517,15 @@ runTest('online restore lifecycleはgeneration・進行・隔離の書き込み�
     assert.strictEqual((source.match(/_onlineRestoreGeneration\s*=(?!=)/g) || []).length, 2);
     assert.strictEqual((source.match(/_onlineRestoreInProgress\s*=(?!=)/g) || []).length, 2);
     assert.strictEqual((source.match(/_onlineRestoreQuarantined\s*=(?!=)/g) || []).length, 2);
+    assert.strictEqual((source.match(/_flushingOnlineRestoreEvents\s*=(?!=)/g) || []).length, 2);
     assert.strictEqual((source.match(/(?:\+\+_onlineRestoreGeneration|_onlineRestoreGeneration\+\+)/g) || []).length, 0);
     assert.ok(source.includes('function _incrementOnlineRestoreGeneration()'));
     assert.ok(source.includes('function _startOnlineRestore()'));
     assert.ok(source.includes('function _finishOnlineRestore()'));
     assert.ok(source.includes('function _quarantineOnlineRestore()'));
     assert.ok(source.includes('function _clearOnlineRestoreQuarantine()'));
+    assert.ok(source.includes('function _startOnlineRestoreFlush()'));
+    assert.ok(source.includes('function _finishOnlineRestoreFlush()'));
 });
 
 runTest('online restore queue store authorityは既定legacyで明示時だけshadowを読む', () => {

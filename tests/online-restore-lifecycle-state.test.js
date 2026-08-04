@@ -12,6 +12,7 @@ function testInitialStateIsNormalizedAndFrozen() {
         generation: 0,
         inProgress: false,
         quarantined: true,
+        flushing: false,
     });
     assert.ok(Object.isFrozen(state));
 }
@@ -23,26 +24,31 @@ function testTransitionsPreserveIndependentDimensions() {
         generation: 1,
         inProgress: false,
         quarantined: false,
+        flushing: false,
     });
     assert.deepStrictEqual(controller.startRestore(), {
         generation: 1,
         inProgress: true,
         quarantined: false,
+        flushing: false,
     });
     assert.deepStrictEqual(controller.quarantine(), {
         generation: 1,
         inProgress: true,
         quarantined: true,
+        flushing: false,
     });
     assert.deepStrictEqual(controller.finishRestore(), {
         generation: 1,
         inProgress: false,
         quarantined: true,
+        flushing: false,
     });
     assert.deepStrictEqual(controller.clearQuarantine(), {
         generation: 1,
         inProgress: false,
         quarantined: false,
+        flushing: false,
     });
 }
 
@@ -57,16 +63,39 @@ function testControllersDoNotShareState() {
         generation: 5,
         inProgress: true,
         quarantined: false,
+        flushing: false,
     });
     assert.deepStrictEqual(right.snapshot(), {
         generation: 9,
         inProgress: false,
         quarantined: false,
+        flushing: false,
+    });
+}
+
+function testFlushTransitionsStayInsideLifecycleState() {
+    const controller = OnlineRestoreLifecycleState.createController({
+        generation: 3,
+        inProgress: true,
+    });
+
+    assert.deepStrictEqual(controller.startFlush(), {
+        generation: 3,
+        inProgress: true,
+        quarantined: false,
+        flushing: true,
+    });
+    assert.deepStrictEqual(controller.finishFlush(), {
+        generation: 3,
+        inProgress: true,
+        quarantined: false,
+        flushing: false,
     });
 }
 
 testInitialStateIsNormalizedAndFrozen();
 testTransitionsPreserveIndependentDimensions();
 testControllersDoNotShareState();
+testFlushTransitionsStayInsideLifecycleState();
 
 console.log('online restore lifecycle state tests passed');

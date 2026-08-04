@@ -355,12 +355,14 @@ const _onlineRestoreLifecycleController = OnlineRestoreLifecycleState.createCont
     generation: _onlineRestoreGeneration,
     inProgress: _onlineRestoreInProgress,
     quarantined: _onlineRestoreQuarantined,
+    flushing: _flushingOnlineRestoreEvents,
 });
 
 function _applyOnlineRestoreLifecycleState(state) {
     _onlineRestoreGeneration = state.generation;
     _onlineRestoreInProgress = state.inProgress;
     _onlineRestoreQuarantined = state.quarantined;
+    _flushingOnlineRestoreEvents = state.flushing;
     return state;
 }
 
@@ -384,6 +386,14 @@ function _quarantineOnlineRestore() {
 
 function _clearOnlineRestoreQuarantine() {
     _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.clearQuarantine());
+}
+
+function _startOnlineRestoreFlush() {
+    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.startFlush());
+}
+
+function _finishOnlineRestoreFlush() {
+    _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.finishFlush());
 }
 
 const _pendingOutboundActionsMemory = new Map();
@@ -1887,7 +1897,7 @@ function resetOnlineState() {
         clearRestoreInProgress() { _finishOnlineRestore(); },
         clearRestoreQueue() { _clearOnlineRestoreEventQueue(); },
         resetLastAppliedSequence() { _lastAppliedOnlineActionSeqMemory = 0; },
-        clearRestoreFlushFlag() { _flushingOnlineRestoreEvents = false; },
+        clearRestoreFlushFlag() { _finishOnlineRestoreFlush(); },
         clearRestoreQuarantine() { _clearOnlineRestoreQuarantine(); },
         clearPendingMemory() { _pendingOutboundActionsMemory.clear(); },
         observeReset() {
@@ -2442,7 +2452,7 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
         drainSelection.source === 'pure-transition' ? drainSelection.transition.queue : []
     );
     _finishOnlineRestore();
-    _flushingOnlineRestoreEvents = true;
+    _startOnlineRestoreFlush();
     try {
         const flushSelection = _onlineRestoreEventFlushPlanSelection(
             queuedEvents,
@@ -2481,7 +2491,7 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
             return false;
         }
     } finally {
-        _flushingOnlineRestoreEvents = false;
+        _finishOnlineRestoreFlush();
     }
     render();
     scheduleCPU();
