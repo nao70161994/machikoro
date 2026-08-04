@@ -359,6 +359,14 @@ function seedHostlessRestoreBundle(runtime, overrides = {}) {
     };
 }
 
+runTest('online rejoin timer stateはretry controllerだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+    assert.strictEqual(source.includes('_rejoinRetryTimer'), false);
+    assert.strictEqual(source.includes('_rejoinRetryDeadline'), false);
+    assert.ok(source.includes('OnlineRetryPolicy.createRejoinTimerController({'));
+    assert.ok(source.includes('_onlineRejoinTimerController.arm('));
+});
+
 runTest('online lobby pendingはcontrollerだけが所有しlegacy globalをread-only投影する', () => {
     const context = loadOnlineRuntime();
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');

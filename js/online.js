@@ -154,8 +154,6 @@ function setOnlineReconnectLegacyFlag(value) {
     return isReconnectingOnline;
 }
 const onlineSchemaSelectionController = OnlineSchemaTransport.createSelectionController();
-let _rejoinRetryTimer = null;
-let _rejoinRetryDeadline = 0;
 const _hostlessRestoreState = OnlineHostlessRestoreState.createController();
 let _onlineRestoreEventQueue = [];
 const _onlineRestoreEventQueueStore = typeof OnlineRestoreQueueState !== 'undefined' &&
@@ -781,12 +779,8 @@ function _onlineReconnectTimerAuthoritySelection() {
         source: active ? 'event' : (enabled ? 'legacy-fallback' : 'legacy'),
         ready: effectSelection.ready,
         fallbackReason: effectSelection.fallbackReason,
-        pending: active
-            ? _onlineRejoinTimerController.hasPending()
-            : !!_rejoinRetryTimer,
-        deadline: active
-            ? _onlineRejoinTimerController.getDeadline()
-            : _rejoinRetryDeadline,
+        pending: _onlineRejoinTimerController.hasPending(),
+        deadline: _onlineRejoinTimerController.getDeadline(),
     });
 }
 
@@ -1033,24 +1027,15 @@ function _isOnlineReconnectCallbackAuthorityActive() {
 }
 
 function _hasOnlineRejoinTimer() {
-    return _isOnlineReconnectTimerAuthorityActive()
-        ? _onlineRejoinTimerController.hasPending()
-        : !!_rejoinRetryTimer;
+    return _onlineRejoinTimerController.hasPending();
 }
 
 function _onlineRejoinTimerDeadline() {
-    return _isOnlineReconnectTimerAuthorityActive()
-        ? _onlineRejoinTimerController.getDeadline()
-        : _rejoinRetryDeadline;
+    return _onlineRejoinTimerController.getDeadline();
 }
 
 function _clearOnlineRejoinTimer() {
     _onlineRejoinTimerController.clear();
-    if (_rejoinRetryTimer && typeof clearTimeout === 'function') {
-        clearTimeout(_rejoinRetryTimer);
-    }
-    _rejoinRetryTimer = null;
-    _rejoinRetryDeadline = 0;
 }
 
 function _clearRejoinRetry() {
@@ -1083,8 +1068,6 @@ function _finishRejoinRetryTimeout() {
 }
 
 function _handleOnlineRejoinResponseTimeout() {
-    _rejoinRetryTimer = null;
-    _rejoinRetryDeadline = 0;
     let shouldExhaust = false;
     if (_isOnlineReconnectCallbackAuthorityActive()) {
         const decision = OnlineRetryPolicy.rejoinTimeoutDecision(
@@ -1107,18 +1090,10 @@ function _handleOnlineRejoinResponseTimeout() {
 
 function _armOnlineRejoinResponseTimeout() {
     if (_hasOnlineRejoinTimer() || _onlineRejoinAttemptController.isExhausted() || typeof setTimeout !== 'function') return true;
-    if (_isOnlineReconnectTimerAuthorityActive()) {
-        return _onlineRejoinTimerController.arm(
-            _handleOnlineRejoinResponseTimeout,
-            ONLINE_REJOIN_RETRY_DELAY_MS
-        ).armed;
-    }
-    _rejoinRetryDeadline = OnlineRetryPolicy.rejoinDeadline(Date.now());
-    _rejoinRetryTimer = setTimeout(
+    return _onlineRejoinTimerController.arm(
         _handleOnlineRejoinResponseTimeout,
         ONLINE_REJOIN_RETRY_DELAY_MS
-    );
-    return true;
+    ).armed;
 }
 
 function _clearOnlineActionTimeout() {
