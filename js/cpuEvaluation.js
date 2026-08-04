@@ -746,6 +746,45 @@ const CPUEvaluation = Object.freeze({
             remainingLandmarkCount <= 2;
     },
 
+    strongLandmarkUrgencyFeatures(name, current, game, dependencies) {
+        const stableIncome = dependencies.estimateStableIncome(game, current);
+        const shopRestaurantCardCount = current.cards.filter(card =>
+            card && (card.category === dependencies.categories.RESTAURANT ||
+                card.category === dependencies.categories.SHOP)
+        ).length;
+        const harborCardCount = current.cards.filter(card =>
+            card && (card.effect === dependencies.effects.HARBOR ||
+                card.effect === dependencies.effects.HARBOR_RED ||
+                card.effect === dependencies.effects.TUNA)
+        ).length;
+        const highVarianceCardCount = current.cards.filter(card =>
+            card && card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7
+        ).length;
+        const cheapEngineCardCount = current.cards.filter(card => card && card.cost <= 3).length;
+        let tunaBoatLevel = 0;
+        if (name === dependencies.landmarkNames.HARBOR) {
+            if (current.countCard('マグロ漁船') >= 2) tunaBoatLevel = 2;
+            else if (current.countCard('マグロ漁船') >= 1) tunaBoatLevel = 1;
+        }
+
+        return Object.freeze({
+            station: name === dependencies.landmarkNames.STATION,
+            mall: name === dependencies.landmarkNames.SHOPPING_MALL,
+            harbor: name === dependencies.landmarkNames.HARBOR,
+            tower: name === dependencies.landmarkNames.RADIO_TOWER,
+            park: name === dependencies.landmarkNames.AMUSEMENT_PARK,
+            airport: name === dependencies.landmarkNames.AIRPORT,
+            crowd: game.players.length >= 4,
+            stableIncome,
+            shopRestaurantCardCount,
+            harborCardCount,
+            highVarianceCardCount,
+            cheapEngineCardCount,
+            tunaBoatLevel,
+            hasStation: !!current.landmarks[dependencies.landmarkNames.STATION],
+        });
+    },
+
     strongLandmarkUrgencyBonus(features) {
         if (!features) return 0;
         if (features.station) {

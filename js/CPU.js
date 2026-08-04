@@ -1808,39 +1808,13 @@ class CPU {
 
     _strongLandmarkUrgencyBonus(name, current, game) {
         if (this.difficulty !== "strong" || !current || !game) return 0;
-        const stableIncome = this._estimateStableIncome(game, current);
-        const shopRestaurantCards = current.cards.filter(c =>
-            c && (c.category === CARD_CATEGORIES.RESTAURANT || c.category === CARD_CATEGORIES.SHOP)
-        ).length;
-        const harborCards = current.cards.filter(c =>
-            c && (c.effect === CARD_EFFECTS.HARBOR || c.effect === CARD_EFFECTS.HARBOR_RED || c.effect === CARD_EFFECTS.TUNA)
-        ).length;
-        const highVarianceCards = current.cards.filter(card =>
-            card && card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7
-        ).length;
-        const cheapEngineCards = current.cards.filter(card => card && card.cost <= 3).length;
-        let tunaBoatLevel = 0;
-        if (name === LANDMARK_NAMES.HARBOR) {
-            if (current.countCard('マグロ漁船') >= 2) tunaBoatLevel = 2;
-            else if (current.countCard('マグロ漁船') >= 1) tunaBoatLevel = 1;
-        }
-
-        return CPUEvaluation.strongLandmarkUrgencyBonus({
-            station: name === LANDMARK_NAMES.STATION,
-            mall: name === LANDMARK_NAMES.SHOPPING_MALL,
-            harbor: name === LANDMARK_NAMES.HARBOR,
-            tower: name === LANDMARK_NAMES.RADIO_TOWER,
-            park: name === LANDMARK_NAMES.AMUSEMENT_PARK,
-            airport: name === LANDMARK_NAMES.AIRPORT,
-            crowd: game.players.length >= 4,
-            stableIncome,
-            shopRestaurantCardCount: shopRestaurantCards,
-            harborCardCount: harborCards,
-            highVarianceCardCount: highVarianceCards,
-            cheapEngineCardCount: cheapEngineCards,
-            tunaBoatLevel,
-            hasStation: !!current.landmarks[LANDMARK_NAMES.STATION],
+        const features = CPUEvaluation.strongLandmarkUrgencyFeatures(name, current, game, {
+            landmarkNames: LANDMARK_NAMES,
+            categories: CARD_CATEGORIES,
+            effects: CARD_EFFECTS,
+            estimateStableIncome: (runtime, player) => this._estimateStableIncome(runtime, player),
         });
+        return CPUEvaluation.strongLandmarkUrgencyBonus(features);
     }
 
     _strongSoftCapValue(value) {

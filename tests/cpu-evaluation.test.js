@@ -1435,6 +1435,50 @@ runTest('CPU本体のstrong多人数購入wrapperはfeature adapterからpure po
     }));
 });
 
+runTest('CPU evaluation はstrongランドマーク特徴量を盤面からfrozen projectionする', () => {
+    const { CARD_CATEGORIES, CARD_EFFECTS, LANDMARK_NAMES } = loadCPURuntime();
+    const current = {
+        cards: [
+            { name: 'マグロ漁船', category: CARD_CATEGORIES.PRIMARY, effect: CARD_EFFECTS.TUNA, cost: 5, diceNums: [12, 13, 14] },
+            { name: 'マグロ漁船', category: CARD_CATEGORIES.PRIMARY, effect: CARD_EFFECTS.TUNA, cost: 5, diceNums: [12, 13, 14] },
+            { name: 'cheap-shop', category: CARD_CATEGORIES.SHOP, effect: CARD_EFFECTS.NORMAL, cost: 2, diceNums: [3] },
+        ],
+        landmarks: { [LANDMARK_NAMES.STATION]: true },
+        countCard(cardName) {
+            return this.cards.filter(card => card.name === cardName).length;
+        },
+    };
+    const game = { players: [current, {}, {}, {}] };
+    const features = CPUEvaluation.strongLandmarkUrgencyFeatures(
+        LANDMARK_NAMES.HARBOR,
+        current,
+        game,
+        {
+            landmarkNames: LANDMARK_NAMES,
+            categories: CARD_CATEGORIES,
+            effects: CARD_EFFECTS,
+            estimateStableIncome: () => 7.5,
+        }
+    );
+    assert.ok(Object.isFrozen(features));
+    assert.deepStrictEqual(features, {
+        station: false,
+        mall: false,
+        harbor: true,
+        tower: false,
+        park: false,
+        airport: false,
+        crowd: true,
+        stableIncome: 7.5,
+        shopRestaurantCardCount: 1,
+        harborCardCount: 2,
+        highVarianceCardCount: 2,
+        cheapEngineCardCount: 1,
+        tunaBoatLevel: 2,
+        hasStation: true,
+    });
+});
+
 runTest('CPU evaluation はstrongランドマーク優先度の全分岐をpureに判定する', () => {
     const base = {
         station: false, mall: false, harbor: false, tower: false, park: false, airport: false,
@@ -1462,27 +1506,23 @@ runTest('CPU evaluation はstrongランドマーク優先度の全分岐をpure�
 });
 
 runTest('CPU本体のstrongランドマーク優先度wrapperはpure policyへ委譲する', () => {
-    const { CPU, GameManager, createCardByName, CARD_EFFECTS, LANDMARK_NAMES } = loadCPURuntime();
+    const { CPU, GameManager, createCardByName, CARD_CATEGORIES, CARD_EFFECTS, LANDMARK_NAMES } = loadCPURuntime();
     const cpu = new CPU('strong');
     const game = new GameManager(4);
     const current = game.currentPlayer();
     current.cards.push(createCardByName('マグロ漁船'), createCardByName('マグロ漁船'));
     const name = LANDMARK_NAMES.HARBOR;
-    const stableIncome = cpu._estimateStableIncome(game, current);
-    const harborCardCount = current.cards.filter(card =>
-        card && [CARD_EFFECTS.HARBOR, CARD_EFFECTS.HARBOR_RED, CARD_EFFECTS.TUNA].includes(card.effect)
-    ).length;
+    const features = CPUEvaluation.strongLandmarkUrgencyFeatures(name, current, game, {
+        landmarkNames: LANDMARK_NAMES,
+        categories: CARD_CATEGORIES,
+        effects: CARD_EFFECTS,
+        estimateStableIncome: (runtime, player) => cpu._estimateStableIncome(runtime, player),
+    });
 
-    assert.strictEqual(cpu._strongLandmarkUrgencyBonus(name, current, game), CPUEvaluation.strongLandmarkUrgencyBonus({
-        station: false, mall: false, harbor: true, tower: false, park: false, airport: false,
-        crowd: true, stableIncome, shopRestaurantCardCount: 0, harborCardCount,
-        highVarianceCardCount: current.cards.filter(card =>
-            card && card.diceNums && card.diceNums.length > 0 && Math.min(...card.diceNums) >= 7
-        ).length,
-        cheapEngineCardCount: current.cards.filter(card => card && card.cost <= 3).length,
-        tunaBoatLevel: 2,
-        hasStation: !!current.landmarks[LANDMARK_NAMES.STATION],
-    }));
+    assert.strictEqual(
+        cpu._strongLandmarkUrgencyBonus(name, current, game),
+        CPUEvaluation.strongLandmarkUrgencyBonus(features)
+    );
 });
 
 runTest('CPU本体のstrong紫カードwrapperはfeature adapterからpure policyへ委譲する', () => {
