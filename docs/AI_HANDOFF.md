@@ -1018,3 +1018,9 @@ Test index:
 - Local game construction belongs to `LocalGameInitializer`: preserve its reset → game creation → selection/stock → normalized settings → Fisher-Yates shuffle → CPU creation → log/render/schedule order.
 - Randomness is injected but production still delegates exactly to `Math.random`; do not sort candidates or copy/freeze the live CPU array installed in `GameRuntimeState`.
 - The new runtime is linted and checkJs-covered; `main.js` is 1,367 lines. Rules, CPU tuning, persistence, online, and PWA behavior are unchanged.
+
+## Batch 87 handoff (2026-08-05)
+
+- Local restart orchestration belongs to `LocalGameRestartRuntime`; preserve its storage cleanup and cancel/reset/runtime/view/checkpoint order.
+- Keep `ONLINE_STORAGE_KEYS` unchanged and prefer `clearOnlineSessionStorage` when available, retaining the exact fallback keys for classic-script startup compatibility.
+- The runtime is linted and checkJs-covered. `main.js` remains the dependency composition surface; rules, CPU, storage formats, online protocol, modal behavior, and PWA behavior did not change.

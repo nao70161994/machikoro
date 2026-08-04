@@ -802,3 +802,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains dependency composition and its `init` compatibility delegate; its size decreased from 1,391 to 1,367 lines. The runtime accepts injected randomness, making player/CPU creation order directly reproducible in focused tests.
 - Contracts fix reset/effect order, fixed-random player order, names, expert CPU options, stock values, first log, and retain the mutable CPU-array identity installed in `GameRuntimeState`. Scoped gates now cover 238 ESLint maintenance files and 237 checkJs runtime files.
 - Game rules, CPU tuning/decisions/RNG consumption count, save formats, online protocol/reconnect, localStorage keys, and PWA behavior are unchanged.
+
+## 2026-08-05 Batch 87 local game restart runtime
+
+- `js/localGameRestartRuntime.js` now owns restart confirmation, saved/local online-session cleanup, scheduler and delayed-action cancellation, online/UI/lifecycle reset, game/setup reset, title-screen projection, redraw, PWA refresh, and diagnostic checkpoint ordering.
+- `main.js` retains explicit dependency composition and its `restartGame` compatibility delegate. Focused contracts preserve the five legacy online storage keys, facade-first/fallback cleanup, exact reset reason strings, and the complete confirmed-start → confirmed-complete effect order.
+- Existing main and integration tests continue to cover UI lock removal, lifecycle notification re-arming, watchdog silence, and title/game-screen state. Scoped gates now cover 239 ESLint maintenance files and 238 checkJs runtime files.
+- Storage keys/formats, game rules, CPU behavior, online protocol/reconnect, modal behavior, and PWA update behavior are unchanged.

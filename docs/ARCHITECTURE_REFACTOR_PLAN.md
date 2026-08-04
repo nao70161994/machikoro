@@ -956,3 +956,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `LocalGameInitializer` owns deterministic local-game construction from setup state through initial render/schedule, with randomness and all effects injected.
 2. `main.js` is now composition plus the established `init` entry point; card stock, shuffle, player naming, and CPU construction no longer live inline.
 3. Fixed-random contracts preserve RNG call count/order, expert creation options, mutable runtime array semantics, and reset-to-schedule effect order.
+
+## 2026-08-05 Batch 87 boundary update
+
+1. `LocalGameRestartRuntime` owns the local restart use case from confirmation through persistence/session cleanup, runtime reset, view projection, redraw, and final checkpoint.
+2. `main.js` only resolves browser-global effects and preserves the established `restartGame` entry point; ordered restart policy no longer lives in the composition root.
+3. Contracts preserve facade preference, legacy-key fallback, reset reason labels, modal/UI unlock integration, lifecycle reset, and PWA refresh position.
