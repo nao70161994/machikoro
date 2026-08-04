@@ -15,12 +15,22 @@ runTest('game setup stateは既存初期値をdetached snapshotへ投影する',
     assert.ok(Object.isFrozen(controller.snapshot().playerSettings));
 });
 
-runTest('game setup stateは設定配列の互換in-place更新と置換を保持する', () => {
-    const controller = GameSetupState.createController();
-    controller.read('playerSettings').push({ type: 'human' });
-    assert.deepStrictEqual(controller.snapshot().playerSettings, [{ type: 'human' }]);
-    const replacement = [{ type: 'cpu', difficulty: 'strong' }];
+runTest('game setup stateは設定配列の入出力をdetached read-only値にする', () => {
+    const sourceSetting = { type: 'human', name: 'Alice' };
+    const controller = GameSetupState.createController({ playerSettings: [sourceSetting] });
+    sourceSetting.name = 'outside';
+
+    const projection = controller.read('playerSettings');
+    assert.ok(Object.isFrozen(projection));
+    assert.ok(Object.isFrozen(projection[0]));
+    assert.throws(() => projection.push({ type: 'cpu' }), TypeError);
+    assert.throws(() => { projection[0].name = 'mutated'; }, TypeError);
+    assert.deepStrictEqual(controller.snapshot().playerSettings, [{ type: 'human', name: 'Alice' }]);
+
+    const replacementSetting = { type: 'cpu', difficulty: 'strong' };
+    const replacement = [replacementSetting];
     assert.strictEqual(controller.write('playerSettings', replacement), true);
+    replacementSetting.difficulty = 'weak';
     replacement.push({ type: 'human' });
     assert.deepStrictEqual(controller.snapshot().playerSettings, [{ type: 'cpu', difficulty: 'strong' }]);
 });
@@ -71,7 +81,8 @@ runTest('game setup compatibility globalsは単一controllerへ双方向投影�
     root.selectedCount = 4;
     root.cpuSpeed = 600;
     root.playerSettings = [{ type: 'human' }];
-    root.playerSettings[0] = { type: 'cpu', difficulty: 'normal' };
+    assert.throws(() => { root.playerSettings[0] = { type: 'cpu', difficulty: 'normal' }; }, TypeError);
+    controller.setPlayerSetting(0, { type: 'cpu', difficulty: 'normal' });
 
     assert.deepStrictEqual(controller.snapshot(), {
         selectedCount: 4,
