@@ -965,3 +965,10 @@ Test index:
 - Preserve the app-shell compatibility functions `syncUiInteractabilityAfterRender`, `recoverUiInteractability`, and `recoverFreezeKind`. Integration/debug tooling calls them while their implementation delegates to the recovery runtime.
 - Modal/focus primitives and browser composition remain in `appShell.js`; DOM attribute/style mutations remain in `UiRecoveryEffects`, and CPU/online stalled-turn sequencing remains in `UiWatchdogAsyncRecovery`.
 - Scoped gates cover 231 ESLint files and 230 checkJs runtimes; `appShell.js` is now 855 lines and remains a composition-root exclusion.
+
+## Batch 79 handoff (2026-08-05)
+
+- Watchdog classification, progress/dedupe decisions, diagnostic compaction, recovery/report dispatch, and freeze-snapshot persistence belong to `UiWatchdogRuntime`. Do not rebuild that execution loop in `appShell.js`.
+- Keep `OnlineRetryPolicy` late-resolved through the runtime dependency because isolated integration runtimes may load online modules after `appShell.js`.
+- `appShell.js` keeps `classifyLikelyFreeze` and `checkFreezeWatchdog` as compatibility callbacks; recovery sequencing belongs to `UiWatchdogRecoveryRuntime`/`UiWatchdogAsyncRecovery`, while report effect ordering remains in `UiWatchdogReporting`.
+- Scoped gates cover 232 ESLint files and 231 checkJs runtimes; `appShell.js` is now 775 lines and remains the browser composition root.
