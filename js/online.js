@@ -21,6 +21,10 @@ function onlineGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
 }
 
+function onlineSessionSnapshot() {
+    return OnlineRuntimeState.runtime.snapshot();
+}
+
 function createOnlineCpuPlayer(difficulty, options = {}) {
     if (typeof createCpuPlayer === "function") {
         return createCpuPlayer(difficulty, options);
@@ -434,21 +438,22 @@ function _resetOnlineRejoinAttempt() {
 }
 
 function _onlineReconnectObservationFlags() {
-    const connected = !!socket && socket.connected !== false;
+    const session = onlineSessionSnapshot();
+    const connected = !!session.socket && session.socket.connected !== false;
     return {
         failed: _onlineRejoinAttemptController.isExhausted(),
         completed: _onlineReconnectCompletionController.isCompleted(),
-        replaying: isReplaying,
+        replaying: session.isReplaying,
         restoring: _onlineRestoreLifecycleController.isInProgress(),
-        rejoining: isReconnectingOnline && connected,
-        connecting: isReconnectingOnline && !connected,
-        active: isOnlineGame,
+        rejoining: session.isReconnectingOnline && connected,
+        connecting: session.isReconnectingOnline && !connected,
+        active: session.isOnlineGame,
     };
 }
 
 function _observeOnlineReconnectEvent(event) {
     const observation = _onlineReconnectController.observe(event, _onlineReconnectObservationFlags());
-    _applyOnlineReconnectEffectAuthority(isReconnectingOnline);
+    _applyOnlineReconnectEffectAuthority(onlineSessionSnapshot().isReconnectingOnline);
     return observation;
 }
 
@@ -722,7 +727,7 @@ function getOnlineRestoreActivationEffectSelection() {
     return _onlineDiagnosticSelections.onlineRestoreActivationEffectSelection;
 }
 
-function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
+function _onlineReconnectEffectSelection(legacyValue = onlineSessionSnapshot().isReconnectingOnline) {
     return OnlineReconnectState.selectEffectAuthority(
         _onlineReconnectController.snapshot(),
         legacyValue === true,
@@ -730,9 +735,9 @@ function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
     );
 }
 
-function _applyOnlineReconnectEffectAuthority(legacyValue = isReconnectingOnline) {
+function _applyOnlineReconnectEffectAuthority(legacyValue = onlineSessionSnapshot().isReconnectingOnline) {
     const selection = _onlineReconnectEffectSelection(legacyValue);
-    if (selection.reconnecting !== isReconnectingOnline) {
+    if (selection.reconnecting !== onlineSessionSnapshot().isReconnectingOnline) {
         setOnlineReconnectLegacyFlag(selection.reconnecting);
     }
     return selection;
@@ -758,7 +763,7 @@ function _applyOnlineReconnectLifecycleStatusEffectAuthority(event) {
 }
 
 function _onlineReconnectTimerAuthoritySelection() {
-    const effectSelection = _onlineReconnectEffectSelection(isReconnectingOnline);
+    const effectSelection = _onlineReconnectEffectSelection(onlineSessionSnapshot().isReconnectingOnline);
     const enabled = isOnlineReconnectTimerAuthorityEnabled();
     const active = enabled && effectSelection.source === 'event';
     return Object.freeze({
@@ -781,7 +786,7 @@ function _onlineReconnectCallbackAuthoritySelection() {
     });
 }
 
-function _onlineReconnectCleanupAuthoritySelection(legacyValue = isReconnectingOnline) {
+function _onlineReconnectCleanupAuthoritySelection(legacyValue = onlineSessionSnapshot().isReconnectingOnline) {
     return OnlineReconnectState.selectCleanupAuthority(
         _onlineReconnectController.snapshot(),
         legacyValue === true,
@@ -820,11 +825,11 @@ function getOnlineReconnectStateSnapshot() {
     return Object.freeze({
         ...snapshot,
         authority: _onlineReconnectAuthoritySelection(),
-        effectAuthority: _onlineReconnectEffectSelection(isReconnectingOnline),
+        effectAuthority: _onlineReconnectEffectSelection(onlineSessionSnapshot().isReconnectingOnline),
         timerAuthority: _onlineReconnectTimerAuthoritySelection(),
         rejoinAttempt: _onlineRejoinAttemptController.snapshot(),
         callbackAuthority: _onlineReconnectCallbackAuthoritySelection(),
-        cleanupAuthority: _onlineReconnectCleanupAuthoritySelection(isReconnectingOnline),
+        cleanupAuthority: _onlineReconnectCleanupAuthoritySelection(onlineSessionSnapshot().isReconnectingOnline),
         cleanupEffectAuthority: getOnlineReconnectCleanupEffectSelection(),
         requestPlanAuthority: getOnlineReconnectRequestPlanSelection(),
         requestEffectAuthority: getOnlineReconnectRequestEffectSelection(),
@@ -862,10 +867,10 @@ function getOnlineReconnectStateSnapshot() {
 }
 
 function isOnlineReconnectInputBlocked() {
-    if (!isOnlineReconnectEventAuthorityEnabled()) return !!isReconnectingOnline;
+    if (!isOnlineReconnectEventAuthorityEnabled()) return onlineSessionSnapshot().isReconnectingOnline;
     getOnlineReconnectState();
     const selection = _onlineReconnectAuthoritySelection();
-    if (selection.source !== 'event') return !!isReconnectingOnline;
+    if (selection.source !== 'event') return onlineSessionSnapshot().isReconnectingOnline;
     return OnlineReconnectState.blocksInput(selection.state);
 }
 
@@ -884,7 +889,7 @@ function getOnlineClientStorage() {
 
 const onlineStorage = createOnlineStorageFacade({
     storage: getOnlineClientStorage(),
-    getCurrentRoomId: () => myRoomId,
+    getCurrentRoomId: () => onlineSessionSnapshot().myRoomId,
     sessionKey: ONLINE_SESSION_STORAGE_KEY,
     storageKeys: ONLINE_STORAGE_KEYS,
     roomIndexKey: ONLINE_RESTORE_ROOM_INDEX_KEY,
@@ -902,35 +907,35 @@ function _isKnownOnlineGameAction(action) {
     return !!GAME_ACTION_REGISTRY[action];
 }
 
-function _onlineRoomStorageKey(key, roomId = myRoomId) {
+function _onlineRoomStorageKey(key, roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.roomStorageKey(key, roomId);
 }
 
-function _onlineRoomStorageKeys(key, roomId = myRoomId) {
+function _onlineRoomStorageKeys(key, roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.roomStorageKeys(key, roomId);
 }
 
-function _writeOnlineRoomStorageJson(key, value, roomId = myRoomId) {
+function _writeOnlineRoomStorageJson(key, value, roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.writeRoomStorageJson(key, value, roomId);
 }
 
-function _removeOnlineRoomStorageItem(key, roomId = myRoomId) {
+function _removeOnlineRoomStorageItem(key, roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.removeRoomStorageItem(key, roomId);
 }
 
-function _writeOnlineRestoreStorageJson(key, value, roomId = myRoomId) {
+function _writeOnlineRestoreStorageJson(key, value, roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.writeRestoreStorageJson(key, value, roomId);
 }
 
-function _removeOnlineRestoreStorageItem(key, roomId = myRoomId) {
+function _removeOnlineRestoreStorageItem(key, roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.removeRestoreStorageItem(key, roomId);
 }
 
-function _writeOnlineSessionStorageJson(value, roomId = myRoomId) {
+function _writeOnlineSessionStorageJson(value, roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.writeSessionStorageJson(value, roomId);
 }
 
-function _removeOnlineSessionStorageItem(roomId = myRoomId) {
+function _removeOnlineSessionStorageItem(roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.removeSessionStorageItem(roomId);
 }
 
@@ -938,7 +943,7 @@ function _readOnlineStorageJson(key, fallback = null) {
     return onlineStorage.readStorageJson(key, fallback);
 }
 
-function _readOnlineRoomStorageJson(key, fallback = null, roomId = myRoomId) {
+function _readOnlineRoomStorageJson(key, fallback = null, roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.readRoomStorageJson(key, fallback, roomId);
 }
 
@@ -970,11 +975,11 @@ function _buildOnlineRestoreRoomIndexEntry(roomId, now = Date.now()) {
     return onlineStorage.buildRestoreRoomIndexEntry(roomId, now);
 }
 
-function _refreshOnlineRestoreRoomIndex(roomId = myRoomId, now = Date.now()) {
+function _refreshOnlineRestoreRoomIndex(roomId = onlineSessionSnapshot().myRoomId, now = Date.now()) {
     return onlineStorage.refreshRestoreRoomIndex(roomId, now);
 }
 
-function _removeOnlineRestoreRoomIndexEntry(roomId = myRoomId) {
+function _removeOnlineRestoreRoomIndexEntry(roomId = onlineSessionSnapshot().myRoomId) {
     return onlineStorage.removeRestoreRoomIndexEntry(roomId);
 }
 
@@ -983,7 +988,7 @@ function _pruneOnlineRestoreRoomIndex() {
 }
 
 function _clearOnlineRestoreBundle() {
-    const roomIdBeforeClear = myRoomId;
+    const roomIdBeforeClear = onlineSessionSnapshot().myRoomId;
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.gameStart);
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.actionLog);
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
@@ -1057,13 +1062,13 @@ function _handleOnlineRejoinResponseTimeout() {
     let shouldExhaust = false;
     if (_isOnlineReconnectCallbackAuthorityActive()) {
         const decision = OnlineRetryPolicy.rejoinTimeoutDecision(
-            isReconnectingOnline,
+            onlineSessionSnapshot().isReconnectingOnline,
             _onlineRejoinAttemptController.getAttemptCount()
         );
         if (decision === OnlineRetryPolicy.timeoutDecisions.IGNORE) return;
         shouldExhaust = decision === OnlineRetryPolicy.timeoutDecisions.EXHAUST;
     } else {
-        if (!isReconnectingOnline) return;
+        if (!onlineSessionSnapshot().isReconnectingOnline) return;
         shouldExhaust = OnlineRetryPolicy.isRejoinExhausted(_onlineRejoinAttemptController.getAttemptCount());
     }
     if (shouldExhaust) {
@@ -1096,9 +1101,10 @@ function _setOnlineActionInFlight(value) {
 
 function _legacyOnlineRejoinRequestPlan(session) {
     const decisions = OnlineRetryPolicy.requestDecisions;
+    const currentSocket = onlineSessionSnapshot().socket;
     let decision = decisions.REJECT;
-    if (socket && session.roomId && !(session.playerIndex < 0) && session.playerName && session.reconnectToken) {
-        if (socket.connected === false) decision = decisions.WAIT_FOR_SOCKET;
+    if (currentSocket && session.roomId && !(session.playerIndex < 0) && session.playerName && session.reconnectToken) {
+        if (currentSocket.connected === false) decision = decisions.WAIT_FOR_SOCKET;
         else if (OnlineRetryPolicy.isRejoinExhausted(_onlineRejoinAttemptController.getAttemptCount())) decision = decisions.EXHAUST;
         else decision = decisions.EMIT;
     }
@@ -1112,6 +1118,7 @@ function _legacyOnlineRejoinRequestPlan(session) {
 }
 
 function _onlineReconnectRequestPlanSelection(session) {
+    const currentSocket = onlineSessionSnapshot().socket;
     const legacyPlan = _legacyOnlineRejoinRequestPlan(session);
     const requested = isOnlineReconnectRequestPlanAuthorityEnabled();
     const stateSelection = OnlineReconnectState.selectAuthorityState(
@@ -1120,12 +1127,12 @@ function _onlineReconnectRequestPlanSelection(session) {
     );
     const stateReady = stateSelection.source === 'event';
     const selected = OnlineRetryPolicy.selectRejoinRequestPlan({
-        hasSocket: !!socket,
+        hasSocket: !!currentSocket,
         roomId: session.roomId,
         playerIndex: session.playerIndex,
         playerName: session.playerName,
         reconnectToken: session.reconnectToken,
-        socketConnected: socket && socket.connected,
+        socketConnected: currentSocket && currentSocket.connected,
         attemptCount: _onlineRejoinAttemptController.getAttemptCount(),
     }, legacyPlan, {
         authorityEnabled: requested && stateReady,
@@ -1148,7 +1155,7 @@ function _onlineReconnectRequestEffectAuthoritySelection(planSelection) {
 }
 
 function _emitOnlineRejoinSocket(session) {
-    socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
+    onlineSessionSnapshot().socket.emit('rejoinRoom', buildOnlineRejoinPayload(session));
 }
 
 function _runOnlineReconnectRequestEffectsLegacy(plan, session) {
@@ -1175,11 +1182,12 @@ function _runOnlineReconnectRequestEffects(planSelection, session) {
 }
 
 function _emitOnlineRejoinRequest(sessionOverride = null) {
+    const currentSession = onlineSessionSnapshot();
     const session = sessionOverride || {
-        roomId: myRoomId,
-        playerIndex: myOriginalPlayerIndex,
-        playerName: myPlayerName,
-        reconnectToken,
+        roomId: currentSession.myRoomId,
+        playerIndex: currentSession.myOriginalPlayerIndex,
+        playerName: currentSession.myPlayerName,
+        reconnectToken: currentSession.reconnectToken,
     };
     let planSelection = _onlineReconnectRequestPlanSelection(session);
     if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.REJECT) {
@@ -1199,8 +1207,9 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
 }
 
 function resumeOnlineReconnectAfterPageActivation() {
-    if (!isReconnectingOnline || _onlineRejoinAttemptController.isExhausted()) return false;
-    if (!socket || socket.connected === false) return false;
+    const session = onlineSessionSnapshot();
+    if (!session.isReconnectingOnline || _onlineRejoinAttemptController.isExhausted()) return false;
+    if (!session.socket || session.socket.connected === false) return false;
     if (_hasOnlineRejoinTimer() && _onlineRejoinTimerDeadline() > Date.now()) return false;
     _clearOnlineRejoinTimer();
     return _emitOnlineRejoinRequest();
@@ -1208,14 +1217,16 @@ function resumeOnlineReconnectAfterPageActivation() {
 
 function _legacyOnlineActionTimeoutPlan() {
     const decisions = OnlineRetryPolicy.actionTimeoutDecisions;
+    const online = onlineSessionSnapshot().isOnlineGame;
     return Object.freeze({
         decision: !_onlineActionFlightController.isInFlight()
             ? decisions.IGNORE
-            : (isOnlineGame ? decisions.REJOIN : decisions.CLEAR_ONLY),
+            : (online ? decisions.REJOIN : decisions.CLEAR_ONLY),
     });
 }
 
 function _onlineActionTimeoutPlanSelection() {
+    const online = onlineSessionSnapshot().isOnlineGame;
     const legacyPlan = _legacyOnlineActionTimeoutPlan();
     const requested = isOnlineActionTimeoutPlanAuthorityEnabled();
     const stateSelection = OnlineReconnectState.selectAuthorityState(
@@ -1225,7 +1236,7 @@ function _onlineActionTimeoutPlanSelection() {
     const stateReady = stateSelection.source === 'event';
     const selected = OnlineRetryPolicy.selectActionTimeoutPlan(
         _onlineActionFlightController.isInFlight(),
-        isOnlineGame,
+        online,
         legacyPlan,
         { authorityEnabled: requested && stateReady }
     );
@@ -1515,15 +1526,17 @@ function _runOnlineActionCommitEffects(
 }
 
 function _legacyOnlineSocketConnectPlan() {
+    const session = onlineSessionSnapshot();
     const el = document.getElementById("onlineStatus");
     return Object.freeze({
         clearWaitingStatus: !!(el && el.textContent.startsWith('⏳')),
-        requestRejoin: !!((isOnlineGame || isReconnectingOnline || _onlineRestoreLifecycleController.isInProgress()) &&
-            myRoomId && myOriginalPlayerIndex >= 0 && myPlayerName && reconnectToken),
+        requestRejoin: !!((session.isOnlineGame || session.isReconnectingOnline || _onlineRestoreLifecycleController.isInProgress()) &&
+            session.myRoomId && session.myOriginalPlayerIndex >= 0 && session.myPlayerName && session.reconnectToken),
     });
 }
 
 function _onlineSocketConnectPlanSelection() {
+    const session = onlineSessionSnapshot();
     const legacyPlan = _legacyOnlineSocketConnectPlan();
     const requested = isOnlineSocketConnectPlanAuthorityEnabled();
     const stateSelection = OnlineReconnectState.selectAuthorityState(
@@ -1535,13 +1548,13 @@ function _onlineSocketConnectPlanSelection() {
     const el = document.getElementById("onlineStatus");
     const selected = OnlineSocketConnect.selectPlan({
         waitingStatus: !!(el && el.textContent.startsWith('⏳')),
-        onlineActive: isOnlineGame,
-        reconnecting: isReconnectingOnline,
+        onlineActive: session.isOnlineGame,
+        reconnecting: session.isReconnectingOnline,
         restoreInProgress: _onlineRestoreLifecycleController.isInProgress(),
-        hasRoomId: !!myRoomId,
-        originalPlayerIndex: myOriginalPlayerIndex,
-        hasPlayerName: !!myPlayerName,
-        hasReconnectToken: !!reconnectToken,
+        hasRoomId: !!session.myRoomId,
+        originalPlayerIndex: session.myOriginalPlayerIndex,
+        hasPlayerName: !!session.myPlayerName,
+        hasReconnectToken: !!session.reconnectToken,
     }, legacyPlan, {
         authorityEnabled: requested && stateReady,
     });
@@ -1599,12 +1612,13 @@ function _runOnlineSocketConnectEffects() {
 
 function _legacyOnlineSocketDisconnectPlan() {
     return Object.freeze({
-        active: isOnlineGame || _onlineRestoreLifecycleController.isInProgress(),
+        active: onlineSessionSnapshot().isOnlineGame || _onlineRestoreLifecycleController.isInProgress(),
         abortRestore: _onlineRestoreLifecycleController.isInProgress(),
     });
 }
 
 function _onlineSocketDisconnectPlanSelection() {
+    const online = onlineSessionSnapshot().isOnlineGame;
     _onlineReconnectController.reconcile(
         _onlineReconnectObservationFlags(),
         { event: 'socket-disconnect-plan' }
@@ -1617,7 +1631,7 @@ function _onlineSocketDisconnectPlanSelection() {
     );
     const stateReady = stateSelection.source === 'event';
     const selected = OnlineSocketDisconnect.selectPlan({
-        onlineActive: isOnlineGame,
+        onlineActive: online,
         restoreInProgress: _onlineRestoreLifecycleController.isInProgress(),
     }, legacyPlan, {
         authorityEnabled: requested && stateReady,
@@ -1694,15 +1708,16 @@ function _runOnlineSocketDisconnectEffects() {
 function _legacyOnlineHostChangedPlan(newHostPlayerIndex) {
     return Object.freeze({
         isHost: Number.isInteger(newHostPlayerIndex) &&
-            newHostPlayerIndex === myOriginalPlayerIndex,
+            newHostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex,
     });
 }
 
 function _onlineHostChangedPlanSelection(newHostPlayerIndex) {
+    const originalPlayerIndex = onlineSessionSnapshot().myOriginalPlayerIndex;
     const legacyPlan = _legacyOnlineHostChangedPlan(newHostPlayerIndex);
     return OnlineHostChanged.selectPlan({
         newHostPlayerIndex,
-        myOriginalPlayerIndex,
+        myOriginalPlayerIndex: originalPlayerIndex,
     }, legacyPlan, {
         authorityEnabled: isOnlineHostChangedPlanAuthorityEnabled(),
     });
@@ -1835,7 +1850,8 @@ function markOnlineGameFinished() {
 }
 
 function resetOnlineState() {
-    const plan = OnlineSessionLifecycle.resetPlan(myRoomId);
+    const session = onlineSessionSnapshot();
+    const plan = OnlineSessionLifecycle.resetPlan(session.myRoomId);
     OnlineSessionLifecycle.execute(plan, {
         markNotCompleted() { _onlineReconnectCompletionController.reset(); },
         resetEngineShadow() {
@@ -1847,8 +1863,8 @@ function resetOnlineState() {
         finishLobbyRequest() { finishOnlineLobbyRequest(); },
         incrementCpuScheduleToken() { invalidateCpuScheduleChain(); },
         disconnectSocket() {
-            if (socket) {
-                socket.disconnect();
+            if (session.socket) {
+                session.socket.disconnect();
                 OnlineRuntimeState.runtime.setSocket(null);
             }
         },
@@ -1927,13 +1943,14 @@ function _readOnlineActionLog() {
 }
 
 function _savePendingOutboundAction(action, data) {
+    const session = onlineSessionSnapshot();
     const seq = _nextOnlineActionSeq();
     const clientActionId = _createOnlineClientActionId();
     const entry = OnlinePayload.buildPendingOutboundAction(
         action,
         data,
-        myOriginalPlayerIndex,
-        myRoomId,
+        session.myOriginalPlayerIndex,
+        session.myRoomId,
         seq,
         clientActionId
     );
@@ -2028,7 +2045,7 @@ function _normalizePendingOutboundAction(entry) {
 }
 
 function _readPendingOutboundAction() {
-    const currentRoomKey = _normalizeOnlineRoomId(myRoomId) || '';
+    const currentRoomKey = _normalizeOnlineRoomId(onlineSessionSnapshot().myRoomId) || '';
     const memoryEntry = _pendingOutboundState.read(currentRoomKey);
     if (memoryEntry) return memoryEntry;
     const stored = _normalizePendingOutboundAction(_readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null));
@@ -2048,7 +2065,7 @@ function _readPendingOutboundActionForCurrentSession(options = {}) {
     return _pendingOutboundActionBelongsToCurrentSession(entry, gateOptions) ? entry : null;
 }
 
-function _clearPendingOutboundAction(roomId = myRoomId) {
+function _clearPendingOutboundAction(roomId = onlineSessionSnapshot().myRoomId) {
     const memoryKey = _normalizeOnlineRoomId(roomId) || '';
     _pendingOutboundState.remove(memoryKey);
     try {
@@ -2058,7 +2075,7 @@ function _clearPendingOutboundAction(roomId = myRoomId) {
 }
 
 function _pendingOutboundActionBelongsToCurrentSession(entry, options = {}) {
-    return OnlinePayload.pendingBelongsToSession(entry, myRoomId, Object.assign({
+    return OnlinePayload.pendingBelongsToSession(entry, onlineSessionSnapshot().myRoomId, Object.assign({
         normalizeRoomId: _normalizeOnlineRoomId,
     }, options));
 }
@@ -2410,21 +2427,22 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
 
 function _appendPendingForRestore(actionLog, pending) {
     return OnlinePayload.appendPendingForRestore(actionLog, pending, {
-        currentRoomId: myRoomId,
+        currentRoomId: onlineSessionSnapshot().myRoomId,
         normalizeRoomId: _normalizeOnlineRoomId,
     });
 }
 
 function _canResendPendingOutboundAction(pending) {
     const gameState = onlineGameRuntimeSnapshot();
+    const session = onlineSessionSnapshot();
     return OnlinePayload.canResendPendingOutboundAction(pending, {
-        currentRoomId: myRoomId,
+        currentRoomId: session.myRoomId,
         normalizeRoomId: _normalizeOnlineRoomId,
         game: gameState.game,
-        originalPlayerIndex: myOriginalPlayerIndex,
-        playerIndex: myPlayerIndex,
+        originalPlayerIndex: session.myOriginalPlayerIndex,
+        playerIndex: session.myPlayerIndex,
         cpuPlayers: gameState.cpuPlayers,
-        isRoomHost,
+        isRoomHost: session.isRoomHost,
     });
 }
 
@@ -2449,14 +2467,15 @@ function buildOnlineUndoSnapshot() {
 }
 
 function saveOnlineSession() {
-    if (!myRoomId || myOriginalPlayerIndex < 0 || !myPlayerName || !reconnectToken) return;
+    const session = onlineSessionSnapshot();
+    if (!session.myRoomId || session.myOriginalPlayerIndex < 0 || !session.myPlayerName || !session.reconnectToken) return;
     try {
         _writeOnlineSessionStorageJson({
-            roomId: myRoomId,
-            playerIndex: myOriginalPlayerIndex,
-            playerName: myPlayerName,
-            reconnectToken,
-            isRoomHost,
+            roomId: session.myRoomId,
+            playerIndex: session.myOriginalPlayerIndex,
+            playerName: session.myPlayerName,
+            reconnectToken: session.reconnectToken,
+            isRoomHost: session.isRoomHost,
         });
         updateResumeButton();
     } catch (e) {}
@@ -2477,16 +2496,17 @@ function _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch) {
 
 function _setOnlineHostState(hostPlayerIndex) {
     return OnlineRuntimeState.runtime.setHost(
-        Number.isInteger(hostPlayerIndex) && hostPlayerIndex === myOriginalPlayerIndex
+        Number.isInteger(hostPlayerIndex) && hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex
     ).isRoomHost;
 }
 
 function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
+    const runtimeSession = onlineSessionSnapshot();
     const session = _readOnlineStorageJson(ONLINE_SESSION_STORAGE_KEY, null);
     if (session && typeof session === 'object') {
-        session.isRoomHost = isRoomHost;
-        session.reconnectToken = reconnectToken || session.reconnectToken || '';
-        _writeOnlineSessionStorageJson(session, session.roomId || myRoomId);
+        session.isRoomHost = runtimeSession.isRoomHost;
+        session.reconnectToken = runtimeSession.reconnectToken || session.reconnectToken || '';
+        _writeOnlineSessionStorageJson(session, session.roomId || runtimeSession.myRoomId);
     }
     try {
         const gameStartPayload = _readOnlineGameStartPayload();
