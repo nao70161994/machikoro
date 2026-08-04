@@ -23,10 +23,7 @@ let lastWinnerName = safeMainStorageGet('lastWinnerName', '') || '';
 
 // オートスキップ
 const autoSkipScheduleController = AutoSkipPolicy.createScheduleController();
-let delayedHumanActionPending = false;
-let delayedHumanActionTimeout = null;
-let delayedHumanActionToken = 0;
-let delayedHumanActionState = null;
+const delayedHumanActionController = DelayedHumanActionPolicy.createScheduleController();
 const localGameStartPendingController = LocalGameStart.createPendingController();
 
 // 取り消し
@@ -822,36 +819,32 @@ function resumeCpuTurnAfterPageActivation(reason) {
 }
 
 function runDelayedHumanAction(scheduledToken) {
-    const state = delayedHumanActionState;
-    if (!state || scheduledToken !== delayedHumanActionToken || scheduledToken !== state.token) return;
-    delayedHumanActionPending = false;
-    delayedHumanActionTimeout = null;
-    delayedHumanActionState = null;
+    const state = delayedHumanActionController.take(scheduledToken);
+    if (!state) return;
     if (!canRunHumanAction(state.action, state.playerIndex)) return;
     state.run();
 }
 
 function scheduleDelayedHumanAction(action, playerIndex, run, delay = 600) {
-    delayedHumanActionPending = true;
-    const token = ++delayedHumanActionToken;
-    delayedHumanActionState = {
-        token,
+    const state = delayedHumanActionController.schedule({
         action,
         playerIndex,
         deadline: Date.now() + delay,
         run,
-    };
-    delayedHumanActionTimeout = setTimeout(() => runDelayedHumanAction(token), delay);
+    });
+    delayedHumanActionController.setTimer(
+        setTimeout(() => runDelayedHumanAction(state.token), delay)
+    );
 }
 
 function resumeDelayedHumanActionAfterPageActivation() {
     const pageHidden = typeof document !== 'undefined' && !!document.hidden;
-    const state = delayedHumanActionState;
-    const hasCandidate = !pageHidden && delayedHumanActionPending && !!state;
+    const state = delayedHumanActionController.getState();
+    const hasCandidate = !pageHidden && delayedHumanActionController.isPending() && !!state;
     const canRun = hasCandidate && canRunHumanAction(state.action, state.playerIndex);
     const decision = DelayedHumanActionPolicy.resumeDecision({
         pageHidden,
-        pending: delayedHumanActionPending,
+        pending: delayedHumanActionController.isPending(),
         hasState: !!state,
         canRun,
         now: canRun ? Date.now() : 0,
@@ -866,13 +859,13 @@ function resumeDelayedHumanActionAfterPageActivation() {
         runDelayedHumanAction(state.token);
         return;
     }
-    if (delayedHumanActionTimeout !== null) clearTimeout(delayedHumanActionTimeout);
-    const token = ++delayedHumanActionToken;
-    state.token = token;
-    delayedHumanActionTimeout = setTimeout(
-        () => runDelayedHumanAction(token),
-        Math.max(0, state.deadline - Date.now())
-    );
+    const timer = delayedHumanActionController.getTimer();
+    if (timer !== null) clearTimeout(timer);
+    const renewedState = delayedHumanActionController.renew();
+    delayedHumanActionController.setTimer(setTimeout(
+        () => runDelayedHumanAction(renewedState.token),
+        Math.max(0, renewedState.deadline - Date.now())
+    ));
 }
 
 function cpuPageActivationOutcome(before, after, pageHidden) {
@@ -943,13 +936,8 @@ function canRunHumanAction(action, expectedPlayerIndex = null) {
 }
 
 function cancelDelayedHumanAction() {
-    delayedHumanActionToken++;
-    delayedHumanActionPending = false;
-    delayedHumanActionState = null;
-    if (delayedHumanActionTimeout !== null) {
-        clearTimeout(delayedHumanActionTimeout);
-        delayedHumanActionTimeout = null;
-    }
+    const timer = delayedHumanActionController.cancel();
+    if (timer !== null) clearTimeout(timer);
 }
 
 function onRoll() {
@@ -960,7 +948,7 @@ function onRoll() {
         runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => game.rollDice(null, null));
     } else {
         // 駅なし：アニメーションあり
-        if (delayedHumanActionPending) return;
+        if (delayedHumanActionController.isPending()) return;
         const scheduledPlayerIndex = game.currentPlayerIndex;
         updateDiceDisplay(null, true);
         scheduleDelayedHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex, () => {
@@ -977,7 +965,7 @@ function onRoll() {
 
 function onSelectDiceCount(useTwo) {
     if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE)) return;
-    if (delayedHumanActionPending) return;
+    if (delayedHumanActionController.isPending()) return;
     playSound('dice');
     const scheduledPlayerIndex = game.currentPlayerIndex;
     updateDiceDisplay(null, true);

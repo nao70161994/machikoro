@@ -420,10 +420,8 @@ function loadMainRuntime(options = {}) {
             isMainOnlineReconnectInputBlocked: () => isMainOnlineReconnectInputBlocked(),
             cancelCpuSchedule: (reason) => cpuTurnScheduler.cancel(reason),
             expireCpuScheduleLease: () => { cpuStepScheduledUntil = 0; },
-            expireDelayedHumanAction: () => {
-                if (delayedHumanActionState) delayedHumanActionState.deadline = 0;
-            },
-            getDelayedHumanActionPending: () => delayedHumanActionPending,
+            expireDelayedHumanAction: () => { delayedHumanActionController.updateDeadline(0); },
+            getDelayedHumanActionPending: () => delayedHumanActionController.isPending(),
             setPageHiddenAt: (value) => { pageHiddenAt = value; },
             scheduleCPU: () => scheduleCPU(),
             cpuDo: (action, data, fallback) => cpuDo(action, data, fallback),
@@ -445,6 +443,15 @@ runTest('auto skip schedule stateはcontrollerだけが所有する', () => {
     assert.strictEqual(source.includes('let autoSkipPending'), false);
     assert.strictEqual(source.includes('let autoSkipTimeout'), false);
     assert.ok(source.includes('AutoSkipPolicy.createScheduleController()'));
+});
+
+runTest('delayed human action schedule stateはcontrollerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
+    assert.strictEqual(source.includes('let delayedHumanActionPending'), false);
+    assert.strictEqual(source.includes('let delayedHumanActionTimeout'), false);
+    assert.strictEqual(source.includes('let delayedHumanActionToken'), false);
+    assert.strictEqual(source.includes('let delayedHumanActionState'), false);
+    assert.ok(source.includes('DelayedHumanActionPolicy.createScheduleController()'));
 });
 
 runTest('main storage helperは共通facadeでget/removeと例外fallbackを維持する', () => {
