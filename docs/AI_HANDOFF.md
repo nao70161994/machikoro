@@ -937,3 +937,10 @@ Test index:
 - `OnlineDomEffects` is a DOM adapter only. Do not move Socket callbacks, reconnect state, restore authority, storage, protocol payloads, or lobby request state into it.
 - Scoped gates cover 226 ESLint files and 225 checkJs runtimes. The five orchestration files remain whole-file exclusions; continue removing real dependencies rather than declaring broad ambient globals.
 - Continue with macro batches: a few substantive boundaries, focused checks, then one `npm run test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 75 handoff (2026-08-05)
+
+- `online.js` must send outbound Socket.IO events through `onlineSocketEffects`; do not add direct `.emit()` calls. Add fixed application events to its frozen registry and keep hostless event names injected from `OnlinePayload`.
+- `appShell.js` must invoke render/build/resume/settings/preload/skyline/scheduler/online-timeout effects through `appShellRuntimeEffects`. Resolution must remain lazy because `main.js` loads after the shell.
+- Keep policy and ordering in the orchestrators: the adapters invoke effects but do not decide reconnect authority, watchdog classification, recovery eligibility, CPU strategy, or PWA flow.
+- Scoped gates cover 228 ESLint files and 227 checkJs runtimes. Continue macro batches and reduce real dependencies before attempting whole-file activation of the five orchestration files.

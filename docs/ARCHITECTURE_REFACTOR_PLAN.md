@@ -884,3 +884,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. Watchdog recovery policy and DOM effects are now separated more sharply: `appShell.js` chooses the recovery target and order, while `UiRecoveryEffects` performs reusable element querying, Undo insertion, and interaction-lock mutation.
 2. `OnlineDomEffects` is the sole direct DOM access boundary for `online.js`, covering status, lobby controls, inputs, settings HTML, and game-screen activation. Online protocol/state/replay code no longer performs element lookup or mutation directly.
 3. Both boundaries are exercised by focused contracts plus watchdog integration, online, PWA, release, lint, and checkJs gates. No game, CPU, persistence, protocol, reconnect, presentation, or PWA contract changed.
+
+## 2026-08-05 Batch 75 boundary update
+
+1. `OnlineSocketEffects` centralizes all outbound online transport calls while event selection, payload construction, reconnect/restore ordering, and authority decisions remain in `online.js`.
+2. `AppShellRuntimeEffects` gives the shell one late-bound boundary for main/UI/online runtime effects and scheduler observation. Watchdog, crash, lifecycle, and PWA orchestration remain in `appShell.js`.
+3. Focused contracts cover event/payload identity, missing-dependency behavior, scheduler precedence and legacy fallback, online-flight fallback, direct-call exclusion, and production load order. No gameplay, CPU, protocol, persistence, UI, or PWA contract changed.
