@@ -74,6 +74,31 @@ runTest('game setup production writersはnamed runtime operationだけを使う'
     }
 });
 
+runTest('game setup production readersは互換globalではなくruntime snapshotを使う', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const sources = Object.fromEntries(['main.js', 'storage.js', 'ui.js', 'appShell.js'].map(file => [
+        file,
+        fs.readFileSync(path.join(__dirname, '..', 'js', file), 'utf8'),
+    ]));
+    const forbidden = [
+        ['main.js', /(?<![.\w$])selectedCount\s*\+\s*delta/],
+        ['main.js', /normalizeSettings\(playerSettings/],
+        ['main.js', /snapshot\(playerSettings/],
+        ['main.js', /queueCPUStep\(token,\s*cpuSpeed/],
+        ['storage.js', /\n\s*selectedCount,\n\s*playerSettings,/],
+        ['storage.js', /textContent\s*=\s*selectedCount/],
+        ['ui.js', /typeof playerSettings/],
+        ['appShell.js', /playerCount\(null,\s*selectedCount\)/],
+    ];
+    for (const [file, pattern] of forbidden) {
+        assert.strictEqual(pattern.test(sources[file]), false, file + ': ' + pattern);
+    }
+    for (const file of Object.keys(sources)) {
+        assert.ok(sources[file].includes('GameSetupState.runtime.snapshot()'), file);
+    }
+});
+
 runTest('game setup compatibility globalsは単一controllerへ双方向投影する', () => {
     const controller = GameSetupState.createController();
     const root = {};

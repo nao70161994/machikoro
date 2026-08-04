@@ -28,6 +28,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ['index.html', [
             ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/onlineRuntimeState.js', 'js/onlineSetupState.js', 'js/online.js'],
             ['js/gameSelectionState.js', 'js/ui.js'],
+            ['js/gameSetupState.js', 'js/ui.js'],
             ['js/gameSelectionState.js', 'js/gameSetupState.js', 'js/storage.js'],
             ['js/gameRuntimeState.js', 'js/online.js'],
             ['js/gameRuntimeState.js', 'js/ui.js'],
@@ -191,6 +192,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
         ['tests/helpers/integration-runtime.js', [
             ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/onlineRuntimeState.js', 'js/onlineSetupState.js', 'js/online.js'],
             ['js/gameSelectionState.js', 'js/ui.js'],
+            ['js/gameSetupState.js', 'js/ui.js'],
             ['js/gameSelectionState.js', 'js/gameSetupState.js', 'js/storage.js'],
             ['js/gameRuntimeState.js', 'js/online.js'],
             ['js/gameRuntimeState.js', 'js/ui.js'],

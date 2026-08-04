@@ -792,7 +792,7 @@ function gameLifecyclePlayerCount() {
         }
     } catch (_) {}
     try {
-        return LifecycleNotify.playerCount(null, selectedCount);
+        return LifecycleNotify.playerCount(null, GameSetupState.runtime.snapshot().selectedCount);
     } catch (_) {
         return 0;
     }

@@ -539,7 +539,8 @@ function validRenderCpuDifficulty(value) {
 }
 
 function getPlayerSettingForRender(index, player) {
-    const settings = typeof playerSettings !== 'undefined' && Array.isArray(playerSettings) ? playerSettings : [];
+    const setup = GameSetupState.runtime.snapshot();
+    const settings = setup.playerSettings;
     const cpus = typeof cpuPlayers !== 'undefined' && Array.isArray(cpuPlayers) ? cpuPlayers : [];
     const resolved = UiPlayerDisplay.resolvePlayerSetting({
         playerSettings: settings,

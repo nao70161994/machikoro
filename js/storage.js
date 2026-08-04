@@ -160,7 +160,7 @@ function saveGameState() {
             cpuSettings: cpuPlayers.map(cpu => cpu
                 ? { difficulty: cpu.difficulty, rlModelId: cpu.modelId || null }
                 : null),
-            cpuSpeed,
+            cpuSpeed: GameSetupState.runtime.snapshot().cpuSpeed,
             enabledCardsList: [...selection.enabledCards],
             enabledLandmarksList: [...selection.enabledLandmarks],
         }),
@@ -487,9 +487,10 @@ function doUndo() {
 function saveSettings() {
     storageClientStorageFacade.access(storage => {
         const speedEl = document.getElementById('cpuSpeed');
+        const setup = GameSetupState.runtime.snapshot();
         const values = StorageSettings.serializeSettings({
-            selectedCount,
-            playerSettings,
+            selectedCount: setup.selectedCount,
+            playerSettings: setup.playerSettings,
             tutorialEnabled,
             tutorialLevel,
             cpuSpeed: speedEl ? speedEl.value : null,
@@ -517,7 +518,7 @@ function loadSettings() {
             tutorialLevel: storage.getItem('tutorialLevel'),
         }, normalizeName);
         GameSetupState.runtime.setSelectedCount(values.selectedCount);
-        document.getElementById("playerCount").textContent = selectedCount;
+        document.getElementById("playerCount").textContent = values.selectedCount;
         if (values.playerSettings) GameSetupState.runtime.setPlayerSettings(values.playerSettings);
         if (values.cpuSpeed) {
             const speedEl = document.getElementById('cpuSpeed');

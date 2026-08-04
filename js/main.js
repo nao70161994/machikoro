@@ -11,6 +11,10 @@ function safeMainStorageRemove(key) {
     mainClientStorageFacade.remove(key);
 }
 
+function gameSetupSnapshot() {
+    return GameSetupState.runtime.snapshot();
+}
+
 // 連勝記録
 UiWinner.streakRuntime.replace({
     winStreak: parseInt(safeMainStorageGet('winStreak', '0') || '0'),
@@ -99,36 +103,41 @@ function formatCpuSpeedLabel(value) {
 }
 
 function changeCount(delta) {
-    GameSetupState.runtime.setSelectedCount(Math.min(10, Math.max(2, selectedCount + delta)));
-    document.getElementById("playerCount").textContent = selectedCount;
+    const setup = gameSetupSnapshot();
+    const next = GameSetupState.runtime.setSelectedCount(
+        Math.min(10, Math.max(2, setup.selectedCount + delta))
+    );
+    document.getElementById("playerCount").textContent = next.selectedCount;
     renderPlayerSettings();
     preloadLocalRlModelsInBackground('local-player-count-preload');
     saveSettings();
 }
 
 function renderPlayerSettings() {
-    GameSetupState.runtime.setPlayerSettings(
-        LocalPlayerSettings.normalizeSettings(playerSettings, selectedCount)
+    const setup = gameSetupSnapshot();
+    const normalized = GameSetupState.runtime.setPlayerSettings(
+        LocalPlayerSettings.normalizeSettings(setup.playerSettings, setup.selectedCount)
     );
     document.getElementById("playerSettings").innerHTML = LocalPlayerSettings.buildSettingsHtml(
-        playerSettings,
-        selectedCount
+        normalized.playerSettings,
+        normalized.selectedCount
     );
     updateLocalRlModelReadinessUi();
 }
 
 function onChangePlayerType(index, value) {
+    const settings = gameSetupSnapshot().playerSettings;
     if (value === "human") {
         GameSetupState.runtime.setPlayerSetting(index, {
             type: "human",
             difficulty: "normal",
-            name: normalizeLocalPlayerName(playerSettings[index]?.name, index),
+            name: normalizeLocalPlayerName(settings[index]?.name, index),
         });
     } else {
         GameSetupState.runtime.setPlayerSetting(index, {
             type: "cpu",
             difficulty: value,
-            name: normalizeLocalPlayerName(playerSettings[index]?.name, index),
+            name: normalizeLocalPlayerName(settings[index]?.name, index),
         });
     }
     renderPlayerSettings();
@@ -137,7 +146,7 @@ function onChangePlayerType(index, value) {
 }
 
 function onChangePlayerName(index, value) {
-    if (!playerSettings[index]) {
+    if (!gameSetupSnapshot().playerSettings[index]) {
         GameSetupState.runtime.setPlayerSetting(index, {
             type: "human",
             difficulty: "normal",
@@ -152,11 +161,11 @@ function hasRlCpuSetting(settings, playerCount) {
     return LocalPlayerSettings.hasRlCpu(settings, playerCount);
 }
 
-function snapshotLocalPlayerSettings(playerCount = selectedCount) {
-    return LocalPlayerSettings.snapshot(playerSettings, playerCount);
+function snapshotLocalPlayerSettings(playerCount = gameSetupSnapshot().selectedCount) {
+    return LocalPlayerSettings.snapshot(gameSetupSnapshot().playerSettings, playerCount);
 }
 
-function hasLocalRlCpuSetting(playerCount = selectedCount, settings = playerSettings) {
+function hasLocalRlCpuSetting(playerCount = gameSetupSnapshot().selectedCount, settings = gameSetupSnapshot().playerSettings) {
     return hasRlCpuSetting(settings, playerCount);
 }
 
@@ -164,7 +173,7 @@ function canPreloadRlModels() {
     return typeof RLModelPortfolio !== "undefined" && typeof RLModelPortfolio.preloadEligibleModels === "function";
 }
 
-function localRlModelLoadState(playerCount = selectedCount) {
+function localRlModelLoadState(playerCount = gameSetupSnapshot().selectedCount) {
     if (!hasLocalRlCpuSetting(playerCount)) return { status: 'unused', ready: 0, total: 0, errors: [] };
     if (!canPreloadRlModels()) return { status: 'failed', ready: 0, total: 0, errors: ['RL model loader is not available'] };
     if (typeof RLModelPortfolio.eligibleLoadState === "function") return RLModelPortfolio.eligibleLoadState(playerCount);
@@ -176,7 +185,7 @@ function localRlModelStatusMessage(state) {
 }
 
 function updateLocalRlModelReadinessUi() {
-    const state = localRlModelLoadState(selectedCount);
+    const state = localRlModelLoadState(gameSetupSnapshot().selectedCount);
     const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnStart') : null;
     const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('localRlModelStatus') : null;
     if (btn) {
@@ -188,19 +197,20 @@ function updateLocalRlModelReadinessUi() {
     return state;
 }
 
-function preloadLocalRlModelsForStart(playerCount, settings = playerSettings) {
+function preloadLocalRlModelsForStart(playerCount, settings = gameSetupSnapshot().playerSettings) {
     if (!hasLocalRlCpuSetting(playerCount, settings)) return null;
     if (!canPreloadRlModels()) return Promise.reject(new Error("RL model loader is not available"));
     return RLModelPortfolio.preloadEligibleModels(playerCount, { attempts: 3 });
 }
 
 function preloadLocalRlModelsInBackground(reason = 'local-rl-background-preload') {
-    if (!hasLocalRlCpuSetting(selectedCount) || !canPreloadRlModels()) {
+    const setup = gameSetupSnapshot();
+    if (!hasLocalRlCpuSetting(setup.selectedCount, setup.playerSettings) || !canPreloadRlModels()) {
         updateLocalRlModelReadinessUi();
         return null;
     }
     updateLocalRlModelReadinessUi();
-    const preload = RLModelPortfolio.preloadEligibleModels(selectedCount, { attempts: 3, retryDelayMs: 0 });
+    const preload = RLModelPortfolio.preloadEligibleModels(setup.selectedCount, { attempts: 3, retryDelayMs: 0 });
     if (preload && typeof preload.then === "function") {
         preload.then(() => updateLocalRlModelReadinessUi()).catch(error => {
             if (typeof console !== 'undefined' && typeof console.warn === 'function') console.warn(reason, error);
@@ -211,7 +221,7 @@ function preloadLocalRlModelsInBackground(reason = 'local-rl-background-preload'
     return preload;
 }
 
-function startGameNow(playerCount = selectedCount, settings = playerSettings) {
+function startGameNow(playerCount = gameSetupSnapshot().selectedCount, settings = gameSetupSnapshot().playerSettings) {
     const plan = LocalGameStart.runtimePlan(
         playerCount,
         settings,
@@ -249,8 +259,9 @@ function startGameNow(playerCount = selectedCount, settings = playerSettings) {
 function startGame() {
     if (LocalGameStart.initialDecision({ startPending: localGameStartPendingController.isPending() }) ===
             LocalGameStart.REQUEST_DECISIONS.IGNORE_PENDING) return;
-    const startPlayerCount = selectedCount;
-    const startPlayerSettings = snapshotLocalPlayerSettings(startPlayerCount);
+    const setup = gameSetupSnapshot();
+    const startPlayerCount = setup.selectedCount;
+    const startPlayerSettings = LocalPlayerSettings.snapshot(setup.playerSettings, startPlayerCount);
     const state = updateLocalRlModelReadinessUi();
     if (LocalGameStart.initialDecision({ loadStatus: state.status }) ===
             LocalGameStart.REQUEST_DECISIONS.WAIT_LOADING) {
@@ -336,20 +347,22 @@ function init(playerCount) {
     for (const card of CARDS) {
         setShopStockCount(SHOP_STOCK, card, selectedCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0);
     }
-    GameSetupState.runtime.setPlayerSettings(
+    const setup = gameSetupSnapshot();
+    const normalizedSetup = GameSetupState.runtime.setPlayerSettings(
         Array.from({ length: playerCount }, (_, index) =>
-            normalizeLocalPlayerSetting(playerSettings[index], index, playerCount)
+            normalizeLocalPlayerSetting(setup.playerSettings[index], index, playerCount)
         )
     );
+    const normalizedSettings = normalizedSetup.playerSettings;
 
     // ターン順をランダムにシャッフル
-    const order = playerSettings.map((_, i) => i);
+    const order = normalizedSettings.map((_, i) => i);
     for (let i = order.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [order[i], order[j]] = [order[j], order[i]];
     }
 
-    const shuffledSettings = order.map(originalIndex => playerSettings[originalIndex] || {});
+    const shuffledSettings = order.map(originalIndex => normalizedSettings[originalIndex] || {});
     const opponentDifficulties = cpuOpponentDifficultiesFromSettings(shuffledSettings);
 
     // プレイヤー名とCPU設定をシャッフル順に再設定
@@ -772,7 +785,7 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
             runNextStep();
             return;
         }
-        queueCPUStep(token, cpuSpeed, () => {
+        queueCPUStep(token, gameSetupSnapshot().cpuSpeed, () => {
             if (isReplaying) return;
             if (isOnlineGame && !isRoomHost) return;
             if (isOnlineGame && (
