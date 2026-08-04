@@ -733,3 +733,11 @@ Test index:
 - Expert choice score composition belongs to `CPUEvaluation.expertChoiceScore()`. Preserve winner short-circuiting, optional lookahead admission, and the `min(0.35, lookaheadWeight * 0.5)` coefficient; require fixed-decision and 2–10-player self-play parity for changes.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 50 handoff (2026-08-04)
+
+- Reconnect attempt count and exhaustion belong exclusively to `OnlineRetryPolicy.createRejoinAttemptController()`. Do not reintroduce parallel booleans/counters; keep timeout, callback, Socket emit, status, and scheduling authority in `online.js`.
+- Loan repayment admission and amount belong to `GameCardActivationPolicy.loanRepaymentPlan()`. Preserve lazy loan-card counting outside dice 5/6, active/dormant filtering in `GameManager`, the coin cap, and exact log text.
+- Multiplayer threat-ratio bonuses belong to `CPUEvaluation.crowdLeaderBonus()` and `crowdCleaningBonus()`. Preserve current-player exclusion, max-threat first pass, second-pass threat/card reads, and all weights; require fixed-decision and 2–10-player self-play parity for changes.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

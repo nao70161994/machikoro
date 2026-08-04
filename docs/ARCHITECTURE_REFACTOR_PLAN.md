@@ -700,3 +700,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Expert choice score composition now belongs to the pure CPU evaluator while profiling, simulation, and tuning adaptation stay in `CPU.js`.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, reconnect effects, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 50 boundary update
+
+1. Reconnect attempt count and exhausted state now have one controller owner; online timeout, callback, emit, status, and scheduling effects remain unchanged.
+2. Loan repayment admission and amount now belong to card-activation policy while active-card traversal, mutation, and logs remain in the shared Engine adapter.
+3. Multiplayer leader and Cleaning bonus aggregation now belongs to the pure CPU evaluator with exact two-pass callback order and fixed-decision/self-play parity.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, reconnect effects, and PWA defaults are unchanged.

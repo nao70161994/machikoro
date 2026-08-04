@@ -503,3 +503,12 @@ No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol,
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, reconnect timing/effects, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 50 architecture boundaries
+
+- `OnlineRetryPolicy.createRejoinAttemptController()` now exclusively owns reconnect attempt count and exhausted state; duplicate compatibility variables were removed. `online.js` retains timeout, callback, Socket emit, status, and retry scheduling authority.
+- `GameCardActivationPolicy.loanRepaymentPlan()` now owns the 5/6 activation gate, loan-count validation, and coin-capped repayment amount. `GameManager` retains active-card/dormancy traversal, coin mutation, and the exact log.
+- `CPUEvaluation.crowdLeaderBonus()` and `crowdCleaningBonus()` now own multiplayer threat-ratio aggregation. `CPU.js` remains the player/card/threat adapter; two-pass traversal, all weights, fixed decisions, and the complete 2–10-player self-play baseline are unchanged.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, reconnect timing/effects, PWA/SW behavior, or production rollout default changed.
