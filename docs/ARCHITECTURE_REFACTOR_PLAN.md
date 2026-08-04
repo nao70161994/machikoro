@@ -635,3 +635,11 @@ Scoped gates now cover 211 ESLint maintenance files and 210 checkJs runtime file
 3. Crash-screen duplicate admission now has explicit state ownership. App-shell still orchestrates CPU cancellation, persistence lookup, DOM/focus/listener effects, and resume.
 
 Scoped gates now cover 212 ESLint maintenance files and 211 checkJs runtime files. Authority, protocol/schema, persistence, timeout, crash presentation, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 42 boundary update
+
+1. Affordable-purchase scoring composition now belongs to the pure CPU evaluator. The runtime supplies lazy feature callbacks, preserving exact scoring order, difficulty-specific reads, candidate ordering, tuning values, and RNG consumption.
+2. Winner traversal now returns a deterministic player index from turn policy. The mutable Engine adapter retains original player identity and all post-win lifecycle behavior.
+3. Confirm awaiting/cancel state now has one controller owner. DOM, focus/inert, modal admission, and callback execution remain UI effects in their original order.
+
+Scoped gates remain 212 ESLint maintenance files and 211 checkJs runtime files. CPU decisions, rules, authority, protocol/schema, persistence, UI behavior, and PWA defaults are unchanged.

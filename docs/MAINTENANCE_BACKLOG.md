@@ -430,3 +430,12 @@ This batch advances explicit online state ownership, a thinner server compositio
 - Scoped gates now cover 212 ESLint maintenance files and 211 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 This batch advances deterministic Engine transitions, explicit online request state, and a thinner app-shell without changing rules, CPU strength, save/localStorage formats, Socket.IO events/payloads, timeout behavior, crash recovery, or PWA/SW behavior.
+
+## 2026-08-04 Batch 42 architecture boundaries
+
+- `CPUEvaluation.affordablePurchaseScore()` now owns the ordered composition of base gain, landmark synergy, spam/economy penalties, strong conditional and Renovation risk, role pressure, normal safety, and crowd adjustment. `CPU.js` remains the feature adapter and preserves every heuristic value, callback order, difficulty short circuit, candidate order, and RNG behavior.
+- `GameTurnPolicy.winnerIndex()` now owns deterministic first-winner traversal. `GameManager.checkWinner()` maps the result back to the original player reference; enabled-landmark order, `Player.hasWon()` semantics, first-player tie behavior, and post-win Action closure remain unchanged.
+- `UiModalPolicy.createConfirmController()` now owns confirm awaiting state and the optional cancel handler. `ui.js` retains DOM lookup, nested-modal admission, text/focus/inert effects, public callbacks, and the existing close-before-cancel-callback order.
+- Scoped gates remain 212 ESLint maintenance files and 211 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+This batch advances action-only reproducible CPU evaluation, deterministic Engine outcome selection, and explicit UI state ownership without changing rules, CPU strength, persistence, protocol, modal behavior, or PWA/SW behavior.

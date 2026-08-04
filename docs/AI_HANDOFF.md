@@ -669,3 +669,11 @@ Test index:
 - Crash shown/hidden state belongs to `CrashScreen.createController()`. Keep CPU cancellation, saved-game access, DOM/focus/listener effects, `showCrashScreen`, and `crashResume` in app-shell adapters.
 - Scoped gates are 212 ESLint maintenance files and 211 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 42 handoff (2026-08-04)
+
+- Affordable purchase score composition belongs to `CPUEvaluation.affordablePurchaseScore()`. Keep all feature callbacks lazy, preserve their tested order, and require fixed-decision plus 2–10-player self-play parity for changes. `CPU.js` remains the game/card feature adapter.
+- First-winner traversal belongs to `GameTurnPolicy.winnerIndex()`. Preserve player order, per-player enabled-landmark projection, first-match short circuit, original player identity, and post-win Action closure.
+- Confirm awaiting state and cancel-handler ownership belong to `UiModalPolicy.createConfirmController()`. Keep DOM/focus/inert/modal admission in `ui.js`, and close the accessible modal before executing a rejected confirmation callback.
+- Scoped gates remain 212 ESLint maintenance files and 211 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
