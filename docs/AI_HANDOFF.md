@@ -907,3 +907,10 @@ Test index:
 - Use one snapshot for a synchronous admission/decision; take a fresh snapshot inside delayed CPU or dice callbacks where host, connection, replay, or turn identity may have changed.
 - Runtime snapshots are live-reference envelopes, not save/canonical-state formats. Keep DOM effects in UI owners and preserve Socket.IO, reconnect, CPU, save, and PWA contracts.
 - Continue with macro batches: a small number of substantive themes, focused tests per theme, then one batch integration gate, push, and exact-HEAD CI check.
+
+## Batch 71 handoff (2026-08-05)
+
+- All production side-effect clients (`appShell.js`, `storage.js`, `ui.js`, `online.js`, and `main.js`) read game/CPU/Undo state through `GameRuntimeState.runtime.snapshot()`. Do not reintroduce ambient `game`, `cpuPlayers`, or `undoState` reads.
+- Use one envelope for a synchronous admission/serialization/decision. Refresh inside delayed callbacks and Socket-driven effects where the installed game, turn, CPU ownership, or Undo state may have changed.
+- The envelope intentionally retains live object identity. Canonical Engine snapshots and persisted snapshots remain the responsibility of `GameSnapshot` and schema adapters.
+- Continue with macro batches; the next high-impact client boundary is `online.js` internal session-state reads, followed by staged type-check expansion after ambient dependencies are removed.

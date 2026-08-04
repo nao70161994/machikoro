@@ -860,3 +860,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. UI rendering and input orchestration now consume explicit game and online runtime snapshots; compatibility globals no longer form their production read boundary.
 2. Main action and CPU orchestration now consume explicit online snapshots, with asynchronous steps deliberately refreshing the snapshot at execution time.
 3. These are read-boundary migrations only: ownership, effects, rules, CPU decisions/RNG, persistence, protocol, reconnect ordering, and PWA behavior are unchanged.
+
+## 2026-08-05 Batch 71 boundary update
+
+1. All five side-effect client runtimes now consume the shared live game through the explicit `GameRuntimeState` read boundary rather than compatibility globals.
+2. Online Snapshot/replay/Engine adapters and main CPU/action orchestration take operation-scoped envelopes; delayed work deliberately refreshes them before applying effects.
+3. `GameRuntimeState` remains a live-reference runtime owner, not a canonical or persistence schema. No authority, wire, save, rule, CPU, UI, or PWA behavior changed.
