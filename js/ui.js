@@ -596,14 +596,21 @@ function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
     return UiBuildMenu.renderLandmarkBuildButton({ name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji });
 }
 
+function getBuildMenuFilterController() {
+    if (!buildMenuFilterController) {
+        buildMenuFilterController = UiBuildMenu.createFilterController();
+    }
+    return buildMenuFilterController;
+}
+
 function buildCardFilterBarHtml() {
-    return UiBuildMenu.buildCardFilterBarHtml(buildMenuFilterController.get());
+    return UiBuildMenu.buildCardFilterBarHtml(getBuildMenuFilterController().get());
 }
 
 function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
     return UiBuildMenu.buildVisibleCardButtonsHtml({
         cards: CARDS,
-        cardFilter: buildMenuFilterController.get(),
+        cardFilter: getBuildMenuFilterController().get(),
         enabledCards,
         shopStock: SHOP_STOCK,
         current,
@@ -696,7 +703,7 @@ function renderBuildMenu() {
 }
 
 function setCardFilter(color) {
-    const transition = buildMenuFilterController.set(color);
+    const transition = getBuildMenuFilterController().set(color);
     if (transition.shouldRender) renderBuildMenu();
 }
 
@@ -791,7 +798,7 @@ function applyCardSelectStateSnapshot() {
 const logHistoryController = UiLogDisplay.createHistoryController();
 let prevPlayerIndex = -1;
 let turnAnnouncerTimerController = null;
-const buildMenuFilterController = UiBuildMenu.createFilterController();
+let buildMenuFilterController = null;
 let activeModalId = null;
 let lastModalFocus = null;
 let modalInertRestore = [];
@@ -914,7 +921,7 @@ function compareCardNamesForDisplay(a, b) {
     return UiCardOrder.compareCardNamesForDisplay(a, b, CARDS, CARD_COLOR_ORDER);
 }
 
-function resetFullLog() { logHistoryController.reset(); prevPlayerIndex = -1; buildMenuFilterController.clear(); }
+function resetFullLog() { logHistoryController.reset(); prevPlayerIndex = -1; if (buildMenuFilterController) buildMenuFilterController.clear(); }
 
 function isVisibleFocusableElement(el) {
     if (!el || el.disabled || el.hidden || el.getAttribute('aria-hidden') === 'true') return false;
