@@ -800,3 +800,11 @@ Test index:
 - The last local Engine shadow result belongs to `GameEngineClientShadow.createOutcomeController()`. Preserve determinism admission, mutable-first execution, parity report, optional default-OFF adoption, render, and CPU scheduling order.
 - Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 58 handoff (2026-08-04)
+
+- Restore-event queue mutation belongs exclusively to `OnlineRestoreQueueState.createStore()`. Keep all access inside the three `online.js` adapters, preserve the transition/effect flags and diagnostic labels, and do not reintroduce a raw mirror or dual writes.
+- Expert/strong build-candidate assembly belongs to `CPULegalMoves`. Preserve affordability and ranking before the helper call, skip/landmark/card order, candidate cap counting (including landmark entries), early multiplayer filters, and the empty-result first-card fallback; require fixed CPU decisions for changes.
+- Card/landmark selection and the main CPU scheduler still cross multiple browser scripts. Do not move one ambient writer in isolation; first define a compatibility projection and effect-order contract spanning every writer.
+- Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

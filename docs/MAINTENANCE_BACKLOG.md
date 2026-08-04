@@ -577,3 +577,12 @@ No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO event/pay
 - Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, RNG point, save/localStorage shape, Socket.IO event/payload, reconnect timing/status, Engine authority default, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 58 architecture boundaries
+
+- `OnlineRestoreQueueState.createStore()` is now the sole mutable owner of queued restore events. `online.js` retains three read/replace/append adapter functions, transition/effect authority flags, diagnostic source labels, replay execution, Socket callbacks, and the exact overflow/carry/drain/failure order; the duplicate raw queue and its dual-write branches were removed.
+- `CPULegalMoves.expertBuildOptions()` and `strongBuildOptions()` now own ordered build-candidate assembly after affordability and ranking. `CPU.js` retains every score, ranking input, tuning flag, landmark/attack fact, and RNG point; skip/landmark/card order, candidate limits, early multiplayer gates, and fallback behavior are unchanged.
+- UI card/landmark selection ownership was inspected but deferred because the compatibility globals are written across `ui.js`, `main.js`, `online.js`, and `storage.js`; migrating one writer would create another shadow state. The cross-runtime CPU scheduler token remains deferred for the same effect-order reason.
+- Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect timing/effect order, PWA/SW behavior, or production rollout default changed.
