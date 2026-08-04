@@ -759,8 +759,8 @@ runTest('rejoinRoom送信経路はbuildOnlineRejoinPayloadでclientVersion契約
     const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'storage.js'), 'utf8');
     const directOnlineRejoinEmits = onlineSource.match(/socket\.emit\('rejoinRoom'/g) || [];
 
-    assert.strictEqual(directOnlineRejoinEmits.length, 1);
-    assert.strictEqual((onlineSource.match(/socket\.emit\('rejoinRoom', buildOnlineRejoinPayload/g) || []).length, 1);
+    assert.strictEqual(directOnlineRejoinEmits.length, 0);
+    assert.strictEqual((onlineSource.match(/onlineSocketEffects\.rejoinRoom\(buildOnlineRejoinPayload/g) || []).length, 1);
     assert.ok(onlineSource.includes('function _emitOnlineRejoinRequest(sessionOverride = null)'));
     assert.ok(onlineSource.includes('_armOnlineRejoinResponseTimeout();'));
     assert.ok(storageSource.includes('_emitOnlineRejoinRequest(session)'));
