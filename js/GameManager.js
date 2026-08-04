@@ -1036,11 +1036,12 @@ class GameManager {
             return false;
         }
         const current = this.currentPlayer();
-        if (GameTurnPolicy.shouldAwardAirportBonus({
+        const airportPlan = GameTurnPolicy.planNextTurnAirport({
             builtThisTurn: this.builtThisTurn,
             hasAirport: !!current.landmarks[LANDMARK_NAMES.AIRPORT],
-        })) {
-            current.coins += 10;
+        });
+        if (airportPlan.award) {
+            current.coins += airportPlan.coinDelta;
             this.addLog(LOG_TYPES.GAIN, `✈️ 空港効果！建設なしで+10コイン`);
         }
         // ITベンチャー：任意で積立

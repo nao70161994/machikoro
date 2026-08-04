@@ -131,10 +131,42 @@ runTest('turn policyはnextTurn admissionをphase優先でfail closedにする',
     }), { ok: true, reason: '' });
 });
 
-runTest('turn policyは空港bonus条件を建設有無と所有だけで判定する', () => {
-    assert.strictEqual(GameTurnPolicy.shouldAwardAirportBonus({ builtThisTurn: false, hasAirport: true }), true);
-    assert.strictEqual(GameTurnPolicy.shouldAwardAirportBonus({ builtThisTurn: true, hasAirport: true }), false);
-    assert.strictEqual(GameTurnPolicy.shouldAwardAirportBonus({ builtThisTurn: false, hasAirport: false }), false);
+runTest('turn policyは空港bonusを10coinのimmutable transitionへする', () => {
+    const awarded = GameTurnPolicy.planNextTurnAirport({
+        builtThisTurn: false,
+        hasAirport: true,
+    });
+    assert.deepStrictEqual(awarded, { award: true, coinDelta: 10 });
+    assert.ok(Object.isFrozen(awarded));
+    assert.deepStrictEqual(GameTurnPolicy.planNextTurnAirport({
+        builtThisTurn: true,
+        hasAirport: true,
+    }), { award: false, coinDelta: 0 });
+    assert.deepStrictEqual(GameTurnPolicy.planNextTurnAirport({
+        builtThisTurn: false,
+        hasAirport: false,
+    }), { award: false, coinDelta: 0 });
+    assert.strictEqual(GameTurnPolicy.shouldAwardAirportBonus({
+        builtThisTurn: false,
+        hasAirport: true,
+    }), true);
+});
+
+runTest('turn policyの空港transitionはbuilt→landmarkのlazy read順を維持する', () => {
+    const calls = [];
+    const built = GameTurnPolicy.planNextTurnAirport({
+        builtThisTurn: () => { calls.push('built'); return true; },
+        hasAirport: () => { calls.push('airport'); return true; },
+    });
+    assert.deepStrictEqual(calls, ['built']);
+    assert.deepStrictEqual(built, { award: false, coinDelta: 0 });
+
+    calls.length = 0;
+    GameTurnPolicy.planNextTurnAirport({
+        builtThisTurn: () => { calls.push('built'); return false; },
+        hasAirport: () => { calls.push('airport'); return true; },
+    });
+    assert.deepStrictEqual(calls, ['built', 'airport']);
 });
 
 runTest('turn policyはIT pendingと通常進行を排他的なfrozen planにする', () => {
