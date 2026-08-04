@@ -41,6 +41,54 @@ const CPUSimulation = Object.freeze({
         return stock;
     },
 
+    cloneGame(game, adapters = {}) {
+        if (typeof adapters.createGame !== 'function' ||
+                typeof adapters.cloneCard !== 'function' ||
+                typeof adapters.defaultLandmarks !== 'function') {
+            throw new TypeError('createGame, cloneCard, and defaultLandmarks adapters are required');
+        }
+        const clone = adapters.createGame(game.players.length);
+        clone.enabledLandmarks = new Set(game.enabledLandmarks || adapters.defaultLandmarks());
+        clone.players.forEach((player, index) => {
+            const source = game.players[index];
+            player.name = source.name;
+            player.coins = source.coins;
+            player.cards = source.cards.map(card => adapters.cloneCard(card));
+            player.dormantCards = source.dormantCards.map(dormant => source.cards.indexOf(dormant))
+                .filter(indexOfCard => indexOfCard >= 0)
+                .map(indexOfCard => player.cards[indexOfCard])
+                .filter(Boolean);
+            player.landmarks = Object.assign({}, source.landmarks);
+            player.itVentureCoins = source.itVentureCoins || 0;
+            player.hasYakusho = source.hasYakusho !== false;
+        });
+        clone.currentPlayerIndex = game.currentPlayerIndex;
+        clone.phase = game.phase;
+        clone.lastDiceResult = game.lastDiceResult || 0;
+        clone.lastDice1 = game.lastDice1 || 0;
+        clone.lastDice2 = game.lastDice2 || 0;
+        clone.builtThisTurn = game.builtThisTurn || false;
+        clone.pendingTV = game.pendingTV || 0;
+        clone.pendingBusiness = game.pendingBusiness || 0;
+        clone.pendingCleaning = game.pendingCleaning || 0;
+        clone.pendingMover = game.pendingMover || 0;
+        clone.pendingRenovation = game.pendingRenovation || 0;
+        clone.pendingActionQueue = Array.isArray(game.pendingActionQueue)
+            ? game.pendingActionQueue.map(pending => ({ action: pending.action, field: pending.field }))
+            : [];
+        if (typeof clone.rebuildPendingActionsFromFields === 'function' &&
+                clone.pendingActionQueue.length === 0) {
+            clone.rebuildPendingActionsFromFields();
+        }
+        clone.pendingIT = game.pendingIT || false;
+        clone.usedReroll = game.usedReroll || false;
+        clone.pendingTunaDice = game.pendingTunaDice || null;
+        clone.turnCount = game.turnCount || 0;
+        clone.hadAmusementParkAtRoll = game.hadAmusementParkAtRoll || false;
+        clone.log = [];
+        return clone;
+    },
+
     runPlayout(game, maxSteps, step) {
         let safety = 0;
         while (!game.checkWinner() && safety < maxSteps) {

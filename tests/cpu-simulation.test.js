@@ -164,3 +164,101 @@ runTest('CPU simulation stepはbuild後のpendingITとnextTurn順を維持する
 
     assert.deepStrictEqual(calls, ['build', 'nextTurn']);
 });
+
+
+runTest('CPU simulation cloneはgame stateをcard identity対応込みでdetached再構築する', () => {
+    const firstCard = { id: 'first' };
+    const secondCard = { id: 'second' };
+    const tunaDice = [3, 4];
+    const game = {
+        players: [{
+            name: 'Alice', coins: 7, cards: [firstCard, secondCard], dormantCards: [secondCard],
+            landmarks: { station: true }, itVentureCoins: 2, hasYakusho: false,
+        }],
+        enabledLandmarks: new Set(['station']),
+        currentPlayerIndex: 0,
+        phase: 'pending',
+        lastDiceResult: 7,
+        lastDice1: 3,
+        lastDice2: 4,
+        builtThisTurn: true,
+        pendingTV: 1,
+        pendingBusiness: 2,
+        pendingCleaning: 3,
+        pendingMover: 4,
+        pendingRenovation: 5,
+        pendingActionQueue: [{ action: 'resolveTV', field: 'pendingTV' }],
+        pendingIT: true,
+        usedReroll: true,
+        pendingTunaDice: tunaDice,
+        turnCount: 9,
+        hadAmusementParkAtRoll: true,
+        log: [{ message: 'do not copy' }],
+    };
+    let rebuilt = 0;
+    const clone = CPUSimulation.cloneGame(game, {
+        createGame(playerCount) {
+            assert.strictEqual(playerCount, 1);
+            return {
+                players: [{ cards: [], dormantCards: [], landmarks: {} }],
+                rebuildPendingActionsFromFields() { rebuilt++; },
+            };
+        },
+        cloneCard(card) { return { ...card, cloned: true }; },
+        defaultLandmarks() { return ['fallback']; },
+    });
+
+    assert.notStrictEqual(clone.players[0].cards[0], firstCard);
+    assert.strictEqual(clone.players[0].dormantCards[0], clone.players[0].cards[1]);
+    assert.deepStrictEqual(clone.players[0].cards.map(card => card.id), ['first', 'second']);
+    assert.deepStrictEqual([...clone.enabledLandmarks], ['station']);
+    assert.deepStrictEqual(clone.pendingActionQueue, [{ action: 'resolveTV', field: 'pendingTV' }]);
+    assert.notStrictEqual(clone.pendingActionQueue, game.pendingActionQueue);
+    assert.strictEqual(clone.pendingTunaDice, tunaDice);
+    assert.deepStrictEqual(clone.log, []);
+    assert.strictEqual(rebuilt, 0);
+    assert.deepStrictEqual(game.log, [{ message: 'do not copy' }]);
+});
+
+runTest('CPU simulation cloneはlegacy pending fieldsだけならqueueを再構築する', () => {
+    let rebuilt = 0;
+    const clone = CPUSimulation.cloneGame({
+        players: [{
+            name: 'A', coins: 0, cards: [], dormantCards: [], landmarks: {},
+            itVentureCoins: 0, hasYakusho: true,
+        }],
+        enabledLandmarks: null,
+        pendingActionQueue: null,
+    }, {
+        createGame() {
+            return {
+                players: [{ cards: [], dormantCards: [], landmarks: {} }],
+                rebuildPendingActionsFromFields() { rebuilt++; },
+            };
+        },
+        cloneCard(card) { return card; },
+        defaultLandmarks() { return ['fallback']; },
+    });
+    assert.deepStrictEqual([...clone.enabledLandmarks], ['fallback']);
+    assert.strictEqual(rebuilt, 1);
+    assert.throws(() => CPUSimulation.cloneGame({ players: [] }), /adapters are required/);
+});
+
+runTest('CPU本体のclone wrapperはsimulation runtimeと同じdetached gameを返す', () => {
+    const runtime = loadCPURuntime();
+    const game = new runtime.GameManager(2);
+    game.players[0].coins = 12;
+    game.players[0].makeDormant(game.players[0].cards[0]);
+    game.pendingTV = 1;
+    game.pendingActionQueue = [{ action: 'resolveTV', field: 'pendingTV' }];
+    const clone = new runtime.CPU('expert')._cloneGame(game);
+
+    assert.notStrictEqual(clone, game);
+    assert.notStrictEqual(clone.players[0], game.players[0]);
+    assert.notStrictEqual(clone.players[0].cards[0], game.players[0].cards[0]);
+    assert.strictEqual(clone.players[0].dormantCards[0], clone.players[0].cards[0]);
+    assert.strictEqual(clone.players[0].coins, 12);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(clone.pendingActionQueue)), [
+        { action: 'resolveTV', field: 'pendingTV' },
+    ]);
+});
