@@ -32,6 +32,46 @@ runTest('card activation policyは同一card参照と入力順を維持する', 
     assert.strictEqual(eligible[1], cards[1]);
 });
 
+runTest('card activation policyは赤カードの条件と徴収額をdetached planにする', () => {
+    const effects = { HARBOR_RED: 'harbor-red', FRENCHR: 'french', MEMBERBAR: 'member' };
+    assert.deepStrictEqual(GameCardActivationPolicy.redActivationPlan({
+        effect: effects.HARBOR_RED, effects, income: 3, hasHarbor: false,
+    }), { active: false, kind: 'normal', requested: 0 });
+    assert.deepStrictEqual(GameCardActivationPolicy.redActivationPlan({
+        effect: effects.FRENCHR, effects, income: 5, currentLandmarkCount: 2,
+    }), { active: true, kind: 'french', requested: 5 });
+    assert.deepStrictEqual(GameCardActivationPolicy.redActivationPlan({
+        effect: effects.MEMBERBAR, effects, currentLandmarkCount: 3, currentCoins: 11,
+    }), { active: true, kind: 'member-bar', requested: 11 });
+    assert.deepStrictEqual(GameCardActivationPolicy.redActivationPlan({
+        effect: 'normal', effects, income: 2, hasShoppingMall: true, isRestaurantOrShop: true,
+    }), { active: true, kind: 'normal', requested: 3 });
+});
+
+runTest('card activation policyは赤カードkind確定後だけ条件factを読む', () => {
+    const effects = { HARBOR_RED: 'harbor-red', FRENCHR: 'french', MEMBERBAR: 'member' };
+    const reads = [];
+    const facts = {
+        effects,
+        income: 2,
+        currentLandmarkCount: () => { reads.push('landmarks'); return 2; },
+        currentCoins: () => { reads.push('coins'); return 8; },
+        isRestaurantOrShop: () => { reads.push('category'); return true; },
+    };
+    GameCardActivationPolicy.redActivationPlan({ ...facts, effect: 'normal', hasShoppingMall: false });
+    assert.deepStrictEqual(reads, []);
+    GameCardActivationPolicy.redActivationPlan({ ...facts, effect: effects.FRENCHR });
+    assert.deepStrictEqual(reads, ['landmarks']);
+    reads.length = 0;
+    const blockedMember = GameCardActivationPolicy.redActivationPlan({
+        ...facts,
+        effect: effects.MEMBERBAR,
+        currentLandmarkCount: () => { reads.push('landmarks'); return 2; },
+    });
+    assert.strictEqual(blockedMember.active, false);
+    assert.deepStrictEqual(reads, ['landmarks']);
+});
+
 runTest('card activation policyは青カードの条件と収入をdetached planにする', () => {
     const effects = { CORNFIELD: 'corn', HARBOR: 'harbor', TUNA: 'tuna' };
     assert.deepStrictEqual(GameCardActivationPolicy.blueIncomePlan({

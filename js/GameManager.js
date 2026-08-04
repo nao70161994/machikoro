@@ -462,24 +462,25 @@ class GameManager {
                 if (revivedCards.has(card)) continue;
                 if (other.isDormant(card)) continue;
                 if (card.color !== "red" || !card.diceNums.includes(dice)) continue;
-                if (card.effect === CARD_EFFECTS.HARBOR_RED && !other.landmarks[LANDMARK_NAMES.HARBOR]) continue;
-
-                if (card.effect === CARD_EFFECTS.FRENCHR) {
-                    if (current.builtLandmarkCount() < 2) continue;
-                    activations.push({ card, kind: 'french', requested: card.income });
-                    continue;
-                }
-
-                if (card.effect === CARD_EFFECTS.MEMBERBAR) {
-                    if (current.builtLandmarkCount() < 3) continue;
-                    activations.push({ card, kind: 'member-bar', requested: current.coins });
-                    continue;
-                }
-
-                let amount = card.income;
-                if (other.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
-                    isCardInCategoryGroup(card, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP)) amount += 1;
-                activations.push({ card, kind: 'normal', requested: amount });
+                const activation = GameCardActivationPolicy.redActivationPlan({
+                    effect: card.effect,
+                    effects: CARD_EFFECTS,
+                    income: card.income,
+                    hasHarbor: !!other.landmarks[LANDMARK_NAMES.HARBOR],
+                    hasShoppingMall: !!other.landmarks[LANDMARK_NAMES.SHOPPING_MALL],
+                    currentLandmarkCount: () => current.builtLandmarkCount(),
+                    currentCoins: () => current.coins,
+                    isRestaurantOrShop: () => isCardInCategoryGroup(
+                        card,
+                        CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP
+                    ),
+                });
+                if (!activation.active) continue;
+                activations.push({
+                    card,
+                    kind: activation.kind,
+                    requested: activation.requested,
+                });
             }
 
             const plan = GameCoinTransaction.sequentialCollectionPlan(

@@ -9,6 +9,45 @@ function eligibleDormantCards(dormantCards, dice, shouldRevive) {
     return Object.freeze(eligible);
 }
 
+const redActivationKinds = Object.freeze({
+    FRENCH: 'french',
+    MEMBER_BAR: 'member-bar',
+    NORMAL: 'normal',
+});
+
+function redActivationPlan(facts = {}) {
+    const inactive = kind => Object.freeze({ active: false, kind, requested: 0 });
+    const active = (kind, requested) => Object.freeze({ active: true, kind, requested });
+    if (facts.effect === facts.effects.HARBOR_RED && facts.hasHarbor !== true) {
+        return inactive(redActivationKinds.NORMAL);
+    }
+    if (facts.effect === facts.effects.FRENCHR) {
+        const landmarkCount = typeof facts.currentLandmarkCount === 'function'
+            ? facts.currentLandmarkCount()
+            : facts.currentLandmarkCount;
+        if (landmarkCount < 2) return inactive(redActivationKinds.FRENCH);
+        return active(redActivationKinds.FRENCH, facts.income);
+    }
+    if (facts.effect === facts.effects.MEMBERBAR) {
+        const landmarkCount = typeof facts.currentLandmarkCount === 'function'
+            ? facts.currentLandmarkCount()
+            : facts.currentLandmarkCount;
+        if (landmarkCount < 3) return inactive(redActivationKinds.MEMBER_BAR);
+        const coins = typeof facts.currentCoins === 'function'
+            ? facts.currentCoins()
+            : facts.currentCoins;
+        return active(redActivationKinds.MEMBER_BAR, coins);
+    }
+    let requested = facts.income;
+    if (facts.hasShoppingMall === true) {
+        const eligible = typeof facts.isRestaurantOrShop === 'function'
+            ? facts.isRestaurantOrShop()
+            : facts.isRestaurantOrShop;
+        if (eligible) requested += 1;
+    }
+    return active(redActivationKinds.NORMAL, requested);
+}
+
 const blueIncomeKinds = Object.freeze({
     CORNFIELD: 'cornfield',
     HARBOR: 'harbor',
@@ -149,6 +188,8 @@ function purpleActivationPlan(facts = {}) {
 
 const GameCardActivationPolicy = Object.freeze({
     eligibleDormantCards,
+    redActivationKinds,
+    redActivationPlan,
     blueIncomeKinds,
     blueIncomePlan,
     greenActivationKinds,
