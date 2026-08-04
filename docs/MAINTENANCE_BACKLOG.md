@@ -476,3 +476,12 @@ No CPU heuristic or decision, game rule, save/localStorage format, Socket.IO pro
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/decision, save/localStorage format, Socket.IO protocol, reconnect authority/timing, UI rendering order, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 47 architecture boundaries
+
+- `GamePendingResolutionPolicy.resolveMinorCardRef()` now owns deterministic index/name lookup and major-card rejection for Business Center and Moving Company targets. `GameManager` remains the Player/category adapter and retains pending admission, mutation, dormancy transfer, card order, and exact logs.
+- `CPUEvaluation.expertDisruptionScale()` now owns the complete expert self-race disruption multiplier table. `CPU.js` retains feature adaptation and flag lookup; focus-player selection, lazy remaining-landmark reads, every numeric value, fixed decisions, and the full 2–10-player self-play baseline are unchanged.
+- `UiWatchdogMonitor.createPendingBatchController()` now owns post-build UI stabilizer pending/task-count state. `appShell.js` retains snapshot admission, the exact 0/250/1500/3500 ms schedule, recovery DOM effects, checkpoints, and fallback execution.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage format, Socket.IO protocol, reconnect authority/timing, UI recovery timing, or PWA/SW behavior changed.

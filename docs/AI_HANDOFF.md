@@ -709,3 +709,11 @@ Test index:
 - Previous-player index for active-game turn presentation belongs to `UiGameStatusEffects.createTurnStateController()`. Keep controller initialization lazy for partial UI runtimes; `ui.js` remains responsible for view construction, DOM effects, and reset orchestration.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 47 handoff (2026-08-04)
+
+- Pending minor-card reference resolution belongs to `GamePendingResolutionPolicy.resolveMinorCardRef()`. Preserve integer-index versus first-name-match behavior, major-card rejection, original card identity, and missing-player short circuit.
+- Expert self-race disruption multipliers belong to `CPUEvaluation.expertDisruptionScale()`. Keep feature reads lazy after difficulty/flag/distance gates and require fixed-decision plus 2–10-player self-play parity for changes.
+- Post-build stabilizer pending and remaining-task state belongs to `UiWatchdogMonitor.createPendingBatchController()`. Keep its controller private to app-shell orchestration and preserve the 0/250/1500/3500 ms effect schedule and fallback loop.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

@@ -676,3 +676,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Active-game previous-player display state now has one immutable-snapshot controller owner; view and DOM effects remain separate and preserve their existing order.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU tuning/choices, authority, protocol/schema, persistence, UI presentation, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 47 boundary update
+
+1. Minor-card target reference resolution now belongs to the pending rule policy, leaving Player/category adaptation and all mutation in the shared Engine adapter.
+2. Expert disruption scaling now belongs to the pure CPU evaluator with short-circuiting feature callbacks and fixed-decision/self-play parity.
+3. Post-build stabilizer batch state now has one controller owner; app-shell remains the scheduler and DOM recovery effect boundary with unchanged delays.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, UI recovery, and PWA defaults are unchanged.
