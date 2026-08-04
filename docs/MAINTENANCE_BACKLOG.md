@@ -795,3 +795,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains browser-global compatibility delegates and dependency composition; its size decreased from 1,491 to 1,391 lines. A focused runtime contract fixes the non-RL effect order and the RL pending/frozen-settings behavior.
 - The new boundary is included in browser script-order, Service Worker asset, integration-loader, ESLint, and checkJs guards. Scoped gates now cover 237 ESLint maintenance files and 236 checkJs runtime files.
 - Game rules, CPU selection/RNG, settings/save formats, localStorage keys, online protocol/reconnect, and PWA cache strategy are unchanged.
+
+## 2026-08-05 Batch 86 local game initializer
+
+- `js/localGameInitializer.js` now owns local-game reset-before-init ordering, enabled card/landmark stock application, normalized setting projection, player-order shuffle, CPU construction, first log, render, and CPU scheduling.
+- `main.js` retains dependency composition and its `init` compatibility delegate; its size decreased from 1,391 to 1,367 lines. The runtime accepts injected randomness, making player/CPU creation order directly reproducible in focused tests.
+- Contracts fix reset/effect order, fixed-random player order, names, expert CPU options, stock values, first log, and retain the mutable CPU-array identity installed in `GameRuntimeState`. Scoped gates now cover 238 ESLint maintenance files and 237 checkJs runtime files.
+- Game rules, CPU tuning/decisions/RNG consumption count, save formats, online protocol/reconnect, localStorage keys, and PWA behavior are unchanged.

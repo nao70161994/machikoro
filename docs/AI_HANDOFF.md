@@ -1012,3 +1012,9 @@ Test index:
 - Local setup mutations, player-settings HTML application, RL readiness/preload, and start sequencing belong to `LocalGameStartRuntime`; keep `main.js` wrappers as compatibility entry points for delegated UI and app-shell preload resolution.
 - Preserve the captured player-settings snapshot while RL preload is pending and the `LocalGameStart.EFFECT_STEPS` order when extending startup behavior.
 - The runtime is linted and checkJs-covered; `main.js` is now 1,391 lines. No rules, CPU, persistence, online, or PWA behavior changed.
+
+## Batch 86 handoff (2026-08-05)
+
+- Local game construction belongs to `LocalGameInitializer`: preserve its reset → game creation → selection/stock → normalized settings → Fisher-Yates shuffle → CPU creation → log/render/schedule order.
+- Randomness is injected but production still delegates exactly to `Math.random`; do not sort candidates or copy/freeze the live CPU array installed in `GameRuntimeState`.
+- The new runtime is linted and checkJs-covered; `main.js` is 1,367 lines. Rules, CPU tuning, persistence, online, and PWA behavior are unchanged.
