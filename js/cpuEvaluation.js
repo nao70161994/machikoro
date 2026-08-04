@@ -46,6 +46,34 @@ const CPUEvaluation = Object.freeze({
         return score;
     },
 
+    crowdLeaderBonus(facts = {}) {
+        if (!facts.gameAvailable || facts.playerCount < 4 || facts.targetIndex < 0) return 0;
+        let maxThreat = -Infinity;
+        for (let index = 0; index < facts.playerCount; index++) {
+            if (index === facts.currentPlayerIndex) continue;
+            maxThreat = Math.max(maxThreat, facts.threatForPlayer(index));
+        }
+        if (!facts.playerExists(facts.targetIndex) || maxThreat <= 0) return 0;
+        return (facts.threatForPlayer(facts.targetIndex) / maxThreat) * facts.weight;
+    },
+
+    crowdCleaningBonus(facts = {}) {
+        if (!facts.gameAvailable || facts.playerCount < 4) return 0;
+        let maxThreat = -Infinity;
+        for (let index = 0; index < facts.playerCount; index++) {
+            if (index === facts.currentPlayerIndex) continue;
+            maxThreat = Math.max(maxThreat, facts.threatForPlayer(index));
+        }
+        if (maxThreat <= 0) return 0;
+        let bonus = 0;
+        for (let index = 0; index < facts.playerCount; index++) {
+            if (index === facts.currentPlayerIndex) continue;
+            const threatRatio = facts.threatForPlayer(index) / maxThreat;
+            bonus += facts.matchingActiveCardCount(index) * threatRatio * facts.weight;
+        }
+        return bonus;
+    },
+
     expertChoiceScore(facts = {}) {
         const read = value => typeof value === 'function' ? value() : value;
         let score = read(facts.positionScore);

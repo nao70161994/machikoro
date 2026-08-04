@@ -605,37 +605,31 @@ class CPU {
     }
 
     _crowdLeaderBonus(game, targetIndex, weight = 1) {
-        if (!game || game.players.length < 4 || targetIndex < 0) return 0;
-        const ci = game.currentPlayerIndex;
-        let maxThreat = -Infinity;
-        for (let i = 0; i < game.players.length; i++) {
-            if (i === ci) continue;
-            maxThreat = Math.max(maxThreat, this._estimateOpponentThreat(game.players[i], game));
-        }
-        const target = game.players[targetIndex];
-        if (!target || maxThreat <= 0) return 0;
-        const threat = this._estimateOpponentThreat(target, game);
-        return (threat / maxThreat) * weight;
+        return CPUEvaluation.crowdLeaderBonus({
+            gameAvailable: !!game,
+            playerCount: game ? game.players.length : 0,
+            currentPlayerIndex: game ? game.currentPlayerIndex : -1,
+            targetIndex,
+            weight,
+            playerExists: index => !!game.players[index],
+            threatForPlayer: index => this._estimateOpponentThreat(game.players[index], game),
+        });
     }
 
     _crowdCleaningBonus(game, cardName, weight = 1) {
-        if (!game || game.players.length < 4) return 0;
-        const ci = game.currentPlayerIndex;
-        let maxThreat = -Infinity;
-        let bonus = 0;
-        for (let i = 0; i < game.players.length; i++) {
-            if (i === ci) continue;
-            maxThreat = Math.max(maxThreat, this._estimateOpponentThreat(game.players[i], game));
-        }
-        if (maxThreat <= 0) return 0;
-        for (let i = 0; i < game.players.length; i++) {
-            if (i === ci) continue;
-            const opponent = game.players[i];
-            const threatRatio = this._estimateOpponentThreat(opponent, game) / maxThreat;
-            const matching = opponent.getMinorCards().filter(card => card.name === cardName && !opponent.isDormant(card)).length;
-            bonus += matching * threatRatio * weight;
-        }
-        return bonus;
+        return CPUEvaluation.crowdCleaningBonus({
+            gameAvailable: !!game,
+            playerCount: game ? game.players.length : 0,
+            currentPlayerIndex: game ? game.currentPlayerIndex : -1,
+            weight,
+            threatForPlayer: index => this._estimateOpponentThreat(game.players[index], game),
+            matchingActiveCardCount: index => {
+                const opponent = game.players[index];
+                return opponent.getMinorCards().filter(card =>
+                    card.name === cardName && !opponent.isDormant(card)
+                ).length;
+            },
+        });
     }
 
     _remainingEnabledLandmarks(current, game) {

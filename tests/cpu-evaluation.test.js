@@ -2108,3 +2108,56 @@ runTest('CPU evaluation のexpert choice scoreは勝者確定時にlookahead fac
     assert.strictEqual(score, 4);
     assert.deepStrictEqual(trace, ['position', 'winner']);
 });
+
+runTest('CPU evaluationは多人数leaderとcleaning bonusを既存比率でpureに集計する', () => {
+    const threats = [0, 8, 4, 2];
+    assert.strictEqual(CPUEvaluation.crowdLeaderBonus({
+        gameAvailable: true,
+        playerCount: 4,
+        currentPlayerIndex: 0,
+        targetIndex: 2,
+        weight: 12,
+        playerExists: index => index >= 0 && index < 4,
+        threatForPlayer: index => threats[index],
+    }), 6);
+    assert.strictEqual(CPUEvaluation.crowdCleaningBonus({
+        gameAvailable: true,
+        playerCount: 4,
+        currentPlayerIndex: 0,
+        weight: 3,
+        threatForPlayer: index => threats[index],
+        matchingActiveCardCount: index => [0, 2, 1, 0][index],
+    }), 7.5);
+});
+
+runTest('CPU evaluationの多人数bonusは既存の二段走査と短絡順を維持する', () => {
+    const trace = [];
+    assert.strictEqual(CPUEvaluation.crowdLeaderBonus({
+        gameAvailable: true,
+        playerCount: 4,
+        currentPlayerIndex: 0,
+        targetIndex: 2,
+        weight: 1,
+        playerExists(index) { trace.push(['exists', index]); return true; },
+        threatForPlayer(index) { trace.push(['threat', index]); return [0, 8, 4, 2][index]; },
+    }), 0.5);
+    assert.deepStrictEqual(trace, [
+        ['threat', 1], ['threat', 2], ['threat', 3], ['exists', 2], ['threat', 2],
+    ]);
+
+    trace.length = 0;
+    assert.strictEqual(CPUEvaluation.crowdCleaningBonus({
+        gameAvailable: true,
+        playerCount: 4,
+        currentPlayerIndex: 0,
+        weight: 1,
+        threatForPlayer(index) { trace.push(['threat', index]); return [0, 8, 4, 2][index]; },
+        matchingActiveCardCount(index) { trace.push(['matching', index]); return 1; },
+    }), 1.75);
+    assert.deepStrictEqual(trace, [
+        ['threat', 1], ['threat', 2], ['threat', 3],
+        ['threat', 1], ['matching', 1],
+        ['threat', 2], ['matching', 2],
+        ['threat', 3], ['matching', 3],
+    ]);
+});
