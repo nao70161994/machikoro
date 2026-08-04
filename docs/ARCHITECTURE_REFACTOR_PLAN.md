@@ -932,3 +932,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `AppShellCrashRuntime` is the application layer over `CrashScreen` policy and `CrashScreenEffects`, owning controller transitions, CPU cancellation, listener lifecycle, view/focus application, and resume dispatch.
 2. DOM lookup, saved-game access, CPU cancellation, and resume are injected while `appShell.js` retains only composition and compatibility delegates.
 3. Unit, main, integration, PWA, release, lint, and checkJs gates preserve single-show behavior, exact effect order, focus trapping, and saved-game resume presentation.
+
+## 2026-08-05 Batch 83 boundary update
+
+1. `AppShellStartupRuntime` owns online availability, PWA delegation, and main-view startup orchestration through injected view/effect/controllers.
+2. `appShell.js` remains the composition and compatibility surface; startup policy/effect order no longer lives inline.
+3. Whole-file app-shell checkJs still reports 102 ambient classic-script references, so typed-boundary extraction continues instead of adding suppressing ambient declarations.

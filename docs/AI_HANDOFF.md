@@ -993,3 +993,10 @@ Test index:
 - Preserve `showCrashScreen` and `crashResume` as app-shell compatibility delegates. Crash/rejection event registration still belongs to `ClientEventRuntime` and must remain active before `main.js` evaluates.
 - Saved-game access, DOM lookup, CPU cancellation, and resume remain injected effects; do not reintroduce direct crash orchestration in `appShell.js`.
 - Scoped gates cover 235 ESLint files and 234 checkJs runtimes; `appShell.js` is now 581 lines and remains the browser composition root.
+
+## Batch 83 handoff (2026-08-05)
+
+- Online availability projection, PWA install delegates, and main-view startup order belong to `AppShellStartupRuntime`. Preserve the existing app-shell compatibility functions and preload reason strings.
+- `ClientEventRuntime` still owns listener registration; `AppShellStartupRuntime` only sequences its named methods with `AppShellRuntimeEffects`.
+- Whole-file app-shell checkJs is not ready: the latest audit reports 102 ambient classic-script references. Continue removing dependencies instead of declaring them globally.
+- Scoped gates cover 236 ESLint files and 235 checkJs runtimes; `appShell.js` is 578 lines.

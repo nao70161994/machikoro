@@ -775,3 +775,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `appShell.js` retains dependency composition and the existing `showCrashScreen` / `crashResume` globals used by startup and delegated UI flows. Its size decreased from 600 to 581 lines.
 - Focused contracts preserve CPU-stop-before-view order, duplicate-show suppression, saved-game resume selection, identical focus-handler removal, and remove-listener → hide → resume order. Scoped gates now cover 235 ESLint maintenance files and 234 checkJs runtime files.
 - Crash text/focus behavior, saved-game handling, game rules, CPU decisions/RNG, online protocol/reconnect, persistence formats, reporting, UI, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 83 app-shell startup runtime
+
+- `js/appShellStartupRuntime.js` now owns online-availability projection, PWA install-controller delegation, and the ordered main-view startup sequence across settings, RL preload, resume/skyline refresh, browser handlers, and watchdog start.
+- `appShell.js` retains classic-script dependency composition and compatibility delegates. Focused contracts fix startup effect order, preload reasons, online projection, and PWA method forwarding. Scoped gates now cover 236 ESLint maintenance files and 235 checkJs runtime files.
+- Whole-file checkJs admission for `appShell.js` remains deferred after an explicit audit found 102 ambient classic-script references; these must be removed through real boundaries rather than hidden with broad declarations.
+- Startup order, online/offline presentation, PWA prompts, game rules, CPU behavior, protocol, reconnect, and persistence are unchanged.
