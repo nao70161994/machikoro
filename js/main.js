@@ -28,7 +28,7 @@ let delayedHumanActionPending = false;
 let delayedHumanActionTimeout = null;
 let delayedHumanActionToken = 0;
 let delayedHumanActionState = null;
-let localGameStartPending = false;
+const localGameStartPendingController = LocalGameStart.createPendingController();
 
 // 取り消し
 let undoState = null;
@@ -181,7 +181,7 @@ function updateLocalRlModelReadinessUi() {
     const btn = typeof document !== 'undefined' && document.getElementById ? document.getElementById('btnStart') : null;
     const status = typeof document !== 'undefined' && document.getElementById ? document.getElementById('localRlModelStatus') : null;
     if (btn) {
-        const view = LocalPlayerSettings.startButtonView(state, localGameStartPending);
+        const view = LocalPlayerSettings.startButtonView(state, localGameStartPendingController.isPending());
         btn.disabled = view.disabled;
         btn.textContent = view.textContent;
     }
@@ -246,7 +246,7 @@ function startGameNow(playerCount = selectedCount, settings = playerSettings) {
 }
 
 function startGame() {
-    if (LocalGameStart.initialDecision({ startPending: localGameStartPending }) ===
+    if (LocalGameStart.initialDecision({ startPending: localGameStartPendingController.isPending() }) ===
             LocalGameStart.REQUEST_DECISIONS.IGNORE_PENDING) return;
     const startPlayerCount = selectedCount;
     const startPlayerSettings = snapshotLocalPlayerSettings(startPlayerCount);
@@ -258,17 +258,17 @@ function startGame() {
     }
     const preload = preloadLocalRlModelsForStart(startPlayerCount, startPlayerSettings);
     if (LocalGameStart.preloadDecision(preload) === LocalGameStart.REQUEST_DECISIONS.PRELOAD) {
-        localGameStartPending = true;
+        localGameStartPendingController.begin();
         updateLocalRlModelReadinessUi();
         showNotice("深層学習AIモデルを読み込んでいます。");
         preload
             .then(() => {
-                localGameStartPending = false;
+                localGameStartPendingController.finish();
                 updateLocalRlModelReadinessUi();
                 startGameNow(startPlayerCount, startPlayerSettings);
             })
             .catch(error => {
-                localGameStartPending = false;
+                localGameStartPendingController.finish();
                 console.error(error);
                 updateLocalRlModelReadinessUi();
                 showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度開始してください。");

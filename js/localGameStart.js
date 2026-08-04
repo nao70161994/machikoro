@@ -18,6 +18,20 @@ const LocalGameStart = (() => {
         'notifyLifecycleStart',
     ]);
 
+    function createPendingController() {
+        let pending = false;
+
+        function isPending() { return pending; }
+        function begin() {
+            if (pending) return false;
+            pending = true;
+            return true;
+        }
+        function finish() { pending = false; }
+
+        return Object.freeze({ isPending, begin, finish });
+    }
+
     function initialDecision(facts = {}) {
         if (facts.startPending === true) return REQUEST_DECISIONS.IGNORE_PENDING;
         if (facts.loadStatus === 'loading') return REQUEST_DECISIONS.WAIT_LOADING;
@@ -69,6 +83,7 @@ const LocalGameStart = (() => {
     return Object.freeze({
         REQUEST_DECISIONS,
         EFFECT_STEPS,
+        createPendingController,
         initialDecision,
         preloadDecision,
         runtimePlan,

@@ -7,6 +7,15 @@ assert.strictEqual(LocalGameStart.initialDecision({ loadStatus: 'ready' }), 'ins
 assert.strictEqual(LocalGameStart.preloadDecision(null), 'start');
 assert.strictEqual(LocalGameStart.preloadDecision({ then() {} }), 'preload');
 
+const pendingController = LocalGameStart.createPendingController();
+assert.strictEqual(pendingController.isPending(), false);
+assert.strictEqual(pendingController.begin(), true);
+assert.strictEqual(pendingController.isPending(), true);
+assert.strictEqual(pendingController.begin(), false);
+pendingController.finish();
+assert.strictEqual(pendingController.isPending(), false);
+assert.ok(Object.isFrozen(pendingController));
+
 const settings = [{ type: 'human', name: 'A' }, { type: 'cpu', difficulty: 'expert' }];
 const plan = LocalGameStart.runtimePlan(2, settings, 1500);
 assert.deepStrictEqual(plan, {

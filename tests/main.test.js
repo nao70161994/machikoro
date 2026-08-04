@@ -430,6 +430,12 @@ function loadMainRuntime(options = {}) {
     return context;
 }
 
+runTest('local game start pendingはcontrollerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
+    assert.strictEqual(source.includes('let localGameStartPending'), false);
+    assert.ok(source.includes('LocalGameStart.createPendingController()'));
+});
+
 runTest('main storage helperは共通facadeでget/removeと例外fallbackを維持する', () => {
     const rt = loadMainRuntime();
     rt.localStorage.setItem('testKey', 'value');
