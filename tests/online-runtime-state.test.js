@@ -14,9 +14,9 @@ runTest('online runtime stateは既存session初期値をfrozen snapshotへ投�
 runTest('online runtime stateは既知fieldだけを更新して一括resetできる', () => {
     const socket = { connected: true };
     const controller = OnlineRuntimeState.createController();
-    assert.strictEqual(controller.write('socket', socket), true);
-    assert.strictEqual(controller.write('myRoomId', 'ABC123'), true);
-    assert.strictEqual(controller.write('unknown', 1), false);
+    controller.setSocket(socket);
+    controller.acceptRoom({ playerIndex: -1, roomId: 'ABC123', reconnectToken: '' });
+    assert.strictEqual(controller.write, undefined);
     assert.strictEqual(controller.read('socket'), socket);
     assert.strictEqual(controller.read('myRoomId'), 'ABC123');
     assert.strictEqual(controller.read('unknown'), undefined);
@@ -29,12 +29,24 @@ runTest('online runtime state compatibility globalsは同じcontrollerを双方�
     assert.strictEqual(controller.bindGlobals(root), true);
     root.isOnlineGame = true;
     root.myPlayerIndex = 3;
-    controller.write('reconnectToken', 'token');
+    controller.acceptRoom({ playerIndex: 3, roomId: null, reconnectToken: 'token' });
 
     assert.strictEqual(controller.read('isOnlineGame'), true);
     assert.strictEqual(controller.read('myPlayerIndex'), 3);
     assert.strictEqual(root.reconnectToken, 'token');
     assert.strictEqual(Object.keys(root).includes('isOnlineGame'), false);
+});
+
+runTest('online runtime compatibility globalsは製品向けread-only投影を選べる', () => {
+    const socket = { connected: true };
+    const root = {};
+    const controller = OnlineRuntimeState.createController({ socket });
+    assert.strictEqual(controller.bindGlobals(root, { writable: false }), true);
+    assert.strictEqual(root.socket, socket);
+    assert.strictEqual(Object.getOwnPropertyDescriptor(root, 'socket').set, undefined);
+    assert.throws(() => { root.socket = null; }, TypeError);
+    controller.setOnline(true);
+    assert.strictEqual(root.isOnlineGame, true);
 });
 
 runTest('online runtime stateはroom受理と保存session復元をnamed transitionで適用する', () => {
