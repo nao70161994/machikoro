@@ -692,3 +692,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Expert lookahead terminal scoring now belongs to the pure CPU evaluator with lazy flag-specific facts and deterministic opponent order.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority rollout, protocol/schema, persistence, reconnect behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 49 boundary update
+
+1. The legacy reconnect-completed projection now has one controller owner while event authority, scheduling, and effects remain in the online runtime.
+2. Active-card-effect lookup now belongs to turn policy at the exact existing post-Airport boundary; full `nextTurn()` staged orchestration remains deferred.
+3. Expert choice score composition now belongs to the pure CPU evaluator while profiling, simulation, and tuning adaptation stay in `CPU.js`.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, reconnect effects, and PWA defaults are unchanged.

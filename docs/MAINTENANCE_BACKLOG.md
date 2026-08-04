@@ -494,3 +494,12 @@ No game rule, CPU heuristic/choice, save/localStorage format, Socket.IO protocol
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, reconnect authority/timing, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 49 architecture boundaries
+
+- `OnlineReconnectState.createCompletionController()` now owns the legacy reconnect-completed projection. `online.js` retains event authority, timers, reconnect effects, transition ordering, and the existing fallback behavior.
+- `GameTurnPolicy.hasActiveCardEffect()` now owns active-effect lookup for the post-Airport IT Startup check. `GameManager` retains staged `nextTurn()` orchestration, award/log ordering, dormancy adaptation, and phase authority.
+- `CPUEvaluation.expertChoiceScore()` now owns expert position-score and optional lookahead-score composition. `CPU.js` retains profiling, simulation, feature adaptation, and tuning ownership; fixed decisions and the complete 2–10-player self-play baseline are unchanged.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, reconnect timing/effects, PWA/SW behavior, or production rollout default changed.

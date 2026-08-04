@@ -725,3 +725,11 @@ Test index:
 - Expert lookahead terminal score composition belongs to `CPUEvaluation.lookaheadTerminalHeuristic()`. Preserve focus/best distance reads, race flag/facts, threat flag, player-index traversal, and threat-before-distance callback order; require fixed-decision and 2–10-player self-play parity for changes.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 49 handoff (2026-08-04)
+
+- The legacy reconnect-completed projection belongs to `OnlineReconnectState.createCompletionController()`. Keep Socket event authority, timers, side effects, and transition ordering in `online.js` until a separately guarded authority cutover.
+- Active effect lookup belongs to `GameTurnPolicy.hasActiveCardEffect()`. Preserve the exact post-Airport lookup point and lazy dormancy callback; `GameManager` still owns all `nextTurn()` mutation and logs.
+- Expert choice score composition belongs to `CPUEvaluation.expertChoiceScore()`. Preserve winner short-circuiting, optional lookahead admission, and the `min(0.35, lookaheadWeight * 0.5)` coefficient; require fixed-decision and 2–10-player self-play parity for changes.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
