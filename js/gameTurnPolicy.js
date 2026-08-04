@@ -1,6 +1,33 @@
 'use strict';
 
 const GameTurnPolicy = (() => {
+    function pendingResetState() {
+        return Object.freeze({
+            pendingTV: 0,
+            pendingBusiness: 0,
+            pendingCleaning: 0,
+            pendingMover: 0,
+            pendingRenovation: 0,
+            pendingIT: false,
+            pendingActionQueue: Object.freeze([]),
+        });
+    }
+
+    function turnResetPlan(options = {}) {
+        return Object.freeze({
+            clearLog: !!options.clearLog,
+            clearDice: !!options.clearDice,
+            lastDiceResult: 0,
+            lastDice1: 0,
+            lastDice2: 0,
+            pendingTunaDice: null,
+            builtThisTurn: false,
+            usedReroll: false,
+            pending: pendingResetState(),
+            hadAmusementParkAtRoll: false,
+        });
+    }
+
     function phaseAfterIncome(state, phases) {
         const hasPending = !!state && !!(
             state.pendingTV ||
@@ -96,6 +123,8 @@ const GameTurnPolicy = (() => {
     }
 
     return Object.freeze({
+        pendingResetState,
+        turnResetPlan,
         phaseAfterIncome,
         shouldRepeatAmusementParkTurn,
         nextPlayerIndex,

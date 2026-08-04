@@ -117,3 +117,43 @@ runTest('turn policyはIT gateをfail-fastにし拒否・skipでcoinsを読ま�
     }), { ok: true, outcome: 'skipped', coinDelta: 0, ventureDelta: 0 });
     assert.strictEqual(coinReads, 0);
 });
+
+
+runTest('turn policyはpending初期状態をdetached immutable stateにする', () => {
+    const first = GameTurnPolicy.pendingResetState();
+    const second = GameTurnPolicy.pendingResetState();
+    assert.deepStrictEqual(first, {
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        pendingActionQueue: [],
+    });
+    assert.notStrictEqual(first, second);
+    assert.notStrictEqual(first.pendingActionQueue, second.pendingActionQueue);
+    assert.ok(Object.isFrozen(first));
+    assert.ok(Object.isFrozen(first.pendingActionQueue));
+});
+
+runTest('turn policyはturn resetの条件付きfieldと固定結果をpure planにする', () => {
+    const preserved = GameTurnPolicy.turnResetPlan();
+    const cleared = GameTurnPolicy.turnResetPlan({ clearLog: 1, clearDice: true });
+    assert.deepStrictEqual(preserved, {
+        clearLog: false,
+        clearDice: false,
+        lastDiceResult: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        pendingTunaDice: null,
+        builtThisTurn: false,
+        usedReroll: false,
+        pending: GameTurnPolicy.pendingResetState(),
+        hadAmusementParkAtRoll: false,
+    });
+    assert.strictEqual(cleared.clearLog, true);
+    assert.strictEqual(cleared.clearDice, true);
+    assert.ok(Object.isFrozen(cleared));
+    assert.ok(Object.isFrozen(cleared.pending));
+});

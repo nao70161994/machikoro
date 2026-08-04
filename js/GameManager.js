@@ -122,27 +122,35 @@ class GameManager {
     currentPlayer() { return this.players[this.currentPlayerIndex]; }
 
     resetPendingState() {
-        this.pendingTV = 0;
-        this.pendingBusiness = 0;
-        this.pendingCleaning = 0;
-        this.pendingMover = 0;
-        this.pendingRenovation = 0;
-        this.pendingIT = false;
-        this.pendingActionQueue = [];
+        const state = GameTurnPolicy.pendingResetState();
+        this.pendingTV = state.pendingTV;
+        this.pendingBusiness = state.pendingBusiness;
+        this.pendingCleaning = state.pendingCleaning;
+        this.pendingMover = state.pendingMover;
+        this.pendingRenovation = state.pendingRenovation;
+        this.pendingIT = state.pendingIT;
+        this.pendingActionQueue = state.pendingActionQueue.slice();
     }
 
     resetTurnState(options = {}) {
-        if (options.clearLog) this.log = [];
-        if (options.clearDice) {
-            this.lastDiceResult = 0;
-            this.lastDice1 = 0;
-            this.lastDice2 = 0;
-            this.pendingTunaDice = null;
+        const plan = GameTurnPolicy.turnResetPlan(options);
+        if (plan.clearLog) this.log = [];
+        if (plan.clearDice) {
+            this.lastDiceResult = plan.lastDiceResult;
+            this.lastDice1 = plan.lastDice1;
+            this.lastDice2 = plan.lastDice2;
+            this.pendingTunaDice = plan.pendingTunaDice;
         }
-        this.builtThisTurn = false;
-        this.usedReroll = false;
-        this.resetPendingState();
-        this.hadAmusementParkAtRoll = false;
+        this.builtThisTurn = plan.builtThisTurn;
+        this.usedReroll = plan.usedReroll;
+        this.pendingTV = plan.pending.pendingTV;
+        this.pendingBusiness = plan.pending.pendingBusiness;
+        this.pendingCleaning = plan.pending.pendingCleaning;
+        this.pendingMover = plan.pending.pendingMover;
+        this.pendingRenovation = plan.pending.pendingRenovation;
+        this.pendingIT = plan.pending.pendingIT;
+        this.pendingActionQueue = plan.pending.pendingActionQueue.slice();
+        this.hadAmusementParkAtRoll = plan.hadAmusementParkAtRoll;
     }
 
     _resolveCardRef(player, ref) {
