@@ -1111,7 +1111,7 @@ runTest('main scheduleCPU は不正なcleaning targetを盤面上の合法カー
 
 runTest('main pending は共通helperで queue 先頭actionだけを見る', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
-    assert.ok(source.includes('CPUPendingResolution.choosePendingAction(game, cpu'));
+    assert.ok(source.includes('CPUPendingResolution.choosePendingAction(\n        mainGameRuntimeSnapshot().game,'));
     assert.ok(!source.includes('pendingResolution.apply()'));
     assert.ok(!source.includes('function fallbackCpuOpponentIndex()'));
     assert.ok(!source.includes('pendingActions.has(GAME_ACTIONS.RESOLVE_CLEANING)'));

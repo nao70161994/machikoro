@@ -15,6 +15,10 @@ function gameSetupSnapshot() {
     return GameSetupState.runtime.snapshot();
 }
 
+function mainGameRuntimeSnapshot() {
+    return GameRuntimeState.runtime.snapshot();
+}
+
 function mainOnlineRuntimeSnapshot() {
     return OnlineRuntimeState.runtime.snapshot();
 }
@@ -341,13 +345,14 @@ function init(playerCount) {
     cancelAutoSkip();
     GameRuntimeState.runtime.setUndoState(null);
     resetFullLog();
-    GameRuntimeState.runtime.setGame(new GameManager(playerCount));
+    const initializedGameState = GameRuntimeState.runtime.setGame(new GameManager(playerCount));
+    const currentGame = initializedGameState.game;
     let selectedLandmarks = getEnabledLandmarkSelection();
     if (selectedLandmarks.size === 0) {
         selectedLandmarks = replaceEnabledLandmarkSelection(Player.landmarkNames());
     }
     const selectedCards = getEnabledCardSelection();
-    game.enabledLandmarks = new Set(selectedLandmarks);
+    currentGame.enabledLandmarks = new Set(selectedLandmarks);
     for (const card of CARDS) {
         setShopStockCount(SHOP_STOCK, card, selectedCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0);
     }
@@ -374,7 +379,7 @@ function init(playerCount) {
     for (let i = 0; i < playerCount; i++) {
         const originalIndex = order[i];
         const setting = shuffledSettings[i];
-        game.players[i].name = setting.type === "cpu"
+        currentGame.players[i].name = setting.type === "cpu"
             ? getLocalCpuLabel(setting.difficulty)
             : normalizeLocalPlayerName(setting.name, originalIndex);
         shuffledCpuPlayers.push(
@@ -384,13 +389,14 @@ function init(playerCount) {
         );
     }
     GameRuntimeState.runtime.setCpuPlayers(shuffledCpuPlayers);
-    game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
+    currentGame.addLog(LOG_TYPES.SYSTEM, `👤 ${currentGame.currentPlayer().name}のターン`);
     render();
     scheduleCPU();
 }
 
 // CPUアクションをローカル・オンライン両対応で実行
 function cpuDo(action, data, fallback) {
+    const currentGame = mainGameRuntimeSnapshot().game;
     const proposal = typeof CPUActionProposal !== 'undefined'
         ? CPUActionProposal.create(action, data)
         : null;
@@ -403,7 +409,7 @@ function cpuDo(action, data, fallback) {
     if (typeof GameEngine !== 'undefined' &&
             typeof GameEngine.applyMutableAction === 'function') {
         GameEngine.applyMutableAction({
-            game,
+            game: currentGame,
             action: proposal.action,
             data: proposal.data,
         });
@@ -436,10 +442,11 @@ function isLocalGameEngineAuthorityEnabled() {
 }
 
 function _createLocalGameEngineRuntimeAdapter() {
+    const currentGame = mainGameRuntimeSnapshot().game;
     return GameEngineRuntimeAdapter.create({
         createGame: playerCount => new GameManager(playerCount),
-        enabledLandmarks: game && game.enabledLandmarks
-            ? game.enabledLandmarks
+        enabledLandmarks: currentGame && currentGame.enabledLandmarks
+            ? currentGame.enabledLandmarks
             : Player.landmarkNames(),
         landmarkNames: Player.landmarkNames,
         createCardByName,
@@ -451,8 +458,9 @@ function _createLocalGameEngineRuntimeAdapter() {
 }
 
 function _buildLocalGameEngineSnapshot() {
-    return GameSnapshot.serializeGameState(game, SHOP_STOCK, {
-        undoState,
+    const gameState = mainGameRuntimeSnapshot();
+    return GameSnapshot.serializeGameState(gameState.game, SHOP_STOCK, {
+        undoState: gameState.undoState,
         actionSeq: 0,
         logLimit: Number.MAX_SAFE_INTEGER,
         pendingActionsFor: GameManager.serializedPendingActionsFor,
@@ -551,10 +559,11 @@ const MAIN_ACTIONS = (typeof GAME_ACTIONS !== 'undefined') ? GAME_ACTIONS : Obje
 });
 
 function canRunAction(action) {
-    if (!game || !action) return false;
-    if (typeof game.allowedActions === 'function') return game.allowedActions().has(action);
+    const currentGame = mainGameRuntimeSnapshot().game;
+    if (!currentGame || !action) return false;
+    if (typeof currentGame.allowedActions === 'function') return currentGame.allowedActions().has(action);
     if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') {
-        return GameManager.allowedActionsFor(game).has(action);
+        return GameManager.allowedActionsFor(currentGame).has(action);
     }
     return true;
 }
@@ -571,12 +580,16 @@ function queueCPUStep(token, delay, fn) {
 }
 
 function chooseCpuPendingAction(cpu) {
-    return CPUPendingResolution.choosePendingAction(game, cpu, { clearFallback: false });
+    return CPUPendingResolution.choosePendingAction(
+        mainGameRuntimeSnapshot().game,
+        cpu,
+        { clearFallback: false }
+    );
 }
 
 function chooseCpuTurnAction(stepName, cpu) {
     return CpuTurnStrategy.chooseAction(stepName, {
-        game,
+        game: mainGameRuntimeSnapshot().game,
         cpu,
         rollDie: rollRandomDie,
         choosePendingAction: chooseCpuPendingAction,
@@ -587,11 +600,12 @@ function chooseCpuTurnAction(stepName, cpu) {
 // フェーズごとの CPU ハンドラテーブル。
 // 新フェーズを追加するときはここに1エントリ追加するだけでよい。
 function shouldRunCpuPhaseStep(stepName) {
+    const currentGame = mainGameRuntimeSnapshot().game;
     return CpuSchedulerState.shouldRunPhaseStep(stepName, {
-        hasGame: !!game,
-        phase: game && game.phase,
-        pendingIT: !!(game && game.pendingIT),
-        builtThisTurn: !!(game && game.builtThisTurn),
+        hasGame: !!currentGame,
+        phase: currentGame && currentGame.phase,
+        pendingIT: !!(currentGame && currentGame.pendingIT),
+        builtThisTurn: !!(currentGame && currentGame.builtThisTurn),
     }, GAME_PHASES);
 }
 
@@ -599,19 +613,21 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "roll",
         run(cpu) {
-            if (game.phase !== GAME_PHASES.ROLL) return;
+            const currentGame = mainGameRuntimeSnapshot().game;
+            if (currentGame.phase !== GAME_PHASES.ROLL) return;
             const proposal = chooseCpuTurnAction('roll', cpu);
             cpuDo(proposal.action, proposal.data, () =>
-                game.rollDice(proposal.data.forceDice, proposal.data.tunaDice)
+                currentGame.rollDice(proposal.data.forceDice, proposal.data.tunaDice)
             );
         },
     },
     {
         name: "selectDice",
         run(cpu) {
-            if (game.phase !== GAME_PHASES.SELECT_DICE) return;
+            const currentGame = mainGameRuntimeSnapshot().game;
+            if (currentGame.phase !== GAME_PHASES.SELECT_DICE) return;
             const proposal = chooseCpuTurnAction('selectDice', cpu);
-            cpuDo(proposal.action, proposal.data, () => game.selectDiceCount(
+            cpuDo(proposal.action, proposal.data, () => currentGame.selectDiceCount(
                 proposal.data.useTwo, proposal.data.d1, proposal.data.d2, proposal.data.tunaDice
             ));
         },
@@ -619,38 +635,41 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "rerollConfirm",
         run(cpu) {
-            if (game.phase !== GAME_PHASES.REROLL_CONFIRM) return;
+            const currentGame = mainGameRuntimeSnapshot().game;
+            if (currentGame.phase !== GAME_PHASES.REROLL_CONFIRM) return;
             const proposal = chooseCpuTurnAction('rerollConfirm', cpu);
             if (proposal.action === MAIN_ACTIONS.REROLL_DICE) {
                 cpuDo(proposal.action, proposal.data, () =>
-                    game.rerollDice(proposal.data.forceDice, proposal.data.tunaDice)
+                    currentGame.rerollDice(proposal.data.forceDice, proposal.data.tunaDice)
                 );
             } else {
-                cpuDo(proposal.action, proposal.data, () => game.skipReroll());
+                cpuDo(proposal.action, proposal.data, () => currentGame.skipReroll());
             }
         },
     },
     {
         name: "harborChoice",
         run(cpu) {
-            if (game.phase !== GAME_PHASES.HARBOR_CHOICE) return;
+            const currentGame = mainGameRuntimeSnapshot().game;
+            if (currentGame.phase !== GAME_PHASES.HARBOR_CHOICE) return;
             const proposal = chooseCpuTurnAction('harborChoice', cpu);
-            cpuDo(proposal.action, proposal.data, () => game.resolveHarbor(proposal.data.useBonus));
+            cpuDo(proposal.action, proposal.data, () => currentGame.resolveHarbor(proposal.data.useBonus));
         },
     },
     {
         name: "pending",
         run(cpu) {
-            if (game.phase !== GAME_PHASES.PENDING) return;
+            const currentGame = mainGameRuntimeSnapshot().game;
+            if (currentGame.phase !== GAME_PHASES.PENDING) return;
             const pendingAction = chooseCpuTurnAction('pending', cpu);
             if (pendingAction) {
                 markMainCheckpoint('scheduleCPU-pending-resolution', {
                     action: pendingAction.action,
-                    pendingIT: !!game.pendingIT,
-                    pendingAction: GameManager.nextPendingActionFor(game),
+                    pendingIT: !!currentGame.pendingIT,
+                    pendingAction: GameManager.nextPendingActionFor(currentGame),
                 });
                 cpuDo(pendingAction.action, pendingAction.data, () =>
-                    CPUPendingResolution.applyPendingAction(game, pendingAction)
+                    CPUPendingResolution.applyPendingAction(currentGame, pendingAction)
                 );
             }
         },
@@ -658,18 +677,19 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "build",
         run(cpu) {
-            if (game.phase !== GAME_PHASES.BUILD) return;
+            const currentGame = mainGameRuntimeSnapshot().game;
+            if (currentGame.phase !== GAME_PHASES.BUILD) return;
             const actionOnlyBuild = typeof cpu.chooseBuildAction === 'function' &&
                 typeof cpu.executeBuildAction === 'function';
             const proposal = actionOnlyBuild ? chooseCpuTurnAction('build', cpu) : null;
             const buildResult = actionOnlyBuild
-                ? cpu.executeBuildAction(proposal, game, SHOP_STOCK)
-                : cpu.build(game, SHOP_STOCK);
+                ? cpu.executeBuildAction(proposal, currentGame, SHOP_STOCK)
+                : cpu.build(currentGame, SHOP_STOCK);
             if (buildResult === false) {
                 if (mainOnlineRuntimeSnapshot().isOnlineGame) return false;
-                if (!game.builtThisTurn) {
+                if (!currentGame.builtThisTurn) {
                     markMainCheckpoint('scheduleCPU-build-failed-pass');
-                    game.nextTurn();
+                    currentGame.nextTurn();
                 }
                 return true;
             }
@@ -680,17 +700,19 @@ const CPU_PHASE_HANDLERS = [
     {
         name: "nextTurn",
         run(cpu) {
-            if (game.phase !== GAME_PHASES.BUILD || game.pendingIT) return;
+            const currentGame = mainGameRuntimeSnapshot().game;
+            if (currentGame.phase !== GAME_PHASES.BUILD || currentGame.pendingIT) return;
             const proposal = chooseCpuTurnAction('nextTurn', cpu);
-            cpuDo(proposal.action, proposal.data, () => game.nextTurn());
+            cpuDo(proposal.action, proposal.data, () => currentGame.nextTurn());
         },
     },
     {
         name: "resolveIT",
         run(cpu) {
-            if (!game.pendingIT) return;
+            const currentGame = mainGameRuntimeSnapshot().game;
+            if (!currentGame.pendingIT) return;
             const proposal = chooseCpuTurnAction('resolveIT', cpu);
-            cpuDo(proposal.action, proposal.data, () => game.resolveIT(proposal.data.doSave));
+            cpuDo(proposal.action, proposal.data, () => currentGame.resolveIT(proposal.data.doSave));
         },
     },
 ];
@@ -726,24 +748,28 @@ function cpuScheduleBlockedReason() {
         isCpuTurn: true,
     });
     if (transportReason) return transportReason;
-    const currentPlayerIndex = game ? game.currentPlayerIndex : null;
+    const gameState = mainGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const currentPlayerIndex = currentGame ? currentGame.currentPlayerIndex : null;
     return CpuSchedulerState.blockedReason({
-        hasGame: !!game,
-        hasWinner: !!(game && game.checkWinner && game.checkWinner()),
-        isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]),
+        hasGame: !!currentGame,
+        hasWinner: !!(currentGame && currentGame.checkWinner && currentGame.checkWinner()),
+        isCpuTurn: !!(currentGame && Array.isArray(gameState.cpuPlayers) && gameState.cpuPlayers[currentPlayerIndex]),
     });
 }
 
 function currentCpuTurnSchedulerHealth() {
     const blockedReason = cpuScheduleBlockedReason();
-    const currentPlayerIndex = game ? game.currentPlayerIndex : null;
+    const gameState = mainGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const currentPlayerIndex = currentGame ? currentGame.currentPlayerIndex : null;
     const schedulerState = cpuSchedulerStateController.snapshot();
     return CpuSchedulerState.buildHealth({
         scheduleToken: schedulerState.scheduleToken,
         pendingToken: schedulerState.pendingToken,
         scheduledUntil: schedulerState.scheduledUntil,
         now: Date.now(),
-        isCpuTurn: !!(game && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]),
+        isCpuTurn: !!(currentGame && Array.isArray(gameState.cpuPlayers) && gameState.cpuPlayers[currentPlayerIndex]),
         currentPlayerIndex,
         blockedReason,
     });
@@ -751,6 +777,8 @@ function currentCpuTurnSchedulerHealth() {
 
 function scheduleCpuTurn(reason = 'scheduleCPU') {
     const onlineState = mainOnlineRuntimeSnapshot();
+    const gameState = mainGameRuntimeSnapshot();
+    const currentGame = gameState.game;
     markMainCheckpoint('scheduleCPU-enter', {
         reason,
         isReplaying: onlineState.isReplaying,
@@ -764,14 +792,14 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
         mainOnlineActionFlightState().inFlight ||
         (!onlineState.socket || onlineState.socket.connected === false)
     )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: mainOnlineActionFlightState().inFlight }); return currentCpuTurnSchedulerHealth(); }
-    if (!game || game.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return currentCpuTurnSchedulerHealth(); }
-    const ci = game.currentPlayerIndex;
-    if (!cpuPlayers[ci]) {
+    if (!currentGame || currentGame.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return currentCpuTurnSchedulerHealth(); }
+    const ci = currentGame.currentPlayerIndex;
+    if (!gameState.cpuPlayers[ci]) {
         markMainCheckpoint('scheduleCPU-skip-human-turn', { currentPlayerIndex: ci });
         if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn('scheduleCPU-human-turn-unlock');
         return currentCpuTurnSchedulerHealth();
     }
-    const cpu = cpuPlayers[ci];
+    const cpu = gameState.cpuPlayers[ci];
     const token = invalidateCpuScheduleChain();
     let stepIndex = 0;
 
@@ -783,12 +811,20 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
             return;
         }
         if (stepIndex >= CPU_PHASE_HANDLERS.length) {
-            queueCPUStep(token, 500, () => { if (!game.checkWinner()) scheduleCPU(); });
+            queueCPUStep(token, 500, () => {
+                const latestGame = mainGameRuntimeSnapshot().game;
+                if (latestGame && !latestGame.checkWinner()) scheduleCPU();
+            });
             return;
         }
         const step = CPU_PHASE_HANDLERS[stepIndex++];
         if (!shouldRunCpuPhaseStep(step.name)) {
-            markMainCheckpoint('scheduleCPU-step-skip-phase', { step: step.name, phase: game && game.phase || '', pendingIT: !!(game && game.pendingIT) });
+            const latestGame = mainGameRuntimeSnapshot().game;
+            markMainCheckpoint('scheduleCPU-step-skip-phase', {
+                step: step.name,
+                phase: latestGame && latestGame.phase || '',
+                pendingIT: !!(latestGame && latestGame.pendingIT),
+            });
             runNextStep();
             return;
         }
@@ -801,8 +837,10 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
                 mainOnlineActionFlightState().inFlight ||
                 (!stepOnlineState.socket || stepOnlineState.socket.connected === false)
             )) return;
-            if (!game || game.checkWinner()) return;
-            if (!cpuPlayers[game.currentPlayerIndex]) return;
+            const stepGameState = mainGameRuntimeSnapshot();
+            const stepGame = stepGameState.game;
+            if (!stepGame || stepGame.checkWinner()) return;
+            if (!stepGameState.cpuPlayers[stepGame.currentPlayerIndex]) return;
             markMainCheckpoint('scheduleCPU-step-run', { step: step.name });
             let stepResult;
             try {
@@ -811,8 +849,8 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
                 console.error('[cpu] phase step failed:', step.name, error);
                 markMainCheckpoint('scheduleCPU-step-error', { step: step.name, message: error && error.message || String(error) });
                 if (mainOnlineRuntimeSnapshot().isOnlineGame) return;
-                if (step.name === 'build' && game.phase === GAME_PHASES.BUILD && !game.builtThisTurn) {
-                    game.nextTurn();
+                if (step.name === 'build' && stepGame.phase === GAME_PHASES.BUILD && !stepGame.builtThisTurn) {
+                    stepGame.nextTurn();
                 }
                 runNextStep();
                 return;
@@ -951,15 +989,17 @@ function bindCpuResumeScheduler() {
 }
 
 function canRunLocalHumanAction(expectedPlayerIndex = null) {
-    if (!game || game.checkWinner()) return false;
+    const gameState = mainGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    if (!currentGame || currentGame.checkWinner()) return false;
     const onlineState = mainOnlineRuntimeSnapshot();
     const online = onlineState.isOnlineGame;
     return LocalActionPolicy.canRunHumanAction({
         hasGame: true,
         hasWinner: false,
         expectedPlayerIndex,
-        currentPlayerIndex: game.currentPlayerIndex,
-        isCpuTurn: !!cpuPlayers[game.currentPlayerIndex],
+        currentPlayerIndex: currentGame.currentPlayerIndex,
+        isCpuTurn: !!gameState.cpuPlayers[currentGame.currentPlayerIndex],
         isOnlineGame: online,
         myPlayerIndex: onlineState.myPlayerIndex,
         isReconnecting: online ? isMainOnlineReconnectInputBlocked() : false,
@@ -979,23 +1019,25 @@ function cancelDelayedHumanAction() {
 
 function onRoll() {
     if (!canRunHumanAction(MAIN_ACTIONS.ROLL_DICE)) return;
+    const currentGame = mainGameRuntimeSnapshot().game;
     playSound('dice');
-    if (game.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
+    if (currentGame.currentPlayer().landmarks[LANDMARK_NAMES.STATION]) {
         // 駅あり：アニメーションなしで即座に選択肢を表示
-        runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => game.rollDice(null, null));
+        runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => currentGame.rollDice(null, null));
     } else {
         // 駅なし：アニメーションあり
         if (delayedHumanActionController.isPending()) return;
-        const scheduledPlayerIndex = game.currentPlayerIndex;
+        const scheduledPlayerIndex = currentGame.currentPlayerIndex;
         updateDiceDisplay(null, true);
         scheduleDelayedHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex, () => {
+            const delayedGame = mainGameRuntimeSnapshot().game;
             if (mainOnlineRuntimeSnapshot().isOnlineGame) {
-                runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => game.rollDice(null, null));
+                runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => delayedGame.rollDice(null, null));
                 return;
             }
             const forceDice = rollRandomDie();
             const tunaDice = [rollRandomDie(), rollRandomDie()];
-            runLocalOrSendOnline('rollDice', { forceDice, tunaDice }, () => game.rollDice(forceDice, tunaDice));
+            runLocalOrSendOnline('rollDice', { forceDice, tunaDice }, () => delayedGame.rollDice(forceDice, tunaDice));
         });
     }
 }
@@ -1003,37 +1045,41 @@ function onRoll() {
 function onSelectDiceCount(useTwo) {
     if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE)) return;
     if (delayedHumanActionController.isPending()) return;
+    const currentGame = mainGameRuntimeSnapshot().game;
     playSound('dice');
-    const scheduledPlayerIndex = game.currentPlayerIndex;
+    const scheduledPlayerIndex = currentGame.currentPlayerIndex;
     updateDiceDisplay(null, true);
     scheduleDelayedHumanAction(MAIN_ACTIONS.SELECT_DICE, scheduledPlayerIndex, () => {
+        const delayedGame = mainGameRuntimeSnapshot().game;
         if (mainOnlineRuntimeSnapshot().isOnlineGame) {
             runLocalOrSendOnline('selectDice', { useTwo, diceCount: useTwo ? 2 : 1 },
-                () => game.selectDiceCount(useTwo, 1, useTwo ? 1 : 0, null));
+                () => delayedGame.selectDiceCount(useTwo, 1, useTwo ? 1 : 0, null));
             return;
         }
         const d1 = rollRandomDie();
         const d2 = useTwo ? rollRandomDie() : 0;
         const tunaDice = [rollRandomDie(), rollRandomDie()];
         runLocalOrSendOnline('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice },
-            () => game.selectDiceCount(useTwo, d1, d2, tunaDice));
+            () => delayedGame.selectDiceCount(useTwo, d1, d2, tunaDice));
     });
 }
 
 function onReroll() {
     if (!canRunHumanAction(MAIN_ACTIONS.REROLL_DICE)) return;
+    const currentGame = mainGameRuntimeSnapshot().game;
     if (mainOnlineRuntimeSnapshot().isOnlineGame) {
-        runLocalOrSendOnline('rerollDice', {}, () => game.rerollDice(1, null));
+        runLocalOrSendOnline('rerollDice', {}, () => currentGame.rerollDice(1, null));
         return;
     }
     const forceDice = rollRandomDie();
     const tunaDice = [rollRandomDie(), rollRandomDie()];
-    runLocalOrSendOnline('rerollDice', { forceDice, tunaDice }, () => game.rerollDice(forceDice, tunaDice));
+    runLocalOrSendOnline('rerollDice', { forceDice, tunaDice }, () => currentGame.rerollDice(forceDice, tunaDice));
 }
 
 function onSkipReroll() {
     if (!canRunHumanAction(MAIN_ACTIONS.SKIP_REROLL)) return;
-    runLocalOrSendOnline('skipReroll', {}, () => game.skipReroll());
+    const currentGame = mainGameRuntimeSnapshot().game;
+    runLocalOrSendOnline('skipReroll', {}, () => currentGame.skipReroll());
 }
 
 const uiEventBindingController = UiEventDelegation.createBindingController();
@@ -1230,12 +1276,12 @@ function bindDelegatedUiHandlers() {
 
 function onResolveHarbor(useBonus) {
     if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_HARBOR)) return;
-    runLocalOrSendOnline('resolveHarbor', { useBonus }, () => game.resolveHarbor(useBonus));
+    runLocalOrSendOnline('resolveHarbor', { useBonus }, () => mainGameRuntimeSnapshot().game.resolveHarbor(useBonus));
 }
 
 function onResolveTV(i) {
     if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_TV)) return;
-    runLocalOrSendOnline('resolveTV', { targetIndex: i }, () => game.resolveTV(i));
+    runLocalOrSendOnline('resolveTV', { targetIndex: i }, () => mainGameRuntimeSnapshot().game.resolveTV(i));
 }
 
 function onResolveBusiness(targetIndex) {
@@ -1243,28 +1289,28 @@ function onResolveBusiness(targetIndex) {
     const myCard = parseInt(document.getElementById("myCardSelect").value, 10);
     const theirCard = parseInt(document.getElementById(`theirCardSelect_${targetIndex}`).value, 10);
     runLocalOrSendOnline('resolveBusiness', { myCard, targetIndex, theirCard },
-        () => game.resolveBusiness(myCard, targetIndex, theirCard));
+        () => mainGameRuntimeSnapshot().game.resolveBusiness(myCard, targetIndex, theirCard));
 }
 
 function onResolveCleaning(cardName) {
     if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_CLEANING)) return;
-    runLocalOrSendOnline('resolveCleaning', { cardName }, () => game.resolveCleaning(cardName));
+    runLocalOrSendOnline('resolveCleaning', { cardName }, () => mainGameRuntimeSnapshot().game.resolveCleaning(cardName));
 }
 
 function onResolveMover(targetIndex) {
     if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_MOVER)) return;
     const cardIndex = parseInt(document.getElementById("moverCardSelect").value, 10);
-    runLocalOrSendOnline('resolveMover', { cardIndex, targetIndex }, () => game.resolveMover(cardIndex, targetIndex));
+    runLocalOrSendOnline('resolveMover', { cardIndex, targetIndex }, () => mainGameRuntimeSnapshot().game.resolveMover(cardIndex, targetIndex));
 }
 
 function onResolveRenovation(landmarkName) {
     if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_RENOVATION)) return;
-    runLocalOrSendOnline('resolveRenovation', { landmarkName }, () => game.resolveRenovation(landmarkName));
+    runLocalOrSendOnline('resolveRenovation', { landmarkName }, () => mainGameRuntimeSnapshot().game.resolveRenovation(landmarkName));
 }
 
 function onResolveIT(doSave) {
     if (!canRunHumanAction(MAIN_ACTIONS.RESOLVE_IT)) return;
-    runLocalOrSendOnline('resolveIT', { doSave }, () => game.resolveIT(doSave));
+    runLocalOrSendOnline('resolveIT', { doSave }, () => mainGameRuntimeSnapshot().game.resolveIT(doSave));
 }
 
 function traceBuildFlow(stage, details = {}) {
@@ -1280,7 +1326,7 @@ function onBuildCard(name) {
     traceBuildFlow('card-request', { cardName: name });
     const card = CARDS.find(c => c.name === name);
     if (!card) return;
-    const scheduledPlayerIndex = game.currentPlayerIndex;
+    const scheduledPlayerIndex = mainGameRuntimeSnapshot().game.currentPlayerIndex;
     showConfirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`, () => {
         traceBuildFlow('card-confirmed', { cardName: name, scheduledPlayerIndex });
         if (!canRunHumanAction(MAIN_ACTIONS.BUILD_CARD, scheduledPlayerIndex)) { traceBuildFlow('card-stale-action', { cardName: name, scheduledPlayerIndex }); return; }
@@ -1293,7 +1339,7 @@ function onBuildCard(name) {
             return;
         }
         const shadow = _prepareLocalGameEngineShadow('buildCard', { cardName: name });
-        const built = game.buildCard(card);
+        const built = mainGameRuntimeSnapshot().game.buildCard(card);
         if (built) decrementShopStock(SHOP_STOCK, card);
         _finishLocalGameEngineShadow(shadow);
         if (built) {
@@ -1311,7 +1357,7 @@ function onBuildLandmark(name) {
     if (!canRunHumanAction(MAIN_ACTIONS.BUILD_LANDMARK)) return;
     traceBuildFlow('landmark-request', { landmarkName: name });
     const cost = Player.landmarkCost(name);
-    const scheduledPlayerIndex = game.currentPlayerIndex;
+    const scheduledPlayerIndex = mainGameRuntimeSnapshot().game.currentPlayerIndex;
     showConfirm(`${getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`, () => {
         traceBuildFlow('landmark-confirmed', { landmarkName: name, scheduledPlayerIndex });
         if (!canRunHumanAction(MAIN_ACTIONS.BUILD_LANDMARK, scheduledPlayerIndex)) { traceBuildFlow('landmark-stale-action', { landmarkName: name, scheduledPlayerIndex }); return; }
@@ -1323,7 +1369,7 @@ function onBuildLandmark(name) {
             return;
         }
         const shadow = _prepareLocalGameEngineShadow('buildLandmark', { name });
-        const built = game.buildLandmark(name);
+        const built = mainGameRuntimeSnapshot().game.buildLandmark(name);
         _finishLocalGameEngineShadow(shadow);
         if (built) {
             traceBuildFlow('landmark-applied', { landmarkName: name });
@@ -1339,26 +1385,29 @@ function onBuildLandmark(name) {
 function onSkip() {
     markMainCheckpoint('skip-request');
     if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN)) { markMainCheckpoint('skip-rejected-gate'); return; }
+    const currentGame = mainGameRuntimeSnapshot().game;
     let msg;
-    if (game.builtThisTurn) {
+    if (currentGame.builtThisTurn) {
         msg = "建設完了・ターン終了しますか？";
-    } else if (game.currentPlayer().landmarks[LANDMARK_NAMES.AIRPORT]) {
+    } else if (currentGame.currentPlayer().landmarks[LANDMARK_NAMES.AIRPORT]) {
         msg = "建設せずにターン終了しますか？\n✈️ 空港効果で+10コイン獲得します";
     } else {
         msg = "建設せずにターン終了しますか？";
     }
-    const scheduledPlayerIndex = game.currentPlayerIndex;
+    const scheduledPlayerIndex = currentGame.currentPlayerIndex;
     showConfirm(msg, () => {
         markMainCheckpoint('skip-confirmed', { scheduledPlayerIndex });
         if (!canRunHumanAction(MAIN_ACTIONS.NEXT_TURN, scheduledPlayerIndex)) { markMainCheckpoint('skip-stale-action', { scheduledPlayerIndex }); return; }
         cancelAutoSkip();
         GameRuntimeState.runtime.setUndoState(null);
-        const result = runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());
+        const result = runLocalOrSendOnline(
+            'nextTurn',
+            {},
+            () => mainGameRuntimeSnapshot().game.nextTurn()
+        );
         markMainCheckpoint('skip-nextTurn-returned', { result });
     });
 }
-
-// サイコロの目を描画
 function renderDiceFace(num) {
     return UiDiceDisplay.buildFaceHtml(num);
 }
@@ -1400,17 +1449,19 @@ function cancelAutoSkip() {
 
 function checkAutoSkip() {
     if (autoSkipScheduleController.isPending()) return;
-    if (!game || game.checkWinner()) return;
-    if (game.phase !== GAME_PHASES.BUILD) { cancelAutoSkip(); return; }
-    if (cpuPlayers[game.currentPlayerIndex]) return;
+    const gameState = mainGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    if (!currentGame || currentGame.checkWinner()) return;
+    if (currentGame.phase !== GAME_PHASES.BUILD) { cancelAutoSkip(); return; }
+    if (gameState.cpuPlayers[currentGame.currentPlayerIndex]) return;
     const onlineState = mainOnlineRuntimeSnapshot();
-    if (onlineState.isOnlineGame && game.currentPlayerIndex !== onlineState.myPlayerIndex) return;
-    if (game.pendingRenovation > 0) return;
-    if (game.builtThisTurn) { cancelAutoSkip(); return; }
+    if (onlineState.isOnlineGame && currentGame.currentPlayerIndex !== onlineState.myPlayerIndex) return;
+    if (currentGame.pendingRenovation > 0) return;
+    if (currentGame.builtThisTurn) { cancelAutoSkip(); return; }
 
     const availability = AutoSkipPolicy.buildAvailability({
         cards: CARDS,
-        current: game.currentPlayer(),
+        current: currentGame.currentPlayer(),
         shopStock: SHOP_STOCK,
         getStockCount: getShopStockCount,
         enabledLandmarks: getEnabledLandmarkSelection(),
@@ -1419,21 +1470,21 @@ function checkAutoSkip() {
     });
 
     if (!availability.canAffordAny) {
-        const scheduledPlayerIndex = game.currentPlayerIndex;
+        const scheduledPlayerIndex = currentGame.currentPlayerIndex;
         autoSkipScheduleController.begin();
         autoSkipScheduleController.setTimer(setTimeout(() => {
             autoSkipScheduleController.finish();
+            const delayedGame = mainGameRuntimeSnapshot().game;
             if (
                 canRunLocalHumanAction(scheduledPlayerIndex) &&
-                game.phase === GAME_PHASES.BUILD &&
-                !game.builtThisTurn
+                delayedGame.phase === GAME_PHASES.BUILD &&
+                !delayedGame.builtThisTurn
             ) {
-                runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());
+                runLocalOrSendOnline('nextTurn', {}, () => delayedGame.nextTurn());
             }
         }, 1500));
     }
 }
-
 // 初期表示
 initMainView();
 bindDelegatedUiHandlers();

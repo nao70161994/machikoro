@@ -98,6 +98,23 @@ runTest('storageはlive gameをruntime snapshot境界から読む', () => {
     }
 });
 
+runTest('mainはlive gameとCPU・Undoをruntime snapshot境界から読む', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
+    assert.ok(source.includes('GameRuntimeState.runtime.snapshot()'));
+    for (const pattern of [
+        'if (!game ||',
+        'game.currentPlayer()',
+        'cpuPlayers[game.',
+        'serializeGameState(game,',
+        'serializeUndoState(game,',
+        'GameManager.nextPendingActionFor(game)',
+        'CPUPendingResolution.applyPendingAction(game,',
+        '() => game.',
+    ]) {
+        assert.strictEqual(source.includes(pattern), false, pattern);
+    }
+});
+
 runTest('onlineはlive gameとCPU・Undoをruntime snapshot境界から読む', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
     assert.ok(source.includes('GameRuntimeState.runtime.snapshot()'));
