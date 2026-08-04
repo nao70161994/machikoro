@@ -355,6 +355,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiDomSnapshotSource, context, { filename: 'js/uiDomSnapshot.js' });
     const uiRecoveryEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiRecoveryEffects.js'), 'utf8');
     vm.runInContext(uiRecoveryEffectsSource, context, { filename: 'js/uiRecoveryEffects.js' });
+    const appShellRuntimeEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellRuntimeEffects.js'), 'utf8');
+    vm.runInContext(appShellRuntimeEffectsSource, context, { filename: 'js/appShellRuntimeEffects.js' });
     const uiWatchdogMonitorSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdogMonitor.js'), 'utf8');
     vm.runInContext(uiWatchdogMonitorSource, context, { filename: 'js/uiWatchdogMonitor.js' });
     const uiWatchdogReportingSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdogReporting.js'), 'utf8');
@@ -506,7 +508,8 @@ runTest('CPU scheduler runtime stateはcontrollerだけが所有する', () => {
     const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
     const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js/storage.js'), 'utf8');
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
-    for (const source of [mainSource, onlineSource, storageSource, appShellSource]) {
+    const appShellRuntimeEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellRuntimeEffects.js'), 'utf8');
+    for (const source of [mainSource, onlineSource, storageSource, appShellSource, appShellRuntimeEffectsSource]) {
         assert.ok(!source.includes('let cpuScheduleToken'));
         assert.ok(!source.includes('let cpuStepScheduledUntil'));
         assert.ok(!source.includes('let cpuPendingStepToken'));
@@ -516,7 +519,8 @@ runTest('CPU scheduler runtime stateはcontrollerだけが所有する', () => {
     assert.ok(onlineSource.includes('invalidateCpuSchedule: () => typeof invalidateCpuScheduleChain'));
     assert.ok(onlineSource.includes('onlineClientEffects.invalidateCpuSchedule()'));
     assert.ok(storageSource.includes('invalidateCpuScheduleChain()'));
-    assert.ok(appShellSource.includes('cpuSchedulerStateController.snapshot()'));
+    assert.ok(appShellSource.includes('appShellRuntimeEffects.schedulerSnapshot()'));
+    assert.ok(appShellRuntimeEffectsSource.includes("resolveDependency('cpuSchedulerStateController')"));
 });
 
 runTest('main page activation stateはlifecycle controllerだけが所有する', () => {
@@ -2397,6 +2401,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiWatchdog.js', 'js/appShell.js');
     assertBefore('js/uiDomSnapshot.js', 'js/appShell.js');
     assertBefore('js/uiRecoveryEffects.js', 'js/appShell.js');
+    assertBefore('js/appShellRuntimeEffects.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogMonitor.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogReporting.js', 'js/appShell.js');
     assertBefore('js/clientRuntimeSnapshot.js', 'js/appShell.js');

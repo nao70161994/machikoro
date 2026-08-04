@@ -49,6 +49,28 @@ const appShellDomSnapshot = UiDomSnapshot.createRuntime({
 const appShellRecoveryEffects = UiRecoveryEffects.createRuntime({
     getDocument: () => typeof document !== 'undefined' ? document : null,
 });
+const appShellRuntimeEffects = AppShellRuntimeEffects.createFromResolver(name => {
+    const resolvers = {
+        cancelCpuSchedule: () => typeof cancelCpuSchedule === 'function' ? cancelCpuSchedule : null,
+        cpuSchedulerStateController: () => typeof cpuSchedulerStateController !== 'undefined' ? cpuSchedulerStateController : null,
+        cpuTurnScheduler: () => typeof cpuTurnScheduler !== 'undefined' ? cpuTurnScheduler : null,
+        drawCitySkyline: () => typeof drawCitySkyline === 'function' ? drawCitySkyline : null,
+        getOnlineActionFlightState: () => typeof getOnlineActionFlightState === 'function' ? getOnlineActionFlightState : null,
+        handleOnlineActionTimeout: () => typeof _handleOnlineActionTimeout === 'function' ? _handleOnlineActionTimeout : null,
+        loadSettings: () => typeof loadSettings === 'function' ? loadSettings : null,
+        onlineActionInFlight: () => typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : false,
+        onlineActionInFlightAt: () => typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : 0,
+        preloadLocalRlModels: () => typeof preloadLocalRlModelsInBackground === 'function' ? preloadLocalRlModelsInBackground : null,
+        preloadOnlineRlModels: () => typeof preloadOnlineRlModelsInBackground === 'function' ? preloadOnlineRlModelsInBackground : null,
+        render: () => typeof render === 'function' ? render : null,
+        renderBuildMenu: () => typeof renderBuildMenu === 'function' ? renderBuildMenu : null,
+        renderOnlinePlayerSettings: () => typeof renderOnlinePlayerSettings === 'function' ? renderOnlinePlayerSettings : null,
+        resumeGame: () => typeof resumeGame === 'function' ? resumeGame : null,
+        scheduleCpu: () => typeof scheduleCPU === 'function' ? scheduleCPU : null,
+        updateResumeButton: () => typeof updateResumeButton === 'function' ? updateResumeButton : null,
+    };
+    return resolvers[name] ? resolvers[name]() : null;
+});
 
 function safeClientErrorUrl() {
     return ClientReporting.clientUrl(
@@ -327,12 +349,10 @@ function primaryActionButtonStates() {
 
 function appShellOnlineActionFlightState() {
     try {
-        if (typeof getOnlineActionFlightState === 'function') return getOnlineActionFlightState();
-    } catch (_) {}
-    return {
-        inFlight: typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
-        startedAt: typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : 0,
-    };
+        return appShellRuntimeEffects.onlineActionFlightState();
+    } catch (_) {
+        return { inFlight: false, startedAt: 0 };
+    }
 }
 
 function buildClientRuntimeSnapshot(reason = '') {
@@ -346,25 +366,9 @@ function buildClientRuntimeSnapshot(reason = '') {
     let cpuStepScheduled = false;
     let cpuSchedulerHealth = null;
     try {
-        if (isCpuTurn && typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.getHealth === 'function') {
-            const health = cpuTurnScheduler.getHealth();
-            cpuStepScheduled = !!health.stepScheduled;
-            cpuSchedulerHealth = {
-                blockedReason: health.blockedReason || '',
-                token: Number.isInteger(health.token) ? health.token : null,
-                scheduledUntil: Number.isFinite(health.scheduledUntil) ? health.scheduledUntil : 0,
-                stepScheduled: !!health.stepScheduled,
-            };
-        } else if (isCpuTurn && typeof cpuSchedulerStateController !== 'undefined') {
-            const state = cpuSchedulerStateController.snapshot();
-            cpuStepScheduled = cpuSchedulerStateController.isStepScheduled() &&
-                Date.now() < state.scheduledUntil;
-            cpuSchedulerHealth = {
-                blockedReason: '',
-                token: Number.isInteger(state.scheduleToken) ? state.scheduleToken : null,
-                scheduledUntil: Number.isFinite(state.scheduledUntil) ? state.scheduledUntil : 0,
-                stepScheduled: cpuStepScheduled,
-            };
+        if (isCpuTurn) {
+            cpuSchedulerHealth = appShellRuntimeEffects.schedulerSnapshot();
+            cpuStepScheduled = !!(cpuSchedulerHealth && cpuSchedulerHealth.stepScheduled);
         }
     } catch (_) {}
     let hasWinner = false;
@@ -668,7 +672,7 @@ function unlockUiForHumanTurn(reason = 'human-turn-unlock') {
     if (!expectedPrimaryActions(snapshot).length) return false;
     if (hasActiveBlockingModal(snapshot)) return false;
     clearUiLocks(reason + '-before-render', snapshot);
-    try { if (typeof render === 'function') render(); } catch (_) {}
+    try { appShellRuntimeEffects.render(); } catch (_) {}
     const afterRender = buildClientRuntimeSnapshot(reason + '-after-render');
     if (!isHumanTurnSnapshot(afterRender) || isOnlineUiBlockedSnapshot(afterRender)) return false;
     if (hasActiveBlockingModal(afterRender)) return false;
@@ -823,8 +827,7 @@ function trapCrashScreenFocus(event) {
 function showCrashScreen(err) {
     const transition = crashScreenController.show();
     if (!transition.changed) return;
-    if (typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.cancel === 'function') cpuTurnScheduler.cancel('game-lifecycle-reset-cpu');
-    else if (typeof cancelCpuSchedule === 'function') cancelCpuSchedule('game-lifecycle-reset-cpu');
+    appShellRuntimeEffects.cancelCpu('game-lifecycle-reset-cpu');
     const el = document.getElementById('crashScreen');
     if (!el) return;
     const view = CrashScreen.buildView(err, safeAppShellStorageGet('savedGame'));
@@ -845,7 +848,7 @@ function crashResume() {
     crashScreenController.hide();
     if (typeof document.removeEventListener === 'function') document.removeEventListener('keydown', trapCrashScreenFocus, true);
     CrashScreenEffects.hide(document.getElementById('crashScreen'));
-    resumeGame();
+    appShellRuntimeEffects.resumeGame();
 }
 
 // ===== オフライン検知 =====
@@ -1044,10 +1047,10 @@ function recoverPostBuildUiFreeze(snapshot) {
     if (!isHumanTurnSnapshot(snapshot) || isOnlineUiBlockedSnapshot(snapshot)) return false;
     clearUiLocks('freeze-watchdog-post-build-unlock', snapshot);
     try {
-        if (typeof render === 'function') render();
+        appShellRuntimeEffects.render();
     } catch (_) {}
     try {
-        if (typeof renderBuildMenu === 'function') renderBuildMenu();
+        appShellRuntimeEffects.renderBuildMenu();
     } catch (_) {}
     let afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-after-render');
     let issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
@@ -1055,7 +1058,7 @@ function recoverPostBuildUiFreeze(snapshot) {
     ensurePostBuildUndoButtonForRecovery(afterRender);
     clearUiLocks('freeze-watchdog-post-build-after-render-unlock', afterRender);
     try {
-        if (typeof renderBuildMenu === 'function') renderBuildMenu();
+        appShellRuntimeEffects.renderBuildMenu();
     } catch (_) {}
     afterRender = buildClientRuntimeSnapshot('freeze-watchdog-post-build-second-render');
     issues = validateUiInteractability(afterRender).filter(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
@@ -1135,7 +1138,7 @@ function recoverPendingUiLock(snapshot) {
     const issues = validateUiInteractability(snapshot).filter(issue => issue.action && issue.action.startsWith('resolve'));
     const changed = recoverAllowedActionContainers(snapshot, issues);
     try {
-        if (typeof render === 'function') render();
+        appShellRuntimeEffects.render();
     } catch (_) {}
     markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.PENDING_UI_LOCKED, issues });
     return changed;
@@ -1161,7 +1164,7 @@ function recoverHumanUiLock(snapshot) {
     const changed = recoverAllowedActionContainers(snapshot, issues) || clearUiInteractabilityIssueTargets(issues);
     clearUiLocks('freeze-watchdog-human-turn-unlock', snapshot);
     try {
-        if (typeof render === 'function') render();
+        appShellRuntimeEffects.render();
     } catch (_) {}
     markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.HUMAN_TURN_UI_LOCKED, issues });
     return changed || issues.length > 0;
@@ -1188,7 +1191,7 @@ function recoverStaleModalUiLock(snapshot) {
     if (!closed) return false;
     clearUiLocks('freeze-watchdog-stale-modal-unlock', snapshot);
     try {
-        if (typeof render === 'function') render();
+        appShellRuntimeEffects.render();
     } catch (_) {}
     markClientFlowCheckpoint('freeze-watchdog-recovered', { freezeKind: FREEZE_KINDS.STALE_MODAL_UI_LOCKED });
     return true;
@@ -1198,8 +1201,9 @@ function recoverCpuTurnStall(snapshot) {
     if (!snapshot || !snapshot.isCpuTurn || snapshot.onlineActionInFlight || snapshot.isReconnectingOnline) return false;
     if (snapshot.isOnlineGame && !snapshot.isRoomHost) return false;
     try {
-        if (typeof cpuTurnScheduler !== 'undefined' && cpuTurnScheduler && typeof cpuTurnScheduler.schedule === 'function') {
-            const health = cpuTurnScheduler.schedule('watchdog-cpu-turn-stall');
+        const scheduled = appShellRuntimeEffects.scheduleCpu('watchdog-cpu-turn-stall');
+        if (scheduled.source === 'scheduler') {
+            const health = scheduled.health;
             const recovered = !!(health && health.stepScheduled);
             const after = buildClientRuntimeSnapshot('cpu-turn-stall-recovery-after');
             markClientFlowCheckpoint('freeze-watchdog-cpu-reschedule', {
@@ -1210,8 +1214,7 @@ function recoverCpuTurnStall(snapshot) {
             });
             return recovered;
         }
-        if (typeof scheduleCPU !== 'function') return false;
-        scheduleCPU();
+        if (scheduled.source === 'none') return false;
     } catch (_) {
         return false;
     }
@@ -1227,9 +1230,10 @@ function recoverCpuTurnStall(snapshot) {
 
 function recoverOnlineActionInFlightStall(snapshot) {
     if (!snapshot || !snapshot.onlineActionInFlight) return false;
-    if (typeof _handleOnlineActionTimeout !== 'function') return false;
     try {
-        const recovered = _handleOnlineActionTimeout();
+        const timeout = appShellRuntimeEffects.handleOnlineActionTimeout();
+        if (!timeout.available) return false;
+        const recovered = timeout.value;
         markClientFlowCheckpoint('freeze-watchdog-online-action-resync', {
             recovered: !!recovered,
             onlineActionInFlightAt: snapshot.onlineActionInFlightAt || null,
@@ -1370,14 +1374,14 @@ if (typeof window !== 'undefined') {
 if (typeof window !== 'undefined') bindCrashHandlers();
 
 function initMainView() {
-    loadSettings();
-    if (typeof preloadLocalRlModelsInBackground === 'function') preloadLocalRlModelsInBackground('init-main-local-rl-preload');
-    renderOnlinePlayerSettings();
-    if (typeof preloadOnlineRlModelsInBackground === 'function') preloadOnlineRlModelsInBackground('init-main-online-rl-preload');
-    updateResumeButton();
-    drawCitySkyline();
+    appShellRuntimeEffects.loadSettings();
+    appShellRuntimeEffects.preloadLocalRlModels('init-main-local-rl-preload');
+    appShellRuntimeEffects.renderOnlinePlayerSettings();
+    appShellRuntimeEffects.preloadOnlineRlModels('init-main-online-rl-preload');
+    appShellRuntimeEffects.updateResumeButton();
+    appShellRuntimeEffects.drawCitySkyline();
     if (!clientEventBindingController.isBound(clientEventBindingKeys.MAIN_VIEW_RESIZE)) {
-        window.addEventListener("resize", drawCitySkyline);
+        window.addEventListener("resize", appShellRuntimeEffects.drawCitySkyline);
         clientEventBindingController.markBound(clientEventBindingKeys.MAIN_VIEW_RESIZE);
     }
     bindCrashHandlers();

@@ -112,6 +112,7 @@ interface Window {
     UiWatchdog: unknown;
     UiDomSnapshot: unknown;
     UiRecoveryEffects: unknown;
+    AppShellRuntimeEffects: unknown;
     CrashScreen: unknown;
     UiWinner: unknown;
     UiWinnerEffects: unknown;
