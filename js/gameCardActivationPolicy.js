@@ -1,5 +1,12 @@
 'use strict';
 
+function isActivationCandidate(facts = {}) {
+    const card = facts.card;
+    if (!card || facts.revivedCards.has(card)) return false;
+    if (facts.isDormant(card)) return false;
+    return card.color === facts.color && card.diceNums.includes(facts.dice);
+}
+
 function eligibleDormantCards(dormantCards, dice, shouldRevive) {
     const eligible = [];
     for (const card of Array.from(dormantCards)) {
@@ -223,6 +230,7 @@ function purpleActivationPlan(facts = {}) {
 }
 
 const GameCardActivationPolicy = Object.freeze({
+    isActivationCandidate,
     eligibleDormantCards,
     redActivationKinds,
     redActivationPlan,

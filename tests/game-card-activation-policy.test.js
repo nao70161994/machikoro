@@ -4,6 +4,36 @@ const assert = require('assert');
 const GameCardActivationPolicy = require('../js/gameCardActivationPolicy');
 const { runTest } = require('./helpers/test-utils');
 
+runTest('card activation policyは復帰・休業・色・出目の既存短絡順を維持する', () => {
+    const card = { color: 'blue', diceNums: [4] };
+    const reads = [];
+    const revivedCards = {
+        has(value) { reads.push('revived'); return value === card; },
+    };
+    const isDormant = () => { reads.push('dormant'); return false; };
+
+    assert.strictEqual(GameCardActivationPolicy.isActivationCandidate({
+        card, revivedCards, isDormant, color: 'blue', dice: 4,
+    }), false);
+    assert.deepStrictEqual(reads, ['revived']);
+
+    reads.length = 0;
+    assert.strictEqual(GameCardActivationPolicy.isActivationCandidate({
+        card,
+        revivedCards: { has() { reads.push('revived'); return false; } },
+        isDormant: () => { reads.push('dormant'); return false; },
+        color: 'blue',
+        dice: 4,
+    }), true);
+    assert.deepStrictEqual(reads, ['revived', 'dormant']);
+    assert.strictEqual(GameCardActivationPolicy.isActivationCandidate({
+        card, revivedCards: new Set(), isDormant: () => false, color: 'red', dice: 4,
+    }), false);
+    assert.strictEqual(GameCardActivationPolicy.isActivationCandidate({
+        card, revivedCards: new Set(), isDormant: () => false, color: 'blue', dice: 3,
+    }), false);
+});
+
 runTest('card activation policyはdice一致後だけpredicateを順番どおり評価する', () => {
     const first = { name: 'first', diceNums: [1] };
     const skipped = { name: 'skipped', diceNums: [2] };

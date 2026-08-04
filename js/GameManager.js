@@ -474,9 +474,13 @@ class GameManager {
             const revivedCards = this._reviveDormantCardsForDice(other, dice, card => card.color === "red");
             const activations = [];
             for (const card of other.cards) {
-                if (revivedCards.has(card)) continue;
-                if (other.isDormant(card)) continue;
-                if (card.color !== "red" || !card.diceNums.includes(dice)) continue;
+                if (!GameCardActivationPolicy.isActivationCandidate({
+                    card,
+                    revivedCards,
+                    isDormant: candidate => other.isDormant(candidate),
+                    color: "red",
+                    dice,
+                })) continue;
                 const activation = GameCardActivationPolicy.redActivationPlan({
                     effect: card.effect,
                     effects: CARD_EFFECTS,
@@ -521,9 +525,13 @@ class GameManager {
         for (const p of this.players) {
             const revivedCards = this._reviveDormantCardsForDice(p, dice, card => card.color === "blue");
             for (const card of p.cards) {
-                if (revivedCards.has(card)) continue;
-                if (p.isDormant(card)) continue;
-                if (card.color !== "blue" || !card.diceNums.includes(dice)) continue;
+                if (!GameCardActivationPolicy.isActivationCandidate({
+                    card,
+                    revivedCards,
+                    isDormant: candidate => p.isDormant(candidate),
+                    color: "blue",
+                    dice,
+                })) continue;
 
                 const plan = GameCardActivationPolicy.blueIncomePlan({
                     effect: card.effect,
@@ -551,9 +559,13 @@ class GameManager {
     _processGreen(current, dice) {
         const revivedCards = this._reviveDormantCardsForDice(current, dice, card => card.color === "green");
         for (const card of current.cards) {
-            if (revivedCards.has(card)) continue;
-            if (current.isDormant(card)) continue;
-            if (card.color !== "green" || !card.diceNums.includes(dice)) continue;
+            if (!GameCardActivationPolicy.isActivationCandidate({
+                card,
+                revivedCards,
+                isDormant: candidate => current.isDormant(candidate),
+                color: "green",
+                dice,
+            })) continue;
 
             const plan = GameCardActivationPolicy.greenActivationPlan({
                 effect: card.effect,
@@ -613,9 +625,13 @@ class GameManager {
     _processPurple(current, ci, dice) {
         const revivedCards = this._reviveDormantCardsForDice(current, dice, card => card.color === "purple");
         for (const card of current.cards) {
-            if (revivedCards.has(card)) continue;
-            if (current.isDormant(card)) continue;
-            if (card.color !== "purple" || !card.diceNums.includes(dice)) continue;
+            if (!GameCardActivationPolicy.isActivationCandidate({
+                card,
+                revivedCards,
+                isDormant: candidate => current.isDormant(candidate),
+                color: "purple",
+                dice,
+            })) continue;
 
             const activation = GameCardActivationPolicy.purpleActivationPlan({
                 effect: card.effect,
