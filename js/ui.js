@@ -812,9 +812,7 @@ function getActiveGameTurnStateController() {
     return activeGameTurnStateController;
 }
 let buildMenuFilterController = null;
-let activeModalId = null;
-let lastModalFocus = null;
-let modalInertRestore = [];
+const modalRuntimeController = UiModalPolicy.createRuntimeController();
 
 const MODAL_INERT_ROOT_IDS = UiModalPolicy.inertRootIds;
 const MODAL_POLICY_REGISTRY = UiModalPolicy.registry;
@@ -990,7 +988,7 @@ function clearOrphanAccessibleModalLocks() {
 function setAppInertForModal(enabled) {
     if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
     if (!enabled) {
-        for (const entry of modalInertRestore) {
+        for (const entry of modalRuntimeController.getInertRestore()) {
             const el = entry && entry.el;
             if (!el) continue;
             el.inert = entry.hadInert ? entry.inert : false;
@@ -998,11 +996,11 @@ function setAppInertForModal(enabled) {
             else el.setAttribute && el.setAttribute('aria-hidden', entry.ariaHidden);
             if (el.style) el.style.pointerEvents = entry.pointerEvents || '';
         }
-        modalInertRestore = [];
+        modalRuntimeController.clearInertRestore();
         return;
     }
-    if (modalInertRestore.length > 0) return;
-    modalInertRestore = MODAL_INERT_ROOT_IDS
+    if (modalRuntimeController.getInertRestore().length > 0) return;
+    const inertRestore = MODAL_INERT_ROOT_IDS
         .map(rootId => document.getElementById(rootId))
         .filter(Boolean)
         .map(el => ({
@@ -1012,7 +1010,8 @@ function setAppInertForModal(enabled) {
             ariaHidden: el.getAttribute ? el.getAttribute('aria-hidden') : null,
             pointerEvents: el.style ? el.style.pointerEvents || '' : '',
         }));
-    for (const { el } of modalInertRestore) {
+    modalRuntimeController.setInertRestore(inertRestore);
+    for (const { el } of inertRestore) {
         el.inert = true;
         if (el.setAttribute) el.setAttribute('aria-hidden', 'true');
         if (el.style) el.style.pointerEvents = 'none';
@@ -1056,7 +1055,7 @@ function recordModalPolicyViolation(type, details = {}) {
     const entry = {
         type,
         timestamp: new Date().toISOString(),
-        activeModalId,
+        activeModalId: modalRuntimeController.getActiveModalId(),
         ...details,
     };
     try {
@@ -1084,7 +1083,7 @@ function visibleBlockingModalIds() {
 
 function canOpenBlockingModal(id) {
     const decision = UiModalPolicy.canOpen(id, {
-        activeModalId,
+        activeModalId: modalRuntimeController.getActiveModalId(),
         isVisible: isModalVisibleById,
     });
     if (decision.ok) return true;
@@ -1136,8 +1135,8 @@ function uiModalOpenPlanSelection(id) {
 }
 
 function runUiModalOpenEffectsLegacy(modal, id) {
-    if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
-    activeModalId = id;
+    if (typeof document !== 'undefined') modalRuntimeController.rememberFocus(document.activeElement);
+    modalRuntimeController.setActiveModalId(id);
     if (document.body && document.body.classList) document.body.classList.add('modal-open');
     normalizeModalVisualStateForOpen(modal);
     if (typeof modal.setAttribute === 'function') {
@@ -1156,9 +1155,9 @@ function runUiModalOpenEffects(modal, id) {
     }
     UiModalOpen.execute(selection.plan, {
         captureFocus() {
-            if (typeof document !== 'undefined') lastModalFocus = document.activeElement || lastModalFocus;
+            if (typeof document !== 'undefined') modalRuntimeController.rememberFocus(document.activeElement);
         },
-        setActiveModal(modalId) { activeModalId = modalId; },
+        setActiveModal(modalId) { modalRuntimeController.setActiveModalId(modalId); },
         addBodyClass() {
             if (document.body && document.body.classList) document.body.classList.add('modal-open');
         },
@@ -1197,7 +1196,7 @@ function uiModalClosePlanInput(id, options, visibleBlockingIds, nextActiveModalI
         nextActiveModalId,
         visibleBlockingIds,
         restoreFocus: options.restoreFocus,
-        hasRestorableFocus: !!(lastModalFocus && typeof lastModalFocus.focus === 'function'),
+        hasRestorableFocus: !!(modalRuntimeController.getLastFocus() && typeof modalRuntimeController.getLastFocus().focus === 'function'),
         canRenderPending: typeof renderPending === 'function',
         canTrace: typeof recordFlowTrace === 'function',
     };
@@ -1211,7 +1210,7 @@ function legacyUiModalClosePlan(id, options, visibleBlockingIds, nextActiveModal
         visibleBlockingIds: Object.freeze(visibleBlockingIds.slice()),
         shouldUnlockApp,
         shouldRenderPending: shouldUnlockApp && id !== 'pendingModal' && typeof renderPending === 'function',
-        shouldRestoreFocus: options.restoreFocus !== false && !!lastModalFocus && typeof lastModalFocus.focus === 'function',
+        shouldRestoreFocus: options.restoreFocus !== false && !!modalRuntimeController.getLastFocus() && typeof modalRuntimeController.getLastFocus().focus === 'function',
         shouldTrace: (id === 'rulesModal' || id === 'cardSelectModal') && typeof recordFlowTrace === 'function',
     });
 }
@@ -1225,19 +1224,20 @@ function uiModalClosePlanSelection(id, options, visibleBlockingIds, nextActiveMo
 }
 
 function runUiModalCloseEffectsLegacy(id, options, beforeSnapshot, visibleBlockingIds, nextActiveModalId) {
-    activeModalId = nextActiveModalId;
+    modalRuntimeController.setActiveModalId(nextActiveModalId);
     if (visibleBlockingIds.length <= 0) {
-        activeModalId = null;
+        modalRuntimeController.setActiveModalId(null);
         setAppInertForModal(false);
         clearOrphanAccessibleModalLocks();
         if (id !== 'pendingModal' && typeof renderPending === 'function') {
             try { renderPending(); } catch (_) {}
         }
     }
-    if (options.restoreFocus !== false && lastModalFocus && typeof lastModalFocus.focus === 'function') {
-        lastModalFocus.focus();
+    const lastFocus = modalRuntimeController.getLastFocus();
+    if (options.restoreFocus !== false && lastFocus && typeof lastFocus.focus === 'function') {
+        lastFocus.focus();
     }
-    lastModalFocus = null;
+    modalRuntimeController.clearLastFocus();
     if ((id === 'rulesModal' || id === 'cardSelectModal') && typeof recordFlowTrace === 'function') {
         recordFlowTrace('modal-close-ui-state', {
             modalId: id,
@@ -1254,14 +1254,14 @@ function runUiModalCloseEffects(id, options, beforeSnapshot, visibleBlockingIds,
         return;
     }
     UiModalClose.execute(selection.plan, {
-        setActiveModal(plan) { activeModalId = plan.nextActiveModalId; },
+        setActiveModal(plan) { modalRuntimeController.setActiveModalId(plan.nextActiveModalId); },
         restoreAppInert() { setAppInertForModal(false); },
         clearOrphanLocks() { clearOrphanAccessibleModalLocks(); },
         renderPending() {
             try { renderPending(); } catch (_) {}
         },
-        restoreFocus() { lastModalFocus.focus(); },
-        clearLastFocus() { lastModalFocus = null; },
+        restoreFocus() { modalRuntimeController.getLastFocus().focus(); },
+        clearLastFocus() { modalRuntimeController.clearLastFocus(); },
         recordTrace(plan) {
             recordFlowTrace('modal-close-ui-state', {
                 modalId: plan.modalId,
@@ -1280,7 +1280,7 @@ function closeAccessibleModal(id, options = {}) {
     const visibleBlockingIds = visibleBlockingModalIds();
     const nextActiveModalId = UiModalPolicy.activeAfterClose(
         id,
-        activeModalId,
+        modalRuntimeController.getActiveModalId(),
         visibleBlockingIds,
         isModalVisibleById
     );
@@ -1305,6 +1305,7 @@ function closeConfirmModal(accepted) {
 }
 
 function handleModalKeydown(event) {
+    const activeModalId = modalRuntimeController.getActiveModalId();
     if (!activeModalId) return;
     const modal = document.getElementById(activeModalId);
     if (!modal || modal.style.display === 'none') return;

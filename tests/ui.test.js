@@ -163,6 +163,14 @@ runTest('ui pending modal更新stateはeffect controllerだけが所有する', 
     assert.ok(source.includes('pendingModalUpdateController.run('));
 });
 
+runTest('ui modal runtime stateはpolicy controllerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/ui.js'), 'utf8');
+    assert.strictEqual(source.includes('let activeModalId'), false);
+    assert.strictEqual(source.includes('let lastModalFocus'), false);
+    assert.strictEqual(source.includes('let modalInertRestore'), false);
+    assert.ok(source.includes('UiModalPolicy.createRuntimeController()'));
+});
+
 runTest('ui storage境界はstorage取得拒否を外へ伝播しない', () => {
     const { context } = loadUiRuntime();
     Object.defineProperty(context, 'localStorage', {

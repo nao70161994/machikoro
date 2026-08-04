@@ -40,6 +40,38 @@ runTest('UI confirm controllerはawaitingとcancel handlerを一つのstate境�
     assert.ok(Object.isFrozen(rejected.state));
 });
 
+runTest('UI modal runtime controllerはactive focus inert復元stateを一つの境界で所有する', () => {
+    const controller = UiModalPolicy.createRuntimeController();
+    const focus = { focus() {} };
+    const restore = [{ el: {} }];
+    assert.deepStrictEqual(controller.snapshot(), {
+        activeModalId: null,
+        hasLastFocus: false,
+        inertRestoreCount: 0,
+    });
+    controller.setActiveModalId('rulesModal');
+    controller.rememberFocus(focus);
+    controller.rememberFocus(null);
+    controller.setInertRestore(restore);
+    assert.strictEqual(controller.getActiveModalId(), 'rulesModal');
+    assert.strictEqual(controller.getLastFocus(), focus);
+    assert.strictEqual(controller.getInertRestore(), restore);
+    assert.deepStrictEqual(controller.snapshot(), {
+        activeModalId: 'rulesModal',
+        hasLastFocus: true,
+        inertRestoreCount: 1,
+    });
+    assert.ok(Object.isFrozen(controller.snapshot()));
+    controller.setActiveModalId(null);
+    controller.clearLastFocus();
+    controller.clearInertRestore();
+    assert.deepStrictEqual(controller.snapshot(), {
+        activeModalId: null,
+        hasLastFocus: false,
+        inertRestoreCount: 0,
+    });
+});
+
 runTest('UI modal policy はvisible blocking modalだけを抽出する', () => {
     const visible = new Set(['rulesModal', 'pendingModal', 'noticeToast', 'confirmModal']);
     assert.deepStrictEqual(

@@ -52,6 +52,41 @@ function createConfirmController(onAwaitingChange = null) {
     return Object.freeze({ snapshot, open, close });
 }
 
+function createRuntimeController() {
+    let activeModalId = null;
+    let lastFocus = null;
+    let inertRestore = [];
+
+    function snapshot() {
+        return Object.freeze({
+            activeModalId,
+            hasLastFocus: !!lastFocus,
+            inertRestoreCount: inertRestore.length,
+        });
+    }
+
+    function getActiveModalId() { return activeModalId; }
+    function setActiveModalId(id) { activeModalId = id || null; }
+    function getLastFocus() { return lastFocus; }
+    function rememberFocus(value) { if (value) lastFocus = value; }
+    function clearLastFocus() { lastFocus = null; }
+    function getInertRestore() { return inertRestore; }
+    function setInertRestore(entries) { inertRestore = Array.isArray(entries) ? entries : []; }
+    function clearInertRestore() { inertRestore = []; }
+
+    return Object.freeze({
+        snapshot,
+        getActiveModalId,
+        setActiveModalId,
+        getLastFocus,
+        rememberFocus,
+        clearLastFocus,
+        getInertRestore,
+        setInertRestore,
+        clearInertRestore,
+    });
+}
+
 function policyFor(id) {
     return UI_MODAL_POLICY_REGISTRY[id] || UI_DEFAULT_BLOCKING_MODAL_POLICY;
 }
@@ -130,6 +165,7 @@ function keydownAction(state = {}) {
 const UiModalPolicy = Object.freeze({
     inertRootIds: UI_MODAL_INERT_ROOT_IDS,
     createConfirmController,
+    createRuntimeController,
     registry: UI_MODAL_POLICY_REGISTRY,
     exceptions: UI_MODAL_STACK_EXCEPTION_REGISTRY,
     policyFor,
