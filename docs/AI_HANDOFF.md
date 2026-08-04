@@ -1006,3 +1006,9 @@ Test index:
 - `tests/game-schema-shadow-parity.test.js` now covers Stadium transfers from every opponent, including zero/one-coin partial payments.
 - Preserve the 2/3/5/10-player and independent action/snapshot v0/v1 matrix when extending this fixture set.
 - No production authority flag or runtime path changed; authority rollout remains a separate human-controlled decision.
+
+## Batch 85 handoff (2026-08-05)
+
+- Local setup mutations, player-settings HTML application, RL readiness/preload, and start sequencing belong to `LocalGameStartRuntime`; keep `main.js` wrappers as compatibility entry points for delegated UI and app-shell preload resolution.
+- Preserve the captured player-settings snapshot while RL preload is pending and the `LocalGameStart.EFFECT_STEPS` order when extending startup behavior.
+- The runtime is linted and checkJs-covered; `main.js` is now 1,391 lines. No rules, CPU, persistence, online, or PWA behavior changed.

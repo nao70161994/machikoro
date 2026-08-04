@@ -788,3 +788,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - The deterministic Engine shadow matrix now covers Stadium income across every opponent when some opponents cannot pay the full two coins.
 - The fixture runs for 2, 3, 5, and 10 players across independent action/snapshot schema v0/v1 selections, fixing both multiplayer iteration and partial-payment semantics before any authority rollout.
 - This is test-only: game rules, CPU behavior/RNG, save formats, online protocol/reconnect, localStorage, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 85 local game start runtime
+
+- `js/localGameStartRuntime.js` now owns local player-count/type/name transitions, settings rendering, RL model readiness/preload lifecycle, duplicate-start admission, and the ordered local-game start effects.
+- `main.js` retains browser-global compatibility delegates and dependency composition; its size decreased from 1,491 to 1,391 lines. A focused runtime contract fixes the non-RL effect order and the RL pending/frozen-settings behavior.
+- The new boundary is included in browser script-order, Service Worker asset, integration-loader, ESLint, and checkJs guards. Scoped gates now cover 237 ESLint maintenance files and 236 checkJs runtime files.
+- Game rules, CPU selection/RNG, settings/save formats, localStorage keys, online protocol/reconnect, and PWA cache strategy are unchanged.

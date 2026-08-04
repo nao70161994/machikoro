@@ -944,3 +944,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. Engine shadow parity now includes Stadium's multi-opponent transfer with insufficient payer balances.
 2. The same trace is checked for 2/3/5/10 players and every independent action/snapshot schema v0/v1 pairing.
 3. Production authority remains unchanged and default-OFF; this batch only expands the rollout safety contract.
+
+## 2026-08-05 Batch 85 boundary update
+
+1. `LocalGameStartRuntime` is the application layer over `LocalPlayerSettings`, `LocalGameStart`, and `GameSetupState`, owning local setup rendering, RL preload state, and start orchestration.
+2. `main.js` now composes injected game initialization, settings persistence, online/UI reset, notice, and lifecycle effects while preserving its existing global entry points.
+3. Direct contracts preserve the exact start effect order, duplicate-start exclusion, async settings snapshot, browser load order, and PWA asset availability.
