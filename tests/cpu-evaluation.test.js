@@ -3,6 +3,55 @@ const { CPUEvaluation } = require('../js/cpuEvaluation');
 const { runTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
+runTest('CPU evaluation は進行収入カードの色・休業・特殊effect契約を判定する', () => {
+    const effects = {
+        LOAN: 'loan',
+        RENOVATION: 'renovation',
+        ITSTARTUP: 'itstartup',
+        PARK: 'park',
+        BUSINESS: 'business',
+        CLEANING: 'cleaning',
+        MOVER: 'mover',
+    };
+    const dormant = new Set();
+    const player = { isDormant: card => dormant.has(card) };
+    const blue = { color: 'blue', effect: 'normal' };
+    const green = { color: 'green', effect: 'normal' };
+    const red = { color: 'red', effect: 'normal' };
+    const loan = { color: 'green', effect: effects.LOAN };
+
+    assert.strictEqual(CPUEvaluation.isProgressIncomeCard(blue, player, effects), true);
+    assert.strictEqual(CPUEvaluation.isProgressIncomeCard(green, player, effects), true);
+    assert.strictEqual(CPUEvaluation.isProgressIncomeCard(red, player, effects), false);
+    assert.strictEqual(CPUEvaluation.isProgressIncomeCard(loan, player, effects), false);
+    dormant.add(blue);
+    assert.strictEqual(CPUEvaluation.isProgressIncomeCard(blue, player, effects), false);
+    assert.strictEqual(CPUEvaluation.isProgressIncomeCard(null, player, effects), false);
+    assert.strictEqual(CPUEvaluation.isProgressIncomeCard(green, null, effects), false);
+});
+
+runTest('CPU evaluation は進行収入を入力順でpureに集計する', () => {
+    const cards = [{ id: 'first' }, { id: 'excluded' }, { id: 'last' }];
+    const visited = [];
+    const valued = [];
+    const total = CPUEvaluation.progressIncomeTotal(
+        cards,
+        card => {
+            visited.push(card.id);
+            return card.id !== 'excluded';
+        },
+        card => {
+            valued.push(card.id);
+            return card.id === 'first' ? 2 : 5;
+        }
+    );
+
+    assert.strictEqual(total, 7);
+    assert.deepStrictEqual(visited, ['first', 'excluded', 'last']);
+    assert.deepStrictEqual(valued, ['first', 'last']);
+    assert.deepStrictEqual(cards.map(card => card.id), ['first', 'excluded', 'last']);
+});
+
 runTest('CPU evaluation はランドマーク候補の最高scoreと低cost tie-breakをpureに選ぶ', () => {
     const first = { name: 'first', score: 8, cost: 6 };
     const cheaperTie = { name: 'cheaper', score: 8, cost: 4 };

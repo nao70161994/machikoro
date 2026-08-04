@@ -3111,59 +3111,39 @@ class CPU {
     }
 
     _isProgressIncomeCard(card, player) {
-        if (!card || !player || player.isDormant(card)) return false;
-        if (card.color !== "blue" && card.color !== "green") return false;
-        return ![
-            CARD_EFFECTS.LOAN,
-            CARD_EFFECTS.RENOVATION,
-            CARD_EFFECTS.ITSTARTUP,
-            CARD_EFFECTS.PARK,
-            CARD_EFFECTS.BUSINESS,
-            CARD_EFFECTS.CLEANING,
-            CARD_EFFECTS.MOVER,
-        ].includes(card.effect);
+        return CPUEvaluation.isProgressIncomeCard(card, player, CARD_EFFECTS);
     }
 
     _estimateStableIncome(game, player) {
         const playerIndex = game && game.players ? game.players.indexOf(player) : -1;
+        let cache = null;
         if (playerIndex >= 0) {
-            const cache = this._stateEvaluationCache(game);
+            cache = this._stateEvaluationCache(game);
             if (playerIndex in cache.stableIncomes) return cache.stableIncomes[playerIndex];
-            let total = 0;
-            for (const card of player.cards) {
-                if (!this._isProgressIncomeCard(card, player)) continue;
-                total += this._ownedCardValue(card, game, player);
-            }
-            cache.stableIncomes[playerIndex] = total;
-            return total;
         }
-        let total = 0;
-        for (const card of player.cards) {
-            if (!this._isProgressIncomeCard(card, player)) continue;
-            total += this._ownedCardValue(card, game, player);
-        }
+        const total = CPUEvaluation.progressIncomeTotal(
+            player.cards,
+            card => this._isProgressIncomeCard(card, player),
+            card => this._ownedCardValue(card, game, player)
+        );
+        if (cache) cache.stableIncomes[playerIndex] = total;
         return total;
     }
 
     _estimateProgressIncome(game, player) {
         if (!game || !player) return 0;
         const playerIndex = game.players ? game.players.indexOf(player) : -1;
+        let cache = null;
         if (playerIndex >= 0) {
-            const cache = this._stateEvaluationCache(game);
+            cache = this._stateEvaluationCache(game);
             if (playerIndex in cache.progressIncomes) return cache.progressIncomes[playerIndex];
-            let total = 0;
-            for (const card of player.cards) {
-                if (!this._isProgressIncomeCard(card, player)) continue;
-                total += this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / 6;
-            }
-            cache.progressIncomes[playerIndex] = total;
-            return total;
         }
-        let total = 0;
-        for (const card of player.cards) {
-            if (!this._isProgressIncomeCard(card, player)) continue;
-            total += this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / 6;
-        }
+        const total = CPUEvaluation.progressIncomeTotal(
+            player.cards,
+            card => this._isProgressIncomeCard(card, player),
+            card => this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / 6
+        );
+        if (cache) cache.progressIncomes[playerIndex] = total;
         return total;
     }
 

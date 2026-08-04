@@ -919,6 +919,29 @@ const CPUEvaluation = Object.freeze({
         if (Number.isFinite(deltaEv) && deltaEv > 0.45) return 0;
         return current.countCard(card.name) >= 3 ? 0.75 : 0.45;
     },
+    isProgressIncomeCard(card, player, effects) {
+        if (!card || !player || player.isDormant(card)) return false;
+        if (card.color !== 'blue' && card.color !== 'green') return false;
+        return ![
+            effects.LOAN,
+            effects.RENOVATION,
+            effects.ITSTARTUP,
+            effects.PARK,
+            effects.BUSINESS,
+            effects.CLEANING,
+            effects.MOVER,
+        ].includes(card.effect);
+    },
+
+    progressIncomeTotal(cards, isEligible, valueForCard) {
+        let total = 0;
+        for (const card of cards) {
+            if (!isEligible(card)) continue;
+            total += valueForCard(card);
+        }
+        return total;
+    },
+
     expertLookaheadSteps(playerCount, remainingLandmarks, phase, buildPhase, simulationMode, baseSteps) {
         let steps = Math.max(2, baseSteps);
         if (remainingLandmarks <= 1) steps += playerCount * 2;
