@@ -1654,26 +1654,23 @@ function checkFreezeWatchdog() {
         return;
     }
     if (action !== UiWatchdogMonitor.ACTIONS.REPORT_AND_RECOVER) return;
-    const payload = {
+    UiWatchdogReporting.execute({
         freezeKind,
         stagnantMs: progress.stagnantMs,
         snapshot,
         interactabilityIssues: validateUiInteractability(snapshot).filter(issue => issue && issue.freezeKind),
-    };
-    markClientFlowCheckpoint('freeze-watchdog-report', payload);
-    const recovered = recoverUiInteractability(snapshot);
-    payload.recovery = { attempted: true, success: !!recovered };
-    appShellStorage.access(storage => {
-        storage.setItem('machikoroFreezeSnapshot', freezePayloadStorageJson(payload));
+    }, {
+        markCheckpoint: markClientFlowCheckpoint,
+        recover: recoverUiInteractability,
+        serialize: freezePayloadStorageJson,
+        store(key, value) {
+            appShellStorage.access(storage => storage.setItem(key, value));
+        },
+        buildStack: buildFreezeReportStack,
+        report(input) {
+            if (typeof reportClientError === 'function') reportClientError(input);
+        },
     });
-    if (typeof reportClientError === 'function') {
-        reportClientError({
-            source: 'freeze-watchdog',
-            phase: snapshot.phase,
-            message: freezeKind + ' after ' + payload.stagnantMs + 'ms',
-            stack: buildFreezeReportStack(payload),
-        });
-    }
 }
 
 function startFreezeWatchdog() {

@@ -194,6 +194,7 @@ const TEST_GROUPS = {
         'ui-pending-effects.test.js',
         'ui-watchdog.test.js',
         'ui-watchdog-monitor.test.js',
+        'ui-watchdog-reporting.test.js',
         'client-runtime-snapshot.test.js',
         'crash-screen.test.js',
         'crash-screen-effects.test.js',

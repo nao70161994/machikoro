@@ -135,6 +135,7 @@ const STATIC_ASSETS = [
   '/js/clientEventRuntime.js',
   '/js/uiWatchdog.js',
   '/js/uiWatchdogMonitor.js',
+  '/js/uiWatchdogReporting.js',
   '/js/clientRuntimeSnapshot.js',
   '/js/crashScreen.js',
   '/js/crashScreenEffects.js',
