@@ -593,3 +593,18 @@ runTest('online reconnect cleanup authorityはstateまたはlegacy不一致でfa
         { cleanup: true, source: 'legacy-fallback', ready: false, fallbackReason: 'state-mismatch' }
     );
 });
+
+runTest('online reconnect completion controllerはlegacy完了projectionを単独所有する', () => {
+    const controller = OnlineReconnectState.createCompletionController();
+    assert.strictEqual(controller.isCompleted(), false);
+    assert.deepStrictEqual(controller.snapshot(), { completed: false });
+    assert.deepStrictEqual(controller.markCompleted(), { completed: true });
+    assert.strictEqual(controller.isCompleted(), true);
+    assert.deepStrictEqual(controller.reset(), { completed: false });
+    assert.strictEqual(controller.isCompleted(), false);
+    assert.ok(Object.isFrozen(controller));
+    assert.ok(Object.isFrozen(controller.snapshot()));
+
+    const restored = OnlineReconnectState.createCompletionController(true);
+    assert.strictEqual(restored.isCompleted(), true);
+});

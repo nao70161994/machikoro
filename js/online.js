@@ -445,7 +445,7 @@ const _onlineActionFlightController = OnlineRetryPolicy.createActionFlightContro
     clearTimer: typeof clearTimeout === 'function' ? clearTimeout : null,
     now: () => Date.now(),
 });
-let _onlineReconnectCompleted = false;
+const _onlineReconnectCompletionController = OnlineReconnectState.createCompletionController();
 
 function _syncOnlineRejoinAttemptCompatibilityState(snapshot) {
     _rejoinRetryCount = snapshot.attemptCount;
@@ -475,7 +475,7 @@ function _onlineReconnectObservationFlags() {
     const connected = !!socket && socket.connected !== false;
     return {
         failed: _rejoinRetryExhausted,
-        completed: _onlineReconnectCompleted,
+        completed: _onlineReconnectCompletionController.isCompleted(),
         replaying: isReplaying,
         restoring: _onlineRestoreInProgress,
         rejoining: isReconnectingOnline && connected,
@@ -1888,7 +1888,7 @@ function _onlineRestoreActivationEffectAuthoritySelection(planSelection) {
 function markOnlineGameFinished() {
     const plan = OnlineSessionLifecycle.completedPlan();
     OnlineSessionLifecycle.execute(plan, {
-        markCompleted() { _onlineReconnectCompleted = true; },
+        markCompleted() { _onlineReconnectCompletionController.markCompleted(); },
         leaveOnlineGame() { isOnlineGame = false; },
         clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
         clearActionInFlight() { _setOnlineActionInFlight(false); },
@@ -1902,7 +1902,7 @@ function markOnlineGameFinished() {
 function resetOnlineState() {
     const plan = OnlineSessionLifecycle.resetPlan(myRoomId);
     OnlineSessionLifecycle.execute(plan, {
-        markNotCompleted() { _onlineReconnectCompleted = false; },
+        markNotCompleted() { _onlineReconnectCompletionController.reset(); },
         resetEngineShadow() {
             _lastOnlineGameEngineShadowOutcome = Object.freeze({
                 report: null,
@@ -2713,7 +2713,7 @@ function initSocket() {
         if (gameSchema) gameStartPayload.gameSchema = gameSchema;
         const startOnlineGame = () => {
             if (startGeneration !== _onlineRestoreGeneration) return;
-            _onlineReconnectCompleted = false;
+            _onlineReconnectCompletionController.reset();
             isOnlineGame = true;
             _setOnlineHostState(hostPlayerIndex);
             cpuSpeed = cs || 1500;
@@ -3303,7 +3303,7 @@ function initSocket() {
                     restoreActivationPlan,
                     {
                         resetReconnectCompleted: () => {
-                            _onlineReconnectCompleted = false;
+                            _onlineReconnectCompletionController.reset();
                         },
                         activateOnlineGame: () => { isOnlineGame = true; },
                         clearReconnectFlag: () => {
@@ -3336,7 +3336,7 @@ function initSocket() {
                 );
                 if (!activationResult.result) return;
             } else {
-                _onlineReconnectCompleted = false;
+                _onlineReconnectCompletionController.reset();
                 isOnlineGame = true;
                 setOnlineReconnectLegacyFlag(false);
                 prevCoins = null;

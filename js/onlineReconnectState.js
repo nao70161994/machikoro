@@ -110,6 +110,31 @@ const ONLINE_RECONNECT_TRANSITIONS = Object.freeze({
     ]),
 });
 
+function createOnlineReconnectCompletionController(initialCompleted = false) {
+    let completed = initialCompleted === true;
+
+    function snapshot() {
+        return Object.freeze({ completed });
+    }
+
+    function markCompleted() {
+        completed = true;
+        return snapshot();
+    }
+
+    function reset() {
+        completed = false;
+        return snapshot();
+    }
+
+    return Object.freeze({
+        isCompleted() { return completed; },
+        markCompleted,
+        reset,
+        snapshot,
+    });
+}
+
 function onlineReconnectEventAuthorityEnabled(env = {}) {
     return ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED_VALUES.has(
         String(env.ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED || '').trim().toLowerCase()
@@ -538,6 +563,7 @@ const OnlineReconnectState = Object.freeze({
     effectAuthorityEnabled: onlineReconnectEffectAuthorityEnabled,
     statusEffectAuthorityEnabled: onlineReconnectStatusEffectAuthorityEnabled,
     cleanupAuthorityEnabled: onlineReconnectCleanupAuthorityEnabled,
+    createCompletionController: createOnlineReconnectCompletionController,
     isState: isOnlineReconnectState,
     isEvent: isOnlineReconnectEvent,
     blocksInput: onlineReconnectStateBlocksInput,
