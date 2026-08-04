@@ -231,6 +231,8 @@ runTest('online action flight controllerはflag・開始時刻・timeoutを一�
         startedAt: 1200,
         timeoutPending: true,
     });
+    assert.strictEqual(controller.isInFlight(), true);
+    assert.strictEqual(controller.getStartedAt(), 1200);
     assert.strictEqual(timers[0].delayMs, OnlineRetryPolicy.defaults.actionAckTimeoutMs);
 
     currentTime = 1300;
@@ -254,6 +256,8 @@ runTest('online action flight controllerはflag・開始時刻・timeoutを一�
         startedAt: 0,
         timeoutPending: false,
     });
+    assert.strictEqual(controller.isInFlight(), false);
+    assert.strictEqual(controller.getStartedAt(), 0);
 });
 
 runTest('online action flight controllerはtimer不在でもflight時刻を保持する', () => {

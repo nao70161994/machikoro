@@ -244,7 +244,13 @@ function createActionFlightController(options = {}) {
         });
     }
 
-    return Object.freeze({ set, clear, snapshot });
+    return Object.freeze({
+        isInFlight() { return inFlight; },
+        getStartedAt() { return startedAt; },
+        set,
+        clear,
+        snapshot,
+    });
 }
 
 function actionAckAgeMs(startedAt, now = Date.now()) {

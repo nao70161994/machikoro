@@ -423,6 +423,16 @@ function primaryActionButtonStates() {
     return { buttons, enabled };
 }
 
+function appShellOnlineActionFlightState() {
+    try {
+        if (typeof getOnlineActionFlightState === 'function') return getOnlineActionFlightState();
+    } catch (_) {}
+    return {
+        inFlight: typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
+        startedAt: typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : 0,
+    };
+}
+
 function buildClientRuntimeSnapshot(reason = '') {
     const hasGame = typeof game !== 'undefined' && !!game;
     const currentPlayerIndex = hasGame ? game.currentPlayerIndex : null;
@@ -481,8 +491,8 @@ function buildClientRuntimeSnapshot(reason = '') {
             isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
             isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
             myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
-            actionInFlight: typeof onlineActionInFlight !== 'undefined' ? !!onlineActionInFlight : null,
-            actionInFlightAt: typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : null,
+            actionInFlight: appShellOnlineActionFlightState().inFlight,
+            actionInFlightAt: appShellOnlineActionFlightState().startedAt,
             isReconnecting: typeof isReconnectingOnline !== 'undefined' ? !!isReconnectingOnline : null,
             socketConnected: typeof socket !== 'undefined' && socket ? socket.connected !== false : null,
         },

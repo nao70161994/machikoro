@@ -294,7 +294,7 @@ function loadOnlineRuntime(options = {}) {
             if (v.rejoinRetryExhausted === true) _markOnlineRejoinAttemptExhausted();
             if (typeof v.isReconnectingOnline !== 'undefined') isReconnectingOnline = v.isReconnectingOnline;
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
-            if (typeof v.onlineActionInFlight !== 'undefined') onlineActionInFlight = v.onlineActionInFlight;
+            if (typeof v.onlineActionInFlight !== 'undefined') _setOnlineActionInFlight(v.onlineActionInFlight);
             if (typeof v.hostlessRestorePending !== 'undefined') _hostlessRestoreState.setPending(v.hostlessRestorePending);
             if (typeof v.onlineGameSchemaSelection !== 'undefined') onlineSchemaSelectionController.set(v.onlineGameSchemaSelection);
             if (typeof v.myRoomId !== 'undefined') myRoomId = v.myRoomId;
@@ -305,7 +305,7 @@ function loadOnlineRuntime(options = {}) {
         this.getOnlineLobbyState = () => onlineLobbyRequestController.snapshot();
         this.isOnlineReconnectInputBlocked = isOnlineReconnectInputBlocked;
         this.setOnlineReconnectLegacyFlag = setOnlineReconnectLegacyFlag;
-        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestoreState.isPending() });
+        this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, onlineActionInFlight: getOnlineActionFlightState().inFlight, hostlessRestorePending: _hostlessRestoreState.isPending() });
         this.myPlayerIndex = myPlayerIndex;
     `, context);
     context.elements = elements;
@@ -514,6 +514,14 @@ runTest('online restore queueは生の状態accessをowner関数へ集約する'
     assert.ok(source.includes('function _readOnlineRestoreEventQueue()'));
     assert.ok(source.includes('function _replaceOnlineRestoreEventQueue(queue)'));
     assert.ok(source.includes('function _appendOnlineRestoreEventQueueLegacy(event)'));
+});
+
+runTest('online action flight stateはretry controllerだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    assert.ok(!source.includes('let onlineActionInFlight'));
+    assert.ok(!source.includes('_syncOnlineActionFlightCompatibilityState'));
+    assert.ok(source.includes('function getOnlineActionFlightState()'));
+    assert.ok(source.includes('_onlineActionFlightController.isInFlight()'));
 });
 
 runTest('online restore lifecycleはgeneration・進行・隔離の書き込みをcontroller境界へ集約する', () => {

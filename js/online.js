@@ -143,8 +143,6 @@ function setOnlineReconnectLegacyFlag(value) {
     isReconnectingOnline = value === true;
     return isReconnectingOnline;
 }
-let onlineActionInFlight = false;
-let onlineActionInFlightAt = 0;
 const onlineSchemaSelectionController = OnlineSchemaTransport.createSelectionController();
 let _rejoinRetryTimer = null;
 let _rejoinRetryDeadline = 0;
@@ -422,6 +420,10 @@ const _onlineActionFlightController = OnlineRetryPolicy.createActionFlightContro
     now: () => Date.now(),
 });
 const _onlineReconnectCompletionController = OnlineReconnectState.createCompletionController();
+
+function getOnlineActionFlightState() {
+    return _onlineActionFlightController.snapshot();
+}
 
 function _setOnlineRejoinAttemptCount(value) {
     return _onlineRejoinAttemptController.setAttemptCount(value);
@@ -1107,22 +1109,16 @@ function _armOnlineRejoinResponseTimeout() {
     return true;
 }
 
-function _syncOnlineActionFlightCompatibilityState(snapshot) {
-    onlineActionInFlight = snapshot.inFlight;
-    onlineActionInFlightAt = snapshot.startedAt;
-}
-
 function _clearOnlineActionTimeout() {
-    _syncOnlineActionFlightCompatibilityState(_onlineActionFlightController.clear());
+    _onlineActionFlightController.clear();
 }
 
 function _setOnlineActionInFlight(value) {
-    const snapshot = _onlineActionFlightController.set(
+    _onlineActionFlightController.set(
         value,
         _handleOnlineActionTimeout,
         ONLINE_ACTION_ACK_TIMEOUT_MS
     );
-    _syncOnlineActionFlightCompatibilityState(snapshot);
 }
 
 function _legacyOnlineRejoinRequestPlan(session) {
@@ -1240,7 +1236,7 @@ function resumeOnlineReconnectAfterPageActivation() {
 function _legacyOnlineActionTimeoutPlan() {
     const decisions = OnlineRetryPolicy.actionTimeoutDecisions;
     return Object.freeze({
-        decision: !onlineActionInFlight
+        decision: !_onlineActionFlightController.isInFlight()
             ? decisions.IGNORE
             : (isOnlineGame ? decisions.REJOIN : decisions.CLEAR_ONLY),
     });
@@ -1255,7 +1251,7 @@ function _onlineActionTimeoutPlanSelection() {
     );
     const stateReady = stateSelection.source === 'event';
     const selected = OnlineRetryPolicy.selectActionTimeoutPlan(
-        onlineActionInFlight,
+        _onlineActionFlightController.isInFlight(),
         isOnlineGame,
         legacyPlan,
         { authorityEnabled: requested && stateReady }
@@ -3939,7 +3935,7 @@ function restoreOnlineSnapshot(state) {
 
 function sendAction(action, data = {}) {
     if (isOnlineGame && socket) {
-        if (isOnlineReconnectInputBlocked() || onlineActionInFlight || socket.connected === false) return false;
+        if (isOnlineReconnectInputBlocked() || _onlineActionFlightController.isInFlight() || socket.connected === false) return false;
         _setOnlineActionInFlight(true);
         cpuScheduleToken++;
         const pending = _savePendingOutboundAction(action, data);

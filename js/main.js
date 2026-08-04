@@ -676,6 +676,16 @@ function isMainOnlineReconnectInputBlocked() {
     return typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline;
 }
 
+function mainOnlineActionFlightState() {
+    try {
+        if (typeof getOnlineActionFlightState === 'function') return getOnlineActionFlightState();
+    } catch (_) {}
+    return {
+        inFlight: typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
+        startedAt: typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : 0,
+    };
+}
+
 function cpuScheduleBlockedReason() {
     const online = typeof isOnlineGame !== 'undefined' && isOnlineGame;
     const transportReason = CpuSchedulerState.blockedReason({
@@ -683,7 +693,7 @@ function cpuScheduleBlockedReason() {
         isOnlineGame: online,
         isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
         isReconnecting: online ? isMainOnlineReconnectInputBlocked() : false,
-        onlineActionInFlight: online && typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
+        onlineActionInFlight: online && mainOnlineActionFlightState().inFlight,
         socketConnected: !online || (typeof socket !== 'undefined' && !!socket && socket.connected !== false),
         hasGame: true,
         isCpuTurn: true,
@@ -722,9 +732,9 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
     if (isOnlineGame && !isRoomHost) { markMainCheckpoint('scheduleCPU-skip-non-host'); return currentCpuTurnSchedulerHealth(); }
     if (isOnlineGame && (
         isMainOnlineReconnectInputBlocked() ||
-        (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
+        mainOnlineActionFlightState().inFlight ||
         (typeof socket === 'undefined' || !socket || socket.connected === false)
-    )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : null }); return currentCpuTurnSchedulerHealth(); }
+    )) { markMainCheckpoint('scheduleCPU-skip-online-blocked', { onlineActionInFlight: mainOnlineActionFlightState().inFlight }); return currentCpuTurnSchedulerHealth(); }
     if (!game || game.checkWinner()) { markMainCheckpoint('scheduleCPU-skip-no-game-or-winner'); return currentCpuTurnSchedulerHealth(); }
     const ci = game.currentPlayerIndex;
     if (!cpuPlayers[ci]) {
@@ -754,7 +764,7 @@ function scheduleCpuTurn(reason = 'scheduleCPU') {
             if (isOnlineGame && !isRoomHost) return;
             if (isOnlineGame && (
                 isMainOnlineReconnectInputBlocked() ||
-                (typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight) ||
+                mainOnlineActionFlightState().inFlight ||
                 (typeof socket === 'undefined' || !socket || socket.connected === false)
             )) return;
             if (!game || game.checkWinner()) return;
@@ -924,7 +934,7 @@ function canRunLocalHumanAction(expectedPlayerIndex = null) {
         isOnlineGame: online,
         myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
         isReconnecting: online ? isMainOnlineReconnectInputBlocked() : false,
-        onlineActionInFlight: online && typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
+        onlineActionInFlight: online && mainOnlineActionFlightState().inFlight,
         socketConnected: !online || (typeof socket !== 'undefined' && !!socket && socket.connected !== false),
     });
 }

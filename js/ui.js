@@ -341,6 +341,16 @@ function currentUiAllowedActions() {
     return new Set();
 }
 
+function uiOnlineActionFlightState() {
+    try {
+        if (typeof getOnlineActionFlightState === 'function') return getOnlineActionFlightState();
+    } catch (_) {}
+    return {
+        inFlight: typeof onlineActionInFlight !== 'undefined' && !!onlineActionInFlight,
+        startedAt: typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : 0,
+    };
+}
+
 function isOnlineUiInputBlocked() {
     const isReconnecting = typeof isOnlineReconnectInputBlocked === 'function'
         ? isOnlineReconnectInputBlocked()
@@ -349,7 +359,7 @@ function isOnlineUiInputBlocked() {
     return UiInputPolicy.onlineBlockReason({
         isOnlineGame,
         isReconnecting,
-        actionInFlight: typeof onlineActionInFlight !== 'undefined' && onlineActionInFlight,
+        actionInFlight: uiOnlineActionFlightState().inFlight,
         socketAvailable,
         socketConnected: socketAvailable ? socket.connected : false,
     }) !== '';
