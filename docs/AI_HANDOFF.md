@@ -661,3 +661,11 @@ Test index:
 - UI log entries and previous rendered length belong to `UiLogDisplay.createHistoryController()`. Keep log text, DOM effects, scrolling, card filters, and browser-global APIs in `ui.js`.
 - Scoped gates are 211 ESLint maintenance files and 210 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 41 handoff (2026-08-04)
+
+- Income completion belongs to `GameTurnPolicy.incomeCompletionPlan()`. Preserve exact-zero City Hall admission and do not read City Hall ownership unless coins are zero; `GameManager` remains the mutable coin/log/phase adapter.
+- Lobby create/join pending flags, request kind/generation, and timeout handle belong to `OnlineLobbyRequestState`. Keep the two legacy pending variables as read projections only and preserve the 15-second timeout, Socket events, notices, disconnect cleanup, and RL preload ordering.
+- Crash shown/hidden state belongs to `CrashScreen.createController()`. Keep CPU cancellation, saved-game access, DOM/focus/listener effects, `showCrashScreen`, and `crashResume` in app-shell adapters.
+- Scoped gates are 212 ESLint maintenance files and 211 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

@@ -421,3 +421,12 @@ This batch advances deterministic shared-Engine state, action-only reproducible 
 - Scoped gates now cover 211 ESLint maintenance files and 210 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 This batch advances explicit online state ownership, a thinner server composition root, and isolated UI history state without changing rules, CPU strength, save/localStorage formats, Socket.IO protocol, reconnect authority/defaults, UI presentation, or PWA/SW behavior.
+
+## 2026-08-04 Batch 41 architecture boundaries
+
+- `GameTurnPolicy.incomeCompletionPlan()` now owns the immutable City Hall relief and post-income phase result. `GameManager` retains red/blue/green/purple activation order, live coin/log mutation, and phase assignment; City Hall ownership remains lazy and is read only at exactly zero coins.
+- `js/onlineLobbyRequestState.js` is now the sole owner of create/join pending state, request kind, generation, and timeout handle. `online.js` keeps compatibility read projections, the unchanged 15-second timer, DOM notices, Socket emits, disconnect handling, and RL preload effects.
+- `CrashScreen.createController()` now owns crash-screen shown/hidden state and duplicate-show admission. `appShell.js` retains CPU cancellation, saved-game lookup, DOM/focus effects, listener wiring, resume dispatch, and public browser APIs.
+- Scoped gates now cover 212 ESLint maintenance files and 211 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+This batch advances deterministic Engine transitions, explicit online request state, and a thinner app-shell without changing rules, CPU strength, save/localStorage formats, Socket.IO events/payloads, timeout behavior, crash recovery, or PWA/SW behavior.

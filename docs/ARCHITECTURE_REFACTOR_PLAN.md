@@ -627,3 +627,11 @@ Scoped gates remain 210 ESLint maintenance files and 209 checkJs runtime files. 
 3. UI log history now has an immutable-snapshot controller. `ui.js` remains responsible for display strings, DOM effects, scrolling, public APIs, and unrelated filter/player state.
 
 Scoped gates now cover 211 ESLint maintenance files and 210 checkJs runtime files. Production authority, protocol/schema, persistence formats, presentation, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 41 boundary update
+
+1. Post-income City Hall relief and phase selection now form one immutable Engine transition. The mutable adapter preserves card-effect order, exact-zero admission, lazy ownership reads, log text, and mutation order.
+2. Lobby create/join pending state, request generation, and timeout identity now have one controller owner. Socket transport, RL preload, DOM rendering, notices, and the 15-second policy remain adapters.
+3. Crash-screen duplicate admission now has explicit state ownership. App-shell still orchestrates CPU cancellation, persistence lookup, DOM/focus/listener effects, and resume.
+
+Scoped gates now cover 212 ESLint maintenance files and 211 checkJs runtime files. Authority, protocol/schema, persistence, timeout, crash presentation, and PWA defaults are unchanged.
