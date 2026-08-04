@@ -685,3 +685,11 @@ Test index:
 - Do not extract forwarding wrappers around the room projection helpers already delegated from `server.js` to `server/roomProjection.js`; select a boundary with new ownership instead.
 - Scoped gates are 213 ESLint maintenance files and 212 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 44 handoff (2026-08-04)
+
+- Turn advancement belongs to `GameTurnPolicy.turnAdvancePlan()`. Preserve the frozen reset options, Amusement Park repeat admission, zero turn-count delta on repeat, cyclic next-player index, and exact GameManager log/effect order.
+- Negotiated schema selection state belongs to `OnlineSchemaTransport.createSelectionController()`. Keep GAME_START and REJOIN_DATA validation, runtime flags, codecs, Socket payloads, and default legacy transport outside the controller.
+- Recreate-room admission and existing/new routing belong to `server/recreateRoomRuntime.js`. Keep validation, identity, room mutation, persistence, hostless policy, and Socket delivery in the injected owners; `handleRecreateRoom` is only the public compatibility wrapper.
+- Scoped gates are 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- New modules must be registered in production/SW where applicable, lint, checkJs, test groups, every partial VM loader, and runtime-dependency contracts within the same theme.

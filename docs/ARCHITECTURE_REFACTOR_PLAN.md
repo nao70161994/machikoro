@@ -651,3 +651,11 @@ Scoped gates remain 212 ESLint maintenance files and 211 checkJs runtime files. 
 3. The remaining inspected `server.js` room projections are already delegated to `roomProjection`; creating a second forwarding boundary was rejected as non-progress.
 
 Scoped gates now cover 213 ESLint maintenance files and 212 checkJs runtime files. No authority cutover, protocol/schema, persistence, rule, CPU, UI timing, or PWA behavior changed.
+
+## 2026-08-04 Batch 44 boundary update
+
+1. Complete turn advancement now has one detached Engine plan for repeat/next-player state. The mutable adapter applies the plan and retains exact structured log effects.
+2. Negotiated online schema selection now has one controller owner inside the transport boundary. Negotiation, codecs, flags, and protocol rollout remain independent and default-compatible.
+3. Recreate-room admission routing now has a dedicated server runtime. The composition root no longer expands admission fields or chooses existing/new restore execution inline.
+
+Scoped gates now cover 214 ESLint maintenance files and 213 checkJs runtime files. No authority activation, schema/protocol change, persistence change, rule/CPU change, or PWA behavior change occurred.

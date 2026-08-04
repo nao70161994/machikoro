@@ -448,3 +448,12 @@ This batch advances action-only reproducible CPU evaluation, deterministic Engin
 - Scoped gates now cover 213 ESLint maintenance files and 212 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU strength, save/localStorage format, Socket.IO protocol, reconnect timeout/authority, UI presentation timing, or PWA/SW cache policy changed.
+
+## 2026-08-04 Batch 44 architecture boundaries
+
+- `GameTurnPolicy.turnAdvancePlan()` now owns the immutable repeat-turn/next-player outcome, player index, turn-count delta, roll phase, and reset options. `GameManager` remains the live mutation/log adapter; Amusement Park admission, exact log text, dice clearing, and player order are unchanged.
+- `OnlineSchemaTransport.createSelectionController()` is now the sole owner of negotiated schema selection state. `online.js` retains GAME_START/REJOIN_DATA admission, runtime flags, action/snapshot/recreate codecs, Socket transport, and the default legacy path.
+- `server/recreateRoomRuntime.js` now owns restore admission routing and the existing-room/new-room branch. `server.js` injects room lookup, error delivery, and the existing restore runtimes; validation, identity, room mutation, persistence, Socket events, and payload shapes remain in their prior owners.
+- Scoped gates now cover 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU strength, save/localStorage format, Action/Snapshot schema, Socket.IO protocol, reconnect authority/timing, or PWA/SW behavior changed.
