@@ -129,6 +129,45 @@ const UiLogDisplay = (() => {
         });
     }
 
+    function createHistoryController(options = {}) {
+        let entries = Array.isArray(options.entries) ? options.entries.slice() : [];
+        let currentLength = Number.isInteger(options.currentLength) && options.currentLength >= 0
+            ? options.currentLength
+            : 0;
+        const maxEntries = Number.isInteger(options.maxEntries) && options.maxEntries >= 0
+            ? options.maxEntries
+            : MAX_FULL_LOG;
+
+        function snapshot() {
+            const detachedEntries = Object.freeze(entries.slice());
+            return Object.freeze({
+                entries: detachedEntries,
+                currentLength,
+                entryCount: detachedEntries.filter(entry => entry !== '__SEP__').length,
+            });
+        }
+
+        function append(currentEntries) {
+            const history = updateLogHistory(
+                entries,
+                currentLength,
+                currentEntries,
+                maxEntries
+            );
+            entries = Array.from(history.entries);
+            currentLength = history.currentLength;
+            return snapshot();
+        }
+
+        function reset() {
+            entries = [];
+            currentLength = 0;
+            return snapshot();
+        }
+
+        return Object.freeze({ snapshot, append, reset });
+    }
+
     function buildLogToggleView(collapsed) {
         return Object.freeze({
             collapsed: collapsed === true,
@@ -145,6 +184,7 @@ const UiLogDisplay = (() => {
         buildLogSummaryHtml,
         buildLogToggleView,
         updateLogHistory,
+        createHistoryController,
     });
 })();
 

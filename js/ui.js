@@ -38,12 +38,14 @@ function renderLog() {
 
     const cur = game.log || [];
 
-    const history = UiLogDisplay.updateLogHistory(fullLog, prevLogLength, cur);
-    fullLog = Array.from(history.entries);
-    prevLogLength = history.currentLength;
+    const history = logHistoryController.append(cur);
     titleEl.textContent = `📋 ログ (${history.entryCount})`;
 
-    logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(fullLog, LOG_TYPE_DISPLAY, escapeHtml);
+    logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(
+        history.entries,
+        LOG_TYPE_DISPLAY,
+        escapeHtml
+    );
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml);
     logEl.scrollTop = logEl.scrollHeight;
 }
@@ -786,8 +788,7 @@ function applyCardSelectStateSnapshot() {
     enabledCards = new Set(snapshot.enabledCards);
     enabledLandmarks = new Set(snapshot.enabledLandmarks);
 }
-let fullLog = [];
-let prevLogLength = 0;
+const logHistoryController = UiLogDisplay.createHistoryController();
 let prevPlayerIndex = -1;
 let announcerTimer = null;
 let cardFilter = '';
@@ -913,7 +914,7 @@ function compareCardNamesForDisplay(a, b) {
     return UiCardOrder.compareCardNamesForDisplay(a, b, CARDS, CARD_COLOR_ORDER);
 }
 
-function resetFullLog() { fullLog = []; prevLogLength = 0; prevPlayerIndex = -1; cardFilter = ''; }
+function resetFullLog() { logHistoryController.reset(); prevPlayerIndex = -1; cardFilter = ''; }
 
 function isVisibleFocusableElement(el) {
     if (!el || el.disabled || el.hidden || el.getAttribute('aria-hidden') === 'true') return false;

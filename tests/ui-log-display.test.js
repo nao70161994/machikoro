@@ -136,3 +136,36 @@ const boundedHistory = UiLogDisplay.updateLogHistory(
 );
 assert.deepStrictEqual(boundedHistory.entries, [{ message: 'new' }]);
 assert.strictEqual(boundedHistory.entryCount, 1);
+
+
+const sourceHistoryEntries = [{ type: 'dice', message: 'first' }];
+const historyController = UiLogDisplay.createHistoryController({
+    entries: sourceHistoryEntries,
+    currentLength: 1,
+    maxEntries: 3,
+});
+sourceHistoryEntries.push({ type: 'gain', message: 'external' });
+assert.deepStrictEqual(historyController.snapshot(), {
+    entries: [{ type: 'dice', message: 'first' }],
+    currentLength: 1,
+    entryCount: 1,
+});
+const appendedControllerHistory = historyController.append([
+    { type: 'dice', message: 'first' },
+    { type: 'gain', message: 'second' },
+]);
+assert.deepStrictEqual(appendedControllerHistory, {
+    entries: [
+        { type: 'dice', message: 'first' },
+        { type: 'gain', message: 'second' },
+    ],
+    currentLength: 2,
+    entryCount: 2,
+});
+assert.notStrictEqual(historyController.snapshot().entries, historyController.snapshot().entries);
+assert.ok(Object.isFrozen(historyController));
+assert.ok(Object.isFrozen(appendedControllerHistory));
+assert.ok(Object.isFrozen(appendedControllerHistory.entries));
+assert.deepStrictEqual(historyController.reset(), {
+    entries: [], currentLength: 0, entryCount: 0,
+});
