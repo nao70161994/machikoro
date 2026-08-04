@@ -511,7 +511,8 @@ runTest('CPU scheduler runtime stateはcontrollerだけが所有する', () => {
     }
     assert.ok(mainSource.includes('CpuSchedulerState.createController()'));
     assert.ok(mainSource.includes('function invalidateCpuScheduleChain()'));
-    assert.ok(onlineSource.includes('invalidateCpuScheduleChain()'));
+    assert.ok(onlineSource.includes("invalidateCpuSchedule: 'invalidateCpuScheduleChain'"));
+    assert.ok(onlineSource.includes('onlineClientEffects.invalidateCpuSchedule()'));
     assert.ok(storageSource.includes('invalidateCpuScheduleChain()'));
     assert.ok(appShellSource.includes('cpuSchedulerStateController.snapshot()'));
 });

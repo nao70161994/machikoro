@@ -100,6 +100,7 @@ const STATIC_ASSETS = [
   '/js/onlineDiagnosticState.js',
   '/js/onlineRetryPolicy.js',
   '/js/onlineSchemaTransport.js',
+  '/js/onlineClientEffects.js',
   '/js/online.js',
   '/js/uiNotice.js',
   '/js/uiLogDisplay.js',

@@ -312,6 +312,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineDiagnosticState.js');
         files.push('js/onlineRetryPolicy.js');
         files.push('js/onlineSchemaTransport.js');
+        files.push('js/onlineClientEffects.js');
         files.push('js/online.js');
     }
     files.push('js/main.js');

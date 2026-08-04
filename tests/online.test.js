@@ -181,6 +181,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineDiagnosticState.js');
     loadScript(context, 'js/onlineRetryPolicy.js');
     loadScript(context, 'js/onlineSchemaTransport.js');
+    loadScript(context, 'js/onlineClientEffects.js');
     loadScript(context, 'js/onlineRuntimeState.js');
     loadScript(context, 'js/onlineSetupState.js');
     loadScript(context, 'js/gameSetupState.js');

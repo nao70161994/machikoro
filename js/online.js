@@ -16,6 +16,19 @@ if (typeof window !== 'undefined' && typeof Object.defineProperties === 'functio
 const ONLINE_LOBBY_REQUEST_TIMEOUT_MS = 15000;
 const onlineSocketUnavailableReportController = OnlineSocketRegistry.createUnavailableReportController();
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
+const onlineClientEffectGlobalNames = Object.freeze({
+    invalidateCpuSchedule: 'invalidateCpuScheduleChain',
+    notifyLifecycleStart: 'notifyGameLifecycleStart',
+    render: 'render',
+    resetUiLocks: 'resetUiLocksForGameReset',
+    scheduleCpu: 'scheduleCPU',
+    showNotice: 'showNotice',
+    updateResumeButton: 'updateResumeButton',
+});
+const onlineClientEffects = OnlineClientEffects.createFromResolver(name => {
+    const root = typeof globalThis !== 'undefined' ? globalThis : null;
+    return root ? root[onlineClientEffectGlobalNames[name]] : null;
+});
 
 function onlineGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
@@ -1053,8 +1066,8 @@ function _finishRejoinRetryTimeout() {
         OnlineReconnectState.events.RETRY_EXHAUSTED,
         retryExhaustedMessage
     );
-    invalidateCpuScheduleChain();
-    try { if (typeof render === 'function') render(); } catch (_) {}
+    onlineClientEffects.invalidateCpuSchedule();
+    try { onlineClientEffects.render(); } catch (_) {}
     return false;
 }
 
@@ -1267,7 +1280,7 @@ function _runOnlineActionTimeoutEffectsLegacy(plan) {
     _setOnlineActionInFlight(false);
     if (plan.decision === decisions.CLEAR_ONLY) return false;
     setOnlineReconnectLegacyFlag(true);
-    invalidateCpuScheduleChain();
+    onlineClientEffects.invalidateCpuSchedule();
     const el = document.getElementById("onlineStatus");
     if (el) el.textContent = '⚠️ サーバー応答がタイムアウトしました。状態を再同期しています...';
     return _emitOnlineRejoinRequest();
@@ -1282,7 +1295,7 @@ function _runOnlineActionTimeoutEffects(planSelection) {
     return OnlineActionTimeout.execute(planSelection.plan, {
         clearActionFlight: () => _setOnlineActionInFlight(false),
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
-        invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
+        invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
         updateStatus: message => {
             const el = document.getElementById("onlineStatus");
             if (el) el.textContent = message;
@@ -1356,7 +1369,7 @@ function _onlineActionApplyFailureEffectAuthoritySelection(planSelection, enable
 function _runOnlineActionApplyFailureEffectsLegacy(error) {
     console.error(error);
     setOnlineReconnectLegacyFlag(true);
-    invalidateCpuScheduleChain();
+    onlineClientEffects.invalidateCpuSchedule();
     if (!_onlineRestoreLifecycleController.isFlushing() && !_emitOnlineRejoinRequest()) _scheduleRejoinRetry();
     return false;
 }
@@ -1372,7 +1385,7 @@ function _runOnlineActionApplyFailureEffects(error, planSelection, enabled, reco
         {
             reportError: () => console.error(error),
             markReconnecting: () => setOnlineReconnectLegacyFlag(true),
-            invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
+            invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
             requestRejoin: () => _emitOnlineRejoinRequest(),
             scheduleRetry: () => _scheduleRejoinRetry(),
         }
@@ -1396,7 +1409,7 @@ function _onlineActionGapEffectAuthoritySelection(planSelection, enabled) {
 
 function _runOnlineActionGapEffectsLegacy(statusMessage) {
     setOnlineReconnectLegacyFlag(true);
-    invalidateCpuScheduleChain();
+    onlineClientEffects.invalidateCpuSchedule();
     if (statusMessage !== null) {
         const el = document.getElementById("onlineStatus");
         if (el) el.textContent = statusMessage;
@@ -1418,7 +1431,7 @@ function _runOnlineActionGapEffects(statusMessage, planSelection, enabled, recor
         },
         {
             markReconnecting: () => setOnlineReconnectLegacyFlag(true),
-            invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
+            invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
             updateStatus: message => {
                 const el = document.getElementById("onlineStatus");
                 if (el) el.textContent = message;
@@ -1495,8 +1508,8 @@ function _runOnlineActionCommitEffectsLegacy(action, data, seq, logOptions, clea
     _saveActionLog(action, data, logOptions);
     if (clearPending) _clearPendingOutboundAction();
     if (!_onlineRestoreLifecycleController.isFlushing()) {
-        render();
-        scheduleCPU();
+        onlineClientEffects.render();
+        onlineClientEffects.scheduleCpu();
     }
     return true;
 }
@@ -1519,8 +1532,8 @@ function _runOnlineActionCommitEffects(
             setSequence: () => _setLastAppliedOnlineActionSeq(seq),
             saveActionLog: () => _saveActionLog(action, data, logOptions),
             clearPending: () => _clearPendingOutboundAction(),
-            render: () => render(),
-            scheduleCpu: () => scheduleCPU(),
+            render: () => onlineClientEffects.render(),
+            scheduleCpu: () => onlineClientEffects.scheduleCpu(),
         }
     ).result;
 }
@@ -1669,7 +1682,7 @@ function _runOnlineSocketDisconnectEffectsLegacy(plan) {
     }
     setOnlineReconnectLegacyFlag(true);
     _setOnlineActionInFlight(false);
-    invalidateCpuScheduleChain();
+    onlineClientEffects.invalidateCpuSchedule();
     _observeOnlineReconnectEvent(OnlineReconnectState.events.SOCKET_DISCONNECTED);
     _applyOnlineReconnectStatusEffectAuthority(
         OnlineReconnectState.events.SOCKET_DISCONNECTED,
@@ -1694,7 +1707,7 @@ function _runOnlineSocketDisconnectEffects() {
         clearRestoreQueue: () => { _clearOnlineRestoreEventQueue(); },
         markReconnecting: () => setOnlineReconnectLegacyFlag(true),
         clearActionFlight: () => _setOnlineActionInFlight(false),
-        invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
+        invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
         observeDisconnect: () => _observeOnlineReconnectEvent(
             OnlineReconnectState.events.SOCKET_DISCONNECTED
         ),
@@ -1741,10 +1754,10 @@ function _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch) {
     if (_setOnlineHostState(newHostPlayerIndex)) {
         const currentGame = onlineGameRuntimeSnapshot().game;
         currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
-        render();
-        scheduleCPU();
+        onlineClientEffects.render();
+        onlineClientEffects.scheduleCpu();
     } else {
-        invalidateCpuScheduleChain();
+        onlineClientEffects.invalidateCpuSchedule();
     }
     _persistOnlineHostState(newHostPlayerIndex, hostEpoch);
     return true;
@@ -1764,9 +1777,9 @@ function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
             const currentGame = onlineGameRuntimeSnapshot().game;
             currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
         },
-        render: () => render(),
-        scheduleCpu: () => scheduleCPU(),
-        invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
+        render: () => onlineClientEffects.render(),
+        scheduleCpu: () => onlineClientEffects.scheduleCpu(),
+        invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
         persistHostState: () => _persistOnlineHostState(newHostPlayerIndex, hostEpoch),
     }).result;
 }
@@ -1861,7 +1874,7 @@ function resetOnlineState() {
             });
         },
         finishLobbyRequest() { finishOnlineLobbyRequest(); },
-        incrementCpuScheduleToken() { invalidateCpuScheduleChain(); },
+        incrementCpuScheduleToken() { onlineClientEffects.invalidateCpuSchedule(); },
         disconnectSocket() {
             if (session.socket) {
                 session.socket.disconnect();
@@ -2419,8 +2432,8 @@ function _flushOnlineRestoreEvents(generation, restoredThroughSeq, handlers) {
     } finally {
         _finishOnlineRestoreFlush();
     }
-    render();
-    scheduleCPU();
+    onlineClientEffects.render();
+    onlineClientEffects.scheduleCpu();
     _clearOnlineRestoreQuarantine();
     return true;
 }
@@ -2477,7 +2490,7 @@ function saveOnlineSession() {
             reconnectToken: session.reconnectToken,
             isRoomHost: session.isRoomHost,
         });
-        updateResumeButton();
+        onlineClientEffects.updateResumeButton();
     } catch (e) {}
 }
 
@@ -2527,7 +2540,7 @@ function initSocket() {
     if (onlineSessionSnapshot().socket) return true;
     if (typeof io !== 'function') {
         const message = 'オンライン機能を読み込めませんでした。サーバーURLから開き直してください。';
-        showNotice(message);
+        onlineClientEffects.showNotice(message);
         const el = document.getElementById("onlineStatus");
         if (el) el.textContent = `❌ ${message}`;
         if (onlineSocketUnavailableReportController.claim()) {
@@ -2630,11 +2643,11 @@ function initSocket() {
                 _clearPendingOutboundAction();
             } catch(e) {}
             saveOnlineSession();
-            if (typeof resetUiLocksForGameReset === 'function') resetUiLocksForGameReset('online-game-start-reset-ui-locks');
+            onlineClientEffects.resetUiLocks('online-game-start-reset-ui-locks');
             document.getElementById("titleScreen").style.display = "none";
             document.getElementById("gameScreen").style.display = "block";
             initOnlineGame(playerNames, ps, playerOrder);
-            if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
+            onlineClientEffects.notifyLifecycleStart();
             // バージョン不一致チェック（initOnlineGame後にgameが初期化されてから）
             if (versions && versions.length > 1) {
                 const unique = [...new Set(versions)];
@@ -2980,7 +2993,7 @@ function initSocket() {
             _onlineDiagnosticSelections.pendingReconciliationPlanSelection.plan.accepted;
         const defaultLandmarks = (el && el.length > 0) ? null : Player.landmarkNames();
         const resolvedEnabledLandmarks = (el && el.length > 0) ? el : defaultLandmarks;
-        const resetUiLocksAvailable = typeof resetUiLocksForGameReset === 'function';
+        const resetUiLocksAvailable = onlineClientEffects.supportsResetUiLocks();
         const legacyRejoinPersistencePlan = Object.freeze({
             clearPendingOutboundAction: acceptedPendingReconciliation,
             cpuSpeed: cs || 1500,
@@ -3056,9 +3069,9 @@ function initSocket() {
             _setOnlineHostState(plan.hostPlayerIndex);
             persistRestoreBundle();
             saveOnlineSession();
-            invalidateCpuScheduleChain();
+            onlineClientEffects.invalidateCpuSchedule();
             if (plan.resetUiLocks) {
-                resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
+                onlineClientEffects.resetUiLocks('online-rejoin-reset-ui-locks');
             }
         };
 
@@ -3084,9 +3097,9 @@ function initSocket() {
                 setHostState: value => _setOnlineHostState(value),
                 persistRestoreBundle,
                 saveSession: () => saveOnlineSession(),
-                invalidateCpuSchedule: () => { invalidateCpuScheduleChain(); },
+                invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
                 resetUiLocks: () => {
-                    resetUiLocksForGameReset('online-rejoin-reset-ui-locks');
+                    onlineClientEffects.resetUiLocks('online-rejoin-reset-ui-locks');
                 },
             });
         };
@@ -3423,14 +3436,14 @@ function initSocket() {
             const currentGame = onlineGameRuntimeSnapshot().game;
             currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `🔌 ${playerName}が再接続しました`);
         }
-        render();
+        onlineClientEffects.render();
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.PLAYER_DISCONNECTED, ({ playerIndex, playerName }) => {
         const name = playerName || `プレイヤー${playerIndex + 1}`;
         const currentGame = onlineGameRuntimeSnapshot().game;
         currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `🔌 ${name}が切断しました`);
-        render();
+        onlineClientEffects.render();
     });
 
     const handleHostChanged = ({ newHostPlayerIndex, hostEpoch }) => {
@@ -3463,7 +3476,7 @@ function _runOnlineReconnectTerminalCleanupLegacy() {
     setOnlineReconnectLegacyFlag(false);
     _removeOnlineSessionStorageItem();
     _clearOnlineRestoreBundle();
-    updateResumeButton();
+    onlineClientEffects.updateResumeButton();
     if (currentSocket) {
         currentSocket.disconnect();
         OnlineRuntimeState.runtime.setSocket(null);
@@ -3482,7 +3495,7 @@ function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
         clearReconnectFlag: () => setOnlineReconnectLegacyFlag(false),
         removeOnlineSession: () => _removeOnlineSessionStorageItem(),
         clearRestoreBundle: () => _clearOnlineRestoreBundle(),
-        updateResumeButton: () => updateResumeButton(),
+        updateResumeButton: () => onlineClientEffects.updateResumeButton(),
         disconnectSocket: () => {
             const currentSocket = onlineSessionSnapshot().socket;
             if (currentSocket) {
@@ -3511,7 +3524,7 @@ function handleAppError(msg) {
             session.myOriginalPlayerIndex >= 0 && session.myPlayerName && session.reconnectToken) {
         _clearPendingOutboundActionForCurrentSession({ requireExplicitRoomId: true });
         setOnlineReconnectLegacyFlag(true);
-        invalidateCpuScheduleChain();
+        onlineClientEffects.invalidateCpuSchedule();
         document.getElementById("onlineStatus").textContent = '⚠️ 操作がサーバーで拒否されました。状態を再同期しています...';
         _emitOnlineRejoinRequest();
         return;
@@ -3600,7 +3613,7 @@ function beginOnlineLobbyRequest(kind) {
         finishOnlineLobbyRequest(kind);
         const status = document.getElementById('onlineStatus');
         if (status) status.textContent = '⚠️ サーバー応答がありません。もう一度お試しください。';
-        showNotice('サーバー応答がタイムアウトしました。通信状態を確認してもう一度お試しください。');
+        onlineClientEffects.showNotice('サーバー応答がタイムアウトしました。通信状態を確認してもう一度お試しください。');
     }, ONLINE_LOBBY_REQUEST_TIMEOUT_MS);
     onlineLobbyRequestController.attachTimer(kind, transition.generation, timer);
 }
@@ -3663,13 +3676,13 @@ function emitCreateRoom(name, playerCount = onlineSetupStateController.snapshot(
 function showCreateRoom() {
     if (onlineLobbyRequestController.snapshot().createPending) return;
     const name = document.getElementById("playerNameInput").value.trim();
-    if (!name) { showNotice("名前を入力してください"); return; }
+    if (!name) { onlineClientEffects.showNotice("名前を入力してください"); return; }
     const setup = onlineSetupStateController.snapshot();
     const createPlayerCount = setup.selectedCount;
     const createPlayerSettings = OnlinePlayerSettings.snapshot(setup.playerSettings, createPlayerCount);
     const state = updateOnlineRlModelReadinessUi();
     if (state.status === 'loading') {
-        showNotice("深層学習AIモデルを読み込んでいます。");
+        onlineClientEffects.showNotice("深層学習AIモデルを読み込んでいます。");
         return;
     }
     const preload = preloadOnlineRlModelsForCreate(createPlayerCount, createPlayerSettings);
@@ -3680,7 +3693,7 @@ function showCreateRoom() {
             btn.disabled = true;
             btn.textContent = "モデル読み込み中";
         }
-        showNotice("深層学習AIモデルを読み込んでいます。");
+        onlineClientEffects.showNotice("深層学習AIモデルを読み込んでいます。");
         preload
             .then(() => {
                 setOnlineCreateRoomPending(false);
@@ -3691,7 +3704,7 @@ function showCreateRoom() {
                 setOnlineCreateRoomPending(false);
                 console.error(error);
                 updateOnlineRlModelReadinessUi();
-                showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度部屋を作成してください。");
+                onlineClientEffects.showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度部屋を作成してください。");
             });
         return;
     }
@@ -3702,8 +3715,8 @@ function joinRoom() {
     if (onlineLobbyRequestController.snapshot().joinPending) return;
     const name = document.getElementById("playerNameInput").value.trim();
     const roomId = document.getElementById("roomIdInput").value.trim().toUpperCase();
-    if (!name) { showNotice("名前を入力してください"); return; }
-    if (roomId.length !== 6) { showNotice("ルームIDは6文字です"); return; }
+    if (!name) { onlineClientEffects.showNotice("名前を入力してください"); return; }
+    if (roomId.length !== 6) { onlineClientEffects.showNotice("ルームIDは6文字です"); return; }
     OnlineRuntimeState.runtime.setPlayerName(name);
     OnlineRuntimeState.runtime.setHost(false);
     if (!initSocket()) return;
@@ -3721,7 +3734,7 @@ function joinRoom() {
 
 function initOnlineGame(playerNames, ps, playerOrder) {
     const count = playerNames.length;
-    invalidateCpuScheduleChain();
+    onlineClientEffects.invalidateCpuSchedule();
     if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
     if (typeof cancelAutoSkip === 'function') cancelAutoSkip();
     GameRuntimeState.runtime.setPreviousCoins(null);
@@ -3770,8 +3783,8 @@ function initOnlineGame(playerNames, ps, playerOrder) {
     ); // 見つからない場合はホスト
 
     currentGame.addLog(LOG_TYPES.SYSTEM, `👤 ${currentGame.currentPlayer().name}のターン`);
-    render();
-    scheduleCPU();
+    onlineClientEffects.render();
+    onlineClientEffects.scheduleCpu();
 }
 
 function _createOnlineGameEngineRuntimeAdapter() {
@@ -3894,7 +3907,7 @@ function sendAction(action, data = {}) {
     if (session.isOnlineGame && session.socket) {
         if (isOnlineReconnectInputBlocked() || _onlineActionFlightController.isInFlight() || session.socket.connected === false) return false;
         _setOnlineActionInFlight(true);
-        invalidateCpuScheduleChain();
+        onlineClientEffects.invalidateCpuSchedule();
         const pending = _savePendingOutboundAction(action, data);
         const encodedWire = encodeOnlineGameSchemaAction({ action, data, clientActionId: pending.clientActionId });
         if (!encodedWire.ok) {

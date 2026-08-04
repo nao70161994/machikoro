@@ -193,6 +193,23 @@ runTest('online Socketとaction処理はruntime snapshot境界から読む', () 
     }
 });
 
+runTest('online client effectは単一adapter境界から呼び出す', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
+    assert.ok(source.includes('OnlineClientEffects.createFromResolver'));
+    for (const pattern of [
+        /(^|[^.\w])invalidateCpuScheduleChain\(/m,
+        /(^|[^.\w])scheduleCPU\(/m,
+        /(^|[^.\w])showNotice\(/m,
+        /typeof resetUiLocksForGameReset/,
+        /typeof notifyGameLifecycleStart/,
+        /typeof render ===/,
+    ]) {
+        assert.strictEqual(pattern.test(source), false, String(pattern));
+    }
+});
+
 runTest('mainはonline sessionをruntime snapshot境界から読む', () => {
     const fs = require('fs');
     const path = require('path');
