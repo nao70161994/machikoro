@@ -980,3 +980,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `LocalGameEngineRuntime` is the local application boundary over shared Engine, Snapshot, runtime adapter, determinism, and client-shadow policy.
 2. Human and CPU actions now share one route for online dispatch versus local mutable execution plus optional shadow/parity/authority adoption; `main.js` keeps compatibility delegates and domain dependency composition.
 3. Engine lookup remains late-bound for legacy fallback and test replacement. Default-OFF authority, resolved-random admission, adapter hydration parity, checkpoint order, and mutable identity are contract-covered.
+
+## 2026-08-05 Batch 91 boundary update
+
+1. `CpuTurnSchedulerRuntime` owns scheduling state and orchestration over existing `CpuSchedulerState`; phase handlers and `CpuTurnStrategy` remain separate decision/execution dependencies.
+2. The runtime centralizes transport/game gates, health projection, token/lease timers, phase admission, cooldown, stale cancellation, and exception fallback while `main.js` composes effects.
+3. Main/integration and full CPU decision/self-play regression gates preserve handler order, delays, online host authority, action traces, RNG, and strength.

@@ -830,3 +830,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains injected game/domain adapters and compatibility delegates; its size decreased from 1,174 to 1,096 lines. Shared Engine rollout mechanics no longer sit inline with CPU scheduling and UI actions.
 - Focused and full local-shadow contracts preserve online send-only behavior, checkpoint/render/schedule order, unresolved-random rejection, all deterministic action parity, build/Undo, mutable identity under default-OFF, and late-bound Engine replacement/fallback. Scoped gates now cover 242 ESLint maintenance files and 241 checkJs runtime files.
 - Production flags remain absent/default-OFF. Rules, CPU decisions/RNG, Action/Snapshot formats, online protocol, persistence, and PWA behavior are unchanged.
+
+## 2026-08-05 Batch 91 CPU turn scheduler runtime
+
+- `js/cpuTurnSchedulerRuntime.js` now owns CPU schedule token/lease/pending-timer state, transport/game blocking health, phase-step admission, timer chaining, stale cancellation, cooldown, error recovery, and the public scheduler facade.
+- `main.js` retains the phase handlers and action-selection/execution functions while supplying runtime effects; its size decreased from 1,096 to 930 lines. Scheduler orchestration no longer surrounds CPU strategy code.
+- Focused contracts preserve CPU-speed delay, 500ms cooldown, non-host rejection, cancel/stale-timer behavior, and checkpoint labels. Existing main/integration plus full CPU decision/self-play baselines preserve phase execution, online gates, build-failure pass, fixed decisions, and CPU strength. Scoped gates now cover 243 ESLint maintenance files and 242 checkJs runtime files.
+- Phase handler order, CPU choices/RNG, difficulty tuning, rules, online protocol/reconnect, persistence, and PWA behavior are unchanged.

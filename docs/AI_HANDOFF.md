@@ -1042,3 +1042,9 @@ Test index:
 - Local Action routing, Engine snapshot/adapter creation, shadow comparison, outcome ownership, and optional authority adoption belong to `LocalGameEngineRuntime`; keep `main.js` wrappers for existing action/build/Undo callers.
 - Preserve late-bound `getEngine`, default-OFF flags, determinism admission before transition, hydrate→serialize equality before adoption, and human checkpoint/render/schedule order.
 - The runtime is linted and checkJs-covered; `main.js` is 1,096 lines. Rules, CPU/RNG, schemas, online protocol, persistence, and PWA behavior are unchanged.
+
+## Batch 91 handoff (2026-08-05)
+
+- CPU token/lease ownership, health, online/game gates, phase timer chain, cooldown, and error recovery belong to `CpuTurnSchedulerRuntime`; keep phase handlers and action choice in `main.js`/`CpuTurnStrategy`.
+- Preserve handler order, configured CPU-speed delay, 500ms final cooldown, checkpoint names, build-error local pass, and false-result stop semantics.
+- The runtime is linted and checkJs-covered; `main.js` is 930 lines. Full CPU decision and self-play baselines pass with unchanged rules, choices, RNG, and strength.
