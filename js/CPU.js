@@ -3578,19 +3578,15 @@ class CPU {
     }
 
     _shouldHoldForLandmark(current, game, bestCardScore, maxShortfall) {
-        let best = null;
-        for (const name of Player.landmarkNames()) {
-            if (!game.enabledLandmarks || !game.enabledLandmarks.has(name) || current.landmarks[name]) continue;
-            const cost = Player.landmarkCost(name);
-            const shortfall = cost - current.coins;
-            if (shortfall <= 0 || shortfall > maxShortfall) continue;
-            const urgency = this._landmarkUrgency(name, current, game);
-            if (!best || urgency > best.urgency || (urgency === best.urgency && shortfall < best.shortfall)) {
-                best = { urgency, shortfall };
-            }
-        }
-        if (!best) return false;
-        return best.urgency >= 6 && bestCardScore < (best.urgency - best.shortfall) * 1.2;
+        return CPUEvaluation.shouldHoldForLandmark(Player.landmarkNames(), {
+            isEnabled: name => !!game.enabledLandmarks && game.enabledLandmarks.has(name),
+            isBuilt: name => !!current.landmarks[name],
+            costOf: Player.landmarkCost,
+            urgencyOf: name => this._landmarkUrgency(name, current, game),
+            coins: current.coins,
+            bestCardScore,
+            maxShortfall,
+        });
     }
 
     _maybeBuyLandmark(current, game, reserve = 0, minUrgency = 0) {

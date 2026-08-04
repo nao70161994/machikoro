@@ -1227,6 +1227,21 @@ const CPUEvaluation = Object.freeze({
         return steps;
     },
 
+    shouldHoldForLandmark(landmarkNames, facts = {}) {
+        let best = null;
+        for (const name of landmarkNames) {
+            if (!facts.isEnabled(name) || facts.isBuilt(name)) continue;
+            const shortfall = facts.costOf(name) - facts.coins;
+            if (shortfall <= 0 || shortfall > facts.maxShortfall) continue;
+            const urgency = facts.urgencyOf(name);
+            if (!best || urgency > best.urgency || (urgency === best.urgency && shortfall < best.shortfall)) {
+                best = { urgency, shortfall };
+            }
+        }
+        if (!best) return false;
+        return best.urgency >= 6 && facts.bestCardScore < (best.urgency - best.shortfall) * 1.2;
+    },
+
     landmarkUrgency(name, features, landmarkNames) {
         const values = features || {};
         let urgency = 0;

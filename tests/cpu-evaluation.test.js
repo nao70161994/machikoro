@@ -2235,3 +2235,50 @@ runTest('CPU evaluationの購入計画はランドマーク不足coinを負値�
         coins: 3,
     }), 4.8);
 });
+
+runTest('CPU evaluationはランドマーク直前の貯金判断をpureに選ぶ', () => {
+    const names = ['駅', '港', '空港'];
+    const enabled = new Set(names);
+    const built = new Set(['駅']);
+    const costs = { 駅: 4, 港: 10, 空港: 30 };
+    const urgencies = { 駅: 9, 港: 7, 空港: 8 };
+
+    assert.strictEqual(CPUEvaluation.shouldHoldForLandmark(names, {
+        isEnabled: name => enabled.has(name),
+        isBuilt: name => built.has(name),
+        costOf: name => costs[name],
+        urgencyOf: name => urgencies[name],
+        coins: 8,
+        bestCardScore: 4,
+        maxShortfall: 4,
+    }), true);
+    assert.strictEqual(CPUEvaluation.shouldHoldForLandmark(names, {
+        isEnabled: name => enabled.has(name),
+        isBuilt: name => built.has(name),
+        costOf: name => costs[name],
+        urgencyOf: name => urgencies[name],
+        coins: 8,
+        bestCardScore: 7,
+        maxShortfall: 4,
+    }), false);
+});
+
+runTest('CPU evaluationの貯金判断は不適格候補のurgencyを読まない', () => {
+    const reads = [];
+    const result = CPUEvaluation.shouldHoldForLandmark(['建設済み', '遠い', '対象'], {
+        isEnabled: name => { reads.push(`enabled:${name}`); return true; },
+        isBuilt: name => { reads.push(`built:${name}`); return name === '建設済み'; },
+        costOf: name => { reads.push(`cost:${name}`); return name === '遠い' ? 20 : 10; },
+        urgencyOf: name => { reads.push(`urgency:${name}`); return 8; },
+        coins: 8,
+        bestCardScore: 1,
+        maxShortfall: 4,
+    });
+
+    assert.strictEqual(result, true);
+    assert.deepStrictEqual(reads, [
+        'enabled:建設済み', 'built:建設済み',
+        'enabled:遠い', 'built:遠い', 'cost:遠い',
+        'enabled:対象', 'built:対象', 'cost:対象', 'urgency:対象',
+    ]);
+});
