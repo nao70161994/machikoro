@@ -25,6 +25,21 @@ function buildOptions(overrides = {}) {
     };
 }
 
+runTest('auto skip schedule controllerはpendingとtimerを一つの境界で所有する', () => {
+    const controller = AutoSkipPolicy.createScheduleController();
+    const timer = { id: 1 };
+    assert.deepStrictEqual(controller.snapshot(), { pending: false, hasTimer: false });
+    assert.strictEqual(controller.begin(), true);
+    assert.strictEqual(controller.begin(), false);
+    controller.setTimer(timer);
+    assert.strictEqual(controller.isPending(), true);
+    assert.strictEqual(controller.getTimer(), timer);
+    assert.deepStrictEqual(controller.snapshot(), { pending: true, hasTimer: true });
+    controller.finish();
+    assert.deepStrictEqual(controller.snapshot(), { pending: false, hasTimer: false });
+    assert.ok(Object.isFrozen(controller.snapshot()));
+});
+
 runTest('auto skip availabilityは購入可能カードとランドマークをpureに判定する', () => {
     const options = buildOptions();
     const before = JSON.stringify(options.current);

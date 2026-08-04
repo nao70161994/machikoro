@@ -407,8 +407,12 @@ function loadMainRuntime(options = {}) {
             getShopStock: () => SHOP_STOCK,
             setCpuPlayers: (value) => { cpuPlayers = value; },
             getCpuPlayers: () => cpuPlayers,
-            setAutoSkipState: (pending, timeout) => { autoSkipPending = pending; autoSkipTimeout = timeout; },
-            getAutoSkipPending: () => autoSkipPending,
+            setAutoSkipState: (pending, timeout) => {
+                autoSkipScheduleController.finish();
+                if (pending) autoSkipScheduleController.begin();
+                autoSkipScheduleController.setTimer(timeout);
+            },
+            getAutoSkipPending: () => autoSkipScheduleController.isPending(),
             getCpuScheduleToken: () => cpuScheduleToken,
             getCpuSchedulerHealth: () => cpuTurnScheduler.getHealth(),
             scheduleCpuTurn: (reason) => cpuTurnScheduler.schedule(reason),
@@ -434,6 +438,13 @@ runTest('local game start pendingはcontrollerだけが所有する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
     assert.strictEqual(source.includes('let localGameStartPending'), false);
     assert.ok(source.includes('LocalGameStart.createPendingController()'));
+});
+
+runTest('auto skip schedule stateはcontrollerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
+    assert.strictEqual(source.includes('let autoSkipPending'), false);
+    assert.strictEqual(source.includes('let autoSkipTimeout'), false);
+    assert.ok(source.includes('AutoSkipPolicy.createScheduleController()'));
 });
 
 runTest('main storage helperは共通facadeでget/removeと例外fallbackを維持する', () => {

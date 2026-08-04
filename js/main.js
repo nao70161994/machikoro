@@ -22,8 +22,7 @@ let winStreak = parseInt(safeMainStorageGet('winStreak', '0') || '0');
 let lastWinnerName = safeMainStorageGet('lastWinnerName', '') || '';
 
 // オートスキップ
-let autoSkipPending = false;
-let autoSkipTimeout = null;
+const autoSkipScheduleController = AutoSkipPolicy.createScheduleController();
 let delayedHumanActionPending = false;
 let delayedHumanActionTimeout = null;
 let delayedHumanActionToken = 0;
@@ -1370,12 +1369,13 @@ function showCoinAnimation(playerIndex, diff) {
 
 // ===== オートスキップ =====
 function cancelAutoSkip() {
-    if (autoSkipTimeout) { clearTimeout(autoSkipTimeout); autoSkipTimeout = null; }
-    autoSkipPending = false;
+    const timer = autoSkipScheduleController.getTimer();
+    if (timer) clearTimeout(timer);
+    autoSkipScheduleController.finish();
 }
 
 function checkAutoSkip() {
-    if (autoSkipPending) return;
+    if (autoSkipScheduleController.isPending()) return;
     if (!game || game.checkWinner()) return;
     if (game.phase !== GAME_PHASES.BUILD) { cancelAutoSkip(); return; }
     if (cpuPlayers[game.currentPlayerIndex]) return;
@@ -1395,10 +1395,9 @@ function checkAutoSkip() {
 
     if (!availability.canAffordAny) {
         const scheduledPlayerIndex = game.currentPlayerIndex;
-        autoSkipPending = true;
-        autoSkipTimeout = setTimeout(() => {
-            autoSkipPending = false;
-            autoSkipTimeout = null;
+        autoSkipScheduleController.begin();
+        autoSkipScheduleController.setTimer(setTimeout(() => {
+            autoSkipScheduleController.finish();
             if (
                 canRunLocalHumanAction(scheduledPlayerIndex) &&
                 game.phase === GAME_PHASES.BUILD &&
@@ -1406,7 +1405,7 @@ function checkAutoSkip() {
             ) {
                 runLocalOrSendOnline('nextTurn', {}, () => game.nextTurn());
             }
-        }, 1500);
+        }, 1500));
     }
 }
 

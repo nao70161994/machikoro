@@ -1,6 +1,29 @@
 'use strict';
 
 const AutoSkipPolicy = (() => {
+    function createScheduleController() {
+        let pending = false;
+        let timer = null;
+
+        function isPending() { return pending; }
+        function getTimer() { return timer; }
+        function begin() {
+            if (pending) return false;
+            pending = true;
+            return true;
+        }
+        function setTimer(value) { timer = value; }
+        function finish() {
+            pending = false;
+            timer = null;
+        }
+        function snapshot() {
+            return Object.freeze({ pending, hasTimer: timer !== null });
+        }
+
+        return Object.freeze({ isPending, getTimer, begin, setTimer, finish, snapshot });
+    }
+
     function buildAvailability(options) {
         const {
             cards,
@@ -32,7 +55,7 @@ const AutoSkipPolicy = (() => {
         });
     }
 
-    return Object.freeze({ buildAvailability });
+    return Object.freeze({ createScheduleController, buildAvailability });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = AutoSkipPolicy;
