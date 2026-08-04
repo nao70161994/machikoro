@@ -652,3 +652,12 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event
 - Scoped gates now cover 221 ESLint maintenance files and 220 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice/RNG, RL model or adoption policy, save/localStorage shape, Socket.IO event/payload, reconnect ordering, winner/UI presentation, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 66 architecture boundaries
+
+- Actual browser property setters projected by `GameSetupState.runtime` and `UiTutorialSettings.runtime` are now absent. Production updates use named operations; isolated Node/VM fixtures retain writable binding compatibility. The `playerSettings` getter intentionally remains the same live array until its editing consumers move to detached operations.
+- `UiDomSnapshot.createRuntime()` now owns app-shell DOM observation: blocking-ancestor checks, interactive-child usability/counting, action-HTML fallback inspection, detached element snapshots, and visibility projection. `appShell.js` retains Action registry adaptation, watchdog classification/recovery, DOM mutation, focus/inert handling, reporting, lifecycle, and PWA effects.
+- `CPUEvaluation.strongLandmarkThresholdFeatures()` now owns the frozen board projection for conditional-red landmark threshold pressure. Opponent/card traversal, dormancy reads, current progress reads, remaining-landmark lookup, penalty coefficients, and RNG behavior retain their exact order.
+- Scoped gates now cover 222 ESLint maintenance files and 221 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, Socket.IO event/payload, reconnect timing, DOM/focus/recovery effect, UI presentation, or PWA/SW behavior changed.

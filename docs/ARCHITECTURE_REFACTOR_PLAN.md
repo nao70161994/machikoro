@@ -820,3 +820,11 @@ Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. 
 3. Strong landmark urgency feature extraction now belongs to the pure CPU evaluator while `CPU.js` remains the live-game adapter.
 
 Scoped gates now cover 221 ESLint maintenance files and 220 checkJs runtime files. Rules, CPU strength/RNG, RL models/adoption, authority defaults, schema/protocol, persistence formats, reconnect behavior, winner/UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 66 boundary update
+
+1. Shared game-setup and tutorial compatibility properties are read-only in the actual browser, leaving named controller operations as production mutation authority.
+2. App-shell DOM observation and detached element snapshot construction now belong to a typed, dependency-injected module; watchdog policy and all DOM effects remain separate.
+3. Strong landmark conditional-threshold feature extraction now belongs to the pure CPU evaluator while `CPU.js` remains the live-game adapter.
+
+Scoped gates now cover 222 ESLint maintenance files and 221 checkJs runtime files. Rules, CPU strength/RNG, schema/protocol, persistence formats, reconnect behavior, DOM/focus recovery, UI presentation, and PWA defaults are unchanged.

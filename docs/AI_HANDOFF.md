@@ -867,3 +867,10 @@ Test index:
 - Distributed RL model definitions belong to `RLModelCatalog`. Keep `RLModelPortfolio` and server admission derived from that catalog, preserve the catalog-before-portfolio script order, and include the catalog in the Service Worker asset contract.
 - Strong-landmark board feature assembly belongs to `CPUEvaluation.strongLandmarkUrgencyFeatures()`. Preserve card traversal, stable-income evaluation timing, tuna-boat count calls, coefficients, branch order, and all RNG points; require fixed-decision and 2–10-player self-play parity for changes.
 - Scoped gates are 221 ESLint maintenance files and 220 checkJs runtime files. Continue with at most three independent themes and one batch-level integration gate/push/CI.
+
+## Batch 66 handoff (2026-08-04)
+
+- Actual-browser setup and tutorial compatibility properties are getter-only. Update them through `GameSetupState.runtime` and `UiTutorialSettings.runtime` named operations. The setup settings-array getter is intentionally live for current editing compatibility; do not introduce new direct production mutation.
+- App-shell DOM observation belongs to `UiDomSnapshot.createRuntime()`. Keep its document/style/text dependencies injected, preserve action-HTML fallback matching and exception fallbacks, and leave all recovery mutations, focus/inert effects, classification, and reporting in their existing owners.
+- Strong landmark threshold feature assembly belongs to `CPUEvaluation.strongLandmarkThresholdFeatures()`. Preserve opponent order, two card scans per opponent, dormancy calls, built/count/remaining read order, penalty coefficients, and every RNG point; require fixed decisions and 2–10-player self-play parity for changes.
+- Scoped gates are 222 ESLint maintenance files and 221 checkJs runtime files. Continue with at most three independent themes and one batch-level integration gate/push/CI.
