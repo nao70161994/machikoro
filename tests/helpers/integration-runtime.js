@@ -294,6 +294,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineRestoreReplay.js');
         files.push('js/onlineRestoreActivation.js');
         files.push('js/onlinePlayerSettings.js');
+        files.push('js/onlineLobbyRequestState.js');
         files.push('js/onlineRestoreRank.js');
         files.push('js/onlineActionSequence.js');
         files.push('js/onlineActionLog.js');

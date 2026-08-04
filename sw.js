@@ -83,6 +83,7 @@ const STATIC_ASSETS = [
   '/js/onlineRestoreReplay.js',
   '/js/onlineRestoreActivation.js',
   '/js/onlinePlayerSettings.js',
+  '/js/onlineLobbyRequestState.js',
   '/js/onlineRestoreRank.js',
   '/js/onlineActionSequence.js',
   '/js/onlineActionLog.js',

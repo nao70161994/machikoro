@@ -2,11 +2,9 @@
 let onlineSelectedCount = 2;
 let onlinePlayerSettings = [];
 let onlineCpuSpeed = 1500;
+const onlineLobbyRequestController = OnlineLobbyRequestState.createController();
 let onlineCreateRoomPending = false;
 let onlineJoinRoomPending = false;
-let onlineLobbyRequestTimer = null;
-let onlineLobbyRequestKind = '';
-let onlineLobbyRequestGeneration = 0;
 const ONLINE_LOBBY_REQUEST_TIMEOUT_MS = 15000;
 let onlineSocketUnavailableReported = false;
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
@@ -3647,8 +3645,13 @@ function updateOnlineRlModelReadinessUi() {
     return state;
 }
 
-function setOnlineJoinRoomPending(pending) {
-    onlineJoinRoomPending = pending === true;
+function syncOnlineLobbyRequestProjection(state = onlineLobbyRequestController.snapshot()) {
+    onlineCreateRoomPending = state.createPending;
+    onlineJoinRoomPending = state.joinPending;
+    return state;
+}
+
+function renderOnlineJoinRoomPending() {
     const btn = typeof document !== 'undefined' && document.getElementById
         ? document.getElementById('onlineJoinSubmitButton')
         : null;
@@ -3659,34 +3662,39 @@ function setOnlineJoinRoomPending(pending) {
     }
 }
 
+function setOnlineJoinRoomPending(pending) {
+    syncOnlineLobbyRequestProjection(onlineLobbyRequestController.setJoinPending(pending));
+    renderOnlineJoinRoomPending();
+}
+
 function finishOnlineLobbyRequest(kind = '') {
-    if (kind && onlineLobbyRequestKind && kind !== onlineLobbyRequestKind) return false;
-    onlineLobbyRequestGeneration++;
-    if (onlineLobbyRequestTimer) clearTimeout(onlineLobbyRequestTimer);
-    onlineLobbyRequestTimer = null;
-    onlineLobbyRequestKind = '';
-    setOnlineCreateRoomPending(false);
-    setOnlineJoinRoomPending(false);
+    const transition = onlineLobbyRequestController.finish(kind);
+    if (!transition.finished) return false;
+    if (transition.timer) clearTimeout(transition.timer);
+    syncOnlineLobbyRequestProjection(transition.state);
+    updateOnlineRlModelReadinessUi();
+    renderOnlineJoinRoomPending();
     return true;
 }
 
 function beginOnlineLobbyRequest(kind) {
-    finishOnlineLobbyRequest();
-    onlineLobbyRequestKind = kind;
-    const generation = ++onlineLobbyRequestGeneration;
-    if (kind === 'create') setOnlineCreateRoomPending(true);
-    if (kind === 'join') setOnlineJoinRoomPending(true);
-    onlineLobbyRequestTimer = setTimeout(() => {
-        if (generation !== onlineLobbyRequestGeneration || onlineLobbyRequestKind !== kind) return;
+    const transition = onlineLobbyRequestController.begin(kind);
+    if (transition.replacedTimer) clearTimeout(transition.replacedTimer);
+    syncOnlineLobbyRequestProjection(transition.state);
+    updateOnlineRlModelReadinessUi();
+    renderOnlineJoinRoomPending();
+    const timer = setTimeout(() => {
+        if (!onlineLobbyRequestController.isCurrent(kind, transition.generation)) return;
         finishOnlineLobbyRequest(kind);
         const status = document.getElementById('onlineStatus');
         if (status) status.textContent = '⚠️ サーバー応答がありません。もう一度お試しください。';
         showNotice('サーバー応答がタイムアウトしました。通信状態を確認してもう一度お試しください。');
     }, ONLINE_LOBBY_REQUEST_TIMEOUT_MS);
+    onlineLobbyRequestController.attachTimer(kind, transition.generation, timer);
 }
 
 function setOnlineCreateRoomPending(pending) {
-    onlineCreateRoomPending = pending === true;
+    syncOnlineLobbyRequestProjection(onlineLobbyRequestController.setCreatePending(pending));
     updateOnlineRlModelReadinessUi();
 }
 
@@ -3751,7 +3759,7 @@ function showCreateRoom() {
     }
     const preload = preloadOnlineRlModelsForCreate(createPlayerCount, createPlayerSettings);
     if (preload && typeof preload.then === "function") {
-        onlineCreateRoomPending = true;
+        setOnlineCreateRoomPending(true);
         const btn = document.getElementById("onlineCreateSubmitButton");
         if (btn) {
             btn.disabled = true;
@@ -3760,12 +3768,12 @@ function showCreateRoom() {
         showNotice("深層学習AIモデルを読み込んでいます。");
         preload
             .then(() => {
-                onlineCreateRoomPending = false;
+                setOnlineCreateRoomPending(false);
                 updateOnlineRlModelReadinessUi();
                 emitCreateRoom(name, createPlayerCount, createPlayerSettings);
             })
             .catch(error => {
-                onlineCreateRoomPending = false;
+                setOnlineCreateRoomPending(false);
                 console.error(error);
                 updateOnlineRlModelReadinessUi();
                 showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度部屋を作成してください。");

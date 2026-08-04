@@ -148,6 +148,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineRestoreReplay.js');
     loadScript(context, 'js/onlineRestoreActivation.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
+    loadScript(context, 'js/onlineLobbyRequestState.js');
     loadScript(context, 'js/onlineRestoreRank.js');
     loadScript(context, 'js/onlineActionSequence.js');
     loadScript(context, 'js/onlineActionLog.js');
@@ -299,7 +300,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.myPlayerName !== 'undefined') myPlayerName = v.myPlayerName;
             if (typeof v.reconnectToken !== 'undefined') reconnectToken = v.reconnectToken;
         };
-        this.getOnlineLobbyState = () => ({ createPending: onlineCreateRoomPending, joinPending: onlineJoinRoomPending, kind: onlineLobbyRequestKind });
+        this.getOnlineLobbyState = () => onlineLobbyRequestController.snapshot();
         this.isOnlineReconnectInputBlocked = isOnlineReconnectInputBlocked;
         this.setOnlineReconnectLegacyFlag = setOnlineReconnectLegacyFlag;
         this.getOnlineState = () => ({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, onlineActionInFlight, hostlessRestorePending: _hostlessRestorePending });
