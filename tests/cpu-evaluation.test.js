@@ -146,6 +146,82 @@ runTest('CPU evaluation は購入候補をscore降順かつ同点入力順でpur
     assert.ok(ranked[0].card === cards[1]);
 });
 
+runTest('CPU evaluation は購入scoreを既存順で合成しdifficulty外factをlazyに保つ', () => {
+    const calls = [];
+    const value = (name, amount) => () => { calls.push(name); return amount; };
+    const score = CPUEvaluation.affordablePurchaseScore({
+        difficulty: 'strong',
+        cost: 4,
+        cardValue: value('card', 8),
+        tempoBonus: value('tempo', 2),
+        diceFrequency: value('dice', 3),
+        synergyBonus: value('synergy', 1),
+        spamPenalty: value('spam', 2),
+        balancePenalty: value('balance', 3),
+        conditionalAdjustment: value('conditional', 4),
+        renovation: true,
+        renovationOwned: value('owned', 1),
+        duplicateRenovationPenalty: owned => { calls.push(['duplicate', owned]); return 5; },
+        rolePressure: value('role', 6),
+        safetyAdjustment: value('safety', 100),
+        crowd: true,
+        crowdScore: current => { calls.push(['crowd', current]); return current + 7; },
+    });
+    assert.strictEqual(score, 35.2);
+    assert.deepStrictEqual(calls, [
+        'card', 'tempo', 'dice', 'synergy', 'spam', 'balance', 'conditional',
+        'owned', ['duplicate', 1], 'role', ['crowd', 28.2],
+    ]);
+
+    calls.length = 0;
+    assert.strictEqual(CPUEvaluation.affordablePurchaseScore({
+        difficulty: 'normal',
+        cost: 2,
+        cardValue: value('card', 6),
+        tempoBonus: value('tempo', 0),
+        diceFrequency: value('dice', 2),
+        synergyBonus: value('synergy', 1),
+        spamPenalty: value('spam', 2),
+        balancePenalty: value('balance', 1),
+        conditionalAdjustment: value('conditional', 100),
+        renovation: true,
+        renovationOwned: value('owned', 2),
+        duplicateRenovationPenalty: () => { calls.push('duplicate'); return 100; },
+        rolePressure: value('role', 100),
+        safetyAdjustment: value('safety', 3),
+        crowd: value('crowd-fact', true),
+        crowdScore: () => { calls.push('crowd'); return 100; },
+    }), 7);
+    assert.deepStrictEqual(calls, ['card', 'tempo', 'dice', 'synergy', 'spam', 'balance', 'safety']);
+});
+
+runTest('CPU本体の購入score wrapperはpure evaluationと既存callback順を維持する', () => {
+    const { CPU } = loadCPURuntime();
+    const cpu = new CPU('strong');
+    const calls = [];
+    const card = { cost: 4, effect: 'renovation' };
+    const player = { countCard: () => { calls.push('owned'); return 1; } };
+    const game = { players: [{}, {}, {}, {}] };
+    cpu.evalCard = () => { calls.push('card'); return 8; };
+    cpu._strongTempoValueBonus = () => { calls.push('tempo'); return 2; };
+    cpu._cardDiceFreq = () => { calls.push('dice'); return 3; };
+    cpu._landmarkCardSynergyBonus = () => { calls.push('synergy'); return 1; };
+    cpu._cardSpamPenalty = () => { calls.push('spam'); return 2; };
+    cpu._economyBalancePenalty = () => { calls.push('balance'); return 3; };
+    cpu._strongConditionalCardAdjustment = () => { calls.push('conditional'); return 4; };
+    cpu._duplicateRenovationPenalty = () => { calls.push('duplicate'); return 5; };
+    cpu._strongRolePressure = () => { calls.push('role'); return 6; };
+    cpu._strongCrowdPurchaseScore = score => { calls.push(['crowd', score]); return score + 7; };
+    assert.strictEqual(cpu._scoreAffordablePurchase(card, game, player, {
+        intensity: 1.4,
+        difficulty: 'strong',
+    }), 35.2);
+    assert.deepStrictEqual(calls, [
+        'card', 'tempo', 'dice', 'synergy', 'spam', 'balance', 'conditional',
+        'owned', 'duplicate', 'role', ['crowd', 28.2],
+    ]);
+});
+
 runTest('CPU本体の購入候補ranking wrapperはpure evaluationへ同値委譲する', () => {
     const { CPU } = loadCPURuntime();
     const cpu = new CPU('strong');

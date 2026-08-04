@@ -17,6 +17,35 @@ const CPUEvaluation = Object.freeze({
         })).sort((a, b) => b.score - a.score);
     },
 
+    affordablePurchaseScore(facts = {}) {
+        const read = value => typeof value === 'function' ? value() : value;
+        const difficulty = facts.difficulty;
+        const expectedGain = (read(facts.cardValue) + read(facts.tempoBonus)) *
+            read(facts.diceFrequency);
+        let score = difficulty === 'strong'
+            ? expectedGain - facts.cost * 0.7
+            : expectedGain / Math.max(facts.cost, 1);
+        score += read(facts.synergyBonus);
+        score -= read(facts.spamPenalty);
+        score -= read(facts.balancePenalty);
+        if (difficulty === 'strong') score += read(facts.conditionalAdjustment);
+        if (difficulty === 'strong' && facts.renovation === true) {
+            const owned = read(facts.renovationOwned);
+            if (owned >= 1) {
+                score -= typeof facts.duplicateRenovationPenalty === 'function'
+                    ? facts.duplicateRenovationPenalty(owned)
+                    : 0;
+            }
+        }
+        if (difficulty === 'strong') score += read(facts.rolePressure);
+        if (difficulty === 'normal') score += read(facts.safetyAdjustment);
+        if (difficulty === 'strong' && read(facts.crowd) === true &&
+                typeof facts.crowdScore === 'function') {
+            score = facts.crowdScore(score);
+        }
+        return score;
+    },
+
     expertPositiveIncomeCap(value, mode, facts = {}) {
         const softCap = (cap, rate) => value <= cap ? value : cap + (value - cap) * rate;
         const remainingCosts = () => {

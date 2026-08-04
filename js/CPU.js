@@ -1872,30 +1872,25 @@ class CPU {
 
     _scoreAffordablePurchase(card, game, player, options = {}) {
         const intensity = options.intensity || 1;
-        const expectedGain = (this.evalCard(card, game, player) + this._strongTempoValueBonus(card, game, player)) *
-            this._cardDiceFreq(card, game, player);
-        let score;
-        if (options.difficulty === "strong") {
-            score = expectedGain - card.cost * 0.7;
-        } else {
-            score = expectedGain / Math.max(card.cost, 1);
-        }
-        score += this._landmarkCardSynergyBonus(card, game, player);
-        score -= this._cardSpamPenalty(card, player, intensity);
-        score -= this._economyBalancePenalty(card, game, player, intensity);
-        if (options.difficulty === "strong") score += this._strongConditionalCardAdjustment(card, game, player);
-        if (card.effect === CARD_EFFECTS.RENOVATION && options.difficulty === "strong") {
-            const owned = player.countCard("改装屋");
-            if (owned >= 1) {
-                score -= this._duplicateRenovationPenalty({ countCard: () => owned + 1 }, "strong", game);
-            }
-        }
-        if (options.difficulty === "strong") score += this._strongRolePressure(card, game, player);
-        if (options.difficulty === "normal") score += this._normalSafetyAdjustment(card, game, player);
-        if (options.difficulty === "strong" && game.players.length >= 4) {
-            score = this._strongCrowdPurchaseScore(score, card, game, player);
-        }
-        return score;
+        return CPUEvaluation.affordablePurchaseScore({
+            difficulty: options.difficulty,
+            cost: card.cost,
+            cardValue: () => this.evalCard(card, game, player),
+            tempoBonus: () => this._strongTempoValueBonus(card, game, player),
+            diceFrequency: () => this._cardDiceFreq(card, game, player),
+            synergyBonus: () => this._landmarkCardSynergyBonus(card, game, player),
+            spamPenalty: () => this._cardSpamPenalty(card, player, intensity),
+            balancePenalty: () => this._economyBalancePenalty(card, game, player, intensity),
+            conditionalAdjustment: () => this._strongConditionalCardAdjustment(card, game, player),
+            renovation: card.effect === CARD_EFFECTS.RENOVATION,
+            renovationOwned: () => player.countCard("改装屋"),
+            duplicateRenovationPenalty: owned =>
+                this._duplicateRenovationPenalty({ countCard: () => owned + 1 }, "strong", game),
+            rolePressure: () => this._strongRolePressure(card, game, player),
+            safetyAdjustment: () => this._normalSafetyAdjustment(card, game, player),
+            crowd: () => game.players.length >= 4,
+            crowdScore: score => this._strongCrowdPurchaseScore(score, card, game, player),
+        });
     }
 
     _sortAffordableForDifficulty(cards, game, player, difficulty) {
