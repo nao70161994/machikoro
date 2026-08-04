@@ -100,12 +100,61 @@ function greenActivationPlan(facts = {}) {
     return plan(greenActivationKinds.NORMAL, { amount });
 }
 
+const purpleActivationKinds = Object.freeze({
+    STADIUM: 'stadium',
+    TV: 'tv',
+    BUSINESS: 'business',
+    PUBLISHER: 'publisher',
+    TAXOFFICE: 'taxoffice',
+    CLEANING: 'cleaning',
+    ITSTARTUP: 'itstartup',
+    PARK: 'park',
+    UNKNOWN: 'unknown',
+});
+
+function purpleActivationPlan(facts = {}) {
+    const plan = (kind, pendingField = '', hasTarget = false) => Object.freeze({
+        kind,
+        pendingField,
+        hasTarget,
+    });
+    if (facts.effect === facts.effects.STADIUM) return plan(purpleActivationKinds.STADIUM);
+    if (facts.effect === facts.effects.TV) return plan(purpleActivationKinds.TV, 'pendingTV', true);
+    if (facts.effect === facts.effects.BUSINESS) {
+        const hasTarget = typeof facts.hasBusinessExchange === 'function'
+            ? facts.hasBusinessExchange()
+            : facts.hasBusinessExchange;
+        return plan(
+            purpleActivationKinds.BUSINESS,
+            hasTarget ? 'pendingBusiness' : '',
+            hasTarget === true
+        );
+    }
+    if (facts.effect === facts.effects.PUBLISHER) return plan(purpleActivationKinds.PUBLISHER);
+    if (facts.effect === facts.effects.TAXOFFICE) return plan(purpleActivationKinds.TAXOFFICE);
+    if (facts.effect === facts.effects.CLEANING) {
+        const hasTarget = typeof facts.hasCleaningTarget === 'function'
+            ? facts.hasCleaningTarget()
+            : facts.hasCleaningTarget;
+        return plan(
+            purpleActivationKinds.CLEANING,
+            hasTarget ? 'pendingCleaning' : '',
+            hasTarget === true
+        );
+    }
+    if (facts.effect === facts.effects.ITSTARTUP) return plan(purpleActivationKinds.ITSTARTUP);
+    if (facts.effect === facts.effects.PARK) return plan(purpleActivationKinds.PARK);
+    return plan(purpleActivationKinds.UNKNOWN);
+}
+
 const GameCardActivationPolicy = Object.freeze({
     eligibleDormantCards,
     blueIncomeKinds,
     blueIncomePlan,
     greenActivationKinds,
     greenActivationPlan,
+    purpleActivationKinds,
+    purpleActivationPlan,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameCardActivationPolicy;

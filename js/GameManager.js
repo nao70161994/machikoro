@@ -599,7 +599,13 @@ class GameManager {
             if (current.isDormant(card)) continue;
             if (card.color !== "purple" || !card.diceNums.includes(dice)) continue;
 
-            if (card.effect === CARD_EFFECTS.STADIUM) {
+            const activation = GameCardActivationPolicy.purpleActivationPlan({
+                effect: card.effect,
+                effects: CARD_EFFECTS,
+                hasBusinessExchange: () => this._hasBusinessExchange(ci),
+                hasCleaningTarget: () => this._hasCleaningTarget(),
+            });
+            if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.STADIUM) {
                 const plan = GameCoinTransaction.collectionPlan(
                     this.players.map(player => player.coins),
                     ci,
@@ -607,17 +613,17 @@ class GameManager {
                 );
                 applyCoinTransactionPlan(this.players, plan);
                 this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${plan.total}コイン`);
-            } else if (card.effect === CARD_EFFECTS.TV) {
-                this._enqueuePendingAction('pendingTV');
+            } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.TV) {
+                this._enqueuePendingAction(activation.pendingField);
                 this.addLog(LOG_TYPES.SPECIAL, `📺 テレビ局発動 → 対象プレイヤーを選んでください`);
-            } else if (card.effect === CARD_EFFECTS.BUSINESS) {
-                if (this._hasBusinessExchange(ci)) {
-                    this._enqueuePendingAction('pendingBusiness');
+            } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.BUSINESS) {
+                if (activation.hasTarget) {
+                    this._enqueuePendingAction(activation.pendingField);
                     this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター発動 → 交換する施設を選んでください`);
                 } else {
                     this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンター：交換できる施設がないため不発`);
                 }
-            } else if (card.effect === CARD_EFFECTS.PUBLISHER) {
+            } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.PUBLISHER) {
                 const requestedAmounts = this.players.map((player, index) => index === ci ? 0 :
                     player.cards.filter(c =>
                         isCardInCategoryGroup(c, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP) &&
@@ -633,7 +639,7 @@ class GameManager {
                     if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `📰 ${this.players[index].name}から${transfer}コイン`);
                 });
                 this.addLog(LOG_TYPES.SPECIAL, `📰 出版社発動 → 合計+${plan.total}コイン`);
-            } else if (card.effect === CARD_EFFECTS.TAXOFFICE) {
+            } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.TAXOFFICE) {
                 const requestedAmounts = this.players.map((player, index) =>
                     index !== ci && player.coins >= 10 ? Math.floor(player.coins / 2) : 0);
                 const plan = GameCoinTransaction.collectionPlan(
@@ -646,14 +652,14 @@ class GameManager {
                     if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `🏛️ ${this.players[index].name}から${transfer}コイン`);
                 });
                 this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${plan.total}コイン`);
-            } else if (card.effect === CARD_EFFECTS.CLEANING) {
-                if (this._hasCleaningTarget()) {
-                    this._enqueuePendingAction('pendingCleaning');
+            } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.CLEANING) {
+                if (activation.hasTarget) {
+                    this._enqueuePendingAction(activation.pendingField);
                     this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にする施設を選んでください`);
                 } else {
                     this.addLog(LOG_TYPES.SPECIAL, `🧹 清掃業発動 → 休業にできる施設がありません`);
                 }
-            } else if (card.effect === CARD_EFFECTS.ITSTARTUP) {
+            } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.ITSTARTUP) {
                 const plan = GameCoinTransaction.collectionPlan(
                     this.players.map(player => player.coins),
                     ci,
@@ -661,7 +667,7 @@ class GameManager {
                 );
                 applyCoinTransactionPlan(this.players, plan);
                 this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${plan.total}コイン`);
-            } else if (card.effect === CARD_EFFECTS.PARK) {
+            } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.PARK) {
                 const plan = GameCoinTransaction.equalDistributionPlan(
                     this.players.map(player => player.coins),
                     ci

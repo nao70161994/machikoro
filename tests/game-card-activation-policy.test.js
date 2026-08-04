@@ -132,3 +132,44 @@ runTest('card activation policyは緑カードkind確定後だけ必要なfact�
     assert.deepStrictEqual({ incomeReads, targetReads }, { incomeReads: 1, targetReads: 1 });
     assert.strictEqual(Object.isFrozen(normal), true);
 });
+
+runTest('card activation policyは紫カードのeffect・pending・対象有無をdetached planにする', () => {
+    const effects = {
+        STADIUM: 'stadium', TV: 'tv', BUSINESS: 'business', PUBLISHER: 'publisher',
+        TAXOFFICE: 'taxoffice', CLEANING: 'cleaning', ITSTARTUP: 'itstartup', PARK: 'park',
+    };
+    assert.deepStrictEqual(GameCardActivationPolicy.purpleActivationPlan({
+        effect: effects.STADIUM, effects,
+    }), { kind: 'stadium', pendingField: '', hasTarget: false });
+    assert.deepStrictEqual(GameCardActivationPolicy.purpleActivationPlan({
+        effect: effects.TV, effects,
+    }), { kind: 'tv', pendingField: 'pendingTV', hasTarget: true });
+    assert.deepStrictEqual(GameCardActivationPolicy.purpleActivationPlan({
+        effect: effects.BUSINESS, effects, hasBusinessExchange: true,
+    }), { kind: 'business', pendingField: 'pendingBusiness', hasTarget: true });
+    assert.deepStrictEqual(GameCardActivationPolicy.purpleActivationPlan({
+        effect: effects.CLEANING, effects, hasCleaningTarget: false,
+    }), { kind: 'cleaning', pendingField: '', hasTarget: false });
+    assert.deepStrictEqual(GameCardActivationPolicy.purpleActivationPlan({
+        effect: 'unknown', effects,
+    }), { kind: 'unknown', pendingField: '', hasTarget: false });
+});
+
+runTest('card activation policyは紫カードkind確定後だけ対象factを読む', () => {
+    const effects = {
+        STADIUM: 'stadium', TV: 'tv', BUSINESS: 'business', PUBLISHER: 'publisher',
+        TAXOFFICE: 'taxoffice', CLEANING: 'cleaning', ITSTARTUP: 'itstartup', PARK: 'park',
+    };
+    const reads = [];
+    const facts = {
+        effects,
+        hasBusinessExchange: () => { reads.push('business'); return true; },
+        hasCleaningTarget: () => { reads.push('cleaning'); return true; },
+    };
+    GameCardActivationPolicy.purpleActivationPlan({ ...facts, effect: effects.STADIUM });
+    GameCardActivationPolicy.purpleActivationPlan({ ...facts, effect: effects.TV });
+    assert.deepStrictEqual(reads, []);
+    GameCardActivationPolicy.purpleActivationPlan({ ...facts, effect: effects.BUSINESS });
+    GameCardActivationPolicy.purpleActivationPlan({ ...facts, effect: effects.CLEANING });
+    assert.deepStrictEqual(reads, ['business', 'cleaning']);
+});
