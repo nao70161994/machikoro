@@ -559,3 +559,12 @@ No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol,
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO event/payload, diagnostic payload/order, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 56 architecture boundaries
+
+- `OnlineDiagnosticState.createController()` now owns the 37 plan/effect/shadow diagnostic selections that were writable top-level variables in `online.js`. Existing public diagnostic getters, assignments, Socket event order, authority flags, and legacy fallbacks are unchanged.
+- `UiCardSelect.createBindingController()` now owns card-selection modal handler admission. `ui.js` retains DOM lookup/listener registration and deliberately preserves the existing one-shot claim even when the modal is absent.
+- `GameCardActivationPolicy.isActivationCandidate()` now owns the shared revived-card, dormant-card, color, and dice admission sequence for red/blue/green/purple processing. `GameManager` retains player adaptation, activation order, all effects, coin mutation, pending state, and exact logs.
+- Scoped gates are now 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO event/payload, reconnect authority/timing, UI presentation, PWA/SW behavior, or production rollout default changed.

@@ -784,3 +784,11 @@ Test index:
 - Socket.IO-unavailable diagnostic admission belongs to `OnlineSocketRegistry.createUnavailableReportController()`. Keep user notice/status effects on every failed initialization and checkpoint/client-error effects only on the first claim.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 56 handoff (2026-08-04)
+
+- The 37 online plan/effect/shadow diagnostic selections belong to `OnlineDiagnosticState.createController()`. Keep its projection private to `online.js`; preserve every public getter, assignment point, authority flag, fallback, and Socket effect order.
+- Card-selection modal handler admission belongs to `UiCardSelect.createBindingController()`. Preserve the existing behavior that the one-time claim occurs before DOM lookup.
+- Red/blue/green/purple candidate admission belongs to `GameCardActivationPolicy.isActivationCandidate()`. Preserve short-circuit order: revived identity, dormancy, color, then dice; keep all traversal, mutation, effects, and logs in `GameManager`.
+- Scoped gates are now 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

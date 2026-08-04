@@ -748,3 +748,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Socket.IO-unavailable one-shot reporting state now belongs to a socket-registry controller while notice/status/checkpoint/report effects remain in `online.js`.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, protocol/schema, persistence, diagnostic behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 56 boundary update
+
+1. Online plan/effect/shadow diagnostic selections now have one private controller owner while public getters, transport, authority selection, and effects remain in `online.js`.
+2. Card-selection modal listener admission now belongs to the card-select controller while DOM registration remains in the UI adapter.
+3. Shared card activation candidate admission now belongs to pure card-activation policy while the shared Engine remains the mutation and effect-order authority.
+
+Scoped gates are now 215 ESLint maintenance files and 214 checkJs runtime files. Rules, CPU strength, protocol/schema, persistence, reconnect behavior, UI behavior, and PWA defaults are unchanged.
