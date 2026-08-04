@@ -17,6 +17,66 @@ const CPUEvaluation = Object.freeze({
         })).sort((a, b) => b.score - a.score);
     },
 
+    expertPositiveIncomeCap(value, mode, facts = {}) {
+        const softCap = (cap, rate) => value <= cap ? value : cap + (value - cap) * rate;
+        const remainingCosts = () => {
+            const source = typeof facts.remainingLandmarkCosts === 'function'
+                ? facts.remainingLandmarkCosts()
+                : facts.remainingLandmarkCosts;
+            return Array.isArray(source) ? source : [];
+        };
+        const remainingTotal = () => remainingCosts().reduce((sum, cost) => sum + cost, 0);
+        const remainingMax = () => remainingCosts().reduce((max, cost) => Math.max(max, cost), 0);
+        const coins = () => {
+            const source = typeof facts.coins === 'function' ? facts.coins() : facts.coins;
+            return Number.isFinite(source) ? source : 0;
+        };
+        const remainingNeed = () => Math.max(0, remainingTotal() - coins());
+        const maxRemainingNeed = () => Math.max(0, remainingMax() - coins());
+
+        switch (mode) {
+        case 'hard30':
+            return Math.min(value, 30);
+        case 'hard40':
+            return Math.min(value, 40);
+        case 'hard50':
+            return Math.min(value, 50);
+        case 'soft30':
+            return value <= 30 ? value : 30 + (value - 30) * 0.5;
+        case 'soft40':
+            return value <= 40 ? value : 40 + (value - 40) * 0.5;
+        case 'soft50':
+            return value <= 50 ? value : 50 + (value - 50) * 0.5;
+        case 'landmarkTotalHard':
+            return Math.min(value, remainingTotal());
+        case 'landmarkTotalSoft25':
+            return softCap(remainingTotal(), 0.25);
+        case 'landmarkTotalSoft50':
+            return softCap(remainingTotal(), 0.5);
+        case 'landmarkNeedHard':
+            return Math.min(value, remainingNeed());
+        case 'landmarkNeedSoft25':
+            return softCap(remainingNeed(), 0.25);
+        case 'landmarkNeedSoft50':
+            return softCap(remainingNeed(), 0.5);
+        case 'landmarkMaxHard':
+            return Math.min(value, remainingMax());
+        case 'landmarkMaxSoft25':
+            return softCap(remainingMax(), 0.25);
+        case 'landmarkMaxSoft50':
+            return softCap(remainingMax(), 0.5);
+        case 'landmarkMaxNeedHard':
+            return Math.min(value, maxRemainingNeed());
+        case 'landmarkMaxNeedSoft25':
+            return softCap(maxRemainingNeed(), 0.25);
+        case 'landmarkMaxNeedSoft50':
+            return softCap(maxRemainingNeed(), 0.5);
+        case 'none':
+        default:
+            return value;
+        }
+    },
+
     ownRollIncome(cards, dice, candidateCard, isDormant, activationValue) {
         let total = 0;
         const evaluatedCards = candidateCard ? cards.concat([candidateCard]) : cards;

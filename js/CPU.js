@@ -490,64 +490,18 @@ class CPU {
 
     _expertV2CappedPositiveIncome(game, player, value) {
         if (!this._isExpertV2Simple()) return value;
-        const softCap = (cap, rate) => value <= cap ? value : cap + (value - cap) * rate;
-        const remainingLandmarkCost = () => {
-            if (!game || !player || !player.landmarks) return 0;
-            const names = game.enabledLandmarks ? [...game.enabledLandmarks] : Player.landmarkNames();
-            return names
-                .filter(name => !player.landmarks[name])
-                .reduce((sum, name) => sum + Player.landmarkCost(name), 0);
-        };
-        const remainingLandmarkNeed = () => Math.max(0, remainingLandmarkCost() - (player && Number.isFinite(player.coins) ? player.coins : 0));
-        const maxRemainingLandmarkCost = () => {
-            if (!game || !player || !player.landmarks) return 0;
-            const names = game.enabledLandmarks ? [...game.enabledLandmarks] : Player.landmarkNames();
-            return names
-                .filter(name => !player.landmarks[name])
-                .reduce((max, name) => Math.max(max, Player.landmarkCost(name)), 0);
-        };
-        const maxRemainingLandmarkNeed = () => Math.max(0, maxRemainingLandmarkCost() - (player && Number.isFinite(player.coins) ? player.coins : 0));
-        switch (this.expertIncomeCapMode) {
-            case "hard30":
-                return Math.min(value, 30);
-            case "hard40":
-                return Math.min(value, 40);
-            case "hard50":
-                return Math.min(value, 50);
-            case "soft30":
-                return value <= 30 ? value : 30 + (value - 30) * 0.5;
-            case "soft40":
-                return value <= 40 ? value : 40 + (value - 40) * 0.5;
-            case "soft50":
-                return value <= 50 ? value : 50 + (value - 50) * 0.5;
-            case "landmarkTotalHard":
-                return Math.min(value, remainingLandmarkCost());
-            case "landmarkTotalSoft25":
-                return softCap(remainingLandmarkCost(), 0.25);
-            case "landmarkTotalSoft50":
-                return softCap(remainingLandmarkCost(), 0.5);
-            case "landmarkNeedHard":
-                return Math.min(value, remainingLandmarkNeed());
-            case "landmarkNeedSoft25":
-                return softCap(remainingLandmarkNeed(), 0.25);
-            case "landmarkNeedSoft50":
-                return softCap(remainingLandmarkNeed(), 0.5);
-            case "landmarkMaxHard":
-                return Math.min(value, maxRemainingLandmarkCost());
-            case "landmarkMaxSoft25":
-                return softCap(maxRemainingLandmarkCost(), 0.25);
-            case "landmarkMaxSoft50":
-                return softCap(maxRemainingLandmarkCost(), 0.5);
-            case "landmarkMaxNeedHard":
-                return Math.min(value, maxRemainingLandmarkNeed());
-            case "landmarkMaxNeedSoft25":
-                return softCap(maxRemainingLandmarkNeed(), 0.25);
-            case "landmarkMaxNeedSoft50":
-                return softCap(maxRemainingLandmarkNeed(), 0.5);
-            case "none":
-            default:
-                return value;
-        }
+        return CPUEvaluation.expertPositiveIncomeCap(value, this.expertIncomeCapMode, {
+            remainingLandmarkCosts() {
+                if (!game || !player || !player.landmarks) return [];
+                const names = game.enabledLandmarks
+                    ? [...game.enabledLandmarks]
+                    : Player.landmarkNames();
+                return names
+                    .filter(name => !player.landmarks[name])
+                    .map(name => Player.landmarkCost(name));
+            },
+            coins: () => player && Number.isFinite(player.coins) ? player.coins : 0,
+        });
     }
 
     _cardSelfIncomeValue(card, game, owner, roller, dice) {

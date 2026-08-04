@@ -1773,3 +1773,63 @@ runTest('CPU evaluation は1個・2個振りの期待値とdice読出順をpure�
     );
     assert.deepStrictEqual(oneDieCalls, [1, 2, 3, 4, 5, 6]);
 });
+
+
+runTest('CPU evaluation はexpert収入capの全modeを同じ算術でpureに評価する', () => {
+    const facts = { remainingLandmarkCosts: [4, 10, 16], coins: 7 };
+    const expected = {
+        hard30: 30,
+        hard40: 40,
+        hard50: 50,
+        soft30: 45,
+        soft40: 50,
+        soft50: 55,
+        landmarkTotalHard: 30,
+        landmarkTotalSoft25: 37.5,
+        landmarkTotalSoft50: 45,
+        landmarkNeedHard: 23,
+        landmarkNeedSoft25: 32.25,
+        landmarkNeedSoft50: 41.5,
+        landmarkMaxHard: 16,
+        landmarkMaxSoft25: 27,
+        landmarkMaxSoft50: 38,
+        landmarkMaxNeedHard: 9,
+        landmarkMaxNeedSoft25: 21.75,
+        landmarkMaxNeedSoft50: 34.5,
+        none: 60,
+        unknown: 60,
+    };
+    for (const [mode, result] of Object.entries(expected)) {
+        assert.strictEqual(CPUEvaluation.expertPositiveIncomeCap(60, mode, facts), result, mode);
+    }
+    assert.deepStrictEqual(facts.remainingLandmarkCosts, [4, 10, 16]);
+});
+
+runTest('CPU evaluation のexpert収入capはmodeごとに必要なfactだけを読む', () => {
+    const calls = [];
+    const facts = {
+        remainingLandmarkCosts() { calls.push('costs'); return [4, 10]; },
+        coins() { calls.push('coins'); return 3; },
+    };
+    assert.strictEqual(CPUEvaluation.expertPositiveIncomeCap(80, 'hard30', facts), 30);
+    assert.deepStrictEqual(calls, []);
+    assert.strictEqual(CPUEvaluation.expertPositiveIncomeCap(80, 'landmarkTotalHard', facts), 14);
+    assert.deepStrictEqual(calls, ['costs']);
+    calls.length = 0;
+    assert.strictEqual(CPUEvaluation.expertPositiveIncomeCap(80, 'landmarkMaxNeedHard', facts), 7);
+    assert.deepStrictEqual(calls, ['costs', 'coins']);
+});
+
+runTest('CPU wrapperはv2simple時だけexpert収入capへlandmark factを渡す', () => {
+    const { CPU, Player } = loadCPURuntime();
+    const player = new Player('CPU');
+    player.coins = 7;
+    player.landmarks['駅'] = true;
+    const game = { enabledLandmarks: new Set(['駅', 'ショッピングモール']), players: [player] };
+    const cpu = new CPU('expert', { expertPreset: 'v2simple' });
+    cpu.expertIncomeCapMode = 'landmarkNeedHard';
+    assert.strictEqual(cpu._expertV2CappedPositiveIncome(game, player, 99), 3);
+
+    const normal = new CPU('normal');
+    assert.strictEqual(normal._expertV2CappedPositiveIncome(null, null, 99), 99);
+});
