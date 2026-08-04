@@ -1024,3 +1024,9 @@ Test index:
 - Local restart orchestration belongs to `LocalGameRestartRuntime`; preserve its storage cleanup and cancel/reset/runtime/view/checkpoint order.
 - Keep `ONLINE_STORAGE_KEYS` unchanged and prefer `clearOnlineSessionStorage` when available, retaining the exact fallback keys for classic-script startup compatibility.
 - The runtime is linted and checkJs-covered. `main.js` remains the dependency composition surface; rules, CPU, storage formats, online protocol, modal behavior, and PWA behavior did not change.
+
+## Batch 88 handoff (2026-08-05)
+
+- Visibility/pageshow orchestration and delayed human-action mutable state belong to `PageActivationRuntime`; do not recreate either controller in `main.js`.
+- Preserve RL → delayed human → online reconnect → CPU recovery → checkpoint order and the existing `visibility-resume` / `pageshow-resume` reason strings.
+- The runtime is linted and checkJs-covered; `main.js` is 1,319 lines. RNG, scheduler decisions, input eligibility, reconnect, rules, persistence, and PWA behavior are unchanged.

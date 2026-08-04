@@ -962,3 +962,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `LocalGameRestartRuntime` owns the local restart use case from confirmation through persistence/session cleanup, runtime reset, view projection, redraw, and final checkpoint.
 2. `main.js` only resolves browser-global effects and preserves the established `restartGame` entry point; ordered restart policy no longer lives in the composition root.
 3. Contracts preserve facade preference, legacy-key fallback, reset reason labels, modal/UI unlock integration, lifecycle reset, and PWA refresh position.
+
+## 2026-08-05 Batch 88 boundary update
+
+1. `PageActivationRuntime` owns visibility lifecycle and delayed-human schedule state, composing the existing `PageActivationPolicy` and `DelayedHumanActionPolicy`.
+2. Page recovery now has one injected application boundary for RL loads, delayed input, online reconnect, CPU lease recovery, and diagnostics; `main.js` keeps only compatibility delegates.
+3. Contracts preserve timer/token semantics, Date/deadline boundaries, single listener ownership, hidden behavior, CPU outcome labels, and effect order.

@@ -809,3 +809,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains explicit dependency composition and its `restartGame` compatibility delegate. Focused contracts preserve the five legacy online storage keys, facade-first/fallback cleanup, exact reset reason strings, and the complete confirmed-start → confirmed-complete effect order.
 - Existing main and integration tests continue to cover UI lock removal, lifecycle notification re-arming, watchdog silence, and title/game-screen state. Scoped gates now cover 239 ESLint maintenance files and 238 checkJs runtime files.
 - Storage keys/formats, game rules, CPU behavior, online protocol/reconnect, modal behavior, and PWA update behavior are unchanged.
+
+## 2026-08-05 Batch 88 page activation runtime
+
+- `js/pageActivationRuntime.js` now owns page visibility/pageshow binding, hidden-duration lifecycle state, delayed human-action token/timer/state, deadline resume decisions, RL/online/CPU resume orchestration, and activation diagnostics.
+- `main.js` retains injected browser/game effects and compatibility delegates; its size decreased from 1,369 to 1,319 lines. The two mutable controllers now live together with the use case that coordinates them.
+- Focused contracts preserve deadline reschedule/run-once behavior, listener single-binding, hidden-page CPU suppression, stale CPU lease renewal, and RL → delayed human → online → CPU → checkpoint ordering. Scoped gates now cover 240 ESLint maintenance files and 239 checkJs runtime files.
+- Dice RNG, CPU decisions/scheduling policy, delayed-action eligibility, online reconnect behavior, game rules, storage, and PWA behavior are unchanged.
