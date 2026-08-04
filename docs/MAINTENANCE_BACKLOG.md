@@ -439,3 +439,12 @@ This batch advances deterministic Engine transitions, explicit online request st
 - Scoped gates remain 212 ESLint maintenance files and 211 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 This batch advances action-only reproducible CPU evaluation, deterministic Engine outcome selection, and explicit UI state ownership without changing rules, CPU strength, persistence, protocol, modal behavior, or PWA/SW behavior.
+
+## 2026-08-04 Batch 43 architecture boundaries
+
+- `UiTurnAnnouncer.createTimerController()` now owns the two-stage show/hide timer handle and replacement cancellation. `ui.js` retains DOM lookup, text/style/class effects, and the public `showTurnAnnouncer()` API; the 1300 ms display and 400 ms transition timings are unchanged.
+- `OnlineHostlessRestoreState.createController()` is now the sole owner of hostless-restore request pending state. `online.js` retains bundle validation, reconnect state, Socket.IO request/candidate/status effects, terminal handling, and all existing event names and payloads.
+- A further `server.js` extraction was deferred in this batch because the inspected room name/slot/version/token/capability projections already belong to `server/roomProjection.js`; another wrapper would duplicate rather than clarify ownership.
+- Scoped gates now cover 213 ESLint maintenance files and 212 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU strength, save/localStorage format, Socket.IO protocol, reconnect timeout/authority, UI presentation timing, or PWA/SW cache policy changed.

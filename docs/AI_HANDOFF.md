@@ -677,3 +677,11 @@ Test index:
 - Confirm awaiting state and cancel-handler ownership belong to `UiModalPolicy.createConfirmController()`. Keep DOM/focus/inert/modal admission in `ui.js`, and close the accessible modal before executing a rejected confirmation callback.
 - Scoped gates remain 212 ESLint maintenance files and 211 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 43 handoff (2026-08-04)
+
+- Turn-announcer timer ownership belongs to `UiTurnAnnouncer.createTimerController()`. Keep the 1300/400 ms schedule and replacement cancellation stable; DOM classes/styles/text and `showTurnAnnouncer()` remain `ui.js` responsibilities.
+- Hostless-restore pending ownership belongs to `OnlineHostlessRestoreState.createController()`. Keep bundle admission, Socket event names/payloads, reconnect state transitions, terminal reasons, and retry timing in their current owners.
+- Do not extract forwarding wrappers around the room projection helpers already delegated from `server.js` to `server/roomProjection.js`; select a boundary with new ownership instead.
+- Scoped gates are 213 ESLint maintenance files and 212 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

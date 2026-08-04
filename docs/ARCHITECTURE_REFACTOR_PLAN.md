@@ -643,3 +643,11 @@ Scoped gates now cover 212 ESLint maintenance files and 211 checkJs runtime file
 3. Confirm awaiting/cancel state now has one controller owner. DOM, focus/inert, modal admission, and callback execution remain UI effects in their original order.
 
 Scoped gates remain 212 ESLint maintenance files and 211 checkJs runtime files. CPU decisions, rules, authority, protocol/schema, persistence, UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 43 boundary update
+
+1. Turn-announcer timer identity now has one controller owner. UI keeps presentation effects and the browser-global API while timer replacement and the exact two-stage schedule are directly contract-tested.
+2. Hostless-restore request pending state now has one controller owner. Bundle validation, reconnect coordination, terminal reason policy, and Socket transport remain independent adapters with their existing wire contract.
+3. The remaining inspected `server.js` room projections are already delegated to `roomProjection`; creating a second forwarding boundary was rejected as non-progress.
+
+Scoped gates now cover 213 ESLint maintenance files and 212 checkJs runtime files. No authority cutover, protocol/schema, persistence, rule, CPU, UI timing, or PWA behavior changed.
