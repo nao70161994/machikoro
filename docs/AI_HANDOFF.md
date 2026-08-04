@@ -944,3 +944,10 @@ Test index:
 - `appShell.js` must invoke render/build/resume/settings/preload/skyline/scheduler/online-timeout effects through `appShellRuntimeEffects`. Resolution must remain lazy because `main.js` loads after the shell.
 - Keep policy and ordering in the orchestrators: the adapters invoke effects but do not decide reconnect authority, watchdog classification, recovery eligibility, CPU strategy, or PWA flow.
 - Scoped gates cover 228 ESLint files and 227 checkJs runtimes. Continue macro batches and reduce real dependencies before attempting whole-file activation of the five orchestration files.
+
+## Batch 76 handoff (2026-08-05)
+
+- Add CPU/online stalled-turn recovery sequencing to `UiWatchdogAsyncRecovery`; keep freeze classification and recovery-handler selection in `appShell.js`.
+- Register crash/rejection/console, online/offline, resize, freeze-watchdog interval, and PWA install handlers through `ClientEventRuntime.createShellBindings()`. Do not reintroduce binding-key branches in `appShell.js`.
+- The runtime receives explicit callbacks and retains the original event/effect order. It does not own watchdog classification, CPU strategy, online protocol, report formatting, or PWA policy.
+- Scoped gates cover 229 ESLint files and 228 checkJs runtimes. The five orchestration files remain whole-file exclusions.

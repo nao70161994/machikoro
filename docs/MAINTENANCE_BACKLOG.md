@@ -726,3 +726,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `js/appShellRuntimeEffects.js` now owns late resolution and invocation of rendering, build-menu refresh, CPU scheduler health/schedule/cancel, online action timeout recovery, resume, RL preload, settings, skyline, and resume-button effects. `appShell.js` retains watchdog/crash/PWA policy and effect order while no longer invoking those ambient runtime functions directly.
 - Production/PWA assets, isolated runtimes, release runtime, load order, ESLint, and checkJs include both boundaries. Scoped gates now cover 228 ESLint maintenance files and 227 checkJs runtime files; the five orchestration files remain whole-file exclusions.
 - Rules, CPU strength/RNG and scheduling policy, Socket.IO names/payloads/ACK timing, restore/reconnect order, storage formats/keys, UI output, lifecycle semantics, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 76 app-shell recovery and event ownership
+
+- `js/uiWatchdogAsyncRecovery.js` now owns CPU-turn-stall and online-action-flight-stall recovery admission, scheduler/timeout invocation, recovered-state observation, and checkpoint payload/order through injected effects. `appShell.js` retains freeze classification and handler selection; Safari CPU-stall and online ACK-stall integration contracts remain unchanged.
+- `ClientEventRuntime.createShellBindings()` now owns one-time crash/rejection/console, online/offline, resize, watchdog interval, and PWA-install handler registration. `appShell.js` retains public compatibility wrappers and startup order without directly managing binding keys or replacing console callbacks.
+- `appShell.js` decreased from 1,391 to 1,346 lines in this batch. Scoped gates now cover 229 ESLint maintenance files and 228 checkJs runtime files.
+- Game rules, CPU decisions/RNG and scheduler policy, online timeout/reconnect behavior, report payloads, browser event order, storage, UI output, and PWA/SW behavior are unchanged.

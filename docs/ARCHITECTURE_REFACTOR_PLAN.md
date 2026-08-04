@@ -890,3 +890,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `OnlineSocketEffects` centralizes all outbound online transport calls while event selection, payload construction, reconnect/restore ordering, and authority decisions remain in `online.js`.
 2. `AppShellRuntimeEffects` gives the shell one late-bound boundary for main/UI/online runtime effects and scheduler observation. Watchdog, crash, lifecycle, and PWA orchestration remain in `appShell.js`.
 3. Focused contracts cover event/payload identity, missing-dependency behavior, scheduler precedence and legacy fallback, online-flight fallback, direct-call exclusion, and production load order. No gameplay, CPU, protocol, persistence, UI, or PWA contract changed.
+
+## 2026-08-05 Batch 76 boundary update
+
+1. Asynchronous watchdog recovery is now an injected runtime boundary: app-shell classification selects a handler, while CPU reschedule and online ACK-timeout recovery own their admission, effect, observation, and checkpoint sequence together.
+2. Browser event lifecycle ownership moved into `ClientEventRuntime`; app-shell startup now wires one runtime instead of coordinating six independent binding-key branches.
+3. Direct and integration contracts preserve scheduler precedence/legacy fallback, recovery checkpoints, error and console capture order, duplicate binding suppression, PWA install registration, online status initialization, resize, and watchdog timing.
