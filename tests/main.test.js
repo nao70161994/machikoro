@@ -395,6 +395,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(actionUiRegistrySource, context, { filename: 'js/actionUiRegistry.js' });
     const pwaShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/pwaShell.js'), 'utf8');
     vm.runInContext(pwaShellSource, context, { filename: 'js/pwaShell.js' });
+    const appShellStartupRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellStartupRuntime.js'), 'utf8');
+    vm.runInContext(appShellStartupRuntimeSource, context, { filename: 'js/appShellStartupRuntime.js' });
     const uiTabViewSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTabView.js'), 'utf8');
     vm.runInContext(uiTabViewSource, context, { filename: 'js/uiTabView.js' });
     const uiTabEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTabEffects.js'), 'utf8');
@@ -2431,6 +2433,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/crashScreenEffects.js', 'js/appShell.js');
     assertBefore('js/appShellCrashRuntime.js', 'js/appShell.js');
     assertBefore('js/pwaShell.js', 'js/appShell.js');
+    assertBefore('js/appShellStartupRuntime.js', 'js/appShell.js');
     assertBefore('js/actionUiRegistry.js', 'js/appShell.js');
     assertBefore('js/appShell.js', 'js/main.js');
     assertBefore('js/localPlayerSettings.js', 'js/main.js');

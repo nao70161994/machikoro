@@ -140,4 +140,5 @@ interface Window {
     ClientStorage: unknown;
     AppShellStorage: unknown;
     PwaShell: unknown;
+    AppShellStartupRuntime: unknown;
 }

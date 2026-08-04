@@ -229,6 +229,7 @@ const TEST_GROUPS = {
         'lifecycle-runtime.test.js',
         'lifecycle-transport.test.js',
         'pwa-shell.test.js',
+        'app-shell-startup-runtime.test.js',
         'ui.test.js',
         'integration.test.js',
         'rlcpu.test.js',

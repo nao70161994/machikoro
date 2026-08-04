@@ -236,6 +236,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/crashScreenEffects.js',
         'js/appShellCrashRuntime.js',
         'js/pwaShell.js',
+        'js/appShellStartupRuntime.js',
         'js/actionUiRegistry.js',
         'js/uiTabView.js',
         'js/uiTabEffects.js',

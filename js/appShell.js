@@ -385,18 +385,7 @@ function crashResume() {
     return appShellCrashRuntime.resume();
 }
 
-// ===== オフライン検知 =====
-function updateOnlineTabState() {
-    const view = UiTabView.buildOnlineAvailabilityView(navigator.onLine);
-    UiTabEffects.applyOnlineAvailabilityView({
-        tabButton: document.getElementById('tabOnline'),
-        notice: document.getElementById('offlineNotice'),
-        createButton: document.getElementById('onlineCreateSubmitButton'),
-        joinButton: document.getElementById('onlineJoinSubmitButton'),
-    }, view);
-}
-
-// ===== PWAインストールバナー =====
+// ===== オフライン検知 / PWAインストールバナー =====
 const _pwaInstallController = PwaShell.createInstallController({
     document,
     window,
@@ -404,24 +393,28 @@ const _pwaInstallController = PwaShell.createInstallController({
     writeStorage: safeAppShellStorageSet,
 });
 
+function updateOnlineTabState() {
+    return appShellStartupRuntime.updateOnlineStatus();
+}
+
 function setPwaBannerVisible(id, visible) {
-    return _pwaInstallController.setBannerVisible(id, visible);
+    return appShellStartupRuntime.setPwaBannerVisible(id, visible);
 }
 
 function updatePwaBannerBodyState() {
-    return _pwaInstallController.updateBannerBodyState();
+    return appShellStartupRuntime.updatePwaBannerBodyState();
 }
 
 function maybeShowPwaInstallBanner() {
-    return _pwaInstallController.maybeShowInstallBanner();
+    return appShellStartupRuntime.maybeShowPwaInstallBanner();
 }
 
 function pwaInstallPrompt() {
-    return _pwaInstallController.promptInstall();
+    return appShellStartupRuntime.pwaInstallPrompt();
 }
 
 function pwaInstallDismiss() {
-    return _pwaInstallController.dismissInstall();
+    return appShellStartupRuntime.pwaInstallDismiss();
 }
 
 const appShellEventBindings = ClientEventRuntime.createShellBindings({
@@ -439,6 +432,20 @@ const appShellEventBindings = ClientEventRuntime.createShellBindings({
     updateOnlineStatus: updateOnlineTabState,
     windowErrorInput: ClientReporting.windowErrorInput,
     windowTarget: window,
+});
+const appShellStartupRuntime = AppShellStartupRuntime.createRuntime({
+    eventBindings: appShellEventBindings,
+    getOnlineElements: () => ({
+        tabButton: document.getElementById('tabOnline'),
+        notice: document.getElementById('offlineNotice'),
+        createButton: document.getElementById('onlineCreateSubmitButton'),
+        joinButton: document.getElementById('onlineJoinSubmitButton'),
+    }),
+    getOnlineState: () => navigator.onLine,
+    pwaController: _pwaInstallController,
+    runtimeEffects: appShellRuntimeEffects,
+    tabEffects: UiTabEffects,
+    tabView: UiTabView,
 });
 
 function handleWindowErrorEvent(event) {
@@ -567,15 +574,5 @@ if (typeof window !== 'undefined') {
 if (typeof window !== 'undefined') bindCrashHandlers();
 
 function initMainView() {
-    appShellRuntimeEffects.loadSettings();
-    appShellRuntimeEffects.preloadLocalRlModels('init-main-local-rl-preload');
-    appShellRuntimeEffects.renderOnlinePlayerSettings();
-    appShellRuntimeEffects.preloadOnlineRlModels('init-main-online-rl-preload');
-    appShellRuntimeEffects.updateResumeButton();
-    appShellRuntimeEffects.drawCitySkyline();
-    appShellEventBindings.bindMainViewResize();
-    bindCrashHandlers();
-    bindOnlineStatusHandlers();
-    bindPwaInstallHandlers();
-    startFreezeWatchdog();
+    return appShellStartupRuntime.initMainView();
 }

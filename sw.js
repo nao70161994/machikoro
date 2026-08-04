@@ -165,6 +165,7 @@ const STATIC_ASSETS = [
   '/js/crashScreenEffects.js',
   '/js/appShellCrashRuntime.js',
   '/js/pwaShell.js',
+  '/js/appShellStartupRuntime.js',
   '/js/actionUiRegistry.js',
   '/js/appShell.js',
   '/js/localPlayerSettings.js',
