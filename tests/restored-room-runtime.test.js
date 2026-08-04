@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const makeRestoredRoomRuntime = require('../server/restoredRoomRuntime');
+const makeNewRoomRestoreRuntime = require('../server/newRoomRestoreRuntime');
 const { runTest } = require('./helpers/test-utils');
 
 function makeRuntime(options = {}) {
@@ -158,4 +159,125 @@ runTest('restored room runtimeはeffect欠落をroom変更前に拒否する', (
 
 runTest('restored room runtimeは依存欠落を初期化時に拒否する', () => {
     assert.throws(() => makeRestoredRoomRuntime({}), /planActivation dependency/);
+});
+
+
+function makeNewRoomRuntimeHarness(options = {}) {
+    const calls = [];
+    const socket = { id: 'socket-1', join(roomId) { calls.push(['socket-join', roomId]); } };
+    const restoredRoom = { stateSnapshot: { actionSeq: 4 }, actionLog: [{ seq: 5 }] };
+    const runtime = makeNewRoomRestoreRuntime({
+        prepareRoom(input) {
+            calls.push(['prepare', input]);
+            return options.preparation || {
+                ok: true,
+                gameStartPayload: { playerNames: ['Alice'] },
+                restoredRoom,
+            };
+        },
+        activateRoom(input, effects) {
+            calls.push(['activate', input]);
+            if (options.activation) return options.activation;
+            effects.install();
+            effects.persist();
+            effects.joinSocket();
+            effects.assignSocketRoom();
+            effects.assignSocketPlayer();
+            effects.emitRejoinData();
+            effects.log('restored');
+            return { ok: true, roomId: input.roomId };
+        },
+        emitAppError(_socket, message) { calls.push(['error', message]); },
+        roomExists(roomId) { calls.push(['exists', roomId]); return false; },
+        detachExisting(context) { calls.push(['detach', context.roomId]); },
+        deleteExisting(context) { calls.push(['delete', context.roomId]); },
+        installRoom(context) { calls.push(['install-room', context.restoredRoom]); },
+        persistRoom(context) { calls.push(['persist-room', context.roomId]); },
+        joinSocket(context) { context.socket.join(context.roomId); },
+        emitRejoinData(context) {
+            calls.push(['emit-rejoin', context.gameStartPayload, context.playerIndex]);
+        },
+        log(message) { calls.push(['log', message]); },
+    });
+    const admission = {
+        roomId: 'ROOM05',
+        playerIndex: 1,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+        approvedHostless: false,
+        gameStartPayload: { original: true },
+        stateSnapshot: { actionSeq: 2 },
+        replayStateSnapshot: { actionSeq: 3 },
+        actionLog: [{ seq: 4 }],
+        canonicalRecord: { roomId: 'ROOM05' },
+        clientSnapshotTrusted: true,
+    };
+    return { calls, socket, restoredRoom, runtime, admission };
+}
+
+runTest('new room restore runtimeはprepareからdeliveryまでcontextと順序を維持する', () => {
+    const harness = makeNewRoomRuntimeHarness();
+    const result = harness.runtime.handle({
+        socket: harness.socket,
+        admission: harness.admission,
+        candidateCount: 3,
+    });
+    assert.deepStrictEqual(result, { ok: true, roomId: 'ROOM05' });
+    assert.strictEqual(harness.socket.roomId, 'ROOM05');
+    assert.strictEqual(harness.socket.playerIndex, 1);
+    assert.deepStrictEqual(harness.calls.map(call => call[0]), [
+        'prepare', 'exists', 'activate', 'install-room', 'persist-room',
+        'socket-join', 'emit-rejoin', 'log',
+    ]);
+    assert.deepStrictEqual(harness.calls[0][1], {
+        roomId: 'ROOM05',
+        playerIndex: 1,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+        approvedHostless: false,
+        socketId: 'socket-1',
+        gameStartPayload: { original: true },
+        stateSnapshot: { actionSeq: 2 },
+        replayStateSnapshot: { actionSeq: 3 },
+        actionLog: [{ seq: 4 }],
+        canonicalRecord: { roomId: 'ROOM05' },
+        clientSnapshotTrusted: true,
+        candidateCount: 3,
+    });
+});
+
+runTest('new room restore runtimeはprepare拒否をactivation前にappErrorへ返す', () => {
+    const harness = makeNewRoomRuntimeHarness({
+        preparation: { ok: false, errorMessage: '復元できません' },
+    });
+    assert.strictEqual(harness.runtime.handle({
+        socket: harness.socket,
+        admission: harness.admission,
+    }), undefined);
+    assert.deepStrictEqual(harness.calls.map(call => call[0]), ['prepare', 'error']);
+});
+
+runTest('new room restore runtimeはactivation拒否の既存public resultを維持する', () => {
+    const harness = makeNewRoomRuntimeHarness({
+        activation: { ok: false, reason: 'room-exists', errorMessage: '使用中です' },
+    });
+    assert.deepStrictEqual(harness.runtime.handle({
+        socket: harness.socket,
+        admission: harness.admission,
+    }), { ok: false, reason: 'room-exists' });
+    assert.deepStrictEqual(harness.calls.slice(-2), [
+        ['activate', {
+            roomExists: false,
+            approvedHostless: false,
+            roomId: 'ROOM05',
+            playerName: 'Alice',
+            playerIndex: 1,
+            restoredRoom: harness.restoredRoom,
+        }],
+        ['error', '使用中です'],
+    ]);
+});
+
+runTest('new room restore runtimeは依存不足を初期化時に拒否する', () => {
+    assert.throws(() => makeNewRoomRestoreRuntime({}), /prepareRoom dependency/);
 });

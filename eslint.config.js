@@ -205,6 +205,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/restoreAdmission.js',
     'server/existingRoomRejoin.js',
     'server/existingRoomRestoreRuntime.js',
+    'server/newRoomRestoreRuntime.js',
     'server/restoreReplayAdmission.js',
     'server/restorePreparation.js',
     'server/restoreGateway.js',

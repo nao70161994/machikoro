@@ -62,6 +62,7 @@ const makeRestorePreparation = require('./server/restorePreparation');
 const makeRestoredRoom = require('./server/restoredRoom');
 const makeRestoredRoomRuntime = require('./server/restoredRoomRuntime');
 const makeExistingRoomRestoreRuntime = require('./server/existingRoomRestoreRuntime');
+const makeNewRoomRestoreRuntime = require('./server/newRoomRestoreRuntime');
 const {
     existingRoomRejoinEffectAuthorityEnabled,
     executeExistingRoomRejoin,
@@ -952,6 +953,46 @@ const { prepareRestoredRoom } = makeRestorePreparation({
     hostlessRestoreCountField: HOSTLESS_RESTORE_COUNT_FIELD,
 });
 
+const newRoomRestoreRuntime = makeNewRoomRestoreRuntime({
+    prepareRoom: prepareRestoredRoom,
+    activateRoom: activateRestoredRoom,
+    emitAppError,
+    roomExists: hasOwnRoom,
+    detachExisting(context) {
+        detachRoomSockets(context.roomId, rooms[context.roomId], 'ROOM_REPLACED');
+    },
+    deleteExisting(context) {
+        delete rooms[context.roomId];
+    },
+    installRoom(context) {
+        rooms[context.roomId] = context.restoredRoom;
+    },
+    persistRoom(context) {
+        persistRoomCanonicalState(
+            context.roomId,
+            context.restoredRoom,
+            'server-restart-restore'
+        );
+    },
+    joinSocket(context) {
+        context.socket.join(context.roomId);
+    },
+    emitRejoinData(context) {
+        context.socket.emit(
+            'rejoinData',
+            buildRejoinDataPayload(context.restoredRoom, context.playerIndex, {
+                gameStartPayload: context.gameStartPayload,
+                stateSnapshot: context.restoredRoom.stateSnapshot,
+                actionLog: context.restoredRoom.actionLog,
+                hostPlayerIndex: context.playerIndex,
+            })
+        );
+    },
+    log(message) {
+        console.log(message);
+    },
+});
+
 function handleRecreateRoom(socket, payload = {}, options = {}) {
     const admission = planRestoreAdmission(payload, options);
     if (admission.ok !== true) {
@@ -993,73 +1034,11 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
         });
         if (existingRoomResult.handled) return;
     }
-    const preparation = prepareRestoredRoom({
-        roomId,
-        playerIndex,
-        playerName,
-        reconnectToken,
-        approvedHostless,
-        socketId: socket.id,
-        gameStartPayload,
-        stateSnapshot,
-        replayStateSnapshot,
-        actionLog,
-        canonicalRecord,
-        clientSnapshotTrusted,
+    return newRoomRestoreRuntime.handle({
+        socket,
+        admission,
         candidateCount: options.candidateCount,
     });
-    if (preparation.ok !== true) {
-        emitAppError(socket, preparation.errorMessage);
-        return;
-    }
-    gameStartPayload = preparation.gameStartPayload;
-    const { restoredRoom } = preparation;
-    const activationResult = activateRestoredRoom({
-        roomExists: hasOwnRoom(roomId),
-        approvedHostless,
-        roomId,
-        playerName,
-        playerIndex,
-        restoredRoom,
-    }, {
-        detachExisting() {
-            detachRoomSockets(roomId, rooms[roomId], 'ROOM_REPLACED');
-        },
-        deleteExisting() {
-            delete rooms[roomId];
-        },
-        install() {
-            rooms[roomId] = restoredRoom;
-        },
-        persist() {
-            persistRoomCanonicalState(roomId, restoredRoom, 'server-restart-restore');
-        },
-        joinSocket() {
-            socket.join(roomId);
-        },
-        assignSocketRoom() {
-            socket.roomId = roomId;
-        },
-        assignSocketPlayer() {
-            socket.playerIndex = playerIndex;
-        },
-        emitRejoinData() {
-            socket.emit('rejoinData', buildRejoinDataPayload(restoredRoom, playerIndex, {
-                gameStartPayload,
-                stateSnapshot: restoredRoom.stateSnapshot,
-                actionLog: restoredRoom.actionLog,
-                hostPlayerIndex: playerIndex,
-            }));
-        },
-        log(message) {
-            console.log(message);
-        },
-    });
-    if (activationResult.ok !== true) {
-        emitAppError(socket, activationResult.errorMessage);
-        return { ok: false, reason: activationResult.reason };
-    }
-    return activationResult;
 }
 
 // ===== Snapshot limits and restore payload guards =====
