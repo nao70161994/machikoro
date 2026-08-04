@@ -692,14 +692,16 @@ class CPU {
                 "strong.choiceState.redPressure",
                 () => this._estimateRedPressure(game, focusIndex)
             );
-            return purchasePlanValue +
-                turnValue * 0.35 +
-                player.coins * 0.18 +
-                player.builtLandmarkCount() * 2.8 +
-                landmarkPressure -
-                winDistance * 1.2 -
-                redPressure * 0.08 -
-                this._duplicateRenovationPenalty(player, "strong", game);
+            return CPUEvaluation.strongChoiceScore({
+                purchasePlanValue,
+                turnValue,
+                coins: player.coins,
+                builtLandmarkCount: player.builtLandmarkCount(),
+                landmarkPressure,
+                winDistance,
+                redPressure,
+                duplicateRenovationPenalty: this._duplicateRenovationPenalty(player, "strong", game),
+            });
         });
     }
 

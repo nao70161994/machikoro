@@ -2161,3 +2161,27 @@ runTest('CPU evaluationの多人数bonusは既存の二段走査と短絡順を�
         ['threat', 3], ['matching', 3],
     ]);
 });
+
+runTest('CPU evaluationはstrong choice scoreの既存係数をpureに合成する', () => {
+    const composed = CPUEvaluation.strongChoiceScore({
+        purchasePlanValue: 12,
+        turnValue: 8,
+        coins: 10,
+        builtLandmarkCount: 2,
+        landmarkPressure: 6,
+        winDistance: 4,
+        redPressure: 5,
+        duplicateRenovationPenalty: 3,
+    });
+    assert.ok(Math.abs(composed - 20) < 1e-9);
+    assert.strictEqual(CPUEvaluation.strongChoiceScore({
+        purchasePlanValue: 0,
+        turnValue: 0,
+        coins: 0,
+        builtLandmarkCount: 0,
+        landmarkPressure: 0,
+        winDistance: 0,
+        redPressure: 0,
+        duplicateRenovationPenalty: 0,
+    }), 0);
+});

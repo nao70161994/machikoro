@@ -74,6 +74,17 @@ const CPUEvaluation = Object.freeze({
         return bonus;
     },
 
+    strongChoiceScore(facts = {}) {
+        return facts.purchasePlanValue +
+            facts.turnValue * 0.35 +
+            facts.coins * 0.18 +
+            facts.builtLandmarkCount * 2.8 +
+            facts.landmarkPressure -
+            facts.winDistance * 1.2 -
+            facts.redPressure * 0.08 -
+            facts.duplicateRenovationPenalty;
+    },
+
     expertChoiceScore(facts = {}) {
         const read = value => typeof value === 'function' ? value() : value;
         let score = read(facts.positionScore);
