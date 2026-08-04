@@ -1045,6 +1045,9 @@ class GameManager {
         this.addLog(LOG_TYPES.SYSTEM, `👤 ${this.currentPlayer().name}のターン`);
     }
 
-    checkWinner() { return this.players.find(p => p.hasWon([...this.enabledLandmarks])) || null; }
+    checkWinner() {
+        const index = GameTurnPolicy.winnerIndex(this.players, this.enabledLandmarks);
+        return index >= 0 ? this.players[index] : null;
+    }
     addLog(type, msg) { this.log.push({ type, message: msg }); }
 }

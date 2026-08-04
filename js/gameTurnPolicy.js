@@ -48,6 +48,16 @@ const GameTurnPolicy = (() => {
         });
     }
 
+    function winnerIndex(players, enabledLandmarks) {
+        const candidates = Array.isArray(players) ? players : [];
+        for (let index = 0; index < candidates.length; index++) {
+            const player = candidates[index];
+            if (!player || typeof player.hasWon !== 'function') continue;
+            if (player.hasWon(Array.from(enabledLandmarks || []))) return index;
+        }
+        return -1;
+    }
+
     function shouldRepeatAmusementParkTurn(state) {
         return !!state && state.hadAmusementParkAtRoll === true &&
             Number.isFinite(state.lastDice1) && state.lastDice1 > 0 &&
@@ -136,6 +146,7 @@ const GameTurnPolicy = (() => {
         turnResetPlan,
         phaseAfterIncome,
         incomeCompletionPlan,
+        winnerIndex,
         shouldRepeatAmusementParkTurn,
         nextPlayerIndex,
         nextTurnRejectionReasons,

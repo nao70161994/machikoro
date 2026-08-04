@@ -65,6 +65,24 @@ runTest('turn policyはincome終了時の役所救済とphaseを一つのimmutab
     assert.strictEqual(cityHallReads, 0);
 });
 
+runTest('turn policyはplayer順に勝者を探索して最初のindexで短絡する', () => {
+    const calls = [];
+    const landmarks = new Set(['station', 'mall']);
+    const players = [
+        { hasWon: enabled => { calls.push(['first', enabled]); return false; } },
+        { hasWon: enabled => { calls.push(['second', enabled]); return true; } },
+        { hasWon: enabled => { calls.push(['third', enabled]); return true; } },
+    ];
+    assert.strictEqual(GameTurnPolicy.winnerIndex(players, landmarks), 1);
+    assert.deepStrictEqual(calls, [
+        ['first', ['station', 'mall']],
+        ['second', ['station', 'mall']],
+    ]);
+    assert.deepStrictEqual(Array.from(landmarks), ['station', 'mall']);
+    assert.strictEqual(GameTurnPolicy.winnerIndex([], landmarks), -1);
+    assert.strictEqual(GameTurnPolicy.winnerIndex(null, landmarks), -1);
+});
+
 runTest('turn policyは遊園地の既存ゾロ目条件を厳密に維持する', () => {
     assert.strictEqual(GameTurnPolicy.shouldRepeatAmusementParkTurn({
         hadAmusementParkAtRoll: true,
