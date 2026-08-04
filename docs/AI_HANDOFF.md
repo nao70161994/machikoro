@@ -844,3 +844,11 @@ Test index:
 - A future batch may migrate remaining live-game assignments to named operations and make compatibility projections read-only only after main, online, storage, UI, app-shell, isolated runtimes, and inline PWA consumers are contract-covered.
 - Scoped gates are 220 ESLint maintenance files and 219 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 63 handoff (2026-08-04)
+
+- Production live-game writes must use `GameRuntimeState.runtime` named operations. Preserve the exact assignment/effect position, especially Engine shadow adoption (`game` → shop stock → `undoState`), restore hydration, Undo capture/clear, and render coin baselines.
+- `GameTurnPolicy.planNextTurnAirport()` is the Airport transition authority for award and `coinDelta`. Keep `GameManager.nextTurn()` staged as admission → current player/Airport application and log → active IT lookup/continuation; do not pre-read IT cards before the Airport effect.
+- Winner streak state belongs to `UiWinner.streakRuntime`. Record only on first winner presentation, then persist `winStreak` before `lastWinnerName`; repeated renders must reuse the snapshot without incrementing.
+- Compatibility setters for live game and winner streak are temporary classic-script/test projections. Remove or make them read-only only after every cross-script consumer and inline PWA path is migrated and contract-covered.
+- Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Continue with at most three independent themes and one batch-level integration gate/push/CI.

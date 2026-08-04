@@ -796,3 +796,11 @@ Scoped gates now cover 219 ESLint maintenance files and 218 checkJs runtime file
 3. Tutorial preference state now has one controller owner integrated with the existing transition/effect contract and unchanged storage wire values.
 
 Scoped gates now cover 220 ESLint maintenance files and 219 checkJs runtime files. Rules, CPU strength/RNG, authority defaults, schema/protocol, persistence formats, reconnect behavior, UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 63 boundary update
+
+1. Live client game mutations now pass through named runtime operations across local start/reset, Engine shadow adoption, online replay/restore, save/Undo hydration, and UI coin rendering. Compatibility identifiers are projections rather than production write paths.
+2. Turn completion is explicitly staged through admission, an immutable Airport coin transition, and IT continuation without changing mutable/log effect order.
+3. Winner streak state is separated from winner view HTML and terminal DOM/effect orchestration while retaining the existing localStorage contract and first-presentation gate.
+
+Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Rules and amounts, CPU strength/RNG, Engine authority defaults, schema/protocol, persistence formats, reconnect behavior, UI presentation, and PWA defaults are unchanged.

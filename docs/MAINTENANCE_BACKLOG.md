@@ -623,3 +623,13 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event
 - Scoped gates now cover 220 ESLint maintenance files and 219 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect or Socket callback order, Game Engine authority, UI presentation, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 63 architecture boundaries
+
+- All production writes to live `game`, `cpuPlayers`, `prevCoins`, and `undoState` now use named `GameRuntimeState.runtime` operations. Compatibility properties remain readable/writable only for classic-script and isolated-runtime compatibility; a static contract rejects new bare writes in main, online, storage, and UI.
+- The `nextTurn()` path now has an explicit Airport transition plan between admission and IT continuation. `GameTurnPolicy` owns the immutable award/coin delta, while `GameManager` preserves current-player lookup, mutable coin application, exact log text, IT-card inspection, and turn advancement order.
+- Winner streak and prior-winner state now belong to `UiWinner.streakRuntime`. `ui.js` keeps first-presentation admission and persists the same `winStreak` then `lastWinnerName` keys before the existing winner effect pipeline.
+- The next live-runtime step is to audit read consumers and make compatibility projections read-only only where classic inline/PWA and isolated runtime contracts permit. The state container must not become a duplicate Game Engine, Snapshot, CPU scheduler, or persistence authority.
+- Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, Airport amount/log, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO protocol, reconnect ordering, winner presentation, or PWA/SW behavior changed.
