@@ -176,6 +176,7 @@ const STATIC_ASSETS = [
   '/js/autoSkipPolicy.js',
   '/js/pageActivationPolicy.js',
   '/js/delayedHumanActionPolicy.js',
+  '/js/pageActivationRuntime.js',
   '/js/cpuSchedulerState.js',
   '/js/cpuTurnStrategy.js',
   '/js/localActionPolicy.js',

@@ -423,6 +423,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(pageActivationPolicySource, context, { filename: 'js/pageActivationPolicy.js' });
     const delayedHumanActionPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/delayedHumanActionPolicy.js'), 'utf8');
     vm.runInContext(delayedHumanActionPolicySource, context, { filename: 'js/delayedHumanActionPolicy.js' });
+    const pageActivationRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/pageActivationRuntime.js'), 'utf8');
+    vm.runInContext(pageActivationRuntimeSource, context, { filename: 'js/pageActivationRuntime.js' });
     const cpuSchedulerStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuSchedulerState.js'), 'utf8');
     const cpuTurnStrategySource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuTurnStrategy.js'), 'utf8');
     const localActionPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/localActionPolicy.js'), 'utf8');
@@ -484,9 +486,9 @@ function loadMainRuntime(options = {}) {
             isMainOnlineReconnectInputBlocked: () => isMainOnlineReconnectInputBlocked(),
             cancelCpuSchedule: (reason) => cpuTurnScheduler.cancel(reason),
             expireCpuScheduleLease: () => { cpuSchedulerStateController.expireLease(0); },
-            expireDelayedHumanAction: () => { delayedHumanActionController.updateDeadline(0); },
-            getDelayedHumanActionPending: () => delayedHumanActionController.isPending(),
-            setPageHiddenAt: (value) => { pageActivationLifecycleController.setHiddenAt(value); },
+            expireDelayedHumanAction: () => { pageActivationRuntime.setDelayedDeadline(0); },
+            getDelayedHumanActionPending: () => pageActivationRuntime.isDelayedPending(),
+            setPageHiddenAt: (value) => { pageActivationRuntime.setHiddenAt(value); },
             scheduleCPU: () => scheduleCPU(),
             cpuDo: (action, data, fallback) => cpuDo(action, data, fallback),
             counters,
@@ -551,8 +553,10 @@ runTest('main page activation stateはlifecycle controllerだけが所有する'
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
     assert.strictEqual(source.includes('cpuResumeSchedulerBound'), false);
     assert.strictEqual(source.includes('let pageHiddenAt'), false);
-    assert.ok(source.includes('PageActivationPolicy.createLifecycleController()'));
-    assert.ok(source.includes('pageActivationLifecycleController.claimBinding()'));
+    const runtimeSource = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/pageActivationRuntime.js'), 'utf8');
+    assert.ok(source.includes('PageActivationRuntime.createRuntime'));
+    assert.ok(runtimeSource.includes('pagePolicy.createLifecycleController()'));
+    assert.ok(runtimeSource.includes('lifecycleController.claimBinding()'));
 });
 
 runTest('local game start pendingはcontrollerだけが所有する', () => {
@@ -576,7 +580,9 @@ runTest('delayed human action schedule stateはcontrollerだけが所有する',
     assert.strictEqual(source.includes('let delayedHumanActionTimeout'), false);
     assert.strictEqual(source.includes('let delayedHumanActionToken'), false);
     assert.strictEqual(source.includes('let delayedHumanActionState'), false);
-    assert.ok(source.includes('DelayedHumanActionPolicy.createScheduleController()'));
+    const runtimeSource = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/pageActivationRuntime.js'), 'utf8');
+    assert.ok(source.includes('PageActivationRuntime.createRuntime'));
+    assert.ok(runtimeSource.includes('delayedPolicy.createScheduleController()'));
 });
 
 runTest('main UI handler binding stateはdelegation controllerだけが所有する', () => {
@@ -2453,7 +2459,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/localGameInitializer.js', 'js/localGameRestartRuntime.js');
     assertBefore('js/localGameRestartRuntime.js', 'js/main.js');
     assertBefore('js/pageActivationPolicy.js', 'js/main.js');
-    assertBefore('js/delayedHumanActionPolicy.js', 'js/main.js');
+    assertBefore('js/delayedHumanActionPolicy.js', 'js/pageActivationRuntime.js');
+    assertBefore('js/pageActivationRuntime.js', 'js/main.js');
     assertBefore('js/cpuSchedulerState.js', 'js/main.js');
     assertBefore('js/cpuTurnStrategy.js', 'js/main.js');
     assertBefore('js/localActionPolicy.js', 'js/main.js');

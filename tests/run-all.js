@@ -175,6 +175,7 @@ const TEST_GROUPS = {
         'auto-skip-policy.test.js',
         'page-activation-policy.test.js',
         'delayed-human-action-policy.test.js',
+        'page-activation-runtime.test.js',
         'cpu-scheduler-state.test.js',
         'cpu-turn-strategy.test.js',
         'local-action-policy.test.js',

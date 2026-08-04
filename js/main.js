@@ -31,7 +31,6 @@ UiWinner.streakRuntime.replace({
 
 // オートスキップ
 const autoSkipScheduleController = AutoSkipPolicy.createScheduleController();
-const delayedHumanActionController = DelayedHumanActionPolicy.createScheduleController();
 
 // 取り消し状態は GameRuntimeState が所有する。
 UiTutorialSettings.runtime.replace({
@@ -760,65 +759,46 @@ function scheduleCPU() {
     return cpuTurnScheduler.schedule('scheduleCPU');
 }
 
-const pageActivationLifecycleController = PageActivationPolicy.createLifecycleController();
+const pageActivationRuntime = PageActivationRuntime.createRuntime({
+    canRunHumanAction: (action, playerIndex) => canRunHumanAction(action, playerIndex),
+    cancelCpuSchedule: reason => cancelCpuSchedule(reason),
+    checkpoint: (event, details) => markMainCheckpoint(event, details),
+    clearTimeout: timer => clearTimeout(timer),
+    currentCpuHealth: () => currentCpuTurnSchedulerHealth(),
+    delayedPolicy: DelayedHumanActionPolicy,
+    getDocument: () => typeof document !== 'undefined' ? document : null,
+    getWindow: () => typeof window !== 'undefined' ? window : null,
+    now: () => Date.now(),
+    pagePolicy: PageActivationPolicy,
+    resumeOnline() {
+        if (typeof resumeOnlineReconnectAfterPageActivation === 'function') {
+            resumeOnlineReconnectAfterPageActivation();
+        }
+    },
+    resumeRlLoads() {
+        if (typeof RLModelPortfolio !== 'undefined' &&
+                typeof RLModelPortfolio.resumePendingLoadsAfterPageActivation === 'function') {
+            RLModelPortfolio.resumePendingLoadsAfterPageActivation();
+        }
+    },
+    scheduleCpuTurn: reason => scheduleCpuTurn(reason),
+    setTimeout: (callback, delay) => setTimeout(callback, delay),
+});
 
 function resumeCpuTurnAfterPageActivation(reason) {
-    if (typeof document !== 'undefined' && document.hidden) return;
-    const health = currentCpuTurnSchedulerHealth();
-    if (!health.isCpuTurn || health.blockedReason) return;
-    if (health.stepScheduled && Date.now() < health.scheduledUntil) return;
-    cancelCpuSchedule(reason + '-expire-stale');
-    scheduleCpuTurn(reason);
+    return pageActivationRuntime.resumeCpu(reason);
 }
 
 function runDelayedHumanAction(scheduledToken) {
-    const state = delayedHumanActionController.take(scheduledToken);
-    if (!state) return;
-    if (!canRunHumanAction(state.action, state.playerIndex)) return;
-    state.run();
+    return pageActivationRuntime.runDelayed(scheduledToken);
 }
 
 function scheduleDelayedHumanAction(action, playerIndex, run, delay = 600) {
-    const state = delayedHumanActionController.schedule({
-        action,
-        playerIndex,
-        deadline: Date.now() + delay,
-        run,
-    });
-    delayedHumanActionController.setTimer(
-        setTimeout(() => runDelayedHumanAction(state.token), delay)
-    );
+    return pageActivationRuntime.scheduleDelayed(action, playerIndex, run, delay);
 }
 
 function resumeDelayedHumanActionAfterPageActivation() {
-    const pageHidden = typeof document !== 'undefined' && !!document.hidden;
-    const state = delayedHumanActionController.getState();
-    const hasCandidate = !pageHidden && delayedHumanActionController.isPending() && !!state;
-    const canRun = hasCandidate && canRunHumanAction(state.action, state.playerIndex);
-    const decision = DelayedHumanActionPolicy.resumeDecision({
-        pageHidden,
-        pending: delayedHumanActionController.isPending(),
-        hasState: !!state,
-        canRun,
-        now: canRun ? Date.now() : 0,
-        deadline: state ? state.deadline : 0,
-    });
-    if (decision === 'idle') return;
-    if (decision === 'cancel') {
-        cancelDelayedHumanAction();
-        return;
-    }
-    if (decision === 'run') {
-        runDelayedHumanAction(state.token);
-        return;
-    }
-    const timer = delayedHumanActionController.getTimer();
-    if (timer !== null) clearTimeout(timer);
-    const renewedState = delayedHumanActionController.renew();
-    delayedHumanActionController.setTimer(setTimeout(
-        () => runDelayedHumanAction(renewedState.token),
-        Math.max(0, renewedState.deadline - Date.now())
-    ));
+    return pageActivationRuntime.resumeDelayed();
 }
 
 function cpuPageActivationOutcome(before, after, pageHidden) {
@@ -826,44 +806,15 @@ function cpuPageActivationOutcome(before, after, pageHidden) {
 }
 
 function pageHiddenDurationMs(now) {
-    return pageActivationLifecycleController.hiddenDurationMs(now);
+    return pageActivationRuntime.pageHiddenDurationMs(now);
 }
 
 function resumeTurnAfterPageActivation(reason) {
-    const activationAt = Date.now();
-    const pageHidden = typeof document !== 'undefined' && !!document.hidden;
-    const activation = pageActivationLifecycleController.beginActivation(pageHidden, activationAt);
-    const hiddenForMs = activation.hiddenForMs;
-    const cpuBefore = currentCpuTurnSchedulerHealth();
-
-    if (typeof RLModelPortfolio !== 'undefined' &&
-            typeof RLModelPortfolio.resumePendingLoadsAfterPageActivation === 'function') {
-        RLModelPortfolio.resumePendingLoadsAfterPageActivation();
-    }
-    resumeDelayedHumanActionAfterPageActivation();
-    if (typeof resumeOnlineReconnectAfterPageActivation === 'function') {
-        resumeOnlineReconnectAfterPageActivation();
-    }
-    resumeCpuTurnAfterPageActivation(reason);
-    const cpuAfter = currentCpuTurnSchedulerHealth();
-    markMainCheckpoint(pageHidden ? 'page-activation-hidden' : 'page-activation-resume', {
-        reason,
-        hiddenForMs,
-        cpuOutcome: cpuPageActivationOutcome(cpuBefore, cpuAfter, pageHidden),
-        cpuBefore,
-        cpuAfter,
-    });
-    pageActivationLifecycleController.finishActivation(pageHidden);
+    return pageActivationRuntime.resume(reason);
 }
 
 function bindCpuResumeScheduler() {
-    if (!pageActivationLifecycleController.claimBinding()) return;
-    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
-        document.addEventListener('visibilitychange', () => resumeTurnAfterPageActivation('visibility-resume'));
-    }
-    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-        window.addEventListener('pageshow', () => resumeTurnAfterPageActivation('pageshow-resume'));
-    }
+    return pageActivationRuntime.bind();
 }
 
 function canRunLocalHumanAction(expectedPlayerIndex = null) {
@@ -891,8 +842,7 @@ function canRunHumanAction(action, expectedPlayerIndex = null) {
 }
 
 function cancelDelayedHumanAction() {
-    const timer = delayedHumanActionController.cancel();
-    if (timer !== null) clearTimeout(timer);
+    return pageActivationRuntime.cancelDelayed();
 }
 
 function onRoll() {
@@ -904,7 +854,7 @@ function onRoll() {
         runLocalOrSendOnline('rollDice', { forceDice: null, tunaDice: null }, () => currentGame.rollDice(null, null));
     } else {
         // 駅なし：アニメーションあり
-        if (delayedHumanActionController.isPending()) return;
+        if (pageActivationRuntime.isDelayedPending()) return;
         const scheduledPlayerIndex = currentGame.currentPlayerIndex;
         updateDiceDisplay(null, true);
         scheduleDelayedHumanAction(MAIN_ACTIONS.ROLL_DICE, scheduledPlayerIndex, () => {
@@ -922,7 +872,7 @@ function onRoll() {
 
 function onSelectDiceCount(useTwo) {
     if (!canRunHumanAction(MAIN_ACTIONS.SELECT_DICE)) return;
-    if (delayedHumanActionController.isPending()) return;
+    if (pageActivationRuntime.isDelayedPending()) return;
     const currentGame = mainGameRuntimeSnapshot().game;
     playSound('dice');
     const scheduledPlayerIndex = currentGame.currentPlayerIndex;

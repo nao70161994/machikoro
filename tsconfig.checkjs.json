@@ -44,6 +44,7 @@
     "js/autoSkipPolicy.js",
     "js/confetti.js",
     "js/delayedHumanActionPolicy.js",
+    "js/pageActivationRuntime.js",
     "js/cpuSchedulerState.js",
     "js/cpuTurnStrategy.js",
     "js/localActionPolicy.js",
