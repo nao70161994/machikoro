@@ -46,6 +46,15 @@ const CPUEvaluation = Object.freeze({
         return score;
     },
 
+    expertChoiceScore(facts = {}) {
+        const read = value => typeof value === 'function' ? value() : value;
+        let score = read(facts.positionScore);
+        if (!read(facts.hasWinner) && read(facts.shouldUseLookahead)) {
+            score += read(facts.lookaheadScore) * Math.min(0.35, facts.lookaheadWeight * 0.5);
+        }
+        return score;
+    },
+
     lookaheadTerminalHeuristic(facts = {}) {
         const read = value => typeof value === 'function' ? value() : value;
         const focusDistance = read(facts.focusDistance);

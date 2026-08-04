@@ -555,21 +555,22 @@ class CPU {
         );
     }
     _scoreExpertChoiceState(game, focusIndex) {
-        return this._profileMeasure("expert.choiceState", () => {
-            const tuning = this.expertTuning;
-            let score = this._evaluatePosition(game, focusIndex);
-            if (!game.checkWinner() && this._shouldUseExpertChoiceLookahead(game, focusIndex)) {
-                score += this._profileMeasure("expert.choiceLookahead", () =>
+        return this._profileMeasure("expert.choiceState", () =>
+            CPUEvaluation.expertChoiceScore({
+                positionScore: () => this._evaluatePosition(game, focusIndex),
+                hasWinner: () => !!game.checkWinner(),
+                shouldUseLookahead: () => this._shouldUseExpertChoiceLookahead(game, focusIndex),
+                lookaheadScore: () => this._profileMeasure("expert.choiceLookahead", () =>
                     this._simulateLookahead(
                         game,
                         this._simulationShopStock(game.players.length),
                         focusIndex,
                         this._expertLookaheadSteps(game, focusIndex, game.players.length * 2)
                     )
-                ) * Math.min(0.35, tuning.lookaheadWeight * 0.5);
-            }
-            return score;
-        });
+                ),
+                lookaheadWeight: this.expertTuning.lookaheadWeight,
+            })
+        );
     }
 
     _shouldUseExpertChoiceLookahead(game, focusIndex) {

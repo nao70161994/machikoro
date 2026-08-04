@@ -2071,3 +2071,40 @@ runTest('CPU evaluation のlookahead終端scoreはflag別factと相手順をlazy
         ['threat', 0], ['distance', 0], ['threat', 2], ['distance', 2],
     ]);
 });
+
+runTest('CPU evaluation はexpert choice scoreへlookaheadを既存上限で加算する', () => {
+    assert.strictEqual(CPUEvaluation.expertChoiceScore({
+        positionScore: 10,
+        hasWinner: false,
+        shouldUseLookahead: true,
+        lookaheadScore: 8,
+        lookaheadWeight: 0.4,
+    }), 11.6);
+    assert.strictEqual(CPUEvaluation.expertChoiceScore({
+        positionScore: 10,
+        hasWinner: false,
+        shouldUseLookahead: true,
+        lookaheadScore: 8,
+        lookaheadWeight: 2,
+    }), 12.8);
+    assert.strictEqual(CPUEvaluation.expertChoiceScore({
+        positionScore: 10,
+        hasWinner: false,
+        shouldUseLookahead: false,
+        lookaheadScore: 8,
+        lookaheadWeight: 2,
+    }), 10);
+});
+
+runTest('CPU evaluation のexpert choice scoreは勝者確定時にlookahead factを読まない', () => {
+    const trace = [];
+    const score = CPUEvaluation.expertChoiceScore({
+        positionScore() { trace.push('position'); return 4; },
+        hasWinner() { trace.push('winner'); return true; },
+        shouldUseLookahead() { throw new Error('gate must stay lazy'); },
+        lookaheadScore() { throw new Error('lookahead must stay lazy'); },
+        lookaheadWeight: 1,
+    });
+    assert.strictEqual(score, 4);
+    assert.deepStrictEqual(trace, ['position', 'winner']);
+});
