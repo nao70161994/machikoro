@@ -854,3 +854,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 3. Moving Company evaluation now separates ordered live-board feature acquisition from its pure numeric policy while preserving exact evaluation and RNG behavior.
 
 Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Rules, CPU strength/RNG, authority defaults, schema/protocol, persistence formats, reconnect behavior, watchdog/lifecycle behavior, UI presentation, and PWA defaults are unchanged.
+
+## 2026-08-05 Batch 70 boundary update
+
+1. UI rendering and input orchestration now consume explicit game and online runtime snapshots; compatibility globals no longer form their production read boundary.
+2. Main action and CPU orchestration now consume explicit online snapshots, with asynchronous steps deliberately refreshing the snapshot at execution time.
+3. These are read-boundary migrations only: ownership, effects, rules, CPU decisions/RNG, persistence, protocol, reconnect ordering, and PWA behavior are unchanged.

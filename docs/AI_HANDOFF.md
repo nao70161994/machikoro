@@ -900,3 +900,10 @@ Test index:
 - Moving Company candidate traversal belongs to `CPUEvaluation.moverValueFeatures()` and its numeric formula to `moverValue()`. Preserve card-major/target-minor order, per-target owned/received/built/dormant callback order, all coefficients, max/zero behavior, and every RNG point.
 - Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three independent themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 70 handoff (2026-08-05)
+
+- `ui.js` and `main.js` must read shared game/online state through the runtime snapshot controllers. Do not reintroduce bare compatibility-global reads.
+- Use one snapshot for a synchronous admission/decision; take a fresh snapshot inside delayed CPU or dice callbacks where host, connection, replay, or turn identity may have changed.
+- Runtime snapshots are live-reference envelopes, not save/canonical-state formats. Keep DOM effects in UI owners and preserve Socket.IO, reconnect, CPU, save, and PWA contracts.
+- Continue with macro batches: a small number of substantive themes, focused tests per theme, then one batch integration gate, push, and exact-HEAD CI check.

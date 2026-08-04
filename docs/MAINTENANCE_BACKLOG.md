@@ -687,3 +687,9 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `CPUEvaluation.moverValueFeatures()` now owns the ordered, frozen Moving Company candidate projection and `moverValue()` owns the existing formula. `CPU.js` remains the live-game adapter; card/target traversal, callback order, coefficients, tie behavior, fixed decisions, self-play results, and RNG points are unchanged.
 - Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Rules, CPU strength/RNG, schema/protocol, persistence keys/formats, reconnect/Socket ordering, watchdog/lifecycle behavior, UI presentation, and PWA defaults are unchanged.
+
+## 2026-08-05 Batch 70 UI and main runtime read boundaries
+
+- `ui.js` now reads game/CPU/Undo and online-session state through `GameRuntimeState.runtime.snapshot()` and `OnlineRuntimeState.runtime.snapshot()` across rendering, input admission, pending/build/Undo views, tutorials, and diagnostics. DOM writes, modal behavior, presentation, and event order remain in their existing owners.
+- `main.js` now reads online-session state through `OnlineRuntimeState.runtime.snapshot()` for action dispatch, CPU scheduling, reconnect gates, human-action admission, delayed dice actions, builds, and auto-skip. Delayed CPU work takes a fresh snapshot at execution time so it does not retain stale connection/host state.
+- Static contracts prevent the removed ambient reads from returning and enforce runtime module load order. Rules, CPU strength/RNG, schema/protocol, persistence formats, reconnect timing, UI presentation, and PWA defaults are unchanged.
