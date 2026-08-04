@@ -159,7 +159,7 @@ function loadStorageRuntime(options = {}) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/storedOnlineReconnect.js', 'js/gameRuntimeState.js', 'js/uiTutorialSettings.js', 'js/storage.js']);
+    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/uiTutorialSettings.js', 'js/storage.js']);
     context.OnlinePayloadApi = vm.runInContext('OnlinePayload', context);
     vm.runInContext(`
         this.__test = {

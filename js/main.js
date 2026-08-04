@@ -99,7 +99,7 @@ function formatCpuSpeedLabel(value) {
 }
 
 function changeCount(delta) {
-    selectedCount = Math.min(10, Math.max(2, selectedCount + delta));
+    GameSetupState.runtime.setSelectedCount(Math.min(10, Math.max(2, selectedCount + delta)));
     document.getElementById("playerCount").textContent = selectedCount;
     renderPlayerSettings();
     preloadLocalRlModelsInBackground('local-player-count-preload');
@@ -107,7 +107,9 @@ function changeCount(delta) {
 }
 
 function renderPlayerSettings() {
-    playerSettings = Array.from(LocalPlayerSettings.normalizeSettings(playerSettings, selectedCount));
+    GameSetupState.runtime.setPlayerSettings(
+        LocalPlayerSettings.normalizeSettings(playerSettings, selectedCount)
+    );
     document.getElementById("playerSettings").innerHTML = LocalPlayerSettings.buildSettingsHtml(
         playerSettings,
         selectedCount
@@ -117,17 +119,17 @@ function renderPlayerSettings() {
 
 function onChangePlayerType(index, value) {
     if (value === "human") {
-        playerSettings[index] = {
+        GameSetupState.runtime.setPlayerSetting(index, {
             type: "human",
             difficulty: "normal",
             name: normalizeLocalPlayerName(playerSettings[index]?.name, index),
-        };
+        });
     } else {
-        playerSettings[index] = {
+        GameSetupState.runtime.setPlayerSetting(index, {
             type: "cpu",
             difficulty: value,
             name: normalizeLocalPlayerName(playerSettings[index]?.name, index),
-        };
+        });
     }
     renderPlayerSettings();
     if (value === "rl") preloadLocalRlModelsInBackground('local-rl-selected-preload');
@@ -136,9 +138,13 @@ function onChangePlayerType(index, value) {
 
 function onChangePlayerName(index, value) {
     if (!playerSettings[index]) {
-        playerSettings[index] = { type: "human", difficulty: "normal", name: defaultLocalPlayerName(index) };
+        GameSetupState.runtime.setPlayerSetting(index, {
+            type: "human",
+            difficulty: "normal",
+            name: defaultLocalPlayerName(index),
+        });
     }
-    playerSettings[index].name = value;
+    GameSetupState.runtime.setPlayerName(index, value);
     saveSettings();
 }
 
@@ -213,9 +219,11 @@ function startGameNow(playerCount = selectedCount, settings = playerSettings) {
     );
     LocalGameStart.execute(plan, {
         setRuntime(value) {
-            selectedCount = value.playerCount;
-            playerSettings = Array.from(value.playerSettings, setting => Object.assign({}, setting));
-            cpuSpeed = value.cpuSpeed;
+            GameSetupState.runtime.replace({
+                selectedCount: value.playerCount,
+                playerSettings: Array.from(value.playerSettings, setting => Object.assign({}, setting)),
+                cpuSpeed: value.cpuSpeed,
+            });
         },
         saveSettings,
         resetStats: resetStatsRecorded,
@@ -298,8 +306,7 @@ function restartGame() {
         resetFullLog();
         document.getElementById("gameScreen").style.display = "none";
         document.getElementById("titleScreen").style.display = "block";
-        selectedCount = 2;
-        playerSettings = [];
+        GameSetupState.runtime.replace({ selectedCount: 2, playerSettings: [] });
         GameRuntimeState.runtime.setCpuPlayers([]);
         document.getElementById("playerCount").textContent = 2;
         renderPlayerSettings();
@@ -329,8 +336,10 @@ function init(playerCount) {
     for (const card of CARDS) {
         setShopStockCount(SHOP_STOCK, card, selectedCards.has(card.name) ? getInitialCardStock(card, playerCount) : 0);
     }
-    playerSettings = Array.from({ length: playerCount }, (_, index) =>
-        normalizeLocalPlayerSetting(playerSettings[index], index, playerCount)
+    GameSetupState.runtime.setPlayerSettings(
+        Array.from({ length: playerCount }, (_, index) =>
+            normalizeLocalPlayerSetting(playerSettings[index], index, playerCount)
+        )
     );
 
     // ターン順をランダムにシャッフル

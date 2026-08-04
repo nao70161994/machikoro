@@ -29,6 +29,44 @@ const GameSetupState = (() => {
             return true;
         }
 
+        function setSelectedCount(value) {
+            state.selectedCount = value;
+            return snapshot();
+        }
+
+        function setPlayerSettings(value) {
+            state.playerSettings = Array.from(value || []);
+            return snapshot();
+        }
+
+        function setPlayerSetting(index, value) {
+            state.playerSettings[index] = value;
+            return snapshot();
+        }
+
+        function setPlayerName(index, value) {
+            state.playerSettings[index].name = value;
+            return snapshot();
+        }
+
+        function setCpuSpeed(value) {
+            state.cpuSpeed = value;
+            return snapshot();
+        }
+
+        function replace(value = {}) {
+            if (Object.prototype.hasOwnProperty.call(value, 'selectedCount')) {
+                state.selectedCount = value.selectedCount;
+            }
+            if (Object.prototype.hasOwnProperty.call(value, 'playerSettings')) {
+                state.playerSettings = Array.from(value.playerSettings || []);
+            }
+            if (Object.prototype.hasOwnProperty.call(value, 'cpuSpeed')) {
+                state.cpuSpeed = value.cpuSpeed;
+            }
+            return snapshot();
+        }
+
         function bindGlobals(root) {
             if (!root || (typeof root !== 'object' && typeof root !== 'function')) return false;
             Object.defineProperties(root, Object.fromEntries(fields.map(field => [field, {
@@ -40,7 +78,18 @@ const GameSetupState = (() => {
             return true;
         }
 
-        return Object.freeze({ snapshot, read, write, bindGlobals });
+        return Object.freeze({
+            snapshot,
+            read,
+            write,
+            setSelectedCount,
+            setPlayerSettings,
+            setPlayerSetting,
+            setPlayerName,
+            setCpuSpeed,
+            replace,
+            bindGlobals,
+        });
     }
 
     const runtime = createController();

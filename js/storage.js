@@ -337,7 +337,7 @@ function resumeGame(options = {}) {
                 }
             },
             applySettings(plan) {
-                cpuSpeed = plan.cpuSpeed;
+                GameSetupState.runtime.setCpuSpeed(plan.cpuSpeed);
                 if (plan.enabledCards) replaceEnabledCardSelection(plan.enabledCards);
                 replaceEnabledLandmarkSelection(plan.enabledLandmarks);
             },
@@ -516,9 +516,9 @@ function loadSettings() {
             tutorialEnabled: storage.getItem('tutorialEnabled'),
             tutorialLevel: storage.getItem('tutorialLevel'),
         }, normalizeName);
-        selectedCount = values.selectedCount;
+        GameSetupState.runtime.setSelectedCount(values.selectedCount);
         document.getElementById("playerCount").textContent = selectedCount;
-        if (values.playerSettings) playerSettings = values.playerSettings;
+        if (values.playerSettings) GameSetupState.runtime.setPlayerSettings(values.playerSettings);
         if (values.cpuSpeed) {
             const speedEl = document.getElementById('cpuSpeed');
             if (speedEl) {

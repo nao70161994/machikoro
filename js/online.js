@@ -2588,7 +2588,7 @@ function initSocket() {
             _onlineReconnectCompletionController.reset();
             OnlineRuntimeState.runtime.setOnline(true);
             _setOnlineHostState(hostPlayerIndex);
-            cpuSpeed = cs || 1500;
+            GameSetupState.runtime.setCpuSpeed(cs || 1500);
             if (ec) replaceEnabledCardSelection(ec);
             replaceEnabledLandmarkSelection((el && el.length > 0) ? el : Player.landmarkNames());
             try {
@@ -3017,7 +3017,7 @@ function initSocket() {
             _setOnlineActionInFlight(false);
             if (plan.clearPendingOutboundAction) _clearPendingOutboundAction();
             _clearRejoinRetry();
-            cpuSpeed = plan.cpuSpeed;
+            GameSetupState.runtime.setCpuSpeed(plan.cpuSpeed);
             if (plan.updateEnabledCards) replaceEnabledCardSelection(plan.enabledCards);
             replaceEnabledLandmarkSelection(plan.enabledLandmarks);
             OnlineRuntimeState.runtime.setPlayerIndexes(plan.playerIndex);
@@ -3043,7 +3043,7 @@ function initSocket() {
                 clearActionFlight: () => _setOnlineActionInFlight(false),
                 clearPendingOutboundAction: () => _clearPendingOutboundAction(),
                 clearRetry: () => _clearRejoinRetry(),
-                setCpuSpeed: value => { cpuSpeed = value; },
+                setCpuSpeed: value => { GameSetupState.runtime.setCpuSpeed(value); },
                 setEnabledCards: values => { replaceEnabledCardSelection(values); },
                 setEnabledLandmarks: values => { replaceEnabledLandmarkSelection(values); },
                 setPlayerIndices: value => {
