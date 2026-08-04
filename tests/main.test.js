@@ -341,6 +341,10 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(crashScreenEffectsSource, context, { filename: 'js/crashScreenEffects.js' });
     const actionContractSource = fs.readFileSync(path.join(__dirname, '..', 'js/actionContract.js'), 'utf8');
     vm.runInContext(actionContractSource, context, { filename: 'js/actionContract.js' });
+    const gameEngineAuthoritySource = fs.readFileSync(path.join(__dirname, '..', 'js/gameEngineAuthority.js'), 'utf8');
+    vm.runInContext(gameEngineAuthoritySource, context, { filename: 'js/gameEngineAuthority.js' });
+    const gameEngineClientShadowSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameEngineClientShadow.js'), 'utf8');
+    vm.runInContext(gameEngineClientShadowSource, context, { filename: 'js/gameEngineClientShadow.js' });
     const cpuActionProposalSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuActionProposal.js'), 'utf8');
     vm.runInContext(cpuActionProposalSource, context, { filename: 'js/cpuActionProposal.js' });
     const cpuPendingResolutionSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuPendingResolution.js'), 'utf8');
