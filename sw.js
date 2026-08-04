@@ -91,6 +91,7 @@ const STATIC_ASSETS = [
   '/js/onlineSessionLifecycle.js',
   '/js/onlineReconnectState.js',
   '/js/onlineRuntimeFlags.js',
+  '/js/onlineDiagnosticState.js',
   '/js/onlineRetryPolicy.js',
   '/js/onlineSchemaTransport.js',
   '/js/online.js',

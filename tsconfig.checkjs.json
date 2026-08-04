@@ -57,6 +57,7 @@
     "js/gameSchemaCodec.js",
     "js/onlineReconnectState.js",
     "js/onlineRuntimeFlags.js",
+    "js/onlineDiagnosticState.js",
     "js/onlineSchemaTransport.js",
     "js/onlineRetryPolicy.js",
     "js/gameEngine.js",

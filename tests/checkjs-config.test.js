@@ -79,6 +79,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/pageActivationPolicy.js'));
     assert.ok(config.files.includes('js/onlineReconnectState.js'));
     assert.ok(config.files.includes('js/onlineRuntimeFlags.js'));
+    assert.ok(config.files.includes('js/onlineDiagnosticState.js'));
     assert.ok(config.files.includes('js/onlineSchemaTransport.js'));
     assert.ok(config.files.includes('js/onlineRestoreQueueState.js'));
     assert.ok(config.files.includes('js/onlineRestoreLifecycleState.js'));

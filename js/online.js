@@ -193,178 +193,180 @@ const _onlineRestoreQueueDiagnostics = typeof OnlineRestoreQueueState !== 'undef
             write(key, value) { state[key] = value; return value; },
         });
     })();
-let _lastOnlineGameEngineShadowOutcome = Object.freeze({
-    report: null,
-    authority: Object.freeze({ authority: 'mutable', reason: 'disabled' }),
-});
-let _lastOnlineReconnectCleanupEffectSelection = Object.freeze({
-    source: 'none',
-    ready: false,
-    fallbackReason: '',
-});
-let _lastOnlineReconnectRequestPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastOnlineReconnectRequestEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineRestoreAbortPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastOnlineRestoreAbortEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineActionTimeoutPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastOnlineActionTimeoutEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastIncomingGameActionPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastAcceptedGameActionPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastIncomingGameActionDecodeEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastAcceptedGameActionDecodeEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastIncomingGameActionApplyEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastAcceptedGameActionApplyEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastIncomingGameActionGapEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastAcceptedGameActionGapEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastIncomingGameActionNoGameEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastAcceptedGameActionNoGameEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastIncomingGameActionCommitEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastAcceptedGameActionCommitEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineSocketConnectPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineSocketConnectEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineSocketDisconnectPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineSocketDisconnectEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineHostChangedPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineHostChangedEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastPendingReconciliationPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastRejoinActionLogPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastLocalHostRestoreOfferPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    matched: true,
-    fallbackReason: '',
-});
-let _lastOnlineRejoinPersistencePlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineRejoinPersistenceEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlinePendingResendPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlinePendingResendEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineRestoreReplayPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineRestoreReplayEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineRestoreActivationPlanSelection = Object.freeze({
-    plan: null,
-    source: 'none',
-    fallbackReason: '',
-});
-let _lastOnlineRestoreActivationEffectSelection = Object.freeze({
-    source: 'none',
-    fallbackReason: '',
-});
+const _onlineDiagnosticController = OnlineDiagnosticState.createController({
+    onlineGameEngineShadowOutcome: Object.freeze({
+        report: null,
+        authority: Object.freeze({ authority: 'mutable', reason: 'disabled' }),
+    }),
+    onlineReconnectCleanupEffectSelection: Object.freeze({
+        source: 'none',
+        ready: false,
+        fallbackReason: '',
+    }),
+    onlineReconnectRequestPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        matched: true,
+        fallbackReason: '',
+    }),
+    onlineReconnectRequestEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineRestoreAbortPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        matched: true,
+        fallbackReason: '',
+    }),
+    onlineRestoreAbortEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineActionTimeoutPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        matched: true,
+        fallbackReason: '',
+    }),
+    onlineActionTimeoutEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    incomingGameActionPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        matched: true,
+        fallbackReason: '',
+    }),
+    acceptedGameActionPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        matched: true,
+        fallbackReason: '',
+    }),
+    incomingGameActionDecodeEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    acceptedGameActionDecodeEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    incomingGameActionApplyEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    acceptedGameActionApplyEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    incomingGameActionGapEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    acceptedGameActionGapEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    incomingGameActionNoGameEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    acceptedGameActionNoGameEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    incomingGameActionCommitEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    acceptedGameActionCommitEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineSocketConnectPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineSocketConnectEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineSocketDisconnectPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineSocketDisconnectEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineHostChangedPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineHostChangedEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    pendingReconciliationPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        matched: true,
+        fallbackReason: '',
+    }),
+    rejoinActionLogPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        matched: true,
+        fallbackReason: '',
+    }),
+    localHostRestoreOfferPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        matched: true,
+        fallbackReason: '',
+    }),
+    onlineRejoinPersistencePlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineRejoinPersistenceEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlinePendingResendPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlinePendingResendEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineRestoreReplayPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineRestoreReplayEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineRestoreActivationPlanSelection: Object.freeze({
+        plan: null,
+        source: 'none',
+        fallbackReason: '',
+    }),
+    onlineRestoreActivationEffectSelection: Object.freeze({
+        source: 'none',
+        fallbackReason: '',
+    }),});
+const _onlineDiagnosticSelections = _onlineDiagnosticController.projection;
 const _onlineActionSequenceController = OnlineActionSequence.createController();
 const _onlineRestoreLifecycleController = OnlineRestoreLifecycleState.createController();
 
@@ -569,7 +571,7 @@ const {
 ]);
 
 function getOnlineGameEngineShadowOutcome() {
-    return _lastOnlineGameEngineShadowOutcome;
+    return _onlineDiagnosticSelections.onlineGameEngineShadowOutcome;
 }
 
 function getOnlineRestoreQueuePlanSelection() {
@@ -593,147 +595,147 @@ function getOnlineRestoreQueueStoreWriteSelection() {
 }
 
 function getOnlineReconnectCleanupEffectSelection() {
-    return _lastOnlineReconnectCleanupEffectSelection;
+    return _onlineDiagnosticSelections.onlineReconnectCleanupEffectSelection;
 }
 
 function getOnlineReconnectRequestPlanSelection() {
-    return _lastOnlineReconnectRequestPlanSelection;
+    return _onlineDiagnosticSelections.onlineReconnectRequestPlanSelection;
 }
 
 function getOnlineReconnectRequestEffectSelection() {
-    return _lastOnlineReconnectRequestEffectSelection;
+    return _onlineDiagnosticSelections.onlineReconnectRequestEffectSelection;
 }
 
 function getOnlineRestoreAbortPlanSelection() {
-    return _lastOnlineRestoreAbortPlanSelection;
+    return _onlineDiagnosticSelections.onlineRestoreAbortPlanSelection;
 }
 
 function getOnlineRestoreAbortEffectSelection() {
-    return _lastOnlineRestoreAbortEffectSelection;
+    return _onlineDiagnosticSelections.onlineRestoreAbortEffectSelection;
 }
 
 function getOnlineActionTimeoutPlanSelection() {
-    return _lastOnlineActionTimeoutPlanSelection;
+    return _onlineDiagnosticSelections.onlineActionTimeoutPlanSelection;
 }
 
 function getOnlineActionTimeoutEffectSelection() {
-    return _lastOnlineActionTimeoutEffectSelection;
+    return _onlineDiagnosticSelections.onlineActionTimeoutEffectSelection;
 }
 
 function getIncomingGameActionPlanSelection() {
-    return _lastIncomingGameActionPlanSelection;
+    return _onlineDiagnosticSelections.incomingGameActionPlanSelection;
 }
 
 function getAcceptedGameActionPlanSelection() {
-    return _lastAcceptedGameActionPlanSelection;
+    return _onlineDiagnosticSelections.acceptedGameActionPlanSelection;
 }
 
 function getIncomingGameActionDecodeEffectSelection() {
-    return _lastIncomingGameActionDecodeEffectSelection;
+    return _onlineDiagnosticSelections.incomingGameActionDecodeEffectSelection;
 }
 
 function getAcceptedGameActionDecodeEffectSelection() {
-    return _lastAcceptedGameActionDecodeEffectSelection;
+    return _onlineDiagnosticSelections.acceptedGameActionDecodeEffectSelection;
 }
 
 function getIncomingGameActionApplyEffectSelection() {
-    return _lastIncomingGameActionApplyEffectSelection;
+    return _onlineDiagnosticSelections.incomingGameActionApplyEffectSelection;
 }
 
 function getAcceptedGameActionApplyEffectSelection() {
-    return _lastAcceptedGameActionApplyEffectSelection;
+    return _onlineDiagnosticSelections.acceptedGameActionApplyEffectSelection;
 }
 
 function getIncomingGameActionGapEffectSelection() {
-    return _lastIncomingGameActionGapEffectSelection;
+    return _onlineDiagnosticSelections.incomingGameActionGapEffectSelection;
 }
 
 function getAcceptedGameActionGapEffectSelection() {
-    return _lastAcceptedGameActionGapEffectSelection;
+    return _onlineDiagnosticSelections.acceptedGameActionGapEffectSelection;
 }
 
 function getIncomingGameActionNoGameEffectSelection() {
-    return _lastIncomingGameActionNoGameEffectSelection;
+    return _onlineDiagnosticSelections.incomingGameActionNoGameEffectSelection;
 }
 
 function getAcceptedGameActionNoGameEffectSelection() {
-    return _lastAcceptedGameActionNoGameEffectSelection;
+    return _onlineDiagnosticSelections.acceptedGameActionNoGameEffectSelection;
 }
 
 function getIncomingGameActionCommitEffectSelection() {
-    return _lastIncomingGameActionCommitEffectSelection;
+    return _onlineDiagnosticSelections.incomingGameActionCommitEffectSelection;
 }
 
 function getAcceptedGameActionCommitEffectSelection() {
-    return _lastAcceptedGameActionCommitEffectSelection;
+    return _onlineDiagnosticSelections.acceptedGameActionCommitEffectSelection;
 }
 
 function getOnlineSocketConnectPlanSelection() {
-    return _lastOnlineSocketConnectPlanSelection;
+    return _onlineDiagnosticSelections.onlineSocketConnectPlanSelection;
 }
 
 function getOnlineSocketConnectEffectSelection() {
-    return _lastOnlineSocketConnectEffectSelection;
+    return _onlineDiagnosticSelections.onlineSocketConnectEffectSelection;
 }
 
 function getOnlineSocketDisconnectPlanSelection() {
-    return _lastOnlineSocketDisconnectPlanSelection;
+    return _onlineDiagnosticSelections.onlineSocketDisconnectPlanSelection;
 }
 
 function getOnlineSocketDisconnectEffectSelection() {
-    return _lastOnlineSocketDisconnectEffectSelection;
+    return _onlineDiagnosticSelections.onlineSocketDisconnectEffectSelection;
 }
 
 function getOnlineHostChangedPlanSelection() {
-    return _lastOnlineHostChangedPlanSelection;
+    return _onlineDiagnosticSelections.onlineHostChangedPlanSelection;
 }
 
 function getOnlineHostChangedEffectSelection() {
-    return _lastOnlineHostChangedEffectSelection;
+    return _onlineDiagnosticSelections.onlineHostChangedEffectSelection;
 }
 
 function getPendingReconciliationPlanSelection() {
-    return _lastPendingReconciliationPlanSelection;
+    return _onlineDiagnosticSelections.pendingReconciliationPlanSelection;
 }
 
 function getRejoinActionLogPlanSelection() {
-    return _lastRejoinActionLogPlanSelection;
+    return _onlineDiagnosticSelections.rejoinActionLogPlanSelection;
 }
 
 function getLocalHostRestoreOfferPlanSelection() {
-    return _lastLocalHostRestoreOfferPlanSelection;
+    return _onlineDiagnosticSelections.localHostRestoreOfferPlanSelection;
 }
 
 function getOnlineRejoinPersistencePlanSelection() {
-    return _lastOnlineRejoinPersistencePlanSelection;
+    return _onlineDiagnosticSelections.onlineRejoinPersistencePlanSelection;
 }
 
 function getOnlineRejoinPersistenceEffectSelection() {
-    return _lastOnlineRejoinPersistenceEffectSelection;
+    return _onlineDiagnosticSelections.onlineRejoinPersistenceEffectSelection;
 }
 
 function getOnlinePendingResendPlanSelection() {
-    return _lastOnlinePendingResendPlanSelection;
+    return _onlineDiagnosticSelections.onlinePendingResendPlanSelection;
 }
 
 function getOnlinePendingResendEffectSelection() {
-    return _lastOnlinePendingResendEffectSelection;
+    return _onlineDiagnosticSelections.onlinePendingResendEffectSelection;
 }
 
 function getOnlineRestoreReplayPlanSelection() {
-    return _lastOnlineRestoreReplayPlanSelection;
+    return _onlineDiagnosticSelections.onlineRestoreReplayPlanSelection;
 }
 
 function getOnlineRestoreReplayEffectSelection() {
-    return _lastOnlineRestoreReplayEffectSelection;
+    return _onlineDiagnosticSelections.onlineRestoreReplayEffectSelection;
 }
 
 function getOnlineRestoreActivationPlanSelection() {
-    return _lastOnlineRestoreActivationPlanSelection;
+    return _onlineDiagnosticSelections.onlineRestoreActivationPlanSelection;
 }
 
 function getOnlineRestoreActivationEffectSelection() {
-    return _lastOnlineRestoreActivationEffectSelection;
+    return _onlineDiagnosticSelections.onlineRestoreActivationEffectSelection;
 }
 
 function _onlineReconnectEffectSelection(legacyValue = isReconnectingOnline) {
@@ -1197,7 +1199,7 @@ function _runOnlineReconnectRequestEffectsLegacy(plan, session) {
 
 function _runOnlineReconnectRequestEffects(planSelection, session) {
     const effectSelection = _onlineReconnectRequestEffectAuthoritySelection(planSelection);
-    _lastOnlineReconnectRequestEffectSelection = effectSelection;
+    _onlineDiagnosticSelections.onlineReconnectRequestEffectSelection = effectSelection;
     if (effectSelection.source !== 'executor') {
         _runOnlineReconnectRequestEffectsLegacy(planSelection.plan, session);
         return effectSelection;
@@ -1220,13 +1222,13 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
     };
     let planSelection = _onlineReconnectRequestPlanSelection(session);
     if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.REJECT) {
-        _lastOnlineReconnectRequestPlanSelection = planSelection;
+        _onlineDiagnosticSelections.onlineReconnectRequestPlanSelection = planSelection;
         return false;
     }
     setOnlineReconnectLegacyFlag(true);
     _observeOnlineReconnectEvent(OnlineReconnectState.events.RECONNECT_REQUESTED);
     planSelection = _onlineReconnectRequestPlanSelection(session);
-    _lastOnlineReconnectRequestPlanSelection = planSelection;
+    _onlineDiagnosticSelections.onlineReconnectRequestPlanSelection = planSelection;
     if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.WAIT_FOR_SOCKET) return true;
     if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.EXHAUST) {
         return _finishRejoinRetryTimeout();
@@ -1301,7 +1303,7 @@ function _runOnlineActionTimeoutEffectsLegacy(plan) {
 
 function _runOnlineActionTimeoutEffects(planSelection) {
     const effectSelection = _onlineActionTimeoutEffectAuthoritySelection(planSelection);
-    _lastOnlineActionTimeoutEffectSelection = effectSelection;
+    _onlineDiagnosticSelections.onlineActionTimeoutEffectSelection = effectSelection;
     if (effectSelection.source !== 'executor') {
         return _runOnlineActionTimeoutEffectsLegacy(planSelection.plan);
     }
@@ -1319,7 +1321,7 @@ function _runOnlineActionTimeoutEffects(planSelection) {
 
 function _handleOnlineActionTimeout() {
     const planSelection = _onlineActionTimeoutPlanSelection();
-    _lastOnlineActionTimeoutPlanSelection = planSelection;
+    _onlineDiagnosticSelections.onlineActionTimeoutPlanSelection = planSelection;
     if (planSelection.plan.decision === OnlineRetryPolicy.actionTimeoutDecisions.IGNORE) return false;
     return _runOnlineActionTimeoutEffects(planSelection);
 }
@@ -1618,9 +1620,9 @@ function _runOnlineSocketConnectEffectsLegacy(plan) {
 
 function _runOnlineSocketConnectEffects() {
     const planSelection = _onlineSocketConnectPlanSelection();
-    _lastOnlineSocketConnectPlanSelection = planSelection;
+    _onlineDiagnosticSelections.onlineSocketConnectPlanSelection = planSelection;
     const effectSelection = _onlineSocketConnectEffectAuthoritySelection(planSelection);
-    _lastOnlineSocketConnectEffectSelection = effectSelection;
+    _onlineDiagnosticSelections.onlineSocketConnectEffectSelection = effectSelection;
     if (effectSelection.source !== 'executor') {
         return _runOnlineSocketConnectEffectsLegacy(planSelection.plan);
     }
@@ -1703,9 +1705,9 @@ function _runOnlineSocketDisconnectEffectsLegacy(plan) {
 
 function _runOnlineSocketDisconnectEffects() {
     const planSelection = _onlineSocketDisconnectPlanSelection();
-    _lastOnlineSocketDisconnectPlanSelection = planSelection;
+    _onlineDiagnosticSelections.onlineSocketDisconnectPlanSelection = planSelection;
     const effectSelection = _onlineSocketDisconnectEffectAuthoritySelection(planSelection);
-    _lastOnlineSocketDisconnectEffectSelection = effectSelection;
+    _onlineDiagnosticSelections.onlineSocketDisconnectEffectSelection = effectSelection;
     if (effectSelection.source !== 'executor') {
         return _runOnlineSocketDisconnectEffectsLegacy(planSelection.plan);
     }
@@ -1773,9 +1775,9 @@ function _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch) {
 
 function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
     const planSelection = _onlineHostChangedPlanSelection(newHostPlayerIndex);
-    _lastOnlineHostChangedPlanSelection = planSelection;
+    _onlineDiagnosticSelections.onlineHostChangedPlanSelection = planSelection;
     const effectSelection = _onlineHostChangedEffectAuthoritySelection(planSelection);
-    _lastOnlineHostChangedEffectSelection = effectSelection;
+    _onlineDiagnosticSelections.onlineHostChangedEffectSelection = effectSelection;
     if (effectSelection.source !== 'executor') {
         return _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch);
     }
@@ -1874,7 +1876,7 @@ function resetOnlineState() {
     OnlineSessionLifecycle.execute(plan, {
         markNotCompleted() { _onlineReconnectCompletionController.reset(); },
         resetEngineShadow() {
-            _lastOnlineGameEngineShadowOutcome = Object.freeze({
+            _onlineDiagnosticSelections.onlineGameEngineShadowOutcome = Object.freeze({
                 report: null,
                 authority: Object.freeze({ authority: 'mutable', reason: 'disabled' }),
             });
@@ -2351,7 +2353,7 @@ function _runOnlineRestoreAbortEffectsLegacy(plan) {
 
 function _runOnlineRestoreAbortEffects(planSelection) {
     const effectSelection = _onlineRestoreAbortEffectAuthoritySelection(planSelection);
-    _lastOnlineRestoreAbortEffectSelection = effectSelection;
+    _onlineDiagnosticSelections.onlineRestoreAbortEffectSelection = effectSelection;
     if (effectSelection.source !== 'executor') {
         _runOnlineRestoreAbortEffectsLegacy(planSelection.plan);
         return effectSelection;
@@ -2373,7 +2375,7 @@ function _runOnlineRestoreAbortEffects(planSelection) {
 
 function _abortOnlineRestore(generation, statusMessage, queuedEvents = null) {
     const planSelection = _onlineRestoreAbortPlanSelection(generation, statusMessage, queuedEvents);
-    _lastOnlineRestoreAbortPlanSelection = planSelection;
+    _onlineDiagnosticSelections.onlineRestoreAbortPlanSelection = planSelection;
     if (!planSelection.plan.abort) return;
     _runOnlineRestoreAbortEffects(planSelection);
 }
@@ -2769,7 +2771,7 @@ function initSocket() {
             return _runOnlineDecodeFailureEffects(
                 { clearActionFlight: false },
                 isIncomingGameActionDecodeEffectAuthorityEnabled(),
-                selection => { _lastIncomingGameActionDecodeEffectSelection = selection; }
+                selection => { _onlineDiagnosticSelections.incomingGameActionDecodeEffectSelection = selection; }
             );
         }
         const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
@@ -2781,7 +2783,7 @@ function initSocket() {
             lastAppliedSeq,
             isIncomingGameActionPlanAuthorityEnabled()
         );
-        _lastIncomingGameActionPlanSelection = planSelection;
+        _onlineDiagnosticSelections.incomingGameActionPlanSelection = planSelection;
         const decisions = OnlinePayload.incomingGameActionDecisions;
         if (planSelection.plan.decision === decisions.NO_GAME) {
             return _runOnlineActionNoGameEffects(
@@ -2789,7 +2791,7 @@ function initSocket() {
                 true,
                 planSelection,
                 isIncomingGameActionNoGameEffectAuthorityEnabled(),
-                selection => { _lastIncomingGameActionNoGameEffectSelection = selection; }
+                selection => { _onlineDiagnosticSelections.incomingGameActionNoGameEffectSelection = selection; }
             );
         }
         if (planSelection.plan.decision === decisions.DUPLICATE) return;
@@ -2798,7 +2800,7 @@ function initSocket() {
                 '操作の欠落を検知したため、状態を再同期しています...',
                 planSelection,
                 isIncomingGameActionGapEffectAuthorityEnabled(),
-                selection => { _lastIncomingGameActionGapEffectSelection = selection; }
+                selection => { _onlineDiagnosticSelections.incomingGameActionGapEffectSelection = selection; }
             );
         }
         try {
@@ -2808,7 +2810,7 @@ function initSocket() {
                 error,
                 planSelection,
                 isIncomingGameActionApplyEffectAuthorityEnabled(),
-                selection => { _lastIncomingGameActionApplyEffectSelection = selection; }
+                selection => { _onlineDiagnosticSelections.incomingGameActionApplyEffectSelection = selection; }
             );
         }
         return _runOnlineActionCommitEffects(
@@ -2820,7 +2822,7 @@ function initSocket() {
             false,
             planSelection,
             isIncomingGameActionCommitEffectAuthorityEnabled(),
-            selection => { _lastIncomingGameActionCommitEffectSelection = selection; }
+            selection => { _onlineDiagnosticSelections.incomingGameActionCommitEffectSelection = selection; }
         );
     };
     socketEvents.on(OnlineSocketRegistry.keys.GAME_ACTION, handleGameAction);
@@ -2831,7 +2833,7 @@ function initSocket() {
             return _runOnlineDecodeFailureEffects(
                 { clearActionFlight: true },
                 isAcceptedGameActionDecodeEffectAuthorityEnabled(),
-                selection => { _lastAcceptedGameActionDecodeEffectSelection = selection; }
+                selection => { _onlineDiagnosticSelections.acceptedGameActionDecodeEffectSelection = selection; }
             );
         }
         const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
@@ -2846,7 +2848,7 @@ function initSocket() {
             lastAppliedSeq,
             isAcceptedGameActionPlanAuthorityEnabled()
         );
-        _lastAcceptedGameActionPlanSelection = planSelection;
+        _onlineDiagnosticSelections.acceptedGameActionPlanSelection = planSelection;
         const decisions = OnlinePayload.incomingGameActionDecisions;
         if (planSelection.plan.decision === decisions.NO_GAME) {
             return _runOnlineActionNoGameEffects(
@@ -2854,7 +2856,7 @@ function initSocket() {
                 false,
                 planSelection,
                 isAcceptedGameActionNoGameEffectAuthorityEnabled(),
-                selection => { _lastAcceptedGameActionNoGameEffectSelection = selection; }
+                selection => { _onlineDiagnosticSelections.acceptedGameActionNoGameEffectSelection = selection; }
             );
         }
         if (planSelection.plan.decision === decisions.DUPLICATE) {
@@ -2866,7 +2868,7 @@ function initSocket() {
                 null,
                 planSelection,
                 isAcceptedGameActionGapEffectAuthorityEnabled(),
-                selection => { _lastAcceptedGameActionGapEffectSelection = selection; }
+                selection => { _onlineDiagnosticSelections.acceptedGameActionGapEffectSelection = selection; }
             );
         }
         try {
@@ -2876,7 +2878,7 @@ function initSocket() {
                 error,
                 planSelection,
                 isAcceptedGameActionApplyEffectAuthorityEnabled(),
-                selection => { _lastAcceptedGameActionApplyEffectSelection = selection; }
+                selection => { _onlineDiagnosticSelections.acceptedGameActionApplyEffectSelection = selection; }
             );
         }
         return _runOnlineActionCommitEffects(
@@ -2888,7 +2890,7 @@ function initSocket() {
             true,
             planSelection,
             isAcceptedGameActionCommitEffectAuthorityEnabled(),
-            selection => { _lastAcceptedGameActionCommitEffectSelection = selection; }
+            selection => { _onlineDiagnosticSelections.acceptedGameActionCommitEffectSelection = selection; }
         );
     };
     socketEvents.on(OnlineSocketRegistry.keys.ACTION_ACCEPTED, handleActionAccepted);
@@ -2979,7 +2981,7 @@ function initSocket() {
                         ? localHostOfferReasons.OFFER_NEWER_BUNDLE
                         : localHostOfferReasons.NOT_NEWER)),
         });
-        _lastLocalHostRestoreOfferPlanSelection =
+        _onlineDiagnosticSelections.localHostRestoreOfferPlanSelection =
             OnlineRestoreRank.selectLocalHostRestoreOfferPlan(
                 localBundle,
                 myOriginalPlayerIndex,
@@ -2989,12 +2991,12 @@ function initSocket() {
                 legacyLocalHostOfferPlan,
                 { authorityEnabled: isLocalHostRestoreOfferPlanAuthorityEnabled() }
             );
-        if (_lastLocalHostRestoreOfferPlanSelection.plan.offer) {
+        if (_onlineDiagnosticSelections.localHostRestoreOfferPlanSelection.plan.offer) {
             setOnlineReconnectLegacyFlag(true);
             document.getElementById("onlineStatus").textContent =
                 '♻️ より新しいローカル復元データをサーバーへ送信しています...';
             _sendRecreateRoomFromBundle(
-                _lastLocalHostRestoreOfferPlanSelection.plan.bundle
+                _onlineDiagnosticSelections.localHostRestoreOfferPlanSelection.plan.bundle
             );
             return;
         }
@@ -3033,7 +3035,7 @@ function initSocket() {
                             ? pendingReconciliationReasons.ACCEPTED_CLIENT_ACTION
                             : pendingReconciliationReasons.UNACCEPTED))),
         });
-        _lastPendingReconciliationPlanSelection = OnlinePayload.selectPendingReconciliationPlan(
+        _onlineDiagnosticSelections.pendingReconciliationPlanSelection = OnlinePayload.selectPendingReconciliationPlan(
             pendingBeforeRejoin,
             replayActionLog,
             stateSnapshot,
@@ -3042,7 +3044,7 @@ function initSocket() {
             { authorityEnabled: isPendingReconciliationPlanAuthorityEnabled() }
         );
         const acceptedPendingReconciliation =
-            _lastPendingReconciliationPlanSelection.plan.accepted;
+            _onlineDiagnosticSelections.pendingReconciliationPlanSelection.plan.accepted;
         const defaultLandmarks = (el && el.length > 0) ? null : Player.landmarkNames();
         const resolvedEnabledLandmarks = (el && el.length > 0) ? el : defaultLandmarks;
         const resetUiLocksAvailable = typeof resetUiLocksForGameReset === 'function';
@@ -3056,7 +3058,7 @@ function initSocket() {
             hostPlayerIndex,
             resetUiLocks: resetUiLocksAvailable,
         });
-        _lastOnlineRejoinPersistencePlanSelection = OnlineRejoinPersistence.selectPlan({
+        _onlineDiagnosticSelections.onlineRejoinPersistencePlanSelection = OnlineRejoinPersistence.selectPlan({
             acceptedPending: acceptedPendingReconciliation,
             cpuSpeed: cs,
             enabledCards: ec,
@@ -3094,7 +3096,7 @@ function initSocket() {
                         ? rejoinActionLogReasons.STORED_UNSIGNED_FULL_LOG
                         : rejoinActionLogReasons.SERVER_REPLAY_LOG,
                 });
-                _lastRejoinActionLogPlanSelection =
+                _onlineDiagnosticSelections.rejoinActionLogPlanSelection =
                     OnlinePayload.selectRejoinActionLogPersistencePlan(
                         stateSnapshot,
                         restoreAudit,
@@ -3105,7 +3107,7 @@ function initSocket() {
                     );
                 _writeOnlineRestoreStorageJson(
                     ONLINE_STORAGE_KEYS.actionLog,
-                    _lastRejoinActionLogPlanSelection.plan.actionLog
+                    _onlineDiagnosticSelections.rejoinActionLogPlanSelection.plan.actionLog
                 );
             } catch(e) {}
         };
@@ -3129,10 +3131,10 @@ function initSocket() {
         };
 
         const persistRejoinBundle = () => {
-            const planSelection = _lastOnlineRejoinPersistencePlanSelection;
+            const planSelection = _onlineDiagnosticSelections.onlineRejoinPersistencePlanSelection;
             const effectSelection =
                 _onlineRejoinPersistenceEffectAuthoritySelection(planSelection);
-            _lastOnlineRejoinPersistenceEffectSelection = effectSelection;
+            _onlineDiagnosticSelections.onlineRejoinPersistenceEffectSelection = effectSelection;
             if (effectSelection.source !== 'executor') {
                 persistRejoinBundleLegacy(planSelection.plan);
                 return;
@@ -3172,7 +3174,7 @@ function initSocket() {
                 actionLog: replayActionLog,
                 provisionalRestore: provisionalRestore === true,
             });
-            _lastOnlineRestoreReplayPlanSelection = OnlineRestoreReplay.selectPlan({
+            _onlineDiagnosticSelections.onlineRestoreReplayPlanSelection = OnlineRestoreReplay.selectPlan({
                 playerNames,
                 playerSettings: ps,
                 playerOrder,
@@ -3182,13 +3184,13 @@ function initSocket() {
             }, legacyRestoreReplayPlan, {
                 authorityEnabled: isOnlineRestoreReplayPlanAuthorityEnabled(),
             });
-            _lastOnlineRestoreReplayEffectSelection =
+            _onlineDiagnosticSelections.onlineRestoreReplayEffectSelection =
                 _onlineRestoreReplayEffectAuthoritySelection(
-                    _lastOnlineRestoreReplayPlanSelection
+                    _onlineDiagnosticSelections.onlineRestoreReplayPlanSelection
                 );
             const restoreReplayUsesExecutor =
-                _lastOnlineRestoreReplayEffectSelection.source === 'executor';
-            const restoreReplayPlan = _lastOnlineRestoreReplayPlanSelection.plan;
+                _onlineDiagnosticSelections.onlineRestoreReplayEffectSelection.source === 'executor';
+            const restoreReplayPlan = _onlineDiagnosticSelections.onlineRestoreReplayPlanSelection.plan;
             let restoredOk = false;
             try {
                 // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
@@ -3255,19 +3257,19 @@ function initSocket() {
             const legacyRestoreActivationPlan = Object.freeze({
                 restoredThroughSeq,
             });
-            _lastOnlineRestoreActivationPlanSelection =
+            _onlineDiagnosticSelections.onlineRestoreActivationPlanSelection =
                 OnlineRestoreActivation.selectPlan({
                     restoredThroughSeq,
                 }, legacyRestoreActivationPlan, {
                     authorityEnabled: isOnlineRestoreActivationPlanAuthorityEnabled(),
                 });
-            _lastOnlineRestoreActivationEffectSelection =
+            _onlineDiagnosticSelections.onlineRestoreActivationEffectSelection =
                 _onlineRestoreActivationEffectAuthoritySelection(
-                    _lastOnlineRestoreActivationPlanSelection
+                    _onlineDiagnosticSelections.onlineRestoreActivationPlanSelection
                 );
             const restoreActivationPlan =
-                _lastOnlineRestoreActivationPlanSelection.plan;
-            if (_lastOnlineRestoreActivationEffectSelection.source === 'executor') {
+                _onlineDiagnosticSelections.onlineRestoreActivationPlanSelection.plan;
+            if (_onlineDiagnosticSelections.onlineRestoreActivationEffectSelection.source === 'executor') {
                 const activationResult = OnlineRestoreActivation.execute(
                     restoreActivationPlan,
                     {
@@ -3347,7 +3349,7 @@ function initSocket() {
                         : pendingResendDecisions.CLEAR),
                 pending: pendingResendAllowed ? pendingBeforeRejoin : null,
             });
-            _lastOnlinePendingResendPlanSelection = OnlinePendingResend.selectPlan({
+            _onlineDiagnosticSelections.onlinePendingResendPlanSelection = OnlinePendingResend.selectPlan({
                 pending: pendingBeforeRejoin,
                 acceptedPending: acceptedPendingReconciliation,
                 currentPendingMatches,
@@ -3358,10 +3360,10 @@ function initSocket() {
             });
             const pendingResendEffectSelection =
                 _onlinePendingResendEffectAuthoritySelection(
-                    _lastOnlinePendingResendPlanSelection
+                    _onlineDiagnosticSelections.onlinePendingResendPlanSelection
                 );
-            _lastOnlinePendingResendEffectSelection = pendingResendEffectSelection;
-            const pendingResendPlan = _lastOnlinePendingResendPlanSelection.plan;
+            _onlineDiagnosticSelections.onlinePendingResendEffectSelection = pendingResendEffectSelection;
+            const pendingResendPlan = _onlineDiagnosticSelections.onlinePendingResendPlanSelection.plan;
             if (pendingResendEffectSelection.source === 'executor') {
                 OnlinePendingResend.execute(pendingResendPlan, {
                     clearPendingOutboundAction: () => _clearPendingOutboundAction(),
@@ -3533,7 +3535,7 @@ function _runOnlineReconnectTerminalCleanupLegacy() {
 
 function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
     const effectSelection = _onlineReconnectCleanupEffectAuthoritySelection(cleanupSelection);
-    _lastOnlineReconnectCleanupEffectSelection = effectSelection;
+    _onlineDiagnosticSelections.onlineReconnectCleanupEffectSelection = effectSelection;
     if (effectSelection.source !== 'event') {
         _runOnlineReconnectTerminalCleanupLegacy();
         return effectSelection;
@@ -3888,7 +3890,7 @@ function _finishOnlineGameEngineShadow(prepared) {
         authorityEnabled: isOnlineGameEngineAuthorityEnabled(),
         adoptSnapshot: _adoptOnlineGameEngineShadowSnapshot,
     });
-    _lastOnlineGameEngineShadowOutcome = outcome;
+    _onlineDiagnosticSelections.onlineGameEngineShadowOutcome = outcome;
     return outcome;
 }
 

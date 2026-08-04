@@ -302,6 +302,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineSessionLifecycle.js');
         files.push('js/onlineReconnectState.js');
         files.push('js/onlineRuntimeFlags.js');
+        files.push('js/onlineDiagnosticState.js');
         files.push('js/onlineRetryPolicy.js');
         files.push('js/onlineSchemaTransport.js');
         files.push('js/online.js');

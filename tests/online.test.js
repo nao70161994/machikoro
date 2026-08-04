@@ -156,6 +156,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineSessionLifecycle.js');
     loadScript(context, 'js/onlineReconnectState.js');
     loadScript(context, 'js/onlineRuntimeFlags.js');
+    loadScript(context, 'js/onlineDiagnosticState.js');
     loadScript(context, 'js/onlineRetryPolicy.js');
     loadScript(context, 'js/onlineSchemaTransport.js');
     loadScript(context, 'js/online.js');
