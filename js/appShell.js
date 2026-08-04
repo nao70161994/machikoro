@@ -757,179 +757,43 @@ function reportClientError(input) {
 
 // ===== ゲームライフサイクル通知 =====
 const GAME_LIFECYCLE_ENDPOINT = '/api/game-lifecycle';
-const GAME_LIFECYCLE_NOTIFY_KEY = LifecycleNotify.storageKeys.notify;
-const GAME_LIFECYCLE_LEGACY_NOTIFY_KEY = LifecycleNotify.storageKeys.legacyNotify;
 const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
-const gameLifecycleController = LifecycleNotify.createController();
-
-function readGameLifecycleNotifyValue() {
-    return LifecycleNotify.readNotificationValue(appShellStorage.access);
-}
-
-function isLifecycleNotifyFalse(value) {
-    return LifecycleNotify.isDisabledValue(value);
-}
-
-function isGameLifecycleNotificationEnabled() {
-    return !isLifecycleNotifyFalse(readGameLifecycleNotifyValue());
-}
+const gameLifecycleRuntime = LifecycleRuntime.create({
+    policy: LifecycleNotify,
+    storageAccess: appShellStorage.access,
+    gameSnapshot: appShellGameRuntimeSnapshot,
+    onlineSnapshot: appShellOnlineRuntimeSnapshot,
+    setupSnapshot: () => GameSetupState.runtime.snapshot(),
+    getAppVersion: () => typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
+    getFetch: () => typeof fetch === 'function' ? fetch : null,
+    sendTransport: input => LifecycleTransport.send(input),
+    checkpoint: markClientFlowCheckpoint,
+    endpoint: GAME_LIFECYCLE_ENDPOINT,
+    startSuppressMs: GAME_LIFECYCLE_START_SUPPRESS_MS,
+});
 
 function setGameLifecycleNotificationEnabled(enabled) {
-    LifecycleNotify.writeNotificationEnabled(appShellStorage.access, enabled);
-    return isGameLifecycleNotificationEnabled();
+    return gameLifecycleRuntime.setNotificationEnabled(enabled);
 }
 
 function gameLifecycleNotifyState() {
-    return LifecycleNotify.notificationState(
-        GAME_LIFECYCLE_NOTIFY_KEY,
-        GAME_LIFECYCLE_LEGACY_NOTIFY_KEY,
-        readGameLifecycleNotifyValue()
-    );
-}
-
-function createGameLifecycleSessionId() {
-    return LifecycleNotify.createSessionId(Date.now(), Math.random());
-}
-
-function gameLifecycleCpuCount() {
-    try {
-        return LifecycleNotify.cpuCount(
-            appShellGameRuntimeSnapshot().cpuPlayers
-        );
-    } catch (_) {
-        return 0;
-    }
-}
-
-function gameLifecyclePlayerCount() {
-    try {
-        const currentGame = appShellGameRuntimeSnapshot().game;
-        if (currentGame && Array.isArray(currentGame.players)) {
-            return LifecycleNotify.playerCount(currentGame.players, 0);
-        }
-    } catch (_) {}
-    try {
-        return LifecycleNotify.playerCount(null, GameSetupState.runtime.snapshot().selectedCount);
-    } catch (_) {
-        return 0;
-    }
-}
-
-function gameLifecycleMode() {
-    try {
-        return LifecycleNotify.gameMode(
-            appShellOnlineRuntimeSnapshot().isOnlineGame
-        );
-    } catch (_) {
-        return 'local';
-    }
-}
-
-function gameLifecycleAppVersion() {
-    return LifecycleNotify.appVersion(
-        typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : ''
-    );
-}
-
-function gameLifecycleStartSignature() {
-    return LifecycleNotify.startSignature(
-        gameLifecycleMode(),
-        gameLifecyclePlayerCount(),
-        gameLifecycleCpuCount()
-    );
-}
-
-function recentlySentGameLifecycleStart(signature, now = Date.now()) {
-    return LifecycleNotify.isRecentStart(
-        LifecycleNotify.readStartMarker(appShellStorage.access),
-        signature,
-        now,
-        GAME_LIFECYCLE_START_SUPPRESS_MS
-    );
-}
-
-function rememberGameLifecycleStart(signature, now = Date.now()) {
-    LifecycleNotify.writeStartMarker(appShellStorage.access, signature, now);
-}
-
-function cpuDifficultyForWinner(winner) {
-    try {
-        const gameState = appShellGameRuntimeSnapshot();
-        return LifecycleNotify.winnerCpuDifficulty(
-            gameState.game ? gameState.game.players : null,
-            gameState.cpuPlayers,
-            winner
-        );
-    } catch (_) {
-        return '';
-    }
-}
-
-function buildGameLifecyclePayload(event, extra = {}) {
-    const currentState = gameLifecycleController.snapshot();
-    const state = gameLifecycleController.ensureSession(
-        currentState.sessionId || createGameLifecycleSessionId()
-    );
-    return LifecycleNotify.buildPayload({
-        event,
-        mode: gameLifecycleMode(),
-        playerCount: gameLifecyclePlayerCount(),
-        cpuCount: gameLifecycleCpuCount(),
-        sessionId: state.sessionId,
-        appVersion: gameLifecycleAppVersion(),
-        turn: extra.turn,
-        winnerKind: extra.winnerKind,
-        winnerCpuDifficulty: extra.winnerCpuDifficulty,
-    });
+    return gameLifecycleRuntime.notificationState();
 }
 
 function sendGameLifecycleNotification(event, extra = {}) {
-    return LifecycleTransport.send({
-        enabled: isGameLifecycleNotificationEnabled(),
-        fetchImpl: typeof fetch === 'function' ? fetch : null,
-        endpoint: GAME_LIFECYCLE_ENDPOINT,
-        event,
-        buildPayload: () => buildGameLifecyclePayload(event, extra),
-        checkpoint: markClientFlowCheckpoint,
-    });
+    return gameLifecycleRuntime.send(event, extra);
 }
 
 function notifyGameLifecycleStart() {
-    const state = gameLifecycleController.snapshot();
-    if (state.startSent) return false;
-    const signature = gameLifecycleStartSignature();
-    const now = Date.now();
-    const recentlySent = recentlySentGameLifecycleStart(signature, now);
-    const transition = gameLifecycleController.start(
-        recentlySent,
-        recentlySent ? state.sessionId : createGameLifecycleSessionId()
-    );
-    if (transition.status === 'suppressed') {
-        markClientFlowCheckpoint('game-lifecycle-start-suppressed', { signature });
-        return false;
-    }
-    if (!transition.shouldSend) return false;
-    if (transition.shouldRememberStart) rememberGameLifecycleStart(signature, now);
-    return sendGameLifecycleNotification('play-start');
+    return gameLifecycleRuntime.notifyStart();
 }
 
 function notifyGameLifecycleFinish(winner) {
-    const transition = gameLifecycleController.finish();
-    if (!transition.shouldSend) return false;
-    const cpuDifficulty = cpuDifficultyForWinner(winner);
-    return sendGameLifecycleNotification(
-        'play-finish',
-        LifecycleNotify.finishPayloadExtras(
-            appShellGameRuntimeSnapshot().game?.turnCount || 0,
-            cpuDifficulty
-        )
-    );
+    return gameLifecycleRuntime.notifyFinish(winner);
 }
 
 function resetGameLifecycleForRestart(reason = 'game-restart') {
-    gameLifecycleController.reset();
-    LifecycleNotify.clearStartMarker(appShellStorage.access);
-    markClientFlowCheckpoint(reason, { lifecycle: 'reset' });
+    gameLifecycleRuntime.reset(reason);
 }
 
 if (typeof window !== 'undefined') {
