@@ -1,6 +1,26 @@
 'use strict';
 
 const UiGameStatusEffects = (() => {
+    function createTurnStateController(initialPreviousPlayerIndex = -1) {
+        let previousPlayerIndex = initialPreviousPlayerIndex;
+
+        function snapshot() {
+            return Object.freeze({ previousPlayerIndex });
+        }
+
+        function set(nextPreviousPlayerIndex) {
+            previousPlayerIndex = nextPreviousPlayerIndex;
+            return snapshot();
+        }
+
+        function reset() {
+            previousPlayerIndex = -1;
+            return snapshot();
+        }
+
+        return Object.freeze({ snapshot, set, reset });
+    }
+
     const REQUIRED_EFFECTS = Object.freeze([
         'setStatusText',
         'announceTurn',
@@ -59,7 +79,7 @@ const UiGameStatusEffects = (() => {
         effects.runRenderStep('checkAutoSkip', effects.checkAutoSkip);
     }
 
-    return Object.freeze({ REQUIRED_EFFECTS, execute });
+    return Object.freeze({ createTurnStateController, REQUIRED_EFFECTS, execute });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusEffects;

@@ -96,3 +96,16 @@ runTest('active game effect境界は不完全な配線を副作用前に拒否�
     assert.ok(Object.isFrozen(UiGameStatusEffects));
     assert.ok(Object.isFrozen(UiGameStatusEffects.REQUIRED_EFFECTS));
 });
+
+runTest('active game turn state controllerは前回player indexを一箇所で所有する', () => {
+    const controller = UiGameStatusEffects.createTurnStateController();
+    assert.deepStrictEqual(controller.snapshot(), { previousPlayerIndex: -1 });
+    assert.deepStrictEqual(controller.set(3), { previousPlayerIndex: 3 });
+    assert.deepStrictEqual(controller.snapshot(), { previousPlayerIndex: 3 });
+    assert.deepStrictEqual(controller.reset(), { previousPlayerIndex: -1 });
+    assert.ok(Object.isFrozen(controller));
+    assert.ok(Object.isFrozen(controller.snapshot()));
+
+    const restored = UiGameStatusEffects.createTurnStateController(2);
+    assert.deepStrictEqual(restored.snapshot(), { previousPlayerIndex: 2 });
+});

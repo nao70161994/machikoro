@@ -252,7 +252,7 @@ function renderActiveGameState(current) {
         phase: game.phase,
         rollPhase: GAME_PHASES.ROLL,
         currentPlayerIndex: game.currentPlayerIndex,
-        previousPlayerIndex: prevPlayerIndex,
+        previousPlayerIndex: getActiveGameTurnStateController().snapshot().previousPlayerIndex,
         isReplaying,
         currentName: current.name,
         isCpuTurn: isCPUTurn,
@@ -273,7 +273,7 @@ function renderActiveGameState(current) {
             showTurnAnnouncer(name, isCpuTurn);
         },
         setPreviousPlayerIndex(playerIndex) {
-            prevPlayerIndex = playerIndex;
+            getActiveGameTurnStateController().set(playerIndex);
         },
         setRollDisabled(disabled) {
             document.getElementById("btnRoll").disabled = disabled;
@@ -796,8 +796,15 @@ function applyCardSelectStateSnapshot() {
     enabledLandmarks = new Set(snapshot.enabledLandmarks);
 }
 const logHistoryController = UiLogDisplay.createHistoryController();
-let prevPlayerIndex = -1;
+let activeGameTurnStateController = null;
 let turnAnnouncerTimerController = null;
+
+function getActiveGameTurnStateController() {
+    if (!activeGameTurnStateController) {
+        activeGameTurnStateController = UiGameStatusEffects.createTurnStateController();
+    }
+    return activeGameTurnStateController;
+}
 let buildMenuFilterController = null;
 let activeModalId = null;
 let lastModalFocus = null;
@@ -921,7 +928,7 @@ function compareCardNamesForDisplay(a, b) {
     return UiCardOrder.compareCardNamesForDisplay(a, b, CARDS, CARD_COLOR_ORDER);
 }
 
-function resetFullLog() { logHistoryController.reset(); prevPlayerIndex = -1; if (buildMenuFilterController) buildMenuFilterController.clear(); }
+function resetFullLog() { logHistoryController.reset(); if (activeGameTurnStateController) activeGameTurnStateController.reset(); if (buildMenuFilterController) buildMenuFilterController.clear(); }
 
 function isVisibleFocusableElement(el) {
     if (!el || el.disabled || el.hidden || el.getAttribute('aria-hidden') === 'true') return false;
