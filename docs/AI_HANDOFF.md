@@ -653,3 +653,11 @@ Test index:
 - Lifecycle session/start/finish writes belong to `LifecycleNotify.createController()`. Keep storage keys/markers, 60-second reload suppression, metadata reads, transport, checkpoints, and browser-global APIs in app-shell adapters.
 - Scoped gates remain 210 ESLint maintenance files and 209 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 40 handoff (2026-08-04)
+
+- Last-applied online action sequence memory belongs to `OnlineActionSequence.createController()`. Keep storage, snapshot/log reads, ACK/replay, reconnect, and Socket effects in their current adapters; do not introduce a second mutable sequence owner.
+- New-room restore prepare/activate/delivery sequencing belongs to `server/newRoomRestoreRuntime.js`. Keep candidate authority, room mutation, persistence, event names/payloads, and existing-room restore behavior in their current owners.
+- UI log entries and previous rendered length belong to `UiLogDisplay.createHistoryController()`. Keep log text, DOM effects, scrolling, card filters, and browser-global APIs in `ui.js`.
+- Scoped gates are 211 ESLint maintenance files and 210 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

@@ -619,3 +619,11 @@ No authority flag was enabled and no rule, protocol, persistence, reconnect timi
 3. Lifecycle notification state now lives behind a controller. App-shell no longer writes session/start/finish flags directly; persistence markers, notification admission, payload construction, and transport remain separate boundaries.
 
 Scoped gates remain 210 ESLint maintenance files and 209 checkJs runtime files. No authority activation, rule, CPU tuning, schema/protocol, persistence, notification, or PWA behavior changed.
+
+## 2026-08-04 Batch 40 boundary update
+
+1. Last-applied online action sequence memory now has one controller owner. Snapshot, action-log, game-start metadata, persistence, ACK, replay, and transport remain separate adapters with their existing contracts.
+2. New-room recreate handling now has a dedicated runtime boundary for prepare → activate → delivery. `server.js` injects all authority, mutation, persistence, Socket, and clock dependencies and retains the existing-room branch.
+3. UI log history now has an immutable-snapshot controller. `ui.js` remains responsible for display strings, DOM effects, scrolling, public APIs, and unrelated filter/player state.
+
+Scoped gates now cover 211 ESLint maintenance files and 210 checkJs runtime files. Production authority, protocol/schema, persistence formats, presentation, and PWA defaults are unchanged.

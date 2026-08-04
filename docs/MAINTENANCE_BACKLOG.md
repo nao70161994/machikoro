@@ -412,3 +412,12 @@ This batch advances deterministic rule transitions, a thinner server composition
 - Scoped gates remain 210 ESLint maintenance files and 209 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 This batch advances deterministic shared-Engine state, action-only reproducible CPU evaluation, and a thinner app-shell without changing game rules, CPU choices/RNG, save/localStorage formats, Socket.IO protocol, notification payloads, PWA/SW behavior, or rollout defaults.
+
+## 2026-08-04 Batch 40 architecture boundaries
+
+- `OnlineActionSequence.createController()` is now the sole mutable owner of the last-applied online action sequence. `online.js` retains snapshot/log/storage reads, ACK and replay effects, reconnect flow, and Socket.IO transport; sequence calculation and every wire/storage shape are unchanged.
+- `server/newRoomRestoreRuntime.js` now owns new-room restore preparation, activation, and delivery sequencing. `server.js` remains the composition root and keeps existing-room handling, candidate authority, room mutation dependencies, event names, payloads, and default rollout behavior unchanged.
+- `UiLogDisplay.createHistoryController()` now owns detached log entries and the previous rendered length. `ui.js` retains text construction, rendering, scrolling, card-filter reset, and DOM/public API behavior.
+- Scoped gates now cover 211 ESLint maintenance files and 210 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+This batch advances explicit online state ownership, a thinner server composition root, and isolated UI history state without changing rules, CPU strength, save/localStorage formats, Socket.IO protocol, reconnect authority/defaults, UI presentation, or PWA/SW behavior.
