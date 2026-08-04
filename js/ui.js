@@ -2,6 +2,14 @@ const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
 
+function uiGameRuntimeSnapshot() {
+    return GameRuntimeState.runtime.snapshot();
+}
+
+function uiOnlineRuntimeSnapshot() {
+    return OnlineRuntimeState.runtime.snapshot();
+}
+
 function safeUiStorageSet(key, value) {
     try {
         if (typeof safeStorageSet === 'function') return safeStorageSet(key, value);
@@ -23,7 +31,8 @@ function safeUiStorageRemove(key) {
 
 function currentCpuPlayerAt(index) {
     try {
-        if (typeof cpuPlayers === 'undefined' || !Array.isArray(cpuPlayers)) return null;
+        const cpuPlayers = uiGameRuntimeSnapshot().cpuPlayers;
+        if (!Array.isArray(cpuPlayers)) return null;
         return cpuPlayers[index] || null;
     } catch (_) {
         return null;
@@ -40,7 +49,8 @@ function renderLog() {
     const summaryEl = document.getElementById("logSummary");
     if (!logEl || !titleEl || !summaryEl) return;
 
-    const cur = game.log || [];
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const cur = currentGame.log || [];
 
     const history = logHistoryController.append(cur);
     titleEl.textContent = `📋 ログ (${history.entryCount})`;
@@ -56,6 +66,8 @@ function renderLog() {
 
 function tutorialOptions() {
     const tutorial = tutorialSettingsSnapshot();
+    const gameState = uiGameRuntimeSnapshot();
+    const onlineState = uiOnlineRuntimeSnapshot();
     return {
         cards: CARDS,
         enabledCards: getEnabledCardSelection(),
@@ -64,9 +76,9 @@ function tutorialOptions() {
         enabledLandmarks: getEnabledLandmarkSelection(),
         landmarkNames: LANDMARK_NAMES,
         landmarkCost: Player.landmarkCost,
-        game,
-        isOnlineGame,
-        myPlayerIndex,
+        game: gameState.game,
+        isOnlineGame: onlineState.isOnlineGame,
+        myPlayerIndex: onlineState.myPlayerIndex,
         currentCpuPlayerAt,
         tutorialLevel: tutorial.tutorialLevel,
         phases: GAME_PHASES,
@@ -86,7 +98,8 @@ function renderTutorial() {
     const box = document.getElementById("tutorialBox");
     if (!box) return;
     const tutorial = tutorialSettingsSnapshot();
-    if (!tutorial.tutorialEnabled || !game || game.checkWinner()) {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    if (!tutorial.tutorialEnabled || !currentGame || currentGame.checkWinner()) {
         box.style.display = "none";
         box.innerHTML = "";
         return;
@@ -154,12 +167,13 @@ function render() {
 }
 
 function _render() {
-    const renderPlan = !game
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const renderPlan = !currentGame
         ? UiRenderRuntime.plan()
         : UiRenderRuntime.plan({
             hasGame: true,
-            current: game.currentPlayer(),
-            winner: game.checkWinner(),
+            current: currentGame.currentPlayer(),
+            winner: currentGame.checkWinner(),
         });
     UiRenderRuntime.execute(renderPlan, {
         syncTutorialControls,
@@ -181,7 +195,9 @@ function clearOnlineSessionAfterWin() {
 }
 
 function renderWinnerState(winner) {
-    const winnerIdx = game.players.indexOf(winner);
+    const gameState = uiGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const winnerIdx = currentGame.players.indexOf(winner);
     const isCPUWinner = !!currentCpuPlayerAt(winnerIdx);
     let streakState = UiWinner.streakRuntime.snapshot();
     if (!winSoundPlayed) {
@@ -197,9 +213,9 @@ function renderWinnerState(winner) {
     }
     const statusHtml = UiWinner.buildWinnerScreenHtml({
         winner,
-        players: game.players,
+        players: currentGame.players,
         isCpuWinner: isCPUWinner,
-        turnCount: game.turnCount,
+        turnCount: currentGame.turnCount,
         winStreak: streakState.winStreak,
         resultAdSlot,
         escapeHtml,
@@ -216,8 +232,8 @@ function renderWinnerState(winner) {
             playSound('win');
         },
         recordStats() {
-            const cpuList = typeof cpuPlayers !== 'undefined' && Array.isArray(cpuPlayers) ? cpuPlayers : [];
-            recordGameStats(winner, game, cpuList);
+            const cpuList = Array.isArray(gameState.cpuPlayers) ? gameState.cpuPlayers : [];
+            recordGameStats(winner, currentGame, cpuList);
         },
         notifyFinish() {
             if (typeof notifyGameLifecycleFinish === 'function') notifyGameLifecycleFinish(winner);
@@ -252,25 +268,28 @@ function renderWinnerState(winner) {
 }
 
 function renderActiveGameState(current) {
-    const isCPUTurn = !!currentCpuPlayerAt(game.currentPlayerIndex);
+    const gameState = uiGameRuntimeSnapshot();
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const isCPUTurn = !!currentCpuPlayerAt(currentGame.currentPlayerIndex);
     const view = UiGameStatusView.buildActiveGameView({
         current,
-        players: game.players,
-        phase: game.phase,
+        players: currentGame.players,
+        phase: currentGame.phase,
         rollPhase: GAME_PHASES.ROLL,
-        currentPlayerIndex: game.currentPlayerIndex,
+        currentPlayerIndex: currentGame.currentPlayerIndex,
         previousPlayerIndex: activeGameTurnStateController.snapshot().previousPlayerIndex,
-        isReplaying,
+        isReplaying: onlineState.isReplaying,
         currentName: current.name,
         isCpuTurn: isCPUTurn,
         canRoll: canShowUiAction('rollDice'),
         canNextTurn: canShowUiAction('nextTurn'),
-        pendingRenovation: game.pendingRenovation,
-        builtThisTurn: game.builtThisTurn,
-        previousCoins: prevCoins,
-        lastDice1: game.lastDice1,
-        lastDice2: game.lastDice2,
-        lastDiceResult: game.lastDiceResult,
+        pendingRenovation: currentGame.pendingRenovation,
+        builtThisTurn: currentGame.builtThisTurn,
+        previousCoins: gameState.prevCoins,
+        lastDice1: currentGame.lastDice1,
+        lastDice2: currentGame.lastDice2,
+        lastDiceResult: currentGame.lastDiceResult,
     });
     UiGameStatusEffects.execute(view, {
         setStatusText(text) {
@@ -340,10 +359,11 @@ function persistAfterRender() {
 }
 
 function currentUiAllowedActions() {
-    if (!game) return new Set();
+    const currentGame = uiGameRuntimeSnapshot().game;
+    if (!currentGame) return new Set();
     try {
-        if (typeof game.allowedActions === 'function') return game.allowedActions();
-        if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') return GameManager.allowedActionsFor(game);
+        if (typeof currentGame.allowedActions === 'function') return currentGame.allowedActions();
+        if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') return GameManager.allowedActionsFor(currentGame);
     } catch (_) {}
     return new Set();
 }
@@ -359,29 +379,32 @@ function uiOnlineActionFlightState() {
 }
 
 function isOnlineUiInputBlocked() {
+    const onlineState = uiOnlineRuntimeSnapshot();
     const isReconnecting = typeof isOnlineReconnectInputBlocked === 'function'
         ? isOnlineReconnectInputBlocked()
-        : (typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline);
-    const socketAvailable = typeof socket !== 'undefined' && !!socket;
+        : onlineState.isReconnectingOnline;
+    const socketAvailable = !!onlineState.socket;
     return UiInputPolicy.onlineBlockReason({
-        isOnlineGame,
+        isOnlineGame: onlineState.isOnlineGame,
         isReconnecting,
         actionInFlight: uiOnlineActionFlightState().inFlight,
         socketAvailable,
-        socketConnected: socketAvailable ? socket.connected : false,
+        socketConnected: socketAvailable ? onlineState.socket.connected : false,
     }) !== '';
 }
 
 function isCurrentHumanUiTurn() {
-    const hasGame = !!game;
-    const currentPlayerIndex = hasGame ? game.currentPlayerIndex : -1;
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const hasGame = !!currentGame;
+    const currentPlayerIndex = hasGame ? currentGame.currentPlayerIndex : -1;
     return UiInputPolicy.isHumanTurn({
         hasGame,
         isCpuTurn: hasGame && !!currentCpuPlayerAt(currentPlayerIndex),
-        isOnlineGame,
+        isOnlineGame: onlineState.isOnlineGame,
         onlineBlockReason: isOnlineUiInputBlocked() ? 'blocked' : '',
         currentPlayerIndex,
-        myPlayerIndex,
+        myPlayerIndex: onlineState.myPlayerIndex,
     });
 }
 
@@ -408,9 +431,10 @@ function renderDiceChoose() {
     const el = document.getElementById("diceChoose");
     if (!el) return;
     if (!isCurrentHumanUiTurn()) { setDiceChooseContent(el, ""); return; }
+    const currentGame = uiGameRuntimeSnapshot().game;
     const html = UiDiceChoice.buildHtml({
-        phase: game.phase,
-        lastDiceResult: game.lastDiceResult,
+        phase: currentGame.phase,
+        lastDiceResult: currentGame.lastDiceResult,
         allowedActions: currentUiAllowedActions(),
         disabledAttr: uiActionDisabledAttr,
         phases: GAME_PHASES,
@@ -419,11 +443,12 @@ function renderDiceChoose() {
 }
 
 function shouldShowPendingForCurrentPlayer() {
+    const currentGame = uiGameRuntimeSnapshot().game;
     const state = {
-        phase: game.phase,
+        phase: currentGame.phase,
         pendingPhase: GAME_PHASES.PENDING,
-        pendingIT: game.pendingIT,
-        pendingRenovation: game.pendingRenovation,
+        pendingIT: currentGame.pendingIT,
+        pendingRenovation: currentGame.pendingRenovation,
     };
     if (!UiPendingMenu.isPendingDisplayCandidate(state)) return false;
     return UiPendingMenu.shouldShowForCurrentPlayer({
@@ -529,11 +554,12 @@ function renderPending() {
     const el = document.getElementById("pendingMenu");
     const modal = document.getElementById("pendingModal");
     if (!shouldShowPendingForCurrentPlayer()) { hidePendingModalContent(el, modal); return; }
+    const currentGame = uiGameRuntimeSnapshot().game;
     const nextPending = typeof GameManager !== 'undefined' && GameManager.nextPendingActionFor
-        ? GameManager.nextPendingActionFor(game)
+        ? GameManager.nextPendingActionFor(currentGame)
         : null;
     const allowedActions = currentUiAllowedActions();
-    const html = buildPendingMenuHtml(game, allowedActions, nextPending);
+    const html = buildPendingMenuHtml(currentGame, allowedActions, nextPending);
     updatePendingModalContent(el, modal, html);
 }
 
@@ -547,8 +573,9 @@ function validRenderCpuDifficulty(value) {
 
 function getPlayerSettingForRender(index, player) {
     const setup = GameSetupState.runtime.snapshot();
+    const gameState = uiGameRuntimeSnapshot();
     const settings = setup.playerSettings;
-    const cpus = typeof cpuPlayers !== 'undefined' && Array.isArray(cpuPlayers) ? cpuPlayers : [];
+    const cpus = Array.isArray(gameState.cpuPlayers) ? gameState.cpuPlayers : [];
     const resolved = UiPlayerDisplay.resolvePlayerSetting({
         playerSettings: settings,
         cpuPlayers: cpus,
@@ -562,17 +589,19 @@ function getPlayerSettingForRender(index, player) {
             fallbackDifficulty: resolved.difficulty,
             playerSettingsLength: settings.length,
             cpuPlayersLength: cpus.length,
-            playersLength: game && Array.isArray(game.players) ? game.players.length : 0,
+            playersLength: gameState.game && Array.isArray(gameState.game.players)
+                ? gameState.game.players.length : 0,
         });
     }
     return resolved;
 }
 
 function renderPlayers() {
-    const settings = game.players.map((player, index) => getPlayerSettingForRender(index, player));
-    const html = UiPlayerDisplay.buildPlayersHtml(game.players, {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const settings = currentGame.players.map((player, index) => getPlayerSettingForRender(index, player));
+    const html = UiPlayerDisplay.buildPlayersHtml(currentGame.players, {
         settings,
-        currentPlayerIndex: game.currentPlayerIndex,
+        currentPlayerIndex: currentGame.currentPlayerIndex,
         enabledLandmarks: getEnabledLandmarkSelection(),
         getLandmarkEmoji,
         compareCardNames: compareCardNamesForDisplay,
@@ -640,11 +669,13 @@ function buildLandmarkButtonsHtml(current, canBuildLandmarkAction) {
 }
 
 function currentUndoBuildActionState() {
-    if (!undoState || !game || !game.builtThisTurn) {
+    const gameState = uiGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    if (!gameState.undoState || !currentGame || !currentGame.builtThisTurn) {
         return UiBuildMenu.undoBuildActionState({
-            hasUndoState: !!undoState,
-            hasGame: !!game,
-            builtThisTurn: !!(game && game.builtThisTurn),
+            hasUndoState: !!gameState.undoState,
+            hasGame: !!currentGame,
+            builtThisTurn: !!(currentGame && currentGame.builtThisTurn),
         });
     }
     try {
@@ -692,13 +723,14 @@ function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction)
 
 function renderBuildMenu() {
     const buildMenu = document.getElementById("buildMenu");
-    if (!buildMenu || !game) return;
-    const current = game.currentPlayer();
+    const currentGame = uiGameRuntimeSnapshot().game;
+    if (!buildMenu || !currentGame) return;
+    const current = currentGame.currentPlayer();
     const buildState = {
-        phase: game.phase,
+        phase: currentGame.phase,
         buildPhase: GAME_PHASES.BUILD,
-        pendingRenovation: game.pendingRenovation,
-        builtThisTurn: game.builtThisTurn,
+        pendingRenovation: currentGame.pendingRenovation,
+        builtThisTurn: currentGame.builtThisTurn,
     };
     const buildGateOpen = UiBuildMenu.isBuildGateOpen(buildState);
     const actionState = UiBuildMenu.buildActionState({
@@ -816,8 +848,11 @@ const CARD_COLOR_ORDER = Object.freeze({ blue: 0, green: 1, red: 2, purple: 3 })
 const FLOW_TRACE_LIMIT = 40;
 
 function buildRuntimeStateSnapshot(reason = '') {
-    const pendingActions = game && typeof GameManager !== 'undefined' && typeof GameManager.pendingActionsFor === 'function'
-        ? GameManager.pendingActionsFor(game)
+    const gameState = uiGameRuntimeSnapshot();
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const pendingActions = currentGame && typeof GameManager !== 'undefined' && typeof GameManager.pendingActionsFor === 'function'
+        ? GameManager.pendingActionsFor(currentGame)
         : [];
     const elementState = id => {
         const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(id) : null;
@@ -832,11 +867,11 @@ function buildRuntimeStateSnapshot(reason = '') {
     return UiRuntimeSnapshot.build({
         reason,
         timestamp: new Date().toISOString(),
-        game,
-        isCpuTurn: !!(game && currentCpuPlayerAt(game.currentPlayerIndex)),
+        game: currentGame,
+        isCpuTurn: !!(currentGame && currentCpuPlayerAt(currentGame.currentPlayerIndex)),
         online: {
-            isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
-            myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
+            isOnlineGame: !!onlineState.isOnlineGame,
+            myPlayerIndex: onlineState.myPlayerIndex,
         },
         pendingActions,
         ui: {
@@ -876,6 +911,7 @@ function recordFlowTrace(event, details = {}) {
 }
 
 function reportRenderStepError(step, error) {
+    const currentGame = uiGameRuntimeSnapshot().game;
     const message = error && error.message || String(error);
     const stack = error && error.stack || '';
     const trace = recordFlowTrace('render-step-error', {
@@ -894,7 +930,7 @@ function reportRenderStepError(step, error) {
         } catch (_) {}
         reportClientError({
             source: 'render-step',
-            phase: game && game.phase,
+            phase: currentGame && currentGame.phase,
             message: 'render ' + step + ': ' + message,
             stack: [stack, traceSummary ? 'FLOW_TRACE ' + traceSummary : ''].filter(Boolean).join('\n'),
         });

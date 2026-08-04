@@ -155,3 +155,21 @@ runTest('storageはonline sessionをruntime snapshot境界から読む', () => {
         assert.strictEqual(source.includes(pattern), false, pattern);
     }
 });
+
+runTest('uiはonline sessionをruntime snapshot境界から読む', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'ui.js'), 'utf8');
+    assert.ok(source.includes('OnlineRuntimeState.runtime.snapshot()'));
+    for (const pattern of [
+        'typeof isOnlineGame',
+        'typeof myPlayerIndex',
+        'typeof isReconnectingOnline',
+        'typeof socket',
+        '\n        isReplaying,',
+        '\n        isOnlineGame,',
+        '\n        myPlayerIndex,',
+    ]) {
+        assert.strictEqual(source.includes(pattern), false, pattern);
+    }
+});

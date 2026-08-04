@@ -98,6 +98,23 @@ runTest('storageはlive gameをruntime snapshot境界から読む', () => {
     }
 });
 
+runTest('uiはlive gameとCPU・Undoをruntime snapshot境界から読む', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'ui.js'), 'utf8');
+    assert.ok(source.includes('GameRuntimeState.runtime.snapshot()'));
+    for (const pattern of [
+        'typeof cpuPlayers',
+        'const cur = game.log',
+        'const renderPlan = !game',
+        'recordGameStats(winner, game,',
+        'if (!game) return new Set()',
+        'if (!undoState || !game',
+        'GameManager.nextPendingActionFor(game)',
+        'game.players.map((player, index)',
+    ]) {
+        assert.strictEqual(source.includes(pattern), false, pattern);
+    }
+});
+
 runTest('live game production writersはnamed runtime operationだけを使う', () => {
     const assignment = new RegExp(
         String.raw`^\s*(${GameRuntimeState.fields.join('|')})\s*=`,
