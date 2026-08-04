@@ -180,6 +180,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineDiagnosticState.js');
     loadScript(context, 'js/onlineRetryPolicy.js');
     loadScript(context, 'js/onlineSchemaTransport.js');
+    loadScript(context, 'js/onlineRuntimeState.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート
@@ -379,6 +380,13 @@ function seedHostlessRestoreBundle(runtime, overrides = {}) {
         gameStartPayload,
     };
 }
+
+runTest('online session globalsはOnlineRuntimeStateだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+    for (const field of require('../js/onlineRuntimeState').fields) {
+        assert.strictEqual(new RegExp(`^let ${field}\\b`, 'm').test(source), false, field);
+    }
+});
 
 runTest('online rejoin timer stateはretry controllerだけが所有する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
@@ -710,7 +718,7 @@ runTest('online.jsのlegacy reconnect書き込みは単一setterでboolean契約
 
     const onlineSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
     assert.strictEqual((onlineSource.match(/isReconnectingOnline = true;/g) || []).length, 0);
-    assert.strictEqual((onlineSource.match(/isReconnectingOnline = false;/g) || []).length, 1);
+    assert.strictEqual((onlineSource.match(/isReconnectingOnline = false;/g) || []).length, 0);
     assert.ok(onlineSource.includes('isReconnectingOnline = value === true;'));
 });
 

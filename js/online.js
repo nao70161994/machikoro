@@ -137,17 +137,7 @@ function onChangeOnlinePlayerType(index, value) {
     if (value === "rl") preloadOnlineRlModelsInBackground('online-rl-selected-preload');
 }
 
-// オンライン対戦（セッション状態）— resetOnlineState() でまとめてリセット
-let socket = null;
-let isOnlineGame = false;
-let isRoomHost = false;
-let myPlayerIndex = -1;
-let myOriginalPlayerIndex = -1;
-let myPlayerName = '';
-let myRoomId = null;
-let reconnectToken = '';
-let isReplaying = false;
-let isReconnectingOnline = false;
+// オンライン対戦（セッション状態）は OnlineRuntimeState が所有する。
 
 function setOnlineReconnectLegacyFlag(value) {
     isReconnectingOnline = value === true;
