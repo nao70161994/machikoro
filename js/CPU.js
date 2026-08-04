@@ -1694,17 +1694,11 @@ class CPU {
 
     _strongTempoValueBonus(card, game, player) {
         if (this.difficulty !== "strong" || !game || !player || !card || !card.diceNums || card.diceNums.length === 0) return 0;
-        return CPUEvaluation.strongTempoValueBonus({
+        const features = CPUEvaluation.strongTempoValueFeatures(card, game, player, {
             difficulty: this.difficulty,
-            color: card.color,
-            lowDice: Math.max(...card.diceNums) <= 6,
-            highDice: Math.min(...card.diceNums) >= 7,
-            oneDieOpponentCount: game.players.filter(candidate =>
-                candidate !== player && !candidate.landmarks[LANDMARK_NAMES.STATION]
-            ).length,
-            selfOneDie: !player.landmarks[LANDMARK_NAMES.STATION],
-            playerCount: game.players.length,
+            stationName: LANDMARK_NAMES.STATION,
         });
+        return CPUEvaluation.strongTempoValueBonus(features);
     }
 
     _strongCrowdOneDieOpponents(game, player = null) {

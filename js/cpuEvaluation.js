@@ -729,6 +729,20 @@ const CPUEvaluation = Object.freeze({
         return penalty;
     },
 
+    strongTempoValueFeatures(card, game, player, dependencies) {
+        return Object.freeze({
+            difficulty: dependencies.difficulty,
+            color: card.color,
+            lowDice: Math.max(...card.diceNums) <= 6,
+            highDice: Math.min(...card.diceNums) >= 7,
+            oneDieOpponentCount: game.players.filter(candidate =>
+                candidate !== player && !candidate.landmarks[dependencies.stationName]
+            ).length,
+            selfOneDie: !player.landmarks[dependencies.stationName],
+            playerCount: game.players.length,
+        });
+    },
+
     strongTempoValueBonus(features) {
         if (!features || features.difficulty !== 'strong') return 0;
         let bonus = 0;

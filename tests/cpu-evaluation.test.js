@@ -1410,6 +1410,30 @@ runTest('CPU evaluation はstrong条件付き赤カード圧力を数値feature�
     );
 });
 
+runTest('CPU evaluation はstrong出目テンポ特徴量を盤面からfrozen投影する', () => {
+    const station = 'station';
+    const current = { landmarks: { [station]: false } };
+    const oneDieOpponent = { landmarks: { [station]: false } };
+    const twoDiceOpponent = { landmarks: { [station]: true } };
+    const card = { color: 'red', diceNums: [7, 8] };
+    const game = { players: [current, oneDieOpponent, twoDiceOpponent] };
+    const features = CPUEvaluation.strongTempoValueFeatures(card, game, current, {
+        difficulty: 'strong',
+        stationName: station,
+    });
+
+    assert.deepStrictEqual(features, {
+        difficulty: 'strong',
+        color: 'red',
+        lowDice: false,
+        highDice: true,
+        oneDieOpponentCount: 1,
+        selfOneDie: true,
+        playerCount: 3,
+    });
+    assert.ok(Object.isFrozen(features));
+});
+
 runTest('CPU evaluation はstrong出目テンポとランドマーク相乗を数値featureで評価する', () => {
     assert.strictEqual(CPUEvaluation.strongTempoValueBonus({
         difficulty: 'strong', color: 'blue', lowDice: true, highDice: false,
@@ -1669,14 +1693,12 @@ runTest('CPU本体のtempo/synergy wrapperはfeature adapterからpure policyへ
     const lowDice = Math.max(...card.diceNums) <= 6;
     const highDice = Math.min(...card.diceNums) >= 7;
 
-    assert.strictEqual(cpu._strongTempoValueBonus(card, game, current), CPUEvaluation.strongTempoValueBonus({
-        difficulty: 'strong', color: card.color, lowDice, highDice,
-        oneDieOpponentCount: game.players.filter(player =>
-            player !== current && !player.landmarks[LANDMARK_NAMES.STATION]
-        ).length,
-        selfOneDie: !current.landmarks[LANDMARK_NAMES.STATION],
-        playerCount: game.players.length,
-    }));
+    assert.strictEqual(cpu._strongTempoValueBonus(card, game, current), CPUEvaluation.strongTempoValueBonus(
+        CPUEvaluation.strongTempoValueFeatures(card, game, current, {
+            difficulty: 'strong',
+            stationName: LANDMARK_NAMES.STATION,
+        })
+    ));
     assert.strictEqual(cpu._landmarkCardSynergyBonus(card, game, current), CPUEvaluation.landmarkCardSynergyBonus({
         hasStation: !!current.landmarks[LANDMARK_NAMES.STATION],
         hasMall: !!current.landmarks[LANDMARK_NAMES.SHOPPING_MALL],
