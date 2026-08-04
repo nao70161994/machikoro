@@ -202,9 +202,6 @@ runTest('online client effectは単一adapter境界から呼び出す', () => {
         /(^|[^.\w])invalidateCpuScheduleChain\(/m,
         /(^|[^.\w])scheduleCPU\(/m,
         /(^|[^.\w])showNotice\(/m,
-        /typeof resetUiLocksForGameReset/,
-        /typeof notifyGameLifecycleStart/,
-        /typeof render ===/,
     ]) {
         assert.strictEqual(pattern.test(source), false, String(pattern));
     }

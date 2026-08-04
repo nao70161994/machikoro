@@ -16,18 +16,18 @@ if (typeof window !== 'undefined' && typeof Object.defineProperties === 'functio
 const ONLINE_LOBBY_REQUEST_TIMEOUT_MS = 15000;
 const onlineSocketUnavailableReportController = OnlineSocketRegistry.createUnavailableReportController();
 const ONLINE_SNAPSHOT_LOG_LIMIT = 30;
-const onlineClientEffectGlobalNames = Object.freeze({
-    invalidateCpuSchedule: 'invalidateCpuScheduleChain',
-    notifyLifecycleStart: 'notifyGameLifecycleStart',
-    render: 'render',
-    resetUiLocks: 'resetUiLocksForGameReset',
-    scheduleCpu: 'scheduleCPU',
-    showNotice: 'showNotice',
-    updateResumeButton: 'updateResumeButton',
+const onlineClientEffectResolvers = Object.freeze({
+    invalidateCpuSchedule: () => typeof invalidateCpuScheduleChain === 'function' ? invalidateCpuScheduleChain : null,
+    notifyLifecycleStart: () => typeof notifyGameLifecycleStart === 'function' ? notifyGameLifecycleStart : null,
+    render: () => typeof render === 'function' ? render : null,
+    resetUiLocks: () => typeof resetUiLocksForGameReset === 'function' ? resetUiLocksForGameReset : null,
+    scheduleCpu: () => typeof scheduleCPU === 'function' ? scheduleCPU : null,
+    showNotice: () => typeof showNotice === 'function' ? showNotice : null,
+    updateResumeButton: () => typeof updateResumeButton === 'function' ? updateResumeButton : null,
 });
 const onlineClientEffects = OnlineClientEffects.createFromResolver(name => {
-    const root = typeof globalThis !== 'undefined' ? globalThis : null;
-    return root ? root[onlineClientEffectGlobalNames[name]] : null;
+    const resolveEffect = onlineClientEffectResolvers[name];
+    return typeof resolveEffect === 'function' ? resolveEffect() : null;
 });
 
 function onlineGameRuntimeSnapshot() {
