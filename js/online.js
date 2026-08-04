@@ -396,7 +396,9 @@ function _finishOnlineRestoreFlush() {
     _applyOnlineRestoreLifecycleState(_onlineRestoreLifecycleController.finishFlush());
 }
 
-const _pendingOutboundActionsMemory = new Map();
+const _pendingOutboundState = OnlinePendingOutboundState.createController({
+    normalizeRoomId: roomId => _normalizeOnlineRoomId(roomId),
+});
 const APP_ERROR_EVENT = 'appError';
 const ONLINE_ACTION_LOG_LIMIT = 200;
 const ONLINE_ACTION_ACK_TIMEOUT_MS = OnlineRetryPolicy.defaults.actionAckTimeoutMs;
@@ -1928,7 +1930,7 @@ function resetOnlineState() {
         resetLastAppliedSequence() { _lastAppliedOnlineActionSeqMemory = 0; },
         clearRestoreFlushFlag() { _finishOnlineRestoreFlush(); },
         clearRestoreQuarantine() { _clearOnlineRestoreQuarantine(); },
-        clearPendingMemory() { _pendingOutboundActionsMemory.clear(); },
+        clearPendingMemory() { _pendingOutboundState.clear(); },
         observeReset() {
             _observeOnlineReconnectEvent(OnlineReconnectState.events.RESET);
         },
@@ -1993,7 +1995,7 @@ function _savePendingOutboundAction(action, data) {
         clientActionId
     );
     const memoryKey = _normalizeOnlineRoomId(entry.roomId) || '';
-    _pendingOutboundActionsMemory.set(memoryKey, entry);
+    _pendingOutboundState.store(entry, memoryKey);
     try {
         _writeOnlineStorageJson(ONLINE_STORAGE_KEYS.pendingAction, entry);
         _writeOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, entry, entry.roomId);
@@ -2089,13 +2091,12 @@ function _normalizePendingOutboundAction(entry) {
 
 function _readPendingOutboundAction() {
     const currentRoomKey = _normalizeOnlineRoomId(myRoomId) || '';
-    if (_pendingOutboundActionsMemory.has(currentRoomKey)) {
-        return _pendingOutboundActionsMemory.get(currentRoomKey);
-    }
+    const memoryEntry = _pendingOutboundState.read(currentRoomKey);
+    if (memoryEntry) return memoryEntry;
     const stored = _normalizePendingOutboundAction(_readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.pendingAction, null));
     if (stored) {
         const storedRoomKey = _normalizeOnlineRoomId(stored.roomId) || currentRoomKey;
-        _pendingOutboundActionsMemory.set(storedRoomKey, stored);
+        _pendingOutboundState.store(stored, storedRoomKey);
         return stored;
     }
     return null;
@@ -2111,7 +2112,7 @@ function _readPendingOutboundActionForCurrentSession(options = {}) {
 
 function _clearPendingOutboundAction(roomId = myRoomId) {
     const memoryKey = _normalizeOnlineRoomId(roomId) || '';
-    _pendingOutboundActionsMemory.delete(memoryKey);
+    _pendingOutboundState.remove(memoryKey);
     try {
         _removeOnlineStorageItem(ONLINE_STORAGE_KEYS.pendingAction);
         _removeOnlineRoomStorageItem(ONLINE_STORAGE_KEYS.pendingAction, roomId);

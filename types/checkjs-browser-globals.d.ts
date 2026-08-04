@@ -64,6 +64,7 @@ interface Window {
     OnlinePlayerSettings: unknown;
     OnlineActionLog: unknown;
     OnlineSessionLifecycle: unknown;
+    OnlinePendingOutboundState: unknown;
     createOnlineStorageFacade: unknown;
     GameEngine: unknown;
     GameEngineDeterminism: unknown;
