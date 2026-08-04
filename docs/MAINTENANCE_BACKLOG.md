@@ -531,3 +531,13 @@ No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol,
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, ACK/reconnect timing, modal behavior, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 53 architecture boundaries
+
+- `LocalGameStart.createPendingController()` now exclusively owns local-game RL preload/start pending state. `main.js` retains readiness rendering, Promise effects, game initialization, and lifecycle notification; duplicate-click admission and success/failure ordering are unchanged.
+- `AutoSkipPolicy.createScheduleController()` now exclusively owns auto-skip pending state and timer handle. `main.js` retains build availability facts, the exact 1500 ms timer, human-action revalidation, online dispatch, and cancellation effects.
+- `DelayedHumanActionPolicy.createScheduleController()` now exclusively owns delayed roll/select pending state, generation token, immutable action snapshot, and timer handle. `main.js` retains visibility effects, action admission, random dice generation, online dispatch, and the exact 600 ms/default deadline behavior.
+- Main CPU scheduler state remains deferred because token invalidation crosses `main.js`, `online.js`, `storage.js`, and `appShell.js`; this batch removes independent state without altering that shared effect boundary.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, RNG point, save/localStorage shape, Socket.IO protocol, reconnect timing, UI timing, PWA/SW behavior, or production rollout default changed.

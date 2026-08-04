@@ -758,3 +758,12 @@ Test index:
 - Do not move the main CPU scheduler token piecemeal: invalidation currently crosses `main.js`, `online.js`, `storage.js`, and `appShell.js`. A future migration needs explicit effect-order contracts across all four runtimes.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 53 handoff (2026-08-04)
+
+- Local-game start pending state belongs exclusively to `LocalGameStart.createPendingController()`. Preserve duplicate admission and clear pending before readiness rendering plus success/error effects.
+- Auto-skip pending and timer ownership belongs to `AutoSkipPolicy.createScheduleController()`. Preserve the 1500 ms delay, availability traversal, callback-time human/phase/build revalidation, and clear state before dispatch.
+- Delayed roll/select pending, token, action snapshot, and timer ownership belongs to `DelayedHumanActionPolicy.createScheduleController()`. Preserve stale-token rejection, immutable renewed snapshots, original deadline on page resume, default 600 ms delay, and random dice generation only inside the accepted callback.
+- The main CPU scheduler token still crosses `main.js`, `online.js`, `storage.js`, and `appShell.js`; do not migrate one writer in isolation.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

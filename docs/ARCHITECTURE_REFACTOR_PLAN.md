@@ -724,3 +724,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Active modal, focus restoration, and inert restoration state now belong to the modal runtime controller while admission policy and DOM effects remain in `ui.js` with unchanged order.
 
 Main CPU scheduler ownership remains deferred until cross-runtime token invalidation can be migrated with explicit effect-order contracts. Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, reconnect behavior, UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 53 boundary update
+
+1. Local-game preload/start pending state now has one controller owner while readiness UI, Promise effects, initialization, and lifecycle effects remain in `main.js`.
+2. Auto-skip pending and timer state now have one controller owner while availability facts, 1500 ms scheduling, revalidation, and dispatch remain unchanged.
+3. Delayed roll/select pending, token, immutable action snapshot, and timer state now have one controller owner while visibility effects, RNG, admission, and online/local dispatch stay in `main.js`.
+
+The cross-runtime CPU scheduler token remains deferred for an explicit effect-order migration. Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, RNG, protocol/schema, persistence, reconnect behavior, UI timing, and PWA defaults are unchanged.
