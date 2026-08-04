@@ -2253,22 +2253,14 @@ class CPU {
     }
 
     _estimateMoverValue(game, player) {
-        const opponentCount = Math.max(1, game.players.length - 1);
-        const myCards = player.getMinorCards();
-        if (myCards.length === 0) return 0;
-        let best = -Infinity;
-        for (const card of myCards) {
-            for (const target of game.players) {
-                if (!target || target === player) continue;
-                const myLoss = this._ownedCardValue(card, game, player);
-                const gift = this._receivedCardValue(card, game, target);
-                const score = 4 - myLoss - gift * 0.6 / opponentCount -
-                    target.builtLandmarkCount() * 0.6 / opponentCount +
-                    (player.isDormant(card) ? 2.5 : 0);
-                if (score > best) best = score;
-            }
-        }
-        return Math.max(best, 0);
+        const features = CPUEvaluation.moverValueFeatures(game, player, {
+            minorCards: value => value.getMinorCards(),
+            ownedCardValue: (card, owner) => this._ownedCardValue(card, game, owner),
+            receivedCardValue: (card, target) => this._receivedCardValue(card, game, target),
+            builtLandmarkCount: target => target.builtLandmarkCount(),
+            isDormant: (owner, card) => owner.isDormant(card),
+        });
+        return CPUEvaluation.moverValue(features);
     }
 
     _estimateTvTargetValue(game, player, targetIndex) {

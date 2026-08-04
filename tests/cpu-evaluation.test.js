@@ -1317,6 +1317,84 @@ runTest('CPU本体のCleaning価値wrapperはpure featureと既存callback順を
     ]);
 });
 
+runTest('CPU evaluation はMover価値候補を既存走査順でfrozen投影する', () => {
+    const calls = [];
+    const card = { id: 'mover-card' };
+    const current = { id: 'current', cards: [card] };
+    const targetA = { id: 'a', gift: 2, built: 1 };
+    const targetB = { id: 'b', gift: 0, built: 4 };
+    const game = { players: [current, targetA, targetB] };
+    const features = CPUEvaluation.moverValueFeatures(game, current, {
+        minorCards(player) {
+            calls.push('cards:' + player.id);
+            return player.cards;
+        },
+        ownedCardValue(value, owner) {
+            calls.push('owned:' + value.id + ':' + owner.id);
+            return 3;
+        },
+        receivedCardValue(value, target) {
+            calls.push('received:' + value.id + ':' + target.id);
+            return target.gift;
+        },
+        builtLandmarkCount(target) {
+            calls.push('built:' + target.id);
+            return target.built;
+        },
+        isDormant(owner, value) {
+            calls.push('dormant:' + owner.id + ':' + value.id);
+            return true;
+        },
+    });
+
+    assert.strictEqual(features.opponentCount, 2);
+    assert.strictEqual(features.candidates.length, 2);
+    assert.ok(Object.isFrozen(features));
+    assert.ok(Object.isFrozen(features.candidates));
+    assert.ok(Object.isFrozen(features.candidates[0]));
+    assert.ok(Math.abs(CPUEvaluation.moverValue(features) - 2.6) < 1e-12);
+    assert.deepStrictEqual(calls, [
+        'cards:current',
+        'owned:mover-card:current', 'received:mover-card:a', 'built:a', 'dormant:current:mover-card',
+        'owned:mover-card:current', 'received:mover-card:b', 'built:b', 'dormant:current:mover-card',
+    ]);
+    assert.strictEqual(CPUEvaluation.moverValue({ candidates: [], opponentCount: 1 }), 0);
+});
+
+runTest('CPU本体のMover価値wrapperはpure featureと既存callback順を維持する', () => {
+    const { CPU } = loadCPURuntime();
+    const cpu = new CPU('expert');
+    const calls = [];
+    const card = { id: 'owned' };
+    const current = {
+        id: 'current',
+        getMinorCards() { calls.push('cards'); return [card]; },
+        isDormant(value) { calls.push('dormant:' + value.id); return true; },
+    };
+    const target = {
+        id: 'target',
+        builtLandmarkCount() { calls.push('built'); return 2; },
+    };
+    const game = { players: [current, target] };
+    cpu._ownedCardValue = (value, runtime, owner) => {
+        assert.strictEqual(runtime, game);
+        assert.strictEqual(owner, current);
+        calls.push('owned:' + value.id);
+        return 1;
+    };
+    cpu._receivedCardValue = (value, runtime, owner) => {
+        assert.strictEqual(runtime, game);
+        assert.strictEqual(owner, target);
+        calls.push('received:' + value.id);
+        return 1;
+    };
+
+    assert.ok(Math.abs(cpu._estimateMoverValue(game, current) - 3.7) < 1e-12);
+    assert.deepStrictEqual(calls, [
+        'cards', 'owned:owned', 'received:owned', 'built', 'dormant:owned',
+    ]);
+});
+
 runTest('CPU evaluation はstrongランドマーク閾値特徴量を既存読取順でfrozen投影する', () => {
     const effects = { FRENCHR: 'french', MEMBERBAR: 'member' };
     const calls = [];

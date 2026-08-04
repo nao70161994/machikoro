@@ -92,6 +92,39 @@ const CPUEvaluation = Object.freeze({
         return features.opponentValue - features.selfValue * 1.2;
     },
 
+    moverValueFeatures(game, player, dependencies) {
+        const opponentCount = Math.max(1, game.players.length - 1);
+        const candidates = [];
+        const myCards = dependencies.minorCards(player);
+        for (const card of myCards) {
+            for (const target of game.players) {
+                if (!target || target === player) continue;
+                candidates.push(Object.freeze({
+                    myLoss: dependencies.ownedCardValue(card, player),
+                    gift: dependencies.receivedCardValue(card, target),
+                    targetBuiltLandmarkCount: dependencies.builtLandmarkCount(target),
+                    dormant: dependencies.isDormant(player, card),
+                }));
+            }
+        }
+        return Object.freeze({
+            opponentCount,
+            candidates: Object.freeze(candidates),
+        });
+    },
+
+    moverValue(features) {
+        let best = -Infinity;
+        for (const candidate of features.candidates) {
+            const score = 4 - candidate.myLoss -
+                candidate.gift * 0.6 / features.opponentCount -
+                candidate.targetBuiltLandmarkCount * 0.6 / features.opponentCount +
+                (candidate.dormant ? 2.5 : 0);
+            if (score > best) best = score;
+        }
+        return Math.max(best, 0);
+    },
+
     purchasePlanValue(facts = {}) {
         const landmarkValue = facts.bestLandmark
             ? facts.bestLandmark.urgency * 2.4 +
