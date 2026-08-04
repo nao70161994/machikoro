@@ -716,3 +716,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Pending-modal reentrancy state now belongs to an effect controller; modal admission policy and DOM effects remain in `ui.js` with unchanged order.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, UI presentation, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 52 boundary update
+
+1. Online action in-flight state and start time now have one controller owner while ACK admission, timeout/retry, Socket effects, and compatibility projection remain unchanged.
+2. Purchase-plan score selection now belongs to the pure CPU evaluator while candidate generation, ranking, cache, profiling, and tuning adaptation stay in `CPU.js`.
+3. Active modal, focus restoration, and inert restoration state now belong to the modal runtime controller while admission policy and DOM effects remain in `ui.js` with unchanged order.
+
+Main CPU scheduler ownership remains deferred until cross-runtime token invalidation can be migrated with explicit effect-order contracts. Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, authority, protocol/schema, persistence, reconnect behavior, UI behavior, and PWA defaults are unchanged.

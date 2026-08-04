@@ -749,3 +749,12 @@ Test index:
 - Pending-modal update reentrancy belongs to `UiPendingEffects.createUpdateController()`. Preserve the pre-controller blocking-modal denial path and the HTML-before-interaction DOM effect order in `ui.js`.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 52 handoff (2026-08-04)
+
+- Online action-flight state and start time belong exclusively to `OnlineRetryPolicy.createActionFlightController()`. Keep ACK matching, timeout/retry scheduling, Socket effects, and public compatibility projection in their current adapters; do not reintroduce writable parallel state.
+- Purchase-plan score selection belongs to `CPUEvaluation.purchasePlanValue()`. Preserve card-before-landmark comparison, the exact urgency/surplus coefficients, candidate/ranking/cache order, and require fixed-decision plus 2–10-player self-play parity for changes.
+- Active modal ID, last focus, and inert restoration entries belong to `UiModalPolicy.createRuntimeController()`. Preserve open/close effect order and keep policy decisions plus DOM/focus/inert effects in `ui.js`.
+- Do not move the main CPU scheduler token piecemeal: invalidation currently crosses `main.js`, `online.js`, `storage.js`, and `appShell.js`. A future migration needs explicit effect-order contracts across all four runtimes.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

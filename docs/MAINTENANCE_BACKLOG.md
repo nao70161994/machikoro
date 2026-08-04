@@ -521,3 +521,13 @@ No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol,
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, reconnect timing/effects, modal presentation, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 52 architecture boundaries
+
+- `OnlineRetryPolicy.createActionFlightController()` is now the sole production owner of online action in-flight state and start time. `online.js` retains ACK admission, timeout/retry scheduling, Socket transport, and public state projection; partial test runtimes retain a read-only legacy fallback.
+- `CPUEvaluation.purchasePlanValue()` now owns purchase-plan card/landmark/zero score selection. `CPU.js` retains candidate generation, ranking, cache, profiling, and all feature acquisition; the exact urgency and surplus coefficients, fixed decisions, and 2–10-player self-play baseline are unchanged.
+- `UiModalPolicy.createRuntimeController()` now owns active modal ID, focus restoration target, and inert restoration entries. `ui.js` retains modal policy, DOM/focus/inert effects, public APIs, and the exact open/close effect order.
+- Main CPU scheduler state extraction was deferred because token invalidation is shared across `main.js`, `online.js`, `storage.js`, and `appShell.js`; moving it safely requires a separately guarded effect-order migration.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, ACK/reconnect timing, modal behavior, PWA/SW behavior, or production rollout default changed.
