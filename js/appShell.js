@@ -23,15 +23,12 @@ const freezeWatchdogMonitor = UiWatchdogMonitor.create({
     thresholdMs: FREEZE_WATCHDOG_THRESHOLD_MS,
     reportSuppressMs: FREEZE_WATCHDOG_REPORT_SUPPRESS_MS,
 });
-let _clientErrorReportingBound = false;
-let _consoleErrorHooked = false;
+const clientEventBindingController = ClientEventRuntime.createBindingController();
+const clientEventBindingKeys = ClientEventRuntime.bindingKeys;
 const clientErrorAdmissionController = ClientReporting.createAdmissionController({
     suppressMs: CLIENT_ERROR_REPORT_SUPPRESS_MS,
     now: () => Date.now(),
 });
-let _onlineStatusHandlersBound = false;
-let _mainViewResizeBound = false;
-let _freezeWatchdogBound = false;
 let _postBuildUiStabilizerPending = false;
 
 const truncateClientErrorField = ClientReporting.truncateField;
@@ -1160,28 +1157,28 @@ function handleWindowUnhandledRejection(e) {
 }
 
 function bindConsoleErrorReporting() {
-    if (_consoleErrorHooked || typeof console === 'undefined' || typeof console.error !== 'function') return;
+    if (clientEventBindingController.isBound(clientEventBindingKeys.CONSOLE_ERROR) || typeof console === 'undefined' || typeof console.error !== 'function') return;
     const originalConsoleError = console.error.bind(console);
     console.error = (...args) => {
         originalConsoleError(...args);
         reportClientError(ClientReporting.consoleErrorInput(args));
     };
-    _consoleErrorHooked = true;
+    clientEventBindingController.markBound(clientEventBindingKeys.CONSOLE_ERROR);
 }
 
 function bindCrashHandlers() {
-    if (_clientErrorReportingBound) return;
+    if (clientEventBindingController.isBound(clientEventBindingKeys.CLIENT_ERROR_REPORTING)) return;
     ClientEventRuntime.bindCrashHandlers({
         windowTarget: window,
         handleWindowErrorEvent,
         handleWindowUnhandledRejection,
     });
     bindConsoleErrorReporting();
-    _clientErrorReportingBound = true;
+    clientEventBindingController.markBound(clientEventBindingKeys.CLIENT_ERROR_REPORTING);
 }
 
 function bindOnlineStatusHandlers() {
-    if (_onlineStatusHandlersBound) {
+    if (clientEventBindingController.isBound(clientEventBindingKeys.ONLINE_STATUS)) {
         updateOnlineTabState();
         return;
     }
@@ -1189,7 +1186,7 @@ function bindOnlineStatusHandlers() {
         windowTarget: window,
         updateOnlineStatus: updateOnlineTabState,
     });
-    _onlineStatusHandlersBound = true;
+    clientEventBindingController.markBound(clientEventBindingKeys.ONLINE_STATUS);
 }
 
 function bindPwaInstallHandlers() {
@@ -1671,8 +1668,8 @@ function checkFreezeWatchdog() {
 }
 
 function startFreezeWatchdog() {
-    if (_freezeWatchdogBound || typeof setInterval !== 'function') return;
-    _freezeWatchdogBound = true;
+    if (clientEventBindingController.isBound(clientEventBindingKeys.FREEZE_WATCHDOG) || typeof setInterval !== 'function') return;
+    clientEventBindingController.markBound(clientEventBindingKeys.FREEZE_WATCHDOG);
     setInterval(checkFreezeWatchdog, FREEZE_WATCHDOG_INTERVAL_MS);
 }
 
@@ -1699,9 +1696,9 @@ function initMainView() {
     if (typeof preloadOnlineRlModelsInBackground === 'function') preloadOnlineRlModelsInBackground('init-main-online-rl-preload');
     updateResumeButton();
     drawCitySkyline();
-    if (!_mainViewResizeBound) {
+    if (!clientEventBindingController.isBound(clientEventBindingKeys.MAIN_VIEW_RESIZE)) {
         window.addEventListener("resize", drawCitySkyline);
-        _mainViewResizeBound = true;
+        clientEventBindingController.markBound(clientEventBindingKeys.MAIN_VIEW_RESIZE);
     }
     bindCrashHandlers();
     bindOnlineStatusHandlers();

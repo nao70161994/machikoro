@@ -1,6 +1,34 @@
 'use strict';
 
 const ClientEventRuntime = (() => {
+    const bindingKeys = Object.freeze({
+        CLIENT_ERROR_REPORTING: 'client-error-reporting',
+        CONSOLE_ERROR: 'console-error',
+        ONLINE_STATUS: 'online-status',
+        FREEZE_WATCHDOG: 'freeze-watchdog',
+        MAIN_VIEW_RESIZE: 'main-view-resize',
+    });
+
+    function createBindingController(initialKeys = []) {
+        const bound = new Set(Array.isArray(initialKeys) ? initialKeys : []);
+
+        function isBound(key) {
+            return bound.has(key);
+        }
+
+        function markBound(key) {
+            if (bound.has(key)) return false;
+            bound.add(key);
+            return true;
+        }
+
+        function snapshot() {
+            return Object.freeze({ boundKeys: Object.freeze(Array.from(bound)) });
+        }
+
+        return Object.freeze({ isBound, markBound, snapshot });
+    }
+
     function requireWindowTarget(windowTarget) {
         if (!windowTarget || typeof windowTarget.addEventListener !== 'function') {
             throw new TypeError('windowTarget.addEventListener is required');
@@ -42,7 +70,7 @@ const ClientEventRuntime = (() => {
         return updateOnlineStatus;
     }
 
-    return Object.freeze({ bindCrashHandlers, bindOnlineStatusHandlers });
+    return Object.freeze({ bindingKeys, createBindingController, bindCrashHandlers, bindOnlineStatusHandlers });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = ClientEventRuntime;

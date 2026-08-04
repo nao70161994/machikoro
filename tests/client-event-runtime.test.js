@@ -70,3 +70,18 @@ runTest('client event runtimeは不完全な配線を副作用前に拒否する
     assert.deepStrictEqual(calls, []);
     assert.ok(Object.isFrozen(ClientEventRuntime));
 });
+
+runTest('client event binding controllerは名前付きbind状態を一箇所で所有する', () => {
+    const keys = ClientEventRuntime.bindingKeys;
+    const controller = ClientEventRuntime.createBindingController([keys.CONSOLE_ERROR]);
+    assert.strictEqual(controller.isBound(keys.CONSOLE_ERROR), true);
+    assert.strictEqual(controller.isBound(keys.ONLINE_STATUS), false);
+    assert.strictEqual(controller.markBound(keys.ONLINE_STATUS), true);
+    assert.strictEqual(controller.markBound(keys.ONLINE_STATUS), false);
+    assert.deepStrictEqual(controller.snapshot(), {
+        boundKeys: [keys.CONSOLE_ERROR, keys.ONLINE_STATUS],
+    });
+    assert.ok(Object.isFrozen(controller.snapshot()));
+    assert.ok(Object.isFrozen(controller.snapshot().boundKeys));
+    assert.ok(Object.isFrozen(keys));
+});
