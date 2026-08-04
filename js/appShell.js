@@ -9,10 +9,6 @@ function appShellOnlineRuntimeSnapshot() {
 }
 
 // ===== クライアントエラー通知 =====
-const CLIENT_ERROR_REPORT_ENDPOINT = '/api/client-error';
-const CLIENT_ERROR_REPORT_STACK_LIMIT = 2400;
-const CLIENT_ERROR_REPORT_MESSAGE_LIMIT = 500;
-const CLIENT_ERROR_REPORT_SUPPRESS_MS = 10000;
 const FREEZE_WATCHDOG_INTERVAL_MS = 1000;
 const FREEZE_WATCHDOG_THRESHOLD_MS = 5000;
 const FREEZE_WATCHDOG_REPORT_SUPPRESS_MS = 60000;
@@ -33,10 +29,6 @@ const freezeWatchdogMonitor = UiWatchdogMonitor.create({
 });
 const clientEventBindingController = ClientEventRuntime.createBindingController();
 const clientEventBindingKeys = ClientEventRuntime.bindingKeys;
-const clientErrorAdmissionController = ClientReporting.createAdmissionController({
-    suppressMs: CLIENT_ERROR_REPORT_SUPPRESS_MS,
-    now: () => Date.now(),
-});
 const postBuildUiStabilizerBatch = UiWatchdogMonitor.createPendingBatchController();
 
 const truncateClientErrorField = ClientReporting.truncateField;
@@ -71,25 +63,6 @@ const appShellRuntimeEffects = AppShellRuntimeEffects.createFromResolver(name =>
     };
     return resolvers[name] ? resolvers[name]() : null;
 });
-
-function safeClientErrorUrl() {
-    return ClientReporting.clientUrl(
-        typeof window !== 'undefined' ? window.location : null
-    );
-}
-
-function safeClientErrorContext() {
-    const gameState = appShellGameRuntimeSnapshot();
-    const onlineState = appShellOnlineRuntimeSnapshot();
-    return ClientReporting.runtimeContext({
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-        phase: gameState.game ? gameState.game.phase : '',
-        roomId: onlineState.myRoomId || '',
-        playerIndex: onlineState.myPlayerIndex,
-        appVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
-        url: safeClientErrorUrl(),
-    });
-}
 
 const appShellObservationRuntime = AppShellObservationRuntime.createRuntime({
     actionUiRegistry: ActionUiRegistry,
@@ -312,49 +285,31 @@ function markClientFlowCheckpoint(event, details = {}) {
 }
 
 
-function compactFreezeSummaryStackForReport(stack, limit = CLIENT_ERROR_REPORT_STACK_LIMIT) {
-    return ClientReporting.compactFreezeSummaryStack(stack, {
-        limit,
-        schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
-    });
-}
-
-function clientErrorStackForReport(input) {
-    return ClientReporting.stackForReport(input, {
-        limit: CLIENT_ERROR_REPORT_STACK_LIMIT,
-        schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
-    });
-}
+const appShellClientReportingRuntime = AppShellClientReportingRuntime.createRuntime({
+    buildSnapshot: buildClientRuntimeSnapshot,
+    checkpoint: markClientFlowCheckpoint,
+    endpoint: '/api/client-error',
+    getFetch: () => typeof fetch === 'function' ? fetch : null,
+    getGameSnapshot: appShellGameRuntimeSnapshot,
+    getLocation: () => typeof window !== 'undefined' ? window.location : null,
+    getOnlineSnapshot: appShellOnlineRuntimeSnapshot,
+    getUserAgent: () => typeof navigator !== 'undefined' ? navigator.userAgent : '',
+    getVersion: () => typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
+    messageLimit: 500,
+    now: () => Date.now(),
+    reporting: ClientReporting,
+    schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
+    stackLimit: 2400,
+    suppressMs: 10000,
+    transport: ClientReportingTransport,
+});
 
 function buildClientErrorReport(input) {
-    return ClientReporting.buildReport(input, safeClientErrorContext(), {
-        messageLimit: CLIENT_ERROR_REPORT_MESSAGE_LIMIT,
-        stack: clientErrorStackForReport(input || {}),
-    });
-}
-
-function clientErrorReportKey(report) {
-    return ClientReporting.reportKey(report);
+    return appShellClientReportingRuntime.buildReport(input);
 }
 
 function reportClientError(input) {
-    return ClientReportingTransport.send({
-        fetchImpl: typeof fetch === 'function' ? fetch : null,
-        endpoint: CLIENT_ERROR_REPORT_ENDPOINT,
-        source: input?.source || 'unknown',
-        buildReport: () => buildClientErrorReport(input || {}),
-        shouldSend(report) {
-            const admission = clientErrorAdmissionController.admit(
-                clientErrorReportKey(report)
-            );
-            if (!admission.shouldSend) {
-                markClientFlowCheckpoint('client-error-suppressed', { source: report.source, message: report.message });
-                return false;
-            }
-            return true;
-        },
-        checkpoint: markClientFlowCheckpoint,
-    });
+    return appShellClientReportingRuntime.report(input);
 }
 
 // ===== ゲームライフサイクル通知 =====
@@ -620,12 +575,7 @@ function startFreezeWatchdog() {
 }
 
 function sendDebugClientErrorReport(message = 'manual client error test') {
-    markClientFlowCheckpoint('debug-client-error-report-start', { message });
-    return reportClientError({
-        source: 'debug-client-test',
-        message,
-        stack: 'Manual client-side debug report; no real error occurred. ' + JSON.stringify(buildClientRuntimeSnapshot('debug-client-test')).slice(0, 1600),
-    });
+    return appShellClientReportingRuntime.sendDebugReport(message);
 }
 
 if (typeof window !== 'undefined') {

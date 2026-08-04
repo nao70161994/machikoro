@@ -126,6 +126,7 @@ interface Window {
     LifecycleRuntime: unknown;
     LifecycleTransport: unknown;
     ClientReportingTransport: unknown;
+    AppShellClientReportingRuntime: unknown;
     ClientEventRuntime: unknown;
     ClientCheckpoint: unknown;
     LocalPlayerSettings: unknown;

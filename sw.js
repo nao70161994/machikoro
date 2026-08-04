@@ -144,6 +144,7 @@ const STATIC_ASSETS = [
   '/js/clientCheckpoint.js',
   '/js/clientReporting.js',
   '/js/clientReportingTransport.js',
+  '/js/appShellClientReportingRuntime.js',
   '/js/lifecycleNotify.js',
   '/js/lifecycleRuntime.js',
   '/js/lifecycleTransport.js',

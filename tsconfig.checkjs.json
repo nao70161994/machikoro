@@ -162,6 +162,7 @@
     "js/clientCheckpoint.js",
     "js/clientReporting.js",
     "js/clientReportingTransport.js",
+    "js/appShellClientReportingRuntime.js",
     "js/clientEventRuntime.js",
     "js/lifecycleNotify.js",
     "js/lifecycleRuntime.js",

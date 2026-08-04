@@ -341,6 +341,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(clientReportingSource, context, { filename: 'js/clientReporting.js' });
     const clientReportingTransportSource = fs.readFileSync(path.join(__dirname, '..', 'js/clientReportingTransport.js'), 'utf8');
     vm.runInContext(clientReportingTransportSource, context, { filename: 'js/clientReportingTransport.js' });
+    const appShellClientReportingRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellClientReportingRuntime.js'), 'utf8');
+    vm.runInContext(appShellClientReportingRuntimeSource, context, { filename: 'js/appShellClientReportingRuntime.js' });
     const lifecycleNotifySource = fs.readFileSync(path.join(__dirname, '..', 'js/lifecycleNotify.js'), 'utf8');
     vm.runInContext(lifecycleNotifySource, context, { filename: 'js/lifecycleNotify.js' });
     const lifecycleRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/lifecycleRuntime.js'), 'utf8');
@@ -2406,6 +2408,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/clientCheckpoint.js', 'js/appShell.js');
     assertBefore('js/clientReporting.js', 'js/clientReportingTransport.js');
     assertBefore('js/clientReportingTransport.js', 'js/appShell.js');
+    assertBefore('js/appShellClientReportingRuntime.js', 'js/appShell.js');
     assertBefore('js/lifecycleNotify.js', 'js/lifecycleRuntime.js');
     assertBefore('js/lifecycleRuntime.js', 'js/appShell.js');
     assertBefore('js/lifecycleTransport.js', 'js/clientEventRuntime.js');
@@ -2597,6 +2600,12 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('window.__machikoroCheckVersionMismatch = checkClientVersionMismatch;'));
     assert.ok(html.includes('window.refreshPwaUpdateState = refreshPwaUpdateState;'));
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
+    const clientReportingRuntimeSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js/appShellClientReportingRuntime.js'),
+        'utf8'
+    );
+    assert.ok(clientReportingRuntimeSource.includes('return transport.send({'));
+    assert.ok(!appShellSource.includes('ClientReportingTransport.send({'));
     const watchdogReportingSource = fs.readFileSync(
         path.join(__dirname, '..', 'js/uiWatchdogReporting.js'),
         'utf8'
