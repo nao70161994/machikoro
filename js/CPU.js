@@ -666,10 +666,11 @@ class CPU {
         );
         const ranked = this._sortAffordableForDifficulty(affordable, game, player, difficulty);
         const bestCard = ranked[0] ? ranked[0].score : -Infinity;
-        const landmarkValue = bestLandmark
-            ? bestLandmark.urgency * 2.4 + Math.max(0, player.coins - bestLandmark.cost) * 0.08
-            : -Infinity;
-        return Math.max(bestCard, landmarkValue, 0);
+        return CPUEvaluation.purchasePlanValue({
+            bestCardScore: bestCard,
+            bestLandmark,
+            coins: player.coins,
+        });
     }
 
     _scoreStrongChoiceState(game, focusIndex) {

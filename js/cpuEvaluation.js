@@ -74,6 +74,14 @@ const CPUEvaluation = Object.freeze({
         return bonus;
     },
 
+    purchasePlanValue(facts = {}) {
+        const landmarkValue = facts.bestLandmark
+            ? facts.bestLandmark.urgency * 2.4 +
+                Math.max(0, facts.coins - facts.bestLandmark.cost) * 0.08
+            : -Infinity;
+        return Math.max(facts.bestCardScore, landmarkValue, 0);
+    },
+
     strongChoiceScore(facts = {}) {
         return facts.purchasePlanValue +
             facts.turnValue * 0.35 +

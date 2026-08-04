@@ -2185,3 +2185,29 @@ runTest('CPU evaluationはstrong choice scoreの既存係数をpureに合成す�
         duplicateRenovationPenalty: 0,
     }), 0);
 });
+
+runTest('CPU evaluationは購入計画でカード・ランドマーク・0の最大値をpureに選ぶ', () => {
+    assert.strictEqual(CPUEvaluation.purchasePlanValue({
+        bestCardScore: 8,
+        bestLandmark: { urgency: 2, cost: 10 },
+        coins: 15,
+    }), 8);
+    assert.strictEqual(CPUEvaluation.purchasePlanValue({
+        bestCardScore: 4,
+        bestLandmark: { urgency: 3, cost: 10 },
+        coins: 15,
+    }), 7.6);
+    assert.strictEqual(CPUEvaluation.purchasePlanValue({
+        bestCardScore: -Infinity,
+        bestLandmark: null,
+        coins: 2,
+    }), 0);
+});
+
+runTest('CPU evaluationの購入計画はランドマーク不足coinを負値にしない', () => {
+    assert.strictEqual(CPUEvaluation.purchasePlanValue({
+        bestCardScore: 0,
+        bestLandmark: { urgency: 2, cost: 10 },
+        coins: 3,
+    }), 4.8);
+});
