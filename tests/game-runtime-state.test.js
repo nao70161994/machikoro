@@ -84,6 +84,20 @@ runTest('app shellはlive gameをruntime snapshot境界から読む', () => {
     }
 });
 
+runTest('storageはlive gameをruntime snapshot境界から読む', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'storage.js'), 'utf8');
+    assert.ok(source.includes('GameRuntimeState.runtime.snapshot()'));
+    for (const pattern of [
+        'hasGame: !!game',
+        'serializeLocalSaveState(game,',
+        'cpuSettings: cpuPlayers.map(',
+        'if (!undoState)',
+        'game.currentPlayerIndex !== myPlayerIndex',
+    ]) {
+        assert.strictEqual(source.includes(pattern), false, pattern);
+    }
+});
+
 runTest('live game production writersはnamed runtime operationだけを使う', () => {
     const assignment = new RegExp(
         String.raw`^\s*(${GameRuntimeState.fields.join('|')})\s*=`,

@@ -1,4 +1,12 @@
 const storageClientStorageFacade = ClientStorage.createFacade();
+
+function storageGameRuntimeSnapshot() {
+    return GameRuntimeState.runtime.snapshot();
+}
+
+function storageOnlineRuntimeSnapshot() {
+    return OnlineRuntimeState.runtime.snapshot();
+}
 const LOCAL_SAVE_SCHEMA_WRITE_ENABLED = typeof window !== 'undefined' &&
     window.MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED === true;
 let localSaveRepository = null;
@@ -107,7 +115,7 @@ function getStorageOnlineStorageFacade() {
         storageKeys: STORAGE_ONLINE_STORAGE_KEYS,
         roomIndexKey: STORAGE_ONLINE_RESTORE_ROOM_INDEX_KEY,
         roomKeySeparator: STORAGE_ONLINE_ROOM_KEY_SEPARATOR,
-        getCurrentRoomId: () => (typeof myRoomId === 'string' ? myRoomId : ''),
+        getCurrentRoomId: () => storageOnlineRuntimeSnapshot().myRoomId || '',
     });
     return storageOnlineStorageFacade;
 }
@@ -143,21 +151,24 @@ function clearOnlineSessionStorage() {
 
 function saveGameState() {
     const selection = GameSelectionState.runtime.snapshot();
+    const gameState = storageGameRuntimeSnapshot();
+    const onlineState = storageOnlineRuntimeSnapshot();
+    const currentGame = gameState.game;
     const decision = LocalSaveRuntime.admission({
-        hasGame: !!game,
-        isOnline: isOnlineGame,
-        hasWinner: () => game.checkWinner(),
+        hasGame: !!currentGame,
+        isOnline: onlineState.isOnlineGame,
+        hasWinner: () => currentGame.checkWinner(),
     });
     if (decision !== LocalSaveRuntime.DECISIONS.SAVE) return;
     LocalSaveRuntime.execute({
-        serialize: () => GameSnapshot.serializeLocalSaveState(game, SHOP_STOCK, {
+        serialize: () => GameSnapshot.serializeLocalSaveState(currentGame, SHOP_STOCK, {
             logLimit: 30,
             pendingActionsFor: value =>
                 (typeof GameManager !== 'undefined' &&
                     typeof GameManager.serializedPendingActionsFor === 'function')
                     ? GameManager.serializedPendingActionsFor(value)
                     : [],
-            cpuSettings: cpuPlayers.map(cpu => cpu
+            cpuSettings: gameState.cpuPlayers.map(cpu => cpu
                 ? { difficulty: cpu.difficulty, rlModelId: cpu.modelId || null }
                 : null),
             cpuSpeed: GameSetupState.runtime.snapshot().cpuSpeed,
@@ -342,10 +353,11 @@ function resumeGame(options = {}) {
                 replaceEnabledLandmarkSelection(plan.enabledLandmarks);
             },
             createAndHydrateGame(plan) {
-                GameRuntimeState.runtime.setGame(new GameManager(plan.playerCount));
-                game.enabledLandmarks = getEnabledLandmarkSelection();
+                const currentGame = GameRuntimeState.runtime
+                    .setGame(new GameManager(plan.playerCount)).game;
+                currentGame.enabledLandmarks = getEnabledLandmarkSelection();
                 return GameSnapshot.hydrateMutableGameState({
-                    game,
+                    game: currentGame,
                     shopStock: SHOP_STOCK,
                     state: plan.state,
                     createCardByName,
@@ -440,14 +452,16 @@ function isValidSavedGameState(state) {
 }
 
 function saveUndoState() {
+    const currentGame = storageGameRuntimeSnapshot().game;
     GameRuntimeState.runtime.setUndoState(
-        GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER)
+        GameSnapshot.serializeUndoState(currentGame, SHOP_STOCK, Number.MAX_SAFE_INTEGER)
     );
 }
 
 function restoreUndoSnapshot(state) {
+    const currentGame = storageGameRuntimeSnapshot().game;
     const hydrated = GameSnapshot.hydrateUndoState({
-        game,
+        game: currentGame,
         shopStock: SHOP_STOCK,
         state,
         createCardByName,
@@ -467,10 +481,14 @@ function restoreUndoSnapshot(state) {
 }
 
 function doUndo() {
-    if (!undoState) return;
-    if (isOnlineGame && (!game || game.currentPlayerIndex !== myPlayerIndex)) return;
-    const state = undoState;
-    if (isOnlineGame) {
+    const gameState = storageGameRuntimeSnapshot();
+    const onlineState = storageOnlineRuntimeSnapshot();
+    if (!gameState.undoState) return;
+    if (onlineState.isOnlineGame && (
+        !gameState.game || gameState.game.currentPlayerIndex !== onlineState.myPlayerIndex
+    )) return;
+    const state = gameState.undoState;
+    if (onlineState.isOnlineGame) {
         sendAction('undoBuild', { state });
         return;
     }
