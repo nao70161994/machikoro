@@ -896,3 +896,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. Asynchronous watchdog recovery is now an injected runtime boundary: app-shell classification selects a handler, while CPU reschedule and online ACK-timeout recovery own their admission, effect, observation, and checkpoint sequence together.
 2. Browser event lifecycle ownership moved into `ClientEventRuntime`; app-shell startup now wires one runtime instead of coordinating six independent binding-key branches.
 3. Direct and integration contracts preserve scheduler precedence/legacy fallback, recovery checkpoints, error and console capture order, duplicate binding suppression, PWA install registration, online status initialization, resize, and watchdog timing.
+
+## 2026-08-05 Batch 77 boundary update
+
+1. App-shell watchdog observation is now a distinct runtime owner rather than a 350-line block mixed with recovery, reporting, lifecycle, and PWA orchestration.
+2. The boundary consumes explicit game/online snapshots, DOM snapshot effects, action registry, watchdog policy, scheduler observation, clock, and a small late-bound compatibility resolver; it emits the unchanged client diagnostic schema and interactability observations.
+3. `appShell.js` remains the recovery and browser orchestration composition root. Direct, main, integration, PWA, release, lint, and checkJs contracts preserve all observed values and effect behavior.

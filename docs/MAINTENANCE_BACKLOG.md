@@ -733,3 +733,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `ClientEventRuntime.createShellBindings()` now owns one-time crash/rejection/console, online/offline, resize, watchdog interval, and PWA-install handler registration. `appShell.js` retains public compatibility wrappers and startup order without directly managing binding keys or replacing console callbacks.
 - `appShell.js` decreased from 1,391 to 1,346 lines in this batch. Scoped gates now cover 229 ESLint maintenance files and 228 checkJs runtime files.
 - Game rules, CPU decisions/RNG and scheduler policy, online timeout/reconnect behavior, report payloads, browser event order, storage, UI output, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 77 app-shell observation runtime
+
+- `js/appShellObservationRuntime.js` now owns watchdog DOM observation, buildable-card/landmark candidate detection, action-child/container usability, registry-drift observations, interactability issue assembly, primary-button state, and complete client runtime snapshot construction through injected game/online/DOM/runtime dependencies.
+- `appShell.js` retains browser dependency wiring, compatibility entry points, modal/focus recovery coordination, freeze classification, reporting, lifecycle, PWA, and startup ordering. Its size decreased from 1,346 to 1,069 lines; the 426-line observation owner is independently linted, type-checked, and unit-tested.
+- Existing integration coverage fixes post-build, pending, modal, Safari CPU-stall, online ACK-stall, selector drift, missing Undo, card-filter, winner, reconnect, and checkpoint behavior across the new boundary. Scoped gates now cover 230 ESLint maintenance files and 229 checkJs runtime files.
+- Rules, CPU decisions/RNG, scheduler and watchdog policy, Action/Socket/schema contracts, persistence, UI recovery/output, and PWA/SW behavior are unchanged.

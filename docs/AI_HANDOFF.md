@@ -951,3 +951,10 @@ Test index:
 - Register crash/rejection/console, online/offline, resize, freeze-watchdog interval, and PWA install handlers through `ClientEventRuntime.createShellBindings()`. Do not reintroduce binding-key branches in `appShell.js`.
 - The runtime receives explicit callbacks and retains the original event/effect order. It does not own watchdog classification, CPU strategy, online protocol, report formatting, or PWA policy.
 - Scoped gates cover 229 ESLint files and 228 checkJs runtimes. The five orchestration files remain whole-file exclusions.
+
+## Batch 77 handoff (2026-08-05)
+
+- Put watchdog DOM reads, build-candidate facts, action-container/child usability, registry drift, and client diagnostic snapshot assembly in `AppShellObservationRuntime`. Keep recovery mutations and classification/reporting orchestration outside it.
+- Preserve the three app-shell compatibility entry points `collectUiLockSnapshot`, `validateUiInteractability`, and `buildClientRuntimeSnapshot`; they delegate to the observation runtime because integration and debug tooling call them directly.
+- Extend injected dependencies or the narrowly named late resolver when adding observation facts. Do not add ambient game/online/DOM reads back into `appShell.js`.
+- Scoped gates cover 230 ESLint files and 229 checkJs runtimes; `appShell.js` is now 1,069 lines but remains excluded as a whole until its remaining recovery/reporting/PWA effects are further separated.
