@@ -12,8 +12,38 @@ function buildTurnAnnouncerView(name, isCPU) {
     });
 }
 
+function createTimerController({
+    schedule = (callback, delay) => setTimeout(callback, delay),
+    cancel = timer => clearTimeout(timer),
+} = {}) {
+    let timer = null;
+
+    function clear() {
+        if (timer !== null) cancel(timer);
+        timer = null;
+    }
+
+    function start(view, { beginHide, finishHide }) {
+        clear();
+        timer = schedule(() => {
+            beginHide();
+            timer = schedule(() => {
+                finishHide();
+                timer = null;
+            }, view.transitionDurationMs);
+        }, view.showDurationMs);
+    }
+
+    function snapshot() {
+        return Object.freeze({ timerAttached: timer !== null });
+    }
+
+    return Object.freeze({ clear, start, snapshot });
+}
+
 const UiTurnAnnouncer = Object.freeze({
     buildView: buildTurnAnnouncerView,
+    createTimerController,
     showDurationMs: TURN_ANNOUNCER_SHOW_DURATION_MS,
     transitionDurationMs: TURN_ANNOUNCER_TRANSITION_DURATION_MS,
 });

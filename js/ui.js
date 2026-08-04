@@ -719,19 +719,17 @@ function showTurnAnnouncer(name, isCPU) {
     const el = document.getElementById("turnAnnouncer");
     const text = document.getElementById("turnAnnouncerText");
     if (!el || !text) return;
-    if (announcerTimer) { clearTimeout(announcerTimer); announcerTimer = null; }
     el.classList.remove("hiding");
     const view = UiTurnAnnouncer.buildView(name, isCPU);
     el.style.display = view.display;
     text.textContent = view.text;
-    announcerTimer = setTimeout(() => {
-        el.classList.add("hiding");
-        announcerTimer = setTimeout(() => {
+    turnAnnouncerTimerController.start(view, {
+        beginHide() { el.classList.add("hiding"); },
+        finishHide() {
             el.style.display = "none";
             el.classList.remove("hiding");
-            announcerTimer = null;
-        }, view.transitionDurationMs);
-    }, view.showDurationMs);
+        },
+    });
 }
 
 function switchTab(tab) {
@@ -790,7 +788,7 @@ function applyCardSelectStateSnapshot() {
 }
 const logHistoryController = UiLogDisplay.createHistoryController();
 let prevPlayerIndex = -1;
-let announcerTimer = null;
+const turnAnnouncerTimerController = UiTurnAnnouncer.createTimerController();
 let cardFilter = '';
 let activeModalId = null;
 let lastModalFocus = null;
