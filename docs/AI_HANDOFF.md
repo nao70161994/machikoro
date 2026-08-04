@@ -958,3 +958,10 @@ Test index:
 - Preserve the three app-shell compatibility entry points `collectUiLockSnapshot`, `validateUiInteractability`, and `buildClientRuntimeSnapshot`; they delegate to the observation runtime because integration and debug tooling call them directly.
 - Extend injected dependencies or the narrowly named late resolver when adding observation facts. Do not add ambient game/online/DOM reads back into `appShell.js`.
 - Scoped gates cover 230 ESLint files and 229 checkJs runtimes; `appShell.js` is now 1,069 lines but remains excluded as a whole until its remaining recovery/reporting/PWA effects are further separated.
+
+## Batch 78 handoff (2026-08-05)
+
+- Put render synchronization, action-container repair, post-build Undo restoration, pending/human/modal recovery, freeze-handler selection, and recovery tracing in `UiWatchdogRecoveryRuntime`; extend its explicit dependencies rather than restoring these branches to `appShell.js`.
+- Preserve the app-shell compatibility functions `syncUiInteractabilityAfterRender`, `recoverUiInteractability`, and `recoverFreezeKind`. Integration/debug tooling calls them while their implementation delegates to the recovery runtime.
+- Modal/focus primitives and browser composition remain in `appShell.js`; DOM attribute/style mutations remain in `UiRecoveryEffects`, and CPU/online stalled-turn sequencing remains in `UiWatchdogAsyncRecovery`.
+- Scoped gates cover 231 ESLint files and 230 checkJs runtimes; `appShell.js` is now 855 lines and remains a composition-root exclusion.

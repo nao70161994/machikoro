@@ -740,3 +740,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `appShell.js` retains browser dependency wiring, compatibility entry points, modal/focus recovery coordination, freeze classification, reporting, lifecycle, PWA, and startup ordering. Its size decreased from 1,346 to 1,069 lines; the 426-line observation owner is independently linted, type-checked, and unit-tested.
 - Existing integration coverage fixes post-build, pending, modal, Safari CPU-stall, online ACK-stall, selector drift, missing Undo, card-filter, winner, reconnect, and checkpoint behavior across the new boundary. Scoped gates now cover 230 ESLint maintenance files and 229 checkJs runtime files.
 - Rules, CPU decisions/RNG, scheduler and watchdog policy, Action/Socket/schema contracts, persistence, UI recovery/output, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 78 app-shell UI recovery runtime
+
+- `js/uiWatchdogRecoveryRuntime.js` now owns watchdog render synchronization, action-container/child repair, post-build Undo restoration, pending/human/modal/stale-modal recovery, freeze-handler selection, and before/after recovery checkpoint orchestration through injected policy, observation, and effect boundaries.
+- `appShell.js` retains browser composition, its established compatibility entry points, modal/focus primitives, reporting, lifecycle, PWA, and startup ordering. Its size decreased from 1,069 to 855 lines; the 340-line recovery runtime is independently linted, type-checked, unit-tested, and covered by the existing integration suite.
+- Production/PWA assets and isolated main/integration/release runtimes load the new boundary before `appShell.js`. Scoped gates now cover 231 ESLint maintenance files and 230 checkJs runtime files.
+- Recovery eligibility, render/checkpoint/effect order, CPU scheduling, online ACK timeout behavior, rules, CPU strength/RNG, protocol, persistence, UI output, and PWA/SW behavior are unchanged.

@@ -902,3 +902,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. App-shell watchdog observation is now a distinct runtime owner rather than a 350-line block mixed with recovery, reporting, lifecycle, and PWA orchestration.
 2. The boundary consumes explicit game/online snapshots, DOM snapshot effects, action registry, watchdog policy, scheduler observation, clock, and a small late-bound compatibility resolver; it emits the unchanged client diagnostic schema and interactability observations.
 3. `appShell.js` remains the recovery and browser orchestration composition root. Direct, main, integration, PWA, release, lint, and checkJs contracts preserve all observed values and effect behavior.
+
+## 2026-08-05 Batch 78 boundary update
+
+1. App-shell UI recovery is now an injected orchestration boundary: `UiWatchdogRecoveryRuntime` coordinates pure watchdog policy, captured observations, reusable DOM effects, runtime effects, and asynchronous CPU/online recovery.
+2. `appShell.js` remains the browser composition root and compatibility surface, but no longer contains the action-container, post-build, pending, human-turn, modal, stale-modal, or freeze-handler recovery implementations.
+3. Focused unit tests plus main/integration/PWA/release, ESLint, and checkJs gates preserve the existing recovery decisions and effect ordering without changing gameplay, CPU, online, storage, UI, or PWA contracts.
