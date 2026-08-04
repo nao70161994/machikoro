@@ -559,3 +559,11 @@ These are rule-transaction, CPU-evaluation, server-composition, and UI view/effe
 4. The card effect omission contract now recognizes injected rule-policy references as explicit ownership alongside direct `GameManager` references, without weakening the requirement that every non-normal effect has both rule and CPU coverage.
 
 These are rule-policy, online-state, UI-effect, and contract boundaries selected across distinct architectural layers. Scoped gates now cover 203 ESLint maintenance files and 202 checkJs runtime files; rules, protocol/schema, persistence, reconnect defaults, and PWA behavior remain unchanged.
+
+## 2026-08-04 Batch 33 boundary update
+
+1. Green-card dispatch now uses a detached domain plan for the five existing outcome kinds. The policy selects kind, amount, pending field, dormancy, and target availability; the mutable engine continues to own every state change and log.
+2. Restore lifecycle state now includes queue-flush activity. Production writes pass through semantic controller transitions while legacy globals remain read-compatible diagnostic projections.
+3. CPU progress-income eligibility and summation are pure evaluation primitives. Live cache lookup/write and injected card valuation remain in `CPU.js`, so strategy, tuning, RNG, and action traces are outside this migration.
+
+These changes deepen rule-policy, online-state, and CPU-evaluation ownership without activating a new authority path. Scoped gates remain 203 ESLint maintenance files and 202 checkJs runtime files; compatibility defaults are unchanged.

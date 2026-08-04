@@ -597,3 +597,11 @@ Test index:
 - Card rule registration checks intentionally scan both direct `GameManager` constants and injected `facts.effects.*` references in `GameCardActivationPolicy`. Add a delegated rule owner explicitly rather than weakening or deleting the omission assertion.
 - Current scoped gate is 203 ESLint maintenance files / 202 checkJs runtime files. Remaining checkJs exclusions stay `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with 3–5 independently rollbackable themes chosen across domain policy, shared Engine, CPU strategy, online state, server composition, UI state/view/effect, and contracts. Keep one theme per commit, one docs commit, one `test:batch`, one push, and exact-HEAD CI per batch.
+
+## 2026-08-04 Batch 33 handoff
+
+- Green-card activation outcome selection belongs to `GameCardActivationPolicy.greenActivationPlan()`. Keep income and renovation-target facts lazy. `GameManager` remains the owner of live mutation, pending fields, dormancy, logs, and card activation order.
+- Restore queue-flush state belongs to `OnlineRestoreLifecycleState`. `_flushingOnlineRestoreEvents` is a compatibility projection, not a second owner. Preserve flush start/finally/reset order and do not move queue, retry, storage, reconnect, or Socket authority into the controller.
+- Progress-income eligibility and ordered aggregation belong to `CPUEvaluation`. `CPU.js` owns cache lifecycle and valuation callbacks. Preserve excluded effects, callback order, heuristic values, and fixed decision/action traces.
+- Scoped gates remain 203 ESLint maintenance files and 202 checkJs runtime files. Remaining checkJs exclusions stay `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Efficiency policy: keep batches at no more than three independently rollbackable themes, use focused checks per theme, then run one `npm run test:batch`, one push, and one exact-HEAD CI check at batch end.
