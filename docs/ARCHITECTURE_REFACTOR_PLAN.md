@@ -756,3 +756,11 @@ Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. 
 3. Shared card activation candidate admission now belongs to pure card-activation policy while the shared Engine remains the mutation and effect-order authority.
 
 Scoped gates are now 215 ESLint maintenance files and 214 checkJs runtime files. Rules, CPU strength, protocol/schema, persistence, reconnect behavior, UI behavior, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 57 boundary update
+
+1. Rejoin timer handle/deadline now have one controller owner across legacy and opt-in authority observation; authority labels, decisions, effects, and default flags remain unchanged.
+2. Page-activation binding and hidden-time state now belong to lifecycle policy while all resume effects and their order stay in `main.js`.
+3. The last local Engine shadow outcome now belongs to the shared client-shadow controller while snapshot adaptation, mutable fallback, and adoption remain in the local runtime adapter.
+
+Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Rules, CPU strength, authority defaults, protocol/schema, persistence, reconnect behavior, and PWA defaults are unchanged.

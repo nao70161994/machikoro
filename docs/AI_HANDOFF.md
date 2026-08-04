@@ -792,3 +792,11 @@ Test index:
 - Red/blue/green/purple candidate admission belongs to `GameCardActivationPolicy.isActivationCandidate()`. Preserve short-circuit order: revived identity, dormancy, color, then dice; keep all traversal, mutation, effects, and logs in `GameManager`.
 - Scoped gates are now 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 57 handoff (2026-08-04)
+
+- Rejoin timer handle/deadline belong exclusively to `OnlineRetryPolicy.createRejoinTimerController()`. Do not reintroduce parallel legacy variables; preserve source labels, callback decision gates, hostless fallback, Socket emit order, and all default-OFF authority flags.
+- Page-activation binding and hidden timestamp belong to `PageActivationPolicy.createLifecycleController()`. Preserve claim-before-listener behavior and the existing RL load → delayed action → online reconnect → CPU resume → checkpoint sequence.
+- The last local Engine shadow result belongs to `GameEngineClientShadow.createOutcomeController()`. Preserve determinism admission, mutable-first execution, parity report, optional default-OFF adoption, render, and CPU scheduling order.
+- Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

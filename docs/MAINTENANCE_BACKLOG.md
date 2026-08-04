@@ -568,3 +568,12 @@ No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO event/pay
 - Scoped gates are now 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO event/payload, reconnect authority/timing, UI presentation, PWA/SW behavior, or production rollout default changed.
+
+## 2026-08-04 Batch 57 architecture boundaries
+
+- `OnlineRetryPolicy.createRejoinTimerController()` is now the sole owner of rejoin timer handle and deadline in both legacy and event-authority modes. `online.js` retains authority selection labels, timeout decisions, Socket emits, hostless fallback, status effects, and the existing default-OFF rollout flags.
+- `PageActivationPolicy.createLifecycleController()` now owns page-activation handler binding admission and hidden-start time. `main.js` retains listener effects and the exact RL-load, delayed-human-action, online-reconnect, CPU-resume, and checkpoint order.
+- `GameEngineClientShadow.createOutcomeController()` now owns the last local shadow/authority diagnostic result. `main.js` retains snapshot adaptation, mutable execution, parity comparison, optional adoption, rendering, and CPU scheduling.
+- Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, RNG point, save/localStorage shape, Socket.IO event/payload, reconnect timing/status, Engine authority default, PWA/SW behavior, or production rollout default changed.
