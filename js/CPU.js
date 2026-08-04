@@ -3193,33 +3193,14 @@ class CPU {
     }
 
     _scoreExpertCardPenalty(cardName, player, game) {
-        const copies = player.countCard(cardName);
-        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        if (game.players.length >= 4 && remainingLandmarks > 2) {
-            if (cardName === "スタジアム" || cardName === "テレビ局" || cardName === "税務署" || cardName === "出版社") return 9 + copies * 3;
-            if (cardName === "公園" || cardName === "ITベンチャー") return 7 + copies * 2.5;
-        }
-        if (cardName === "改装屋") {
-            if (player.builtLandmarkCount() === 0) return 18 + copies * 5;
-            return copies >= 2 ? 18 + copies * 8 : 0;
-        }
-        if (cardName === "貸金業") {
-            if (remainingLandmarks <= 3 && copies >= 2) return 12 + copies * 4;
-            return copies >= 3 ? 8 + copies * 3 : 0;
-        }
-        if (remainingLandmarks <= 4) {
-            if (cardName === "食品倉庫") return 10 + copies * 3;
-            if (cardName === "ピザ屋" || cardName === "バーガーショップ") return 7 + copies * 2.5;
-            if (cardName === "ブドウ園") return 6 + copies * 2;
-        }
-        if (game.players.length >= 4 && remainingLandmarks <= 4) {
-            if (cardName === "食品倉庫") return 16 + copies * 4;
-            if (cardName === "改装屋") return 14 + copies * 4;
-            if (cardName === "ピザ屋" || cardName === "バーガーショップ") return 10 + copies * 3;
-            if (cardName === "寿司屋") return 6 + copies * 2;
-        }
-        if (cardName === "雑貨屋") return remainingLandmarks <= 2 && copies >= 3 ? 8 + copies * 2 : 0;
-        return 0;
+        return CPUEvaluation.expertCardPenalty({
+            cardName,
+            copies: player.countCard(cardName),
+            remainingLandmarks: [...game.enabledLandmarks]
+                .filter(name => !player.landmarks[name]).length,
+            playerCount: game.players.length,
+            builtLandmarkCount: () => player.builtLandmarkCount(),
+        });
     }
 
     _scoreExpertLandmarkDelayPenalty(player, game) {

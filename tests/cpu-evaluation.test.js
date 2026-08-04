@@ -1909,3 +1909,38 @@ runTest('CPU wrapperはv2simple時だけexpert収入capへlandmark factを渡す
     const normal = new CPU('normal');
     assert.strictEqual(normal._expertV2CappedPositiveIncome(null, null, 99), 99);
 });
+
+runTest('CPU evaluation はexpert card penalty表の既存分岐と値をpureに固定する', () => {
+    const score = (cardName, copies, remainingLandmarks, playerCount = 4, built = 1) =>
+        CPUEvaluation.expertCardPenalty({
+            cardName, copies, remainingLandmarks, playerCount, builtLandmarkCount: built,
+        });
+    assert.strictEqual(score('スタジアム', 2, 5), 15);
+    assert.strictEqual(score('公園', 2, 5), 12);
+    assert.strictEqual(score('改装屋', 1, 2, 2, 0), 23);
+    assert.strictEqual(score('改装屋', 2, 2, 2, 1), 34);
+    assert.strictEqual(score('貸金業', 2, 3), 20);
+    assert.strictEqual(score('貸金業', 3, 5), 17);
+    assert.strictEqual(score('食品倉庫', 2, 4), 16);
+    assert.strictEqual(score('ピザ屋', 2, 4), 12);
+    assert.strictEqual(score('ブドウ園', 2, 4), 10);
+    assert.strictEqual(score('寿司屋', 2, 4), 10);
+    assert.strictEqual(score('雑貨屋', 3, 2), 14);
+    assert.strictEqual(score('雑貨屋', 2, 2), 0);
+    assert.strictEqual(score('麦畑', 5, 1), 0);
+});
+
+runTest('CPU evaluation のexpert card penaltyは改装屋以外でlandmark countを読まない', () => {
+    let reads = 0;
+    const facts = {
+        cardName: 'スタジアム',
+        copies: 1,
+        remainingLandmarks: 5,
+        playerCount: 4,
+        builtLandmarkCount() { reads++; return 0; },
+    };
+    assert.strictEqual(CPUEvaluation.expertCardPenalty(facts), 12);
+    assert.strictEqual(reads, 0);
+    assert.strictEqual(CPUEvaluation.expertCardPenalty({ ...facts, cardName: '改装屋' }), 23);
+    assert.strictEqual(reads, 1);
+});
