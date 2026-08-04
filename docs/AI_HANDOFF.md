@@ -776,3 +776,11 @@ Test index:
 - Preserve the 15-second lobby timeout, generation checks, timer cancellation, readiness rendering, and create/join Socket payloads.
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
+
+## Batch 55 handoff (2026-08-04)
+
+- Stadium, Publisher, Tax Office, and IT Startup collection request arrays belong to `GameCardActivationPolicy`. Preserve player order, current-player zeroing, Publisher active-card filtering, Tax Office threshold/flooring, and frozen outputs.
+- Strongest-CPU TV target score belongs to `CPUEvaluation.v2SimpleTvTargetScore()`. Preserve the `2.2`/`2.5` base coefficients, both landmark-denial branches, target order, and first-max tie behavior; require fixed-decision and 2–10-player self-play parity for changes.
+- Socket.IO-unavailable diagnostic admission belongs to `OnlineSocketRegistry.createUnavailableReportController()`. Keep user notice/status effects on every failed initialization and checkpoint/client-error effects only on the first claim.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

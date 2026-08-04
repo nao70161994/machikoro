@@ -550,3 +550,12 @@ No game rule, CPU heuristic/choice, RNG point, save/localStorage shape, Socket.I
 - Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO protocol, lobby timeout/callback order, PWA update deferral, or production rollout default changed.
+
+## 2026-08-04 Batch 55 architecture boundaries
+
+- `GameCardActivationPolicy` now owns frozen player-ordered collection requests for Stadium, Publisher, Tax Office, and IT Startup. `GameManager` retains live card/player adaptation, coin transaction application, pending effects, and exact logs.
+- `CPUEvaluation.v2SimpleTvTargetScore()` now owns the complete strongest-CPU TV target base/landmark-denial score. `CPU.js` retains target traversal, feature adaptation, first-max tie order, profiling, and tuning; fixed decisions and the 2–10-player self-play baseline are unchanged.
+- `OnlineSocketRegistry.createUnavailableReportController()` now owns the one-shot Socket.IO-unavailable diagnostic state. `online.js` retains user notice/status effects and reports checkpoint/client error only on the first claim, preserving effect order and payloads.
+- Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice, save/localStorage shape, Socket.IO event/payload, diagnostic payload/order, PWA/SW behavior, or production rollout default changed.

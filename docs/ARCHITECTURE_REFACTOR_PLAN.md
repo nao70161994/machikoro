@@ -740,3 +740,11 @@ The cross-runtime CPU scheduler token remains deferred for an explicit effect-or
 3. Online create/join pending now has only the generation/timer-aware lobby controller as mutable owner; legacy browser names remain read-only projections for unchanged PWA deferral.
 
 Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, protocol/schema, persistence, lobby timing, browser-global read compatibility, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 55 boundary update
+
+1. Purple-card collection request arrays now belong to pure card-activation policy while the shared Engine remains the mutable transaction/log adapter.
+2. Strongest-CPU TV target scoring now belongs to the pure evaluator while target enumeration, facts, tie order, profiling, and tuning stay in `CPU.js`.
+3. Socket.IO-unavailable one-shot reporting state now belongs to a socket-registry controller while notice/status/checkpoint/report effects remain in `online.js`.
+
+Scoped gates remain 214 ESLint maintenance files and 213 checkJs runtime files. Rules, CPU strength, protocol/schema, persistence, diagnostic behavior, and PWA defaults are unchanged.
