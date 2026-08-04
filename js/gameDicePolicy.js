@@ -52,6 +52,17 @@ const GameDicePolicy = (() => {
         });
     }
 
+    function rerollResetState(rollPhase) {
+        return Object.freeze({
+            usedReroll: true,
+            lastDiceResult: 0,
+            lastDice1: 0,
+            lastDice2: 0,
+            log: Object.freeze([]),
+            phase: rollPhase,
+        });
+    }
+
     function planHarborOrIncome(facts = {}) {
         const useTwo = readFact(facts.lastDice1) > 0 && readFact(facts.lastDice2) > 0;
         const requestHarborChoice = useTwo && !!readFact(facts.hasHarbor) &&
@@ -87,6 +98,7 @@ const GameDicePolicy = (() => {
         planDiceOutcome,
         planAfterRoll,
         planRerollAdmission,
+        rerollResetState,
         planHarborOrIncome,
         planHarborResolution,
         formatDiceOutcome,

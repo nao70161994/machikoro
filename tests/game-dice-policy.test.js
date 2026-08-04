@@ -50,6 +50,20 @@ runTest('dice policyは電波塔の再振り確認を既存短絡順で決める
     });
 });
 
+runTest('dice policyは振り直し開始状態をdetached frozen planにする', () => {
+    const plan = GameDicePolicy.rerollResetState('roll');
+    assert.deepStrictEqual(plan, {
+        usedReroll: true,
+        lastDiceResult: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        log: [],
+        phase: 'roll',
+    });
+    assert.ok(Object.isFrozen(plan));
+    assert.ok(Object.isFrozen(plan.log));
+});
+
 runTest('dice policyは港選択条件を2個振り→港→10以上の順に判定する', () => {
     let harborReads = 0;
     let resultReads = 0;

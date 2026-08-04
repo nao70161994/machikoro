@@ -355,13 +355,14 @@ class GameManager {
         const prevDice1 = this.lastDice1;
         const prevDice2 = this.lastDice2;
         const prevResult = this.lastDiceResult;
-        this.usedReroll = true;
-        this.lastDiceResult = 0;
-        this.lastDice1 = 0;
-        this.lastDice2 = 0;
-        this.log = [];
+        const reset = GameDicePolicy.rerollResetState(GAME_PHASES.ROLL);
+        this.usedReroll = reset.usedReroll;
+        this.lastDiceResult = reset.lastDiceResult;
+        this.lastDice1 = reset.lastDice1;
+        this.lastDice2 = reset.lastDice2;
+        this.log = reset.log.slice();
         /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
-        this.phase = GAME_PHASES.ROLL;
+        this.phase = reset.phase;
         this.rollDice(forceDice, tunaDice);
         this.addLog(
             LOG_TYPES.DICE,
