@@ -163,17 +163,20 @@ class GameManager {
     }
 
     _hasBusinessExchange(currentPlayerIndex) {
-        const current = this.players[currentPlayerIndex];
-        if (!current || current.getMinorCards().length === 0) return false;
-        return this.players.some((player, index) =>
-            index !== currentPlayerIndex && player.getMinorCards().length > 0
-        );
+        return GamePendingResolutionPolicy.hasBusinessExchange({
+            players: this.players,
+            currentPlayerIndex,
+            minorCardsFor: player => player.getMinorCards(),
+        });
     }
 
     _hasCleaningTarget() {
-        return this.players.some(player =>
-            player.cards.some(card => card.category !== CARD_CATEGORIES.MAJOR && !player.isDormant(card))
-        );
+        return GamePendingResolutionPolicy.hasCleaningTarget({
+            players: this.players,
+            cardsFor: player => player.cards,
+            isMajor: card => card.category === CARD_CATEGORIES.MAJOR,
+            isDormant: (player, card) => player.isDormant(card),
+        });
     }
 
     static _pendingDescriptorsFromFields(game) {

@@ -58,6 +58,25 @@ const GamePendingResolutionPolicy = (() => {
         return result(true);
     }
 
+    function hasBusinessExchange(facts = {}) {
+        const players = readFact(facts.players) || [];
+        const currentPlayerIndex = readFact(facts.currentPlayerIndex);
+        const current = players[currentPlayerIndex];
+        if (!current || facts.minorCardsFor(current).length === 0) return false;
+        return players.some((player, index) =>
+            index !== currentPlayerIndex && facts.minorCardsFor(player).length > 0
+        );
+    }
+
+    function hasCleaningTarget(facts = {}) {
+        const players = readFact(facts.players) || [];
+        return players.some(player =>
+            facts.cardsFor(player).some(card =>
+                !facts.isMajor(card) && !facts.isDormant(player, card)
+            )
+        );
+    }
+
     function hasPendingAction(state = {}) {
         return !!(
             state.pendingTV ||
@@ -82,6 +101,8 @@ const GamePendingResolutionPolicy = (() => {
         planOtherPlayerTarget,
         planCleaningTarget,
         planRenovationTarget,
+        hasBusinessExchange,
+        hasCleaningTarget,
         hasPendingAction,
         completionTransition,
     });

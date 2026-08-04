@@ -89,3 +89,57 @@ runTest('pending resolution policyは全pending完了時だけbuild遷移を返�
         assert.strictEqual(Object.isFrozen(transition), true);
     }
 });
+
+runTest('pending resolution policyは交換可能なminor cardを現在手番から順に走査する', () => {
+    const players = [{ id: 'current' }, { id: 'empty' }, { id: 'target' }, { id: 'unread' }];
+    const trace = [];
+    const result = GamePendingResolutionPolicy.hasBusinessExchange({
+        players,
+        currentPlayerIndex: 0,
+        minorCardsFor(player) {
+            trace.push(player.id);
+            if (player.id === 'current' || player.id === 'target') return [{}];
+            if (player.id === 'unread') throw new Error('must stay short-circuited');
+            return [];
+        },
+    });
+    assert.strictEqual(result, true);
+    assert.deepStrictEqual(trace, ['current', 'empty', 'target']);
+
+    const noCurrentCards = GamePendingResolutionPolicy.hasBusinessExchange({
+        players,
+        currentPlayerIndex: 0,
+        minorCardsFor(player) {
+            if (player.id !== 'current') throw new Error('opponents must stay lazy');
+            return [];
+        },
+    });
+    assert.strictEqual(noCurrentCards, false);
+});
+
+runTest('pending resolution policyは最初の休業可能なminor cardで走査を止める', () => {
+    const players = [
+        { cards: [{ major: true, dormant: false }, { major: false, dormant: true }] },
+        { cards: [{ major: false, dormant: false }, { unread: true }] },
+        { unread: true },
+    ];
+    const trace = [];
+    const result = GamePendingResolutionPolicy.hasCleaningTarget({
+        players,
+        cardsFor(player) {
+            if (player.unread) throw new Error('players must stay short-circuited');
+            return player.cards;
+        },
+        isMajor(card) {
+            trace.push(['major', card]);
+            return !!card.major;
+        },
+        isDormant(_player, card) {
+            if (card.unread) throw new Error('cards must stay short-circuited');
+            trace.push(['dormant', card]);
+            return !!card.dormant;
+        },
+    });
+    assert.strictEqual(result, true);
+    assert.deepStrictEqual(trace.map(entry => entry[0]), ['major', 'major', 'dormant', 'major', 'dormant']);
+});
