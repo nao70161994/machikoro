@@ -874,3 +874,12 @@ Test index:
 - App-shell DOM observation belongs to `UiDomSnapshot.createRuntime()`. Keep its document/style/text dependencies injected, preserve action-HTML fallback matching and exception fallbacks, and leave all recovery mutations, focus/inert effects, classification, and reporting in their existing owners.
 - Strong landmark threshold feature assembly belongs to `CPUEvaluation.strongLandmarkThresholdFeatures()`. Preserve opponent order, two card scans per opponent, dormancy calls, built/count/remaining read order, penalty coefficients, and every RNG point; require fixed decisions and 2–10-player self-play parity for changes.
 - Scoped gates are 222 ESLint maintenance files and 221 checkJs runtime files. Continue with at most three independent themes and one batch-level integration gate/push/CI.
+
+
+## Batch 67 handoff (2026-08-04)
+
+- `GameSetupState` player-setting projections are no longer live. Treat `read('playerSettings')` and `snapshot().playerSettings` as frozen detached values; update state only with `setPlayerSettings()`, `setPlayerSetting()`, `setPlayerName()`, or `replace()`.
+- App-shell DOM observation belongs to `UiDomSnapshot`; lock/display/pointer/body-class mutations belong to `UiRecoveryEffects`. Keep watchdog recovery decisions, modal/focus coordination, checkpoints, and call ordering in `appShell.js` until a separately contract-covered orchestration boundary exists.
+- Expert-v2 Cleaning feature traversal belongs to `CPUEvaluation.expertV2SimpleCleaningFeatures()`, and its numeric formula belongs to `expertV2SimpleCleaningScore()`. Preserve player/card order, name-before-dormancy short-circuiting, the `0.2` floor, the self `1.2` multiplier, tie behavior, and every RNG point.
+- Scoped gates are 223 ESLint maintenance files and 222 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Continue with at most three independent themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.

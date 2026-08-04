@@ -828,3 +828,12 @@ Scoped gates now cover 221 ESLint maintenance files and 220 checkJs runtime file
 3. Strong landmark conditional-threshold feature extraction now belongs to the pure CPU evaluator while `CPU.js` remains the live-game adapter.
 
 Scoped gates now cover 222 ESLint maintenance files and 221 checkJs runtime files. Rules, CPU strength/RNG, schema/protocol, persistence formats, reconnect behavior, DOM/focus recovery, UI presentation, and PWA defaults are unchanged.
+
+
+## 2026-08-04 Batch 67 boundary update
+
+1. Shared player-setting state now has a closed controller boundary: ingress is copied, reads/snapshots are frozen detached projections, and only named operations mutate production state.
+2. App-shell recovery policy now invokes a typed, dependency-injected DOM-effect runtime for lock/display/class mutations while keeping admission, focus coordination, diagnostics, and ordering in the shell orchestrator.
+3. Expert-v2 Cleaning candidate evaluation now projects board reads into immutable numeric features before the pure score formula, preserving traversal and decision behavior.
+
+Scoped gates now cover 223 ESLint maintenance files and 222 checkJs runtime files. Rules, CPU strength/RNG, schema/protocol, persistence formats, reconnect behavior, UI/focus behavior, and PWA defaults are unchanged.
