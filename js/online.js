@@ -348,7 +348,7 @@ let _lastOnlineRestoreActivationEffectSelection = Object.freeze({
     source: 'none',
     fallbackReason: '',
 });
-let _lastAppliedOnlineActionSeqMemory = 0;
+const _onlineActionSequenceController = OnlineActionSequence.createController();
 let _flushingOnlineRestoreEvents = false;
 let _onlineRestoreQuarantined = false;
 const _onlineRestoreLifecycleController = OnlineRestoreLifecycleState.createController({
@@ -1927,7 +1927,7 @@ function resetOnlineState() {
         incrementRestoreGeneration() { _incrementOnlineRestoreGeneration(); },
         clearRestoreInProgress() { _finishOnlineRestore(); },
         clearRestoreQueue() { _clearOnlineRestoreEventQueue(); },
-        resetLastAppliedSequence() { _lastAppliedOnlineActionSeqMemory = 0; },
+        resetLastAppliedSequence() { _onlineActionSequenceController.reset(); },
         clearRestoreFlushFlag() { _finishOnlineRestoreFlush(); },
         clearRestoreQuarantine() { _clearOnlineRestoreQuarantine(); },
         clearPendingMemory() { _pendingOutboundState.clear(); },
@@ -2024,8 +2024,7 @@ function _writeOnlineGameStartPatch(patch) {
 }
 
 function _currentOnlineActionSeq(log = null) {
-    return OnlineActionSequence.current(
-        _lastAppliedOnlineActionSeqMemory,
+    return _onlineActionSequenceController.current(
         _readOnlineGameStartPayload(),
         _readOnlineStateSnapshot(),
         log || _readOnlineActionLog()
@@ -2033,18 +2032,14 @@ function _currentOnlineActionSeq(log = null) {
 }
 
 function _lastAppliedOnlineActionSeq(log = null) {
-    _lastAppliedOnlineActionSeqMemory = OnlineActionSequence.lastApplied(
-        _lastAppliedOnlineActionSeqMemory,
+    return _onlineActionSequenceController.refreshLastApplied(
         _readOnlineStateSnapshot(),
         log || _readOnlineActionLog()
     );
-    return _lastAppliedOnlineActionSeqMemory;
 }
 
 function _setLastAppliedOnlineActionSeq(seq) {
-    if (Number.isInteger(seq)) {
-        _lastAppliedOnlineActionSeqMemory = Math.max(_lastAppliedOnlineActionSeqMemory, seq);
-    }
+    _onlineActionSequenceController.adopt(seq);
 }
 
 function _serverOnlineActionSeq(gameStartPayload, stateSnapshot, actionLog) {
@@ -2736,8 +2731,8 @@ function initSocket() {
                     game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
                 }
             }
-            _lastAppliedOnlineActionSeqMemory = Number.isInteger(actionSeq) ? actionSeq : 0;
-            const flushed = _flushOnlineRestoreEvents(startGeneration, _lastAppliedOnlineActionSeqMemory, {
+            const lastAppliedSeq = _onlineActionSequenceController.replace(actionSeq);
+            const flushed = _flushOnlineRestoreEvents(startGeneration, lastAppliedSeq, {
                 gameAction: handleGameAction,
                 actionAccepted: handleActionAccepted,
                 hostChanged: handleHostChanged,
@@ -3309,7 +3304,7 @@ function initSocket() {
                         },
                         resetPreviousCoins: () => { prevCoins = null; },
                         setAppliedSequence: value => {
-                            _lastAppliedOnlineActionSeqMemory = value;
+                            _onlineActionSequenceController.replace(value);
                         },
                         flushRestoreEvents: value => _flushOnlineRestoreEvents(
                             restoreGeneration,
@@ -3338,8 +3333,9 @@ function initSocket() {
                 isOnlineGame = true;
                 setOnlineReconnectLegacyFlag(false);
                 prevCoins = null;
-                _lastAppliedOnlineActionSeqMemory =
-                    restoreActivationPlan.restoredThroughSeq;
+                _onlineActionSequenceController.replace(
+                    restoreActivationPlan.restoredThroughSeq
+                );
                 if (!_flushOnlineRestoreEvents(
                     restoreGeneration,
                     restoreActivationPlan.restoredThroughSeq,
