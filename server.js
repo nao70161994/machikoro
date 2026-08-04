@@ -61,6 +61,7 @@ const makeRestoreReplayAdmission = require('./server/restoreReplayAdmission');
 const makeRestorePreparation = require('./server/restorePreparation');
 const makeRestoredRoom = require('./server/restoredRoom');
 const makeRestoredRoomRuntime = require('./server/restoredRoomRuntime');
+const makeExistingRoomRestoreRuntime = require('./server/existingRoomRestoreRuntime');
 const {
     existingRoomRejoinEffectAuthorityEnabled,
     executeExistingRoomRejoin,
@@ -885,6 +886,55 @@ const { planRestoreReplayAdmission } = makeRestoreReplayAdmission({
     restoreAuditSecret,
     restorePayloadRank,
 });
+const existingRoomRestoreRuntime = makeExistingRoomRestoreRuntime({
+    planAdmission: planExistingRoomRestoreAdmission,
+    emitAppError,
+    effectAuthorityEnabled: EXISTING_ROOM_REJOIN_EFFECT_AUTHORITY_ENABLED,
+    executeRejoin: executeExistingRoomRejoin,
+    detachExisting(input) {
+        detachExistingPlayerSocket(input.room, input.roomId, input.playerIndex, input.socket.id);
+    },
+    resolvePlayer(input) {
+        return resolveRejoinPlayer(
+            input.room,
+            input.playerIndex,
+            input.playerName,
+            input.reconnectToken,
+            input.socket.id
+        );
+    },
+    joinSocket(input) {
+        input.socket.join(input.roomId);
+    },
+    isHostConnected(input) {
+        return isRoomHostConnected(input.room);
+    },
+    setHostPlayer(input) {
+        setRoomHostPlayerIndex(input.room, input.playerIndex);
+    },
+    emitHostChanged(input) {
+        emitRoomHostChanged(input.roomId, input.room);
+    },
+    persistHostReselected(input) {
+        persistRoomCanonicalState(input.roomId, input.room, 'host-reselected');
+    },
+    logHostReselected(input) {
+        console.log(`ホスト再選出: ${input.roomId} → プレイヤー${input.room.hostPlayerIndex}`);
+    },
+    touchRoom(input) {
+        input.room.lastTouchedAt = Date.now();
+    },
+    emitRejoinData(input) {
+        input.socket.emit('rejoinData', buildRejoinDataPayload(input.room, input.playerIndex));
+    },
+    broadcastPlayerRejoined(input) {
+        io.to(input.roomId).emit('playerRejoined', {
+            playerIndex: input.playerIndex,
+            playerName: input.playerName,
+        });
+    },
+});
+
 const { prepareRestoredRoom } = makeRestorePreparation({
     planGameStartAdmission: planRestoreGameStartAdmission,
     planIdentityAdmission: planRestoreIdentityAdmission,
@@ -921,96 +971,27 @@ function handleRecreateRoom(socket, payload = {}, options = {}) {
     let { gameStartPayload, stateSnapshot, actionLog } = admission;
     if (hasOwnRoom(roomId)) {
         const room = rooms[roomId];
-        const existingRoomAdmission = planExistingRoomRestoreAdmission({
+        const existingRoomResult = existingRoomRestoreRuntime.handle({
+            socket,
             room,
             roomId,
             playerIndex,
             playerName,
             reconnectToken,
-            actionLog,
-            replayStateSnapshot,
-            canonicalRecord,
-            gameStartPayload,
-            clientSnapshotTrusted,
+            admissionInput: {
+                room,
+                roomId,
+                playerIndex,
+                playerName,
+                reconnectToken,
+                actionLog,
+                replayStateSnapshot,
+                canonicalRecord,
+                gameStartPayload,
+                clientSnapshotTrusted,
+            },
         });
-        if (existingRoomAdmission.ok !== true) {
-            emitAppError(socket, existingRoomAdmission.errorMessage);
-            return;
-        }
-        if (existingRoomAdmission.action !== 'replace') {
-            if (EXISTING_ROOM_REJOIN_EFFECT_AUTHORITY_ENABLED) {
-                const rejoinResult = executeExistingRoomRejoin({
-                    detachExisting() {
-                        detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
-                    },
-                    resolvePlayer() {
-                        return resolveRejoinPlayer(
-                            room,
-                            playerIndex,
-                            playerName,
-                            reconnectToken,
-                            socket.id
-                        );
-                    },
-                    joinSocket() {
-                        socket.join(roomId);
-                    },
-                    assignSocketRoom() {
-                        socket.roomId = roomId;
-                    },
-                    assignSocketPlayer() {
-                        socket.playerIndex = playerIndex;
-                    },
-                    isHostConnected() {
-                        return isRoomHostConnected(room);
-                    },
-                    setHostPlayer() {
-                        setRoomHostPlayerIndex(room, playerIndex);
-                    },
-                    emitHostChanged() {
-                        emitRoomHostChanged(roomId, room);
-                    },
-                    persistHostReselected() {
-                        persistRoomCanonicalState(roomId, room, 'host-reselected');
-                    },
-                    logHostReselected() {
-                        console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
-                    },
-                    touchRoom() {
-                        room.lastTouchedAt = Date.now();
-                    },
-                    emitRejoinData() {
-                        socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
-                    },
-                    broadcastPlayerRejoined() {
-                        io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
-                    },
-                });
-                if (rejoinResult.ok !== true) {
-                    emitAppError(socket, rejoinResult.errorMessage);
-                }
-                return;
-            }
-            detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
-            const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
-            if (!player) {
-                emitAppError(socket, '再接続情報が一致しません');
-                return;
-            }
-            socket.join(roomId);
-            socket.roomId = roomId;
-            socket.playerIndex = playerIndex;
-            if (!isRoomHostConnected(room)) {
-                setRoomHostPlayerIndex(room, playerIndex);
-                emitRoomHostChanged(roomId, room);
-                persistRoomCanonicalState(roomId, room, 'host-reselected');
-                console.log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
-            }
-            room.lastTouchedAt = Date.now();
-            socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
-            io.to(roomId).emit('playerRejoined', { playerIndex, playerName });
-            return;
-        }
+        if (existingRoomResult.handled) return;
     }
     const preparation = prepareRestoredRoom({
         roomId,

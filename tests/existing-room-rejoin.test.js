@@ -7,6 +7,7 @@ const {
     existingRoomRejoinEffectAuthorityEnabled,
     executeExistingRoomRejoin,
 } = require('../server/existingRoomRejoin');
+const makeExistingRoomRestoreRuntime = require('../server/existingRoomRestoreRuntime');
 
 function makeHarness(overrides = {}) {
     const calls = [];
@@ -100,4 +101,108 @@ runTest('existing room rejoin executorは依存不足を全effect前に拒否す
         /broadcastPlayerRejoined effect is required/
     );
     assert.deepStrictEqual(harness.calls, []);
+});
+
+
+function makeRuntimeHarness(options = {}) {
+    const calls = [];
+    const socket = { id: 'socket-1' };
+    const dependencies = {
+        planAdmission() {
+            calls.push('planAdmission');
+            return options.admission || { ok: true, action: 'rejoin' };
+        },
+        emitAppError(_socket, message) {
+            calls.push('emitAppError:' + message);
+        },
+        effectAuthorityEnabled: options.effectAuthorityEnabled === true,
+        executeRejoin(effects) {
+            calls.push('executeRejoin');
+            return executeExistingRoomRejoin(effects);
+        },
+    };
+    for (const name of [
+        'detachExisting',
+        'resolvePlayer',
+        'joinSocket',
+        'isHostConnected',
+        'setHostPlayer',
+        'emitHostChanged',
+        'persistHostReselected',
+        'logHostReselected',
+        'touchRoom',
+        'emitRejoinData',
+        'broadcastPlayerRejoined',
+    ]) {
+        dependencies[name] = () => {
+            calls.push(name);
+            if (name === 'resolvePlayer') return options.player === null ? null : { index: 0 };
+            if (name === 'isHostConnected') return options.hostConnected !== false;
+            return undefined;
+        };
+    }
+    const runtime = makeExistingRoomRestoreRuntime(dependencies);
+    const input = {
+        socket,
+        room: {},
+        roomId: '123456',
+        playerIndex: 0,
+        playerName: 'Alice',
+        admissionInput: { marker: true },
+    };
+    return { calls, runtime, input, socket };
+}
+
+runTest('existing room restore runtimeはreplace判断を副作用なしで呼出元へ返す', () => {
+    const harness = makeRuntimeHarness({ admission: { ok: true, action: 'replace' } });
+    assert.deepStrictEqual(harness.runtime.handle(harness.input), { handled: false });
+    assert.deepStrictEqual(harness.calls, ['planAdmission']);
+});
+
+runTest('existing room restore runtimeはlegacy fallbackのeffect順とsocket割当を維持する', () => {
+    const harness = makeRuntimeHarness({ hostConnected: false });
+    assert.deepStrictEqual(harness.runtime.handle(harness.input), { handled: true });
+    assert.strictEqual(harness.socket.roomId, '123456');
+    assert.strictEqual(harness.socket.playerIndex, 0);
+    assert.deepStrictEqual(harness.calls, [
+        'planAdmission',
+        'detachExisting',
+        'resolvePlayer',
+        'joinSocket',
+        'isHostConnected',
+        'setHostPlayer',
+        'emitHostChanged',
+        'persistHostReselected',
+        'logHostReselected',
+        'touchRoom',
+        'emitRejoinData',
+        'broadcastPlayerRejoined',
+    ]);
+});
+
+runTest('existing room restore runtimeはauthority opt-in時だけ既存executorへ委譲する', () => {
+    const harness = makeRuntimeHarness({ effectAuthorityEnabled: true });
+    assert.deepStrictEqual(harness.runtime.handle(harness.input), { handled: true });
+    assert.deepStrictEqual(harness.calls.slice(0, 3), [
+        'planAdmission',
+        'executeRejoin',
+        'detachExisting',
+    ]);
+});
+
+runTest('existing room restore runtimeはadmissionとplayer不一致を同じappError境界で拒否する', () => {
+    const rejected = makeRuntimeHarness({
+        admission: { ok: false, errorMessage: '復元不可' },
+    });
+    rejected.runtime.handle(rejected.input);
+    assert.deepStrictEqual(rejected.calls, ['planAdmission', 'emitAppError:復元不可']);
+
+    const missingPlayer = makeRuntimeHarness({ player: null });
+    missingPlayer.runtime.handle(missingPlayer.input);
+    assert.deepStrictEqual(missingPlayer.calls, [
+        'planAdmission',
+        'detachExisting',
+        'resolvePlayer',
+        'emitAppError:再接続情報が一致しません',
+    ]);
 });

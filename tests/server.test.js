@@ -1684,7 +1684,7 @@ runTest('acceptedClientActionRefs は reconnect ack metadata 用の最小refを�
     const helperSource = fs.readFileSync(path.join(__dirname, '..', 'server', 'rejoinPayload.js'), 'utf8');
     const occurrences = helperSource.match(/acceptedClientActions: acceptedClientActionRefs/g) || [];
     assert.strictEqual(occurrences.length, 1);
-    assert.ok(serverSource.includes('buildRejoinDataPayload(room, playerIndex)'));
+    assert.ok(serverSource.includes('buildRejoinDataPayload(input.room, input.playerIndex)'));
     assert.ok(serverSource.includes("require('./server/rejoinPayload')"));
 });
 
