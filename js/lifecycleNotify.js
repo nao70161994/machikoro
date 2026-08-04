@@ -121,6 +121,42 @@ const LifecycleNotify = (() => {
         return lifecycleState();
     }
 
+    function createController(initialState = lifecycleState()) {
+        let state = lifecycleState(
+            initialState && initialState.sessionId,
+            initialState && initialState.startSent,
+            initialState && initialState.finishSent
+        );
+
+        function snapshot() {
+            return state;
+        }
+
+        function ensureSession(sessionId) {
+            state = ensureSessionState(state, sessionId);
+            return state;
+        }
+
+        function start(recentlySent, sessionId) {
+            const transition = startTransition(state, recentlySent, sessionId);
+            state = transition.state;
+            return transition;
+        }
+
+        function finish() {
+            const transition = finishTransition(state);
+            state = transition.state;
+            return transition;
+        }
+
+        function reset() {
+            state = resetLifecycleState();
+            return state;
+        }
+
+        return Object.freeze({ snapshot, ensureSession, start, finish, reset });
+    }
+
     function startSignature(mode, playerCount, cpuCount) {
         return [mode, playerCount, cpuCount].join('|');
     }
@@ -207,6 +243,7 @@ const LifecycleNotify = (() => {
         startTransition,
         finishTransition,
         resetLifecycleState,
+        createController,
         startSignature,
         notificationState,
         createSessionId,

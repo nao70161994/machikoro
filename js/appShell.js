@@ -887,7 +887,7 @@ const GAME_LIFECYCLE_ENDPOINT = '/api/game-lifecycle';
 const GAME_LIFECYCLE_NOTIFY_KEY = LifecycleNotify.storageKeys.notify;
 const GAME_LIFECYCLE_LEGACY_NOTIFY_KEY = LifecycleNotify.storageKeys.legacyNotify;
 const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
-let _gameLifecycleState = LifecycleNotify.lifecycleState();
+const gameLifecycleController = LifecycleNotify.createController();
 
 function readGameLifecycleNotifyValue() {
     return LifecycleNotify.readNotificationValue(appShellStorage.access);
@@ -991,16 +991,16 @@ function cpuDifficultyForWinner(winner) {
 }
 
 function buildGameLifecyclePayload(event, extra = {}) {
-    _gameLifecycleState = LifecycleNotify.ensureSessionState(
-        _gameLifecycleState,
-        _gameLifecycleState.sessionId || createGameLifecycleSessionId()
+    const currentState = gameLifecycleController.snapshot();
+    const state = gameLifecycleController.ensureSession(
+        currentState.sessionId || createGameLifecycleSessionId()
     );
     return LifecycleNotify.buildPayload({
         event,
         mode: gameLifecycleMode(),
         playerCount: gameLifecyclePlayerCount(),
         cpuCount: gameLifecycleCpuCount(),
-        sessionId: _gameLifecycleState.sessionId,
+        sessionId: state.sessionId,
         appVersion: gameLifecycleAppVersion(),
         turn: extra.turn,
         winnerKind: extra.winnerKind,
@@ -1020,16 +1020,15 @@ function sendGameLifecycleNotification(event, extra = {}) {
 }
 
 function notifyGameLifecycleStart() {
-    if (_gameLifecycleState.startSent) return false;
+    const state = gameLifecycleController.snapshot();
+    if (state.startSent) return false;
     const signature = gameLifecycleStartSignature();
     const now = Date.now();
     const recentlySent = recentlySentGameLifecycleStart(signature, now);
-    const transition = LifecycleNotify.startTransition(
-        _gameLifecycleState,
+    const transition = gameLifecycleController.start(
         recentlySent,
-        recentlySent ? _gameLifecycleState.sessionId : createGameLifecycleSessionId()
+        recentlySent ? state.sessionId : createGameLifecycleSessionId()
     );
-    _gameLifecycleState = transition.state;
     if (transition.status === 'suppressed') {
         markClientFlowCheckpoint('game-lifecycle-start-suppressed', { signature });
         return false;
@@ -1040,8 +1039,7 @@ function notifyGameLifecycleStart() {
 }
 
 function notifyGameLifecycleFinish(winner) {
-    const transition = LifecycleNotify.finishTransition(_gameLifecycleState);
-    _gameLifecycleState = transition.state;
+    const transition = gameLifecycleController.finish();
     if (!transition.shouldSend) return false;
     const cpuDifficulty = cpuDifficultyForWinner(winner);
     return sendGameLifecycleNotification(
@@ -1054,7 +1052,7 @@ function notifyGameLifecycleFinish(winner) {
 }
 
 function resetGameLifecycleForRestart(reason = 'game-restart') {
-    _gameLifecycleState = LifecycleNotify.resetLifecycleState();
+    gameLifecycleController.reset();
     LifecycleNotify.clearStartMarker(appShellStorage.access);
     markClientFlowCheckpoint(reason, { lifecycle: 'reset' });
 }

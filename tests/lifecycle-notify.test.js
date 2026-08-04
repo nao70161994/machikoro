@@ -291,3 +291,47 @@ runTest('lifecycle notify は開始通知のstrict抑止境界と壊れたmarker
         );
     }
 });
+
+
+runTest('lifecycle controllerはsession/start/finishの唯一のmutable ownerになる', () => {
+    const controller = LifecycleNotify.createController();
+    assert.deepStrictEqual(controller.snapshot(), {
+        sessionId: '', startSent: false, finishSent: false,
+    });
+    const ensured = controller.ensureSession('session-1');
+    assert.strictEqual(controller.snapshot(), ensured);
+    assert.deepStrictEqual(ensured, {
+        sessionId: 'session-1', startSent: false, finishSent: false,
+    });
+
+    const started = controller.start(false, 'ignored-session');
+    assert.strictEqual(started.status, 'send');
+    assert.strictEqual(controller.snapshot(), started.state);
+    assert.deepStrictEqual(controller.snapshot(), {
+        sessionId: 'ignored-session', startSent: true, finishSent: false,
+    });
+
+    const finished = controller.finish();
+    assert.strictEqual(finished.status, 'send');
+    assert.strictEqual(controller.snapshot(), finished.state);
+    assert.deepStrictEqual(controller.snapshot(), {
+        sessionId: 'ignored-session', startSent: true, finishSent: true,
+    });
+    assert.ok(Object.isFrozen(controller));
+});
+
+runTest('lifecycle controllerはduplicate/suppressed/resetの既存transitionを維持する', () => {
+    const controller = LifecycleNotify.createController({
+        sessionId: 'existing', startSent: false, finishSent: true,
+    });
+    const suppressed = controller.start(true, 'unused');
+    assert.strictEqual(suppressed.status, 'suppressed');
+    assert.deepStrictEqual(controller.snapshot(), {
+        sessionId: 'existing', startSent: true, finishSent: true,
+    });
+    assert.strictEqual(controller.start(false, 'unused').status, 'already-sent');
+    assert.strictEqual(controller.finish().status, 'already-sent');
+    assert.deepStrictEqual(controller.reset(), {
+        sessionId: '', startSent: false, finishSent: false,
+    });
+});
