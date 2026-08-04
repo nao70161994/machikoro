@@ -381,6 +381,10 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiTabViewSource, context, { filename: 'js/uiTabView.js' });
     const uiTabEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTabEffects.js'), 'utf8');
     vm.runInContext(uiTabEffectsSource, context, { filename: 'js/uiTabEffects.js' });
+    const gameRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameRuntimeState.js'), 'utf8');
+    vm.runInContext(gameRuntimeStateSource, context, { filename: 'js/gameRuntimeState.js' });
+    const onlineRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/onlineRuntimeState.js'), 'utf8');
+    vm.runInContext(onlineRuntimeStateSource, context, { filename: 'js/onlineRuntimeState.js' });
     const appShellSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShell.js'), 'utf8');
     vm.runInContext(appShellSource, context, { filename: 'js/appShell.js' });
     const localPlayerSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/localPlayerSettings.js'), 'utf8');
@@ -411,8 +415,6 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiDiceDisplaySource, context, { filename: 'js/uiDiceDisplay.js' });
     const gameSetupStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameSetupState.js'), 'utf8');
     vm.runInContext(gameSetupStateSource, context, { filename: 'js/gameSetupState.js' });
-    const gameRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameRuntimeState.js'), 'utf8');
-    vm.runInContext(gameRuntimeStateSource, context, { filename: 'js/gameRuntimeState.js' });
     const uiTutorialSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTutorialSettings.js'), 'utf8');
     vm.runInContext(uiTutorialSettingsSource, context, { filename: 'js/uiTutorialSettings.js' });
     const uiWinnerSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWinner.js'), 'utf8');

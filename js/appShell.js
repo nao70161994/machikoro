@@ -1,5 +1,13 @@
 const appShellStorage = AppShellStorage.createFacade();
 
+function appShellGameRuntimeSnapshot() {
+    return GameRuntimeState.runtime.snapshot();
+}
+
+function appShellOnlineRuntimeSnapshot() {
+    return OnlineRuntimeState.runtime.snapshot();
+}
+
 // ===== クライアントエラー通知 =====
 const CLIENT_ERROR_REPORT_ENDPOINT = '/api/client-error';
 const CLIENT_ERROR_REPORT_STACK_LIMIT = 2400;
@@ -49,11 +57,13 @@ function safeClientErrorUrl() {
 }
 
 function safeClientErrorContext() {
+    const gameState = appShellGameRuntimeSnapshot();
+    const onlineState = appShellOnlineRuntimeSnapshot();
     return ClientReporting.runtimeContext({
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-        phase: typeof game !== 'undefined' && game ? game.phase : '',
-        roomId: typeof myRoomId !== 'undefined' ? myRoomId : '',
-        playerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
+        phase: gameState.game ? gameState.game.phase : '',
+        roomId: onlineState.myRoomId || '',
+        playerIndex: onlineState.myPlayerIndex,
         appVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
         url: safeClientErrorUrl(),
     });
@@ -69,8 +79,9 @@ function childInteractiveState(el) {
 
 function hasBuildableCardCandidate() {
     try {
-        if (typeof game === 'undefined' || !game || game.builtThisTurn) return false;
-        const current = game.currentPlayer && game.currentPlayer();
+        const currentGame = appShellGameRuntimeSnapshot().game;
+        if (!currentGame || currentGame.builtThisTurn) return false;
+        const current = currentGame.currentPlayer && currentGame.currentPlayer();
         if (!current || typeof CARDS === 'undefined' || !Array.isArray(CARDS)) return false;
         return CARDS.some(card => {
             if (!card) return false;
@@ -86,8 +97,9 @@ function hasBuildableCardCandidate() {
 
 function hasBuildableLandmarkCandidate() {
     try {
-        if (typeof game === 'undefined' || !game || game.builtThisTurn) return false;
-        const current = game.currentPlayer && game.currentPlayer();
+        const currentGame = appShellGameRuntimeSnapshot().game;
+        if (!currentGame || currentGame.builtThisTurn) return false;
+        const current = currentGame.currentPlayer && currentGame.currentPlayer();
         if (!current || !current.landmarks) return false;
         return Object.entries(current.landmarks).some(([name, built]) => {
             if (built) return false;
@@ -109,7 +121,7 @@ function expectedChildSpecForEntry(snapshot, entry) {
     let hasUndoState = false;
     if (action === 'undoBuild') {
         try {
-            hasUndoState = typeof undoState !== 'undefined' && !!undoState;
+            hasUndoState = !!appShellGameRuntimeSnapshot().undoState;
         } catch (_) {}
     }
     const required = UiWatchdog.shouldRequireActionChildren(action, {
@@ -176,10 +188,11 @@ function classListText(el) {
 }
 
 function allowedActionListForSnapshot() {
-    if (typeof game === 'undefined' || !game) return [];
+    const currentGame = appShellGameRuntimeSnapshot().game;
+    if (!currentGame) return [];
     try {
-        if (typeof game.allowedActions === 'function') return Array.from(game.allowedActions());
-        if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') return Array.from(GameManager.allowedActionsFor(game));
+        if (typeof currentGame.allowedActions === 'function') return Array.from(currentGame.allowedActions());
+        if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') return Array.from(GameManager.allowedActionsFor(currentGame));
     } catch (_) {}
     return [];
 }
@@ -323,10 +336,13 @@ function appShellOnlineActionFlightState() {
 }
 
 function buildClientRuntimeSnapshot(reason = '') {
-    const hasGame = typeof game !== 'undefined' && !!game;
-    const currentPlayerIndex = hasGame ? game.currentPlayerIndex : null;
+    const gameState = appShellGameRuntimeSnapshot();
+    const onlineState = appShellOnlineRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const hasGame = !!currentGame;
+    const currentPlayerIndex = hasGame ? currentGame.currentPlayerIndex : null;
     let isCpuTurn = false;
-    try { isCpuTurn = !!(hasGame && Array.isArray(cpuPlayers) && cpuPlayers[currentPlayerIndex]); } catch (_) {}
+    try { isCpuTurn = !!(hasGame && Array.isArray(gameState.cpuPlayers) && gameState.cpuPlayers[currentPlayerIndex]); } catch (_) {}
     let cpuStepScheduled = false;
     let cpuSchedulerHealth = null;
     try {
@@ -352,23 +368,23 @@ function buildClientRuntimeSnapshot(reason = '') {
         }
     } catch (_) {}
     let hasWinner = false;
-    try { hasWinner = !!(hasGame && typeof game.checkWinner === 'function' && game.checkWinner()); } catch (_) {}
+    try { hasWinner = !!(hasGame && typeof currentGame.checkWinner === 'function' && currentGame.checkWinner()); } catch (_) {}
     return ClientRuntimeSnapshot.build({
         reason,
         timestamp: new Date().toISOString(),
         game: {
-            phase: hasGame ? game.phase : '',
+            phase: hasGame ? currentGame.phase : '',
             hasWinner,
-            builtThisTurn: !!(hasGame && game.builtThisTurn),
-            turnCount: hasGame ? game.turnCount : null,
+            builtThisTurn: !!(hasGame && currentGame.builtThisTurn),
+            turnCount: hasGame ? currentGame.turnCount : null,
             currentPlayerIndex,
             pendingFields: hasGame ? {
-                pendingTV: game.pendingTV || 0,
-                pendingBusiness: game.pendingBusiness || 0,
-                pendingCleaning: game.pendingCleaning || 0,
-                pendingMover: game.pendingMover || 0,
-                pendingRenovation: game.pendingRenovation || 0,
-                pendingIT: !!game.pendingIT,
+                pendingTV: currentGame.pendingTV || 0,
+                pendingBusiness: currentGame.pendingBusiness || 0,
+                pendingCleaning: currentGame.pendingCleaning || 0,
+                pendingMover: currentGame.pendingMover || 0,
+                pendingRenovation: currentGame.pendingRenovation || 0,
+                pendingIT: !!currentGame.pendingIT,
             } : null,
         },
         cpu: {
@@ -377,13 +393,13 @@ function buildClientRuntimeSnapshot(reason = '') {
             schedulerHealth: cpuSchedulerHealth,
         },
         online: {
-            isOnlineGame: typeof isOnlineGame !== 'undefined' ? !!isOnlineGame : null,
-            isRoomHost: typeof isRoomHost !== 'undefined' ? !!isRoomHost : null,
-            myPlayerIndex: typeof myPlayerIndex !== 'undefined' ? myPlayerIndex : null,
+            isOnlineGame: !!onlineState.isOnlineGame,
+            isRoomHost: !!onlineState.isRoomHost,
+            myPlayerIndex: onlineState.myPlayerIndex,
             actionInFlight: appShellOnlineActionFlightState().inFlight,
             actionInFlightAt: appShellOnlineActionFlightState().startedAt,
-            isReconnecting: typeof isReconnectingOnline !== 'undefined' ? !!isReconnectingOnline : null,
-            socketConnected: typeof socket !== 'undefined' && socket ? socket.connected !== false : null,
+            isReconnecting: !!onlineState.isReconnectingOnline,
+            socketConnected: onlineState.socket ? onlineState.socket.connected !== false : null,
         },
         allowedActions: allowedActionListForSnapshot(),
         dom: {
@@ -778,7 +794,7 @@ function createGameLifecycleSessionId() {
 function gameLifecycleCpuCount() {
     try {
         return LifecycleNotify.cpuCount(
-            typeof cpuPlayers !== 'undefined' ? cpuPlayers : null
+            appShellGameRuntimeSnapshot().cpuPlayers
         );
     } catch (_) {
         return 0;
@@ -787,8 +803,9 @@ function gameLifecycleCpuCount() {
 
 function gameLifecyclePlayerCount() {
     try {
-        if (typeof game !== 'undefined' && game && Array.isArray(game.players)) {
-            return LifecycleNotify.playerCount(game.players, 0);
+        const currentGame = appShellGameRuntimeSnapshot().game;
+        if (currentGame && Array.isArray(currentGame.players)) {
+            return LifecycleNotify.playerCount(currentGame.players, 0);
         }
     } catch (_) {}
     try {
@@ -801,7 +818,7 @@ function gameLifecyclePlayerCount() {
 function gameLifecycleMode() {
     try {
         return LifecycleNotify.gameMode(
-            typeof isOnlineGame !== 'undefined' && isOnlineGame
+            appShellOnlineRuntimeSnapshot().isOnlineGame
         );
     } catch (_) {
         return 'local';
@@ -837,9 +854,10 @@ function rememberGameLifecycleStart(signature, now = Date.now()) {
 
 function cpuDifficultyForWinner(winner) {
     try {
+        const gameState = appShellGameRuntimeSnapshot();
         return LifecycleNotify.winnerCpuDifficulty(
-            typeof game !== 'undefined' && game ? game.players : null,
-            typeof cpuPlayers !== 'undefined' ? cpuPlayers : null,
+            gameState.game ? gameState.game.players : null,
+            gameState.cpuPlayers,
             winner
         );
     } catch (_) {
@@ -902,7 +920,7 @@ function notifyGameLifecycleFinish(winner) {
     return sendGameLifecycleNotification(
         'play-finish',
         LifecycleNotify.finishPayloadExtras(
-            typeof game !== 'undefined' && game ? game.turnCount : 0,
+            appShellGameRuntimeSnapshot().game?.turnCount || 0,
             cpuDifficulty
         )
     );
@@ -1189,7 +1207,7 @@ function ensurePostBuildUndoButtonForRecovery(snapshot) {
     const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
     if (!snapshot || snapshot.phase !== 'build' || !snapshot.builtThisTurn || !allowed.includes('undoBuild')) return false;
     try {
-        if (typeof undoState === 'undefined' || !undoState) return false;
+        if (!appShellGameRuntimeSnapshot().undoState) return false;
     } catch (_) {
         return false;
     }

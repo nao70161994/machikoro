@@ -76,6 +76,14 @@ runTest('game runtime compatibility globalsは製品向けread-only投影を選�
     assert.strictEqual(root.game, replacement);
 });
 
+runTest('app shellはlive gameをruntime snapshot境界から読む', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'appShell.js'), 'utf8');
+    assert.ok(source.includes('GameRuntimeState.runtime.snapshot()'));
+    for (const pattern of ['typeof game', 'typeof cpuPlayers', 'typeof undoState']) {
+        assert.strictEqual(source.includes(pattern), false, pattern);
+    }
+});
+
 runTest('live game production writersはnamed runtime operationだけを使う', () => {
     const assignment = new RegExp(
         String.raw`^\s*(${GameRuntimeState.fields.join('|')})\s*=`,

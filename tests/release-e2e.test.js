@@ -137,7 +137,15 @@ function loadAppShellRuntime(profile = MOBILE_PROFILES[0]) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/actionContract.js', 'js/clientStorage.js', 'js/appShellStorage.js', 'js/clientCheckpoint.js', 'js/clientReporting.js', 'js/clientReportingTransport.js', 'js/lifecycleNotify.js', 'js/lifecycleTransport.js', 'js/clientEventRuntime.js', 'js/uiWatchdog.js', 'js/uiWatchdogMonitor.js', 'js/uiWatchdogReporting.js', 'js/clientRuntimeSnapshot.js', 'js/crashScreen.js', 'js/crashScreenEffects.js', 'js/pwaShell.js', 'js/actionUiRegistry.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiDomSnapshot.js', 'js/uiRecoveryEffects.js', 'js/appShell.js']);
+    loadScripts(context, ['js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/actionContract.js', 'js/clientStorage.js', 'js/appShellStorage.js', 'js/clientCheckpoint.js', 'js/clientReporting.js', 'js/clientReportingTransport.js', 'js/lifecycleNotify.js', 'js/lifecycleTransport.js', 'js/clientEventRuntime.js', 'js/uiWatchdog.js', 'js/uiWatchdogMonitor.js', 'js/uiWatchdogReporting.js', 'js/clientRuntimeSnapshot.js', 'js/crashScreen.js', 'js/crashScreenEffects.js', 'js/pwaShell.js', 'js/actionUiRegistry.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiDomSnapshot.js', 'js/uiRecoveryEffects.js', 'js/appShell.js']);
+    context.OnlineRuntimeState.runtime.restoreIdentity({
+        isRoomHost: false,
+        playerName: '',
+        roomId: 'ABCD',
+        originalPlayerIndex: 1,
+        playerIndex: 1,
+        reconnectToken: '',
+    });
     return { context, elements, fetchCalls };
 }
 

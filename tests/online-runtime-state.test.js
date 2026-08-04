@@ -130,3 +130,13 @@ runTest('online runtime stateのnamed transitionはboolean正規化とidentity c
         token: cleared.reconnectToken,
     }, { host: false, current: -1, original: -1, name: '', roomId: null, token: '' });
 });
+
+runTest('app shellはonline sessionをruntime snapshot境界から読む', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'appShell.js'), 'utf8');
+    assert.ok(source.includes('OnlineRuntimeState.runtime.snapshot()'));
+    for (const field of OnlineRuntimeState.fields) {
+        assert.strictEqual(source.includes(`typeof ${field}`), false, field);
+    }
+});
