@@ -761,3 +761,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `appShell.js` retains classic-script dependency resolution and compatibility entry points used by `main.js`, `ui.js`, `online.js`, and `storage.js`. Its size decreased from 775 to 650 lines; the 280-line UI lock owner is independently linted, type-checked, and unit-tested.
 - Focused tests fix stale-confirm cleanup, the unchanged `[0, 250, 1500, 3500]` post-build schedule, and human-turn render/action-lock ordering. Existing integration coverage preserves pending/modal/accessibility recovery and online/CPU freeze behavior. Scoped gates now cover 233 ESLint maintenance files and 232 checkJs runtime files.
 - UI text, modal/focus semantics, game rules, CPU decisions/RNG, scheduler policy, online protocol/reconnect, persistence, reports, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 81 app-shell client reporting runtime
+
+- `js/appShellClientReportingRuntime.js` now owns client URL/context capture, freeze-stack normalization, report construction/keying, 10-second duplicate admission, transport dispatch, and manual debug-report assembly through injected game/online/browser/checkpoint dependencies.
+- `appShell.js` retains composition plus the existing `buildClientErrorReport`, `reportClientError`, and debug window entry points. Its size decreased from 650 to 600 lines; direct transport ownership is guarded against returning to the composition root.
+- Focused contracts preserve query/hash redaction, runtime context fields, `/api/client-error`, duplicate suppression, debug checkpoint/snapshot content, and fail-fast dependency validation. Scoped gates now cover 234 ESLint maintenance files and 233 checkJs runtime files.
+- Report payload/schema, notification behavior, game rules, CPU decisions/RNG, online protocol/reconnect, persistence, UI, and PWA/SW behavior are unchanged.

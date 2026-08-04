@@ -920,3 +920,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `AppShellUiLockRuntime` is the browser application layer for modal and shell-lock recovery, game-reset cleanup, post-build stabilization, and human-turn unlock synchronization. It composes `UiWatchdog` policy with `UiRecoveryEffects`, render effects, monitor state, and captured snapshots.
 2. Cross-script functions `resetUiLocksForGameReset`, `schedulePostBuildUiStabilizer`, and `unlockUiForHumanTurn` remain app-shell compatibility delegates, preserving consumers in main, UI, online, and storage code.
 3. Unit, main, integration, PWA, release, lint, and checkJs gates preserve modal/focus state, timer values, effect ordering, and recovery outcomes without changing gameplay or externally visible contracts.
+
+## 2026-08-05 Batch 81 boundary update
+
+1. `AppShellClientReportingRuntime` is the application layer over pure `ClientReporting` policy and `ClientReportingTransport`, owning context capture, duplicate admission, payload construction, dispatch, and debug-report sequencing.
+2. Game/online state, browser facts, clock, fetch, checkpoints, and diagnostic snapshots are injected. `appShell.js` retains only dependency composition and its established report compatibility functions.
+3. Unit, main, integration, PWA, release, lint, and checkJs gates preserve redaction, endpoint/payload, suppression timing, checkpoint order, and freeze-report behavior.

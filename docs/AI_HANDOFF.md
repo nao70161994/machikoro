@@ -979,3 +979,10 @@ Test index:
 - Preserve the app-shell compatibility delegates `resetUiLocksForGameReset`, `schedulePostBuildUiStabilizer`, and `unlockUiForHumanTurn`; `main.js`, `ui.js`, `online.js`, and `storage.js` resolve them as classic-script globals.
 - Modal close functions and mutable accessibility state remain late-resolved effects because `ui.js` loads after `appShell.js`. Do not capture them during runtime creation.
 - Scoped gates cover 233 ESLint files and 232 checkJs runtimes; `appShell.js` is now 650 lines and remains the browser composition root.
+
+## Batch 81 handoff (2026-08-05)
+
+- Client-error context capture, stack normalization, report construction/keying, duplicate admission, transport dispatch, and manual debug-report sequencing belong to `AppShellClientReportingRuntime`. `ClientReporting` remains pure policy and `ClientReportingTransport` remains the fetch effect.
+- Preserve `buildClientErrorReport`, `reportClientError`, and `window.__machikoroSendTestErrorReport` as app-shell compatibility delegates; online/UI/event consumers resolve `reportClientError` as a classic-script global.
+- Browser/game/online facts and fetch remain injected/lazy. Do not read ambient state or call `ClientReportingTransport.send` directly from `appShell.js`.
+- Scoped gates cover 234 ESLint files and 233 checkJs runtimes; `appShell.js` is now 600 lines and remains the browser composition root.
