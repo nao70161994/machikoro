@@ -183,6 +183,7 @@
     "server/disconnectSocketHandler.js",
     "server/hostlessRestoreCoordinator.js",
     "server/hostlessRestoreGateway.js",
+    "server/hostlessRestoreApproval.js",
     "server/hostlessRestoreDiagnostics.js",
     "server/ntfyNotifier.js",
     "server/restoreRank.js",

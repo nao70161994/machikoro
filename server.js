@@ -108,6 +108,7 @@ const {
     hostlessRestoreEnabled,
 } = require('./server/hostlessRestoreRuntime');
 const makeHostlessRestoreDiagnostics = require('./server/hostlessRestoreDiagnostics');
+const makeHostlessRestoreApproval = require('./server/hostlessRestoreApproval');
 const {
     hostlessRestoreRoomLogId,
     hostlessRestoreDiagnostic,
@@ -746,18 +747,11 @@ function logHostlessRestoreCoordinatorEvent(event) {
 }
 
 
-function approveHostlessRestoreCandidate(socket, payload, metadata = {}) {
-    const roomId = typeof payload?.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
-    if (!roomId || hasOwnRoom(roomId)) return { ok: false, reason: 'room-exists' };
-    const result = handleRecreateRoom(socket, payload, {
-        approvedHostless: true,
-        candidateCount: metadata.candidateCount,
-    });
-    if (!result?.ok || !rooms[roomId]?.provisionalRestore) {
-        return { ok: false, reason: result?.reason || 'restore-failed' };
-    }
-    return { ok: true };
-}
+const { approve: approveHostlessRestoreCandidate } = makeHostlessRestoreApproval({
+    hasRoom: hasOwnRoom,
+    recreateRoom: handleRecreateRoom,
+    roomForId: roomId => rooms[roomId],
+});
 
 hostlessRestoreRuntime = createHostlessRestoreRuntime({
     io,
