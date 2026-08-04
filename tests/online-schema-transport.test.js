@@ -113,4 +113,18 @@ function createHarness(enabledNames = []) {
     assert.strictEqual(transport.acceptsSelection({}), false);
 }
 
+
+{
+    const selection = { actionSchemaVersion: 1, snapshotSchemaVersion: 1 };
+    const controller = OnlineSchemaTransport.createSelectionController();
+    assert.strictEqual(controller.get(), null);
+    assert.strictEqual(controller.set(selection), selection);
+    assert.strictEqual(controller.get(), selection);
+    assert.deepStrictEqual(controller.snapshot(), { selection });
+    assert.ok(Object.isFrozen(controller.snapshot()));
+    controller.clear();
+    assert.strictEqual(controller.get(), null);
+    assert.strictEqual(controller.set(undefined), null);
+}
+
 console.log('online-schema-transport.test.js passed');

@@ -1,6 +1,29 @@
 'use strict';
 
 const OnlineSchemaTransport = (() => {
+    function createSelectionController(initialSelection = null) {
+        let selection = initialSelection || null;
+
+        function get() {
+            return selection;
+        }
+
+        function set(value) {
+            selection = value || null;
+            return selection;
+        }
+
+        function clear() {
+            selection = null;
+        }
+
+        function snapshot() {
+            return Object.freeze({ selection });
+        }
+
+        return Object.freeze({ get, set, clear, snapshot });
+    }
+
     function create(options = {}) {
         const runtimeFlags = options.runtimeFlags || null;
         const negotiation = options.negotiation || null;
@@ -102,7 +125,7 @@ const OnlineSchemaTransport = (() => {
         });
     }
 
-    return Object.freeze({ create });
+    return Object.freeze({ create, createSelectionController });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = OnlineSchemaTransport;

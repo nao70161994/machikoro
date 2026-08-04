@@ -295,7 +295,7 @@ function loadOnlineRuntime(options = {}) {
             if (typeof v.isRoomHost !== 'undefined') isRoomHost = v.isRoomHost;
             if (typeof v.onlineActionInFlight !== 'undefined') onlineActionInFlight = v.onlineActionInFlight;
             if (typeof v.hostlessRestorePending !== 'undefined') _hostlessRestoreState.setPending(v.hostlessRestorePending);
-            if (typeof v.onlineGameSchemaSelection !== 'undefined') onlineGameSchemaSelection = v.onlineGameSchemaSelection;
+            if (typeof v.onlineGameSchemaSelection !== 'undefined') onlineSchemaSelectionController.set(v.onlineGameSchemaSelection);
             if (typeof v.myRoomId !== 'undefined') myRoomId = v.myRoomId;
             if (typeof v.myOriginalPlayerIndex !== 'undefined') myOriginalPlayerIndex = v.myOriginalPlayerIndex;
             if (typeof v.myPlayerName !== 'undefined') myPlayerName = v.myPlayerName;

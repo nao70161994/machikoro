@@ -45,7 +45,7 @@ function getOnlineSchemaTransport() {
         actionWire: typeof GameSchemaWire !== 'undefined' ? GameSchemaWire : null,
         recreateWire: typeof GameSchemaRecreateWire !== 'undefined' ? GameSchemaRecreateWire : null,
         getFlagRoot: () => typeof window !== 'undefined' ? window : null,
-        getSelection: () => onlineGameSchemaSelection,
+        getSelection: () => onlineSchemaSelectionController.get(),
     });
     return onlineSchemaTransport;
 }
@@ -145,7 +145,7 @@ function setOnlineReconnectLegacyFlag(value) {
 }
 let onlineActionInFlight = false;
 let onlineActionInFlightAt = 0;
-let onlineGameSchemaSelection = null;
+const onlineSchemaSelectionController = OnlineSchemaTransport.createSelectionController();
 let _rejoinRetryCount = 0;
 let _rejoinRetryTimer = null;
 let _rejoinRetryDeadline = 0;
@@ -1913,7 +1913,7 @@ function resetOnlineState() {
         },
         clearRoom() { myRoomId = null; },
         clearReconnectToken() { reconnectToken = ''; },
-        clearSchemaSelection() { onlineGameSchemaSelection = null; },
+        clearSchemaSelection() { onlineSchemaSelectionController.clear(); },
         clearReplayFlag() { isReplaying = false; },
         clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
         clearActionInFlight() { _setOnlineActionInFlight(false); },
@@ -2683,7 +2683,7 @@ function initSocket() {
             document.getElementById("onlineStatus").textContent = 'ゲーム状態のschema versionに対応していません。アプリを更新してください。';
             return;
         }
-        onlineGameSchemaSelection = gameSchema || null;
+        onlineSchemaSelectionController.set(gameSchema);
         _clearRejoinRetry();
         _hostlessRestoreState.clear();
         _clearOnlineRestoreQuarantine();
@@ -2930,7 +2930,7 @@ function initSocket() {
             document.getElementById("onlineStatus").textContent = '復元データのschema versionに対応していません。アプリを更新してください。';
             return;
         }
-        onlineGameSchemaSelection = gameStartPayload.gameSchema || null;
+        onlineSchemaSelectionController.set(gameStartPayload.gameSchema);
         const shouldCarryRestoreEvents = _onlineRestoreInProgress || _onlineRestoreQuarantined;
         const carriedEvents = shouldCarryRestoreEvents ? _readOnlineRestoreEventQueue().slice() : [];
         const restoreGeneration = _incrementOnlineRestoreGeneration();
