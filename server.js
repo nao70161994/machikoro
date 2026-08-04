@@ -72,6 +72,7 @@ const GameSchemaWire = require('./js/gameSchemaWire');
 const GameSchemaRecreateWire = require('./js/gameSchemaRecreateWire');
 const OnlineReconnectState = require('./js/onlineReconnectState');
 const makeGameSettings = require('./server/gameSettings');
+const RLModelCatalog = require('./js/rlModelCatalog');
 const makeGameStartPayload = require('./server/gameStartPayload');
 const makeGameStartLifecycle = require('./server/gameStartLifecycle');
 const makeGameStartCoordinator = require('./server/gameStartCoordinator');
@@ -612,12 +613,7 @@ function cpuDifficultyLabel(difficulty) {
 }
 
 const ALLOWED_CPU_DIFFICULTIES = new Set(['weak', 'normal', 'strong', 'expert', 'rl']);
-const ALLOWED_RL_MODEL_IDS = new Set([
-    'self-only-4p-h256-lr1e5-5000-seed103',
-    'self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3',
-    'self-only-both-h256-lr2e5-5000-seed70-rewardcap',
-    'self-only-both-h256-lr2e5-5000-seed69-rewardcap',
-]);
+const ALLOWED_RL_MODEL_IDS = new Set(RLModelCatalog.modelIds);
 
 const gameSettings = makeGameSettings({
     cardNames: gameRuntime.CARDS.map(card => card.name),

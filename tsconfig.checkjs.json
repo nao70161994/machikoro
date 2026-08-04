@@ -49,6 +49,7 @@
     "js/uiRenderRuntime.js",
     "js/stats.js",
     "js/uiStatsView.js",
+    "js/rlModelCatalog.js",
     "js/RLModelPortfolio.js",
     "js/RLCPU.js",
     "js/gameSnapshot.js",

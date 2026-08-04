@@ -7,9 +7,10 @@ const { loadScript, runTest } = require('./helpers/test-utils');
 function loadPortfolio(overrides = {}) {
     const context = Object.assign({ console, Math: Object.create(Math) }, overrides);
     vm.createContext(context);
+    loadScript(context, 'js/rlModelCatalog.js');
     loadScript(context, 'js/RLModelPortfolio.js');
     vm.runInContext(
-        'this.RLModelPortfolio = RLModelPortfolio; this.RL_MODEL_PORTFOLIO = RL_MODEL_PORTFOLIO;',
+        'this.RLModelCatalog = RLModelCatalog; this.RLModelPortfolio = RLModelPortfolio; this.RL_MODEL_PORTFOLIO = RL_MODEL_PORTFOLIO;',
         context
     );
     return context;
@@ -18,6 +19,20 @@ function loadPortfolio(overrides = {}) {
 function repoPath(relativePath) {
     return path.join(__dirname, '..', relativePath);
 }
+
+runTest('RL model portfolio: client runtimeは共有frozen catalogを正本にする', () => {
+    const { RLModelCatalog, RLModelPortfolio, RL_MODEL_PORTFOLIO } = loadPortfolio();
+    assert.strictEqual(RL_MODEL_PORTFOLIO, RLModelCatalog.models);
+    assert.strictEqual(RLModelPortfolio.models, RLModelCatalog.models);
+    assert.ok(Object.isFrozen(RLModelCatalog));
+    assert.ok(Object.isFrozen(RLModelCatalog.models));
+    assert.ok(Object.isFrozen(RLModelCatalog.modelIds));
+    assert.ok(RLModelCatalog.models.every(Object.isFrozen));
+    assert.deepStrictEqual(
+        Array.from(RLModelCatalog.modelIds),
+        Array.from(RLModelCatalog.models, model => model.id)
+    );
+});
 
 runTest('RL model portfolio: 配布モデルの参照先ファイルが存在する', () => {
     const { RL_MODEL_PORTFOLIO } = loadPortfolio();

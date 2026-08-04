@@ -15,6 +15,7 @@ declare var showConfirm: ((message: string, onConfirm: () => void) => void) | un
 declare var UiWinnerEffects: typeof import("../js/uiWinnerEffects");
 declare var UiGameStatusEffects: typeof import("../js/uiGameStatusEffects");
 declare var UiTutorialSettings: typeof import("../js/uiTutorialSettings");
+declare var RLModelCatalog: typeof import("../js/rlModelCatalog");
 
 declare var CPUProfile: typeof import("../js/cpuProfile").CPUProfile;
 declare var CPUSelection: typeof import("../js/cpuSelection").CPUSelection;
@@ -41,6 +42,7 @@ declare var sendAction: ((action: string, data: Record<string, unknown>) => bool
 
 // Browser-global publication names for the explicitly checked compatibility modules.
 interface Window {
+    RLModelCatalog: unknown;
     GameTurnPolicy: unknown;
     GameDicePolicy: unknown;
     GameCardActivationPolicy: unknown;

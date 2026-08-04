@@ -59,6 +59,7 @@ const STATIC_ASSETS = [
   '/js/cpuPendingResolution.js',
   '/js/CPU.js',
   '/js/RLCPU.js',
+  '/js/rlModelCatalog.js',
   '/js/RLModelPortfolio.js',
   '/js/adSlots.js',
   '/js/confetti.js',

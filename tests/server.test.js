@@ -1513,7 +1513,7 @@ runTest('hasInvalidOnlineRlModelSettings はrl model id未指定を拒否対象�
 runTest('server のRLモデル許可リストは portfolio と一致する', () => {
     const context = {};
     vm.createContext(context);
-    vm.runInContext(`${fs.readFileSync(path.join(__dirname, '..', 'js', 'RLModelPortfolio.js'), 'utf8')}\nthis.__portfolioIds = RLModelPortfolio.models.map(model => model.id);`, context);
+    vm.runInContext(`${fs.readFileSync(path.join(__dirname, '..', 'js', 'rlModelCatalog.js'), 'utf8')}\n${fs.readFileSync(path.join(__dirname, '..', 'js', 'RLModelPortfolio.js'), 'utf8')}\nthis.__portfolioIds = RLModelPortfolio.models.map(model => model.id);`, context);
     const portfolioIds = Array.from(context.__portfolioIds).sort();
     assert.deepStrictEqual([...ALLOWED_RL_MODEL_IDS].sort(), portfolioIds);
 });
