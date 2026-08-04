@@ -319,13 +319,13 @@ class CPU {
     }
 
     _expertCrowdNormalPlan(game) {
-        if (this.difficulty !== "expert") return false;
-        if (!game || !game.players || game.players.length < 4) return false;
-        const current = game.currentPlayer ? game.currentPlayer() : null;
-        if (!current) return false;
-        const remaining = this._remainingEnabledLandmarks(current, game);
-        const stableIncome = this._estimateStableIncome(game, current);
-        return remaining.length > 1 || stableIncome < 10;
+        return CPUEvaluation.expertCrowdNormalPlan({
+            difficulty: this.difficulty,
+            playerCount: () => game && game.players ? game.players.length : 0,
+            currentPlayer: () => game && game.currentPlayer ? game.currentPlayer() : null,
+            remainingLandmarkCount: current => this._remainingEnabledLandmarks(current, game).length,
+            stableIncome: current => this._estimateStableIncome(game, current),
+        });
     }
 
     _expertCrowdDisruptionBonus(game, targetIndex, amount) {

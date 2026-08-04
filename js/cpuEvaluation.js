@@ -46,6 +46,21 @@ const CPUEvaluation = Object.freeze({
         return score;
     },
 
+    expertCrowdNormalPlan(facts = {}) {
+        if (facts.difficulty !== 'expert') return false;
+        const playerCount = typeof facts.playerCount === 'function'
+            ? facts.playerCount()
+            : facts.playerCount;
+        if (playerCount < 4) return false;
+        const current = typeof facts.currentPlayer === 'function'
+            ? facts.currentPlayer()
+            : facts.currentPlayer;
+        if (!current) return false;
+        const remainingLandmarkCount = facts.remainingLandmarkCount(current);
+        const stableIncome = facts.stableIncome(current);
+        return remainingLandmarkCount > 1 || stableIncome < 10;
+    },
+
     expertCardPenalty(facts = {}) {
         const cardName = facts.cardName;
         const copies = facts.copies;

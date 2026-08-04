@@ -1944,3 +1944,41 @@ runTest('CPU evaluation のexpert card penaltyは改装屋以外でlandmark coun
     assert.strictEqual(CPUEvaluation.expertCardPenalty({ ...facts, cardName: '改装屋' }), 23);
     assert.strictEqual(reads, 1);
 });
+
+runTest('CPU evaluation はexpert 4人戦のnormal寄せ条件をpureに固定する', () => {
+    const current = { id: 'current' };
+    const evaluate = (overrides = {}) => CPUEvaluation.expertCrowdNormalPlan({
+        difficulty: 'expert',
+        playerCount: 4,
+        currentPlayer: current,
+        remainingLandmarkCount: () => 2,
+        stableIncome: () => 12,
+        ...overrides,
+    });
+    assert.strictEqual(evaluate(), true);
+    assert.strictEqual(evaluate({ remainingLandmarkCount: () => 1 }), false);
+    assert.strictEqual(evaluate({ remainingLandmarkCount: () => 1, stableIncome: () => 9 }), true);
+    assert.strictEqual(evaluate({ difficulty: 'strong' }), false);
+    assert.strictEqual(evaluate({ playerCount: 3 }), false);
+    assert.strictEqual(evaluate({ currentPlayer: null }), false);
+});
+
+runTest('CPU evaluation のexpert normal寄せ判定は既存fact順と短絡を維持する', () => {
+    const trace = [];
+    const result = CPUEvaluation.expertCrowdNormalPlan({
+        difficulty: 'expert',
+        playerCount() { trace.push('count'); return 4; },
+        currentPlayer() { trace.push('current'); return { id: 1 }; },
+        remainingLandmarkCount(current) { trace.push(['remaining', current.id]); return 3; },
+        stableIncome(current) { trace.push(['income', current.id]); return 20; },
+    });
+    assert.strictEqual(result, true);
+    assert.deepStrictEqual(trace, ['count', 'current', ['remaining', 1], ['income', 1]]);
+
+    trace.length = 0;
+    assert.strictEqual(CPUEvaluation.expertCrowdNormalPlan({
+        difficulty: 'normal',
+        playerCount() { throw new Error('must stay lazy'); },
+    }), false);
+    assert.deepStrictEqual(trace, []);
+});
