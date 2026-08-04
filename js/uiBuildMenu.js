@@ -9,6 +9,30 @@ const UiBuildMenu = (() => {
         });
     }
 
+    function createFilterController(initialFilter = '') {
+        let cardFilter = initialFilter;
+
+        function get() {
+            return cardFilter;
+        }
+
+        function set(requestedFilter) {
+            const transition = cardFilterTransition(cardFilter, requestedFilter);
+            cardFilter = transition.cardFilter;
+            return transition;
+        }
+
+        function clear() {
+            cardFilter = '';
+        }
+
+        function snapshot() {
+            return Object.freeze({ cardFilter });
+        }
+
+        return Object.freeze({ get, set, clear, snapshot });
+    }
+
     function safeCardColorName(color) {
         return ['blue', 'green', 'red', 'purple'].includes(color) ? color : 'blue';
     }
@@ -94,7 +118,7 @@ const UiBuildMenu = (() => {
         return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    return Object.freeze({ cardFilterTransition, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, buildCardFilterBarHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
+    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, buildCardFilterBarHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

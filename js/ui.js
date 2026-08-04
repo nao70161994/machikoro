@@ -597,13 +597,13 @@ function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
 }
 
 function buildCardFilterBarHtml() {
-    return UiBuildMenu.buildCardFilterBarHtml(cardFilter);
+    return UiBuildMenu.buildCardFilterBarHtml(buildMenuFilterController.get());
 }
 
 function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
     return UiBuildMenu.buildVisibleCardButtonsHtml({
         cards: CARDS,
-        cardFilter,
+        cardFilter: buildMenuFilterController.get(),
         enabledCards,
         shopStock: SHOP_STOCK,
         current,
@@ -696,8 +696,7 @@ function renderBuildMenu() {
 }
 
 function setCardFilter(color) {
-    const transition = UiBuildMenu.cardFilterTransition(cardFilter, color);
-    cardFilter = transition.cardFilter;
+    const transition = buildMenuFilterController.set(color);
     if (transition.shouldRender) renderBuildMenu();
 }
 
@@ -792,7 +791,7 @@ function applyCardSelectStateSnapshot() {
 const logHistoryController = UiLogDisplay.createHistoryController();
 let prevPlayerIndex = -1;
 let turnAnnouncerTimerController = null;
-let cardFilter = '';
+const buildMenuFilterController = UiBuildMenu.createFilterController();
 let activeModalId = null;
 let lastModalFocus = null;
 let modalInertRestore = [];
@@ -915,7 +914,7 @@ function compareCardNamesForDisplay(a, b) {
     return UiCardOrder.compareCardNamesForDisplay(a, b, CARDS, CARD_COLOR_ORDER);
 }
 
-function resetFullLog() { logHistoryController.reset(); prevPlayerIndex = -1; cardFilter = ''; }
+function resetFullLog() { logHistoryController.reset(); prevPlayerIndex = -1; buildMenuFilterController.clear(); }
 
 function isVisibleFocusableElement(el) {
     if (!el || el.disabled || el.hidden || el.getAttribute('aria-hidden') === 'true') return false;

@@ -1468,6 +1468,23 @@ runTest('UiBuildMenu card filter transitionはstate更新と再描画要求をpu
     });
 });
 
+runTest('UiBuildMenu filter controllerは選択・再選択・resetを単独所有する', () => {
+    const helper = require('../js/uiBuildMenu');
+    const controller = helper.createFilterController();
+    assert.deepStrictEqual(controller.snapshot(), { cardFilter: '' });
+    assert.deepStrictEqual(controller.set('green'), {
+        cardFilter: 'green', changed: true, shouldRender: true,
+    });
+    assert.strictEqual(controller.get(), 'green');
+    assert.deepStrictEqual(controller.set('green'), {
+        cardFilter: 'green', changed: false, shouldRender: true,
+    });
+    controller.set('future-filter');
+    controller.clear();
+    assert.strictEqual(controller.get(), '');
+    assert.ok(Object.isFrozen(controller.snapshot()));
+});
+
 runTest('UiBuildMenu action state はphase・pending・turn・allowedActionsをpureに判定する', () => {
     const helper = require('../js/uiBuildMenu');
     const base = {
