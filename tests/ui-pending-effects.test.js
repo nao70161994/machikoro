@@ -112,3 +112,24 @@ runTest('ui pending effectsはDOM断片欠落時も残るviewだけ適用する'
     }, { modal: null, content }));
     assert.deepStrictEqual(content.style, { pointerEvents: 'none' });
 });
+
+runTest('pending effects update controllerは再入を拒否し完了後にstateを戻す', () => {
+    const controller = UiPendingEffects.createUpdateController();
+    const trace = [];
+    assert.strictEqual(controller.isUpdating(), false);
+    assert.strictEqual(controller.run(() => {
+        trace.push(['outer', controller.isUpdating()]);
+        trace.push(['nested', controller.run(() => true)]);
+        return 'done';
+    }), 'done');
+    assert.deepStrictEqual(trace, [['outer', true], ['nested', false]]);
+    assert.strictEqual(controller.isUpdating(), false);
+});
+
+runTest('pending effects update controllerは例外後も次の更新を受け付ける', () => {
+    const controller = UiPendingEffects.createUpdateController();
+    assert.throws(() => controller.run(() => { throw new Error('render failed'); }), /render failed/);
+    assert.strictEqual(controller.isUpdating(), false);
+    assert.strictEqual(controller.run(() => true), true);
+    assert.strictEqual(controller.run(null), false);
+});

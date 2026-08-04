@@ -156,6 +156,13 @@ runTest('ui storage境界は既存keyと値形式を共通facade経由で保持�
     assert.strictEqual(source.includes('localStorage'), false);
 });
 
+runTest('ui pending modal更新stateはeffect controllerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/ui.js'), 'utf8');
+    assert.strictEqual(source.includes('isUpdatingPendingModalContent'), false);
+    assert.ok(source.includes('UiPendingEffects.createUpdateController()'));
+    assert.ok(source.includes('pendingModalUpdateController.run('));
+});
+
 runTest('ui storage境界はstorage取得拒否を外へ伝播しない', () => {
     const { context } = loadUiRuntime();
     Object.defineProperty(context, 'localStorage', {

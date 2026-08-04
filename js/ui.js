@@ -1,6 +1,6 @@
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
-let isUpdatingPendingModalContent = false;
+const pendingModalUpdateController = UiPendingEffects.createUpdateController();
 
 function safeUiStorageSet(key, value) {
     try {
@@ -424,7 +424,6 @@ function normalizePendingModalInteraction(el, modal, hasContent) {
 
 function updatePendingModalContent(el, modal, html) {
     if (!el || !modal) return false;
-    if (isUpdatingPendingModalContent) return false;
     const nextHtml = html || "";
     if (nextHtml) {
         const blockingIds = visibleBlockingModalIds().filter(id => id !== 'pendingModal');
@@ -435,14 +434,11 @@ function updatePendingModalContent(el, modal, html) {
             return true;
         }
     }
-    isUpdatingPendingModalContent = true;
-    try {
+    return pendingModalUpdateController.run(() => {
         if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
         normalizePendingModalInteraction(el, modal, !!nextHtml);
         return true;
-    } finally {
-        isUpdatingPendingModalContent = false;
-    }
+    });
 }
 
 function hidePendingModalContent(el, modal) {

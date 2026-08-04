@@ -1,6 +1,23 @@
 'use strict';
 
 const UiPendingEffects = (() => {
+    function createUpdateController() {
+        let updating = false;
+
+        return Object.freeze({
+            isUpdating() { return updating; },
+            run(update) {
+                if (updating || typeof update !== 'function') return false;
+                updating = true;
+                try {
+                    return update();
+                } finally {
+                    updating = false;
+                }
+            },
+        });
+    }
+
     function applyButtonState(button, state) {
         if (!button || !state) return;
         if (button.classList) {
@@ -41,6 +58,7 @@ const UiPendingEffects = (() => {
     }
 
     return Object.freeze({
+        createUpdateController,
         applyBusinessCardSelection,
         applyModalInteraction,
     });
