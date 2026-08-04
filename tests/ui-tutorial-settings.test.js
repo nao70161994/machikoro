@@ -83,6 +83,21 @@ runTest('tutorial settings controllerは値を正規化してfrozen snapshotへ�
     });
 });
 
+runTest('tutorial settings production readersは互換globalではなくruntime snapshotを使う', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const uiSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'ui.js'), 'utf8');
+    const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'storage.js'), 'utf8');
+    assert.strictEqual(/!tutorialEnabled\b/.test(uiSource), false);
+    assert.strictEqual(/planLevelCycle\(tutorialLevel\)/.test(uiSource), false);
+    assert.strictEqual(/buildControlView\(tutorialEnabled,\s*tutorialLevel\)/.test(uiSource), false);
+    assert.strictEqual(/\n\s*tutorialEnabled,\n\s*tutorialLevel,/.test(storageSource), false);
+    assert.strictEqual(/tutorialEnabled\s*=\s*values\.tutorialEnabled/.test(storageSource), false);
+    assert.strictEqual(/tutorialLevel\s*=\s*values\.tutorialLevel/.test(storageSource), false);
+    assert.ok(uiSource.includes('UiTutorialSettings.runtime.snapshot()'));
+    assert.ok(storageSource.includes('UiTutorialSettings.runtime.snapshot()'));
+});
+
 runTest('tutorial settings compatibility globalsは既存値を保持して単一controllerへ投影する', () => {
     const root = { tutorialEnabled: false, tutorialLevel: 'advanced' };
     const controller = UiTutorialSettings.createController(root);

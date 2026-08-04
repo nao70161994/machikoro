@@ -30,6 +30,10 @@ function currentCpuPlayerAt(index) {
     }
 }
 
+function tutorialSettingsSnapshot() {
+    return UiTutorialSettings.runtime.snapshot();
+}
+
 function renderLog() {
     const logEl = document.getElementById("log");
     const titleEl = document.getElementById("logTitle");
@@ -51,6 +55,7 @@ function renderLog() {
 }
 
 function tutorialOptions() {
+    const tutorial = tutorialSettingsSnapshot();
     return {
         cards: CARDS,
         enabledCards: getEnabledCardSelection(),
@@ -63,7 +68,7 @@ function tutorialOptions() {
         isOnlineGame,
         myPlayerIndex,
         currentCpuPlayerAt,
-        tutorialLevel,
+        tutorialLevel: tutorial.tutorialLevel,
         phases: GAME_PHASES,
     };
 }
@@ -80,7 +85,8 @@ function renderTutorial() {
     safeRenderStep('syncTutorialControls', () => syncTutorialControls());
     const box = document.getElementById("tutorialBox");
     if (!box) return;
-    if (!tutorialEnabled || !game || game.checkWinner()) {
+    const tutorial = tutorialSettingsSnapshot();
+    if (!tutorial.tutorialEnabled || !game || game.checkWinner()) {
         box.style.display = "none";
         box.innerHTML = "";
         return;
@@ -109,7 +115,7 @@ function onToggleTutorial(enabled) {
 }
 
 function toggleTutorial() {
-    setTutorialEnabled(!tutorialEnabled);
+    setTutorialEnabled(!tutorialSettingsSnapshot().tutorialEnabled);
 }
 
 function onChangeTutorialLevel(level) {
@@ -117,11 +123,12 @@ function onChangeTutorialLevel(level) {
 }
 
 function cycleTutorialLevel() {
-    applyTutorialSettingChange(UiTutorialSettings.planLevelCycle(tutorialLevel));
+    applyTutorialSettingChange(UiTutorialSettings.planLevelCycle(tutorialSettingsSnapshot().tutorialLevel));
 }
 
 function syncTutorialControls() {
-    const view = UiTutorial.buildControlView(tutorialEnabled, tutorialLevel);
+    const tutorial = tutorialSettingsSnapshot();
+    const view = UiTutorial.buildControlView(tutorial.tutorialEnabled, tutorial.tutorialLevel);
     const checkbox = document.getElementById("tutorialEnabled");
     if (checkbox) checkbox.checked = view.enabled;
     const select = document.getElementById("tutorialLevel");

@@ -488,11 +488,12 @@ function saveSettings() {
     storageClientStorageFacade.access(storage => {
         const speedEl = document.getElementById('cpuSpeed');
         const setup = GameSetupState.runtime.snapshot();
+        const tutorial = UiTutorialSettings.runtime.snapshot();
         const values = StorageSettings.serializeSettings({
             selectedCount: setup.selectedCount,
             playerSettings: setup.playerSettings,
-            tutorialEnabled,
-            tutorialLevel,
+            tutorialEnabled: tutorial.tutorialEnabled,
+            tutorialLevel: tutorial.tutorialLevel,
             cpuSpeed: speedEl ? speedEl.value : null,
         });
         storage.setItem('selectedCount', values.selectedCount);
@@ -529,12 +530,7 @@ function loadSettings() {
                     : ((parseInt(values.cpuSpeed, 10) / 1000) + '秒');
             }
         }
-        if (typeof UiTutorialSettings !== 'undefined' && UiTutorialSettings.runtime) {
-            UiTutorialSettings.runtime.replace(values);
-        } else {
-            tutorialEnabled = values.tutorialEnabled;
-            tutorialLevel = values.tutorialLevel;
-        }
+        UiTutorialSettings.runtime.replace(values);
     });
     syncTutorialControls();
     renderPlayerSettings();
