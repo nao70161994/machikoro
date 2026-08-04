@@ -26,10 +26,10 @@ function assertDependencyOrder(file, dependencies) {
 runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み込む', () => {
     const cases = [
         ['index.html', [
-            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/onlineRuntimeState.js', 'js/onlineSetupState.js', 'js/online.js'],
+            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/onlineRuntimeState.js', 'js/onlineSetupState.js', 'js/online.js'],
             ['js/gameSelectionState.js', 'js/ui.js'],
-            ['js/gameSelectionState.js', 'js/storage.js'],
-            ['js/gameSelectionState.js', 'js/main.js'],
+            ['js/gameSelectionState.js', 'js/gameSetupState.js', 'js/storage.js'],
+            ['js/gameSelectionState.js', 'js/gameSetupState.js', 'js/main.js'],
             ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],
@@ -183,10 +183,10 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/integration-runtime.js', [
-            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/onlineRuntimeState.js', 'js/onlineSetupState.js', 'js/online.js'],
+            ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/onlineRuntimeState.js', 'js/onlineSetupState.js', 'js/online.js'],
             ['js/gameSelectionState.js', 'js/ui.js'],
-            ['js/gameSelectionState.js', 'js/storage.js'],
-            ['js/gameSelectionState.js', 'js/main.js'],
+            ['js/gameSelectionState.js', 'js/gameSetupState.js', 'js/storage.js'],
+            ['js/gameSelectionState.js', 'js/gameSetupState.js', 'js/main.js'],
             ['js/actionContract.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js'],
             ['js/cpuProfile.js', 'js/cpuSelection.js', 'js/CPU.js'],
             ['js/cpuLegalMoves.js', 'js/CPU.js'],

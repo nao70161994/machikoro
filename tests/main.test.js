@@ -405,6 +405,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiPlayerDisplaySource, context, { filename: 'js/uiPlayerDisplay.js' });
     const uiDiceDisplaySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiDiceDisplay.js'), 'utf8');
     vm.runInContext(uiDiceDisplaySource, context, { filename: 'js/uiDiceDisplay.js' });
+    const gameSetupStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameSetupState.js'), 'utf8');
+    vm.runInContext(gameSetupStateSource, context, { filename: 'js/gameSetupState.js' });
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
     vm.runInContext(mainSource, context, { filename: 'js/main.js' });
     vm.runInContext(`
@@ -455,6 +457,13 @@ function loadMainRuntime(options = {}) {
     context.__test.elements = elements;
     return context;
 }
+
+runTest('game setup globalsはGameSetupStateだけが所有する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
+    assert.strictEqual(source.includes('let selectedCount'), false);
+    assert.strictEqual(source.includes('let playerSettings'), false);
+    assert.strictEqual(source.includes('let cpuSpeed'), false);
+});
 
 runTest('CPU scheduler runtime stateはcontrollerだけが所有する', () => {
     const fs = require('fs');
@@ -2249,7 +2258,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/Card.js', 'js/GameManager.js');
     assertBefore('js/Player.js', 'js/GameManager.js');
     assertBefore('js/Player.js', 'js/gameSelectionState.js');
-    assertBefore('js/gameSelectionState.js', 'js/onlineRuntimeState.js');
+    assertBefore('js/gameSelectionState.js', 'js/gameSetupState.js');
+    assertBefore('js/gameSetupState.js', 'js/onlineRuntimeState.js');
     assertBefore('js/onlineRuntimeState.js', 'js/onlineSetupState.js');
     assertBefore('js/onlineSetupState.js', 'js/online.js');
     assertBefore('js/actionContract.js', 'js/pendingActionQueue.js');

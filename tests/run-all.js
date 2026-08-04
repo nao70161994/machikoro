@@ -161,6 +161,7 @@ const TEST_GROUPS = {
         'local-resume-view.test.js',
         'stored-online-reconnect.test.js',
         'storage.test.js',
+        'game-setup-state.test.js',
         'local-player-settings.test.js',
         'local-game-start.test.js',
         'auto-skip-policy.test.js',

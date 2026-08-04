@@ -182,6 +182,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineSchemaTransport.js');
     loadScript(context, 'js/onlineRuntimeState.js');
     loadScript(context, 'js/onlineSetupState.js');
+    loadScript(context, 'js/gameSetupState.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート

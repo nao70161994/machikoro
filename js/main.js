@@ -1,9 +1,6 @@
 let game;
 const SHOP_STOCK = {};
-let selectedCount = 2;
-let playerSettings = [];
 let cpuPlayers = [];
-let cpuSpeed = 1500;
 
 // コインアニメーション用
 let prevCoins = null;
