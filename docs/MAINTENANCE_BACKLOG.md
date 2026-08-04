@@ -633,3 +633,13 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event
 - Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 No game rule, Airport amount/log, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO protocol, reconnect ordering, winner presentation, or PWA/SW behavior changed.
+
+## 2026-08-04 Batch 64 architecture boundaries
+
+- `GameSetupState.runtime` now exposes named operations for player count, CPU speed, complete player-setting replacement, individual setting/name updates, and atomic setup replacement. Production writes in `main.js`, `online.js`, and `storage.js` use these operations at the same positions; the settings array copy and in-place entry/name semantics are unchanged.
+- Actual browser globals projected by `GameRuntimeState.runtime` are now getter-only. The generic public `write()` escape hatch was removed, while named game/CPU/coin/Undo operations remain the only production mutation surface. Isolated Node/VM compatibility binding remains writable so existing harnesses can stage fixtures without changing runtime behavior.
+- Actual browser globals projected by `OnlineRuntimeState.runtime` are now getter-only. The generic public `write()` escape hatch was removed, while Socket, online/host/replay/reconnect, room identity, and reset transitions remain the only production mutation surface. Socket callbacks, storage adapters, and compatibility reads retain their existing order.
+- `GameSetupState` compatibility reads, including the intentionally live settings array, remain until all readers can move to detached snapshots without changing UI editing behavior. Winner-streak compatibility setters are also a separate future audit.
+- Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+No game rule, CPU heuristic/choice/RNG, save/localStorage shape, Socket.IO event/payload, reconnect/Socket callback order, UI presentation, or PWA/SW behavior changed.

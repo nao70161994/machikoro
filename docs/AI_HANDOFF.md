@@ -852,3 +852,11 @@ Test index:
 - Winner streak state belongs to `UiWinner.streakRuntime`. Record only on first winner presentation, then persist `winStreak` before `lastWinnerName`; repeated renders must reuse the snapshot without incrementing.
 - Compatibility setters for live game and winner streak are temporary classic-script/test projections. Remove or make them read-only only after every cross-script consumer and inline PWA path is migrated and contract-covered.
 - Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Continue with at most three independent themes and one batch-level integration gate/push/CI.
+
+## Batch 64 handoff (2026-08-04)
+
+- Update shared local player count/settings/CPU speed only through `GameSetupState.runtime` named operations. Preserve full-array copy behavior, individual entry/name update positions, and the existing DOM/save/RL preload order.
+- In a real browser, `GameRuntimeState` and `OnlineRuntimeState` compatibility globals are read-only projections. Do not reintroduce setters or generic public `write()` methods; use the domain-named operations. The writable binding default exists only for isolated Node/VM fixture compatibility.
+- `GameSetupState.playerSettings` still exposes a live compatibility array for existing readers. Do not make that projection read-only or detached until main/storage/online/UI consumers and editing semantics are contract-covered.
+- Winner streak compatibility projections remain a separate audit; do not combine their removal with winner DOM or persistence changes.
+- Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Continue with at most three independent themes and one batch-level integration gate/push/CI.

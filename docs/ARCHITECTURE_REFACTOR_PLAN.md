@@ -804,3 +804,11 @@ Scoped gates now cover 220 ESLint maintenance files and 219 checkJs runtime file
 3. Winner streak state is separated from winner view HTML and terminal DOM/effect orchestration while retaining the existing localStorage contract and first-presentation gate.
 
 Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Rules and amounts, CPU strength/RNG, Engine authority defaults, schema/protocol, persistence formats, reconnect behavior, UI presentation, and PWA defaults are unchanged.
+
+## 2026-08-04 Batch 64 boundary update
+
+1. Shared local-game setup mutations now pass through named controller operations across local start/reset, online start/rejoin, settings load, and save restore.
+2. Live-game compatibility globals are read-only in the actual browser, leaving named runtime operations as the production write authority.
+3. Online-session compatibility globals are read-only in the actual browser, leaving named lifecycle transitions as the production write authority.
+
+Scoped gates remain 220 ESLint maintenance files and 219 checkJs runtime files. Rules, CPU strength/RNG, authority defaults, schema/protocol, persistence formats, reconnect/Socket ordering, UI behavior, and PWA defaults are unchanged.
