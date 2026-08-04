@@ -806,8 +806,7 @@ function scheduleCPU() {
     return cpuTurnScheduler.schedule('scheduleCPU');
 }
 
-let cpuResumeSchedulerBound = false;
-let pageHiddenAt = 0;
+const pageActivationLifecycleController = PageActivationPolicy.createLifecycleController();
 
 function resumeCpuTurnAfterPageActivation(reason) {
     if (typeof document !== 'undefined' && document.hidden) return;
@@ -873,14 +872,14 @@ function cpuPageActivationOutcome(before, after, pageHidden) {
 }
 
 function pageHiddenDurationMs(now) {
-    return PageActivationPolicy.hiddenDurationMs(pageHiddenAt, now);
+    return pageActivationLifecycleController.hiddenDurationMs(now);
 }
 
 function resumeTurnAfterPageActivation(reason) {
     const activationAt = Date.now();
     const pageHidden = typeof document !== 'undefined' && !!document.hidden;
-    if (pageHidden && !pageHiddenAt) pageHiddenAt = activationAt;
-    const hiddenForMs = pageHiddenDurationMs(activationAt);
+    const activation = pageActivationLifecycleController.beginActivation(pageHidden, activationAt);
+    const hiddenForMs = activation.hiddenForMs;
     const cpuBefore = currentCpuTurnSchedulerHealth();
 
     if (typeof RLModelPortfolio !== 'undefined' &&
@@ -900,12 +899,11 @@ function resumeTurnAfterPageActivation(reason) {
         cpuBefore,
         cpuAfter,
     });
-    if (!pageHidden) pageHiddenAt = 0;
+    pageActivationLifecycleController.finishActivation(pageHidden);
 }
 
 function bindCpuResumeScheduler() {
-    if (cpuResumeSchedulerBound) return;
-    cpuResumeSchedulerBound = true;
+    if (!pageActivationLifecycleController.claimBinding()) return;
     if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
         document.addEventListener('visibilitychange', () => resumeTurnAfterPageActivation('visibility-resume'));
     }

@@ -34,7 +34,51 @@ const PageActivationPolicy = (() => {
         return Math.max(0, now - hiddenAt);
     }
 
-    return Object.freeze({ cpuOutcome, hiddenDurationMs });
+    function createLifecycleController(initial = {}) {
+        let bindingClaimed = initial.bindingClaimed === true;
+        let hiddenAt = Number.isFinite(initial.hiddenAt) ? initial.hiddenAt : 0;
+
+        function snapshot() {
+            return Object.freeze({ bindingClaimed, hiddenAt });
+        }
+
+        function claimBinding() {
+            if (bindingClaimed) return false;
+            bindingClaimed = true;
+            return true;
+        }
+
+        function beginActivation(pageHidden, now) {
+            if (pageHidden && !hiddenAt) hiddenAt = now;
+            return Object.freeze({
+                pageHidden: pageHidden === true,
+                hiddenForMs: hiddenDurationMs(hiddenAt, now),
+            });
+        }
+
+        function finishActivation(pageHidden) {
+            if (pageHidden !== true) hiddenAt = 0;
+            return snapshot();
+        }
+
+        function setHiddenAt(value) {
+            hiddenAt = value;
+            return snapshot();
+        }
+
+        return Object.freeze({
+            snapshot,
+            claimBinding,
+            beginActivation,
+            finishActivation,
+            setHiddenAt,
+            hiddenDurationMs(now) {
+                return hiddenDurationMs(hiddenAt, now);
+            },
+        });
+    }
+
+    return Object.freeze({ cpuOutcome, hiddenDurationMs, createLifecycleController });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = PageActivationPolicy;

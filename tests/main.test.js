@@ -422,7 +422,7 @@ function loadMainRuntime(options = {}) {
             expireCpuScheduleLease: () => { cpuStepScheduledUntil = 0; },
             expireDelayedHumanAction: () => { delayedHumanActionController.updateDeadline(0); },
             getDelayedHumanActionPending: () => delayedHumanActionController.isPending(),
-            setPageHiddenAt: (value) => { pageHiddenAt = value; },
+            setPageHiddenAt: (value) => { pageActivationLifecycleController.setHiddenAt(value); },
             scheduleCPU: () => scheduleCPU(),
             cpuDo: (action, data, fallback) => cpuDo(action, data, fallback),
             counters,
@@ -431,6 +431,14 @@ function loadMainRuntime(options = {}) {
     context.__test.elements = elements;
     return context;
 }
+
+runTest('main page activation stateはlifecycle controllerだけが所有する', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
+    assert.strictEqual(source.includes('cpuResumeSchedulerBound'), false);
+    assert.strictEqual(source.includes('let pageHiddenAt'), false);
+    assert.ok(source.includes('PageActivationPolicy.createLifecycleController()'));
+    assert.ok(source.includes('pageActivationLifecycleController.claimBinding()'));
+});
 
 runTest('local game start pendingはcontrollerだけが所有する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
