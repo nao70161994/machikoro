@@ -155,11 +155,7 @@ function setOnlineReconnectLegacyFlag(value) {
 }
 const onlineSchemaSelectionController = OnlineSchemaTransport.createSelectionController();
 const _hostlessRestoreState = OnlineHostlessRestoreState.createController();
-let _onlineRestoreEventQueue = [];
-const _onlineRestoreEventQueueStore = typeof OnlineRestoreQueueState !== 'undefined' &&
-    typeof OnlineRestoreQueueState.createStore === 'function'
-    ? OnlineRestoreQueueState.createStore([])
-    : null;
+const _onlineRestoreEventQueueStore = OnlineRestoreQueueState.createStore([]);
 const _onlineRestoreQueueDiagnosticKeys = typeof OnlineRestoreQueueState !== 'undefined' &&
     OnlineRestoreQueueState.diagnosticKeys
     ? OnlineRestoreQueueState.diagnosticKeys
@@ -2114,21 +2110,12 @@ function _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransiti
 
 function _readOnlineRestoreEventQueue() {
     const requested = isOnlineRestoreQueueStoreReadAuthorityEnabled();
-    const helperAvailable = _onlineRestoreEventQueueStore &&
-        typeof OnlineRestoreQueueState !== 'undefined' &&
-        typeof OnlineRestoreQueueState.selectRead === 'function';
-    const selection = helperAvailable
-        ? OnlineRestoreQueueState.selectRead(
-            _onlineRestoreEventQueueStore.read(),
-            _onlineRestoreEventQueue,
-            { authorityEnabled: requested }
-        )
-        : Object.freeze({
-            queue: _onlineRestoreEventQueue,
-            source: requested ? 'legacy-fallback' : 'legacy',
-            matched: false,
-            fallbackReason: requested ? 'restore-queue-store-helper-unavailable' : '',
-        });
+    const queue = _onlineRestoreEventQueueStore.read();
+    const selection = OnlineRestoreQueueState.selectRead(
+        queue,
+        queue,
+        { authorityEnabled: requested }
+    );
     _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STORE_READ, Object.freeze({
         source: selection.source,
         matched: selection.matched,
@@ -2147,72 +2134,22 @@ function _recordOnlineRestoreQueueStoreWriteSelection(selection) {
 }
 
 function _selectOnlineRestoreQueueStoreWrite(storeQueue, legacyQueue) {
-    const requested = isOnlineRestoreQueueStoreWriteAuthorityEnabled();
-    const helperAvailable = _onlineRestoreEventQueueStore &&
-        typeof OnlineRestoreQueueState !== 'undefined' &&
-        typeof OnlineRestoreQueueState.selectWrite === 'function';
-    if (!helperAvailable) {
-        return _recordOnlineRestoreQueueStoreWriteSelection(Object.freeze({
-            queue: legacyQueue,
-            source: requested ? 'legacy-fallback' : 'legacy',
-            matched: false,
-            fallbackReason: requested ? 'restore-queue-store-helper-unavailable' : '',
-        }));
-    }
     return _recordOnlineRestoreQueueStoreWriteSelection(
         OnlineRestoreQueueState.selectWrite(storeQueue, legacyQueue, {
-            authorityEnabled: requested,
+            authorityEnabled: isOnlineRestoreQueueStoreWriteAuthorityEnabled(),
         })
     );
 }
 
 function _replaceOnlineRestoreEventQueue(queue) {
-    const storeAuthorityRequested = isOnlineRestoreQueueStoreWriteAuthorityEnabled();
-    if (storeAuthorityRequested && _onlineRestoreEventQueueStore) {
-        const storeQueue = _onlineRestoreEventQueueStore.replace(queue.slice());
-        const selection = _selectOnlineRestoreQueueStoreWrite(storeQueue, queue);
-        if (selection.source === 'store-write') {
-            _onlineRestoreEventQueue = storeQueue.slice();
-            return _readOnlineRestoreEventQueue();
-        }
-    }
-    _onlineRestoreEventQueue = queue;
-    const storeQueue = _onlineRestoreEventQueueStore
-        ? _onlineRestoreEventQueueStore.replace(queue.slice())
-        : null;
-    if (!storeAuthorityRequested || !_onlineRestoreEventQueueStore) {
-        _selectOnlineRestoreQueueStoreWrite(storeQueue, _onlineRestoreEventQueue);
-    }
+    const storeQueue = _onlineRestoreEventQueueStore.replace(queue);
+    _selectOnlineRestoreQueueStoreWrite(storeQueue, storeQueue);
     return _readOnlineRestoreEventQueue();
 }
 
-function _appendOnlineRestoreEventQueueLegacy(event) {
-    const storeAuthorityRequested = isOnlineRestoreQueueStoreWriteAuthorityEnabled();
-    if (storeAuthorityRequested && _onlineRestoreEventQueueStore &&
-        typeof _onlineRestoreEventQueueStore.append === 'function') {
-        const expectedLegacyQueue = _onlineRestoreEventQueue.concat([event]);
-        const storeQueue = _onlineRestoreEventQueueStore.append(event);
-        const selection = _selectOnlineRestoreQueueStoreWrite(storeQueue, expectedLegacyQueue);
-        if (selection.source === 'store-write') {
-            _onlineRestoreEventQueue = storeQueue.slice();
-            return _readOnlineRestoreEventQueue();
-        }
-    }
-    _onlineRestoreEventQueue.push(event);
-    const storeQueue = _onlineRestoreEventQueueStore
-        ? _onlineRestoreEventQueueStore.replace(_onlineRestoreEventQueue.slice())
-        : null;
-    if (storeAuthorityRequested && _onlineRestoreEventQueueStore &&
-        typeof _onlineRestoreEventQueueStore.append !== 'function') {
-        _recordOnlineRestoreQueueStoreWriteSelection(Object.freeze({
-            queue: _onlineRestoreEventQueue,
-            source: 'legacy-fallback',
-            matched: false,
-            fallbackReason: 'restore-queue-store-append-unavailable',
-        }));
-    } else if (!storeAuthorityRequested || !_onlineRestoreEventQueueStore) {
-        _selectOnlineRestoreQueueStoreWrite(storeQueue, _onlineRestoreEventQueue);
-    }
+function _appendOnlineRestoreEventQueue(event) {
+    const storeQueue = _onlineRestoreEventQueueStore.append(event);
+    _selectOnlineRestoreQueueStoreWrite(storeQueue, storeQueue);
     return _readOnlineRestoreEventQueue();
 }
 
@@ -2264,7 +2201,7 @@ function _queueOnlineEventDuringRestore(type, payload) {
     if (selection.source === 'pure-transition') {
         _replaceOnlineRestoreEventQueue(selection.transition.queue);
     } else {
-        _appendOnlineRestoreEventQueueLegacy(event);
+        _appendOnlineRestoreEventQueue(event);
     }
     return true;
 }

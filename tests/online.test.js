@@ -533,12 +533,13 @@ runTest('online.js は未使用 remote action helper を残さない', () => {
 
 runTest('online restore queueは生の状態accessをowner関数へ集約する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
-    assert.strictEqual((source.match(/_onlineRestoreEventQueue\s*=(?!=)/g) || []).length, 4);
-    assert.strictEqual((source.match(/_onlineRestoreEventQueue\.push\(/g) || []).length, 1);
-    assert.strictEqual((source.match(/\b_onlineRestoreEventQueue\b/g) || []).length, 12);
+    assert.ok(!source.includes('let _onlineRestoreEventQueue'));
+    assert.strictEqual((source.match(/_onlineRestoreEventQueueStore\.read\(/g) || []).length, 1);
+    assert.strictEqual((source.match(/_onlineRestoreEventQueueStore\.replace\(/g) || []).length, 1);
+    assert.strictEqual((source.match(/_onlineRestoreEventQueueStore\.append\(/g) || []).length, 1);
     assert.ok(source.includes('function _readOnlineRestoreEventQueue()'));
     assert.ok(source.includes('function _replaceOnlineRestoreEventQueue(queue)'));
-    assert.ok(source.includes('function _appendOnlineRestoreEventQueueLegacy(event)'));
+    assert.ok(source.includes('function _appendOnlineRestoreEventQueue(event)'));
 });
 
 runTest('online action flight stateはretry controllerだけが所有する', () => {
