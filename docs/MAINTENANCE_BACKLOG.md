@@ -816,3 +816,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains injected browser/game effects and compatibility delegates; its size decreased from 1,369 to 1,319 lines. The two mutable controllers now live together with the use case that coordinates them.
 - Focused contracts preserve deadline reschedule/run-once behavior, listener single-binding, hidden-page CPU suppression, stale CPU lease renewal, and RL → delayed human → online → CPU → checkpoint ordering. Scoped gates now cover 240 ESLint maintenance files and 239 checkJs runtime files.
 - Dice RNG, CPU decisions/scheduling policy, delayed-action eligibility, online reconnect behavior, game rules, storage, and PWA behavior are unchanged.
+
+## 2026-08-05 Batch 89 main UI event runtime
+
+- `js/mainUiEventRuntime.js` now owns `data-ui-*`/`data-action` event targeting, command dispatch, static and delegated listener registration, keyboard role-button activation, speed-label projection, Business Center button context, and PWA apply/banner fallbacks.
+- `main.js` retains a late-resolved effect registry and compatibility handler delegates; its size decreased from 1,319 to 1,174 lines. UI command interpretation and binding state no longer sit beside game-action implementation.
+- Focused contracts preserve command arguments, listener single-binding, reload fallback, and the existing four delegated containers; main/integration contracts retain every static, dice, pending, build, player, keyboard, and PWA path. Scoped gates now cover 241 ESLint maintenance files and 240 checkJs runtime files.
+- Game actions, selectors/data attributes, modal behavior, CPU/RNG, online protocol, persistence, and PWA update semantics are unchanged.

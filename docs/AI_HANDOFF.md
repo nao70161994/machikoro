@@ -1030,3 +1030,9 @@ Test index:
 - Visibility/pageshow orchestration and delayed human-action mutable state belong to `PageActivationRuntime`; do not recreate either controller in `main.js`.
 - Preserve RL → delayed human → online reconnect → CPU recovery → checkpoint order and the existing `visibility-resume` / `pageshow-resume` reason strings.
 - The runtime is linted and checkJs-covered; `main.js` is 1,319 lines. RNG, scheduler decisions, input eligibility, reconnect, rules, persistence, and PWA behavior are unchanged.
+
+## Batch 89 handoff (2026-08-05)
+
+- Main-page event targeting, command dispatch, listener ownership, speed labels, and PWA UI fallbacks belong to `MainUiEventRuntime`; keep data parsing in `UiEventDelegation`.
+- Add new commands through the runtime family map and `resolveMainUiEffect`, preserving late resolution for functions defined after `main.js` such as PWA update helpers.
+- The runtime is linted and checkJs-covered; `main.js` is 1,174 lines. Game behavior, CPU/RNG, online, persistence, modal, and PWA semantics are unchanged.
