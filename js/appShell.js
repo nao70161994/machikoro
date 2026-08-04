@@ -91,353 +91,76 @@ function safeClientErrorContext() {
     });
 }
 
-function elementHasBlockingAncestor(id, el) {
-    return appShellDomSnapshot.hasBlockingAncestor(id, el);
-}
-
-function childInteractiveState(el) {
-    return appShellDomSnapshot.interactiveState(el);
-}
-
-function hasBuildableCardCandidate() {
-    try {
-        const currentGame = appShellGameRuntimeSnapshot().game;
-        if (!currentGame || currentGame.builtThisTurn) return false;
-        const current = currentGame.currentPlayer && currentGame.currentPlayer();
-        if (!current || typeof CARDS === 'undefined' || !Array.isArray(CARDS)) return false;
-        return CARDS.some(card => {
-            if (!card) return false;
-            if (typeof cardFilter !== 'undefined' && cardFilter && card.color !== cardFilter) return false;
-            const stock = typeof SHOP_STOCK !== 'undefined' && SHOP_STOCK ? SHOP_STOCK[card.name] : 0;
-            if (stock <= 0 || current.coins < card.cost) return false;
-            return !(card.color === 'purple' && typeof current.countCardIncludingDormant === 'function' && current.countCardIncludingDormant(card.name) > 0);
-        });
-    } catch (_) {
-        return true;
-    }
-}
-
-function hasBuildableLandmarkCandidate() {
-    try {
-        const currentGame = appShellGameRuntimeSnapshot().game;
-        if (!currentGame || currentGame.builtThisTurn) return false;
-        const current = currentGame.currentPlayer && currentGame.currentPlayer();
-        if (!current || !current.landmarks) return false;
-        return Object.entries(current.landmarks).some(([name, built]) => {
-            if (built) return false;
-            if (typeof enabledLandmarks !== 'undefined' && enabledLandmarks && typeof enabledLandmarks.has === 'function' && !enabledLandmarks.has(name)) return false;
-            if (typeof Player === 'undefined' || !Player || typeof Player.landmarkCost !== 'function') return false;
-            return current.coins >= Player.landmarkCost(name);
-        });
-    } catch (_) {
-        return true;
-    }
-}
-
-function expectedChildSpecForAction(action) {
-    return ActionUiRegistry.childSelectors[action] || null;
-}
-
-function expectedChildSpecForEntry(snapshot, entry) {
-    const action = entry && entry.action || '';
-    let hasUndoState = false;
-    if (action === 'undoBuild') {
-        try {
-            hasUndoState = !!appShellGameRuntimeSnapshot().undoState;
-        } catch (_) {}
-    }
-    const required = UiWatchdog.shouldRequireActionChildren(action, {
-        builtThisTurn: !!(snapshot && snapshot.builtThisTurn),
-        hasBuildableCardCandidate: action === 'buildCard' && hasBuildableCardCandidate(),
-        hasBuildableLandmarkCandidate: action === 'buildLandmark' && hasBuildableLandmarkCandidate(),
-        hasUndoState,
-    });
-    return required ? expectedChildSpecForAction(action) : null;
-}
-
-function expectedChildActionsForAction(action) {
-    const spec = expectedChildSpecForAction(action);
-    return spec ? Array.from(spec.actions) : [];
-}
-
-function expectedChildActionsForEntry(snapshot, entry) {
-    const spec = expectedChildSpecForEntry(snapshot, entry);
-    return spec ? Array.from(spec.actions) : [];
-}
-
-function isInteractiveChildUsable(child) {
-    return appShellDomSnapshot.isInteractiveElementUsable(child);
-}
-
-function childInteractiveStateForSpec(el, spec) {
-    return appShellDomSnapshot.interactiveStateForSpec(el, spec);
-}
-
-function childInteractiveStateForActions(el, actions) {
-    return appShellDomSnapshot.interactiveStateForActions(el, actions);
-}
-
-function compactActionChildStates(snapshot) {
-    return expectedActionContainerEntries(snapshot || {}).map(entry => {
-        const spec = entry && entry.spec;
-        const childSpec = expectedChildSpecForEntry(snapshot, entry);
-        const parent = spec && spec.targetId && typeof document !== 'undefined' && document.getElementById ? document.getElementById(spec.targetId) : null;
-        const state = childSpec ? childInteractiveStateForSpec(parent, childSpec) : { total: 0, usable: 0 };
-        return {
-            action: entry && entry.action || '',
-            target: spec && spec.targetId || '',
-            childTotal: state.total || 0,
-            childUsable: state.usable || 0,
+const appShellObservationRuntime = AppShellObservationRuntime.createRuntime({
+    actionUiRegistry: ActionUiRegistry,
+    activeBlockingModalIds: snapshot => activeBlockingModalIds(snapshot),
+    clientRuntimeSnapshot: ClientRuntimeSnapshot,
+    document: typeof document !== 'undefined' ? document : null,
+    domSnapshot: appShellDomSnapshot,
+    freezeKinds: FREEZE_KINDS,
+    getGameRuntimeSnapshot: appShellGameRuntimeSnapshot,
+    getOnlineRuntimeSnapshot: appShellOnlineRuntimeSnapshot,
+    modalSnapshotFromRuntime: (snapshot, id) => modalSnapshotFromRuntime(snapshot, id),
+    nowIso: () => new Date().toISOString(),
+    resolveDependency(name) {
+        const resolvers = {
+            cards: () => typeof CARDS !== 'undefined' ? CARDS : null,
+            cardFilter: () => typeof cardFilter !== 'undefined' ? cardFilter : '',
+            enabledLandmarks: () => typeof enabledLandmarks !== 'undefined' ? enabledLandmarks : null,
+            gameManager: () => typeof GameManager !== 'undefined' ? GameManager : null,
+            playerClass: () => typeof Player !== 'undefined' ? Player : null,
+            shopStock: () => typeof SHOP_STOCK !== 'undefined' ? SHOP_STOCK : null,
         };
-    }).filter(item => item.childTotal > 0 || item.action === 'undoBuild' || item.childUsable <= 0);
-}
+        return resolvers[name] ? resolvers[name]() : null;
+    },
+    runtimeEffects: appShellRuntimeEffects,
+    uiWatchdog: UiWatchdog,
+});
 
-function safeElementSnapshot(id) {
-    return appShellDomSnapshot.snapshotById(id);
+const elementHasBlockingAncestor = appShellObservationRuntime.elementHasBlockingAncestor;
+const childInteractiveState = appShellObservationRuntime.childInteractiveState;
+const hasBuildableCardCandidate = appShellObservationRuntime.hasBuildableCardCandidate;
+const hasBuildableLandmarkCandidate = appShellObservationRuntime.hasBuildableLandmarkCandidate;
+const expectedChildSpecForAction = appShellObservationRuntime.expectedChildSpecForAction;
+const expectedChildSpecForEntry = appShellObservationRuntime.expectedChildSpecForEntry;
+const expectedChildActionsForAction = appShellObservationRuntime.expectedChildActionsForAction;
+const expectedChildActionsForEntry = appShellObservationRuntime.expectedChildActionsForEntry;
+const isInteractiveChildUsable = appShellObservationRuntime.isInteractiveChildUsable;
+const childInteractiveStateForSpec = appShellObservationRuntime.childInteractiveStateForSpec;
+const childInteractiveStateForActions = appShellObservationRuntime.childInteractiveStateForActions;
+const compactActionChildStates = appShellObservationRuntime.compactActionChildStates;
+const safeElementSnapshot = appShellObservationRuntime.safeElementSnapshot;
+const visibleElement = appShellObservationRuntime.visibleElement;
+const visibleModalIds = appShellObservationRuntime.visibleModalIds;
+const classListText = appShellObservationRuntime.classListText;
+const allowedActionListForSnapshot = appShellObservationRuntime.allowedActionListForSnapshot;
+const isElementUsablyEnabled = appShellObservationRuntime.isElementUsablyEnabled;
+const uiLockReasonForElement = appShellObservationRuntime.uiLockReasonForElement;
+const actionContainerSpecForAction = appShellObservationRuntime.actionContainerSpecForAction;
+const expectedActionContainerEntries = appShellObservationRuntime.expectedActionContainerEntries;
+const shouldIgnoreInactiveActionContainerIssue = appShellObservationRuntime.shouldIgnoreInactiveActionContainerIssue;
+const missingActionContainerRegistryEntries = appShellObservationRuntime.missingActionContainerRegistryEntries;
+function primaryActionContainerRegistryForDiagnostics() {
+    return appShellObservationRuntime.primaryActionContainerRegistryForDiagnostics();
 }
-
-function visibleElement(id) {
-    return appShellDomSnapshot.isVisibleById(id);
-}
-
-function visibleModalIds() {
-    return ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal']
-        .filter(id => visibleElement(id));
-}
-
-function classListText(el) {
-    return UiWatchdog.classListText(el);
-}
-
-function allowedActionListForSnapshot() {
-    const currentGame = appShellGameRuntimeSnapshot().game;
-    if (!currentGame) return [];
-    try {
-        if (typeof currentGame.allowedActions === 'function') return Array.from(currentGame.allowedActions());
-        if (typeof GameManager !== 'undefined' && GameManager && typeof GameManager.allowedActionsFor === 'function') return Array.from(GameManager.allowedActionsFor(currentGame));
-    } catch (_) {}
-    return [];
-}
-
-function isElementUsablyEnabled(snapshot) {
-    return UiWatchdog.isElementUsablyEnabled(snapshot);
-}
+const snapshotStateById = appShellObservationRuntime.snapshotStateById;
+const snapshotElementForAction = appShellObservationRuntime.snapshotElementForAction;
+const isActionContainerUiUsable = appShellObservationRuntime.isActionContainerUiUsable;
+const isActionUiUsable = appShellObservationRuntime.isActionUiUsable;
+const collectInteractabilityObservations = appShellObservationRuntime.collectInteractabilityObservations;
+const primaryUiIssue = appShellObservationRuntime.primaryUiIssue;
+const primaryActionButtonStates = appShellObservationRuntime.primaryActionButtonStates;
 
 function collectUiLockSnapshot(reason = 'ui-lock-snapshot') {
-    return buildClientRuntimeSnapshot(reason);
-}
-
-function uiLockReasonForElement(state) {
-    return UiWatchdog.lockReasonForElement(state);
-}
-
-function actionContainerSpecForAction(snapshot, action) {
-    return ActionUiRegistry.containerSpecForAction(snapshot, action);
-}
-
-function expectedActionContainerEntries(snapshot) {
-    const allowed = Array.isArray(snapshot && snapshot.allowedActions) ? snapshot.allowedActions : [];
-    return allowed
-        .map(action => ({ action, spec: actionContainerSpecForAction(snapshot, action) }))
-        .filter(entry => !!entry.spec);
-}
-
-function shouldIgnoreInactiveActionContainerIssue(snapshot, entry, reason) {
-    const childSpec = expectedChildSpecForEntry(snapshot, entry);
-    return UiWatchdog.shouldIgnoreInactiveActionContainerIssue(entry && entry.spec, !!childSpec, reason);
-}
-
-function missingActionContainerRegistryEntries(snapshot) {
-    return ActionUiRegistry.missingContainerEntries(snapshot);
-}
-
-function primaryActionContainerRegistryForDiagnostics() {
-    return ActionUiRegistry.snapshot();
-}
-
-function snapshotStateById(snapshot, id, targetSource = '') {
-    return UiWatchdog.snapshotStateById(snapshot, id, targetSource);
-}
-
-function snapshotElementForAction(snapshot, action) {
-    const spec = actionContainerSpecForAction(snapshot, action);
-    return spec ? snapshotStateById(snapshot, spec.targetId, spec.targetSource) : null;
-}
-
-function isActionContainerUiUsable(snapshot, entry) {
-    const spec = entry && entry.spec;
-    if (!spec) return false;
-    const state = snapshotStateById(snapshot, spec.targetId, spec.targetSource);
-    const expectedChildSpec = expectedChildSpecForEntry(snapshot, entry);
-    let actionChildState = null;
-    if (spec.requiresContent && expectedChildSpec) {
-        const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById(spec.targetId) : null;
-        actionChildState = childInteractiveStateForSpec(el, expectedChildSpec);
-    }
-    return UiWatchdog.isActionContainerStateUsable(spec, state, {
-        hasExpectedChildSpec: !!expectedChildSpec,
-        actionChildState,
-        modalState: spec.modalId ? snapshotStateById(snapshot, spec.modalId) : null,
-    });
-}
-
-function isActionUiUsable(snapshot, action) {
-    const spec = actionContainerSpecForAction(snapshot, action);
-    return isActionContainerUiUsable(snapshot, { action, spec });
-}
-
-function collectInteractabilityObservations(snapshot) {
-    const expectedContainers = expectedActionContainerEntries(snapshot).map(entry => {
-        const usable = isActionContainerUiUsable(snapshot, entry);
-        if (usable) return { action: entry.action, spec: entry.spec, usable: true };
-        const state = snapshotStateById(snapshot, entry.spec.targetId, entry.spec.targetSource);
-        const expectedChildSpec = expectedChildSpecForEntry(snapshot, entry);
-        let reason = uiLockReasonForElement(state);
-        if (reason === 'not-clickable' && expectedChildSpec) reason = 'action-child-not-clickable';
-        if (entry.spec.modalId) {
-            const modal = snapshotStateById(snapshot, entry.spec.modalId);
-            if (modal && !isElementUsablyEnabled(modal)) reason = uiLockReasonForElement(modal);
-        }
-        return {
-            action: entry.action,
-            spec: entry.spec,
-            state,
-            usable: false,
-            reason,
-            ignore: shouldIgnoreInactiveActionContainerIssue(snapshot, entry, reason),
-        };
-    });
-    return {
-        expectedContainers,
-        missingRegistryEntries: missingActionContainerRegistryEntries(snapshot),
-        activeModals: activeBlockingModalIds(snapshot).map(id => ({
-            id,
-            state: modalSnapshotFromRuntime(snapshot, id) || snapshot && snapshot.ui && snapshot.ui[id],
-        })),
-    };
+    return appShellObservationRuntime.collectUiLockSnapshot(reason);
 }
 
 function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
-    if (!snapshot || !snapshot.phase) return [];
-    return UiWatchdog.buildInteractabilityIssues(
-        snapshot,
-        collectInteractabilityObservations(snapshot),
-        FREEZE_KINDS
-    );
-}
-
-function primaryUiIssue(snapshot) {
-    return validateUiInteractability(snapshot).find(issue => issue.freezeKind === FREEZE_KINDS.HUMAN_TURN_UI_LOCKED);
-}
-
-function primaryActionButtonStates() {
-    const buttons = {
-        btnRoll: safeElementSnapshot('btnRoll'),
-        btnSkip: safeElementSnapshot('btnSkip'),
-        btnReroll: safeElementSnapshot('btnReroll'),
-        diceChoose: safeElementSnapshot('diceChoose'),
-    };
-    const enabled = Object.entries(buttons)
-        .filter(([id, snapshot]) => {
-            if (!isElementUsablyEnabled(snapshot)) return false;
-            if (id === 'diceChoose') return !!snapshot.htmlLength;
-            return true;
-        })
-        .map(([id]) => id);
-    return { buttons, enabled };
-}
-
-function appShellOnlineActionFlightState() {
-    try {
-        return appShellRuntimeEffects.onlineActionFlightState();
-    } catch (_) {
-        return { inFlight: false, startedAt: 0 };
-    }
+    return appShellObservationRuntime.validateUiInteractability(snapshot);
 }
 
 function buildClientRuntimeSnapshot(reason = '') {
-    const gameState = appShellGameRuntimeSnapshot();
-    const onlineState = appShellOnlineRuntimeSnapshot();
-    const currentGame = gameState.game;
-    const hasGame = !!currentGame;
-    const currentPlayerIndex = hasGame ? currentGame.currentPlayerIndex : null;
-    let isCpuTurn = false;
-    try { isCpuTurn = !!(hasGame && Array.isArray(gameState.cpuPlayers) && gameState.cpuPlayers[currentPlayerIndex]); } catch (_) {}
-    let cpuStepScheduled = false;
-    let cpuSchedulerHealth = null;
-    try {
-        if (isCpuTurn) {
-            cpuSchedulerHealth = appShellRuntimeEffects.schedulerSnapshot();
-            cpuStepScheduled = !!(cpuSchedulerHealth && cpuSchedulerHealth.stepScheduled);
-        }
-    } catch (_) {}
-    let hasWinner = false;
-    try { hasWinner = !!(hasGame && typeof currentGame.checkWinner === 'function' && currentGame.checkWinner()); } catch (_) {}
-    return ClientRuntimeSnapshot.build({
-        reason,
-        timestamp: new Date().toISOString(),
-        game: {
-            phase: hasGame ? currentGame.phase : '',
-            hasWinner,
-            builtThisTurn: !!(hasGame && currentGame.builtThisTurn),
-            turnCount: hasGame ? currentGame.turnCount : null,
-            currentPlayerIndex,
-            pendingFields: hasGame ? {
-                pendingTV: currentGame.pendingTV || 0,
-                pendingBusiness: currentGame.pendingBusiness || 0,
-                pendingCleaning: currentGame.pendingCleaning || 0,
-                pendingMover: currentGame.pendingMover || 0,
-                pendingRenovation: currentGame.pendingRenovation || 0,
-                pendingIT: !!currentGame.pendingIT,
-            } : null,
-        },
-        cpu: {
-            isCpuTurn,
-            stepScheduled: cpuStepScheduled,
-            schedulerHealth: cpuSchedulerHealth,
-        },
-        online: {
-            isOnlineGame: !!onlineState.isOnlineGame,
-            isRoomHost: !!onlineState.isRoomHost,
-            myPlayerIndex: onlineState.myPlayerIndex,
-            actionInFlight: appShellOnlineActionFlightState().inFlight,
-            actionInFlightAt: appShellOnlineActionFlightState().startedAt,
-            isReconnecting: !!onlineState.isReconnectingOnline,
-            socketConnected: onlineState.socket ? onlineState.socket.connected !== false : null,
-        },
-        allowedActions: allowedActionListForSnapshot(),
-        dom: {
-            activeElement: typeof document !== 'undefined' && document.activeElement ? {
-                id: document.activeElement.id || '',
-                tagName: document.activeElement.tagName || '',
-                className: document.activeElement.className || '',
-            } : null,
-            bodyClassName: typeof document !== 'undefined' && document.body ? classListText(document.body) : '',
-            visibleModals: visibleModalIds(),
-            overlays: {
-                noticeToast: safeElementSnapshot('noticeToast'),
-                pwaUpdateBanner: safeElementSnapshot('pwaUpdateBanner'),
-                pwaInstallBanner: safeElementSnapshot('pwaInstallBanner'),
-                turnAnnouncer: safeElementSnapshot('turnAnnouncer'),
-                crashScreen: safeElementSnapshot('crashScreen'),
-            },
-            actionButtons: primaryActionButtonStates(),
-            ui: {
-                gameScreen: safeElementSnapshot('gameScreen'),
-                pendingModal: safeElementSnapshot('pendingModal'),
-                pendingMenu: safeElementSnapshot('pendingMenu'),
-                buildMenu: safeElementSnapshot('buildMenu'),
-                btnSkip: safeElementSnapshot('btnSkip'),
-                confirmModal: safeElementSnapshot('confirmModal'),
-                btnRoll: safeElementSnapshot('btnRoll'),
-                btnReroll: safeElementSnapshot('btnReroll'),
-                diceChoose: safeElementSnapshot('diceChoose'),
-                cardDetailModal: safeElementSnapshot('cardDetailModal'),
-                cardSelectModal: safeElementSnapshot('cardSelectModal'),
-                rulesModal: safeElementSnapshot('rulesModal'),
-            },
-        },
-    });
+    return appShellObservationRuntime.buildClientRuntimeSnapshot(reason);
 }
 
 function isHumanTurnSnapshot(snapshot) {
