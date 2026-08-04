@@ -383,3 +383,12 @@ Continue batch-by-batch re-auditing for small contract-first boundaries. The kno
 - Scoped gates now cover 208 ESLint maintenance files and 207 checkJs runtime files. Whole-file client exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 
 These are deterministic rule-transition, explicit online state ownership, and server configuration boundaries. They do not change game rules, CPU policy/strength, Action/Snapshot/save schemas, localStorage keys, Socket.IO events/payloads, reconnect timing, PWA/SW behavior, or rollout defaults.
+
+## 2026-08-04 Batch 37 architecture boundaries
+
+- `CPUSimulation.cloneGame()` now owns detached simulation-runtime reconstruction, including card cloning, dormant-card identity remapping, landmark/pending/turn fields, and legacy pending-queue rebuilding. `CPU.js` retains profiling and injected runtime adapters; exact decisions and 2–10 player self-play remain unchanged.
+- `js/onlinePendingOutboundState.js` is the room-scoped in-memory owner for pending outbound actions. `online.js` retains action creation, current-session admission, legacy/scoped localStorage writes and fallback, ACK matching, reconnect, and Socket.IO transport.
+- `ClientReporting.createAdmissionController()` now owns client-error dedupe key/time state and its injected clock. `appShell.js` retains report context/building, suppressed checkpoints, and transport composition; the 10-second suppression boundary is unchanged.
+- Scoped gates now cover 209 ESLint maintenance files and 208 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+This batch advances reproducible CPU simulation, explicit online state ownership, and a thinner app-shell without changing CPU choices/RNG, storage keys or payloads, Socket events, reporting payloads, PWA behavior, or authority defaults.

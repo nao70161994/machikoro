@@ -592,3 +592,11 @@ Scoped gates now cover 206 ESLint maintenance files and 205 checkJs runtime file
 3. Server operational limits now have one immutable configuration contract. Server composition injects the same values into room lifecycle, payload validation, reporting admission, mirror compaction, and public test exports.
 
 This batch advances the shared rule transition, explicit online state, and thin-server goals without activating schema/reconnect authority or changing any compatibility surface. Scoped gates are 208 ESLint maintenance files and 207 checkJs runtime files.
+
+## 2026-08-04 Batch 37 boundary update
+
+1. CPU simulation cloning is now a runtime-adapter concern rather than strategy orchestration. The clone preserves all mutable game fields and identity relationships while the strategy remains action-only and fixed by exact decision/self-play evidence.
+2. Pending outbound action memory now has one room-scoped controller owner. Durable browser storage, session admission, ACK matching, and transport remain separate adapters and retain their legacy-compatible formats.
+3. Client-report suppression state now has one controller with an injected clock. Report projection, persistence checkpoints, and HTTP delivery remain independently testable boundaries.
+
+These changes reduce three giant-runtime responsibilities without authority cutovers. Scoped gates are 209 ESLint maintenance files and 208 checkJs runtime files; compatibility and rollout defaults are unchanged.

@@ -628,3 +628,10 @@ Test index:
 - Rejoin attempt count/exhaustion writes belong to `OnlineRetryPolicy.createRejoinAttemptController()`. Keep `_rejoinRetryCount` and `_rejoinRetryExhausted` as compatibility projections only; do not bypass the semantic controller helpers.
 - Server action-log, room, payload, and reporting limits belong to `server/runtimeLimits.js`. Keep `server.js` named exports compatible and change a limit only as an explicit behavior/security decision with boundary tests.
 - Scoped gates are 208 ESLint maintenance files and 207 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+
+## Batch 37 handoff (2026-08-04)
+
+- CPU simulation game reconstruction belongs to `CPUSimulation.cloneGame()`. Keep `CPU._cloneGame()` as the profiling/adapter wrapper and preserve cloned card identity, dormant-card remapping, pending queue fallback, and every legacy default before changing simulation state.
+- Pending outbound in-memory ownership belongs to `OnlinePendingOutboundState`; storage dual-write/fallback, normalization, session checks, ACKs, reconnect, and Socket effects remain in `online.js` and existing helpers. Preserve roomless legacy entries by hydrating them under the current-room fallback key.
+- Client-error dedupe key/time belongs to `ClientReporting.createAdmissionController()`. Keep the 10-second app-shell suppression interval, suppressed checkpoint, report key, and transport sequence unchanged.
+- Scoped gates are 209 ESLint maintenance files and 208 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
