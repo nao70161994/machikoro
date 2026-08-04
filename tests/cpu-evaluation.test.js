@@ -2204,6 +2204,30 @@ runTest('CPU evaluationは購入計画でカード・ランドマーク・0の�
     }), 0);
 });
 
+runTest('CPU evaluationは最強TV対象scoreの妨害係数をpureに合成する', () => {
+    assert.strictEqual(CPUEvaluation.v2SimpleTvTargetScore({
+        beforeShortfall: 0,
+        coins: 10,
+        steal: 5,
+        builtLandmarkCount: 2,
+        remainingLandmarkCosts: [10, 20],
+    }), 32);
+    assert.ok(Math.abs(CPUEvaluation.v2SimpleTvTargetScore({
+        beforeShortfall: 2,
+        coins: 8,
+        steal: 2,
+        builtLandmarkCount: 0,
+        remainingLandmarkCosts: [10],
+    }) - 10.4) < 1e-9);
+    assert.ok(Math.abs(CPUEvaluation.v2SimpleTvTargetScore({
+        beforeShortfall: 0,
+        coins: 3,
+        steal: 3,
+        builtLandmarkCount: 1,
+        remainingLandmarkCosts: [],
+    }) - 9.1) < 1e-9);
+});
+
 runTest('CPU evaluationの購入計画はランドマーク不足coinを負値にしない', () => {
     assert.strictEqual(CPUEvaluation.purchasePlanValue({
         bestCardScore: 0,

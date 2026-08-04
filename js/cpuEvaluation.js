@@ -942,6 +942,20 @@ const CPUEvaluation = Object.freeze({
         return Math.max(0, Math.min(...remaining));
     },
 
+    v2SimpleTvTargetScore(facts = {}) {
+        const afterCoins = Math.max(0, facts.coins - facts.steal);
+        const afterShortfall = facts.remainingLandmarkCosts.length > 0
+            ? Math.max(0, Math.min(...facts.remainingLandmarkCosts) - afterCoins)
+            : 0;
+        let denial = 0;
+        if (facts.beforeShortfall <= 0 && afterShortfall > 0) {
+            denial = 10 + Math.min(6, afterShortfall * 1.5);
+        } else if (facts.beforeShortfall <= 2 && afterShortfall > facts.beforeShortfall) {
+            denial = (afterShortfall - facts.beforeShortfall) * 3;
+        }
+        return facts.steal * 2.2 + facts.builtLandmarkCount * 2.5 + denial;
+    },
+
     tvLandmarkDenialValue(target, amount, enabledLandmarks, landmarkCost, enabled) {
         if (!enabled || !target || !enabledLandmarks) return 0;
         const before = CPUEvaluation.closestLandmarkShortfall(

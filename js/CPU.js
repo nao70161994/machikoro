@@ -1085,16 +1085,14 @@ class CPU {
     }
 
     _scoreExpertV2SimpleTVTarget(game, player, steal, built) {
-        const before = this._closestLandmarkShortfall(player, game);
-        const afterCoins = Math.max(0, player.coins - steal);
-        const remainingCosts = this._remainingEnabledLandmarks(player, game).map(name => Player.landmarkCost(name));
-        const after = remainingCosts.length > 0
-            ? Math.max(0, Math.min(...remainingCosts) - afterCoins)
-            : 0;
-        let denial = 0;
-        if (before <= 0 && after > 0) denial = 10 + Math.min(6, after * 1.5);
-        else if (before <= 2 && after > before) denial = (after - before) * 3;
-        return steal * 2.2 + built * 2.5 + denial;
+        return CPUEvaluation.v2SimpleTvTargetScore({
+            beforeShortfall: this._closestLandmarkShortfall(player, game),
+            coins: player.coins,
+            steal,
+            builtLandmarkCount: built,
+            remainingLandmarkCosts: this._remainingEnabledLandmarks(player, game)
+                .map(name => Player.landmarkCost(name)),
+        });
     }
 
     chooseBusinessMove(game) {
