@@ -1070,3 +1070,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CPUPendingDecision` is the action-only strategy boundary for the six pending-effect choices; `CPUPendingResolution` remains proposal validation/application and `CPU` remains the compatibility facade plus evaluation dependency provider.
 2. Candidate enumeration, first-win ties, lookahead callbacks, trace calls, and random selection remain in their original order with no tuning or rule changes.
 3. Focused contracts, fixed decision baselines, and full self-play/simulation gates preserve every observable pending choice and CPU strength.
+
+## 2026-08-05 Batch 106 boundary update
+
+1. `CPUBuildStrategy` is the action-selection orchestration boundary for difficulty dispatch and weak/normal/strong/expert build policy; `CPUBuildExecution` remains the effect adapter and `CPU` remains the compatibility/evaluation facade.
+2. The existing collection scope still converts `_buyCard`/`_buyLandmark` intents into one canonical proposal, but its ownership is now isolated for a later pure proposal-builder replacement.
+3. Focused lifecycle/delegation contracts plus fixed decision and self-play baselines preserve candidate order, tie behavior, random consumption, and CPU strength.

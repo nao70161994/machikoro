@@ -935,3 +935,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `CPU.js` retains public compatibility delegates, pending execution fallback, and the scoring/tuning/lookahead helpers injected into the decision boundary; its size decreased from 3,546 to 3,148 lines. Pending choice policy is now separate from pending proposal validation/application in `CPUPendingResolution`.
 - Focused contracts preserve TV first-win ties, no-candidate short circuiting, expert-v2-simple cleaning/mover candidate order, IT trace order, and all six public delegates. Fixed decision snapshot/baseline, full CPU/self-play/simulation, unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 257 ESLint maintenance files and 256 checkJs runtime files.
 - Pending effect execution, candidate/tie order, heuristic values, random consumption, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 106 CPU build strategy boundary
+
+- `js/cpuBuildStrategy.js` now owns canonical build-action selection scope and weak/normal/strong/expert build orchestration while calling the existing scoring and proposal adapters through the CPU facade.
+- `CPU.js` retains `build` execution, public compatibility delegates, proposal collection adapters, scoring/tuning, and simulation helpers; its size decreased from 3,148 to 2,935 lines. Build policy is now separate from `CPUBuildExecution` side effects and the main CPU facade.
+- Focused contracts preserve difficulty dispatch, selection-scope lifetime, stale-proposal clearing, exception cleanup, and all five public delegates. Fixed decision snapshot/baseline, full CPU/self-play/simulation, unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 258 ESLint maintenance files and 257 checkJs runtime files.
+- Build candidates, ties, heuristic values, direct-call/test replacement compatibility, RNG, rules, stock mutation timing, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.

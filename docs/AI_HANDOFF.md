@@ -1132,3 +1132,9 @@ Test index:
 - TV, Business Center, Cleaning Company, Moving Company, Renovation, and IT Venture choice policy belongs to `CPUPendingDecision`; pending proposal validation/application belongs to `CPUPendingResolution`. Keep the six `CPU` methods as compatibility delegates.
 - Preserve candidate enumeration and first-win tie order, exact score comparison operators, lookahead callback sequencing, expert-v2-simple trace/random behavior, and the existing Business Center legacy executor fallback. Add pending choice policy to the decision module, not `CPU.js` or the application boundary.
 - The module is linted and checkJs-covered; `CPU.js` is 3,148 lines. Fixed decision baselines and full CPU/self-play/simulation gates pass with unchanged rules, pending outcomes, RNG, and strength.
+
+## Batch 106 handoff (2026-08-05)
+
+- Difficulty dispatch and weak/normal/strong/expert build orchestration belong to `CPUBuildStrategy`; concrete application belongs to `CPUBuildExecution`. Keep `CPU` public build methods as compatibility delegates and keep scoring helpers on the injected facade for now.
+- Preserve `_collectingBuildAction` try/finally lifetime, stale selection clearing before admission, public method replacement used by diagnostics/tests, candidate enumeration, first-win ties, score operators, and exact weak/random draw order. The next safe evolution is replacing the isolated collection scope with an explicit proposal builder, not changing policy.
+- The module is linted and checkJs-covered; `CPU.js` is 2,935 lines. Fixed decision baselines and full CPU/self-play/simulation gates pass with unchanged rules, build actions, RNG, and strength.
