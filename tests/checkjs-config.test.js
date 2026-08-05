@@ -62,6 +62,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/cpuBuildScoring.js'));
     assert.ok(config.files.includes('js/cpuEvaluation.js'));
     assert.ok(config.files.includes('js/cpuLegalMoves.js'));
+    assert.ok(config.files.includes('js/cpuLookaheadRuntime.js'));
     assert.ok(config.files.includes('js/cpuProfile.js'));
     assert.ok(config.files.includes('js/cpuSimulation.js'));
     assert.ok(config.files.includes('js/cpuBusinessMoves.js'));

@@ -2362,55 +2362,15 @@ class CPU {
     }
 
     _simulateLookahead(game, shopStock, focusIndex, maxSteps) {
-        return this._profileMeasure("expert.simulateLookahead", () => {
-            const cpus = game.players.map((_, index) => this._createLookaheadCpu(game, focusIndex, index));
-            const tuning = this.expertTuning;
-            const seed = game.turnCount + focusIndex * 97 + game.currentPlayer().coins * 13 + maxSteps;
-            const rng = this._createPlayoutRng(seed);
-            const safety = CPUSimulation.runPlayout(game, maxSteps, () => {
-                const cpu = cpus[game.currentPlayerIndex];
-                this._runSimulationStep(game, cpu, shopStock, rng);
-            });
-            this._profileCount("expert.lookaheadSteps", safety);
-            if (game.checkWinner()) {
-                const winnerIndex = game.players.indexOf(game.checkWinner());
-                return winnerIndex === focusIndex ? tuning.winLookaheadBonus : -tuning.loseLookaheadPenalty;
-            }
-            return this._lookaheadTerminalHeuristic(game, focusIndex);
-        });
+        return CPULookaheadRuntime._simulateLookahead(this, game, shopStock, focusIndex, maxSteps);
     }
 
     _createLookaheadCpu(game, focusIndex, playerIndex) {
-        if (!game || !game.players || playerIndex === focusIndex) return new CPU('strong');
-        if (
-            this.difficulty === "expert" &&
-            this._expertFlagEnabled("crowdNormalLookaheadOpponents") &&
-            game.players.length >= 4 &&
-            playerIndex !== focusIndex
-        ) {
-            return new CPU('normal');
-        }
-        if (this.difficulty === "expert" && game.players.length >= 4) {
-            const strongOpponents = this._lookaheadStrongOpponentSet(game, focusIndex);
-            if (!strongOpponents.has(playerIndex)) {
-                return new CPU('normal');
-            }
-        }
-        return new CPU('strong');
+        return CPULookaheadRuntime._createLookaheadCpu(this, game, focusIndex, playerIndex, difficulty => new CPU(difficulty));
     }
 
     _lookaheadStrongOpponentSet(game, focusIndex) {
-        let mode = 'all';
-        if (this._expertFlagEnabled("lookaheadLeaderStrongOnly")) mode = 'leader';
-        else if (this._expertFlagEnabled("lookaheadNextSeatStrongOnly")) mode = 'next-seat';
-        else if (this._expertFlagEnabled("lookaheadTopTwoStrong")) mode = 'top-two';
-        const indexes = CPULegalMoves.lookaheadStrongOpponentIndexes(
-            game && game.players,
-            focusIndex,
-            mode,
-            player => this._estimateOpponentThreat(player, game)
-        );
-        return new Set(indexes);
+        return CPULookaheadRuntime._lookaheadStrongOpponentSet(this, game, focusIndex);
     }
 
     static _pendingActionDescriptors(game) {

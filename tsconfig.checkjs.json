@@ -127,6 +127,7 @@
     "js/cpuBuildScoring.js",
     "js/cpuEvaluation.js",
     "js/cpuLegalMoves.js",
+    "js/cpuLookaheadRuntime.js",
     "js/cpuProfile.js",
     "js/cpuSelection.js",
     "js/cpuSimulation.js",

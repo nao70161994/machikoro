@@ -45,6 +45,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuBuildStrategy.js', 'js/CPU.js'],
             ['js/cpuBuildScoring.js', 'js/CPU.js'],
             ['js/cpuSimulation.js', 'js/CPU.js'],
+            ['js/cpuLookaheadRuntime.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js'],
             ['js/cpuRollDecision.js', 'js/CPU.js'],
             ['js/cpuPendingDecision.js', 'js/CPU.js'],
@@ -188,6 +189,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuBuildStrategy.js', 'js/CPU.js'],
             ['js/cpuBuildScoring.js', 'js/CPU.js'],
             ['js/cpuSimulation.js', 'js/CPU.js'],
+            ['js/cpuLookaheadRuntime.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/runtime-loaders.js', [
@@ -204,6 +206,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuBuildStrategy.js', 'js/CPU.js'],
             ['js/cpuBuildScoring.js', 'js/CPU.js'],
             ['js/cpuSimulation.js', 'js/CPU.js'],
+            ['js/cpuLookaheadRuntime.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js']
         ]],
         ['tests/helpers/integration-runtime.js', [
@@ -226,6 +229,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/cpuBuildStrategy.js', 'js/CPU.js'],
             ['js/cpuBuildScoring.js', 'js/CPU.js'],
             ['js/cpuSimulation.js', 'js/CPU.js'],
+            ['js/cpuLookaheadRuntime.js', 'js/CPU.js'],
             ['js/cpuEvaluation.js', 'js/CPU.js'],
             ['js/cpuRollDecision.js', 'js/CPU.js'],
             ['js/cpuPendingDecision.js', 'js/CPU.js'],

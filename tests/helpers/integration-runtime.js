@@ -211,6 +211,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/cpuBuildStrategy.js',
         'js/cpuBuildScoring.js',
         'js/cpuSimulation.js',
+        'js/cpuLookaheadRuntime.js',
         'js/cpuPendingResolution.js',
         'js/cpuPendingDecision.js',
         'js/cpuRollDecision.js',
