@@ -519,6 +519,15 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(nightlyWorkflow.includes('npm run test:release'));
     assert.ok(nightlyWorkflow.includes('npm run test:pwa'));
     assert.ok(nightlyWorkflow.includes('npm run test:online'));
+    assert.ok(nightlyWorkflow.includes('npm run test:sim'));
+    assert.ok(nightlyWorkflow.includes('npm run test:cpu-regression'));
+    assert.ok(nightlyWorkflow.includes('npm run test:soak'));
+    assert.ok(nightlyWorkflow.includes('npx playwright install --with-deps webkit'));
+    assert.ok(nightlyWorkflow.includes('npm run test:browser-e2e'));
+    const browserSpec = readRepoFile('tests/browser/mobile-webkit.spec.js');
+    assert.ok(browserSpec.includes('mobile WebKitでapp shellとService Workerが実動作する'));
+    assert.ok(browserSpec.includes('mobile WebKitの2クライアントがonline開始後に再読込復帰できる'));
+    assert.ok(browserSpec.includes('await host.reload()'));
     assert.ok(nightlyWorkflow.includes('NTFY_CI_TOPIC'));
     assert.ok(nightlyWorkflow.includes('failure()'));
     assert.ok(checklist.includes('npm run test:static'));

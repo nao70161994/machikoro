@@ -608,6 +608,22 @@ const TEST_GROUPS = {
 const repoRoot = path.join(__dirname, '..');
 
 const REQUIRED_TEST_GROUPS = Object.freeze({
+    // Fixed maintenance outcomes: these are promotion evidence, not optional
+    // placement choices when the test catalog is reorganized.
+    'action-contract.test.js': ['unit'],
+    'game-snapshot.test.js': ['unit', 'online'],
+    'snapshot-contract.test.js': ['unit', 'online'],
+    'local-save-repository.test.js': ['unit'],
+    'game-schema-codec.test.js': ['unit', 'online'],
+    'game-schema-shadow-parity.test.js': ['unit', 'online'],
+    'game-engine-local-shadow.test.js': ['unit', 'online'],
+    'online-reconnect-state.test.js': ['unit', 'online'],
+    'online-game-engine-runtime.test.js': ['unit', 'online'],
+    'cpu-action-proposal.test.js': ['unit', 'cpu'],
+    'cpu-decision-baseline.test.js': ['unit', 'cpu'],
+    'cpu-selfplay-regression.test.js': ['cpu'],
+    'checkjs-config.test.js': ['unit', 'core'],
+    'release-e2e.test.js': ['release'],
     'online-action-reconnect-e2e.test.js': ['online'],
     'online-completion-e2e.test.js': ['online'],
     'game-schema-online-e2e.test.js': ['online'],

@@ -1,10 +1,12 @@
 # Maintenance Backlog
 
-Last updated: 2026-08-04
+Last updated: 2026-08-05
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
 For larger root-cause refactors, use `docs/ARCHITECTURE_REFACTOR_PLAN.md`. It defines the intended module boundaries, migration order, contract tests, rollback paths, and manual-verification gates before any broad split is attempted.
+
+The six-outcome maintenance migration completed on 2026-08-05 is audited in `docs/MAINTENANCE_GOAL_AUDIT.md`. Use that record to distinguish completed automated scope from production and real-device deferrals.
 
 ## Recently Fixed / Guarded
 

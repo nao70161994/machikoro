@@ -33,12 +33,13 @@
 2. `docs/ARCHITECTURE.md`: 責務境界、phase/action map、壊してはいけない不変条件。
 3. `docs/AI_MAINTENANCE_ISSUES.md`: AI が誤読しやすい不変条件、stop conditions、grep 入口。
 4. `docs/MAINTENANCE_BACKLOG.md`: 直近改善後の残リスク分類、触る/触らない判断、次の費用対効果候補。
-5. `docs/ADR_INDEX.md`: 現在有効な設計判断とhistorical文書の索引。
-6. `docs/ARCHITECTURE_REFACTOR_PLAN.md`: 根本改善が必要な責務境界、段階的移行順、contract test、rollback、実機確認 gate。
-7. `docs/REFACTOR_PLAN.md`: 現行 phase 方針と実施済みログ。
-8. `docs/CARD_SYSTEM.md`: 新カード / 新 effect / 新ランドマーク追加時の修正箇所。
-9. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
-10. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
+5. `docs/MAINTENANCE_GOAL_AUDIT.md`: 6つの固定成果の完了証拠、promotion gate、意図的deferred。
+6. `docs/ADR_INDEX.md`: 現在有効な設計判断とhistorical文書の索引。
+7. `docs/ARCHITECTURE_REFACTOR_PLAN.md`: 根本改善が必要な責務境界、段階的移行順、contract test、rollback、実機確認 gate。
+8. `docs/REFACTOR_PLAN.md`: 現行 phase 方針と実施済みログ。
+9. `docs/CARD_SYSTEM.md`: 新カード / 新 effect / 新ランドマーク追加時の修正箇所。
+10. `docs/ONLINE_SYNC.md`: オンライン同期、再接続、server restart restore の正本。
+11. `docs/CPU_AI.md`: CPU 評価の追従箇所とデータ駆動化の順番。
 
 ## 2026-07-30 保守性改善の現在地
 
