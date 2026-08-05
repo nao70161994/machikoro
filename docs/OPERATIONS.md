@@ -411,3 +411,8 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 ## Local browser reconnect state authority
 
 `OnlineReconnectRuntime` owns the reconnect state controller, completion marker, retry attempt counter, and rejoin timer. Clean lifecycle events are the default state authority and update the compatibility `isReconnectingOnline` projection. Set either `window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED=false` or `window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED=false` for immediate rollback of reads or compatibility writes respectively. Timer callbacks, restore queues, ACK handling, Socket.IO event names/payloads, and online Game Engine authority remain on their existing separately gated paths.
+
+
+## Online shared Engine rollout
+
+Online replay remains default-OFF. Setting both `window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED=true` and `window.MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED=true` lets a successful detached transition and reconstruction replace the live replay before mutable application. Either flag unset/false, transition failure, adapter mismatch, or adoption failure uses the existing mutable replay. Keep both flags unset in production until rollout approval; disabling either flag is the rollback. Socket.IO events/payloads, ACK/watermark, and restore queue ordering are unaffected.

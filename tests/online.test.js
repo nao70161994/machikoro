@@ -1226,7 +1226,7 @@ runTest('online replay Game Engine shadowはdetached transitionとlegacy結果�
     assert.strictEqual(runtime.getGame(), game);
 });
 
-runTest('online replay Game Engine authorityはparity一致時だけdetached stateを採用する', () => {
+runTest('online replay Game Engine authorityは明示flag時にdetached stateを先行採用する', () => {
     const runtime = loadOnlineRuntime();
     runtime.window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED = true;
@@ -1236,7 +1236,7 @@ runTest('online replay Game Engine authorityはparity一致時だけdetached sta
     runtime.CARDS.forEach(card => { runtime.getShopStock()[card.name] = 6; });
     assert.strictEqual(runtime.applyReplayedAction('nextTurn', {}), true);
     const outcome = runtime.getOnlineGameEngineShadowOutcome();
-    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.status, 'authority-direct');
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
     assert.strictEqual(outcome.authority.reason, '');
     assert.notStrictEqual(runtime.getGame(), game);
@@ -1283,7 +1283,7 @@ runTest('online replay Game Engine authorityは固定action列でlegacy snapshot
         assert.strictEqual(legacy.applyReplayedAction(entry.action, entry.data), true, entry.action);
         assert.strictEqual(authoritative.applyReplayedAction(entry.action, entry.data), true, entry.action);
         const outcome = authoritative.getOnlineGameEngineShadowOutcome();
-        assert.strictEqual(outcome.report.status, 'matched', entry.action);
+        assert.strictEqual(outcome.report.status, 'authority-direct', entry.action);
         assert.strictEqual(outcome.authority.authority, 'pure-transition', entry.action);
     });
     assert.deepStrictEqual(

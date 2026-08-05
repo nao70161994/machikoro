@@ -33,13 +33,23 @@ function createHarness(options = {}) {
             calls.push(['prepare', input.action, input.data]);
             return {
                 action: input.action,
-                shadowSnapshot: input.transition(input.snapshot, input.action, input.data),
+                transition: input.transition(input.snapshot, input.action, input.data),
+            };
+        },
+        adoptPrepared(input) {
+            calls.push(['adoptPrepared', input.prepared.action]);
+            const transition = input.prepared.transition;
+            const adopted = transition.ok === true && input.adoptSnapshot(transition.snapshot);
+            return {
+                report: { status: adopted ? 'authority-direct' : 'adoption-error' },
+                authority: { authority: adopted ? 'pure-transition' : 'mutable' },
+                adopted,
             };
         },
         finish(input) {
             calls.push(['finish', input.liveSnapshot, input.authorityEnabled]);
             let adopted = false;
-            if (input.authorityEnabled) adopted = input.adoptSnapshot(input.prepared.shadowSnapshot);
+            if (input.authorityEnabled) adopted = input.adoptSnapshot(input.prepared.transition.snapshot);
             return { authority: adopted ? 'pure-transition' : 'mutable', adopted };
         },
     };
@@ -67,7 +77,7 @@ function createHarness(options = {}) {
                 calls.push(['transition', input.action, input.data]);
                 const next = input.hydrate(input.snapshot);
                 next.game = { marker: `shadow:${input.action}` };
-                return input.serialize(next);
+                return { ok: true, reason: '', snapshot: input.serialize(next) };
             },
         },
         gameRuntime: {
@@ -126,9 +136,19 @@ runTest('online game engine runtimeはauthority有効時だけdetached snapshot�
     assert.strictEqual(harness.undoState, null);
     assert.ok(harness.calls.some(call => call[0] === 'adoptEffect'));
     assert.ok(harness.calls.some(call => call[0] === 'assignStock'));
+    assert.strictEqual(harness.calls.some(call => call[0] === 'applyMutable'), false);
     assert.deepStrictEqual(harness.calls.at(-1)[1], {
-        authority: 'pure-transition', adopted: true,
+        report: { status: 'authority-direct' },
+        authority: { authority: 'pure-transition' },
+        adopted: true,
     });
+});
+
+runTest('online game engine runtimeはdirect adoption失敗時にlegacy replayへ戻る', () => {
+    const harness = createHarness({ authorityEnabled: true, shadowEnabled: true, snapshotMismatch: true });
+    assert.strictEqual(harness.runtime.applyReplayed('nextTurn', {}), true);
+    assert.ok(harness.calls.some(call => call[0] === 'applyMutable'));
+    assert.strictEqual(harness.game.marker, 'mutable:nextTurn');
 });
 
 runTest('online game engine runtimeは再構築parity不一致を採用しない', () => {

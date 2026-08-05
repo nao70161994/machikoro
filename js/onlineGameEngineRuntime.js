@@ -61,6 +61,19 @@ const OnlineGameEngineRuntime = (() => {
             return true;
         }
 
+        function adoptPrepared(prepared) {
+            if (!prepared || !dependencies.isAuthorityEnabled()) return null;
+            const clientShadow = dependencies.getClientShadow();
+            if (!clientShadow || typeof clientShadow.adoptPrepared !== 'function') return null;
+            const outcome = clientShadow.adoptPrepared({
+                prepared,
+                authorityEnabled: true,
+                adoptSnapshot: dependencies.adoptSnapshot,
+            });
+            dependencies.setDiagnostic(outcome);
+            return outcome;
+        }
+
         function finish(prepared) {
             if (!prepared) return null;
             const clientShadow = dependencies.getClientShadow();
@@ -75,11 +88,18 @@ const OnlineGameEngineRuntime = (() => {
             return outcome;
         }
 
+        // Online authority remains opt-in. Disabled flags, unavailable/failed
+        // transitions, or failed detached adoption retain the legacy replay path.
+        // Remove that fallback only after the rollout flag and mixed-version replay
+        // support are intentionally retired together.
         function applyReplayed(action, data) {
             if (BUILD_ACTIONS.includes(action)) {
                 dependencies.gameRuntime.setUndoState(dependencies.buildUndoSnapshot());
             }
             const prepared = prepare(action, data);
+            const direct = adoptPrepared(prepared);
+            const authoritative = direct && direct.authority.authority === 'pure-transition';
+            if (authoritative) return true;
             const applied = dependencies.applyMutableAction(action, data);
             if (UNDO_CLEAR_ACTIONS.includes(action)) {
                 dependencies.gameRuntime.setUndoState(null);
@@ -90,6 +110,7 @@ const OnlineGameEngineRuntime = (() => {
 
         return Object.freeze({
             adopt,
+            adoptPrepared,
             applyReplayed,
             finish,
             hydrate,
