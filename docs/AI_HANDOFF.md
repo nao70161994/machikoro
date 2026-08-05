@@ -1168,3 +1168,9 @@ Test index:
 - `js/cpuChoiceScoring.js` owns expert/strong choice-state scoring, pending clone/application order, expert lookahead admission, and purchase-plan caching.
 - `CPU.js` delegates the nine compatibility methods and is now 2,463 lines. Keep adapters injectable because pending/build strategy diagnostics replace facade methods at runtime.
 - `tests/cpu-choice-scoring.test.js` fixes profile/evaluation order, score inputs, cache identity, pending clone order, and delegate shape. Full unit and CPU/fixed-seed/self-play gates pass.
+
+## Fixed outcome 1 milestone: stateless build selection (2026-08-05)
+
+- `CPUBuildStrategy.chooseBuildAction` runs the selected difficulty strategy against a local prototype adapter, not the production CPU instance. The adapter overrides only `_buyCard` and `_buyLandmark` to collect the first canonical proposal.
+- Do not reintroduce `_selectedBuildAction`, `_collectingBuildAction`, or `_buildProposalCollector`; focused source contracts reject them. Direct execution belongs to `CPUBuildExecution`.
+- Fixed-seed decision and 2-to-10-player self-play baselines pass, so adapter identity did not change CPU choices or RNG order.

@@ -977,3 +977,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `CPU.js` retains compatibility delegates and injected evaluation/simulation adapters; its size decreased from 2,549 to 2,463 lines. Choice-state orchestration no longer lives in the main CPU facade.
 - Focused contracts preserve profile labels/order, clone/application order, lookahead inputs, strong score features, and cache identity. Fixed decision/self-play CPU gates, full unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 262 ESLint maintenance files and 261 checkJs runtime files.
 - Heuristic values, difficulty behavior, candidate/tie order, clone behavior, RNG consumption, CPU strength, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Fixed outcome 1: stateless CPU build selection
+
+- `CPUBuildStrategy.chooseBuildAction` now creates a local prototype adapter whose card/landmark purchase methods write only to the local proposal collector. The production CPU instance no longer carries build-selection state.
+- Removed `_selectedBuildAction`, `_collectingBuildAction`, and `_buildProposalCollector`, including their legacy fallback branches. Direct build execution remains an explicit `CPUBuildExecution` concern outside the strategy selection adapter.
+- Contracts prove the selection adapter is local, invalid state creates no scope, and exceptions leave no CPU state. Fixed decision and 2-to-10-player self-play baselines, the full CPU gate, checkJs, and ESLint pass without heuristic or RNG changes.
+- Removal condition is complete for these fallback fields: no runtime or test references remain.

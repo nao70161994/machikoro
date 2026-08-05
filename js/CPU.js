@@ -49,10 +49,6 @@ class CPU {
         this.baseExpertTuning = runtimeConfig.baseExpertTuning;
         this.activeExpertPreset = runtimeConfig.activeExpertPreset;
         this.expertTuning = runtimeConfig.expertTuning;
-        this._collectingBuildAction = false;
-        this._buildProposalCollector = null;
-        /** @type {CPUBuildActionProposal|null} */
-        this._selectedBuildAction = null;
     }
 
     static _finiteOption(options, key, fallback) {
@@ -1339,32 +1335,10 @@ class CPU {
     }
 
     _buyCard(card, game, shopStock) {
-        if (this._buildProposalCollector) {
-            const accepted = this._buildProposalCollector.selectCard(card);
-            const proposal = this._buildProposalCollector.selectedAction();
-            if (proposal && !this._selectedBuildAction) this._selectedBuildAction = proposal;
-            return accepted;
-        }
-        if (this._collectingBuildAction) {
-            const proposal = CPUBuildExecution.createCardBuildAction(card);
-            if (proposal && !this._selectedBuildAction) this._selectedBuildAction = proposal;
-            return !!proposal;
-        }
         return CPUBuildExecution.buyCard(this, card, game, shopStock, this._buildExecutionContext());
     }
 
     _buyLandmark(name, game) {
-        if (this._buildProposalCollector) {
-            const accepted = this._buildProposalCollector.selectLandmark(name);
-            const proposal = this._buildProposalCollector.selectedAction();
-            if (proposal && !this._selectedBuildAction) this._selectedBuildAction = proposal;
-            return accepted;
-        }
-        if (this._collectingBuildAction) {
-            const proposal = CPUBuildExecution.createLandmarkBuildAction(name);
-            if (proposal && !this._selectedBuildAction) this._selectedBuildAction = proposal;
-            return !!proposal;
-        }
         return CPUBuildExecution.buyLandmark(this, name, game, this._buildExecutionContext());
     }
 

@@ -6,54 +6,52 @@ const { runTest } = require('./helpers/test-utils');
 
 global.GAME_PHASES = Object.freeze({ BUILD: 'build' });
 
-runTest('CPU build strategy はdifficulty別delegateをselection scope内で実行する', () => {
+runTest('CPU build strategy はdifficulty別delegateを局所selection adapterで実行する', () => {
     for (const difficulty of ['weak', 'normal', 'strong', 'expert']) {
         const calls = [];
         const expected = { action: 'buildCard', data: { cardName: difficulty } };
         const cpu = {
             difficulty,
-            _selectedBuildAction: { stale: true },
-            _collectingBuildAction: false,
             _syncExpertTuningForGame: game => calls.push(['sync', game]),
         };
         for (const name of ['buildWeak', 'buildNormal', 'buildStrong', 'buildExpert']) {
-            cpu[name] = (game, stock) => {
-                calls.push([name, game, stock, cpu._collectingBuildAction, !!cpu._buildProposalCollector]);
-                cpu._selectedBuildAction = expected;
+            cpu[name] = function (game, stock) {
+                calls.push([
+                    name,
+                    game,
+                    stock,
+                    this !== cpu,
+                    Object.prototype.hasOwnProperty.call(this, '_buyCard'),
+                ]);
+                this._buyCard({ name: difficulty }, game, stock);
             };
         }
         const game = { phase: 'build', builtThisTurn: false };
         const stock = { marker: difficulty };
 
-        assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, game, stock), expected);
+        assert.deepStrictEqual(CPUBuildStrategy.chooseBuildAction(cpu, game, stock), expected);
         assert.deepStrictEqual(calls, [
             ['sync', game],
             [`build${difficulty[0].toUpperCase()}${difficulty.slice(1)}`, game, stock, true, true],
         ]);
-        assert.strictEqual(cpu._collectingBuildAction, false);
-        assert.strictEqual(cpu._buildProposalCollector, null);
+        assert.strictEqual(Object.prototype.hasOwnProperty.call(cpu, '_buyCard'), false);
+        assert.strictEqual(Object.prototype.hasOwnProperty.call(cpu, '_buyLandmark'), false);
     }
 });
 
-runTest('CPU build strategy はinvalid stateをdispatchせず選択をclearする', () => {
+runTest('CPU build strategy はinvalid stateでadapter生成もdispatchもしない', () => {
     const cpu = {
         difficulty: 'normal',
-        _selectedBuildAction: { stale: true },
-        _collectingBuildAction: false,
         _syncExpertTuningForGame: () => { throw new Error('must not run'); },
     };
     assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, null, {}), null);
-    assert.strictEqual(cpu._selectedBuildAction, null);
-    assert.strictEqual(cpu._buildProposalCollector, null);
     assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, { phase: 'roll', builtThisTurn: false }, {}), null);
-    assert.strictEqual(cpu._selectedBuildAction, null);
+    assert.deepStrictEqual(Object.keys(cpu), ['difficulty', '_syncExpertTuningForGame']);
 });
 
-runTest('CPU build strategy はstrategy例外後もselection scopeを解除する', () => {
+runTest('CPU build strategy はstrategy例外時もCPU instanceへselection stateを残さない', () => {
     const cpu = {
         difficulty: 'normal',
-        _selectedBuildAction: null,
-        _collectingBuildAction: false,
         _syncExpertTuningForGame: () => {},
         buildNormal: () => { throw new Error('boom'); },
     };
@@ -61,8 +59,8 @@ runTest('CPU build strategy はstrategy例外後もselection scopeを解除す�
         () => CPUBuildStrategy.chooseBuildAction(cpu, { phase: 'build', builtThisTurn: false }, {}),
         /boom/
     );
-    assert.strictEqual(cpu._collectingBuildAction, false);
-    assert.strictEqual(cpu._buildProposalCollector, null);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(cpu, '_buyCard'), false);
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(cpu, '_buyLandmark'), false);
 });
 
 runTest('CPU build strategy は空のcrowd候補を既存順でno-opにする', () => {
@@ -108,6 +106,9 @@ runTest('CPU.jsのbuild strategy public APIは専用境界へ委譲する', () =
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/CPU.js'), 'utf8');
     for (const name of ['chooseBuildAction', 'buildWeak', 'buildNormal', 'buildStrong', 'buildExpert']) {
         assert.match(source, new RegExp(`${name}\\(game, shopStock\\) \\{\\s*return CPUBuildStrategy\\.${name}\\(this, game, shopStock\\);\\s*\\}`));
+    }
+    for (const legacyField of ['_selectedBuildAction', '_collectingBuildAction', '_buildProposalCollector']) {
+        assert.strictEqual(source.includes(legacyField), false);
     }
     for (const name of ['_buildExpertCrowd', '_buildStrongCrowd', '_buildExpertV2Simple']) {
         assert.match(source, new RegExp(`${name}\\(current, game, shopStock\\) \\{\\s*return CPUBuildStrategy\\.${name}\\(this, current, game, shopStock\\);\\s*\\}`));

@@ -1106,3 +1106,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 - Added `CPUChoiceScoring` as the owner of expert/strong post-choice state scoring, pending-choice clone evaluation, lookahead admission, and purchase-plan cache orchestration.
 - `CPU.js` now delegates these nine methods while retaining the compatibility surface used by pending/build strategies and diagnostics.
 - This advances the fixed CPU action-only outcome by separating state valuation from the facade without changing policy constants, evaluation order, or random consumption.
+
+## 2026-08-05 Fixed outcome 1 milestone: stateless build strategy
+
+- Build proposal collection moved from mutable CPU instance fields to a call-local adapter owned by `CPUBuildStrategy`.
+- All nested build helpers see proposal-only `_buyCard`/`_buyLandmark` methods through the adapter, while the explicit execution path remains in `CPUBuildExecution`.
+- The three temporary selection/fallback fields were removed rather than retained as compatibility debt.

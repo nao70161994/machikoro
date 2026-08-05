@@ -7,33 +7,38 @@ const CPUBuildExecutionApi = typeof module !== 'undefined' && module.exports
     ? require('./cpuBuildExecution').CPUBuildExecution
     : globalThis.CPUBuildExecution;
 
+function createBuildSelectionCpu(cpu, collector) {
+    const selectionCpu = Object.create(cpu);
+    Object.defineProperties(selectionCpu, {
+        _buyCard: {
+            value: card => collector.selectCard(card),
+        },
+        _buyLandmark: {
+            value: name => collector.selectLandmark(name),
+        },
+    });
+    return selectionCpu;
+}
+
 const CPUBuildStrategy = Object.freeze({
     chooseBuildAction(cpu, game, shopStock) {
-        cpu._selectedBuildAction = null;
-        cpu._buildProposalCollector = null;
         if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
         const collector = CPUBuildProposalCollectorApi.create({
             createCardBuildAction: CPUBuildExecutionApi.createCardBuildAction,
             createLandmarkBuildAction: CPUBuildExecutionApi.createLandmarkBuildAction,
         });
-        cpu._buildProposalCollector = collector;
-        cpu._collectingBuildAction = true;
-        try {
-            cpu._syncExpertTuningForGame(game);
-            if (cpu.difficulty === "weak") {
-                cpu.buildWeak(game, shopStock);
-            } else if (cpu.difficulty === "normal") {
-                cpu.buildNormal(game, shopStock);
-            } else if (cpu.difficulty === "strong") {
-                cpu.buildStrong(game, shopStock);
-            } else {
-                cpu.buildExpert(game, shopStock);
-            }
-            return collector.selectedAction() || cpu._selectedBuildAction;
-        } finally {
-            cpu._buildProposalCollector = null;
-            cpu._collectingBuildAction = false;
+        const selectionCpu = createBuildSelectionCpu(cpu, collector);
+        cpu._syncExpertTuningForGame(game);
+        if (cpu.difficulty === "weak") {
+            selectionCpu.buildWeak(game, shopStock);
+        } else if (cpu.difficulty === "normal") {
+            selectionCpu.buildNormal(game, shopStock);
+        } else if (cpu.difficulty === "strong") {
+            selectionCpu.buildStrong(game, shopStock);
+        } else {
+            selectionCpu.buildExpert(game, shopStock);
         }
+        return collector.selectedAction();
     },
 
     buildWeak(cpu, game, shopStock) {
