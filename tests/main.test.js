@@ -2404,7 +2404,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/onlinePayload.js', 'js/online.js');
     assertBefore('js/onlineSessionLifecycle.js', 'js/online.js');
     assertBefore('js/onlineSocketRegistry.js', 'js/onlineInboundActionRuntime.js');
-    assertBefore('js/onlineInboundActionRuntime.js', 'js/online.js');
+    assertBefore('js/onlineInboundActionRuntime.js', 'js/onlineLobbyStartRuntime.js');
+    assertBefore('js/onlineLobbyStartRuntime.js', 'js/online.js');
     assertBefore('js/clientStorage.js', 'js/ui.js');
     assertBefore('js/uiNotice.js', 'js/ui.js');
     assertBefore('js/uiLogDisplay.js', 'js/ui.js');

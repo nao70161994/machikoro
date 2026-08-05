@@ -2600,111 +2600,78 @@ function initSocket() {
     const handleGameAction = onlineInboundActionRuntime.handleGameAction;
     const handleActionAccepted = onlineInboundActionRuntime.handleActionAccepted;
 
-    socketEvents.on(OnlineSocketRegistry.keys.ROOM_CREATED, ({ roomId, playerIndex, reconnectToken: token }) => {
-        finishOnlineLobbyRequest('create');
-        OnlineRuntimeState.runtime.acceptRoom({
-            playerIndex,
-            roomId,
-            reconnectToken: token,
-        });
-        saveOnlineSession();
-        onlineDomEffects.setStatusHtml(`
-            <div>ルームを作成しました！</div>
-            <div class="room-id-display">${roomId}</div>
-            <div class="waiting-players">プレイヤーを待っています...</div>`);
+    const handleHostChanged = ({ newHostPlayerIndex, hostEpoch }) => {
+        if (_queueOnlineEventDuringRestore('hostChanged', { newHostPlayerIndex, hostEpoch })) return;
+        return _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch);
+    };
+    const onlineLobbyStartRuntime = OnlineLobbyStartRuntime.createRuntime({
+        abortRestore: (generation, message) => _abortOnlineRestore(generation, message),
+        acceptRoom: value => OnlineRuntimeState.runtime.acceptRoom(value),
+        acceptSchema: selection => acceptsNegotiatedGameSchema(selection),
+        applyHostPayload: (payload, hostPlayerIndex, hostEpoch) =>
+            _applyOnlineHostPayload(payload, hostPlayerIndex, hostEpoch),
+        clearHostlessState: () => _hostlessRestoreState.clear(),
+        clearPending: () => _clearPendingOutboundAction(),
+        clearRejoinRetry: () => _clearRejoinRetry(),
+        clearRestoreEventQueue: () => _clearOnlineRestoreEventQueue(),
+        clearRestoreQuarantine: () => _clearOnlineRestoreQuarantine(),
+        console,
+        defaultLandmarks: () => Player.landmarkNames(),
+        finishLobbyRequest: kind => finishOnlineLobbyRequest(kind),
+        flushRestoreEvents: (generation, sequence, handlers) =>
+            _flushOnlineRestoreEvents(generation, sequence, handlers),
+        getGame: () => onlineGameRuntimeSnapshot().game,
+        getRestoreEventHandlers: () => ({
+            gameAction: handleGameAction,
+            actionAccepted: handleActionAccepted,
+            hostChanged: handleHostChanged,
+        }),
+        getRestoreGeneration: () => _onlineRestoreLifecycleController.getGeneration(),
+        getSession: onlineSessionSnapshot,
+        incrementRestoreGeneration: () => _incrementOnlineRestoreGeneration(),
+        initGame: (names, settings, order) => initOnlineGame(names, settings, order),
+        logTypes: LOG_TYPES,
+        notifyLifecycleStart: () => onlineClientEffects.notifyLifecycleStart(),
+        observeReconnect: event => _observeOnlineReconnectEvent(event),
+        preloadModels: (playerCount, settings) =>
+            preloadOnlineRlModelsForSettings(playerCount, settings),
+        reconnectEvents: OnlineReconnectState.events,
+        removeRestoreItem: key => _removeOnlineRestoreStorageItem(key),
+        replaceActionSequence: sequence => _onlineActionSequenceController.replace(sequence),
+        replaceEnabledCards: values => replaceEnabledCardSelection(values),
+        replaceEnabledLandmarks: values => replaceEnabledLandmarkSelection(values),
+        resetReconnectCompletion: () => _onlineReconnectCompletionController.reset(),
+        resetUiLocks: reason => onlineClientEffects.resetUiLocks(reason),
+        restoreKeys: ONLINE_STORAGE_KEYS,
+        restoreSchemaVersion: ONLINE_RESTORE_SCHEMA_VERSION,
+        saveSession: () => saveOnlineSession(),
+        setActionFlight: value => _setOnlineActionInFlight(value),
+        setCpuSpeed: value => GameSetupState.runtime.setCpuSpeed(value),
+        setHostState: hostPlayerIndex => _setOnlineHostState(hostPlayerIndex),
+        setOnline: value => OnlineRuntimeState.runtime.setOnline(value),
+        setSchema: selection => onlineSchemaSelectionController.set(selection),
+        setStatusHtml: html => onlineDomEffects.setStatusHtml(html),
+        setStatusText: message => onlineDomEffects.setStatusText(message),
+        showGame: () => onlineDomEffects.showGame(),
+        startRestore: () => _startOnlineRestore(),
+        writeRestoreJson: (key, value) => _writeOnlineRestoreStorageJson(key, value),
     });
 
-    socketEvents.on(OnlineSocketRegistry.keys.ROOM_JOINED, ({ roomId, playerIndex, reconnectToken: token }) => {
-        finishOnlineLobbyRequest('join');
-        OnlineRuntimeState.runtime.acceptRoom({
-            playerIndex,
-            roomId,
-            reconnectToken: token,
-        });
-        saveOnlineSession();
-        onlineDomEffects.setStatusText(`ルーム ${roomId} に参加しました！`);
-    });
+    socketEvents.on(
+        OnlineSocketRegistry.keys.ROOM_CREATED,
+        payload => onlineLobbyStartRuntime.handleRoomCreated(payload)
+    );
+    socketEvents.on(
+        OnlineSocketRegistry.keys.ROOM_JOINED,
+        payload => onlineLobbyStartRuntime.handleRoomJoined(payload)
+    );
+    socketEvents.on(
+        OnlineSocketRegistry.keys.PLAYER_LIST,
+        players => onlineLobbyStartRuntime.handlePlayerList(players)
+    );
 
-    socketEvents.on(OnlineSocketRegistry.keys.PLAYER_LIST, (players) => {
-        const roomId = onlineSessionSnapshot().myRoomId;
-        onlineDomEffects.setStatusHtml(`
-            <div class="room-id-display">${roomId}</div>
-            <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`);
-    });
-
-    socketEvents.on(OnlineSocketRegistry.keys.GAME_START, ({ playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el, versions, reconnectTokenHashes, hostPlayerIndex, hostEpoch, actionSeq, hostlessRestoreCapabilities, hostlessRestoreGeneration, hostlessRestoreCount, gameSchema }) => {
-        if (!acceptsNegotiatedGameSchema(gameSchema)) {
-            onlineDomEffects.setStatusText('ゲーム状態のschema versionに対応していません。アプリを更新してください。');
-            return;
-        }
-        onlineSchemaSelectionController.set(gameSchema);
-        _clearRejoinRetry();
-        _hostlessRestoreState.clear();
-        _clearOnlineRestoreQuarantine();
-        const startGeneration = _incrementOnlineRestoreGeneration();
-        _startOnlineRestore();
-        _clearOnlineRestoreEventQueue();
-        const gameStartPayload = _applyOnlineHostPayload({
-            schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION, playerNames, playerSettings: ps,
-            cpuSpeed: cs, playerOrder, enabledCards: ec ? [...ec] : null,
-            enabledLandmarks: el || null, versions, reconnectTokenHashes, hostPlayerIndex,
-            actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0,
-            hostlessRestoreCapabilities,
-            hostlessRestoreGeneration: Number.isInteger(hostlessRestoreGeneration)
-                ? hostlessRestoreGeneration : 0,
-            hostlessRestoreCount: Number.isInteger(hostlessRestoreCount)
-                ? hostlessRestoreCount : 0,
-        }, hostPlayerIndex, hostEpoch);
-        if (gameSchema) gameStartPayload.gameSchema = gameSchema;
-        const startOnlineGame = () => {
-            if (startGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
-            _onlineReconnectCompletionController.reset();
-            OnlineRuntimeState.runtime.setOnline(true);
-            _setOnlineHostState(hostPlayerIndex);
-            GameSetupState.runtime.setCpuSpeed(cs || 1500);
-            if (ec) replaceEnabledCardSelection(ec);
-            replaceEnabledLandmarkSelection((el && el.length > 0) ? el : Player.landmarkNames());
-            try {
-                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
-                _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
-                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.actionLog, []);
-                _clearPendingOutboundAction();
-            } catch(e) {}
-            saveOnlineSession();
-            onlineClientEffects.resetUiLocks('online-game-start-reset-ui-locks');
-            onlineDomEffects.showGame();
-            initOnlineGame(playerNames, ps, playerOrder);
-            onlineClientEffects.notifyLifecycleStart();
-            // バージョン不一致チェック（initOnlineGame後にgameが初期化されてから）
-            if (versions && versions.length > 1) {
-                const unique = [...new Set(versions)];
-                if (unique.length > 1) {
-                    onlineGameRuntimeSnapshot().game.addLog(LOG_TYPES.SYSTEM, '⚠️ バージョン不一致: ゲームが正常に動作しない可能性があります。全員アプリをリロードしてください。');
-                }
-            }
-            const lastAppliedSeq = _onlineActionSequenceController.replace(actionSeq);
-            const flushed = _flushOnlineRestoreEvents(startGeneration, lastAppliedSeq, {
-                gameAction: handleGameAction,
-                actionAccepted: handleActionAccepted,
-                hostChanged: handleHostChanged,
-            });
-            if (flushed) {
-                _observeOnlineReconnectEvent(OnlineReconnectState.events.GAME_ACTIVATED);
-            }
-        };
-        const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
-        if (preload && typeof preload.then === "function") {
-            onlineDomEffects.setStatusText('深層学習AIモデルを読み込んでいます。');
-            preload.then(startOnlineGame).catch(error => {
-                if (startGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
-                console.error(error);
-                OnlineRuntimeState.runtime.setOnline(false);
-                _setOnlineActionInFlight(false);
-                _abortOnlineRestore(startGeneration, "深層学習AIモデルを読み込めませんでした。再接続して再試行します。");
-            });
-            return;
-        }
-        startOnlineGame();
+    socketEvents.on(OnlineSocketRegistry.keys.GAME_START, payload => {
+        return onlineLobbyStartRuntime.handle(payload);
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.GAME_ACTION, handleGameAction);
@@ -3312,10 +3279,6 @@ function initSocket() {
         onlineClientEffects.render();
     });
 
-    const handleHostChanged = ({ newHostPlayerIndex, hostEpoch }) => {
-        if (_queueOnlineEventDuringRestore("hostChanged", { newHostPlayerIndex, hostEpoch })) return;
-        return _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch);
-    };
     socketEvents.on(OnlineSocketRegistry.keys.HOST_CHANGED, handleHostChanged);
 
     socketEvents.on(OnlineSocketRegistry.keys.CONNECT, () => {
