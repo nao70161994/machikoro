@@ -1010,3 +1010,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `OnlineLobbyStartRuntime` is the pre-game application boundary for room-created/joined/list projection and the schema-checked lobby-to-active-game transaction.
 2. The runtime owns restore-generation start, normalized start-bundle persistence, RL preload gating, online/game/UI initialization, version diagnostics, action-sequence activation, and queued-event release through injected adapters; `online.js` retains Socket.IO registration and composition.
 3. Focused and full online contracts preserve event order/text, session acceptance, schema rejection, storage best-effort behavior, preload stale/failure handling, host state, enabled selections, version warning timing, and queued Action/host-change activation.
+
+## 2026-08-05 Batch 96 boundary update
+
+1. `OnlineRejoinActivationRuntime` is the post-admission application boundary for canonical rejoin completion, composing the existing restore replay, activation, and pending resend contracts.
+2. `online.js` still owns rejoin payload decoding, validation, persistence-plan preparation, and concrete adapters; the runtime owns generation validation and the ordered persist → show → replay → activate/flush → pending reconciliation transaction.
+3. Focused and full online contracts preserve executor/legacy parity, replay cleanup and abort text, action-sequence activation, queued-event ordering, pending identity and socket gates, host migration, compression, and reconnect completion.

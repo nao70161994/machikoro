@@ -1072,3 +1072,9 @@ Test index:
 - Room-created/joined/list handlers and new-game activation belong to `OnlineLobbyStartRuntime`; keep concrete Socket.IO binding, schema/storage/runtime adapters, and rejoin restoration in `online.js`.
 - Preserve schema gate before restore generation, room/session status text, start payload defaults, best-effort storage order, RL generation check, reset/show/init/notify order, version warning after game init, sequence replacement before queue flush, and `GAME_ACTIVATED` observation only after a successful flush.
 - The runtime is linted and checkJs-covered; `online.js` is 3,853 lines. Socket.IO contracts, reconnect/restore, storage formats, game rules, CPU behavior, and PWA semantics are unchanged.
+
+## Batch 96 handoff (2026-08-05)
+
+- Rejoin replay, activation, queued-event release, and pending outbound resend orchestration belong to `OnlineRejoinActivationRuntime`; keep decode/admission and concrete Game/storage/Socket.IO/state-machine effects in `online.js`.
+- Preserve the generation guard before persistence, replay-mode cleanup on every replay exit, abort text/order on replay failure, sequence replacement before queue flush, activation observation only after successful flush, and pending identity/socket/resend gates.
+- The runtime is linted and checkJs-covered; `online.js` is 3,696 lines. Executor flags and legacy fallbacks remain available, and Socket.IO, persistence, rules, CPU, ACK/reconnect, and PWA contracts are unchanged.
