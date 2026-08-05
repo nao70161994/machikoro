@@ -984,3 +984,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - Removed `_selectedBuildAction`, `_collectingBuildAction`, and `_buildProposalCollector`, including their legacy fallback branches. Direct build execution remains an explicit `CPUBuildExecution` concern outside the strategy selection adapter.
 - Contracts prove the selection adapter is local, invalid state creates no scope, and exceptions leave no CPU state. Fixed decision and 2-to-10-player self-play baselines, the full CPU gate, checkJs, and ESLint pass without heuristic or RNG changes.
 - Removal condition is complete for these fallback fields: no runtime or test references remain.
+
+## 2026-08-05 Fixed outcome 1: CPU card evaluation runtime
+
+- `js/cpuCardEvaluationRuntime.js` is now the single runtime owner for 61 card, purchase, landmark urgency, disruption, exchange, and owned-card valuation adapters over the existing pure `CPUEvaluation` policies.
+- The corresponding implementations in `CPU.js` were replaced by compatibility delegates, reducing the facade from 2,437 to 1,920 lines in one cohesive migration. No duplicate legacy implementation or fallback remains in the facade.
+- A dedicated ownership/delegate contract, main CPU behavior tests, fixed decision baseline, 2-to-10-player self-play baseline, full CPU gate, checkJs, ESLint, and static gate pass. Scoped gates now cover 263 ESLint maintenance files and 262 checkJs runtime files.
+- Formulas, lazy fact order, candidate/tie order, difficulty tuning, RNG consumption, CPU strength, game rules, schemas, online/reconnect, storage, and PWA/SW behavior are unchanged.

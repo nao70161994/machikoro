@@ -1112,3 +1112,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 - Build proposal collection moved from mutable CPU instance fields to a call-local adapter owned by `CPUBuildStrategy`.
 - All nested build helpers see proposal-only `_buyCard`/`_buyLandmark` methods through the adapter, while the explicit execution path remains in `CPUBuildExecution`.
 - The three temporary selection/fallback fields were removed rather than retained as compatibility debt.
+
+## 2026-08-05 Fixed outcome 1 milestone: card evaluation runtime
+
+- Consolidated 61 card/purchase/disruption evaluation adapters under `CPUCardEvaluationRuntime`; `CPU.js` now exposes thin compatibility delegates instead of owning those implementations.
+- This is a source-of-truth move, not a shadow path: the old facade bodies were removed and the new runtime is loaded by browser, self-play, integration, and test runtimes.
+- `CPUEvaluation` remains the pure formula layer while the runtime boundary owns board-to-feature projection and injected CPU adapter calls.

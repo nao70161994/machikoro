@@ -29,6 +29,7 @@ declare var CPUBuildProposalCollector: typeof import("../js/cpuBuildProposalColl
 declare var CPUBuildStrategy: typeof import("../js/cpuBuildStrategy").CPUBuildStrategy;
 declare var CPUBuildScoring: typeof import("../js/cpuBuildScoring").CPUBuildScoring;
 declare var CPUChoiceScoring: typeof import("../js/cpuChoiceScoring").CPUChoiceScoring;
+declare var CPUCardEvaluationRuntime: typeof import("../js/cpuCardEvaluationRuntime").CPUCardEvaluationRuntime;
 declare var CPULegalMoves: typeof import("../js/cpuLegalMoves").CPULegalMoves;
 declare var CPULookaheadRuntime: typeof import("../js/cpuLookaheadRuntime").CPULookaheadRuntime;
 declare var CPUPendingResolution: typeof import("../js/cpuPendingResolution").CPUPendingResolution;

@@ -1174,3 +1174,9 @@ Test index:
 - `CPUBuildStrategy.chooseBuildAction` runs the selected difficulty strategy against a local prototype adapter, not the production CPU instance. The adapter overrides only `_buyCard` and `_buyLandmark` to collect the first canonical proposal.
 - Do not reintroduce `_selectedBuildAction`, `_collectingBuildAction`, or `_buildProposalCollector`; focused source contracts reject them. Direct execution belongs to `CPUBuildExecution`.
 - Fixed-seed decision and 2-to-10-player self-play baselines pass, so adapter identity did not change CPU choices or RNG order.
+
+## Fixed outcome 1 milestone: card evaluation runtime (2026-08-05)
+
+- `js/cpuCardEvaluationRuntime.js` owns 61 card, purchase, disruption, exchange, landmark urgency, and owned-card evaluation adapters. `CPU.js` delegates each API and is now 1,920 lines.
+- Keep `CPUEvaluation` as the pure formula layer and `CPUCardEvaluationRuntime` as the board/runtime projection layer; do not copy these bodies back into the CPU facade.
+- `tests/cpu-card-evaluation-runtime.test.js` fixes complete API ownership and delegate shape. Fixed decision and 2-to-10-player self-play baselines prove unchanged CPU choices and RNG order.
