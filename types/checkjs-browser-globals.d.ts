@@ -25,6 +25,7 @@ declare var CPUBusinessMoves: typeof import("../js/cpuBusinessMoves").CPUBusines
 declare var CPUSimulation: typeof import("../js/cpuSimulation").CPUSimulation;
 declare var CPUEvaluation: typeof import("../js/cpuEvaluation").CPUEvaluation;
 declare var CPUBuildExecution: typeof import("../js/cpuBuildExecution").CPUBuildExecution;
+declare var CPUBuildProposalCollector: typeof import("../js/cpuBuildProposalCollector").CPUBuildProposalCollector;
 declare var CPUBuildStrategy: typeof import("../js/cpuBuildStrategy").CPUBuildStrategy;
 declare var CPUBuildScoring: typeof import("../js/cpuBuildScoring").CPUBuildScoring;
 declare var CPULegalMoves: typeof import("../js/cpuLegalMoves").CPULegalMoves;

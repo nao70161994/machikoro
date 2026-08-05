@@ -56,6 +56,7 @@ const STATIC_ASSETS = [
   '/js/cpuBusinessMoves.js',
   '/js/cpuActionProposal.js',
   '/js/cpuBuildExecution.js',
+  '/js/cpuBuildProposalCollector.js',
   '/js/cpuBuildStrategy.js',
   '/js/cpuBuildScoring.js',
   '/js/cpuSimulation.js',

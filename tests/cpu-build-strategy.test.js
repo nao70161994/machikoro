@@ -18,7 +18,7 @@ runTest('CPU build strategy はdifficulty別delegateをselection scope内で実�
         };
         for (const name of ['buildWeak', 'buildNormal', 'buildStrong', 'buildExpert']) {
             cpu[name] = (game, stock) => {
-                calls.push([name, game, stock, cpu._collectingBuildAction]);
+                calls.push([name, game, stock, cpu._collectingBuildAction, !!cpu._buildProposalCollector]);
                 cpu._selectedBuildAction = expected;
             };
         }
@@ -28,9 +28,10 @@ runTest('CPU build strategy はdifficulty別delegateをselection scope内で実�
         assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, game, stock), expected);
         assert.deepStrictEqual(calls, [
             ['sync', game],
-            [`build${difficulty[0].toUpperCase()}${difficulty.slice(1)}`, game, stock, true],
+            [`build${difficulty[0].toUpperCase()}${difficulty.slice(1)}`, game, stock, true, true],
         ]);
         assert.strictEqual(cpu._collectingBuildAction, false);
+        assert.strictEqual(cpu._buildProposalCollector, null);
     }
 });
 
@@ -43,6 +44,7 @@ runTest('CPU build strategy はinvalid stateをdispatchせず選択をclearす�
     };
     assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, null, {}), null);
     assert.strictEqual(cpu._selectedBuildAction, null);
+    assert.strictEqual(cpu._buildProposalCollector, null);
     assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, { phase: 'roll', builtThisTurn: false }, {}), null);
     assert.strictEqual(cpu._selectedBuildAction, null);
 });
@@ -60,6 +62,7 @@ runTest('CPU build strategy はstrategy例外後もselection scopeを解除す�
         /boom/
     );
     assert.strictEqual(cpu._collectingBuildAction, false);
+    assert.strictEqual(cpu._buildProposalCollector, null);
 });
 
 runTest('CPU build strategy は空のcrowd候補を既存順でno-opにする', () => {

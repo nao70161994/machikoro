@@ -1,9 +1,22 @@
 'use strict';
 
+const CPUBuildProposalCollectorApi = typeof module !== 'undefined' && module.exports
+    ? require('./cpuBuildProposalCollector').CPUBuildProposalCollector
+    : globalThis.CPUBuildProposalCollector;
+const CPUBuildExecutionApi = typeof module !== 'undefined' && module.exports
+    ? require('./cpuBuildExecution').CPUBuildExecution
+    : globalThis.CPUBuildExecution;
+
 const CPUBuildStrategy = Object.freeze({
     chooseBuildAction(cpu, game, shopStock) {
         cpu._selectedBuildAction = null;
+        cpu._buildProposalCollector = null;
         if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
+        const collector = CPUBuildProposalCollectorApi.create({
+            createCardBuildAction: CPUBuildExecutionApi.createCardBuildAction,
+            createLandmarkBuildAction: CPUBuildExecutionApi.createLandmarkBuildAction,
+        });
+        cpu._buildProposalCollector = collector;
         cpu._collectingBuildAction = true;
         try {
             cpu._syncExpertTuningForGame(game);
@@ -16,8 +29,9 @@ const CPUBuildStrategy = Object.freeze({
             } else {
                 cpu.buildExpert(game, shopStock);
             }
-            return cpu._selectedBuildAction;
+            return collector.selectedAction() || cpu._selectedBuildAction;
         } finally {
+            cpu._buildProposalCollector = null;
             cpu._collectingBuildAction = false;
         }
     },
