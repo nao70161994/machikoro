@@ -186,7 +186,7 @@ const OnlineInboundActionRuntime = (() => {
                 );
             }
             const applied = applyOrRecover(channel, payload, selected);
-            if (!applied.ok) return applied.result;
+            if (applied.ok === false) return applied.result;
             const logOptions = {
                 ...(config.alreadyApplied ? { alreadyApplied: true } : {}),
                 playerIndex: payload.playerIndex,
@@ -211,7 +211,7 @@ const OnlineInboundActionRuntime = (() => {
 
         function handleGameAction(wirePayload) {
             const decoded = decode('incoming', wirePayload);
-            if (!decoded.ok) return decoded.result;
+            if (decoded.ok === false) return decoded.result;
             const payload = decoded.payload;
             if (dependencies.queueDuringRestore(CHANNELS.incoming.queueType, payload)) return;
             return dispatchSelected('incoming', payload, selectPlan('incoming', payload));
@@ -219,7 +219,7 @@ const OnlineInboundActionRuntime = (() => {
 
         function handleActionAccepted(wirePayload) {
             const decoded = decode('accepted', wirePayload);
-            if (!decoded.ok) return decoded.result;
+            if (decoded.ok === false) return decoded.result;
             const payload = decoded.payload;
             if (dependencies.queueDuringRestore(CHANNELS.accepted.queueType, payload)) return;
             const pending = dependencies.readPending();
