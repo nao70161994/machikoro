@@ -3189,62 +3189,6 @@ function _createOnlineGameEngineRuntimeAdapter() {
     });
 }
 
-function _hydrateOnlineGameEngineShadowSnapshot(snapshot) {
-    return _createOnlineGameEngineRuntimeAdapter().hydrate(snapshot);
-}
-
-function _serializeOnlineGameEngineShadowRuntime(runtime) {
-    return _createOnlineGameEngineRuntimeAdapter().serialize(runtime);
-}
-
-function _prepareOnlineGameEngineShadow(action, data) {
-    if (!isOnlineGameEngineShadowEnabled() ||
-            typeof GameEngineClientShadow === 'undefined') return null;
-    const snapshot = buildOnlineSnapshot();
-    return GameEngineClientShadow.prepare({
-        enabled: true,
-        action,
-        data,
-        snapshot,
-        transition(sourceSnapshot, shadowAction, shadowData) {
-            return GameEngine.transitionSnapshot({
-                snapshot: sourceSnapshot,
-                action: shadowAction,
-                data: shadowData,
-                hydrate: _hydrateOnlineGameEngineShadowSnapshot,
-                serialize(runtime) {
-                    if (shadowAction === 'undoBuild' || shadowAction === 'nextTurn') {
-                        runtime.undoState = null;
-                    }
-                    return _serializeOnlineGameEngineShadowRuntime(runtime);
-                },
-            });
-        },
-    });
-}
-
-function _adoptOnlineGameEngineShadowSnapshot(snapshot) {
-    const runtime = _hydrateOnlineGameEngineShadowSnapshot(snapshot);
-    const rebuilt = _serializeOnlineGameEngineShadowRuntime(runtime);
-    if (!GameEngineClientShadow.equalSnapshots(rebuilt, snapshot)) return false;
-    GameRuntimeState.runtime.setGame(runtime.game);
-    assignShopStockSnapshot(SHOP_STOCK, runtime.shopStock);
-    GameRuntimeState.runtime.setUndoState(runtime.undoState);
-    return true;
-}
-
-function _finishOnlineGameEngineShadow(prepared) {
-    if (!prepared) return null;
-    const outcome = GameEngineClientShadow.finish({
-        prepared,
-        liveSnapshot: buildOnlineSnapshot(),
-        authorityEnabled: isOnlineGameEngineAuthorityEnabled(),
-        adoptSnapshot: _adoptOnlineGameEngineShadowSnapshot,
-    });
-    _onlineDiagnosticSelections.onlineGameEngineShadowOutcome = outcome;
-    return outcome;
-}
-
 function applyAction(action, data) {
     return GameEngine.applyMutableAction({
         game: onlineGameRuntimeSnapshot().game,
@@ -3257,17 +3201,54 @@ function applyAction(action, data) {
     });
 }
 
+let onlineGameEngineRuntime = null;
+
+function getOnlineGameEngineRuntime() {
+    if (onlineGameEngineRuntime) return onlineGameEngineRuntime;
+    onlineGameEngineRuntime = OnlineGameEngineRuntime.createRuntime({
+        adoptSnapshot: snapshot => _adoptOnlineGameEngineShadowSnapshot(snapshot),
+        applyMutableAction: (action, data) => applyAction(action, data),
+        assignShopStock: (stock, snapshot) => assignShopStockSnapshot(stock, snapshot),
+        buildSnapshot: () => buildOnlineSnapshot(),
+        buildUndoSnapshot: () => buildOnlineUndoSnapshot(),
+        createAdapter: () => _createOnlineGameEngineRuntimeAdapter(),
+        engine: GameEngine,
+        gameRuntime: GameRuntimeState.runtime,
+        getClientShadow: () => typeof GameEngineClientShadow === 'undefined'
+            ? null
+            : GameEngineClientShadow,
+        isAuthorityEnabled: () => isOnlineGameEngineAuthorityEnabled(),
+        isShadowEnabled: () => isOnlineGameEngineShadowEnabled(),
+        setDiagnostic: outcome => {
+            _onlineDiagnosticSelections.onlineGameEngineShadowOutcome = outcome;
+        },
+        shopStock: SHOP_STOCK,
+    });
+    return onlineGameEngineRuntime;
+}
+
+function _hydrateOnlineGameEngineShadowSnapshot(snapshot) {
+    return getOnlineGameEngineRuntime().hydrate(snapshot);
+}
+
+function _serializeOnlineGameEngineShadowRuntime(runtime) {
+    return getOnlineGameEngineRuntime().serialize(runtime);
+}
+
+function _prepareOnlineGameEngineShadow(action, data) {
+    return getOnlineGameEngineRuntime().prepare(action, data);
+}
+
+function _adoptOnlineGameEngineShadowSnapshot(snapshot) {
+    return getOnlineGameEngineRuntime().adopt(snapshot);
+}
+
+function _finishOnlineGameEngineShadow(prepared) {
+    return getOnlineGameEngineRuntime().finish(prepared);
+}
+
 function applyReplayedAction(action, data) {
-    if (action === 'buildCard' || action === 'buildLandmark') {
-        GameRuntimeState.runtime.setUndoState(buildOnlineUndoSnapshot());
-    }
-    const shadow = _prepareOnlineGameEngineShadow(action, data);
-    const applied = applyAction(action, data);
-    if (action === 'undoBuild' || action === 'nextTurn') {
-        GameRuntimeState.runtime.setUndoState(null);
-    }
-    _finishOnlineGameEngineShadow(shadow);
-    return applied;
+    return getOnlineGameEngineRuntime().applyReplayed(action, data);
 }
 
 function restoreOnlineSnapshot(state) {

@@ -2373,7 +2373,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/gameEngineDeterminism.js', 'js/main.js');
     assertBefore('js/gameEngine.js', 'js/online.js');
     assertBefore('js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js');
-    assertBefore('js/gameEngineClientShadow.js', 'js/online.js');
+    assertBefore('js/gameEngineClientShadow.js', 'js/onlineGameEngineRuntime.js');
+    assertBefore('js/onlineGameEngineRuntime.js', 'js/online.js');
     assertBefore('js/gameSchemaNegotiation.js', 'js/online.js');
     assertBefore('js/gameSnapshot.js', 'js/gameSchemaCodec.js');
     assertBefore('js/gameSnapshot.js', 'js/localSaveRepository.js');

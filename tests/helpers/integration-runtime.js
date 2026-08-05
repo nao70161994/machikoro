@@ -313,6 +313,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineSocketConnect.js');
         files.push('js/onlineSocketRegistry.js');
         files.push('js/onlineInboundActionRuntime.js');
+        files.push('js/onlineGameEngineRuntime.js');
         files.push('js/onlineLobbyRequestRuntime.js');
         files.push('js/onlineGameInitializer.js');
         files.push('js/onlineLobbyStartRuntime.js');
