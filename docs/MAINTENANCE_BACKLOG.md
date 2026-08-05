@@ -851,3 +851,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains dependency composition and compatibility delegates; its size decreased from 836 to 674 lines. Human Action execution no longer sits beside local setup, CPU scheduling, UI binding, and rendering helpers.
 - Focused contracts preserve delayed RNG and payload order, online ACK blocking, local build shadow/effect order, online send-only builds, Airport skip/Undo order, and ownership. Existing main/integration/online/PWA/release gates preserve stale-action rejection, reconnect authority, UI recovery, and browser load/cache contracts. Scoped gates now cover 245 ESLint maintenance files and 244 checkJs runtime files.
 - Game rules, CPU decisions/strength/RNG, Action and Socket.IO payloads, save/localStorage formats, reconnect behavior, confirmation text, and PWA/SW semantics are unchanged.
+
+## 2026-08-05 Batch 94 online inbound Action runtime
+
+- `js/onlineInboundActionRuntime.js` now owns the common `gameAction` / `actionAccepted` pipeline: schema decode, restore-event admission, reconnect-state authority selection, sequence decision, replay apply/recovery, and commit dispatch.
+- `online.js` retains Socket.IO binding and concrete schema/state/effect/storage adapters; its size decreased from 3,999 to 3,890 lines. Remote Action and sender ACK semantics are now represented by explicit channel contracts instead of duplicated nested handlers.
+- Focused contracts preserve effect order, unrelated-ACK isolation, duplicate ACK cleanup, malformed-wire flight behavior, apply-failure return values, and legacy fallback when event authority is not ready. Full online/integration/PWA/release gates preserve restore queueing, gap recovery, Undo/action-log metadata, reconnect, event order, and cache loading. Scoped gates now cover 246 ESLint maintenance files and 245 checkJs runtime files.
+- Socket.IO event names/order and payloads, Action/Snapshot schema, ACK timing, restore/reconnect semantics, storage formats/keys, game rules, CPU behavior, UI messages, and PWA/SW behavior are unchanged.

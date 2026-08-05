@@ -998,3 +998,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `MainHumanActionRuntime` is the application boundary for local-human admission, delayed dice payload construction, pending resolution dispatch, confirmed build execution, and turn-end orchestration.
 2. `main.js` now composes Game/online/PageActivation/Engine/UI effects and retains the established global action delegates; Action admission and gameplay effect sequencing no longer live inline.
 3. Focused, main, integration, online, PWA, release, lint, and checkJs contracts preserve delayed RNG order, ACK/reconnect gates, local shadow versus online send, Undo/stock/render/unlock order, payloads, and confirmation text.
+
+## 2026-08-05 Batch 94 boundary update
+
+1. `OnlineInboundActionRuntime` is the application boundary shared by remote `gameAction` and sender `actionAccepted`, owning decode, restore-queue admission, reconnect-authority selection, sequence decisions, apply/recovery, and commit dispatch.
+2. `online.js` retains Socket.IO registration plus injected schema, state-machine, persistence, replay, and effect adapters; the two inbound paths no longer duplicate protocol orchestration inside `initSocket`.
+3. Focused and full online contracts preserve event names/order, malformed-wire recovery return values, ACK-flight timing, pending identity checks, duplicate/gap/no-game handling, restore queueing, action-log metadata, Undo, and reconnect behavior.

@@ -1060,3 +1060,9 @@ Test index:
 - Human Action admission and orchestration belong to `MainHumanActionRuntime`; keep `main.js` wrappers for delegated UI, page activation, and classic-script callers.
 - Preserve delayed roll/select RNG order, online payload omissions, confirm-time player/phase revalidation, build Undo → cancel → send/shadow order, stock decrement timing, unlock reason strings, and skip checkpoints.
 - The runtime is linted and checkJs-covered; `main.js` is 674 lines. Rules, CPU choices/RNG, Action/Socket payloads, persistence, and PWA behavior are unchanged.
+
+## Batch 94 handoff (2026-08-05)
+
+- Incoming remote Actions and sender ACK Actions belong to `OnlineInboundActionRuntime`; keep Socket.IO registration and concrete replay/recovery/persistence effects in `online.js` composition.
+- Preserve decode before queueing, accepted-pending identity before flight clear, state-authority gating before pure plan selection, duplicate/gap/no-game distinctions, exact status text, commit flags/log metadata, and recovery return values.
+- The runtime is linted and checkJs-covered; `online.js` is 3,890 lines. Socket.IO names/payloads, Action schema, ACK/reconnect order, persistence, rules, and CPU behavior are unchanged.
