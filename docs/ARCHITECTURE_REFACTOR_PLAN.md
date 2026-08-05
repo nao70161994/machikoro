@@ -1064,3 +1064,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CPURollDecision` is the action-only policy boundary for dice-count, reroll, and Harbor choices; `CPU` remains the compatibility facade and supplies evaluation/tuning/profile dependencies.
 2. The extracted methods keep the original branch, comparison, callback, and random-call order. No scoring constants or expert presets moved or changed.
 3. Focused order/RNG contracts plus the repository decision baseline and full self-play/simulation gates preserve every difficulty's observable choice and CPU strength.
+
+## 2026-08-05 Batch 105 boundary update
+
+1. `CPUPendingDecision` is the action-only strategy boundary for the six pending-effect choices; `CPUPendingResolution` remains proposal validation/application and `CPU` remains the compatibility facade plus evaluation dependency provider.
+2. Candidate enumeration, first-win ties, lookahead callbacks, trace calls, and random selection remain in their original order with no tuning or rule changes.
+3. Focused contracts, fixed decision baselines, and full self-play/simulation gates preserve every observable pending choice and CPU strength.

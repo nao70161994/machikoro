@@ -1126,3 +1126,9 @@ Test index:
 - Dice-count, reroll, and Harbor decision orchestration belongs to `CPURollDecision`; keep `CPU.chooseDiceCount`, `CPU.chooseReroll`, and `CPU.chooseHarbor` as compatibility delegates and keep scoring/tuning helpers injectable through the CPU facade.
 - Preserve profiling labels, branch/comparison order, tie operators, expert lookahead callbacks, and exactly one random draw in each weak/random-mode decision. Add new roll policies to this boundary rather than growing `CPU.js`.
 - The module is linted and checkJs-covered; `CPU.js` is 3,546 lines. Fixed decision baselines and full CPU/self-play/simulation gates pass with unchanged rules, choices, RNG, and strength.
+
+## Batch 105 handoff (2026-08-05)
+
+- TV, Business Center, Cleaning Company, Moving Company, Renovation, and IT Venture choice policy belongs to `CPUPendingDecision`; pending proposal validation/application belongs to `CPUPendingResolution`. Keep the six `CPU` methods as compatibility delegates.
+- Preserve candidate enumeration and first-win tie order, exact score comparison operators, lookahead callback sequencing, expert-v2-simple trace/random behavior, and the existing Business Center legacy executor fallback. Add pending choice policy to the decision module, not `CPU.js` or the application boundary.
+- The module is linted and checkJs-covered; `CPU.js` is 3,148 lines. Fixed decision baselines and full CPU/self-play/simulation gates pass with unchanged rules, pending outcomes, RNG, and strength.
