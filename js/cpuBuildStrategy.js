@@ -232,6 +232,234 @@ const CPUBuildStrategy = Object.freeze({
         }
         const card = cpu._cardByName(best.cardName);
         if (card) cpu._buyCard(card, game, shopStock);
+    },
+
+    _buildExpertCrowd(cpu, current, game, shopStock) {
+        const remainingLandmarks = cpu._remainingEnabledLandmarks(current, game);
+        const builtCount = current.builtLandmarkCount();
+        const bannedCrowdCards = remainingLandmarks.length > 2
+            ? new Set(["食品倉庫", "改装屋", "ピザ屋", "バーガーショップ", "寿司屋", "ブドウ園"])
+            : null;
+        if (cpu._shouldExpertForceLandmarkPlan(current, game) && cpu._maybeBuyLandmark(current, game, 0, 6)) return true;
+        if (builtCount >= 2 && cpu._maybeBuyLandmark(current, game, 0, 6)) return true;
+        if (cpu._maybeBuyLandmark(current, game, 1, 7)) return true;
+
+        const affordable = CARDS.filter(card =>
+            shopStock[card.name] > 0 &&
+            current.coins >= card.cost &&
+            card.cost > 0 &&
+            !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
+        );
+        if (affordable.length === 0) return false;
+
+        const sorted = CPUSelection.stableRankDescending(
+            affordable.map(card => ({
+                card,
+                score: cpu._scoreExpertCrowdAffordable(card, game, current),
+            })),
+            entry => entry.score
+        );
+        const candidatePool = bannedCrowdCards
+            ? sorted.filter(entry => !bannedCrowdCards.has(entry.card.name))
+            : sorted;
+
+        const stableIncome = cpu._estimateStableIncome(game, current);
+        const oneDieOpponents = game.players.filter(p =>
+            p !== current && !p.landmarks[LANDMARK_NAMES.STATION]
+        ).length;
+        const lowDiceEconomy = candidatePool.find(entry =>
+            (entry.card.color === "blue" || entry.card.color === "green") &&
+            Math.max(...entry.card.diceNums) <= 6
+        );
+        const candidate = (
+            oneDieOpponents >= 2 &&
+            builtCount < 4 &&
+            lowDiceEconomy
+        ) || cpu._bestCrowdEconomyCard(candidatePool, game, current) || candidatePool[0] || sorted[0];
+
+        if (!candidate) return false;
+        if (builtCount >= 2 && cpu._shouldHoldForLandmark(current, game, candidate.score, 1)) return true;
+        if (remainingLandmarks.length <= 3 && cpu._maybeBuyLandmark(current, game, 0, 4)) return true;
+        if (stableIncome < 12 && lowDiceEconomy && lowDiceEconomy.score >= candidate.score - 1.2) {
+            cpu._buyCard(lowDiceEconomy.card, game, shopStock);
+            return true;
+        }
+        if (candidate.score >= 0.5) {
+            cpu._buyCard(candidate.card, game, shopStock);
+            return true;
+        }
+        if (cpu._maybeBuyLandmark(current, game, 0, 3)) return true;
+        return false;
+    },
+
+    _buildStrongCrowd(cpu, current, game, shopStock) {
+        const bestAffordableLandmark = cpu._bestAffordableLandmark(current, game);
+        if (bestAffordableLandmark && (
+            bestAffordableLandmark.urgency >= 6 ||
+            current.coins >= 12 ||
+            current.coins >= bestAffordableLandmark.cost + 5
+        )) {
+            cpu._buyLandmark(bestAffordableLandmark.name, game);
+            return true;
+        }
+
+        if (cpu._maybeBuyLandmark(current, game, 1, 6)) return true;
+        const affordable = CARDS.filter(card =>
+            shopStock[card.name] > 0 &&
+            current.coins >= card.cost &&
+            card.cost > 0 &&
+            !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
+        );
+        const sorted = cpu._sortAffordableForDifficulty(affordable, game, current, "strong");
+        if (sorted.length === 0) return false;
+
+        const crowdEconomyCard = cpu._bestCrowdEconomyCard(sorted, game, current);
+        const stableIncome = cpu._estimateStableIncome(game, current);
+        const candidate = crowdEconomyCard || sorted[0];
+        if (cpu._shouldHoldForLandmark(current, game, candidate.score, 2)) return true;
+        if (stableIncome < 10 && crowdEconomyCard && crowdEconomyCard.score >= 0.7) {
+            cpu._buyCard(crowdEconomyCard.card, game, shopStock);
+            return true;
+        }
+        if (cpu._maybeBuyLandmark(current, game, 0, 4)) return true;
+        if (candidate.score >= 0.75) {
+            cpu._buyCard(candidate.card, game, shopStock);
+            return true;
+        }
+        if (crowdEconomyCard) {
+            cpu._buyCard(crowdEconomyCard.card, game, shopStock);
+            return true;
+        }
+        return false;
+    },
+
+    _buildExpertV2Simple(cpu, current, game, shopStock) {
+        cpu._traceV2Simple('buildCalls');
+        const affordableLandmarks = cpu._listExpertV2SimpleAffordableLandmarks(current, game);
+        const affordableCards = cpu._listExpertV2SimpleAffordableCards(current, shopStock);
+
+        if (cpu._buyWinningLandmark(current, game)) {
+            cpu._traceV2Simple('buildLandmarkChoices');
+            return true;
+        }
+
+        let bestLandmark = null;
+        let bestLandmarkScore = -Infinity;
+        if (affordableLandmarks.length > 0) {
+            cpu._traceV2Simple('buildLandmarkOptionCalls');
+            if (affordableLandmarks.length > 1) cpu._traceV2Simple('buildMultiOptionCalls');
+            for (const option of affordableLandmarks) {
+                const score = cpu._scoreExpertV2SimpleLandmarkOption(game, option.name);
+                if (
+                    !bestLandmark ||
+                    score > bestLandmarkScore ||
+                    (score === bestLandmarkScore && Player.landmarkCost(option.name) > Player.landmarkCost(bestLandmark.name))
+                ) {
+                    bestLandmark = option;
+                    bestLandmarkScore = score;
+                }
+            }
+        }
+
+        if (
+            cpu.expertAirportSkipMode === "whenNoLandmark" &&
+            affordableLandmarks.length === 0 &&
+            current.landmarks[LANDMARK_NAMES.AIRPORT]
+        ) {
+            cpu._traceV2Simple('buildAirportSkipChoices');
+            return false;
+        }
+
+        const options = affordableLandmarks.concat(affordableCards);
+        cpu._traceV2Simple('buildOptionTotal', options.length);
+        if (options.length === 0) {
+            cpu._traceV2Simple('buildNoop');
+            return false;
+        }
+        if (affordableLandmarks.length > 0) cpu._traceV2Simple('buildLandmarkCardCompareCalls');
+        if (affordableCards.length > 0) cpu._traceV2Simple('buildCardOptionCalls');
+        if (options.length > 1) cpu._traceV2Simple('buildMultiOptionCalls');
+
+        if (cpu.expertBuildMode === "random") {
+            const choice = cpu._randomChoice(options);
+            if (!choice) return false;
+            const choiceIndex = options.indexOf(choice);
+            cpu._traceV2Simple('buildRandomChoiceIndexTotal', choiceIndex);
+            if (choiceIndex === 0) cpu._traceV2Simple('buildRandomChoiceFirst');
+            let bestOption = null;
+            let bestScore = -Infinity;
+            for (const option of options) {
+                const score = cpu._scoreExpertV2SimpleBuildOption(game, option, shopStock);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestOption = option;
+                }
+            }
+            cpu._traceV2SimpleBuildOption('buildRandomChoice', choice);
+            cpu._traceV2SimpleBuildOption('buildRandomEvBest', bestOption);
+            if (!cpu._sameExpertV2SimpleBuildOption(choice, bestOption)) {
+                cpu._traceV2Simple('buildRandomDiffFromEv');
+            }
+            if (choice.type === 'landmark') {
+                cpu._traceV2Simple('buildLandmarkChoices');
+                cpu._buyLandmark(choice.name, game);
+                return true;
+            }
+            cpu._traceV2Simple('buildCardChoices');
+            cpu._buyCard(choice.card, game, shopStock);
+            return true;
+        }
+
+        let bestOption = null;
+        let bestScore = -Infinity;
+        const scoredOptions = [];
+        for (const option of options) {
+            const breakdown = cpu._scoreExpertV2SimpleBuildOptionBreakdown(game, option, shopStock);
+            const score = option.type === 'landmark'
+                ? cpu._scoreExpertV2SimpleLandmarkOption(game, option.name)
+                : cpu._scoreExpertV2SimpleCardOptionForLandmarkComparison(game, option, breakdown, affordableLandmarks.length > 0);
+            scoredOptions.push({ option, breakdown });
+            if (score > bestScore) {
+                bestScore = score;
+                bestOption = option;
+            }
+        }
+
+        if (bestLandmark && bestOption && bestOption.type === 'card') {
+            const canCompareLandmark = cpu._shouldCompareExpertV2SimpleLandmarkWithCards(bestLandmark.name);
+            const forceLandmarkProgress = cpu._shouldForceExpertV2SimpleLandmarkProgress(game);
+            if (canCompareLandmark && !forceLandmarkProgress) cpu._traceV2Simple(`buildLandmarkCardCompareEligible:${bestLandmark.name}`);
+            const margin = cpu._expertV2SimpleLandmarkOverrideMargin(game, bestLandmark.name);
+            const cardClearsMargin = bestScore >= bestLandmarkScore + margin;
+            if (canCompareLandmark && !forceLandmarkProgress && cardClearsMargin) {
+                cpu._traceV2Simple(`buildLandmarkCardCompareCardWins:${bestLandmark.name}`);
+            } else {
+                cpu._traceV2Simple(forceLandmarkProgress
+                    ? `buildLandmarkCardCompareBlockedByEndgame:${bestLandmark.name}`
+                    : canCompareLandmark
+                    ? `buildLandmarkCardCompareBlockedByMargin:${bestLandmark.name}`
+                    : `buildLandmarkCardCompareBlockedByLandmark:${bestLandmark.name}`);
+                bestOption = bestLandmark;
+            }
+        }
+
+        if (!bestOption) return false;
+        for (const entry of scoredOptions) {
+            cpu._traceV2SimpleBuildBreakdown(
+                entry.option,
+                entry.breakdown,
+                cpu._sameExpertV2SimpleBuildOption(entry.option, bestOption)
+            );
+        }
+        cpu._traceV2SimpleBuildOption('buildEvChoice', bestOption);
+        if (bestOption.type === 'landmark') {
+            cpu._traceV2Simple('buildLandmarkChoices');
+            cpu._buyLandmark(bestOption.name, game);
+            return true;
+        }
+        cpu._traceV2Simple('buildCardChoices');
+        cpu._buyCard(bestOption.card, game, shopStock);
+        return true;
     }
 });
 
