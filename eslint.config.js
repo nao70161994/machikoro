@@ -147,6 +147,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiModalOpen.js',
     'js/uiModalClose.js',
     'js/uiModalDomEffects.js',
+    'js/uiModalRuntime.js',
     'js/uiPlayerDisplay.js',
     'js/uiInputPolicy.js',
     'js/uiNotice.js',

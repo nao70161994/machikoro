@@ -1006,52 +1006,55 @@ function hasRegisteredModalStackException(parentId, childId) {
 }
 
 function recordModalPolicyViolation(type, details = {}) {
-    const entry = {
-        type,
-        timestamp: new Date().toISOString(),
-        activeModalId: modalRuntimeController.getActiveModalId(),
-        ...details,
-    };
-    try {
-        const root = typeof window !== 'undefined' ? window : globalThis;
-        if (root) {
-            const list = Array.isArray(root.__machikoroModalPolicyViolations) ? root.__machikoroModalPolicyViolations : [];
-            list.push(entry);
-            while (list.length > 20) list.shift();
-            root.__machikoroModalPolicyViolations = list;
-        }
-    } catch (_) {}
-    try {
-        if (typeof recordFlowTrace === 'function') recordFlowTrace('modal-policy-violation', entry);
-    } catch (_) {}
-    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-        console.warn('[machikoro-modal-policy]', type, entry);
-    }
-    return entry;
+    return uiModalRuntime.recordViolation(type, details);
 }
 
 function visibleBlockingModalIds() {
-    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return [];
-    return UiModalPolicy.visibleBlockingIds(isModalVisibleById);
+    return uiModalRuntime.visibleBlockingIds();
 }
 
 function canOpenBlockingModal(id) {
-    const decision = UiModalPolicy.canOpen(id, {
-        activeModalId: modalRuntimeController.getActiveModalId(),
-        isVisible: isModalVisibleById,
-    });
-    if (decision.ok) return true;
-    recordModalPolicyViolation(decision.reason, {
-        parentModalId: decision.parentId,
-        childModalId: decision.childId,
-        visibleBlockingModalIds: decision.blockingIds,
-    });
-    return false;
+    return uiModalRuntime.canOpen(id);
 }
 
 function normalizeModalVisualStateForOpen(modal) {
     uiModalDomEffects.normalizeForOpen(modal);
 }
+
+const uiModalRuntime = UiModalRuntime.createRuntime({
+    appendViolation: entry => {
+        try {
+            const root = typeof window !== 'undefined' ? window : globalThis;
+            if (!root) return;
+            const list = Array.isArray(root.__machikoroModalPolicyViolations)
+                ? root.__machikoroModalPolicyViolations
+                : [];
+            list.push(entry);
+            while (list.length > 20) list.shift();
+            root.__machikoroModalPolicyViolations = list;
+        } catch (_) {}
+    },
+    buildSnapshot: reason => buildRuntimeStateSnapshot(reason),
+    canRenderPending: () => typeof renderPending === 'function',
+    canTrace: () => typeof recordFlowTrace === 'function',
+    closePlan: UiModalClose,
+    controller: modalRuntimeController,
+    domEffects: uiModalDomEffects,
+    getCloseHandler: id => MODAL_CLOSE_HANDLERS[id] || null,
+    getDocument: () => typeof document === 'undefined' ? null : document,
+    isCloseAuthorityEnabled: () => isUiModalCloseEffectAuthorityEnabled(),
+    isOpenAuthorityEnabled: () => isUiModalOpenEffectAuthorityEnabled(),
+    nowIso: () => new Date().toISOString(),
+    openPlan: UiModalOpen,
+    policy: UiModalPolicy,
+    recordTrace: (event, details) => recordFlowTrace(event, details),
+    renderPending: () => renderPending(),
+    warn: (...args) => {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+            console.warn(...args);
+        }
+    },
+});
 
 function isUiModalOpenEffectAuthorityEnabled() {
     try {
@@ -1064,61 +1067,23 @@ function isUiModalOpenEffectAuthorityEnabled() {
 }
 
 function legacyUiModalOpenPlan(id) {
-    return Object.freeze({ modalId: id });
+    return uiModalRuntime.legacyOpenPlan(id);
 }
 
 function uiModalOpenPlanSelection(id) {
-    return UiModalOpen.selectPlan(
-        { modalId: id },
-        legacyUiModalOpenPlan(id),
-        { authorityEnabled: isUiModalOpenEffectAuthorityEnabled() }
-    );
+    return uiModalRuntime.selectOpenPlan(id);
 }
 
 function runUiModalOpenEffectsLegacy(modal, id) {
-    if (typeof document !== 'undefined') modalRuntimeController.rememberFocus(document.activeElement);
-    modalRuntimeController.setActiveModalId(id);
-    if (document.body && document.body.classList) document.body.classList.add('modal-open');
-    normalizeModalVisualStateForOpen(modal);
-    if (typeof modal.setAttribute === 'function') {
-        modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
-        modal.setAttribute('aria-modal', 'true');
-    }
-    focusModal(modal);
-    setAppInertForModal(true);
+    uiModalRuntime.runOpenLegacy(modal, id);
 }
 
 function runUiModalOpenEffects(modal, id) {
-    const selection = uiModalOpenPlanSelection(id);
-    if (selection.source !== 'pure-plan') {
-        runUiModalOpenEffectsLegacy(modal, id);
-        return;
-    }
-    UiModalOpen.execute(selection.plan, {
-        captureFocus() {
-            if (typeof document !== 'undefined') modalRuntimeController.rememberFocus(document.activeElement);
-        },
-        setActiveModal(modalId) { modalRuntimeController.setActiveModalId(modalId); },
-        addBodyClass() {
-            if (document.body && document.body.classList) document.body.classList.add('modal-open');
-        },
-        normalizeVisualState() { normalizeModalVisualStateForOpen(modal); },
-        setDialogAttributes() {
-            if (typeof modal.setAttribute !== 'function') return;
-            modal.setAttribute('role', modal.getAttribute('role') || 'dialog');
-            modal.setAttribute('aria-modal', 'true');
-        },
-        focusModal() { focusModal(modal); },
-        setAppInert() { setAppInertForModal(true); },
-    });
+    uiModalRuntime.runOpen(modal, id);
 }
 
 function openAccessibleModal(id) {
-    const modal = document.getElementById(id);
-    if (!modal) return false;
-    if (!canOpenBlockingModal(id)) return false;
-    runUiModalOpenEffects(modal, id);
-    return true;
+    return uiModalRuntime.open(id);
 }
 
 function isUiModalCloseEffectAuthorityEnabled() {
@@ -1132,100 +1097,56 @@ function isUiModalCloseEffectAuthorityEnabled() {
 }
 
 function uiModalClosePlanInput(id, options, visibleBlockingIds, nextActiveModalId) {
-    return {
-        modalId: id,
-        nextActiveModalId,
+    return uiModalRuntime.closePlanInput(
+        id,
+        options,
         visibleBlockingIds,
-        restoreFocus: options.restoreFocus,
-        hasRestorableFocus: !!(modalRuntimeController.getLastFocus() && typeof modalRuntimeController.getLastFocus().focus === 'function'),
-        canRenderPending: typeof renderPending === 'function',
-        canTrace: typeof recordFlowTrace === 'function',
-    };
+        nextActiveModalId
+    );
 }
 
 function legacyUiModalClosePlan(id, options, visibleBlockingIds, nextActiveModalId) {
-    const shouldUnlockApp = visibleBlockingIds.length <= 0;
-    return Object.freeze({
-        modalId: id,
-        nextActiveModalId: shouldUnlockApp ? null : (nextActiveModalId || null),
-        visibleBlockingIds: Object.freeze(visibleBlockingIds.slice()),
-        shouldUnlockApp,
-        shouldRenderPending: shouldUnlockApp && id !== 'pendingModal' && typeof renderPending === 'function',
-        shouldRestoreFocus: options.restoreFocus !== false && !!modalRuntimeController.getLastFocus() && typeof modalRuntimeController.getLastFocus().focus === 'function',
-        shouldTrace: (id === 'rulesModal' || id === 'cardSelectModal') && typeof recordFlowTrace === 'function',
-    });
+    return uiModalRuntime.legacyClosePlan(
+        id,
+        options,
+        visibleBlockingIds,
+        nextActiveModalId
+    );
 }
 
 function uiModalClosePlanSelection(id, options, visibleBlockingIds, nextActiveModalId) {
-    return UiModalClose.selectPlan(
-        uiModalClosePlanInput(id, options, visibleBlockingIds, nextActiveModalId),
-        legacyUiModalClosePlan(id, options, visibleBlockingIds, nextActiveModalId),
-        { authorityEnabled: isUiModalCloseEffectAuthorityEnabled() }
+    return uiModalRuntime.selectClosePlan(
+        id,
+        options,
+        visibleBlockingIds,
+        nextActiveModalId
     );
 }
 
-function runUiModalCloseEffectsLegacy(id, options, beforeSnapshot, visibleBlockingIds, nextActiveModalId) {
-    modalRuntimeController.setActiveModalId(nextActiveModalId);
-    if (visibleBlockingIds.length <= 0) {
-        modalRuntimeController.setActiveModalId(null);
-        setAppInertForModal(false);
-        clearOrphanAccessibleModalLocks();
-        if (id !== 'pendingModal' && typeof renderPending === 'function') {
-            try { renderPending(); } catch (_) {}
-        }
-    }
-    const lastFocus = modalRuntimeController.getLastFocus();
-    if (options.restoreFocus !== false && lastFocus && typeof lastFocus.focus === 'function') {
-        lastFocus.focus();
-    }
-    modalRuntimeController.clearLastFocus();
-    if ((id === 'rulesModal' || id === 'cardSelectModal') && typeof recordFlowTrace === 'function') {
-        recordFlowTrace('modal-close-ui-state', {
-            modalId: id,
-            before: beforeSnapshot,
-            after: buildRuntimeStateSnapshot('modal-close-after-' + id),
-        });
-    }
+function runUiModalCloseEffectsLegacy(id, options, beforeSnapshot,
+        visibleBlockingIds, nextActiveModalId) {
+    uiModalRuntime.runCloseLegacy(
+        id,
+        options,
+        beforeSnapshot,
+        visibleBlockingIds,
+        nextActiveModalId
+    );
 }
 
-function runUiModalCloseEffects(id, options, beforeSnapshot, visibleBlockingIds, nextActiveModalId) {
-    const selection = uiModalClosePlanSelection(id, options, visibleBlockingIds, nextActiveModalId);
-    if (selection.source !== 'pure-plan') {
-        runUiModalCloseEffectsLegacy(id, options, beforeSnapshot, visibleBlockingIds, nextActiveModalId);
-        return;
-    }
-    UiModalClose.execute(selection.plan, {
-        setActiveModal(plan) { modalRuntimeController.setActiveModalId(plan.nextActiveModalId); },
-        restoreAppInert() { setAppInertForModal(false); },
-        clearOrphanLocks() { clearOrphanAccessibleModalLocks(); },
-        renderPending() {
-            try { renderPending(); } catch (_) {}
-        },
-        restoreFocus() { modalRuntimeController.getLastFocus().focus(); },
-        clearLastFocus() { modalRuntimeController.clearLastFocus(); },
-        recordTrace(plan) {
-            recordFlowTrace('modal-close-ui-state', {
-                modalId: plan.modalId,
-                before: beforeSnapshot,
-                after: buildRuntimeStateSnapshot('modal-close-after-' + plan.modalId),
-            });
-        },
-    });
+function runUiModalCloseEffects(id, options, beforeSnapshot,
+        visibleBlockingIds, nextActiveModalId) {
+    uiModalRuntime.runClose(
+        id,
+        options,
+        beforeSnapshot,
+        visibleBlockingIds,
+        nextActiveModalId
+    );
 }
 
 function closeAccessibleModal(id, options = {}) {
-    const beforeSnapshot = buildRuntimeStateSnapshot('modal-close-before-' + id);
-    const modal = document.getElementById(id);
-    if (modal) modal.style.display = 'none';
-
-    const visibleBlockingIds = visibleBlockingModalIds();
-    const nextActiveModalId = UiModalPolicy.activeAfterClose(
-        id,
-        modalRuntimeController.getActiveModalId(),
-        visibleBlockingIds,
-        isModalVisibleById
-    );
-    runUiModalCloseEffects(id, options, beforeSnapshot, visibleBlockingIds, nextActiveModalId);
+    uiModalRuntime.close(id, options);
 }
 
 function setConfirmModalAwaitingChoice(value) {
@@ -1246,45 +1167,7 @@ function closeConfirmModal(accepted) {
 }
 
 function handleModalKeydown(event) {
-    const activeModalId = modalRuntimeController.getActiveModalId();
-    if (!activeModalId) return;
-    const modal = document.getElementById(activeModalId);
-    if (!modal || modal.style.display === 'none') return;
-    const closeHandler = event.key === 'Escape' ? MODAL_CLOSE_HANDLERS[activeModalId] : null;
-    const state = {
-        active: true,
-        visible: true,
-        key: event.key,
-        hasCloseHandler: !!closeHandler,
-    };
-    let focusable = [];
-    if (event.key === 'Tab') {
-        focusable = getFocusableElements(modal);
-        state.containsActive = typeof modal.contains !== 'function' || modal.contains(document.activeElement);
-        state.focusableCount = focusable.length;
-        state.activeIndex = focusable.indexOf(document.activeElement);
-        state.shiftKey = !!event.shiftKey;
-    }
-    const action = UiModalPolicy.keydownAction(state);
-    if (action === 'close') {
-        event.preventDefault();
-        closeHandler();
-        return;
-    }
-    if (action === 'focus-modal') {
-        event.preventDefault();
-        focusModal(modal);
-        return;
-    }
-    if (action === 'focus-last') {
-        event.preventDefault();
-        focusable[focusable.length - 1].focus();
-        return;
-    }
-    if (action === 'focus-first') {
-        event.preventDefault();
-        focusable[0].focus();
-    }
+    uiModalRuntime.handleKeydown(event);
 }
 
 if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {

@@ -132,6 +132,7 @@ const STATIC_ASSETS = [
   '/js/uiModalOpen.js',
   '/js/uiModalClose.js',
   '/js/uiModalDomEffects.js',
+  '/js/uiModalRuntime.js',
   '/js/uiWinner.js',
   '/js/uiWinnerEffects.js',
   '/js/uiGameStatusView.js',
