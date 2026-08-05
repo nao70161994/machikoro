@@ -183,6 +183,7 @@ const STATIC_ASSETS = [
   '/js/cpuTurnStrategy.js',
   '/js/cpuPhaseHandlers.js',
   '/js/localActionPolicy.js',
+  '/js/mainHumanActionRuntime.js',
   '/js/uiEventDelegation.js',
   '/js/mainUiEventRuntime.js',
   '/js/citySkyline.js',

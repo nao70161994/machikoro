@@ -445,6 +445,8 @@ function loadMainRuntime(options = {}) {
     const cpuPhaseHandlersSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuPhaseHandlers.js'), 'utf8');
     vm.runInContext(cpuPhaseHandlersSource, context, { filename: 'js/cpuPhaseHandlers.js' });
     vm.runInContext(localActionPolicySource, context, { filename: 'js/localActionPolicy.js' });
+    const mainHumanActionRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/mainHumanActionRuntime.js'), 'utf8');
+    vm.runInContext(mainHumanActionRuntimeSource, context, { filename: 'js/mainHumanActionRuntime.js' });
     const uiEventDelegationSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiEventDelegation.js'), 'utf8');
     vm.runInContext(uiEventDelegationSource, context, { filename: 'js/uiEventDelegation.js' });
     const mainUiEventRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/mainUiEventRuntime.js'), 'utf8');
@@ -2248,6 +2250,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'js/localGameStartRuntime.js',
         'js/localGameInitializer.js',
         'js/localGameRestartRuntime.js',
+        'js/mainHumanActionRuntime.js',
         'js/storedOnlineReconnect.js',
         'js/onlinePlayerSettings.js',
         'js/uiLogDisplay.js',
@@ -2483,7 +2486,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/cpuTurnSchedulerRuntime.js', 'js/main.js');
     assertBefore('js/cpuTurnStrategy.js', 'js/cpuPhaseHandlers.js');
     assertBefore('js/cpuPhaseHandlers.js', 'js/main.js');
-    assertBefore('js/localActionPolicy.js', 'js/main.js');
+    assertBefore('js/localActionPolicy.js', 'js/mainHumanActionRuntime.js');
+    assertBefore('js/mainHumanActionRuntime.js', 'js/main.js');
     assertBefore('js/uiEventDelegation.js', 'js/mainUiEventRuntime.js');
     assertBefore('js/mainUiEventRuntime.js', 'js/main.js');
     assertBefore('js/citySkyline.js', 'js/main.js');
