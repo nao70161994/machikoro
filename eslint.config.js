@@ -104,6 +104,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/onlineActionCommit.js',
     'js/onlineSocketConnect.js',
     'js/onlineSocketRegistry.js',
+    'js/onlineInboundActionRuntime.js',
     'js/onlineSocketDisconnect.js',
     'js/onlineHostChanged.js',
     'js/onlineRejoinPersistence.js',

@@ -2515,6 +2515,52 @@ function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
     } catch (_) {}
 }
 
+const onlineInboundActionRuntime = OnlineInboundActionRuntime.createRuntime({
+    applyReplayedAction: (action, data) => applyReplayedAction(action, data),
+    clearPending: () => _clearPendingOutboundAction(),
+    decodeAction: payload => decodeOnlineGameSchemaAction(payload),
+    flags: {
+        incoming: {
+            plan: isIncomingGameActionPlanAuthorityEnabled,
+            decode: isIncomingGameActionDecodeEffectAuthorityEnabled,
+            apply: isIncomingGameActionApplyEffectAuthorityEnabled,
+            gap: isIncomingGameActionGapEffectAuthorityEnabled,
+            noGame: isIncomingGameActionNoGameEffectAuthorityEnabled,
+            commit: isIncomingGameActionCommitEffectAuthorityEnabled,
+        },
+        accepted: {
+            plan: isAcceptedGameActionPlanAuthorityEnabled,
+            decode: isAcceptedGameActionDecodeEffectAuthorityEnabled,
+            apply: isAcceptedGameActionApplyEffectAuthorityEnabled,
+            gap: isAcceptedGameActionGapEffectAuthorityEnabled,
+            noGame: isAcceptedGameActionNoGameEffectAuthorityEnabled,
+            commit: isAcceptedGameActionCommitEffectAuthorityEnabled,
+        },
+    },
+    getGameState: onlineGameRuntimeSnapshot,
+    getReconnectSnapshot: () => _onlineReconnectController.snapshot(),
+    lastAppliedSeq: () => _lastAppliedOnlineActionSeq(),
+    payload: OnlinePayload,
+    queueDuringRestore: (type, payload) => _queueOnlineEventDuringRestore(type, payload),
+    readPending: () => _readPendingOutboundActionForCurrentSession(),
+    reconnectState: OnlineReconnectState,
+    recordSelection(key, selection) {
+        _onlineDiagnosticSelections[key] = selection;
+    },
+    runApplyFailure: (error, plan, enabled, record) =>
+        _runOnlineActionApplyFailureEffects(error, plan, enabled, record),
+    runCommit: (...args) => _runOnlineActionCommitEffects(...args),
+    runDecodeFailure: (plan, enabled, record) =>
+        _runOnlineDecodeFailureEffects(plan, enabled, record),
+    runGap: (message, plan, enabled, record) =>
+        _runOnlineActionGapEffects(message, plan, enabled, record),
+    runNoGame: (message, requestRejoin, plan, enabled, record) =>
+        _runOnlineActionNoGameEffects(message, requestRejoin, plan, enabled, record),
+    setActionFlight: value => _setOnlineActionInFlight(value),
+    shouldClearPending: (accepted, pending) =>
+        _shouldClearPendingForAcceptedAction(accepted, pending),
+});
+
 // オンライン対戦（Socket.IO）
 function initSocket() {
     if (onlineSessionSnapshot().socket) return true;
@@ -2550,6 +2596,9 @@ function initSocket() {
         hostlessApproved: hostlessEvents.APPROVED,
         appError: APP_ERROR_EVENT,
     });
+
+    const handleGameAction = onlineInboundActionRuntime.handleGameAction;
+    const handleActionAccepted = onlineInboundActionRuntime.handleActionAccepted;
 
     socketEvents.on(OnlineSocketRegistry.keys.ROOM_CREATED, ({ roomId, playerIndex, reconnectToken: token }) => {
         finishOnlineLobbyRequest('create');
@@ -2658,165 +2707,7 @@ function initSocket() {
         startOnlineGame();
     });
 
-    function legacyInboundGameActionPlan(seq, lastAppliedSeq) {
-        const decisions = OnlinePayload.incomingGameActionDecisions;
-        let decision = decisions.APPLY;
-        if (!onlineGameRuntimeSnapshot().game) decision = decisions.NO_GAME;
-        else if (Number.isInteger(seq) && seq <= lastAppliedSeq) decision = decisions.DUPLICATE;
-        else if (Number.isInteger(seq) && seq !== lastAppliedSeq + 1) decision = decisions.GAP;
-        return Object.freeze({ decision });
-    }
-
-    function inboundGameActionPlanSelection(seq, lastAppliedSeq, requested) {
-        const legacyPlan = legacyInboundGameActionPlan(seq, lastAppliedSeq);
-        const stateSelection = OnlineReconnectState.selectAuthorityState(
-            _onlineReconnectController.snapshot(),
-            { eventAuthorityEnabled: requested }
-        );
-        const stateReady = stateSelection.source === 'event';
-        const selected = OnlinePayload.selectIncomingGameActionPlan(
-            !!onlineGameRuntimeSnapshot().game,
-            seq,
-            lastAppliedSeq,
-            legacyPlan,
-            { authorityEnabled: requested && stateReady }
-        );
-        if (!requested || stateReady) return selected;
-        return Object.freeze({
-            ...selected,
-            source: 'legacy-fallback',
-            fallbackReason: stateSelection.fallbackReason || 'state-authority-unavailable',
-        });
-    }
-
-    const handleGameAction = wirePayload => {
-        const decodedWire = decodeOnlineGameSchemaAction(wirePayload);
-        if (!decodedWire.ok) {
-            return _runOnlineDecodeFailureEffects(
-                { clearActionFlight: false },
-                isIncomingGameActionDecodeEffectAuthorityEnabled(),
-                selection => { _onlineDiagnosticSelections.incomingGameActionDecodeEffectSelection = selection; }
-            );
-        }
-        const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
-        const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
-        if (_queueOnlineEventDuringRestore('gameAction', payload)) return;
-        const lastAppliedSeq = _lastAppliedOnlineActionSeq();
-        const planSelection = inboundGameActionPlanSelection(
-            seq,
-            lastAppliedSeq,
-            isIncomingGameActionPlanAuthorityEnabled()
-        );
-        _onlineDiagnosticSelections.incomingGameActionPlanSelection = planSelection;
-        const decisions = OnlinePayload.incomingGameActionDecisions;
-        if (planSelection.plan.decision === decisions.NO_GAME) {
-            return _runOnlineActionNoGameEffects(
-                '⚠️ ゲーム状態を準備できていないため、再接続しています...',
-                true,
-                planSelection,
-                isIncomingGameActionNoGameEffectAuthorityEnabled(),
-                selection => { _onlineDiagnosticSelections.incomingGameActionNoGameEffectSelection = selection; }
-            );
-        }
-        if (planSelection.plan.decision === decisions.DUPLICATE) return;
-        if (planSelection.plan.decision === decisions.GAP) {
-            return _runOnlineActionGapEffects(
-                '操作の欠落を検知したため、状態を再同期しています...',
-                planSelection,
-                isIncomingGameActionGapEffectAuthorityEnabled(),
-                selection => { _onlineDiagnosticSelections.incomingGameActionGapEffectSelection = selection; }
-            );
-        }
-        try {
-            applyReplayedAction(action, data);
-        } catch (error) {
-            return _runOnlineActionApplyFailureEffects(
-                error,
-                planSelection,
-                isIncomingGameActionApplyEffectAuthorityEnabled(),
-                selection => { _onlineDiagnosticSelections.incomingGameActionApplyEffectSelection = selection; }
-            );
-        }
-        return _runOnlineActionCommitEffects(
-            action,
-            data,
-            seq,
-            { playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit },
-            false,
-            false,
-            planSelection,
-            isIncomingGameActionCommitEffectAuthorityEnabled(),
-            selection => { _onlineDiagnosticSelections.incomingGameActionCommitEffectSelection = selection; }
-        );
-    };
     socketEvents.on(OnlineSocketRegistry.keys.GAME_ACTION, handleGameAction);
-
-    const handleActionAccepted = wirePayload => {
-        const decodedWire = decodeOnlineGameSchemaAction(wirePayload);
-        if (!decodedWire.ok) {
-            return _runOnlineDecodeFailureEffects(
-                { clearActionFlight: true },
-                isAcceptedGameActionDecodeEffectAuthorityEnabled(),
-                selection => { _onlineDiagnosticSelections.acceptedGameActionDecodeEffectSelection = selection; }
-            );
-        }
-        const { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit } = decodedWire.value;
-        const payload = { action, data, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit };
-        if (_queueOnlineEventDuringRestore('actionAccepted', payload)) return;
-        const pendingBeforeAccept = _readPendingOutboundActionForCurrentSession();
-        if (!_shouldClearPendingForAcceptedAction(payload, pendingBeforeAccept)) return;
-        _setOnlineActionInFlight(false);
-        const lastAppliedSeq = _lastAppliedOnlineActionSeq();
-        const planSelection = inboundGameActionPlanSelection(
-            seq,
-            lastAppliedSeq,
-            isAcceptedGameActionPlanAuthorityEnabled()
-        );
-        _onlineDiagnosticSelections.acceptedGameActionPlanSelection = planSelection;
-        const decisions = OnlinePayload.incomingGameActionDecisions;
-        if (planSelection.plan.decision === decisions.NO_GAME) {
-            return _runOnlineActionNoGameEffects(
-                '⚠️ ゲーム状態を準備できていないため、再接続してください。',
-                false,
-                planSelection,
-                isAcceptedGameActionNoGameEffectAuthorityEnabled(),
-                selection => { _onlineDiagnosticSelections.acceptedGameActionNoGameEffectSelection = selection; }
-            );
-        }
-        if (planSelection.plan.decision === decisions.DUPLICATE) {
-            _clearPendingOutboundAction();
-            return;
-        }
-        if (planSelection.plan.decision === decisions.GAP) {
-            return _runOnlineActionGapEffects(
-                null,
-                planSelection,
-                isAcceptedGameActionGapEffectAuthorityEnabled(),
-                selection => { _onlineDiagnosticSelections.acceptedGameActionGapEffectSelection = selection; }
-            );
-        }
-        try {
-            applyReplayedAction(action, data);
-        } catch (error) {
-            return _runOnlineActionApplyFailureEffects(
-                error,
-                planSelection,
-                isAcceptedGameActionApplyEffectAuthorityEnabled(),
-                selection => { _onlineDiagnosticSelections.acceptedGameActionApplyEffectSelection = selection; }
-            );
-        }
-        return _runOnlineActionCommitEffects(
-            action,
-            data,
-            seq,
-            { alreadyApplied: true, playerIndex, seq, clientActionId, restoreActionAudit, stateSnapshot, restoreAudit },
-            true,
-            true,
-            planSelection,
-            isAcceptedGameActionCommitEffectAuthorityEnabled(),
-            selection => { _onlineDiagnosticSelections.acceptedGameActionCommitEffectSelection = selection; }
-        );
-    };
     socketEvents.on(OnlineSocketRegistry.keys.ACTION_ACCEPTED, handleActionAccepted);
 
     socketEvents.on(OnlineSocketRegistry.keys.REJOIN_DATA, rejoinPayload => {
