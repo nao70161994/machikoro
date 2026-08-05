@@ -921,3 +921,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `ui.js` retains authority-flag reads, concrete state/DOM/trace dependency composition, document keydown binding, and compatibility delegates; its size decreased from 1,485 to 1,368 lines. Modal policy, application transaction, and DOM effects now have explicit separate ownership.
 - Focused contracts preserve open focus-before-inert order, close unlock→pending→focus→trace order, legacy/pure-plan parity, nested-blocking denial diagnostics, violation retention inputs, Escape close, Tab wrap, and missing modal behavior. Full unit/UI/smoke/static/PWA/release gates pass. Scoped gates now cover 255 ESLint maintenance files and 254 checkJs runtime files.
 - Modal IDs/policies, default-OFF authority flags, focus/inert behavior, UI layout, game rules, online flow, persistence, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 104 CPU roll decision boundary
+
+- `js/cpuRollDecision.js` now owns dice-count, reroll, and Harbor-bonus decisions for weak/normal/strong/expert and expert-v2-simple modes, including the existing profiling scopes and lookahead callbacks.
+- `CPU.js` retains its public methods as compatibility delegates plus the scoring, tuning, simulation, and expert helpers supplied to the decision boundary; its size decreased from 3,803 to 3,546 lines. Roll decision orchestration no longer sits inside the main strategy class.
+- Focused contracts preserve normal thresholds and evaluation order, weak-mode random consumption, and all three public delegates. The fixed decision snapshot/baseline, full CPU/self-play/simulation, unit, smoke, online, RL, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 256 ESLint maintenance files and 255 checkJs runtime files.
+- Difficulty presets, heuristic values, candidate/tie ordering, random-call count, game rules, Action/Snapshot schemas, online protocol/reconnect, persistence, and PWA/SW behavior are unchanged.

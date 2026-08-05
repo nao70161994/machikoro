@@ -1120,3 +1120,9 @@ Test index:
 - Modal admission, violation diagnostics, open/close transaction selection/execution, focus ownership, pending/trace follow-up, and Escape/Tab commands belong to `UiModalRuntime`; DOM mechanics remain in `UiModalDomEffects`.
 - Preserve default-OFF authority reads, focus-before-inert open order, unlock-before-focus close order, `pendingModal` render exclusion, rules/card-select trace scope, 20-entry violation retention in the `ui.js` adapter, and existing compatibility delegates.
 - The runtime is linted and checkJs-covered; `ui.js` is 1,368 lines. Modal UX/accessibility, rules, online, persistence, and PWA behavior are unchanged.
+
+## Batch 104 handoff (2026-08-05)
+
+- Dice-count, reroll, and Harbor decision orchestration belongs to `CPURollDecision`; keep `CPU.chooseDiceCount`, `CPU.chooseReroll`, and `CPU.chooseHarbor` as compatibility delegates and keep scoring/tuning helpers injectable through the CPU facade.
+- Preserve profiling labels, branch/comparison order, tie operators, expert lookahead callbacks, and exactly one random draw in each weak/random-mode decision. Add new roll policies to this boundary rather than growing `CPU.js`.
+- The module is linted and checkJs-covered; `CPU.js` is 3,546 lines. Fixed decision baselines and full CPU/self-play/simulation gates pass with unchanged rules, choices, RNG, and strength.

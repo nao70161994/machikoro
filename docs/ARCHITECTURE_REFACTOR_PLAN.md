@@ -1058,3 +1058,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `UiModalRuntime` is the application layer between pure `UiModalPolicy`/open/close plans and `UiModalDomEffects`.
 2. It owns admission, diagnostics, ordered open/close effects, active/focus state, pending/trace follow-up, and keyboard commands through injected adapters; `ui.js` is now modal composition plus compatibility delegates.
 3. Both default legacy and explicit authority paths remain contract-covered with identical accessibility-sensitive ordering and fallback behavior; production authority flags remain absent/default-OFF.
+
+## 2026-08-05 Batch 104 boundary update
+
+1. `CPURollDecision` is the action-only policy boundary for dice-count, reroll, and Harbor choices; `CPU` remains the compatibility facade and supplies evaluation/tuning/profile dependencies.
+2. The extracted methods keep the original branch, comparison, callback, and random-call order. No scoring constants or expert presets moved or changed.
+3. Focused order/RNG contracts plus the repository decision baseline and full self-play/simulation gates preserve every difficulty's observable choice and CPU strength.
