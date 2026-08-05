@@ -132,6 +132,7 @@
     "js/cpuDiagnostics.js",
     "js/cpuEvaluationCache.js",
     "js/cpuPendingResolution.js",
+    "js/cpuPendingDecision.js",
     "js/cpuRollDecision.js",
     "js/cpuTuning.js",
     "js/savedGameValidation.js",
