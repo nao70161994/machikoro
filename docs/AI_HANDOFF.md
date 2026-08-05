@@ -1066,3 +1066,9 @@ Test index:
 - Incoming remote Actions and sender ACK Actions belong to `OnlineInboundActionRuntime`; keep Socket.IO registration and concrete replay/recovery/persistence effects in `online.js` composition.
 - Preserve decode before queueing, accepted-pending identity before flight clear, state-authority gating before pure plan selection, duplicate/gap/no-game distinctions, exact status text, commit flags/log metadata, and recovery return values.
 - The runtime is linted and checkJs-covered; `online.js` is 3,890 lines. Socket.IO names/payloads, Action schema, ACK/reconnect order, persistence, rules, and CPU behavior are unchanged.
+
+## Batch 95 handoff (2026-08-05)
+
+- Room-created/joined/list handlers and new-game activation belong to `OnlineLobbyStartRuntime`; keep concrete Socket.IO binding, schema/storage/runtime adapters, and rejoin restoration in `online.js`.
+- Preserve schema gate before restore generation, room/session status text, start payload defaults, best-effort storage order, RL generation check, reset/show/init/notify order, version warning after game init, sequence replacement before queue flush, and `GAME_ACTIVATED` observation only after a successful flush.
+- The runtime is linted and checkJs-covered; `online.js` is 3,853 lines. Socket.IO contracts, reconnect/restore, storage formats, game rules, CPU behavior, and PWA semantics are unchanged.
