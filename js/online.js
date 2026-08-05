@@ -3201,59 +3201,49 @@ function joinRoom() {
     ));
 }
 
-function initOnlineGame(playerNames, ps, playerOrder) {
-    const count = playerNames.length;
-    onlineClientEffects.invalidateCpuSchedule();
-    if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
-    if (typeof cancelAutoSkip === 'function') cancelAutoSkip();
-    GameRuntimeState.runtime.setPreviousCoins(null);
-    GameRuntimeState.runtime.setUndoState(null);
-    resetFullLog();
-    if (typeof resetStatsRecorded === "function") {
-        resetStatsRecorded();
-    }
-    const initializedGameState = GameRuntimeState.runtime.setGame(new GameManager(count));
-    const currentGame = initializedGameState.game;
-    const selection = GameSelectionState.runtime.snapshot();
-    const selectedLandmarks = selection.enabledLandmarks.length > 0
-        ? selection.enabledLandmarks
-        : Player.landmarkNames();
-    const selectedCards = new Set(selection.enabledCards);
-    currentGame.enabledLandmarks = new Set(selectedLandmarks);
-    for (const card of CARDS) {
-        setShopStockCount(SHOP_STOCK, card, selectedCards.has(card.name) ? getInitialCardStock(card, count) : 0);
-    }
+let onlineGameInitializer = null;
 
-    // playerOrderに従ってプレイヤー名とCPU設定を設定
-    const order = playerOrder || playerNames.map((_, i) => i);
-    for (let i = 0; i < count; i++) {
-        const originalIndex = order[i];
-        currentGame.players[i].name = playerNames[originalIndex];
-    }
+function getOnlineGameInitializer() {
+    if (onlineGameInitializer) return onlineGameInitializer;
+    onlineGameInitializer = OnlineGameInitializer.createRuntime({
+        cancelAutoSkip: () => {
+            if (typeof cancelAutoSkip === 'function') cancelAutoSkip();
+        },
+        cancelCpuSchedule: () => onlineClientEffects.invalidateCpuSchedule(),
+        cancelDelayedHumanAction: () => {
+            if (typeof cancelDelayedHumanAction === 'function') cancelDelayedHumanAction();
+        },
+        cards: CARDS,
+        createCpu: (difficulty, options) => createOnlineCpuPlayer(difficulty, options),
+        createGame: playerCount => new GameManager(playerCount),
+        gameRuntime: GameRuntimeState.runtime,
+        getSelection: () => GameSelectionState.runtime.snapshot(),
+        initialCardStock: (card, playerCount) => getInitialCardStock(card, playerCount),
+        landmarkNames: () => Player.landmarkNames(),
+        logTypes: LOG_TYPES,
+        opponentDifficulties: settings => onlineCpuOpponentDifficultiesFromSettings(settings),
+        render: () => onlineClientEffects.render(),
+        resetFullLog: () => resetFullLog(),
+        resetStatsRecorded: () => {
+            if (typeof resetStatsRecorded === 'function') resetStatsRecorded();
+        },
+        scheduleCpu: () => onlineClientEffects.scheduleCpu(),
+        setCurrentPlayerIndex: index =>
+            OnlineRuntimeState.runtime.setCurrentPlayerIndex(index),
+        setShopStockCount: (stock, card, count) =>
+            setShopStockCount(stock, card, count),
+        shopStock: SHOP_STOCK,
+    });
+    return onlineGameInitializer;
+}
 
-    // CPU設定をorderに合わせて反映
-    if (ps && ps.length > 0) {
-        const orderedSettings = order.map(originalIndex => ps[originalIndex] || null);
-        const opponentDifficulties = onlineCpuOpponentDifficultiesFromSettings(orderedSettings);
-        GameRuntimeState.runtime.setCpuPlayers(orderedSettings.map(s => {
-            return s && s.type === "cpu"
-                ? createOnlineCpuPlayer(s.difficulty, { expertPurpose: "live", playerCount: count, expertOpponentDifficulties: opponentDifficulties, rlModelId: s.rlModelId || s.modelId || null })
-                : null;
-        }));
-    } else {
-        GameRuntimeState.runtime.setCpuPlayers(currentGame.players.map(() => null));
-    }
-
-    // myPlayerIndexをシャッフル後の位置に更新
-    // order[i] === 元のindex なので、自分の元indexがorderの何番目かを探す
-    const orderedPlayerIndex = order.indexOf(onlineSessionSnapshot().myOriginalPlayerIndex);
-    OnlineRuntimeState.runtime.setCurrentPlayerIndex(
-        orderedPlayerIndex === -1 ? 0 : orderedPlayerIndex
-    ); // 見つからない場合はホスト
-
-    currentGame.addLog(LOG_TYPES.SYSTEM, `👤 ${currentGame.currentPlayer().name}のターン`);
-    onlineClientEffects.render();
-    onlineClientEffects.scheduleCpu();
+function initOnlineGame(playerNames, playerSettings, playerOrder) {
+    return getOnlineGameInitializer().initialize({
+        myOriginalPlayerIndex: onlineSessionSnapshot().myOriginalPlayerIndex,
+        playerNames,
+        playerOrder,
+        playerSettings,
+    });
 }
 
 function _createOnlineGameEngineRuntimeAdapter() {
