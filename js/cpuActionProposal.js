@@ -5,8 +5,9 @@ const CPUActionContractApi = typeof module !== 'undefined' && module.exports
     : globalThis.GameActionContract;
 
 /**
+ * @template {string} TAction
  * @typedef {Object} CPUActionProposalValue
- * @property {string} action
+ * @property {TAction} action
  * @property {Record<string, *>} data
  */
 
@@ -38,9 +39,10 @@ function hasCanonicalPayloadShape(action, data) {
  * Creates a detached canonical action proposal without applying game or transport effects.
  * Value validation and actor authority remain with the live owner.
  *
- * @param {string} action
+ * @template {string} TAction
+ * @param {TAction} action
  * @param {Record<string, *>} data
- * @returns {CPUActionProposalValue|null}
+ * @returns {CPUActionProposalValue<TAction>|null}
  */
 function create(action, data = {}) {
     if (!hasCanonicalPayloadShape(action, data)) return null;

@@ -37,6 +37,7 @@ const GameEngineRuntimeAdapter = (() => {
             runtimeGame.enabledLandmarks = new Set(
                 configuredLandmarks == null ? landmarkNames() : configuredLandmarks
             );
+            /** @type {Record<string, number>} */
             const runtimeStock = {};
             let runtimeUndoState = null;
             const hydrated = GameSnapshotRuntimeApi.hydrateMutableGameState({

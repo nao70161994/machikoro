@@ -1218,3 +1218,11 @@ Test index:
 - Transition/adoption/client-shadow failures retain mutable replay and existing Undo clearing. Keep this fallback until production rollout and mixed-version retirement are both approved.
 - Runtime selection tests, fixed online traces, and the existing 2–10-player all-action client/server/schema parity suite are the evidence. Protocol, ACK/watermark, restore queues, reconnect, storage, and server authority are unchanged.
 - Fixed outcome 4 is complete. Next fixed scope is typed browser-global and adapter boundaries.
+
+
+## Fixed outcome 5 handoff: typed boundaries (2026-08-05)
+
+- Keep the six concrete `Window` declarations (`GameActionContract`, `GameSnapshot`, `CPUActionProposal`, `CPUBuildStrategy`, `OnlineReconnectRuntime`, `OnlineGameEngineRuntime`) linked to `typeof import(...)`; do not weaken them back to `unknown`.
+- Action and CPU proposal types preserve action identity, Snapshot retains a version-compatible record plus stable core fields, Card/Player expose their shared runtime shapes, and online runtimes type their dependency-injection seams.
+- `npm run test:types`, `npm run lint:maintenance`, and `tests/checkjs-config.test.js` are the enforcement points. Current scope is 267 ESLint files / 266 checkJs JavaScript files. Whole-file exclusions remain the five composition roots; continue typing extracted boundaries rather than declaring all classic-script globals.
+- This change is annotation/config-contract only. Rules, CPU strength/RNG, schemas, online/reconnect, storage, UI, and PWA behavior remain unchanged. Proceed to the fixed-outcome completion audit.

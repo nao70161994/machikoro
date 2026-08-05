@@ -8,11 +8,15 @@ const LANDMARK_NAMES = Object.freeze({
     YAKUSHO:        "役所",
 });
 
+/** Mutable player boundary shared by rules, snapshots, UI, and CPU adapters. */
 class Player {
+    /** @param {string} name */
     constructor(name) {
         this.name = name;
         this.coins = 3;
+        /** @type {Array<Card>} */
         this.cards = [];
+        /** @type {Array<Card>} */
         this.dormantCards = []; // 休業中のカード
         this.itVentureCoins = 0; // ITベンチャーの積立コイン
 
@@ -24,6 +28,7 @@ class Player {
         this.hasYakusho = true;
     }
 
+    /** @param {Card} card */
     addCard(card) { this.cards.push(card); }
 
     countCard(name) {

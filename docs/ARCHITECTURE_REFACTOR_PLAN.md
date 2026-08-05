@@ -1155,3 +1155,11 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 2. Successful detached reconstruction skips duplicate live mutation. Transition, shadow, reconstruction, or adoption failure selects the unchanged mutable replay and Undo handling.
 3. The existing all-action client/server mirror parity across Action/Snapshot v0/v1 and 2–10 players proves the shared transition semantics; online runtime tests prove the authority/fallback selection itself.
 4. Protocol, validation, ACK/watermark, action logging, queue ordering, reconnect behavior, and server canonical authority are outside this cutover and unchanged.
+
+
+## Fixed outcome 5 complete: typed compatibility boundaries (2026-08-05)
+
+- The browser-global compatibility surface for Action, Snapshot, CPU proposal/build strategy, reconnect runtime, and online Engine runtime is linked to concrete CommonJS inference. `unknown` is no longer the adapter contract for these paths.
+- JSDoc types now cover the stable data passed between Action/Snapshot/Card/Player, online controller/Engine adapters, and CPU action-only selection. The large side-effect composition roots are still excluded; their extracted dependencies are checked instead of being hidden behind broad ambient declarations.
+- ESLint remains limited to bug-detection rules and checkJs remains no-emit JavaScript checking. No TypeScript migration or runtime build step was introduced.
+- Fixed outcome 5 is complete. The next and final scope is a requirement-by-requirement migration/parity/E2E/documentation audit.

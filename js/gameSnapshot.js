@@ -5,6 +5,25 @@ const GAME_SNAPSHOT_LEGACY_VERSION = 0;
 const GAME_SNAPSHOT_DEFAULT_LOG_LIMIT = 30;
 
 /**
+ * @typedef {Record<string, *> & {
+ *     name: string,
+ *     coins: number,
+ *     cards: Array<string>,
+ *     landmarks: Record<string, boolean>
+ * }} GameSnapshotPlayerState
+ */
+/**
+ * Stable adapter boundary for save, Undo, online snapshot, and Engine replay.
+ * Additional version-compatible fields remain caller-owned.
+ * @typedef {Record<string, *> & {
+ *     players: Array<GameSnapshotPlayerState>,
+ *     currentPlayerIndex: number,
+ *     phase: string,
+ *     shopStock: Record<string, number>
+ * }} GameSnapshotState
+ */
+
+/**
  * @typedef {Object} GameSnapshotSerializeOptions
  * @property {number} [logLimit] Maximum recent structured-log entries.
  * @property {function(Object): Array<Object>} [pendingActionsFor] Caller-owned pending projection.
@@ -20,7 +39,7 @@ const GAME_SNAPSHOT_DEFAULT_LOG_LIMIT = 30;
  * @typedef {Object} GameSnapshotHydrateOptions
  * @property {Object} game Existing mutable GameManager-compatible runtime.
  * @property {Record<string, number>} shopStock Existing mutable inventory object.
- * @property {Object} state Validated or caller-normalized snapshot state.
+ * @property {GameSnapshotState} state Validated or caller-normalized snapshot state.
  * @property {function(string): (Object|null)} createCardByName Caller-owned card factory.
  * @property {function(Record<string, number>, Object): void} assignShopStockSnapshot Caller-owned inventory policy.
  * @property {function(*, number, number): number} normalizePlayerCoins Caller-owned compatibility policy.
@@ -34,7 +53,7 @@ const GAME_SNAPSHOT_DEFAULT_LOG_LIMIT = 30;
 /**
  * @typedef {Object} GameSnapshotEnvelope
  * @property {number} schemaVersion
- * @property {Object} snapshot
+ * @property {GameSnapshotState} snapshot
  */
 
 function snapshotVersionOf(value) {
@@ -50,6 +69,10 @@ function isSupportedSnapshotVersion(version) {
         version === GAME_SNAPSHOT_SCHEMA_VERSION;
 }
 
+/**
+ * @param {GameSnapshotState} snapshot
+ * @returns {GameSnapshotEnvelope}
+ */
 function createSnapshotEnvelope(snapshot) {
     return {
         schemaVersion: GAME_SNAPSHOT_SCHEMA_VERSION,
@@ -57,6 +80,10 @@ function createSnapshotEnvelope(snapshot) {
     };
 }
 
+/**
+ * @param {*} value
+ * @returns {{ok: boolean, schemaVersion: number|null, snapshot: GameSnapshotState|null, legacy: boolean}}
+ */
 function readSnapshotEnvelope(value) {
     const version = snapshotVersionOf(value);
     if (version === GAME_SNAPSHOT_LEGACY_VERSION) {
@@ -81,7 +108,7 @@ function copyRecentLog(log, limit) {
  * @param {Object} game
  * @param {Record<string, number>} shopStock
  * @param {GameSnapshotSerializeOptions} [options]
- * @returns {Object}
+ * @returns {GameSnapshotState}
  */
 function serializeGameState(game, shopStock, options = {}) {
     const logLimit = Number.isInteger(options.logLimit) && options.logLimit >= 0
@@ -131,7 +158,7 @@ function serializeGameState(game, shopStock, options = {}) {
  * @param {Object} game
  * @param {Record<string, number>} shopStock
  * @param {GameSnapshotSerializeOptions} [options]
- * @returns {Object}
+ * @returns {GameSnapshotState}
  */
 function serializeLocalSaveState(game, shopStock, options = {}) {
     const state = serializeGameState(game, shopStock, {

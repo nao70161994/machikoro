@@ -1033,3 +1033,12 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `OnlineGameEngineRuntime` owns the fallback. Its deletion condition is an approved production rollout plus retirement of mixed-version replay support; neither is part of this goal.
 - Runtime contracts prove successful authority skips mutable application and adoption failure falls back. Fixed online action traces converge with legacy, while the existing 2–10-player, all-Action, v0/v1 client/server mirror parity suite covers the underlying transition and Snapshot adapters.
 - Socket.IO event names/payloads, actor validation, ACK/watermark, action sequence/log, restore queue order, reconnect state, storage formats, and server authority remain unchanged.
+
+
+## Fixed outcome 5 complete: typed browser-global and adapter boundaries (2026-08-05)
+
+- `GameActionContract`, `GameSnapshot`, `CPUActionProposal`, `CPUBuildStrategy`, `OnlineReconnectRuntime`, and `OnlineGameEngineRuntime` browser globals now use their real inferred module types instead of `unknown`. Publication and consumption drift is therefore a `test:types` failure.
+- Action envelopes/read results, Snapshot/player state, Card/Player runtime values, reconnect/online-Engine dependency injection, generic CPU action literals, and build-strategy results have explicit JSDoc boundaries. The generic action proposal preserves literal action IDs through the build adapter.
+- Enabling the real global types exposed and fixed two pre-existing type gaps: build-action literal widening and an untyped Engine runtime stock record. Both fixes are annotations only.
+- `tests/checkjs-config.test.js` prevents these target globals or boundary declarations from silently returning to `unknown`. The scoped gates now cover 267 ESLint files and 266 checkJs JavaScript files; the five composition roots remain intentionally excluded as whole files.
+- No runtime logic, schemas, rules, CPU choices/RNG, online protocol/reconnect, storage, UI, or PWA behavior changed. Fixed outcome 5 is complete; only the six-outcome completion audit remains.

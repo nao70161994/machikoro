@@ -1,4 +1,5 @@
 declare var GameActionContract: typeof import("../js/actionContract");
+declare var GameSnapshot: typeof import("../js/gameSnapshot");
 declare var PendingActionQueue: typeof import("../js/pendingActionQueue").PendingActionQueue;
 declare var GameTurnPolicy: typeof import("../js/gameTurnPolicy");
 declare var GameDicePolicy: typeof import("../js/gameDicePolicy");
@@ -28,6 +29,7 @@ declare var CPUEvaluation: typeof import("../js/cpuEvaluation").CPUEvaluation;
 declare var CPUBuildExecution: typeof import("../js/cpuBuildExecution").CPUBuildExecution;
 declare var CPUBuildProposalCollector: typeof import("../js/cpuBuildProposalCollector").CPUBuildProposalCollector;
 declare var CPUBuildStrategy: typeof import("../js/cpuBuildStrategy").CPUBuildStrategy;
+declare var CPUActionProposal: typeof import("../js/cpuActionProposal").CPUActionProposal;
 declare var CPUBuildScoring: typeof import("../js/cpuBuildScoring").CPUBuildScoring;
 declare var CPUChoiceScoring: typeof import("../js/cpuChoiceScoring").CPUChoiceScoring;
 declare var CPUCardEvaluationRuntime: typeof import("../js/cpuCardEvaluationRuntime").CPUCardEvaluationRuntime;
@@ -49,10 +51,13 @@ declare var isRoomHost: boolean | undefined;
 declare var isReconnectingOnline: boolean | undefined;
 declare var socket: { connected?: boolean } | undefined;
 declare var sendAction: ((action: string, data: Record<string, unknown>) => boolean) | undefined;
+declare var OnlineReconnectRuntime: typeof import("../js/onlineReconnectRuntime");
+declare var OnlineGameEngineRuntime: typeof import("../js/onlineGameEngineRuntime");
 
 
 // Browser-global publication names for the explicitly checked compatibility modules.
 interface Window {
+    GameActionContract: typeof import("../js/actionContract");
     RLModelCatalog: unknown;
     GameTurnPolicy: unknown;
     GameDicePolicy: unknown;
@@ -67,7 +72,7 @@ interface Window {
     mountAdSlot: unknown;
     mountStaticAdSlots: unknown;
     webkitAudioContext: typeof AudioContext;
-    GameSnapshot: unknown;
+    GameSnapshot: typeof import("../js/gameSnapshot");
     LocalSaveRepository: unknown;
     LocalResumeView: unknown;
     GameSchemaNegotiation: unknown;
@@ -90,7 +95,10 @@ interface Window {
     GameSchemaWire: unknown;
     RecreateRoomPayload: unknown;
     GameSchemaRecreateWire: unknown;
-    CPUActionProposal: unknown;
+    CPUActionProposal: typeof import("../js/cpuActionProposal").CPUActionProposal;
+    CPUBuildStrategy: typeof import("../js/cpuBuildStrategy").CPUBuildStrategy;
+    OnlineReconnectRuntime: typeof import("../js/onlineReconnectRuntime");
+    OnlineGameEngineRuntime: typeof import("../js/onlineGameEngineRuntime");
     CPUBuildExecution: unknown;
     CPULegalMoves: unknown;
     CPUProfile: unknown;

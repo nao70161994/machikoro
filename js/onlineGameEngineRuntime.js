@@ -1,10 +1,31 @@
 'use strict';
 
+/**
+ * @typedef {Object} OnlineGameEngineRuntimeDependencies
+ * @property {{transitionSnapshot: function(Object): *}} engine
+ * @property {{setGame: function(*): void, setUndoState: function(*): void}} gameRuntime
+ * @property {Record<string, number>} shopStock
+ * @property {function(Object): boolean} adoptSnapshot
+ * @property {function(string, Record<string, *>): boolean} applyMutableAction
+ * @property {function(Record<string, number>, Object): void} assignShopStock
+ * @property {function(): Object} buildSnapshot
+ * @property {function(): Object} buildUndoSnapshot
+ * @property {function(): {hydrate: function(Object): Object, serialize: function(Object): Object}} createAdapter
+ * @property {function(): *} getClientShadow
+ * @property {function(): boolean} isAuthorityEnabled
+ * @property {function(): boolean} isShadowEnabled
+ * @property {function(*): void} setDiagnostic
+ */
+
 const OnlineGameEngineRuntime = (() => {
     const BUILD_ACTIONS = Object.freeze(['buildCard', 'buildLandmark']);
     const UNDO_CLEAR_ACTIONS = Object.freeze(['undoBuild', 'nextTurn']);
 
-    function createRuntime(dependencies = {}) {
+    /**
+     * @param {OnlineGameEngineRuntimeDependencies} [dependencies]
+     * @returns {Readonly<Record<string, *>>}
+     */
+    function createRuntime(dependencies = /** @type {*} */ ({})) {
         const requiredFunctions = [
             'adoptSnapshot', 'applyMutableAction', 'assignShopStock', 'buildSnapshot',
             'buildUndoSnapshot', 'createAdapter', 'getClientShadow', 'isAuthorityEnabled',

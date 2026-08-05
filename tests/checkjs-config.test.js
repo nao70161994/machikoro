@@ -167,3 +167,37 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
     assert.ok(config.files.includes('js/crashScreenEffects.js'));
     assert.ok(config.files.includes('scripts/check-static-files.js'));
 });
+
+
+runTest('主要browser globalとadapter境界は実モジュール型で検査する', () => {
+    const globals = fs.readFileSync(
+        path.join(__dirname, '..', 'types/checkjs-browser-globals.d.ts'),
+        'utf8'
+    );
+    for (const name of [
+        'GameActionContract',
+        'GameSnapshot',
+        'CPUActionProposal',
+        'CPUBuildStrategy',
+        'OnlineReconnectRuntime',
+        'OnlineGameEngineRuntime',
+    ]) {
+        assert.match(globals, new RegExp('\\b' + name + ': typeof import\\('));
+        assert.ok(!globals.includes(name + ': unknown;'), name);
+    }
+
+    const boundaries = {
+        'js/actionContract.js': ['GameActionEnvelope', 'GameActionReadResult'],
+        'js/gameSnapshot.js': ['GameSnapshotPlayerState', 'GameSnapshotState'],
+        'js/Card.js': ['class Card', '@param {Array<number>} diceNums'],
+        'js/Player.js': ['class Player', '@type {Array<Card>}'],
+        'js/onlineReconnectRuntime.js': ['OnlineReconnectRuntimeDependencies'],
+        'js/onlineGameEngineRuntime.js': ['OnlineGameEngineRuntimeDependencies'],
+        'js/cpuActionProposal.js': ['@template {string} TAction'],
+        'js/cpuBuildStrategy.js': ['CPUBuildStrategyAction'],
+    };
+    for (const [file, markers] of Object.entries(boundaries)) {
+        const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+        for (const marker of markers) assert.ok(source.includes(marker), file + ': ' + marker);
+    }
+});

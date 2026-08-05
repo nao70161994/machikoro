@@ -31,6 +31,22 @@ const ACTION_ACTOR_AUTHORITY = Object.freeze({
     CURRENT_PLAYER_OR_HOST_CPU: 'current-player-or-host-cpu',
 });
 
+/** @typedef {Record<string, *>} GameActionData */
+/**
+ * @typedef {Object} GameActionEnvelope
+ * @property {number} [schemaVersion]
+ * @property {string} action
+ * @property {GameActionData} data
+ */
+/**
+ * @typedef {Object} GameActionReadResult
+ * @property {boolean} ok
+ * @property {number|null} schemaVersion
+ * @property {string|null} action
+ * @property {GameActionData|null} data
+ * @property {boolean} legacy
+ */
+
 function actionEntry(action, phase, payloadKind, canonicalPayloadKeys, ui, phaseOrder = 0, canonicalPayloadVariants = null) {
     const variants = canonicalPayloadVariants || [canonicalPayloadKeys];
     return Object.freeze({
@@ -96,6 +112,10 @@ const ACTION_CONTRACT_PHASE_ACTIONS = Object.freeze(Object.fromEntries(
             .map(entry => entry.action))])
 ));
 
+/**
+ * @param {*} value
+ * @returns {number|null}
+ */
 function actionSchemaVersionOf(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
     if (!Object.prototype.hasOwnProperty.call(value, 'schemaVersion')) {
@@ -104,12 +124,21 @@ function actionSchemaVersionOf(value) {
     return Number.isInteger(value.schemaVersion) ? value.schemaVersion : null;
 }
 
+/**
+ * @param {string} action
+ * @param {GameActionData} [data]
+ * @returns {GameActionEnvelope|null}
+ */
 function createActionEnvelope(action, data = {}) {
     if (!ACTION_CONTRACT_BY_ACTION[action] || !data ||
             typeof data !== 'object' || Array.isArray(data)) return null;
     return { schemaVersion: ACTION_SCHEMA_VERSION, action, data };
 }
 
+/**
+ * @param {*} value
+ * @returns {GameActionReadResult}
+ */
 function readActionEnvelope(value) {
     const schemaVersion = actionSchemaVersionOf(value);
     const supportedVersion = schemaVersion === ACTION_SCHEMA_LEGACY_VERSION ||

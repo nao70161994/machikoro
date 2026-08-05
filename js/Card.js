@@ -1,4 +1,15 @@
+/** Immutable-definition-compatible card value used across rules, snapshots, UI, and CPU adapters. */
 class Card {
+    /**
+     * @param {string} name
+     * @param {number} cost
+     * @param {Array<number>} diceNums
+     * @param {number} income
+     * @param {string} color
+     * @param {string} category
+     * @param {string} effect
+     * @param {string|null} [id]
+     */
     constructor(name, cost, diceNums, income, color, category, effect, id = null) {
         this.name = name;
         this.cost = cost;
@@ -325,16 +336,19 @@ const CARD_EFFECT_DESCRIPTIONS = Object.freeze({
     [CARD_EFFECTS.PARK]:         ()  => `全員のコインを均等分配`,
 });
 
+/** @param {Card|null|undefined} card @returns {Card|null} */
 function cloneCard(card) {
     if (!card) return null;
     return new Card(card.name, card.cost, [...card.diceNums], card.income, card.color, card.category, card.effect, card.id || CARD_ID_BY_NAME[card.name] || null);
 }
 
+/** @param {string} name @returns {Card|null} */
 function createCardByName(name) {
     const card = CARDS.find(c => c.name === name);
     return cloneCard(card);
 }
 
+/** @param {string} id @returns {Card|null} */
 function createCardById(id) {
     return createCardByName(CARD_NAME_BY_ID[id]);
 }

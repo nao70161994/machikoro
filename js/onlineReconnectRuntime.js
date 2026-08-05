@@ -1,7 +1,25 @@
 'use strict';
 
+/**
+ * @typedef {Object} OnlineReconnectRuntimeDependencies
+ * @property {function(): boolean} getLegacyReconnecting
+ * @property {function(): Record<string, *>} getObservationFlags
+ * @property {function(): string} getStatusText
+ * @property {function(boolean): void} setLegacyReconnecting
+ * @property {function(string): void} setStatusText
+ * @property {Record<string, function(...*): *>} statePolicy
+ * @property {Record<string, function(...*): *>} retryPolicy
+ * @property {function(function(): void, number): *} [setTimer]
+ * @property {function(*): void} [clearTimer]
+ * @property {function(): number} [now]
+ */
+
 const OnlineReconnectRuntime = (() => {
-    function create(dependencies = {}) {
+    /**
+     * @param {OnlineReconnectRuntimeDependencies} [dependencies]
+     * @returns {Readonly<Record<string, *>>}
+     */
+    function create(dependencies = /** @type {*} */ ({})) {
         const requiredFunctions = [
             'getLegacyReconnecting', 'getObservationFlags', 'getStatusText',
             'setLegacyReconnecting', 'setStatusText',

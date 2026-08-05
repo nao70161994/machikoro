@@ -7,6 +7,12 @@ const CPUBuildExecutionApi = typeof module !== 'undefined' && module.exports
     ? require('./cpuBuildExecution').CPUBuildExecution
     : globalThis.CPUBuildExecution;
 
+/**
+ * @typedef {Object} CPUBuildStrategyAction
+ * @property {'buildCard'|'buildLandmark'} action
+ * @property {Record<string, *>} data
+ */
+
 function createBuildSelectionCpu(cpu, collector) {
     const selectionCpu = Object.create(cpu);
     Object.defineProperties(selectionCpu, {
@@ -21,6 +27,13 @@ function createBuildSelectionCpu(cpu, collector) {
 }
 
 const CPUBuildStrategy = Object.freeze({
+    /**
+     * Selects a detached canonical action and leaves application to the caller.
+     * @param {*} cpu
+     * @param {*} game
+     * @param {Record<string, number>} shopStock
+     * @returns {CPUBuildStrategyAction|null}
+     */
     chooseBuildAction(cpu, game, shopStock) {
         if (!game || game.phase !== GAME_PHASES.BUILD || game.builtThisTurn) return null;
         const collector = CPUBuildProposalCollectorApi.create({
