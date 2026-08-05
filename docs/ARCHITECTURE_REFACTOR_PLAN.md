@@ -992,3 +992,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CpuPhaseHandlers` owns phase-specific proposal-to-effect adapters; `CpuTurnStrategy` remains action-only decision policy and `CpuTurnSchedulerRuntime` remains scheduling orchestration.
 2. `main.js` now composes those three CPU layers with Game/online/render effects rather than implementing handlers inline.
 3. Contracts and full CPU baselines preserve the eight-step order, proposal payloads, pending diagnostics, build false semantics, action traces, RNG, and strength.
+
+## 2026-08-05 Batch 93 boundary update
+
+1. `MainHumanActionRuntime` is the application boundary for local-human admission, delayed dice payload construction, pending resolution dispatch, confirmed build execution, and turn-end orchestration.
+2. `main.js` now composes Game/online/PageActivation/Engine/UI effects and retains the established global action delegates; Action admission and gameplay effect sequencing no longer live inline.
+3. Focused, main, integration, online, PWA, release, lint, and checkJs contracts preserve delayed RNG order, ACK/reconnect gates, local shadow versus online send, Undo/stock/render/unlock order, payloads, and confirmation text.

@@ -844,3 +844,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains proposal construction and injected action/game effects; its size decreased from 930 to 836 lines. Scheduler orchestration, strategy selection, and phase execution adapters are now separate boundaries.
 - Focused contracts freeze all eight handler names/order, resolved roll arguments, and local-versus-online build-failure behavior. Existing main/integration and full CPU decision/self-play baselines preserve every phase result, action trace, RNG, and CPU strength. Scoped gates now cover 244 ESLint maintenance files and 243 checkJs runtime files.
 - CPU heuristics/tuning, proposal meaning, handler order, rules, online protocol, persistence, and PWA behavior are unchanged.
+
+## 2026-08-05 Batch 93 human Action runtime
+
+- `js/mainHumanActionRuntime.js` now owns local-human authority admission, delayed roll/select execution, canonical dice/pending payload construction, confirmed card/landmark builds, and turn-end sequencing through injected Game, online, PageActivation, Engine-shadow, and UI effects.
+- `main.js` retains dependency composition and compatibility delegates; its size decreased from 836 to 674 lines. Human Action execution no longer sits beside local setup, CPU scheduling, UI binding, and rendering helpers.
+- Focused contracts preserve delayed RNG and payload order, online ACK blocking, local build shadow/effect order, online send-only builds, Airport skip/Undo order, and ownership. Existing main/integration/online/PWA/release gates preserve stale-action rejection, reconnect authority, UI recovery, and browser load/cache contracts. Scoped gates now cover 245 ESLint maintenance files and 244 checkJs runtime files.
+- Game rules, CPU decisions/strength/RNG, Action and Socket.IO payloads, save/localStorage formats, reconnect behavior, confirmation text, and PWA/SW semantics are unchanged.

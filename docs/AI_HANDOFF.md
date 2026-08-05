@@ -1054,3 +1054,9 @@ Test index:
 - CPU phase-specific execution belongs to `CpuPhaseHandlers`; keep proposal selection in `CpuTurnStrategy` and timer/gate ownership in `CpuTurnSchedulerRuntime`.
 - Preserve `ORDER`, pending checkpoint payload, action-only build preference, local failed-build pass, online failed-build stop, and render behavior.
 - The module is linted and checkJs-covered; `main.js` is 836 lines. Full CPU decision/self-play baselines pass with unchanged heuristics, RNG, and strength.
+
+## Batch 93 handoff (2026-08-05)
+
+- Human Action admission and orchestration belong to `MainHumanActionRuntime`; keep `main.js` wrappers for delegated UI, page activation, and classic-script callers.
+- Preserve delayed roll/select RNG order, online payload omissions, confirm-time player/phase revalidation, build Undo → cancel → send/shadow order, stock decrement timing, unlock reason strings, and skip checkpoints.
+- The runtime is linted and checkJs-covered; `main.js` is 674 lines. Rules, CPU choices/RNG, Action/Socket payloads, persistence, and PWA behavior are unchanged.
