@@ -254,6 +254,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/cpuSchedulerState.js',
         'js/cpuTurnSchedulerRuntime.js',
         'js/cpuTurnStrategy.js',
+        'js/cpuPhaseHandlers.js',
         'js/localActionPolicy.js',
         'js/uiEventDelegation.js',
         'js/mainUiEventRuntime.js',

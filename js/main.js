@@ -384,113 +384,19 @@ function chooseCpuTurnAction(stepName, cpu) {
 
 // フェーズごとの CPU ハンドラテーブル。
 // 新フェーズを追加するときはここに1エントリ追加するだけでよい。
-const CPU_PHASE_HANDLERS = [
-    {
-        name: "roll",
-        run(cpu) {
-            const currentGame = mainGameRuntimeSnapshot().game;
-            if (currentGame.phase !== GAME_PHASES.ROLL) return;
-            const proposal = chooseCpuTurnAction('roll', cpu);
-            cpuDo(proposal.action, proposal.data, () =>
-                currentGame.rollDice(proposal.data.forceDice, proposal.data.tunaDice)
-            );
-        },
-    },
-    {
-        name: "selectDice",
-        run(cpu) {
-            const currentGame = mainGameRuntimeSnapshot().game;
-            if (currentGame.phase !== GAME_PHASES.SELECT_DICE) return;
-            const proposal = chooseCpuTurnAction('selectDice', cpu);
-            cpuDo(proposal.action, proposal.data, () => currentGame.selectDiceCount(
-                proposal.data.useTwo, proposal.data.d1, proposal.data.d2, proposal.data.tunaDice
-            ));
-        },
-    },
-    {
-        name: "rerollConfirm",
-        run(cpu) {
-            const currentGame = mainGameRuntimeSnapshot().game;
-            if (currentGame.phase !== GAME_PHASES.REROLL_CONFIRM) return;
-            const proposal = chooseCpuTurnAction('rerollConfirm', cpu);
-            if (proposal.action === MAIN_ACTIONS.REROLL_DICE) {
-                cpuDo(proposal.action, proposal.data, () =>
-                    currentGame.rerollDice(proposal.data.forceDice, proposal.data.tunaDice)
-                );
-            } else {
-                cpuDo(proposal.action, proposal.data, () => currentGame.skipReroll());
-            }
-        },
-    },
-    {
-        name: "harborChoice",
-        run(cpu) {
-            const currentGame = mainGameRuntimeSnapshot().game;
-            if (currentGame.phase !== GAME_PHASES.HARBOR_CHOICE) return;
-            const proposal = chooseCpuTurnAction('harborChoice', cpu);
-            cpuDo(proposal.action, proposal.data, () => currentGame.resolveHarbor(proposal.data.useBonus));
-        },
-    },
-    {
-        name: "pending",
-        run(cpu) {
-            const currentGame = mainGameRuntimeSnapshot().game;
-            if (currentGame.phase !== GAME_PHASES.PENDING) return;
-            const pendingAction = chooseCpuTurnAction('pending', cpu);
-            if (pendingAction) {
-                markMainCheckpoint('scheduleCPU-pending-resolution', {
-                    action: pendingAction.action,
-                    pendingIT: !!currentGame.pendingIT,
-                    pendingAction: GameManager.nextPendingActionFor(currentGame),
-                });
-                cpuDo(pendingAction.action, pendingAction.data, () =>
-                    CPUPendingResolution.applyPendingAction(currentGame, pendingAction)
-                );
-            }
-        },
-    },
-    {
-        name: "build",
-        run(cpu) {
-            const currentGame = mainGameRuntimeSnapshot().game;
-            if (currentGame.phase !== GAME_PHASES.BUILD) return;
-            const actionOnlyBuild = typeof cpu.chooseBuildAction === 'function' &&
-                typeof cpu.executeBuildAction === 'function';
-            const proposal = actionOnlyBuild ? chooseCpuTurnAction('build', cpu) : null;
-            const buildResult = actionOnlyBuild
-                ? cpu.executeBuildAction(proposal, currentGame, SHOP_STOCK)
-                : cpu.build(currentGame, SHOP_STOCK);
-            if (buildResult === false) {
-                if (mainOnlineRuntimeSnapshot().isOnlineGame) return false;
-                if (!currentGame.builtThisTurn) {
-                    markMainCheckpoint('scheduleCPU-build-failed-pass');
-                    currentGame.nextTurn();
-                }
-                return true;
-            }
-            render();
-            return true;
-        },
-    },
-    {
-        name: "nextTurn",
-        run(cpu) {
-            const currentGame = mainGameRuntimeSnapshot().game;
-            if (currentGame.phase !== GAME_PHASES.BUILD || currentGame.pendingIT) return;
-            const proposal = chooseCpuTurnAction('nextTurn', cpu);
-            cpuDo(proposal.action, proposal.data, () => currentGame.nextTurn());
-        },
-    },
-    {
-        name: "resolveIT",
-        run(cpu) {
-            const currentGame = mainGameRuntimeSnapshot().game;
-            if (!currentGame.pendingIT) return;
-            const proposal = chooseCpuTurnAction('resolveIT', cpu);
-            cpuDo(proposal.action, proposal.data, () => currentGame.resolveIT(proposal.data.doSave));
-        },
-    },
-];
+const CPU_PHASE_HANDLERS = CpuPhaseHandlers.create({
+    actions: MAIN_ACTIONS,
+    checkpoint: (event, details) => markMainCheckpoint(event, details),
+    chooseAction: (stepName, cpu) => chooseCpuTurnAction(stepName, cpu),
+    executeAction: (action, data, fallback) => cpuDo(action, data, fallback),
+    gamePhases: GAME_PHASES,
+    getGameState: mainGameRuntimeSnapshot,
+    getOnlineState: mainOnlineRuntimeSnapshot,
+    nextPendingAction: game => GameManager.nextPendingActionFor(game),
+    pendingResolution: CPUPendingResolution,
+    render: () => render(),
+    shopStock: SHOP_STOCK,
+});
 
 function isMainOnlineReconnectInputBlocked() {
     if (typeof isOnlineReconnectInputBlocked === 'function') {

@@ -442,6 +442,8 @@ function loadMainRuntime(options = {}) {
     const cpuTurnSchedulerRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuTurnSchedulerRuntime.js'), 'utf8');
     vm.runInContext(cpuTurnSchedulerRuntimeSource, context, { filename: 'js/cpuTurnSchedulerRuntime.js' });
     vm.runInContext(cpuTurnStrategySource, context, { filename: 'js/cpuTurnStrategy.js' });
+    const cpuPhaseHandlersSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuPhaseHandlers.js'), 'utf8');
+    vm.runInContext(cpuPhaseHandlersSource, context, { filename: 'js/cpuPhaseHandlers.js' });
     vm.runInContext(localActionPolicySource, context, { filename: 'js/localActionPolicy.js' });
     const uiEventDelegationSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiEventDelegation.js'), 'utf8');
     vm.runInContext(uiEventDelegationSource, context, { filename: 'js/uiEventDelegation.js' });
@@ -2479,7 +2481,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/pageActivationRuntime.js', 'js/main.js');
     assertBefore('js/cpuSchedulerState.js', 'js/cpuTurnSchedulerRuntime.js');
     assertBefore('js/cpuTurnSchedulerRuntime.js', 'js/main.js');
-    assertBefore('js/cpuTurnStrategy.js', 'js/main.js');
+    assertBefore('js/cpuTurnStrategy.js', 'js/cpuPhaseHandlers.js');
+    assertBefore('js/cpuPhaseHandlers.js', 'js/main.js');
     assertBefore('js/localActionPolicy.js', 'js/main.js');
     assertBefore('js/uiEventDelegation.js', 'js/mainUiEventRuntime.js');
     assertBefore('js/mainUiEventRuntime.js', 'js/main.js');
