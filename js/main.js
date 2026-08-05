@@ -392,7 +392,7 @@ const CPU_PHASE_HANDLERS = CpuPhaseHandlers.create({
     gamePhases: GAME_PHASES,
     getGameState: mainGameRuntimeSnapshot,
     getOnlineState: mainOnlineRuntimeSnapshot,
-    nextPendingAction: game => GameManager.nextPendingActionFor(game),
+    nextPendingAction: game => CPUPendingResolution.pendingActionDescriptors(game)[0] || null,
     pendingResolution: CPUPendingResolution,
     render: () => render(),
     shopStock: SHOP_STOCK,
