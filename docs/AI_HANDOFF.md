@@ -1078,3 +1078,9 @@ Test index:
 - Rejoin replay, activation, queued-event release, and pending outbound resend orchestration belong to `OnlineRejoinActivationRuntime`; keep decode/admission and concrete Game/storage/Socket.IO/state-machine effects in `online.js`.
 - Preserve the generation guard before persistence, replay-mode cleanup on every replay exit, abort text/order on replay failure, sequence replacement before queue flush, activation observation only after successful flush, and pending identity/socket/resend gates.
 - The runtime is linted and checkJs-covered; `online.js` is 3,696 lines. Executor flags and legacy fallbacks remain available, and Socket.IO, persistence, rules, CPU, ACK/reconnect, and PWA contracts are unchanged.
+
+## Batch 97 handoff (2026-08-05)
+
+- Rejoin queue carry, original-host bundle offer, host metadata normalization, pending reconciliation, and restore persistence belong to `OnlineRejoinPreparationRuntime`; activation/replay/resend remains in `OnlineRejoinActivationRuntime`.
+- Preserve schema admission before preparation, restore generation before queue carry, local bundle offer before server payload mutation, pending session ownership before reconciliation, unsigned full-log retention, persistence executor/legacy ordering, and best-effort storage failure isolation.
+- Both runtimes are linted and checkJs-covered; `online.js` is 3,539 lines. Socket.IO, Action/Snapshot, storage, ACK/reconnect, rules, CPU, UI text, and PWA contracts are unchanged.
