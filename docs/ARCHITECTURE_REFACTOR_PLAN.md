@@ -1046,3 +1046,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `OnlineGameEngineRuntime` is the online application boundary over shared `GameEngine`, `GameEngineRuntimeAdapter`, and `GameEngineClientShadow`.
 2. It owns replay preparation → detached transition → legacy mutable application → live parity finish → optional reconstruction-checked adoption, including the established Undo lifecycle; `online.js` supplies concrete mutable and snapshot adapters.
 3. Authority remains default-OFF. Focused and full parity contracts preserve mutable identity, fixed Action traces, adoption failure fallback, diagnostics, schemas, and online restore/replay behavior.
+
+## 2026-08-05 Batch 102 boundary update
+
+1. `UiModalDomEffects` is the concrete DOM adapter beneath pure `UiModalPolicy` and the `UiModalOpen`/`UiModalClose` application plans.
+2. Focus discovery, visibility snapshots, visual normalization, inert capture/restore, and orphan cleanup now use injected document/window/state/trace dependencies; `ui.js` keeps modal transaction composition and browser-global delegates.
+3. Focus/inert/release and integration contracts preserve exact accessibility-sensitive ordering, absent-native-inert behavior, blocking-modal guards, and existing authority fallback.

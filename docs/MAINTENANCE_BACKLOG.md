@@ -907,3 +907,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `online.js` retains lazy adapter composition, mutable Game application, and compatibility delegates used by inbound/rejoin paths; its size decreased from 3,421 to 3,402 lines. Existing test replacement of the adoption delegate remains supported, while the runtime owns the production transaction.
 - Focused contracts preserve default-OFF mutable-only execution, build Undo capture, next-turn/Undo clearing before live comparison, detached transition, reconstruction equality, adoption fallback, diagnostics, and absent-shadow fallback. Full unit/online/smoke/static/PWA/release gates pass. Scoped gates now cover 253 ESLint maintenance files and 252 checkJs runtime files.
 - Production Engine authority remains default-OFF. Game rules, Action/Snapshot schemas, CPU decisions/RNG, Socket.IO/reconnect, storage, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 102 UI modal DOM effects
+
+- `js/uiModalDomEffects.js` now owns modal focusable filtering/focus, computed visibility projection, open visual normalization, background inert capture/restore, and orphan lock cleanup.
+- `ui.js` retains modal policy/application orchestration and compatibility delegates while injecting document/window access, runtime state, trace, and blocking-modal observation; its size decreased from 1,567 to 1,485 lines. Modal policy, open/close plans, and DOM mechanics are now separate layers.
+- Focused contracts preserve hidden/disabled/ancestor/computed focus filtering, native and absent-native inert restoration, aria-hidden/pointer restoration, blocking-modal orphan guard, body class cleanup, trace payload, and nested content normalization. Full unit/UI/smoke/static/PWA/release gates pass. Scoped gates now cover 254 ESLint maintenance files and 253 checkJs runtime files.
+- Modal IDs/policies, focus order, inert behavior, open/close authority flags, UI layout, game rules, online flow, storage, and PWA/SW behavior are unchanged.

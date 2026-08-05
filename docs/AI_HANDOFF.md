@@ -1108,3 +1108,9 @@ Test index:
 - Online replay shadow/authority orchestration belongs to `OnlineGameEngineRuntime`; keep mutable rule application and concrete snapshot/runtime adapter composition in `online.js`.
 - Preserve build Undo capture before shadow preparation, mutable application before live comparison, Undo clearing for `undoBuild`/`nextTurn`, reconstruction equality before adoption, default-OFF authority, and the `_adoptOnlineGameEngineShadowSnapshot` compatibility delegate used by fallback tests.
 - The runtime is linted and checkJs-covered; `online.js` is 3,402 lines. Rules, CPU/RNG, schemas, Socket.IO/reconnect, persistence, and PWA behavior are unchanged.
+
+## Batch 102 handoff (2026-08-05)
+
+- Modal focus, visibility, visual normalization, inert capture/restore, and orphan-lock DOM mechanics belong to `UiModalDomEffects`; keep admission/stack policy in `UiModalPolicy` and ordered transactions in `UiModalOpen`/`UiModalClose`.
+- Preserve focus-before-inert open ordering, saved `hadInert`/aria-hidden/pointer values, explicit `false` restoration when native inert was absent, blocking-modal orphan guard, and trace only after an actual cleanup.
+- The module is linted and checkJs-covered; `ui.js` is 1,485 lines. Modal behavior, UI layout, rules, online, persistence, and PWA behavior are unchanged.
