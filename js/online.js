@@ -2022,10 +2022,6 @@ function _onlineRestoreRank(gameStartPayload, stateSnapshot, actionLog) {
     return OnlineRestoreRank.build(gameStartPayload, stateSnapshot, actionLog, actionRegistry);
 }
 
-function _isOnlineRestoreRankNewer(localRank, serverRank) {
-    return OnlineRestoreRank.isNewer(localRank, serverRank);
-}
-
 function _nextOnlineActionSeq(log = null) {
     const seq = OnlineActionSequence.next(_currentOnlineActionSeq(log));
     _writeOnlineGameStartPatch({ actionSeq: seq });
@@ -2656,6 +2652,90 @@ function initSocket() {
         startRestore: () => _startOnlineRestore(),
         writeRestoreJson: (key, value) => _writeOnlineRestoreStorageJson(key, value),
     });
+    const onlineRejoinPreparationRuntime = OnlineRejoinPreparationRuntime.createRuntime({
+        applyHostPayload: (payload, hostPlayerIndex, hostEpoch) =>
+            _applyOnlineHostPayload(payload, hostPlayerIndex, hostEpoch),
+        applyReconnectStatus: event => {
+            _applyOnlineReconnectLifecycleStatusEffectAuthority(event);
+        },
+        calculateRank: (gameStartPayload, stateSnapshot, actionLog) =>
+            _onlineRestoreRank(gameStartPayload, stateSnapshot, actionLog),
+        clearHostlessState: () => _hostlessRestoreState.clear(),
+        clearPending: () => _clearPendingOutboundAction(),
+        clearQuarantine: () => _clearOnlineRestoreQuarantine(),
+        clearRetry: () => _clearRejoinRetry(),
+        getDefaultLandmarks: () => Player.landmarkNames(),
+        getOriginalPlayerIndex: () => onlineSessionSnapshot().myOriginalPlayerIndex,
+        incrementRestoreGeneration: () => _incrementOnlineRestoreGeneration(),
+        invalidateCpuSchedule: () => onlineClientEffects.invalidateCpuSchedule(),
+        isActionLogPlanAuthorityEnabled: () =>
+            isRejoinActionLogPlanAuthorityEnabled(),
+        isPendingPlanAuthorityEnabled: () =>
+            isPendingReconciliationPlanAuthorityEnabled(),
+        isPersistencePlanAuthorityEnabled: () =>
+            isOnlineRejoinPersistencePlanAuthorityEnabled(),
+        isQueueCarryRequired: () =>
+            _onlineRestoreLifecycleController.isInProgress() ||
+            _onlineRestoreLifecycleController.isQuarantined(),
+        isRestoreOfferPlanAuthorityEnabled: () =>
+            isLocalHostRestoreOfferPlanAuthorityEnabled(),
+        normalizeActionLog: value => _normalizeOnlineActionLog(value),
+        observeReconnect: event => _observeOnlineReconnectEvent(event),
+        payload: OnlinePayload,
+        pendingBelongsToSession: pending =>
+            _pendingOutboundActionBelongsToCurrentSession(
+                pending,
+                { requireRoomId: true }
+            ),
+        pendingMatchesAccepted: (reference, pending) =>
+            _acceptedClientActionMatchesPending(reference, pending),
+        readActionLog: () => _readOnlineActionLog(),
+        readLocalBundle: () => _readLocalRestoreBundle(),
+        readPending: () => _readPendingOutboundAction(),
+        readRestoreQueue: () => _readOnlineRestoreEventQueue(),
+        reconnectEvents: OnlineReconnectState.events,
+        recordDiagnostic: (key, selection) => {
+            _onlineDiagnosticSelections[key] = selection;
+        },
+        recordQueueDiagnostic: selection => {
+            _onlineRestoreQueueDiagnostics.write(
+                _onlineRestoreQueueDiagnosticKeys.STATE,
+                Object.freeze({
+                    source: selection.source,
+                    matched: selection.matched,
+                    fallbackReason: selection.fallbackReason,
+                })
+            );
+        },
+        rejoinPersistence: OnlineRejoinPersistence,
+        removeRestoreItem: key => _removeOnlineRestoreStorageItem(key),
+        replaceEnabledCards: values => replaceEnabledCardSelection(values),
+        replaceEnabledLandmarks: values => replaceEnabledLandmarkSelection(values),
+        replaceRestoreQueue: queue => _replaceOnlineRestoreEventQueue(queue),
+        resetUiLocks: reason => onlineClientEffects.resetUiLocks(reason),
+        restoreQueueState: OnlineRestoreQueueState,
+        restoreRank: OnlineRestoreRank,
+        restoreSchemaVersion: ONLINE_RESTORE_SCHEMA_VERSION,
+        sameActionEntry: (left, right) => _sameOnlineActionEntry(left, right),
+        saveSession: () => saveOnlineSession(),
+        selectPersistenceEffect: selection =>
+            _onlineRejoinPersistenceEffectAuthoritySelection(selection),
+        selectQueueTransition: (pureTransition, legacyTransition) =>
+            _selectOnlineRestoreQueueStateTransition(pureTransition, legacyTransition),
+        sendLocalBundle: bundle => _sendRecreateRoomFromBundle(bundle),
+        serverActionSeq: (gameStartPayload, stateSnapshot, actionLog) =>
+            _serverOnlineActionSeq(gameStartPayload, stateSnapshot, actionLog),
+        setActionFlight: value => _setOnlineActionInFlight(value),
+        setCpuSpeed: value => GameSetupState.runtime.setCpuSpeed(value),
+        setHostState: value => _setOnlineHostState(value),
+        setPlayerIndexes: value => OnlineRuntimeState.runtime.setPlayerIndexes(value),
+        setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
+        setStatusText: message => onlineDomEffects.setStatusText(message),
+        startRestore: () => _startOnlineRestore(),
+        storageKeys: ONLINE_STORAGE_KEYS,
+        supportsResetUiLocks: () => onlineClientEffects.supportsResetUiLocks(),
+        writeRestoreJson: (key, value) => _writeOnlineRestoreStorageJson(key, value),
+    });
 
     socketEvents.on(
         OnlineSocketRegistry.keys.ROOM_CREATED,
@@ -2694,251 +2774,18 @@ function initSocket() {
             return;
         }
         onlineSchemaSelectionController.set(gameStartPayload.gameSchema);
-        const shouldCarryRestoreEvents = _onlineRestoreLifecycleController.isInProgress() || _onlineRestoreLifecycleController.isQuarantined();
-        const carriedEvents = shouldCarryRestoreEvents ? _readOnlineRestoreEventQueue().slice() : [];
-        const restoreGeneration = _incrementOnlineRestoreGeneration();
-        _startOnlineRestore();
-        _observeOnlineReconnectEvent(OnlineReconnectState.events.RESTORE_STARTED);
-        _applyOnlineReconnectLifecycleStatusEffectAuthority(
-            OnlineReconnectState.events.RESTORE_STARTED
-        );
-        _clearOnlineRestoreQuarantine();
-        const legacyCarryTransition = Object.freeze({
-            overflow: false,
-            queue: carriedEvents.map(event => ({
-                type: event.type,
-                payload: event.payload,
-                generation: restoreGeneration,
-            })),
-        });
-        const pureCarryTransition = typeof OnlineRestoreQueueState !== 'undefined' &&
-            typeof OnlineRestoreQueueState.planCarry === 'function'
-            ? OnlineRestoreQueueState.planCarry(
-                _readOnlineRestoreEventQueue(),
-                shouldCarryRestoreEvents,
-                restoreGeneration
-            )
-            : null;
-        const carrySelection = _selectOnlineRestoreQueueStateTransition(
-            pureCarryTransition,
-            legacyCarryTransition
-        );
-        _onlineRestoreQueueDiagnostics.write(_onlineRestoreQueueDiagnosticKeys.STATE, Object.freeze({
-            source: carrySelection.source,
-            matched: carrySelection.matched,
-            fallbackReason: carrySelection.fallbackReason,
-        }));
-        _replaceOnlineRestoreEventQueue(carrySelection.transition.queue);
-        _clearRejoinRetry();
-        _hostlessRestoreState.clear();
-        const { playerNames, playerSettings: ps, cpuSpeed: cs, playerOrder, enabledCards: ec, enabledLandmarks: el } = gameStartPayload;
-        const replayActionLog = _normalizeOnlineActionLog(actionLog);
-        const restoredThroughSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
-        const localBundle = _readLocalRestoreBundle();
-        const ownsLocalHostBundle = !!localBundle &&
-            localBundle.gameStartPayload.hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex;
-        const localRank = ownsLocalHostBundle
-            ? _onlineRestoreRank(
-                localBundle.gameStartPayload,
-                localBundle.stateSnapshot,
-                localBundle.actionLog
-            )
-            : null;
-        const localOfferServerRank = ownsLocalHostBundle
-            ? _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog)
-            : null;
-        const canOfferLocalHostBundle = ownsLocalHostBundle &&
-            (hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex ||
-                localRank.hostEpoch > localOfferServerRank.hostEpoch);
-        const shouldOfferLocalHostBundle = canOfferLocalHostBundle &&
-            _isOnlineRestoreRankNewer(localRank, localOfferServerRank);
-        const localHostOfferReasons = OnlineRestoreRank.localHostRestoreOfferReasons;
-        const legacyLocalHostOfferPlan = Object.freeze({
-            offer: shouldOfferLocalHostBundle,
-            bundle: shouldOfferLocalHostBundle ? localBundle : null,
-            reason: !ownsLocalHostBundle
-                ? localHostOfferReasons.NOT_ORIGINAL_HOST_BUNDLE
-                : (!canOfferLocalHostBundle
-                    ? localHostOfferReasons.SERVER_HOST_AUTHORITY
-                    : (shouldOfferLocalHostBundle
-                        ? localHostOfferReasons.OFFER_NEWER_BUNDLE
-                        : localHostOfferReasons.NOT_NEWER)),
-        });
-        _onlineDiagnosticSelections.localHostRestoreOfferPlanSelection =
-            OnlineRestoreRank.selectLocalHostRestoreOfferPlan(
-                localBundle,
-                onlineSessionSnapshot().myOriginalPlayerIndex,
-                hostPlayerIndex,
-                localRank,
-                localOfferServerRank,
-                legacyLocalHostOfferPlan,
-                { authorityEnabled: isLocalHostRestoreOfferPlanAuthorityEnabled() }
-            );
-        if (_onlineDiagnosticSelections.localHostRestoreOfferPlanSelection.plan.offer) {
-            setOnlineReconnectLegacyFlag(true);
-            onlineDomEffects.setStatusText('♻️ より新しいローカル復元データをサーバーへ送信しています...');
-            _sendRecreateRoomFromBundle(
-                _onlineDiagnosticSelections.localHostRestoreOfferPlanSelection.plan.bundle
-            );
-            return;
-        }
-        gameStartPayload.schemaVersion = ONLINE_RESTORE_SCHEMA_VERSION;
-        _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch);
-        gameStartPayload.actionSeq = _serverOnlineActionSeq(gameStartPayload, stateSnapshot, replayActionLog);
-        let pendingBeforeRejoin = _readPendingOutboundAction();
-        if (pendingBeforeRejoin && !_pendingOutboundActionBelongsToCurrentSession(pendingBeforeRejoin, { requireRoomId: true })) {
-            _clearPendingOutboundAction();
-            pendingBeforeRejoin = null;
-        }
-        const serverRank = _onlineRestoreRank(gameStartPayload, stateSnapshot, replayActionLog);
-        const pendingMatchedReplayLog = pendingBeforeRejoin &&
-            replayActionLog.some(entry => _sameOnlineActionEntry(entry, pendingBeforeRejoin));
-        const pendingCompactedIntoSnapshot = pendingBeforeRejoin &&
-            typeof pendingBeforeRejoin.clientActionId !== 'string' &&
-            Number.isInteger(pendingBeforeRejoin.seq) &&
-            Number.isInteger(stateSnapshot?.actionSeq) &&
-            stateSnapshot.actionSeq >= pendingBeforeRejoin.seq;
-        const pendingAcceptedById = pendingBeforeRejoin && Array.isArray(acceptedClientActions) &&
-            acceptedClientActions.some(ref => _acceptedClientActionMatchesPending(ref, pendingBeforeRejoin));
-        const pendingAccepted = !pendingBeforeRejoin ||
-            pendingMatchedReplayLog ||
-            pendingCompactedIntoSnapshot ||
-            pendingAcceptedById;
-        const pendingReconciliationReasons = OnlinePayload.pendingReconciliationReasons;
-        const legacyPendingReconciliationPlan = Object.freeze({
-            accepted: pendingAccepted,
-            reason: !pendingBeforeRejoin
-                ? pendingReconciliationReasons.NO_PENDING
-                : (pendingMatchedReplayLog
-                    ? pendingReconciliationReasons.REPLAY_LOG
-                    : (pendingCompactedIntoSnapshot
-                        ? pendingReconciliationReasons.SNAPSHOT_COMPACTED
-                        : (pendingAcceptedById
-                            ? pendingReconciliationReasons.ACCEPTED_CLIENT_ACTION
-                            : pendingReconciliationReasons.UNACCEPTED))),
-        });
-        _onlineDiagnosticSelections.pendingReconciliationPlanSelection = OnlinePayload.selectPendingReconciliationPlan(
-            pendingBeforeRejoin,
-            replayActionLog,
-            stateSnapshot,
+        const prepared = onlineRejoinPreparationRuntime.prepare({
             acceptedClientActions,
-            legacyPendingReconciliationPlan,
-            { authorityEnabled: isPendingReconciliationPlanAuthorityEnabled() }
-        );
-        const acceptedPendingReconciliation =
-            _onlineDiagnosticSelections.pendingReconciliationPlanSelection.plan.accepted;
-        const defaultLandmarks = (el && el.length > 0) ? null : Player.landmarkNames();
-        const resolvedEnabledLandmarks = (el && el.length > 0) ? el : defaultLandmarks;
-        const resetUiLocksAvailable = onlineClientEffects.supportsResetUiLocks();
-        const legacyRejoinPersistencePlan = Object.freeze({
-            clearPendingOutboundAction: acceptedPendingReconciliation,
-            cpuSpeed: cs || 1500,
-            updateEnabledCards: !!ec,
-            enabledCards: ec,
-            enabledLandmarks: resolvedEnabledLandmarks,
-            playerIndex,
+            actionLog,
+            gameStartPayload,
+            hostEpoch,
             hostPlayerIndex,
-            resetUiLocks: resetUiLocksAvailable,
-        });
-        _onlineDiagnosticSelections.onlineRejoinPersistencePlanSelection = OnlineRejoinPersistence.selectPlan({
-            acceptedPending: acceptedPendingReconciliation,
-            cpuSpeed: cs,
-            enabledCards: ec,
-            enabledLandmarks: el,
-            defaultLandmarks,
             playerIndex,
-            hostPlayerIndex,
-            resetUiLocksAvailable,
-        }, legacyRejoinPersistencePlan, {
-            authorityEnabled: isOnlineRejoinPersistencePlanAuthorityEnabled(),
+            provisionalRestore,
+            restoreAudit,
+            stateSnapshot,
         });
-
-        const persistRestoreBundle = () => {
-            try {
-                _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
-                if (stateSnapshot) {
-                    _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.stateSnapshot, stateSnapshot);
-                } else {
-                    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
-                }
-                if (restoreAudit) {
-                    _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.restoreAudit, restoreAudit);
-                } else {
-                    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
-                }
-                const storedActionLog = _readOnlineActionLog();
-                const shouldKeepUnsignedFullLog = stateSnapshot &&
-                    !restoreAudit &&
-                    Array.isArray(storedActionLog) &&
-                    storedActionLog.length > replayActionLog.length;
-                const rejoinActionLogReasons = OnlinePayload.rejoinActionLogReasons;
-                const legacyRejoinActionLogPlan = Object.freeze({
-                    actionLog: shouldKeepUnsignedFullLog ? storedActionLog : replayActionLog,
-                    reason: shouldKeepUnsignedFullLog
-                        ? rejoinActionLogReasons.STORED_UNSIGNED_FULL_LOG
-                        : rejoinActionLogReasons.SERVER_REPLAY_LOG,
-                });
-                _onlineDiagnosticSelections.rejoinActionLogPlanSelection =
-                    OnlinePayload.selectRejoinActionLogPersistencePlan(
-                        stateSnapshot,
-                        restoreAudit,
-                        storedActionLog,
-                        replayActionLog,
-                        legacyRejoinActionLogPlan,
-                        { authorityEnabled: isRejoinActionLogPlanAuthorityEnabled() }
-                    );
-                _writeOnlineRestoreStorageJson(
-                    ONLINE_STORAGE_KEYS.actionLog,
-                    _onlineDiagnosticSelections.rejoinActionLogPlanSelection.plan.actionLog
-                );
-            } catch(e) {}
-        };
-
-        const persistRejoinBundleLegacy = plan => {
-            _setOnlineActionInFlight(false);
-            if (plan.clearPendingOutboundAction) _clearPendingOutboundAction();
-            _clearRejoinRetry();
-            GameSetupState.runtime.setCpuSpeed(plan.cpuSpeed);
-            if (plan.updateEnabledCards) replaceEnabledCardSelection(plan.enabledCards);
-            replaceEnabledLandmarkSelection(plan.enabledLandmarks);
-            OnlineRuntimeState.runtime.setPlayerIndexes(plan.playerIndex);
-            _setOnlineHostState(plan.hostPlayerIndex);
-            persistRestoreBundle();
-            saveOnlineSession();
-            onlineClientEffects.invalidateCpuSchedule();
-            if (plan.resetUiLocks) {
-                onlineClientEffects.resetUiLocks('online-rejoin-reset-ui-locks');
-            }
-        };
-
-        const persistRejoinBundle = () => {
-            const planSelection = _onlineDiagnosticSelections.onlineRejoinPersistencePlanSelection;
-            const effectSelection =
-                _onlineRejoinPersistenceEffectAuthoritySelection(planSelection);
-            _onlineDiagnosticSelections.onlineRejoinPersistenceEffectSelection = effectSelection;
-            if (effectSelection.source !== 'executor') {
-                persistRejoinBundleLegacy(planSelection.plan);
-                return;
-            }
-            OnlineRejoinPersistence.execute(planSelection.plan, {
-                clearActionFlight: () => _setOnlineActionInFlight(false),
-                clearPendingOutboundAction: () => _clearPendingOutboundAction(),
-                clearRetry: () => _clearRejoinRetry(),
-                setCpuSpeed: value => { GameSetupState.runtime.setCpuSpeed(value); },
-                setEnabledCards: values => { replaceEnabledCardSelection(values); },
-                setEnabledLandmarks: values => { replaceEnabledLandmarkSelection(values); },
-                setPlayerIndices: value => {
-                    OnlineRuntimeState.runtime.setPlayerIndexes(value);
-                },
-                setHostState: value => _setOnlineHostState(value),
-                persistRestoreBundle,
-                saveSession: () => saveOnlineSession(),
-                invalidateCpuSchedule: () => { onlineClientEffects.invalidateCpuSchedule(); },
-                resetUiLocks: () => {
-                    onlineClientEffects.resetUiLocks('online-rejoin-reset-ui-locks');
-                },
-            });
-        };
+        if (!prepared.ready) return;
 
         const onlineRejoinActivationRuntime = OnlineRejoinActivationRuntime.createRuntime({
             abortRestore: (generation, message) => _abortOnlineRestore(generation, message),
@@ -2974,7 +2821,7 @@ function initSocket() {
             logTypes: LOG_TYPES,
             observeReconnect: event => _observeOnlineReconnectEvent(event),
             pendingResend: OnlinePendingResend,
-            persistRejoinBundle,
+            persistRejoinBundle: () => onlineRejoinPreparationRuntime.persist(prepared),
             reconnectEvents: OnlineReconnectState.events,
             recordDiagnostic: (key, selection) => {
                 _onlineDiagnosticSelections[key] = selection;
@@ -3000,25 +2847,21 @@ function initSocket() {
             showGame: () => onlineDomEffects.showGame(),
         });
 
-        const restoreOnlineGame = () => onlineRejoinActivationRuntime.handle({
-            acceptedPendingReconciliation,
-            actionLog: replayActionLog,
-            pendingBeforeRejoin,
-            playerNames,
-            playerOrder,
-            playerSettings: ps,
-            provisionalRestore,
-            restoreGeneration,
-            restoredThroughSeq,
-            stateSnapshot,
-        });
-        const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
+        const restoreOnlineGame = () => onlineRejoinActivationRuntime.handle(prepared);
+        const preload = preloadOnlineRlModelsForSettings(
+            prepared.playerNames.length,
+            prepared.playerSettings || []
+        );
         if (preload && typeof preload.then === "function") {
             onlineDomEffects.setStatusText('深層学習AIモデルを読み込んでいます。');
             preload.then(restoreOnlineGame).catch(error => {
-                if (restoreGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
+                if (prepared.restoreGeneration !==
+                        _onlineRestoreLifecycleController.getGeneration()) return;
                 console.error(error);
-                _abortOnlineRestore(restoreGeneration, "深層学習AIモデルを読み込めませんでした。再接続して再試行します。");
+                _abortOnlineRestore(
+                    prepared.restoreGeneration,
+                    "深層学習AIモデルを読み込めませんでした。再接続して再試行します。"
+                );
             });
             return;
         }
