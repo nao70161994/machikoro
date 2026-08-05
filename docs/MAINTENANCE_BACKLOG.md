@@ -949,3 +949,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `CPU.js` retains compatibility delegates required by diagnostics, score/tuning helpers, and proposal/effect adapters; its size decreased from 2,935 to 2,719 lines. Runtime diagnostic replacement of `_buildExpertV2Simple` remains supported through the wrapper.
 - Focused contracts preserve empty-candidate short circuits, crowd landmark-attempt order, expert-v2-simple no-op trace order, and internal delegates. Fixed decision baseline, full CPU/self-play, unit, lint, and checkJs gates pass; the unchanged asset/load configuration retains the immediately preceding PWA/release coverage.
 - Candidate ordering, trace keys/counts, score comparisons, heuristic values, random consumption, build outcomes, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 108 CPU build scoring boundary
+
+- `js/cpuBuildScoring.js` now owns expert-v2-simple score breakdown, expert build option scoring, endgame build focus, and strong build option scoring over cloned game state.
+- `CPU.js` retains compatibility delegates and injects cloning, evaluation, lookahead, tuning, and card/landmark helpers; its size decreased from 2,719 to 2,576 lines. Build strategy, scoring orchestration, and build effects now have distinct boundaries.
+- Focused contracts preserve breakdown evaluation/arithmetic order, cloned card application, invalid-build rejection, and all four delegates. Fixed decision baseline, CPU/self-play, unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 259 ESLint maintenance files and 258 checkJs runtime files.
+- Score constants, lookahead admission/steps, candidate/tie order, clone behavior, RNG, CPU strength, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.

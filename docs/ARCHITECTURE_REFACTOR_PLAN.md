@@ -1082,3 +1082,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CPUBuildStrategy` now contains the large expert-v2-simple and multiplayer expert/strong build branches in addition to top-level difficulty dispatch.
 2. `CPU` compatibility wrappers preserve runtime diagnostic monkeypatching while injecting all evaluation, tuning, trace, and proposal dependencies into the strategy boundary.
 3. Empty-candidate/order contracts, fixed decision baselines, and full self-play preserve branch order, trace sequencing, candidate ties, RNG, and strength.
+
+## 2026-08-05 Batch 108 boundary update
+
+1. `CPUBuildScoring` is the high-level evaluation boundary between `CPUBuildStrategy` candidate orchestration and `CPUBuildExecution` effects.
+2. It evaluates cloned states through injected CPU helpers and owns expert-v2-simple breakdown arithmetic, expert lookahead scoring, endgame focus, and strong option scoring without mutating the live game or stock.
+3. Focused arithmetic/rejection contracts plus fixed decision and self-play baselines preserve scores, branch order, lookahead behavior, RNG, and strength.

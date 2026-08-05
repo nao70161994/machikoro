@@ -1144,3 +1144,9 @@ Test index:
 - Expert-v2-simple, expert crowd, and strong crowd build orchestration now belongs to `CPUBuildStrategy`; do not move candidate loops or trace sequencing back into `CPU.js`.
 - Keep the three underscored CPU wrappers because `diagnose-expert-v2-branches.js` temporarily replaces `_buildExpertV2Simple`. Preserve landmark-attempt order, banned-card filtering, stable ranking, score/tie operators, all expert trace keys/counts, and random choice order.
 - `CPU.js` is 2,719 lines and `CPUBuildStrategy` is 468 lines. Fixed decision baseline, full CPU/self-play, unit, lint, and checkJs gates pass with unchanged rules, build outcomes, RNG, and strength.
+
+## Batch 108 handoff (2026-08-05)
+
+- High-level expert-v2-simple/expert/strong build option scoring belongs to `CPUBuildScoring`; candidate orchestration belongs to `CPUBuildStrategy`, and application belongs to `CPUBuildExecution`.
+- Preserve clone-before-apply order, stock-copy decrement, invalid-build `-Infinity`, profiling labels, lookahead admission/weighting, endgame focus penalties, exact arithmetic order, and CPU wrappers used by existing diagnostics/tests.
+- The module is linted and checkJs-covered; `CPU.js` is 2,576 lines. Fixed decision baseline, CPU/self-play, unit, static, PWA, and release gates pass with unchanged rules, scores, RNG, and strength.
