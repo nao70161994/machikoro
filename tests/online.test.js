@@ -171,6 +171,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlinePendingResend.js');
     loadScript(context, 'js/onlineRestoreReplay.js');
     loadScript(context, 'js/onlineRestoreActivation.js');
+    loadScript(context, 'js/onlineRejoinActivationRuntime.js');
     loadScript(context, 'js/onlinePlayerSettings.js');
     loadScript(context, 'js/onlineLobbyRequestState.js');
     loadScript(context, 'js/onlineHostlessRestoreState.js');

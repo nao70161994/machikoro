@@ -2940,235 +2940,78 @@ function initSocket() {
             });
         };
 
-        const restoreOnlineGame = () => {
-            if (restoreGeneration !== _onlineRestoreLifecycleController.getGeneration()) return;
-            persistRejoinBundle();
-            onlineDomEffects.showGame();
+        const onlineRejoinActivationRuntime = OnlineRejoinActivationRuntime.createRuntime({
+            abortRestore: (generation, message) => _abortOnlineRestore(generation, message),
+            applyAction: (action, data) => applyReplayedAction(action, data),
+            applyReconnectStatus: event => {
+                _applyOnlineReconnectLifecycleStatusEffectAuthority(event);
+            },
+            canResendPending: pending => _canResendPendingOutboundAction(pending),
+            clearPending: () => _clearPendingOutboundAction(),
+            emitAction: (pending, targetSocket) => onlineSocketEffects.gameAction({
+                action: pending.action,
+                data: pending.data,
+                clientActionId: pending.clientActionId,
+            }, targetSocket),
+            flushRestoreEvents: (generation, sequence, handlers) =>
+                _flushOnlineRestoreEvents(generation, sequence, handlers),
+            getGame: () => onlineGameRuntimeSnapshot().game,
+            getPending: () => _readPendingOutboundActionForCurrentSession(),
+            getRestoreEventHandlers: () => ({
+                gameAction: handleGameAction,
+                actionAccepted: handleActionAccepted,
+                hostChanged: handleHostChanged,
+            }),
+            getRestoreGeneration: () => _onlineRestoreLifecycleController.getGeneration(),
+            getSocket: () => onlineSessionSnapshot().socket,
+            initGame: (names, settings, order) => initOnlineGame(names, settings, order),
+            isActivationPlanAuthorityEnabled: () =>
+                isOnlineRestoreActivationPlanAuthorityEnabled(),
+            isPendingResendPlanAuthorityEnabled: () =>
+                isOnlinePendingResendPlanAuthorityEnabled(),
+            isReplayPlanAuthorityEnabled: () =>
+                isOnlineRestoreReplayPlanAuthorityEnabled(),
+            logTypes: LOG_TYPES,
+            observeReconnect: event => _observeOnlineReconnectEvent(event),
+            pendingResend: OnlinePendingResend,
+            persistRejoinBundle,
+            reconnectEvents: OnlineReconnectState.events,
+            recordDiagnostic: (key, selection) => {
+                _onlineDiagnosticSelections[key] = selection;
+            },
+            replaceActionSequence: sequence => _onlineActionSequenceController.replace(sequence),
+            resetPreviousCoins: () => GameRuntimeState.runtime.setPreviousCoins(null),
+            resetReconnectCompletion: () => _onlineReconnectCompletionController.reset(),
+            restoreActivation: OnlineRestoreActivation,
+            restoreReplay: OnlineRestoreReplay,
+            restoreSnapshot: snapshot => restoreOnlineSnapshot(snapshot),
+            samePending: (left, right) => _sameOnlineActionEntry(left, right),
+            selectActivationEffect: selection =>
+                _onlineRestoreActivationEffectAuthoritySelection(selection),
+            selectPendingResendEffect: selection =>
+                _onlinePendingResendEffectAuthoritySelection(selection),
+            selectReplayEffect: selection =>
+                _onlineRestoreReplayEffectAuthoritySelection(selection),
+            setActionFlight: value => _setOnlineActionInFlight(value),
+            setOnline: value => OnlineRuntimeState.runtime.setOnline(value),
+            setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
+            setReplaying: value => OnlineRuntimeState.runtime.setReplaying(value),
+            setStatusText: message => onlineDomEffects.setStatusText(message),
+            showGame: () => onlineDomEffects.showGame(),
+        });
 
-            const legacyRestoreReplayPlan = Object.freeze({
-                playerNames,
-                playerSettings: ps,
-                playerOrder,
-                stateSnapshot,
-                actionLog: replayActionLog,
-                provisionalRestore: provisionalRestore === true,
-            });
-            _onlineDiagnosticSelections.onlineRestoreReplayPlanSelection = OnlineRestoreReplay.selectPlan({
-                playerNames,
-                playerSettings: ps,
-                playerOrder,
-                stateSnapshot,
-                actionLog: replayActionLog,
-                provisionalRestore,
-            }, legacyRestoreReplayPlan, {
-                authorityEnabled: isOnlineRestoreReplayPlanAuthorityEnabled(),
-            });
-            _onlineDiagnosticSelections.onlineRestoreReplayEffectSelection =
-                _onlineRestoreReplayEffectAuthoritySelection(
-                    _onlineDiagnosticSelections.onlineRestoreReplayPlanSelection
-                );
-            const restoreReplayUsesExecutor =
-                _onlineDiagnosticSelections.onlineRestoreReplayEffectSelection.source === 'executor';
-            const restoreReplayPlan = _onlineDiagnosticSelections.onlineRestoreReplayPlanSelection.plan;
-            let restoredOk = false;
-            try {
-                // 既存ゲームをリプレイで再構築（render/scheduleCPUを抑制）
-                if (restoreReplayUsesExecutor) {
-                    OnlineRestoreReplay.execute(restoreReplayPlan, {
-                        setReplaying: value => { OnlineRuntimeState.runtime.setReplaying(value); },
-                        observeReplayStarted: () => {
-                            _observeOnlineReconnectEvent(
-                                OnlineReconnectState.events.REPLAY_STARTED
-                            );
-                        },
-                        applyReplayStatus: () => {
-                            _applyOnlineReconnectLifecycleStatusEffectAuthority(
-                                OnlineReconnectState.events.REPLAY_STARTED
-                            );
-                        },
-                        initGame: (names, settings, order) => {
-                            initOnlineGame(names, settings, order);
-                        },
-                        restoreSnapshot: snapshot => restoreOnlineSnapshot(snapshot),
-                        applyAction: (action, data) => applyReplayedAction(action, data),
-                        addProvisionalLog: () => {
-                            onlineGameRuntimeSnapshot().game.addLog(
-                                LOG_TYPES.SYSTEM,
-                                '⚠️ 参加者データの全一致確認により暫定復元しました'
-                            );
-                        },
-                    });
-                } else {
-                    OnlineRuntimeState.runtime.setReplaying(true);
-                    _observeOnlineReconnectEvent(OnlineReconnectState.events.REPLAY_STARTED);
-                    _applyOnlineReconnectLifecycleStatusEffectAuthority(
-                        OnlineReconnectState.events.REPLAY_STARTED
-                    );
-                    initOnlineGame(
-                        restoreReplayPlan.playerNames,
-                        restoreReplayPlan.playerSettings,
-                        restoreReplayPlan.playerOrder
-                    );
-                    if (restoreReplayPlan.stateSnapshot) {
-                        restoreOnlineSnapshot(restoreReplayPlan.stateSnapshot);
-                    }
-                    for (const { action, data } of restoreReplayPlan.actionLog) {
-                        applyReplayedAction(action, data);
-                    }
-                    if (restoreReplayPlan.provisionalRestore) {
-                        onlineGameRuntimeSnapshot().game.addLog(
-                            LOG_TYPES.SYSTEM,
-                            '⚠️ 参加者データの全一致確認により暫定復元しました'
-                        );
-                    }
-                }
-                restoredOk = true;
-            } catch (e) {
-                onlineDomEffects.setStatusText('❌ 復元データの再生に失敗しました。再接続してください。');
-                setOnlineReconnectLegacyFlag(true);
-            } finally {
-                if (!restoreReplayUsesExecutor) OnlineRuntimeState.runtime.setReplaying(false);
-            }
-            if (!restoredOk) {
-                _abortOnlineRestore(restoreGeneration, "復元データの再生に失敗しました。再接続して再試行します。");
-                return;
-            }
-            const legacyRestoreActivationPlan = Object.freeze({
-                restoredThroughSeq,
-            });
-            _onlineDiagnosticSelections.onlineRestoreActivationPlanSelection =
-                OnlineRestoreActivation.selectPlan({
-                    restoredThroughSeq,
-                }, legacyRestoreActivationPlan, {
-                    authorityEnabled: isOnlineRestoreActivationPlanAuthorityEnabled(),
-                });
-            _onlineDiagnosticSelections.onlineRestoreActivationEffectSelection =
-                _onlineRestoreActivationEffectAuthoritySelection(
-                    _onlineDiagnosticSelections.onlineRestoreActivationPlanSelection
-                );
-            const restoreActivationPlan =
-                _onlineDiagnosticSelections.onlineRestoreActivationPlanSelection.plan;
-            if (_onlineDiagnosticSelections.onlineRestoreActivationEffectSelection.source === 'executor') {
-                const activationResult = OnlineRestoreActivation.execute(
-                    restoreActivationPlan,
-                    {
-                        resetReconnectCompleted: () => {
-                            _onlineReconnectCompletionController.reset();
-                        },
-                        activateOnlineGame: () => { OnlineRuntimeState.runtime.setOnline(true); },
-                        clearReconnectFlag: () => {
-                            setOnlineReconnectLegacyFlag(false);
-                        },
-                        resetPreviousCoins: () => { GameRuntimeState.runtime.setPreviousCoins(null); },
-                        setAppliedSequence: value => {
-                            _onlineActionSequenceController.replace(value);
-                        },
-                        flushRestoreEvents: value => _flushOnlineRestoreEvents(
-                            restoreGeneration,
-                            value,
-                            {
-                                gameAction: handleGameAction,
-                                actionAccepted: handleActionAccepted,
-                                hostChanged: handleHostChanged,
-                            }
-                        ),
-                        observeRestoreActivated: () => {
-                            _observeOnlineReconnectEvent(
-                                OnlineReconnectState.events.RESTORE_ACTIVATED
-                            );
-                        },
-                        applyActivatedStatus: () => {
-                            _applyOnlineReconnectLifecycleStatusEffectAuthority(
-                                OnlineReconnectState.events.RESTORE_ACTIVATED
-                            );
-                        },
-                    }
-                );
-                if (!activationResult.result) return;
-            } else {
-                _onlineReconnectCompletionController.reset();
-                OnlineRuntimeState.runtime.setOnline(true);
-                setOnlineReconnectLegacyFlag(false);
-                GameRuntimeState.runtime.setPreviousCoins(null);
-                _onlineActionSequenceController.replace(
-                    restoreActivationPlan.restoredThroughSeq
-                );
-                if (!_flushOnlineRestoreEvents(
-                    restoreGeneration,
-                    restoreActivationPlan.restoredThroughSeq,
-                    {
-                        gameAction: handleGameAction,
-                        actionAccepted: handleActionAccepted,
-                        hostChanged: handleHostChanged,
-                    }
-                )) return;
-                _observeOnlineReconnectEvent(
-                    OnlineReconnectState.events.RESTORE_ACTIVATED
-                );
-                _applyOnlineReconnectLifecycleStatusEffectAuthority(
-                    OnlineReconnectState.events.RESTORE_ACTIVATED
-                );
-            }
-            const currentPendingMatches = !!pendingBeforeRejoin &&
-                !acceptedPendingReconciliation &&
-                _sameOnlineActionEntry(
-                    _readPendingOutboundActionForCurrentSession(),
-                    pendingBeforeRejoin
-                );
-            const pendingSocket = onlineSessionSnapshot().socket;
-            const pendingResendEligible = currentPendingMatches &&
-                !!pendingSocket && pendingSocket.connected !== false;
-            const pendingResendAllowed = pendingResendEligible &&
-                _canResendPendingOutboundAction(pendingBeforeRejoin);
-            const pendingResendDecisions = OnlinePendingResend.decisions;
-            const legacyPendingResendPlan = Object.freeze({
-                decision: !pendingResendEligible
-                    ? pendingResendDecisions.NONE
-                    : (pendingResendAllowed
-                        ? pendingResendDecisions.RESEND
-                        : pendingResendDecisions.CLEAR),
-                pending: pendingResendAllowed ? pendingBeforeRejoin : null,
-            });
-            _onlineDiagnosticSelections.onlinePendingResendPlanSelection = OnlinePendingResend.selectPlan({
-                pending: pendingBeforeRejoin,
-                acceptedPending: acceptedPendingReconciliation,
-                currentPendingMatches,
-                socketConnected: !!pendingSocket && pendingSocket.connected !== false,
-                canResend: pendingResendAllowed,
-            }, legacyPendingResendPlan, {
-                authorityEnabled: isOnlinePendingResendPlanAuthorityEnabled(),
-            });
-            const pendingResendEffectSelection =
-                _onlinePendingResendEffectAuthoritySelection(
-                    _onlineDiagnosticSelections.onlinePendingResendPlanSelection
-                );
-            _onlineDiagnosticSelections.onlinePendingResendEffectSelection = pendingResendEffectSelection;
-            const pendingResendPlan = _onlineDiagnosticSelections.onlinePendingResendPlanSelection.plan;
-            if (pendingResendEffectSelection.source === 'executor') {
-                OnlinePendingResend.execute(pendingResendPlan, {
-                    clearPendingOutboundAction: () => _clearPendingOutboundAction(),
-                    setActionFlight: () => _setOnlineActionInFlight(true),
-                    emitAction: pending => onlineSocketEffects.gameAction({
-                        action: pending.action,
-                        data: pending.data,
-                        clientActionId: pending.clientActionId,
-                    }, pendingSocket),
-                });
-                return;
-            }
-            if (pendingResendPlan.decision === pendingResendDecisions.CLEAR) {
-                _clearPendingOutboundAction();
-                return;
-            }
-            if (pendingResendPlan.decision === pendingResendDecisions.RESEND) {
-                _setOnlineActionInFlight(true);
-                onlineSocketEffects.gameAction({
-                    action: pendingResendPlan.pending.action,
-                    data: pendingResendPlan.pending.data,
-                    clientActionId: pendingResendPlan.pending.clientActionId,
-                }, pendingSocket);
-            }
-        };
+        const restoreOnlineGame = () => onlineRejoinActivationRuntime.handle({
+            acceptedPendingReconciliation,
+            actionLog: replayActionLog,
+            pendingBeforeRejoin,
+            playerNames,
+            playerOrder,
+            playerSettings: ps,
+            provisionalRestore,
+            restoreGeneration,
+            restoredThroughSeq,
+            stateSnapshot,
+        });
         const preload = preloadOnlineRlModelsForSettings(playerNames.length, ps || []);
         if (preload && typeof preload.then === "function") {
             onlineDomEffects.setStatusText('深層学習AIモデルを読み込んでいます。');
