@@ -2400,6 +2400,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/cpuBuildScoring.js', 'js/CPU.js');
     assertBefore('js/cpuChoiceScoring.js', 'js/CPU.js');
     assertBefore('js/cpuCardEvaluationRuntime.js', 'js/CPU.js');
+    assertBefore('js/cpuStateEvaluationRuntime.js', 'js/CPU.js');
     assertBefore('js/cpuSimulation.js', 'js/CPU.js');
     assertBefore('js/cpuLookaheadRuntime.js', 'js/CPU.js');
     assertBefore('js/cpuDiagnostics.js', 'js/CPU.js');

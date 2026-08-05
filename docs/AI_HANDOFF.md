@@ -1180,3 +1180,9 @@ Test index:
 - `js/cpuCardEvaluationRuntime.js` owns 61 card, purchase, disruption, exchange, landmark urgency, and owned-card evaluation adapters. `CPU.js` delegates each API and is now 1,920 lines.
 - Keep `CPUEvaluation` as the pure formula layer and `CPUCardEvaluationRuntime` as the board/runtime projection layer; do not copy these bodies back into the CPU facade.
 - `tests/cpu-card-evaluation-runtime.test.js` fixes complete API ownership and delegate shape. Fixed decision and 2-to-10-player self-play baselines prove unchanged CPU choices and RNG order.
+
+## Fixed outcome 1 milestone: state evaluation runtime (2026-08-05)
+
+- `js/cpuStateEvaluationRuntime.js` owns 50 profile/board, roll expectation, income, threat, win-distance, crowd, and build-candidate projection adapters. `CPU.js` delegates them and is now 1,496 lines.
+- Keep cache and board projection orchestration here, with pure arithmetic in `CPUEvaluation`; do not copy implementation bodies back into `CPU.js`.
+- `tests/cpu-state-evaluation-runtime.test.js` fixes complete ownership, representative short-circuit behavior, and delegate shape. Fixed decision and 2-to-10-player self-play baselines pass.

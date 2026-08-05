@@ -213,6 +213,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/cpuBuildScoring.js',
         'js/cpuChoiceScoring.js',
         'js/cpuCardEvaluationRuntime.js',
+        'js/cpuStateEvaluationRuntime.js',
         'js/cpuSimulation.js',
         'js/cpuLookaheadRuntime.js',
         'js/cpuPendingResolution.js',

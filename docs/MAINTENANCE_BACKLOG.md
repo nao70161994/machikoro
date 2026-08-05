@@ -991,3 +991,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - The corresponding implementations in `CPU.js` were replaced by compatibility delegates, reducing the facade from 2,437 to 1,920 lines in one cohesive migration. No duplicate legacy implementation or fallback remains in the facade.
 - A dedicated ownership/delegate contract, main CPU behavior tests, fixed decision baseline, 2-to-10-player self-play baseline, full CPU gate, checkJs, ESLint, and static gate pass. Scoped gates now cover 263 ESLint maintenance files and 262 checkJs runtime files.
 - Formulas, lazy fact order, candidate/tie order, difficulty tuning, RNG consumption, CPU strength, game rules, schemas, online/reconnect, storage, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Fixed outcome 1: CPU state evaluation runtime
+
+- `js/cpuStateEvaluationRuntime.js` is now the single runtime owner for 50 board/profile, roll expectation, opponent threat, win-distance, income, crowd, and build-candidate projection adapters.
+- The corresponding implementations in `CPU.js` were replaced by thin delegates, reducing the facade from 1,920 to 1,496 lines. No duplicate facade formulas or fallback path remain.
+- Ownership/delegate contracts, main CPU tests, fixed decision baseline, 2-to-10-player self-play baseline, full CPU gate, checkJs, ESLint, and static gate pass. Scoped gates now cover 264 ESLint maintenance files and 263 checkJs runtime files.
+- Cache keys, lazy callback order, formulas, candidate order, difficulty tuning, RNG consumption, CPU strength, rules, schemas, online/reconnect, storage, and PWA/SW behavior are unchanged.

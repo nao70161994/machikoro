@@ -1118,3 +1118,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 - Consolidated 61 card/purchase/disruption evaluation adapters under `CPUCardEvaluationRuntime`; `CPU.js` now exposes thin compatibility delegates instead of owning those implementations.
 - This is a source-of-truth move, not a shadow path: the old facade bodies were removed and the new runtime is loaded by browser, self-play, integration, and test runtimes.
 - `CPUEvaluation` remains the pure formula layer while the runtime boundary owns board-to-feature projection and injected CPU adapter calls.
+
+## 2026-08-05 Fixed outcome 1 milestone: state evaluation runtime
+
+- Consolidated 50 board/profile, roll, income, threat, win-distance, crowd, and build-candidate adapters under `CPUStateEvaluationRuntime`.
+- `CPU.js` now delegates these APIs instead of owning their implementations; the new runtime is the production source of truth in browser, self-play, integration, and test loaders.
+- Together with `CPUCardEvaluationRuntime`, this leaves the CPU facade focused on configuration, public compatibility APIs, remaining build policy adapters, and explicit execution wiring.

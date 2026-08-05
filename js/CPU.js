@@ -293,264 +293,120 @@ class CPU {
     }
 
     _playerCountProfile(game) {
-        return CPUProfile.playerCountProfile(game.players.length);
+        return CPUStateEvaluationRuntime._playerCountProfile(this, game);
     }
+
 
     _expertProfileName(game) {
-        return CPUProfile.expertProfileName(game && game.players ? game.players.length : null);
+        return CPUStateEvaluationRuntime._expertProfileName(this, game);
     }
+
 
     _syncExpertTuningForGame(game) {
-        if (this.difficulty !== "expert") return this.expertTuning;
-        const resolved = resolveExpertProfileTuning({
-            profile: this._expertProfileName(game),
-            profilePresets: this.expertProfilePresets,
-            profileTunings: this.expertProfileTunings,
-            expertPreset: this.expertPreset,
-            baseTuning: this.baseExpertTuning,
-            simulationMode: this.simulationMode,
-        });
-        this.activeExpertPreset = resolved.activePreset;
-        this.expertTuning = resolved.tuning;
-        return this.expertTuning;
+        return CPUStateEvaluationRuntime._syncExpertTuningForGame(this, game);
     }
+
 
     _expertCrowdNormalPlan(game) {
-        return CPUEvaluation.expertCrowdNormalPlan({
-            difficulty: this.difficulty,
-            playerCount: () => game && game.players ? game.players.length : 0,
-            currentPlayer: () => game && game.currentPlayer ? game.currentPlayer() : null,
-            remainingLandmarkCount: current => this._remainingEnabledLandmarks(current, game).length,
-            stableIncome: current => this._estimateStableIncome(game, current),
-        });
+        return CPUStateEvaluationRuntime._expertCrowdNormalPlan(this, game);
     }
+
 
     _expertCrowdDisruptionBonus(game, targetIndex, amount) {
-        if (!game || this.difficulty !== "expert") return 0;
-        if (this._expertCrowdNormalPlan(game)) return 0;
-        return this._crowdLeaderBonus(game, targetIndex, amount);
+        return CPUStateEvaluationRuntime._expertCrowdDisruptionBonus(this, game, targetIndex, amount);
     }
+
 
     _expertCrowdCleaningWeight(game, cardName, amount) {
-        if (!game || this.difficulty !== "expert") return 0;
-        if (this._expertCrowdNormalPlan(game)) return this._crowdCleaningBonus(game, cardName, amount * 0.3);
-        return this._crowdCleaningBonus(game, cardName, amount);
+        return CPUStateEvaluationRuntime._expertCrowdCleaningWeight(this, game, cardName, amount);
     }
+
 
     _expertDisruptionScale(game, focusIndex = null) {
-        return CPUEvaluation.expertDisruptionScale({
-            gameAvailable: !!game,
-            difficulty: this.difficulty,
-            selfRacePriority: () => this._expertFlagEnabled("selfRacePriority"),
-            focusIndex,
-            currentPlayerIndex: game && game.currentPlayerIndex,
-            myDistance: playerIndex => this._estimateWinDistance(game.players[playerIndex], game),
-            bestOpponentDistance: playerIndex => this._bestOpponentWinDistance(game, playerIndex),
-            remainingLandmarkCount: playerIndex => [...game.enabledLandmarks]
-                .filter(name => !game.players[playerIndex].landmarks[name]).length,
-        });
+        return CPUStateEvaluationRuntime._expertDisruptionScale(this, game, focusIndex);
     }
+
 
     _closestLandmarkShortfall(player, game) {
-        return CPUEvaluation.closestLandmarkShortfall(
-            player,
-            game && game.enabledLandmarks,
-            Player.landmarkCost
-        );
+        return CPUStateEvaluationRuntime._closestLandmarkShortfall(this, player, game);
     }
+
 
     _lookaheadTerminalHeuristic(game, focusIndex) {
-        if (!game || focusIndex < 0) return 0;
-        const focus = game.players[focusIndex];
-        return CPUEvaluation.lookaheadTerminalHeuristic({
-            focusIndex,
-            playerCount: game.players.length,
-            focusDistance: () => this._estimateWinDistance(focus, game),
-            bestOpponentDistance: () => this._bestOpponentWinDistance(game, focusIndex),
-            raceFocus: () => this._expertFlagEnabled("lookaheadRaceFocus"),
-            remainingLandmarkCount: () => [...game.enabledLandmarks]
-                .filter(name => !focus.landmarks[name]).length,
-            reachableLandmarkCount: () => this._countReachableLandmarks(
-                focus,
-                [...game.enabledLandmarks]
-            ),
-            threatBalance: () => this._expertFlagEnabled("lookaheadThreatBalance"),
-            threatForPlayer: index => this._estimateOpponentThreat(game.players[index], game),
-            distanceForPlayer: index => this._estimateWinDistance(game.players[index], game),
-        });
+        return CPUStateEvaluationRuntime._lookaheadTerminalHeuristic(this, game, focusIndex);
     }
+
 
     _tvLandmarkDenialValue(target, amount, game) {
-        return CPUEvaluation.tvLandmarkDenialValue(
-            target,
-            amount,
-            game && game.enabledLandmarks,
-            Player.landmarkCost,
-            this._expertFlagEnabled("tvLandmarkDenial")
-        );
+        return CPUStateEvaluationRuntime._tvLandmarkDenialValue(this, target, amount, game);
     }
+
 
     _expertCandidateTargetIndexes(game, currentIndex) {
-        if (!game || !game.players) return [];
-        const prune = this._expertFlagEnabled("disruptionCandidatePruning") && game.players.length >= 4;
-        return CPULegalMoves.disruptionTargetIndexes(
-            game.players,
-            currentIndex,
-            player => this._estimateOpponentThreat(player, game),
-            prune
-        );
+        return CPUStateEvaluationRuntime._expertCandidateTargetIndexes(this, game, currentIndex);
     }
 
+
     _expertCandidateCleaningNames(game) {
-        if (!game) return [];
-        const prune = this._expertFlagEnabled("disruptionCandidatePruning") && game.players.length >= 4;
-        return CPULegalMoves.disruptionCleaningNames(
-            game.players,
-            player => player.getMinorCards().filter(card => !player.isDormant(card)),
-            (card, player) => this._ownedCardValue(card, game, player),
-            prune
-        );
+        return CPUStateEvaluationRuntime._expertCandidateCleaningNames(this, game);
     }
+
 
     // ===== サイコロ判断 =====
 
     _cardActivationValue(card, game, owner, roller, dice) {
-        return CPUEvaluation.cardActivationValue(card, game, owner, roller, dice, {
-            effects: CARD_EFFECTS,
-            categories: CARD_CATEGORIES,
-            landmarkNames: LANDMARK_NAMES,
-            capValue: value => this._strongSoftCapValue(value),
-            calcCardIncome: GameManager.calcCardIncome,
-            estimateTvValue: (runtime, player) => this._estimateTvValue(runtime, player),
-            estimatePublisherValue: (runtime, player) => this._estimatePublisherValue(runtime, player),
-            estimateTaxOfficeValue: (runtime, player) => this._estimateTaxOfficeValue(runtime, player),
-            estimateBusinessValue: (runtime, player) => this._estimateBusinessValue(runtime, player),
-            estimateCleaningValue: (runtime, player) => this._estimateCleaningValue(runtime, player),
-            estimateMoverValue: (runtime, player) => this._estimateMoverValue(runtime, player),
-            estimateRenovationValue: (runtime, player, ordinal) =>
-                this._estimateRenovationValue(runtime, player, ordinal),
-            estimateItStartupValue: (runtime, player) => this._estimateItStartupValue(runtime, player),
-            estimateParkValue: (runtime, player) => this._estimateParkValue(runtime, player),
-        });
+        return CPUStateEvaluationRuntime._cardActivationValue(this, card, game, owner, roller, dice);
     }
+
 
     _estimateRollScore(game, dice) {
-        let selfPositiveIncome = 0;
-        let selfOtherValue = 0;
-        let opponentValue = 0;
-        const current = game.currentPlayer();
-        for (const player of game.players) {
-            for (const card of player.cards) {
-                if (player.isDormant(card)) continue;
-                if (!card.diceNums.includes(dice)) continue;
-                const value = this._cardActivationValue(card, game, player, current, dice);
-                if (player === current) {
-                    const incomeValue = Math.max(0, this._cardSelfIncomeValue(card, game, player, current, dice));
-                    selfPositiveIncome += incomeValue;
-                    selfOtherValue += value - incomeValue;
-                } else {
-                    opponentValue += value * (card.color === "blue" ? 0.7 : 1);
-                }
-            }
-        }
-        return this._expertV2CappedPositiveIncome(game, current, selfPositiveIncome) + selfOtherValue - opponentValue;
+        return CPUStateEvaluationRuntime._estimateRollScore(this, game, dice);
     }
+
 
     _estimateOpponentRedRisk(game, dice) {
-        if (!game || this.expertRollRiskMode !== "red") return 0;
-        const current = game.currentPlayer();
-        if (!current) return 0;
-        let risk = 0;
-        for (const player of game.players) {
-            if (player === current) continue;
-            for (const card of player.cards) {
-                if (player.isDormant(card)) continue;
-                if (card.color !== "red" || !card.diceNums.includes(dice)) continue;
-                risk += Math.max(0, this._cardActivationValue(card, game, player, current, dice));
-            }
-        }
-        return risk;
+        return CPUStateEvaluationRuntime._estimateOpponentRedRisk(this, game, dice);
     }
+
 
     _estimateRiskAdjustedRollScore(game, dice) {
-        const baseScore = this._estimateRollScoreCached(game, dice);
-        if (this.expertRollRiskMode !== "red" || this.expertRollRedRiskWeight <= 0) return baseScore;
-        return baseScore - this._estimateOpponentRedRisk(game, dice) * this.expertRollRedRiskWeight;
+        return CPUStateEvaluationRuntime._estimateRiskAdjustedRollScore(this, game, dice);
     }
+
 
     _expertV2CappedPositiveIncome(game, player, value) {
-        if (!this._isExpertV2Simple()) return value;
-        return CPUEvaluation.expertPositiveIncomeCap(value, this.expertIncomeCapMode, {
-            remainingLandmarkCosts() {
-                if (!game || !player || !player.landmarks) return [];
-                const names = game.enabledLandmarks
-                    ? [...game.enabledLandmarks]
-                    : Player.landmarkNames();
-                return names
-                    .filter(name => !player.landmarks[name])
-                    .map(name => Player.landmarkCost(name));
-            },
-            coins: () => player && Number.isFinite(player.coins) ? player.coins : 0,
-        });
+        return CPUStateEvaluationRuntime._expertV2CappedPositiveIncome(this, game, player, value);
     }
+
 
     _cardSelfIncomeValue(card, game, owner, roller, dice) {
-        return CPUEvaluation.cardSelfIncomeValue(
-            card, game, owner, roller,
-            CARD_EFFECTS, CARD_CATEGORIES, LANDMARK_NAMES,
-            GameManager.calcCardIncome
-        );
+        return CPUStateEvaluationRuntime._cardSelfIncomeValue(this, card, game, owner, roller, dice);
     }
+
 
     _expectedDiceScore(game, useTwo) {
-        const cache = this._rollEvaluationCache(game);
-        const cacheKey = useTwo ? 'two' : 'one';
-        if (cacheKey in cache.expectedDiceScores) {
-            return cache.expectedDiceScores[cacheKey];
-        }
-        const score = CPUEvaluation.expectedDiceScore(
-            this._diceOutcomeWeights(useTwo),
-            dice => this._estimateRiskAdjustedRollScore(game, dice)
-        );
-        cache.expectedDiceScores[cacheKey] = score;
-        return score;
+        return CPUStateEvaluationRuntime._expectedDiceScore(this, game, useTwo);
     }
+
 
     _expectedDiceScoreWithHarbor(game, useTwo) {
-        const cache = this._rollEvaluationCache(game);
-        const cacheKey = useTwo ? 'two' : 'one';
-        if (cacheKey in cache.expectedDiceScoresWithHarbor) {
-            return cache.expectedDiceScoresWithHarbor[cacheKey];
-        }
-        const current = game.currentPlayer();
-        const canUseHarbor = useTwo && current.landmarks[LANDMARK_NAMES.HARBOR];
-        const score = CPUEvaluation.expectedDiceScore(
-            this._diceOutcomeWeights(useTwo),
-            dice => this._estimateRiskAdjustedRollScore(game, dice),
-            canUseHarbor ? {
-                alternateMinDice: 10,
-                alternateScoreForDice: dice => this._estimateRiskAdjustedRollScore(game, dice + 2),
-            } : {}
-        );
-        cache.expectedDiceScoresWithHarbor[cacheKey] = score;
-        return score;
+        return CPUStateEvaluationRuntime._expectedDiceScoreWithHarbor(this, game, useTwo);
     }
 
+
     _diceOutcomeWeights(useTwo) {
-        return CPUSimulation.diceOutcomeWeights(useTwo);
+        return CPUStateEvaluationRuntime._diceOutcomeWeights(this, useTwo);
     }
+
 
     _simulationShopStock(playerCount = 2) {
         return CPUSimulation.buildShopStock(CARDS, playerCount, getInitialCardStock);
     }
 
     _expertLookaheadSteps(game, focusIndex, baseSteps) {
-        const player = game.players[focusIndex];
-        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        return CPUEvaluation.expertLookaheadSteps(
-            game.players.length, remainingLandmarks, game.phase, GAME_PHASES.BUILD, this.simulationMode, baseSteps
-        );
+        return CPUStateEvaluationRuntime._expertLookaheadSteps(this, game, focusIndex, baseSteps);
     }
+
     _scoreExpertChoiceState(game, focusIndex) {
         return CPUChoiceScoring.scoreExpertChoiceState(this, game, focusIndex);
     }
@@ -572,44 +428,24 @@ class CPU {
     }
 
     _crowdLeaderBonus(game, targetIndex, weight = 1) {
-        return CPUEvaluation.crowdLeaderBonus({
-            gameAvailable: !!game,
-            playerCount: game ? game.players.length : 0,
-            currentPlayerIndex: game ? game.currentPlayerIndex : -1,
-            targetIndex,
-            weight,
-            playerExists: index => !!game.players[index],
-            threatForPlayer: index => this._estimateOpponentThreat(game.players[index], game),
-        });
+        return CPUStateEvaluationRuntime._crowdLeaderBonus(this, game, targetIndex, weight);
     }
+
 
     _crowdCleaningBonus(game, cardName, weight = 1) {
-        return CPUEvaluation.crowdCleaningBonus({
-            gameAvailable: !!game,
-            playerCount: game ? game.players.length : 0,
-            currentPlayerIndex: game ? game.currentPlayerIndex : -1,
-            weight,
-            threatForPlayer: index => this._estimateOpponentThreat(game.players[index], game),
-            matchingActiveCardCount: index => {
-                const opponent = game.players[index];
-                return opponent.getMinorCards().filter(card =>
-                    card.name === cardName && !opponent.isDormant(card)
-                ).length;
-            },
-        });
+        return CPUStateEvaluationRuntime._crowdCleaningBonus(this, game, cardName, weight);
     }
+
 
     _remainingEnabledLandmarks(current, game) {
-        return CPULegalMoves.remainingEnabledLandmarkNames(
-            current, game.enabledLandmarks, Player.landmarkNames()
-        );
+        return CPUStateEvaluationRuntime._remainingEnabledLandmarks(this, current, game);
     }
 
+
     _isEndgameMode(current, game, threshold = 2) {
-        return CPULegalMoves.isEndgame(
-            current, game.enabledLandmarks, Player.landmarkNames(), threshold
-        );
+        return CPUStateEvaluationRuntime._isEndgameMode(this, current, game, threshold);
     }
+
 
     _estimatePurchasePlanValue(player, game, difficulty = this.difficulty) {
         return CPUChoiceScoring.estimatePurchasePlanValue(this, player, game, difficulty);
@@ -628,25 +464,18 @@ class CPU {
     }
 
     _strongLiteUseHeuristicChoices() {
-        return this.difficulty === "strong" && this.simulationMode === "lite";
+        return CPUStateEvaluationRuntime._strongLiteUseHeuristicChoices(this);
     }
+
 
     chooseDiceCount(game) {
         return CPURollDecision.chooseDiceCount(this, game);
     }
 
     _expertV2SimpleStrongCrowdDiceThreshold(game) {
-        if (!game || !game.players || game.players.length < 4) return false;
-        let strongOpponents = 0;
-        for (let i = 0; i < game.players.length; i++) {
-            if (i === game.currentPlayerIndex) continue;
-            const difficulty = this.expertOpponentDifficulties && this.expertOpponentDifficulties[i]
-                ? this.expertOpponentDifficulties[i]
-                : game.players[i] && game.players[i].difficulty;
-            if (difficulty === "strong") strongOpponents++;
-        }
-        return strongOpponents >= 2;
+        return CPUStateEvaluationRuntime._expertV2SimpleStrongCrowdDiceThreshold(this, game);
     }
+
 
     chooseReroll(game) {
         return CPURollDecision.chooseReroll(this, game);
@@ -661,15 +490,9 @@ class CPU {
     }
 
     _scoreExpertV2SimpleTVTarget(game, player, steal, built) {
-        return CPUEvaluation.v2SimpleTvTargetScore({
-            beforeShortfall: this._closestLandmarkShortfall(player, game),
-            coins: player.coins,
-            steal,
-            builtLandmarkCount: built,
-            remainingLandmarkCosts: this._remainingEnabledLandmarks(player, game)
-                .map(name => Player.landmarkCost(name)),
-        });
+        return CPUStateEvaluationRuntime._scoreExpertV2SimpleTVTarget(this, game, player, steal, built);
     }
+
 
     chooseBusinessMove(game) {
         return CPUPendingDecision.chooseBusinessMove(this, game);
@@ -690,19 +513,9 @@ class CPU {
     }
 
     _scoreExpertV2SimpleCleaningValue(game, name) {
-        const current = game.currentPlayer();
-        const features = CPUEvaluation.expertV2SimpleCleaningFeatures(
-            name,
-            current,
-            game.players,
-            {
-                minorCards: player => player.getMinorCards(),
-                isDormant: (player, card) => player.isDormant(card),
-                ownedCardValue: (card, player) => this._ownedCardValue(card, game, player),
-            }
-        );
-        return CPUEvaluation.expertV2SimpleCleaningScore(features);
+        return CPUStateEvaluationRuntime._scoreExpertV2SimpleCleaningValue(this, game, name);
     }
+
 
     chooseMoverMove(game) {
         return CPUPendingDecision.chooseMoverMove(this, game);
@@ -1393,319 +1206,99 @@ class CPU {
     }
 
     _estimatePlayerTurnValue(game, playerIndex) {
-        const cache = this._stateEvaluationCache(game);
-        if (playerIndex in cache.playerTurnValues) return cache.playerTurnValues[playerIndex];
-        const scores = this._estimatePlayerTurnScorePair(game, playerIndex);
-        const value = Math.max(scores.one, scores.two);
-        const normalized = Number.isFinite(value) ? value : 0;
-        cache.playerTurnValues[playerIndex] = normalized;
-        return normalized;
+        return CPUStateEvaluationRuntime._estimatePlayerTurnValue(this, game, playerIndex);
     }
+
 
     _estimatePlayerTurnScorePair(game, playerIndex) {
-        const cache = this._stateEvaluationCache(game);
-        if (playerIndex in cache.playerTurnScorePairs) return cache.playerTurnScorePairs[playerIndex];
-        const original = game.currentPlayerIndex;
-        game.currentPlayerIndex = playerIndex;
-        try {
-            const rollCache = this._rollEvaluationCache(game);
-            const getRollScore = dice => {
-                if (!(dice in rollCache.rollScores)) {
-                    rollCache.rollScores[dice] = this._estimateRollScore(game, dice);
-                }
-                return rollCache.rollScores[dice];
-            };
-            const scores = CPUEvaluation.turnScorePair(
-                game.players[playerIndex].landmarks[LANDMARK_NAMES.STATION],
-                getRollScore
-            );
-            cache.playerTurnScorePairs[playerIndex] = scores;
-            return scores;
-        } finally {
-            game.currentPlayerIndex = original;
-        }
+        return CPUStateEvaluationRuntime._estimatePlayerTurnScorePair(this, game, playerIndex);
     }
+
 
     _countReachableLandmarks(player, enabledLandmarks) {
-        return CPUEvaluation.countReachableLandmarks(player, enabledLandmarks, Player.landmarkCost);
+        return CPUStateEvaluationRuntime._countReachableLandmarks(this, player, enabledLandmarks);
     }
+
 
     _isProgressIncomeCard(card, player) {
-        return CPUEvaluation.isProgressIncomeCard(card, player, CARD_EFFECTS);
+        return CPUStateEvaluationRuntime._isProgressIncomeCard(this, card, player);
     }
+
 
     _estimateStableIncome(game, player) {
-        const playerIndex = game && game.players ? game.players.indexOf(player) : -1;
-        let cache = null;
-        if (playerIndex >= 0) {
-            cache = this._stateEvaluationCache(game);
-            if (playerIndex in cache.stableIncomes) return cache.stableIncomes[playerIndex];
-        }
-        const total = CPUEvaluation.progressIncomeTotal(
-            player.cards,
-            card => this._isProgressIncomeCard(card, player),
-            card => this._ownedCardValue(card, game, player)
-        );
-        if (cache) cache.stableIncomes[playerIndex] = total;
-        return total;
+        return CPUStateEvaluationRuntime._estimateStableIncome(this, game, player);
     }
+
 
     _estimateProgressIncome(game, player) {
-        if (!game || !player) return 0;
-        const playerIndex = game.players ? game.players.indexOf(player) : -1;
-        let cache = null;
-        if (playerIndex >= 0) {
-            cache = this._stateEvaluationCache(game);
-            if (playerIndex in cache.progressIncomes) return cache.progressIncomes[playerIndex];
-        }
-        const total = CPUEvaluation.progressIncomeTotal(
-            player.cards,
-            card => this._isProgressIncomeCard(card, player),
-            card => this.evalCard(card, game, player) * this._cardDiceFreq(card, game, player) / 6
-        );
-        if (cache) cache.progressIncomes[playerIndex] = total;
-        return total;
+        return CPUStateEvaluationRuntime._estimateProgressIncome(this, game, player);
     }
+
 
     _estimateWinDistance(player, game) {
-        if (!player || !game || !game.enabledLandmarks) return Infinity;
-        const playerIndex = game.players ? game.players.indexOf(player) : -1;
-        if (playerIndex >= 0) {
-            const cache = this._stateEvaluationCache(game);
-            if (playerIndex in cache.winDistances) return cache.winDistances[playerIndex];
-            const value = this._estimateWinDistanceUncached(player, game, playerIndex);
-            cache.winDistances[playerIndex] = value;
-            return value;
-        }
-        return this._estimateWinDistanceUncached(player, game, playerIndex);
+        return CPUStateEvaluationRuntime._estimateWinDistance(this, player, game);
     }
+
 
     _estimateWinDistanceUncached(player, game, playerIndex = -1) {
-        if (!player || !game || !game.enabledLandmarks) return Infinity;
-        const remaining = [...game.enabledLandmarks]
-            .filter(name => !player.landmarks[name])
-            .map(name => ({
-                name,
-                cost: Player.landmarkCost(name),
-                urgency: this._landmarkUrgency(name, player, game),
-            }));
-        if (remaining.length === 0) return 0;
-        const turnValue = playerIndex >= 0 ? this._estimatePlayerTurnValue(game, playerIndex) : 0;
-        const reachable = remaining.filter(entry => player.coins >= entry.cost).length;
-        const progressIncome = this._estimateProgressIncome(game, player);
-        return CPUEvaluation.estimateWinDistance({
-            remainingLandmarks: remaining,
-            playerCoins: player.coins,
-            turnValue,
-            reachable,
-            progressIncome,
-            crowdFocus: this._expertFlagEnabled("crowdWinDistanceFocus") && game.players.length >= 4,
-        });
+        return CPUStateEvaluationRuntime._estimateWinDistanceUncached(this, player, game, playerIndex);
     }
+
 
     _estimateRedPressure(game, playerIndex) {
-        const cache = this._stateEvaluationCache(game);
-        if (playerIndex in cache.redPressures) return cache.redPressures[playerIndex];
-        let pressure = 0;
-        for (let i = 0; i < game.players.length; i++) {
-            if (i === playerIndex) continue;
-            const opponent = game.players[i];
-            for (const card of opponent.cards) {
-                if (opponent.isDormant(card) || card.color !== "red") continue;
-                pressure += this._ownedCardValue(card, game, opponent);
-            }
-        }
-        cache.redPressures[playerIndex] = pressure;
-        return pressure;
+        return CPUStateEvaluationRuntime._estimateRedPressure(this, game, playerIndex);
     }
+
 
     _estimateOpponentThreat(opponent, game) {
-        const opponentIndex = game.players ? game.players.indexOf(opponent) : -1;
-        if (opponentIndex >= 0) {
-            const cache = this._stateEvaluationCache(game);
-            if (opponentIndex in cache.opponentThreats) return cache.opponentThreats[opponentIndex];
-            const value = this._estimateOpponentThreatUncached(opponent, game, opponentIndex);
-            cache.opponentThreats[opponentIndex] = value;
-            return value;
-        }
-        return this._estimateOpponentThreatUncached(opponent, game, opponentIndex);
+        return CPUStateEvaluationRuntime._estimateOpponentThreat(this, opponent, game);
     }
+
 
     _estimateOpponentThreatUncached(opponent, game, opponentIndex = -1) {
-        const enabledLandmarks = [...game.enabledLandmarks];
-        const progress = enabledLandmarks.filter(name => opponent.landmarks[name]).length;
-        const turnValue = this._estimatePlayerTurnValue(game, opponentIndex);
-        const reachable = this._countReachableLandmarks(opponent, enabledLandmarks);
-        const winDistance = this._estimateWinDistance(opponent, game);
-        return CPUEvaluation.estimateOpponentThreat({
-            coins: opponent.coins,
-            turnValue,
-            landmarkProgress: progress,
-            builtLandmarkCount: opponent.builtLandmarkCount(),
-            reachableLandmarks: reachable,
-            winDistance,
-        });
+        return CPUStateEvaluationRuntime._estimateOpponentThreatUncached(this, opponent, game, opponentIndex);
     }
+
 
     _bestOpponentWinDistance(game, playerIndex) {
-        let best = Infinity;
-        for (let i = 0; i < game.players.length; i++) {
-            if (i === playerIndex) continue;
-            best = Math.min(best, this._estimateWinDistance(game.players[i], game));
-        }
-        return best;
+        return CPUStateEvaluationRuntime._bestOpponentWinDistance(this, game, playerIndex);
     }
+
 
     _evaluatePosition(game, playerIndex) {
-        const player = game.players[playerIndex];
-        const tuning = this.expertTuning;
-        if (player.hasWon([...game.enabledLandmarks])) return 100000;
-        const myTurnValue = this._estimatePlayerTurnValue(game, playerIndex);
-        const enabledLandmarks = [...game.enabledLandmarks];
-        const myLandmarkProgress = enabledLandmarks.filter(name => player.landmarks[name]).length;
-        const remainingLandmarks = enabledLandmarks.filter(name => !player.landmarks[name]);
-        const reachableLandmarks = this._countReachableLandmarks(player, enabledLandmarks);
-        const stableIncome = this._estimateStableIncome(game, player);
-        const winDistance = this._estimateWinDistance(player, game);
-        const redPressure = this._estimateRedPressure(game, playerIndex);
-        const lowValueSpam = player.countCard("改装屋") + player.countCard("貸金業") + player.countCard("雑貨屋");
-        const builtLandmarkCount = player.builtLandmarkCount();
-        const duplicateRenovationPenalty = this._duplicateRenovationPenalty(player, "expert", game);
-        const airportIdleBonus = Boolean(
-            player.landmarks[LANDMARK_NAMES.AIRPORT] &&
-            !game.builtThisTurn &&
-            game.currentPlayerIndex === playerIndex
-        );
-        const opponentThreats = [];
-        for (let i = 0; i < game.players.length; i++) {
-            if (i === playerIndex) continue;
-            opponentThreats.push(this._estimateOpponentThreat(game.players[i], game));
-        }
-        return CPUEvaluation.evaluatePositionScore({
-            coins: player.coins,
-            turnValue: myTurnValue,
-            landmarkProgress: myLandmarkProgress,
-            builtLandmarkCount,
-            reachableLandmarks,
-            stableIncome,
-            winDistance,
-            redPressure,
-            remainingLandmarkCount: remainingLandmarks.length,
-            lowValueSpam,
-            duplicateRenovationPenalty,
-            airportIdleBonus,
-            opponentThreats,
-        }, tuning);
+        return CPUStateEvaluationRuntime._evaluatePosition(this, game, playerIndex);
     }
+
 
     _scoreExpertCardPenalty(cardName, player, game) {
-        return CPUEvaluation.expertCardPenalty({
-            cardName,
-            copies: player.countCard(cardName),
-            remainingLandmarks: [...game.enabledLandmarks]
-                .filter(name => !player.landmarks[name]).length,
-            playerCount: game.players.length,
-            builtLandmarkCount: () => player.builtLandmarkCount(),
-        });
+        return CPUStateEvaluationRuntime._scoreExpertCardPenalty(this, cardName, player, game);
     }
+
 
     _scoreExpertLandmarkDelayPenalty(player, game) {
-        const remaining = [...game.enabledLandmarks]
-            .filter(name => !player.landmarks[name])
-            .map(name => ({ name, cost: Player.landmarkCost(name), urgency: this._landmarkUrgency(name, player, game) }));
-        if (remaining.length === 0) return 0;
-        const affordable = CPUSelection.stableRankLexicographic(
-            remaining.filter(entry => player.coins >= entry.cost),
-            [
-                { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
-                { valueOf: entry => entry.cost, direction: CPUSelection.directions.ASCENDING },
-            ]
-        );
-        if (affordable.length === 0) return 0;
-        const best = affordable[0];
-        const surplus = player.coins - best.cost;
-        return Math.max(0, best.urgency * 2 + Math.min(12, surplus * 0.4));
+        return CPUStateEvaluationRuntime._scoreExpertLandmarkDelayPenalty(this, player, game);
     }
+
 
     _scoreExpertFutureLandmarkHoldPenalty(player, game, card = null) {
-        if (!player || !game || !this._expertFlagEnabled("futureLandmarkHold")) return 0;
-        const remaining = [...game.enabledLandmarks]
-            .filter(name => !player.landmarks[name])
-            .map(name => ({
-                name,
-                cost: Player.landmarkCost(name),
-                urgency: this._landmarkUrgency(name, player, game),
-                shortfall: Player.landmarkCost(name) - player.coins,
-            }))
-            .filter(entry => entry.shortfall > 0 && entry.shortfall <= 3);
-        const rankedRemaining = CPUSelection.stableRankLexicographic(remaining, [
-            { valueOf: entry => entry.urgency, direction: CPUSelection.directions.DESCENDING },
-            { valueOf: entry => entry.shortfall, direction: CPUSelection.directions.ASCENDING },
-        ]);
-
-        if (rankedRemaining.length === 0) return 0;
-        const target = rankedRemaining[0];
-        let penalty = target.urgency * (4 - target.shortfall) * 1.35;
-        if (card) {
-            if (card.cost >= 5) penalty += 4.5;
-            else if (card.cost >= 3) penalty += 2.5;
-            if (card.color === "purple") penalty += 3.5;
-        }
-        return penalty;
+        return CPUStateEvaluationRuntime._scoreExpertFutureLandmarkHoldPenalty(this, player, game, card);
     }
+
 
     _expertPremiumPurpleReady(card, game, player) {
-        if (!card || !game || !player) return true;
-        if (!this._expertFlagEnabled("premiumPurpleGate")) return true;
-        if (![CARD_EFFECTS.STADIUM, CARD_EFFECTS.TV, CARD_EFFECTS.TAXOFFICE, CARD_EFFECTS.PUBLISHER].includes(card.effect)) {
-            return true;
-        }
-        const stableIncome = this._estimateStableIncome(game, player);
-        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        const nextLandmark = this._bestAffordableLandmark(player, game, 0);
-        const nextShortfall = nextLandmark ? Math.max(0, nextLandmark.cost - player.coins) : Infinity;
-        const opponents = game.players.filter(p => p !== player);
-        const maxThreat = opponents.reduce((max, opponent) => Math.max(max, this._estimateOpponentThreat(opponent, game)), 0);
-        const threatReady = maxThreat >= 40;
-        return stableIncome >= 10 || remainingLandmarks <= 2 || nextShortfall <= 2 || threatReady;
+        return CPUStateEvaluationRuntime._expertPremiumPurpleReady(this, card, game, player);
     }
+
 
     _expertBuildCandidateLimit(game, current) {
-        let limit = this.simulationMode === "realtime" ? 2 : (this.simulationMode === "lite" ? 2 : (this.simulationMode === "fast" ? 3 : 4));
-        if (!game || !current || !this._expertFlagEnabled("dynamicBuildCandidateLimit")) return limit;
-        if (game.players.length < 4) return limit;
-        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !current.landmarks[name]).length;
-        const stableIncome = this._estimateStableIncome(game, current);
-        if (remainingLandmarks <= 2 || current.coins >= 10 || stableIncome >= 12) {
-            limit += 1;
-        }
-        return limit;
+        return CPUStateEvaluationRuntime._expertBuildCandidateLimit(this, game, current);
     }
 
+
     _listExpertBuildOptions(game, shopStock) {
-        const current = game.currentPlayer();
-        const affordableLandmarks = CPULegalMoves.affordableLandmarkNames(
-            current,
-            game.enabledLandmarks,
-            Player.landmarkNames(),
-            Player.landmarkCost,
-            false
-        );
-        const affordable = CPULegalMoves.affordableCards(current, shopStock, CARDS);
-        const ranked = CPUSelection.stableRankDescending(
-            affordable.map(card => ({
-                card,
-                score: this._scoreExpertCardCandidate(card, game, current),
-            })),
-            entry => entry.score
-        );
-        return CPULegalMoves.expertBuildOptions(
-            affordableLandmarks,
-            ranked,
-            this._expertBuildCandidateLimit(game, current),
-            card => this._expertPremiumPurpleReady(card, game, current)
-        );
+        return CPUStateEvaluationRuntime._listExpertBuildOptions(this, game, shopStock);
     }
+
 
     _scoreExpertBuildOption(game, shopStock, action, context = null) {
         return CPUBuildScoring._scoreExpertBuildOption(this, game, shopStock, action, context);
@@ -1716,26 +1309,9 @@ class CPU {
     }
 
     _listStrongBuildOptions(game, shopStock) {
-        const current = game.currentPlayer();
-        const affordableLandmarks = CPULegalMoves.affordableLandmarkNames(
-            current,
-            game.enabledLandmarks,
-            Player.landmarkNames(),
-            Player.landmarkCost,
-            false
-        );
-        const affordable = CPULegalMoves.affordableCards(current, shopStock, CARDS);
-        const ranked = this._sortAffordableForDifficulty(affordable, game, current, "strong");
-        const targetLandmark = this._strongTargetLandmark(current, game);
-        return CPULegalMoves.strongBuildOptions(affordableLandmarks, ranked, {
-            playerCount: game.players.length,
-            builtLandmarkCount: current.builtLandmarkCount(),
-            attackUnlocked: this._strongAttackUnlocked(current, game, targetLandmark),
-            oneDieOpponentCount: game.players.filter(
-                player => player !== current && !player.landmarks[LANDMARK_NAMES.STATION]
-            ).length,
-        });
+        return CPUStateEvaluationRuntime._listStrongBuildOptions(this, game, shopStock);
     }
+
 
     _scoreStrongBuildOption(game, shopStock, action) {
         return CPUBuildScoring._scoreStrongBuildOption(this, game, shopStock, action);
