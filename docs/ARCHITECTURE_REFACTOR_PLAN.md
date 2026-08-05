@@ -1052,3 +1052,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `UiModalDomEffects` is the concrete DOM adapter beneath pure `UiModalPolicy` and the `UiModalOpen`/`UiModalClose` application plans.
 2. Focus discovery, visibility snapshots, visual normalization, inert capture/restore, and orphan cleanup now use injected document/window/state/trace dependencies; `ui.js` keeps modal transaction composition and browser-global delegates.
 3. Focus/inert/release and integration contracts preserve exact accessibility-sensitive ordering, absent-native-inert behavior, blocking-modal guards, and existing authority fallback.
+
+## 2026-08-05 Batch 103 boundary update
+
+1. `UiModalRuntime` is the application layer between pure `UiModalPolicy`/open/close plans and `UiModalDomEffects`.
+2. It owns admission, diagnostics, ordered open/close effects, active/focus state, pending/trace follow-up, and keyboard commands through injected adapters; `ui.js` is now modal composition plus compatibility delegates.
+3. Both default legacy and explicit authority paths remain contract-covered with identical accessibility-sensitive ordering and fallback behavior; production authority flags remain absent/default-OFF.

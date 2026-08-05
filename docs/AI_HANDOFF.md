@@ -1114,3 +1114,9 @@ Test index:
 - Modal focus, visibility, visual normalization, inert capture/restore, and orphan-lock DOM mechanics belong to `UiModalDomEffects`; keep admission/stack policy in `UiModalPolicy` and ordered transactions in `UiModalOpen`/`UiModalClose`.
 - Preserve focus-before-inert open ordering, saved `hadInert`/aria-hidden/pointer values, explicit `false` restoration when native inert was absent, blocking-modal orphan guard, and trace only after an actual cleanup.
 - The module is linted and checkJs-covered; `ui.js` is 1,485 lines. Modal behavior, UI layout, rules, online, persistence, and PWA behavior are unchanged.
+
+## Batch 103 handoff (2026-08-05)
+
+- Modal admission, violation diagnostics, open/close transaction selection/execution, focus ownership, pending/trace follow-up, and Escape/Tab commands belong to `UiModalRuntime`; DOM mechanics remain in `UiModalDomEffects`.
+- Preserve default-OFF authority reads, focus-before-inert open order, unlock-before-focus close order, `pendingModal` render exclusion, rules/card-select trace scope, 20-entry violation retention in the `ui.js` adapter, and existing compatibility delegates.
+- The runtime is linted and checkJs-covered; `ui.js` is 1,368 lines. Modal UX/accessibility, rules, online, persistence, and PWA behavior are unchanged.

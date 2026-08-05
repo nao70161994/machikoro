@@ -914,3 +914,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `ui.js` retains modal policy/application orchestration and compatibility delegates while injecting document/window access, runtime state, trace, and blocking-modal observation; its size decreased from 1,567 to 1,485 lines. Modal policy, open/close plans, and DOM mechanics are now separate layers.
 - Focused contracts preserve hidden/disabled/ancestor/computed focus filtering, native and absent-native inert restoration, aria-hidden/pointer restoration, blocking-modal orphan guard, body class cleanup, trace payload, and nested content normalization. Full unit/UI/smoke/static/PWA/release gates pass. Scoped gates now cover 254 ESLint maintenance files and 253 checkJs runtime files.
 - Modal IDs/policies, focus order, inert behavior, open/close authority flags, UI layout, game rules, online flow, storage, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 103 UI modal application runtime
+
+- `js/uiModalRuntime.js` now owns blocking admission/violation diagnostics, open and close plan selection, legacy/pure effect execution, active/focus lifecycle, pending/trace sequencing, and Escape/Tab focus-trap commands.
+- `ui.js` retains authority-flag reads, concrete state/DOM/trace dependency composition, document keydown binding, and compatibility delegates; its size decreased from 1,485 to 1,368 lines. Modal policy, application transaction, and DOM effects now have explicit separate ownership.
+- Focused contracts preserve open focus-before-inert order, close unlock→pending→focus→trace order, legacy/pure-plan parity, nested-blocking denial diagnostics, violation retention inputs, Escape close, Tab wrap, and missing modal behavior. Full unit/UI/smoke/static/PWA/release gates pass. Scoped gates now cover 255 ESLint maintenance files and 254 checkJs runtime files.
+- Modal IDs/policies, default-OFF authority flags, focus/inert behavior, UI layout, game rules, online flow, persistence, and PWA/SW behavior are unchanged.
