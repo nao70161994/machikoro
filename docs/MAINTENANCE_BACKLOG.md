@@ -900,3 +900,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `online.js` retains lazy dependency composition and compatibility delegates for existing browser callers; its size decreased from 3,494 to 3,421 lines. The controller, DOM/Socket effects, schema capability provider, setup state, and model portfolio are explicit adapters.
 - Focused contracts preserve trimmed/uppercased input, exact payloads, player-name/host/request ordering, duplicate submission exclusion, async RL settings identity, timeout generation, notices, and missing-Socket behavior. Full unit/online/static/PWA/release gates pass. Scoped gates now cover 252 ESLint maintenance files and 251 checkJs runtime files.
 - Socket.IO event names/payloads, schema negotiation, hostless capability value, timeout duration/text, CPU model choice, player settings, storage/reconnect, game rules, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 101 online Game Engine runtime
+
+- `js/onlineGameEngineRuntime.js` now owns online replay shadow preparation, detached Engine transition, mutable application orchestration, Undo snapshot lifecycle, parity finish/diagnostics, and guarded authority adoption.
+- `online.js` retains lazy adapter composition, mutable Game application, and compatibility delegates used by inbound/rejoin paths; its size decreased from 3,421 to 3,402 lines. Existing test replacement of the adoption delegate remains supported, while the runtime owns the production transaction.
+- Focused contracts preserve default-OFF mutable-only execution, build Undo capture, next-turn/Undo clearing before live comparison, detached transition, reconstruction equality, adoption fallback, diagnostics, and absent-shadow fallback. Full unit/online/smoke/static/PWA/release gates pass. Scoped gates now cover 253 ESLint maintenance files and 252 checkJs runtime files.
+- Production Engine authority remains default-OFF. Game rules, Action/Snapshot schemas, CPU decisions/RNG, Socket.IO/reconnect, storage, and PWA/SW behavior are unchanged.

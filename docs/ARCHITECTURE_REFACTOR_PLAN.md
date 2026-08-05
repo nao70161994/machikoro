@@ -1040,3 +1040,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `OnlineLobbyRequestRuntime` is the application boundary over `OnlineLobbyRequestState` and `OnlinePlayerSettings` for room creation/join and RL model preparation.
 2. It owns admission → readiness/preload → pending generation/timer → schema-capability payload → Socket effect sequencing; `online.js` now provides lazy state, DOM, model, schema, and transport adapters.
 3. Focused and full online contracts preserve payload shapes, exact status/notice behavior, duplicate prevention, async settings capture, timeout generation, host transitions, and all protocol/reconnect behavior.
+
+## 2026-08-05 Batch 101 boundary update
+
+1. `OnlineGameEngineRuntime` is the online application boundary over shared `GameEngine`, `GameEngineRuntimeAdapter`, and `GameEngineClientShadow`.
+2. It owns replay preparation → detached transition → legacy mutable application → live parity finish → optional reconstruction-checked adoption, including the established Undo lifecycle; `online.js` supplies concrete mutable and snapshot adapters.
+3. Authority remains default-OFF. Focused and full parity contracts preserve mutable identity, fixed Action traces, adoption failure fallback, diagnostics, schemas, and online restore/replay behavior.

@@ -1102,3 +1102,9 @@ Test index:
 - Online room create/join admission, RL readiness/preload, lobby request generations/timeouts, payload construction, and Socket emission belong to `OnlineLobbyRequestRuntime`; keep the existing `online.js` global functions as compatibility delegates.
 - Preserve player name → CPU speed → Socket readiness → pending begin → host/create order, join host clearing before Socket readiness, captured settings across async preload, exact 15-second timeout text, and schema capability wrapping.
 - The runtime is linted and checkJs-covered; `online.js` is 3,421 lines. Socket.IO, schemas, settings/model selection, storage/reconnect, rules, CPU, and PWA behavior are unchanged.
+
+## Batch 101 handoff (2026-08-05)
+
+- Online replay shadow/authority orchestration belongs to `OnlineGameEngineRuntime`; keep mutable rule application and concrete snapshot/runtime adapter composition in `online.js`.
+- Preserve build Undo capture before shadow preparation, mutable application before live comparison, Undo clearing for `undoBuild`/`nextTurn`, reconstruction equality before adoption, default-OFF authority, and the `_adoptOnlineGameEngineShadowSnapshot` compatibility delegate used by fallback tests.
+- The runtime is linted and checkJs-covered; `online.js` is 3,402 lines. Rules, CPU/RNG, schemas, Socket.IO/reconnect, persistence, and PWA behavior are unchanged.
