@@ -3015,190 +3015,117 @@ function handleAppError(msg) {
     onlineDomEffects.setStatusText(`❌ ${msg}`);
 }
 
-function snapshotOnlinePlayerSettings(playerCount = onlineSetupStateController.snapshot().selectedCount) {
-    return OnlinePlayerSettings.snapshot(onlineSetupStateController.snapshot().playerSettings, playerCount);
+let onlineLobbyRequestRuntime = null;
+
+function getOnlineLobbyRequestRuntime() {
+    if (onlineLobbyRequestRuntime) return onlineLobbyRequestRuntime;
+    onlineLobbyRequestRuntime = OnlineLobbyRequestRuntime.createRuntime({
+        applyButtonView: (id, view) => onlineDomEffects.applyButtonView(id, view),
+        clearTimer: timer => clearTimeout(timer),
+        controller: onlineLobbyRequestController,
+        createRoom: payload => onlineSocketEffects.createRoom(payload),
+        freezeSettings: (settings, playerCount) =>
+            freezeOnlinePlayerSettings(settings, playerCount),
+        getCapabilities: () => getGameSchemaCapabilitiesForTransport(),
+        getClientVersion: () => getClientVersion(),
+        getModelPortfolio: () => typeof RLModelPortfolio === 'undefined'
+            ? null
+            : RLModelPortfolio,
+        getSelection: () => GameSelectionState.runtime.snapshot(),
+        hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
+        ids: OnlineDomEffects.ids,
+        initSocket: () => initSocket(),
+        inputValue: id => onlineDomEffects.inputValue(id),
+        joinRoom: payload => onlineSocketEffects.joinRoom(payload),
+        playerSettings: OnlinePlayerSettings,
+        requestTimeoutMs: ONLINE_LOBBY_REQUEST_TIMEOUT_MS,
+        setHost: value => OnlineRuntimeState.runtime.setHost(value),
+        setPlayerName: value => OnlineRuntimeState.runtime.setPlayerName(value),
+        setStatusText: message => onlineDomEffects.setStatusText(message),
+        setText: (id, text) => onlineDomEffects.setText(id, text),
+        setTimer: (callback, delay) => setTimeout(callback, delay),
+        setupRuntime: onlineSetupStateController,
+        showNotice: message => onlineClientEffects.showNotice(message),
+        warn: (reason, error, asError) => {
+            if (typeof console === 'undefined') return;
+            if (asError === true && typeof console.error === 'function') {
+                console.error(error);
+                return;
+            }
+            if (typeof console.warn === 'function') console.warn(reason, error);
+        },
+        withCapabilities: (payload, capabilities) =>
+            OnlinePayload.withGameSchemaCapabilities(payload, capabilities),
+    });
+    return onlineLobbyRequestRuntime;
 }
 
-function hasOnlineRlCpuSetting(playerCount = onlineSetupStateController.snapshot().selectedCount, settings = onlineSetupStateController.snapshot().playerSettings) {
-    return OnlinePlayerSettings.hasRlCpu(settings, playerCount);
+function snapshotOnlinePlayerSettings(playerCount) {
+    return getOnlineLobbyRequestRuntime().snapshotPlayerSettings(playerCount);
+}
+
+function hasOnlineRlCpuSetting(playerCount, settings) {
+    return getOnlineLobbyRequestRuntime().hasRlCpu(playerCount, settings);
 }
 
 function canPreloadOnlineRlModels() {
-    return typeof RLModelPortfolio !== "undefined" && typeof RLModelPortfolio.preloadEligibleModels === "function";
+    return getOnlineLobbyRequestRuntime().canPreloadModels();
 }
 
-function onlineRlModelLoadState(playerCount = onlineSetupStateController.snapshot().selectedCount) {
-    const usesRl = hasOnlineRlCpuSetting(playerCount);
-    if (!usesRl) return OnlinePlayerSettings.rlModelLoadState({ usesRl: false, playerCount });
-    const loaderAvailable = canPreloadOnlineRlModels();
-    return OnlinePlayerSettings.rlModelLoadState({
-        usesRl,
-        loaderAvailable,
-        playerCount,
-        eligibleLoadState: loaderAvailable && typeof RLModelPortfolio.eligibleLoadState === "function"
-            ? count => RLModelPortfolio.eligibleLoadState(count) : null,
-    });
+function onlineRlModelLoadState(playerCount) {
+    return getOnlineLobbyRequestRuntime().modelLoadState(playerCount);
 }
 
 function onlineRlModelStatusMessage(state) {
-    return OnlinePlayerSettings.rlModelStatusMessage(state);
+    return getOnlineLobbyRequestRuntime().modelStatusMessage(state);
 }
 
 function updateOnlineRlModelReadinessUi() {
-    const state = onlineRlModelLoadState(onlineSetupStateController.snapshot().selectedCount);
-    const view = OnlinePlayerSettings.createButtonView(
-        state,
-        onlineLobbyRequestController.snapshot().createPending
-    );
-    onlineDomEffects.applyButtonView(OnlineDomEffects.ids.createButton, view);
-    onlineDomEffects.setText(OnlineDomEffects.ids.rlStatus, onlineRlModelStatusMessage(state));
-    return state;
+    return getOnlineLobbyRequestRuntime().updateReadinessUi();
 }
 
 function renderOnlineJoinRoomPending() {
-    const view = OnlinePlayerSettings.joinButtonView(onlineLobbyRequestController.snapshot().joinPending);
-    onlineDomEffects.applyButtonView(OnlineDomEffects.ids.joinButton, view);
+    getOnlineLobbyRequestRuntime().renderJoinPending();
 }
 
 function setOnlineJoinRoomPending(pending) {
-    onlineLobbyRequestController.setJoinPending(pending);
-    renderOnlineJoinRoomPending();
+    getOnlineLobbyRequestRuntime().setJoinPending(pending);
 }
 
 function finishOnlineLobbyRequest(kind = '') {
-    const transition = onlineLobbyRequestController.finish(kind);
-    if (!transition.finished) return false;
-    if (transition.timer) clearTimeout(transition.timer);
-    updateOnlineRlModelReadinessUi();
-    renderOnlineJoinRoomPending();
-    return true;
+    return getOnlineLobbyRequestRuntime().finish(kind);
 }
 
 function beginOnlineLobbyRequest(kind) {
-    const transition = onlineLobbyRequestController.begin(kind);
-    if (transition.replacedTimer) clearTimeout(transition.replacedTimer);
-    updateOnlineRlModelReadinessUi();
-    renderOnlineJoinRoomPending();
-    const timer = setTimeout(() => {
-        if (!onlineLobbyRequestController.isCurrent(kind, transition.generation)) return;
-        finishOnlineLobbyRequest(kind);
-        onlineDomEffects.setStatusText('⚠️ サーバー応答がありません。もう一度お試しください。');
-        onlineClientEffects.showNotice('サーバー応答がタイムアウトしました。通信状態を確認してもう一度お試しください。');
-    }, ONLINE_LOBBY_REQUEST_TIMEOUT_MS);
-    onlineLobbyRequestController.attachTimer(kind, transition.generation, timer);
+    getOnlineLobbyRequestRuntime().begin(kind);
 }
 
 function setOnlineCreateRoomPending(pending) {
-    onlineLobbyRequestController.setCreatePending(pending);
-    updateOnlineRlModelReadinessUi();
+    getOnlineLobbyRequestRuntime().setCreatePending(pending);
 }
 
 function preloadOnlineRlModelsForSettings(playerCount, settings) {
-    if (!hasOnlineRlCpuSetting(playerCount, settings)) return null;
-    if (!canPreloadOnlineRlModels()) return Promise.reject(new Error("RL model loader is not available"));
-    return RLModelPortfolio.preloadEligibleModels(playerCount, { attempts: 3 });
+    return getOnlineLobbyRequestRuntime().preloadForSettings(playerCount, settings);
 }
 
-function preloadOnlineRlModelsForCreate(playerCount, settings = onlineSetupStateController.snapshot().playerSettings) {
-    return preloadOnlineRlModelsForSettings(playerCount, settings);
+function preloadOnlineRlModelsForCreate(playerCount, settings) {
+    return getOnlineLobbyRequestRuntime().preloadForCreate(playerCount, settings);
 }
 
 function preloadOnlineRlModelsInBackground(reason = 'online-rl-background-preload') {
-    const setup = onlineSetupStateController.snapshot();
-    if (!hasOnlineRlCpuSetting(setup.selectedCount, setup.playerSettings) || !canPreloadOnlineRlModels()) {
-        updateOnlineRlModelReadinessUi();
-        return null;
-    }
-    updateOnlineRlModelReadinessUi();
-    const preload = RLModelPortfolio.preloadEligibleModels(setup.selectedCount, { attempts: 3, retryDelayMs: 0 });
-    if (preload && typeof preload.then === "function") {
-        preload.then(() => updateOnlineRlModelReadinessUi()).catch(error => {
-            if (typeof console !== 'undefined' && typeof console.warn === 'function') console.warn(reason, error);
-            updateOnlineRlModelReadinessUi();
-        });
-    }
-    updateOnlineRlModelReadinessUi();
-    return preload;
+    return getOnlineLobbyRequestRuntime().preloadInBackground(reason);
 }
 
-function emitCreateRoom(name, playerCount = onlineSetupStateController.snapshot().selectedCount, settings = onlineSetupStateController.snapshot().playerSettings) {
-    OnlineRuntimeState.runtime.setPlayerName(name);
-    const setup = onlineSetupStateController.setCpuSpeed(parseInt(onlineDomEffects.inputValue(OnlineDomEffects.ids.cpuSpeed)));
-    if (!initSocket()) return;
-    beginOnlineLobbyRequest('create');
-    OnlineRuntimeState.runtime.setHost(true);
-    const selection = GameSelectionState.runtime.snapshot();
-    const createPayload = {
-        playerName: name,
-        playerCount,
-        playerSettings: freezeOnlinePlayerSettings(settings, playerCount),
-        cpuSpeed: setup.cpuSpeed,
-        enabledCards: [...selection.enabledCards],
-        enabledLandmarks: [...selection.enabledLandmarks],
-        clientVersion: getClientVersion(),
-        hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
-    };
-    onlineSocketEffects.createRoom(OnlinePayload.withGameSchemaCapabilities(
-        createPayload, getGameSchemaCapabilitiesForTransport()
-    ));
+function emitCreateRoom(name, playerCount, settings) {
+    getOnlineLobbyRequestRuntime().emitCreate(name, playerCount, settings);
 }
 
 function showCreateRoom() {
-    if (onlineLobbyRequestController.snapshot().createPending) return;
-    const name = onlineDomEffects.inputValue(OnlineDomEffects.ids.playerName).trim();
-    if (!name) { onlineClientEffects.showNotice("名前を入力してください"); return; }
-    const setup = onlineSetupStateController.snapshot();
-    const createPlayerCount = setup.selectedCount;
-    const createPlayerSettings = OnlinePlayerSettings.snapshot(setup.playerSettings, createPlayerCount);
-    const state = updateOnlineRlModelReadinessUi();
-    if (state.status === 'loading') {
-        onlineClientEffects.showNotice("深層学習AIモデルを読み込んでいます。");
-        return;
-    }
-    const preload = preloadOnlineRlModelsForCreate(createPlayerCount, createPlayerSettings);
-    if (preload && typeof preload.then === "function") {
-        setOnlineCreateRoomPending(true);
-        onlineDomEffects.applyButtonView(OnlineDomEffects.ids.createButton, {
-            disabled: true,
-            textContent: 'モデル読み込み中',
-        });
-        onlineClientEffects.showNotice("深層学習AIモデルを読み込んでいます。");
-        preload
-            .then(() => {
-                setOnlineCreateRoomPending(false);
-                updateOnlineRlModelReadinessUi();
-                emitCreateRoom(name, createPlayerCount, createPlayerSettings);
-            })
-            .catch(error => {
-                setOnlineCreateRoomPending(false);
-                console.error(error);
-                updateOnlineRlModelReadinessUi();
-                onlineClientEffects.showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度部屋を作成してください。");
-            });
-        return;
-    }
-    emitCreateRoom(name, createPlayerCount, createPlayerSettings);
+    getOnlineLobbyRequestRuntime().showCreate();
 }
 
 function joinRoom() {
-    if (onlineLobbyRequestController.snapshot().joinPending) return;
-    const name = onlineDomEffects.inputValue(OnlineDomEffects.ids.playerName).trim();
-    const roomId = onlineDomEffects.inputValue(OnlineDomEffects.ids.roomId).trim().toUpperCase();
-    if (!name) { onlineClientEffects.showNotice("名前を入力してください"); return; }
-    if (roomId.length !== 6) { onlineClientEffects.showNotice("ルームIDは6文字です"); return; }
-    OnlineRuntimeState.runtime.setPlayerName(name);
-    OnlineRuntimeState.runtime.setHost(false);
-    if (!initSocket()) return;
-    beginOnlineLobbyRequest('join');
-    const joinPayload = {
-        roomId,
-        playerName: name,
-        clientVersion: getClientVersion(),
-        hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
-    };
-    onlineSocketEffects.joinRoom(OnlinePayload.withGameSchemaCapabilities(
-        joinPayload, getGameSchemaCapabilitiesForTransport()
-    ));
+    getOnlineLobbyRequestRuntime().join();
 }
 
 let onlineGameInitializer = null;

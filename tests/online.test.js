@@ -163,6 +163,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineSocketConnect.js');
     loadScript(context, 'js/onlineSocketRegistry.js');
     loadScript(context, 'js/onlineInboundActionRuntime.js');
+    loadScript(context, 'js/onlineLobbyRequestRuntime.js');
     loadScript(context, 'js/onlineGameInitializer.js');
     loadScript(context, 'js/onlineLobbyStartRuntime.js');
     loadScript(context, 'js/onlineSocketDisconnect.js');
