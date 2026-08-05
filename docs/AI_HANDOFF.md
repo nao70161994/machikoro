@@ -1096,3 +1096,9 @@ Test index:
 - Online Game construction belongs to `OnlineGameInitializer`; keep `initOnlineGame` as the compatibility delegate used by lobby start and rejoin activation runtimes.
 - Preserve lazy initializer construction because `online.js` evaluates before `SHOP_STOCK` is installed by `main.js`. Preserve reset, stock, server order, CPU options, local-index, first-log, render, and schedule order.
 - The module is linted and checkJs-covered; `online.js` is 3,494 lines. Rules, CPU choices/RNG, Socket.IO, schemas, persistence, reconnect, and PWA behavior are unchanged.
+
+## Batch 100 handoff (2026-08-05)
+
+- Online room create/join admission, RL readiness/preload, lobby request generations/timeouts, payload construction, and Socket emission belong to `OnlineLobbyRequestRuntime`; keep the existing `online.js` global functions as compatibility delegates.
+- Preserve player name → CPU speed → Socket readiness → pending begin → host/create order, join host clearing before Socket readiness, captured settings across async preload, exact 15-second timeout text, and schema capability wrapping.
+- The runtime is linted and checkJs-covered; `online.js` is 3,421 lines. Socket.IO, schemas, settings/model selection, storage/reconnect, rules, CPU, and PWA behavior are unchanged.

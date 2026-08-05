@@ -893,3 +893,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `online.js` retains lazy dependency composition and its `initOnlineGame` compatibility delegate; lazy construction preserves classic-script startup where `SHOP_STOCK` becomes available after `online.js` evaluation. Its size decreased from 3,504 to 3,494 lines.
 - Focused contracts preserve exact effect order, shuffled names, CPU opponent settings and RL model ID, missing-local-index fallback, stock/landmark defaults, first log, browser dependency order, and delegation. Full unit/online/release/static gates pass; PWA asset/load tests also pass. Scoped gates now cover 251 ESLint maintenance files and 250 checkJs runtime files.
 - Game rules, card stock values, player order, CPU decisions/strength/RNG, Socket.IO schemas/events, save/storage, reconnect, and PWA/SW semantics are unchanged.
+
+## 2026-08-05 Batch 100 online lobby request runtime
+
+- `js/onlineLobbyRequestRuntime.js` now owns create/join input admission, pending generations and timeout effects, RL model readiness/preload, frozen player settings, schema-capability payload construction, and ordered Socket emission.
+- `online.js` retains lazy dependency composition and compatibility delegates for existing browser callers; its size decreased from 3,494 to 3,421 lines. The controller, DOM/Socket effects, schema capability provider, setup state, and model portfolio are explicit adapters.
+- Focused contracts preserve trimmed/uppercased input, exact payloads, player-name/host/request ordering, duplicate submission exclusion, async RL settings identity, timeout generation, notices, and missing-Socket behavior. Full unit/online/static/PWA/release gates pass. Scoped gates now cover 252 ESLint maintenance files and 251 checkJs runtime files.
+- Socket.IO event names/payloads, schema negotiation, hostless capability value, timeout duration/text, CPU model choice, player settings, storage/reconnect, game rules, and PWA/SW behavior are unchanged.
