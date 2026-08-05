@@ -93,8 +93,8 @@ runTest('integration: 購入後もrender step例外で操作不能にならな�
     rt.onBuildCard('麦畑');
     rt.__test.elements.confirmOkBtn.onclick();
 
-    assert.strictEqual(game.builtThisTurn, true);
-    assert.strictEqual(game.phase, rt.GAME_PHASES.BUILD);
+    assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
+    assert.strictEqual(rt.__test.getGame().phase, rt.GAME_PHASES.BUILD);
     assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
     assert.notStrictEqual(rt.__test.elements.gameScreen.inert, true);
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
@@ -171,7 +171,7 @@ runTest('integration: 建設後にskip disabledが遅れて残ってもstabilize
     rt.__test.elements.btnSkip.disabled = true;
     rt.__test.flushTimeouts();
 
-    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
     const snapshot = rt.collectUiLockSnapshot('post-build-stabilized');
@@ -195,7 +195,8 @@ runTest('integration: 建設後unlockはrenderで再disabled化されたskipを�
     const originalRender = rt.render;
     rt.render = () => {
         originalRender();
-        if (game.phase === rt.GAME_PHASES.BUILD && game.builtThisTurn) {
+        const activeGame = rt.__test.getGame();
+        if (activeGame.phase === rt.GAME_PHASES.BUILD && activeGame.builtThisTurn) {
             rt.__test.elements.btnSkip.disabled = true;
         }
     };
@@ -203,7 +204,7 @@ runTest('integration: 建設後unlockはrenderで再disabled化されたskipを�
     rt.onBuildCard('麦畑');
     rt.__test.elements.confirmOkBtn.onclick();
 
-    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     const snapshot = rt.collectUiLockSnapshot('post-build-unlock-after-render-sync');
     assert.strictEqual(rt.classifyLikelyFreeze(snapshot), '');
@@ -302,7 +303,7 @@ runTest('integration: 建設後にUI lockが残っても自分ターン操作を
     rt.onBuildCard('麦畑');
     rt.__test.elements.confirmOkBtn.onclick();
 
-    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
     assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
@@ -332,8 +333,9 @@ runTest('integration: CPUターン終了後に人間ターンのUI lockを解除
     rt.scheduleCPU();
     rt.__test.flushTimeouts();
 
-    assert.notStrictEqual(game.currentPlayerIndex, cpuIndex);
-    assert.strictEqual(game.phase, rt.GAME_PHASES.ROLL);
+    const activeGame = rt.__test.getGame();
+    assert.notStrictEqual(activeGame.currentPlayerIndex, cpuIndex);
+    assert.strictEqual(activeGame.phase, rt.GAME_PHASES.ROLL);
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
     assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
     assert.strictEqual(rt.__test.elements.btnRoll.disabled, false);
@@ -737,7 +739,7 @@ runTest('integration: stale confirmModal が post-build の親lockを残して�
 
     rt.onBuildCard('麦畑');
     rt.__test.elements.confirmOkBtn.onclick();
-    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
     rt.__test.setOnlineState({ isOnlineGame: false, myPlayerIndex: -1 });
 
     rt.__test.elements.confirmModal.style.display = 'flex';
@@ -1870,8 +1872,9 @@ runTest('integration: ランドマーク購入後もskip操作へ進める', () 
     rt.onBuildLandmark('駅');
     rt.__test.elements.confirmOkBtn.onclick();
 
-    assert.strictEqual(game.currentPlayer().landmarks['駅'], true);
-    assert.strictEqual(game.builtThisTurn, true);
+    const activeGame = rt.__test.getGame();
+    assert.strictEqual(activeGame.currentPlayer().landmarks['駅'], true);
+    assert.strictEqual(activeGame.builtThisTurn, true);
     assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
     assert.notStrictEqual(rt.__test.elements.gameScreen.inert, true);
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);

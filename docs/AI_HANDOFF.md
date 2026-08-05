@@ -797,7 +797,7 @@ Test index:
 
 - Rejoin timer handle/deadline belong exclusively to `OnlineRetryPolicy.createRejoinTimerController()`. Do not reintroduce parallel legacy variables; preserve source labels, callback decision gates, hostless fallback, Socket emit order, and all default-OFF authority flags.
 - Page-activation binding and hidden timestamp belong to `PageActivationPolicy.createLifecycleController()`. Preserve claim-before-listener behavior and the existing RL load → delayed action → online reconnect → CPU resume → checkpoint sequence.
-- The last local Engine shadow result belongs to `GameEngineClientShadow.createOutcomeController()`. Preserve determinism admission, mutable-first execution, parity report, optional default-OFF adoption, render, and CPU scheduling order.
+- The last local Engine outcome belongs to `GameEngineClientShadow.createOutcomeController()`. Resolved actions use authority-first detached adoption by default; preserve explicit-false rollback, unresolved-random admission, failure fallback, render, and CPU scheduling order.
 - Scoped gates remain 215 ESLint maintenance files and 214 checkJs runtime files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
 - Continue with at most three rollbackable themes, focused checks per theme, then one `test:batch`, one push, and one exact-HEAD CI check.
 
@@ -1193,3 +1193,12 @@ Test index:
 - CPU facade bodies longer than eight lines are contract-limited to constructor/configuration, caches, explicit compatibility executors, build execution wiring, and simulation-step wiring. Do not move decision formulas back into the facade.
 - Build selection uses a call-local proposal adapter and no `_selectedBuildAction`, `_collectingBuildAction`, or `_buildProposalCollector`. Roll/pending/build decisions remain fixed by full CPU, decision snapshot, baseline, and 2-to-10-player self-play tests.
 - Fixed outcome 1 is complete. The next fixed scope is local shared Game Engine default authority and removal of parity-proven duplicate mutable application paths.
+
+
+## Fixed outcome 2 complete: local shared Engine authority (2026-08-05)
+
+- The browser local game now defaults to direct adoption of successful resolved `GameEngine.transitionSnapshot()` results. Do not restore mutable-first double application.
+- `LocalGameEngineRuntime` owns authority and fallback. Explicit `false` flags, unresolved randomness, transition failure, and adoption failure are the only legacy selectors; removing fallback requires deterministic random inputs and a deliberate rollback-gate retirement.
+- Human actions/builds, Undo, and production CPU build proposals use this boundary. `CPUBuildExecution` remains the standalone/self-play mutable adapter and intentionally has no UI shadow hooks.
+- `tests/game-engine-local-shadow.test.js` compares all 15 deterministic actions against explicit-OFF legacy mode; runtime contracts additionally prove successful authority skips mutable/fallback execution.
+- Fixed outcome 2 is complete. Next fixed scope: integrate online connection/rejoin/restore/replay states into the existing controller boundary without changing Socket.IO protocol, ACK, watermark, or reconnect behavior.

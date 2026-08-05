@@ -18,13 +18,36 @@ function createHarness(options = {}) {
         checkpoint: (event, details) => calls.push(['checkpoint', event, details]),
         clientShadow: {
             createOutcomeController: () => controller,
-            prepare(input) { calls.push(['prepare', input.action]); return { action: input.action, shadow: input.transition(input.snapshot, input.action, input.data) }; },
+            prepare(input) {
+                calls.push(['prepare', input.action]);
+                return { action: input.action, transition: input.transition(input.snapshot, input.action, input.data) };
+            },
+            adoptPrepared(input) {
+                calls.push(['adoptPrepared', input.prepared.action]);
+                const transition = input.prepared.transition;
+                const valid = transition && transition.ok === true && transition.snapshot;
+                const adopted = valid && options.adoption !== false &&
+                    input.adoptSnapshot(transition.snapshot) === true;
+                return {
+                    report: { status: valid ? 'authority-direct' : 'transition-error' },
+                    authority: {
+                        authority: adopted ? 'pure-transition' : 'mutable',
+                        reason: adopted ? '' : valid ? 'adoption-failed' : transition.reason,
+                    },
+                };
+            },
             finish(input) { calls.push(['finish', input.prepared.action]); return { report: { status: 'matched' }, authority: { authority: input.authorityEnabled ? 'pure-transition' : 'legacy' } }; },
             equalSnapshots: () => true,
         },
         determinism: { isResolved: () => options.resolved !== false },
         getEngine: () => ({
-            transitionSnapshot: input => ({ transitioned: input.action }),
+            transitionSnapshot: input => options.transitionFailure
+                ? { ok: false, reason: 'action-rejected', snapshot: null }
+                : {
+                    ok: true,
+                    reason: '',
+                    snapshot: { game: { id: 'transitioned' }, undoState: input.snapshot.undoState },
+                },
             applyMutableAction: input => calls.push(['mutable', input.action]),
         }),
         gameRuntime: {
@@ -69,6 +92,39 @@ runTest('local game engine runtimeはonline actionを送信だけで終える', 
     assert.strictEqual(h.runtime.runHuman('rollDice', { forceDice: 2 }, () => { fallback++; }), 'sent');
     assert.strictEqual(fallback, 0);
     assert.deepStrictEqual(h.calls.map(call => call[0]), ['checkpoint', 'send', 'checkpoint']);
+});
+
+runTest('local game engine runtimeはprepared authority成功時にhuman fallbackを実行しない', () => {
+    const h = createHarness({ shadow: true, authority: true });
+    let fallback = 0;
+    assert.strictEqual(h.runtime.runHuman('nextTurn', {}, () => { fallback += 1; return true; }), true);
+    assert.strictEqual(fallback, 0);
+    assert.ok(h.calls.some(call => call[0] === 'adoptPrepared'));
+    assert.strictEqual(h.calls.some(call => call[0] === 'finish'), false);
+    assert.strictEqual(h.controller.get().authority.authority, 'pure-transition');
+});
+
+runTest('local game engine runtimeはprepared authority成功時にCPU mutable適用を省略する', () => {
+    const h = createHarness({ shadow: true, authority: true });
+    h.runtime.runCpu('nextTurn', {}, () => { h.calls.push(['fallback']); });
+    assert.ok(h.calls.some(call => call[0] === 'adoptPrepared'));
+    assert.strictEqual(h.calls.some(call => call[0] === 'mutable'), false);
+    assert.strictEqual(h.calls.some(call => call[0] === 'fallback'), false);
+});
+
+runTest('local game engine runtimeは未解決・transition・採用失敗をmutableへ戻す', () => {
+    const unresolved = createHarness({ shadow: true, authority: true, resolved: false });
+    let fallback = 0;
+    unresolved.runtime.runHuman('rollDice', {}, () => { fallback += 1; return true; });
+    assert.strictEqual(fallback, 1);
+
+    for (const option of [{ transitionFailure: true }, { adoption: false }]) {
+        const h = createHarness({ shadow: true, authority: true, ...option });
+        let calls = 0;
+        h.runtime.runHuman('nextTurn', {}, () => { calls += 1; return true; });
+        assert.strictEqual(calls, 1);
+        assert.ok(h.calls.some(call => call[0] === 'finish'));
+    }
 });
 
 runTest('local game engine runtimeはresolved shadowだけを比較しoutcome controllerへ記録する', () => {

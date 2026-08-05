@@ -204,7 +204,7 @@ runTest('CPU online build proposal は共有Game Engineを使わず既存sendAct
 });
 
 
-runTest('CPU local build proposal calls shadow hooks around mutable apply once', () => {
+runTest('CPU local build proposalはUI authority hookを持たずmutable adapterを一度だけ呼ぶ', () => {
     const actor = cpu();
     const proposal = CPUBuildExecution.createCardBuildAction({ name: '\u9ea6\u7551' });
     const game = { builtThisTurn: false };
@@ -229,9 +229,7 @@ runTest('CPU local build proposal calls shadow hooks around mutable apply once',
 
     assert.strictEqual(result, true);
     assert.deepStrictEqual(calls, [
-        ['prepare', 'buildCard', { cardName: '\u9ea6\u7551' }],
         ['apply', 'buildCard', { cardName: '\u9ea6\u7551' }],
-        ['finish', marker],
     ]);
 });
 

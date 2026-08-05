@@ -41,6 +41,23 @@ runTest('shared pure engine authority policyはfail-closed選択を固定する'
     );
 });
 
+runTest('local prepared authorityは成功transitionだけを直接選択する', () => {
+    const disabled = GameEngineAuthority.create();
+    assert.deepStrictEqual(
+        disabled.selectPrepared({ ok: true, snapshot: { phase: 'build' } }),
+        { authority: 'mutable', reason: 'disabled' }
+    );
+    const enabled = GameEngineAuthority.create({ enabled: true });
+    assert.deepStrictEqual(
+        enabled.selectPrepared({ ok: true, snapshot: { phase: 'build' } }),
+        { authority: 'pure-transition', reason: '' }
+    );
+    assert.deepStrictEqual(
+        enabled.selectPrepared({ ok: false, reason: 'action-rejected', snapshot: null }),
+        { authority: 'mutable', reason: 'action-rejected' }
+    );
+});
+
 runTest('server pure engine authority wrapperはshared policyと同じ選択を返す', () => {
     const shared = GameEngineAuthority.create({ enabled: true });
     const server = makeGameEngineTransitionAuthority({ enabled: true });

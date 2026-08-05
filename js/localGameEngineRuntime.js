@@ -87,7 +87,22 @@ const LocalGameEngineRuntime = (() => {
             return outcome;
         }
 
-        function runHuman(action, data, fallback) {
+        // The legacy mutable path is rollback/failure ownership only. It is selected
+        // when either local gate is explicitly false, randomness is unresolved, or
+        // transition/adoption fails. Remove it only after those inputs have a
+        // deterministic transition and the explicit rollback gate is retired.
+        function adoptPrepared(prepared) {
+            if (!prepared || !dependencies.isAuthorityEnabled()) return null;
+            const outcome = dependencies.clientShadow.adoptPrepared({
+                prepared,
+                authorityEnabled: true,
+                adoptSnapshot: adopt,
+            });
+            outcomeController.set(outcome);
+            return outcome;
+        }
+
+        function runHuman(action, data, fallback, options = {}) {
             const online = dependencies.getOnlineState();
             dependencies.checkpoint('action-start', { action, isOnlineGame: online.isOnlineGame });
             if (online.isOnlineGame) {
@@ -96,14 +111,18 @@ const LocalGameEngineRuntime = (() => {
                 return sent;
             }
             const prepared = prepare(action, data);
-            const result = fallback();
+            const direct = adoptPrepared(prepared);
+            const authoritative = direct && direct.authority.authority === 'pure-transition';
+            const result = authoritative ? true : fallback();
             dependencies.checkpoint('action-local-applied', { action, result });
-            finish(prepared);
+            if (!authoritative) finish(prepared);
             if (result === false) return false;
-            dependencies.render();
-            dependencies.checkpoint('action-rendered', { action });
-            dependencies.scheduleCpu();
-            dependencies.checkpoint('action-scheduleCPU-returned', { action });
+            if (options.effects !== false) {
+                dependencies.render();
+                dependencies.checkpoint('action-rendered', { action });
+                dependencies.scheduleCpu();
+                dependencies.checkpoint('action-scheduleCPU-returned', { action });
+            }
             return true;
         }
 
@@ -116,24 +135,30 @@ const LocalGameEngineRuntime = (() => {
                 return;
             }
             const prepared = prepare(proposal.action, proposal.data);
-            const engine = dependencies.getEngine();
-            if (engine && typeof engine.applyMutableAction === 'function') {
-                engine.applyMutableAction({
-                    game,
-                    action: proposal.action,
-                    data: proposal.data,
-                });
-            } else {
-                fallback();
+            const direct = adoptPrepared(prepared);
+            const authoritative = direct && direct.authority.authority === 'pure-transition';
+            if (!authoritative) {
+                const engine = dependencies.getEngine();
+                if (engine && typeof engine.applyMutableAction === 'function') {
+                    engine.applyMutableAction({
+                        game,
+                        action: proposal.action,
+                        data: proposal.data,
+                    });
+                } else {
+                    fallback();
+                }
+                finish(prepared);
             }
-            finish(prepared);
             dependencies.render();
             dependencies.scheduleCpu();
+            return true;
         }
 
         return Object.freeze({
             outcomeController,
             adopt,
+            adoptPrepared,
             buildSnapshot,
             createAdapter,
             finish,

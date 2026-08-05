@@ -707,12 +707,6 @@ class CPU {
             isReconnectingOnline: typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline,
             socketConnected: typeof socket === 'undefined' || !socket ? null : socket.connected,
             sendAction: typeof sendAction === 'function' ? sendAction : null,
-            prepareLocalAction: typeof globalThis._prepareLocalGameEngineShadow === 'function'
-                ? globalThis._prepareLocalGameEngineShadow
-                : null,
-            finishLocalAction: typeof globalThis._finishLocalGameEngineShadow === 'function'
-                ? globalThis._finishLocalGameEngineShadow
-                : null,
         };
     }
 

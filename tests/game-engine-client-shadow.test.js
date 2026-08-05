@@ -112,3 +112,46 @@ runTest('client Engine shadowはmismatchと採用失敗でmutableへfallbackす�
     assert.deepStrictEqual(failed.authority, { authority: 'mutable', reason: 'adoption-failed' });
     assert.strictEqual(adoptCalls, 1);
 });
+
+
+runTest('client Engine authorityはprepared transitionをmutable比較なしで採用する', () => {
+    const target = { phase: 'build', currentPlayerIndex: 0 };
+    const prepared = {
+        action: 'rollDice',
+        transition: { ok: true, reason: '', snapshot: target },
+    };
+    let adopted = null;
+    const outcome = GameEngineClientShadow.adoptPrepared({
+        prepared,
+        authorityEnabled: true,
+        adoptSnapshot(snapshot) { adopted = snapshot; return true; },
+    });
+    assert.deepStrictEqual(outcome, {
+        report: { status: 'authority-direct', action: 'rollDice', reason: '' },
+        authority: { authority: 'pure-transition', reason: '' },
+    });
+    assert.strictEqual(adopted, target);
+});
+
+runTest('client Engine authorityは無効・transition失敗・採用失敗をmutableへ戻す', () => {
+    const valid = {
+        action: 'nextTurn',
+        transition: { ok: true, reason: '', snapshot: { phase: 'roll' } },
+    };
+    assert.deepStrictEqual(GameEngineClientShadow.adoptPrepared({
+        prepared: valid,
+        authorityEnabled: false,
+    }).authority, { authority: 'mutable', reason: 'disabled' });
+    assert.deepStrictEqual(GameEngineClientShadow.adoptPrepared({
+        prepared: {
+            action: 'nextTurn',
+            transition: { ok: false, reason: 'action-rejected', snapshot: null },
+        },
+        authorityEnabled: true,
+    }).authority, { authority: 'mutable', reason: 'action-rejected' });
+    assert.deepStrictEqual(GameEngineClientShadow.adoptPrepared({
+        prepared: valid,
+        authorityEnabled: true,
+        adoptSnapshot: () => false,
+    }).authority, { authority: 'mutable', reason: 'adoption-failed' });
+});

@@ -1131,3 +1131,11 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 - The CPU facade now owns configuration, caches, public compatibility methods, and explicit executors; roll, pending, build, card evaluation, state evaluation, lookahead, and business decisions live behind dedicated strategy/runtime boundaries.
 - Canonical build proposals are collected without CPU instance selection state. A structural contract limits long CPU facade bodies to named configuration/cache/executor adapters.
 - Fixed-seed decision and 2-to-10-player self-play baselines are the completion evidence for unchanged policy and random-consumption order.
+
+
+## 2026-08-05 Fixed outcome 2 complete: local Engine cutover
+
+1. Resolved local actions use `snapshot -> GameEngine.transitionSnapshot -> validated adoption` as the default authority path; a successful adoption skips the duplicate live mutable execution.
+2. `LocalGameEngineRuntime` is the sole rollback owner. Explicit-false gates, unresolved randomness, transition failure, or adoption failure select legacy mutation. That fallback may be removed only after unresolved random inputs become deterministic and the rollback gate is intentionally retired.
+3. Human builds, Undo, and the production CPU build phase now enter the same runtime boundary. Standalone CPU/self-play mutation remains an injected Engine adapter and no longer participates in UI shadowing.
+4. Local cutover changes no rule, payload, Snapshot/save schema, CPU decision/RNG, online authority, transport, or PWA behavior. Online/server Engine adoption remains separately gated and default-OFF.

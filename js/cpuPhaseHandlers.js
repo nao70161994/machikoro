@@ -91,18 +91,27 @@ const CpuPhaseHandlers = (() => {
                     const actionOnly = typeof cpu.chooseBuildAction === 'function' &&
                         typeof cpu.executeBuildAction === 'function';
                     const proposal = actionOnly ? dependencies.chooseAction('build', cpu) : null;
-                    const result = actionOnly
-                        ? cpu.executeBuildAction(proposal, current, dependencies.shopStock)
-                        : cpu.build(current, dependencies.shopStock);
+                    const result = actionOnly && proposal
+                        ? dependencies.getOnlineState().isOnlineGame
+                            ? cpu.executeBuildAction(proposal, current, dependencies.shopStock)
+                            : dependencies.executeAction(proposal.action, proposal.data, () =>
+                                cpu.executeBuildAction(proposal, current, dependencies.shopStock))
+                        : actionOnly
+                            ? false
+                            : cpu.build(current, dependencies.shopStock);
                     if (result === false) {
                         if (dependencies.getOnlineState().isOnlineGame) return false;
                         if (!current.builtThisTurn) {
                             dependencies.checkpoint('scheduleCPU-build-failed-pass');
-                            current.nextTurn();
+                            dependencies.executeAction(
+                                dependencies.actions.NEXT_TURN,
+                                {},
+                                () => current.nextTurn()
+                            );
                         }
                         return true;
                     }
-                    dependencies.render();
+                    if (!actionOnly) dependencies.render();
                     return true;
                 },
             },

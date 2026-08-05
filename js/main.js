@@ -278,12 +278,12 @@ function markMainCheckpoint(event, details = {}) {
 
 function isLocalGameEngineShadowEnabled() {
     return typeof window !== 'undefined' &&
-        window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED === true;
+        window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED !== false;
 }
 
 function isLocalGameEngineAuthorityEnabled() {
     return typeof window !== 'undefined' &&
-        window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED === true;
+        window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED !== false;
 }
 
 const localGameEngineRuntime = LocalGameEngineRuntime.createRuntime({
@@ -329,11 +329,8 @@ function cpuDo(action, data, fallback) {
 }
 function _createLocalGameEngineRuntimeAdapter() { return localGameEngineRuntime.createAdapter(); }
 function _buildLocalGameEngineSnapshot() { return localGameEngineRuntime.buildSnapshot(); }
-function _prepareLocalGameEngineShadow(action, data) { return localGameEngineRuntime.prepare(action, data); }
-function _adoptLocalGameEngineShadowSnapshot(snapshot) { return localGameEngineRuntime.adopt(snapshot); }
-function _finishLocalGameEngineShadow(prepared) { return localGameEngineRuntime.finish(prepared); }
-function runLocalOrSendOnline(action, data, fallback) {
-    return localGameEngineRuntime.runHuman(action, data, fallback);
+function runLocalOrSendOnline(action, data, fallback, options) {
+    return localGameEngineRuntime.runHuman(action, data, fallback, options);
 }
 
 const MAIN_ACTIONS = (typeof GAME_ACTIONS !== 'undefined') ? GAME_ACTIONS : Object.freeze({
@@ -480,9 +477,8 @@ const mainHumanActionRuntime = MainHumanActionRuntime.createRuntime({
     cards: CARDS,
     checkpoint: (event, details) => markMainCheckpoint(event, details),
     clearUndoState: () => GameRuntimeState.runtime.setUndoState(null),
-    decrementStock: (stock, card) => decrementShopStock(stock, card),
     document,
-    finishShadow: prepared => _finishLocalGameEngineShadow(prepared),
+    decrementStock: (stock, card) => decrementShopStock(stock, card),
     getActionFlightState: () => mainOnlineActionFlightState(),
     getGameState: mainGameRuntimeSnapshot,
     getLandmarkEmoji: name => getLandmarkEmoji(name),
@@ -494,10 +490,9 @@ const mainHumanActionRuntime = MainHumanActionRuntime.createRuntime({
     pageActivationRuntime,
     playSound: name => playSound(name),
     player: Player,
-    prepareShadow: (action, data) => _prepareLocalGameEngineShadow(action, data),
     render: () => render(),
     rollDie: () => rollRandomDie(),
-    runAction: (action, data, fallback) => runLocalOrSendOnline(action, data, fallback),
+    runAction: (action, data, fallback, options) => runLocalOrSendOnline(action, data, fallback, options),
     saveUndoState: () => saveUndoState(),
     scheduleCpu: () => scheduleCPU(),
     sendAction: (action, data) => sendAction(action, data),

@@ -93,7 +93,37 @@ const GameEngineClientShadow = (() => {
         return Object.freeze({ report, authority: decision });
     }
 
-    return Object.freeze({ equalSnapshots, createOutcomeController, prepare, finish });
+    function adoptPrepared(options) {
+        const prepared = options && options.prepared;
+        if (!prepared) return null;
+        const authority = GameEngineAuthorityApi.create({
+            enabled: options.authorityEnabled === true,
+        });
+        let decision = authority.selectPrepared(prepared.transition);
+        const transition = prepared.transition;
+        const report = Object.freeze({
+            status: decision.authority === 'pure-transition'
+                ? 'authority-direct'
+                : 'transition-error',
+            action: prepared.action || '',
+            reason: decision.reason,
+        });
+        if (decision.authority === 'pure-transition') {
+            let adopted = false;
+            try {
+                adopted = typeof options.adoptSnapshot === 'function' &&
+                    options.adoptSnapshot(transition.snapshot) === true;
+            } catch (_) {
+                adopted = false;
+            }
+            if (!adopted) {
+                decision = Object.freeze({ authority: 'mutable', reason: 'adoption-failed' });
+            }
+        }
+        return Object.freeze({ report, authority: decision });
+    }
+
+    return Object.freeze({ adoptPrepared, equalSnapshots, createOutcomeController, prepare, finish });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameEngineClientShadow;

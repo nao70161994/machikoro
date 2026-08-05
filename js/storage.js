@@ -492,14 +492,15 @@ function doUndo() {
         sendAction('undoBuild', { state });
         return;
     }
-    const shadow = typeof _prepareLocalGameEngineShadow === 'function'
-        ? _prepareLocalGameEngineShadow('undoBuild', { state })
-        : null;
-    restoreUndoSnapshot(state);
-    if (typeof _finishLocalGameEngineShadow === 'function') {
-        _finishLocalGameEngineShadow(shadow);
-    }
-    render();
+    const restored = typeof runLocalOrSendOnline === 'function'
+        ? runLocalOrSendOnline(
+            'undoBuild',
+            { state },
+            () => restoreUndoSnapshot(state),
+            { effects: false }
+        )
+        : restoreUndoSnapshot(state);
+    if (restored !== false) render();
 }
 
 function saveSettings() {

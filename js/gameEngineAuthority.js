@@ -20,6 +20,19 @@ const GameEngineAuthority = (() => {
         return Object.freeze({ authority: 'pure-transition', reason: '' });
     }
 
+    function selectPrepared(enabled, transition) {
+        if (!enabled) {
+            return Object.freeze({ authority: 'mutable', reason: 'disabled' });
+        }
+        if (!transition || transition.ok !== true || !transition.snapshot) {
+            return Object.freeze({
+                authority: 'mutable',
+                reason: transition && transition.reason || 'transition-unavailable',
+            });
+        }
+        return Object.freeze({ authority: 'pure-transition', reason: '' });
+    }
+
     function create(options = {}) {
         const enabled = options.enabled === true;
         return Object.freeze({
@@ -27,10 +40,13 @@ const GameEngineAuthority = (() => {
             select(transition, parityReport) {
                 return select(enabled, transition, parityReport);
             },
+            selectPrepared(transition) {
+                return selectPrepared(enabled, transition);
+            },
         });
     }
 
-    return Object.freeze({ create, select });
+    return Object.freeze({ create, select, selectPrepared });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameEngineAuthority;

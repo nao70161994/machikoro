@@ -8,6 +8,11 @@ function resolvedRoll() {
     return { forceDice: 3, tunaDice: [2, 5] };
 }
 
+function disableLocalAuthority(runtime) {
+    runtime.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = false;
+    runtime.window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED = false;
+}
+
 function symmetricSettings() {
     return [
         { type: 'human', difficulty: 'normal', name: 'Player' },
@@ -24,8 +29,19 @@ runTest('local Engine shadow outcomeはclient shadow controllerだけが所有�
     assert.ok(runtimeSource.includes('outcomeController.set(outcome)'));
 });
 
-runTest('local Engine shadowはproduction未注入時にmutable game identityを維持する', () => {
+runTest('local Engineはproduction未注入時に共有transitionを既定authorityとして採用する', () => {
     const rt = loadIntegrationRuntime();
+    const before = rt.__test.startLocalGame();
+    assert.strictEqual(rt.__test.runLocalEngineAction('rollDice', resolvedRoll()), true);
+    assert.notStrictEqual(rt.__test.getGame(), before);
+    const outcome = rt.__test.getLocalGameEngineShadowOutcome();
+    assert.strictEqual(outcome.report.status, 'authority-direct');
+    assert.strictEqual(outcome.authority.authority, 'pure-transition');
+});
+
+runTest('local Engineは明示OFFでlegacy mutable経路へrollbackできる', () => {
+    const rt = loadIntegrationRuntime();
+    disableLocalAuthority(rt);
     const before = rt.__test.startLocalGame();
     assert.strictEqual(rt.__test.runLocalEngineAction('rollDice', resolvedRoll()), true);
     assert.strictEqual(rt.__test.getGame(), before);
@@ -48,6 +64,7 @@ runTest('local Engine shadowは未解決乱数payloadをauthority有効時も採
 
 runTest('local Engine shadow authorityは確定action列でlegacy snapshotへ収束する', () => {
     const legacy = loadIntegrationRuntime();
+    disableLocalAuthority(legacy);
     legacy.__test.startLocalGame(symmetricSettings());
     legacy.__test.runLocalEngineAction('rollDice', resolvedRoll());
     legacy.__test.runLocalEngineAction('nextTurn', {});
@@ -60,7 +77,7 @@ runTest('local Engine shadow authorityは確定action列でlegacy snapshotへ収
     authoritative.__test.runLocalEngineAction('nextTurn', {});
 
     const outcome = authoritative.__test.getLocalGameEngineShadowOutcome();
-    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.status, 'authority-direct');
     assert.strictEqual(outcome.report.action, 'nextTurn');
     assert.strictEqual(outcome.report.reason, '');
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
@@ -74,6 +91,7 @@ runTest('local Engine shadow authorityは確定action列でlegacy snapshotへ収
 
 runTest('local CPU Engine shadow authorityは確定proposal列でlegacy snapshotへ収束する', () => {
     const legacy = loadIntegrationRuntime();
+    disableLocalAuthority(legacy);
     legacy.__test.startLocalGame(symmetricSettings());
     legacy.__test.runLocalCpuEngineAction('rollDice', resolvedRoll());
     legacy.__test.runLocalCpuEngineAction('nextTurn', {});
@@ -86,7 +104,7 @@ runTest('local CPU Engine shadow authorityは確定proposal列でlegacy snapshot
     authoritative.__test.runLocalCpuEngineAction('nextTurn', {});
 
     const outcome = authoritative.__test.getLocalGameEngineShadowOutcome();
-    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.status, 'authority-direct');
     assert.strictEqual(outcome.report.action, 'nextTurn');
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
     assert.strictEqual(
@@ -108,7 +126,7 @@ runTest('local human build/UndoはEngine shadow authorityでrollback前後を維
     rt.__test.elements.confirmOkBtn.onclick();
 
     let outcome = rt.__test.getLocalGameEngineShadowOutcome();
-    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.status, 'authority-direct');
     assert.strictEqual(outcome.report.action, 'buildCard');
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
     assert.strictEqual(rt.__test.getGame().currentPlayer().countCard('麦畑'), beforeCount + 1);
@@ -116,7 +134,7 @@ runTest('local human build/UndoはEngine shadow authorityでrollback前後を維
     rt.doUndo();
 
     outcome = rt.__test.getLocalGameEngineShadowOutcome();
-    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.status, 'authority-direct');
     assert.strictEqual(outcome.report.action, 'undoBuild');
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
     assert.strictEqual(JSON.stringify(rt.__test.getLocalGameEngineSnapshot()), before);
@@ -133,14 +151,14 @@ runTest('local human landmark buildはEngine shadow authorityでlegacy結果と�
     rt.__test.elements.confirmOkBtn.onclick();
 
     const outcome = rt.__test.getLocalGameEngineShadowOutcome();
-    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.status, 'authority-direct');
     assert.strictEqual(outcome.report.action, 'buildLandmark');
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
     assert.strictEqual(rt.__test.getGame().currentPlayer().landmarks['駅'], true);
 });
 
 
-runTest('local CPU build passes a resolved proposal through Engine shadow authority', () => {
+runTest('local CPU build actionは共有Engineの既定authorityを通る', () => {
     const rt = loadIntegrationRuntime();
     rt.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = true;
     rt.window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED = true;
@@ -153,13 +171,13 @@ runTest('local CPU build passes a resolved proposal through Engine shadow author
     game.currentPlayerIndex = cpuIndex;
     rt.__test.startBuildPhase({ coins: 20 });
 
-    assert.strictEqual(rt.__test.runLocalCpuBuildAction(
+    assert.strictEqual(rt.__test.runLocalCpuEngineAction(
         'buildLandmark',
         { name: '\u99c5' }
     ), true);
 
     const outcome = rt.__test.getLocalGameEngineShadowOutcome();
-    assert.strictEqual(outcome.report.status, 'matched');
+    assert.strictEqual(outcome.report.status, 'authority-direct');
     assert.strictEqual(outcome.report.action, 'buildLandmark');
     assert.strictEqual(outcome.authority.authority, 'pure-transition');
     assert.strictEqual(rt.__test.getGame().currentPlayer().landmarks['\u99c5'], true);
@@ -267,6 +285,7 @@ runTest('local Engine shadow authorityは全決定論action群でlegacy snapshot
 
     for (const fixture of cases) {
         const legacy = loadIntegrationRuntime();
+        disableLocalAuthority(legacy);
         const legacyGame = legacy.__test.startLocalGame(symmetricSettings());
         fixture.setup(legacy, legacyGame);
         assert.strictEqual(
@@ -287,7 +306,7 @@ runTest('local Engine shadow authorityは全決定論action群でlegacy snapshot
         );
 
         const outcome = authoritative.__test.getLocalGameEngineShadowOutcome();
-        assert.strictEqual(outcome.report.status, 'matched', fixture.action);
+        assert.strictEqual(outcome.report.status, 'authority-direct', fixture.action);
         assert.strictEqual(outcome.report.action, fixture.action);
         assert.strictEqual(outcome.authority.authority, 'pure-transition', fixture.action);
         assert.strictEqual(

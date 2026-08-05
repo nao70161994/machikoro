@@ -13,9 +13,8 @@ const MainHumanActionRuntime = (() => {
         }
         const requiredEffects = [
             'allowedActionsFor', 'cancelAutoSkip', 'checkpoint', 'clearUndoState',
-            'decrementStock', 'finishShadow', 'getActionFlightState', 'getGameState',
-            'getLandmarkEmoji', 'getOnlineState', 'getStockCount', 'isReconnectBlocked',
-            'playSound', 'prepareShadow', 'render', 'rollDie', 'runAction',
+            'decrementStock', 'getActionFlightState', 'getGameState', 'getLandmarkEmoji', 'getOnlineState',
+            'getStockCount', 'isReconnectBlocked', 'playSound', 'render', 'rollDie', 'runAction',
             'saveUndoState', 'scheduleCpu', 'sendAction', 'showConfirm', 'traceBuild',
             'unlockHumanTurn', 'updateDiceDisplay',
         ];
@@ -277,13 +276,16 @@ const MainHumanActionRuntime = (() => {
                     traceBuildFlow('card-online-send', { cardName: name, sent });
                     return;
                 }
-                const shadow = dependencies.prepareShadow(
+                const built = dependencies.runAction(
                     dependencies.actions.BUILD_CARD,
-                    { cardName: name }
+                    { cardName: name },
+                    () => {
+                        const applied = gameState().game.buildCard(card);
+                        if (applied) dependencies.decrementStock(dependencies.shopStock, card);
+                        return applied;
+                    },
+                    { effects: false }
                 );
-                const built = gameState().game.buildCard(card);
-                if (built) dependencies.decrementStock(dependencies.shopStock, card);
-                dependencies.finishShadow(shadow);
                 if (!built) return;
                 traceBuildFlow('card-applied', { cardName: name });
                 dependencies.playSound('build');
@@ -317,12 +319,12 @@ const MainHumanActionRuntime = (() => {
                         traceBuildFlow('landmark-online-send', { landmarkName: name, sent });
                         return;
                     }
-                    const shadow = dependencies.prepareShadow(
+                    const built = dependencies.runAction(
                         dependencies.actions.BUILD_LANDMARK,
-                        { name }
+                        { name },
+                        () => gameState().game.buildLandmark(name),
+                        { effects: false }
                     );
-                    const built = gameState().game.buildLandmark(name);
-                    dependencies.finishShadow(shadow);
                     if (!built) return;
                     traceBuildFlow('landmark-applied', { landmarkName: name });
                     dependencies.playSound('build');

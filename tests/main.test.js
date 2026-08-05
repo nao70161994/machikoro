@@ -104,6 +104,10 @@ function loadMainRuntime(options = {}) {
                 reload() { context.reloadCount = (context.reloadCount || 0) + 1; },
             },
             MACHIKORO_CLIENT_VERSION: 'test-version',
+            // This lightweight harness uses partial GameManager doubles. Engine authority
+            // integration is covered by game-engine-local-shadow.test.js.
+            MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED: false,
+            MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED: false,
             addEventListener(name, handler) {
                 eventAddCounts[`window:${name}`] = (eventAddCounts[`window:${name}`] || 0) + 1;
                 eventHandlers[name] = handler;

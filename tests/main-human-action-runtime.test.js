@@ -71,9 +71,11 @@ function createHarness(options = {}) {
         cards: [{ name: '麦畑', cost: 1 }],
         checkpoint: (event, details) => calls.push(['checkpoint', event, details]),
         clearUndoState: () => calls.push(['clearUndoState']),
-        decrementStock: (target, card) => { calls.push(['decrementStock', card.name]); target[card.name]--; },
         document: { getElementById: id => elements[id] },
-        finishShadow: shadow => calls.push(['finishShadow', shadow]),
+        decrementStock: (target, card) => {
+            calls.push(['decrementStock', card.name]);
+            target[card.name]--;
+        },
         getActionFlightState: () => ({ inFlight: !!options.inFlight }),
         getGameState: () => gameState,
         getLandmarkEmoji: () => '🏛️',
@@ -85,11 +87,12 @@ function createHarness(options = {}) {
         pageActivationRuntime,
         playSound: name => calls.push(['playSound', name]),
         player: { landmarkCost: () => 4 },
-        prepareShadow: (action, data) => { calls.push(['prepareShadow', action, data]); return 'shadow'; },
         render: () => calls.push(['render']),
         rollDie: () => random.shift(),
-        runAction(action, data, fallback) {
-            calls.push(['runAction', action, data]);
+        runAction(action, data, fallback, runtimeOptions) {
+            const call = ['runAction', action, data];
+            if (runtimeOptions !== undefined) call.push(runtimeOptions);
+            calls.push(call);
             return fallback();
         },
         saveUndoState: () => calls.push(['saveUndoState']),
@@ -135,16 +138,18 @@ runTest('main human action runtimeはonline ACK中の人間actionを入場前に
     assert.deepStrictEqual(harness.calls, []);
 });
 
-runTest('main human action runtimeはlocal card建設のshadowとUI effect順を維持する', () => {
+runTest('main human action runtimeはlocal card建設を共有action runtime経由で適用する', () => {
     const harness = createHarness();
     harness.runtime.onBuildCard('麦畑');
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
         'traceBuild', 'showConfirm', 'traceBuild', 'saveUndoState', 'cancelAutoSkip',
-        'prepareShadow', 'buildCard', 'decrementStock', 'finishShadow', 'traceBuild',
-        'playSound', 'render', 'traceBuild', 'unlockHumanTurn', 'scheduleCpu',
+        'runAction', 'buildCard', 'decrementStock', 'traceBuild', 'playSound', 'render',
+        'traceBuild', 'unlockHumanTurn', 'scheduleCpu',
     ]);
     assert.strictEqual(harness.stock.麦畑, 0);
-    assert.deepStrictEqual(harness.calls[5], ['prepareShadow', 'buildCard', { cardName: '麦畑' }]);
+    assert.deepStrictEqual(harness.calls[5], [
+        'runAction', 'buildCard', { cardName: '麦畑' }, { effects: false },
+    ]);
 });
 
 runTest('main human action runtimeはonline建設をlocal mutationなしで送信する', () => {

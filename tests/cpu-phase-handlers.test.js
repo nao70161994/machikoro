@@ -51,12 +51,14 @@ runTest('CPU phase roll handlerはcanonical proposalを既存fallback引数へ�
     ]);
 });
 
-runTest('CPU phase build handlerはlocal失敗だけをpassしonlineでは停止する', () => {
+runTest('CPU phase build handlerはlocal proposalを共有action境界へ渡しonline gateを維持する', () => {
     const local = createHarness();
     local.game.phase = local.phases.BUILD;
     const cpu = { chooseBuildAction() {}, executeBuildAction: () => false };
     assert.strictEqual(local.handlers.find(handler => handler.name === 'build').run(cpu), true);
-    assert.deepStrictEqual(local.calls.map(call => call[0]), ['checkpoint', 'nextTurn']);
+    assert.deepStrictEqual(local.calls.map(call => call[0]), [
+        'execute', 'checkpoint', 'execute', 'nextTurn',
+    ]);
 
     const online = createHarness();
     online.game.phase = online.phases.BUILD;

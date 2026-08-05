@@ -105,9 +105,6 @@ function executeAction(cpu, proposal, game, shopStock, context = {}) {
         } else {
             return setBuildActionResult(cpu, false);
         }
-        const shadow = typeof context.prepareLocalAction === 'function'
-            ? context.prepareLocalAction(proposal.action, proposal.data)
-            : null;
         const applied = applyMutableAction({
             game,
             shopStock,
@@ -118,9 +115,6 @@ function executeAction(cpu, proposal, game, shopStock, context = {}) {
                 stock[card.name]--;
             },
         }) === true;
-        if (typeof context.finishLocalAction === 'function') {
-            context.finishLocalAction(shadow);
-        }
         return setBuildActionResult(cpu, applied);
     }
     if (proposal.action === 'buildCard') {
