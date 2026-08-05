@@ -64,12 +64,14 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/cpuChoiceScoring.js'));
     assert.ok(config.files.includes('js/cpuCardEvaluationRuntime.js'));
     assert.ok(config.files.includes('js/cpuStateEvaluationRuntime.js'));
+    assert.ok(config.files.includes('js/cpuBuildPolicyRuntime.js'));
     assert.ok(config.files.includes('js/cpuEvaluation.js'));
     assert.ok(config.files.includes('js/cpuLegalMoves.js'));
     assert.ok(config.files.includes('js/cpuLookaheadRuntime.js'));
     assert.ok(config.files.includes('js/cpuProfile.js'));
     assert.ok(config.files.includes('js/cpuSimulation.js'));
     assert.ok(config.files.includes('js/cpuBusinessMoves.js'));
+    assert.ok(config.files.includes('js/cpuBusinessDecisionRuntime.js'));
     assert.ok(config.files.includes('js/cpuDiagnostics.js'));
     assert.ok(config.files.includes('js/cpuEvaluationCache.js'));
     assert.ok(config.files.includes('js/cpuPendingResolution.js'));

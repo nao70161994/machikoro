@@ -1124,3 +1124,10 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 - Consolidated 50 board/profile, roll, income, threat, win-distance, crowd, and build-candidate adapters under `CPUStateEvaluationRuntime`.
 - `CPU.js` now delegates these APIs instead of owning their implementations; the new runtime is the production source of truth in browser, self-play, integration, and test loaders.
 - Together with `CPUCardEvaluationRuntime`, this leaves the CPU facade focused on configuration, public compatibility APIs, remaining build policy adapters, and explicit execution wiring.
+
+## 2026-08-05 Fixed outcome 1 complete: action-only CPU strategy
+
+- Added `CPUBuildPolicyRuntime` and `CPUBusinessDecisionRuntime`, removing the last substantial decision bodies from `CPU.js`.
+- The CPU facade now owns configuration, caches, public compatibility methods, and explicit executors; roll, pending, build, card evaluation, state evaluation, lookahead, and business decisions live behind dedicated strategy/runtime boundaries.
+- Canonical build proposals are collected without CPU instance selection state. A structural contract limits long CPU facade bodies to named configuration/cache/executor adapters.
+- Fixed-seed decision and 2-to-10-player self-play baselines are the completion evidence for unchanged policy and random-consumption order.

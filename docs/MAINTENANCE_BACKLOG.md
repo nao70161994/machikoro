@@ -998,3 +998,11 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - The corresponding implementations in `CPU.js` were replaced by thin delegates, reducing the facade from 1,920 to 1,496 lines. No duplicate facade formulas or fallback path remain.
 - Ownership/delegate contracts, main CPU tests, fixed decision baseline, 2-to-10-player self-play baseline, full CPU gate, checkJs, ESLint, and static gate pass. Scoped gates now cover 264 ESLint maintenance files and 263 checkJs runtime files.
 - Cache keys, lazy callback order, formulas, candidate order, difficulty tuning, RNG consumption, CPU strength, rules, schemas, online/reconnect, storage, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Fixed outcome 1 complete: action-only CPU strategy
+
+- `js/cpuBuildPolicyRuntime.js` now owns 27 endgame, landmark-progress, expert-v2, synergy, and build-hold policies; `js/cpuBusinessDecisionRuntime.js` owns the remaining 11 business-exchange decision adapters.
+- `CPU.js` decreased from 1,496 to 1,195 lines in this final milestone and from 2,549 to 1,195 lines across fixed outcome 1. Its only bodies longer than eight lines are constructor/configuration, evaluation caches, explicit compatibility executors, build execution wiring, and the simulation-step adapter.
+- Build strategy selection is action-only and stateless: it returns a canonical proposal through a call-local adapter. Pending and roll strategies already return canonical actions or scalar decisions. The legacy build-selection fields and fallback branches remain absent.
+- Structure contracts reject new long decision bodies and legacy selection fields. Fixed decision and 2-to-10-player self-play baselines, full CPU gate, checkJs, ESLint, and static gate pass. Scoped gates now cover 266 ESLint maintenance files and 265 checkJs runtime files.
+- CPU policy values, difficulty behavior, candidate/tie order, RNG consumption, CPU strength, game rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.

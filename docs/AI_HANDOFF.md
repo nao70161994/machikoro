@@ -1186,3 +1186,10 @@ Test index:
 - `js/cpuStateEvaluationRuntime.js` owns 50 profile/board, roll expectation, income, threat, win-distance, crowd, and build-candidate projection adapters. `CPU.js` delegates them and is now 1,496 lines.
 - Keep cache and board projection orchestration here, with pure arithmetic in `CPUEvaluation`; do not copy implementation bodies back into `CPU.js`.
 - `tests/cpu-state-evaluation-runtime.test.js` fixes complete ownership, representative short-circuit behavior, and delegate shape. Fixed decision and 2-to-10-player self-play baselines pass.
+
+## Fixed outcome 1 complete: action-only CPU strategy (2026-08-05)
+
+- `js/cpuBuildPolicyRuntime.js` owns 27 remaining build-policy methods and `js/cpuBusinessDecisionRuntime.js` owns 11 business-decision adapters. `CPU.js` is now 1,195 lines versus 2,549 at fixed-outcome start.
+- CPU facade bodies longer than eight lines are contract-limited to constructor/configuration, caches, explicit compatibility executors, build execution wiring, and simulation-step wiring. Do not move decision formulas back into the facade.
+- Build selection uses a call-local proposal adapter and no `_selectedBuildAction`, `_collectingBuildAction`, or `_buildProposalCollector`. Roll/pending/build decisions remain fixed by full CPU, decision snapshot, baseline, and 2-to-10-player self-play tests.
+- Fixed outcome 1 is complete. The next fixed scope is local shared Game Engine default authority and removal of parity-proven duplicate mutable application paths.

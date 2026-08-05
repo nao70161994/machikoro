@@ -2392,6 +2392,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/cpuSelection.js', 'js/CPU.js');
     assertBefore('js/cpuLegalMoves.js', 'js/CPU.js');
     assertBefore('js/cpuBusinessMoves.js', 'js/CPU.js');
+    assertBefore('js/cpuBusinessDecisionRuntime.js', 'js/CPU.js');
     assertBefore('js/cpuActionProposal.js', 'js/cpuBuildExecution.js');
     assertBefore('js/cpuBuildExecution.js', 'js/cpuBuildProposalCollector.js');
     assertBefore('js/cpuBuildProposalCollector.js', 'js/cpuBuildStrategy.js');
@@ -2401,6 +2402,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/cpuChoiceScoring.js', 'js/CPU.js');
     assertBefore('js/cpuCardEvaluationRuntime.js', 'js/CPU.js');
     assertBefore('js/cpuStateEvaluationRuntime.js', 'js/CPU.js');
+    assertBefore('js/cpuBuildPolicyRuntime.js', 'js/CPU.js');
     assertBefore('js/cpuSimulation.js', 'js/CPU.js');
     assertBefore('js/cpuLookaheadRuntime.js', 'js/CPU.js');
     assertBefore('js/cpuDiagnostics.js', 'js/CPU.js');
