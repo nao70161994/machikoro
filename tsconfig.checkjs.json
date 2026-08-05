@@ -70,6 +70,7 @@
     "js/gameSchemaNegotiation.js",
     "js/gameSchemaCodec.js",
     "js/onlineReconnectState.js",
+    "js/onlineReconnectRuntime.js",
     "js/onlineRuntimeFlags.js",
     "js/onlineDiagnosticState.js",
     "js/onlineSchemaTransport.js",

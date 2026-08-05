@@ -427,20 +427,26 @@ const ONLINE_RESTORE_ROOM_INDEX_KEY = 'onlineRestoreRoomIndex';
 const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
 
 const ONLINE_ROOM_STORAGE_KEY_SEPARATOR = ':room:';
-const _onlineReconnectController = OnlineReconnectState.createController();
-const _onlineRejoinAttemptController = OnlineRetryPolicy.createRejoinAttemptController();
-const _onlineRejoinTimerController = OnlineRetryPolicy.createRejoinTimerController({
+const _onlineReconnectRuntime = OnlineReconnectRuntime.create({
+    statePolicy: OnlineReconnectState,
+    retryPolicy: OnlineRetryPolicy,
     setTimer: typeof setTimeout === 'function' ? setTimeout : null,
     clearTimer: typeof clearTimeout === 'function' ? clearTimeout : null,
     now: () => Date.now(),
+    getLegacyReconnecting: () => onlineSessionSnapshot().isReconnectingOnline,
+    setLegacyReconnecting: value => setOnlineReconnectLegacyFlag(value),
+    getObservationFlags: () => _onlineReconnectObservationFlags(),
+    getStatusText: () => onlineDomEffects.statusText(),
+    setStatusText: message => onlineDomEffects.setStatusText(message),
 });
+const _onlineRejoinAttemptController = _onlineReconnectRuntime.attempts;
+const _onlineRejoinTimerController = _onlineReconnectRuntime.timer;
+const _onlineReconnectCompletionController = _onlineReconnectRuntime.completion;
 const _onlineActionFlightController = OnlineRetryPolicy.createActionFlightController({
     setTimer: typeof setTimeout === 'function' ? setTimeout : null,
     clearTimer: typeof clearTimeout === 'function' ? clearTimeout : null,
     now: () => Date.now(),
 });
-const _onlineReconnectCompletionController = OnlineReconnectState.createCompletionController();
-
 function getOnlineActionFlightState() {
     return _onlineActionFlightController.snapshot();
 }
@@ -461,8 +467,6 @@ function _onlineReconnectObservationFlags() {
     const session = onlineSessionSnapshot();
     const connected = !!session.socket && session.socket.connected !== false;
     return {
-        failed: _onlineRejoinAttemptController.isExhausted(),
-        completed: _onlineReconnectCompletionController.isCompleted(),
         replaying: session.isReplaying,
         restoring: _onlineRestoreLifecycleController.isInProgress(),
         rejoining: session.isReconnectingOnline && connected,
@@ -472,9 +476,9 @@ function _onlineReconnectObservationFlags() {
 }
 
 function _observeOnlineReconnectEvent(event) {
-    const observation = _onlineReconnectController.observe(event, _onlineReconnectObservationFlags());
-    _applyOnlineReconnectEffectAuthority(onlineSessionSnapshot().isReconnectingOnline);
-    return observation;
+    return _onlineReconnectRuntime.observe(event, {
+        effectAuthorityEnabled: isOnlineReconnectEffectAuthorityEnabled(),
+    });
 }
 
 const {
@@ -577,7 +581,14 @@ const {
     'isOnlineRestoreActivationEffectAuthorityEnabled',
     'isOnlineGameEngineShadowEnabled',
     'isOnlineGameEngineAuthorityEnabled',
-]);
+], {
+    // Clean event history is the production state authority. Explicit false keeps
+    // the legacy boolean projection as an immediate rollback path.
+    defaultEnabledNames: [
+        'isOnlineReconnectEventAuthorityEnabled',
+        'isOnlineReconnectEffectAuthorityEnabled',
+    ],
+});
 
 function getOnlineGameEngineShadowOutcome() {
     return _onlineDiagnosticSelections.onlineGameEngineShadowOutcome;
@@ -748,67 +759,53 @@ function getOnlineRestoreActivationEffectSelection() {
 }
 
 function _onlineReconnectEffectSelection(legacyValue = onlineSessionSnapshot().isReconnectingOnline) {
-    return OnlineReconnectState.selectEffectAuthority(
-        _onlineReconnectController.snapshot(),
-        legacyValue === true,
-        { effectAuthorityEnabled: isOnlineReconnectEffectAuthorityEnabled() }
+    return _onlineReconnectRuntime.effectSelection(
+        legacyValue,
+        isOnlineReconnectEffectAuthorityEnabled()
     );
 }
 
 function _applyOnlineReconnectEffectAuthority(legacyValue = onlineSessionSnapshot().isReconnectingOnline) {
-    const selection = _onlineReconnectEffectSelection(legacyValue);
-    if (selection.reconnecting !== onlineSessionSnapshot().isReconnectingOnline) {
-        setOnlineReconnectLegacyFlag(selection.reconnecting);
-    }
-    return selection;
+    return _onlineReconnectRuntime.applyEffectAuthority(
+        legacyValue,
+        isOnlineReconnectEffectAuthorityEnabled()
+    );
 }
 
 function _applyOnlineReconnectStatusEffectAuthority(event, legacyMessage) {
-    const selection = OnlineReconnectState.selectStatusEffectAuthority(
-        _onlineReconnectController.snapshot(),
+    return _onlineReconnectRuntime.applyStatus(
         event,
         legacyMessage,
-        { statusEffectAuthorityEnabled: isOnlineReconnectStatusEffectAuthorityEnabled() }
+        isOnlineReconnectStatusEffectAuthorityEnabled()
     );
-    onlineDomEffects.setStatusText(selection.message);
-    return selection;
 }
 
 function _applyOnlineReconnectLifecycleStatusEffectAuthority(event) {
-    if (!isOnlineReconnectStatusEffectAuthorityEnabled()) return null;
-    const legacyMessage = onlineDomEffects.statusText();
-    return _applyOnlineReconnectStatusEffectAuthority(event, legacyMessage);
+    return _onlineReconnectRuntime.applyLifecycleStatus(
+        event,
+        isOnlineReconnectStatusEffectAuthorityEnabled()
+    );
 }
 
 function _onlineReconnectTimerAuthoritySelection() {
-    const effectSelection = _onlineReconnectEffectSelection(onlineSessionSnapshot().isReconnectingOnline);
-    const enabled = isOnlineReconnectTimerAuthorityEnabled();
-    const active = enabled && effectSelection.source === 'event';
-    return Object.freeze({
-        source: active ? 'event' : (enabled ? 'legacy-fallback' : 'legacy'),
-        ready: effectSelection.ready,
-        fallbackReason: effectSelection.fallbackReason,
-        pending: _onlineRejoinTimerController.hasPending(),
-        deadline: _onlineRejoinTimerController.getDeadline(),
-    });
+    return _onlineReconnectRuntime.timerSelection(
+        isOnlineReconnectEffectAuthorityEnabled(),
+        isOnlineReconnectTimerAuthorityEnabled()
+    );
 }
 
 function _onlineReconnectCallbackAuthoritySelection() {
-    const timerSelection = _onlineReconnectTimerAuthoritySelection();
-    const enabled = isOnlineReconnectCallbackAuthorityEnabled();
-    const active = enabled && timerSelection.source === 'event';
-    return Object.freeze({
-        source: active ? 'event' : (enabled ? 'legacy-fallback' : 'legacy'),
-        ready: timerSelection.ready,
-        fallbackReason: timerSelection.fallbackReason,
-    });
+    return _onlineReconnectRuntime.callbackSelection(
+        isOnlineReconnectEffectAuthorityEnabled(),
+        isOnlineReconnectTimerAuthorityEnabled(),
+        isOnlineReconnectCallbackAuthorityEnabled()
+    );
 }
 
 function _onlineReconnectCleanupAuthoritySelection(legacyValue = onlineSessionSnapshot().isReconnectingOnline) {
-    return OnlineReconnectState.selectCleanupAuthority(
-        _onlineReconnectController.snapshot(),
-        legacyValue === true,
-        { cleanupAuthorityEnabled: isOnlineReconnectCleanupAuthorityEnabled() }
+    return _onlineReconnectRuntime.cleanupSelection(
+        legacyValue,
+        isOnlineReconnectCleanupAuthorityEnabled()
     );
 }
 
@@ -823,23 +820,18 @@ function _onlineReconnectCleanupEffectAuthoritySelection(cleanupSelection) {
 }
 
 function _onlineReconnectAuthoritySelection() {
-    return OnlineReconnectState.selectAuthorityState(
-        _onlineReconnectController.snapshot(),
-        { eventAuthorityEnabled: isOnlineReconnectEventAuthorityEnabled() }
+    return _onlineReconnectRuntime.authoritySelection(
+        isOnlineReconnectEventAuthorityEnabled()
     );
 }
 
 function getOnlineReconnectState() {
-    _onlineReconnectController.reconcile(
-        _onlineReconnectObservationFlags(),
-        { event: 'runtime-observation' }
-    );
-    return _onlineReconnectAuthoritySelection().state;
+    return _onlineReconnectRuntime.getState(isOnlineReconnectEventAuthorityEnabled());
 }
 
 function getOnlineReconnectStateSnapshot() {
     getOnlineReconnectState();
-    const snapshot = _onlineReconnectController.snapshot();
+    const snapshot = _onlineReconnectRuntime.rawSnapshot();
     return Object.freeze({
         ...snapshot,
         authority: _onlineReconnectAuthoritySelection(),
@@ -885,11 +877,7 @@ function getOnlineReconnectStateSnapshot() {
 }
 
 function isOnlineReconnectInputBlocked() {
-    if (!isOnlineReconnectEventAuthorityEnabled()) return onlineSessionSnapshot().isReconnectingOnline;
-    getOnlineReconnectState();
-    const selection = _onlineReconnectAuthoritySelection();
-    if (selection.source !== 'event') return onlineSessionSnapshot().isReconnectingOnline;
-    return OnlineReconnectState.blocksInput(selection.state);
+    return _onlineReconnectRuntime.inputBlocked(isOnlineReconnectEventAuthorityEnabled());
 }
 
 const onlineClientStorageFacade = ClientStorage.createFacade();
@@ -1137,7 +1125,7 @@ function _onlineReconnectRequestPlanSelection(session) {
     const legacyPlan = _legacyOnlineRejoinRequestPlan(session);
     const requested = isOnlineReconnectRequestPlanAuthorityEnabled();
     const stateSelection = OnlineReconnectState.selectAuthorityState(
-        _onlineReconnectController.snapshot(),
+        _onlineReconnectRuntime.rawSnapshot(),
         { eventAuthorityEnabled: requested }
     );
     const stateReady = stateSelection.source === 'event';
@@ -1245,7 +1233,7 @@ function _onlineActionTimeoutPlanSelection() {
     const legacyPlan = _legacyOnlineActionTimeoutPlan();
     const requested = isOnlineActionTimeoutPlanAuthorityEnabled();
     const stateSelection = OnlineReconnectState.selectAuthorityState(
-        _onlineReconnectController.snapshot(),
+        _onlineReconnectRuntime.rawSnapshot(),
         { eventAuthorityEnabled: requested }
     );
     const stateReady = stateSelection.source === 'event';
@@ -1311,7 +1299,7 @@ function _handleOnlineActionTimeout() {
 
 function _onlineDecodeFailureEffectAuthoritySelection(enabled) {
     const stateSelection = OnlineReconnectState.selectAuthorityState(
-        _onlineReconnectController.snapshot(),
+        _onlineReconnectRuntime.rawSnapshot(),
         { eventAuthorityEnabled: enabled }
     );
     const stateReady = stateSelection.source === 'event';
@@ -1540,7 +1528,7 @@ function _onlineSocketConnectPlanSelection() {
     const legacyPlan = _legacyOnlineSocketConnectPlan();
     const requested = isOnlineSocketConnectPlanAuthorityEnabled();
     const stateSelection = OnlineReconnectState.selectAuthorityState(
-        _onlineReconnectController.snapshot(),
+        _onlineReconnectRuntime.rawSnapshot(),
         { eventAuthorityEnabled: requested }
     );
     const stateReady = stateSelection.source === 'event' &&
@@ -1614,14 +1602,11 @@ function _legacyOnlineSocketDisconnectPlan() {
 
 function _onlineSocketDisconnectPlanSelection() {
     const online = onlineSessionSnapshot().isOnlineGame;
-    _onlineReconnectController.reconcile(
-        _onlineReconnectObservationFlags(),
-        { event: 'socket-disconnect-plan' }
-    );
+    _onlineReconnectRuntime.reconcile({ event: 'socket-disconnect-plan' });
     const legacyPlan = _legacyOnlineSocketDisconnectPlan();
     const requested = isOnlineSocketDisconnectPlanAuthorityEnabled();
     const stateSelection = OnlineReconnectState.selectAuthorityState(
-        _onlineReconnectController.snapshot(),
+        _onlineReconnectRuntime.rawSnapshot(),
         { eventAuthorityEnabled: requested }
     );
     const stateReady = stateSelection.source === 'event';
@@ -2220,7 +2205,7 @@ function _onlineRestoreAbortPlanSelection(generation, statusMessage, queuedEvent
     const legacyPlan = _legacyOnlineRestoreAbortPlan(generation, statusMessage, queuedEvents);
     const requested = isOnlineRestoreAbortPlanAuthorityEnabled();
     const stateSelection = OnlineReconnectState.selectAuthorityState(
-        _onlineReconnectController.snapshot(),
+        _onlineReconnectRuntime.rawSnapshot(),
         { eventAuthorityEnabled: requested }
     );
     const stateReady = stateSelection.source === 'event';
@@ -2534,7 +2519,7 @@ const onlineInboundActionRuntime = OnlineInboundActionRuntime.createRuntime({
         },
     },
     getGameState: onlineGameRuntimeSnapshot,
-    getReconnectSnapshot: () => _onlineReconnectController.snapshot(),
+    getReconnectSnapshot: () => _onlineReconnectRuntime.rawSnapshot(),
     lastAppliedSeq: () => _lastAppliedOnlineActionSeq(),
     payload: OnlinePayload,
     queueDuringRestore: (type, payload) => _queueOnlineEventDuringRestore(type, payload),

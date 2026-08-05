@@ -115,7 +115,7 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
     assert.strictEqual(game.currentPlayerIndex, 1);
 });
 
-runTest('online integration: event authorityは開始・切断・再join・復元をclean parityで完了する', () => {
+runTest('online integration: 既定event authorityは開始・切断・再join・復元をclean parityで完了する', () => {
     const rt = loadIntegrationRuntime({
         includeOnline: true,
         onlineReconnectEventAuthorityEnabled: true,
@@ -123,6 +123,8 @@ runTest('online integration: event authorityは開始・切断・再join・復�
         onlineReconnectTimerAuthorityEnabled: true,
         onlineReconnectCallbackAuthorityEnabled: true,
     });
+    delete rt.window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED;
+    delete rt.window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED;
     rt.window.MACHIKORO_ONLINE_SOCKET_CONNECT_PLAN_AUTHORITY_ENABLED = true;
     rt.window.MACHIKORO_ONLINE_SOCKET_CONNECT_EFFECT_AUTHORITY_ENABLED = true;
     rt.window.MACHIKORO_ONLINE_SOCKET_DISCONNECT_PLAN_AUTHORITY_ENABLED = true;

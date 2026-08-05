@@ -73,19 +73,26 @@ const OnlineRuntimeFlags = (() => {
     function createReader(getRoot) {
         if (typeof getRoot !== 'function') throw new TypeError('getRoot is required');
         return Object.freeze({
-            isEnabled(name) {
-                return isEnabled(name, getRoot());
+            isEnabled(name, defaultEnabled = false) {
+                const root = getRoot();
+                const property = names[name];
+                if (typeof property !== 'string') return false;
+                if (root && Object.prototype.hasOwnProperty.call(root, property)) {
+                    return root[property] === true;
+                }
+                return defaultEnabled === true;
             },
         });
     }
 
-    function createNamedReaders(getRoot, selectedNames = Object.keys(names)) {
+    function createNamedReaders(getRoot, selectedNames = Object.keys(names), options = {}) {
         const reader = createReader(getRoot);
         if (!Array.isArray(selectedNames)) throw new TypeError('selectedNames must be an array');
+        const defaultEnabledNames = new Set(options.defaultEnabledNames || []);
         const readers = {};
         for (const name of selectedNames) {
             if (typeof names[name] !== 'string') throw new TypeError(`unknown runtime flag reader: ${name}`);
-            readers[name] = () => reader.isEnabled(name);
+            readers[name] = () => reader.isEnabled(name, defaultEnabledNames.has(name));
         }
         return Object.freeze(readers);
     }

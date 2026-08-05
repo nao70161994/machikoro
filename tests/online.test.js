@@ -188,6 +188,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineRuntimeFlags.js');
     loadScript(context, 'js/onlineDiagnosticState.js');
     loadScript(context, 'js/onlineRetryPolicy.js');
+    loadScript(context, 'js/onlineReconnectRuntime.js');
     loadScript(context, 'js/onlineSchemaTransport.js');
     loadScript(context, 'js/onlineClientEffects.js');
     loadScript(context, 'js/onlineDomEffects.js');
@@ -411,11 +412,16 @@ runTest('online setup stateはcontrollerだけが所有する', () => {
     assert.ok(source.includes('OnlineSetupState.createController()'));
 });
 
-runTest('online rejoin timer stateはretry controllerだけが所有する', () => {
+runTest('online rejoin timer stateはreconnect runtimeだけが所有する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/online.js'), 'utf8');
+    const runtimeSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js/onlineReconnectRuntime.js'),
+        'utf8'
+    );
     assert.strictEqual(source.includes('_rejoinRetryTimer'), false);
     assert.strictEqual(source.includes('_rejoinRetryDeadline'), false);
-    assert.ok(source.includes('OnlineRetryPolicy.createRejoinTimerController({'));
+    assert.strictEqual(source.includes('createRejoinTimerController({'), false);
+    assert.ok(runtimeSource.includes('createRejoinTimerController({'));
     assert.ok(source.includes('_onlineRejoinTimerController.arm('));
 });
 
@@ -678,8 +684,10 @@ runTest('online.jsのreconnect観測状態は既存booleanの優先順位を維�
         ['active', 'connecting', 'rejoining', 'restoring', 'replaying', 'failed']
     );
 });
-runTest('online.jsのevent authority readは明示flagかつclean parity時だけ有効になる', () => {
+runTest('online.jsのevent authority readは明示false rollback後もclean parityで再有効化できる', () => {
     const localRt = loadOnlineRuntime();
+    localRt.window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED = false;
+    localRt.window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED = false;
     let snapshot = localRt.getOnlineState().reconnectStateSnapshot;
     assert.deepStrictEqual({ ...snapshot.authority }, {
         state: 'idle',
@@ -703,6 +711,22 @@ runTest('online.jsのevent authority readは明示flagかつclean parity時だ�
     snapshot = localRt.getOnlineState().reconnectStateSnapshot;
     assert.strictEqual(snapshot.authority.source, 'legacy-projection');
     assert.strictEqual(snapshot.authority.fallbackReason, 'state-mismatch');
+});
+
+runTest('online reconnect state authorityはproduction未注入時に既定ONで明示falseへrollbackする', () => {
+    const localRt = loadOnlineRuntime();
+    delete localRt.window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED;
+    delete localRt.window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED;
+
+    let snapshot = localRt.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.authority.source, 'event');
+    assert.strictEqual(snapshot.effectAuthority.source, 'event');
+
+    localRt.window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED = false;
+    localRt.window.MACHIKORO_ONLINE_RECONNECT_EFFECT_AUTHORITY_ENABLED = false;
+    snapshot = localRt.getOnlineState().reconnectStateSnapshot;
+    assert.strictEqual(snapshot.authority.source, 'legacy-projection');
+    assert.strictEqual(snapshot.effectAuthority.source, 'legacy');
 });
 
 runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す', () => {

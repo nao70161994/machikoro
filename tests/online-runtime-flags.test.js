@@ -82,6 +82,24 @@ runTest('online runtime named readersは選択名をfrozen関数へ投影しroot
     );
 });
 
+runTest('online runtime named readersは選択したauthorityだけ未注入時に既定ONにできる', () => {
+    const selected = [
+        'isOnlineReconnectEventAuthorityEnabled',
+        'isOnlineReconnectEffectAuthorityEnabled',
+        'isOnlineReconnectTimerAuthorityEnabled',
+    ];
+    let root = {};
+    const readers = OnlineRuntimeFlags.createNamedReaders(() => root, selected, {
+        defaultEnabledNames: selected.slice(0, 2),
+    });
+    assert.strictEqual(readers[selected[0]](), true);
+    assert.strictEqual(readers[selected[1]](), true);
+    assert.strictEqual(readers[selected[2]](), false);
+    root = { [OnlineRuntimeFlags.names[selected[0]]]: false };
+    assert.strictEqual(readers[selected[0]](), false);
+    assert.strictEqual(readers[selected[1]](), true);
+});
+
 runTest('online runtime flagsは厳密なboolean trueだけを有効にする', () => {
     const reader = EXPECTED_READERS[0];
     const property = OnlineRuntimeFlags.names[reader];

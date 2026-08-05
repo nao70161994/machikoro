@@ -1,5 +1,7 @@
 const assert = require('assert');
 const OnlineReconnectState = require('../js/onlineReconnectState');
+const OnlineReconnectRuntime = require('../js/onlineReconnectRuntime');
+const OnlineRetryPolicy = require('../js/onlineRetryPolicy');
 const { runTest } = require('./helpers/test-utils');
 
 const STATES = OnlineReconnectState.states;
@@ -607,4 +609,61 @@ runTest('online reconnect completion controllerはlegacy完了projectionを単�
 
     const restored = OnlineReconnectState.createCompletionController(true);
     assert.strictEqual(restored.isCompleted(), true);
+});
+
+
+runTest('online reconnect runtimeは接続・復元・replay・active・failedを単一controllerで所有する', () => {
+    let legacyReconnecting = false;
+    let flags = { active: true };
+    let status = '';
+    const runtime = OnlineReconnectRuntime.create({
+        statePolicy: OnlineReconnectState,
+        retryPolicy: OnlineRetryPolicy,
+        getLegacyReconnecting: () => legacyReconnecting,
+        setLegacyReconnecting: value => { legacyReconnecting = value; },
+        getObservationFlags: () => flags,
+        getStatusText: () => status,
+        setStatusText: value => { status = value; },
+        now: () => 0,
+    });
+
+    runtime.observe(OnlineReconnectState.events.GAME_ACTIVATED, { effectAuthorityEnabled: true });
+    assert.strictEqual(runtime.getState(true), 'active');
+    legacyReconnecting = true;
+    flags = { rejoining: true };
+    runtime.observe(OnlineReconnectState.events.RECONNECT_REQUESTED, { effectAuthorityEnabled: true });
+    assert.strictEqual(runtime.getState(true), 'rejoining');
+    flags = { restoring: true };
+    runtime.observe(OnlineReconnectState.events.RESTORE_STARTED, { effectAuthorityEnabled: true });
+    assert.strictEqual(runtime.getState(true), 'restoring');
+    flags = { replaying: true };
+    runtime.observe(OnlineReconnectState.events.REPLAY_STARTED, { effectAuthorityEnabled: true });
+    assert.strictEqual(runtime.getState(true), 'replaying');
+    runtime.attempts.markExhausted();
+    flags = {};
+    runtime.observe(OnlineReconnectState.events.RETRY_EXHAUSTED, { effectAuthorityEnabled: true });
+    assert.strictEqual(runtime.getState(true), 'failed');
+    assert.strictEqual(runtime.inputBlocked(true), true);
+    assert.strictEqual(runtime.inputBlocked(false), legacyReconnecting);
+});
+
+runTest('online reconnect runtimeはtimer・status・completionを同じ境界から投影する', () => {
+    let legacyReconnecting = false;
+    let status = 'legacy';
+    const runtime = OnlineReconnectRuntime.create({
+        statePolicy: OnlineReconnectState,
+        retryPolicy: OnlineRetryPolicy,
+        getLegacyReconnecting: () => legacyReconnecting,
+        setLegacyReconnecting: value => { legacyReconnecting = value; },
+        getObservationFlags: () => ({ active: true }),
+        getStatusText: () => status,
+        setStatusText: value => { status = value; },
+        now: () => 0,
+    });
+    runtime.observe(OnlineReconnectState.events.GAME_ACTIVATED, { effectAuthorityEnabled: true });
+    assert.strictEqual(runtime.timerSelection(true, true).source, 'event');
+    assert.strictEqual(runtime.callbackSelection(true, true, true).source, 'event');
+    runtime.completion.markCompleted();
+    assert.strictEqual(runtime.observationFlags().completed, true);
+    assert.throws(() => OnlineReconnectRuntime.create(), /dependency is required/);
 });
