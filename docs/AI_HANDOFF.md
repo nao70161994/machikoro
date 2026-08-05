@@ -1162,3 +1162,9 @@ Test index:
 - Build proposal ownership belongs to `CPUBuildProposalCollector`; strategy lifetime belongs to `CPUBuildStrategy`, canonical factories/application belong to `CPUBuildExecution`, and `CPU` only adapts legacy `_buy*` calls.
 - Preserve first valid proposal wins, later valid intents still return `true`, collector-before-legacy lookup, stale clearing before admission, `finally` cleanup, and the `_selectedBuildAction` fallback for replaced strategy methods. Do not make the compatibility mirror the production source again.
 - The collector is linted/checkJs-covered. Fixed decision baseline, CPU/self-play, unit, static, PWA, and release gates pass with unchanged actions, rules, RNG, and strength.
+
+## Batch 111 handoff (2026-08-05)
+
+- `js/cpuChoiceScoring.js` owns expert/strong choice-state scoring, pending clone/application order, expert lookahead admission, and purchase-plan caching.
+- `CPU.js` delegates the nine compatibility methods and is now 2,463 lines. Keep adapters injectable because pending/build strategy diagnostics replace facade methods at runtime.
+- `tests/cpu-choice-scoring.test.js` fixes profile/evaluation order, score inputs, cache identity, pending clone order, and delegate shape. Full unit and CPU/fixed-seed/self-play gates pass.

@@ -1100,3 +1100,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CPUBuildProposalCollector` is the explicit first-win output boundary for action-only build strategy; canonical proposal factories remain in `CPUBuildExecution`.
 2. `CPUBuildStrategy` owns collector lifetime and returns collector state, while the former CPU private fields are compatibility mirrors/fallbacks rather than the production source of truth.
 3. Focused identity/lifecycle contracts plus fixed decision and self-play baselines preserve exact proposal identity, candidate order, exception cleanup, RNG, and strength.
+
+## 2026-08-05 Batch 111 boundary update
+
+- Added `CPUChoiceScoring` as the owner of expert/strong post-choice state scoring, pending-choice clone evaluation, lookahead admission, and purchase-plan cache orchestration.
+- `CPU.js` now delegates these nine methods while retaining the compatibility surface used by pending/build strategies and diagnostics.
+- This advances the fixed CPU action-only outcome by separating state valuation from the facade without changing policy constants, evaluation order, or random consumption.

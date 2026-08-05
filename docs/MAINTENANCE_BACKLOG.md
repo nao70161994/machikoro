@@ -970,3 +970,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `CPU._buyCard`/`_buyLandmark` route selection-mode intents into the collector and mirror the accepted action to `_selectedBuildAction`; `_collectingBuildAction` and the legacy selected field remain temporary compatibility/fallback state for diagnostic or test method replacement. Collector scope is cleared in `finally`.
 - Focused contracts preserve first-win identity, malformed-candidate recovery, missing-adapter fail-closed behavior, selection-scope visibility, invalid-state clearing, and exception cleanup. Fixed decision baseline, CPU/self-play, unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 261 ESLint maintenance files and 260 checkJs runtime files.
 - Build actions/payloads, candidate order, random consumption, mutation timing, CPU strength, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 111 CPU choice scoring boundary
+
+- `js/cpuChoiceScoring.js` now owns expert/strong choice-state orchestration, pending-choice clone evaluation, expert lookahead admission, and difficulty/player-scoped purchase-plan caching.
+- `CPU.js` retains compatibility delegates and injected evaluation/simulation adapters; its size decreased from 2,549 to 2,463 lines. Choice-state orchestration no longer lives in the main CPU facade.
+- Focused contracts preserve profile labels/order, clone/application order, lookahead inputs, strong score features, and cache identity. Fixed decision/self-play CPU gates, full unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 262 ESLint maintenance files and 261 checkJs runtime files.
+- Heuristic values, difficulty behavior, candidate/tie order, clone behavior, RNG consumption, CPU strength, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.

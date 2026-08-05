@@ -556,53 +556,23 @@ class CPU {
         );
     }
     _scoreExpertChoiceState(game, focusIndex) {
-        return this._profileMeasure("expert.choiceState", () =>
-            CPUEvaluation.expertChoiceScore({
-                positionScore: () => this._evaluatePosition(game, focusIndex),
-                hasWinner: () => !!game.checkWinner(),
-                shouldUseLookahead: () => this._shouldUseExpertChoiceLookahead(game, focusIndex),
-                lookaheadScore: () => this._profileMeasure("expert.choiceLookahead", () =>
-                    this._simulateLookahead(
-                        game,
-                        this._simulationShopStock(game.players.length),
-                        focusIndex,
-                        this._expertLookaheadSteps(game, focusIndex, game.players.length * 2)
-                    )
-                ),
-                lookaheadWeight: this.expertTuning.lookaheadWeight,
-            })
-        );
+        return CPUChoiceScoring.scoreExpertChoiceState(this, game, focusIndex);
     }
 
     _shouldUseExpertChoiceLookahead(game, focusIndex) {
-        const player = game.players[focusIndex];
-        const remainingLandmarks = [...game.enabledLandmarks].filter(name => !player.landmarks[name]).length;
-        return CPUEvaluation.shouldUseExpertChoiceLookahead(
-            game.players.length, remainingLandmarks, game.phase, GAME_PHASES.BUILD, this.simulationMode
-        );
+        return CPUChoiceScoring.shouldUseExpertChoiceLookahead(this, game, focusIndex);
     }
+
     _expectedExpertChoiceValue(game, focusIndex, outcomes, applyOutcome) {
-        return this._profileMeasure("expert.expectedChoiceValue", () =>
-            CPUEvaluation.expectedOutcomeValue(outcomes, outcome => {
-                const clone = this._cloneGame(game);
-                applyOutcome(clone, outcome);
-                return this._scoreExpertChoiceState(clone, focusIndex);
-            })
-        );
+        return CPUChoiceScoring.expectedExpertChoiceValue(this, game, focusIndex, outcomes, applyOutcome);
     }
 
     _scoreExpertPendingChoice(game, applyChoice) {
-        const focusIndex = game.currentPlayerIndex;
-        const clone = this._cloneGame(game);
-        applyChoice(clone);
-        return this._scoreExpertChoiceState(clone, focusIndex);
+        return CPUChoiceScoring.scoreExpertPendingChoice(this, game, applyChoice);
     }
 
     _scoreStrongPendingChoice(game, applyChoice) {
-        const focusIndex = game.currentPlayerIndex;
-        const clone = this._cloneGame(game);
-        applyChoice(clone);
-        return this._scoreStrongChoiceState(clone, focusIndex);
+        return CPUChoiceScoring.scoreStrongPendingChoice(this, game, applyChoice);
     }
 
     _crowdLeaderBonus(game, targetIndex, weight = 1) {
@@ -646,75 +616,19 @@ class CPU {
     }
 
     _estimatePurchasePlanValue(player, game, difficulty = this.difficulty) {
-        const playerIndex = game && game.players ? game.players.indexOf(player) : -1;
-        const cacheKey = playerIndex >= 0 ? `${difficulty}:${playerIndex}` : null;
-        if (cacheKey) {
-            const cache = this._stateEvaluationCache(game);
-            if (cacheKey in cache.purchasePlanValues) return cache.purchasePlanValues[cacheKey];
-            const value = this._estimatePurchasePlanValueUncached(player, game, difficulty);
-            cache.purchasePlanValues[cacheKey] = value;
-            return value;
-        }
-        return this._estimatePurchasePlanValueUncached(player, game, difficulty);
+        return CPUChoiceScoring.estimatePurchasePlanValue(this, player, game, difficulty);
     }
 
     _estimatePurchasePlanValueUncached(player, game, difficulty = this.difficulty) {
-        const bestLandmark = this._bestAffordableLandmark(player, game);
-        const affordable = CARDS.filter(card =>
-            player.coins >= card.cost &&
-            card.cost > 0 &&
-            !(card.color === "purple" && player.countCardIncludingDormant(card.name) > 0)
-        );
-        const ranked = this._sortAffordableForDifficulty(affordable, game, player, difficulty);
-        const bestCard = ranked[0] ? ranked[0].score : -Infinity;
-        return CPUEvaluation.purchasePlanValue({
-            bestCardScore: bestCard,
-            bestLandmark,
-            coins: player.coins,
-        });
+        return CPUChoiceScoring.estimatePurchasePlanValueUncached(this, player, game, difficulty);
     }
 
     _scoreStrongChoiceState(game, focusIndex) {
-        return this._profileMeasure("strong.choiceState", () => {
-            const player = game.players[focusIndex];
-            const landmarkPressure = this._isEndgameMode(player, game, 2) ? 6 : 0;
-            const purchasePlanValue = this._profileMeasure(
-                "strong.choiceState.purchasePlan",
-                () => this._estimatePurchasePlanValue(player, game, "strong")
-            );
-            const turnValue = this._profileMeasure(
-                "strong.choiceState.turnValue",
-                () => this._estimatePlayerTurnValue(game, focusIndex)
-            );
-            const winDistance = this._profileMeasure(
-                "strong.choiceState.winDistance",
-                () => this._estimateWinDistance(player, game)
-            );
-            const redPressure = this._profileMeasure(
-                "strong.choiceState.redPressure",
-                () => this._estimateRedPressure(game, focusIndex)
-            );
-            return CPUEvaluation.strongChoiceScore({
-                purchasePlanValue,
-                turnValue,
-                coins: player.coins,
-                builtLandmarkCount: player.builtLandmarkCount(),
-                landmarkPressure,
-                winDistance,
-                redPressure,
-                duplicateRenovationPenalty: this._duplicateRenovationPenalty(player, "strong", game),
-            });
-        });
+        return CPUChoiceScoring.scoreStrongChoiceState(this, game, focusIndex);
     }
 
     _expectedStrongChoiceValue(game, focusIndex, outcomes, applyOutcome) {
-        return this._profileMeasure("strong.expectedChoiceValue", () =>
-            CPUEvaluation.expectedOutcomeValue(outcomes, outcome => {
-                const clone = this._cloneGame(game);
-                applyOutcome(clone, outcome);
-                return this._scoreStrongChoiceState(clone, focusIndex);
-            })
-        );
+        return CPUChoiceScoring.expectedStrongChoiceValue(this, game, focusIndex, outcomes, applyOutcome);
     }
 
     _strongLiteUseHeuristicChoices() {
