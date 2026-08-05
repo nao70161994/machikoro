@@ -886,3 +886,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `OnlineRejoinActivationRuntime` is now reusable across rejoin attempts: bundle persistence is supplied per `handle` call instead of being captured by a per-payload runtime closure. `online.js` retains Socket.IO registration and concrete schema, state, storage, Game, and UI adapters; its size decreased from 3,539 to 3,504 lines.
 - Focused contracts preserve decode/admission order, local-bundle short circuiting, synchronous/asynchronous preload, stale-generation rejection, exact failure status, prepared-context identity, persistence-before-replay, and browser dependency order. Full unit/online/PWA/release gates pass. Scoped gates now cover 250 ESLint maintenance files and 249 checkJs runtime files.
 - Socket.IO event names/order/payloads, Action/Snapshot schemas, restore/ACK/reconnect semantics, storage keys/formats, game rules, CPU decisions/strength/RNG, UI text, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 99 online game initializer
+
+- `js/onlineGameInitializer.js` now owns online-game reset, Game construction, enabled card/landmark stock application, server-supplied player order, CPU creation, local player index projection, first log, render, and CPU scheduling.
+- `online.js` retains lazy dependency composition and its `initOnlineGame` compatibility delegate; lazy construction preserves classic-script startup where `SHOP_STOCK` becomes available after `online.js` evaluation. Its size decreased from 3,504 to 3,494 lines.
+- Focused contracts preserve exact effect order, shuffled names, CPU opponent settings and RL model ID, missing-local-index fallback, stock/landmark defaults, first log, browser dependency order, and delegation. Full unit/online/release/static gates pass; PWA asset/load tests also pass. Scoped gates now cover 251 ESLint maintenance files and 250 checkJs runtime files.
+- Game rules, card stock values, player order, CPU decisions/strength/RNG, Socket.IO schemas/events, save/storage, reconnect, and PWA/SW semantics are unchanged.

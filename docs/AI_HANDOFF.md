@@ -1090,3 +1090,9 @@ Test index:
 - Top-level `rejoinData` orchestration belongs to `OnlineRejoinRuntime`; preparation/ranking/persistence planning remains in `OnlineRejoinPreparationRuntime`, and replay/activation/queued-event/pending resend remains in `OnlineRejoinActivationRuntime`.
 - Preserve decode → schema admission → prepare → preload → generation-guarded activate order, local-bundle early return, exact model-loading/failure text, and per-handle persistence effect identity. Do not move these transactions back into the Socket.IO callback.
 - All three runtimes are linted and checkJs-covered; `online.js` is 3,504 lines. Socket.IO, schemas, storage, ACK/reconnect, rules, CPU, UI, and PWA contracts are unchanged.
+
+## Batch 99 handoff (2026-08-05)
+
+- Online Game construction belongs to `OnlineGameInitializer`; keep `initOnlineGame` as the compatibility delegate used by lobby start and rejoin activation runtimes.
+- Preserve lazy initializer construction because `online.js` evaluates before `SHOP_STOCK` is installed by `main.js`. Preserve reset, stock, server order, CPU options, local-index, first-log, render, and schedule order.
+- The module is linted and checkJs-covered; `online.js` is 3,494 lines. Rules, CPU choices/RNG, Socket.IO, schemas, persistence, reconnect, and PWA behavior are unchanged.

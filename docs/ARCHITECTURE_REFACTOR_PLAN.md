@@ -1028,3 +1028,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `OnlineRejoinRuntime` is the top-level application boundary that composes `OnlineRejoinPreparationRuntime` and `OnlineRejoinActivationRuntime` around decode, schema admission, and RL preload.
 2. `online.js` now constructs the three rejoin layers once and delegates `rejoinData` directly; prepared payload persistence is an activation-call effect, so activation no longer captures one payload at runtime construction.
 3. Focused and full online contracts preserve schema/status text, local-host bundle authority, preload generation gates, persistence/replay/flush/resend order, Socket.IO registration, and all compatibility fallbacks.
+
+## 2026-08-05 Batch 99 boundary update
+
+1. `OnlineGameInitializer` is the application boundary for constructing the mutable online Game runtime from the accepted server start/rejoin inputs.
+2. It owns reset → selection/stock → ordered names/CPU creation → local-index projection → log/render/schedule sequencing; `online.js` supplies concrete domain/runtime effects through a lazy singleton.
+3. Dedicated and full online contracts preserve server player order, CPU options/model identity, stock values, effect order, classic-script load timing, and all protocol/reconnect behavior.
