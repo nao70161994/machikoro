@@ -963,3 +963,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `CPU.js` retains compatibility delegates and injects CPU construction, profile, terminal evaluation, and simulation-step adapters; its size decreased from 2,576 to 2,536 lines. The runtime has no direct constructor dependency on the CPU class.
 - Focused contracts preserve seed arithmetic, CPU creation order, step/profile order, winner scoring, and difficulty adapter calls. Fixed decision baseline, CPU/self-play/simulation, unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 260 ESLint maintenance files and 259 checkJs runtime files.
 - Playout RNG, max-step behavior, opponent modes, heuristic/tuning values, CPU strength, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 110 explicit CPU build proposal collector
+
+- `js/cpuBuildProposalCollector.js` now owns first-win canonical card/landmark proposal selection through injected `CPUBuildExecution` factories. Production `CPUBuildStrategy.chooseBuildAction` reads its result from this explicit collector.
+- `CPU._buyCard`/`_buyLandmark` route selection-mode intents into the collector and mirror the accepted action to `_selectedBuildAction`; `_collectingBuildAction` and the legacy selected field remain temporary compatibility/fallback state for diagnostic or test method replacement. Collector scope is cleared in `finally`.
+- Focused contracts preserve first-win identity, malformed-candidate recovery, missing-adapter fail-closed behavior, selection-scope visibility, invalid-state clearing, and exception cleanup. Fixed decision baseline, CPU/self-play, unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 261 ESLint maintenance files and 260 checkJs runtime files.
+- Build actions/payloads, candidate order, random consumption, mutation timing, CPU strength, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.

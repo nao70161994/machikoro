@@ -1094,3 +1094,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CPULookaheadRuntime` is the deterministic simulation application boundary over `CPUSimulation` and `CPULegalMoves`, used by high-level CPU scoring.
 2. Seed construction, lineup policy, playout steps, profiling, and winner/terminal scoring are explicit; CPU construction is injected rather than referenced as a runtime-global dependency.
 3. Focused seed/order/adapter contracts plus fixed decision, self-play, and simulation gates preserve deterministic traces, opponent composition, RNG, and strength.
+
+## 2026-08-05 Batch 110 boundary update
+
+1. `CPUBuildProposalCollector` is the explicit first-win output boundary for action-only build strategy; canonical proposal factories remain in `CPUBuildExecution`.
+2. `CPUBuildStrategy` owns collector lifetime and returns collector state, while the former CPU private fields are compatibility mirrors/fallbacks rather than the production source of truth.
+3. Focused identity/lifecycle contracts plus fixed decision and self-play baselines preserve exact proposal identity, candidate order, exception cleanup, RNG, and strength.

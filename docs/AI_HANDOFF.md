@@ -1156,3 +1156,9 @@ Test index:
 - Lookahead seed/lineup/playout orchestration belongs to `CPULookaheadRuntime`; primitive clone/RNG/step mechanics remain in `CPUSimulation`, and option scoring remains in `CPUBuildScoring`.
 - Preserve seed arithmetic, player-index CPU creation order, owner `_runSimulationStep` dispatch, max-step loop, profile labels/counts, winner double-check behavior, opponent flag precedence, and constructor adapter injection.
 - The module is linted and checkJs-covered; `CPU.js` is 2,536 lines. Fixed decision baseline, CPU/self-play/simulation, unit, static, PWA, and release gates pass with unchanged rules, traces, RNG, and strength.
+
+## Batch 110 handoff (2026-08-05)
+
+- Build proposal ownership belongs to `CPUBuildProposalCollector`; strategy lifetime belongs to `CPUBuildStrategy`, canonical factories/application belong to `CPUBuildExecution`, and `CPU` only adapts legacy `_buy*` calls.
+- Preserve first valid proposal wins, later valid intents still return `true`, collector-before-legacy lookup, stale clearing before admission, `finally` cleanup, and the `_selectedBuildAction` fallback for replaced strategy methods. Do not make the compatibility mirror the production source again.
+- The collector is linted/checkJs-covered. Fixed decision baseline, CPU/self-play, unit, static, PWA, and release gates pass with unchanged actions, rules, RNG, and strength.
