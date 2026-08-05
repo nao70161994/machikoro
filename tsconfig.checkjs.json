@@ -124,6 +124,7 @@
     "js/cpuActionProposal.js",
     "js/cpuBuildExecution.js",
     "js/cpuBuildStrategy.js",
+    "js/cpuBuildScoring.js",
     "js/cpuEvaluation.js",
     "js/cpuLegalMoves.js",
     "js/cpuProfile.js",

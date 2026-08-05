@@ -1850,40 +1850,7 @@ class CPU {
     }
 
     _scoreExpertV2SimpleBuildOptionBreakdown(game, option, shopStock = null) {
-        const clone = this._cloneGame(game);
-        const current = clone.currentPlayer();
-        if (option.type === 'landmark') {
-            current.coins -= Player.landmarkCost(option.name);
-            current.landmarks[option.name] = true;
-        } else {
-            current.coins -= option.card.cost;
-            current.cards.push(this._cardByName(option.card.name));
-        }
-        const oneScore = this._expectedDiceScoreWithHarbor(clone, false);
-        const twoScore = current.landmarks[LANDMARK_NAMES.STATION]
-            ? this._expectedDiceScoreWithHarbor(clone, true)
-            : -Infinity;
-        const baseEv = Math.max(oneScore, twoScore);
-        const beforeOneScore = this._expectedDiceScoreWithHarbor(game, false);
-        const beforeTwoScore = game.currentPlayer().landmarks[LANDMARK_NAMES.STATION]
-            ? this._expectedDiceScoreWithHarbor(game, true)
-            : -Infinity;
-        const deltaEv = baseEv - Math.max(beforeOneScore, beforeTwoScore);
-        const comboUnlockBonus = this._expertV2SimpleComboUnlockBonus(game, option, shopStock);
-        const tempoBonus = this._expertV2SimpleBuildTempoBonus(clone);
-        const redOpponentTurnBonus = this._expertV2SimpleRedOpponentTurnBonus(game, option);
-        const lateBasicDuplicatePenalty = this._expertV2SimpleLateBasicDuplicatePenalty(game, option, deltaEv);
-        const renovationRiskPenalty = this._expertV2SimpleRenovationRiskPenalty(game, option);
-        return {
-            baseEv,
-            deltaEv,
-            comboUnlockBonus,
-            tempoBonus,
-            redOpponentTurnBonus,
-            lateBasicDuplicatePenalty,
-            renovationRiskPenalty,
-            total: baseEv + comboUnlockBonus + tempoBonus + redOpponentTurnBonus - lateBasicDuplicatePenalty - renovationRiskPenalty,
-        };
+        return CPUBuildScoring._scoreExpertV2SimpleBuildOptionBreakdown(this, game, option, shopStock);
     }
 
     _expertV2SimpleLateBasicDuplicatePenalty(game, option, deltaEv) {
@@ -2357,94 +2324,11 @@ class CPU {
     }
 
     _scoreExpertBuildOption(game, shopStock, action, context = null) {
-        return this._profileMeasure("expert.scoreBuildOption", () => {
-            const ci = game.currentPlayerIndex;
-            const tuning = this.expertTuning;
-            const beforePlayer = game.players[ci];
-            const beforeDistance = this._estimateWinDistance(beforePlayer, game);
-            const affordableBuildCount = context && typeof context.affordableBuildCount === "number"
-                ? context.affordableBuildCount
-                : this._listExpertBuildOptions(game, shopStock).filter(option => option.type !== 'skip').length;
-            const clone = this._cloneGame(game);
-            const stock = Object.assign({}, shopStock);
-            clone.phase = GAME_PHASES.BUILD;
-            const current = clone.currentPlayer();
-            let scorePenalty = 0;
-            if (action.type === 'landmark') {
-                if (!clone.buildLandmark(action.name)) return -Infinity;
-            } else if (action.type === 'card') {
-                const card = this._cardByName(action.cardName);
-                if (!card || !clone.buildCard(card)) return -Infinity;
-                stock[card.name] = Math.max(0, (stock[card.name] || 0) - 1);
-                scorePenalty = this._scoreExpertCardPenalty(card.name, current, clone);
-                scorePenalty += this._scoreExpertFutureLandmarkHoldPenalty(current, clone, card);
-            } else if (action.type === 'skip') {
-                clone.builtThisTurn = false;
-            }
-            let score = this._evaluatePosition(clone, ci);
-            const remainingLandmarks = [...clone.enabledLandmarks].filter(name => !current.landmarks[name]).length;
-            const allowBuildLookahead = this.simulationMode === "realtime"
-                ? (game.players.length < 4 && action.type === 'landmark' && remainingLandmarks <= 1)
-                : (this.simulationMode !== "lite" && (action.type === 'landmark' || remainingLandmarks <= 2));
-            if (allowBuildLookahead) {
-                score += this._profileMeasure("expert.buildLookahead", () =>
-                    this._simulateLookahead(
-                        clone,
-                        stock,
-                        ci,
-                        this._expertLookaheadSteps(clone, ci, game.players.length * tuning.lateGameLookaheadStepsPerPlayer)
-                    )
-                ) * tuning.lookaheadWeight;
-            }
-            if (action.type === 'landmark') score += tuning.landmarkActionBonus + (remainingLandmarks <= 2 ? tuning.lateLandmarkActionBonus : 0);
-            if (action.type === 'card') score -= (scorePenalty || 0) + this._scoreExpertLandmarkDelayPenalty(current, clone);
-            if (action.type === 'card' && this._shouldExpertStopBuyingCards(current, clone, this._cardByName(action.cardName))) {
-                score -= 18;
-            }
-            if (action.type === 'skip' && current.landmarks[LANDMARK_NAMES.AIRPORT]) score += tuning.skipAirportBonus;
-            if (action.type === 'skip' && !current.landmarks[LANDMARK_NAMES.AIRPORT]) score -= tuning.skipPenalty;
-            if (action.type === 'skip' && affordableBuildCount > 0 && !current.landmarks[LANDMARK_NAMES.AIRPORT]) {
-                score -= Math.min(12, 4 + affordableBuildCount * 1.5);
-            }
-            if (action.type === 'landmark' && current.hasWon([...clone.enabledLandmarks])) score += 50000;
-            if (this._expertFlagEnabled("endgameBuildFocus")) {
-                score += this._scoreExpertEndgameBuildFocus(game, clone, ci, action, beforeDistance);
-            }
-            return score;
-        });
+        return CPUBuildScoring._scoreExpertBuildOption(this, game, shopStock, action, context);
     }
 
     _scoreExpertEndgameBuildFocus(game, clone, playerIndex, action, beforeDistance = null) {
-        if (!game || !clone) return 0;
-        const beforePlayer = game.players[playerIndex];
-        const afterPlayer = clone.players[playerIndex];
-        const remainingBefore = [...game.enabledLandmarks].filter(name => !beforePlayer.landmarks[name]).length;
-        if (remainingBefore > 2) return 0;
-        const distanceBefore = beforeDistance == null ? this._estimateWinDistance(beforePlayer, game) : beforeDistance;
-        const distanceAfter = this._estimateWinDistance(afterPlayer, clone);
-        const distanceGain = distanceBefore - distanceAfter;
-        let score = distanceGain * 12;
-        if (action.type === "landmark") score += 10;
-        if (action.type === "card" && distanceGain < 0.3) score -= remainingBefore <= 1 ? 14 : 8;
-        if (action.type === "skip" && !afterPlayer.landmarks[LANDMARK_NAMES.AIRPORT]) score -= remainingBefore <= 1 ? 10 : 4;
-        if (remainingBefore <= 3) {
-            const urgentAfter = this._bestAffordableLandmark(afterPlayer, clone);
-            if (action.type === "card") {
-                score -= 6;
-                if (urgentAfter && urgentAfter.urgency >= 7) score -= 10;
-                if (!afterPlayer.landmarks[LANDMARK_NAMES.AIRPORT]) score -= 4;
-                if (!afterPlayer.landmarks[LANDMARK_NAMES.RADIO_TOWER]) score -= 4;
-            }
-            if (action.type === "skip") {
-                score -= 8;
-                if (!afterPlayer.landmarks[LANDMARK_NAMES.AIRPORT]) score -= 6;
-                if (!afterPlayer.landmarks[LANDMARK_NAMES.RADIO_TOWER]) score -= 4;
-            }
-        }
-        if (remainingBefore <= 1) {
-            score += Math.max(0, afterPlayer.coins - beforePlayer.coins) * 1.5;
-        }
-        return score;
+        return CPUBuildScoring._scoreExpertEndgameBuildFocus(this, game, clone, playerIndex, action, beforeDistance);
     }
 
     _listStrongBuildOptions(game, shopStock) {
@@ -2470,34 +2354,7 @@ class CPU {
     }
 
     _scoreStrongBuildOption(game, shopStock, action) {
-        const ci = game.currentPlayerIndex;
-        const clone = this._cloneGame(game);
-        const stock = Object.assign({}, shopStock);
-        const current = clone.currentPlayer();
-        if (action.type === 'landmark') {
-            if (!clone.buildLandmark(action.name)) return -Infinity;
-        } else {
-            const card = this._cardByName(action.cardName);
-            if (!card || !clone.buildCard(card)) return -Infinity;
-            stock[card.name] = Math.max(0, (stock[card.name] || 0) - 1);
-        }
-        let score = this._scoreStrongChoiceState(clone, ci);
-        const targetLandmark = this._strongTargetLandmark(game.currentPlayer(), game);
-        if (action.type === 'landmark') {
-            const urgency = this._landmarkUrgency(action.name, current, clone);
-            score += urgency * 3.5;
-            if (targetLandmark && action.name === targetLandmark.name) score += 6;
-        } else {
-            const card = this._cardByName(action.cardName);
-            const stableIncome = this._estimateStableIncome(game, game.currentPlayer());
-            if (targetLandmark) {
-                const shortfall = targetLandmark.cost - game.currentPlayer().coins;
-                if (shortfall > 0 && shortfall <= 3) score -= Math.max(0, 4 - shortfall) * 1.8;
-            }
-            if (card && (card.color === "red" || card.color === "purple") && stableIncome < 10) score -= 4.5;
-            if (card && game.players.length >= 4 && (card.color === "red" || card.color === "purple")) score -= 2.5;
-        }
-        return score;
+        return CPUBuildScoring._scoreStrongBuildOption(this, game, shopStock, action);
     }
 
     _createPlayoutRng(seed) {
