@@ -20,7 +20,7 @@ const OnlineRejoinActivationRuntime = (() => {
             'flushRestoreEvents', 'getGame', 'getPending', 'getRestoreEventHandlers',
             'getRestoreGeneration', 'getSocket', 'initGame', 'isActivationPlanAuthorityEnabled',
             'isPendingResendPlanAuthorityEnabled', 'isReplayPlanAuthorityEnabled',
-            'observeReconnect', 'persistRejoinBundle', 'replaceActionSequence',
+            'observeReconnect', 'replaceActionSequence',
             'resetPreviousCoins', 'resetReconnectCompletion', 'restoreSnapshot',
             'samePending', 'selectActivationEffect', 'selectPendingResendEffect',
             'selectReplayEffect', 'setActionFlight', 'setOnline', 'setReconnectFlag',
@@ -174,9 +174,12 @@ const OnlineRejoinActivationRuntime = (() => {
             }
         }
 
-        function handle(input = {}) {
+        function handle(input = {}, effects = {}) {
             if (input.restoreGeneration !== dependencies.getRestoreGeneration()) return false;
-            dependencies.persistRejoinBundle();
+            if (typeof effects.persistRejoinBundle !== 'function') {
+                throw new TypeError('online rejoin persistence effect is required');
+            }
+            effects.persistRejoinBundle();
             dependencies.showGame();
             try {
                 replay(input);

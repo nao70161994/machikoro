@@ -95,12 +95,21 @@ function createHarness(options = {}) {
         setStatusText: value => calls.push(['setStatusText', value]),
         showGame: () => calls.push(['showGame']),
     });
-    return { calls, diagnostics, input, runtime, socket };
+    return {
+        calls,
+        diagnostics,
+        handle: value => runtime.handle(value, {
+            persistRejoinBundle: () => calls.push(['persistRejoinBundle']),
+        }),
+        input,
+        runtime,
+        socket,
+    };
 }
 
 runTest('online rejoin activation runtimeはreplay・active化・pending再送を順序通り完了する', () => {
     const harness = createHarness();
-    assert.strictEqual(harness.runtime.handle(harness.input), true);
+    assert.strictEqual(harness.handle(harness.input), true);
     const names = harness.calls.map(call => call[0]);
     assert.deepStrictEqual(names.slice(0, 5), [
         'getRestoreGeneration', 'persistRejoinBundle', 'showGame',
@@ -130,7 +139,7 @@ runTest('online rejoin activation runtimeはreplay・active化・pending再送�
 
 runTest('online rejoin activation runtimeはlegacy fallbackでも同じ主要effectを維持する', () => {
     const harness = createHarness({ effectSource: 'legacy' });
-    assert.strictEqual(harness.runtime.handle(harness.input), true);
+    assert.strictEqual(harness.handle(harness.input), true);
     const names = harness.calls.map(call => call[0]);
     assert.deepStrictEqual(
         harness.calls.filter(call => call[0] === 'setReplaying'),
@@ -142,13 +151,13 @@ runTest('online rejoin activation runtimeはlegacy fallbackでも同じ主要eff
 
 runTest('online rejoin activation runtimeはstale世代を副作用前に破棄する', () => {
     const harness = createHarness({ generation: 4 });
-    assert.strictEqual(harness.runtime.handle(harness.input), false);
+    assert.strictEqual(harness.handle(harness.input), false);
     assert.deepStrictEqual(harness.calls, [['getRestoreGeneration']]);
 });
 
 runTest('online rejoin activation runtimeはreplay失敗を終了してabortする', () => {
     const harness = createHarness({ replayError: true });
-    assert.strictEqual(harness.runtime.handle(harness.input), false);
+    assert.strictEqual(harness.handle(harness.input), false);
     assert.deepStrictEqual(
         harness.calls.filter(call => call[0] === 'setReplaying'),
         [['setReplaying', true], ['setReplaying', false]]
@@ -163,14 +172,14 @@ runTest('online rejoin activation runtimeはreplay失敗を終了してabortす�
 
 runTest('online rejoin activation runtimeはqueue flush失敗後にpendingを再送しない', () => {
     const harness = createHarness({ flushed: false });
-    assert.strictEqual(harness.runtime.handle(harness.input), false);
+    assert.strictEqual(harness.handle(harness.input), false);
     assert.strictEqual(harness.calls.some(call => call[0] === 'getPending'), false);
     assert.strictEqual(harness.calls.some(call => call[0] === 'emitAction'), false);
 });
 
 runTest('online rejoin activation runtimeは再送不可の同一pendingだけをclearする', () => {
     const harness = createHarness({ canResend: false });
-    assert.strictEqual(harness.runtime.handle(harness.input), true);
+    assert.strictEqual(harness.handle(harness.input), true);
     assert.strictEqual(harness.calls.filter(call => call[0] === 'clearPending').length, 1);
     assert.strictEqual(harness.calls.some(call => call[0] === 'emitAction'), false);
 });

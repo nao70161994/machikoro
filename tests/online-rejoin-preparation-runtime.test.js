@@ -270,7 +270,8 @@ runTest('online.jsはrejoin準備と保存を専用runtimeへ委譲する', () =
         'utf8'
     );
     assert.ok(online.includes('OnlineRejoinPreparationRuntime.createRuntime'));
-    assert.ok(online.includes('onlineRejoinPreparationRuntime.prepare'));
+    assert.ok(online.includes('OnlineRejoinRuntime.createRuntime'));
+    assert.ok(online.includes('preparationRuntime: onlineRejoinPreparationRuntime'));
     assert.strictEqual(online.includes('const persistRestoreBundle = () =>'), false);
     assert.strictEqual(online.includes('const legacyPendingReconciliationPlan'), false);
     assert.ok(runtime.includes('function reconcilePending(input)'));
