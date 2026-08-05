@@ -1084,3 +1084,9 @@ Test index:
 - Rejoin queue carry, original-host bundle offer, host metadata normalization, pending reconciliation, and restore persistence belong to `OnlineRejoinPreparationRuntime`; activation/replay/resend remains in `OnlineRejoinActivationRuntime`.
 - Preserve schema admission before preparation, restore generation before queue carry, local bundle offer before server payload mutation, pending session ownership before reconciliation, unsigned full-log retention, persistence executor/legacy ordering, and best-effort storage failure isolation.
 - Both runtimes are linted and checkJs-covered; `online.js` is 3,539 lines. Socket.IO, Action/Snapshot, storage, ACK/reconnect, rules, CPU, UI text, and PWA contracts are unchanged.
+
+## Batch 98 handoff (2026-08-05)
+
+- Top-level `rejoinData` orchestration belongs to `OnlineRejoinRuntime`; preparation/ranking/persistence planning remains in `OnlineRejoinPreparationRuntime`, and replay/activation/queued-event/pending resend remains in `OnlineRejoinActivationRuntime`.
+- Preserve decode → schema admission → prepare → preload → generation-guarded activate order, local-bundle early return, exact model-loading/failure text, and per-handle persistence effect identity. Do not move these transactions back into the Socket.IO callback.
+- All three runtimes are linted and checkJs-covered; `online.js` is 3,504 lines. Socket.IO, schemas, storage, ACK/reconnect, rules, CPU, UI, and PWA contracts are unchanged.

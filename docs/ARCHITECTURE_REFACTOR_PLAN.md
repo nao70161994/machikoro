@@ -1022,3 +1022,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `OnlineRejoinPreparationRuntime` is the post-schema-admission application boundary that prepares canonical rejoin activation context and owns its runtime/storage persistence transaction.
 2. It composes existing restore-queue, restore-rank, pending-reconciliation, rejoin-persistence, and action-log persistence contracts through explicit adapters; `online.js` retains wire admission and dependency composition, while `OnlineRejoinActivationRuntime` consumes the prepared context.
 3. Focused and full online contracts preserve generation carry, local-host authority ordering, pending ACK/compaction rules, signed versus unsigned log retention, executor/legacy fallback, preload generation gates, replay/flush/resend order, and transport compatibility.
+
+## 2026-08-05 Batch 98 boundary update
+
+1. `OnlineRejoinRuntime` is the top-level application boundary that composes `OnlineRejoinPreparationRuntime` and `OnlineRejoinActivationRuntime` around decode, schema admission, and RL preload.
+2. `online.js` now constructs the three rejoin layers once and delegates `rejoinData` directly; prepared payload persistence is an activation-call effect, so activation no longer captures one payload at runtime construction.
+3. Focused and full online contracts preserve schema/status text, local-host bundle authority, preload generation gates, persistence/replay/flush/resend order, Socket.IO registration, and all compatibility fallbacks.
