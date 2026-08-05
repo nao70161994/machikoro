@@ -1150,3 +1150,9 @@ Test index:
 - High-level expert-v2-simple/expert/strong build option scoring belongs to `CPUBuildScoring`; candidate orchestration belongs to `CPUBuildStrategy`, and application belongs to `CPUBuildExecution`.
 - Preserve clone-before-apply order, stock-copy decrement, invalid-build `-Infinity`, profiling labels, lookahead admission/weighting, endgame focus penalties, exact arithmetic order, and CPU wrappers used by existing diagnostics/tests.
 - The module is linted and checkJs-covered; `CPU.js` is 2,576 lines. Fixed decision baseline, CPU/self-play, unit, static, PWA, and release gates pass with unchanged rules, scores, RNG, and strength.
+
+## Batch 109 handoff (2026-08-05)
+
+- Lookahead seed/lineup/playout orchestration belongs to `CPULookaheadRuntime`; primitive clone/RNG/step mechanics remain in `CPUSimulation`, and option scoring remains in `CPUBuildScoring`.
+- Preserve seed arithmetic, player-index CPU creation order, owner `_runSimulationStep` dispatch, max-step loop, profile labels/counts, winner double-check behavior, opponent flag precedence, and constructor adapter injection.
+- The module is linted and checkJs-covered; `CPU.js` is 2,536 lines. Fixed decision baseline, CPU/self-play/simulation, unit, static, PWA, and release gates pass with unchanged rules, traces, RNG, and strength.

@@ -956,3 +956,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `CPU.js` retains compatibility delegates and injects cloning, evaluation, lookahead, tuning, and card/landmark helpers; its size decreased from 2,719 to 2,576 lines. Build strategy, scoring orchestration, and build effects now have distinct boundaries.
 - Focused contracts preserve breakdown evaluation/arithmetic order, cloned card application, invalid-build rejection, and all four delegates. Fixed decision baseline, CPU/self-play, unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 259 ESLint maintenance files and 258 checkJs runtime files.
 - Score constants, lookahead admission/steps, candidate/tie order, clone behavior, RNG, CPU strength, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.
+
+## 2026-08-05 Batch 109 CPU lookahead runtime boundary
+
+- `js/cpuLookaheadRuntime.js` now owns lookahead playout orchestration, deterministic seed construction, simulated CPU lineup selection, and strong-opponent set policy over `CPUSimulation`/`CPULegalMoves`.
+- `CPU.js` retains compatibility delegates and injects CPU construction, profile, terminal evaluation, and simulation-step adapters; its size decreased from 2,576 to 2,536 lines. The runtime has no direct constructor dependency on the CPU class.
+- Focused contracts preserve seed arithmetic, CPU creation order, step/profile order, winner scoring, and difficulty adapter calls. Fixed decision baseline, CPU/self-play/simulation, unit, static, PWA, release, lint, and checkJs gates pass. Scoped gates now cover 260 ESLint maintenance files and 259 checkJs runtime files.
+- Playout RNG, max-step behavior, opponent modes, heuristic/tuning values, CPU strength, rules, schemas, online/reconnect, persistence, and PWA/SW behavior are unchanged.

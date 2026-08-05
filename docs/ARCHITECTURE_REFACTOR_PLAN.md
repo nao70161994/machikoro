@@ -1088,3 +1088,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CPUBuildScoring` is the high-level evaluation boundary between `CPUBuildStrategy` candidate orchestration and `CPUBuildExecution` effects.
 2. It evaluates cloned states through injected CPU helpers and owns expert-v2-simple breakdown arithmetic, expert lookahead scoring, endgame focus, and strong option scoring without mutating the live game or stock.
 3. Focused arithmetic/rejection contracts plus fixed decision and self-play baselines preserve scores, branch order, lookahead behavior, RNG, and strength.
+
+## 2026-08-05 Batch 109 boundary update
+
+1. `CPULookaheadRuntime` is the deterministic simulation application boundary over `CPUSimulation` and `CPULegalMoves`, used by high-level CPU scoring.
+2. Seed construction, lineup policy, playout steps, profiling, and winner/terminal scoring are explicit; CPU construction is injected rather than referenced as a runtime-global dependency.
+3. Focused seed/order/adapter contracts plus fixed decision, self-play, and simulation gates preserve deterministic traces, opponent composition, RNG, and strength.
