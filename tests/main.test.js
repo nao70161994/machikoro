@@ -2432,7 +2432,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiDiceDisplay.js', 'js/main.js');
     assertBefore('js/uiModalPolicy.js', 'js/ui.js');
     assertBefore('js/uiModalOpen.js', 'js/uiModalClose.js');
-    assertBefore('js/uiModalClose.js', 'js/ui.js');
+    assertBefore('js/uiModalClose.js', 'js/uiModalDomEffects.js');
+    assertBefore('js/uiModalDomEffects.js', 'js/ui.js');
     assertBefore('js/uiWinner.js', 'js/uiWinnerEffects.js');
     assertBefore('js/uiWinnerEffects.js', 'js/ui.js');
     assertBefore('js/uiGameStatusView.js', 'js/uiGameStatusEffects.js');

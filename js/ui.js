@@ -957,88 +957,36 @@ function compareCardNamesForDisplay(a, b) {
 
 function resetFullLog() { logHistoryController.reset(); activeGameTurnStateController.reset(); buildMenuFilterController.clear(); }
 
-function isVisibleFocusableElement(el) {
-    if (!el || el.disabled || el.hidden || el.getAttribute('aria-hidden') === 'true') return false;
-    if (typeof el.closest === 'function' && el.closest('[hidden], [aria-hidden="true"]')) return false;
-    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
-        const style = window.getComputedStyle(el);
-        if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
-    }
-    return true;
+const uiModalDomEffects = UiModalDomEffects.createRuntime({
+    controller: modalRuntimeController,
+    getDocument: () => typeof document === 'undefined' ? null : document,
+    getVisibleBlockingIds: () => visibleBlockingModalIds(),
+    getWindow: () => typeof window === 'undefined' ? null : window,
+    inertRootIds: MODAL_INERT_ROOT_IDS,
+    policy: UiModalPolicy,
+    recordTrace: (event, details) => {
+        if (typeof recordFlowTrace === 'function') recordFlowTrace(event, details);
+    },
+});
+
+function isVisibleFocusableElement(element) {
+    return uiModalDomEffects.isVisibleFocusable(element);
 }
 
 function getFocusableElements(root) {
-    if (!root || typeof root.querySelectorAll !== 'function') return [];
-    return Array.from(root.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
-        .filter(isVisibleFocusableElement);
+    return uiModalDomEffects.focusableElements(root);
 }
 
 function focusModal(modal) {
-    const focusable = getFocusableElements(modal);
-    const target = focusable[0] || modal;
-    if (target && typeof target.focus === 'function') target.focus();
+    uiModalDomEffects.focusModal(modal);
 }
 
 function clearOrphanAccessibleModalLocks() {
-    if (visibleBlockingModalIds().length > 0) return false;
-    let changed = false;
-    for (const rootId of MODAL_INERT_ROOT_IDS) {
-        const el = document.getElementById(rootId);
-        if (!el) continue;
-        if (el.inert) {
-            el.inert = false;
-            changed = true;
-        }
-        if (el.getAttribute && el.getAttribute('aria-hidden') === 'true') {
-            el.removeAttribute('aria-hidden');
-            changed = true;
-        }
-        if (el.style && el.style.pointerEvents === 'none') {
-            el.style.pointerEvents = '';
-            changed = true;
-        }
-    }
-    if (document.body && document.body.classList && document.body.classList.contains('modal-open')) {
-        document.body.classList.remove('modal-open');
-        changed = true;
-    }
-    if (changed && typeof recordFlowTrace === 'function') {
-        recordFlowTrace('modal-close-orphan-lock-cleared', { visibleBlockingModalIds: visibleBlockingModalIds() });
-    }
-    return changed;
+    return uiModalDomEffects.clearOrphanLocks();
 }
 
 function setAppInertForModal(enabled) {
-    if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
-    if (!enabled) {
-        for (const entry of modalRuntimeController.getInertRestore()) {
-            const el = entry && entry.el;
-            if (!el) continue;
-            el.inert = entry.hadInert ? entry.inert : false;
-            if (entry.ariaHidden === null) el.removeAttribute && el.removeAttribute('aria-hidden');
-            else el.setAttribute && el.setAttribute('aria-hidden', entry.ariaHidden);
-            if (el.style) el.style.pointerEvents = entry.pointerEvents || '';
-        }
-        modalRuntimeController.clearInertRestore();
-        return;
-    }
-    if (modalRuntimeController.getInertRestore().length > 0) return;
-    const inertRestore = MODAL_INERT_ROOT_IDS
-        .map(rootId => document.getElementById(rootId))
-        .filter(Boolean)
-        .map(el => ({
-            el,
-            hadInert: Object.prototype.hasOwnProperty.call(el, 'inert'),
-            inert: el.inert,
-            ariaHidden: el.getAttribute ? el.getAttribute('aria-hidden') : null,
-            pointerEvents: el.style ? el.style.pointerEvents || '' : '',
-        }));
-    modalRuntimeController.setInertRestore(inertRestore);
-    for (const { el } of inertRestore) {
-        el.inert = true;
-        if (el.setAttribute) el.setAttribute('aria-hidden', 'true');
-        if (el.style) el.style.pointerEvents = 'none';
-    }
+    uiModalDomEffects.setAppInert(enabled);
 }
 
 function modalPolicyFor(id) {
@@ -1046,24 +994,7 @@ function modalPolicyFor(id) {
 }
 
 function isModalVisibleById(id) {
-    if (!id || typeof document === 'undefined' || typeof document.getElementById !== 'function') return false;
-    const modal = document.getElementById(id);
-    const inline = modal && modal.style || {};
-    let computed = null;
-    if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
-        computed = modal ? window.getComputedStyle(modal) : null;
-    }
-    return UiModalPolicy.isVisibleState({
-        exists: !!modal,
-        hidden: !!(modal && modal.hidden),
-        inline: {
-            display: inline.display || '',
-            visibility: inline.visibility || '',
-            opacity: inline.opacity || '',
-            pointerEvents: inline.pointerEvents || '',
-        },
-        computed,
-    });
+    return uiModalDomEffects.isModalVisible(id);
 }
 
 function modalStackExceptionKey(parentId, childId) {
@@ -1119,20 +1050,7 @@ function canOpenBlockingModal(id) {
 }
 
 function normalizeModalVisualStateForOpen(modal) {
-    if (!modal || !modal.style) return;
-    modal.style.display = 'flex';
-    modal.style.visibility = 'visible';
-    modal.style.opacity = '1';
-    modal.style.pointerEvents = 'auto';
-    modal.style.transform = '';
-    if (typeof modal.querySelector === 'function') {
-        const content = modal.querySelector('.modal-content');
-        if (content && content.style) {
-            content.style.visibility = 'visible';
-            content.style.opacity = '1';
-            content.style.pointerEvents = 'auto';
-        }
-    }
+    uiModalDomEffects.normalizeForOpen(modal);
 }
 
 function isUiModalOpenEffectAuthorityEnabled() {
