@@ -837,3 +837,10 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - `main.js` retains the phase handlers and action-selection/execution functions while supplying runtime effects; its size decreased from 1,096 to 930 lines. Scheduler orchestration no longer surrounds CPU strategy code.
 - Focused contracts preserve CPU-speed delay, 500ms cooldown, non-host rejection, cancel/stale-timer behavior, and checkpoint labels. Existing main/integration plus full CPU decision/self-play baselines preserve phase execution, online gates, build-failure pass, fixed decisions, and CPU strength. Scoped gates now cover 243 ESLint maintenance files and 242 checkJs runtime files.
 - Phase handler order, CPU choices/RNG, difficulty tuning, rules, online protocol/reconnect, persistence, and PWA behavior are unchanged.
+
+## 2026-08-05 Batch 92 CPU phase handlers
+
+- `js/cpuPhaseHandlers.js` now owns the ordered roll/select/reroll/harbor/pending/build/nextTurn/IT execution adapters between `CpuTurnStrategy` proposals and local/online game effects.
+- `main.js` retains proposal construction and injected action/game effects; its size decreased from 930 to 836 lines. Scheduler orchestration, strategy selection, and phase execution adapters are now separate boundaries.
+- Focused contracts freeze all eight handler names/order, resolved roll arguments, and local-versus-online build-failure behavior. Existing main/integration and full CPU decision/self-play baselines preserve every phase result, action trace, RNG, and CPU strength. Scoped gates now cover 244 ESLint maintenance files and 243 checkJs runtime files.
+- CPU heuristics/tuning, proposal meaning, handler order, rules, online protocol, persistence, and PWA behavior are unchanged.

@@ -986,3 +986,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CpuTurnSchedulerRuntime` owns scheduling state and orchestration over existing `CpuSchedulerState`; phase handlers and `CpuTurnStrategy` remain separate decision/execution dependencies.
 2. The runtime centralizes transport/game gates, health projection, token/lease timers, phase admission, cooldown, stale cancellation, and exception fallback while `main.js` composes effects.
 3. Main/integration and full CPU decision/self-play regression gates preserve handler order, delays, online host authority, action traces, RNG, and strength.
+
+## 2026-08-05 Batch 92 boundary update
+
+1. `CpuPhaseHandlers` owns phase-specific proposal-to-effect adapters; `CpuTurnStrategy` remains action-only decision policy and `CpuTurnSchedulerRuntime` remains scheduling orchestration.
+2. `main.js` now composes those three CPU layers with Game/online/render effects rather than implementing handlers inline.
+3. Contracts and full CPU baselines preserve the eight-step order, proposal payloads, pending diagnostics, build false semantics, action traces, RNG, and strength.

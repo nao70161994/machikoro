@@ -1048,3 +1048,9 @@ Test index:
 - CPU token/lease ownership, health, online/game gates, phase timer chain, cooldown, and error recovery belong to `CpuTurnSchedulerRuntime`; keep phase handlers and action choice in `main.js`/`CpuTurnStrategy`.
 - Preserve handler order, configured CPU-speed delay, 500ms final cooldown, checkpoint names, build-error local pass, and false-result stop semantics.
 - The runtime is linted and checkJs-covered; `main.js` is 930 lines. Full CPU decision and self-play baselines pass with unchanged rules, choices, RNG, and strength.
+
+## Batch 92 handoff (2026-08-05)
+
+- CPU phase-specific execution belongs to `CpuPhaseHandlers`; keep proposal selection in `CpuTurnStrategy` and timer/gate ownership in `CpuTurnSchedulerRuntime`.
+- Preserve `ORDER`, pending checkpoint payload, action-only build preference, local failed-build pass, online failed-build stop, and render behavior.
+- The module is linted and checkJs-covered; `main.js` is 836 lines. Full CPU decision/self-play baselines pass with unchanged heuristics, RNG, and strength.
