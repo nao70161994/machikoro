@@ -1138,3 +1138,9 @@ Test index:
 - Difficulty dispatch and weak/normal/strong/expert build orchestration belong to `CPUBuildStrategy`; concrete application belongs to `CPUBuildExecution`. Keep `CPU` public build methods as compatibility delegates and keep scoring helpers on the injected facade for now.
 - Preserve `_collectingBuildAction` try/finally lifetime, stale selection clearing before admission, public method replacement used by diagnostics/tests, candidate enumeration, first-win ties, score operators, and exact weak/random draw order. The next safe evolution is replacing the isolated collection scope with an explicit proposal builder, not changing policy.
 - The module is linted and checkJs-covered; `CPU.js` is 2,935 lines. Fixed decision baselines and full CPU/self-play/simulation gates pass with unchanged rules, build actions, RNG, and strength.
+
+## Batch 107 handoff (2026-08-05)
+
+- Expert-v2-simple, expert crowd, and strong crowd build orchestration now belongs to `CPUBuildStrategy`; do not move candidate loops or trace sequencing back into `CPU.js`.
+- Keep the three underscored CPU wrappers because `diagnose-expert-v2-branches.js` temporarily replaces `_buildExpertV2Simple`. Preserve landmark-attempt order, banned-card filtering, stable ranking, score/tie operators, all expert trace keys/counts, and random choice order.
+- `CPU.js` is 2,719 lines and `CPUBuildStrategy` is 468 lines. Fixed decision baseline, full CPU/self-play, unit, lint, and checkJs gates pass with unchanged rules, build outcomes, RNG, and strength.

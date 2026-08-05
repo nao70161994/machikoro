@@ -1076,3 +1076,9 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 1. `CPUBuildStrategy` is the action-selection orchestration boundary for difficulty dispatch and weak/normal/strong/expert build policy; `CPUBuildExecution` remains the effect adapter and `CPU` remains the compatibility/evaluation facade.
 2. The existing collection scope still converts `_buyCard`/`_buyLandmark` intents into one canonical proposal, but its ownership is now isolated for a later pure proposal-builder replacement.
 3. Focused lifecycle/delegation contracts plus fixed decision and self-play baselines preserve candidate order, tie behavior, random consumption, and CPU strength.
+
+## 2026-08-05 Batch 107 boundary update
+
+1. `CPUBuildStrategy` now contains the large expert-v2-simple and multiplayer expert/strong build branches in addition to top-level difficulty dispatch.
+2. `CPU` compatibility wrappers preserve runtime diagnostic monkeypatching while injecting all evaluation, tuning, trace, and proposal dependencies into the strategy boundary.
+3. Empty-candidate/order contracts, fixed decision baselines, and full self-play preserve branch order, trace sequencing, candidate ties, RNG, and strength.
