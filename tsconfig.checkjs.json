@@ -42,6 +42,7 @@
     "js/audio.js",
     "js/citySkyline.js",
     "js/autoSkipPolicy.js",
+    "js/mainAutoSkipRuntime.js",
     "js/confetti.js",
     "js/delayedHumanActionPolicy.js",
     "js/pageActivationRuntime.js",

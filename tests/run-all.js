@@ -193,6 +193,7 @@ const TEST_GROUPS = {
         'local-game-initializer.test.js',
         'local-game-restart-runtime.test.js',
         'auto-skip-policy.test.js',
+        'main-auto-skip-runtime.test.js',
         'page-activation-policy.test.js',
         'delayed-human-action-policy.test.js',
         'page-activation-runtime.test.js',

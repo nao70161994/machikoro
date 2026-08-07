@@ -260,6 +260,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/localGameInitializer.js',
         'js/localGameRestartRuntime.js',
         'js/autoSkipPolicy.js',
+        'js/mainAutoSkipRuntime.js',
         'js/pageActivationPolicy.js',
         'js/delayedHumanActionPolicy.js',
         'js/pageActivationRuntime.js',

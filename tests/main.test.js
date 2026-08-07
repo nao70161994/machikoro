@@ -433,6 +433,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(localGameRestartRuntimeSource, context, { filename: 'js/localGameRestartRuntime.js' });
     const autoSkipPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/autoSkipPolicy.js'), 'utf8');
     vm.runInContext(autoSkipPolicySource, context, { filename: 'js/autoSkipPolicy.js' });
+    const mainAutoSkipRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/mainAutoSkipRuntime.js'), 'utf8');
+    vm.runInContext(mainAutoSkipRuntimeSource, context, { filename: 'js/mainAutoSkipRuntime.js' });
     const pageActivationPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/pageActivationPolicy.js'), 'utf8');
     vm.runInContext(pageActivationPolicySource, context, { filename: 'js/pageActivationPolicy.js' });
     const delayedHumanActionPolicySource = fs.readFileSync(path.join(__dirname, '..', 'js/delayedHumanActionPolicy.js'), 'utf8');
@@ -593,9 +595,11 @@ runTest('local game start pendingはcontrollerだけが所有する', () => {
 
 runTest('auto skip schedule stateはcontrollerだけが所有する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/main.js'), 'utf8');
+    const runtimeSource = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/mainAutoSkipRuntime.js'), 'utf8');
     assert.strictEqual(source.includes('let autoSkipPending'), false);
     assert.strictEqual(source.includes('let autoSkipTimeout'), false);
-    assert.ok(source.includes('AutoSkipPolicy.createScheduleController()'));
+    assert.ok(source.includes('MainAutoSkipRuntime.createRuntime({'));
+    assert.ok(runtimeSource.includes('dependencies.policy.createScheduleController()'));
 });
 
 runTest('delayed human action schedule stateはcontrollerだけが所有する', () => {

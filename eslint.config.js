@@ -37,6 +37,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/appShellStorage.js',
     'js/audio.js',
     'js/autoSkipPolicy.js',
+    'js/mainAutoSkipRuntime.js',
     'js/confetti.js',
     'js/cpuActionProposal.js',
     'js/cpuBuildExecution.js',

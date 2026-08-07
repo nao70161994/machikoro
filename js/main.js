@@ -29,9 +29,6 @@ UiWinner.streakRuntime.replace({
     lastWinnerName: safeMainStorageGet('lastWinnerName', '') || '',
 });
 
-// オートスキップ
-const autoSkipScheduleController = AutoSkipPolicy.createScheduleController();
-
 // 取り消し状態は GameRuntimeState が所有する。
 UiTutorialSettings.runtime.replace({
     tutorialEnabled: safeMainStorageGet('tutorialEnabled') !== 'false',
@@ -619,50 +616,26 @@ function showCoinAnimation(playerIndex, diff) {
 }
 
 // ===== オートスキップ =====
-function cancelAutoSkip() {
-    const timer = autoSkipScheduleController.getTimer();
-    if (timer) clearTimeout(timer);
-    autoSkipScheduleController.finish();
-}
+const mainAutoSkipRuntime = MainAutoSkipRuntime.createRuntime({
+    canRunLocalHumanAction: playerIndex => canRunLocalHumanAction(playerIndex),
+    cards: CARDS,
+    clearTimeout: timer => clearTimeout(timer),
+    gamePhases: GAME_PHASES,
+    getEnabledLandmarks: () => getEnabledLandmarkSelection(),
+    getGameState: mainGameRuntimeSnapshot,
+    getOnlineState: mainOnlineRuntimeSnapshot,
+    getStockCount: (stock, card) => getShopStockCount(stock, card),
+    landmarkNames: LANDMARK_NAMES,
+    player: Player,
+    policy: AutoSkipPolicy,
+    runAction: (action, data, fallback) => runLocalOrSendOnline(action, data, fallback),
+    setTimeout: (callback, delay) => setTimeout(callback, delay),
+    shopStock: SHOP_STOCK,
+});
+const autoSkipScheduleController = mainAutoSkipRuntime.controller;
 
-function checkAutoSkip() {
-    if (autoSkipScheduleController.isPending()) return;
-    const gameState = mainGameRuntimeSnapshot();
-    const currentGame = gameState.game;
-    if (!currentGame || currentGame.checkWinner()) return;
-    if (currentGame.phase !== GAME_PHASES.BUILD) { cancelAutoSkip(); return; }
-    if (gameState.cpuPlayers[currentGame.currentPlayerIndex]) return;
-    const onlineState = mainOnlineRuntimeSnapshot();
-    if (onlineState.isOnlineGame && currentGame.currentPlayerIndex !== onlineState.myPlayerIndex) return;
-    if (currentGame.pendingRenovation > 0) return;
-    if (currentGame.builtThisTurn) { cancelAutoSkip(); return; }
-
-    const availability = AutoSkipPolicy.buildAvailability({
-        cards: CARDS,
-        current: currentGame.currentPlayer(),
-        shopStock: SHOP_STOCK,
-        getStockCount: getShopStockCount,
-        enabledLandmarks: getEnabledLandmarkSelection(),
-        yakushoName: LANDMARK_NAMES.YAKUSHO,
-        landmarkCost: name => Player.landmarkCost(name),
-    });
-
-    if (!availability.canAffordAny) {
-        const scheduledPlayerIndex = currentGame.currentPlayerIndex;
-        autoSkipScheduleController.begin();
-        autoSkipScheduleController.setTimer(setTimeout(() => {
-            autoSkipScheduleController.finish();
-            const delayedGame = mainGameRuntimeSnapshot().game;
-            if (
-                canRunLocalHumanAction(scheduledPlayerIndex) &&
-                delayedGame.phase === GAME_PHASES.BUILD &&
-                !delayedGame.builtThisTurn
-            ) {
-                runLocalOrSendOnline('nextTurn', {}, () => delayedGame.nextTurn());
-            }
-        }, 1500));
-    }
-}
+function cancelAutoSkip() { return mainAutoSkipRuntime.cancel(); }
+function checkAutoSkip() { return mainAutoSkipRuntime.check(); }
 // 初期表示
 initMainView();
 bindDelegatedUiHandlers();
