@@ -193,6 +193,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineClientEffects.js');
     loadScript(context, 'js/onlineDomEffects.js');
     loadScript(context, 'js/onlineSocketEffects.js');
+    loadScript(context, 'js/onlineComposition.js');
     loadScript(context, 'js/onlineRuntimeState.js');
     loadScript(context, 'js/onlineSetupState.js');
     loadScript(context, 'js/gameSetupState.js');
@@ -767,7 +768,7 @@ runTest('online.jsのreconnect書き込みはruntime transitionでboolean契約�
     assert.strictEqual((onlineSource.match(/isReconnectingOnline = true;/g) || []).length, 0);
     assert.strictEqual((onlineSource.match(/isReconnectingOnline = false;/g) || []).length, 0);
     assert.ok(onlineSource.includes(
-        'OnlineRuntimeState.runtime.setReconnecting(value).isReconnectingOnline'
+        'onlineComposition.sessionState.setReconnecting(value).isReconnectingOnline'
     ));
 });
 

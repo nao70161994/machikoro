@@ -160,7 +160,12 @@ runTest('online reconnectとsession保存はruntime snapshot境界から読む',
     const fs = require('fs');
     const path = require('path');
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
-    assert.ok(source.includes('OnlineRuntimeState.runtime.snapshot()'));
+    const compositionSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js', 'onlineComposition.js'),
+        'utf8'
+    );
+    assert.ok(source.includes('onlineComposition.snapshotSession()'));
+    assert.ok(compositionSource.includes('sessionState.snapshot()'));
     for (const pattern of [
         'const connected = !!socket',
         'legacyValue = isReconnectingOnline',
@@ -197,7 +202,12 @@ runTest('online client effectは単一adapter境界から呼び出す', () => {
     const fs = require('fs');
     const path = require('path');
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
-    assert.ok(source.includes('OnlineClientEffects.createFromResolver'));
+    const compositionSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js', 'onlineComposition.js'),
+        'utf8'
+    );
+    assert.ok(source.includes('OnlineComposition.create({'));
+    assert.ok(compositionSource.includes('clientEffectsModule.createFromResolver'));
     for (const pattern of [
         /(^|[^.\w])invalidateCpuScheduleChain\(/m,
         /(^|[^.\w])scheduleCPU\(/m,
@@ -211,7 +221,11 @@ runTest('online DOM read/writeは単一effect runtimeを経由する', () => {
     const fs = require('fs');
     const path = require('path');
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
-    assert.ok(source.includes('OnlineDomEffects.createRuntime'));
+    const compositionSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js', 'onlineComposition.js'),
+        'utf8'
+    );
+    assert.ok(compositionSource.includes('domEffectsModule.createRuntime'));
     assert.strictEqual(source.includes('document.getElementById'), false);
     assert.ok(source.includes('onlineDomEffects.setStatusText'));
     assert.ok(source.includes('onlineDomEffects.showGame()'));
@@ -222,7 +236,11 @@ runTest('online Socket送信は単一effect runtimeを経由する', () => {
     const fs = require('fs');
     const path = require('path');
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
-    assert.ok(source.includes('OnlineSocketEffects.createRuntime'));
+    const compositionSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js', 'onlineComposition.js'),
+        'utf8'
+    );
+    assert.ok(compositionSource.includes('socketEffectsModule.createRuntime'));
     assert.strictEqual(source.includes('.emit('), false);
     assert.ok(source.includes('onlineSocketEffects.gameAction'));
     assert.ok(source.includes('onlineSocketEffects.rejoinRoom'));

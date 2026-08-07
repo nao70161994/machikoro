@@ -25,6 +25,7 @@
     "js/onlineClientEffects.js",
     "js/onlineDomEffects.js",
     "js/onlineSocketEffects.js",
+    "js/onlineComposition.js",
     "js/onlineSetupState.js",
     "js/CPU.js",
     "js/GameManager.js",

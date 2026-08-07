@@ -38,6 +38,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/gameSetupState.js'));
     assert.ok(config.files.includes('js/gameRuntimeState.js'));
     assert.ok(config.files.includes('js/onlineRuntimeState.js'));
+    assert.ok(config.files.includes('js/onlineComposition.js'));
     assert.ok(config.files.includes('js/onlineSetupState.js'));
     assert.ok(config.files.includes('js/GameManager.js'));
     assert.ok(config.files.includes('js/actionContract.js'));

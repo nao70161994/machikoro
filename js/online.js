@@ -25,24 +25,31 @@ const onlineClientEffectResolvers = Object.freeze({
     showNotice: () => typeof showNotice === 'function' ? showNotice : null,
     updateResumeButton: () => typeof updateResumeButton === 'function' ? updateResumeButton : null,
 });
-const onlineClientEffects = OnlineClientEffects.createFromResolver(name => {
-    const resolveEffect = onlineClientEffectResolvers[name];
-    return typeof resolveEffect === 'function' ? resolveEffect() : null;
-});
-const onlineDomEffects = OnlineDomEffects.createRuntime({
+const onlineComposition = OnlineComposition.create({
+    clientEffectsModule: OnlineClientEffects,
+    clientStorageModule: ClientStorage,
+    domEffectsModule: OnlineDomEffects,
+    gameState: GameRuntimeState.runtime,
     getDocument: () => typeof document !== 'undefined' ? document : null,
-});
-const onlineSocketEffects = OnlineSocketEffects.createRuntime({
-    getSocket: () => onlineSessionSnapshot().socket,
     hostlessEvents: OnlinePayload.hostlessRestoreEvents,
+    resolveClientEffect: name => {
+        const resolveEffect = onlineClientEffectResolvers[name];
+        return typeof resolveEffect === 'function' ? resolveEffect() : null;
+    },
+    sessionState: OnlineRuntimeState.runtime,
+    socketEffectsModule: OnlineSocketEffects,
 });
+const onlineClientEffects = onlineComposition.clientEffects;
+const onlineDomEffects = onlineComposition.domEffects;
+const onlineSocketEffects = onlineComposition.socketEffects;
+const onlineClientStorageFacade = onlineComposition.storage;
 
 function onlineGameRuntimeSnapshot() {
-    return GameRuntimeState.runtime.snapshot();
+    return onlineComposition.snapshotGame();
 }
 
 function onlineSessionSnapshot() {
-    return OnlineRuntimeState.runtime.snapshot();
+    return onlineComposition.snapshotSession();
 }
 
 function createOnlineCpuPlayer(difficulty, options = {}) {
@@ -165,7 +172,7 @@ function onChangeOnlinePlayerType(index, value) {
 // オンライン対戦（セッション状態）は OnlineRuntimeState が所有する。
 
 function setOnlineReconnectLegacyFlag(value) {
-    return OnlineRuntimeState.runtime.setReconnecting(value).isReconnectingOnline;
+    return onlineComposition.sessionState.setReconnecting(value).isReconnectingOnline;
 }
 const onlineSchemaSelectionController = OnlineSchemaTransport.createSelectionController();
 const _hostlessRestoreState = OnlineHostlessRestoreState.createController();
@@ -880,7 +887,6 @@ function isOnlineReconnectInputBlocked() {
     return _onlineReconnectRuntime.inputBlocked(isOnlineReconnectEventAuthorityEnabled());
 }
 
-const onlineClientStorageFacade = ClientStorage.createFacade();
 const onlineUnavailableClientStorage = Object.freeze({
     getItem() { return null; },
     setItem() {},
@@ -1739,7 +1745,7 @@ function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
         return _runOnlineHostChangedEffectsLegacy(newHostPlayerIndex, hostEpoch);
     }
     return OnlineHostChanged.execute(planSelection.plan, {
-        setHostState: isHost => { OnlineRuntimeState.runtime.setHost(isHost); },
+        setHostState: isHost => { onlineComposition.sessionState.setHost(isHost); },
         addHostLog: () => {
             const currentGame = onlineGameRuntimeSnapshot().game;
             currentGame && currentGame.addLog(LOG_TYPES.SYSTEM, `👑 あなたがホストになりました`);
@@ -1819,7 +1825,7 @@ function markOnlineGameFinished() {
     const plan = OnlineSessionLifecycle.completedPlan();
     OnlineSessionLifecycle.execute(plan, {
         markCompleted() { _onlineReconnectCompletionController.markCompleted(); },
-        leaveOnlineGame() { OnlineRuntimeState.runtime.setOnline(false); },
+        leaveOnlineGame() { onlineComposition.sessionState.setOnline(false); },
         clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
         clearActionInFlight() { _setOnlineActionInFlight(false); },
         clearRejoinRetry() { _clearRejoinRetry(); },
@@ -1845,16 +1851,16 @@ function resetOnlineState() {
         disconnectSocket() {
             if (session.socket) {
                 session.socket.disconnect();
-                OnlineRuntimeState.runtime.setSocket(null);
+                onlineComposition.sessionState.setSocket(null);
             }
         },
-        leaveOnlineGame() { OnlineRuntimeState.runtime.setOnline(false); },
-        clearHost() { OnlineRuntimeState.runtime.setHost(false); },
-        clearPlayerIndexes() { OnlineRuntimeState.runtime.clearPlayerIndexes(); },
-        clearRoom() { OnlineRuntimeState.runtime.clearRoom(); },
-        clearReconnectToken() { OnlineRuntimeState.runtime.clearReconnectToken(); },
+        leaveOnlineGame() { onlineComposition.sessionState.setOnline(false); },
+        clearHost() { onlineComposition.sessionState.setHost(false); },
+        clearPlayerIndexes() { onlineComposition.sessionState.clearPlayerIndexes(); },
+        clearRoom() { onlineComposition.sessionState.clearRoom(); },
+        clearReconnectToken() { onlineComposition.sessionState.clearReconnectToken(); },
         clearSchemaSelection() { onlineSchemaSelectionController.clear(); },
-        clearReplayFlag() { OnlineRuntimeState.runtime.setReplaying(false); },
+        clearReplayFlag() { onlineComposition.sessionState.setReplaying(false); },
         clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
         clearActionInFlight() { _setOnlineActionInFlight(false); },
         clearPendingOutboundAction(currentPlan) {
@@ -2469,7 +2475,7 @@ function _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch) {
 }
 
 function _setOnlineHostState(hostPlayerIndex) {
-    return OnlineRuntimeState.runtime.setHost(
+    return onlineComposition.sessionState.setHost(
         Number.isInteger(hostPlayerIndex) && hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex
     ).isRoomHost;
 }
@@ -2567,7 +2573,7 @@ function initSocket() {
         }
         return false;
     }
-    const connectedSession = OnlineRuntimeState.runtime.setSocket(io());
+    const connectedSession = onlineComposition.sessionState.setSocket(io());
     const currentSocket = connectedSession.socket;
     const hostlessEvents = OnlinePayload.hostlessRestoreEvents;
     const socketEvents = OnlineSocketRegistry.createBinder(currentSocket, {
@@ -2587,7 +2593,7 @@ function initSocket() {
     };
     const onlineLobbyStartRuntime = OnlineLobbyStartRuntime.createRuntime({
         abortRestore: (generation, message) => _abortOnlineRestore(generation, message),
-        acceptRoom: value => OnlineRuntimeState.runtime.acceptRoom(value),
+        acceptRoom: value => onlineComposition.sessionState.acceptRoom(value),
         acceptSchema: selection => acceptsNegotiatedGameSchema(selection),
         applyHostPayload: (payload, hostPlayerIndex, hostEpoch) =>
             _applyOnlineHostPayload(payload, hostPlayerIndex, hostEpoch),
@@ -2629,7 +2635,7 @@ function initSocket() {
         setActionFlight: value => _setOnlineActionInFlight(value),
         setCpuSpeed: value => GameSetupState.runtime.setCpuSpeed(value),
         setHostState: hostPlayerIndex => _setOnlineHostState(hostPlayerIndex),
-        setOnline: value => OnlineRuntimeState.runtime.setOnline(value),
+        setOnline: value => onlineComposition.sessionState.setOnline(value),
         setSchema: selection => onlineSchemaSelectionController.set(selection),
         setStatusHtml: html => onlineDomEffects.setStatusHtml(html),
         setStatusText: message => onlineDomEffects.setStatusText(message),
@@ -2713,7 +2719,7 @@ function initSocket() {
         setActionFlight: value => _setOnlineActionInFlight(value),
         setCpuSpeed: value => GameSetupState.runtime.setCpuSpeed(value),
         setHostState: value => _setOnlineHostState(value),
-        setPlayerIndexes: value => OnlineRuntimeState.runtime.setPlayerIndexes(value),
+        setPlayerIndexes: value => onlineComposition.sessionState.setPlayerIndexes(value),
         setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
         setStatusText: message => onlineDomEffects.setStatusText(message),
         startRestore: () => _startOnlineRestore(),
@@ -2773,9 +2779,9 @@ function initSocket() {
         selectReplayEffect: selection =>
             _onlineRestoreReplayEffectAuthoritySelection(selection),
         setActionFlight: value => _setOnlineActionInFlight(value),
-        setOnline: value => OnlineRuntimeState.runtime.setOnline(value),
+        setOnline: value => onlineComposition.sessionState.setOnline(value),
         setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
-        setReplaying: value => OnlineRuntimeState.runtime.setReplaying(value),
+        setReplaying: value => onlineComposition.sessionState.setReplaying(value),
         setStatusText: message => onlineDomEffects.setStatusText(message),
         showGame: () => onlineDomEffects.showGame(),
     });
@@ -2943,7 +2949,7 @@ function _runOnlineReconnectTerminalCleanupLegacy() {
     onlineClientEffects.updateResumeButton();
     if (currentSocket) {
         currentSocket.disconnect();
-        OnlineRuntimeState.runtime.setSocket(null);
+        onlineComposition.sessionState.setSocket(null);
     }
 }
 
@@ -2964,7 +2970,7 @@ function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
             const currentSocket = onlineSessionSnapshot().socket;
             if (currentSocket) {
                 currentSocket.disconnect();
-                OnlineRuntimeState.runtime.setSocket(null);
+                onlineComposition.sessionState.setSocket(null);
             }
         },
     });
@@ -3024,8 +3030,8 @@ function getOnlineLobbyRequestRuntime() {
         joinRoom: payload => onlineSocketEffects.joinRoom(payload),
         playerSettings: OnlinePlayerSettings,
         requestTimeoutMs: ONLINE_LOBBY_REQUEST_TIMEOUT_MS,
-        setHost: value => OnlineRuntimeState.runtime.setHost(value),
-        setPlayerName: value => OnlineRuntimeState.runtime.setPlayerName(value),
+        setHost: value => onlineComposition.sessionState.setHost(value),
+        setPlayerName: value => onlineComposition.sessionState.setPlayerName(value),
         setStatusText: message => onlineDomEffects.setStatusText(message),
         setText: (id, text) => onlineDomEffects.setText(id, text),
         setTimer: (callback, delay) => setTimeout(callback, delay),
@@ -3141,7 +3147,7 @@ function getOnlineGameInitializer() {
         },
         scheduleCpu: () => onlineClientEffects.scheduleCpu(),
         setCurrentPlayerIndex: index =>
-            OnlineRuntimeState.runtime.setCurrentPlayerIndex(index),
+            onlineComposition.sessionState.setCurrentPlayerIndex(index),
         setShopStockCount: (stock, card, count) =>
             setShopStockCount(stock, card, count),
         shopStock: SHOP_STOCK,
