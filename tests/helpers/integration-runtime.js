@@ -238,6 +238,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiWatchdogAsyncRecovery.js',
         'js/uiWatchdogRecoveryRuntime.js',
         'js/appShellUiLockRuntime.js',
+        'js/appShellComposition.js',
         'js/appShellRuntimeEffects.js',
         'js/appShellObservationRuntime.js',
         'js/uiWatchdogMonitor.js',

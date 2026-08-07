@@ -1,5 +1,42 @@
 const appShellStorage = AppShellStorage.createFacade();
 
+// appShell.js is evaluated before main.js/online.js. All late classic-script
+// dependencies live in this one registry instead of being rediscovered by each
+// runtime adapter.
+const appShellComposition = AppShellComposition.create({
+    cancelCpuSchedule: () => typeof cancelCpuSchedule === 'function' ? cancelCpuSchedule : null,
+    cpuSchedulerStateController: () => typeof cpuSchedulerStateController !== 'undefined' ? cpuSchedulerStateController : null,
+    cpuTurnScheduler: () => typeof cpuTurnScheduler !== 'undefined' ? cpuTurnScheduler : null,
+    drawCitySkyline: () => typeof drawCitySkyline === 'function' ? drawCitySkyline : null,
+    getOnlineActionFlightState: () => typeof getOnlineActionFlightState === 'function' ? getOnlineActionFlightState : null,
+    handleOnlineActionTimeout: () => typeof _handleOnlineActionTimeout === 'function' ? _handleOnlineActionTimeout : null,
+    loadSettings: () => typeof loadSettings === 'function' ? loadSettings : null,
+    onlineActionInFlight: () => typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : false,
+    onlineActionInFlightAt: () => typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : 0,
+    preloadLocalRlModels: () => typeof preloadLocalRlModelsInBackground === 'function' ? preloadLocalRlModelsInBackground : null,
+    preloadOnlineRlModels: () => typeof preloadOnlineRlModelsInBackground === 'function' ? preloadOnlineRlModelsInBackground : null,
+    render: () => typeof render === 'function' ? render : null,
+    renderBuildMenu: () => typeof renderBuildMenu === 'function' ? renderBuildMenu : null,
+    renderOnlinePlayerSettings: () => typeof renderOnlinePlayerSettings === 'function' ? renderOnlinePlayerSettings : null,
+    resumeGame: () => typeof resumeGame === 'function' ? resumeGame : null,
+    scheduleCpu: () => typeof scheduleCPU === 'function' ? scheduleCPU : null,
+    updateResumeButton: () => typeof updateResumeButton === 'function' ? updateResumeButton : null,
+    cards: () => typeof CARDS !== 'undefined' ? CARDS : null,
+    cardFilter: () => typeof cardFilter !== 'undefined' ? cardFilter : '',
+    enabledLandmarks: () => typeof enabledLandmarks !== 'undefined' ? enabledLandmarks : null,
+    gameManager: () => typeof GameManager !== 'undefined' ? GameManager : null,
+    playerClass: () => typeof Player !== 'undefined' ? Player : null,
+    shopStock: () => typeof SHOP_STOCK !== 'undefined' ? SHOP_STOCK : null,
+    onlineRetryPolicy: () => typeof OnlineRetryPolicy !== 'undefined' ? OnlineRetryPolicy : null,
+    document: () => typeof document !== 'undefined' ? document : null,
+    navigator: () => typeof navigator !== 'undefined' ? navigator : null,
+    root: () => typeof window !== 'undefined' ? window : globalThis,
+    console: () => typeof console !== 'undefined' ? console : null,
+    fetch: () => typeof fetch === 'function' ? fetch : null,
+    setInterval: () => typeof setInterval === 'function' ? setInterval : null,
+    setTimeout: () => typeof setTimeout === 'function' ? setTimeout : null,
+});
+
 function appShellGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
 }
@@ -33,59 +70,32 @@ const postBuildUiStabilizerBatch = UiWatchdogMonitor.createPendingBatchControlle
 
 const truncateClientErrorField = ClientReporting.truncateField;
 const appShellDomSnapshot = UiDomSnapshot.createRuntime({
-    getDocument: () => typeof document !== 'undefined' ? document : null,
-    getComputedStyle: element => typeof window !== 'undefined' && typeof window.getComputedStyle === 'function'
-        ? window.getComputedStyle(element) : null,
+    getDocument: () => appShellComposition.resolve('document'),
+    getComputedStyle: element => {
+        const root = appShellComposition.resolve('root');
+        return root && typeof root.getComputedStyle === 'function' ? root.getComputedStyle(element) : null;
+    },
     truncateText: truncateClientErrorField,
 });
 const appShellRecoveryEffects = UiRecoveryEffects.createRuntime({
-    getDocument: () => typeof document !== 'undefined' ? document : null,
+    getDocument: () => appShellComposition.resolve('document'),
 });
-const appShellRuntimeEffects = AppShellRuntimeEffects.createFromResolver(name => {
-    const resolvers = {
-        cancelCpuSchedule: () => typeof cancelCpuSchedule === 'function' ? cancelCpuSchedule : null,
-        cpuSchedulerStateController: () => typeof cpuSchedulerStateController !== 'undefined' ? cpuSchedulerStateController : null,
-        cpuTurnScheduler: () => typeof cpuTurnScheduler !== 'undefined' ? cpuTurnScheduler : null,
-        drawCitySkyline: () => typeof drawCitySkyline === 'function' ? drawCitySkyline : null,
-        getOnlineActionFlightState: () => typeof getOnlineActionFlightState === 'function' ? getOnlineActionFlightState : null,
-        handleOnlineActionTimeout: () => typeof _handleOnlineActionTimeout === 'function' ? _handleOnlineActionTimeout : null,
-        loadSettings: () => typeof loadSettings === 'function' ? loadSettings : null,
-        onlineActionInFlight: () => typeof onlineActionInFlight !== 'undefined' ? onlineActionInFlight : false,
-        onlineActionInFlightAt: () => typeof onlineActionInFlightAt !== 'undefined' ? onlineActionInFlightAt : 0,
-        preloadLocalRlModels: () => typeof preloadLocalRlModelsInBackground === 'function' ? preloadLocalRlModelsInBackground : null,
-        preloadOnlineRlModels: () => typeof preloadOnlineRlModelsInBackground === 'function' ? preloadOnlineRlModelsInBackground : null,
-        render: () => typeof render === 'function' ? render : null,
-        renderBuildMenu: () => typeof renderBuildMenu === 'function' ? renderBuildMenu : null,
-        renderOnlinePlayerSettings: () => typeof renderOnlinePlayerSettings === 'function' ? renderOnlinePlayerSettings : null,
-        resumeGame: () => typeof resumeGame === 'function' ? resumeGame : null,
-        scheduleCpu: () => typeof scheduleCPU === 'function' ? scheduleCPU : null,
-        updateResumeButton: () => typeof updateResumeButton === 'function' ? updateResumeButton : null,
-    };
-    return resolvers[name] ? resolvers[name]() : null;
-});
+const appShellRuntimeEffects = AppShellRuntimeEffects.createFromResolver(
+    name => appShellComposition.resolve(name)
+);
 
 const appShellObservationRuntime = AppShellObservationRuntime.createRuntime({
     actionUiRegistry: ActionUiRegistry,
     activeBlockingModalIds: snapshot => activeBlockingModalIds(snapshot),
     clientRuntimeSnapshot: ClientRuntimeSnapshot,
-    document: typeof document !== 'undefined' ? document : null,
+    document: appShellComposition.resolve('document'),
     domSnapshot: appShellDomSnapshot,
     freezeKinds: FREEZE_KINDS,
     getGameRuntimeSnapshot: appShellGameRuntimeSnapshot,
     getOnlineRuntimeSnapshot: appShellOnlineRuntimeSnapshot,
     modalSnapshotFromRuntime: (snapshot, id) => modalSnapshotFromRuntime(snapshot, id),
     nowIso: () => new Date().toISOString(),
-    resolveDependency(name) {
-        const resolvers = {
-            cards: () => typeof CARDS !== 'undefined' ? CARDS : null,
-            cardFilter: () => typeof cardFilter !== 'undefined' ? cardFilter : '',
-            enabledLandmarks: () => typeof enabledLandmarks !== 'undefined' ? enabledLandmarks : null,
-            gameManager: () => typeof GameManager !== 'undefined' ? GameManager : null,
-            playerClass: () => typeof Player !== 'undefined' ? Player : null,
-            shopStock: () => typeof SHOP_STOCK !== 'undefined' ? SHOP_STOCK : null,
-        };
-        return resolvers[name] ? resolvers[name]() : null;
-    },
+    resolveDependency: name => appShellComposition.resolve(name),
     runtimeEffects: appShellRuntimeEffects,
     uiWatchdog: UiWatchdog,
 });
@@ -177,15 +187,17 @@ const appShellUiLockRuntime = AppShellUiLockRuntime.createRuntime({
     freezeKinds: FREEZE_KINDS,
     getConfirmAwaitingChoice() {
         try {
-            const root = typeof window !== 'undefined' ? window : globalThis;
+            const root = appShellComposition.resolve('root');
             return !!(root && root.__machikoroConfirmModalOpen === true);
         } catch (_) {
             return false;
         }
     },
-    getElementById: id => typeof document !== 'undefined' && document.getElementById
-        ? document.getElementById(id) : null,
-    getRoot: () => typeof window !== 'undefined' ? window : globalThis,
+    getElementById: id => {
+        const documentRef = appShellComposition.resolve('document');
+        return documentRef && documentRef.getElementById ? documentRef.getElementById(id) : null;
+    },
+    getRoot: () => appShellComposition.resolve('root'),
     isHumanTurnSnapshot,
     isOnlineUiBlockedSnapshot,
     monitor: freezeWatchdogMonitor,
@@ -198,7 +210,7 @@ const appShellUiLockRuntime = AppShellUiLockRuntime.createRuntime({
         try { if (typeof modalInertRestore !== 'undefined') modalInertRestore = []; } catch (_) {}
     },
     runtimeEffects: appShellRuntimeEffects,
-    setTimeoutFn: typeof setTimeout === 'function' ? setTimeout : null,
+    setTimeoutFn: appShellComposition.resolveFunction('setTimeout'),
     snapshotElement: id => safeElementSnapshot(id),
     syncAllowedActionContainers: (snapshot, issues) => syncAllowedActionContainersForRender(snapshot, issues),
     uiWatchdog: UiWatchdog,
@@ -275,7 +287,7 @@ function markClientFlowCheckpoint(event, details = {}) {
         details,
         buildSnapshot: () => buildClientRuntimeSnapshot(event),
         timestamp: () => new Date().toISOString(),
-        getRoot: () => typeof window !== 'undefined' ? window : globalThis,
+        getRoot: () => appShellComposition.resolve('root'),
         persist(value) {
             appShellStorage.access(storage => {
                 storage.setItem('machikoroLastClientCheckpoint', value);
@@ -289,12 +301,21 @@ const appShellClientReportingRuntime = AppShellClientReportingRuntime.createRunt
     buildSnapshot: buildClientRuntimeSnapshot,
     checkpoint: markClientFlowCheckpoint,
     endpoint: '/api/client-error',
-    getFetch: () => typeof fetch === 'function' ? fetch : null,
+    getFetch: () => appShellComposition.resolveFunction('fetch'),
     getGameSnapshot: appShellGameRuntimeSnapshot,
-    getLocation: () => typeof window !== 'undefined' ? window.location : null,
+    getLocation: () => {
+        const root = appShellComposition.resolve('root');
+        return root ? root.location : null;
+    },
     getOnlineSnapshot: appShellOnlineRuntimeSnapshot,
-    getUserAgent: () => typeof navigator !== 'undefined' ? navigator.userAgent : '',
-    getVersion: () => typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
+    getUserAgent: () => {
+        const navigatorRef = appShellComposition.resolve('navigator');
+        return navigatorRef ? navigatorRef.userAgent : '';
+    },
+    getVersion: () => {
+        const root = appShellComposition.resolve('root');
+        return root ? root.MACHIKORO_CLIENT_VERSION : '';
+    },
     messageLimit: 500,
     now: () => Date.now(),
     reporting: ClientReporting,
@@ -321,8 +342,11 @@ const gameLifecycleRuntime = LifecycleRuntime.create({
     gameSnapshot: appShellGameRuntimeSnapshot,
     onlineSnapshot: appShellOnlineRuntimeSnapshot,
     setupSnapshot: () => GameSetupState.runtime.snapshot(),
-    getAppVersion: () => typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
-    getFetch: () => typeof fetch === 'function' ? fetch : null,
+    getAppVersion: () => {
+        const root = appShellComposition.resolve('root');
+        return root ? root.MACHIKORO_CLIENT_VERSION : '';
+    },
+    getFetch: () => appShellComposition.resolveFunction('fetch'),
     sendTransport: input => LifecycleTransport.send(input),
     checkpoint: markClientFlowCheckpoint,
     endpoint: GAME_LIFECYCLE_ENDPOINT,
@@ -353,26 +377,33 @@ function resetGameLifecycleForRestart(reason = 'game-restart') {
     gameLifecycleRuntime.reset(reason);
 }
 
-if (typeof window !== 'undefined') {
-    window.__machikoroSetLifecycleNotificationsEnabled = setGameLifecycleNotificationEnabled;
-    window.__machikoroLifecycleNotifyState = gameLifecycleNotifyState;
-    window.__machikoroSendLifecycleNotification = sendGameLifecycleNotification;
+const appShellRoot = appShellComposition.resolve('root');
+if (appShellRoot) {
+    appShellRoot.__machikoroSetLifecycleNotificationsEnabled = setGameLifecycleNotificationEnabled;
+    appShellRoot.__machikoroLifecycleNotifyState = gameLifecycleNotifyState;
+    appShellRoot.__machikoroSendLifecycleNotification = sendGameLifecycleNotification;
 }
 
 // ===== クラッシュ回復 =====
 const appShellCrashRuntime = AppShellCrashRuntime.createRuntime({
     addKeydownListener: handler => {
-        if (typeof document.addEventListener === 'function') document.addEventListener('keydown', handler, true);
+        const documentRef = appShellComposition.resolve('document');
+        if (documentRef && typeof documentRef.addEventListener === 'function') {
+            documentRef.addEventListener('keydown', handler, true);
+        }
     },
     cancelCpu: appShellRuntimeEffects.cancelCpu,
     controller: CrashScreen.createController(),
     effects: CrashScreenEffects,
-    getActiveElement: () => document.activeElement,
-    getElementById: id => document.getElementById(id),
+    getActiveElement: () => appShellComposition.resolve('document').activeElement,
+    getElementById: id => appShellComposition.resolve('document').getElementById(id),
     policy: CrashScreen,
     readSavedGame: () => safeAppShellStorageGet('savedGame'),
     removeKeydownListener: handler => {
-        if (typeof document.removeEventListener === 'function') document.removeEventListener('keydown', handler, true);
+        const documentRef = appShellComposition.resolve('document');
+        if (documentRef && typeof documentRef.removeEventListener === 'function') {
+            documentRef.removeEventListener('keydown', handler, true);
+        }
     },
     resumeGame: appShellRuntimeEffects.resumeGame,
 });
@@ -387,8 +418,8 @@ function crashResume() {
 
 // ===== オフライン検知 / PWAインストールバナー =====
 const _pwaInstallController = PwaShell.createInstallController({
-    document,
-    window,
+    document: appShellComposition.resolve('document'),
+    window: appShellComposition.resolve('root'),
     readStorage: safeAppShellStorageGet,
     writeStorage: safeAppShellStorageSet,
 });
@@ -422,26 +453,32 @@ const appShellEventBindings = ClientEventRuntime.createShellBindings({
     checkFreezeWatchdog,
     consoleErrorInput: ClientReporting.consoleErrorInput,
     freezeWatchdogIntervalMs: FREEZE_WATCHDOG_INTERVAL_MS,
-    getConsole: () => typeof console !== 'undefined' ? console : null,
+    getConsole: () => appShellComposition.resolve('console'),
     pwaInstallController: _pwaInstallController,
     reportClientError,
     resizeHandler: appShellRuntimeEffects.drawCitySkyline,
-    setIntervalFn: typeof setInterval === 'function' ? setInterval : null,
+    setIntervalFn: appShellComposition.resolveFunction('setInterval'),
     showCrashScreen,
     unhandledRejectionInput: ClientReporting.unhandledRejectionInput,
     updateOnlineStatus: updateOnlineTabState,
     windowErrorInput: ClientReporting.windowErrorInput,
-    windowTarget: window,
+    windowTarget: appShellComposition.resolve('root'),
 });
 const appShellStartupRuntime = AppShellStartupRuntime.createRuntime({
     eventBindings: appShellEventBindings,
-    getOnlineElements: () => ({
-        tabButton: document.getElementById('tabOnline'),
-        notice: document.getElementById('offlineNotice'),
-        createButton: document.getElementById('onlineCreateSubmitButton'),
-        joinButton: document.getElementById('onlineJoinSubmitButton'),
-    }),
-    getOnlineState: () => navigator.onLine,
+    getOnlineElements: () => {
+        const documentRef = appShellComposition.resolve('document');
+        return {
+            tabButton: documentRef.getElementById('tabOnline'),
+            notice: documentRef.getElementById('offlineNotice'),
+            createButton: documentRef.getElementById('onlineCreateSubmitButton'),
+            joinButton: documentRef.getElementById('onlineJoinSubmitButton'),
+        };
+    },
+    getOnlineState: () => {
+        const navigatorRef = appShellComposition.resolve('navigator');
+        return navigatorRef ? navigatorRef.onLine : false;
+    },
     pwaController: _pwaInstallController,
     runtimeEffects: appShellRuntimeEffects,
     tabEffects: UiTabEffects,
@@ -479,8 +516,8 @@ const appShellWatchdogRuntime = UiWatchdogRuntime.createRuntime({
     confirmModalOpen: confirmModalOpenFromSnapshot,
     freezeKinds: FREEZE_KINDS,
     getConfirmAwaitingChoice: isConfirmModalAwaitingUserChoice,
-    getOnlineRetryPolicy: () => typeof OnlineRetryPolicy !== 'undefined' ? OnlineRetryPolicy : null,
-    getRoot: () => typeof window !== 'undefined' ? window : globalThis,
+    getOnlineRetryPolicy: () => appShellComposition.resolve('onlineRetryPolicy'),
+    getRoot: () => appShellComposition.resolve('root'),
     hasActiveBlockingModal,
     hasUsablePendingAction,
     hasUsablePrimaryAction,
@@ -488,9 +525,7 @@ const appShellWatchdogRuntime = UiWatchdogRuntime.createRuntime({
     monitorActions: UiWatchdogMonitor.ACTIONS,
     now: () => Date.now(),
     recover: snapshot => recoverUiInteractability(snapshot),
-    report(input) {
-        if (typeof reportClientError === 'function') reportClientError(input);
-    },
+    report: input => reportClientError(input),
     reporting: UiWatchdogReporting,
     schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
     staleConfirmModalOpen: isStaleConfirmModalSnapshot,
@@ -566,12 +601,12 @@ function sendDebugClientErrorReport(message = 'manual client error test') {
     return appShellClientReportingRuntime.sendDebugReport(message);
 }
 
-if (typeof window !== 'undefined') {
-    window.__machikoroSendTestErrorReport = sendDebugClientErrorReport;
+if (appShellRoot) {
+    appShellRoot.__machikoroSendTestErrorReport = sendDebugClientErrorReport;
 }
 
 // Register before main.js evaluates so startup failures can still reach the crash UI.
-if (typeof window !== 'undefined') bindCrashHandlers();
+if (appShellRoot) bindCrashHandlers();
 
 function initMainView() {
     return appShellStartupRuntime.initMainView();

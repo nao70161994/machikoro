@@ -91,6 +91,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/clientStorage.js'));
     assert.ok(config.files.includes('js/clientReporting.js'));
     assert.ok(config.files.includes('js/pwaShell.js'));
+    assert.ok(config.files.includes('js/appShellComposition.js'));
     assert.ok(config.files.includes('js/localPlayerSettings.js'));
     assert.ok(config.files.includes('js/pageActivationPolicy.js'));
     assert.ok(config.files.includes('js/onlineReconnectState.js'));

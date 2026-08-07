@@ -367,6 +367,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiWatchdogRecoveryRuntimeSource, context, { filename: 'js/uiWatchdogRecoveryRuntime.js' });
     const appShellUiLockRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellUiLockRuntime.js'), 'utf8');
     vm.runInContext(appShellUiLockRuntimeSource, context, { filename: 'js/appShellUiLockRuntime.js' });
+    const appShellCompositionSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellComposition.js'), 'utf8');
+    vm.runInContext(appShellCompositionSource, context, { filename: 'js/appShellComposition.js' });
     const appShellRuntimeEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellRuntimeEffects.js'), 'utf8');
     vm.runInContext(appShellRuntimeEffectsSource, context, { filename: 'js/appShellRuntimeEffects.js' });
     const appShellObservationRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellObservationRuntime.js'), 'utf8');
@@ -2282,6 +2284,7 @@ runTest('UI interactability registry は描画されるaction child selectorと�
     const appShell = [
         'js/actionContract.js',
         'js/actionUiRegistry.js',
+        'js/appShellComposition.js',
         'js/appShell.js',
     ].map(file => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')).join('\n');
     const uiSources = [
@@ -2490,6 +2493,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/uiWatchdogAsyncRecovery.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogRecoveryRuntime.js', 'js/appShell.js');
     assertBefore('js/appShellUiLockRuntime.js', 'js/appShell.js');
+    assertBefore('js/appShellComposition.js', 'js/appShell.js');
     assertBefore('js/appShellRuntimeEffects.js', 'js/appShell.js');
     assertBefore('js/appShellObservationRuntime.js', 'js/appShell.js');
     assertBefore('js/uiWatchdogMonitor.js', 'js/appShell.js');

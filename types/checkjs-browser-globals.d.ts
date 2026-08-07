@@ -57,6 +57,7 @@ declare var OnlineGameEngineRuntime: typeof import("../js/onlineGameEngineRuntim
 
 // Browser-global publication names for the explicitly checked compatibility modules.
 interface Window {
+    AppShellComposition: typeof import("../js/appShellComposition");
     GameActionContract: typeof import("../js/actionContract");
     RLModelCatalog: unknown;
     GameTurnPolicy: unknown;
