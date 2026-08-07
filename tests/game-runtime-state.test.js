@@ -117,7 +117,12 @@ runTest('mainはlive gameとCPU・Undoをruntime snapshot境界から読む', ()
 
 runTest('onlineはlive gameとCPU・Undoをruntime snapshot境界から読む', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js', 'online.js'), 'utf8');
-    assert.ok(source.includes('GameRuntimeState.runtime.snapshot()'));
+    const compositionSource = fs.readFileSync(
+        path.join(__dirname, '..', 'js', 'onlineComposition.js'),
+        'utf8'
+    );
+    assert.ok(source.includes('onlineComposition.snapshotGame()'));
+    assert.ok(compositionSource.includes('gameState.snapshot()'));
     for (const pattern of [
         'hasGame: !!game,',
         '\n        game,',
