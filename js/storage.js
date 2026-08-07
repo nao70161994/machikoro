@@ -48,16 +48,14 @@ function setStorageOnlineReconnectLegacyFlag(value) {
 }
 
 const localResumePreloadController = LocalResumePreloadState.create();
+const localResumeEffects = LocalResumeEffects.create({
+    getElementById: id => typeof document !== 'undefined' && document.getElementById
+        ? document.getElementById(id)
+        : null,
+});
 
 function applyLocalResumePreloadState(state) {
-    const button = typeof document !== 'undefined' && document.getElementById
-        ? document.getElementById('btnResume')
-        : null;
-    if (button) {
-        const view = LocalResumeView.pendingButton(state.pending);
-        button.disabled = view.disabled;
-        button.textContent = view.textContent;
-    }
+    localResumeEffects.applyPendingButton(LocalResumeView.pendingButton(state.pending));
 }
 
 function setLocalResumePending(pending) {
@@ -180,16 +178,11 @@ function saveGameState() {
 }
 
 function updateResumeButton() {
-    const localSection = document.getElementById('resumeSection');
-    const onlineSection = document.getElementById('onlineResumeSection');
-    const onlineDescription = document.getElementById('onlineResumeDescription');
     const view = LocalResumeView.resumeSections(
         getLocalSaveRepository().exists(),
         readOnlineSession()
     );
-    if (localSection) localSection.style.display = view.localDisplay;
-    if (onlineSection) onlineSection.style.display = view.onlineDisplay;
-    if (onlineDescription) onlineDescription.textContent = view.onlineDescription;
+    localResumeEffects.applyResumeSections(view);
 }
 
 function readOnlineSession() {

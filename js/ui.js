@@ -815,6 +815,9 @@ const CARD_SETS = {
 };
 
 const cardSelectState = UiCardSelect.createSelectionController(GameSelectionState.runtime.snapshot());
+const uiCardSelectEffects = UiCardSelectEffects.create({
+    getElementById: id => document.getElementById(id),
+});
 
 function syncCardSelectStateFromRuntime() {
     const snapshot = GameSelectionState.runtime.snapshot();
@@ -1243,18 +1246,7 @@ function renderCardSelectModal() {
         buildCardHtml: buildCardSelectToggleButtonHtml,
         buildLandmarkHtml: buildLandmarkSelectToggleButtonHtml,
     });
-    for (const setView of view.sets) {
-        const el = document.getElementById(`cardList${setView.suffix}`);
-        if (el) el.innerHTML = setView.cardListHtml;
-        const btn = document.getElementById(`btnSet${setView.suffix}`);
-        if (btn) {
-            btn.textContent = setView.allOn ? "ON" : "OFF";
-            btn.className = `set-toggle ${setView.allOn ? 'on' : 'off'}`;
-            if (typeof btn.setAttribute === 'function') btn.setAttribute('aria-pressed', setView.allOn ? 'true' : 'false');
-        }
-    }
-    const landmarkList = document.getElementById("landmarkList");
-    if (landmarkList) landmarkList.innerHTML = view.landmarkListHtml;
+    uiCardSelectEffects.apply(view);
 }
 
 function toggleCard(name) {
