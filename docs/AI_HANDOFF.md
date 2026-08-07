@@ -3,6 +3,14 @@
 この文書は、途中参加した人間 / AI が最初に読む短い入口です。
 詳細は各専門 doc を参照し、このファイルは現在地と次の安全な一手だけを示します。
 
+## 2026-08-08 composition-root status
+
+- The five client side-effect roots now each have an explicit dependency/effect seam: `AppShellComposition`, `MainAutoSkipRuntime`, `OnlineComposition`, `LocalResumeEffects`, and `UiCardSelectEffects`.
+- `storage.js` must pass `LocalResumeView` projections to `LocalResumeEffects`; do not restore direct resume/preload DOM writes. `ui.js` must pass `UiCardSelect` view models to `UiCardSelectEffects`; modal focus/inert ownership remains unchanged.
+- `online.js` state snapshots and named transitions go through `OnlineComposition`; Socket registration and protocol order remain in `online.js`. `main.js` post-build auto-skip effect order belongs to `MainAutoSkipRuntime`. `appShell.js` late dependency lookup belongs to `AppShellComposition`.
+- Scoped gates cover 272 ESLint files and 271 checkJs JavaScript files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- The measured remaining ambient inventory is 85/69, 162/88, 300/102, 127/66, and 242/76 reference-occurrences/unique-identifiers in that order. See `MAINTENANCE_GOAL_AUDIT.md` for owners and method. Continue removing real dependencies; do not add broad browser-global declarations or suppressions.
+
 ## 2026-07-19 Current restore status
 
 - Read `docs/HOSTLESS_RESTORE_DESIGN.md` after the restore trust ADR. It is the
@@ -1225,5 +1233,5 @@ Test index:
 
 - Keep the six concrete `Window` declarations (`GameActionContract`, `GameSnapshot`, `CPUActionProposal`, `CPUBuildStrategy`, `OnlineReconnectRuntime`, `OnlineGameEngineRuntime`) linked to `typeof import(...)`; do not weaken them back to `unknown`.
 - Action and CPU proposal types preserve action identity, Snapshot retains a version-compatible record plus stable core fields, Card/Player expose their shared runtime shapes, and online runtimes type their dependency-injection seams.
-- `npm run test:types`, `npm run lint:maintenance`, and `tests/checkjs-config.test.js` are the enforcement points. Current scope is 267 ESLint files / 266 checkJs JavaScript files. Whole-file exclusions remain the five composition roots; continue typing extracted boundaries rather than declaring all classic-script globals.
+- `npm run test:types`, `npm run lint:maintenance`, and `tests/checkjs-config.test.js` are the enforcement points. Current scope is 272 ESLint files / 271 checkJs JavaScript files. Whole-file exclusions remain the five composition roots; continue typing extracted boundaries rather than declaring all classic-script globals.
 - This change is annotation/config-contract only. Rules, CPU strength/RNG, schemas, online/reconnect, storage, UI, and PWA behavior remain unchanged. Proceed to the fixed-outcome completion audit.

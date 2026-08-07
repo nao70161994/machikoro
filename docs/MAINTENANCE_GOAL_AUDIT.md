@@ -1,8 +1,34 @@
 # Maintenance Goal Completion Audit
 
-Last updated: 2026-08-05
+Last updated: 2026-08-08
 
 This is the completion record for the six fixed maintenance outcomes. It records the code owner, executable evidence, rollback boundary, and intentionally deferred scope. It does not authorize production flags, protocol changes, rule changes, CPU tuning, or persistence-provider work.
+
+## 2026-08-08 composition-root maintenance pass
+
+The next maintenance pass thinned all five remaining client composition roots without changing their compatibility contracts:
+
+| Root | New dependency boundary | Contract evidence | Commit |
+| --- | --- | --- | --- |
+| `appShell.js` | `AppShellComposition` centralizes late browser-global dependency resolution used by watchdog, reporting, lifecycle, PWA, crash, and startup runtimes. | `app-shell-composition`, runtime-dependency, PWA, and Release pseudo-E2E tests. | `c82d7423` |
+| `main.js` | `MainAutoSkipRuntime` owns the stable post-build UI/checkpoint/schedule effect order and token-invalidating next-turn dispatch. | `main-auto-skip-runtime`, main, fixed CPU, PWA, and Release tests. | `a999ea1c` |
+| `online.js` | `OnlineComposition` binds session/game state and storage/DOM/socket/client-effect adapters; production reads use named composition snapshots and transitions. | `online-composition`, runtime-state, online, release, and corrected source-contract test (`a94cba20`). | `630d21e1` |
+| `storage.js` | `LocalResumeEffects` owns injected resume/preload DOM writes over `LocalResumeView` projections. | `local-resume-effects`, storage, PWA, and Release tests. | `939fee83` |
+| `ui.js` | `UiCardSelectEffects` owns injected card/landmark selection DOM application over `UiCardSelect` view models. | `ui-card-select-effects`, UI, selector/load-order, PWA, and Release tests. | `939fee83` |
+
+All five boundaries preserve existing public browser APIs and script order. Storage keys/formats, modal focus/inert behavior, selectors/text, Socket.IO protocol/ACK/watermark/replay order, CPU policy/RNG, game rules, and PWA/SW semantics are unchanged. Each new boundary is admitted to JSDoc checkJs and limited ESLint; current allowlists contain 272 ESLint files and 271 checkJs JavaScript files.
+
+Whole-file admission remains intentionally deferred. A reproducible ESLint `no-undef` inventory with ES2022 built-ins only reports the following remaining classic-script/browser dependencies:
+
+| Root | Reference occurrences | Unique identifiers | Principal owners |
+| --- | ---: | ---: | --- |
+| `appShell.js` | 85 | 69 | watchdog/reporting/lifecycle/PWA/crash adapters, `main`/`online`/`ui`/`storage` bridges, browser platform |
+| `main.js` | 162 | 88 | Card/GameManager/Player and scheduler/start runtimes, `appShell`/`online`/`ui`/`storage` bridges, browser platform |
+| `online.js` | 300 | 102 | online state/reconnect/restore/socket helpers, Card/Game/runtime adapters, `main`/`storage`/`ui` bridges, browser platform/Socket.IO |
+| `storage.js` | 127 | 66 | save/resume/runtime helpers, `main`/`online`/`ui` bridges, browser platform |
+| `ui.js` | 242 | 76 | UI projection/effect helpers, Game/Card/runtime adapters, `appShell`/`main`/`online`/`storage` bridges, browser platform |
+
+The counts include platform globals such as `document`, `window`, timers, and Socket.IO. They measure references, not mutable owners. Adding broad ambient declarations or suppressions would only hide these dependencies, so whole-file checkJs/ESLint must wait for further real composition or typed bridge removal.
 
 ## Outcome evidence
 

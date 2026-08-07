@@ -1,12 +1,14 @@
 # Maintenance Backlog
 
-Last updated: 2026-08-05
+Last updated: 2026-08-08
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.
 
 For larger root-cause refactors, use `docs/ARCHITECTURE_REFACTOR_PLAN.md`. It defines the intended module boundaries, migration order, contract tests, rollback paths, and manual-verification gates before any broad split is attempted.
 
 The six-outcome maintenance migration completed on 2026-08-05 is audited in `docs/MAINTENANCE_GOAL_AUDIT.md`. Use that record to distinguish completed automated scope from production and real-device deferrals.
+
+The 2026-08-08 follow-up added real dependency boundaries to all five remaining client composition roots: `AppShellComposition`, `MainAutoSkipRuntime`, `OnlineComposition`, `LocalResumeEffects`, and `UiCardSelectEffects`. The same audit records their commits, tests, and the measured remaining ambient dependencies. Scoped static gates now cover 272 ESLint files and 271 checkJs JavaScript files. Whole-file admission remains deferred because the roots still have 69/88/102/66/76 unique classic-script or browser dependencies respectively; do not replace those dependencies with broad declarations or lint suppressions.
 
 ## Recently Fixed / Guarded
 

@@ -1,6 +1,6 @@
 # ADR Index
 
-Last updated: 2026-08-03
+Last updated: 2026-08-08
 
 この索引は設計判断の入口です。実装の現在地は `MAINTENANCE_BACKLOG.md`、段階移行計画は `ARCHITECTURE_REFACTOR_PLAN.md` を正本とします。
 
@@ -14,6 +14,8 @@ Last updated: 2026-08-03
 | [Protocol compatibility](PROTOCOL_COMPATIBILITY.md) | Accepted / staged | Socket.IO event名とlegacy defaultを維持。capability negotiation、shadow、versioned live Action wire、rejoin/compacted-Snapshot wireは独立した既定OFF flag。local save、recreate input、restore logはlegacy。 |
 
 2026-07-26の段階移行ではprovider-neutral canonical store、署名keyring、authority priorityを追加した。既定storeは`noop`でDB/providerは継続費用を理由に保留。2026-08-02時点ではAction/Snapshot/recreate/local-saveのversioned境界と、server mirror・online replay・local actionのpure Engine shadow境界が独立した既定OFF gateで利用可能だが、production authority・既定wire・保存形式は変更していない。2026-08-03のreporting/settings/CPU集計のpure境界追加とsnapshot fixture強化も、authorityや永続形式を変更しない責務分離としてこの判断を維持する。
+
+2026-08-08の5 client composition-root分離は既存Accepted判断の範囲内で、protocol・authority・保存・PWA方針を変更しない。実装証拠と残依存は`MAINTENANCE_GOAL_AUDIT.md`を正とし、新しいADRは不要と判断した。
 
 Current override (2026-07-19): the additive provisional hostless event surface
 is implemented under the accepted design above. It does not add durable authority.
@@ -36,4 +38,3 @@ is implemented under the accepted design above. It does not add durable authorit
 - Current / Accepted: 現在の実装判断として有効。
 - Rejected: 採用しない判断を独立記録したもの。
 - Historical / Superseded: 文脈保存用。新しい実装根拠には単独で使わない。
-
