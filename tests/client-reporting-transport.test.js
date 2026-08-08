@@ -171,8 +171,13 @@ runTest('client reporting transportは失敗をoutboxへ残し次回flush成功�
     assert.strictEqual(JSON.parse(stored).length, 1);
     assert.strictEqual(outbox.pending().length, 0);
 
+    const restartedOutbox = ClientReportingTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => currentTime,
+    });
     const retry = createSubject({
-        outbox,
+        outbox: restartedOutbox,
         fetchImpl() {
             return Promise.resolve({ ok: true, status: 202 });
         },
@@ -237,4 +242,36 @@ runTest('client reporting transportは拒否・rate limit・転送失敗を表�
         assert.strictEqual(entries[0].attempts, 1, String(status));
         assert.strictEqual(entries[0].nextAttemptAt, 2000, String(status));
     }
+});
+
+runTest('client reporting transportはoffline相当のfetch失敗を再起動後まで保持する', async () => {
+    let stored = '[]';
+    let currentTime = 1000;
+    const createOutbox = () => ClientReportingTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => currentTime,
+    });
+    const offline = createSubject({
+        outbox: createOutbox(),
+        fetchImpl() {
+            return Promise.reject(new TypeError('Failed to fetch'));
+        },
+    });
+    assert.strictEqual(ClientReportingTransport.send(offline.options), true);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.strictEqual(JSON.parse(stored)[0].attempts, 1);
+
+    currentTime = 2000;
+    const restarted = createSubject({
+        outbox: createOutbox(),
+        fetchImpl() {
+            return Promise.resolve({ ok: true, status: 202 });
+        },
+    });
+    assert.strictEqual(ClientReportingTransport.flush(restarted.options), 1);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.strictEqual(stored, '[]');
 });
