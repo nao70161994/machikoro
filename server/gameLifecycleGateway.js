@@ -50,18 +50,28 @@ function makeGameLifecycleGateway(dependencies = {}) {
             now,
             options.dedupeCache || dependencies.defaultDedupeCache
         );
-        /** @type {{sent: boolean, reason?: string}} */
-        let result = {
-            sent: false,
-            reason: duplicate ? 'duplicate' : 'not-sent',
-        };
-        if (!duplicate) {
-            result = await notify(normalized.report, {
-                env,
-                ...(options.notifyOptions || {}),
+        if (duplicate) {
+            res.status(202).json({
+                ok: true,
+                duplicate: true,
+                result: { sent: false, reason: 'duplicate' },
             });
+            return;
         }
-        res.status(202).json({ ok: true, duplicate, result });
+        const result = await notify(normalized.report, {
+            env,
+            ...(options.notifyOptions || {}),
+        });
+        if (!result || result.sent !== true) {
+            res.status(503).json({
+                ok: false,
+                error: 'notification_failed',
+                duplicate: false,
+                result: result || { sent: false, reason: 'invalid-delivery-result' },
+            });
+            return;
+        }
+        res.status(202).json({ ok: true, duplicate: false, result });
     }
 
     return Object.freeze({ handleGameLifecycleRequest });

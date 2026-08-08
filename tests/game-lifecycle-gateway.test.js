@@ -147,23 +147,34 @@ runTest('game lifecycle gateway suppresses duplicate delivery with stable result
     });
 });
 
-runTest('game lifecycle gateway preserves delivery failure as accepted report result', async () => {
-    const { gateway } = makeGateway({
-        async notify() {
-            return { sent: false, reason: 'http' };
-        },
-    });
-    const res = responseRecorder();
+runTest('game lifecycle gatewayは通知失敗を503として返す', async () => {
+    const cases = [
+        { result: { sent: false, reason: 'missing-topic' }, reason: 'missing-topic' },
+        { result: { sent: false, reason: 'ntfy-status' }, reason: 'ntfy-status' },
+        { result: { sent: false, reason: 'ntfy-error' }, reason: 'ntfy-error' },
+        { result: null, reason: 'invalid result' },
+    ];
+    for (const testCase of cases) {
+        const { gateway } = makeGateway({
+            async notify() {
+                return testCase.result;
+            },
+        });
+        const res = responseRecorder();
 
-    await gateway.handleGameLifecycleRequest({}, res, {
-        env: { NODE_ENV: 'production' },
-        now: 9,
-    });
+        await gateway.handleGameLifecycleRequest({}, res, {
+            env: { NODE_ENV: 'production' },
+            now: 9,
+        });
 
-    assert.strictEqual(res.statusCode, 202);
-    assert.deepStrictEqual(res.body, {
-        ok: true,
-        duplicate: false,
-        result: { sent: false, reason: 'http' },
-    });
+        assert.strictEqual(res.statusCode, 503, testCase.reason);
+        assert.strictEqual(res.body.ok, false, testCase.reason);
+        assert.strictEqual(res.body.error, 'notification_failed', testCase.reason);
+        assert.strictEqual(res.body.duplicate, false, testCase.reason);
+        assert.deepStrictEqual(
+            res.body.result,
+            testCase.result || { sent: false, reason: 'invalid-delivery-result' },
+            testCase.reason
+        );
+    }
 });

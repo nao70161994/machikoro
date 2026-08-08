@@ -115,12 +115,12 @@ runTest('reporting HTTP routes は各gateway失敗時のstatus・body・logを�
         ['warn', '[client-error-health] handler failed:', 'health boom'],
         ['warn', '[game-lifecycle] handler failed:', 'lifecycle boom'],
     ]);
-    assert.deepStrictEqual(calls.filter(call => call[0] === 'status').map(call => call[1]), [503, 503, 503, 202]);
+    assert.deepStrictEqual(calls.filter(call => call[0] === 'status').map(call => call[1]), [503, 503, 503, 503]);
     assert.deepStrictEqual(calls.filter(call => call[0] === 'response-json').map(call => call[1]), [
         { ok: false, error: 'notification_failed' },
         { ok: false, error: 'client_error_test_failed' },
         { ok: false, error: 'client_error_health_failed' },
-        { ok: true, notificationFailed: true },
+        { ok: false, error: 'notification_failed' },
     ]);
 });
 

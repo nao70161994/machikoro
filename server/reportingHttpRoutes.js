@@ -68,8 +68,8 @@ function registerReportingHttpRoutes(dependencies = {}) {
         }),
         gameLifecycle: Object.freeze({
             logPrefix: '[game-lifecycle] handler failed:',
-            status: 202,
-            body: Object.freeze({ ok: true, notificationFailed: true }),
+            status: 503,
+            body: Object.freeze({ ok: false, error: 'notification_failed' }),
         }),
     });
     const handlers = Object.freeze({
