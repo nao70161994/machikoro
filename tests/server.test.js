@@ -897,6 +897,20 @@ runTest('postNtfyNotification helper は ntfy POST options を一箇所で組み
     assert.strictEqual(calls[0].options.body, 'hello');
 });
 
+runTest('postNtfyNotification helper は拒否statusを秘密情報なしで返す', async () => {
+    const result = await postNtfyNotification({
+        topic: 'helper-topic',
+        fetchImpl() {
+            return { ok: false, status: 429 };
+        },
+    });
+    assert.deepStrictEqual(result, {
+        sent: false,
+        reason: 'ntfy-status',
+        status: 429,
+    });
+});
+
 runTest('client error test endpoint helper は production 既定で無効、dev/debug で有効になる', () => {
     assert.strictEqual(isClientErrorTestEnabled({ NODE_ENV: 'production' }), false);
     assert.strictEqual(isClientErrorTestEnabled({ NODE_ENV: 'production', CLIENT_ERROR_TEST_ENABLED: '1' }), true);

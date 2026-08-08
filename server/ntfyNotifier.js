@@ -21,7 +21,11 @@ async function postNtfyNotification(options = {}) {
         });
         if (response && response.ok === false) {
             console.warn(options.statusFailureMessage || '[ntfy] notification failed:', response.status || 'unknown');
-            return { sent: false, reason: 'ntfy-status' };
+            return {
+                sent: false,
+                reason: 'ntfy-status',
+                status: Number.isInteger(response.status) ? response.status : null,
+            };
         }
         return { sent: true };
     } catch (error) {
