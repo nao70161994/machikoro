@@ -71,13 +71,24 @@ function makeClientErrorGateway(dependencies = {}) {
             now,
             options.dedupeCache || dependencies.defaultDedupeCache
         );
-        if (!duplicate) {
-            await notify(normalized.report, {
-                env,
-                ...(options.notifyOptions || {}),
-            });
+        if (duplicate) {
+            res.status(202).json({ ok: true, duplicate: true });
+            return;
         }
-        res.status(202).json({ ok: true, duplicate });
+        const delivery = await notify(normalized.report, {
+            env,
+            ...(options.notifyOptions || {}),
+        });
+        if (!delivery || delivery.sent !== true) {
+            res.status(503).json({
+                ok: false,
+                error: 'notification_failed',
+                duplicate: false,
+                delivery: delivery || { sent: false, reason: 'invalid-delivery-result' },
+            });
+            return;
+        }
+        res.status(202).json({ ok: true, duplicate: false, delivery });
     }
 
     async function handleClientErrorTestRequest(req, res, options = {}) {

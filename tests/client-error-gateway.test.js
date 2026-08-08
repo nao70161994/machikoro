@@ -79,7 +79,11 @@ runTest('client error gateway preserves auth-rate-normalize-dedupe-notify order'
     );
 
     assert.strictEqual(res.statusCode, 202);
-    assert.deepStrictEqual(res.body, { ok: true, duplicate: false });
+    assert.deepStrictEqual(res.body, {
+        ok: true,
+        duplicate: false,
+        delivery: { sent: true },
+    });
     assert.deepStrictEqual(calls.map(call => call[0]), [
         'authorize',
         'rate-key',
@@ -147,6 +151,27 @@ runTest('client error gateway skips duplicate notification but keeps accepted re
     assert.strictEqual(notifications, 0);
     assert.strictEqual(res.statusCode, 202);
     assert.deepStrictEqual(res.body, { ok: true, duplicate: true });
+});
+
+runTest('client error gatewayはntfy転送失敗を503と理由付きで返す', async () => {
+    const cases = [
+        { delivery: { sent: false, reason: 'missing-topic' }, reason: 'missing-topic' },
+        { delivery: { sent: false, reason: 'ntfy-status' }, reason: 'ntfy-status' },
+        { delivery: { sent: false, reason: 'ntfy-error' }, reason: 'ntfy-error' },
+        { delivery: undefined, reason: 'invalid-delivery-result' },
+    ];
+    for (const testCase of cases) {
+        const { gateway } = makeGateway({
+            async notify() { return testCase.delivery; },
+        });
+        const res = responseRecorder();
+        await gateway.handleClientErrorRequest({ body: {} }, res, { now: 30 });
+        assert.strictEqual(res.statusCode, 503, testCase.reason);
+        assert.strictEqual(res.body.ok, false, testCase.reason);
+        assert.strictEqual(res.body.error, 'notification_failed', testCase.reason);
+        assert.strictEqual(res.body.duplicate, false, testCase.reason);
+        assert.strictEqual(res.body.delivery.reason, testCase.reason, testCase.reason);
+    }
 });
 
 runTest('client error test gateway preserves strict auth and availability gates', async () => {

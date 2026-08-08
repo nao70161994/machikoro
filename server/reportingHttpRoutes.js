@@ -48,8 +48,8 @@ function registerReportingHttpRoutes(dependencies = {}) {
     const failures = Object.freeze({
         clientError: Object.freeze({
             logPrefix: '[client-error] handler failed:',
-            status: 202,
-            body: Object.freeze({ ok: true, notificationFailed: true }),
+            status: 503,
+            body: Object.freeze({ ok: false, error: 'notification_failed' }),
         }),
         clientErrorTest: Object.freeze({
             logPrefix: '[client-error-test] handler failed:',
