@@ -97,6 +97,30 @@ runTest('CPU turn scheduler runtimeはstep例外にも開始情報と所要時�
     assert.strictEqual(failed.message, 'decision failed');
 });
 
+runTest('CPU turn scheduler runtimeはstep実行中だけexecution leaseをhealthへ公開する', () => {
+    let harness;
+    let activeHealth;
+    harness = createHarness({
+        handlers: [{
+            name: 'roll',
+            run() {
+                activeHealth = harness.runtime.health();
+                harness.game.phase = 'build';
+                return true;
+            },
+        }],
+    });
+    harness.runtime.schedule();
+    harness.setNow(700);
+    harness.timers.shift().fn();
+    assert.strictEqual(activeHealth.stepActive, true);
+    assert.strictEqual(activeHealth.stepScheduled, true);
+    assert.strictEqual(activeHealth.activeStep.step, 'roll');
+    assert.strictEqual(activeHealth.activeStep.activeUntil, 15700);
+    assert.strictEqual(harness.runtime.health().stepActive, false);
+    assert.strictEqual(harness.runtime.controller.snapshot().activeStep, null);
+});
+
 runTest('CPU turn scheduler runtimeはonline non-hostをeffect前に拒否する', () => {
     const h = createHarness({ online: { isOnlineGame: true, isRoomHost: false, socket: { connected: true } } });
     h.runtime.schedule();

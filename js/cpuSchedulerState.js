@@ -45,12 +45,18 @@ const CpuSchedulerState = (() => {
     }
     function buildHealth(input = {}) {
         const blockedReason = input.blockedReason || '';
+        const activeStep = input.activeStep && input.activeStep.token === input.scheduleToken
+            ? input.activeStep
+            : null;
+        const stepActive = !!(activeStep && input.now < activeStep.activeUntil);
         return {
             token: input.scheduleToken,
             scheduledUntil: input.scheduledUntil,
             stepScheduled: !blockedReason &&
-                tokenIsScheduled(input.pendingToken, input.scheduleToken) &&
-                input.now < input.scheduledUntil,
+                ((tokenIsScheduled(input.pendingToken, input.scheduleToken) &&
+                    input.now < input.scheduledUntil) || stepActive),
+            stepActive,
+            activeStep: activeStep ? Object.freeze({ ...activeStep }) : null,
             isCpuTurn: !!input.isCpuTurn,
             currentPlayerIndex: input.currentPlayerIndex,
             blockedReason,
@@ -61,12 +67,16 @@ const CpuSchedulerState = (() => {
         let scheduleToken = Number.isInteger(initial.scheduleToken) ? initial.scheduleToken : 0;
         let pendingToken = Number.isInteger(initial.pendingToken) ? initial.pendingToken : null;
         let scheduledUntilValue = Number.isFinite(initial.scheduledUntil) ? initial.scheduledUntil : 0;
+        let activeStep = initial.activeStep && typeof initial.activeStep === 'object'
+            ? Object.freeze({ ...initial.activeStep })
+            : null;
 
         function snapshot() {
             return Object.freeze({
                 scheduleToken,
                 pendingToken,
                 scheduledUntil: scheduledUntilValue,
+                activeStep,
             });
         }
 
@@ -79,6 +89,7 @@ const CpuSchedulerState = (() => {
             scheduleToken++;
             pendingToken = null;
             scheduledUntilValue = 0;
+            activeStep = null;
             return snapshot();
         }
 
@@ -99,6 +110,19 @@ const CpuSchedulerState = (() => {
 
         function clearPendingToken() {
             pendingToken = null;
+            return snapshot();
+        }
+
+        function markActive(details) {
+            activeStep = Object.freeze({ ...details });
+            return snapshot();
+        }
+
+        function clearActive(stepExecutionId = '') {
+            if (!activeStep || (stepExecutionId && activeStep.stepExecutionId !== stepExecutionId)) {
+                return snapshot();
+            }
+            activeStep = null;
             return snapshot();
         }
 
@@ -123,6 +147,8 @@ const CpuSchedulerState = (() => {
             refreshLease,
             setPendingToken,
             clearPendingToken,
+            markActive,
+            clearActive,
             isCurrent,
             isStepScheduled,
             expireLease,

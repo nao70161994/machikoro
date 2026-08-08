@@ -26,6 +26,8 @@ const AppShellRuntimeEffects = (() => {
                     token: Number.isInteger(health.token) ? health.token : null,
                     scheduledUntil: Number.isFinite(health.scheduledUntil) ? health.scheduledUntil : 0,
                     stepScheduled: !!health.stepScheduled,
+                    stepActive: !!health.stepActive,
+                    activeStep: health.activeStep || null,
                 });
             }
             const controller = resolveDependency('cpuSchedulerStateController');
@@ -37,6 +39,8 @@ const AppShellRuntimeEffects = (() => {
                 token: Number.isInteger(state.scheduleToken) ? state.scheduleToken : null,
                 scheduledUntil: Number.isFinite(state.scheduledUntil) ? state.scheduledUntil : 0,
                 stepScheduled: controller.isStepScheduled() && now() < state.scheduledUntil,
+                stepActive: false,
+                activeStep: null,
             });
         }
 

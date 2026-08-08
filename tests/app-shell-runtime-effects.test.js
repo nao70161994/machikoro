@@ -37,7 +37,11 @@ runTest('app shell runtime effectsはscheduler healthを正規化して優先す
         cancelCpuSchedule: () => calls.push(['legacy-cancel']),
     });
 
-    assert.deepStrictEqual(runtime.schedulerSnapshot(), health);
+    assert.deepStrictEqual(runtime.schedulerSnapshot(), {
+        ...health,
+        stepActive: false,
+        activeStep: null,
+    });
     assert.deepStrictEqual(runtime.scheduleCpu('watchdog'), { source: 'scheduler', health });
     assert.strictEqual(runtime.cancelCpu('reset'), 'scheduler');
     assert.deepStrictEqual(calls, [['schedule', 'watchdog'], ['cancel', 'reset']]);
@@ -56,6 +60,7 @@ runTest('app shell runtime effectsはlegacy CPU scheduler契約を維持する',
 
     assert.deepStrictEqual(runtime.schedulerSnapshot(), {
         blockedReason: '', token: 7, scheduledUntil: 150, stepScheduled: true,
+        stepActive: false, activeStep: null,
     });
     assert.deepStrictEqual(runtime.scheduleCpu('ignored-by-legacy'), { source: 'legacy', health: null });
     assert.strictEqual(runtime.cancelCpu('reset'), 'legacy');

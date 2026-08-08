@@ -34,6 +34,8 @@ runTest('CPU scheduler healthはtoken・期限・block理由を既存優先度�
         token: 3,
         scheduledUntil: 2000,
         stepScheduled: true,
+        stepActive: false,
+        activeStep: null,
         isCpuTurn: true,
         currentPlayerIndex: 1,
         blockedReason: '',
@@ -103,11 +105,13 @@ runTest('CPU scheduler controllerはtoken・pending・leaseを一つの状態と
         scheduleToken: 4,
         pendingToken: 4,
         scheduledUntil: 900,
+        activeStep: null,
     });
     assert.deepStrictEqual(controller.snapshot(), {
         scheduleToken: 4,
         pendingToken: 4,
         scheduledUntil: 900,
+        activeStep: null,
     });
     assert.strictEqual(controller.isCurrent(4), true);
     assert.strictEqual(controller.isStepScheduled(), true);
@@ -117,6 +121,7 @@ runTest('CPU scheduler controllerはtoken・pending・leaseを一つの状態と
         scheduleToken: 5,
         pendingToken: 4,
         scheduledUntil: 900,
+        activeStep: null,
     });
     assert.strictEqual(controller.isCurrent(4), false);
     assert.strictEqual(controller.isStepScheduled(), false);
@@ -127,20 +132,60 @@ runTest('CPU scheduler controllerはtoken・pending・leaseを一つの状態と
         scheduleToken: 5,
         pendingToken: 5,
         scheduledUntil: 3100,
+        activeStep: null,
     });
     controller.refreshLease(2000, 1500);
     assert.strictEqual(controller.snapshot().scheduledUntil, 3500);
     controller.clearPendingToken();
     assert.strictEqual(controller.snapshot().pendingToken, null);
+    controller.markActive({
+        token: 5,
+        step: 'build',
+        stepExecutionId: '5:build',
+        activeUntil: 4000,
+    });
+    assert.strictEqual(controller.snapshot().activeStep.step, 'build');
+    controller.clearActive('other');
+    assert.strictEqual(controller.snapshot().activeStep.step, 'build');
+    controller.clearActive('5:build');
+    assert.strictEqual(controller.snapshot().activeStep, null);
 
     const cancelled = controller.cancel();
     assert.deepStrictEqual(cancelled, {
         scheduleToken: 6,
         pendingToken: null,
         scheduledUntil: 0,
+        activeStep: null,
     });
     assert.ok(Object.isFrozen(controller));
     assert.ok(Object.isFrozen(controller.snapshot()));
+});
+
+runTest('CPU scheduler healthは実行中stepを期限内だけ予約中として扱う', () => {
+    const base = {
+        scheduleToken: 8,
+        pendingToken: null,
+        scheduledUntil: 0,
+        activeStep: {
+            token: 8,
+            step: 'build',
+            stepExecutionId: '8:build',
+            activeUntil: 5000,
+        },
+        now: 4000,
+        isCpuTurn: true,
+        currentPlayerIndex: 1,
+        blockedReason: '',
+    };
+    const active = CpuSchedulerState.buildHealth(base);
+    assert.strictEqual(active.stepScheduled, true);
+    assert.strictEqual(active.stepActive, true);
+    assert.strictEqual(active.activeStep.stepExecutionId, '8:build');
+    assert.strictEqual(CpuSchedulerState.buildHealth({ ...base, now: 5000 }).stepScheduled, false);
+    assert.strictEqual(CpuSchedulerState.buildHealth({
+        ...base,
+        activeStep: { ...base.activeStep, token: 7 },
+    }).stepActive, false);
 });
 
 runTest('CPU scheduler controllerは初期値とlease期限の不正値を安全に正規化する', () => {
@@ -153,6 +198,7 @@ runTest('CPU scheduler controllerは初期値とlease期限の不正値を安全
         scheduleToken: 0,
         pendingToken: null,
         scheduledUntil: 0,
+        activeStep: null,
     });
     controller.expireLease(123);
     assert.strictEqual(controller.snapshot().scheduledUntil, 123);

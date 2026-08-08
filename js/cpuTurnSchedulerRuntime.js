@@ -16,6 +16,9 @@ const CpuTurnSchedulerRuntime = (() => {
             throw new TypeError('CPU turn scheduler runtime policies are required');
         }
         const controller = dependencies.policy.createController();
+        const executionLeaseMs = Number.isFinite(dependencies.executionLeaseMs)
+            ? Math.max(1000, dependencies.executionLeaseMs)
+            : 15000;
 
         function invalidate() { return controller.invalidate().scheduleToken; }
         function cancel(reason = 'cpu-schedule-cancel') {
@@ -71,6 +74,7 @@ const CpuTurnSchedulerRuntime = (() => {
                 scheduleToken: scheduler.scheduleToken,
                 pendingToken: scheduler.pendingToken,
                 scheduledUntil: scheduler.scheduledUntil,
+                activeStep: scheduler.activeStep,
                 now: dependencies.now(),
                 isCpuTurn: !!(game && Array.isArray(state.cpuPlayers) && state.cpuPlayers[index]),
                 currentPlayerIndex: index,
@@ -179,9 +183,13 @@ const CpuTurnSchedulerRuntime = (() => {
                         stepExecutionId,
                         startedAt,
                     };
-                    dependencies.checkpoint('scheduleCPU-step-run', stepDetails);
                     let result;
+                    controller.markActive({
+                        ...stepDetails,
+                        activeUntil: startedAt + executionLeaseMs,
+                    });
                     try {
+                        dependencies.checkpoint('scheduleCPU-step-run', stepDetails);
                         result = step.run(cpu);
                     } catch (error) {
                         if (dependencies.console && typeof dependencies.console.error === 'function') {
@@ -192,6 +200,7 @@ const CpuTurnSchedulerRuntime = (() => {
                             durationMs: Math.max(0, dependencies.now() - startedAt),
                             message: error && error.message || String(error),
                         });
+                        controller.clearActive(stepExecutionId);
                         if (dependencies.getOnlineState().isOnlineGame) return;
                         if (step.name === 'build' && stepGame.phase === dependencies.gamePhases.BUILD && !stepGame.builtThisTurn) {
                             stepGame.nextTurn();
@@ -199,6 +208,7 @@ const CpuTurnSchedulerRuntime = (() => {
                         runNextStep();
                         return;
                     }
+                    controller.clearActive(stepExecutionId);
                     dependencies.checkpoint('scheduleCPU-step-result', {
                         ...stepDetails,
                         durationMs: Math.max(0, dependencies.now() - startedAt),
