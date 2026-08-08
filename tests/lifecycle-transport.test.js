@@ -116,3 +116,72 @@ runTest('lifecycle transportは同期例外を既存checkpointへ変換する', 
         details: { event: 'play-start', message: 'fetch threw' },
     });
 });
+
+runTest('lifecycle transportは失敗通知を永続化して再起動後に再送する', async () => {
+    let stored = '[]';
+    let now = 1000;
+    const storage = {
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => now,
+    };
+    const firstOutbox = LifecycleTransport.createOutbox(storage);
+    const failed = createSubject({
+        outbox: firstOutbox,
+        fetchImpl() {
+            return Promise.resolve({ ok: false, status: 503 });
+        },
+    });
+
+    assert.strictEqual(LifecycleTransport.send(failed.options), true);
+    await Promise.resolve();
+    await Promise.resolve();
+    const queued = JSON.parse(stored);
+    assert.strictEqual(queued.length, 1);
+    assert.strictEqual(queued[0].payload.event, 'play-start');
+    assert.strictEqual(queued[0].attempts, 1);
+
+    now = 2000;
+    const restartedOutbox = LifecycleTransport.createOutbox(storage);
+    const checkpoints = [];
+    const sent = [];
+    assert.strictEqual(LifecycleTransport.flush({
+        endpoint: '/api/game-lifecycle',
+        outbox: restartedOutbox,
+        checkpoint: (...args) => checkpoints.push(args),
+        fetchImpl(url, init) {
+            sent.push({ url, init });
+            return Promise.resolve({ ok: true, status: 202 });
+        },
+    }), 1);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.strictEqual(sent.length, 1);
+    assert.strictEqual(JSON.parse(sent[0].init.body).sessionId, 'session-1');
+    assert.strictEqual(JSON.parse(stored).length, 0);
+    assert.strictEqual(checkpoints[0][0], 'game-lifecycle-retry-start');
+});
+
+runTest('lifecycle transport outboxは重複と上限を制御しfetch不在でも保持する', () => {
+    let stored = '[]';
+    const outbox = LifecycleTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => 5000,
+        maxEntries: 2,
+    });
+    const first = createSubject({ outbox, fetchImpl: null });
+    assert.strictEqual(LifecycleTransport.send(first.options), false);
+    assert.strictEqual(LifecycleTransport.send(first.options), false);
+    assert.strictEqual(JSON.parse(stored).length, 1);
+
+    outbox.enqueue({ ...first.payload, event: 'play-finish' });
+    outbox.enqueue({ ...first.payload, sessionId: 'session-2' });
+    const entries = JSON.parse(stored);
+    assert.strictEqual(entries.length, 2);
+    assert.deepStrictEqual(entries.map(entry => entry.payload.sessionId), [
+        'session-1',
+        'session-2',
+    ]);
+});

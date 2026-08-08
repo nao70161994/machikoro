@@ -356,6 +356,13 @@ function flushClientErrorReports() {
 // ===== ゲームライフサイクル通知 =====
 const GAME_LIFECYCLE_ENDPOINT = '/api/game-lifecycle';
 const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
+const gameLifecycleOutbox = LifecycleTransport.createOutbox({
+    read: () => safeAppShellStorageGet('machikoroLifecycleOutbox', '[]'),
+    write: value => safeAppShellStorageSet('machikoroLifecycleOutbox', value),
+    now: () => Date.now(),
+    maxEntries: 8,
+    maxAgeMs: 7 * 24 * 60 * 60 * 1000,
+});
 const gameLifecycleRuntime = LifecycleRuntime.create({
     policy: LifecycleNotify,
     storageAccess: appShellStorage.access,
@@ -367,7 +374,10 @@ const gameLifecycleRuntime = LifecycleRuntime.create({
         return root ? root.MACHIKORO_CLIENT_VERSION : '';
     },
     getFetch: () => appShellComposition.resolveFunction('fetch'),
-    sendTransport: input => LifecycleTransport.send(input),
+    sendTransport: input => LifecycleTransport.send({
+        ...input,
+        outbox: gameLifecycleOutbox,
+    }),
     checkpoint: markClientFlowCheckpoint,
     endpoint: GAME_LIFECYCLE_ENDPOINT,
     startSuppressMs: GAME_LIFECYCLE_START_SUPPRESS_MS,
@@ -383,6 +393,15 @@ function gameLifecycleNotifyState() {
 
 function sendGameLifecycleNotification(event, extra = {}) {
     return gameLifecycleRuntime.send(event, extra);
+}
+
+function flushGameLifecycleNotifications() {
+    return LifecycleTransport.flush({
+        fetchImpl: appShellComposition.resolveFunction('fetch'),
+        endpoint: GAME_LIFECYCLE_ENDPOINT,
+        checkpoint: markClientFlowCheckpoint,
+        outbox: gameLifecycleOutbox,
+    });
 }
 
 function notifyGameLifecycleStart() {
@@ -447,7 +466,10 @@ const _pwaInstallController = PwaShell.createInstallController({
 function updateOnlineTabState() {
     const result = appShellStartupRuntime.updateOnlineStatus();
     const navigatorRef = appShellComposition.resolve('navigator');
-    if (!navigatorRef || navigatorRef.onLine !== false) flushClientErrorReports();
+    if (!navigatorRef || navigatorRef.onLine !== false) {
+        flushClientErrorReports();
+        flushGameLifecycleNotifications();
+    }
     return result;
 }
 
@@ -652,6 +674,7 @@ if (appShellRoot) {
 if (appShellRoot) {
     bindCrashHandlers();
     flushClientErrorReports();
+    flushGameLifecycleNotifications();
     reportAbandonedCpuStep();
 }
 
