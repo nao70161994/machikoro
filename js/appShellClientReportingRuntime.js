@@ -14,6 +14,7 @@ const AppShellClientReportingRuntime = (() => {
             getVersion,
             messageLimit,
             now,
+            outbox,
             reporting,
             schemaVersion,
             stackLimit,
@@ -93,6 +94,16 @@ const AppShellClientReportingRuntime = (() => {
                     return true;
                 },
                 checkpoint,
+                outbox,
+            });
+        }
+
+        function flush() {
+            return transport.flush({
+                fetchImpl: getFetch(),
+                endpoint,
+                checkpoint,
+                outbox,
             });
         }
 
@@ -114,6 +125,7 @@ const AppShellClientReportingRuntime = (() => {
             buildReport,
             reportKey,
             report,
+            flush,
             sendDebugReport,
         });
     }

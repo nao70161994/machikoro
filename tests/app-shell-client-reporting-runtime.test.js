@@ -74,3 +74,22 @@ runTest('app shell client reporting runtimeはdebug reportのcheckpointとsnapsh
 runTest('app shell client reporting runtimeは必須依存欠落を初期化時に拒否する', () => {
     assert.throws(() => AppShellClientReportingRuntime.createRuntime(), /buildSnapshot is required/);
 });
+
+runTest('app shell client reporting runtimeは保存済みreportの再送をtransportへ委譲する', () => {
+    const calls = [];
+    const outbox = { pending() { return []; } };
+    const { runtime } = createHarness({
+        outbox,
+        transport: {
+            send: ClientReportingTransport.send,
+            flush(options) {
+                calls.push(options);
+                return 2;
+            },
+        },
+    });
+    assert.strictEqual(runtime.flush(), 2);
+    assert.strictEqual(calls[0].outbox, outbox);
+    assert.strictEqual(calls[0].endpoint, '/api/client-error');
+    assert.strictEqual(typeof calls[0].fetchImpl, 'function');
+});

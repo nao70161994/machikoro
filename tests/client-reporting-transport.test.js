@@ -124,3 +124,60 @@ runTest('client reporting transportは同期例外を既存checkpointへ変換�
         details: { source: 'window.onerror', message: 'fetch threw' },
     });
 });
+
+runTest('client reporting outboxはroom IDを保存せず件数と期限を制限する', () => {
+    let stored = 'not-json';
+    let currentTime = 1000;
+    const outbox = ClientReportingTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => currentTime,
+        maxEntries: 2,
+        maxAgeMs: 100,
+    });
+    outbox.enqueue({ source: 'one', message: 'first', roomId: 'SECRET_ROOM' });
+    outbox.enqueue({ source: 'two', message: 'second' });
+    outbox.enqueue({ source: 'three', message: 'third' });
+    let entries = outbox.pending();
+    assert.deepStrictEqual(entries.map(entry => entry.report.source), ['two', 'three']);
+    assert.strictEqual(Object.hasOwn(entries[0].report, 'roomId'), false);
+    assert.strictEqual(stored.includes('SECRET_ROOM'), false);
+
+    currentTime = 1200;
+    entries = outbox.pending();
+    assert.deepStrictEqual(entries, []);
+    assert.strictEqual(stored, '[]');
+});
+
+runTest('client reporting transportは失敗をoutboxへ残し次回flush成功時に削除する', async () => {
+    let stored = '[]';
+    const outbox = ClientReportingTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => 1000,
+    });
+    const failure = createSubject({
+        outbox,
+        fetchImpl() {
+            return Promise.resolve({ ok: false, status: 503 });
+        },
+    });
+    failure.report.roomId = 'LIVE_ROOM';
+    assert.strictEqual(ClientReportingTransport.send(failure.options), true);
+    assert.strictEqual(JSON.parse(stored)[0].report.roomId, undefined);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.strictEqual(outbox.pending().length, 1);
+
+    const retry = createSubject({
+        outbox,
+        fetchImpl() {
+            return Promise.resolve({ ok: true, status: 202 });
+        },
+    });
+    assert.strictEqual(ClientReportingTransport.flush(retry.options), 1);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.deepStrictEqual(outbox.pending(), []);
+    assert.strictEqual(retry.checkpoints[0].event, 'client-error-retry-start');
+});

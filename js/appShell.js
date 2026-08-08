@@ -304,6 +304,13 @@ function markClientFlowCheckpoint(event, details = {}) {
     return checkpoint;
 }
 
+const clientErrorOutbox = ClientReportingTransport.createOutbox({
+    read: () => safeAppShellStorageGet('machikoroClientErrorOutbox', '[]'),
+    write: value => safeAppShellStorageSet('machikoroClientErrorOutbox', value),
+    now: () => Date.now(),
+    maxEntries: 8,
+    maxAgeMs: 7 * 24 * 60 * 60 * 1000,
+});
 
 const appShellClientReportingRuntime = AppShellClientReportingRuntime.createRuntime({
     buildSnapshot: buildClientRuntimeSnapshot,
@@ -326,6 +333,7 @@ const appShellClientReportingRuntime = AppShellClientReportingRuntime.createRunt
     },
     messageLimit: 500,
     now: () => Date.now(),
+    outbox: clientErrorOutbox,
     reporting: ClientReporting,
     schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
     stackLimit: 2400,
@@ -339,6 +347,10 @@ function buildClientErrorReport(input) {
 
 function reportClientError(input) {
     return appShellClientReportingRuntime.report(input);
+}
+
+function flushClientErrorReports() {
+    return appShellClientReportingRuntime.flush();
 }
 
 // ===== ゲームライフサイクル通知 =====
@@ -433,7 +445,10 @@ const _pwaInstallController = PwaShell.createInstallController({
 });
 
 function updateOnlineTabState() {
-    return appShellStartupRuntime.updateOnlineStatus();
+    const result = appShellStartupRuntime.updateOnlineStatus();
+    const navigatorRef = appShellComposition.resolve('navigator');
+    if (!navigatorRef || navigatorRef.onLine !== false) flushClientErrorReports();
+    return result;
 }
 
 function setPwaBannerVisible(id, visible) {
@@ -636,6 +651,7 @@ if (appShellRoot) {
 // Register before main.js evaluates so startup failures can still reach the crash UI.
 if (appShellRoot) {
     bindCrashHandlers();
+    flushClientErrorReports();
     reportAbandonedCpuStep();
 }
 
