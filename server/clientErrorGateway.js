@@ -13,7 +13,8 @@ function requireFunction(value, name) {
  * @returns {{
  *   handleClientErrorRequest: function(Object, Object, Object=): Promise<void>,
  *   buildClientErrorTestPayload: function(number=, string=): Object,
- *   handleClientErrorTestRequest: function(Object, Object, Object=): Promise<void>
+ *   handleClientErrorTestRequest: function(Object, Object, Object=): Promise<void>,
+ *   handleClientErrorHealthRequest: function(Object, Object, Object=): Promise<void>
  * }}
  */
 function makeClientErrorGateway(dependencies = {}) {
@@ -31,6 +32,7 @@ function makeClientErrorGateway(dependencies = {}) {
         dependencies.createTestPayload,
         'createTestPayload'
     );
+    const healthSnapshot = requireFunction(dependencies.healthSnapshot, 'healthSnapshot');
     const defaultEnv = dependencies.defaultEnv || {};
     const defaultBuildHash = dependencies.defaultBuildHash || '';
     const warn = typeof dependencies.warn === 'function'
@@ -143,10 +145,28 @@ function makeClientErrorGateway(dependencies = {}) {
         });
     }
 
+    async function handleClientErrorHealthRequest(req, res, options = {}) {
+        const env = options.env || defaultEnv;
+        const auth = authorizeRequest(req, env, {
+            allowSameOriginWithoutToken: false,
+        });
+        if (!auth.ok) {
+            res.status(403).json({ ok: false, error: auth.error });
+            return;
+        }
+        const health = healthSnapshot(
+            env,
+            typeof (options.fetchImpl || global.fetch) === 'function',
+            options.buildHash || defaultBuildHash
+        );
+        res.status(health.ok ? 200 : 503).json(health);
+    }
+
     return Object.freeze({
         handleClientErrorRequest,
         buildClientErrorTestPayload,
         handleClientErrorTestRequest,
+        handleClientErrorHealthRequest,
     });
 }
 

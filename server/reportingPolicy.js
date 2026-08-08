@@ -49,6 +49,20 @@ function createClientErrorTestPayload(now, buildHash) {
     };
 }
 
+function clientErrorHealthSnapshot(env = {}, fetchAvailable = false, buildHash = '') {
+    const production = String(env.NODE_ENV || '').toLowerCase() === 'production';
+    const ntfyConfigured = isNtfyConfigured(env);
+    const transportAvailable = fetchAvailable === true;
+    return Object.freeze({
+        schemaVersion: 1,
+        ok: production && ntfyConfigured && transportAvailable,
+        production,
+        ntfyConfigured,
+        transportAvailable,
+        buildHash: String(buildHash || ''),
+    });
+}
+
 function gameLifecycleDedupeKey(report) {
     return [report.event, report.sessionId].join('|');
 }
@@ -60,5 +74,6 @@ module.exports = {
     resolveNtfyTopic,
     isClientErrorTestEnabled,
     createClientErrorTestPayload,
+    clientErrorHealthSnapshot,
     gameLifecycleDedupeKey,
 };

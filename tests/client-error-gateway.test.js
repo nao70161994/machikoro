@@ -59,6 +59,16 @@ function makeGateway(overrides = {}) {
             calls.push(['test-payload', now, buildHash]);
             return { source: 'test', now, buildHash };
         },
+        healthSnapshot(env, fetchAvailable, buildHash) {
+            calls.push(['health', env, fetchAvailable, buildHash]);
+            return {
+                ok: true,
+                production: true,
+                ntfyConfigured: true,
+                transportAvailable: true,
+                buildHash,
+            };
+        },
     };
     Object.assign(dependencies, overrides);
     return {
@@ -237,6 +247,36 @@ runTest('client error test gateway builds normalized payload and mirrors deliver
         buildHash: 'explicit-hash',
     });
     assert.strictEqual(normalized[2], 456);
+});
+
+runTest('client error health gatewayはstrict auth後に非送信readinessだけを返す', async () => {
+    const authOptions = [];
+    const { gateway, calls } = makeGateway({
+        authorizeRequest(req, env, options) {
+            authOptions.push(options);
+            return { ok: true };
+        },
+    });
+    const res = responseRecorder();
+    await gateway.handleClientErrorHealthRequest({}, res, {
+        env: { NODE_ENV: 'production', NTFY_TOPIC: 'topic' },
+        buildHash: 'health-build',
+        fetchImpl: async () => {},
+    });
+    assert.deepStrictEqual(authOptions, [{ allowSameOriginWithoutToken: false }]);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.ok, true);
+    assert.ok(calls.some(call => call[0] === 'health' && call[2] === true &&
+        call[3] === 'health-build'));
+
+    const unavailable = makeGateway({
+        healthSnapshot() {
+            return { ok: false, ntfyConfigured: false, transportAvailable: true };
+        },
+    });
+    const unavailableRes = responseRecorder();
+    await unavailable.gateway.handleClientErrorHealthRequest({}, unavailableRes);
+    assert.strictEqual(unavailableRes.statusCode, 503);
 });
 
 runTest('client error test gateway reports normalization failure before notification', async () => {

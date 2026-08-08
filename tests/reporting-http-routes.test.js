@@ -8,6 +8,7 @@ function makeRuntime(overrides = {}) {
     const calls = [];
     const app = {
         use(...args) { calls.push(['use', ...args]); },
+        get(...args) { calls.push(['get', ...args]); },
         post(...args) { calls.push(['post', ...args]); },
     };
     const json = options => {
@@ -25,6 +26,10 @@ function makeRuntime(overrides = {}) {
         },
         handleClientErrorTestRequest(req, res) {
             calls.push(['test-handler', req, res]);
+            return Promise.resolve();
+        },
+        handleClientErrorHealthRequest(req, res) {
+            calls.push(['health-handler', req, res]);
             return Promise.resolve();
         },
         handleGameLifecycleRequest(req, res) {
@@ -53,11 +58,12 @@ function responseRecorder(calls) {
 
 runTest('reporting HTTP routes は既存path・JSON limit・登録順を維持する', () => {
     const { calls, handlers } = makeRuntime();
-    const registrations = calls.filter(call => call[0] === 'use' || call[0] === 'post');
+    const registrations = calls.filter(call => ['use', 'get', 'post'].includes(call[0]));
     assert.deepStrictEqual(registrations.map(call => [call[0], call[1]]), [
         ['use', '/api/client-error'],
         ['post', '/api/client-error'],
         ['post', '/api/client-error-test'],
+        ['get', '/api/client-error-health'],
         ['use', '/api/game-lifecycle'],
         ['post', '/api/game-lifecycle'],
     ]);
@@ -68,7 +74,8 @@ runTest('reporting HTTP routes は既存path・JSON limit・登録順を維持�
     ]);
     assert.strictEqual(registrations[1][2], handlers.clientError);
     assert.strictEqual(registrations[2][3], handlers.clientErrorTest);
-    assert.strictEqual(registrations[4][2], handlers.gameLifecycle);
+    assert.strictEqual(registrations[3][2], handlers.clientErrorHealth);
+    assert.strictEqual(registrations[5][2], handlers.gameLifecycle);
     assert.ok(Object.isFrozen(handlers));
 });
 
@@ -78,9 +85,11 @@ runTest('reporting HTTP route handler はgatewayへreq/resを同一参照で渡�
     const res = { id: 'response' };
     assert.strictEqual(handlers.clientError(req, res), undefined);
     assert.strictEqual(handlers.clientErrorTest(req, res), undefined);
+    assert.strictEqual(handlers.clientErrorHealth(req, res), undefined);
     assert.strictEqual(handlers.gameLifecycle(req, res), undefined);
     await new Promise(resolve => setImmediate(resolve));
     assert.deepStrictEqual(calls.filter(call => call[0].endsWith('-handler')).map(call => call.slice(1)), [
+        [req, res],
         [req, res],
         [req, res],
         [req, res],
@@ -92,21 +101,25 @@ runTest('reporting HTTP routes は各gateway失敗時のstatus・body・logを�
     const { calls, handlers } = makeRuntime({
         handleClientErrorRequest: rejected('client boom'),
         handleClientErrorTestRequest: rejected('test boom'),
+        handleClientErrorHealthRequest: rejected('health boom'),
         handleGameLifecycleRequest: rejected('lifecycle boom'),
     });
     handlers.clientError({}, responseRecorder(calls));
     handlers.clientErrorTest({}, responseRecorder(calls));
+    handlers.clientErrorHealth({}, responseRecorder(calls));
     handlers.gameLifecycle({}, responseRecorder(calls));
     await new Promise(resolve => setImmediate(resolve));
     assert.deepStrictEqual(calls.filter(call => call[0] === 'warn'), [
         ['warn', '[client-error] handler failed:', 'client boom'],
         ['warn', '[client-error-test] handler failed:', 'test boom'],
+        ['warn', '[client-error-health] handler failed:', 'health boom'],
         ['warn', '[game-lifecycle] handler failed:', 'lifecycle boom'],
     ]);
-    assert.deepStrictEqual(calls.filter(call => call[0] === 'status').map(call => call[1]), [503, 503, 202]);
+    assert.deepStrictEqual(calls.filter(call => call[0] === 'status').map(call => call[1]), [503, 503, 503, 202]);
     assert.deepStrictEqual(calls.filter(call => call[0] === 'response-json').map(call => call[1]), [
         { ok: false, error: 'notification_failed' },
         { ok: false, error: 'client_error_test_failed' },
+        { ok: false, error: 'client_error_health_failed' },
         { ok: true, notificationFailed: true },
     ]);
 });
@@ -114,10 +127,11 @@ runTest('reporting HTTP routes は各gateway失敗時のstatus・body・logを�
 runTest('reporting HTTP routes は依存不正時にrouteを部分登録しない', () => {
     const calls = [];
     assert.throws(() => registerReportingHttpRoutes({
-        app: { use() { calls.push('use'); }, post() { calls.push('post'); } },
+        app: { use() { calls.push('use'); }, get() { calls.push('get'); }, post() { calls.push('post'); } },
         json() {},
         handleClientErrorRequest() { return Promise.resolve(); },
         handleClientErrorTestRequest: null,
+        handleClientErrorHealthRequest() { return Promise.resolve(); },
         handleGameLifecycleRequest() { return Promise.resolve(); },
     }), /handleClientErrorTestRequest must be a function/);
     assert.deepStrictEqual(calls, []);

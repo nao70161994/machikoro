@@ -38,6 +38,7 @@ const {
     resolveNtfyTopic,
     isClientErrorTestEnabled,
     createClientErrorTestPayload,
+    clientErrorHealthSnapshot,
     gameLifecycleDedupeKey,
 } = require('./server/reportingPolicy');
 const { makeGameLifecycleReporting } = require('./server/gameLifecycleReporting');
@@ -492,6 +493,7 @@ const {
     handleClientErrorRequest,
     buildClientErrorTestPayload,
     handleClientErrorTestRequest,
+    handleClientErrorHealthRequest,
 } = makeClientErrorGateway({
     authorizeRequest: authorizeClientErrorRequest,
     reportRateKey: clientReportRateKey,
@@ -501,6 +503,7 @@ const {
     notify: notifyClientError,
     isTestEnabled: isClientErrorTestEnabled,
     createTestPayload: createClientErrorTestPayload,
+    healthSnapshot: clientErrorHealthSnapshot,
     defaultEnv: process.env,
     defaultBuildHash: BUILD_HASH,
     defaultRateBuckets: clientErrorRateBuckets,
@@ -559,6 +562,7 @@ registerReportingHttpRoutes({
     clientErrorJsonLimit: CLIENT_ERROR_LIMITS.maxJsonBytes,
     handleClientErrorRequest,
     handleClientErrorTestRequest,
+    handleClientErrorHealthRequest,
     handleGameLifecycleRequest,
     warn: (...args) => console.warn(...args),
 });
@@ -1135,6 +1139,7 @@ module.exports = {
     isClientErrorTestEnabled,
     buildClientErrorTestPayload,
     handleClientErrorTestRequest,
+    handleClientErrorHealthRequest,
     postNtfyNotification,
     PUBLIC_ROOT_FILES,
     PUBLIC_STATIC_DIRS,

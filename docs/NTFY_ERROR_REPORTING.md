@@ -33,7 +33,7 @@ Render steps:
 6. Check `docs/OPERATIONS.md` for `BUILD_HASH`, `CLIENT_ERROR_ALLOW_NO_ORIGIN`, and other production-only knobs before redeploying.
 7. Redeploy or restart the service.
 
-If `NODE_ENV=production` and `NTFY_TOPIC` are not both set, `POST /api/client-error` still accepts reports but only writes a server-side `console.warn`. The game must not stop when notification delivery fails.
+If `NODE_ENV=production` and `NTFY_TOPIC` are not both set, or ntfy rejects the transfer, `POST /api/client-error` returns `503 notification_failed`. The browser keeps a bounded, privacy-reduced outbox and retries it on the next startup or online recovery. Gameplay does not wait for notification delivery.
 
 ## Subscribing on Android
 
@@ -106,6 +106,21 @@ Keep `NTFY_TOPIC` and `NTFY_CI_TOPIC` different. Browser topics may include runt
 
 ## Test notification
 
+Check production configuration without sending a notification:
+
+```sh
+curl -H 'Origin: https://your-production-host.example' \
+  https://your-production-host.example/api/client-error-health
+# If CLIENT_ERROR_SHARED_TOKEN is set:
+curl -H 'X-Client-Error-Token: <token>' \
+  https://your-production-host.example/api/client-error-health
+```
+
+The health endpoint never posts to ntfy and never returns the topic or token. It returns `200`
+only when production mode, an ntfy topic, and the server fetch transport are all available;
+otherwise it returns `503` with boolean readiness fields. Use the test endpoint below only
+when an actual end-to-end notification is required.
+
 A development/debug-only test endpoint is available:
 
 ```sh
@@ -139,6 +154,8 @@ A successful test returns `202` and sends a notification with `phase=test`, a ha
 - Browser reports with a cross-origin `Origin` / `Referer` are rejected unless explicitly allowlisted.
 - `CLIENT_ERROR_SHARED_TOKEN` can require a shared token for scripted/no-origin reports and test endpoints; same-origin browser reports remain tokenless.
 - ntfy failures are logged and do not block gameplay.
+- Browser reports are retained for at most seven days and eight entries when delivery fails.
+  The persisted copy excludes the raw room ID and is removed only after a successful HTTP response.
 
 ## Privacy notes
 

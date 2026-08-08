@@ -6,8 +6,9 @@ function requireFunction(value, name) {
 }
 
 function requireApp(value) {
-    if (!value || typeof value.use !== 'function' || typeof value.post !== 'function') {
-        throw new TypeError('app must provide use and post');
+    if (!value || typeof value.use !== 'function' || typeof value.get !== 'function' ||
+            typeof value.post !== 'function') {
+        throw new TypeError('app must provide use, get, and post');
     }
     return value;
 }
@@ -38,6 +39,10 @@ function registerReportingHttpRoutes(dependencies = {}) {
         dependencies.handleClientErrorTestRequest,
         'handleClientErrorTestRequest'
     );
+    const handleClientErrorHealthRequest = requireFunction(
+        dependencies.handleClientErrorHealthRequest,
+        'handleClientErrorHealthRequest'
+    );
     const handleGameLifecycleRequest = requireFunction(
         dependencies.handleGameLifecycleRequest,
         'handleGameLifecycleRequest'
@@ -56,6 +61,11 @@ function registerReportingHttpRoutes(dependencies = {}) {
             status: 503,
             body: Object.freeze({ ok: false, error: 'client_error_test_failed' }),
         }),
+        clientErrorHealth: Object.freeze({
+            logPrefix: '[client-error-health] handler failed:',
+            status: 503,
+            body: Object.freeze({ ok: false, error: 'client_error_health_failed' }),
+        }),
         gameLifecycle: Object.freeze({
             logPrefix: '[game-lifecycle] handler failed:',
             status: 202,
@@ -69,6 +79,11 @@ function registerReportingHttpRoutes(dependencies = {}) {
             failures.clientErrorTest,
             warn
         ),
+        clientErrorHealth: makeRouteHandler(
+            handleClientErrorHealthRequest,
+            failures.clientErrorHealth,
+            warn
+        ),
         gameLifecycle: makeRouteHandler(
             handleGameLifecycleRequest,
             failures.gameLifecycle,
@@ -79,6 +94,7 @@ function registerReportingHttpRoutes(dependencies = {}) {
     app.use('/api/client-error', json({ limit: dependencies.clientErrorJsonLimit }));
     app.post('/api/client-error', handlers.clientError);
     app.post('/api/client-error-test', json({ limit: '1kb' }), handlers.clientErrorTest);
+    app.get('/api/client-error-health', handlers.clientErrorHealth);
     app.use('/api/game-lifecycle', json({ limit: '8kb' }));
     app.post('/api/game-lifecycle', handlers.gameLifecycle);
 

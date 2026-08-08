@@ -222,6 +222,7 @@ Before public traffic, AdSense review submission/recheck, ads after review, or w
 - AdSense placeholders remain outside gameplay controls, still use `pointer-events: none`, and match the allowed-placement policy in `docs/ADS_PLAN.md`.
 - PWA install prompt and update banner have been checked on at least one real mobile browser before relying on them publicly.
 - `/api/client-error-test` sends to ntfy in a controlled window, then `CLIENT_ERROR_TEST_ENABLED` is removed again.
+- `GET /api/client-error-health` returns `200` for the deployed build without sending a notification; its response confirms production mode, topic configuration, and fetch transport without exposing secrets. Use an allowed `Origin` header or `CLIENT_ERROR_SHARED_TOKEN` as documented in `docs/NTFY_ERROR_REPORTING.md`.
 - Lifecycle `play-start` / `play-finish` notification arrives without player names, room codes, reconnect tokens, card inventories, or snapshots.
 - A stale-client drill has been performed: compare browser version, server version, update banner, and cache clearing fallback.
 

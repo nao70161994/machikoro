@@ -29,3 +29,24 @@ runTest('reporting policyはdebug endpointとlifecycle dedupeの契約を固定�
     assert.strictEqual(payload.appVersion, 'build-1');
     assert.strictEqual(ReportingPolicy.gameLifecycleDedupeKey({ event: 'play-start', sessionId: 'session-1' }), 'play-start|session-1');
 });
+
+runTest('reporting policyは秘密値を含めずntfy readinessを投影する', () => {
+    const ready = ReportingPolicy.clientErrorHealthSnapshot({
+        NODE_ENV: 'production',
+        NTFY_TOPIC: 'secret-topic',
+        CLIENT_ERROR_SHARED_TOKEN: 'secret-token',
+    }, true, 'abc123');
+    assert.deepStrictEqual(ready, {
+        schemaVersion: 1,
+        ok: true,
+        production: true,
+        ntfyConfigured: true,
+        transportAvailable: true,
+        buildHash: 'abc123',
+    });
+    assert.strictEqual(JSON.stringify(ready).includes('secret-topic'), false);
+    assert.strictEqual(JSON.stringify(ready).includes('secret-token'), false);
+    assert.strictEqual(ReportingPolicy.clientErrorHealthSnapshot({
+        NODE_ENV: 'production',
+    }, true).ok, false);
+});
