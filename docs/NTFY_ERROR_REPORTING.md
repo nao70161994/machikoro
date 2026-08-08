@@ -223,6 +223,13 @@ turn=14
 
 Lifecycle privacy constraints are stricter than client-error diagnostics. The lifecycle payload must not include player names, room codes, reconnect tokens, card inventories, detailed snapshots, or raw logs. It only includes event type, local/online mode, player count, CPU count, turn count, CPU winner difficulty when relevant, a random session id for dedupe, and optional app version.
 
+Lifecycle delivery has the same success semantics as client-error delivery: a duplicate is
+accepted with `202`, a successful ntfy transfer is accepted with `202`, and a missing
+topic, rejected ntfy response, transport error, or invalid delivery result returns
+`503 notification_failed`. The browser retains at most eight compact lifecycle payloads
+for seven days and retries them after the next startup or online recovery. The outbox
+contains no player name, room code, reconnect token, card state, or game snapshot.
+
 Spam controls:
 
 - Default is on per browser profile unless explicitly disabled.

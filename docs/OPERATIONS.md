@@ -33,6 +33,11 @@ Normal operations should answer four questions in order:
 
 Priority order: `unknown` first, CI failed second, current-version `known-pattern` third, `stale-client` fourth, lifecycle traffic last.
 
+If lifecycle traffic disappears while `/api/client-error-health` is healthy, inspect
+`game-lifecycle-fetch-complete` checkpoints. HTTP `503` remains in
+`machikoroLifecycleOutbox` and retries on startup/online recovery; HTTP `202` means
+the ntfy transfer succeeded or the server suppressed an identical session/event.
+
 ## Production Environment Variables
 
 Set these in the service that runs `server.js` unless noted otherwise:
