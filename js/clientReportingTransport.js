@@ -33,6 +33,10 @@ const ClientReportingTransport = (() => {
         let sequence = 0;
         const inFlight = new Set();
 
+        function sameReport(left, right) {
+            return JSON.stringify(left) === JSON.stringify(right);
+        }
+
         function save(entries) {
             write(JSON.stringify(entries.slice(-maxEntries)));
         }
@@ -54,19 +58,26 @@ const ClientReportingTransport = (() => {
 
         function enqueue(report) {
             const createdAt = now();
+            const persisted = persistedReport(report);
+            const entries = load();
+            const duplicate = entries.find(entry => sameReport(entry.report, persisted));
+            if (duplicate) return duplicate;
             const entry = {
                 id: `${createdAt}-${sequence++}`,
                 createdAt,
-                report: persistedReport(report),
+                attempts: 0,
+                nextAttemptAt: createdAt,
+                report: persisted,
             };
-            const entries = load();
             entries.push(entry);
             save(entries);
             return entry;
         }
 
         function pending() {
-            return load().filter(entry => !inFlight.has(entry.id));
+            const currentTime = now();
+            return load().filter(entry => !inFlight.has(entry.id) &&
+                (!Number.isFinite(entry.nextAttemptAt) || entry.nextAttemptAt <= currentTime));
         }
 
         function begin(id) {
@@ -79,12 +90,23 @@ const ClientReportingTransport = (() => {
             inFlight.delete(id);
         }
 
+        function defer(id) {
+            const entries = load();
+            const entry = entries.find(candidate => candidate.id === id);
+            if (entry) {
+                entry.attempts = Math.max(0, Number(entry.attempts) || 0) + 1;
+                entry.nextAttemptAt = now() + Math.min(60000, 1000 * (2 ** (entry.attempts - 1)));
+                save(entries);
+            }
+            release(id);
+        }
+
         function complete(id) {
             save(load().filter(entry => entry.id !== id));
             release(id);
         }
 
-        return Object.freeze({ enqueue, pending, begin, release, complete });
+        return Object.freeze({ enqueue, pending, begin, release, defer, complete });
     }
 
     function deliver(options, entry, retry = false) {
@@ -108,7 +130,7 @@ const ClientReportingTransport = (() => {
                     const ok = Boolean(response && response.ok === true);
                     if (outbox) {
                         if (ok) outbox.complete(entry.id);
-                        else outbox.release(entry.id);
+                        else outbox.defer(entry.id);
                     }
                     checkpoint('client-error-fetch-complete', {
                         source: report.source,
@@ -116,18 +138,18 @@ const ClientReportingTransport = (() => {
                         status: response && response.status,
                     });
                 }).catch(error => {
-                    if (outbox) outbox.release(entry.id);
+                    if (outbox) outbox.defer(entry.id);
                     checkpoint('client-error-fetch-failed', {
                         source: report.source,
                         message: errorMessage(error),
                     });
                 });
             } else if (outbox) {
-                outbox.release(entry.id);
+                outbox.defer(entry.id);
             }
             return true;
         } catch (error) {
-            if (outbox) outbox.release(entry.id);
+            if (outbox) outbox.defer(entry.id);
             checkpoint('client-error-fetch-threw', {
                 source: report.source,
                 message: errorMessage(error),

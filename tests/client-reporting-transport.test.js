@@ -151,10 +151,11 @@ runTest('client reporting outboxはroom IDを保存せず件数と期限を制�
 
 runTest('client reporting transportは失敗をoutboxへ残し次回flush成功時に削除する', async () => {
     let stored = '[]';
+    let currentTime = 1000;
     const outbox = ClientReportingTransport.createOutbox({
         read: () => stored,
         write: value => { stored = value; },
-        now: () => 1000,
+        now: () => currentTime,
     });
     const failure = createSubject({
         outbox,
@@ -167,7 +168,8 @@ runTest('client reporting transportは失敗をoutboxへ残し次回flush成功�
     assert.strictEqual(JSON.parse(stored)[0].report.roomId, undefined);
     await Promise.resolve();
     await Promise.resolve();
-    assert.strictEqual(outbox.pending().length, 1);
+    assert.strictEqual(JSON.parse(stored).length, 1);
+    assert.strictEqual(outbox.pending().length, 0);
 
     const retry = createSubject({
         outbox,
@@ -175,9 +177,64 @@ runTest('client reporting transportは失敗をoutboxへ残し次回flush成功�
             return Promise.resolve({ ok: true, status: 202 });
         },
     });
+    assert.strictEqual(ClientReportingTransport.flush(retry.options), 0);
+    currentTime = 2000;
     assert.strictEqual(ClientReportingTransport.flush(retry.options), 1);
     await Promise.resolve();
     await Promise.resolve();
     assert.deepStrictEqual(outbox.pending(), []);
     assert.strictEqual(retry.checkpoints[0].event, 'client-error-retry-start');
+});
+
+runTest('client reporting outboxは同一reportを重複保存せず失敗回数で再送を遅延する', () => {
+    let stored = '[]';
+    let currentTime = 1000;
+    const outbox = ClientReportingTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => currentTime,
+    });
+    const first = outbox.enqueue({ source: 'same', message: 'failure' });
+    const duplicate = outbox.enqueue({ source: 'same', message: 'failure' });
+    assert.strictEqual(duplicate.id, first.id);
+    assert.strictEqual(JSON.parse(stored).length, 1);
+
+    assert.strictEqual(outbox.begin(first.id), true);
+    outbox.defer(first.id);
+    assert.deepStrictEqual(outbox.pending(), []);
+    currentTime = 1999;
+    assert.deepStrictEqual(outbox.pending(), []);
+    currentTime = 2000;
+    assert.strictEqual(outbox.pending().length, 1);
+
+    outbox.begin(first.id);
+    outbox.defer(first.id);
+    currentTime = 3999;
+    assert.deepStrictEqual(outbox.pending(), []);
+    currentTime = 4000;
+    assert.strictEqual(outbox.pending().length, 1);
+});
+
+runTest('client reporting transportは拒否・rate limit・転送失敗を表駆動で保持する', async () => {
+    for (const status of [403, 429, 503]) {
+        let stored = '[]';
+        const outbox = ClientReportingTransport.createOutbox({
+            read: () => stored,
+            write: value => { stored = value; },
+            now: () => 1000,
+        });
+        const subject = createSubject({
+            outbox,
+            fetchImpl() {
+                return Promise.resolve({ ok: false, status });
+            },
+        });
+        assert.strictEqual(ClientReportingTransport.send(subject.options), true, String(status));
+        await Promise.resolve();
+        await Promise.resolve();
+        const entries = JSON.parse(stored);
+        assert.strictEqual(entries.length, 1, String(status));
+        assert.strictEqual(entries[0].attempts, 1, String(status));
+        assert.strictEqual(entries[0].nextAttemptAt, 2000, String(status));
+    }
 });
