@@ -74,6 +74,78 @@ runTest('integration: セーブ→再開でゲーム状態を復元する', () =
     assert.strictEqual(rt.__test.elements.resumeSection.style.display, 'flex');
 });
 
+runTest('integration: 保存したstrong CPUのサイコロ後フェーズは再開後に人間手番まで完了する', () => {
+    const cases = [
+        {
+            name: 'rerollConfirm',
+            prepare(rt, game) {
+                game.phase = rt.GAME_PHASES.REROLL_CONFIRM;
+                game.usedReroll = false;
+                game.lastDice1 = 3;
+                game.lastDice2 = 4;
+                game.lastDiceResult = 7;
+                game.pendingTunaDice = [2, 5];
+                game.currentPlayer().landmarks['電波塔'] = true;
+            },
+        },
+        {
+            name: 'harborChoice',
+            prepare(rt, game) {
+                game.phase = rt.GAME_PHASES.HARBOR_CHOICE;
+                game.usedReroll = true;
+                game.lastDice1 = 5;
+                game.lastDice2 = 5;
+                game.lastDiceResult = 10;
+                game.pendingTunaDice = [3, 4];
+                game.currentPlayer().landmarks['港'] = true;
+            },
+        },
+        {
+            name: 'build',
+            prepare(rt, game) {
+                game.phase = rt.GAME_PHASES.BUILD;
+                game.builtThisTurn = false;
+                game.currentPlayer().coins = 0;
+            },
+        },
+    ];
+
+    for (const testCase of cases) {
+        const rt = loadIntegrationRuntime();
+        rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+        rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+        rt.__test.setPlayerSettings([
+            { type: 'human', difficulty: 'normal' },
+            { type: 'cpu', difficulty: 'strong' },
+        ]);
+        rt.startGame();
+        rt.__test.timeouts.length = 0;
+        const game = rt.__test.getGame();
+        const cpuIndex = rt.__test.getCpuPlayers().findIndex(Boolean);
+        assert.notStrictEqual(cpuIndex, -1, testCase.name + ' CPU index');
+        game.currentPlayerIndex = cpuIndex;
+        testCase.prepare(rt, game);
+        rt.saveGameState();
+
+        rt.__test.setGame(null);
+        rt.resumeGame();
+        const resumedCpuIndex = rt.__test.getCpuPlayers().findIndex(Boolean);
+        rt.__test.flushTimeouts();
+
+        const resumed = rt.__test.getGame();
+        assert.ok(resumed, testCase.name + ' resumed game');
+        assert.notStrictEqual(resumed.currentPlayerIndex, resumedCpuIndex, testCase.name + ' advances to human');
+        assert.strictEqual(resumed.phase, rt.GAME_PHASES.ROLL, testCase.name + ' human roll phase');
+        assert.strictEqual(rt.localStorage.getItem('machikoroActiveCpuStep'), null, testCase.name + ' journal cleared');
+        assert.ok(
+            rt.window.__machikoroClientCheckpoints.some(entry =>
+                entry.event === 'scheduleCPU-step-result' && entry.details.difficulty === 'strong'
+            ),
+            testCase.name + ' completed checkpoint'
+        );
+    }
+});
+
 
 runTest('integration: 購入後もrender step例外で操作不能にならない', () => {
     const rt = loadIntegrationRuntime();
