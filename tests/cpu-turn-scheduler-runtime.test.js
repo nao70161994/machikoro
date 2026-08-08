@@ -47,6 +47,56 @@ runTest('CPU turn scheduler runtimeはphase stepをCPU速度後に一度実行�
     assert.ok(h.calls.some(call => call[0] === 'checkpoint' && call[1] === 'scheduleCPU-step-result'));
 });
 
+runTest('CPU turn scheduler runtimeはstep開始と完了を同じ実行ID・難易度・所要時間で記録する', () => {
+    const h = createHarness();
+    h.cpu.difficulty = 'strong';
+    h.runtime.schedule('diagnostic-contract');
+    h.setNow(700);
+    h.timers.shift().fn();
+
+    const started = h.calls.find(call => call[1] === 'scheduleCPU-step-run')[2];
+    const completed = h.calls.find(call => call[1] === 'scheduleCPU-step-result')[2];
+    assert.deepStrictEqual(
+        {
+            step: started.step,
+            phase: started.phase,
+            difficulty: started.difficulty,
+            currentPlayerIndex: started.currentPlayerIndex,
+            token: started.token,
+            startedAt: started.startedAt,
+        },
+        {
+            step: 'roll',
+            phase: 'roll',
+            difficulty: 'strong',
+            currentPlayerIndex: 0,
+            token: 1,
+            startedAt: 700,
+        }
+    );
+    assert.strictEqual(completed.stepExecutionId, started.stepExecutionId);
+    assert.strictEqual(completed.durationMs, 0);
+    assert.strictEqual(completed.stepResult, true);
+});
+
+runTest('CPU turn scheduler runtimeはstep例外にも開始情報と所要時間を保持する', () => {
+    let harness;
+    harness = createHarness({
+        handlers: [{ name: 'roll', run() { harness.setNow(745); throw new Error('decision failed'); } }],
+    });
+    harness.cpu.difficulty = 'strong';
+    harness.runtime.schedule();
+    harness.setNow(700);
+    harness.timers.shift().fn();
+
+    const started = harness.calls.find(call => call[1] === 'scheduleCPU-step-run')[2];
+    const failed = harness.calls.find(call => call[1] === 'scheduleCPU-step-error')[2];
+    assert.strictEqual(failed.stepExecutionId, started.stepExecutionId);
+    assert.strictEqual(failed.difficulty, 'strong');
+    assert.strictEqual(failed.durationMs, 45);
+    assert.strictEqual(failed.message, 'decision failed');
+});
+
 runTest('CPU turn scheduler runtimeはonline non-hostをeffect前に拒否する', () => {
     const h = createHarness({ online: { isOnlineGame: true, isRoomHost: false, socket: { connected: true } } });
     h.runtime.schedule();

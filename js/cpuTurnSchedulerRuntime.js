@@ -162,7 +162,24 @@ const CpuTurnSchedulerRuntime = (() => {
                     const stepGame = stepState.game;
                     if (!stepGame || stepGame.checkWinner()) return;
                     if (!stepState.cpuPlayers[stepGame.currentPlayerIndex]) return;
-                    dependencies.checkpoint('scheduleCPU-step-run', { step: step.name });
+                    const startedAt = dependencies.now();
+                    const stepExecutionId = [
+                        token,
+                        stepIndex - 1,
+                        step.name,
+                        stepGame.currentPlayerIndex,
+                        startedAt,
+                    ].join(':');
+                    const stepDetails = {
+                        step: step.name,
+                        phase: stepGame.phase || '',
+                        difficulty: cpu && cpu.difficulty || '',
+                        currentPlayerIndex: stepGame.currentPlayerIndex,
+                        token,
+                        stepExecutionId,
+                        startedAt,
+                    };
+                    dependencies.checkpoint('scheduleCPU-step-run', stepDetails);
                     let result;
                     try {
                         result = step.run(cpu);
@@ -171,7 +188,8 @@ const CpuTurnSchedulerRuntime = (() => {
                             dependencies.console.error('[cpu] phase step failed:', step.name, error);
                         }
                         dependencies.checkpoint('scheduleCPU-step-error', {
-                            step: step.name,
+                            ...stepDetails,
+                            durationMs: Math.max(0, dependencies.now() - startedAt),
                             message: error && error.message || String(error),
                         });
                         if (dependencies.getOnlineState().isOnlineGame) return;
@@ -181,7 +199,11 @@ const CpuTurnSchedulerRuntime = (() => {
                         runNextStep();
                         return;
                     }
-                    dependencies.checkpoint('scheduleCPU-step-result', { step: step.name, stepResult: result });
+                    dependencies.checkpoint('scheduleCPU-step-result', {
+                        ...stepDetails,
+                        durationMs: Math.max(0, dependencies.now() - startedAt),
+                        stepResult: result,
+                    });
                     if (result === false) return;
                     runNextStep();
                 });
