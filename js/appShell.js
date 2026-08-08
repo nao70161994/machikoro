@@ -282,7 +282,7 @@ function safeAppShellStorageRemove(key) {
 }
 
 function markClientFlowCheckpoint(event, details = {}) {
-    return ClientCheckpoint.record({
+    const checkpoint = ClientCheckpoint.record({
         event,
         details,
         buildSnapshot: () => buildClientRuntimeSnapshot(event),
@@ -294,6 +294,14 @@ function markClientFlowCheckpoint(event, details = {}) {
             });
         },
     });
+    const cpuStepJournalKey = 'machikoroActiveCpuStep';
+    const mutation = ClientCheckpoint.cpuStepJournalMutation(
+        checkpoint,
+        safeAppShellStorageGet(cpuStepJournalKey, '')
+    );
+    if (mutation.kind === 'write') safeAppShellStorageSet(cpuStepJournalKey, mutation.value);
+    if (mutation.kind === 'remove') safeAppShellStorageRemove(cpuStepJournalKey);
+    return checkpoint;
 }
 
 
@@ -601,12 +609,35 @@ function sendDebugClientErrorReport(message = 'manual client error test') {
     return appShellClientReportingRuntime.sendDebugReport(message);
 }
 
+function reportAbandonedCpuStep() {
+    const key = 'machikoroActiveCpuStep';
+    const incident = ClientCheckpoint.abandonedCpuStepIncident(
+        safeAppShellStorageGet(key, ''),
+        Date.now()
+    );
+    if (incident.kind === 'discard') {
+        safeAppShellStorageRemove(key);
+        return false;
+    }
+    if (incident.kind !== 'report') return false;
+    const accepted = reportClientError({
+        source: 'cpu-step-abandoned',
+        message: 'strong CPU step did not complete before restart',
+        stack: 'CPU_STEP_INCIDENT ' + JSON.stringify(incident.summary),
+    });
+    if (accepted) safeAppShellStorageRemove(key);
+    return accepted;
+}
+
 if (appShellRoot) {
     appShellRoot.__machikoroSendTestErrorReport = sendDebugClientErrorReport;
 }
 
 // Register before main.js evaluates so startup failures can still reach the crash UI.
-if (appShellRoot) bindCrashHandlers();
+if (appShellRoot) {
+    bindCrashHandlers();
+    reportAbandonedCpuStep();
+}
 
 function initMainView() {
     return appShellStartupRuntime.initMainView();

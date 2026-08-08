@@ -118,3 +118,49 @@ runTest('client checkpointはfallback timestampも失敗したら記録しない
     assert.strictEqual(rootCalls, 0);
     assert.strictEqual(persistCalls, 0);
 });
+
+runTest('client checkpointはCPU step開始をcompact journalへ射影し同じ実行完了だけを消す', () => {
+    const started = {
+        event: 'scheduleCPU-step-run',
+        timestamp: '2026-08-08T00:00:00.000Z',
+        details: {
+            stepExecutionId: '4:5:build:1:1000',
+            step: 'build', phase: 'build', difficulty: 'strong',
+            currentPlayerIndex: 1, token: 4, startedAt: 1000,
+        },
+    };
+    const write = ClientCheckpoint.cpuStepJournalMutation(started, '');
+    assert.strictEqual(write.kind, 'write');
+    const journal = JSON.parse(write.value);
+    assert.deepStrictEqual(journal, {
+        schemaVersion: 1,
+        stepExecutionId: '4:5:build:1:1000',
+        step: 'build', phase: 'build', difficulty: 'strong',
+        currentPlayerIndex: 1, token: 4, startedAt: 1000,
+        timestamp: '2026-08-08T00:00:00.000Z',
+    });
+    assert.strictEqual(ClientCheckpoint.cpuStepJournalMutation({
+        event: 'scheduleCPU-step-result', details: { stepExecutionId: 'other' },
+    }, write.value).kind, 'none');
+    assert.strictEqual(ClientCheckpoint.cpuStepJournalMutation({
+        event: 'scheduleCPU-step-result', details: { stepExecutionId: journal.stepExecutionId },
+    }, write.value).kind, 'remove');
+});
+
+runTest('client checkpointは再起動時に未完了strong stepだけを期限付きincidentへ変換する', () => {
+    const active = JSON.stringify({
+        schemaVersion: 1,
+        stepExecutionId: '7:4:rerollConfirm:1:1000',
+        step: 'rerollConfirm', phase: 'rerollConfirm', difficulty: 'strong',
+        currentPlayerIndex: 1, token: 7, startedAt: 1000,
+    });
+    const incident = ClientCheckpoint.abandonedCpuStepIncident(active, 6500);
+    assert.strictEqual(incident.kind, 'report');
+    assert.strictEqual(incident.summary.elapsedMs, 5500);
+    assert.strictEqual(incident.summary.step, 'rerollConfirm');
+    assert.strictEqual(ClientCheckpoint.abandonedCpuStepIncident(
+        active.replace('strong', 'normal'), 6500
+    ).kind, 'discard');
+    assert.strictEqual(ClientCheckpoint.abandonedCpuStepIncident('{broken', 6500).kind, 'discard');
+    assert.strictEqual(ClientCheckpoint.abandonedCpuStepIncident(active, 8 * 24 * 60 * 60 * 1000).kind, 'discard');
+});
