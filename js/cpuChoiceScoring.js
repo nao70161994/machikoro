@@ -82,36 +82,42 @@ const CPUChoiceScoring = Object.freeze({
     },
 
     scoreStrongChoiceState(cpu, game, focusIndex) {
-        return cpu._profileMeasure("strong.choiceState", () => {
-            const player = game.players[focusIndex];
-            const landmarkPressure = cpu._isEndgameMode(player, game, 2) ? 6 : 0;
-            const purchasePlanValue = cpu._profileMeasure(
-                "strong.choiceState.purchasePlan",
-                () => cpu._estimatePurchasePlanValue(player, game, "strong")
-            );
-            const turnValue = cpu._profileMeasure(
-                "strong.choiceState.turnValue",
-                () => cpu._estimatePlayerTurnValue(game, focusIndex)
-            );
-            const winDistance = cpu._profileMeasure(
-                "strong.choiceState.winDistance",
-                () => cpu._estimateWinDistance(player, game)
-            );
-            const redPressure = cpu._profileMeasure(
-                "strong.choiceState.redPressure",
-                () => cpu._estimateRedPressure(game, focusIndex)
-            );
-            return CPUEvaluation.strongChoiceScore({
-                purchasePlanValue,
-                turnValue,
-                coins: player.coins,
-                builtLandmarkCount: player.builtLandmarkCount(),
-                landmarkPressure,
-                winDistance,
-                redPressure,
-                duplicateRenovationPenalty: cpu._duplicateRenovationPenalty(player, "strong", game),
+        const withStableSignature = globalThis.CPUEvaluationCache &&
+            globalThis.CPUEvaluationCache.withStableSignature;
+        const evaluate = () =>
+            cpu._profileMeasure("strong.choiceState", () => {
+                const player = game.players[focusIndex];
+                const landmarkPressure = cpu._isEndgameMode(player, game, 2) ? 6 : 0;
+                const purchasePlanValue = cpu._profileMeasure(
+                    "strong.choiceState.purchasePlan",
+                    () => cpu._estimatePurchasePlanValue(player, game, "strong")
+                );
+                const turnValue = cpu._profileMeasure(
+                    "strong.choiceState.turnValue",
+                    () => cpu._estimatePlayerTurnValue(game, focusIndex)
+                );
+                const winDistance = cpu._profileMeasure(
+                    "strong.choiceState.winDistance",
+                    () => cpu._estimateWinDistance(player, game)
+                );
+                const redPressure = cpu._profileMeasure(
+                    "strong.choiceState.redPressure",
+                    () => cpu._estimateRedPressure(game, focusIndex)
+                );
+                return CPUEvaluation.strongChoiceScore({
+                    purchasePlanValue,
+                    turnValue,
+                    coins: player.coins,
+                    builtLandmarkCount: player.builtLandmarkCount(),
+                    landmarkPressure,
+                    winDistance,
+                    redPressure,
+                    duplicateRenovationPenalty: cpu._duplicateRenovationPenalty(player, "strong", game),
+                });
             });
-        });
+        return typeof withStableSignature === 'function'
+            ? withStableSignature(cpu, game, evaluate)
+            : evaluate();
     },
 
     expectedStrongChoiceValue(cpu, game, focusIndex, outcomes, applyOutcome) {

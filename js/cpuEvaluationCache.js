@@ -1,4 +1,5 @@
 const CPU_EVALUATION_CACHE_LIMIT = 16;
+const activeSignatureScopes = new WeakMap();
 
 const CPUEvaluationCache = Object.freeze({
     signature(game) {
@@ -13,7 +14,10 @@ const CPUEvaluationCache = Object.freeze({
     },
 
     entry(target, cacheKey, game, factory, limit = CPU_EVALUATION_CACHE_LIMIT) {
-        const signature = CPUEvaluationCache.signature(game);
+        const scope = activeSignatureScopes.get(target);
+        const signature = scope && scope.game === game
+            ? scope.signature
+            : CPUEvaluationCache.signature(game);
         let store = target[cacheKey];
         if (!store) {
             store = new Map();
@@ -29,6 +33,21 @@ const CPUEvaluationCache = Object.freeze({
             }
         }
         return entry;
+    },
+
+    withStableSignature(target, game, fn) {
+        if (!target || !game || typeof fn !== 'function') return fn();
+        const previous = activeSignatureScopes.get(target);
+        activeSignatureScopes.set(target, {
+            game,
+            signature: CPUEvaluationCache.signature(game),
+        });
+        try {
+            return fn();
+        } finally {
+            if (previous) activeSignatureScopes.set(target, previous);
+            else activeSignatureScopes.delete(target);
+        }
     },
 });
 

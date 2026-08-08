@@ -162,6 +162,38 @@ runTest('CPU evaluation cache helper はsignatureごとにentryを再利用し�
     assert.strictEqual(pruneCpu._pruneCache.size, runtime.CPU_EVALUATION_CACHE_LIMIT);
 });
 
+runTest('CPU evaluation cacheは不変評価scope内で重い盤面署名を一度だけ作る', () => {
+    const cpu = new CPU('strong');
+    const game = new GameManager(2);
+    let cardReads = 0;
+    for (const player of game.players) {
+        const cards = player.cards;
+        Object.defineProperty(player, 'cards', {
+            configurable: true,
+            get() {
+                cardReads += 1;
+                return cards;
+            },
+            set(value) {
+                cards.splice(0, cards.length, ...value);
+            },
+        });
+    }
+
+    runtime.CPUEvaluationCache.withStableSignature(cpu, game, () => {
+        cpu._signatureCache('_scopeA', game, signature => ({ signature }));
+        cpu._signatureCache('_scopeB', game, signature => ({ signature }));
+    });
+    assert.strictEqual(cardReads, game.players.length);
+
+    assert.throws(() => runtime.CPUEvaluationCache.withStableSignature(cpu, game, () => {
+        throw new Error('scope failed');
+    }), /scope failed/);
+    const readsAfterFailure = cardReads;
+    cpu._signatureCache('_scopeC', game, signature => ({ signature }));
+    assert.strictEqual(cardReads, readsAfterFailure + game.players.length);
+});
+
 runTest('CPU progress income helper は休業カードと特殊pending系を除外する', () => {
     const cpu = new CPU('expert');
     const game = new GameManager(2);
