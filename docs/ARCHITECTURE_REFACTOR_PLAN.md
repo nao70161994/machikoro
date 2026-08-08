@@ -1165,3 +1165,13 @@ Scoped gates remain 223 ESLint maintenance files and 222 checkJs runtime files. 
 - JSDoc types now cover the stable data passed between Action/Snapshot/Card/Player, online controller/Engine adapters, and CPU action-only selection. The large side-effect composition roots are still excluded; their extracted dependencies are checked instead of being hidden behind broad ambient declarations.
 - ESLint remains limited to bug-detection rules and checkJs remains no-emit JavaScript checking. No TypeScript migration or runtime build step was introduced.
 - Fixed outcome 5 is complete. The next and final scope is a requirement-by-requirement migration/parity/E2E/documentation audit.
+
+## 2026-08-08 CPU execution and incident-delivery boundaries
+
+- CPU scheduling now has two explicit states: a pending timer and an active execution lease. `CpuTurnSchedulerRuntime` owns execution IDs/deadlines and diagnostic projection; phase handlers still own decisions and effects.
+- The browser persists only a compact active-step journal. Startup recovery reports an abandoned execution, then consumes the journal, which covers hard main-thread stalls where timers and watchdog reporting cannot run.
+- Strong scoring keeps an evaluation cache scoped to one immutable-signature operation. It does not cache across mutations, turns, games, or CPU instances, so no invalidation protocol or policy change is introduced.
+- Client-error construction stays pure in `clientReporting.js`; `clientReportingTransport.js` owns bounded outbox, privacy projection, dedupe, retry state, and HTTP success semantics. `appShell.js` retains browser lifecycle wiring.
+- Server delivery readiness and ntfy result propagation are explicit gateway contracts. The health route is read-only and strict-auth; actual production delivery remains an operational check, not a test side effect.
+
+These boundaries intentionally avoid Web Workers, cooperative policy rewrites, save/schema changes, and Socket protocol changes. A future execution-model change must first prove identical CPU action traces and Safari lifecycle behavior.

@@ -1038,6 +1038,18 @@ No game rule, CPU heuristic/choice/RNG, save/localStorage key or value shape, So
 - Runtime contracts prove successful authority skips mutable application and adoption failure falls back. Fixed online action traces converge with legacy, while the existing 2–10-player, all-Action, v0/v1 client/server mirror parity suite covers the underlying transition and Snapshot adapters.
 - Socket.IO event names/payloads, actor validation, ACK/watermark, action sequence/log, restore queue order, reconnect state, storage formats, and server authority remain unchanged.
 
+## 2026-08-08 strong CPU stall and reporting reliability
+
+- Strong-CPU steps now record execution ID, scheduler token, difficulty, player, phase/step, start time, duration, completion, and error checkpoints. The scheduler distinguishes a pending timer from an executing step, owns a bounded completion deadline, and clears the active lease only on result/error.
+- An active CPU-step journal survives a hard main-thread stall. On the next startup, an unfinished entry is consumed once and reported as `cpu-step-abandoned`; no watchdog callback is assumed to run while Safari JavaScript itself is blocked.
+- `CPUEvaluationCache.withStableSignature()` reuses the immutable board signature during one strong build-scoring pass. A representative late/card-heavy six-option benchmark on Termux decreased from about 755 ms to 166 ms. Fixed decisions, heuristic constants, tie order, RNG consumption, and 2–10-player self-play results are unchanged.
+- Local save/resume contracts cover strong CPU post-roll `rerollConfirm`, `harborChoice`, and `build` states through the next human turn. Existing save data and resume shapes are unchanged.
+- Failed client-error delivery is retained in a privacy-reduced, duplicate-suppressed outbox (maximum eight entries/seven days), retried with bounded exponential delay on startup and online recovery, and removed only after HTTP success. The persisted copy excludes the raw room ID.
+- The server now returns `503 notification_failed` when ntfy is unavailable, rejects the transfer, throws, or returns an invalid result. `GET /api/client-error-health` verifies production/topic/fetch readiness without posting a notification or exposing secrets.
+- Table and restart-boundary tests cover missing topic, ntfy status/error, fetch rejection, offline persistence, duplicate admission, 403/429/503 retention, retry delay, and successful replay after a new controller is created.
+
+Compatibility statement: game rules, CPU choices/strength, save formats, existing localStorage keys, Socket.IO protocol, online/reconnect behavior, and PWA/SW behavior did not change. Production health invocation remains an operations step requiring the deployed origin and optional shared token; real iPhone reproduction is deferred because no test device is available.
+
 
 ## Fixed outcome 5 complete: typed browser-global and adapter boundaries (2026-08-05)
 
