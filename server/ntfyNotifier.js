@@ -14,10 +14,15 @@ async function postNtfyNotification(options = {}) {
     if (options.priority) params.set('priority', String(options.priority));
     if (options.tags) params.set('tags', options.tags);
     const query = params.toString();
+    const baseUrl = String(options.baseUrl || 'https://ntfy.sh').replace(/\/+$/, '');
+    const accessToken = String(options.accessToken || '').trim();
+    const headers = {};
+    if (accessToken) headers.Authorization = 'Bearer ' + accessToken;
     try {
-        const response = await fetchImpl('https://ntfy.sh/' + encodeURIComponent(topic) + (query ? '?' + query : ''), {
+        const response = await fetchImpl(baseUrl + '/' + encodeURIComponent(topic) + (query ? '?' + query : ''), {
             method: 'POST',
             body: options.body || '',
+            headers,
         });
         if (response && response.ok === false) {
             console.warn(options.statusFailureMessage || '[ntfy] notification failed:', response.status || 'unknown');

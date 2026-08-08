@@ -48,10 +48,23 @@ function makeReportDelivery(dependencies = {}) {
         ? dependencies.warn
         : (...args) => console.warn(...args);
 
+    function notificationTransportOptions(options, env) {
+        return {
+            baseUrl: Object.prototype.hasOwnProperty.call(options, 'baseUrl')
+                ? options.baseUrl
+                : env.NTFY_BASE_URL,
+            accessToken: Object.prototype.hasOwnProperty.call(options, 'accessToken')
+                ? options.accessToken
+                : env.NTFY_ACCESS_TOKEN,
+        };
+    }
+
     async function notifyClientError(report, options = {}) {
         const classification = classifyClientError(report);
+        const env = options.env || defaultEnv;
         return postNotification({
-            topic: resolveTopic(options, options.env || defaultEnv),
+            topic: resolveTopic(options, env),
+            ...notificationTransportOptions(options, env),
             fetchImpl: options.fetchImpl || getDefaultFetch(),
             title: classification.classification === 'unknown'
                 ? '[ダイスシティ] Unknown Client Error'
@@ -75,8 +88,10 @@ function makeReportDelivery(dependencies = {}) {
     }
 
     async function notifyGameLifecycle(report, options = {}) {
+        const env = options.env || defaultEnv;
         return postNotification({
-            topic: resolveTopic(options, options.env || defaultEnv),
+            topic: resolveTopic(options, env),
+            ...notificationTransportOptions(options, env),
             fetchImpl: options.fetchImpl || getDefaultFetch(),
             title: lifecycleTitle(report.event),
             priority: '2',

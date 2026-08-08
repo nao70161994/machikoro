@@ -46,6 +46,8 @@ Set these in the service that runs `server.js` unless noted otherwise:
 | --- | --- | --- | --- | --- |
 | `NODE_ENV=production` | Render | Recommended | Enables production defaults such as no-origin client-error blocking when `NTFY_TOPIC` is set. | Keep explicit in production so debug defaults do not leak. |
 | `NTFY_TOPIC` | Render | Recommended | Browser client-error and lifecycle notifications when `NODE_ENV=production`. | Use a hard-to-guess topic. Rotate if exposed. Local/dev `NTFY_TOPIC` values are ignored by normal reports. |
+| `NTFY_ACCESS_TOKEN` | Render secret | Optional | Authenticated publishing to ntfy. | Keep server-side; never place it in client code, logs, or health output. |
+| `NTFY_BASE_URL` | Render | Optional | Routes notifications to a trusted alternate/self-hosted ntfy server. | Defaults to `https://ntfy.sh`; use HTTPS in production. |
 | `NTFY_CI_TOPIC` | GitHub Actions secret | Optional but recommended | Failure-only CI notifications. | Use a different topic from `NTFY_TOPIC`; success runs stay silent. |
 | `CLIENT_ERROR_ALLOWED_ORIGINS` | Render | Recommended for public production | Comma-separated public origins allowed to report browser errors. | Same-origin reports are allowed automatically; use this for explicit public origin hygiene. |
 | `HOSTLESS_RESTORE_ENABLED` | Render | Optional; enabled by default | Enables the provisional quorum fallback after normal host restore retries are exhausted. | Set to `0` for immediate host-only rollback. Values `false`, `no`, `off`, and `disabled` also disable it. |

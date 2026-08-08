@@ -895,6 +895,26 @@ runTest('postNtfyNotification helper は ntfy POST options を一箇所で組み
     assert.strictEqual(helperUrl.searchParams.get('priority'), '5');
     assert.strictEqual(helperUrl.searchParams.get('tags'), 'test,gear');
     assert.strictEqual(calls[0].options.body, 'hello');
+    assert.deepStrictEqual(calls[0].options.headers, {});
+});
+
+runTest('postNtfyNotification helper はserver専用tokenと代替base URLを使える', async () => {
+    const calls = [];
+    await postNtfyNotification({
+        topic: 'private/topic',
+        baseUrl: 'https://notify.example.test/root/',
+        accessToken: 'secret-token',
+        fetchImpl(url, options) {
+            calls.push({ url, options });
+            return { ok: true };
+        },
+    });
+
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls[0].url, 'https://notify.example.test/root/private%2Ftopic');
+    assert.deepStrictEqual(calls[0].options.headers, {
+        Authorization: 'Bearer secret-token',
+    });
 });
 
 runTest('postNtfyNotification helper は拒否statusを秘密情報なしで返す', async () => {

@@ -169,3 +169,26 @@ runTest('report delivery builds lifecycle notification and fallback log exactly'
         'cpu=1',
     ]);
 });
+
+runTest('report delivery keeps ntfy credentials server-side and allows explicit override', async () => {
+    const { delivery, calls } = makeDelivery({
+        defaultEnv: {
+            NODE_ENV: 'production',
+            NTFY_BASE_URL: 'https://notify.example.test',
+            NTFY_ACCESS_TOKEN: 'env-token',
+        },
+    });
+
+    await delivery.notifyGameLifecycle({ event: 'play-start' });
+    let post = calls.filter(call => call[0] === 'post').at(-1)[1];
+    assert.strictEqual(post.baseUrl, 'https://notify.example.test');
+    assert.strictEqual(post.accessToken, 'env-token');
+
+    await delivery.notifyClientError({}, {
+        baseUrl: 'https://override.example.test',
+        accessToken: 'override-token',
+    });
+    post = calls.filter(call => call[0] === 'post').at(-1)[1];
+    assert.strictEqual(post.baseUrl, 'https://override.example.test');
+    assert.strictEqual(post.accessToken, 'override-token');
+});

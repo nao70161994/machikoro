@@ -8,6 +8,8 @@ Set these environment variables on Render:
 
 - `NODE_ENV=production`: recommended for public Render deployments so production defaults apply.
 - `NTFY_TOPIC`: ntfy topic name to publish browser client-error and lifecycle notifications to when `NODE_ENV=production`. Local/dev runs with this variable set only log warnings unless a test passes an explicit topic internally.
+- `NTFY_ACCESS_TOKEN`: optional server-only access token for authenticated ntfy publishing. It is never returned by browser APIs or health responses.
+- `NTFY_BASE_URL`: optional trusted ntfy server URL. The default is `https://ntfy.sh`.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token. When set, no-origin/scripted diagnostics and the debug test endpoint require `X-Client-Error-Token: <token>` or `Authorization: Bearer <token>`. Same-origin browser `/api/client-error` reports stay tokenless so real browser reporting is not broken.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: recommended for public production. Set a comma-separated origin allowlist such as `https://machikoro.example.com`. Same-origin reports are always allowed; cross-origin browser reports are rejected by default when an `Origin` or `Referer` header is present.
 - `TRUST_PROXY=1`: optional Express proxy trust setting. Leave unset for direct serving; set only behind a trusted proxy such as Render so request IP/protocol handling matches deployment.
