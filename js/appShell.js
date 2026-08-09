@@ -356,6 +356,19 @@ function flushClientErrorReports() {
 // ===== ゲームライフサイクル通知 =====
 const GAME_LIFECYCLE_ENDPOINT = '/api/game-lifecycle';
 const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
+let gameLifecycleRetryTimer = null;
+
+function scheduleGameLifecycleRetry(delayMs) {
+    if (gameLifecycleRetryTimer !== null) return false;
+    const setTimeoutFn = appShellComposition.resolveFunction('setTimeout');
+    if (typeof setTimeoutFn !== 'function') return false;
+    gameLifecycleRetryTimer = setTimeoutFn(() => {
+        gameLifecycleRetryTimer = null;
+        flushGameLifecycleNotifications();
+    }, Math.max(0, Number(delayMs) || 0));
+    return true;
+}
+
 const gameLifecycleOutbox = LifecycleTransport.createOutbox({
     read: () => safeAppShellStorageGet('machikoroLifecycleOutbox', '[]'),
     write: value => safeAppShellStorageSet('machikoroLifecycleOutbox', value),
@@ -377,6 +390,7 @@ const gameLifecycleRuntime = LifecycleRuntime.create({
     sendTransport: input => LifecycleTransport.send({
         ...input,
         outbox: gameLifecycleOutbox,
+        scheduleRetry: scheduleGameLifecycleRetry,
     }),
     checkpoint: markClientFlowCheckpoint,
     endpoint: GAME_LIFECYCLE_ENDPOINT,
@@ -401,6 +415,8 @@ function flushGameLifecycleNotifications() {
         endpoint: GAME_LIFECYCLE_ENDPOINT,
         checkpoint: markClientFlowCheckpoint,
         outbox: gameLifecycleOutbox,
+        scheduleRetry: scheduleGameLifecycleRetry,
+        maxDeliveries: 1,
     });
 }
 

@@ -229,7 +229,9 @@ Lifecycle delivery has the same success semantics as client-error delivery: a du
 accepted with `202`, a successful ntfy transfer is accepted with `202`, and a missing
 topic, rejected ntfy response, transport error, or invalid delivery result returns
 `503 notification_failed`. The browser retains at most eight compact lifecycle payloads
-for seven days and retries them after the next startup or online recovery. The outbox
+for seven days and retries them automatically while the page remains open, as well as
+after the next startup or online recovery. Automatic retries honor `Retry-After`, use
+bounded exponential backoff, and send one queued lifecycle event at a time. The outbox
 contains no player name, room code, reconnect token, card state, or game snapshot.
 
 Spam controls:

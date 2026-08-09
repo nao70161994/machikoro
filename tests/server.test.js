@@ -921,13 +921,18 @@ runTest('postNtfyNotification helper は拒否statusを秘密情報なしで返�
     const result = await postNtfyNotification({
         topic: 'helper-topic',
         fetchImpl() {
-            return { ok: false, status: 429 };
+            return {
+                ok: false,
+                status: 429,
+                headers: { get: () => '7' },
+            };
         },
     });
     assert.deepStrictEqual(result, {
         sent: false,
         reason: 'ntfy-status',
         status: 429,
+        retryAfterMs: 7000,
     });
 });
 

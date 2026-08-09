@@ -26,10 +26,19 @@ async function postNtfyNotification(options = {}) {
         });
         if (response && response.ok === false) {
             console.warn(options.statusFailureMessage || '[ntfy] notification failed:', response.status || 'unknown');
+            const retryAfterHeader = response.headers &&
+                typeof response.headers.get === 'function'
+                ? response.headers.get('Retry-After')
+                : '';
+            const retryAfterSeconds = Number(retryAfterHeader);
+            const retryAfterMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0
+                ? Math.ceil(retryAfterSeconds * 1000)
+                : response.status === 429 ? 5000 : 0;
             return {
                 sent: false,
                 reason: 'ntfy-status',
                 status: Number.isInteger(response.status) ? response.status : null,
+                ...(retryAfterMs > 0 ? { retryAfterMs } : {}),
             };
         }
         return { sent: true };

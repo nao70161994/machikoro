@@ -35,7 +35,9 @@ Priority order: `unknown` first, CI failed second, current-version `known-patter
 
 If lifecycle traffic disappears while `/api/client-error-health` is healthy, inspect
 `game-lifecycle-fetch-complete` checkpoints. HTTP `503` remains in
-`machikoroLifecycleOutbox` and retries on startup/online recovery; HTTP `202` means
+`machikoroLifecycleOutbox` and retries automatically one entry at a time using
+`Retry-After` plus bounded exponential backoff, including after startup/online recovery;
+HTTP `202` means
 the ntfy transfer succeeded or the server suppressed an identical session/event.
 
 ## Production Environment Variables

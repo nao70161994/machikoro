@@ -3,6 +3,8 @@
 const LifecycleTransport = (() => {
     const DEFAULT_MAX_ENTRIES = 8;
     const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+    const DEFAULT_RETRY_AFTER_MS = 5000;
+    const MAX_RETRY_DELAY_MS = 15 * 60 * 1000;
 
     function errorMessage(error) {
         return error && error.message || String(error);
@@ -87,6 +89,16 @@ const LifecycleTransport = (() => {
                     entry.nextAttemptAt <= currentTime));
         }
 
+        function nextDelayMs() {
+            const currentTime = now();
+            const delays = load()
+                .filter(entry => !inFlight.has(entry.id))
+                .map(entry => Number.isFinite(entry.nextAttemptAt)
+                    ? Math.max(0, entry.nextAttemptAt - currentTime)
+                    : 0);
+            return delays.length > 0 ? Math.min(...delays) : null;
+        }
+
         function begin(id) {
             if (inFlight.has(id)) return false;
             inFlight.add(id);
@@ -97,16 +109,26 @@ const LifecycleTransport = (() => {
             inFlight.delete(id);
         }
 
-        function defer(id) {
+        function defer(id, minimumDelayMs = 0) {
             const entries = load();
             const entry = entries.find(candidate => candidate.id === id);
             if (entry) {
                 entry.attempts = Math.max(0, Number(entry.attempts) || 0) + 1;
-                entry.nextAttemptAt = now() +
-                    Math.min(60000, 1000 * (2 ** (entry.attempts - 1)));
+                const exponentialDelay = Math.min(
+                    MAX_RETRY_DELAY_MS,
+                    1000 * (2 ** (entry.attempts - 1))
+                );
+                const delayMs = Math.min(
+                    MAX_RETRY_DELAY_MS,
+                    Math.max(exponentialDelay, Number(minimumDelayMs) || 0)
+                );
+                entry.nextAttemptAt = now() + delayMs;
                 save(entries);
+                release(id);
+                return delayMs;
             }
             release(id);
+            return 0;
         }
 
         function complete(id) {
@@ -114,7 +136,47 @@ const LifecycleTransport = (() => {
             release(id);
         }
 
-        return Object.freeze({ enqueue, pending, begin, release, defer, complete });
+        return Object.freeze({
+            enqueue,
+            pending,
+            nextDelayMs,
+            begin,
+            release,
+            defer,
+            complete,
+        });
+    }
+
+    function responseRetryAfterMs(response, now = Date.now()) {
+        const value = response && response.headers &&
+            typeof response.headers.get === 'function'
+            ? response.headers.get('Retry-After')
+            : '';
+        if (value) {
+            const seconds = Number(value);
+            if (Number.isFinite(seconds) && seconds >= 0) {
+                return Math.min(MAX_RETRY_DELAY_MS, Math.ceil(seconds * 1000));
+            }
+            const timestamp = Date.parse(value);
+            if (Number.isFinite(timestamp)) {
+                return Math.min(MAX_RETRY_DELAY_MS, Math.max(0, timestamp - now));
+            }
+        }
+        if (response && (response.status === 429 || response.status === 503)) {
+            return DEFAULT_RETRY_AFTER_MS;
+        }
+        return 0;
+    }
+
+    function deferAndSchedule(options, entry, response) {
+        if (!options.outbox) return;
+        const delayMs = options.outbox.defer(
+            entry.id,
+            responseRetryAfterMs(response, Date.now())
+        );
+        if (delayMs > 0 && typeof options.scheduleRetry === 'function') {
+            options.scheduleRetry(delayMs);
+        }
     }
 
     function deliver(options, entry, retry = false) {
@@ -139,8 +201,14 @@ const LifecycleTransport = (() => {
                 request.then(response => {
                     const ok = Boolean(response && response.ok === true);
                     if (outbox) {
-                        if (ok) outbox.complete(entry.id);
-                        else outbox.defer(entry.id);
+                        if (ok) {
+                            outbox.complete(entry.id);
+                            if (typeof options.scheduleRetry === 'function') {
+                                options.scheduleRetry(DEFAULT_RETRY_AFTER_MS);
+                            }
+                        } else {
+                            deferAndSchedule(options, entry, response);
+                        }
                     }
                     checkpoint('game-lifecycle-fetch-complete', {
                         event: payload.event,
@@ -148,18 +216,18 @@ const LifecycleTransport = (() => {
                         status: response && response.status,
                     });
                 }).catch(error => {
-                    if (outbox) outbox.defer(entry.id);
+                    deferAndSchedule(options, entry);
                     checkpoint('game-lifecycle-fetch-failed', {
                         event: payload.event,
                         message: errorMessage(error),
                     });
                 });
             } else if (outbox) {
-                outbox.defer(entry.id);
+                deferAndSchedule(options, entry);
             }
             return true;
         } catch (error) {
-            if (outbox) outbox.defer(entry.id);
+            deferAndSchedule(options, entry);
             checkpoint('game-lifecycle-fetch-threw', {
                 event: payload.event,
                 message: errorMessage(error),
@@ -195,13 +263,29 @@ const LifecycleTransport = (() => {
     function flush(options) {
         if (!options.outbox || typeof options.fetchImpl !== 'function') return 0;
         let started = 0;
+        const maxDeliveries = Number.isSafeInteger(options.maxDeliveries) &&
+            options.maxDeliveries > 0
+            ? options.maxDeliveries
+            : Infinity;
         for (const entry of options.outbox.pending()) {
+            if (started >= maxDeliveries) break;
             if (deliver(options, entry, true)) started += 1;
+        }
+        if (started === 0 && typeof options.scheduleRetry === 'function' &&
+            typeof options.outbox.nextDelayMs === 'function') {
+            const delayMs = options.outbox.nextDelayMs();
+            if (delayMs !== null) options.scheduleRetry(delayMs);
         }
         return started;
     }
 
-    return Object.freeze({ createOutbox, persistedPayload, send, flush });
+    return Object.freeze({
+        createOutbox,
+        persistedPayload,
+        responseRetryAfterMs,
+        send,
+        flush,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = LifecycleTransport;

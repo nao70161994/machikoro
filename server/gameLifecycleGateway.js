@@ -63,6 +63,10 @@ function makeGameLifecycleGateway(dependencies = {}) {
             ...(options.notifyOptions || {}),
         });
         if (!result || result.sent !== true) {
+            if (result && Number.isFinite(result.retryAfterMs) &&
+                result.retryAfterMs > 0 && typeof res.set === 'function') {
+                res.set('Retry-After', String(Math.ceil(result.retryAfterMs / 1000)));
+            }
             res.status(503).json({
                 ok: false,
                 error: 'notification_failed',

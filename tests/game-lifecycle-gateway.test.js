@@ -8,6 +8,11 @@ function responseRecorder() {
     return {
         statusCode: null,
         body: null,
+        headers: {},
+        set(name, value) {
+            this.headers[name] = value;
+            return this;
+        },
         status(code) {
             this.statusCode = code;
             return this;
@@ -177,4 +182,23 @@ runTest('game lifecycle gatewayは通知失敗を503として返す', async () =
             testCase.reason
         );
     }
+});
+
+runTest('game lifecycle gatewayは通知元の再送待機時間をheaderへ伝播する', async () => {
+    const { gateway } = makeGateway({
+        async notify() {
+            return {
+                sent: false,
+                reason: 'ntfy-status',
+                status: 429,
+                retryAfterMs: 5200,
+            };
+        },
+    });
+    const res = responseRecorder();
+
+    await gateway.handleGameLifecycleRequest({}, res, { now: 10 });
+
+    assert.strictEqual(res.statusCode, 503);
+    assert.strictEqual(res.headers['Retry-After'], '6');
 });

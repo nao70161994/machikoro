@@ -141,7 +141,7 @@ runTest('lifecycle transportは失敗通知を永続化して再起動後に再�
     assert.strictEqual(queued[0].payload.event, 'play-start');
     assert.strictEqual(queued[0].attempts, 1);
 
-    now = 2000;
+    now = 6000;
     const restartedOutbox = LifecycleTransport.createOutbox(storage);
     const checkpoints = [];
     const sent = [];
@@ -161,6 +161,103 @@ runTest('lifecycle transportは失敗通知を永続化して再起動後に再�
     assert.strictEqual(JSON.parse(sent[0].init.body).sessionId, 'session-1');
     assert.strictEqual(JSON.parse(stored).length, 0);
     assert.strictEqual(checkpoints[0][0], 'game-lifecycle-retry-start');
+});
+
+runTest('lifecycle transportはRetry-After後に自動flushを予約する', async () => {
+    let stored = '[]';
+    let now = 1000;
+    const scheduled = [];
+    const outbox = LifecycleTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => now,
+    });
+    const subject = createSubject({
+        outbox,
+        scheduleRetry: delayMs => scheduled.push(delayMs),
+        fetchImpl() {
+            return Promise.resolve({
+                ok: false,
+                status: 503,
+                headers: { get: name => name === 'Retry-After' ? '5' : null },
+            });
+        },
+    });
+
+    LifecycleTransport.send(subject.options);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.deepStrictEqual(scheduled, [5000]);
+    assert.strictEqual(JSON.parse(stored)[0].nextAttemptAt, 6000);
+    now = 6000;
+    assert.strictEqual(outbox.pending().length, 1);
+});
+
+runTest('lifecycle transportの自動flushはoutboxを一件ずつ送る', () => {
+    let stored = '[]';
+    const outbox = LifecycleTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => 1000,
+    });
+    outbox.enqueue({ event: 'play-start', sessionId: 'one' });
+    outbox.enqueue({ event: 'play-finish', sessionId: 'two' });
+    let calls = 0;
+
+    assert.strictEqual(LifecycleTransport.flush({
+        endpoint: '/api/game-lifecycle',
+        outbox,
+        checkpoint() {},
+        maxDeliveries: 1,
+        fetchImpl() {
+            calls += 1;
+            return null;
+        },
+    }), 1);
+    assert.strictEqual(calls, 1);
+});
+
+runTest('lifecycle transportは早く起きたtimerから次の再送時刻を再予約する', () => {
+    let stored = JSON.stringify([{
+        id: 'future-entry',
+        createdAt: 1000,
+        attempts: 2,
+        nextAttemptAt: 9000,
+        payload: { event: 'play-start', sessionId: 'future' },
+    }]);
+    const scheduled = [];
+    const outbox = LifecycleTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => 4000,
+    });
+
+    assert.strictEqual(LifecycleTransport.flush({
+        endpoint: '/api/game-lifecycle',
+        outbox,
+        checkpoint() {},
+        scheduleRetry: delayMs => scheduled.push(delayMs),
+        fetchImpl() {
+            throw new Error('future entry must not be sent early');
+        },
+    }), 0);
+    assert.deepStrictEqual(scheduled, [5000]);
+});
+
+runTest('lifecycle transportはRetry-After秒数とHTTP日付を解釈する', () => {
+    assert.strictEqual(LifecycleTransport.responseRetryAfterMs({
+        status: 503,
+        headers: { get: () => '12' },
+    }, 1000), 12000);
+    assert.strictEqual(LifecycleTransport.responseRetryAfterMs({
+        status: 503,
+        headers: { get: () => new Date(9000).toUTCString() },
+    }, 1000), 8000);
+    assert.strictEqual(LifecycleTransport.responseRetryAfterMs({
+        status: 503,
+        headers: { get: () => null },
+    }, 1000), 5000);
 });
 
 runTest('lifecycle transport outboxは重複と上限を制御しfetch不在でも保持する', () => {
