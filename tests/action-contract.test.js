@@ -35,6 +35,10 @@ runTest('action contract is a frozen manifest for all 15 runtime actions', () =>
         ['cardName', 'targetIndex'],
         ['cardIndex', 'targetIndex'],
     ]);
+    assert.deepStrictEqual(GameActionContract.canonicalPayloadVariants.resolveBusiness, [
+        ['myCard', 'targetIndex', 'theirCard'],
+        ['skip'],
+    ]);
 });
 
 runTest('runtime, canonical payload, and phase projections match the manifest exactly', () => {

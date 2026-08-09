@@ -518,6 +518,21 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             actions: [['resolveBusiness', { myCard: 0, targetIndex: 1, theirCard: 0 }]],
         },
         {
+            name: 'pending-business-skip',
+            setup(game) {
+                setPending(game, 'resolveBusiness', 'pendingBusiness');
+                game.players[0].cards = [runtime.createCardByName('パン屋')];
+                game.players[1].cards = [runtime.createCardByName('森林')];
+            },
+            actions: [['resolveBusiness', { skip: true }]],
+            assertAfter(game) {
+                assert.deepStrictEqual(Array.from(game.players[0].cards, card => card.name), ['パン屋']);
+                assert.deepStrictEqual(Array.from(game.players[1].cards, card => card.name), ['森林']);
+                assert.strictEqual(game.pendingBusiness, 0);
+                assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+            },
+        },
+        {
             name: 'pending-cleaning',
             setup(game) {
                 setPending(game, 'resolveCleaning', 'pendingCleaning');

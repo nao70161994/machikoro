@@ -14,6 +14,9 @@ function makeActionPayload({ isPlainObject }) {
 
     function canonicalizeActionData(action, data) {
         if (!isPlainObject(data)) return {};
+        if (action === 'resolveBusiness' && data.skip === true) {
+            return { skip: true };
+        }
         if (action === 'resolveMover' && Number.isInteger(data.cardIndex)) {
             return { cardIndex: data.cardIndex, targetIndex: data.targetIndex };
         }

@@ -206,6 +206,15 @@ const MainHumanActionRuntime = (() => {
             );
         }
 
+        function onSkipBusiness() {
+            if (!canRunHumanAction(dependencies.actions.RESOLVE_BUSINESS)) return;
+            dependencies.runAction(
+                dependencies.actions.RESOLVE_BUSINESS,
+                { skip: true },
+                () => gameState().game.skipBusiness()
+            );
+        }
+
         function onResolveCleaning(cardName) {
             if (!canRunHumanAction(dependencies.actions.RESOLVE_CLEANING)) return;
             dependencies.runAction(
@@ -386,6 +395,7 @@ const MainHumanActionRuntime = (() => {
             onRoll,
             onSelectDiceCount,
             onSkip,
+            onSkipBusiness,
             onSkipReroll,
             traceBuildFlow,
         });

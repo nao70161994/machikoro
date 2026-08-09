@@ -39,6 +39,7 @@ function createHarness(options = {}) {
         selectDiceCount(...args) { calls.push(['selectDiceCount', ...args]); },
         rerollDice(...args) { calls.push(['rerollDice', ...args]); },
         skipReroll() { calls.push(['skipReroll']); },
+        skipBusiness() { calls.push(['skipBusiness']); return true; },
         buildCard(card) { calls.push(['buildCard', card.name]); return options.buildResult !== false; },
         buildLandmark(name) { calls.push(['buildLandmark', name]); return options.buildResult !== false; },
         nextTurn() { calls.push(['nextTurn']); return 'next-result'; },
@@ -169,6 +170,15 @@ runTest('main human action runtimeは空港skip確認後にUndoを消してnextT
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
         'checkpoint', 'showConfirm', 'checkpoint', 'cancelAutoSkip', 'clearUndoState',
         'runAction', 'nextTurn', 'checkpoint',
+    ]);
+});
+
+runTest('main human action runtimeはBusiness Center不使用を同じactionのcanonical payloadで送る', () => {
+    const harness = createHarness();
+    harness.runtime.onSkipBusiness();
+    assert.deepStrictEqual(harness.calls, [
+        ['runAction', 'resolveBusiness', { skip: true }],
+        ['skipBusiness'],
     ]);
 });
 

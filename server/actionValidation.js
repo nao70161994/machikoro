@@ -20,6 +20,7 @@ function makeActionValidation({ gameRuntime }) {
 
     function validateBusinessPayload(game, data) {
         if (!hasPendingAction(game, 'resolveBusiness') || !isPlainObject(data)) return false;
+        if (data.skip === true) return true;
         const { myCard, targetIndex, theirCard } = data;
         if (!isPlayerIndex(targetIndex, game)) {
             return false;

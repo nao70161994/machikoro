@@ -770,6 +770,20 @@ class GameManager {
         return true;
     }
 
+    skipBusiness() {
+        const plan = GamePendingResolutionPolicy.planPendingAction({
+            phase: this.phase,
+            pendingPhase: GAME_PHASES.PENDING,
+            pendingCount: this.pendingBusiness,
+            canResolve: () => GameManager.canResolvePendingField(this, 'pendingBusiness'),
+        });
+        if (!plan.ok) return false;
+        this.addLog(LOG_TYPES.SPECIAL, `🏢 ビジネスセンターを使用しませんでした`);
+        this._consumePendingAction('pendingBusiness');
+        this._checkPending();
+        return true;
+    }
+
     resolveBusiness(myCardRef, targetIndex, theirCardRef) {
         /** @type {Player | undefined} */
         let current;

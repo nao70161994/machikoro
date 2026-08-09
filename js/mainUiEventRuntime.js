@@ -109,7 +109,7 @@ const MainUiEventRuntime = (() => {
         }
         function handlePendingClick(event) {
             return execute(event, 'pending', button => Object.assign({}, effectMap([
-                'resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover',
+                'resolveTV', 'resolveBusiness', 'skipBusiness', 'resolveCleaning', 'resolveMover',
                 'resolveRenovation', 'resolveIT',
             ]), {
                 selectBusinessCard: inputId => invoke('selectBusinessCard', button, inputId),

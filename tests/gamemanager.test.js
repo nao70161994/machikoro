@@ -721,6 +721,28 @@ runTest('引越し屋とビジネスセンターがカード単位で休業状�
     assert.strictEqual(businessGame.currentPlayer().cards.some(c => c.name === '森林'), true);
 });
 
+runTest('ビジネスセンターは交換せずに使用しないことを選べる', () => {
+    const game = new GameManager(2);
+    const bakery = createCardByName('パン屋');
+    const cafe = createCardByName('カフェ');
+    game.currentPlayer().cards = [bakery];
+    game.players[1].cards = [cafe];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].dormantCards = [];
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    game.pendingActionQueue = [{ action: GAME_ACTIONS.RESOLVE_BUSINESS, field: 'pendingBusiness' }];
+
+    assert.strictEqual(game.skipBusiness(), true);
+    assert.deepStrictEqual(game.currentPlayer().cards, [bakery]);
+    assert.deepStrictEqual(game.players[1].cards, [cafe]);
+    assert.strictEqual(game.pendingBusiness, 0);
+    assert.deepStrictEqual(game.pendingActionQueue, []);
+    assert.strictEqual(game.phase, GAME_PHASES.BUILD);
+    assert.ok(game.log.some(entry => entry.message.includes('使用しませんでした')));
+    assert.strictEqual(game.skipBusiness(), false);
+});
+
 runTest('清掃業は同名カードを全て休業にする', () => {
     const game = new GameManager(2);
     const cafeA = createCardByName('カフェ');

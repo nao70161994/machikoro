@@ -13,7 +13,7 @@ function makeRecorder(returnValues = {}) {
     const game = {};
     const methodNames = [
         'rollDice', 'selectDiceCount', 'skipReroll', 'rerollDice',
-        'resolveHarbor', 'resolveTV', 'resolveBusiness', 'resolveCleaning',
+        'resolveHarbor', 'resolveTV', 'resolveBusiness', 'skipBusiness', 'resolveCleaning',
         'resolveMover', 'resolveRenovation', 'resolveIT', 'buildLandmark', 'nextTurn',
     ];
     for (const method of methodNames) {
@@ -43,6 +43,7 @@ runTest('共有Game Engine executorはcanonical payloadを既存GameManager引�
         ['resolveHarbor', { useBonus: true }, 'resolveHarbor', [true]],
         ['resolveTV', { targetIndex: 2 }, 'resolveTV', [2]],
         ['resolveBusiness', { myCard: 1, targetIndex: 2, theirCard: 3 }, 'resolveBusiness', [1, 2, 3]],
+        ['resolveBusiness', { skip: true }, 'skipBusiness', []],
         ['resolveCleaning', { cardName: 'カフェ' }, 'resolveCleaning', ['カフェ']],
         ['resolveMover', { cardIndex: 4, cardName: 'ignored', targetIndex: 1 }, 'resolveMover', [4, 1]],
         ['resolveMover', { cardName: 'パン屋', targetIndex: 1 }, 'resolveMover', ['パン屋', 1]],

@@ -82,7 +82,7 @@ const UiPendingMenu = (() => {
         const myDefaultIdx = myCards[0]?.index ?? 0;
         const myChips = buildBusinessCardChipGroupHtml(current, myCards, 'myCardSelect', escapeHtml);
         const othersHtml = others.map(({ p, i }) => buildBusinessTargetExchangeHtml(p, i, escapeHtml)).join("");
-        return `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換します</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}</div>`;
+        return `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換できます</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}<button data-action="skipBusiness">使用しない</button></div>`;
     }
 
     function buildPendingCleaningHtml(game, escapeHtml) {

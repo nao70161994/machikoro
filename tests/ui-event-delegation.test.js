@@ -78,6 +78,9 @@ runTest('ui event delegationは各dataset familyをdetached commandへ変換す�
         dataset: { action: 'selectBusinessCard', inputId: 'myCardSelect' },
     }, 'pending'), { family: 'pending', name: 'selectBusinessCard', args: ['myCardSelect'] });
     assert.deepStrictEqual(UiEventDelegation.commandFromElement({
+        dataset: { action: 'skipBusiness' },
+    }, 'pending'), { family: 'pending', name: 'skipBusiness', args: [] });
+    assert.deepStrictEqual(UiEventDelegation.commandFromElement({
         dataset: { action: 'showLandmarkDetail', landmarkName: '駅' },
     }, 'build'), { family: 'build', name: 'showLandmarkDetail', args: ['駅', true] });
     assert.strictEqual(UiEventDelegation.commandFromElement(null, 'static'), null);

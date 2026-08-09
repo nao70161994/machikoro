@@ -537,6 +537,7 @@ function resolveMainUiEffect(name) {
         resolveHarbor: 'onResolveHarbor',
         resolveTV: 'onResolveTV',
         resolveBusiness: 'onResolveBusiness',
+        skipBusiness: 'onSkipBusiness',
         resolveCleaning: 'onResolveCleaning',
         resolveMover: 'onResolveMover',
         resolveRenovation: 'onResolveRenovation',
@@ -575,6 +576,7 @@ function bindDelegatedUiHandlers() { return mainUiEventRuntime.bindDelegated(); 
 function onResolveHarbor(useBonus) { return mainHumanActionRuntime.onResolveHarbor(useBonus); }
 function onResolveTV(index) { return mainHumanActionRuntime.onResolveTV(index); }
 function onResolveBusiness(targetIndex) { return mainHumanActionRuntime.onResolveBusiness(targetIndex); }
+function onSkipBusiness() { return mainHumanActionRuntime.onSkipBusiness(); }
 function onResolveCleaning(cardName) { return mainHumanActionRuntime.onResolveCleaning(cardName); }
 function onResolveMover(targetIndex) { return mainHumanActionRuntime.onResolveMover(targetIndex); }
 function onResolveRenovation(name) { return mainHumanActionRuntime.onResolveRenovation(name); }

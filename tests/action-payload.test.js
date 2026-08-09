@@ -33,6 +33,16 @@ runTest('action payloadは余分なkeyを除き既存canonical shapeを維持す
         }),
         { cardName: '麦畑', targetIndex: 1 }
     );
+    assert.deepStrictEqual(
+        canonicalizeActionData('resolveBusiness', {
+            skip: true,
+            myCard: 2,
+            targetIndex: 1,
+            theirCard: 3,
+            extra: true,
+        }),
+        { skip: true }
+    );
     assert.deepStrictEqual(canonicalizeActionData('unknown', { value: 1 }), {});
     assert.deepStrictEqual(canonicalizeActionData('buildCard', []), {});
 });

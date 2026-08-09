@@ -123,6 +123,8 @@ runTest('ui pending menu はbusiness/renovation/ITの既存selectorを維持す�
 
     assert.ok(html.includes('data-action="selectBusinessCard"'));
     assert.ok(html.includes('data-action="resolveBusiness"'));
+    assert.ok(html.includes('data-action="skipBusiness"'));
+    assert.ok(html.includes('使用しない'));
     assert.ok(html.includes('data-action="resolveRenovation"'));
     assert.ok(!html.includes('data-landmark-name="役所"'));
     assert.ok(html.includes('data-action="resolveIT"'));

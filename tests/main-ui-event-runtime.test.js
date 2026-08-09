@@ -40,6 +40,12 @@ runTest('main UI event runtimeはstatic/input/dice commandをdetached effectへ�
     assert.strictEqual(h.elements.speedLabel.textContent, 'speed:500');
 });
 
+runTest('main UI event runtimeはBusiness Center不使用を専用effectへ渡す', () => {
+    const h = createHarness();
+    h.runtime.handlePendingClick(h.event({ action: 'skipBusiness' }));
+    assert.deepStrictEqual(h.calls, [['preventDefault'], ['skipBusiness']]);
+});
+
 runTest('main UI event runtimeはstatic/delegated listenerを一度だけ所有する', () => {
     const h = createHarness();
     assert.strictEqual(h.runtime.bindDelegated(), true);

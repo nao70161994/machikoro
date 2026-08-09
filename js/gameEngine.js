@@ -75,6 +75,7 @@ const GAME_ACTION_HANDLERS = Object.freeze({
         return context.game.resolveTV(data.targetIndex) !== false;
     },
     resolveBusiness(context, data) {
+        if (data.skip === true) return context.game.skipBusiness() !== false;
         return context.game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard) !== false;
     },
     resolveCleaning(context, data) {

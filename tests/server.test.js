@@ -1139,6 +1139,18 @@ runTest('server validateBusinessPayload はカードindex指定を許可する',
     assert.strictEqual(result, true);
 });
 
+runTest('server validateBusinessPayload はpending中の明示的な不使用だけを許可する', () => {
+    const { GameManager } = makeGame();
+    const game = new GameManager(2);
+    game.phase = 'pending';
+    game.pendingBusiness = 1;
+
+    assert.strictEqual(validateBusinessPayload(game, { skip: true }), true);
+    assert.strictEqual(validateBusinessPayload(game, { skip: false }), false);
+    game.pendingBusiness = 0;
+    assert.strictEqual(validateBusinessPayload(game, { skip: true }), false);
+});
+
 runTest('server validateMoverPayload はカードindex指定を許可する', () => {
     const { GameManager, createCardByName } = makeGame();
     const game = new GameManager(2);

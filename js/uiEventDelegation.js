@@ -87,6 +87,7 @@ const UiEventDelegation = (() => {
             else if (name === 'resolveHarbor') args = [element.dataset.useBonus === 'true'];
         } else if (family === 'pending') {
             if (name === 'selectBusinessCard') args = [element.dataset.inputId];
+            else if (name === 'skipBusiness') args = [];
             else if (name === 'resolveTV' || name === 'resolveBusiness' || name === 'resolveMover') {
                 args = [parseInt(element.dataset.targetIndex, 10)];
             } else if (name === 'resolveCleaning') args = [element.dataset.cardName];
