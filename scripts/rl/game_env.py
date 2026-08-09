@@ -501,6 +501,7 @@ class MachikoroEnv:
 
     # ---- 青カード ----
     def _proc_blue(self, dice):
+        tuna_dice_total = None
         for name in CARD_NAMES:
             cd = CARD_DEF[name]
             if cd.color != "blue" or dice not in cd.dice_nums:
@@ -525,7 +526,9 @@ class MachikoroEnv:
 
                 elif cd.effect == TUNA:
                     if pl.landmarks[LM_HARBOR]:
-                        earn = (self._roll() + self._roll()) * count
+                        if tuna_dice_total is None:
+                            tuna_dice_total = self._roll() + self._roll()
+                        earn = tuna_dice_total * count
                         pl.coins += earn
 
                 else:  # NORMAL

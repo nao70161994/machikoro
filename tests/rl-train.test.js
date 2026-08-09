@@ -861,6 +861,23 @@ city_hall._process_income()
 city_hall_before_pending = chp.coins
 city_hall.step(ACT_TV_TARGET)
 
+tuna = MachikoroEnv(player_count=2)
+for player in tuna.players:
+    for name in list(player.cards.keys()):
+        player.cards[name] = 0
+        player.dormant[name] = 0
+    player.landmarks["港"] = True
+tuna.players[0].cards["マグロ漁船"] = 2
+tuna.players[1].cards["マグロ漁船"] = 1
+tuna_before = [player.coins for player in tuna.players]
+tuna_rolls = iter([3, 4, 6, 6])
+tuna_roll_count = [0]
+def fixed_tuna_roll():
+    tuna_roll_count[0] += 1
+    return next(tuna_rolls)
+tuna._roll = fixed_tuna_roll
+tuna._proc_blue(12)
+
 print(json.dumps({
     "cheese": cheese,
     "flower": flower,
@@ -876,6 +893,8 @@ print(json.dumps({
     "renovationCoins": rp.coins,
     "cityHallBeforePending": city_hall_before_pending,
     "cityHallAfterIncome": chp.coins,
+    "tunaGains": [player.coins - before for player, before in zip(tuna.players, tuna_before)],
+    "tunaRollCount": tuna_roll_count[0],
 }, ensure_ascii=False))
 `);
     assert.deepStrictEqual(JSON.parse(output), {
@@ -893,6 +912,8 @@ print(json.dumps({
         renovationCoins: 9,
         cityHallBeforePending: 0,
         cityHallAfterIncome: 5,
+        tunaGains: [14, 7],
+        tunaRollCount: 2,
     });
 });
 
