@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "27c2185bf60aca600d0da861861e905c3da2d520",
+  "sourceCommit": "493932429cecef3787e8be96e17df574b0c81003",
   "maxSteps": 1800,
   "difficulties": [
     "weak",
@@ -25,7 +25,7 @@
       "playerCount": 2,
       "seed": 1720,
       "winner": 1,
-      "turns": 87,
+      "turns": 79,
       "exhausted": false
     },
     {
@@ -40,16 +40,16 @@
       "difficulty": "weak",
       "playerCount": 4,
       "seed": 1740,
-      "winner": 1,
-      "turns": 121,
+      "winner": 2,
+      "turns": 110,
       "exhausted": false
     },
     {
       "difficulty": "weak",
       "playerCount": 5,
       "seed": 1750,
-      "winner": 1,
-      "turns": 146,
+      "winner": 3,
+      "turns": 133,
       "exhausted": false
     },
     {
@@ -96,8 +96,8 @@
       "difficulty": "normal",
       "playerCount": 2,
       "seed": 1721,
-      "winner": 1,
-      "turns": 73,
+      "winner": 0,
+      "turns": 62,
       "exhausted": false
     },
     {
@@ -129,7 +129,7 @@
       "playerCount": 6,
       "seed": 1761,
       "winner": 4,
-      "turns": 148,
+      "turns": 130,
       "exhausted": false
     },
     {
@@ -144,8 +144,8 @@
       "difficulty": "normal",
       "playerCount": 8,
       "seed": 1781,
-      "winner": 5,
-      "turns": 157,
+      "winner": 1,
+      "turns": 113,
       "exhausted": false
     },
     {
@@ -240,16 +240,16 @@
       "difficulty": "expert",
       "playerCount": 2,
       "seed": 1723,
-      "winner": 0,
-      "turns": 60,
+      "winner": 1,
+      "turns": 51,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 3,
       "seed": 1733,
-      "winner": 1,
-      "turns": 85,
+      "winner": 0,
+      "turns": 69,
       "exhausted": false
     },
     {
@@ -265,7 +265,7 @@
       "playerCount": 5,
       "seed": 1753,
       "winner": 3,
-      "turns": 123,
+      "turns": 143,
       "exhausted": false
     },
     {
@@ -273,7 +273,7 @@
       "playerCount": 6,
       "seed": 1763,
       "winner": 4,
-      "turns": 136,
+      "turns": 106,
       "exhausted": false
     },
     {
@@ -281,23 +281,23 @@
       "playerCount": 7,
       "seed": 1773,
       "winner": 2,
-      "turns": 184,
+      "turns": 142,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 8,
       "seed": 1783,
-      "winner": 1,
-      "turns": 257,
+      "winner": 2,
+      "turns": 266,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 9,
       "seed": 1793,
-      "winner": 5,
-      "turns": 203,
+      "winner": 7,
+      "turns": 205,
       "exhausted": false
     },
     {
@@ -305,7 +305,7 @@
       "playerCount": 10,
       "seed": 1803,
       "winner": 8,
-      "turns": 278,
+      "turns": 208,
       "exhausted": false
     }
   ]
