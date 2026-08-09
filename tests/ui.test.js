@@ -1640,6 +1640,10 @@ runTest('UiBuildMenu helper は建設メニューのescapeとgateをpureに固�
     assert.ok(cardHtml.includes('&lt;cat&gt;'));
     assert.ok(cardHtml.includes('&lt;effect&gt;'));
     assert.ok(!cardHtml.includes('<effect>'));
+    assert.ok(cardHtml.includes('<div class="card-meta-row">'));
+    assert.ok(cardHtml.indexOf('</button><div class="card-meta-row">') >= 0);
+    assert.ok(cardHtml.includes('ℹ 詳細'));
+    assert.ok(cardHtml.includes('<span class="card-stock">残り2枚</span>'));
 
     const visible = helper.buildVisibleCardButtonsHtml({
         cards: [card],

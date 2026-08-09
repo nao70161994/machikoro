@@ -2235,12 +2235,14 @@ runTest('onlineStatus はライブリージョンとして宣言されている'
     assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true"'));
 });
 
-runTest('card detail button はタッチ向けhit areaを持つ', () => {
+runTest('card detail button はカードに重ならない専用行へ配置する', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const match = css.match(/\.card-detail-btn\s*{([\s\S]*?)}/);
     assert.ok(match);
-    assert.ok(match[1].includes('width: 36px;'));
-    assert.ok(match[1].includes('height: 36px;'));
+    assert.ok(match[1].includes('width: auto;'));
+    assert.ok(match[1].includes('height: 24px;'));
+    assert.ok(!match[1].includes('position: absolute;'));
+    assert.ok(css.includes('.card-meta-row {'));
 });
 
 runTest('player setting select は local/online とも programmatic label を持つ', () => {
