@@ -26,12 +26,16 @@ runTest('test process runnerはallだけ既定2並列で明示値を検証する
 runTest('test schedulerは上限内で並列実行し結果を宣言順に返す', async () => {
     let active = 0;
     let maxActive = 0;
+    let releaseSlow;
+    const slowGate = new Promise(resolve => { releaseSlow = resolve; });
     const completionOrder = [];
     const results = await scheduleTests(['slow', 'fast', 'last'], async file => {
         active += 1;
         maxActive = Math.max(maxActive, active);
-        await delay(file === 'slow' ? 20 : 1);
+        if (file === 'slow') await slowGate;
+        else await Promise.resolve();
         completionOrder.push(file);
+        if (file === 'last') releaseSlow();
         active -= 1;
         return `${file}-result`;
     }, 2);
