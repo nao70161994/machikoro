@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "34923192eeb48ba3037e90191c4243b3c803e590",
+  "sourceCommit": "42a4bef2ae4b3c8d3da74b44a38e3bf1cbd548bf",
   "difficulties": [
     "weak",
     "normal",
@@ -174,10 +174,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1,
+            "affordableScore": 2,
             "cardName": "雑貨屋",
-            "evalCard": 1,
-            "expertCandidateScore": 1
+            "evalCard": 2,
+            "expertCandidateScore": 2
           },
           {
             "affordableScore": 0,
@@ -590,10 +590,10 @@
             "expertCandidateScore": 12.600000000000001
           },
           {
-            "affordableScore": 1,
+            "affordableScore": 2,
             "cardName": "雑貨屋",
-            "evalCard": 1,
-            "expertCandidateScore": 1
+            "evalCard": 2,
+            "expertCandidateScore": 2
           },
           {
             "affordableScore": -25.800000000000004,
@@ -1014,10 +1014,10 @@
             "expertCandidateScore": 7.68
           },
           {
-            "affordableScore": 1.18,
+            "affordableScore": 2.36,
             "cardName": "雑貨屋",
-            "evalCard": 1.18,
-            "expertCandidateScore": 1.18
+            "evalCard": 2.36,
+            "expertCandidateScore": 2.36
           },
           {
             "affordableScore": 0,
@@ -1844,10 +1844,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1.18,
+            "affordableScore": 2.36,
             "cardName": "雑貨屋",
-            "evalCard": 1.18,
-            "expertCandidateScore": 1.18
+            "evalCard": 2.36,
+            "expertCandidateScore": 2.36
           },
           {
             "affordableScore": 0,
@@ -2312,10 +2312,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1,
+            "affordableScore": 2,
             "cardName": "雑貨屋",
-            "evalCard": 1,
-            "expertCandidateScore": 1
+            "evalCard": 2,
+            "expertCandidateScore": 2
           },
           {
             "affordableScore": -1.8,
@@ -2728,10 +2728,10 @@
             "expertCandidateScore": 12.600000000000001
           },
           {
-            "affordableScore": 1,
+            "affordableScore": 2,
             "cardName": "雑貨屋",
-            "evalCard": 1,
-            "expertCandidateScore": 1
+            "evalCard": 2,
+            "expertCandidateScore": 2
           },
           {
             "affordableScore": -25.800000000000004,
@@ -3152,10 +3152,10 @@
             "expertCandidateScore": 7.68
           },
           {
-            "affordableScore": 1.18,
+            "affordableScore": 2.36,
             "cardName": "雑貨屋",
-            "evalCard": 1.18,
-            "expertCandidateScore": 1.18
+            "evalCard": 2.36,
+            "expertCandidateScore": 2.36
           },
           {
             "affordableScore": -1.8,
@@ -3982,10 +3982,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1.18,
+            "affordableScore": 2.36,
             "cardName": "雑貨屋",
-            "evalCard": 1.18,
-            "expertCandidateScore": 1.18
+            "evalCard": 2.36,
+            "expertCandidateScore": 2.36
           },
           {
             "affordableScore": -1.8,
@@ -4450,10 +4450,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1.9,
+            "affordableScore": 2.9,
             "cardName": "雑貨屋",
-            "evalCard": 1,
-            "expertCandidateScore": 1
+            "evalCard": 2,
+            "expertCandidateScore": 2
           },
           {
             "affordableScore": 0.20000000000000007,
@@ -4549,13 +4549,13 @@
               "type": "card"
             },
             {
-              "cardName": "スタジアム",
-              "score": -83.32183333333333,
+              "cardName": "雑貨屋",
+              "score": -15.783299999999997,
               "type": "card"
             },
             {
-              "cardName": "コンビニ",
-              "score": -15.17216666666667,
+              "cardName": "スタジアム",
+              "score": -83.32183333333333,
               "type": "card"
             }
           ]
@@ -4899,10 +4899,10 @@
             "expertCandidateScore": 12.600000000000001
           },
           {
-            "affordableScore": 1,
+            "affordableScore": 2,
             "cardName": "雑貨屋",
-            "evalCard": 1,
-            "expertCandidateScore": 1
+            "evalCard": 2,
+            "expertCandidateScore": 2
           },
           {
             "affordableScore": -32.50000000000001,
@@ -5356,10 +5356,10 @@
             "expertCandidateScore": 7.68
           },
           {
-            "affordableScore": 7.28,
+            "affordableScore": 8.46,
             "cardName": "雑貨屋",
-            "evalCard": 1.18,
-            "expertCandidateScore": 1.18
+            "evalCard": 2.36,
+            "expertCandidateScore": 2.36
           },
           {
             "affordableScore": 5.4,
@@ -6252,10 +6252,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 7.28,
+            "affordableScore": 8.46,
             "cardName": "雑貨屋",
-            "evalCard": 1.18,
-            "expertCandidateScore": 1.18
+            "evalCard": 2.36,
+            "expertCandidateScore": 2.36
           },
           {
             "affordableScore": 5.4,
@@ -6753,10 +6753,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1,
+            "affordableScore": 2,
             "cardName": "雑貨屋",
-            "evalCard": 1,
-            "expertCandidateScore": 1
+            "evalCard": 2,
+            "expertCandidateScore": 2
           },
           {
             "affordableScore": 0,
@@ -7196,10 +7196,10 @@
             "expertCandidateScore": 12.600000000000001
           },
           {
-            "affordableScore": 1,
+            "affordableScore": 2,
             "cardName": "雑貨屋",
-            "evalCard": 1,
-            "expertCandidateScore": 1
+            "evalCard": 2,
+            "expertCandidateScore": 2
           },
           {
             "affordableScore": -25.800000000000004,
@@ -7647,10 +7647,10 @@
             "expertCandidateScore": 7.68
           },
           {
-            "affordableScore": 1.18,
+            "affordableScore": 2.36,
             "cardName": "雑貨屋",
-            "evalCard": 1.18,
-            "expertCandidateScore": 1.18
+            "evalCard": 2.36,
+            "expertCandidateScore": 2.36
           },
           {
             "affordableScore": 0,
@@ -8526,10 +8526,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1.18,
+            "affordableScore": 2.36,
             "cardName": "雑貨屋",
-            "evalCard": 1.18,
-            "expertCandidateScore": 1.18
+            "evalCard": 2.36,
+            "expertCandidateScore": 2.36
           },
           {
             "affordableScore": 0,

@@ -28,6 +28,16 @@ runTest('card contract は全定義をstable ID・既知effect・一意名で固
     }
 });
 
+runTest('雑貨屋はランドマーク0-1軒で2コインの公式定義を維持する', () => {
+    const def = runtime.CARD_DEFS.find(card => card.id === runtime.CARD_IDS.GENERAL_STORE);
+    assert.ok(def);
+    assert.deepStrictEqual(
+        { cost: def.cost, diceNums: Array.from(def.diceNums), income: def.income, effect: def.effect },
+        { cost: 0, diceNums: [2], income: 2, effect: runtime.CARD_EFFECTS.FEWLANDMARK }
+    );
+    assert.strictEqual(runtime.CARD_EFFECT_DESCRIPTIONS[def.effect](def.income), 'ランドマーク0-1軒なら+2コイン');
+});
+
 runTest('card contract は全special effectのUI説明登録を要求する', () => {
     const expected = effectValues.filter(effect => effect !== runtime.CARD_EFFECTS.NORMAL).sort();
     assert.deepStrictEqual(Object.keys(runtime.CARD_EFFECT_DESCRIPTIONS).sort(), expected);

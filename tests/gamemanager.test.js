@@ -1452,7 +1452,7 @@ runTest('ショッピングモールは特殊計算を持つ商店カードに�
     current.landmarks['駅'] = true;
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), current, game), 0);
     current.landmarks['駅'] = false;
-    assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), current, game), 2);
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), current, game), 3);
 });
 
 runTest('ショッピングモールは商店の改装屋が得る収入にも+1する', () => {
@@ -1635,9 +1635,9 @@ runTest('calcCardIncomeがCHEESE・FURNITURE・MARKET・FEWLANDMARKの収入を�
     // MARKET: 農園2枚 × income2 = 4
     p0.cards = [createCardByName('麦畑'), createCardByName('花畑')];
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('青果市場'), p0, game), 4);
-    // FEWLANDMARK: ランドマーク0個 → income1
+    // FEWLANDMARK: ランドマーク0個 → income2
     Object.keys(p0.landmarks).forEach(k => { p0.landmarks[k] = false; });
-    assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), p0, game), 1);
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), p0, game), 2);
     // ランドマーク2個以上 → 0
     p0.landmarks['駅'] = true;
     p0.landmarks['ショッピングモール'] = true;

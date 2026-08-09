@@ -112,7 +112,7 @@ ALL_CARDS = [
     CardDef("コーン畑", 2, (3, 4), 1, "blue",   FARM,     CORNFIELD),
     CardDef("ブドウ園", 3, (7,),   3, "blue",   FARM,     NORMAL),
     # 緑カード
-    CardDef("雑貨屋",   0, (2,),   1, "green",  SHOP,     FEWLANDMARK),
+    CardDef("雑貨屋",   0, (2,),   2, "green",  SHOP,     FEWLANDMARK),
     CardDef("改装屋",   1, (4,),   8, "green",  SHOP,     RENOVATION),
     CardDef("貸金業",   0, (5, 6), 0, "green",  SHOP,     LOAN),
     CardDef("ワイナリー",3,(9,),   6, "green",  INDUSTRY, WINERY),
