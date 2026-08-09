@@ -154,6 +154,11 @@ runTest('card activation policyは緑カードの収入・pending・休業をdet
         kind: 'winery', amount: 6, pendingField: '', shouldDormant: true, hasTarget: false,
     });
     assert.deepStrictEqual(GameCardActivationPolicy.greenActivationPlan({
+        effect: effects.WINERY, effects, income: 0,
+    }), {
+        kind: 'winery', amount: 0, pendingField: '', shouldDormant: true, hasTarget: false,
+    });
+    assert.deepStrictEqual(GameCardActivationPolicy.greenActivationPlan({
         effect: effects.MOVER, effects,
     }), {
         kind: 'mover', amount: 0, pendingField: 'pendingMover',

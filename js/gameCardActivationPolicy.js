@@ -124,7 +124,7 @@ function greenActivationPlan(facts = {}) {
         const amount = typeof facts.income === 'function' ? facts.income() : facts.income;
         return plan(greenActivationKinds.WINERY, {
             amount,
-            shouldDormant: amount > 0,
+            shouldDormant: true,
         });
     }
     if (facts.effect === facts.effects.MOVER) {

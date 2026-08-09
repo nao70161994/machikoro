@@ -580,12 +580,10 @@ class GameManager {
                 }),
             });
             if (plan.kind === GameCardActivationPolicy.greenActivationKinds.WINERY) {
-                if (plan.amount > 0) {
-                    current.coins += plan.amount;
-                    this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${plan.amount}コイン`);
-                    if (plan.shouldDormant) current.makeDormant(card);
-                    this.addLog(LOG_TYPES.SPECIAL, `💤 ワイナリーが休業`);
-                }
+                current.coins += plan.amount;
+                this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${plan.amount}コイン`);
+                if (plan.shouldDormant) current.makeDormant(card);
+                this.addLog(LOG_TYPES.SPECIAL, `💤 ワイナリーが休業`);
                 continue;
             }
             if (plan.kind === GameCardActivationPolicy.greenActivationKinds.MOVER) {

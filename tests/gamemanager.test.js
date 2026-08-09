@@ -831,6 +831,19 @@ runTest('複数ワイナリーが同時発動しても同じ出目中に休業�
     assert.strictEqual(game.currentPlayer().isDormant(wineryB), true);
 });
 
+runTest('ワイナリーはブドウ園がなく収入0でも発動すると直ちに休業する', () => {
+    const game = new GameManager(2);
+    const winery = createCardByName('ワイナリー');
+    game.currentPlayer().cards = [winery];
+    game.currentPlayer().dormantCards = [];
+    const before = game.currentPlayer().coins;
+
+    game.rollDice(9);
+
+    assert.strictEqual(game.currentPlayer().coins, before);
+    assert.strictEqual(game.currentPlayer().isDormant(winery), true);
+});
+
 runTest('休業中の高級フレンチは相手が5を出すと休業解除だけ行う', () => {
     const game = new GameManager(2);
     const current = game.currentPlayer();
