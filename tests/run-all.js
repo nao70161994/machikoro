@@ -106,6 +106,7 @@ const TEST_GROUPS = {
         'reporting-policy.test.js',
         'report-throttle.test.js',
         'cpu.test.js',
+        'cpu-pending-contract-matrix.test.js',
         'cpu-profile.test.js',
         'cpu-selection.test.js',
         'cpu-evaluation.test.js',
@@ -545,6 +546,7 @@ const TEST_GROUPS = {
     ],
     cpu: [
         'cpu.test.js',
+        'cpu-pending-contract-matrix.test.js',
         'cpu-profile.test.js',
         'cpu-selection.test.js',
         'cpu-evaluation.test.js',
