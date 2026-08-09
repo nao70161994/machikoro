@@ -438,14 +438,13 @@ class MachikoroEnv:
         self._proc_green(p, ci, dice)
         self._proc_purple(p, ci, dice)
 
-        # 役所：コイン0なら+1
-        if p.coins == 0:
-            p.coins += 1
-
         if (self.pending_tv or self.pending_biz or self.pending_clean
                 or self.pending_mover or self.pending_reno):
             self.phase = PHASE_PENDING
         else:
+            # 役所：選択式の収入を含む全収入解決後、コイン0なら+1
+            if p.coins == 0:
+                p.coins += 1
             self.phase = PHASE_BUILD
 
     # ---- 赤カード ----
@@ -715,6 +714,8 @@ class MachikoroEnv:
                 self.pending_reno <= 0):
             self.pending_action_queue = []
             self.pending_target_index = None
+            if self.players[self.current].coins == 0:
+                self.players[self.current].coins += 1
             self.phase = PHASE_BUILD
 
     def _next_turn(self):

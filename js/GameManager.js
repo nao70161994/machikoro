@@ -431,6 +431,15 @@ class GameManager {
         return amount;
     }
 
+    _applyIncomeCompletion(completion) {
+        const current = this.currentPlayer();
+        if (completion.cityHallCoinDelta > 0) {
+            current.coins += completion.cityHallCoinDelta;
+            this.addLog(LOG_TYPES.GAIN, `🏛️ 役所効果 → +1コイン`);
+        }
+        this.phase = completion.phase;
+    }
+
     _reviveDormantCardsForDice(player, dice, shouldRevive) {
         const revived = new Set();
         const eligible = GameCardActivationPolicy.eligibleDormantCards(
@@ -490,11 +499,7 @@ class GameManager {
             phases: GAME_PHASES,
         });
         // 役所：建設フェーズ開始時コイン0なら+1
-        if (completion.cityHallCoinDelta > 0) {
-            current.coins += completion.cityHallCoinDelta;
-            this.addLog(LOG_TYPES.GAIN, `🏛️ 役所効果 → +1コイン`);
-        }
-        this.phase = completion.phase;
+        this._applyIncomeCompletion(completion);
     }
 
     _processRed(current, ci, dice) {
@@ -963,8 +968,15 @@ class GameManager {
     }
 
     _checkPending() {
+        if (this.phase !== GAME_PHASES.PENDING) return;
         const transition = GamePendingResolutionPolicy.completionTransition(this, GAME_PHASES.BUILD);
-        if (transition.completed) this.phase = transition.nextPhase;
+        if (!transition.completed) return;
+        this._applyIncomeCompletion(GameTurnPolicy.incomeCompletionPlan({
+            coins: () => this.currentPlayer().coins,
+            hasCityHall: () => this.currentPlayer().hasYakusho,
+            pendingState: this,
+            phases: GAME_PHASES,
+        }));
     }
 
     // ITベンチャー：任意で1コイン消費して積立

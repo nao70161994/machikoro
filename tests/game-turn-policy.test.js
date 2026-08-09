@@ -51,6 +51,12 @@ runTest('turn policyはincome終了時の役所救済とphaseを一つのimmutab
     }), { cityHallCoinDelta: 0, phase: 'pending' });
     assert.deepStrictEqual(GameTurnPolicy.incomeCompletionPlan({
         coins: 0,
+        hasCityHall: true,
+        pendingState: { ...pendingState, pendingTV: 1 },
+        phases,
+    }), { cityHallCoinDelta: 0, phase: 'pending' });
+    assert.deepStrictEqual(GameTurnPolicy.incomeCompletionPlan({
+        coins: 0,
         hasCityHall: false,
         pendingState,
         phases,

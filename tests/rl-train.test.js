@@ -788,7 +788,7 @@ runTest('rl train: 公式ルール修正後の休業・連携・清掃・公園�
     const output = runPython(`
 import json
 from scripts.rl.cards import CARD_DEF, CARD_INDEX
-from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_CLEAN_BASE, ACT_RENO_BASE, LANDMARK_INDEX
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_CLEAN_BASE, ACT_RENO_BASE, ACT_TV_TARGET, LANDMARK_INDEX
 
 combo = MachikoroEnv(player_count=2)
 p = combo.players[0]
@@ -850,6 +850,17 @@ rp.landmarks["駅"] = True
 rp.coins = 0
 reno.step(ACT_RENO_BASE + LANDMARK_INDEX["駅"])
 
+city_hall = MachikoroEnv(player_count=2)
+chp = city_hall.players[0]
+chp.cards["麦畑"] = chp.cards["パン屋"] = 0
+chp.cards["テレビ局"] = 1
+chp.coins = 0
+city_hall.players[1].coins = 5
+city_hall.last_dice = 6
+city_hall._process_income()
+city_hall_before_pending = chp.coins
+city_hall.step(ACT_TV_TARGET)
+
 print(json.dumps({
     "cheese": cheese,
     "flower": flower,
@@ -863,6 +874,8 @@ print(json.dumps({
     "wineryGain": wp.coins - before_winery,
     "wineryDormant": wp.dormant["ワイナリー"],
     "renovationCoins": rp.coins,
+    "cityHallBeforePending": city_hall_before_pending,
+    "cityHallAfterIncome": chp.coins,
 }, ensure_ascii=False))
 `);
     assert.deepStrictEqual(JSON.parse(output), {
@@ -878,6 +891,8 @@ print(json.dumps({
         wineryGain: 6,
         wineryDormant: 1,
         renovationCoins: 9,
+        cityHallBeforePending: 0,
+        cityHallAfterIncome: 5,
     });
 });
 

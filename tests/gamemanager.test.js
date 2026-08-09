@@ -1059,6 +1059,42 @@ runTest('テレビ局はresolveTVで指定プレイヤーから最大5コイン�
     assert.strictEqual(game2.players[1].coins, 0);
 });
 
+runTest('役所は選択式の収入解決後に0コインの場合だけ1コインを得る', () => {
+    const tvGame = new GameManager(2);
+    const tvOwner = tvGame.currentPlayer();
+    tvOwner.cards = [createCardByName('テレビ局')];
+    tvOwner.dormantCards = [];
+    tvOwner.coins = 0;
+    tvGame.players[1].coins = 5;
+
+    tvGame.rollDice(6);
+    assert.strictEqual(tvGame.phase, GAME_PHASES.PENDING);
+    assert.strictEqual(tvOwner.coins, 0);
+    tvGame.resolveTV(1);
+    assert.strictEqual(tvOwner.coins, 5);
+    assert.strictEqual(tvGame.phase, GAME_PHASES.BUILD);
+    assert.ok(!tvGame.log.some(entry => entry.message.includes('役所効果')));
+
+    const businessGame = new GameManager(2);
+    const businessOwner = businessGame.currentPlayer();
+    businessOwner.cards = [createCardByName('ビジネスセンター'), createCardByName('麦畑')];
+    businessOwner.dormantCards = [];
+    businessOwner.coins = 0;
+    businessGame.players[1].cards = [createCardByName('牧場')];
+    businessGame.players[1].dormantCards = [];
+
+    businessGame.rollDice(6);
+    assert.strictEqual(businessGame.phase, GAME_PHASES.PENDING);
+    assert.strictEqual(businessOwner.coins, 0);
+    businessGame.skipBusiness();
+    assert.strictEqual(businessOwner.coins, 1);
+    assert.strictEqual(businessGame.phase, GAME_PHASES.BUILD);
+    assert.strictEqual(
+        businessGame.log.filter(entry => entry.message.includes('役所効果')).length,
+        1
+    );
+});
+
 runTest('pending解決は対応pendingが無ければ副作用を出さない', () => {
     const game = new GameManager(2);
     game.phase = GAME_PHASES.BUILD;

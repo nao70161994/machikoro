@@ -40,11 +40,13 @@ const GameTurnPolicy = (() => {
     }
 
     function incomeCompletionPlan(facts = {}) {
+        const phase = phaseAfterIncome(facts.pendingState, facts.phases);
         const coins = readFact(facts.coins);
-        const cityHallCoinDelta = coins === 0 && readFact(facts.hasCityHall) === true ? 1 : 0;
+        const cityHallCoinDelta = phase === facts.phases.BUILD &&
+            coins === 0 && readFact(facts.hasCityHall) === true ? 1 : 0;
         return Object.freeze({
             cityHallCoinDelta,
-            phase: phaseAfterIncome(facts.pendingState, facts.phases),
+            phase,
         });
     }
 
