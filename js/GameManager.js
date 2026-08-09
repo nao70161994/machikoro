@@ -68,22 +68,23 @@ const CARD_INCOME_HANDLER_IMPLS = Object.freeze({
     cheese: (card, owner) =>
         owner.countCardIncludingDormantById(CARD_IDS.RANCH) * card.income,
     furniture: (card, owner) =>
-        (owner.countCardById(CARD_IDS.FOREST) + owner.countCardById(CARD_IDS.MINE)) * card.income,
+        (owner.countCardIncludingDormantById(CARD_IDS.FOREST) +
+            owner.countCardIncludingDormantById(CARD_IDS.MINE)) * card.income,
     market: (card, owner) =>
-        owner.cards.filter(c => c.category === CARD_CATEGORIES.FARM && !owner.isDormant(c)).length * card.income,
+        owner.cards.filter(c => c.category === CARD_CATEGORIES.FARM).length * card.income,
     flower: (card, owner) =>
-        owner.countCardById(CARD_IDS.FLOWER_GARDEN) * card.income,
+        owner.countCardIncludingDormantById(CARD_IDS.FLOWER_GARDEN) * card.income,
     foodwarehouse: (card, owner) =>
-        owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !owner.isDormant(c)).length * card.income,
+        owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT).length * card.income,
     fewlandmark: (card, owner) =>
         owner.builtLandmarkCount() <= 1 ? card.income : 0,
     cornfield: (card, owner) =>
         owner.builtLandmarkCount() <= 1 ? card.income : 0,
     winery: (card, owner) =>
-        owner.countCardById(CARD_IDS.VINEYARD) * card.income,
+        owner.countCardIncludingDormantById(CARD_IDS.VINEYARD) * card.income,
     drinkfactory: (card, owner, game) =>
         game.players.reduce((sum, p) =>
-            sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT && !p.isDormant(c)).length, 0) * card.income,
+            sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT).length, 0) * card.income,
 });
 
 const CARD_INCOME_EFFECT_HANDLERS = Object.freeze(Object.fromEntries(
@@ -663,8 +664,7 @@ class GameManager {
                     this.players,
                     ci,
                     player => player.cards.filter(c =>
-                        isCardInCategoryGroup(c, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP) &&
-                        !player.isDormant(c)
+                        isCardInCategoryGroup(c, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP)
                     ).length
                 );
                 const plan = GameCoinTransaction.collectionPlan(

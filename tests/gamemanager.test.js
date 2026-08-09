@@ -1494,6 +1494,25 @@ runTest('calcCardIncomeがCHEESE・FURNITURE・MARKET・FEWLANDMARKの収入を�
     p0.cards = [createCardByName('牧場'), createCardByName('牧場')];
     p0.dormantCards = [p0.cards[0]];
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('チーズ工場'), p0, game), 6);
+
+    const referenceCases = [
+        ['家具工場', ['森林', '鉱山'], 6],
+        ['青果市場', ['麦畑', '花畑'], 4],
+        ['フラワーショップ', ['花畑', '花畑'], 2],
+        ['食品倉庫', ['カフェ', 'ファミレス'], 4],
+        ['ワイナリー', ['ブドウ園', 'ブドウ園'], 12],
+    ];
+    for (const [incomeCardName, sourceNames, expected] of referenceCases) {
+        p0.cards = sourceNames.map(createCardByName);
+        p0.dormantCards = [p0.cards[0]];
+        assert.strictEqual(GameManager.calcCardIncome(createCardByName(incomeCardName), p0, game), expected);
+    }
+
+    p0.cards = [createCardByName('カフェ')];
+    p0.dormantCards = [p0.cards[0]];
+    game.players[1].cards = [createCardByName('ファミレス')];
+    game.players[1].dormantCards = [game.players[1].cards[0]];
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('ドリンク工場'), p0, game), 2);
 });
 
 // ===== Player メソッド =====
@@ -1652,6 +1671,23 @@ runTest('出版社は貸金業・引越し屋を飲食店・商店として数�
 
     assert.strictEqual(opponent.coins, 9);
     assert.strictEqual(publisher.coins, before + 1);
+});
+
+runTest('出版社は休業中でも所有している飲食店・商店を徴収対象に数える', () => {
+    const game = new GameManager(2);
+    const cafe = createCardByName('カフェ');
+    const shop = createCardByName('コンビニ');
+    game.currentPlayer().cards = [createCardByName('出版社')];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].cards = [cafe, shop];
+    game.players[1].dormantCards = [cafe, shop];
+    game.players[1].coins = 5;
+    const before = game.currentPlayer().coins;
+
+    game.rollDice(7);
+
+    assert.strictEqual(game.currentPlayer().coins, before + 2);
+    assert.strictEqual(game.players[1].coins, 3);
 });
 
 runTest('税務署が10コイン以上の相手から半分奪う', () => {
