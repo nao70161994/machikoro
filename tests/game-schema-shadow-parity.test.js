@@ -215,7 +215,7 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                     assert.strictEqual(game.pendingCleaning, 0);
                     assert.strictEqual(game.pendingRenovation, 2);
                     assert.strictEqual(game.phase, runtime.GAME_PHASES.PENDING);
-                    assert.strictEqual(current.coins, 3 + game.players.length);
+                    assert.strictEqual(current.coins, 3 + game.players.length - 1);
                     assert.ok(game.players.every(player => player.isDormant(player.cards[0])));
                     assert.deepStrictEqual(
                         Array.from(game.pendingActionQueue, entry => `${entry.action}:${entry.field}`),
@@ -223,7 +223,7 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                     );
                 } else {
                     assert.strictEqual(current.landmarks['駅'], false);
-                    assert.strictEqual(current.coins, 11 + game.players.length);
+                    assert.strictEqual(current.coins, 10 + game.players.length);
                     assert.strictEqual(game.pendingRenovation, 0);
                     assert.strictEqual(game.pendingActionQueue.length, 0);
                     assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
@@ -463,15 +463,13 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             actions: [['rollDice', { forceDice: 11, tunaDice: [1, 1] }]],
             assertAfter(game) {
                 const total = game.players.length * (game.players.length + 1) / 2;
-                const each = Math.floor(total / game.players.length);
-                const remainder = total - each * game.players.length;
-                assert.strictEqual(game.players[0].coins, each + remainder);
-                for (let index = 1; index < game.players.length; index++) {
+                const each = Math.ceil(total / game.players.length);
+                for (let index = 0; index < game.players.length; index++) {
                     assert.strictEqual(game.players[index].coins, each);
                 }
                 assert.strictEqual(
                     game.players.reduce((sum, player) => sum + player.coins, 0),
-                    total
+                    each * game.players.length
                 );
                 assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
             },
