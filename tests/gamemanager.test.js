@@ -67,6 +67,10 @@ runTest('CARD_CATEGORY_GROUPS は飲食店・商店の分類判定を共有す�
     assert.ok(CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP.includes(CARD_CATEGORIES.SHOP));
     assert.strictEqual(isCardInCategoryGroup(CARDS.find(c => c.name === 'パン屋'), CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP), true);
     assert.strictEqual(isCardInCategoryGroup(CARDS.find(c => c.name === '麦畑'), CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP), false);
+    assert.strictEqual(createCardByName('貸金業').category, CARD_CATEGORIES.SPECIAL);
+    assert.strictEqual(createCardByName('引越し屋').category, CARD_CATEGORIES.SPECIAL);
+    assert.strictEqual(isCardInCategoryGroup(createCardByName('貸金業'), CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP), false);
+    assert.strictEqual(isCardInCategoryGroup(createCardByName('引越し屋'), CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP), false);
 });
 
 runTest('getCardActivationProfile は NORMAL の色別対象と複合triggerを返す', () => {
@@ -1233,6 +1237,17 @@ runTest('チーズ工場は牧場枚数×3コインを得る', () => {
     const coinsBefore2 = p0b.coins;
     game2.rollDice(7);
     assert.strictEqual(p0b.coins, coinsBefore2);
+
+    // 休業中の牧場自身は発動しないが、街に存在するためチーズ工場の枚数には数える
+    const game3 = new GameManager(2);
+    const p0c = game3.currentPlayer();
+    const dormantRanch = createCardByName('牧場');
+    p0c.cards = [dormantRanch, createCardByName('チーズ工場')];
+    p0c.dormantCards = [dormantRanch];
+    const coinsBefore3 = p0c.coins;
+    game3.rollDice(7);
+    assert.strictEqual(p0c.coins, coinsBefore3 + 3);
+    assert.ok(game3.log.some(entry => entry.message === '💰 チーズ工場発動 → +3コイン'));
 });
 
 runTest('ショッピングモール所持で飲食店・商店の緑カードが+1コイン', () => {
@@ -1429,10 +1444,10 @@ runTest('calcCardIncomeがCHEESE・FURNITURE・MARKET・FEWLANDMARKの収入を�
     p0.landmarks['駅'] = true;
     p0.landmarks['ショッピングモール'] = true;
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), p0, game), 0);
-    // 休業中のカードはカウントしない
+    // 休業中でも街に存在する牧場は、チーズ工場の参照枚数に含める
     p0.cards = [createCardByName('牧場'), createCardByName('牧場')];
     p0.dormantCards = [p0.cards[0]];
-    assert.strictEqual(GameManager.calcCardIncome(createCardByName('チーズ工場'), p0, game), 3); // 1枚のみ
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('チーズ工場'), p0, game), 6);
 });
 
 // ===== Player メソッド =====
@@ -1570,6 +1585,27 @@ runTest('出版社が相手の飲食店・商店枚数分コインを奪う', ()
 
     assert.strictEqual(game.players[1].coins, 7);
     assert.strictEqual(p0.coins, before + 3);
+});
+
+runTest('出版社は貸金業・引越し屋を飲食店・商店として数えない', () => {
+    const game = new GameManager(2);
+    const publisher = game.currentPlayer();
+    const opponent = game.players[1];
+    publisher.cards = [createCardByName('出版社')];
+    publisher.dormantCards = [];
+    opponent.cards = [
+        createCardByName('貸金業'),
+        createCardByName('引越し屋'),
+        createCardByName('パン屋'),
+    ];
+    opponent.dormantCards = [];
+    opponent.coins = 10;
+    const before = publisher.coins;
+
+    game.rollDice(7);
+
+    assert.strictEqual(opponent.coins, 9);
+    assert.strictEqual(publisher.coins, before + 1);
 });
 
 runTest('税務署が10コイン以上の相手から半分奪う', () => {

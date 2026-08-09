@@ -66,7 +66,7 @@ function rollRandomDie() {
 
 const CARD_INCOME_HANDLER_IMPLS = Object.freeze({
     cheese: (card, owner) =>
-        owner.countCardById(CARD_IDS.RANCH) * card.income,
+        owner.countCardIncludingDormantById(CARD_IDS.RANCH) * card.income,
     furniture: (card, owner) =>
         (owner.countCardById(CARD_IDS.FOREST) + owner.countCardById(CARD_IDS.MINE)) * card.income,
     market: (card, owner) =>
@@ -603,7 +603,7 @@ class GameManager {
             }
             if (plan.amount > 0) {
                 current.coins += plan.amount;
-                this.addLog(LOG_TYPES.GAIN, `🏪 ${card.name}発動 → +${plan.amount}コイン`);
+                this.addLog(LOG_TYPES.GAIN, `💰 ${card.name}発動 → +${plan.amount}コイン`);
             }
         }
 

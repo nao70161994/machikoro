@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "1f9f5769465b74c512d640eb4a91a8cd177a722b",
+  "sourceCommit": "bf60a44432952139ace3602c2f73d8a879c2d1ed",
   "difficulties": [
     "weak",
     "normal",
@@ -1444,7 +1444,7 @@
             "expertCandidateScore": 6.018000000000001
           },
           {
-            "affordableScore": 13.844,
+            "affordableScore": 12.744,
             "cardName": "貸金業",
             "evalCard": 1.416,
             "expertCandidateScore": 12.744
@@ -1456,7 +1456,7 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 2.85,
+            "affordableScore": 1.75,
             "cardName": "引越し屋",
             "evalCard": 0,
             "expertCandidateScore": 0
@@ -3582,7 +3582,7 @@
             "expertCandidateScore": 6.018000000000001
           },
           {
-            "affordableScore": 12.344,
+            "affordableScore": 11.244,
             "cardName": "貸金業",
             "evalCard": 1.416,
             "expertCandidateScore": 12.744
@@ -3594,7 +3594,7 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 2.85,
+            "affordableScore": 1.75,
             "cardName": "引越し屋",
             "evalCard": 0,
             "expertCandidateScore": 0
@@ -5819,7 +5819,7 @@
             "expertCandidateScore": -1.0620000000000025
           },
           {
-            "affordableScore": 18.944,
+            "affordableScore": 17.844,
             "cardName": "貸金業",
             "evalCard": 1.416,
             "expertCandidateScore": 12.744
@@ -5831,7 +5831,7 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 2.45,
+            "affordableScore": 1.35,
             "cardName": "引越し屋",
             "evalCard": 0,
             "expertCandidateScore": 0
@@ -8104,7 +8104,7 @@
             "expertCandidateScore": 2.8180000000000005
           },
           {
-            "affordableScore": 13.844,
+            "affordableScore": 12.744,
             "cardName": "貸金業",
             "evalCard": 1.416,
             "expertCandidateScore": 12.744
@@ -8116,7 +8116,7 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 2.85,
+            "affordableScore": 1.75,
             "cardName": "引越し屋",
             "evalCard": 0,
             "expertCandidateScore": 0
