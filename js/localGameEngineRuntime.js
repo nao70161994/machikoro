@@ -137,18 +137,23 @@ const LocalGameEngineRuntime = (() => {
             const prepared = prepare(proposal.action, proposal.data);
             const direct = adoptPrepared(prepared);
             const authoritative = direct && direct.authority.authority === 'pure-transition';
+            let result = true;
             if (!authoritative) {
                 const engine = dependencies.getEngine();
                 if (engine && typeof engine.applyMutableAction === 'function') {
-                    engine.applyMutableAction({
+                    result = engine.applyMutableAction({
                         game,
                         action: proposal.action,
                         data: proposal.data,
                     });
                 } else {
-                    fallback();
+                    result = fallback();
                 }
                 finish(prepared);
+            }
+            if (result === false) {
+                dependencies.checkpoint('cpu-action-rejected', { action: proposal.action });
+                return false;
             }
             dependencies.render();
             dependencies.scheduleCpu();

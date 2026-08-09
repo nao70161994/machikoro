@@ -131,6 +131,7 @@ const CpuTurnSchedulerRuntime = (() => {
             const cpu = state.cpuPlayers[playerIndex];
             const token = invalidate();
             let stepIndex = 0;
+            let pendingNoProgressRetries = 0;
             const handlers = dependencies.getPhaseHandlers();
 
             function runNextStep() {
@@ -214,7 +215,26 @@ const CpuTurnSchedulerRuntime = (() => {
                         durationMs: Math.max(0, dependencies.now() - startedAt),
                         stepResult: result,
                     });
-                    if (result === false) return;
+                    if (result === false) {
+                        if (step.name === 'pending' && pendingNoProgressRetries < 1) {
+                            pendingNoProgressRetries++;
+                            dependencies.checkpoint('scheduleCPU-pending-no-progress-retry', {
+                                ...stepDetails,
+                                retryCount: pendingNoProgressRetries,
+                            });
+                            stepIndex--;
+                            queueStep(token, 500, runNextStep);
+                            return;
+                        }
+                        if (step.name === 'pending') {
+                            dependencies.checkpoint('scheduleCPU-pending-no-progress-exhausted', {
+                                ...stepDetails,
+                                retryCount: pendingNoProgressRetries,
+                            });
+                        }
+                        return;
+                    }
+                    if (step.name === 'pending') pendingNoProgressRetries = 0;
                     runNextStep();
                 });
             }

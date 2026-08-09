@@ -545,6 +545,24 @@ runTest('強CPUの引越し屋評価値をcanonical payloadから除外してpen
     assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
 });
 
+runTest('CPUは交換可能な自分の施設がないビジネスセンターをcanonical skipで解決する', () => {
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    game.currentPlayer().cards = [createCardByName('ビジネスセンター')];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].cards = [createCardByName('森林')];
+    game.players[1].dormantCards = [];
+    const cpu = new CPU('strong');
+
+    const proposal = CPU.choosePendingAction(game, cpu, { clearFallback: false });
+
+    assert.strictEqual(JSON.stringify(proposal.data), JSON.stringify({ skip: true }));
+    assert.strictEqual(CPUPendingResolution.applyPendingAction(game, proposal), true);
+    assert.strictEqual(game.pendingBusiness, 0);
+    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+});
+
 runTest('CPU pending action互換executorはcanonical proposalだけを適用する', () => {
     const calls = [];
     const game = {

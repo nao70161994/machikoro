@@ -72,15 +72,32 @@ const CpuPhaseHandlers = (() => {
                 run(cpu) {
                     const current = game();
                     if (current.phase !== dependencies.gamePhases.PENDING) return;
+                    const pendingAction = dependencies.nextPendingAction(current);
                     const proposal = dependencies.chooseAction('pending', cpu);
-                    if (!proposal) return;
+                    if (!proposal) {
+                        dependencies.checkpoint('scheduleCPU-pending-no-proposal', {
+                            difficulty: cpu && cpu.difficulty || '',
+                            pendingIT: !!current.pendingIT,
+                            pendingAction,
+                        });
+                        return false;
+                    }
                     dependencies.checkpoint('scheduleCPU-pending-resolution', {
                         action: proposal.action,
                         pendingIT: !!current.pendingIT,
-                        pendingAction: dependencies.nextPendingAction(current),
+                        pendingAction,
                     });
-                    dependencies.executeAction(proposal.action, proposal.data, () =>
+                    const result = dependencies.executeAction(proposal.action, proposal.data, () =>
                         dependencies.pendingResolution.applyPendingAction(current, proposal));
+                    if (result === false) {
+                        dependencies.checkpoint('scheduleCPU-pending-apply-rejected', {
+                            action: proposal.action,
+                            difficulty: cpu && cpu.difficulty || '',
+                            pendingAction,
+                        });
+                        return false;
+                    }
+                    return result;
                 },
             },
             {

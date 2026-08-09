@@ -32,7 +32,14 @@ function createHarness() {
         render: () => calls.push(['render']),
         shopStock: { wheat: 6 },
     });
-    return { calls, game, handlers, phases, setOnline: value => { online = value; } };
+    return {
+        calls,
+        game,
+        handlers,
+        phases,
+        proposals,
+        setOnline: value => { online = value; },
+    };
 }
 
 runTest('CPU phase handlersは既存8段階の順序を凍結する', () => {
@@ -65,6 +72,41 @@ runTest('CPU phase build handlerはlocal proposalを共有action境界へ渡しo
     online.setOnline(true);
     assert.strictEqual(online.handlers.find(handler => handler.name === 'build').run(cpu), false);
     assert.deepStrictEqual(online.calls, []);
+});
+
+runTest('CPU phase pending handlerはproposal欠落を診断してno-progressを返す', () => {
+    const h = createHarness();
+    h.game.phase = h.phases.PENDING;
+    h.proposals.pending = null;
+
+    assert.strictEqual(h.handlers.find(handler => handler.name === 'pending').run({ difficulty: 'strong' }), false);
+    const checkpoint = h.calls.find(call => call[1] === 'scheduleCPU-pending-no-proposal');
+    assert.ok(checkpoint);
+    assert.strictEqual(checkpoint[2].difficulty, 'strong');
+    assert.strictEqual(checkpoint[2].pendingAction, 'resolveTV');
+    assert.strictEqual(h.calls.some(call => call[0] === 'execute'), false);
+});
+
+runTest('CPU phase pending handlerは適用拒否を診断してno-progressを返す', () => {
+    const h = createHarness();
+    h.game.phase = h.phases.PENDING;
+    h.proposals.pending = { action: 'resolveTV', data: { targetIndex: 1 } };
+    const rejected = CpuPhaseHandlers.create({
+        actions: { REROLL_DICE: 'rerollDice' },
+        checkpoint: (event, details) => h.calls.push(['checkpoint', event, details]),
+        chooseAction: () => h.proposals.pending,
+        executeAction: () => false,
+        gamePhases: h.phases,
+        getGameState: () => ({ game: h.game }),
+        getOnlineState: () => ({ isOnlineGame: false }),
+        nextPendingAction: () => 'resolveTV',
+        pendingResolution: { applyPendingAction: () => true },
+        render: () => {},
+        shopStock: {},
+    }).find(handler => handler.name === 'pending');
+
+    assert.strictEqual(rejected.run({ difficulty: 'strong' }), false);
+    assert.ok(h.calls.some(call => call[1] === 'scheduleCPU-pending-apply-rejected'));
 });
 
 runTest('CPU phase handlersは必須依存欠落を初期化前に拒否する', () => {

@@ -158,7 +158,13 @@ const CPUPendingResolution = Object.freeze({
         const fallback = options.fallbackBusinessMove || CPUPendingResolution.fallbackCpuBusinessMove;
         if (!CPUPendingResolution.isCpuBusinessMove(game, move)) move = fallback(game, cpu);
         if (!CPUPendingResolution.isCpuBusinessMove(game, move)) {
-            return CPUPendingResolution.pendingFallback(game, 'resolveBusiness', 'pendingBusiness', options.fallbackBusiness, options);
+            return {
+                action: 'resolveBusiness',
+                payload: { skip: true },
+                move: null,
+                usedFallback: true,
+                apply: () => game.skipBusiness(),
+            };
         }
         const payload = {
             myCard: move.myCard,
@@ -252,6 +258,7 @@ const CPUPendingResolution = Object.freeze({
             case 'resolveTV':
                 return game.resolveTV(data.targetIndex) !== false;
             case 'resolveBusiness':
+                if (data.skip === true) return game.skipBusiness() !== false;
                 return game.resolveBusiness(data.myCard, data.targetIndex, data.theirCard) !== false;
             case 'resolveCleaning':
                 return game.resolveCleaning(data.cardName) !== false;

@@ -121,6 +121,38 @@ runTest('CPU turn scheduler runtimeはstep実行中だけexecution leaseをhealt
     assert.strictEqual(harness.runtime.controller.snapshot().activeStep, null);
 });
 
+for (const online of [false, true]) {
+    runTest(`CPU turn scheduler runtimeは${online ? 'online host' : 'local'} pending no-progressを1回だけ再試行する`, () => {
+        const calls = [];
+        const h = createHarness({
+            online: online ? { isOnlineGame: true, isRoomHost: true, socket: { connected: true } } : undefined,
+            handlers: [{ name: 'pending', run() { calls.push('pending'); return false; } }],
+        });
+        h.game.phase = 'pending';
+        h.runtime.schedule();
+
+        h.timers.shift().fn();
+        assert.strictEqual(calls.length, 1);
+        const retryTimer = h.timers.shift();
+        assert.strictEqual(retryTimer.delay, 500);
+        retryTimer.fn();
+        const secondStepTimer = h.timers.shift();
+        assert.strictEqual(secondStepTimer.delay, 600);
+        secondStepTimer.fn();
+
+        assert.strictEqual(calls.length, 2);
+        assert.strictEqual(h.timers.length, 0);
+        assert.strictEqual(
+            h.calls.filter(call => call[1] === 'scheduleCPU-pending-no-progress-retry').length,
+            1
+        );
+        assert.strictEqual(
+            h.calls.filter(call => call[1] === 'scheduleCPU-pending-no-progress-exhausted').length,
+            1
+        );
+    });
+}
+
 runTest('CPU turn scheduler runtimeはonline non-hostをeffect前に拒否する', () => {
     const h = createHarness({ online: { isOnlineGame: true, isRoomHost: false, socket: { connected: true } } });
     h.runtime.schedule();

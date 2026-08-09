@@ -48,7 +48,10 @@ function createHarness(options = {}) {
                     reason: '',
                     snapshot: { game: { id: 'transitioned' }, undoState: input.snapshot.undoState },
                 },
-            applyMutableAction: input => calls.push(['mutable', input.action]),
+            applyMutableAction: input => {
+                calls.push(['mutable', input.action]);
+                return options.mutableResult !== false;
+            },
         }),
         gameRuntime: {
             setGame(value) { game = value; calls.push(['setGame', value]); },
@@ -110,6 +113,16 @@ runTest('local game engine runtimeはprepared authority成功時にCPU mutable�
     assert.ok(h.calls.some(call => call[0] === 'adoptPrepared'));
     assert.strictEqual(h.calls.some(call => call[0] === 'mutable'), false);
     assert.strictEqual(h.calls.some(call => call[0] === 'fallback'), false);
+});
+
+runTest('local game engine runtimeはCPU mutable拒否をrender・再scheduleせず返す', () => {
+    const h = createHarness({ mutableResult: false });
+
+    assert.strictEqual(h.runtime.runCpu('nextTurn', {}, () => true), false);
+    assert.ok(h.calls.some(call => call[0] === 'mutable'));
+    assert.ok(h.calls.some(call => call[1] === 'cpu-action-rejected'));
+    assert.strictEqual(h.calls.some(call => call[0] === 'render'), false);
+    assert.strictEqual(h.calls.some(call => call[0] === 'scheduleCpu'), false);
 });
 
 runTest('local game engine runtimeは未解決・transition・採用失敗をmutableへ戻す', () => {
