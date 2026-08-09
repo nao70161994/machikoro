@@ -740,6 +740,30 @@ runTest('清掃業は同名カードを全て休業にする', () => {
     assert.strictEqual(game.currentPlayer().isDormant(family), false);
 });
 
+runTest('清掃業は休業させた施設ごとに各所有者から支払可能額を徴収する', () => {
+    const game = new GameManager(3);
+    const ownCafe = createCardByName('カフェ');
+    const opponentCafeA = createCardByName('カフェ');
+    const opponentCafeB = createCardByName('カフェ');
+    const poorCafeA = createCardByName('カフェ');
+    const poorCafeB = createCardByName('カフェ');
+    game.currentPlayer().cards = [ownCafe];
+    game.players[1].cards = [opponentCafeA, opponentCafeB];
+    game.players[2].cards = [poorCafeA, poorCafeB];
+    game.players.forEach(player => { player.dormantCards = []; });
+    game.currentPlayer().coins = 3;
+    game.players[1].coins = 5;
+    game.players[2].coins = 1;
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
+
+    game.resolveCleaning('カフェ');
+
+    assert.deepStrictEqual(Array.from(game.players, player => player.coins), [6, 3, 0]);
+    assert.ok(game.players.every(player => player.cards.every(card => player.isDormant(card))));
+    assert.strictEqual(game.pendingCleaning, 0);
+});
+
 runTest('清掃業は大施設を対象にできない', () => {
     const game = new GameManager(2);
     const stadium = createCardByName('スタジアム');

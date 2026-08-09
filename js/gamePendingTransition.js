@@ -30,6 +30,7 @@ const GamePendingTransition = (() => {
 
     function cleaningPlan(players, cardName, majorCategory, isDormant) {
         const targets = [];
+        const requestedAmounts = players.map(() => 0);
         players.forEach((player, playerIndex) => {
             const selectedCards = new Set();
             player.cards.forEach((card, cardIndex) => {
@@ -37,12 +38,13 @@ const GamePendingTransition = (() => {
                         !selectedCards.has(card) && !isDormant(player, card)) {
                     selectedCards.add(card);
                     targets.push(Object.freeze({ playerIndex, cardIndex, card }));
+                    requestedAmounts[playerIndex] += 1;
                 }
             });
         });
         return freezePlan({
             targets: Object.freeze(targets),
-            reward: targets.length,
+            requestedAmounts: Object.freeze(requestedAmounts),
         });
     }
 

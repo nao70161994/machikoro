@@ -54,8 +54,9 @@ runTest('pending transitionは清掃対象をplayer/card順で一度だけ列挙
         (_player, card) => card === dormant
     );
     assert.deepStrictEqual(plan.targets.map(target => [target.playerIndex, target.cardIndex]), [[0, 0], [1, 1]]);
-    assert.strictEqual(plan.reward, 2);
+    assert.deepStrictEqual(plan.requestedAmounts, [1, 1]);
     assert.strictEqual(Object.isFrozen(plan.targets), true);
+    assert.strictEqual(Object.isFrozen(plan.requestedAmounts), true);
     assert.strictEqual(Object.isFrozen(plan.targets[0]), true);
 });
 
