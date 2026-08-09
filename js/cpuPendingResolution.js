@@ -180,11 +180,15 @@ const CPUPendingResolution = Object.freeze({
         if (!CPUPendingResolution.isCpuMoverMove(game, move)) {
             return CPUPendingResolution.pendingFallback(game, 'resolveMover', 'pendingMover', options.fallbackMover, options);
         }
+        const payload = {
+            cardIndex: move.cardIndex,
+            targetIndex: move.targetIndex,
+        };
         return {
             action: 'resolveMover',
-            payload: move,
+            payload,
             move,
-            apply: () => game.resolveMover(move.cardIndex, move.targetIndex),
+            apply: () => game.resolveMover(payload.cardIndex, payload.targetIndex),
         };
     },
 
