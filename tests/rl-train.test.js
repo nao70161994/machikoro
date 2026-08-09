@@ -17,15 +17,15 @@ function runPython(code) {
 }
 
 
-runTest('rl parity report: ワイナリー集約近似を既知差分として出力する', () => {
+runTest('rl parity report: ワイナリー集約結果はJSと差分がない', () => {
     const output = runPython(`
 import json
 from scripts.rl.parity_report import build_report
 print(json.dumps(build_report(), ensure_ascii=False))
 `);
     const report = JSON.parse(output);
-    assert.strictEqual(report.schema, 'rl-parity-report-v1');
-    assert.ok(report.knownApproximationCount >= 1);
+    assert.strictEqual(report.schema, 'rl-parity-report-v2');
+    assert.strictEqual(report.knownApproximationCount, 0);
     const dormantCase = report.knownApproximations.find(entry =>
         entry.card === 'ワイナリー' &&
         entry.totalWineries === 2 &&
@@ -34,8 +34,8 @@ print(json.dumps(build_report(), ensure_ascii=False))
     );
     assert.ok(dormantCase);
     assert.strictEqual(dormantCase.js.gain, 6);
-    assert.strictEqual(dormantCase.pythonApprox.gain, 12);
-    assert.strictEqual(dormantCase.gainDiff, 6);
+    assert.strictEqual(dormantCase.pythonApprox.gain, 6);
+    assert.strictEqual(dormantCase.gainDiff, 0);
 });
 
 runTest('rl train: CLI help は train-batch-size を含む', () => {
@@ -782,6 +782,94 @@ print(env.pending_action_queue)
     assert.strictEqual(lines[1], '[]');
     assert.strictEqual(lines[2], '1');
     assert.strictEqual(lines[3], "['pendingCleaning']");
+});
+
+runTest('rl train: 公式ルール修正後の休業・連携・清掃・公園・モール収入をJSと共有する', () => {
+    const output = runPython(`
+import json
+from scripts.rl.cards import CARD_DEF, CARD_INDEX
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_CLEAN_BASE, ACT_RENO_BASE, LANDMARK_INDEX
+
+combo = MachikoroEnv(player_count=2)
+p = combo.players[0]
+p.cards["牧場"] = 2
+p.dormant["牧場"] = 1
+p.cards["チーズ工場"] = 1
+cheese = combo._calc_green(CARD_DEF["チーズ工場"], p, 1)
+p.cards["花畑"] = 1
+p.dormant["花畑"] = 1
+p.landmarks["ショッピングモール"] = True
+flower = combo._calc_green(CARD_DEF["フラワーショップ"], p, 1)
+
+cleaning = MachikoroEnv(player_count=3)
+cleaning.phase = PHASE_PENDING
+cleaning.pending_clean = 1
+cleaning.players[0].cards["カフェ"] = 1
+cleaning.players[1].cards["カフェ"] = 2
+cleaning.players[2].cards["カフェ"] = 2
+cleaning.players[0].coins = 3
+cleaning.players[1].coins = 5
+cleaning.players[2].coins = 1
+cleaning.step(ACT_CLEAN_BASE + CARD_INDEX["カフェ"])
+
+park = MachikoroEnv(player_count=3)
+park.players[0].cards["公園"] = 1
+park.players[0].coins, park.players[1].coins, park.players[2].coins = 1, 1, 2
+park._proc_purple(park.players[0], 0, 11)
+
+dormant = MachikoroEnv(player_count=2)
+cur, owner = dormant.players
+cur.cards["麦畑"] = cur.cards["パン屋"] = 0
+owner.cards["高級フレンチ"] = 1
+owner.dormant["高級フレンチ"] = 1
+dormant._proc_red(cur, 0, 5)
+blocked_french = owner.dormant["高級フレンチ"]
+cur.landmarks["駅"] = cur.landmarks["港"] = True
+dormant._proc_red(cur, 0, 5)
+revived_french = owner.dormant["高級フレンチ"]
+
+winery = MachikoroEnv(player_count=2)
+wp = winery.players[0]
+wp.cards["ワイナリー"] = 2
+wp.dormant["ワイナリー"] = 1
+wp.cards["ブドウ園"] = 1
+before_winery = wp.coins
+winery._proc_green(wp, 0, 9)
+
+reno = MachikoroEnv(player_count=2)
+rp = reno.players[0]
+reno.phase = PHASE_PENDING
+reno.pending_reno = 1
+rp.landmarks["ショッピングモール"] = True
+rp.landmarks["駅"] = True
+rp.coins = 0
+reno.step(ACT_RENO_BASE + LANDMARK_INDEX["駅"])
+
+print(json.dumps({
+    "cheese": cheese,
+    "flower": flower,
+    "cleaningCoins": [pl.coins for pl in cleaning.players],
+    "cleaningDormant": [pl.dormant["カフェ"] for pl in cleaning.players],
+    "parkCoins": [pl.coins for pl in park.players],
+    "blockedFrench": blocked_french,
+    "revivedFrench": revived_french,
+    "wineryGain": wp.coins - before_winery,
+    "wineryDormant": wp.dormant["ワイナリー"],
+    "renovationCoins": rp.coins,
+}, ensure_ascii=False))
+`);
+    assert.deepStrictEqual(JSON.parse(output), {
+        cheese: 6,
+        flower: 2,
+        cleaningCoins: [6, 3, 0],
+        cleaningDormant: [1, 2, 2],
+        parkCoins: [2, 2, 2],
+        blockedFrench: 1,
+        revivedFrench: 0,
+        wineryGain: 6,
+        wineryDormant: 1,
+        renovationCoins: 9,
+    });
 });
 
 runTest('rl train: mover と business pending は JS と同じ発動条件で立つ', () => {

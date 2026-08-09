@@ -79,6 +79,10 @@ class PlayerState:
         return sum(self.active(n) for n in CARD_NAMES
                    if CARD_DEF[n].category in categories)
 
+    def total_owned_by_cat(self, *categories) -> int:
+        return sum(self.cards[n] for n in CARD_NAMES
+                   if CARD_DEF[n].category in categories)
+
     def built_lm_count(self) -> int:
         return sum(1 for v in self.landmarks.values() if v)
 
@@ -308,13 +312,16 @@ class MachikoroEnv:
             ci = action - ACT_CLEAN_BASE
             if 0 <= ci < NUM_CARDS:
                 name = CARD_NAMES[ci]
-                count = 0
-                for pl in self.players:
+                collected = 0
+                for player_index, pl in enumerate(self.players):
                     n = pl.active(name)
                     if n > 0:
                         pl.dormant[name] = pl.dormant.get(name, 0) + n
-                        count += n
-                p.coins += count
+                        if player_index != self.current:
+                            payment = min(n, pl.coins)
+                            pl.coins -= payment
+                            collected += payment
+                p.coins += collected
             self.pending_clean -= 1
             self._consume_pending("pendingCleaning")
             self._check_pending()
@@ -337,8 +344,9 @@ class MachikoroEnv:
             if 0 <= li < NUM_LANDMARKS:
                 lm = LANDMARK_ORDER[li]
                 if p.landmarks[lm]:
+                    reward = 8 + (1 if p.landmarks[LM_MALL] else 0)
                     p.landmarks[lm] = False
-                    p.coins += 8
+                    p.coins += reward
             self.pending_reno -= 1
             self._consume_pending("pendingRenovation")
             while self.pending_reno > 0:
@@ -445,7 +453,14 @@ class MachikoroEnv:
             for oi, opp in enumerate(self.players):
                 if oi == ci:
                     continue
-                count = opp.active(name)
+                would_activate = True
+                if cd.effect == HARBOR_RED:
+                    would_activate = opp.landmarks[LM_HARBOR]
+                elif cd.effect == FRENCHR:
+                    would_activate = cur.built_lm_count() >= 2
+                elif cd.effect == MEMBERBAR:
+                    would_activate = cur.built_lm_count() >= 3
+                count = self._activation_count(opp, name, would_activate)
                 if count == 0:
                     continue
 
@@ -488,7 +503,12 @@ class MachikoroEnv:
             if cd.color != "blue" or dice not in cd.dice_nums:
                 continue
             for pl in self.players:
-                count = pl.active(name)
+                would_activate = True
+                if cd.effect == CORNFIELD:
+                    would_activate = pl.built_lm_count() <= 1
+                elif cd.effect in (HARBOR, TUNA):
+                    would_activate = pl.landmarks[LM_HARBOR]
+                count = self._activation_count(pl, name, would_activate)
                 if count == 0:
                     continue
 
@@ -510,11 +530,13 @@ class MachikoroEnv:
 
     # ---- 緑カード ----
     def _proc_green(self, p, ci, dice):
+        loan_activation_count = 0
         for name in CARD_NAMES:
             cd = CARD_DEF[name]
             if cd.color != "green" or dice not in cd.dice_nums:
                 continue
-            count = p.active(name)
+            would_activate = cd.effect != FEWLANDMARK or p.built_lm_count() <= 1
+            count = self._activation_count(p, name, would_activate)
             if count == 0:
                 continue
 
@@ -531,19 +553,13 @@ class MachikoroEnv:
                 continue
 
             if cd.effect == LOAN:
+                loan_activation_count = count
                 continue  # ダイスによるペナルティは下で処理
 
             if cd.effect == WINERY:
-                # JS 本体はカード単位でワイナリーを順に処理し、
-                # 各カードごとに「休業中1枚を復活 -> 発動 -> このカードを休業」
-                # の挙動になる。集約表現では、発動可能なワイナリーが1枚でもあれば
-                # 総枚数ぶん発動し、最終的に少なくとも1枚は休業に残る形で近似する。
-                if p.active(name) > 0:
-                    activations = p.cards.get(name, 0)
-                    earn = p.active("ブドウ園") * cd.income * activations
-                    if earn > 0:
-                        p.coins += earn
-                        p.dormant[name] = max(p.dormant.get(name, 0), 1)
+                earn = p.cards["ブドウ園"] * cd.income * count
+                p.coins += earn
+                p.dormant[name] = count
                 continue
 
             earn = self._calc_green(cd, p, count)
@@ -551,28 +567,30 @@ class MachikoroEnv:
 
         # 貸金業：ダイス5か6でペナルティ
         if dice in (5, 6):
-            loan_count = p.active("貸金業")
-            if loan_count > 0:
-                pay = min(loan_count * 2, p.coins)
+            if loan_activation_count > 0:
+                pay = min(loan_activation_count * 2, p.coins)
                 p.coins -= pay
 
     def _calc_green(self, cd, p: PlayerState, count: int) -> int:
         ef = cd.effect
         if ef == CHEESE:
-            return p.active("牧場") * cd.income * count
+            return p.cards["牧場"] * cd.income * count
         if ef == FURNITURE:
-            return (p.active("森林") + p.active("鉱山")) * cd.income * count
+            return (p.cards["森林"] + p.cards["鉱山"]) * cd.income * count
         if ef == MARKET:
-            return p.total_active_by_cat(FARM) * cd.income * count
+            return p.total_owned_by_cat(FARM) * cd.income * count
         if ef == FLOWER:
-            return p.active("花畑") * cd.income * count
+            base = p.cards["花畑"] * cd.income * count
+            return base + (count if p.landmarks[LM_MALL] else 0)
         if ef == FOODWAREHOUSE:
-            return p.total_active_by_cat(RESTAURANT) * cd.income * count
+            return p.total_owned_by_cat(RESTAURANT) * cd.income * count
         if ef == DRINKFACTORY:
-            total_rest = sum(pl.total_active_by_cat(RESTAURANT) for pl in self.players)
+            total_rest = sum(pl.total_owned_by_cat(RESTAURANT) for pl in self.players)
             return total_rest * cd.income * count
         if ef == FEWLANDMARK:
-            return (cd.income * count) if p.built_lm_count() <= 1 else 0
+            if p.built_lm_count() > 1:
+                return 0
+            return (cd.income + (1 if p.landmarks[LM_MALL] else 0)) * count
         # NORMAL + SHOP/RESTAURANT ショッピングモール補正
         amount = cd.income
         if p.landmarks[LM_MALL] and cd.category in (RESTAURANT, SHOP):
@@ -585,7 +603,8 @@ class MachikoroEnv:
             cd = CARD_DEF[name]
             if cd.color != "purple" or dice not in cd.dice_nums:
                 continue
-            if p.active(name) == 0:
+            count = self._activation_count(p, name, True)
+            if count == 0:
                 continue
 
             if cd.effect == STADIUM:
@@ -612,7 +631,7 @@ class MachikoroEnv:
                 for oi, opp in enumerate(self.players):
                     if oi == ci:
                         continue
-                    cnt = opp.total_active_by_cat(RESTAURANT, SHOP)
+                    cnt = opp.total_owned_by_cat(RESTAURANT, SHOP)
                     steal = min(cnt, opp.coins)
                     opp.coins -= steal
                     total += steal
@@ -646,11 +665,9 @@ class MachikoroEnv:
 
             elif cd.effect == PARK:
                 total = sum(pl.coins for pl in self.players)
-                each  = total // len(self.players)
-                rem   = total - each * len(self.players)
+                each = (total + len(self.players) - 1) // len(self.players)
                 for pl in self.players:
                     pl.coins = each
-                p.coins += rem
 
     def _pending_count_for_field(self, field: str) -> int:
         return {
@@ -750,6 +767,12 @@ class MachikoroEnv:
         if was_dormant:
             player.dormant[name] = max(0, player.dormant.get(name, 0) - 1)
         return was_dormant
+
+    def _activation_count(self, player: PlayerState, name: str, would_activate: bool) -> int:
+        active_before = player.active(name)
+        if would_activate and player.dormant.get(name, 0) > 0:
+            player.dormant[name] = 0
+        return active_before
 
     def _add_one_card(self, player: PlayerState, name: str, dormant: bool = False):
         player.cards[name] += 1
