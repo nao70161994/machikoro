@@ -83,6 +83,10 @@ class PlayerState:
         return sum(self.cards[n] for n in CARD_NAMES
                    if CARD_DEF[n].category in categories)
 
+    def total_owned_by_color(self, color: str) -> int:
+        return sum(self.cards[n] for n in CARD_NAMES
+                   if CARD_DEF[n].color == color)
+
     def built_lm_count(self) -> int:
         return sum(1 for v in self.landmarks.values() if v)
 
@@ -583,9 +587,9 @@ class MachikoroEnv:
             base = p.cards["花畑"] * cd.income * count
             return base + (count if p.landmarks[LM_MALL] else 0)
         if ef == FOODWAREHOUSE:
-            return p.total_owned_by_cat(RESTAURANT) * cd.income * count
+            return p.total_owned_by_color("red") * cd.income * count
         if ef == DRINKFACTORY:
-            total_rest = sum(pl.total_owned_by_cat(RESTAURANT) for pl in self.players)
+            total_rest = sum(pl.total_owned_by_color("red") for pl in self.players)
             return total_rest * cd.income * count
         if ef == FEWLANDMARK:
             if p.built_lm_count() > 1:

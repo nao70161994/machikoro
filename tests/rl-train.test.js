@@ -800,6 +800,11 @@ p.cards["花畑"] = 1
 p.dormant["花畑"] = 1
 p.landmarks["ショッピングモール"] = True
 flower = combo._calc_green(CARD_DEF["フラワーショップ"], p, 1)
+p.cards["カフェ"] = 1
+p.dormant["カフェ"] = 1
+combo.players[1].cards["カフェ"] = 1
+food_warehouse = combo._calc_green(CARD_DEF["食品倉庫"], p, 1)
+drink_factory = combo._calc_green(CARD_DEF["ドリンク工場"], p, 1)
 
 cleaning = MachikoroEnv(player_count=3)
 cleaning.phase = PHASE_PENDING
@@ -848,6 +853,8 @@ reno.step(ACT_RENO_BASE + LANDMARK_INDEX["駅"])
 print(json.dumps({
     "cheese": cheese,
     "flower": flower,
+    "foodWarehouse": food_warehouse,
+    "drinkFactory": drink_factory,
     "cleaningCoins": [pl.coins for pl in cleaning.players],
     "cleaningDormant": [pl.dormant["カフェ"] for pl in cleaning.players],
     "parkCoins": [pl.coins for pl in park.players],
@@ -861,6 +868,8 @@ print(json.dumps({
     assert.deepStrictEqual(JSON.parse(output), {
         cheese: 6,
         flower: 2,
+        foodWarehouse: 2,
+        drinkFactory: 2,
         cleaningCoins: [6, 3, 0],
         cleaningDormant: [1, 2, 2],
         parkCoins: [2, 2, 2],

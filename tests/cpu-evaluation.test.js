@@ -782,6 +782,21 @@ runTest('CPU evaluation はcombo payoff候補と限界収入を注入定数で�
         CPUEvaluation.marginalComboIncome(ranch, { effect: effects.MARKET, income: 2 }, categories, effects),
         0
     );
+    const cafe = { name: 'カフェ', category: categories.RESTAURANT, color: 'red' };
+    const bakery = { name: 'パン屋', category: categories.RESTAURANT, color: 'green' };
+    assert.deepStrictEqual(
+        CPUEvaluation.futurePayoffCardNames(cafe, 'unlock', categories),
+        ['食品倉庫', 'ドリンク工場']
+    );
+    assert.deepStrictEqual(CPUEvaluation.futurePayoffCardNames(bakery, 'unlock', categories), []);
+    assert.strictEqual(
+        CPUEvaluation.marginalComboIncome(cafe, { effect: effects.FOODWAREHOUSE, income: 2 }, categories, effects),
+        2
+    );
+    assert.strictEqual(
+        CPUEvaluation.marginalComboIncome(bakery, { effect: effects.DRINKFACTORY, income: 1 }, categories, effects),
+        0
+    );
 });
 
 runTest('CPU本体のcombo scoring wrapperはpure evaluationへ完全委譲する', () => {

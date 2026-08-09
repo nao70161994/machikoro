@@ -372,7 +372,7 @@ const CPUBuildPolicyRuntime = Object.freeze({
         if (try_("ワイナリー",  3, current.countCard("ブドウ園") >= 2)) return true;
         if (try_("フラワーショップ", 1, current.countCard("花畑") >= 2)) return true;
         if (try_("青果市場",    2, current.cards.filter(c => c.category === CARD_CATEGORIES.FARM).length >= 3)) return true;
-        if (try_("食品倉庫",    2, current.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT).length >= 3)) return true;
+        if (try_("食品倉庫",    2, current.cards.filter(c => c.color === "red").length >= 3)) return true;
         const crowdAttackReady = game.players.length < 4 || cpu._estimateStableIncome(game, current) >= 12 || current.builtLandmarkCount() >= 4;
         if (try_("テレビ局",    7, crowdAttackReady && game.players.some(p => p !== current && p.coins >= 6) && current.countCard("テレビ局") === 0)) return true;
         if (try_("税務署",      4, crowdAttackReady && game.players.some(p => p !== current && p.coins >= 10) && current.countCard("税務署") === 0)) return true;

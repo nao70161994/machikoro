@@ -75,7 +75,7 @@ const CARD_INCOME_HANDLER_IMPLS = Object.freeze({
     flower: (card, owner) =>
         owner.countCardIncludingDormantById(CARD_IDS.FLOWER_GARDEN) * card.income,
     foodwarehouse: (card, owner) =>
-        owner.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT).length * card.income,
+        owner.cards.filter(c => c.color === "red").length * card.income,
     fewlandmark: (card, owner) =>
         owner.builtLandmarkCount() <= 1 ? card.income : 0,
     cornfield: (card, owner) =>
@@ -84,7 +84,7 @@ const CARD_INCOME_HANDLER_IMPLS = Object.freeze({
         owner.countCardIncludingDormantById(CARD_IDS.VINEYARD) * card.income,
     drinkfactory: (card, owner, game) =>
         game.players.reduce((sum, p) =>
-            sum + p.cards.filter(c => c.category === CARD_CATEGORIES.RESTAURANT).length, 0) * card.income,
+            sum + p.cards.filter(c => c.color === "red").length, 0) * card.income,
 });
 
 const CARD_INCOME_EFFECT_HANDLERS = Object.freeze(Object.fromEntries(

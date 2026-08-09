@@ -948,10 +948,10 @@ const CPUEvaluation = Object.freeze({
             case effects.MARKET:
                 return player.cards.filter(c => c.category === categories.FARM && !player.isDormant(c)).length * 1.3;
             case effects.FOODWAREHOUSE:
-                return player.cards.filter(c => c.category === categories.RESTAURANT && !player.isDormant(c)).length * 0.9;
+                return player.cards.filter(c => c.color === 'red').length * 0.9;
             case effects.DRINKFACTORY:
                 return game.players.reduce((sum, owner) =>
-                    sum + owner.cards.filter(c => c.category === categories.RESTAURANT && !owner.isDormant(c)).length, 0) * 0.9;
+                    sum + owner.cards.filter(c => c.color === 'red').length, 0) * 0.9;
             case effects.WINERY:
                 return player.countCard('ブドウ園') * 1.2;
             case effects.HARBOR:
@@ -1139,7 +1139,7 @@ const CPUEvaluation = Object.freeze({
         if (card.name === 'ブドウ園') payoffs.push('ワイナリー');
         if (mode === 'core') return payoffs;
         if (card.category === categories.FARM) payoffs.push('青果市場');
-        if (card.category === categories.RESTAURANT) {
+        if (card.color === 'red') {
             payoffs.push('食品倉庫');
             payoffs.push('ドリンク工場');
         }
@@ -1161,7 +1161,7 @@ const CPUEvaluation = Object.freeze({
                 return enabler.name === 'ブドウ園' ? payoff.income : 0;
             case effects.FOODWAREHOUSE:
             case effects.DRINKFACTORY:
-                return enabler.category === categories.RESTAURANT ? payoff.income : 0;
+                return enabler.color === 'red' ? payoff.income : 0;
             default:
                 return 0;
         }

@@ -1737,13 +1737,14 @@ runTest('calcCardIncome が WINERY・FLOWER・FOODWAREHOUSE・DRINKFACTORY を�
     p0.cards = [createCardByName('花畑'), createCardByName('花畑')];
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('フラワーショップ'), p0, game), 2);
 
-    // FOODWAREHOUSE: 飲食店2枚(カフェ×2) × income2 = 4
-    p0.cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    // FOODWAREHOUSE: カップマーク2枚(カフェ×2) × income2 = 4。パン屋は数えない
+    p0.cards = [createCardByName('カフェ'), createCardByName('カフェ'), createCardByName('パン屋')];
+    p0.dormantCards = [p0.cards[0]];
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('食品倉庫'), p0, game), 4);
 
-    // DRINKFACTORY: 全員の飲食店合計 × income1
+    // DRINKFACTORY: 全員のカップマーク合計 × income1。パン屋は数えない
     // p0: カフェ×2, p1: カフェ×1 → 合計3 × 1 = 3
-    game.players[1].cards = [createCardByName('カフェ')];
+    game.players[1].cards = [createCardByName('カフェ'), createCardByName('パン屋')];
     game.players[1].dormantCards = [];
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('ドリンク工場'), p0, game), 3);
 });

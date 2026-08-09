@@ -991,7 +991,7 @@ runTest('_cardDependencyValue: ワイナリーはブドウ園枚数を参照す�
     assert.strictEqual(cpu._cardDependencyValue(createCardByName('ワイナリー'), player, game), 2.4);
 });
 
-runTest('_cardDependencyValue: 青果市場と工場系は実ルールと同じカテゴリを参照する', () => {
+runTest('_cardDependencyValue: 青果市場と工場系は実ルールと同じ所有施設を参照する', () => {
     const cpu = new CPU("expert", { expertPreset: "v2simple" });
     const game = new GameManager(2);
     const player = game.currentPlayer();
@@ -1001,9 +1001,10 @@ runTest('_cardDependencyValue: 青果市場と工場系は実ルールと同じ�
         createCardByName('リンゴ園'),
         createCardByName('カフェ'),
         createCardByName('ファミレス'),
+        createCardByName('パン屋'),
     ];
-    opponent.cards = [createCardByName('寿司屋')];
-    player.dormantCards = [];
+    opponent.cards = [createCardByName('寿司屋'), createCardByName('パン屋')];
+    player.dormantCards = [player.cards[2]];
     opponent.dormantCards = [];
 
     assert.strictEqual(cpu._cardDependencyValue(createCardByName('青果市場'), player, game), 2.6);
@@ -1197,7 +1198,7 @@ runTest('chooseDiceCount: expert v2 simple は港込みの高出目期待値を�
     current.landmarks[LANDMARK_NAMES.HARBOR] = true;
     current.cards = [
         createCardByName('食品倉庫'),
-        createCardByName('パン屋'),
+        createCardByName('カフェ'),
         createCardByName('コンビニ'),
         createCardByName('コンビニ'),
     ];

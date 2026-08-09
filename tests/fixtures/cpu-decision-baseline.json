@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "42a4bef2ae4b3c8d3da74b44a38e3bf1cbd548bf",
+  "sourceCommit": "27c2185bf60aca600d0da861861e905c3da2d520",
   "difficulties": [
     "weak",
     "normal",
@@ -128,7 +128,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 4,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -206,7 +206,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 4,
+            "evalCard": 1,
             "expertCandidateScore": 0
           },
           {
@@ -542,10 +542,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1.9,
+            "affordableScore": 0.9,
             "cardName": "食品倉庫",
-            "evalCard": 2,
-            "expertCandidateScore": 1
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 0,
@@ -620,10 +620,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 2.1,
+            "affordableScore": 0.9,
             "cardName": "ドリンク工場",
-            "evalCard": 3,
-            "expertCandidateScore": 1.2
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 9,
@@ -968,7 +968,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 4.72,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -1046,7 +1046,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 5.8999999999999995,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -1384,10 +1384,10 @@
             "expertCandidateScore": 5.8999999999999995
           },
           {
-            "affordableScore": 4.109999999999999,
+            "affordableScore": 1.75,
             "cardName": "食品倉庫",
-            "evalCard": 4.72,
-            "expertCandidateScore": 2.36
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 13.740000000000002,
@@ -1462,10 +1462,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 4.582,
+            "affordableScore": 1.75,
             "cardName": "ドリンク工場",
-            "evalCard": 7.08,
-            "expertCandidateScore": 2.832
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 1.1,
@@ -1798,7 +1798,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 7.08,
+            "evalCard": 2.36,
             "expertCandidateScore": 0
           },
           {
@@ -1876,7 +1876,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 14.16,
+            "evalCard": 1.18,
             "expertCandidateScore": 0
           },
           {
@@ -2266,7 +2266,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 4,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -2344,7 +2344,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 4,
+            "evalCard": 1,
             "expertCandidateScore": 0
           },
           {
@@ -2680,10 +2680,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1.9,
+            "affordableScore": 0.9,
             "cardName": "食品倉庫",
-            "evalCard": 2,
-            "expertCandidateScore": 1
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 0,
@@ -2758,10 +2758,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 2.1,
+            "affordableScore": 0.9,
             "cardName": "ドリンク工場",
-            "evalCard": 3,
-            "expertCandidateScore": 1.2
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 9,
@@ -3106,7 +3106,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 4.72,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -3184,7 +3184,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 5.8999999999999995,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -3522,10 +3522,10 @@
             "expertCandidateScore": 5.8999999999999995
           },
           {
-            "affordableScore": 4.109999999999999,
+            "affordableScore": 1.75,
             "cardName": "食品倉庫",
-            "evalCard": 4.72,
-            "expertCandidateScore": 2.36
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 13.740000000000002,
@@ -3600,10 +3600,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 4.582,
+            "affordableScore": 1.75,
             "cardName": "ドリンク工場",
-            "evalCard": 7.08,
-            "expertCandidateScore": 2.832
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 1.1,
@@ -3936,7 +3936,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 7.08,
+            "evalCard": 2.36,
             "expertCandidateScore": 0
           },
           {
@@ -4014,7 +4014,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 14.16,
+            "evalCard": 1.18,
             "expertCandidateScore": 0
           },
           {
@@ -4404,7 +4404,7 @@
           {
             "affordableScore": -2,
             "cardName": "食品倉庫",
-            "evalCard": 4,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -4482,7 +4482,7 @@
           {
             "affordableScore": -4.1,
             "cardName": "ドリンク工場",
-            "evalCard": 4,
+            "evalCard": 1,
             "expertCandidateScore": 0
           },
           {
@@ -4851,10 +4851,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1.5,
+            "affordableScore": -0.4999999999999999,
             "cardName": "食品倉庫",
-            "evalCard": 2,
-            "expertCandidateScore": 1
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 0.5,
@@ -4929,10 +4929,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 3.4,
+            "affordableScore": -2.6,
             "cardName": "ドリンク工場",
-            "evalCard": 3,
-            "expertCandidateScore": 1.2
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 28.75,
@@ -5310,7 +5310,7 @@
           {
             "affordableScore": -1.4,
             "cardName": "食品倉庫",
-            "evalCard": 4.72,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -5388,7 +5388,7 @@
           {
             "affordableScore": -3.4999999999999996,
             "cardName": "ドリンク工場",
-            "evalCard": 5.8999999999999995,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -5759,10 +5759,10 @@
             "expertCandidateScore": 5.8999999999999995
           },
           {
-            "affordableScore": 6.07,
+            "affordableScore": 1.35,
             "cardName": "食品倉庫",
-            "evalCard": 4.72,
-            "expertCandidateScore": 2.36
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 15.44,
@@ -5837,10 +5837,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 13.41,
+            "affordableScore": -0.7499999999999999,
             "cardName": "ドリンク工場",
-            "evalCard": 7.08,
-            "expertCandidateScore": 2.832
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": -2.2000000000000006,
@@ -6206,7 +6206,7 @@
           {
             "affordableScore": -1.4,
             "cardName": "食品倉庫",
-            "evalCard": 7.08,
+            "evalCard": 2.36,
             "expertCandidateScore": 0
           },
           {
@@ -6284,7 +6284,7 @@
           {
             "affordableScore": -3.4999999999999996,
             "cardName": "ドリンク工場",
-            "evalCard": 14.16,
+            "evalCard": 1.18,
             "expertCandidateScore": 0
           },
           {
@@ -6707,7 +6707,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 4,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -6785,7 +6785,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 4,
+            "evalCard": 1,
             "expertCandidateScore": 0
           },
           {
@@ -7148,10 +7148,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 1.9,
+            "affordableScore": 0.9,
             "cardName": "食品倉庫",
-            "evalCard": 2,
-            "expertCandidateScore": 1
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 0,
@@ -7226,10 +7226,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 2.1,
+            "affordableScore": 0.9,
             "cardName": "ドリンク工場",
-            "evalCard": 3,
-            "expertCandidateScore": 1.2
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 9,
@@ -7601,7 +7601,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 4.72,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -7679,7 +7679,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 5.8999999999999995,
+            "evalCard": 0,
             "expertCandidateScore": 0
           },
           {
@@ -8044,10 +8044,10 @@
             "expertCandidateScore": 5.8999999999999995
           },
           {
-            "affordableScore": 4.109999999999999,
+            "affordableScore": 1.75,
             "cardName": "食品倉庫",
-            "evalCard": 4.72,
-            "expertCandidateScore": -3.94
+            "evalCard": 0,
+            "expertCandidateScore": -6.3
           },
           {
             "affordableScore": 13.740000000000002,
@@ -8122,10 +8122,10 @@
             "expertCandidateScore": 0
           },
           {
-            "affordableScore": 4.582,
+            "affordableScore": 1.75,
             "cardName": "ドリンク工場",
-            "evalCard": 7.08,
-            "expertCandidateScore": 2.832
+            "evalCard": 0,
+            "expertCandidateScore": 0
           },
           {
             "affordableScore": 1.1,
@@ -8480,7 +8480,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "食品倉庫",
-            "evalCard": 7.08,
+            "evalCard": 2.36,
             "expertCandidateScore": 0
           },
           {
@@ -8558,7 +8558,7 @@
           {
             "affordableScore": -0.6,
             "cardName": "ドリンク工場",
-            "evalCard": 14.16,
+            "evalCard": 1.18,
             "expertCandidateScore": 0
           },
           {
