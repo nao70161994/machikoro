@@ -497,6 +497,33 @@ runTest('CPU pending cleaning action は不正候補を一度だけ評価して�
     assert.strictEqual(game.pendingCleaning, 1);
 });
 
+runTest('強CPUのビジネスセンター評価値をcanonical payloadから除外してpendingを解決する', () => {
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    game.currentPlayer().cards = [
+        createCardByName('ビジネスセンター'),
+        createCardByName('麦畑'),
+        createCardByName('パン屋'),
+    ];
+    game.currentPlayer().dormantCards = [];
+    game.players[1].cards = [createCardByName('森林'), createCardByName('鉱山')];
+    game.players[1].dormantCards = [];
+    const cpu = new CPU('strong');
+
+    const scoredMove = cpu.chooseBusinessMove(game);
+    assert.strictEqual(Number.isFinite(scoredMove.score), true);
+
+    const proposal = CPU.choosePendingAction(game, cpu, { clearFallback: false });
+    assert.ok(proposal);
+    assert.strictEqual(proposal.action, 'resolveBusiness');
+    assert.deepStrictEqual(Object.keys(proposal.data).sort(), ['myCard', 'targetIndex', 'theirCard']);
+    assert.strictEqual(Object.hasOwn(proposal.data, 'score'), false);
+    assert.strictEqual(CPUPendingResolution.applyPendingAction(game, proposal), true);
+    assert.strictEqual(game.pendingBusiness, 0);
+    assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
+});
+
 runTest('CPU pending action互換executorはcanonical proposalだけを適用する', () => {
     const calls = [];
     const game = {

@@ -160,11 +160,16 @@ const CPUPendingResolution = Object.freeze({
         if (!CPUPendingResolution.isCpuBusinessMove(game, move)) {
             return CPUPendingResolution.pendingFallback(game, 'resolveBusiness', 'pendingBusiness', options.fallbackBusiness, options);
         }
+        const payload = {
+            myCard: move.myCard,
+            targetIndex: move.targetIndex,
+            theirCard: move.theirCard,
+        };
         return {
             action: 'resolveBusiness',
-            payload: move,
+            payload,
             move,
-            apply: () => game.resolveBusiness(move.myCard, move.targetIndex, move.theirCard),
+            apply: () => game.resolveBusiness(payload.myCard, payload.targetIndex, payload.theirCard),
         };
     },
 
