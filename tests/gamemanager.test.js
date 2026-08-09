@@ -1316,6 +1316,35 @@ runTest('ショッピングモール所持で飲食店・商店の緑カード�
     assert.strictEqual(p0b.coins, 2);
 });
 
+runTest('ショッピングモールは特殊計算を持つ商店カードにもカード1枚ごとに+1する', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks['ショッピングモール'] = true;
+    current.cards = [createCardByName('花畑'), createCardByName('麦畑')];
+    current.dormantCards = [];
+
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('フラワーショップ'), current, game), 2);
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('青果市場'), current, game), 5);
+
+    current.landmarks['駅'] = true;
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), current, game), 0);
+    current.landmarks['駅'] = false;
+    assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), current, game), 2);
+});
+
+runTest('ショッピングモールは商店の改装屋が得る収入にも+1する', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    current.landmarks['ショッピングモール'] = true;
+    current.landmarks['駅'] = true;
+    current.coins = 0;
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingRenovation = 1;
+
+    assert.strictEqual(game.resolveRenovation('駅'), true);
+    assert.strictEqual(current.coins, 9);
+});
+
 runTest('貸金業は5か6が出ると枚数×2コイン支払う', () => {
     const game = new GameManager(2);
     const p0 = game.currentPlayer();
@@ -1490,6 +1519,7 @@ runTest('calcCardIncomeがCHEESE・FURNITURE・MARKET・FEWLANDMARKの収入を�
     p0.landmarks['駅'] = true;
     p0.landmarks['ショッピングモール'] = true;
     assert.strictEqual(GameManager.calcCardIncome(createCardByName('雑貨屋'), p0, game), 0);
+    p0.landmarks['ショッピングモール'] = false;
     // 休業中でも街に存在する牧場は、チーズ工場の参照枚数に含める
     p0.cards = [createCardByName('牧場'), createCardByName('牧場')];
     p0.dormantCards = [p0.cards[0]];

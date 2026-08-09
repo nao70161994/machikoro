@@ -75,5 +75,10 @@ runTest('pending transitionは引越しと改装の報酬結果を固定する',
         reward: 8,
         actorCoins: 11,
     });
+    assert.deepStrictEqual(GamePendingTransition.renovationPlan(3, { 駅: true }, '駅', 9), {
+        landmarkName: '駅',
+        reward: 9,
+        actorCoins: 12,
+    });
     assert.strictEqual(GamePendingTransition.renovationPlan(3, { 駅: false }, '駅'), null);
 });

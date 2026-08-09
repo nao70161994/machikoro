@@ -422,11 +422,12 @@ class GameManager {
 
     static calcCardIncome(card, owner, game) {
         const handler = CARD_INCOME_EFFECT_HANDLERS[card.effect];
-        if (handler) return handler(card, owner, game);
-
-        let amount = card.income;
+        let amount = handler ? handler(card, owner, game) : card.income;
         if (owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL] &&
-            isCardInCategoryGroup(card, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP)) amount += 1;
+                isCardInCategoryGroup(card, CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP) &&
+                !(card.effect === CARD_EFFECTS.FEWLANDMARK && amount <= 0)) {
+            amount += 1;
+        }
         return amount;
     }
 
@@ -904,11 +905,17 @@ class GameManager {
             return false;
         }
         if (!current) return false;
-        const transition = GamePendingTransition.renovationPlan(current.coins, current.landmarks, landmarkName);
+        const reward = 8 + (current.landmarks[LANDMARK_NAMES.SHOPPING_MALL] ? 1 : 0);
+        const transition = GamePendingTransition.renovationPlan(
+            current.coins,
+            current.landmarks,
+            landmarkName,
+            reward
+        );
         if (!transition) return false;
         current.landmarks[transition.landmarkName] = false;
         current.coins = transition.actorCoins;
-        this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+8コイン`);
+        this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+${transition.reward}コイン`);
         this._consumePendingAction('pendingRenovation');
 
         // 残りの改装屋発動回数があっても建設済みランドマークがなければスキップ

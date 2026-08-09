@@ -61,9 +61,8 @@ const GamePendingTransition = (() => {
         });
     }
 
-    function renovationPlan(actorCoins, landmarks, landmarkName) {
+    function renovationPlan(actorCoins, landmarks, landmarkName, reward = 8) {
         if (!landmarks || landmarks[landmarkName] !== true) return null;
-        const reward = 8;
         return freezePlan({
             landmarkName,
             reward,
