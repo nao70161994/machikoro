@@ -866,6 +866,94 @@ runTest('休業中の高級フレンチは相手が5を出すと休業解除だ�
     assert.strictEqual(opponent.coins, 0);
 });
 
+runTest('休業中の条件付き施設はカード固有の発動条件を満たすまで休業解除しない', () => {
+    const frenchGame = new GameManager(2);
+    const frenchCurrent = frenchGame.currentPlayer();
+    const frenchOwner = frenchGame.players[1];
+    const french = createCardByName('高級フレンチ');
+    frenchCurrent.cards = [];
+    frenchCurrent.dormantCards = [];
+    frenchCurrent.coins = 10;
+    frenchOwner.cards = [french];
+    frenchOwner.dormantCards = [french];
+
+    frenchGame.rollDice(5);
+
+    assert.strictEqual(frenchOwner.isDormant(french), true);
+    assert.strictEqual(frenchCurrent.coins, 10);
+
+    const sushiGame = new GameManager(2);
+    const sushiCurrent = sushiGame.currentPlayer();
+    const sushiOwner = sushiGame.players[1];
+    const sushi = createCardByName('寿司屋');
+    sushiCurrent.cards = [];
+    sushiCurrent.dormantCards = [];
+    sushiOwner.cards = [sushi];
+    sushiOwner.dormantCards = [sushi];
+    sushiOwner.landmarks['港'] = false;
+
+    sushiGame.rollDice(1);
+
+    assert.strictEqual(sushiOwner.isDormant(sushi), true);
+
+    const cornGame = new GameManager(2);
+    const cornOwner = cornGame.currentPlayer();
+    const corn = createCardByName('コーン畑');
+    cornOwner.cards = [corn];
+    cornOwner.dormantCards = [corn];
+    cornOwner.landmarks['港'] = true;
+    cornOwner.landmarks['ショッピングモール'] = true;
+
+    cornGame.rollDice(3);
+
+    assert.strictEqual(cornOwner.isDormant(corn), true);
+});
+
+runTest('休業中の条件付き施設は発動条件を満たす出目では休業解除だけ行う', () => {
+    const frenchGame = new GameManager(2);
+    const frenchCurrent = frenchGame.currentPlayer();
+    const frenchOwner = frenchGame.players[1];
+    const french = createCardByName('高級フレンチ');
+    frenchCurrent.cards = [];
+    frenchCurrent.dormantCards = [];
+    frenchCurrent.coins = 10;
+    frenchCurrent.landmarks['港'] = true;
+    frenchCurrent.landmarks['ショッピングモール'] = true;
+    frenchOwner.cards = [french];
+    frenchOwner.dormantCards = [french];
+
+    frenchGame.rollDice(5);
+
+    assert.strictEqual(frenchOwner.isDormant(french), false);
+    assert.strictEqual(frenchCurrent.coins, 10);
+
+    const wineryGame = new GameManager(2);
+    const wineryOwner = wineryGame.currentPlayer();
+    const winery = createCardByName('ワイナリー');
+    wineryOwner.cards = [winery];
+    wineryOwner.dormantCards = [winery];
+    const before = wineryOwner.coins;
+
+    wineryGame.rollDice(9);
+
+    assert.strictEqual(wineryOwner.isDormant(winery), false);
+    assert.strictEqual(wineryOwner.coins, before);
+});
+
+runTest('休業中の雑貨屋はランドマーク条件を満たすまで休業解除しない', () => {
+    const game = new GameManager(2);
+    const current = game.currentPlayer();
+    const store = createCardByName('雑貨屋');
+    current.cards = [store];
+    current.dormantCards = [store];
+    current.landmarks['港'] = true;
+    current.landmarks['ショッピングモール'] = true;
+
+    game.rollDice(2);
+
+    assert.strictEqual(current.isDormant(store), true);
+});
+
 runTest('休業中の高級フレンチ所持中に購入した高級フレンチは個別に発動する', () => {
     const game = new GameManager(2);
     const current = game.players[0];

@@ -446,6 +446,33 @@ class GameManager {
         return revived;
     }
 
+    _redActivationPlan(card, owner, current) {
+        return GameCardActivationPolicy.redActivationPlan({
+            effect: card.effect,
+            effects: CARD_EFFECTS,
+            income: card.income,
+            hasHarbor: !!owner.landmarks[LANDMARK_NAMES.HARBOR],
+            hasShoppingMall: !!owner.landmarks[LANDMARK_NAMES.SHOPPING_MALL],
+            currentLandmarkCount: () => current.builtLandmarkCount(),
+            currentCoins: () => current.coins,
+            isRestaurantOrShop: () => isCardInCategoryGroup(
+                card,
+                CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP
+            ),
+        });
+    }
+
+    _blueIncomePlan(card, owner, tunaDice) {
+        return GameCardActivationPolicy.blueIncomePlan({
+            effect: card.effect,
+            effects: CARD_EFFECTS,
+            income: card.income,
+            builtLandmarkCount: () => owner.builtLandmarkCount(),
+            hasHarbor: !!owner.landmarks[LANDMARK_NAMES.HARBOR],
+            tunaDice: () => tunaDice || [rollRandomDie(), rollRandomDie()],
+        });
+    }
+
     processIncome(tunaDice = null) {
         const dice = this.lastDiceResult;
         const current = this.currentPlayer();
@@ -474,7 +501,9 @@ class GameManager {
         for (let offset = 1; offset < this.players.length; offset++) {
             const i = (ci - offset + this.players.length) % this.players.length;
             const other = this.players[i];
-            const revivedCards = this._reviveDormantCardsForDice(other, dice, card => card.color === "red");
+            const revivedCards = this._reviveDormantCardsForDice(other, dice, card =>
+                card.color === "red" && this._redActivationPlan(card, other, current).active
+            );
             const activations = [];
             for (const card of other.cards) {
                 if (!GameCardActivationPolicy.isActivationCandidate({
@@ -484,19 +513,7 @@ class GameManager {
                     color: "red",
                     dice,
                 })) continue;
-                const activation = GameCardActivationPolicy.redActivationPlan({
-                    effect: card.effect,
-                    effects: CARD_EFFECTS,
-                    income: card.income,
-                    hasHarbor: !!other.landmarks[LANDMARK_NAMES.HARBOR],
-                    hasShoppingMall: !!other.landmarks[LANDMARK_NAMES.SHOPPING_MALL],
-                    currentLandmarkCount: () => current.builtLandmarkCount(),
-                    currentCoins: () => current.coins,
-                    isRestaurantOrShop: () => isCardInCategoryGroup(
-                        card,
-                        CARD_CATEGORY_GROUPS.RESTAURANT_OR_SHOP
-                    ),
-                });
+                const activation = this._redActivationPlan(card, other, current);
                 if (!activation.active) continue;
                 activations.push({
                     card,
@@ -526,7 +543,9 @@ class GameManager {
 
     _processBlue(dice, tunaDice) {
         for (const p of this.players) {
-            const revivedCards = this._reviveDormantCardsForDice(p, dice, card => card.color === "blue");
+            const revivedCards = this._reviveDormantCardsForDice(p, dice, card =>
+                card.color === "blue" && this._blueIncomePlan(card, p, [0, 0]).active
+            );
             for (const card of p.cards) {
                 if (!GameCardActivationPolicy.isActivationCandidate({
                     card,
@@ -536,14 +555,7 @@ class GameManager {
                     dice,
                 })) continue;
 
-                const plan = GameCardActivationPolicy.blueIncomePlan({
-                    effect: card.effect,
-                    effects: CARD_EFFECTS,
-                    income: card.income,
-                    builtLandmarkCount: () => p.builtLandmarkCount(),
-                    hasHarbor: !!p.landmarks[LANDMARK_NAMES.HARBOR],
-                    tunaDice: () => tunaDice || [rollRandomDie(), rollRandomDie()],
-                });
+                const plan = this._blueIncomePlan(card, p, tunaDice);
                 if (!plan.active) continue;
                 p.coins += plan.amount;
                 if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.CORNFIELD) {
@@ -560,7 +572,12 @@ class GameManager {
     }
 
     _processGreen(current, dice) {
-        const revivedCards = this._reviveDormantCardsForDice(current, dice, card => card.color === "green");
+        const revivedCards = this._reviveDormantCardsForDice(current, dice, card =>
+            card.color === "green" && (
+                card.effect !== CARD_EFFECTS.FEWLANDMARK ||
+                GameManager.calcCardIncome(card, current, this) > 0
+            )
+        );
         for (const card of current.cards) {
             if (!GameCardActivationPolicy.isActivationCandidate({
                 card,

@@ -35,7 +35,7 @@ assert.deepStrictEqual({
     actions: traceEntries.slice(0, 12).map(entry => entry.chosenAction && entry.chosenAction.label),
 }, {
     winner: 0,
-    turns: 52,
+    turns: 44,
     exhausted: false,
     actions: ['ROLL1', 'BUY_LM:駅', 'ROLL1', 'BUY_CARD:貸金業', 'ROLL1', 'ROLL1',
         'BUY_CARD:パン屋', 'ROLL1', 'BUY_LM:駅', 'ROLL1', 'ROLL1', 'BUY_CARD:パン屋'],
