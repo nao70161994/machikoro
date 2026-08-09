@@ -469,8 +469,8 @@ class GameManager {
     }
 
     _processRed(current, ci, dice) {
-        for (let i = 0; i < this.players.length; i++) {
-            if (i === ci) continue;
+        for (let offset = 1; offset < this.players.length; offset++) {
+            const i = (ci - offset + this.players.length) % this.players.length;
             const other = this.players[i];
             const revivedCards = this._reviveDormantCardsForDice(other, dice, card => card.color === "red");
             const activations = [];

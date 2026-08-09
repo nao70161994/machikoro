@@ -1221,6 +1221,28 @@ runTest('赤カード（カフェ）は現在プレイヤーから1コイン徴�
     assert.strictEqual(game2.players[1].coins, 0);
 });
 
+runTest('赤施設への支払いは手番プレイヤーから反時計回りに処理する', () => {
+    const game = new GameManager(4);
+    game.currentPlayerIndex = 2;
+    game.players.forEach(player => {
+        player.cards = [];
+        player.dormantCards = [];
+        player.coins = 0;
+    });
+    game.currentPlayer().coins = 3;
+    game.currentPlayer().hasYakusho = false;
+    game.players[0].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    game.players[1].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+    game.players[3].cards = [createCardByName('カフェ'), createCardByName('カフェ')];
+
+    game.rollDice(3);
+
+    assert.strictEqual(game.currentPlayer().coins, 0);
+    assert.strictEqual(game.players[1].coins, 2);
+    assert.strictEqual(game.players[0].coins, 1);
+    assert.strictEqual(game.players[3].coins, 0);
+});
+
 runTest('チーズ工場は牧場枚数×3コインを得る', () => {
     const game = new GameManager(2);
     const p0 = game.currentPlayer();
