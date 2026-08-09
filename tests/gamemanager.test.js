@@ -1719,6 +1719,20 @@ runTest('公園はコインを全員に均等分配する', () => {
     assert.strictEqual(game.players[2].coins, 6);
 });
 
+runTest('公園は端数が出ると銀行から補填して全員を同額にする', () => {
+    const game = new GameManager(4);
+    game.currentPlayer().cards = [createCardByName('公園')];
+    game.currentPlayer().dormantCards = [];
+    game.players[0].coins = 1;
+    game.players[1].coins = 2;
+    game.players[2].coins = 8;
+    game.players[3].coins = 0;
+
+    game.rollDice(11);
+
+    assert.deepStrictEqual(Array.from(game.players, player => player.coins), [3, 3, 3, 3]);
+});
+
 runTest('貸金業の支払いはactivation policy計画を同じcoin/log結果へ適用する', () => {
     const game = new GameManager(2);
     const current = game.currentPlayer();

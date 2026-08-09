@@ -32,24 +32,21 @@ const GameCoinTransaction = (() => {
         });
     }
 
-    function equalDistributionPlan(balances, remainderReceiverIndex) {
+    function equalDistributionPlan(balances) {
         if (!Array.isArray(balances) || balances.length === 0) {
             throw new TypeError('balances must be a non-empty array');
         }
-        if (!Number.isInteger(remainderReceiverIndex) ||
-                remainderReceiverIndex < 0 || remainderReceiverIndex >= balances.length) {
-            throw new RangeError('remainderReceiverIndex must identify a balance');
-        }
         const total = balances.reduce((sum, balance) => sum + balance, 0);
-        const each = Math.floor(total / balances.length);
-        const remainder = total - each * balances.length;
+        const each = Math.ceil(total / balances.length);
+        const remainder = total % balances.length;
+        const bankContribution = (balances.length - remainder) % balances.length;
         const nextBalances = balances.map(() => each);
-        nextBalances[remainderReceiverIndex] += remainder;
         return Object.freeze({
             balances: Object.freeze(nextBalances),
             total,
             each,
             remainder,
+            bankContribution,
         });
     }
 

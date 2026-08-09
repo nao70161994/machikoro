@@ -713,8 +713,7 @@ class GameManager {
                 this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${plan.total}コイン`);
             } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.PARK) {
                 const plan = GameCoinTransaction.equalDistributionPlan(
-                    this.players.map(player => player.coins),
-                    ci
+                    this.players.map(player => player.coins)
                 );
                 applyCoinTransactionPlan(this.players, plan);
                 this.addLog(LOG_TYPES.SPECIAL, `🌳 公園発動 → 全員${plan.each}コインに均等分配`);

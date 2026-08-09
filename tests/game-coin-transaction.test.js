@@ -23,17 +23,17 @@ runTest('coin transactionは要求額の異なる複数人回収を一つのplan
     );
 });
 
-runTest('coin transactionは端数を指定playerへ残して均等分配する', () => {
+runTest('coin transactionは銀行から不足分を補って全員へ均等分配する', () => {
     assert.deepStrictEqual(
-        GameCoinTransaction.equalDistributionPlan([1, 2, 8, 0], 2),
-        { balances: [2, 2, 5, 2], total: 11, each: 2, remainder: 3 }
+        GameCoinTransaction.equalDistributionPlan([1, 2, 8, 0]),
+        { balances: [3, 3, 3, 3], total: 11, each: 3, remainder: 3, bankContribution: 1 }
     );
 });
 
 runTest('coin transactionは不正なshapeを副作用前に拒否する', () => {
     assert.throws(() => GameCoinTransaction.collectionPlan([1], 0, []), /equal-length/);
     assert.throws(() => GameCoinTransaction.collectionPlan([1], 2, [0]), /receiverIndex/);
-    assert.throws(() => GameCoinTransaction.equalDistributionPlan([], 0), /non-empty/);
+    assert.throws(() => GameCoinTransaction.equalDistributionPlan([]), /non-empty/);
 });
 
 runTest('coin transactionは同一playerへの連続徴収を入力順と残高上限で計画する', () => {
