@@ -86,7 +86,7 @@ function getRlCpuSettingNote(playerCount) {
 }
 
 function createCpuPlayer(difficulty, options = {}) {
-    const resolvedOptions = resolveLiveExpertOptions(difficulty, options);
+    const resolvedOptions = resolveLiveCpuOptions(difficulty, options);
     const resolvedDifficulty = difficulty;
     if (resolvedDifficulty === 'rl') {
         return RLModelPortfolio.createRandomCpu(resolvedOptions);

@@ -44,6 +44,7 @@ declare var CPU_EXPERT_DEFAULT_OPTIONS: typeof import("../js/cpuTuning").CPU_EXP
 declare var CPU_EXPERT_PRESETS: typeof import("../js/cpuTuning").CPU_EXPERT_PRESETS;
 declare var CPU_EXPERT_PROFILE_TUNINGS: typeof import("../js/cpuTuning").CPU_EXPERT_PROFILE_TUNINGS;
 declare var resolveLiveExpertOptions: typeof import("../js/cpuTuning").resolveLiveExpertOptions;
+declare var resolveLiveCpuOptions: typeof import("../js/cpuTuning").resolveLiveCpuOptions;
 declare var resolveExpertProfileTuning: typeof import("../js/cpuTuning").resolveExpertProfileTuning;
 
 

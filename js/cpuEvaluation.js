@@ -1420,6 +1420,25 @@ const CPUEvaluation = Object.freeze({
         return totalWeight > 0 ? totalScore / totalWeight : -Infinity;
     },
 
+    strongLiveSearchPlan(facts = {}) {
+        const candidateCount = Math.max(0, Number.isFinite(facts.candidateCount)
+            ? facts.candidateCount
+            : 0);
+        const totalCardCount = Math.max(0, Number.isFinite(facts.totalCardCount)
+            ? facts.totalCardCount
+            : 0);
+        const estimatedCloneWork = candidateCount * Math.max(1, totalCardCount);
+        const useHeuristic = facts.difficulty === 'strong' &&
+            facts.simulationMode === 'realtime' &&
+            estimatedCloneWork >= 900;
+        return Object.freeze({
+            candidateCount,
+            totalCardCount,
+            estimatedCloneWork,
+            useHeuristic,
+        });
+    },
+
     shouldUseExpertChoiceLookahead(playerCount, remainingLandmarks, phase, buildPhase, simulationMode) {
         if (simulationMode === 'realtime') {
             if (playerCount >= 4) return false;

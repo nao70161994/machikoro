@@ -3,6 +3,27 @@ const { CPUEvaluation } = require('../js/cpuEvaluation');
 const { runTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
+runTest('強CPU live探索予算は通常盤面を維持し病的な複製評価だけheuristicへ切り替える', () => {
+    assert.deepStrictEqual(
+        CPUEvaluation.strongLiveSearchPlan({
+            difficulty: 'strong', simulationMode: 'full', candidateCount: 18, totalCardCount: 24,
+        }),
+        { candidateCount: 18, totalCardCount: 24, estimatedCloneWork: 432, useHeuristic: false }
+    );
+    assert.deepStrictEqual(
+        CPUEvaluation.strongLiveSearchPlan({
+            difficulty: 'strong', simulationMode: 'realtime', candidateCount: 54, totalCardCount: 80,
+        }),
+        { candidateCount: 54, totalCardCount: 80, estimatedCloneWork: 4320, useHeuristic: true }
+    );
+    assert.strictEqual(CPUEvaluation.strongLiveSearchPlan({
+        difficulty: 'normal', simulationMode: 'full', candidateCount: 54, totalCardCount: 80,
+    }).useHeuristic, false);
+    assert.strictEqual(CPUEvaluation.strongLiveSearchPlan({
+        difficulty: 'strong', simulationMode: 'full', candidateCount: 54, totalCardCount: 80,
+    }).useHeuristic, false);
+});
+
 runTest('CPU evaluation は受取カード価値のeffect dispatchと算術順をpureに維持する', () => {
     const effects = { LOAN: 'loan', RENOVATION: 'renovation', BUSINESS: 'business' };
     const calls = [];

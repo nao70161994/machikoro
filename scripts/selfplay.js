@@ -115,6 +115,9 @@ function createPlayers(runtime, difficulties, options = {}) {
         if (difficulty !== 'expert') {
             return new runtime.CPU(difficulty, {
                 profileStats: options.profileStats,
+                simulationMode: difficulty === 'strong'
+                    ? options.strongSimulationMode
+                    : undefined,
             });
         }
         return new runtime.CPU(difficulty, {

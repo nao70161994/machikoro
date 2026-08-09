@@ -1,5 +1,20 @@
 'use strict';
 
+const CPU_PENDING_EVALUATION = typeof CPUEvaluation !== 'undefined'
+    ? CPUEvaluation
+    : require('./cpuEvaluation').CPUEvaluation;
+
+function strongLivePendingSearchPlan(cpu, game, candidateCount) {
+    const totalCardCount = game.players.reduce((sum, player) =>
+        sum + (player && Array.isArray(player.cards) ? player.cards.length : 0), 0);
+    return CPU_PENDING_EVALUATION.strongLiveSearchPlan({
+        difficulty: cpu.difficulty,
+        simulationMode: cpu.simulationMode,
+        candidateCount,
+        totalCardCount,
+    });
+}
+
 const CPUPendingDecision = Object.freeze({
     chooseTVTarget(cpu, game) {
         return cpu._profileDecision("chooseTVTarget", () => {
@@ -71,12 +86,15 @@ const CPUPendingDecision = Object.freeze({
             let targetIndex = -1;
             const attackScale = cpu._strongCrowdAttackScale(game);
             const disruptionReady = cpu._strongCrowdDisruptionReady(game, game.currentPlayer());
+            const searchPlan = strongLivePendingSearchPlan(cpu, game, game.players.length - 1);
             for (let i = 0; i < game.players.length; i++) {
                 if (i === ci) continue;
                 const opponent = game.players[i];
                 const steal = Math.min(5, opponent.coins);
                 const score = (cpu.difficulty === "strong" && game.players.length >= 4)
-                    ? (disruptionReady ? cpu._scoreStrongPendingChoice(game, clone => clone.resolveTV(i)) + steal * 0.4 : steal * 0.5)
+                    ? (disruptionReady && !searchPlan.useHeuristic
+                        ? cpu._scoreStrongPendingChoice(game, clone => clone.resolveTV(i)) + steal * 0.4
+                        : steal * 0.5)
                     : steal * 2.2 +
                         opponent.builtLandmarkCount() * 2.5 * attackScale +
                         cpu._coinsTowardsNextLandmark(opponent) * 0.25 * attackScale;
@@ -107,6 +125,16 @@ const CPUPendingDecision = Object.freeze({
             const disruptionReady = cpu._strongCrowdDisruptionReady(game, current);
             const disruptionScale = cpu._expertDisruptionScale(game, ci);
             const candidateTargets = cpu._expertCandidateTargetIndexes(game, ci);
+            const myCandidateCount = Math.min(myCards.length, cpu.difficulty === "expert" ? 3 : 2);
+            const targetCandidateLimit = cpu.difficulty === "expert" ? 4 : 3;
+            const businessCandidateCount = candidateTargets.reduce((sum, targetIndex) => {
+                const target = game.players[targetIndex];
+                return sum + myCandidateCount * Math.min(
+                    target && typeof target.getMinorCards === "function" ? target.getMinorCards().length : 0,
+                    targetCandidateLimit
+                );
+            }, 0);
+            const searchPlan = strongLivePendingSearchPlan(cpu, game, businessCandidateCount);
             cpu._forEachBusinessMoveCandidate(game, candidateTargets, ({ myCard, myIndex, target, targetIndex, theirCard, theirIndex }) => {
                 const move = {
                     myCard: myIndex,
@@ -126,8 +154,8 @@ const CPUPendingDecision = Object.freeze({
                         denialValue * 0.45 * disruptionScale +
                         racePressure * 0.75 * disruptionScale -
                         giftValue * 0.2;
-                } else if (cpu.difficulty === "strong" && game.players.length >= 4) {
-                    if (cpu._strongLiteUseHeuristicChoices()) {
+                    } else if (cpu.difficulty === "strong" && game.players.length >= 4) {
+                    if (cpu._strongLiteUseHeuristicChoices() || searchPlan.useHeuristic) {
                         score = cpu._receivedCardValue(theirCard, game, current) -
                             cpu._ownedCardValue(myCard, game, current) * 0.9 +
                             target.builtLandmarkCount() * 0.6 * attackScale +
@@ -195,6 +223,7 @@ const CPUPendingDecision = Object.freeze({
             const disruptionReady = cpu._strongCrowdDisruptionReady(game, current);
             const disruptionScale = cpu._expertDisruptionScale(game, game.currentPlayerIndex);
             const names = cpu._expertCandidateCleaningNames(game);
+            const searchPlan = strongLivePendingSearchPlan(cpu, game, names.length);
             for (const name of names) {
                 let score;
                 if (cpu.difficulty === "expert" && !cpu._expertCrowdNormalPlan(game)) {
@@ -216,7 +245,7 @@ const CPUPendingDecision = Object.freeze({
                         targetValue * 0.18 * disruptionScale +
                         racePressure * 0.45 * disruptionScale;
                 } else if (cpu.difficulty === "strong" && game.players.length >= 4) {
-                    score = disruptionReady
+                    score = disruptionReady && !searchPlan.useHeuristic
                         ? cpu._scoreStrongPendingChoice(game, clone => clone.resolveCleaning(name))
                         : (() => {
                             let ownPenalty = 0;
@@ -289,7 +318,13 @@ const CPUPendingDecision = Object.freeze({
             cpu._syncExpertTuningForGame(game);
             const attackScale = cpu._strongCrowdAttackScale(game);
             let best = null;
-            for (const card of current.getMinorCards()) {
+            const myCards = current.getMinorCards();
+            const searchPlan = strongLivePendingSearchPlan(
+                cpu,
+                game,
+                myCards.length * Math.max(0, game.players.length - 1)
+            );
+            for (const card of myCards) {
                 for (let i = 0; i < game.players.length; i++) {
                     if (i === ci) continue;
                     const target = game.players[i];
@@ -302,10 +337,15 @@ const CPUPendingDecision = Object.freeze({
                         score = cpu._scoreExpertPendingChoice(game, clone =>
                             clone.resolveMover(move.cardIndex, move.targetIndex)
                         ) - cpu._expertCrowdDisruptionBonus(game, i, 8);
-                    } else if (cpu.difficulty === "strong" && game.players.length >= 4) {
-                        score = cpu._scoreStrongPendingChoice(game, clone =>
-                            clone.resolveMover(move.cardIndex, move.targetIndex)
-                        );
+                } else if (cpu.difficulty === "strong" && game.players.length >= 4) {
+                        score = searchPlan.useHeuristic
+                            ? 4 - cpu._ownedCardValue(card, game, current) -
+                                cpu._receivedCardValue(card, game, target) * 0.6 * attackScale -
+                                target.builtLandmarkCount() * 0.6 * attackScale +
+                                (current.isDormant(card) ? 2.5 : 0)
+                            : cpu._scoreStrongPendingChoice(game, clone =>
+                                clone.resolveMover(move.cardIndex, move.targetIndex)
+                            );
                     } else {
                         const myLoss = cpu._ownedCardValue(card, game, current);
                         const gift = cpu._receivedCardValue(card, game, target);

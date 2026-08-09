@@ -139,6 +139,14 @@
         if (!resolved.expertAirportSkipMode) resolved.expertAirportSkipMode = "whenNoLandmark";
         return resolved;
     }
+
+    function resolveLiveCpuOptions(difficulty, options = {}) {
+        const resolved = resolveLiveExpertOptions(difficulty, options);
+        if (difficulty === "strong" && !resolved.simulationMode) {
+            resolved.simulationMode = "realtime";
+        }
+        return resolved;
+    }
     /**
      * @param {string} difficulty
      * @param {Record<string, any>} options
@@ -279,6 +287,7 @@
     global.CPU_EXPERT_PRESETS = CPU_EXPERT_PRESETS;
     global.CPU_EXPERT_PROFILE_TUNINGS = CPU_EXPERT_PROFILE_TUNINGS;
     global.resolveLiveExpertOptions = resolveLiveExpertOptions;
+    global.resolveLiveCpuOptions = resolveLiveCpuOptions;
     /** @type {any} */ (global).resolveCpuRuntimeConfig = resolveCpuRuntimeConfig;
     /** @type {any} */ (global).resolveExpertProfileTuning = resolveExpertProfileTuning;
 
@@ -288,6 +297,7 @@
             CPU_EXPERT_PRESETS,
             CPU_EXPERT_PROFILE_TUNINGS,
             resolveLiveExpertOptions,
+            resolveLiveCpuOptions,
             resolveCpuRuntimeConfig,
             resolveExpertProfileTuning,
         };

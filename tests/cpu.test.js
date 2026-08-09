@@ -80,6 +80,14 @@ runTest('CPU live expert option policyは既存v2simple既定値を入力非破�
         expertAirportSkipMode: 'whenNoLandmark',
     });
     assert.deepStrictEqual(plain(runtime.resolveLiveExpertOptions('strong', source)), source);
+    assert.deepStrictEqual(plain(runtime.resolveLiveCpuOptions('strong', source)), {
+        expertPurpose: 'live',
+        expertBuildTempoWeight: 0,
+        simulationMode: 'realtime',
+    });
+    assert.deepStrictEqual(plain(runtime.resolveLiveCpuOptions('strong', {
+        simulationMode: 'full',
+    })), { simulationMode: 'full' });
     assert.deepStrictEqual(plain(runtime.resolveLiveExpertOptions('expert', {
         expertPurpose: 'live',
         expertPreset: 'rush',

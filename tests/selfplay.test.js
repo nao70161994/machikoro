@@ -5,6 +5,7 @@ const { runTest } = require('./helpers/test-utils');
 
 const {
     loadRuntime,
+    createPlayers,
     createShopStock,
     playCpuStep,
     simulateGame,
@@ -22,6 +23,14 @@ const {
     printPresetComparison,
     printDifficultyLadder,
 } = require(path.join(__dirname, '..', 'scripts', 'selfplay.js'));
+
+runTest('selfplayはlive強CPUの性能方針を評価用optionで明示できる', () => {
+    const players = createPlayers(loadRuntime(), ['strong', 'normal'], {
+        strongSimulationMode: 'realtime',
+    });
+    assert.strictEqual(players[0].simulationMode, 'realtime');
+    assert.notStrictEqual(players[1].simulationMode, 'realtime');
+});
 
 function loadMultiplayerRlModel() {
     return JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed103-4p.browser.json'), 'utf8'));

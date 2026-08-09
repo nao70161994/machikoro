@@ -12,7 +12,7 @@ const {
     GameManager,
     LANDMARK_NAMES,
     createCardByName,
-    resolveLiveExpertOptions,
+    resolveLiveCpuOptions,
 } = runtime;
 
 const DIFFICULTIES = Object.freeze(['weak', 'normal', 'strong', 'expert']);
@@ -79,10 +79,10 @@ const PENDING_CASES = Object.freeze([
 ]);
 
 function createCpu(difficulty) {
-    const options = difficulty === 'expert'
-        ? resolveLiveExpertOptions(difficulty, { expertPurpose: 'live' })
-        : {};
-    return new CPU(difficulty, options);
+    return new CPU(difficulty, resolveLiveCpuOptions(
+        difficulty,
+        difficulty === 'expert' ? { expertPurpose: 'live' } : {}
+    ));
 }
 
 function createPendingGame(playerCount, pendingCase) {
