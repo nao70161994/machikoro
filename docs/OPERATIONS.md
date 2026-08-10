@@ -413,6 +413,14 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 - `server/canonicalStateRepository.js` owns record construction, save/load delegation, schema/room validation, and store-failure isolation without granting authority. The authority priority contract is live room > authoritative durable canonical state > valid signed state > host replay > confirmed hostless quorum. It is not yet wired as a production durable dispatcher; the default canonical store remains `noop`. A database-backed provider is currently deferred because recurring cost is not approved.
 - Legacy single-secret configuration remains compatible. For rotation, set `RESTORE_AUDIT_KEYRING_JSON` (or the MACHIKORO alias) with active and old keys, select `RESTORE_AUDIT_ACTIVE_KEY_ID`, retain old verification keys through the configured maximum age, then remove them only after the overlap window.
 
+### Unsigned compaction recovery boundary
+
+- After action-log compaction, the server keeps a bounded complete history and exposes it as `fullActionLog` only on unsigned rejoin payloads. The bound is the existing `RESTORE_PAYLOAD_LIMITS.maxActionLogEntries` value of 1000; signed snapshot rooms keep the existing snapshot-plus-residual path.
+- Before replacing the four restore-bundle records, the client must prove that the selected unsigned history is continuous from sequence 1 through the server-observed target sequence. A prefix, residual-only log, gap, or mixed-version input that cannot satisfy that proof is incomplete.
+- Incomplete history does not stop the currently rejoined game. The client leaves the previous restore bundle untouched, writes the room-scoped `onlineRestoreBundleStatus` quarantine marker, suppresses later restore-bundle writes for that room, and excludes it from automatic recreate/hostless candidates. A later complete or signed rejoin replaces the bundle and clears the marker.
+- Unsigned recovery beyond 1000 actions is not guaranteed: recreate admission rejects an oversized full replay, while an unsigned snapshot cannot be trusted after server restart. Do not raise the entry limit alone. Configure `RESTORE_AUDIT_SECRET` or `RESTORE_AUDIT_KEYRING_JSON` for deployments expected to reach this boundary.
+- A ceiling-free unsigned alternative requires a separately reviewed bounded chunk/hash-chain protocol or durable canonical authority. Neither is enabled by the quarantine marker.
+
 ## Multiple Room Resume UI
 
 - Visible multiple-room resume UI is not enabled. Operators should still expect the existing single online resume affordance.

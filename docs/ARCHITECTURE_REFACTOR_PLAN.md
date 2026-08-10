@@ -1,6 +1,6 @@
 # Architecture Refactor Plan
 
-Last updated: 2026-08-08
+Last updated: 2026-08-10
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.
 
@@ -18,6 +18,8 @@ Do not use this plan to justify a broad rewrite. Each step below should be imple
 | Tests | `tests/server.test.js`, `tests/online.test.js`, `tests/ui.test.js`, `tests/main.test.js`, others | Contract coverage exists, but high-traffic files are large and often test several boundaries in one file. |
 
 The 2026-08-08 pass also established `AppShellComposition` for app-shell dependency resolution, `MainAutoSkipRuntime` for post-build auto-skip effect order, and `LocalResumeEffects` for resume/preload DOM application. These are production boundaries, not duplicate wrappers. All are checkJs/limited-ESLint covered and load-order tested. The five composition roots still remain outside whole-file gates because measured unique classic-script/browser dependencies are 69 (`appShell`), 88 (`main`), 102 (`online`), 66 (`storage`), and 76 (`ui`); broad ambient declarations are not an acceptable migration.
+
+The 2026-08-10 review added a bounded compaction-history seam and fail-closed client quarantine for incomplete unsigned replay. This is a compatibility guard, not durable authority: unsigned recovery still has the existing 1000-entry admission ceiling. Do not broaden payload limits or trust unsigned snapshots as an incremental refactor; use configured restore-audit signing, or treat chunked/hash-chained replay and durable canonical state as separate architecture decisions.
 
 ## Where Small Fixes Become Symptomatic
 

@@ -1094,6 +1094,14 @@ Test index:
 - Preserve schema admission before preparation, restore generation before queue carry, local bundle offer before server payload mutation, pending session ownership before reconciliation, unsigned full-log retention, persistence executor/legacy ordering, and best-effort storage failure isolation.
 - Both runtimes are linted and checkJs-covered; `online.js` is 3,539 lines. Socket.IO, Action/Snapshot, storage, ACK/reconnect, rules, CPU, UI text, and PWA contracts are unchanged.
 
+## 2026-08-10 restore continuity handoff
+
+- Unsigned rejoin persistence must prove a sequence-1-through-server-target continuous action history before replacing the restore bundle. Do not restore the former length-based prefix fallback: a longer prefix is not a complete replay after compaction.
+- `server/mirrorReplay.js` retains bounded compacted history and `server/rejoinPayload.js` publishes `fullActionLog` only for the unsigned path. `OnlinePayload.planRejoinActionLogPersistence()` merges stored/full/residual sources by sequence and returns a non-persisting incomplete decision when continuity cannot be proven.
+- `onlineRestoreBundleStatus` is a local, room-scoped quarantine marker. While set, live play continues but restore bundle writes, automatic recreate, and hostless candidate reads for that room fail closed. A later complete or signed rejoin clears it only after the replacement bundle is written.
+- The unsigned full-replay ceiling remains 1000 entries because producer and restore-admission limits share `RESTORE_PAYLOAD_LIMITS.maxActionLogEntries`. Production sessions that may exceed it require `RESTORE_AUDIT_SECRET`/keyring. Raising the limit alone, trusting an unsigned snapshot, or adding unbounded history is prohibited; chunk/hash-chain or durable canonical authority needs a separate design review.
+- The 2026-08-10 review also fixed false-return propagation for live/replayed actions, host reselection after all clients disconnect, connected-room TTL retention, and sequence commit-after-apply. Preserve those failure-order contracts when changing Socket handlers.
+
 ## Batch 98 handoff (2026-08-05)
 
 - Top-level `rejoinData` orchestration belongs to `OnlineRejoinRuntime`; preparation/ranking/persistence planning remains in `OnlineRejoinPreparationRuntime`, and replay/activation/queued-event/pending resend remains in `OnlineRejoinActivationRuntime`.
