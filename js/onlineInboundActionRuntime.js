@@ -147,7 +147,10 @@ const OnlineInboundActionRuntime = (() => {
 
         function applyOrRecover(channel, payload, selected) {
             try {
-                dependencies.applyReplayedAction(payload.action, payload.data);
+                const applied = dependencies.applyReplayedAction(payload.action, payload.data);
+                if (applied === false) {
+                    throw new Error('online action application rejected');
+                }
                 return Object.freeze({ ok: true });
             } catch (error) {
                 const result = dependencies.runApplyFailure(

@@ -3244,8 +3244,8 @@ function applyReplayedAction(action, data) {
 
 function restoreOnlineSnapshot(state) {
     const currentGame = onlineGameRuntimeSnapshot().game;
-    if (!state || !currentGame) return;
-    GameSnapshot.hydrateMutableGameState({
+    if (!state || !currentGame) return false;
+    return GameSnapshot.hydrateMutableGameState({
         game: currentGame,
         shopStock: SHOP_STOCK,
         state,

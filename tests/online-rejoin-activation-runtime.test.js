@@ -39,6 +39,7 @@ function createHarness(options = {}) {
         applyAction: (...args) => {
             calls.push(['applyAction', ...args]);
             if (options.replayError) throw new Error('broken replay');
+            return options.replayResult === undefined ? true : options.replayResult;
         },
         applyReconnectStatus: event => calls.push(['applyReconnectStatus', event]),
         canResendPending: pending => {
@@ -168,6 +169,21 @@ runTest('online rejoin activation runtimeはreplay失敗を終了してabortす�
         ['abortRestore', 3, OnlineRejoinActivationRuntime.RESTORE_FAILED_ABORT],
     ]);
     assert.strictEqual(harness.calls.some(call => call[0] === 'setOnline'), false);
+});
+
+runTest('online rejoin activation runtimeはlegacy replayのfalseを終了してabortする', () => {
+    const harness = createHarness({ effectSource: 'legacy', replayResult: false });
+    assert.strictEqual(harness.handle(harness.input), false);
+    assert.deepStrictEqual(
+        harness.calls.filter(call => call[0] === 'setReplaying'),
+        [['setReplaying', true], ['setReplaying', false]]
+    );
+    assert.strictEqual(harness.calls.some(call => call[0] === 'setOnline'), false);
+    assert.deepStrictEqual(harness.calls.slice(-3), [
+        ['setStatusText', OnlineRejoinActivationRuntime.RESTORE_FAILED_STATUS],
+        ['setReconnectFlag', true],
+        ['abortRestore', 3, OnlineRejoinActivationRuntime.RESTORE_FAILED_ABORT],
+    ]);
 });
 
 runTest('online rejoin activation runtimeはqueue flush失敗後にpendingを再送しない', () => {

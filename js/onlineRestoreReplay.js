@@ -77,11 +77,15 @@ function executeOnlineRestoreReplay(plan, handlers) {
         handlers.initGame(plan.playerNames, plan.playerSettings, plan.playerOrder);
         steps.push('initGame');
         if (plan.stateSnapshot) {
-            handlers.restoreSnapshot(plan.stateSnapshot);
+            if (handlers.restoreSnapshot(plan.stateSnapshot) === false) {
+                throw new Error('online snapshot restore rejected');
+            }
             steps.push('restoreSnapshot');
         }
         for (const entry of plan.actionLog) {
-            handlers.applyAction(entry.action, entry.data);
+            if (handlers.applyAction(entry.action, entry.data) === false) {
+                throw new Error('online restore action rejected');
+            }
             steps.push('applyAction');
         }
         if (plan.provisionalRestore) {

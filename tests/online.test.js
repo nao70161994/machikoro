@@ -4176,8 +4176,14 @@ runTest('live gameAction duplicate is ignored and sequence gap starts rejoin', (
     runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 0, myPlayerName: 'Alice', reconnectToken: 'token-a' });
     runtime.getSocketHandlers().gameStart({ playerNames: ['Alice', 'Bob'], playerSettings: [{ type: 'human' }, { type: 'human' }], playerOrder: [0, 1], enabledCards: CARDS.map(card => card.name), enabledLandmarks: Player.landmarkNames(), hostPlayerIndex: 0, actionSeq: 0 });
     const handlers = runtime.getSocketHandlers();
-    handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 1, seq: 1 });
-    handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 1, seq: 1 });
+    const firstAction = {
+        action: 'rollDice',
+        data: { forceDice: 3, tunaDice: [1, 1] },
+        playerIndex: 0,
+        seq: 1,
+    };
+    handlers.gameAction(firstAction);
+    handlers.gameAction(firstAction);
     assert.strictEqual(runtime._readOnlineActionLog().length, 1);
     handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 1, seq: 3 });
     assert.strictEqual(runtime.getIncomingGameActionPlanSelection().source, 'pure-plan');
@@ -4202,10 +4208,15 @@ runTest('live sequence tracking survives localStorage write failures', () => {
     handlers.gameStart({ playerNames: ['Alice', 'Bob'], playerSettings: [{ type: 'human' }, { type: 'human' }], playerOrder: [0, 1], enabledCards: CARDS.map(card => card.name), enabledLandmarks: Player.landmarkNames(), hostPlayerIndex: 0, actionSeq: 0 });
     runtime.localStorage.setItem = () => { throw new Error('quota exceeded'); };
 
-    handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 1, seq: 1 });
-    handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 1, seq: 2 });
+    handlers.gameAction({
+        action: 'rollDice',
+        data: { forceDice: 3, tunaDice: [1, 1] },
+        playerIndex: 0,
+        seq: 1,
+    });
+    handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 2 });
 
-    assert.strictEqual(runtime.getGame().currentPlayerIndex, 0);
+    assert.strictEqual(runtime.getGame().currentPlayerIndex, 1);
     assert.strictEqual(runtime.getOnlineState().isReconnectingOnline, false);
     assert.ok(!runtime.getSocketEmits().some(event => event.name === 'rejoinRoom'));
     assert.deepStrictEqual(JSON.parse(JSON.stringify(
@@ -4448,7 +4459,12 @@ runTest('gameStart queues actions and host changes while RL preload is pending',
     runtime.initSocket(); runtime.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 1, myPlayerName: 'Bob', reconnectToken: 'token-b' });
     const handlers = runtime.getSocketHandlers();
     handlers.gameStart({ playerNames: ['Alice', 'Bob'], playerSettings: [{ type: 'human' }, { type: 'cpu', difficulty: 'rl', rlModelId: 'fixed-rl' }], playerOrder: [0, 1], enabledCards: CARDS.map(card => card.name), enabledLandmarks: Player.landmarkNames(), hostPlayerIndex: 0, hostEpoch: 1, actionSeq: 0 });
-    handlers.gameAction({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 1 }); handlers.hostChanged({ newHostPlayerIndex: 1, hostEpoch: 2 });
+    handlers.gameAction({
+        action: 'rollDice',
+        data: { forceDice: 3, tunaDice: [1, 1] },
+        playerIndex: 0,
+        seq: 1,
+    }); handlers.hostChanged({ newHostPlayerIndex: 1, hostEpoch: 2 });
     assert.strictEqual(runtime.getGame(), null); resolvePreload([]); await Promise.resolve();
     assert.ok(runtime.getGame()); assert.strictEqual(runtime._readOnlineActionLog().length, 1);
     assert.strictEqual(runtime._readOnlineGameStartPayload().hostPlayerIndex, 1); assert.strictEqual(runtime.getOnlineState().isRoomHost, true);

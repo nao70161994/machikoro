@@ -41,6 +41,7 @@ function createHarness(options = {}) {
         applyReplayedAction(action, data) {
             calls.push(['apply', action, data]);
             if (options.applyError) throw new Error('apply failed');
+            return options.applyResult === undefined ? true : options.applyResult;
         },
         clearPending: () => calls.push(['clearPending']),
         decodeAction(wire) {
@@ -165,6 +166,24 @@ runTest('online inbound runtimeはapply例外をcommitせずchannel別recovery�
     assert.ok(harness.calls.some(call => call[0] === 'applyFailure' && call[3] === true));
     assert.strictEqual(harness.calls.some(call => call[0] === 'commit'), false);
     assert.strictEqual(harness.diagnostics.incomingGameActionApplyEffectSelection.source, 'apply-effect');
+});
+
+runTest('online inbound runtimeはapply falseをincoming/acceptedともcommitせずrecoveryへ渡す', () => {
+    for (const channel of ['incoming', 'accepted']) {
+        const options = { applyResult: false };
+        options[`${channel}.apply`] = true;
+        if (channel === 'accepted') options.pending = { clientActionId: 'action-1' };
+        const harness = createHarness(options);
+        const result = channel === 'incoming'
+            ? harness.runtime.handleGameAction(action())
+            : harness.runtime.handleActionAccepted(action());
+        assert.strictEqual(result, 'apply-failed', channel);
+        assert.strictEqual(harness.calls.some(call => call[0] === 'commit'), false, channel);
+        assert.ok(harness.calls.some(call =>
+            call[0] === 'applyFailure' &&
+            call[1] === 'online action application rejected'
+        ), channel);
+    }
 });
 
 runTest('online inbound runtimeはstate authority未準備ならlegacy planへ明示fallbackする', () => {

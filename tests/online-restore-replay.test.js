@@ -122,6 +122,29 @@ runTest('online restore replay executorは失敗時もreplay modeを解除して
     assert.strictEqual(calls.some(call => call[0] === 'addProvisionalLog'), false);
 });
 
+runTest('online restore replay executorはsnapshot/actionのfalseを成功扱いしない', () => {
+    for (const rejectedEffect of ['restoreSnapshot', 'applyAction']) {
+        const calls = [];
+        assert.throws(() => OnlineRestoreReplay.execute({
+            playerNames: [],
+            playerSettings: [],
+            playerOrder: [],
+            stateSnapshot: { phase: 'build' },
+            actionLog: [{ action: 'nextTurn', data: {} }],
+            provisionalRestore: false,
+        }, handlers(calls, {
+            [rejectedEffect]: (...args) => {
+                calls.push([rejectedEffect, ...args]);
+                return false;
+            },
+        })), /online (snapshot restore|restore action) rejected/, rejectedEffect);
+        assert.deepStrictEqual(calls[calls.length - 1], ['setReplaying', false]);
+        if (rejectedEffect === 'restoreSnapshot') {
+            assert.strictEqual(calls.some(call => call[0] === 'applyAction'), false);
+        }
+    }
+});
+
 runTest('online restore replay executorは全handlerをeffect前に検証する', () => {
     const calls = [];
     const incomplete = handlers(calls);
