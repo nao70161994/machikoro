@@ -36,6 +36,36 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ pa
     expect(errors).toEqual([]);
 });
 
+test('320pxと360pxでプレイヤー種別が設定枠内に収まる', async ({ page }) => {
+    await prepare(page);
+    const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
+    for (let count = 2; count < 10; count++) await increasePlayerCount.click();
+    await expect(page.locator('#playerCount')).toHaveText('10');
+
+    for (const width of [320, 360]) {
+        await page.setViewportSize({ width, height: 844 });
+        const layouts = await page.locator('.player-setting-row').evaluateAll(rows => rows.map(row => {
+            const select = row.querySelector('.player-setting-select');
+            const rowBounds = row.getBoundingClientRect();
+            const selectBounds = select.getBoundingClientRect();
+            return {
+                flexDirection: getComputedStyle(row).flexDirection,
+                contained: selectBounds.left >= rowBounds.left && selectBounds.right <= rowBounds.right,
+                withinViewport: selectBounds.left >= 0 && selectBounds.right <= document.documentElement.clientWidth,
+            };
+        }));
+        expect(layouts).toHaveLength(10);
+        expect(layouts.every(layout => layout.contained && layout.withinViewport)).toBe(true);
+        expect(layouts.every(layout => layout.flexDirection === 'column')).toBe(true);
+    }
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const wideLayouts = await page.locator('.player-setting-row').evaluateAll(rows =>
+        rows.map(row => getComputedStyle(row).flexDirection)
+    );
+    expect(wideLayouts.every(flexDirection => flexDirection === 'row')).toBe(true);
+});
+
 test('mobile WebKitの2クライアントがonline開始後に再読込復帰できる', async ({ browser, baseURL }) => {
     const hostContext = await browser.newContext({
         ...MOBILE_CONTEXT,

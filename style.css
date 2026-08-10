@@ -526,6 +526,19 @@ body.modal-open #gameScreen {
     flex: 1;
 }
 
+@media (max-width: 389px) {
+    .player-setting-row {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .player-setting-select {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
 .player-name-input {
     font-size: 14px;
 }
