@@ -4,6 +4,7 @@ const OnlineDomEffects = (() => {
     const ids = Object.freeze({
         createButton: 'onlineCreateSubmitButton',
         cpuSpeed: 'onlineCpuSpeed',
+        gameStatus: 'onlineGameStatus',
         gameScreen: 'gameScreen',
         joinButton: 'onlineJoinSubmitButton',
         playerCount: 'onlinePlayerCount',
@@ -43,6 +44,21 @@ const OnlineDomEffects = (() => {
             return true;
         }
 
+        function setGameStatusText(value) {
+            const target = element(ids.gameStatus);
+            if (!target) return false;
+            const message = String(value || '');
+            target.textContent = message;
+            if (target.style) target.style.display = message ? 'block' : 'none';
+            return true;
+        }
+
+        function setStatusText(value) {
+            const lobbyChanged = setText(ids.status, value);
+            const gameChanged = setGameStatusText(value);
+            return lobbyChanged || gameChanged;
+        }
+
         function setDisplay(id, value) {
             const target = element(id);
             if (!target || !target.style) return false;
@@ -64,6 +80,7 @@ const OnlineDomEffects = (() => {
         }
 
         function showGame() {
+            setGameStatusText('');
             const titleChanged = setDisplay(ids.titleScreen, 'none');
             const gameChanged = setDisplay(ids.gameScreen, 'block');
             return titleChanged || gameChanged;
@@ -75,8 +92,9 @@ const OnlineDomEffects = (() => {
             inputValue,
             isStatusWaiting: () => text(ids.status).startsWith('⏳'),
             setHtml,
+            setGameStatusText,
             setStatusHtml: value => setHtml(ids.status, value),
-            setStatusText: value => setText(ids.status, value),
+            setStatusText,
             setText,
             showGame,
             statusText: () => text(ids.status),

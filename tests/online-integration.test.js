@@ -166,6 +166,11 @@ runTest('online integration: 既定event authorityは開始・切断・再join�
     assert.strictEqual(snapshot.timerAuthority.source, 'event');
     assert.strictEqual(snapshot.timerAuthority.pending, false);
     assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
+    assert.strictEqual(
+        rt.__test.elements.onlineGameStatus.textContent,
+        '⏳ 接続が切れました。再接続しています...'
+    );
+    assert.strictEqual(rt.__test.elements.onlineGameStatus.style.display, 'block');
     assert.deepStrictEqual(JSON.parse(JSON.stringify(snapshot.socketDisconnectPlanAuthority)), {
         plan: { active: true, abortRestore: false },
         source: 'pure-plan',
@@ -189,6 +194,10 @@ runTest('online integration: 既定event authorityは開始・切断・再join�
     assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, true);
     assert.strictEqual(snapshot.socketConnectPlanAuthority.source, 'pure-plan');
     assert.strictEqual(snapshot.socketConnectEffectAuthority.source, 'executor');
+    assert.strictEqual(
+        rt.__test.elements.onlineGameStatus.textContent,
+        '⏳ サーバーに再参加しています...'
+    );
 
     rt.__test.socketHandlers.rejoinData({
         gameStartPayload,
@@ -206,6 +215,8 @@ runTest('online integration: 既定event authorityは開始・切断・再join�
     assert.strictEqual(snapshot.timerAuthority.pending, false);
     assert.strictEqual(snapshot.timerAuthority.deadline, 0);
     assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, false);
+    assert.strictEqual(rt.__test.elements.onlineGameStatus.textContent, '');
+    assert.strictEqual(rt.__test.elements.onlineGameStatus.style.display, 'none');
     assert.strictEqual(snapshot.projectionMismatchCount, 0);
     assert.strictEqual(snapshot.invalidEventTransitionCount, 0);
 });

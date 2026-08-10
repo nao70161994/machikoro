@@ -1235,6 +1235,9 @@ function _emitOnlineRejoinRequest(sessionOverride = null) {
     }
     setOnlineReconnectLegacyFlag(true);
     _observeOnlineReconnectEvent(OnlineReconnectState.events.RECONNECT_REQUESTED);
+    if (currentSession.isOnlineGame) {
+        onlineDomEffects.setGameStatusText('⏳ サーバーに再参加しています...');
+    }
     planSelection = _onlineReconnectRequestPlanSelection(session);
     _onlineDiagnosticSelections.onlineReconnectRequestPlanSelection = planSelection;
     if (planSelection.plan.decision === OnlineRetryPolicy.requestDecisions.WAIT_FOR_SOCKET) return true;
