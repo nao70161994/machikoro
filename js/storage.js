@@ -274,18 +274,20 @@ function reconnectOnline() {
 }
 
 function resumeGame(options = {}) {
+    const onlineState = storageOnlineRuntimeSnapshot();
+    if (onlineState.isOnlineGame === true || onlineState.isReconnectingOnline === true) return false;
     const resumePending = localResumePreloadController.snapshot().pending;
     if (!LocalResumePolicy.shouldInspectRepository({
         resumePending,
         fromPreload: options.fromPreload,
-    })) return;
+    })) return false;
     const repository = getLocalSaveRepository();
     const initialDecision = LocalResumePolicy.initialDecision({
         resumePending,
         fromPreload: options.fromPreload,
         repositoryExists: repository.exists(),
     });
-    if (initialDecision !== 'read-save') return;
+    if (initialDecision !== 'read-save') return false;
     let validatedSave = false;
     try {
         const decoded = repository.read(isValidSavedGameState);
@@ -326,7 +328,7 @@ function resumeGame(options = {}) {
                     console.error(error);
                     showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度再開してください。");
                 });
-                return;
+                return true;
             }
         }
         const runtimePlan = LocalResumePolicy.runtimePlan(
@@ -439,6 +441,7 @@ function resumeGame(options = {}) {
             scheduleCpu: scheduleCPU,
         });
         if (runtimeResult.ok !== true) throw new Error('Saved game hydration failed');
+        return true;
     } catch(e) {
         setLocalResumePending(false);
         if (!validatedSave) repository.remove();
@@ -448,6 +451,7 @@ function resumeGame(options = {}) {
             resumeButton.focus();
         }
         showNotice("セーブデータの読み込みに失敗しました");
+        return false;
     }
 }
 

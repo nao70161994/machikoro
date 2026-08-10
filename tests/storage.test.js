@@ -538,6 +538,24 @@ runTest('storage resumeGame は検証済みsaveを一時的なruntime例外で�
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
+runTest('storage resumeGame はonline active/reconnecting中にlocal saveへ切り替えない', () => {
+    for (const onlineState of [
+        { isOnlineGame: true, isReconnectingOnline: false },
+        { isOnlineGame: false, isReconnectingOnline: true },
+    ]) {
+        const rt = loadStorageRuntime();
+        const serialized = JSON.stringify(makeSavedGameState());
+        rt.localStorage.setItem('savedGame', serialized);
+        rt.OnlineRuntimeState.runtime.setOnline(onlineState.isOnlineGame);
+        rt.OnlineRuntimeState.runtime.setReconnecting(onlineState.isReconnectingOnline);
+
+        assert.strictEqual(rt.resumeGame(), false);
+        assert.strictEqual(rt.__test.getResetOnlineStateCalls(), 0);
+        assert.strictEqual(rt.localStorage.getItem('savedGame'), serialized);
+        assert.strictEqual(rt.__test.getGame(), null);
+    }
+});
+
 runTest('storage resumeGame はv1 local-save envelopeをlegacyと同じ経路で復元する', () => {
     const rt = loadStorageRuntime();
     const state = makeSavedGameState({

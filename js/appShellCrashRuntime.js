@@ -70,6 +70,7 @@ const AppShellCrashRuntime = (() => {
         }
 
         function resume() {
+            if (resumeGame() === false) return false;
             controller.hide();
             removeKeydownListener(trapFocus);
             effects.hide(getElementById('crashScreen'));
@@ -78,13 +79,8 @@ const AppShellCrashRuntime = (() => {
             backgroundRestore = [];
             const restoreTarget = previousFocus;
             previousFocus = null;
-            try {
-                resumeGame();
-            } catch (error) {
-                effects.restoreFocus(restoreTarget, backgroundElements);
-                throw error;
-            }
             effects.restoreFocus(restoreTarget, backgroundElements);
+            return true;
         }
 
         return Object.freeze({ trapFocus, show, resume });

@@ -90,22 +90,22 @@ runTest('app shell crash runtimeは同一focus handlerをtrapとresume解除に�
     assert.ok(calls.some(call => call[0] === 'focus-trap' && call[1].focusTarget === 'last'));
     runtime.resume();
     assert.deepStrictEqual(calls.slice(-5).map(call => call[0]), [
-        'remove-keydown', 'hide', 'restore-background', 'resume-game', 'restore-focus',
+        'resume-game', 'remove-keydown', 'hide', 'restore-background', 'restore-focus',
     ]);
     assert.strictEqual(calls.find(call => call[0] === 'remove-keydown')[1], true);
     assert.strictEqual(calls.find(call => call[0] === 'restore-focus')[1].name, 'previous');
 });
 
-runTest('app shell crash runtimeはresume失敗時も再クラッシュ前にfocusを背景へ戻す', () => {
+runTest('app shell crash runtimeはresume拒否時にoverlayと背景lockを維持する', () => {
     const { calls, runtime } = createHarness({
-        resumeGame() {
-            calls.push(['resume-game']);
-            throw new Error('resume failed');
-        },
+        resumeGame() { calls.push(['resume-game']); return false; },
     });
     runtime.show(new Error('boom'));
-    assert.throws(() => runtime.resume(), /resume failed/);
-    assert.deepStrictEqual(calls.slice(-2).map(call => call[0]), ['resume-game', 'restore-focus']);
+    assert.strictEqual(runtime.resume(), false);
+    assert.strictEqual(runtime.trapFocus({ key: 'Tab', shiftKey: true }), undefined);
+    assert.strictEqual(calls.some(call => call[0] === 'hide'), false);
+    assert.strictEqual(calls.some(call => call[0] === 'restore-background'), false);
+    assert.strictEqual(calls.some(call => call[0] === 'remove-keydown'), false);
 });
 
 runTest('app shell crash runtimeは必須依存欠落を初期化時に拒否する', () => {

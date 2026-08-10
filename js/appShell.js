@@ -485,7 +485,12 @@ const appShellCrashRuntime = AppShellCrashRuntime.createRuntime({
     },
     getElementById: id => appShellComposition.resolve('document').getElementById(id),
     policy: CrashScreen,
-    readSavedGame: () => safeAppShellStorageGet('savedGame'),
+    readSavedGame: () => {
+        const online = appShellOnlineRuntimeSnapshot();
+        return online.isOnlineGame || online.isReconnectingOnline
+            ? null
+            : safeAppShellStorageGet('savedGame');
+    },
     removeKeydownListener: handler => {
         const documentRef = appShellComposition.resolve('document');
         if (documentRef && typeof documentRef.removeEventListener === 'function') {
