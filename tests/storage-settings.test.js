@@ -9,7 +9,9 @@ runTest('storage settings は保存済み人数を既存の2..10範囲へ正規�
     assert.strictEqual(StorageSettings.normalizePlayerCount('1'), 2);
     assert.strictEqual(StorageSettings.normalizePlayerCount('4'), 4);
     assert.strictEqual(StorageSettings.normalizePlayerCount('11'), 10);
-    assert.ok(Number.isNaN(StorageSettings.normalizePlayerCount('invalid')));
+    for (const malformed of ['invalid', '', '3.5', undefined, Number.MAX_VALUE]) {
+        assert.strictEqual(StorageSettings.normalizePlayerCount(malformed), 2);
+    }
 });
 
 runTest('storage settings は旧player設定へ既存defaultを補う', () => {

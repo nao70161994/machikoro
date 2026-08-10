@@ -1,7 +1,8 @@
 'use strict';
 
 function normalizePlayerCount(value) {
-    const count = parseInt(value || '2');
+    const count = Number(value);
+    if (!Number.isSafeInteger(count)) return 2;
     return Math.min(10, Math.max(2, count));
 }
 
