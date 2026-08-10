@@ -828,6 +828,20 @@ const CARD_SETS = {
 const cardSelectState = UiCardSelect.createSelectionController(GameSelectionState.runtime.snapshot());
 const uiCardSelectEffects = UiCardSelectEffects.create({
     getElementById: id => document.getElementById(id),
+    getActiveElement: () => document.activeElement,
+    getWindow: () => typeof window !== 'undefined' ? window : null,
+    findToggle(identity) {
+        const modal = document.getElementById('cardSelectModal');
+        if (!modal || typeof modal.querySelectorAll !== 'function') return null;
+        return Array.from(modal.querySelectorAll('[data-action]')).find(element => {
+            if (!element || !element.dataset || element.dataset.action !== identity.action) {
+                return false;
+            }
+            return identity.action === 'toggleCard'
+                ? element.dataset.cardName === identity.name
+                : element.dataset.landmarkName === identity.name;
+        }) || null;
+    },
 });
 
 function syncCardSelectStateFromRuntime() {
