@@ -835,10 +835,10 @@ body.modal-open #gameScreen {
     white-space: nowrap;
 }
 
-.blue-badge   { background: #3b82f6; color: white; }
-.green-badge  { background: #22c55e; color: white; }
-.red-badge    { background: #ef4444; color: white; }
-.purple-badge { background: #a855f7; color: white; }
+.blue-badge   { background: #3b82f6; color: #0f0e17; }
+.green-badge  { background: #22c55e; color: #0f0e17; }
+.red-badge    { background: #ef4444; color: #0f0e17; }
+.purple-badge { background: #a855f7; color: #0f0e17; }
 
 .landmark-list {
     display: flex;
@@ -891,7 +891,7 @@ body.modal-open #gameScreen {
     padding: 0;
 }
 
-.set-toggle.on  { background: #22c55e; color: white; }
+.set-toggle.on  { background: #22c55e; color: #0f0e17; }
 .set-toggle.off { background: #2a2a4a; color: #a7a9be; }
 
 .card-toggle-list {
@@ -1973,7 +1973,7 @@ button:not(:disabled):active {
 .confirm-btn-ok {
     flex: 1;
     padding: 11px;
-    background: linear-gradient(135deg, #e94560, #c73652);
+    background: linear-gradient(135deg, #c92f4b, #c73652);
     border-radius: 10px;
     color: #fff;
     font-size: 15px;
@@ -2200,7 +2200,7 @@ button:not(:disabled):active {
 .crash-btn-primary {
     width: 100%;
     padding: 12px;
-    background: #ef4444;
+    background: #b91c1c;
     color: #fff;
     border: none;
     border-radius: 10px;
