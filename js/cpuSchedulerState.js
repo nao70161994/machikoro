@@ -1,6 +1,25 @@
 'use strict';
 
 const CpuSchedulerState = (() => {
+    const STEP_BUDGETS = Object.freeze(Object.fromEntries(Object.entries({
+        roll: { slowMs: 1000, leaseMs: 5000, hardMs: 10000 },
+        selectDice: { slowMs: 1000, leaseMs: 10000, hardMs: 30000 },
+        rerollConfirm: { slowMs: 1000, leaseMs: 10000, hardMs: 30000 },
+        harborChoice: { slowMs: 1000, leaseMs: 10000, hardMs: 30000 },
+        pending: { slowMs: 1000, leaseMs: 15000, hardMs: 30000 },
+        build: { slowMs: 1000, leaseMs: 15000, hardMs: 30000 },
+        nextTurn: { slowMs: 1000, leaseMs: 5000, hardMs: 10000 },
+        resolveIT: { slowMs: 1000, leaseMs: 10000, hardMs: 30000 },
+    }).map(([name, budget]) => [name, Object.freeze(budget)])));
+
+    function stepBudget(stepName, fallback = {}) {
+        return STEP_BUDGETS[stepName] || Object.freeze({
+            slowMs: Number.isFinite(fallback.slowMs) ? Math.max(0, fallback.slowMs) : 1000,
+            leaseMs: Number.isFinite(fallback.leaseMs) ? Math.max(1000, fallback.leaseMs) : 15000,
+            hardMs: Number.isFinite(fallback.hardMs) ? Math.max(1000, fallback.hardMs) : 30000,
+        });
+    }
+
     function waitDuration(delay) {
         return Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
     }
@@ -156,6 +175,8 @@ const CpuSchedulerState = (() => {
     }
 
     return Object.freeze({
+        STEP_BUDGETS,
+        stepBudget,
         waitDuration,
         scheduledUntil,
         refreshedUntil,

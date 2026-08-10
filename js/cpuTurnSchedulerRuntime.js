@@ -16,12 +16,29 @@ const CpuTurnSchedulerRuntime = (() => {
             throw new TypeError('CPU turn scheduler runtime policies are required');
         }
         const controller = dependencies.policy.createController();
-        const executionLeaseMs = Number.isFinite(dependencies.executionLeaseMs)
+        const hasExecutionLeaseOverride = Number.isFinite(dependencies.executionLeaseMs);
+        const executionLeaseMs = hasExecutionLeaseOverride
             ? Math.max(1000, dependencies.executionLeaseMs)
             : 15000;
-        const slowStepThresholdMs = Number.isFinite(dependencies.slowStepThresholdMs)
+        const hasSlowStepThresholdOverride = Number.isFinite(dependencies.slowStepThresholdMs);
+        const slowStepThresholdMs = hasSlowStepThresholdOverride
             ? Math.max(0, dependencies.slowStepThresholdMs)
             : 1000;
+
+        function stepBudget(stepName) {
+            if (typeof dependencies.policy.stepBudget === 'function') {
+                const budget = dependencies.policy.stepBudget(stepName, {
+                    slowMs: slowStepThresholdMs,
+                    leaseMs: executionLeaseMs,
+                });
+                return {
+                    ...budget,
+                    slowMs: hasSlowStepThresholdOverride ? slowStepThresholdMs : budget.slowMs,
+                    leaseMs: hasExecutionLeaseOverride ? executionLeaseMs : budget.leaseMs,
+                };
+            }
+            return { slowMs: slowStepThresholdMs, leaseMs: executionLeaseMs };
+        }
 
         function invalidate() { return controller.invalidate().scheduleToken; }
         function cancel(reason = 'cpu-schedule-cancel') {
@@ -48,12 +65,14 @@ const CpuTurnSchedulerRuntime = (() => {
         }
 
         function reportSlowStep(details, durationMs, outcome = {}) {
-            if (durationMs < slowStepThresholdMs) return false;
+            const budget = stepBudget(details && details.step);
+            if (durationMs < budget.slowMs) return false;
             const report = Object.freeze({
                 ...details,
                 ...outcome,
                 durationMs,
-                thresholdMs: slowStepThresholdMs,
+                thresholdMs: budget.slowMs,
+                hardBudgetMs: budget.hardMs,
             });
             dependencies.checkpoint('scheduleCPU-step-slow', report);
             if (typeof dependencies.reportSlowStep !== 'function') return true;
@@ -209,6 +228,7 @@ const CpuTurnSchedulerRuntime = (() => {
                         stepGame.currentPlayerIndex,
                         startedAt,
                     ].join(':');
+                    const budget = stepBudget(step.name);
                     const stepDetails = {
                         step: step.name,
                         phase: stepGame.phase || '',
@@ -218,11 +238,14 @@ const CpuTurnSchedulerRuntime = (() => {
                         token,
                         stepExecutionId,
                         startedAt,
+                        budgetMs: budget.slowMs,
+                        hardBudgetMs: budget.hardMs,
+                        leaseMs: budget.leaseMs,
                     };
                     let result;
                     controller.markActive({
                         ...stepDetails,
-                        activeUntil: startedAt + executionLeaseMs,
+                        activeUntil: startedAt + budget.leaseMs,
                     });
                     try {
                         dependencies.checkpoint('scheduleCPU-step-run', stepDetails);

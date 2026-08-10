@@ -255,7 +255,9 @@ runTest('CPU turn scheduler runtimeはstep実行中だけexecution leaseをhealt
     assert.strictEqual(activeHealth.stepActive, true);
     assert.strictEqual(activeHealth.stepScheduled, true);
     assert.strictEqual(activeHealth.activeStep.step, 'roll');
-    assert.strictEqual(activeHealth.activeStep.activeUntil, 15700);
+    assert.strictEqual(activeHealth.activeStep.budgetMs, 1000);
+    assert.strictEqual(activeHealth.activeStep.hardBudgetMs, 10000);
+    assert.strictEqual(activeHealth.activeStep.activeUntil, 5700);
     assert.strictEqual(harness.runtime.health().stepActive, false);
     assert.strictEqual(harness.runtime.controller.snapshot().activeStep, null);
 });

@@ -85,6 +85,9 @@ const ClientCheckpoint = (() => {
                         : null,
                     token: Number.isInteger(details.token) ? details.token : null,
                     startedAt: Number.isFinite(details.startedAt) ? details.startedAt : null,
+                    budgetMs: Number.isFinite(details.budgetMs) ? details.budgetMs : null,
+                    hardBudgetMs: Number.isFinite(details.hardBudgetMs) ? details.hardBudgetMs : null,
+                    leaseMs: Number.isFinite(details.leaseMs) ? details.leaseMs : null,
                     timestamp: checkpoint.timestamp || '',
                 }),
             });
@@ -125,6 +128,9 @@ const ClientCheckpoint = (() => {
             startedAt,
             detectedAt: now,
             elapsedMs: ageMs,
+            budgetMs: Number.isFinite(active.budgetMs) ? active.budgetMs : null,
+            hardBudgetMs: Number.isFinite(active.hardBudgetMs) ? active.hardBudgetMs : null,
+            leaseMs: Number.isFinite(active.leaseMs) ? active.leaseMs : null,
         });
         return Object.freeze({ kind: 'report', summary });
     }

@@ -4,6 +4,25 @@ const assert = require('assert');
 const CpuSchedulerState = require('../js/cpuSchedulerState');
 const { runTest } = require('./helpers/test-utils');
 
+runTest('CPU schedulerは全8判断stepの診断予算をfrozen contractで持つ', () => {
+    assert.deepStrictEqual(Object.keys(CpuSchedulerState.STEP_BUDGETS), [
+        'roll', 'selectDice', 'rerollConfirm', 'harborChoice',
+        'pending', 'build', 'nextTurn', 'resolveIT',
+    ]);
+    for (const [step, budget] of Object.entries(CpuSchedulerState.STEP_BUDGETS)) {
+        assert.ok(Object.isFrozen(budget), step);
+        assert.ok(budget.slowMs > 0, step);
+        assert.ok(budget.leaseMs >= budget.slowMs, step);
+        assert.ok(budget.hardMs >= budget.leaseMs, step);
+        assert.strictEqual(CpuSchedulerState.stepBudget(step), budget);
+    }
+    assert.deepStrictEqual(CpuSchedulerState.stepBudget('unknown', {
+        slowMs: 250,
+        leaseMs: 2000,
+        hardMs: 4000,
+    }), { slowMs: 250, leaseMs: 2000, hardMs: 4000 });
+});
+
 runTest('CPU scheduler stateは既存wait正規化とlease期限をpureに計算する', () => {
     assert.strictEqual(CpuSchedulerState.waitDuration(600), 600);
     assert.strictEqual(CpuSchedulerState.waitDuration('600'), 600);
