@@ -227,6 +227,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/clientCheckpoint.js',
         'js/clientReporting.js',
         'js/clientReportingTransport.js',
+        'js/retryTimer.js',
         'js/appShellClientReportingRuntime.js',
         'js/lifecycleNotify.js',
         'js/lifecycleRuntime.js',
