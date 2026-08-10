@@ -220,10 +220,19 @@ function renderWinnerState(winner) {
         resultAdSlot,
         escapeHtml,
     });
+    const winnerStatusText = UiWinner.buildWinnerStatusText({
+        winner,
+        isCpuWinner: isCPUWinner,
+        turnCount: currentGame.turnCount,
+    });
     const firstPresentation = !winSoundPlayed;
-    UiWinnerEffects.execute({ statusHtml, firstPresentation }, {
+    UiWinnerEffects.execute({ statusHtml, winnerStatusText, firstPresentation }, {
         setStatusHtml(html) {
             document.getElementById("status").innerHTML = html;
+        },
+        announceWinner(text) {
+            const status = document.getElementById("turnStatusAnnouncer");
+            if (status) status.textContent = text;
         },
         markPresented() {
             winSoundPlayed = true;

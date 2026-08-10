@@ -12,10 +12,15 @@ function makeEffects(calls) {
 
 runTest('winner effectsは初回のruntime/DOM副作用を既存順で一度実行する', () => {
     const calls = [];
-    UiWinnerEffects.execute({ statusHtml: '<winner>', firstPresentation: true }, makeEffects(calls));
+    UiWinnerEffects.execute({
+        statusHtml: '<winner>',
+        winnerStatusText: 'ゲーム終了。Aliceの勝利。',
+        firstPresentation: true,
+    }, makeEffects(calls));
     assert.deepStrictEqual(calls.map(call => call[0]), [
         'setStatusHtml',
         'markPresented',
+        'announceWinner',
         'playWinSound',
         'recordStats',
         'notifyFinish',
@@ -31,7 +36,8 @@ runTest('winner effectsは初回のruntime/DOM副作用を既存順で一度実�
         'renderPlayers',
     ]);
     assert.strictEqual(calls[0][1], '<winner>');
-    assert.strictEqual(calls[11][1], UiWinnerEffects.TERMINAL_CONTROLS);
+    assert.strictEqual(calls[2][1], 'ゲーム終了。Aliceの勝利。');
+    assert.strictEqual(calls[12][1], UiWinnerEffects.TERMINAL_CONTROLS);
     assert.ok(Object.isFrozen(UiWinnerEffects.TERMINAL_CONTROLS));
 });
 

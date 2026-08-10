@@ -80,6 +80,13 @@ function buildWinStreakHtml(winner, winStreak, escapeHtml) {
     return `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>`;
 }
 
+function buildWinnerStatusText(options = {}) {
+    const winner = options.winner;
+    if (!winner) return '';
+    const winnerType = options.isCpuWinner ? 'CPU' : '人間';
+    return `ゲーム終了。${String(winner.name || '')}の勝利。${winnerType}プレイヤー、${options.turnCount}ターン。`;
+}
+
 function buildWinnerScreenHtml(options = {}) {
     const winner = options.winner;
     const escapeHtml = options.escapeHtml;
@@ -105,6 +112,7 @@ const UiWinner = Object.freeze({
     streakRuntime,
     buildWinnerStatsRows,
     buildWinStreakHtml,
+    buildWinnerStatusText,
     buildWinnerScreenHtml,
 });
 

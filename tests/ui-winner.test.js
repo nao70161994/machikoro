@@ -45,6 +45,23 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
     assert.ok(cpu.includes('2連勝中！'));
 });
 
+runTest('ui winnerは勝者・種別・turnを読み上げ用statusへ整形する', () => {
+    const winner = { name: 'Alice' };
+    assert.strictEqual(
+        UiWinner.buildWinnerStatusText({
+            winner, isCpuWinner: false, turnCount: 9,
+        }),
+        'ゲーム終了。Aliceの勝利。人間プレイヤー、9ターン。'
+    );
+    assert.strictEqual(
+        UiWinner.buildWinnerStatusText({
+            winner, isCpuWinner: true, turnCount: 10,
+        }),
+        'ゲーム終了。Aliceの勝利。CPUプレイヤー、10ターン。'
+    );
+    assert.strictEqual(UiWinner.buildWinnerStatusText(), '');
+});
+
 runTest('ui winnerは不正inputを空HTMLへfail closedにする', () => {
     assert.strictEqual(UiWinner.buildWinnerScreenHtml(), '');
     assert.strictEqual(UiWinner.buildWinnerStatsRows(null, null, escapeHtml), '');

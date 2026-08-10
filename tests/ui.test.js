@@ -716,6 +716,14 @@ runTest('renderWinnerState はオンライン復元bundleをまとめて消す',
     assert.strictEqual(context.markOnlineGameFinishedCalls, 1);
     assert.strictEqual(context.refreshPwaUpdateStateCalls, 1);
     assert.strictEqual(elements.btnRoll.disabled, true);
+    assert.strictEqual(
+        elements.turnStatusAnnouncer.textContent,
+        'ゲーム終了。Aliceの勝利。人間プレイヤー、12ターン。'
+    );
+
+    elements.turnStatusAnnouncer.textContent = 'already-announced';
+    context.renderWinnerState(winner);
+    assert.strictEqual(elements.turnStatusAnnouncer.textContent, 'already-announced');
 });
 
 runTest('updatePendingModalContent は再入とDOM欠落を安全に扱う', () => {

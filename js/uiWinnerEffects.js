@@ -3,6 +3,7 @@
 const UiWinnerEffects = (() => {
     const REQUIRED_EFFECTS = Object.freeze([
         'setStatusHtml',
+        'announceWinner',
         'markPresented',
         'playWinSound',
         'recordStats',
@@ -37,6 +38,9 @@ const UiWinnerEffects = (() => {
         effects.setStatusHtml(typeof plan.statusHtml === 'string' ? plan.statusHtml : '');
         if (plan.firstPresentation === true) {
             effects.markPresented();
+            effects.announceWinner(
+                typeof plan.winnerStatusText === 'string' ? plan.winnerStatusText : ''
+            );
             effects.playWinSound();
             effects.recordStats();
             effects.notifyFinish();
