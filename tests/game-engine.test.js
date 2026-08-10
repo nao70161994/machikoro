@@ -36,16 +36,16 @@ runTest('共有Game Engine executorはAction Contractを過不足なく網羅す
 
 runTest('共有Game Engine executorはcanonical payloadを既存GameManager引数へ写像する', () => {
     const cases = [
-        ['rollDice', { forceDice: 7, tunaDice: 2 }, 'rollDice', [7, 2]],
-        ['selectDice', { useTwo: true, d1: 3, d2: 4, tunaDice: 1 }, 'selectDiceCount', [true, 3, 4, 1]],
+        ['rollDice', { forceDice: 6, tunaDice: [1, 2] }, 'rollDice', [6, [1, 2]]],
+        ['selectDice', { useTwo: true, diceCount: 2, d1: 3, d2: 4, tunaDice: [2, 5] }, 'selectDiceCount', [true, 3, 4, [2, 5]]],
         ['skipReroll', {}, 'skipReroll', []],
-        ['rerollDice', { forceDice: 8, tunaDice: 3 }, 'rerollDice', [8, 3]],
+        ['rerollDice', { forceDice: 5, tunaDice: [3, 4] }, 'rerollDice', [5, [3, 4]]],
         ['resolveHarbor', { useBonus: true }, 'resolveHarbor', [true]],
         ['resolveTV', { targetIndex: 2 }, 'resolveTV', [2]],
         ['resolveBusiness', { myCard: 1, targetIndex: 2, theirCard: 3 }, 'resolveBusiness', [1, 2, 3]],
         ['resolveBusiness', { skip: true }, 'skipBusiness', []],
         ['resolveCleaning', { cardName: 'カフェ' }, 'resolveCleaning', ['カフェ']],
-        ['resolveMover', { cardIndex: 4, cardName: 'ignored', targetIndex: 1 }, 'resolveMover', [4, 1]],
+        ['resolveMover', { cardIndex: 4, targetIndex: 1 }, 'resolveMover', [4, 1]],
         ['resolveMover', { cardName: 'パン屋', targetIndex: 1 }, 'resolveMover', ['パン屋', 1]],
         ['resolveRenovation', { landmarkName: '駅' }, 'resolveRenovation', ['駅']],
         ['resolveIT', { doSave: false }, 'resolveIT', [false]],
@@ -124,15 +124,26 @@ runTest('共有Game Engine executorは未知actionと非object payloadを副作�
     assert.deepStrictEqual(recorder.calls, []);
 });
 
+runTest('共有Game Engine executorはcanonical key内の不正値をclient適用前に拒否する', () => {
+    const recorder = makeRecorder();
+    for (const [action, data] of [
+        ['rollDice', { forceDice: 7, tunaDice: [1, 2] }],
+        ['selectDice', { useTwo: true, diceCount: 1, d1: 3, d2: 4, tunaDice: [1, 2] }],
+        ['resolveTV', { targetIndex: NaN }],
+        ['resolveMover', { cardIndex: -1, targetIndex: 1 }],
+        ['resolveIT', { doSave: undefined }],
+    ]) {
+        assert.strictEqual(GameEngine.applyMutableAction({ game: recorder.game, action, data }), false, action);
+    }
+    assert.deepStrictEqual(recorder.calls, []);
+});
+
 runTest('pure transition境界は入力snapshot/actionを変更せず出力を分離する', () => {
     const snapshot = Object.freeze({
         counter: 2,
         nested: Object.freeze({ label: 'before' }),
     });
-    const data = Object.freeze({
-        targetIndex: 3,
-        nested: Object.freeze({ label: 'action' }),
-    });
+    const data = Object.freeze({ targetIndex: 3 });
     let hydratedRuntime = null;
 
     const result = GameEngine.transitionSnapshot({
@@ -165,7 +176,7 @@ runTest('pure transition境界は入力snapshot/actionを変更せず出力を�
         snapshot: { counter: 5, nested: { label: 'after' } },
     });
     assert.deepStrictEqual(snapshot, { counter: 2, nested: { label: 'before' } });
-    assert.deepStrictEqual(data, { targetIndex: 3, nested: { label: 'action' } });
+    assert.deepStrictEqual(data, { targetIndex: 3 });
     hydratedRuntime.state.counter = 99;
     assert.strictEqual(result.snapshot.counter, 5);
     assert.ok(Object.isFrozen(result));
@@ -355,7 +366,7 @@ runTest('pure transition shadowはmulti-action traceごとにmutable replayと�
             setup(game) { game.phase = runtime.GAME_PHASES.ROLL; game.players[0].landmarks['駅'] = true; },
             actions: [
                 ['rollDice', { forceDice: 1, tunaDice: [1, 1] }],
-                ['selectDice', { useTwo: false, d1: 1, d2: 1, tunaDice: [1, 1] }],
+                ['selectDice', { useTwo: false, diceCount: 1, d1: 1, d2: 1, tunaDice: [1, 1] }],
             ],
         },
         {

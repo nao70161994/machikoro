@@ -39,6 +39,11 @@ runTest('action contract is a frozen manifest for all 15 runtime actions', () =>
         ['myCard', 'targetIndex', 'theirCard'],
         ['skip'],
     ]);
+    assert.deepStrictEqual(
+        Object.keys(GameActionContract.payloadValueValidators).sort(),
+        actions.slice().sort()
+    );
+    assert.ok(Object.isFrozen(GameActionContract.payloadValueValidators));
 });
 
 runTest('runtime, canonical payload, and phase projections match the manifest exactly', () => {
@@ -61,6 +66,27 @@ runTest('runtime, canonical payload, and phase projections match the manifest ex
             .map(entry => entry.action);
         assert.deepStrictEqual(actions, ordered, phase);
     }
+});
+
+runTest('payload値契約はlocal旧Business名参照だけを互換modeで許可する', () => {
+    const legacyBusiness = { myCard: '麦畑', targetIndex: 1, theirCard: '森林' };
+
+    assert.strictEqual(
+        GameActionContract.validateCanonicalPayload('resolveBusiness', legacyBusiness),
+        false
+    );
+    assert.strictEqual(
+        GameActionContract.validateCanonicalPayload(
+            'resolveBusiness', legacyBusiness, { allowLegacy: true }
+        ),
+        true
+    );
+    assert.strictEqual(
+        GameActionContract.validateCanonicalPayload(
+            'resolveBusiness', { ...legacyBusiness, myCard: '' }, { allowLegacy: true }
+        ),
+        false
+    );
 });
 
 runTest('UI registry is a lossless projection of action contract targets', () => {

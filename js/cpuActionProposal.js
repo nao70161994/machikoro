@@ -24,15 +24,9 @@ function cloneAndFreezeProposalValue(value, active = new WeakSet()) {
 }
 
 function hasCanonicalPayloadShape(action, data) {
-    if (!CPUActionContractApi || !CPUActionContractApi.canonicalPayloadVariants ||
-            !data || typeof data !== 'object' || Array.isArray(data)) return false;
-    const variants = CPUActionContractApi.canonicalPayloadVariants[action];
-    if (!Array.isArray(variants)) return false;
-    const keys = Object.keys(data).sort();
-    return variants.some(variant => {
-        if (variant.length !== keys.length) return false;
-        return Array.from(variant).sort().every((key, index) => key === keys[index]);
-    });
+    return !!CPUActionContractApi &&
+        typeof CPUActionContractApi.hasCanonicalPayloadShape === 'function' &&
+        CPUActionContractApi.hasCanonicalPayloadShape(action, data);
 }
 
 /**
@@ -45,7 +39,9 @@ function hasCanonicalPayloadShape(action, data) {
  * @returns {CPUActionProposalValue<TAction>|null}
  */
 function create(action, data = {}) {
-    if (!hasCanonicalPayloadShape(action, data)) return null;
+    if (!CPUActionContractApi ||
+            typeof CPUActionContractApi.validateCanonicalPayload !== 'function' ||
+            !CPUActionContractApi.validateCanonicalPayload(action, data)) return null;
     try {
         return Object.freeze({
             action,

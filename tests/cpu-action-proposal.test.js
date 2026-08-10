@@ -5,15 +5,77 @@ const GameActionContract = require('../js/actionContract');
 const { CPUActionProposal } = require('../js/cpuActionProposal');
 const { runTest } = require('./helpers/test-utils');
 
+function validCanonicalData(action, variant) {
+    if (action === 'resolveBusiness' && variant.includes('skip')) return { skip: true };
+    if (action === 'resolveMover' && variant.includes('cardName')) {
+        return { cardName: '麦畑', targetIndex: 1 };
+    }
+    const data = {
+        rollDice: { forceDice: 3, tunaDice: [2, 5] },
+        selectDice: { useTwo: true, diceCount: 2, d1: 2, d2: 5, tunaDice: [1, 6] },
+        rerollDice: { forceDice: 4, tunaDice: [3, 4] },
+        skipReroll: {},
+        resolveHarbor: { useBonus: false },
+        resolveTV: { targetIndex: 1 },
+        resolveBusiness: { myCard: 0, targetIndex: 1, theirCard: 0 },
+        resolveCleaning: { cardName: '麦畑' },
+        resolveMover: { cardIndex: 0, targetIndex: 1 },
+        resolveRenovation: { landmarkName: '駅' },
+        resolveIT: { doSave: true },
+        buildCard: { cardName: '麦畑' },
+        buildLandmark: { name: '駅' },
+        undoBuild: {},
+        nextTurn: {},
+    }[action];
+    if (['rollDice', 'rerollDice', 'selectDice'].includes(action)) {
+        return Object.fromEntries(Object.entries(data).filter(([key]) => variant.includes(key)));
+    }
+    return data;
+}
+
 runTest('CPU action proposalはAction Contract全actionのcanonical keyを受理する', () => {
     for (const entry of GameActionContract.entries) {
         for (const variant of entry.canonicalPayloadVariants) {
-            const data = Object.fromEntries(variant.map(key => [key, undefined]));
+            const data = validCanonicalData(entry.action, variant);
             const proposal = CPUActionProposal.create(entry.action, data);
+            const isLegacyDiceVariant = ['rollDice', 'rerollDice', 'selectDice'].includes(entry.action) &&
+                variant.length < entry.canonicalPayloadKeys.length;
+            if (isLegacyDiceVariant) {
+                assert.strictEqual(proposal, null, 'CPU must not generate legacy dice payload');
+                assert.strictEqual(
+                    GameActionContract.validateCanonicalPayload(entry.action, data, { allowLegacy: true }),
+                    true
+                );
+                continue;
+            }
             assert.ok(proposal, entry.action + ' ' + variant.join(','));
             assert.strictEqual(proposal.action, entry.action);
             assert.deepStrictEqual(Object.keys(proposal.data).sort(), Array.from(variant).sort());
         }
+    }
+});
+
+runTest('CPU action proposalはcanonical key内の不正値をfail closedにする', () => {
+    for (const [action, data] of [
+        ['rollDice', { forceDice: 0, tunaDice: [1, 2] }],
+        ['rollDice', { forceDice: 3, tunaDice: [1, NaN] }],
+        ['selectDice', { useTwo: 'true', diceCount: 2, d1: 1, d2: 2, tunaDice: [1, 2] }],
+        ['selectDice', { useTwo: false, diceCount: 2, d1: 1, d2: 2, tunaDice: [1, 2] }],
+        ['rerollDice', { forceDice: Infinity, tunaDice: [1, 2] }],
+        ['resolveHarbor', { useBonus: undefined }],
+        ['resolveTV', { targetIndex: NaN }],
+        ['resolveBusiness', { myCard: -1, targetIndex: 1, theirCard: 0 }],
+        ['resolveBusiness', { skip: false }],
+        ['resolveCleaning', { cardName: ' ' }],
+        ['resolveMover', { cardIndex: Infinity, targetIndex: 1 }],
+        ['resolveMover', { cardName: '', targetIndex: 1 }],
+        ['resolveRenovation', { landmarkName: undefined }],
+        ['resolveIT', { doSave: 1 }],
+        ['buildCard', { cardName: '' }],
+        ['buildLandmark', { name: null }],
+    ]) {
+        assert.strictEqual(CPUActionProposal.create(action, data), null, action);
+        assert.strictEqual(GameActionContract.validateCanonicalPayload(action, data), false, action);
     }
 });
 

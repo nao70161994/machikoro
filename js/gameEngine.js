@@ -151,6 +151,12 @@ function cloneStateValue(value, seen = new WeakMap(), active = new WeakSet()) {
 function applyMutableAction(context) {
     if (!context || !context.game || !context.data ||
             typeof context.data !== 'object' || Array.isArray(context.data)) return false;
+    const contractData = context.action === 'undoBuild' ? {} : context.data;
+    if (!GameActionContractApi ||
+            typeof GameActionContractApi.validateCanonicalPayload !== 'function' ||
+            !GameActionContractApi.validateCanonicalPayload(context.action, contractData, {
+                allowLegacy: true,
+            })) return false;
     const handler = GAME_ACTION_HANDLERS[context.action];
     if (!handler) return false;
     return handler(context, context.data);

@@ -133,7 +133,7 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
         {
             name: 'multi-mover-dormant-transfer-chain',
             setup(game) {
-                game.phase = runtime.GAME_PHASES.ROLL;
+                game.phase = runtime.GAME_PHASES.SELECT_DICE;
                 const dormantCafe = runtime.createCardByName('カフェ');
                 game.players[0].cards = [
                     runtime.createCardByName('引越し屋'),
@@ -142,13 +142,14 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                     runtime.createCardByName('パン屋'),
                 ];
                 game.players[0].dormantCards = [];
+                game.players[0].landmarks['駅'] = true;
                 game.players[0].makeDormant(dormantCafe);
                 game.players[0].coins = 3;
                 game.players[1].cards = [];
                 game.players[1].dormantCards = [];
             },
             actions: [
-                ['rollDice', { forceDice: 9, tunaDice: [1, 1] }],
+                ['selectDice', { useTwo: true, diceCount: 2, d1: 4, d2: 5, tunaDice: [1, 1] }],
                 ['resolveMover', { cardName: 'カフェ', targetIndex: 1 }],
                 ['resolveMover', { cardName: 'パン屋', targetIndex: 1 }],
             ],
@@ -250,7 +251,7 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
         {
             name: 'winery-income-and-dormancy',
             setup(game) {
-                game.phase = runtime.GAME_PHASES.ROLL;
+                game.phase = runtime.GAME_PHASES.SELECT_DICE;
                 const winery = runtime.createCardByName('ワイナリー');
                 game.players[0].cards = [
                     runtime.createCardByName('ブドウ園'),
@@ -258,9 +259,10 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                     winery,
                 ];
                 game.players[0].dormantCards = [];
+                game.players[0].landmarks['駅'] = true;
                 game.players[0].coins = 3;
             },
-            actions: [['rollDice', { forceDice: 9, tunaDice: [1, 1] }]],
+            actions: [['selectDice', { useTwo: true, diceCount: 2, d1: 4, d2: 5, tunaDice: [1, 1] }]],
             assertAfter(game) {
                 assert.strictEqual(game.players[0].coins, 15);
                 assert.strictEqual(game.players[0].isDormant(game.players[0].cards[2]), true);
@@ -376,9 +378,10 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
         {
             name: 'publisher-multiplayer-transfer',
             setup(game) {
-                game.phase = runtime.GAME_PHASES.ROLL;
+                game.phase = runtime.GAME_PHASES.SELECT_DICE;
                 game.players[0].cards = [runtime.createCardByName('出版社')];
                 game.players[0].dormantCards = [];
+                game.players[0].landmarks['駅'] = true;
                 game.players[0].coins = 3;
                 for (let index = 1; index < game.players.length; index++) {
                     game.players[index].cards = [
@@ -390,7 +393,7 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                     game.players[index].coins = 10;
                 }
             },
-            actions: [['rollDice', { forceDice: 7, tunaDice: [1, 1] }]],
+            actions: [['selectDice', { useTwo: true, diceCount: 2, d1: 3, d2: 4, tunaDice: [1, 1] }]],
             assertAfter(game) {
                 assert.strictEqual(game.players[0].coins, 3 + 3 * (game.players.length - 1));
                 for (let index = 1; index < game.players.length; index++) {
@@ -402,9 +405,10 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
         {
             name: 'tax-office-threshold-transfer',
             setup(game) {
-                game.phase = runtime.GAME_PHASES.ROLL;
+                game.phase = runtime.GAME_PHASES.SELECT_DICE;
                 game.players[0].cards = [runtime.createCardByName('税務署')];
                 game.players[0].dormantCards = [];
+                game.players[0].landmarks['駅'] = true;
                 game.players[0].coins = 3;
                 for (let index = 1; index < game.players.length; index++) {
                     game.players[index].cards = [];
@@ -412,7 +416,7 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                     game.players[index].coins = index % 2 === 1 ? 12 : 9;
                 }
             },
-            actions: [['rollDice', { forceDice: 8, tunaDice: [1, 1] }]],
+            actions: [['selectDice', { useTwo: true, diceCount: 2, d1: 4, d2: 4, tunaDice: [1, 1] }]],
             assertAfter(game) {
                 const taxedPlayers = Math.ceil((game.players.length - 1) / 2);
                 assert.strictEqual(game.players[0].coins, 3 + taxedPlayers * 6);
@@ -425,9 +429,10 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
         {
             name: 'it-startup-multiplayer-transfer',
             setup(game) {
-                game.phase = runtime.GAME_PHASES.ROLL;
+                game.phase = runtime.GAME_PHASES.SELECT_DICE;
                 game.players[0].cards = [runtime.createCardByName('ITベンチャー')];
                 game.players[0].dormantCards = [];
+                game.players[0].landmarks['駅'] = true;
                 game.players[0].coins = 3;
                 game.players[0].itVentureCoins = 2;
                 for (let index = 1; index < game.players.length; index++) {
@@ -436,7 +441,7 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                     game.players[index].coins = index;
                 }
             },
-            actions: [['rollDice', { forceDice: 10, tunaDice: [1, 1] }]],
+            actions: [['selectDice', { useTwo: true, diceCount: 2, d1: 5, d2: 5, tunaDice: [1, 1] }]],
             assertAfter(game) {
                 let expectedIncome = 0;
                 for (let index = 1; index < game.players.length; index++) {
@@ -452,15 +457,16 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
         {
             name: 'park-multiplayer-redistribution',
             setup(game) {
-                game.phase = runtime.GAME_PHASES.ROLL;
+                game.phase = runtime.GAME_PHASES.SELECT_DICE;
                 for (let index = 0; index < game.players.length; index++) {
                     game.players[index].cards = [];
                     game.players[index].dormantCards = [];
                     game.players[index].coins = index + 1;
                 }
                 game.players[0].cards = [runtime.createCardByName('公園')];
+                game.players[0].landmarks['駅'] = true;
             },
-            actions: [['rollDice', { forceDice: 11, tunaDice: [1, 1] }]],
+            actions: [['selectDice', { useTwo: true, diceCount: 2, d1: 5, d2: 6, tunaDice: [1, 1] }]],
             assertAfter(game) {
                 const total = game.players.length * (game.players.length + 1) / 2;
                 const each = Math.ceil(total / game.players.length);

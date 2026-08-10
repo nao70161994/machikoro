@@ -66,9 +66,14 @@ function actionEntry(action, phase, payloadKind, canonicalPayloadKeys, ui, phase
 }
 
 const ACTION_CONTRACT_ENTRIES = Object.freeze([
-    actionEntry('rollDice', 'roll', 'rollDice', ['forceDice', 'tunaDice'], { group: 'roll', targetId: 'btnRoll', targetSource: 'actionButtons', requiresContent: false }),
-    actionEntry('selectDice', 'selectDice', 'selectDice', ['useTwo', 'diceCount', 'd1', 'd2', 'tunaDice'], { group: 'selectDice', targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true, childActions: ['selectDiceCount'] }),
-    actionEntry('rerollDice', 'rerollConfirm', 'rerollDice', ['forceDice', 'tunaDice'], { group: 'reroll', targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true, childActions: ['rerollDice'] }, 0),
+    actionEntry('rollDice', 'roll', 'rollDice', ['forceDice', 'tunaDice'], { group: 'roll', targetId: 'btnRoll', targetSource: 'actionButtons', requiresContent: false }, 0, [['forceDice', 'tunaDice'], ['forceDice']]),
+    actionEntry('selectDice', 'selectDice', 'selectDice', ['useTwo', 'diceCount', 'd1', 'd2', 'tunaDice'], { group: 'selectDice', targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true, childActions: ['selectDiceCount'] }, 0, [
+        ['useTwo', 'diceCount', 'd1', 'd2', 'tunaDice'],
+        ['useTwo', 'diceCount', 'd1', 'd2'],
+        ['useTwo', 'd1', 'd2', 'tunaDice'],
+        ['useTwo', 'd1', 'd2'],
+    ]),
+    actionEntry('rerollDice', 'rerollConfirm', 'rerollDice', ['forceDice', 'tunaDice'], { group: 'reroll', targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true, childActions: ['rerollDice'] }, 0, [['forceDice', 'tunaDice'], ['forceDice']]),
     actionEntry('skipReroll', 'rerollConfirm', 'emptyObject', [], { group: 'reroll', targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true, childActions: ['skipReroll'] }, 1),
     actionEntry('resolveHarbor', 'harborChoice', 'resolveHarbor', ['useBonus'], { group: 'harbor', targetId: 'diceChoose', targetSource: 'actionButtons', requiresContent: true, childActions: ['resolveHarbor'] }),
     actionEntry('resolveTV', 'pending', 'resolveTV', ['targetIndex'], { group: 'pending', targetId: 'pendingMenu', modalId: 'pendingModal', requiresContent: true, allowPendingItOutsidePhase: true, childActions: ['resolveTV'] }, 0),
@@ -102,6 +107,87 @@ const ACTION_CONTRACT_CANONICAL_PAYLOAD_KEYS = Object.freeze(Object.fromEntries(
 const ACTION_CONTRACT_CANONICAL_PAYLOAD_VARIANTS = Object.freeze(Object.fromEntries(
     ACTION_CONTRACT_ENTRIES.map(entry => [entry.action, entry.canonicalPayloadVariants])
 ));
+
+function isPlainActionData(value) {
+    return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isNonEmptyActionString(value) {
+    return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isActionIndex(value) {
+    return Number.isSafeInteger(value) && value >= 0;
+}
+
+function isDieValue(value) {
+    return Number.isInteger(value) && value >= 1 && value <= 6;
+}
+
+function isTunaDice(value) {
+    return value == null || (
+        Array.isArray(value) && value.length === 2 && value.every(isDieValue)
+    );
+}
+
+function hasCanonicalPayloadShape(action, data) {
+    if (!isPlainActionData(data)) return false;
+    const variants = ACTION_CONTRACT_CANONICAL_PAYLOAD_VARIANTS[action];
+    if (!Array.isArray(variants)) return false;
+    const keys = Object.keys(data).sort();
+    return variants.some(variant => variant.length === keys.length &&
+        Array.from(variant).sort().every((key, index) => key === keys[index]));
+}
+
+const ACTION_CONTRACT_PAYLOAD_VALUE_VALIDATORS = Object.freeze({
+    rollDice: (data, options = {}) =>
+        (Object.prototype.hasOwnProperty.call(data, 'tunaDice') || options.allowLegacy === true) &&
+        (data.forceDice == null || isDieValue(data.forceDice)) && isTunaDice(data.tunaDice),
+    selectDice: (data, options = {}) => {
+        const hasDiceCount = Object.prototype.hasOwnProperty.call(data, 'diceCount') &&
+            data.diceCount !== undefined;
+        const hasTunaDice = Object.prototype.hasOwnProperty.call(data, 'tunaDice');
+        if ((!hasDiceCount || !hasTunaDice) && options.allowLegacy !== true) return false;
+        const diceCount = hasDiceCount ? data.diceCount : (data.useTwo ? 2 : 1);
+        if (typeof data.useTwo !== 'boolean' ||
+                (diceCount !== 1 && diceCount !== 2) ||
+                data.useTwo !== (diceCount === 2) || !isDieValue(data.d1) ||
+                !isTunaDice(data.tunaDice)) return false;
+        return diceCount === 2
+            ? isDieValue(data.d2)
+            : data.d2 == null || data.d2 === 0 || isDieValue(data.d2);
+    },
+    rerollDice: (data, options = {}) =>
+        (Object.prototype.hasOwnProperty.call(data, 'tunaDice') || options.allowLegacy === true) &&
+        isDieValue(data.forceDice) && isTunaDice(data.tunaDice),
+    skipReroll: () => true,
+    resolveHarbor: data => typeof data.useBonus === 'boolean',
+    resolveTV: data => isActionIndex(data.targetIndex),
+    resolveBusiness: (data, options = {}) => data.skip === true || (
+        isActionIndex(data.targetIndex) && (
+            (isActionIndex(data.myCard) && isActionIndex(data.theirCard)) ||
+            (options.allowLegacy === true &&
+                isNonEmptyActionString(data.myCard) &&
+                isNonEmptyActionString(data.theirCard))
+        )
+    ),
+    resolveCleaning: data => isNonEmptyActionString(data.cardName),
+    resolveMover: data => isActionIndex(data.targetIndex) && (
+        isActionIndex(data.cardIndex) || isNonEmptyActionString(data.cardName)
+    ),
+    resolveRenovation: data => isNonEmptyActionString(data.landmarkName),
+    resolveIT: data => typeof data.doSave === 'boolean',
+    buildCard: data => isNonEmptyActionString(data.cardName),
+    buildLandmark: data => isNonEmptyActionString(data.name),
+    undoBuild: () => true,
+    nextTurn: () => true,
+});
+
+function validateCanonicalPayload(action, data, options = {}) {
+    if (!hasCanonicalPayloadShape(action, data)) return false;
+    const validator = ACTION_CONTRACT_PAYLOAD_VALUE_VALIDATORS[action];
+    return typeof validator === 'function' && validator(data, options) === true;
+}
 
 const ACTION_CONTRACT_PHASE_ACTIONS = Object.freeze(Object.fromEntries(
     Object.values(ACTION_CONTRACT_PHASES)
@@ -205,6 +291,9 @@ const GameActionContract = Object.freeze({
     registry: ACTION_CONTRACT_REGISTRY,
     canonicalPayloadKeys: ACTION_CONTRACT_CANONICAL_PAYLOAD_KEYS,
     canonicalPayloadVariants: ACTION_CONTRACT_CANONICAL_PAYLOAD_VARIANTS,
+    payloadValueValidators: ACTION_CONTRACT_PAYLOAD_VALUE_VALIDATORS,
+    hasCanonicalPayloadShape,
+    validateCanonicalPayload,
     phaseActions: ACTION_CONTRACT_PHASE_ACTIONS,
     uiContainers: buildUiContainers(),
     uiChildSelectors: buildUiChildSelectors(),

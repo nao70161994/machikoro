@@ -2158,6 +2158,20 @@ runTest('validateActionPayloadForState は payload 判定専用で phase gate �
     assert.strictEqual(validateGameAction(room, { playerIndex: 0 }, 'buildCard', { cardName: 'カフェ' }).ok, false);
 });
 
+runTest('validateActionPayloadForState はAction Contractの不正値を盤面参照前に拒否する', () => {
+    for (const [action, data] of [
+        ['rollDice', { forceDice: Infinity, tunaDice: [1, 2] }],
+        ['selectDice', { useTwo: false, diceCount: 2, d1: 1, d2: 2, tunaDice: [1, 2] }],
+        ['resolveTV', { targetIndex: NaN }],
+        ['resolveBusiness', { skip: false }],
+        ['resolveMover', { cardIndex: -1, targetIndex: 1 }],
+        ['resolveIT', { doSave: 1 }],
+        ['buildCard', { cardName: '' }],
+    ]) {
+        assert.strictEqual(validateActionPayloadForState(null, null, null, action, data), false, action);
+    }
+});
+
 runTest('validateActionPayloadForState は validateGameAction と build payload 判定を共有する', () => {
     const room = makeRoom();
     room.actionLog = [{ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] }, playerIndex: 0 }];

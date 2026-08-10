@@ -1,5 +1,7 @@
 'use strict';
 
+const GameActionContract = require('../js/actionContract');
+
 function makeActionValidation({ gameRuntime }) {
     function isPlainObject(value) {
         return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -171,7 +173,8 @@ function makeActionValidation({ gameRuntime }) {
     // Payload-only validator. Actor authority and phase/action allowance must be checked by the caller.
     function validateActionPayloadForState(room, game, shopStock, action, data, options = {}) {
         const validator = ACTION_PAYLOAD_VALIDATORS[action];
-        return typeof validator === 'function'
+        return GameActionContract.validateCanonicalPayload(action, data, { allowLegacy: true }) &&
+            typeof validator === 'function'
             ? validator(room, game, shopStock, data, options)
             : false;
     }
