@@ -109,6 +109,52 @@ runTest('CPU phase pending handlerは適用拒否を診断してno-progressを�
     assert.ok(h.calls.some(call => call[1] === 'scheduleCPU-pending-apply-rejected'));
 });
 
+runTest('CPU phase pending handlerはlocal適用後の状態不変をno-progressとして拒否する', () => {
+    const h = createHarness();
+    h.game.phase = h.phases.PENDING;
+
+    assert.strictEqual(h.handlers.find(handler => handler.name === 'pending').run({
+        difficulty: 'strong',
+    }), false);
+    assert.ok(h.calls.some(call => call[1] === 'scheduleCPU-pending-state-unchanged'));
+});
+
+runTest('CPU phase pending handlerはonline hostのACK待ちを状態不変として拒否しない', () => {
+    const h = createHarness();
+    h.game.phase = h.phases.PENDING;
+    h.setOnline(true);
+
+    assert.notStrictEqual(h.handlers.find(handler => handler.name === 'pending').run({
+        difficulty: 'strong',
+    }), false);
+    assert.strictEqual(h.calls.filter(call => call[0] === 'execute').length, 1);
+    assert.strictEqual(h.calls.some(call => call[1] === 'scheduleCPU-pending-state-unchanged'), false);
+});
+
+for (const testCase of [
+    { step: 'roll', phase: 'ROLL' },
+    { step: 'selectDice', phase: 'SELECT_DICE' },
+    { step: 'rerollConfirm', phase: 'REROLL_CONFIRM' },
+    { step: 'harborChoice', phase: 'HARBOR_CHOICE' },
+    { step: 'nextTurn', phase: 'BUILD' },
+    { step: 'resolveIT', phase: 'BUILD', pendingIT: true },
+]) {
+    runTest(`CPU phase ${testCase.step} handlerはproposal欠落を例外化せず停止する`, () => {
+        const h = createHarness();
+        h.game.phase = h.phases[testCase.phase];
+        h.game.pendingIT = !!testCase.pendingIT;
+        h.proposals[testCase.step] = null;
+        const handler = h.handlers.find(entry => entry.name === testCase.step);
+
+        assert.strictEqual(handler.run({ difficulty: 'strong' }), false);
+        const checkpoint = h.calls.find(call => call[1] === 'scheduleCPU-step-no-proposal');
+        assert.ok(checkpoint);
+        assert.strictEqual(checkpoint[2].step, testCase.step);
+        assert.strictEqual(checkpoint[2].difficulty, 'strong');
+        assert.strictEqual(h.calls.some(call => call[0] === 'execute'), false);
+    });
+}
+
 runTest('CPU phase handlersは必須依存欠落を初期化前に拒否する', () => {
     assert.throws(() => CpuPhaseHandlers.create(), /dependency is required/);
 });

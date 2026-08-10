@@ -765,6 +765,20 @@ runTest('client error classification は stale client と未知通知を分け�
         knownPatternId: 'cpu-turn-stalled',
     });
 
+    const slowCpuStep = normalizeClientErrorPayload({
+        source: 'cpu-step-slow',
+        message: 'slow CPU step pending strong pending resolveBusiness',
+        stack: 'CPU_STEP_SLOW {"step":"pending","durationMs":1450}',
+        appVersion: 'current-build',
+    }, 1700000000000).report;
+    assert.deepStrictEqual(classifyClientErrorReport(slowCpuStep), {
+        classification: 'known-pattern',
+        priority: '3',
+        tags: 'warning,known,performance',
+        freezeKind: '',
+        knownPatternId: 'cpu-step-slow',
+    });
+
     const versionMismatch = normalizeClientErrorPayload({
         source: 'version-mismatch',
         message: 'Client version mismatch',

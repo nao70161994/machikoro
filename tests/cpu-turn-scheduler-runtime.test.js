@@ -23,11 +23,14 @@ function createHarness(options = {}) {
         getCpuSpeed: () => 600,
         getGameState: () => ({ game, cpuPlayers: [cpu] }),
         getOnlineState: () => online,
+        getPendingAction: current => current.pendingActionQueue?.[0]?.action || '',
         getPhaseHandlers: () => handlers,
         isReconnectBlocked: () => false,
         now: () => now,
         policy: CpuSchedulerState,
+        reportSlowStep: options.reportSlowStep || (details => calls.push(['slow-report', details])),
         setTimeout: (fn, delay) => { timers.push({ fn, delay }); return timers.length; },
+        slowStepThresholdMs: options.slowStepThresholdMs,
         unlockHumanTurn: reason => calls.push(['unlock', reason]),
     });
     return { calls, cpu, game, runtime, timers, setNow: value => { now = value; }, setOnline: value => { online = value; } };
@@ -95,6 +98,82 @@ runTest('CPU turn scheduler runtimeはstep例外にも開始情報と所要時�
     assert.strictEqual(failed.difficulty, 'strong');
     assert.strictEqual(failed.durationMs, 45);
     assert.strictEqual(failed.message, 'decision failed');
+    assert.strictEqual(harness.timers.length, 0);
+});
+
+runTest('CPU turn scheduler runtimeは遅いstepをpending actionと完了結果付きで通知する', () => {
+    let harness;
+    harness = createHarness({
+        handlers: [{
+            name: 'pending',
+            run() {
+                harness.setNow(1900);
+                harness.game.phase = 'build';
+                return true;
+            },
+        }],
+    });
+    harness.cpu.difficulty = 'strong';
+    harness.game.phase = 'pending';
+    harness.game.pendingActionQueue = [{ action: 'resolveBusiness' }];
+    harness.runtime.schedule('slow-step-contract');
+    harness.setNow(700);
+    harness.timers.shift().fn();
+
+    const report = harness.calls.find(call => call[0] === 'slow-report')[1];
+    assert.deepStrictEqual({
+        step: report.step,
+        phase: report.phase,
+        pendingAction: report.pendingAction,
+        difficulty: report.difficulty,
+        durationMs: report.durationMs,
+        thresholdMs: report.thresholdMs,
+        outcome: report.outcome,
+    }, {
+        step: 'pending',
+        phase: 'pending',
+        pendingAction: 'resolveBusiness',
+        difficulty: 'strong',
+        durationMs: 1200,
+        thresholdMs: 1000,
+        outcome: 'completed',
+    });
+    assert.strictEqual(
+        harness.calls.filter(call => call[1] === 'scheduleCPU-step-slow').length,
+        1
+    );
+});
+
+runTest('CPU turn scheduler runtimeは遅延通知失敗をCPU進行から隔離する', () => {
+    let harness;
+    harness = createHarness({
+        slowStepThresholdMs: 0,
+        reportSlowStep() { throw new Error('report unavailable'); },
+        handlers: [{
+            name: 'roll',
+            run() {
+                harness.game.phase = 'build';
+                return true;
+            },
+        }],
+    });
+    harness.runtime.schedule();
+    harness.timers.shift().fn();
+
+    assert.ok(harness.calls.some(call => call[1] === 'scheduleCPU-step-slow-report-error'));
+    assert.strictEqual(harness.timers.length, 1);
+});
+
+runTest('CPU turn scheduler runtimeはonline hostのstep例外を再予約しない', () => {
+    const harness = createHarness({
+        online: { isOnlineGame: true, isRoomHost: true, socket: { connected: true } },
+        handlers: [{ name: 'roll', run() { throw new Error('online decision failed'); } }],
+    });
+    harness.runtime.schedule();
+    harness.timers.shift().fn();
+
+    assert.strictEqual(harness.timers.length, 0);
+    assert.ok(harness.calls.some(call => call[1] === 'scheduleCPU-step-error'));
 });
 
 runTest('CPU turn scheduler runtimeはstep実行中だけexecution leaseをhealthへ公開する', () => {

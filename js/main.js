@@ -44,11 +44,30 @@ const cpuTurnSchedulerRuntime = CpuTurnSchedulerRuntime.createRuntime({
     getCpuSpeed: () => gameSetupSnapshot().cpuSpeed,
     getGameState: mainGameRuntimeSnapshot,
     getOnlineState: mainOnlineRuntimeSnapshot,
+    getPendingAction: game => {
+        const pending = CPUPendingResolution.pendingActionDescriptors(game)[0];
+        return pending && pending.action || '';
+    },
     getPhaseHandlers: () => CPU_PHASE_HANDLERS,
     isReconnectBlocked: () => isMainOnlineReconnectInputBlocked(),
     now: () => Date.now(),
     policy: CpuSchedulerState,
+    reportSlowStep(details) {
+        if (typeof reportClientError !== 'function') return false;
+        return reportClientError({
+            source: 'cpu-step-slow',
+            message: [
+                'slow CPU step',
+                details.step || '-',
+                details.difficulty || '-',
+                details.phase || '-',
+                details.pendingAction || '-',
+            ].join(' '),
+            stack: 'CPU_STEP_SLOW ' + JSON.stringify(details),
+        });
+    },
     setTimeout: (callback, delay) => setTimeout(callback, delay),
+    slowStepThresholdMs: 1000,
     unlockHumanTurn(reason) {
         if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn(reason);
     },
@@ -380,7 +399,10 @@ const CPU_PHASE_HANDLERS = CpuPhaseHandlers.create({
     gamePhases: GAME_PHASES,
     getGameState: mainGameRuntimeSnapshot,
     getOnlineState: mainOnlineRuntimeSnapshot,
-    nextPendingAction: game => CPUPendingResolution.pendingActionDescriptors(game)[0] || null,
+    nextPendingAction: game => {
+        const pending = CPUPendingResolution.pendingActionDescriptors(game)[0];
+        return pending && pending.action || null;
+    },
     pendingResolution: CPUPendingResolution,
     render: () => render(),
     shopStock: SHOP_STOCK,

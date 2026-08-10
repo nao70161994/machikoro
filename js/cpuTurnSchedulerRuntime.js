@@ -19,6 +19,9 @@ const CpuTurnSchedulerRuntime = (() => {
         const executionLeaseMs = Number.isFinite(dependencies.executionLeaseMs)
             ? Math.max(1000, dependencies.executionLeaseMs)
             : 15000;
+        const slowStepThresholdMs = Number.isFinite(dependencies.slowStepThresholdMs)
+            ? Math.max(0, dependencies.slowStepThresholdMs)
+            : 1000;
 
         function invalidate() { return controller.invalidate().scheduleToken; }
         function cancel(reason = 'cpu-schedule-cancel') {
@@ -33,6 +36,37 @@ const CpuTurnSchedulerRuntime = (() => {
             return controller.refreshLease(dependencies.now(), leaseMs).scheduledUntil;
         }
         function isStepScheduled() { return controller.isStepScheduled(); }
+
+        function pendingAction(game) {
+            if (typeof dependencies.getPendingAction === 'function') {
+                return dependencies.getPendingAction(game) || '';
+            }
+            const entry = game && Array.isArray(game.pendingActionQueue)
+                ? game.pendingActionQueue[0]
+                : null;
+            return entry && entry.action || '';
+        }
+
+        function reportSlowStep(details, durationMs, outcome = {}) {
+            if (durationMs < slowStepThresholdMs) return false;
+            const report = Object.freeze({
+                ...details,
+                ...outcome,
+                durationMs,
+                thresholdMs: slowStepThresholdMs,
+            });
+            dependencies.checkpoint('scheduleCPU-step-slow', report);
+            if (typeof dependencies.reportSlowStep !== 'function') return true;
+            try {
+                dependencies.reportSlowStep(report);
+            } catch (error) {
+                dependencies.checkpoint('scheduleCPU-step-slow-report-error', {
+                    ...details,
+                    message: error && error.message || String(error),
+                });
+            }
+            return true;
+        }
 
         function onlineBlocked(online) {
             return online.isOnlineGame && (
@@ -179,6 +213,7 @@ const CpuTurnSchedulerRuntime = (() => {
                         step: step.name,
                         phase: stepGame.phase || '',
                         difficulty: cpu && cpu.difficulty || '',
+                        pendingAction: pendingAction(stepGame),
                         currentPlayerIndex: stepGame.currentPlayerIndex,
                         token,
                         stepExecutionId,
@@ -193,27 +228,36 @@ const CpuTurnSchedulerRuntime = (() => {
                         dependencies.checkpoint('scheduleCPU-step-run', stepDetails);
                         result = step.run(cpu);
                     } catch (error) {
+                        const durationMs = Math.max(0, dependencies.now() - startedAt);
                         if (dependencies.console && typeof dependencies.console.error === 'function') {
                             dependencies.console.error('[cpu] phase step failed:', step.name, error);
                         }
                         dependencies.checkpoint('scheduleCPU-step-error', {
                             ...stepDetails,
-                            durationMs: Math.max(0, dependencies.now() - startedAt),
+                            durationMs,
                             message: error && error.message || String(error),
                         });
                         controller.clearActive(stepExecutionId);
+                        reportSlowStep(stepDetails, durationMs, {
+                            outcome: 'error',
+                            message: error && error.message || String(error),
+                        });
                         if (dependencies.getOnlineState().isOnlineGame) return;
                         if (step.name === 'build' && stepGame.phase === dependencies.gamePhases.BUILD && !stepGame.builtThisTurn) {
                             stepGame.nextTurn();
+                            runNextStep();
                         }
-                        runNextStep();
                         return;
                     }
                     controller.clearActive(stepExecutionId);
+                    const durationMs = Math.max(0, dependencies.now() - startedAt);
                     dependencies.checkpoint('scheduleCPU-step-result', {
                         ...stepDetails,
-                        durationMs: Math.max(0, dependencies.now() - startedAt),
+                        durationMs,
                         stepResult: result,
+                    });
+                    reportSlowStep(stepDetails, durationMs, {
+                        outcome: result === false ? 'no-progress' : 'completed',
                     });
                     if (result === false) {
                         if (step.name === 'pending' && pendingNoProgressRetries < 1) {
@@ -250,7 +294,7 @@ const CpuTurnSchedulerRuntime = (() => {
         return Object.freeze({
             controller, facade, blockedReason, cancel, health, invalidate,
             isStepScheduled, markScheduled, queueStep, refreshLease, schedule,
-            shouldRunStep,
+            reportSlowStep, shouldRunStep,
         });
     }
     return Object.freeze({ createRuntime });

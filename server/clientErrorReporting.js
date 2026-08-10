@@ -22,6 +22,7 @@ const KNOWN_CLIENT_ERROR_FREEZE_KINDS = Object.freeze(new Set([
 const KNOWN_CLIENT_ERROR_MESSAGE_PATTERNS = Object.freeze([
     Object.freeze({ id: 'manual-test-endpoint', pattern: 'ダイスシティ ntfy test notification' }),
     Object.freeze({ id: 'client-version-mismatch', pattern: 'Client version mismatch', priority: '2', tags: 'hourglass,known,stale_client' }),
+    Object.freeze({ id: 'cpu-step-slow', pattern: 'CPU_STEP_SLOW', priority: '3', tags: 'warning,known,performance' }),
     Object.freeze({ id: 'renderPlayers-playerSettings-fallback', pattern: 'difficulty' }),
     Object.freeze({ id: 'pending-render-recovery', pattern: 'updatePendingModalContent recursion' }),
 ]);

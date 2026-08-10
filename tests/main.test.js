@@ -2163,6 +2163,25 @@ runTest('appShell bindCrashHandlers は error と rejection を crash 画面へ�
     assert.strictEqual(rt.__test.fetchCalls.length, 2);
 });
 
+runTest('main CPU schedulerは遅いstepを完了後に詳細付きclient-errorへ送る', () => {
+    const rt = loadMainRuntime();
+    vm.runInContext(`cpuTurnSchedulerRuntime.reportSlowStep({
+        step: 'pending',
+        phase: 'pending',
+        difficulty: 'strong',
+        pendingAction: 'resolveBusiness',
+        currentPlayerIndex: 1,
+        stepExecutionId: 'slow:1'
+    }, 1450, { outcome: 'completed' });`, rt);
+
+    const report = JSON.parse(rt.__test.fetchCalls.at(-1).options.body);
+    assert.strictEqual(report.source, 'cpu-step-slow');
+    assert.strictEqual(report.message, 'slow CPU step pending strong pending resolveBusiness');
+    assert.ok(report.stack.startsWith('CPU_STEP_SLOW '));
+    assert.ok(report.stack.includes('"durationMs":1450'));
+    assert.ok(report.stack.includes('"thresholdMs":1000'));
+});
+
 runTest('appShell console.error hook は最小限のクライアントエラー通知を送る', () => {
     const rt = loadMainRuntime();
     const before = rt.__test.fetchCalls.length;
