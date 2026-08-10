@@ -68,6 +68,7 @@ const LocalPlayerSettings = (() => {
                     type="text"
                     maxlength="12"
                     class="text-input player-name-input"
+                    aria-label="プレイヤー${index + 1}の名前"
                     placeholder="${defaultPlayerName(index)}"
                     value="${escapeAttribute(setting.name)}"
                     data-ui-input="localPlayerName"

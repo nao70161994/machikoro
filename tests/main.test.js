@@ -681,6 +681,7 @@ runTest('main renderPlayerSettings は CPU（最強）オプションを表示�
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('value="expert"'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('data-ui-change="localPlayerType"'));
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('aria-label="プレイヤー1の種類"'));
+    assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('aria-label="プレイヤー2の名前"'));
     assert.ok(!rt.__test.elements.playerSettings.innerHTML.includes('onchange="onChangePlayerType'));
 });
 

@@ -21,6 +21,7 @@ runTest('local player settings HTMLは既存option・label・escape契約を維�
         { type: 'cpu', difficulty: 'rl', name: 'CPU' },
     ], 2);
     assert.ok(html.includes('aria-label="プレイヤー1の種類"'));
+    assert.ok(html.includes('aria-label="プレイヤー1の名前"'));
     assert.ok(html.includes('value="human" selected'));
     assert.ok(html.includes('value="&quot;&lt;&amp;"'));
     assert.ok(html.includes('placeholder="プレイヤー1"'));
@@ -28,6 +29,17 @@ runTest('local player settings HTMLは既存option・label・escape契約を維�
     assert.ok(html.includes('AI（深層学習）として統計を記録'));
     assert.ok(html.includes('2人用の複数モデル'));
     assert.ok(!html.includes('value=""<&"'));
+});
+
+runTest('local player settingsの人間名inputは各playerを識別するaccessible nameを持つ', () => {
+    const html = LocalPlayerSettings.buildSettingsHtml([
+        { type: 'human', difficulty: 'normal', name: 'Alice' },
+        { type: 'human', difficulty: 'normal', name: 'Bob' },
+    ], 2);
+
+    assert.ok(html.includes('aria-label="プレイヤー1の名前"'));
+    assert.ok(html.includes('aria-label="プレイヤー2の名前"'));
+    assert.strictEqual((html.match(/data-ui-input="localPlayerName"/g) || []).length, 2);
 });
 
 runTest('local player settingsはCPU表示・相手設定・速度・RL判定を固定する', () => {
