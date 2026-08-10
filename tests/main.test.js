@@ -2742,9 +2742,10 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('hadServiceWorkerController = true;'));
     assert.ok(html.includes('let updateRequestedByUser = false;'));
     assert.ok(html.includes('let _versionMismatchDetected = false;'));
+    assert.ok(html.includes('let _controllerReloadPending = false;'));
     assert.ok(html.includes('function refreshPwaUpdateState()'));
-    assert.ok(html.includes(`if (!_waitingSW) {
-            if (_versionMismatchDetected)`));
+    assert.ok(html.includes('if (_controllerReloadPending) {'));
+    assert.ok(html.includes('function _reloadOnce()'));
     assert.ok(html.includes('function checkClientVersionMismatch()'));
     assert.ok(html.includes("fetch('/api/version',"));
     assert.ok(html.includes("cache: 'no-store'"));
@@ -2758,7 +2759,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('window.__machikoroCheckOnlineDelivery = checkOnlineDelivery;'));
     assert.ok(html.includes('function shouldKeepPwaUpdateBannerVisible()'));
     assert.ok(html.includes('window.shouldKeepPwaUpdateBannerVisible = shouldKeepPwaUpdateBannerVisible;'));
-    assert.ok(html.includes('(_versionMismatchDetected || !!_waitingSW) && _isOnlineFlowActive()'));
+    assert.ok(html.includes('(_versionMismatchDetected || !!_waitingSW || _controllerReloadPending) && _isOnlineFlowActive()'));
     const mainUiEventRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/mainUiEventRuntime.js'), 'utf8');
     assert.ok(mainUiEventRuntimeSource.includes("resolveEffect('shouldKeepPwaUpdateBannerVisible')"));
     assert.ok(html.includes('checkOnlineDelivery();'));
@@ -2783,7 +2784,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(watchdogRuntimeSource.includes('reporting.execute({'));
     assert.ok(!appShellSource.includes('UiWatchdogReporting.execute({'));
     assert.ok(!appShellSource.includes("markClientFlowCheckpoint('freeze-watchdog-tick'"));
-    assert.ok(html.includes('if ((_isInGame() || _isOnlineFlowActive()) && !updateRequestedByUser) {\n            _showPwaUpdateBanner();\n            return;\n          }'));
+    assert.ok(html.includes('if ((_isInGame() || _isOnlineFlowActive()) && !updateRequestedByUser) {\n            _controllerReloadPending = true;\n            _showPwaUpdateBanner();\n            return;\n          }'));
+    assert.ok(html.includes('_waitingSW = null;'));
     assert.ok(html.includes('updateRequestedByUser = true;'));
     assert.ok(html.includes('_forceVersionReload();'));
     assert.ok(html.includes('caches.keys()'));
