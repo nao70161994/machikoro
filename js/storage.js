@@ -258,9 +258,18 @@ function reconnectOnline() {
         }
     } catch(e) {
         setStorageOnlineReconnectLegacyFlag(false);
-        clearOnlineSessionStorage();
-        updateResumeButton();
-        showNotice('再接続データの読み込みに失敗しました');
+        const reset = StoredOnlineReconnect.resetRuntime();
+        if (typeof OnlineRuntimeState !== 'undefined' && OnlineRuntimeState.runtime) {
+            OnlineRuntimeState.runtime.restoreIdentity(reset);
+        } else {
+            isRoomHost = reset.isRoomHost;
+            myPlayerName = reset.playerName;
+            myRoomId = reset.roomId;
+            myOriginalPlayerIndex = reset.originalPlayerIndex;
+            myPlayerIndex = reset.playerIndex;
+            reconnectToken = reset.reconnectToken;
+        }
+        showNotice('再接続処理に失敗しました。もう一度お試しください');
     }
 }
 
@@ -277,6 +286,7 @@ function resumeGame(options = {}) {
         repositoryExists: repository.exists(),
     });
     if (initialDecision !== 'read-save') return;
+    let validatedSave = false;
     try {
         const decoded = repository.read(isValidSavedGameState);
         const decodedState = decoded && decoded.state;
@@ -302,6 +312,7 @@ function resumeGame(options = {}) {
             throw new Error('Invalid saved game');
         }
         const state = decision.state;
+        validatedSave = true;
         if (decision.kind === LocalResumePolicy.DECISIONS.PRELOAD_RL) {
             const preload = RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
             if (preload && typeof preload.then === 'function') {
@@ -392,7 +403,7 @@ function resumeGame(options = {}) {
         if (runtimeResult.ok !== true) throw new Error('Saved game hydration failed');
     } catch(e) {
         setLocalResumePending(false);
-        repository.remove();
+        if (!validatedSave) repository.remove();
         updateResumeButton();
         showNotice("セーブデータの読み込みに失敗しました");
     }

@@ -302,6 +302,28 @@ runTest('storage reconnectOnline はSocket.IO初期化失敗時に部分適用�
     assert.deepStrictEqual(rt.emits, []);
 });
 
+runTest('storage reconnectOnline は有効な再接続データを一時的な実行時例外で削除しない', () => {
+    const rt = loadStorageRuntime();
+    const session = {
+        roomId: 'room-1',
+        playerIndex: 1,
+        playerName: 'P2',
+        reconnectToken: 'token-1',
+        isRoomHost: true,
+    };
+    rt.localStorage.setItem('onlineSession', JSON.stringify(session));
+    rt.localStorage.setItem('onlineActionLog', '[]');
+    rt.initSocket = () => { throw new Error('temporary socket failure'); };
+
+    rt.reconnectOnline();
+
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), JSON.stringify(session));
+    assert.strictEqual(rt.localStorage.getItem('onlineActionLog'), '[]');
+    assert.strictEqual(rt.isReconnectingOnline, false);
+    assert.strictEqual(rt.myRoomId, null);
+    assert.deepStrictEqual(rt.alerts, ['再接続処理に失敗しました。もう一度お試しください']);
+});
+
 runTest('storage reconnectOnline はオンライン再接続データの空白を正規化して送る', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('onlineSession', JSON.stringify({
@@ -490,6 +512,19 @@ runTest('storage resumeGame は壊れた保存データを破棄して alert す
 
     assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
     assert.strictEqual(rt.elements.resumeSection.style.display, 'none');
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
+runTest('storage resumeGame は検証済みsaveを一時的なruntime例外で削除しない', () => {
+    const rt = loadStorageRuntime();
+    const serialized = JSON.stringify(makeSavedGameState());
+    rt.localStorage.setItem('savedGame', serialized);
+    rt.render = () => { throw new Error('temporary render failure'); };
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), serialized);
+    assert.strictEqual(rt.elements.resumeSection.style.display, 'flex');
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
