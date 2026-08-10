@@ -21,7 +21,7 @@ const CPURollDecision = Object.freeze({
             }
             cpu._syncExpertTuningForGame(game);
             if (cpu.difficulty === "weak") return Math.random() < 0.5;
-            if (cpu.difficulty === "expert" && !cpu._expertCrowdNormalPlan(game)) {
+            if (cpu.difficulty === "expert") {
                 if (cpu._expertCrowdNormalPlan(game)) {
                     const oneScore = cpu._expectedDiceScore(game, false);
                     const twoScore = cpu._expectedDiceScore(game, true);

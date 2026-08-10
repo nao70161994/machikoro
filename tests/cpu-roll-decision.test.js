@@ -54,6 +54,32 @@ runTest('CPU roll decision はnormalの閾値と評価順を維持する', () =>
     ]);
 });
 
+runTest('CPU roll decision はexpert crowdの1個振り閾値を適用する', () => {
+    const calls = [];
+    const cpu = createNormalCpu(calls);
+    cpu.difficulty = 'expert';
+    cpu._expertCrowdNormalPlan = () => {
+        calls.push('crowd-plan');
+        return true;
+    };
+    cpu._expectedDiceScore = (game, useTwo) => {
+        calls.push(['expected', useTwo]);
+        return useTwo ? 5.5 : 5;
+    };
+    cpu._expectedExpertChoiceValue = () => {
+        throw new Error('crowd plan must not use expert lookahead');
+    };
+
+    assert.strictEqual(CPURollDecision.chooseDiceCount(cpu, { players: [{ landmarks: {} }] }), false);
+    assert.deepStrictEqual(calls, [
+        ['profile', 'chooseDiceCount'],
+        'sync',
+        'crowd-plan',
+        ['expected', false],
+        ['expected', true],
+    ]);
+});
+
 runTest('CPU roll decision はweak各判断で乱数をちょうど1回ずつ消費する', () => {
     const calls = [];
     const cpu = createNormalCpu(calls);
