@@ -7,6 +7,7 @@ const PwaShell = (() => {
         const readStorage = dependencies.readStorage;
         const writeStorage = dependencies.writeStorage;
         let installEvent = null;
+        let promptPending = false;
         let handlersBound = false;
 
         function updateBannerBodyState() {
@@ -41,12 +42,47 @@ const PwaShell = (() => {
         }
 
         function promptInstall() {
-            if (!installEvent) return;
-            installEvent.prompt();
-            installEvent.userChoice.then(() => {
+            if (!installEvent || promptPending) return;
+            const event = installEvent;
+            installEvent = null;
+            promptPending = true;
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
                 setBannerVisible('pwaInstallBanner', false);
-                installEvent = null;
-            });
+                promptPending = false;
+            };
+            let userChoice;
+            try {
+                userChoice = event.userChoice;
+            } catch (_) {
+                userChoice = null;
+            }
+            function watchUserChoice() {
+                try {
+                    if (!userChoice || typeof userChoice.then !== 'function') return false;
+                    userChoice.then(finish, finish);
+                    return true;
+                } catch (_) {
+                    finish();
+                    return true;
+                }
+            }
+            let promptResult;
+            try {
+                promptResult = event.prompt();
+            } catch (_) {
+                watchUserChoice();
+                finish();
+                return;
+            }
+            const watchingUserChoice = watchUserChoice();
+            if (promptResult && typeof promptResult.then === 'function') {
+                Promise.resolve(promptResult).catch(finish);
+            } else if (!watchingUserChoice) {
+                finish();
+            }
         }
 
         function dismissInstall() {
@@ -63,7 +99,7 @@ const PwaShell = (() => {
             }
             windowRef.addEventListener('beforeinstallprompt', event => {
                 event.preventDefault();
-                if (readStorage('pwaInstallDismissed')) return;
+                if (promptPending || readStorage('pwaInstallDismissed')) return;
                 installEvent = event;
                 maybeShowInstallBanner();
             });
