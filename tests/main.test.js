@@ -2863,6 +2863,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes(':focus-visible'));
     assert.ok(css.includes('@media (prefers-reduced-motion: reduce)'));
     assert.ok(css.includes('.notice-toast'));
+    assert.ok(css.includes('body.pwa-banner-open .notice-toast {\n    bottom: calc(112px + env(safe-area-inset-bottom, 0px));'));
     assert.ok(css.includes('body.modal-open'));
     assert.ok(css.includes('body.modal-open #titleScreen'));
     assert.ok(uiSource.includes('function isVisibleFocusableElement'));
