@@ -41,19 +41,33 @@ function acceptedClientActionRefs(room) {
         });
 }
 
-function makeNextRoomActionSeq(resolveRestoreRank) {
+function makeRoomActionSequence(resolveRestoreRank) {
     if (typeof resolveRestoreRank !== 'function') {
         throw new TypeError('resolveRestoreRank must be a function');
     }
-    return function nextRoomActionSeq(room) {
+    function planNext(room) {
         const current = Number.isInteger(room.actionSeq)
             ? room.actionSeq
             : resolveRestoreRank(room.gameStartPayload, room.stateSnapshot, room.actionLog).actionSeq;
-        room.actionSeq = current + 1;
+        return current + 1;
+    }
+    function commit(room, actionSeq) {
+        if (!room || !Number.isSafeInteger(actionSeq) || actionSeq < 1) return false;
+        room.actionSeq = actionSeq;
         if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
-            room.gameStartPayload.actionSeq = room.actionSeq;
+            room.gameStartPayload.actionSeq = actionSeq;
         }
-        return room.actionSeq;
+        return true;
+    }
+    return Object.freeze({ planNext, commit });
+}
+
+function makeNextRoomActionSeq(resolveRestoreRank) {
+    const sequence = makeRoomActionSequence(resolveRestoreRank);
+    return function nextRoomActionSeq(room) {
+        const actionSeq = sequence.planNext(room);
+        sequence.commit(room, actionSeq);
+        return actionSeq;
     };
 }
 
@@ -63,5 +77,6 @@ module.exports = {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
+    makeRoomActionSequence,
     makeNextRoomActionSeq,
 };

@@ -32,14 +32,19 @@ function createSubject(overrides = {}) {
         findAcceptedClientAction() { calls.push('dedupe'); return null; },
         validateGameAction() { calls.push('validate'); return { ok: true, mirror, data: { raw: true } }; },
         canonicalizeActionData() { calls.push('canonicalize'); return { canonical: true }; },
-        makeUndoStateFromMirror() { calls.push('undo'); return { undo: true }; },
-        nextRoomActionSeq() { calls.push('seq'); return 4; },
+        planNextRoomActionSeq() { calls.push('seq-plan'); return 4; },
+        commitRoomActionSeq(targetRoom, seq) {
+            calls.push('seq-commit');
+            targetRoom.actionSeq = seq;
+            return true;
+        },
         gameSchemaShadow: {
             prepare() { calls.push('shadow-prepare'); return { before: true }; },
             compare() { calls.push('shadow-compare'); return { status: 'matched' }; },
         },
         buildRestoreActionAudit() { calls.push('audit'); return null; },
         applyAcceptedActionToRoomCanonicalMirror() { calls.push('apply'); return true; },
+        resetRoomCanonicalMirror() { calls.push('mirror-reset'); },
         rememberAcceptedClientAction() { calls.push('remember'); },
         compactRoomActionLog() { calls.push('compact'); },
         attachCompactedRestoreSnapshotToAction() { calls.push('snapshot'); },
@@ -67,10 +72,35 @@ runTest('action socket handlerは受理処理とACK/broadcast順を維持する'
     assert.deepStrictEqual(subject.broadcast, [{ roomId: 'ROOM1', event: 'gameAction', payload: entry }]);
     assert.deepStrictEqual(subject.emitted, [{ event: 'actionAccepted', payload: entry }]);
     assert.deepStrictEqual(subject.calls, [
-        'plain', 'active', 'normalize-id', 'dedupe', 'validate', 'canonicalize', 'seq',
-        'shadow-prepare', 'audit', 'apply', 'shadow-compare', 'remember', 'compact',
+        'plain', 'active', 'normalize-id', 'dedupe', 'validate', 'canonicalize', 'seq-plan',
+        'shadow-prepare', 'audit', 'apply', 'seq-commit', 'shadow-compare', 'remember', 'compact',
         'snapshot', 'mark', 'persist',
     ]);
+});
+
+runTest('action socket handlerはmirror適用拒否・例外でsequenceとUndoを変更しない', () => {
+    for (const mode of ['false', 'throw']) {
+        const previousUndo = { stale: true };
+        const subject = createSubject({
+            applyAcceptedActionToRoomCanonicalMirror() {
+                subject.calls.push('apply');
+                if (mode === 'throw') throw new Error('apply failed');
+                return false;
+            },
+            logError() {},
+        });
+        subject.room.actionSeq = 3;
+        subject.room.gameStartPayload = { actionSeq: 3 };
+        subject.room.lastUndoState = previousUndo;
+        subject.handlers.gameAction({ action: 'buildCard', data: {}, clientActionId: `failed-${mode}` });
+        assert.strictEqual(subject.room.actionSeq, 3, mode);
+        assert.strictEqual(subject.room.gameStartPayload.actionSeq, 3, mode);
+        assert.strictEqual(subject.room.lastUndoState, previousUndo, mode);
+        assert.deepStrictEqual(subject.room.actionLog, [], mode);
+        assert.strictEqual(subject.calls.includes('seq-commit'), false, mode);
+        assert.strictEqual(subject.calls.includes('mirror-reset'), true, mode);
+        assert.strictEqual(subject.emitted.some(item => item.event === 'actionAccepted'), false, mode);
+    }
 });
 
 runTest('action socket handlerは既受理client actionを再実行せずACKする', () => {

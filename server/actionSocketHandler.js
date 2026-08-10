@@ -10,13 +10,14 @@ function registerActionSocketHandler(socket, dependencies) {
         findAcceptedClientAction,
         validateGameAction,
         canonicalizeActionData,
-        makeUndoStateFromMirror,
-        nextRoomActionSeq,
+        planNextRoomActionSeq,
+        commitRoomActionSeq,
         gameSchemaShadow,
         decodeGameSchemaAction = (_room, payload) => ({ ok: true, value: payload }),
         encodeGameSchemaAction = (_room, payload) => ({ ok: true, value: payload }),
         buildRestoreActionAudit,
         applyAcceptedActionToRoomCanonicalMirror,
+        resetRoomCanonicalMirror,
         rememberAcceptedClientAction,
         compactRoomActionLog,
         attachCompactedRestoreSnapshotToAction,
@@ -72,15 +73,10 @@ function registerActionSocketHandler(socket, dependencies) {
             return;
         }
         let safeData = canonicalizeActionData(action, validation.data);
-        if (action === 'buildCard' || action === 'buildLandmark') {
-            room.lastUndoState = makeUndoStateFromMirror(validation.mirror.game, validation.mirror.shopStock);
-        } else if (action === 'undoBuild') {
+        if (action === 'undoBuild') {
             safeData = { state: room.lastUndoState || validation.mirror.lastUndoState };
-            room.lastUndoState = null;
-        } else if (action === 'nextTurn') {
-            room.lastUndoState = null;
         }
-        const actionSeq = nextRoomActionSeq(room);
+        const actionSeq = planNextRoomActionSeq(room);
         const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
         if (safeClientActionId) actionEntry.clientActionId = safeClientActionId;
         const wirePreflight = encodeGameSchemaAction(room, actionEntry);
@@ -91,7 +87,19 @@ function registerActionSocketHandler(socket, dependencies) {
         const schemaShadowTransition = gameSchemaShadow.prepare(room, validation.mirror, actionEntry);
         const restoreActionAudit = buildRestoreActionAudit(roomId, actionEntry);
         if (restoreActionAudit) actionEntry.restoreActionAudit = restoreActionAudit;
-        if (!applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry)) {
+        let applied = false;
+        try {
+            applied = applyAcceptedActionToRoomCanonicalMirror(room, validation.mirror, actionEntry);
+        } catch (error) {
+            logError('applyAcceptedActionToRoomCanonicalMirror error:', error);
+        }
+        if (!applied) {
+            resetRoomCanonicalMirror(room);
+            emitAppError(socket, '無効な操作です');
+            return;
+        }
+        if (!commitRoomActionSeq(room, actionSeq)) {
+            resetRoomCanonicalMirror(room);
             emitAppError(socket, '無効な操作です');
             return;
         }

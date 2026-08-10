@@ -5,6 +5,7 @@ const {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
+    makeRoomActionSequence,
     makeNextRoomActionSeq,
 } = require('../server/actionAcceptance');
 const { runTest } = require('./helpers/test-utils');
@@ -60,6 +61,19 @@ runTest('action acceptance はroom sequenceをrestore rank fallbackから進めp
     assert.strictEqual(nextRoomActionSeq(room), 11);
     assert.strictEqual(room.gameStartPayload.actionSeq, 11);
     assert.strictEqual(calls.length, 1);
+});
+
+runTest('action acceptance はsequenceをplanとcommitに分けて拒否前のroomを変更しない', () => {
+    const sequence = makeRoomActionSequence(() => ({ actionSeq: 7 }));
+    const room = { gameStartPayload: { actionSeq: 2 }, actionLog: [] };
+    const planned = sequence.planNext(room);
+    assert.strictEqual(planned, 8);
+    assert.strictEqual(Object.hasOwn(room, 'actionSeq'), false);
+    assert.strictEqual(room.gameStartPayload.actionSeq, 2);
+    assert.strictEqual(sequence.commit(room, planned), true);
+    assert.strictEqual(room.actionSeq, 8);
+    assert.strictEqual(room.gameStartPayload.actionSeq, 8);
+    assert.strictEqual(sequence.commit(room, NaN), false);
 });
 
 runTest('action acceptance sequence factoryは不正なrank依存を副作用前に拒否する', () => {

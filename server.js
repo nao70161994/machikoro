@@ -98,7 +98,7 @@ const {
     findAcceptedClientAction,
     rememberAcceptedClientAction,
     acceptedClientActionRefs,
-    makeNextRoomActionSeq,
+    makeRoomActionSequence,
 } = require('./server/actionAcceptance');
 const makeRejoinPayload = require('./server/rejoinPayload');
 const makeRestoreAuditPayload = require('./server/restoreAuditPayload');
@@ -339,7 +339,12 @@ const {
     isIncomingRestoreNewer,
     canReplaceRestoredRoom,
 } = require('./server/restoreRank');
-const nextRoomActionSeq = makeNextRoomActionSeq(restorePayloadRank);
+const roomActionSequence = makeRoomActionSequence(restorePayloadRank);
+const nextRoomActionSeq = room => {
+    const actionSeq = roomActionSequence.planNext(room);
+    roomActionSequence.commit(room, actionSeq);
+    return actionSeq;
+};
 const {
     stableStateHash,
     canonicalMirrorStateHash,
@@ -794,8 +799,8 @@ registerSocketConnectionRuntime({
             findAcceptedClientAction,
             validateGameAction,
             canonicalizeActionData,
-            makeUndoStateFromMirror,
-            nextRoomActionSeq,
+            planNextRoomActionSeq: roomActionSequence.planNext,
+            commitRoomActionSeq: roomActionSequence.commit,
             gameSchemaShadow,
             gameEngineAuthority,
             adoptTransitionSnapshotToRoomMirror,
@@ -813,6 +818,7 @@ registerSocketConnectionRuntime({
             ),
             buildRestoreActionAudit,
             applyAcceptedActionToRoomCanonicalMirror,
+            resetRoomCanonicalMirror,
             rememberAcceptedClientAction,
             compactRoomActionLog,
             attachCompactedRestoreSnapshotToAction,
