@@ -1231,6 +1231,9 @@ button:not(:disabled):active {
 }
 
 .player-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
     font-size: 11px;
     color: #a7a9be;
     line-height: 1.6;
@@ -1419,14 +1422,16 @@ button:not(:disabled):active {
 
 .card-badge {
     display: inline-block;
+    width: auto;
+    min-height: 24px;
     font-size: 10px;
-    padding: 2px 5px;
+    padding: 3px 8px;
     border: 0;
     border-radius: 4px;
     background: #2a2a4a;
     color: inherit;
     font-family: inherit;
-    margin: 1px;
+    margin: 0;
 }
 
 .it-badge {
