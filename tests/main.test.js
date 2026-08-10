@@ -2300,6 +2300,7 @@ runTest('index.html は統計タブをオンラインタブの外に配置して
 runTest('onlineStatus はライブリージョンとして宣言されている', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true"'));
 });
 
 runTest('card detail button はカードに重ならない専用行へ配置する', () => {
@@ -2847,6 +2848,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('.pwa-banner-dismiss {\n    width: auto;\n    flex: 0 0 auto;'));
     assert.ok(css.includes('.player-cards {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 4px;'));
     assert.ok(css.includes('.card-badge {\n    display: inline-block;\n    width: auto;\n    min-height: 24px;'));
+    assert.ok(css.includes('.tutorial-toggle-btn {\n    width: auto;\n    flex: 0 0 auto;'));
+    assert.ok(css.includes('.stats-player-btn {\n    width: auto;'));
     assert.ok(css.includes('body.pwa-banner-open #gameScreen'));
     assert.ok(css.indexOf('max-height: min(calc(100vh - 24px), 70vh);') < css.indexOf('max-height: min(calc(100dvh - 24px), 70dvh);'));
     assert.ok(css.includes('calc(12px + env(safe-area-inset-bottom, 0px))'));

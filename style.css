@@ -954,6 +954,18 @@ body.pwa-banner-open #gameScreen {
     border: 1px solid #2a2a4a;
 }
 
+.online-game-status {
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px solid rgba(240,192,64,0.45);
+    border-radius: 10px;
+    background: rgba(240,192,64,0.12);
+    color: #f8d875;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+}
+
 .game-action-panel {
     background: #1a1a2e;
     border-radius: 12px;
@@ -1845,6 +1857,8 @@ button:not(:disabled):active {
 }
 
 .tutorial-toggle-btn {
+    width: auto;
+    flex: 0 0 auto;
     padding: 8px 10px;
     font-size: 12px;
     background: #1a1a2e;
@@ -2251,6 +2265,7 @@ button:not(:disabled):active {
 }
 
 .stats-player-btn {
+    width: auto;
     padding: 7px 10px;
     border-radius: 999px;
     border: 1px solid #2a2a4a;
