@@ -2,6 +2,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { injectServiceWorkerBuildHash } = require('../server/staticAssets');
 
 async function runTest(name, fn) {
     try {
@@ -39,29 +40,47 @@ function makeRequest(url, options = {}) {
 
 function loadServiceWorker(options = {}) {
     const listeners = {};
-    const cacheEntries = new Map(options.cacheEntries || []);
+    const cacheStores = new Map();
+    for (const [name, entries] of Object.entries(options.cacheStores || {})) {
+        cacheStores.set(name, new Map(entries));
+    }
     const addAllCalls = [];
     const addCalls = [];
     const putCalls = [];
     const fetchCalls = [];
     const deletedCaches = [];
-    const cache = {
-        addAll(assets) {
-            addAllCalls.push(assets.slice());
-            return Promise.resolve();
-        },
-        add(asset) {
-            addCalls.push(asset);
-            if (options.addReject && options.addReject(asset)) return Promise.reject(new Error('add failed: ' + asset));
-            return Promise.resolve();
-        },
-        put(request, response) {
-            putCalls.push({ request, response });
-            if (options.putReject) return Promise.reject(new Error('put failed'));
-            cacheEntries.set(request.url || request, response);
-            return Promise.resolve();
-        },
-    };
+    const sourceTemplate = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
+    const source = options.buildHash
+        ? injectServiceWorkerBuildHash(sourceTemplate, options.buildHash)
+        : sourceTemplate;
+    const cacheNameMatch = source.match(/const CACHE_NAME = '([^']+)'/);
+    const currentCacheName = cacheNameMatch ? cacheNameMatch[1] : '';
+    if (options.cacheEntries) {
+        cacheStores.set(currentCacheName, new Map(options.cacheEntries));
+    }
+
+    function cacheFor(name) {
+        if (!cacheStores.has(name)) cacheStores.set(name, new Map());
+        const entries = cacheStores.get(name);
+        return {
+            addAll(assets) {
+                addAllCalls.push(assets.slice());
+                return Promise.resolve();
+            },
+            add(asset) {
+                addCalls.push(asset);
+                if (options.addReject && options.addReject(asset)) return Promise.reject(new Error('add failed: ' + asset));
+                entries.set(asset, makeResponse(`${name}:${asset}`));
+                return Promise.resolve();
+            },
+            put(request, response) {
+                putCalls.push({ cacheName: name, request, response });
+                if (options.putReject) return Promise.reject(new Error('put failed'));
+                entries.set(request.url || request, response);
+                return Promise.resolve();
+            },
+        };
+    }
     const context = {
         URL,
         Response,
@@ -84,17 +103,22 @@ function loadServiceWorker(options = {}) {
         caches: {
             open(name) {
                 context.lastOpenedCache = name;
-                return Promise.resolve(cache);
+                return Promise.resolve(cacheFor(name));
             },
             keys() {
                 return Promise.resolve(options.cacheKeys || ['machikoro-v3', 'machikoro-v4']);
             },
             delete(name) {
                 deletedCaches.push(name);
+                cacheStores.delete(name);
                 return Promise.resolve(true);
             },
             match(request) {
-                return Promise.resolve(cacheEntries.get(request.url || request));
+                const key = request.url || request;
+                for (const entries of cacheStores.values()) {
+                    if (entries.has(key)) return Promise.resolve(entries.get(key));
+                }
+                return Promise.resolve(undefined);
             },
         },
         fetch(request) {
@@ -106,9 +130,24 @@ function loadServiceWorker(options = {}) {
     };
     context.globalThis = context;
     vm.createContext(context);
-    const source = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
     vm.runInContext(source, context, { filename: 'sw.js' });
-    return { context, listeners, addAllCalls, addCalls, putCalls, fetchCalls, deletedCaches };
+    return {
+        context,
+        listeners,
+        addAllCalls,
+        addCalls,
+        putCalls,
+        fetchCalls,
+        deletedCaches,
+        currentCacheName,
+        cacheEntry(name, key) {
+            const entries = cacheStores.get(name);
+            return entries ? entries.get(key) : undefined;
+        },
+        hasCache(name) {
+            return cacheStores.has(name);
+        },
+    };
 }
 
 async function dispatchInstall(runtime) {
@@ -174,11 +213,55 @@ function dispatchMessage(runtime, data) {
         await assert.rejects(() => dispatchInstall(runtime), /Critical precache failed/);
     });
 
+    await runTest('Service Worker install失敗は稼働中の旧世代cacheを変更しない', async () => {
+        const oldShell = makeResponse('old-shell');
+        const runtime = loadServiceWorker({
+            buildHash: 'new-build',
+            cacheKeys: ['machikoro-old-build', 'machikoro-new-build'],
+            cacheStores: {
+                'machikoro-old-build': [['/index.html', oldShell]],
+            },
+            addReject: asset => asset === '/index.html',
+        });
+
+        await assert.rejects(() => dispatchInstall(runtime), /Critical precache failed/);
+
+        assert.strictEqual(runtime.currentCacheName, 'machikoro-new-build');
+        assert.strictEqual(runtime.cacheEntry('machikoro-old-build', '/index.html'), oldShell);
+        assert.strictEqual(runtime.hasCache('machikoro-old-build'), true);
+        assert.deepStrictEqual(runtime.deletedCaches, []);
+    });
+
     await runTest('Service Worker activate はclients.claimをwaitUntil内で完了する', async () => {
         const runtime = loadServiceWorker();
         await dispatchActivate(runtime);
 
         assert.deepStrictEqual(runtime.deletedCaches, ['machikoro-v3']);
+        assert.strictEqual(runtime.context.self.clients.claimed, true);
+    });
+
+    await runTest('Service Worker activate成功時だけ旧世代cacheを削除して新世代を残す', async () => {
+        const oldShell = makeResponse('old-shell');
+        const runtime = loadServiceWorker({
+            buildHash: 'new-build',
+            cacheKeys: ['machikoro-old-build', 'machikoro-new-build', 'unrelated-cache'],
+            cacheStores: {
+                'machikoro-old-build': [['/index.html', oldShell]],
+                'unrelated-cache': [['other', makeResponse('other-app')]],
+            },
+        });
+
+        await dispatchInstall(runtime);
+        const newShell = runtime.cacheEntry('machikoro-new-build', '/index.html');
+        assert.ok(newShell);
+        assert.strictEqual(runtime.cacheEntry('machikoro-old-build', '/index.html'), oldShell);
+
+        await dispatchActivate(runtime);
+
+        assert.deepStrictEqual(runtime.deletedCaches, ['machikoro-old-build']);
+        assert.strictEqual(runtime.hasCache('machikoro-old-build'), false);
+        assert.strictEqual(runtime.cacheEntry('machikoro-new-build', '/index.html'), newShell);
+        assert.strictEqual(runtime.hasCache('unrelated-cache'), true);
         assert.strictEqual(runtime.context.self.clients.claimed, true);
     });
 
