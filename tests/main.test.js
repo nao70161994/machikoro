@@ -2850,6 +2850,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('.card-badge {\n    display: inline-block;\n    width: auto;\n    min-height: 24px;'));
     assert.ok(css.includes('.tutorial-toggle-btn {\n    width: auto;\n    flex: 0 0 auto;'));
     assert.ok(css.includes('.stats-player-btn {\n    width: auto;'));
+    assert.ok(css.includes('.crash-message {\n    font-size: 12px;\n    color: #a7a9be;'));
+    assert.ok(css.includes('.model-load-status {\n    min-height: 1.4em;\n    margin-top: 6px;\n    color: #a7a9be;'));
     assert.ok(css.includes('body.pwa-banner-open #gameScreen'));
     assert.ok(css.indexOf('max-height: min(calc(100vh - 24px), 70vh);') < css.indexOf('max-height: min(calc(100dvh - 24px), 70dvh);'));
     assert.ok(css.includes('calc(12px + env(safe-area-inset-bottom, 0px))'));
