@@ -1,6 +1,9 @@
 'use strict';
 
-function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
+function makeRoomLifecycle(options) {
+    const { limits, defaultRooms, log = console } = options;
+    const isRoomConnected = room => typeof options.isRoomConnected === 'function' &&
+        options.isRoomConnected(room);
     const createRoomRateBuckets = new Map();
 
     function roomTimestamp(value) {
@@ -19,6 +22,7 @@ function makeRoomLifecycle({ limits, defaultRooms, log = console }) {
     function cleanupExpiredRooms(now = Date.now(), targetRooms = defaultRooms) {
         let deleted = 0;
         for (const [id, room] of Object.entries(targetRooms)) {
+            if (room && room.started && isRoomConnected(room)) continue;
             if (isRoomExpired(room, now)) {
                 delete targetRooms[id];
                 deleted++;

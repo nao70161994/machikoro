@@ -115,6 +115,13 @@ runTest('action socket handlerは既受理client actionを再実行せずACKす�
     assert.deepStrictEqual(subject.calls, ['plain', 'active', 'normalize-id', 'dedupe']);
 });
 
+runTest('action socket handlerは削除済みroomへ即ROOM_NOT_FOUNDを返す', () => {
+    const missing = createSubject({ rooms: {} });
+    missing.handlers.gameAction({ action: 'nextTurn', data: {} });
+    assert.deepStrictEqual(missing.emitted, [{ event: 'appError', payload: 'ROOM_NOT_FOUND' }]);
+    assert.deepStrictEqual(missing.calls, ['plain']);
+});
+
 runTest('action socket handlerはvalidation例外を既存appErrorへ変換する', () => {
     const logged = [];
     const subject = createSubject({

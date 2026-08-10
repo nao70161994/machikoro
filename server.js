@@ -319,6 +319,11 @@ const {
 } = require('./server/roomLifecycle')({
     limits: ROOM_LIFECYCLE_LIMITS,
     defaultRooms: rooms,
+    isRoomConnected(room) {
+        return Array.isArray(room.players) && room.players.some(player =>
+            player && player.id && io.sockets.sockets.has(player.id)
+        );
+    },
 });
 const {
     buildPlayerList: buildRoomPlayerList,

@@ -38,7 +38,11 @@ function registerActionSocketHandler(socket, dependencies) {
         const roomId = socket.roomId;
         if (!roomId) return;
         const room = rooms[roomId];
-        if (!room || !room.started) return;
+        if (!room) {
+            emitAppError(socket, 'ROOM_NOT_FOUND');
+            return;
+        }
+        if (!room.started) return;
         if (!isActiveRoomSocket(room, socket)) {
             emitAppError(socket, 'INVALID_SESSION');
             return;

@@ -72,3 +72,19 @@ runTest('room lifecycle は再接続後の本人socketとhost接続だけを認�
     assert.strictEqual(isRoomHostConnected(room, sockets), false);
     assert.strictEqual(isRoomHostConnected(null, sockets), false);
 });
+
+runTest('room lifecycle は接続中の開始済みroomをTTL削除しない', () => {
+    const rooms = {
+        connected: { started: true, lastTouchedAt: 1 },
+        disconnected: { started: true, lastTouchedAt: 1 },
+    };
+    const lifecycle = makeRoomLifecycle({
+        limits: { startedRoomTtlMs: 100, pendingRoomTtlMs: 50 },
+        defaultRooms: rooms,
+        log: { log() {} },
+        isRoomConnected: room => room === rooms.connected,
+    });
+    assert.strictEqual(lifecycle.cleanupExpiredRooms(1000), 1);
+    assert.ok(rooms.connected);
+    assert.strictEqual(rooms.disconnected, undefined);
+});
