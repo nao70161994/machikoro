@@ -65,8 +65,12 @@ function createGameFromState(state) {
             if (name in player.landmarks) player.landmarks[name] = !!built;
         }
         player.cards = [];
-        for (const [name, count] of Object.entries(source.cards || {})) {
-            for (let n = 0; n < count; n++) player.cards.push(cloneCard(name));
+        if (Array.isArray(source.cardOrder)) {
+            player.cards = source.cardOrder.map(cloneCard);
+        } else {
+            for (const [name, count] of Object.entries(source.cards || {})) {
+                for (let n = 0; n < count; n++) player.cards.push(cloneCard(name));
+            }
         }
         player.dormantCards = [];
         const dormant = source.dormant || source.dormantCards || {};

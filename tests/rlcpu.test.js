@@ -243,14 +243,16 @@ function buildGameFromFixtureSetup(context, setup) {
         for (const landmarkName of Object.keys(spec.landmarks || {})) {
             player.landmarks[landmarkName] = true;
         }
-        for (const [cardName, count] of Object.entries(spec.cards || {})) {
-            const dormantCount = (spec.dormant && spec.dormant[cardName]) || 0;
-            for (let j = 0; j < count; j++) {
-                const card = createCardByName(cardName);
-                player.cards.push(card);
-                if (j < dormantCount) {
-                    player.dormantCards.push(card);
-                }
+        const cardOrder = Array.isArray(spec.cardOrder)
+            ? spec.cardOrder
+            : Object.entries(spec.cards || {}).flatMap(([cardName, count]) => Array(count).fill(cardName));
+        const dormantRemaining = Object.assign({}, spec.dormant || {});
+        for (const cardName of cardOrder) {
+            const card = createCardByName(cardName);
+            player.cards.push(card);
+            if ((dormantRemaining[cardName] || 0) > 0) {
+                player.dormantCards.push(card);
+                dormantRemaining[cardName] -= 1;
             }
         }
     }
@@ -292,6 +294,7 @@ function serializeGameSetup(game, context) {
             return {
                 coins: player.coins,
                 cards,
+                cardOrder: player.cards.map(card => card.name),
                 dormant,
                 landmarks,
                 itVentureCoins: player.itVentureCoins,

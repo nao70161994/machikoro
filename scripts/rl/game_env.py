@@ -66,6 +66,7 @@ class PlayerState:
         self.coins: int = 3
         self.cards: dict = {n: 0 for n in CARD_NAMES}
         self.dormant: dict = {n: 0 for n in CARD_NAMES}
+        self.card_order: list[str] = ["麦畑", "パン屋"]
         self.landmarks: dict = {n: False for n in LANDMARK_ORDER}
         self.it_venture_coins: int = 0
         # 初期カード
@@ -98,6 +99,7 @@ class PlayerState:
         p.coins = self.coins
         p.cards = dict(self.cards)
         p.dormant = dict(self.dormant)
+        p.card_order = list(self.card_order)
         p.landmarks = dict(self.landmarks)
         p.it_venture_coins = self.it_venture_coins
         return p
@@ -380,7 +382,7 @@ class MachikoroEnv:
                             p.coins >= cd.cost and
                             not (cd.color == "purple" and p.cards[name] > 0)):
                         p.coins -= cd.cost
-                        p.cards[name] += 1
+                        self._add_one_card(p, name)
                         self.shop_stock[name] -= 1
                         if cd.effect == LOAN:
                             p.coins += 5  # 貸金業建設ボーナス
@@ -449,7 +451,7 @@ class MachikoroEnv:
         for offset in range(1, len(self.players)):
             oi = (ci - offset) % len(self.players)
             opp = self.players[oi]
-            for name in CARD_NAMES:
+            for name in self._ordered_distinct_card_names(opp):
                 cd = CARD_DEF[name]
                 if cd.color != "red" or dice not in cd.dice_nums:
                     continue
@@ -499,11 +501,11 @@ class MachikoroEnv:
     # ---- 青カード ----
     def _proc_blue(self, dice):
         tuna_dice_total = None
-        for name in CARD_NAMES:
-            cd = CARD_DEF[name]
-            if cd.color != "blue" or dice not in cd.dice_nums:
-                continue
-            for pl in self.players:
+        for pl in self.players:
+            for name in self._ordered_distinct_card_names(pl):
+                cd = CARD_DEF[name]
+                if cd.color != "blue" or dice not in cd.dice_nums:
+                    continue
                 would_activate = True
                 if cd.effect == CORNFIELD:
                     would_activate = pl.built_lm_count() <= 1
@@ -534,7 +536,7 @@ class MachikoroEnv:
     # ---- 緑カード ----
     def _proc_green(self, p, ci, dice):
         loan_activation_count = 0
-        for name in CARD_NAMES:
+        for name in self._ordered_distinct_card_names(p):
             cd = CARD_DEF[name]
             if cd.color != "green" or dice not in cd.dice_nums:
                 continue
@@ -602,7 +604,7 @@ class MachikoroEnv:
 
     # ---- 紫カード ----
     def _proc_purple(self, p, ci, dice):
-        for name in CARD_NAMES:
+        for name in self._ordered_distinct_card_names(p):
             cd = CARD_DEF[name]
             if cd.color != "purple" or dice not in cd.dice_nums:
                 continue
@@ -765,10 +767,12 @@ class MachikoroEnv:
     def _remove_one_card(self, player: PlayerState, name: str, prefer_dormant: bool = True) -> bool:
         if player.cards[name] <= 0:
             return False
+        self._sync_card_order(player)
         dormant_count = player.dormant.get(name, 0)
         active_count = player.active(name)
         was_dormant = dormant_count > 0 if prefer_dormant else active_count <= 0
         player.cards[name] -= 1
+        player.card_order.remove(name)
         if was_dormant:
             player.dormant[name] = max(0, player.dormant.get(name, 0) - 1)
         return was_dormant
@@ -780,9 +784,28 @@ class MachikoroEnv:
         return active_before
 
     def _add_one_card(self, player: PlayerState, name: str, dormant: bool = False):
+        self._sync_card_order(player)
         player.cards[name] += 1
+        player.card_order.append(name)
         if dormant:
             player.dormant[name] = player.dormant.get(name, 0) + 1
+
+    def _sync_card_order(self, player: PlayerState) -> list[str]:
+        """Keep acquisition order compatible with tests/fixtures that assign card counts directly."""
+        remaining = {name: max(0, int(player.cards.get(name, 0))) for name in CARD_NAMES}
+        ordered = []
+        for name in getattr(player, "card_order", []):
+            if name not in remaining or remaining[name] <= 0:
+                continue
+            ordered.append(name)
+            remaining[name] -= 1
+        for name in CARD_NAMES:
+            ordered.extend([name] * remaining[name])
+        player.card_order = ordered
+        return ordered
+
+    def _ordered_distinct_card_names(self, player: PlayerState) -> list[str]:
+        return list(dict.fromkeys(self._sync_card_order(player)))
 
     def _transfer_one_card(self, src: PlayerState, dst: PlayerState, name: str) -> bool:
         """カード1枚を移動する。同名に休業中カードがあればそれを優先して動かす。"""

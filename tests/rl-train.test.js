@@ -4,6 +4,7 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const { runTest } = require('./helpers/test-utils');
+const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 function runPython(code) {
     const result = spawnSync('python3', ['-c', code], {
@@ -915,6 +916,95 @@ print(json.dumps({
         tunaGains: [14, 7],
         tunaRollCount: 2,
     });
+});
+
+runTest('rl envは施設取得順と複数pendingの発動順をJSと共有する', () => {
+    const runtime = loadGameRuntime();
+    const game = new runtime.GameManager(4);
+    game.currentPlayerIndex = 0;
+    game.phase = runtime.GAME_PHASES.ROLL;
+    for (const player of game.players) {
+        player.cards = [];
+        player.dormantCards = [];
+        player.coins = 3;
+    }
+    game.players[0].cards = [
+        runtime.createCardByName('ビジネスセンター'),
+        runtime.createCardByName('テレビ局'),
+        runtime.createCardByName('スタジアム'),
+        runtime.createCardByName('パン屋'),
+    ];
+    game.players[1].cards = [runtime.createCardByName('カフェ')];
+    game.players[2].cards = [runtime.createCardByName('牧場')];
+    game.players[3].cards = [runtime.createCardByName('麦畑')];
+    game.lastDiceResult = 6;
+    game.processIncome();
+    const jsQueue = Array.from(game.pendingActionQueue, entry => entry.field);
+
+    const output = runPython(`
+import json
+from scripts.rl.game_env import MachikoroEnv
+
+env = MachikoroEnv(player_count=4)
+for player in env.players:
+    for name in player.cards:
+        player.cards[name] = 0
+        player.dormant[name] = 0
+    player.card_order = []
+    player.coins = 3
+
+actor = env.players[0]
+for name in ["ビジネスセンター", "テレビ局", "スタジアム", "パン屋"]:
+    env._add_one_card(actor, name)
+env._add_one_card(env.players[1], "カフェ")
+env._add_one_card(env.players[2], "牧場")
+env._add_one_card(env.players[3], "麦畑")
+env._proc_purple(actor, 0, 6)
+print(json.dumps({"queue": env.pending_action_queue, "order": actor.card_order}, ensure_ascii=False))
+`);
+    const python = JSON.parse(output);
+    assert.deepStrictEqual(python.queue, jsQueue);
+    assert.deepStrictEqual(python.order, Array.from(game.players[0].cards, card => card.name));
+});
+
+runTest('rl envはbuild・mover・business交換で施設取得順を同期する', () => {
+    const output = runPython(`
+import json
+from scripts.rl.cards import CARD_INDEX
+from scripts.rl.game_env import MachikoroEnv, PHASE_BUILD, PHASE_PENDING, ACT_BUY_CARD_BASE, ACT_BC_BASE
+
+build = MachikoroEnv(player_count=2)
+build.phase = PHASE_BUILD
+build.players[0].coins = 20
+build.step(ACT_BUY_CARD_BASE + CARD_INDEX["ビジネスセンター"])
+
+mover = MachikoroEnv(player_count=2)
+mover._add_one_card(mover.players[0], "引越し屋")
+mover._transfer_one_card(mover.players[0], mover.players[1], "パン屋")
+
+business = MachikoroEnv(player_count=2)
+business.phase = PHASE_PENDING
+business.pending_biz = 1
+business._append_pending("pendingBusiness")
+business._add_one_card(business.players[1], "カフェ")
+give = CARD_INDEX["パン屋"]
+take = CARD_INDEX["カフェ"]
+business.step(ACT_BC_BASE + give * len(CARD_INDEX) + take)
+
+print(json.dumps({
+    "build": build.players[0].card_order,
+    "moverActor": mover.players[0].card_order,
+    "moverTarget": mover.players[1].card_order,
+    "businessActor": business.players[0].card_order,
+    "businessTarget": business.players[1].card_order,
+}, ensure_ascii=False))
+`);
+    const result = JSON.parse(output);
+    assert.strictEqual(result.build.at(-1), 'ビジネスセンター');
+    assert.deepStrictEqual(result.moverActor, ['麦畑', '引越し屋']);
+    assert.deepStrictEqual(result.moverTarget, ['麦畑', 'パン屋', 'パン屋']);
+    assert.deepStrictEqual(result.businessActor, ['麦畑', 'カフェ']);
+    assert.deepStrictEqual(result.businessTarget, ['麦畑', 'パン屋', 'パン屋']);
 });
 
 runTest('rl envは多人数の赤施設支払いを手番から反時計回りに処理する', () => {

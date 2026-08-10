@@ -61,6 +61,7 @@ def env_to_js_state(env) -> dict[str, Any]:
                     for name in CARD_NAMES
                     if int(player.cards.get(name, 0)) > 0
                 },
+                "cardOrder": list(env._sync_card_order(player)),
                 "dormant": {
                     name: int(player.dormant.get(name, 0))
                     for name in CARD_NAMES

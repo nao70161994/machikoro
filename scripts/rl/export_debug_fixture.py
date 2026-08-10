@@ -97,6 +97,7 @@ def _serialize_env_setup(env):
             {
                 "coins": player.coins,
                 "cards": {name: int(player.cards[name]) for name in CARD_NAMES if player.cards[name] > 0},
+                "cardOrder": list(env._sync_card_order(player)),
                 "dormant": {name: int(player.dormant[name]) for name in CARD_NAMES if player.dormant.get(name, 0) > 0},
                 "landmarks": {name: bool(player.landmarks[name]) for name in LANDMARK_ORDER if player.landmarks[name]},
                 "itVentureCoins": player.it_venture_coins,
