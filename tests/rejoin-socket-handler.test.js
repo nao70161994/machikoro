@@ -24,6 +24,10 @@ function makeFixture(overrides = {}) {
         detachExistingPlayerSocket() { events.push(['detach']); },
         resolveRejoinPlayer() { events.push(['resolve']); return { index: 1, name: 'Bob' }; },
         buildRejoinDataPayload() { events.push(['payload']); return { state: 'canonical' }; },
+        isRoomHostConnected() { return true; },
+        setRoomHostPlayerIndex(_room, playerIndex) { _room.hostPlayerIndex = playerIndex; },
+        emitRoomHostChanged() {},
+        persistRoomCanonicalState() {},
         io: {
             to(roomId) {
                 events.push(['io.to', roomId]);
@@ -93,6 +97,55 @@ runTest('rejoin handler fails closed before detaching on token mismatch', () => 
         ['error', 'INVALID_TOKEN'],
     ]);
     assert.strictEqual(fixture.socket.roomId, undefined);
+});
+
+runTest('rejoin handlerはhost不在時に先着playerをrejoinData前にhostへ再選出する', () => {
+    const fixture = makeFixture({
+        isRoomHostConnected() {
+            fixture.events.push(['host-connected']);
+            return false;
+        },
+        setRoomHostPlayerIndex(room, playerIndex) {
+            fixture.events.push(['set-host', playerIndex]);
+            room.hostPlayerIndex = playerIndex;
+        },
+        emitRoomHostChanged(roomId, room) {
+            fixture.events.push(['host-changed', roomId, room.hostPlayerIndex]);
+        },
+        persistRoomCanonicalState(roomId, room, reason) {
+            fixture.events.push(['persist', roomId, room.hostPlayerIndex, reason]);
+        },
+        buildRejoinDataPayload(room) {
+            fixture.events.push(['payload', room.hostPlayerIndex]);
+            return { hostPlayerIndex: room.hostPlayerIndex };
+        },
+    });
+    fixture.room.hostPlayerIndex = 0;
+    fixture.events.length = 0;
+
+    fixture.handlers.rejoinRoom(validPayload);
+
+    assert.strictEqual(fixture.room.hostPlayerIndex, 1);
+    assert.deepStrictEqual(fixture.events, [
+        ['plain'],
+        ['room-id'],
+        ['expected-hash'],
+        ['hash-token'],
+        ['detach'],
+        ['resolve'],
+        ['join', 'ROOM01'],
+        ['host-connected'],
+        ['set-host', 1],
+        ['host-changed', 'ROOM01', 1],
+        ['persist', 'ROOM01', 1, 'host-reselected'],
+        ['log', 'ホスト再選出: ROOM01 → プレイヤー1'],
+        ['now'],
+        ['payload', 1],
+        ['socket.emit', 'rejoinData', { hostPlayerIndex: 1 }],
+        ['io.to', 'ROOM01'],
+        ['io.emit', 'playerRejoined', { playerIndex: 1, playerName: 'Bob' }],
+        ['log', '再接続: Bob (ルーム: ROOM01)'],
+    ]);
 });
 
 runTest('rejoin handler rejects malformed payload without session mutation', () => {

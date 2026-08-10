@@ -846,6 +846,10 @@ registerSocketConnectionRuntime({
             detachExistingPlayerSocket,
             resolveRejoinPlayer,
             buildRejoinDataPayload,
+            isRoomHostConnected,
+            setRoomHostPlayerIndex,
+            emitRoomHostChanged,
+            persistRoomCanonicalState,
             resolveClientGameSchemaCapabilities: value => resolveClientGameSchemaCapabilities(value, GAME_SCHEMA_NEGOTIATION_ENABLED),
             supportsSelectedGameSchema: (capabilities, selected) => supportsSelectedGameSchemaForRuntime(
                 capabilities, selected, GAME_SCHEMA_NEGOTIATION_ENABLED

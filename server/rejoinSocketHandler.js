@@ -11,6 +11,10 @@ function registerRejoinSocketHandler(socket, dependencies) {
         detachExistingPlayerSocket,
         resolveRejoinPlayer,
         buildRejoinDataPayload,
+        isRoomHostConnected,
+        setRoomHostPlayerIndex,
+        emitRoomHostChanged,
+        persistRoomCanonicalState,
         io,
     } = dependencies;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
@@ -52,6 +56,12 @@ function registerRejoinSocketHandler(socket, dependencies) {
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;
+        if (!isRoomHostConnected(room)) {
+            setRoomHostPlayerIndex(room, playerIndex);
+            emitRoomHostChanged(roomId, room, io);
+            persistRoomCanonicalState(roomId, room, 'host-reselected');
+            log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
+        }
         room.lastTouchedAt = now();
 
         socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
