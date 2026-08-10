@@ -16,6 +16,7 @@ const AppShellClientReportingRuntime = (() => {
             now,
             outbox,
             reporting,
+            scheduleRetry,
             schemaVersion,
             stackLimit,
             suppressMs,
@@ -95,6 +96,7 @@ const AppShellClientReportingRuntime = (() => {
                 },
                 checkpoint,
                 outbox,
+                scheduleRetry,
             });
         }
 
@@ -104,6 +106,7 @@ const AppShellClientReportingRuntime = (() => {
                 endpoint,
                 checkpoint,
                 outbox,
+                scheduleRetry,
             });
         }
 

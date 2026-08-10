@@ -39,6 +39,7 @@ const {
     notifyGameLifecycle,
     handleGameLifecycleRequest,
     isDuplicateGameLifecycle,
+    rememberDuplicateGameLifecycle,
     resolveTrustProxySetting,
     normalizeClientErrorPayload,
     requestBaseOrigin,
@@ -53,6 +54,7 @@ const {
     pruneRateBuckets,
     pruneClientErrorRateBuckets,
     isDuplicateClientError,
+    rememberDuplicateClientError,
     extractClientErrorFreezeKind,
     isStaleClientErrorVersion,
     classifyClientErrorReport,
@@ -519,8 +521,15 @@ runTest('client error rate limit と duplicate suppression は短時間の連投
 
     const report = normalizeClientErrorPayload({ message: 'same', stack: 'stack', phase: 'build' }, now).report;
     assert.strictEqual(isDuplicateClientError(report, now, cache), false);
+    rememberDuplicateClientError(report, now, cache);
     assert.strictEqual(isDuplicateClientError(report, now + 1000, cache), true);
     assert.strictEqual(isDuplicateClientError(report, now + CLIENT_ERROR_LIMITS.duplicateWindowMs + 1001, cache), false);
+
+    const lifecycleCache = new Map();
+    const lifecycleReport = { event: 'play-start', roomIdHash: 'hash' };
+    assert.strictEqual(isDuplicateGameLifecycle(lifecycleReport, now, lifecycleCache), false);
+    rememberDuplicateGameLifecycle(lifecycleReport, now, lifecycleCache);
+    assert.strictEqual(isDuplicateGameLifecycle(lifecycleReport, now + 1000, lifecycleCache), true);
 });
 
 runTest('trust proxy は明示設定時だけ有効化する', () => {
@@ -948,6 +957,33 @@ runTest('postNtfyNotification helper は拒否statusを秘密情報なしで返�
         status: 429,
         retryAfterMs: 7000,
     });
+});
+
+runTest('postNtfyNotification helper は応答停止をtimeoutとして中断する', async () => {
+    let cleared = null;
+    class FakeAbortController {
+        constructor() {
+            this.signal = { aborted: false };
+        }
+        abort() {
+            this.signal.aborted = true;
+        }
+    }
+    const result = await postNtfyNotification({
+        topic: 'helper-topic',
+        AbortControllerImpl: FakeAbortController,
+        setTimeoutFn(callback) {
+            callback();
+            return 7;
+        },
+        clearTimeoutFn(id) { cleared = id; },
+        async fetchImpl(url, options) {
+            assert.strictEqual(options.signal.aborted, true);
+            throw new Error('aborted');
+        },
+    });
+    assert.deepStrictEqual(result, { sent: false, reason: 'ntfy-timeout' });
+    assert.strictEqual(cleared, 7);
 });
 
 runTest('client error test endpoint helper は production 既定で無効、dev/debug で有効になる', () => {

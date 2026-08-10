@@ -477,6 +477,7 @@ const {
     pruneRateBuckets: pruneClientErrorRateBuckets,
     isRateLimited: isClientErrorRateLimited,
     isDuplicate: isDuplicateClientError,
+    rememberDuplicate: rememberDuplicateClientError,
 } = makeReportAdmission({
     limits: CLIENT_ERROR_LIMITS,
     rateBuckets: clientErrorRateBuckets,
@@ -486,6 +487,7 @@ const {
 const {
     isRateLimited: isGameLifecycleRateLimited,
     isDuplicate: isDuplicateGameLifecycle,
+    rememberDuplicate: rememberDuplicateGameLifecycle,
 } = makeReportAdmission({
     limits: GAME_LIFECYCLE_LIMITS,
     rateBuckets: gameLifecycleRateBuckets,
@@ -510,6 +512,7 @@ const {
     isRateLimited: isClientErrorRateLimited,
     normalizePayload: normalizeClientErrorPayload,
     isDuplicate: isDuplicateClientError,
+    rememberDuplicate: rememberDuplicateClientError,
     notify: notifyClientError,
     isTestEnabled: isClientErrorTestEnabled,
     createTestPayload: createClientErrorTestPayload,
@@ -529,6 +532,7 @@ const {
     isRateLimited: isGameLifecycleRateLimited,
     normalizePayload: normalizeGameLifecyclePayload,
     isDuplicate: isDuplicateGameLifecycle,
+    rememberDuplicate: rememberDuplicateGameLifecycle,
     notify: notifyGameLifecycle,
     defaultEnv: process.env,
     defaultRateBuckets: gameLifecycleRateBuckets,
@@ -1146,6 +1150,8 @@ module.exports = {
     pruneRateBuckets,
     pruneClientErrorRateBuckets,
     isDuplicateClientError,
+    rememberDuplicateClientError,
+    rememberDuplicateGameLifecycle,
     extractClientErrorFreezeKind,
     isStaleClientErrorVersion,
     classifyClientErrorReport,

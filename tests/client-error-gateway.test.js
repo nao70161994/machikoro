@@ -47,6 +47,9 @@ function makeGateway(overrides = {}) {
             calls.push(['dedupe', report, now, cache]);
             return false;
         },
+        rememberDuplicate(report, now, cache) {
+            calls.push(['remember', report, now, cache]);
+        },
         async notify(report, options) {
             calls.push(['notify', report, options]);
             return { sent: true };
@@ -101,6 +104,7 @@ runTest('client error gateway preserves auth-rate-normalize-dedupe-notify order'
         'normalize',
         'dedupe',
         'notify',
+        'remember',
     ]);
     assert.strictEqual(calls[2][3], dependencies.defaultRateBuckets);
     assert.strictEqual(calls[4][3], dependencies.defaultDedupeCache);
@@ -108,6 +112,7 @@ runTest('client error gateway preserves auth-rate-normalize-dedupe-notify order'
         env: dependencies.defaultEnv,
         topic: 'topic',
     });
+    assert.strictEqual(calls[6][3], dependencies.defaultDedupeCache);
 });
 
 runTest('client error gateway fails before later stages for auth rate and payload errors', async () => {
@@ -171,8 +176,10 @@ runTest('client error gatewayはntfy転送失敗を503と理由付きで返す',
         { delivery: undefined, reason: 'invalid-delivery-result' },
     ];
     for (const testCase of cases) {
+        let remembered = 0;
         const { gateway } = makeGateway({
             async notify() { return testCase.delivery; },
+            rememberDuplicate() { remembered++; },
         });
         const res = responseRecorder();
         await gateway.handleClientErrorRequest({ body: {} }, res, { now: 30 });
@@ -181,6 +188,7 @@ runTest('client error gatewayはntfy転送失敗を503と理由付きで返す',
         assert.strictEqual(res.body.error, 'notification_failed', testCase.reason);
         assert.strictEqual(res.body.duplicate, false, testCase.reason);
         assert.strictEqual(res.body.delivery.reason, testCase.reason, testCase.reason);
+        assert.strictEqual(remembered, 0, testCase.reason);
     }
 });
 

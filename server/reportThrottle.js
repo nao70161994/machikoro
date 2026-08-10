@@ -29,6 +29,23 @@ function rememberAndCheckDuplicate(key, now, cache, windowMs) {
     return previous !== undefined && now - previous < windowMs;
 }
 
+function pruneDedupeCache(now, cache, windowMs) {
+    for (const [cachedKey, timestamp] of cache.entries()) {
+        if (now - timestamp > windowMs) cache.delete(cachedKey);
+    }
+}
+
+function hasRecentDuplicate(key, now, cache, windowMs) {
+    pruneDedupeCache(now, cache, windowMs);
+    const previous = cache.get(key);
+    return previous !== undefined && now - previous < windowMs;
+}
+
+function rememberDuplicate(key, now, cache, windowMs) {
+    cache.set(key, now);
+    pruneDedupeCache(now, cache, windowMs);
+}
+
 function makeReportAdmission(options = {}) {
     if (typeof options.dedupeKey !== 'function') {
         throw new TypeError('dedupeKey must be a function');
@@ -56,7 +73,7 @@ function makeReportAdmission(options = {}) {
     }
 
     function isDuplicate(report, now = Date.now(), cache = defaultDedupeCache) {
-        return rememberAndCheckDuplicate(
+        return hasRecentDuplicate(
             dedupeKey(report),
             now,
             cache,
@@ -64,10 +81,15 @@ function makeReportAdmission(options = {}) {
         );
     }
 
+    function rememberDelivered(report, now = Date.now(), cache = defaultDedupeCache) {
+        rememberDuplicate(dedupeKey(report), now, cache, limits.duplicateWindowMs);
+    }
+
     return Object.freeze({
         pruneRateBuckets: pruneAdmissionRateBuckets,
         isRateLimited: isAdmissionRateLimited,
         isDuplicate,
+        rememberDuplicate: rememberDelivered,
     });
 }
 
@@ -75,5 +97,7 @@ module.exports = {
     pruneRateBuckets,
     isRateLimited,
     rememberAndCheckDuplicate,
+    hasRecentDuplicate,
+    rememberDuplicate,
     makeReportAdmission,
 };

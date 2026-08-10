@@ -78,8 +78,10 @@ runTest('app shell client reporting runtimeは必須依存欠落を初期化時�
 runTest('app shell client reporting runtimeは保存済みreportの再送をtransportへ委譲する', () => {
     const calls = [];
     const outbox = { pending() { return []; } };
+    const scheduleRetry = () => true;
     const { runtime } = createHarness({
         outbox,
+        scheduleRetry,
         transport: {
             send: ClientReportingTransport.send,
             flush(options) {
@@ -92,4 +94,5 @@ runTest('app shell client reporting runtimeは保存済みreportの再送をtran
     assert.strictEqual(calls[0].outbox, outbox);
     assert.strictEqual(calls[0].endpoint, '/api/client-error');
     assert.strictEqual(typeof calls[0].fetchImpl, 'function');
+    assert.strictEqual(calls[0].scheduleRetry, scheduleRetry);
 });

@@ -50,6 +50,9 @@ function makeGateway(overrides = {}) {
             calls.push(['dedupe', report, now, cache]);
             return false;
         },
+        rememberDuplicate(report, now, cache) {
+            calls.push(['remember', report, now, cache]);
+        },
         async notify(report, options) {
             calls.push(['notify', report, options]);
             return { sent: true };
@@ -86,6 +89,7 @@ runTest('game lifecycle gateway preserves auth-rate-normalize-dedupe-notify orde
         'normalize',
         'dedupe',
         'notify',
+        'remember',
     ]);
     assert.strictEqual(calls[2][3], dependencies.defaultRateBuckets);
     assert.strictEqual(calls[4][3], dependencies.defaultDedupeCache);
@@ -93,6 +97,7 @@ runTest('game lifecycle gateway preserves auth-rate-normalize-dedupe-notify orde
         env: dependencies.defaultEnv,
         topic: 'topic',
     });
+    assert.strictEqual(calls[6][3], dependencies.defaultDedupeCache);
 });
 
 runTest('game lifecycle gateway rejects auth rate and malformed input before notify', async () => {
@@ -160,10 +165,12 @@ runTest('game lifecycle gatewayは通知失敗を503として返す', async () =
         { result: null, reason: 'invalid result' },
     ];
     for (const testCase of cases) {
+        let remembered = 0;
         const { gateway } = makeGateway({
             async notify() {
                 return testCase.result;
             },
+            rememberDuplicate() { remembered++; },
         });
         const res = responseRecorder();
 
@@ -181,6 +188,7 @@ runTest('game lifecycle gatewayは通知失敗を503として返す', async () =
             testCase.result || { sent: false, reason: 'invalid-delivery-result' },
             testCase.reason
         );
+        assert.strictEqual(remembered, 0, testCase.reason);
     }
 });
 

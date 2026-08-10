@@ -18,11 +18,29 @@ async function postNtfyNotification(options = {}) {
     const accessToken = String(options.accessToken || '').trim();
     const headers = {};
     if (accessToken) headers.Authorization = 'Bearer ' + accessToken;
+    const timeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
+        ? options.timeoutMs
+        : 10000;
+    const AbortControllerImpl = options.AbortControllerImpl || global.AbortController;
+    const setTimeoutFn = options.setTimeoutFn || setTimeout;
+    const clearTimeoutFn = options.clearTimeoutFn || clearTimeout;
+    const controller = typeof AbortControllerImpl === 'function'
+        ? new AbortControllerImpl()
+        : null;
+    let timeoutId = null;
+    let timedOut = false;
     try {
+        if (controller && typeof setTimeoutFn === 'function') {
+            timeoutId = setTimeoutFn(() => {
+                timedOut = true;
+                controller.abort();
+            }, timeoutMs);
+        }
         const response = await fetchImpl(baseUrl + '/' + encodeURIComponent(topic) + (query ? '?' + query : ''), {
             method: 'POST',
             body: options.body || '',
             headers,
+            ...(controller ? { signal: controller.signal } : {}),
         });
         if (response && response.ok === false) {
             console.warn(options.statusFailureMessage || '[ntfy] notification failed:', response.status || 'unknown');
@@ -44,7 +62,9 @@ async function postNtfyNotification(options = {}) {
         return { sent: true };
     } catch (error) {
         console.warn(options.errorFailureMessage || '[ntfy] notification failed:', error?.message || error);
-        return { sent: false, reason: 'ntfy-error' };
+        return { sent: false, reason: timedOut ? 'ntfy-timeout' : 'ntfy-error' };
+    } finally {
+        if (timeoutId !== null && typeof clearTimeoutFn === 'function') clearTimeoutFn(timeoutId);
     }
 }
 

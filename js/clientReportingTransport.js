@@ -93,12 +93,15 @@ const ClientReportingTransport = (() => {
         function defer(id) {
             const entries = load();
             const entry = entries.find(candidate => candidate.id === id);
+            let delayMs = 0;
             if (entry) {
                 entry.attempts = Math.max(0, Number(entry.attempts) || 0) + 1;
-                entry.nextAttemptAt = now() + Math.min(60000, 1000 * (2 ** (entry.attempts - 1)));
+                delayMs = Math.min(60000, 1000 * (2 ** (entry.attempts - 1)));
+                entry.nextAttemptAt = now() + delayMs;
                 save(entries);
             }
             release(id);
+            return delayMs;
         }
 
         function complete(id) {
@@ -114,6 +117,11 @@ const ClientReportingTransport = (() => {
         const outbox = options.outbox;
         if (outbox && !outbox.begin(entry.id)) return false;
         const report = entry.report;
+        function scheduleAfterDefer() {
+            if (!outbox) return;
+            const delayMs = outbox.defer(entry.id);
+            if (typeof options.scheduleRetry === 'function') options.scheduleRetry(delayMs);
+        }
         try {
             checkpoint(retry ? 'client-error-retry-start' : 'client-error-fetch-start', {
                 source: report.source,
@@ -130,26 +138,27 @@ const ClientReportingTransport = (() => {
                     const ok = Boolean(response && response.ok === true);
                     if (outbox) {
                         if (ok) outbox.complete(entry.id);
-                        else outbox.defer(entry.id);
+                        else scheduleAfterDefer();
                     }
+                    if (ok && typeof options.scheduleRetry === 'function') options.scheduleRetry(0);
                     checkpoint('client-error-fetch-complete', {
                         source: report.source,
                         ok,
                         status: response && response.status,
                     });
                 }).catch(error => {
-                    if (outbox) outbox.defer(entry.id);
+                    scheduleAfterDefer();
                     checkpoint('client-error-fetch-failed', {
                         source: report.source,
                         message: errorMessage(error),
                     });
                 });
             } else if (outbox) {
-                outbox.defer(entry.id);
+                scheduleAfterDefer();
             }
             return true;
         } catch (error) {
-            if (outbox) outbox.defer(entry.id);
+            scheduleAfterDefer();
             checkpoint('client-error-fetch-threw', {
                 source: report.source,
                 message: errorMessage(error),
@@ -175,11 +184,8 @@ const ClientReportingTransport = (() => {
 
     function flush(options) {
         if (!options.outbox || typeof options.fetchImpl !== 'function') return 0;
-        let started = 0;
-        for (const entry of options.outbox.pending()) {
-            if (deliver(options, entry, true)) started += 1;
-        }
-        return started;
+        const entry = options.outbox.pending()[0];
+        return entry && deliver(options, entry, true) ? 1 : 0;
     }
 
     return Object.freeze({ createOutbox, persistedReport, send, flush });

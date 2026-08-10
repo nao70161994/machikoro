@@ -29,8 +29,15 @@ runTest('report admissionはlimits・bucket・dedupe keyを一つの境界へ束
     assert.strictEqual(admission.isRateLimited('ip', 1000), false);
     assert.strictEqual(admission.isRateLimited('ip', 1001), true);
     assert.strictEqual(admission.isDuplicate({ id: 'same' }, 1000), false);
+    admission.rememberDuplicate({ id: 'same' }, 1000);
     assert.strictEqual(admission.isDuplicate({ id: 'same' }, 1049), true);
-    assert.deepStrictEqual(keyCalls, [{ id: 'same' }, { id: 'same' }]);
+    assert.strictEqual(admission.isDuplicate({ id: 'same' }, 1051), false);
+    assert.deepStrictEqual(keyCalls, [
+        { id: 'same' },
+        { id: 'same' },
+        { id: 'same' },
+        { id: 'same' },
+    ]);
 
     rateBuckets.set('expired', { windowStart: 0, count: 1 });
     admission.pruneRateBuckets(1101);

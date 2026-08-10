@@ -21,6 +21,7 @@ function makeGameLifecycleGateway(dependencies = {}) {
     const isRateLimited = requireFunction(dependencies.isRateLimited, 'isRateLimited');
     const normalizePayload = requireFunction(dependencies.normalizePayload, 'normalizePayload');
     const isDuplicate = requireFunction(dependencies.isDuplicate, 'isDuplicate');
+    const rememberDuplicate = requireFunction(dependencies.rememberDuplicate, 'rememberDuplicate');
     const notify = requireFunction(dependencies.notify, 'notify');
     const defaultEnv = dependencies.defaultEnv || {};
 
@@ -75,6 +76,11 @@ function makeGameLifecycleGateway(dependencies = {}) {
             });
             return;
         }
+        rememberDuplicate(
+            normalized.report,
+            now,
+            options.dedupeCache || dependencies.defaultDedupeCache
+        );
         res.status(202).json({ ok: true, duplicate: false, result });
     }
 

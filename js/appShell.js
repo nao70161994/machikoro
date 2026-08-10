@@ -312,6 +312,18 @@ const clientErrorOutbox = ClientReportingTransport.createOutbox({
     maxAgeMs: 7 * 24 * 60 * 60 * 1000,
 });
 
+let clientErrorRetryTimer = null;
+function scheduleClientErrorRetry(delayMs) {
+    if (clientErrorRetryTimer !== null) return false;
+    const setTimeoutFn = appShellComposition.resolveFunction('setTimeout');
+    if (typeof setTimeoutFn !== 'function') return false;
+    clientErrorRetryTimer = setTimeoutFn(() => {
+        clientErrorRetryTimer = null;
+        flushClientErrorReports();
+    }, Math.max(0, Number(delayMs) || 0));
+    return true;
+}
+
 const appShellClientReportingRuntime = AppShellClientReportingRuntime.createRuntime({
     buildSnapshot: buildClientRuntimeSnapshot,
     checkpoint: markClientFlowCheckpoint,
@@ -335,6 +347,7 @@ const appShellClientReportingRuntime = AppShellClientReportingRuntime.createRunt
     now: () => Date.now(),
     outbox: clientErrorOutbox,
     reporting: ClientReporting,
+    scheduleRetry: scheduleClientErrorRetry,
     schemaVersion: FREEZE_SUMMARY_SCHEMA_VERSION,
     stackLimit: 2400,
     suppressMs: 10000,
