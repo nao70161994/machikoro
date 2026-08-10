@@ -56,7 +56,7 @@ const CpuPhaseHandlers = (() => {
                     if (current.phase !== dependencies.gamePhases.ROLL) return;
                     const proposal = chooseRequiredAction('roll', cpu, current);
                     if (!proposal) return false;
-                    dependencies.executeAction(proposal.action, proposal.data, () =>
+                    return dependencies.executeAction(proposal.action, proposal.data, () =>
                         current.rollDice(proposal.data.forceDice, proposal.data.tunaDice));
                 },
             },
@@ -67,7 +67,7 @@ const CpuPhaseHandlers = (() => {
                     if (current.phase !== dependencies.gamePhases.SELECT_DICE) return;
                     const proposal = chooseRequiredAction('selectDice', cpu, current);
                     if (!proposal) return false;
-                    dependencies.executeAction(proposal.action, proposal.data, () => current.selectDiceCount(
+                    return dependencies.executeAction(proposal.action, proposal.data, () => current.selectDiceCount(
                         proposal.data.useTwo, proposal.data.d1, proposal.data.d2, proposal.data.tunaDice
                     ));
                 },
@@ -80,11 +80,10 @@ const CpuPhaseHandlers = (() => {
                     const proposal = chooseRequiredAction('rerollConfirm', cpu, current);
                     if (!proposal) return false;
                     if (proposal.action === dependencies.actions.REROLL_DICE) {
-                        dependencies.executeAction(proposal.action, proposal.data, () =>
+                        return dependencies.executeAction(proposal.action, proposal.data, () =>
                             current.rerollDice(proposal.data.forceDice, proposal.data.tunaDice));
-                    } else {
-                        dependencies.executeAction(proposal.action, proposal.data, () => current.skipReroll());
                     }
+                    return dependencies.executeAction(proposal.action, proposal.data, () => current.skipReroll());
                 },
             },
             {
@@ -94,7 +93,7 @@ const CpuPhaseHandlers = (() => {
                     if (current.phase !== dependencies.gamePhases.HARBOR_CHOICE) return;
                     const proposal = chooseRequiredAction('harborChoice', cpu, current);
                     if (!proposal) return false;
-                    dependencies.executeAction(proposal.action, proposal.data, () =>
+                    return dependencies.executeAction(proposal.action, proposal.data, () =>
                         current.resolveHarbor(proposal.data.useBonus));
                 },
             },
@@ -180,7 +179,7 @@ const CpuPhaseHandlers = (() => {
                     if (current.phase !== dependencies.gamePhases.BUILD || current.pendingIT) return;
                     const proposal = chooseRequiredAction('nextTurn', cpu, current);
                     if (!proposal) return false;
-                    dependencies.executeAction(proposal.action, proposal.data, () => current.nextTurn());
+                    return dependencies.executeAction(proposal.action, proposal.data, () => current.nextTurn());
                 },
             },
             {
@@ -190,7 +189,7 @@ const CpuPhaseHandlers = (() => {
                     if (!current.pendingIT) return;
                     const proposal = chooseRequiredAction('resolveIT', cpu, current);
                     if (!proposal) return false;
-                    dependencies.executeAction(proposal.action, proposal.data, () =>
+                    return dependencies.executeAction(proposal.action, proposal.data, () =>
                         current.resolveIT(proposal.data.doSave));
                 },
             },

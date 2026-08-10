@@ -3,7 +3,7 @@ const assert = require('assert');
 const CpuPhaseHandlers = require('../js/cpuPhaseHandlers');
 const { runTest } = require('./helpers/test-utils');
 
-function createHarness() {
+function createHarness(options = {}) {
     const calls = [];
     const phases = { ROLL: 'roll', SELECT_DICE: 'selectDice', REROLL_CONFIRM: 'reroll', HARBOR_CHOICE: 'harbor', PENDING: 'pending', BUILD: 'build' };
     const game = {
@@ -23,7 +23,12 @@ function createHarness() {
         actions: { REROLL_DICE: 'rerollDice' },
         checkpoint: (event, details) => calls.push(['checkpoint', event, details]),
         chooseAction: name => proposals[name],
-        executeAction: (action, data, fallback) => { calls.push(['execute', action, data]); return fallback(); },
+        executeAction: (action, data, fallback) => {
+            calls.push(['execute', action, data]);
+            return typeof options.executeAction === 'function'
+                ? options.executeAction(action, data, fallback)
+                : fallback();
+        },
         gamePhases: phases,
         getGameState: () => ({ game }),
         getOnlineState: () => ({ isOnlineGame: online }),
@@ -57,6 +62,48 @@ runTest('CPU phase roll handlerはcanonical proposalを既存fallback引数へ�
         ['rollDice', 3, [1, 2]],
     ]);
 });
+
+for (const testCase of [
+    {
+        step: 'roll', phase: 'ROLL',
+        proposal: { action: 'rollDice', data: { forceDice: 3, tunaDice: [1, 2] } },
+    },
+    {
+        step: 'selectDice', phase: 'SELECT_DICE',
+        proposal: { action: 'selectDice', data: { useTwo: true, d1: 2, d2: 4, tunaDice: [1, 6] } },
+    },
+    {
+        step: 'rerollConfirm', phase: 'REROLL_CONFIRM',
+        proposal: { action: 'skipReroll', data: {} },
+    },
+    {
+        step: 'harborChoice', phase: 'HARBOR_CHOICE',
+        proposal: { action: 'resolveHarbor', data: { useBonus: false } },
+    },
+    {
+        step: 'nextTurn', phase: 'BUILD',
+        proposal: { action: 'nextTurn', data: {} },
+    },
+    {
+        step: 'resolveIT', phase: 'BUILD', pendingIT: true,
+        proposal: { action: 'resolveIT', data: { doSave: true } },
+    },
+]) {
+    for (const executionResult of [true, false]) {
+        runTest(`CPU phase ${testCase.step} handlerはaction実行${executionResult ? '成功' : '拒否'}をschedulerへ返す`, () => {
+            const h = createHarness({ executeAction: () => executionResult });
+            h.game.phase = h.phases[testCase.phase];
+            h.game.pendingIT = !!testCase.pendingIT;
+            h.proposals[testCase.step] = testCase.proposal;
+
+            assert.strictEqual(
+                h.handlers.find(handler => handler.name === testCase.step).run({ difficulty: 'strong' }),
+                executionResult
+            );
+            assert.strictEqual(h.calls.filter(call => call[0] === 'execute').length, 1);
+        });
+    }
+}
 
 runTest('CPU phase build handlerはlocal proposalを共有action境界へ渡しonline gateを維持する', () => {
     const local = createHarness();
