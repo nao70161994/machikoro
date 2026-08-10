@@ -7,10 +7,16 @@ const { runTest } = require('./helpers/test-utils');
 
 function createHarness(overrides = {}) {
     const calls = [];
-    const reloadButton = { name: 'reload', focus() { calls.push(['focus', 'reload']); } };
-    const resumeButton = { name: 'resume', style: {}, offsetParent: {}, focus() { calls.push(['focus', 'resume']); } };
+    let activeElement = null;
+    const reloadButton = { name: 'reload', focus() { activeElement = reloadButton; calls.push(['focus', 'reload']); } };
+    const resumeButton = { name: 'resume', style: {}, offsetParent: {}, focus() { activeElement = resumeButton; calls.push(['focus', 'resume']); } };
     const message = {};
     const background = { name: 'background' };
+    const previousFocus = {
+        name: 'previous',
+        offsetParent: {},
+        focus() { activeElement = previousFocus; calls.push(['focus', 'previous']); },
+    };
     const screen = {
         style: {},
         offsetParent: {},
@@ -30,10 +36,14 @@ function createHarness(overrides = {}) {
             targets.resumeButton.style.display = view.resumeDisplay;
             targets.screen.style.display = 'flex';
         },
-        focusInitial: (targets, initialFocus) => calls.push(['focus-initial', initialFocus]),
+        focusInitial: (targets, initialFocus) => {
+            activeElement = initialFocus === 'resume' ? targets.resumeButton : targets.reloadButton;
+            calls.push(['focus-initial', initialFocus]);
+        },
         applyFocusTrap: (plan, event) => calls.push(['focus-trap', plan, event]),
         disableBackground: targets => { calls.push(['disable-background', targets]); return ['restore']; },
         restoreBackground: restore => calls.push(['restore-background', restore]),
+        restoreFocus: (target, backgrounds) => calls.push(['restore-focus', target, backgrounds]),
         hide(target) { calls.push(['hide']); target.style.display = 'none'; },
     };
     let keydownHandler = null;
@@ -42,7 +52,7 @@ function createHarness(overrides = {}) {
         cancelCpu: reason => calls.push(['cancel-cpu', reason]),
         controller: CrashScreen.createController(),
         effects,
-        getActiveElement: () => reloadButton,
+        getActiveElement: () => activeElement || previousFocus,
         getBackgroundElements: () => [background],
         getElementById: id => elements[id] || null,
         policy: CrashScreen,
@@ -51,7 +61,13 @@ function createHarness(overrides = {}) {
         resumeGame: () => calls.push(['resume-game']),
         ...overrides,
     };
-    return { calls, elements, getKeydownHandler: () => keydownHandler, runtime: AppShellCrashRuntime.createRuntime(dependencies) };
+    return {
+        calls,
+        elements,
+        previousFocus,
+        getKeydownHandler: () => keydownHandler,
+        runtime: AppShellCrashRuntime.createRuntime(dependencies),
+    };
 }
 
 runTest('app shell crash runtimeはCPU停止後にview・listener・focusを既存順で適用する', () => {
@@ -70,13 +86,26 @@ runTest('app shell crash runtimeは同一focus handlerをtrapとresume解除に�
     const { calls, getKeydownHandler, runtime } = createHarness();
     runtime.show(new Error('boom'));
     const handler = getKeydownHandler();
-    handler({ key: 'Tab', shiftKey: false });
-    assert.ok(calls.some(call => call[0] === 'focus-trap' && call[1].focusTarget === 'first'));
+    handler({ key: 'Tab', shiftKey: true });
+    assert.ok(calls.some(call => call[0] === 'focus-trap' && call[1].focusTarget === 'last'));
     runtime.resume();
-    assert.deepStrictEqual(calls.slice(-4).map(call => call[0]), [
-        'remove-keydown', 'hide', 'restore-background', 'resume-game',
+    assert.deepStrictEqual(calls.slice(-5).map(call => call[0]), [
+        'remove-keydown', 'hide', 'restore-background', 'resume-game', 'restore-focus',
     ]);
     assert.strictEqual(calls.find(call => call[0] === 'remove-keydown')[1], true);
+    assert.strictEqual(calls.find(call => call[0] === 'restore-focus')[1].name, 'previous');
+});
+
+runTest('app shell crash runtimeはresume失敗時も再クラッシュ前にfocusを背景へ戻す', () => {
+    const { calls, runtime } = createHarness({
+        resumeGame() {
+            calls.push(['resume-game']);
+            throw new Error('resume failed');
+        },
+    });
+    runtime.show(new Error('boom'));
+    assert.throws(() => runtime.resume(), /resume failed/);
+    assert.deepStrictEqual(calls.slice(-2).map(call => call[0]), ['resume-game', 'restore-focus']);
 });
 
 runTest('app shell crash runtimeは必須依存欠落を初期化時に拒否する', () => {

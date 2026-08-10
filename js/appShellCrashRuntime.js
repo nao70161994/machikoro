@@ -32,6 +32,7 @@ const AppShellCrashRuntime = (() => {
             throw new TypeError('crash runtime dependencies are required');
         }
         let backgroundRestore = [];
+        let previousFocus = null;
 
         function trapFocus(event) {
             const crashState = controller.snapshot();
@@ -54,6 +55,7 @@ const AppShellCrashRuntime = (() => {
             cancelCpu('game-lifecycle-reset-cpu');
             const screen = getElementById('crashScreen');
             if (!screen) return;
+            previousFocus = getActiveElement();
             const view = policy.buildView(error, readSavedGame());
             const elements = {
                 screen,
@@ -71,9 +73,18 @@ const AppShellCrashRuntime = (() => {
             controller.hide();
             removeKeydownListener(trapFocus);
             effects.hide(getElementById('crashScreen'));
+            const backgroundElements = getBackgroundElements();
             effects.restoreBackground(backgroundRestore);
             backgroundRestore = [];
-            resumeGame();
+            const restoreTarget = previousFocus;
+            previousFocus = null;
+            try {
+                resumeGame();
+            } catch (error) {
+                effects.restoreFocus(restoreTarget, backgroundElements);
+                throw error;
+            }
+            effects.restoreFocus(restoreTarget, backgroundElements);
         }
 
         return Object.freeze({ trapFocus, show, resume });

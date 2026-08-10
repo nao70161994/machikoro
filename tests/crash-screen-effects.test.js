@@ -99,6 +99,20 @@ runTest('crash screen effectsは操作可能要素だけをfocus trap対象に�
     assert.strictEqual(enabled.focusCount, 1);
 });
 
+runTest('crash screen effectsは可視な元focusまたは背景内のfallbackへ復帰する', () => {
+    const previous = makeElement();
+    const fallback = makeElement();
+    const background = makeElement();
+    background.querySelectorAll = () => [fallback];
+
+    assert.strictEqual(CrashScreenEffects.restoreFocus(previous, [background]), previous);
+    assert.strictEqual(previous.focusCount, 1);
+
+    previous.offsetParent = null;
+    assert.strictEqual(CrashScreenEffects.restoreFocus(previous, [background]), fallback);
+    assert.strictEqual(fallback.focusCount, 1);
+});
+
 runTest('crash screen effectsはfocus対象なしと非表示をscreenへ適用する', () => {
     const screen = makeElement();
     let prevented = 0;

@@ -82,6 +82,26 @@ const CrashScreenEffects = (() => {
         }
     }
 
+    function canRestoreFocus(element) {
+        if (!element || typeof element.focus !== 'function' || element.disabled === true) return false;
+        if (element.isConnected === false || element.hidden === true || element.offsetParent === null) return false;
+        return typeof element.getAttribute !== 'function' || element.getAttribute('aria-hidden') !== 'true';
+    }
+
+    function restoreFocus(previousFocus, backgroundElements) {
+        if (canRestoreFocus(previousFocus)) {
+            previousFocus.focus();
+            return previousFocus;
+        }
+        for (const background of Array.isArray(backgroundElements) ? backgroundElements : []) {
+            const fallback = focusableElements(background)[0];
+            if (!canRestoreFocus(fallback)) continue;
+            fallback.focus();
+            return fallback;
+        }
+        return null;
+    }
+
     function hide(screen) {
         screen.style.display = 'none';
     }
@@ -93,6 +113,7 @@ const CrashScreenEffects = (() => {
         applyFocusTrap,
         disableBackground,
         restoreBackground,
+        restoreFocus,
         hide,
     });
 })();
