@@ -71,6 +71,7 @@ const AppShellCrashRuntime = (() => {
 
         function resume() {
             let result;
+            effects.restoreBackground(backgroundRestore);
             try {
                 result = resumeGame();
             } catch (error) {
@@ -85,7 +86,6 @@ const AppShellCrashRuntime = (() => {
             removeKeydownListener(trapFocus);
             effects.hide(getElementById('crashScreen'));
             const backgroundElements = getBackgroundElements();
-            effects.restoreBackground(backgroundRestore);
             backgroundRestore = [];
             const restoreTarget = previousFocus;
             previousFocus = null;

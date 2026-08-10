@@ -62,7 +62,9 @@ function createHarness(overrides = {}) {
         ...overrides,
     };
     return {
+        background,
         calls,
+        effects,
         elements,
         previousFocus,
         getKeydownHandler: () => keydownHandler,
@@ -90,10 +92,53 @@ runTest('app shell crash runtimeは同一focus handlerをtrapとresume解除に�
     assert.ok(calls.some(call => call[0] === 'focus-trap' && call[1].focusTarget === 'last'));
     runtime.resume();
     assert.deepStrictEqual(calls.slice(-5).map(call => call[0]), [
-        'resume-game', 'remove-keydown', 'hide', 'restore-background', 'restore-focus',
+        'restore-background', 'resume-game', 'remove-keydown', 'hide', 'restore-focus',
     ]);
     assert.strictEqual(calls.find(call => call[0] === 'remove-keydown')[1], true);
     assert.strictEqual(calls.find(call => call[0] === 'restore-focus')[1].name, 'previous');
+});
+
+runTest('app shell crash runtimeは成功した保存復帰後に古いmodal lockを再適用しない', () => {
+    let backgroundRef;
+    const harness = createHarness({
+        resumeGame() {
+            harness.calls.push(['resume-game']);
+            backgroundRef.inert = false;
+            backgroundRef.ariaHidden = null;
+            backgroundRef.style.pointerEvents = '';
+            return true;
+        },
+    });
+    const { background, calls, effects, runtime } = harness;
+    backgroundRef = background;
+    background.inert = true;
+    background.ariaHidden = 'true';
+    background.style = { pointerEvents: 'none' };
+    effects.disableBackground = targets => {
+        calls.push(['disable-background', targets]);
+        for (const target of targets) {
+            target.inert = true;
+            target.ariaHidden = 'true';
+            target.style.pointerEvents = 'none';
+        }
+        return ['modal-lock'];
+    };
+    effects.restoreBackground = () => {
+        calls.push(['restore-background']);
+        background.inert = true;
+        background.ariaHidden = 'true';
+        background.style.pointerEvents = 'none';
+    };
+
+    runtime.show(new Error('boom'));
+    assert.strictEqual(runtime.resume(), true);
+    assert.strictEqual(background.inert, false);
+    assert.strictEqual(background.ariaHidden, null);
+    assert.strictEqual(background.style.pointerEvents, '');
+    assert.deepStrictEqual(
+        calls.filter(call => ['restore-background', 'resume-game'].includes(call[0])).map(call => call[0]),
+        ['restore-background', 'resume-game']
+    );
 });
 
 runTest('app shell crash runtimeはresume拒否時にoverlayと背景lockを維持する', () => {
@@ -105,7 +150,11 @@ runTest('app shell crash runtimeはresume拒否時にoverlayと背景lockを維�
     assert.strictEqual(runtime.trapFocus({ key: 'Tab', shiftKey: true }), undefined);
     assert.strictEqual(calls.filter(call => call[0] === 'disable-background').length, 2);
     assert.strictEqual(calls.some(call => call[0] === 'hide'), false);
-    assert.strictEqual(calls.some(call => call[0] === 'restore-background'), false);
+    assert.deepStrictEqual(
+        calls.filter(call => ['restore-background', 'resume-game', 'disable-background'].includes(call[0]))
+            .slice(-3).map(call => call[0]),
+        ['restore-background', 'resume-game', 'disable-background']
+    );
     assert.strictEqual(calls.some(call => call[0] === 'remove-keydown'), false);
 });
 
