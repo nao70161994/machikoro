@@ -917,6 +917,24 @@ print(json.dumps({
     });
 });
 
+runTest('rl envは多人数の赤施設支払いを手番から反時計回りに処理する', () => {
+    const output = runPython(`
+from scripts.rl.game_env import MachikoroEnv
+env = MachikoroEnv(player_count=4)
+env.current = 2
+for player in env.players:
+    player.cards["麦畑"] = 0
+    player.cards["パン屋"] = 0
+    player.coins = 0
+env.players[2].coins = 3
+for index in (0, 1, 3):
+    env.players[index].cards["カフェ"] = 2
+env._proc_red(env.players[2], 2, 3)
+print([player.coins for player in env.players])
+`);
+    assert.strictEqual(output, '[1, 2, 0, 0]');
+});
+
 runTest('rl train: mover と business pending は JS と同じ発動条件で立つ', () => {
     const output = runPython(`
 from scripts.rl.game_env import MachikoroEnv

@@ -38,6 +38,7 @@ INDUSTRY   = "工業"
 RESTAURANT = "飲食店"
 SHOP       = "商店"
 FISHERY    = "海産"
+SPECIAL    = "特殊"
 MAJOR      = "大施設"
 
 # ---------- ランドマーク定数 ----------
@@ -114,9 +115,9 @@ ALL_CARDS = [
     # 緑カード
     CardDef("雑貨屋",   0, (2,),   2, "green",  SHOP,     FEWLANDMARK),
     CardDef("改装屋",   1, (4,),   8, "green",  SHOP,     RENOVATION),
-    CardDef("貸金業",   0, (5, 6), 0, "green",  SHOP,     LOAN),
+    CardDef("貸金業",   0, (5, 6), 0, "green",  SPECIAL,  LOAN),
     CardDef("ワイナリー",3,(9,),   6, "green",  INDUSTRY, WINERY),
-    CardDef("引越し屋", 2, (9, 10),4, "green",  SHOP,     MOVER),
+    CardDef("引越し屋", 2, (9, 10),4, "green",  SPECIAL,  MOVER),
     CardDef("ドリンク工場",5,(11,),1, "green",  INDUSTRY, DRINKFACTORY),
     # 赤カード
     CardDef("高級フレンチ",  3, (5,),        5, "red", RESTAURANT, FRENCHR),

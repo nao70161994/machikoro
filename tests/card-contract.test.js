@@ -1,6 +1,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 const { runTest } = require('./helpers/test-utils');
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
@@ -100,6 +101,29 @@ runTest('公式定義契約は全38施設のID・費用・出目・収入・色�
     ]);
     assert.strictEqual(actual.length, 38);
     assert.deepStrictEqual(actual, OFFICIAL_CARD_DEFINITION_ROWS);
+});
+
+runTest('JS/Pythonの全カード定義はcategoryを含めて一致する', () => {
+    const result = spawnSync('python3', ['-c', [
+        'import json',
+        'from scripts.rl.cards import ALL_CARDS',
+        'print(json.dumps([[c.name,c.cost,list(c.dice_nums),c.income,c.color,c.category,c.effect] for c in ALL_CARDS], ensure_ascii=False))',
+    ].join(';')], {
+        cwd: path.join(__dirname, '..'),
+        encoding: 'utf8',
+    });
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+    const pythonDefs = JSON.parse(result.stdout);
+    const jsDefs = Array.from(runtime.CARD_DEFS, def => [
+        def.name,
+        def.cost,
+        Array.from(def.diceNums),
+        def.income,
+        def.color,
+        def.category,
+        def.effect,
+    ]);
+    assert.deepStrictEqual(pythonDefs, jsDefs);
 });
 
 runTest('公式定義契約は全6ランドマークの名称と費用を固定する', () => {

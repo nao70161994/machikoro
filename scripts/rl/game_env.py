@@ -446,12 +446,12 @@ class MachikoroEnv:
 
     # ---- 赤カード ----
     def _proc_red(self, cur, ci, dice):
-        for name in CARD_NAMES:
-            cd = CARD_DEF[name]
-            if cd.color != "red" or dice not in cd.dice_nums:
-                continue
-            for oi, opp in enumerate(self.players):
-                if oi == ci:
+        for offset in range(1, len(self.players)):
+            oi = (ci - offset) % len(self.players)
+            opp = self.players[oi]
+            for name in CARD_NAMES:
+                cd = CARD_DEF[name]
+                if cd.color != "red" or dice not in cd.dice_nums:
                     continue
                 would_activate = True
                 if cd.effect == HARBOR_RED:
