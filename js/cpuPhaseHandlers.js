@@ -6,20 +6,6 @@ const CpuPhaseHandlers = (() => {
         'pending', 'build', 'nextTurn', 'resolveIT',
     ]);
 
-    function pendingProgressSignature(game) {
-        if (!game) return '';
-        return [
-            game.phase || '',
-            game.pendingTV || 0,
-            game.pendingBusiness || 0,
-            game.pendingCleaning || 0,
-            game.pendingMover || 0,
-            game.pendingRenovation || 0,
-            game.pendingIT ? 1 : 0,
-            Array.isArray(game.pendingActionQueue) ? game.pendingActionQueue.length : -1,
-        ].join(':');
-    }
-
     function create(dependencies = {}) {
         const required = [
             'checkpoint', 'chooseAction', 'executeAction', 'getGameState',
@@ -31,7 +17,9 @@ const CpuPhaseHandlers = (() => {
             }
         }
         if (!dependencies.actions || !dependencies.gamePhases ||
-                !dependencies.pendingResolution || !dependencies.shopStock) {
+                !dependencies.pendingResolution ||
+                typeof dependencies.pendingResolution.pendingProgressSignature !== 'function' ||
+                !dependencies.shopStock) {
             throw new TypeError('CPU phase handler runtime dependencies are required');
         }
         const game = () => dependencies.getGameState().game;
@@ -103,7 +91,7 @@ const CpuPhaseHandlers = (() => {
                     const current = game();
                     if (current.phase !== dependencies.gamePhases.PENDING) return;
                     const pendingAction = dependencies.nextPendingAction(current);
-                    const beforeSignature = pendingProgressSignature(current);
+                    const beforeSignature = dependencies.pendingResolution.pendingProgressSignature(current);
                     const proposal = dependencies.chooseAction('pending', cpu);
                     if (!proposal) {
                         dependencies.checkpoint('scheduleCPU-pending-no-proposal', {
@@ -129,7 +117,7 @@ const CpuPhaseHandlers = (() => {
                         return false;
                     }
                     if (!dependencies.getOnlineState().isOnlineGame &&
-                            pendingProgressSignature(current) === beforeSignature) {
+                            dependencies.pendingResolution.pendingProgressSignature(current) === beforeSignature) {
                         dependencies.checkpoint('scheduleCPU-pending-state-unchanged', {
                             action: proposal.action,
                             difficulty: cpu && cpu.difficulty || '',
@@ -197,7 +185,7 @@ const CpuPhaseHandlers = (() => {
         return Object.freeze(handlers.map(handler => Object.freeze(handler)));
     }
 
-    return Object.freeze({ ORDER, create, pendingProgressSignature });
+    return Object.freeze({ ORDER, create });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CpuPhaseHandlers;

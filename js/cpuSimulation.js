@@ -92,10 +92,21 @@ const CPUSimulation = Object.freeze({
     runPlayout(game, maxSteps, step) {
         let safety = 0;
         while (!game.checkWinner() && safety < maxSteps) {
-            step();
+            const progressed = step();
             safety++;
+            if (progressed === false) break;
         }
         return safety;
+    },
+    runPendingStep(game, cpu, pendingPolicy) {
+        if (!pendingPolicy ||
+                typeof pendingPolicy.pendingProgressSignature !== 'function' ||
+                typeof pendingPolicy.choosePendingAction !== 'function' ||
+                typeof pendingPolicy.applyPendingAction !== 'function') return false;
+        const beforeSignature = pendingPolicy.pendingProgressSignature(game);
+        const proposal = pendingPolicy.choosePendingAction(game, cpu, { clearFallback: false });
+        if (!proposal || pendingPolicy.applyPendingAction(game, proposal) !== true) return false;
+        return pendingPolicy.pendingProgressSignature(game) !== beforeSignature;
     },
     runStep(game, cpu, shopStock, rng, phases, pendingPolicy) {
         const die = () => Math.floor(rng() * 6) + 1;
@@ -117,19 +128,7 @@ const CPUSimulation = Object.freeze({
                 game.resolveHarbor(cpu.chooseHarbor(game), tunaDice);
                 return;
             case phases.PENDING:
-                const resolution = pendingPolicy.choosePendingResolution(game, cpu);
-                if (resolution) {
-                    resolution.apply();
-                    return;
-                }
-                if (game.pendingCleaning > 0) {
-                    const cardName = cpu.chooseCleaningTarget(game);
-                    if (cardName) game.resolveCleaning(cardName);
-                    else pendingPolicy.clearPendingField(game, 'pendingCleaning');
-                    return;
-                }
-                game.phase = phases.BUILD;
-                return;
+                return CPUSimulation.runPendingStep(game, cpu, pendingPolicy);
             case phases.BUILD:
                 if (game.pendingIT) {
                     game.resolveIT(cpu.chooseITInvest(game));

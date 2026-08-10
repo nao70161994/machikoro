@@ -5,6 +5,20 @@ const CPUPendingActionProposalApi = typeof module !== 'undefined' && module.expo
     : globalThis.CPUActionProposal;
 
 const CPUPendingResolution = Object.freeze({
+    pendingProgressSignature(game) {
+        if (!game) return '';
+        return [
+            game.phase || '',
+            game.pendingTV || 0,
+            game.pendingBusiness || 0,
+            game.pendingCleaning || 0,
+            game.pendingMover || 0,
+            game.pendingRenovation || 0,
+            game.pendingIT ? 1 : 0,
+            Array.isArray(game.pendingActionQueue) ? game.pendingActionQueue.length : -1,
+        ].join(':');
+    },
+
     pendingActionDescriptors(game) {
         if (!game) return [];
         if (typeof GameManager !== "undefined" && typeof GameManager.pendingActionsFor === "function") {

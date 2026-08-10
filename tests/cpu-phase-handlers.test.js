@@ -33,7 +33,13 @@ function createHarness(options = {}) {
         getGameState: () => ({ game }),
         getOnlineState: () => ({ isOnlineGame: online }),
         nextPendingAction: () => 'resolveTV',
-        pendingResolution: { applyPendingAction: () => calls.push(['applyPending']) },
+        pendingResolution: {
+            applyPendingAction: () => calls.push(['applyPending']),
+            pendingProgressSignature: current => [
+                current.phase, current.pendingTV || 0,
+                Array.isArray(current.pendingActionQueue) ? current.pendingActionQueue.length : -1,
+            ].join(':'),
+        },
         render: () => calls.push(['render']),
         shopStock: { wheat: 6 },
     });
@@ -147,7 +153,10 @@ runTest('CPU phase pending handlerは適用拒否を診断してno-progressを�
         getGameState: () => ({ game: h.game }),
         getOnlineState: () => ({ isOnlineGame: false }),
         nextPendingAction: () => 'resolveTV',
-        pendingResolution: { applyPendingAction: () => true },
+        pendingResolution: {
+            applyPendingAction: () => true,
+            pendingProgressSignature: () => 'unchanged',
+        },
         render: () => {},
         shopStock: {},
     }).find(handler => handler.name === 'pending');

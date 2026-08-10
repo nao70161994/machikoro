@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const { CPUSimulation } = require('../js/cpuSimulation');
 const { runTest } = require('./helpers/test-utils');
 const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
@@ -126,7 +127,47 @@ runTest('全CPU難易度・代表人数は全pendingをcanonical proposalで解�
                     : game[pendingCase.field];
                 assert.ok(afterCount < beforeCount, `${label}: pending progress`);
                 assert.notStrictEqual(game.phase, GAME_PHASES.PENDING, `${label}: phase progress`);
+
+                const simulationGame = createPendingGame(playerCount, pendingCase);
+                const simulationBefore = CPUPendingResolution.pendingProgressSignature(simulationGame);
+                assert.strictEqual(CPUSimulation.runStep(
+                    simulationGame,
+                    createCpu(difficulty),
+                    {},
+                    () => 0.5,
+                    GAME_PHASES,
+                    CPUPendingResolution
+                ), true, `${label}: simulation apply`);
+                assert.notStrictEqual(
+                    CPUPendingResolution.pendingProgressSignature(simulationGame),
+                    simulationBefore,
+                    `${label}: simulation progress`
+                );
             }
         }
     }
+});
+
+runTest('simulationは不正pendingを消去・build遷移せずno-progressで停止する', () => {
+    const game = new GameManager(2);
+    game.phase = GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
+    game.pendingActionQueue = [{ action: 'resolveCleaning', field: 'pendingCleaning' }];
+    for (const player of game.players) {
+        player.cards = [];
+        player.dormantCards = [];
+    }
+    const before = CPUPendingResolution.pendingProgressSignature(game);
+
+    assert.strictEqual(CPUSimulation.runStep(
+        game,
+        createCpu('strong'),
+        {},
+        () => 0.5,
+        GAME_PHASES,
+        CPUPendingResolution
+    ), false);
+    assert.strictEqual(CPUPendingResolution.pendingProgressSignature(game), before);
+    assert.strictEqual(game.phase, GAME_PHASES.PENDING);
+    assert.strictEqual(game.pendingCleaning, 1);
 });

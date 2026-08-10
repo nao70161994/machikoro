@@ -113,6 +113,68 @@ runTest('CPU simulation playoutはmaxStepsで停止して追加stepを実行し�
     assert.strictEqual(steps, 2);
 });
 
+runTest('CPU simulation playoutはno-progressを一度の試行で有限停止する', () => {
+    let steps = 0;
+    const game = { checkWinner: () => null };
+    const safety = CPUSimulation.runPlayout(game, 100, () => {
+        steps++;
+        return false;
+    });
+
+    assert.strictEqual(safety, 1);
+    assert.strictEqual(steps, 1);
+});
+
+runTest('CPU simulation pendingはcanonical proposal・apply・進行判定を共有する', () => {
+    const calls = [];
+    const game = { phase: 'pending', pendingTV: 1, pendingActionQueue: [{}] };
+    const cpu = {};
+    const policy = {
+        pendingProgressSignature(current) {
+            return `${current.phase}:${current.pendingTV}:${current.pendingActionQueue.length}`;
+        },
+        choosePendingAction(receivedGame, receivedCpu, options) {
+            calls.push(['choose', receivedGame, receivedCpu, options]);
+            return { action: 'resolveTV', data: { targetIndex: 1 } };
+        },
+        applyPendingAction(receivedGame, proposal) {
+            calls.push(['apply', receivedGame, proposal]);
+            receivedGame.pendingTV = 0;
+            receivedGame.pendingActionQueue = [];
+            receivedGame.phase = 'build';
+            return true;
+        },
+    };
+
+    assert.strictEqual(CPUSimulation.runPendingStep(game, cpu, policy), true);
+    assert.deepStrictEqual(calls[0], ['choose', game, cpu, { clearFallback: false }]);
+    assert.strictEqual(calls[1][0], 'apply');
+    assert.strictEqual(calls[1][1], game);
+    assert.deepStrictEqual(calls[1][2], { action: 'resolveTV', data: { targetIndex: 1 } });
+});
+
+runTest('CPU simulation pendingはproposal欠落・適用拒否・状態不変を補修せず停止する', () => {
+    for (const mode of ['missing', 'rejected', 'unchanged']) {
+        const game = { phase: 'pending', pendingCleaning: 1, pendingActionQueue: [{}] };
+        const before = JSON.stringify(game);
+        const policy = {
+            pendingProgressSignature: current => JSON.stringify(current),
+            choosePendingAction: () => mode === 'missing'
+                ? null
+                : { action: 'resolveCleaning', data: { cardName: '麦畑' } },
+            applyPendingAction(current) {
+                if (mode === 'rejected') return false;
+                if (mode === 'unchanged') return true;
+                current.phase = 'build';
+                return true;
+            },
+        };
+
+        assert.strictEqual(CPUSimulation.runPendingStep(game, {}, policy), false, mode);
+        assert.strictEqual(JSON.stringify(game), before, mode);
+    }
+});
+
 runTest('CPU simulation stepはdice消費順とroll payloadを維持する', () => {
     const phases = {
         ROLL: 'roll',
