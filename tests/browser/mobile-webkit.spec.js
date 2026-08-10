@@ -23,6 +23,16 @@ async function prepare(page) {
     await page.goto('/');
 }
 
+async function expectPlayerSelectTapTargets(page, containerSelector, expectedCount) {
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const heights = await page.locator(`${containerSelector} .player-setting-select`)
+            .evaluateAll(selects => selects.map(select => select.getBoundingClientRect().height));
+        expect(heights).toHaveLength(expectedCount);
+        expect(heights.every(height => height >= 44)).toBe(true);
+    }
+}
+
 test('mobile WebKitでapp shellとService Workerが実動作する', async ({ page }) => {
     const errors = collectRuntimeErrors(page);
     await prepare(page);
@@ -64,6 +74,21 @@ test('320pxと360pxでプレイヤー種別が設定枠内に収まる', async (
         rows.map(row => getComputedStyle(row).flexDirection)
     );
     expect(wideLayouts.every(flexDirection => flexDirection === 'row')).toBe(true);
+});
+
+test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領域を持つ', async ({ page }) => {
+    await prepare(page);
+
+    await expectPlayerSelectTapTargets(page, '#playerSettings', 2);
+    const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
+    for (let count = 2; count < 10; count++) await increasePlayerCount.click();
+    await expectPlayerSelectTapTargets(page, '#playerSettings', 10);
+
+    await page.locator('#tabOnline').click();
+    await expectPlayerSelectTapTargets(page, '#onlinePlayerSettings', 2);
+    const increaseOnlinePlayerCount = page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]');
+    for (let count = 2; count < 10; count++) await increaseOnlinePlayerCount.click();
+    await expectPlayerSelectTapTargets(page, '#onlinePlayerSettings', 10);
 });
 
 test('mobile WebKitの2クライアントがonline開始後に再読込復帰できる', async ({ browser, baseURL }) => {
