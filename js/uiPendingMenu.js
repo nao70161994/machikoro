@@ -94,7 +94,7 @@ const UiPendingMenu = (() => {
         const current = game.currentPlayer();
         const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
-        return `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p>渡す施設：</p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
+        return `<div class="pending-box"><p>🚚 引越し屋：渡す施設と相手を選んでください</p><p><label for="moverCardSelect">渡す施設：</label></p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
     }
 
     function buildPendingRenovationHtml(game, escapeHtml, landmarkNames) {

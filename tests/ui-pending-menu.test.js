@@ -130,3 +130,15 @@ runTest('ui pending menu はbusiness/renovation/ITの既存selectorを維持す�
     assert.ok(html.includes('data-action="resolveIT"'));
     assert.ok(html.includes('パン屋 💤'));
 });
+
+runTest('ui pending menu は引越し屋の施設selectへaccessible nameを関連付ける', () => {
+    const html = UiPendingMenu.buildMenuHtml(
+        makeGame(),
+        new Set(['resolveMover']),
+        null,
+        { escapeHtml, landmarkNames: { YAKUSHO: '役所' } }
+    );
+
+    assert.ok(html.includes('<label for="moverCardSelect">渡す施設：</label>'));
+    assert.ok(html.includes('<select id="moverCardSelect">'));
+});
