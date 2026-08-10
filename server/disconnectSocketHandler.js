@@ -11,6 +11,7 @@ function createDisconnectSocketHandler(dependencies) {
         persistRoomCanonicalState,
         disconnectHostlessRestore,
     } = dependencies;
+    const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
     const log = typeof dependencies.log === 'function' ? dependencies.log : console.log;
     const logError = typeof dependencies.logError === 'function' ? dependencies.logError : console.error;
 
@@ -29,6 +30,7 @@ function createDisconnectSocketHandler(dependencies) {
         const disconnectedPlayer = room.players.find(player => player.index === socket.playerIndex);
         if (!disconnectedPlayer || disconnectedPlayer.id !== socket.id) return { ignored: true };
         disconnectedPlayer.id = null;
+        room.lastTouchedAt = now();
         targetIo.to(roomId).emit('playerDisconnected', {
             playerIndex: socket.playerIndex,
             playerName: disconnectedPlayer.name || `プレイヤー${socket.playerIndex + 1}`,

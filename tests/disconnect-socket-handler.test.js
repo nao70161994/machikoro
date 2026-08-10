@@ -49,6 +49,7 @@ function createSubject(overrides = {}) {
         logError() {
             calls.push('error');
         },
+        now: () => 4321,
     }, overrides);
     const subject = createDisconnectSocketHandler(dependencies);
     const socket = {
@@ -101,6 +102,7 @@ runTest('disconnect socket handlerは開始済みhost切断時の通知と永続
     subject.handlers.disconnect();
 
     assert.strictEqual(subject.rooms.ROOM1.players[0].id, null);
+    assert.strictEqual(subject.rooms.ROOM1.lastTouchedAt, 4321);
     assert.strictEqual(subject.rooms.ROOM1.hostPlayerIndex, 1);
     assert.deepStrictEqual(subject.calls, [
         'hostless', 'remaining', 'set-host', 'emit-host', 'persist', 'log', 'log',
@@ -110,6 +112,22 @@ runTest('disconnect socket handlerは開始済みhost切断時の通知と永続
         event: 'playerDisconnected',
         payload: { playerIndex: 0, playerName: 'Alice' },
     }]);
+});
+
+runTest('disconnect socket handlerは開始済みroomの再接続TTLを最終切断から延長する', () => {
+    const subject = createSubject();
+    subject.rooms.ROOM1 = {
+        started: true,
+        lastTouchedAt: 1,
+        hostPlayerIndex: 1,
+        players: [{ id: 'socket-1', index: 0, name: 'Alice' }],
+    };
+    Object.assign(subject.socket, { roomId: 'ROOM1', playerIndex: 0 });
+
+    subject.subject.handleSocketDisconnect(subject.io, subject.socket);
+
+    assert.strictEqual(subject.rooms.ROOM1.lastTouchedAt, 4321);
+    assert.strictEqual(subject.rooms.ROOM1.players[0].id, null);
 });
 
 runTest('disconnect socket handlerは古いsocketの遅延切断を無視する', () => {
