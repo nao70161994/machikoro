@@ -14,9 +14,9 @@ function registerRecreateSocketHandler(socket, dependencies = {}) {
             dependencies.emitAppError(socket, '復元処理を続けて実行できません');
             return;
         }
-        socket.lastRecreateRoomAt = requestedAt;
         if (typeof dependencies.validateRawPayload === 'function' &&
                 !dependencies.validateRawPayload(payload)) {
+            socket.lastRecreateRoomAt = requestedAt;
             dependencies.emitAppError(socket, '復元データが不完全です');
             return;
         }
@@ -25,6 +25,7 @@ function registerRecreateSocketHandler(socket, dependencies = {}) {
             dependencies.emitAppError(socket, '復元データが不完全です');
             return;
         }
+        socket.lastRecreateRoomAt = requestedAt;
         const result = dependencies.handleRecreateRoom(socket, decoded.value);
         if (result && result.ok) dependencies.hostRestored(result.roomId);
     });

@@ -61,6 +61,12 @@ runTest('recreate socket handlerはlegacyを受理しdecode失敗を副作用前
         ['preflight', { schemaVersion: 99, recreateRoom: legacy }],
         ['error', '復元データが不完全です'],
     ]);
+    rejected.handlers.recreateRoom({ schemaVersion: 1, recreateRoom: legacy });
+    assert.deepStrictEqual(rejected.calls.slice(2), [
+        ['preflight', { schemaVersion: 1, recreateRoom: legacy }],
+        ['handle', legacy],
+        ['restored', 'ABC123'],
+    ]);
 });
 
 runTest('recreate socket handlerはrestore失敗時にhostless coordinatorを進めない', () => {
