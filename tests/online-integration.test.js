@@ -596,6 +596,10 @@ runTest('online integration: reconnectOnline はSocket.IO未読込時にセッ�
     assert.strictEqual(rt.localStorage.getItem('onlineSession') !== null, true);
     assert.strictEqual(rt.__test.socketEmits.length, 0);
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent, '❌ オンライン機能を読み込めませんでした。サーバーURLから開き直してください。');
+    assert.strictEqual(rt.__test.elements.noticeToast.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.noticeToastMessage.textContent,
+        'オンライン機能を読み込めませんでした。サーバーURLから開き直してください。');
+    assert.strictEqual(rt.__test.elements.noticeToast.getAttribute('aria-live'), 'off');
     assert.strictEqual(rt.__test.getOnlineState().isReconnectingOnline, false);
 });
 

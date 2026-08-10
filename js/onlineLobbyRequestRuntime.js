@@ -123,7 +123,7 @@ const OnlineLobbyRequestRuntime = (() => {
                 if (!dependencies.controller.isCurrent(kind, transition.generation)) return;
                 finish(kind);
                 dependencies.setStatusText(TEXT.REQUEST_TIMEOUT_STATUS);
-                dependencies.showNotice(TEXT.REQUEST_TIMEOUT_NOTICE);
+                dependencies.showNotice(TEXT.REQUEST_TIMEOUT_NOTICE, { announce: false });
             }, dependencies.requestTimeoutMs);
             dependencies.controller.attachTimer(kind, transition.generation, timer);
         }

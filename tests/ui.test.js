@@ -286,8 +286,24 @@ runTest('showNotice は non-blocking toast で通知する', () => {
     assert.deepStrictEqual(context.alertMessages, []);
     assert.strictEqual(elements.noticeToast.style.display, 'flex');
     assert.strictEqual(elements.noticeToastMessage.textContent, '通知テスト');
+    assert.strictEqual(elements.noticeToast.getAttribute('aria-live'), 'polite');
     context.hideNotice();
     assert.strictEqual(elements.noticeToast.style.display, 'none');
+});
+
+runTest('showNotice は重複する視覚通知だけをlive regionから除外できる', () => {
+    const { context, elements } = loadUiRuntime();
+
+    context.showNotice('視覚だけの通知', { announce: false });
+
+    assert.strictEqual(elements.noticeToast.style.display, 'flex');
+    assert.strictEqual(elements.noticeToastMessage.textContent, '視覚だけの通知');
+    assert.strictEqual(elements.noticeToast.getAttribute('aria-live'), 'off');
+    context.lastTimeout();
+    assert.strictEqual(elements.noticeToast.style.display, 'none');
+    assert.strictEqual(elements.noticeToast.getAttribute('aria-live'), 'polite');
+    context.showNotice('次の通知');
+    assert.strictEqual(elements.noticeToast.getAttribute('aria-live'), 'polite');
 });
 
 runTest('modal helpers は dialog 属性と表示状態を管理する', () => {

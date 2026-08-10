@@ -72,7 +72,7 @@ function createHarness(options = {}) {
                 return setup;
             },
         },
-        showNotice: message => calls.push(['notice', message]),
+        showNotice: (...args) => calls.push(['notice', ...args]),
         warn: (...args) => calls.push(['warn', ...args]),
         withCapabilities: (payload, capabilities) => ({ ...payload, capabilities }),
     });
@@ -165,7 +165,8 @@ runTest('online lobby request runtimeは現世代timeoutだけを終了・通知
     assert.ok(calls.some(call => call[0] === 'status' &&
         call[1] === OnlineLobbyRequestRuntime.TEXT.REQUEST_TIMEOUT_STATUS));
     assert.ok(calls.some(call => call[0] === 'notice' &&
-        call[1] === OnlineLobbyRequestRuntime.TEXT.REQUEST_TIMEOUT_NOTICE));
+        call[1] === OnlineLobbyRequestRuntime.TEXT.REQUEST_TIMEOUT_NOTICE &&
+        call[2] && call[2].announce === false));
     assert.strictEqual(calls.filter(call => call[0] === 'schedulePwaRefresh').length, 1);
     assert.strictEqual(runtime.finish('join'), true);
 });

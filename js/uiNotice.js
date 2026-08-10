@@ -1,15 +1,24 @@
 let noticeTimer = null;
 
+function setNoticeAnnouncement(toast, enabled) {
+    if (!toast || typeof toast.setAttribute !== 'function') return false;
+    toast.setAttribute('aria-live', enabled === false ? 'off' : 'polite');
+    return true;
+}
+
 function hideNotice() {
     const toast = document.getElementById('noticeToast');
     if (noticeTimer) {
         clearTimeout(noticeTimer);
         noticeTimer = null;
     }
-    if (toast) toast.style.display = 'none';
+    if (toast) {
+        toast.style.display = 'none';
+        setNoticeAnnouncement(toast, true);
+    }
 }
 
-function showNotice(message) {
+function showNotice(message, options = {}) {
     const text = String(message || '');
     const toast = document.getElementById('noticeToast');
     const body = document.getElementById('noticeToastMessage');
@@ -17,11 +26,13 @@ function showNotice(message) {
         if (typeof alert === 'function') alert(text);
         return;
     }
+    setNoticeAnnouncement(toast, options.announce !== false);
     body.textContent = text;
     toast.style.display = 'flex';
     if (noticeTimer) clearTimeout(noticeTimer);
     noticeTimer = setTimeout(() => {
         toast.style.display = 'none';
+        setNoticeAnnouncement(toast, true);
         noticeTimer = null;
     }, 4500);
 }

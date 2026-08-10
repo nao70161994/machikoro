@@ -2589,7 +2589,7 @@ function initSocket() {
     if (onlineSessionSnapshot().socket) return true;
     if (typeof io !== 'function') {
         const message = 'オンライン機能を読み込めませんでした。サーバーURLから開き直してください。';
-        onlineClientEffects.showNotice(message);
+        onlineClientEffects.showNotice(message, { announce: false });
         onlineDomEffects.setStatusText(`❌ ${message}`);
         if (onlineSocketUnavailableReportController.claim()) {
             if (typeof markClientFlowCheckpoint === 'function') {
@@ -3088,7 +3088,7 @@ function getOnlineLobbyRequestRuntime() {
         setText: (id, text) => onlineDomEffects.setText(id, text),
         setTimer: (callback, delay) => setTimeout(callback, delay),
         setupRuntime: onlineSetupStateController,
-        showNotice: message => onlineClientEffects.showNotice(message),
+        showNotice: (...args) => onlineClientEffects.showNotice(...args),
         warn: (reason, error, asError) => {
             if (typeof console === 'undefined') return;
             if (asError === true && typeof console.error === 'function') {
