@@ -862,14 +862,9 @@ class GameManager {
         for (const target of cleaning.targets) {
             this.players[target.playerIndex].makeDormant(target.card);
         }
-        if (cleaning.targets.length <= 0) return false;
-        const coinPlan = GameCoinTransaction.collectionPlan(
-            this.players.map(player => player.coins),
-            this.currentPlayerIndex,
-            cleaning.requestedAmounts
-        );
-        applyCoinTransactionPlan(this.players, coinPlan);
-        this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${cleaning.targets.length}軒を休業 → 他プレイヤーから+${coinPlan.total}コイン`);
+        if (cleaning.reward <= 0) return false;
+        current.coins += cleaning.reward;
+        this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${cleaning.reward}軒を休業 → 銀行から+${cleaning.reward}コイン`);
         this._consumePendingAction('pendingCleaning');
         this._checkPending();
         return true;

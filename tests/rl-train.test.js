@@ -902,7 +902,7 @@ print(json.dumps({
         flower: 2,
         foodWarehouse: 2,
         drinkFactory: 2,
-        cleaningCoins: [6, 3, 0],
+        cleaningCoins: [8, 5, 1],
         cleaningDormant: [1, 2, 2],
         parkCoins: [2, 2, 2],
         blockedFrench: 1,

@@ -332,7 +332,7 @@ const CARD_EFFECT_DESCRIPTIONS = Object.freeze({
     [CARD_EFFECTS.DRINKFACTORY]: ()  => `全員のカップマーク施設1軒につき+1コイン`,
     [CARD_EFFECTS.FRENCHR]:      ()  => `相手ランドマーク2軒以上なら5コイン奪う`,
     [CARD_EFFECTS.MEMBERBAR]:    ()  => `相手ランドマーク3軒以上なら全コイン奪う`,
-    [CARD_EFFECTS.CLEANING]:     ()  => `施設1種を休業にして休業数コイン獲得`,
+    [CARD_EFFECTS.CLEANING]:     ()  => `施設1種を休業にして銀行から休業数コイン獲得`,
     [CARD_EFFECTS.ITSTARTUP]:    ()  => `ターン終了時1コイン積立・全員から積立額奪う`,
     [CARD_EFFECTS.PARK]:         ()  => `全員のコインを均等分配`,
 });

@@ -316,16 +316,13 @@ class MachikoroEnv:
             ci = action - ACT_CLEAN_BASE
             if 0 <= ci < NUM_CARDS:
                 name = CARD_NAMES[ci]
-                collected = 0
-                for player_index, pl in enumerate(self.players):
+                reward = 0
+                for pl in self.players:
                     n = pl.active(name)
                     if n > 0:
                         pl.dormant[name] = pl.dormant.get(name, 0) + n
-                        if player_index != self.current:
-                            payment = min(n, pl.coins)
-                            pl.coins -= payment
-                            collected += payment
-                p.coins += collected
+                        reward += n
+                p.coins += reward
             self.pending_clean -= 1
             self._consume_pending("pendingCleaning")
             self._check_pending()
