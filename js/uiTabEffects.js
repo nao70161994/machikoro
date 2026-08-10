@@ -10,6 +10,9 @@ function applyMainTabView(elements, view) {
     elements.localButton.setAttribute('aria-selected', view.localButton.ariaSelected);
     elements.onlineButton.setAttribute('aria-selected', view.onlineButton.ariaSelected);
     elements.statsButton.setAttribute('aria-selected', view.statsButton.ariaSelected);
+    elements.localButton.tabIndex = view.localButton.tabIndex;
+    elements.onlineButton.tabIndex = view.onlineButton.tabIndex;
+    elements.statsButton.tabIndex = view.statsButton.tabIndex;
 }
 
 function applyOnlineTabView(elements, view) {
@@ -19,6 +22,8 @@ function applyOnlineTabView(elements, view) {
     elements.joinButton.className = view.joinButton.className;
     elements.createButton.setAttribute('aria-selected', view.createButton.ariaSelected);
     elements.joinButton.setAttribute('aria-selected', view.joinButton.ariaSelected);
+    elements.createButton.tabIndex = view.createButton.tabIndex;
+    elements.joinButton.tabIndex = view.joinButton.tabIndex;
 }
 
 function applyOnlineAvailabilityView(elements, view) {

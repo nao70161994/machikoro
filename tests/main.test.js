@@ -2637,7 +2637,7 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.ok(!titleScreen.includes('?? ローカル'));
     assert.ok(!pwaBanners.includes('??'));
     assert.ok(html.includes('data-ui-action="showRules">ルール</button>'));
-    assert.ok(html.includes('id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal">ローカル</button>'));
+    assert.ok(html.includes('id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal" tabindex="0">ローカル</button>'));
     assert.ok(html.includes('<span class="pwa-banner-icon">更新</span>'));
     assert.ok(html.includes('<span class="pwa-banner-icon">追加</span>'));
     assert.ok(html.includes('content="ダイスシティ'));

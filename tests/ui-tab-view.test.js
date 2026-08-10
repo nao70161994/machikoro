@@ -10,9 +10,9 @@ runTest('UI main tab viewは表示・class・aria・stats effect条件を純粋�
         localDisplay: 'flex',
         onlineDisplay: 'none',
         statsDisplay: 'none',
-        localButton: { className: 'tab-btn active', ariaSelected: 'true' },
-        onlineButton: { className: 'tab-btn ', ariaSelected: 'false' },
-        statsButton: { className: 'tab-btn ', ariaSelected: 'false' },
+        localButton: { className: 'tab-btn active', ariaSelected: 'true', tabIndex: 0 },
+        onlineButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
+        statsButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
         renderStats: false,
     });
     const stats = UiTabView.buildMainTabView('stats');
@@ -27,14 +27,35 @@ runTest('UI online tab viewはcreate/joinの既存表示契約を維持する', 
     assert.deepStrictEqual(UiTabView.buildOnlineTabView('join'), {
         createDisplay: 'none',
         joinDisplay: 'block',
-        createButton: { className: 'online-tab-btn ', ariaSelected: 'false' },
-        joinButton: { className: 'online-tab-btn active', ariaSelected: 'true' },
+        createButton: { className: 'online-tab-btn ', ariaSelected: 'false', tabIndex: -1 },
+        joinButton: { className: 'online-tab-btn active', ariaSelected: 'true', tabIndex: 0 },
     });
     assert.deepStrictEqual(UiTabView.buildOnlineTabView('unknown'), {
         createDisplay: 'none',
         joinDisplay: 'none',
-        createButton: { className: 'online-tab-btn ', ariaSelected: 'false' },
-        joinButton: { className: 'online-tab-btn ', ariaSelected: 'false' },
+        createButton: { className: 'online-tab-btn ', ariaSelected: 'false', tabIndex: -1 },
+        joinButton: { className: 'online-tab-btn ', ariaSelected: 'false', tabIndex: -1 },
+    });
+});
+
+runTest('UI tab keyboard planは左右を循環しHomeとEndへ移動する', () => {
+    assert.deepStrictEqual(UiTabView.buildTabKeyboardPlan('ArrowLeft', 0, 3), {
+        handled: true, targetIndex: 2,
+    });
+    assert.deepStrictEqual(UiTabView.buildTabKeyboardPlan('ArrowRight', 2, 3), {
+        handled: true, targetIndex: 0,
+    });
+    assert.deepStrictEqual(UiTabView.buildTabKeyboardPlan('Home', 2, 3), {
+        handled: true, targetIndex: 0,
+    });
+    assert.deepStrictEqual(UiTabView.buildTabKeyboardPlan('End', 0, 3), {
+        handled: true, targetIndex: 2,
+    });
+    assert.deepStrictEqual(UiTabView.buildTabKeyboardPlan('Enter', 0, 3), {
+        handled: false, targetIndex: -1,
+    });
+    assert.deepStrictEqual(UiTabView.buildTabKeyboardPlan('ArrowRight', -1, 3), {
+        handled: false, targetIndex: -1,
     });
 });
 

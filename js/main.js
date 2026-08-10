@@ -588,6 +588,7 @@ const mainUiEventRuntime = MainUiEventRuntime.createRuntime({
     formatCpuSpeedLabel,
     getWindow: () => typeof window !== 'undefined' ? window : null,
     resolveEffect: resolveMainUiEffect,
+    tabView: UiTabView,
 });
 
 function handleStaticUiClick(event) { return mainUiEventRuntime.handleStaticClick(event); }

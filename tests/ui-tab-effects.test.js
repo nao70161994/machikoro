@@ -17,6 +17,14 @@ function traceClass(elementValue, id, trace) {
     });
 }
 
+function traceTabIndex(elementValue, id, trace) {
+    let value = 0;
+    Object.defineProperty(elementValue, 'tabIndex', {
+        get() { return value; },
+        set(next) { trace.push([id, 'tabIndex', next]); value = next; },
+    });
+}
+
 runTest('UI main tab effectはcontent→class→ariaの既存順で適用する', () => {
     const trace = [];
     const elements = {
@@ -26,16 +34,20 @@ runTest('UI main tab effectはcontent→class→ariaの既存順で適用する'
     traceClass(elements.localButton, 'local-button', trace);
     traceClass(elements.onlineButton, 'online-button', trace);
     traceClass(elements.statsButton, 'stats-button', trace);
+    traceTabIndex(elements.localButton, 'local-button', trace);
+    traceTabIndex(elements.onlineButton, 'online-button', trace);
+    traceTabIndex(elements.statsButton, 'stats-button', trace);
     UiTabEffects.applyMainTabView(elements, {
         localDisplay: 'none', onlineDisplay: 'flex', statsDisplay: 'none',
-        localButton: { className: 'tab-btn ', ariaSelected: 'false' },
-        onlineButton: { className: 'tab-btn active', ariaSelected: 'true' },
-        statsButton: { className: 'tab-btn ', ariaSelected: 'false' },
+        localButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
+        onlineButton: { className: 'tab-btn active', ariaSelected: 'true', tabIndex: 0 },
+        statsButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
     });
     assert.deepStrictEqual(trace, [
         ['local-content', 'style.display', 'none'], ['online-content', 'style.display', 'flex'], ['stats-content', 'style.display', 'none'],
         ['local-button', 'className', 'tab-btn '], ['online-button', 'className', 'tab-btn active'], ['stats-button', 'className', 'tab-btn '],
         ['local-button', 'aria-selected', 'false'], ['online-button', 'aria-selected', 'true'], ['stats-button', 'aria-selected', 'false'],
+        ['local-button', 'tabIndex', -1], ['online-button', 'tabIndex', 0], ['stats-button', 'tabIndex', -1],
     ]);
 });
 
@@ -45,15 +57,18 @@ runTest('UI online tab effectは表示・class・ariaを既存順で適用する
     const joinButton = element('join-button', trace);
     traceClass(createButton, 'create-button', trace);
     traceClass(joinButton, 'join-button', trace);
+    traceTabIndex(createButton, 'create-button', trace);
+    traceTabIndex(joinButton, 'join-button', trace);
     UiTabEffects.applyOnlineTabView({ createContent: element('create-content', trace), joinContent: element('join-content', trace), createButton, joinButton }, {
         createDisplay: 'none', joinDisplay: 'block',
-        createButton: { className: 'online-tab-btn ', ariaSelected: 'false' },
-        joinButton: { className: 'online-tab-btn active', ariaSelected: 'true' },
+        createButton: { className: 'online-tab-btn ', ariaSelected: 'false', tabIndex: -1 },
+        joinButton: { className: 'online-tab-btn active', ariaSelected: 'true', tabIndex: 0 },
     });
     assert.deepStrictEqual(trace, [
         ['create-content', 'style.display', 'none'], ['join-content', 'style.display', 'block'],
         ['create-button', 'className', 'online-tab-btn '], ['join-button', 'className', 'online-tab-btn active'],
         ['create-button', 'aria-selected', 'false'], ['join-button', 'aria-selected', 'true'],
+        ['create-button', 'tabIndex', -1], ['join-button', 'tabIndex', 0],
     ]);
 });
 

@@ -56,9 +56,9 @@
             </div>
 
             <div class="tab-bar" role="tablist" aria-label="ゲームモード">
-                <button class="tab-btn active" data-ui-action="switchTab" data-tab="local" id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal">ローカル</button>
-                <button class="tab-btn" data-ui-action="switchTab" data-tab="online" id="tabOnline" role="tab" aria-selected="false" aria-controls="tabContentOnline">オンライン</button>
-                <button class="tab-btn" data-ui-action="switchTab" data-tab="stats" id="tabStats" role="tab" aria-selected="false" aria-controls="tabContentStats">統計</button>
+                <button class="tab-btn active" data-ui-action="switchTab" data-tab="local" id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal" tabindex="0">ローカル</button>
+                <button class="tab-btn" data-ui-action="switchTab" data-tab="online" id="tabOnline" role="tab" aria-selected="false" aria-controls="tabContentOnline" tabindex="-1">オンライン</button>
+                <button class="tab-btn" data-ui-action="switchTab" data-tab="stats" id="tabStats" role="tab" aria-selected="false" aria-controls="tabContentStats" tabindex="-1">統計</button>
             </div>
 
             <div id="tabContentLocal" class="tab-content" role="tabpanel" aria-labelledby="tabLocal">
@@ -105,8 +105,8 @@
                 </div>
 
                 <div class="online-tabs" role="tablist" aria-label="オンライン操作">
-                    <button class="online-tab-btn active" data-ui-action="switchOnlineTab" data-online-tab="create" id="onlineTabCreate" role="tab" aria-selected="true" aria-controls="onlineCreate">ルームを作る</button>
-                    <button class="online-tab-btn" data-ui-action="switchOnlineTab" data-online-tab="join" id="onlineTabJoin" role="tab" aria-selected="false" aria-controls="onlineJoin">ルームに参加</button>
+                    <button class="online-tab-btn active" data-ui-action="switchOnlineTab" data-online-tab="create" id="onlineTabCreate" role="tab" aria-selected="true" aria-controls="onlineCreate" tabindex="0">ルームを作る</button>
+                    <button class="online-tab-btn" data-ui-action="switchOnlineTab" data-online-tab="join" id="onlineTabJoin" role="tab" aria-selected="false" aria-controls="onlineJoin" tabindex="-1">ルームに参加</button>
                 </div>
 
                 <div id="onlineCreate" role="tabpanel" aria-labelledby="onlineTabCreate">

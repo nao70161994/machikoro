@@ -14,7 +14,9 @@ const MainUiEventRuntime = (() => {
         if (!dependencies.delegation || !dependencies.document ||
                 typeof dependencies.resolveEffect !== 'function' ||
                 typeof dependencies.formatCpuSpeedLabel !== 'function' ||
-                typeof dependencies.getWindow !== 'function') {
+                typeof dependencies.getWindow !== 'function' ||
+                !dependencies.tabView ||
+                typeof dependencies.tabView.buildTabKeyboardPlan !== 'function') {
             throw new TypeError('main UI event runtime dependencies are required');
         }
         const bindingController = dependencies.delegation.createBindingController();
@@ -97,8 +99,28 @@ const MainUiEventRuntime = (() => {
             ]), 'data-ui-change');
         }
         function handleStaticKeydown(event) {
-            if (!dependencies.delegation.isKeyboardActivationKey(event)) return false;
             const element = actionElement(event, 'data-ui-action');
+            if (element && element.getAttribute('role') === 'tab') {
+                const tablist = typeof element.closest === 'function'
+                    ? element.closest('[role="tablist"]')
+                    : null;
+                const tabs = tablist && typeof tablist.querySelectorAll === 'function'
+                    ? Array.from(tablist.querySelectorAll('[role="tab"]')).filter(tab => !tab.disabled)
+                    : [];
+                const plan = dependencies.tabView.buildTabKeyboardPlan(
+                    event && event.key,
+                    tabs.indexOf(element),
+                    tabs.length
+                );
+                if (plan.handled) {
+                    if (event && typeof event.preventDefault === 'function') event.preventDefault();
+                    const target = tabs[plan.targetIndex];
+                    if (target && typeof target.focus === 'function') target.focus();
+                    const command = dependencies.delegation.commandFromElement(target, 'static');
+                    return dependencies.delegation.executeCommand(command, staticEffects);
+                }
+            }
+            if (!dependencies.delegation.isKeyboardActivationKey(event)) return false;
             if (!dependencies.delegation.isEnabledRoleButton(element)) return false;
             return handleStaticClick(event);
         }

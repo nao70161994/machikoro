@@ -2,6 +2,7 @@
 const assert = require('assert');
 const MainUiEventRuntime = require('../js/mainUiEventRuntime');
 const UiEventDelegation = require('../js/uiEventDelegation');
+const UiTabView = require('../js/uiTabView');
 const { makeElement, runTest } = require('./helpers/test-utils');
 
 function createHarness() {
@@ -21,6 +22,7 @@ function createHarness() {
         formatCpuSpeedLabel: value => `speed:${value}`,
         getWindow: () => window,
         resolveEffect: name => name === 'pwaApplyUpdate' ? null : effects[name],
+        tabView: UiTabView,
     });
     const event = (dataset, extra = {}) => {
         const element = Object.assign(makeElement(), { dataset, disabled: false, closest: () => element }, extra);
@@ -60,6 +62,44 @@ runTest('main UI event runtimeはPWA apply effect不在時にreloadへfallback�
     const h = createHarness();
     h.runtime.handleStaticClick(h.event({ uiAction: 'pwaApplyUpdate' }));
     assert.deepStrictEqual(h.calls, [['preventDefault'], ['reload']]);
+});
+
+runTest('main UI event runtimeはmainとonline tabを矢印・Home・Endでfocusしてactivateする', () => {
+    const h = createHarness();
+    function tab(dataset, list) {
+        const value = makeElement({
+            dataset,
+            focus() { h.calls.push(['focus', dataset.tab || dataset.onlineTab]); },
+        });
+        value.setAttribute('role', 'tab');
+        value.closest = selector => selector === '[role="tablist"]' ? list : value;
+        return value;
+    }
+    const mainList = { querySelectorAll: () => mainTabs };
+    const mainTabs = [
+        tab({ uiAction: 'switchTab', tab: 'local' }, mainList),
+        tab({ uiAction: 'switchTab', tab: 'online' }, mainList),
+        tab({ uiAction: 'switchTab', tab: 'stats' }, mainList),
+    ];
+    const onlineList = { querySelectorAll: () => onlineTabs };
+    const onlineTabs = [
+        tab({ uiAction: 'switchOnlineTab', onlineTab: 'create' }, onlineList),
+        tab({ uiAction: 'switchOnlineTab', onlineTab: 'join' }, onlineList),
+    ];
+    const keyEvent = (target, key) => ({
+        target,
+        key,
+        preventDefault() { h.calls.push(['preventDefault']); },
+    });
+
+    assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent(mainTabs[0], 'ArrowLeft')), true);
+    assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent(mainTabs[2], 'Home')), true);
+    assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent(onlineTabs[0], 'End')), true);
+    assert.deepStrictEqual(h.calls, [
+        ['preventDefault'], ['focus', 'stats'], ['switchTab', 'stats'],
+        ['preventDefault'], ['focus', 'local'], ['switchTab', 'local'],
+        ['preventDefault'], ['focus', 'join'], ['switchOnlineTab', 'join'],
+    ]);
 });
 
 runTest('main UI event runtimeは必須依存欠落を初期化前に拒否する', () => {

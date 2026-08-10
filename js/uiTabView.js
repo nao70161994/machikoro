@@ -4,7 +4,22 @@ function buttonView(baseClass, selected) {
     return Object.freeze({
         className: `${baseClass} ${selected ? 'active' : ''}`,
         ariaSelected: selected ? 'true' : 'false',
+        tabIndex: selected ? 0 : -1,
     });
+}
+
+function buildTabKeyboardPlan(key, currentIndex, tabCount) {
+    const count = Number.isInteger(tabCount) ? tabCount : 0;
+    const index = Number.isInteger(currentIndex) ? currentIndex : -1;
+    if (count <= 0 || index < 0 || index >= count) {
+        return Object.freeze({ handled: false, targetIndex: -1 });
+    }
+    let targetIndex = -1;
+    if (key === 'ArrowLeft') targetIndex = (index - 1 + count) % count;
+    if (key === 'ArrowRight') targetIndex = (index + 1) % count;
+    if (key === 'Home') targetIndex = 0;
+    if (key === 'End') targetIndex = count - 1;
+    return Object.freeze({ handled: targetIndex >= 0, targetIndex });
 }
 
 function buildMainTabView(tab) {
@@ -36,7 +51,12 @@ function buildOnlineAvailabilityView(online) {
     });
 }
 
-const UiTabView = Object.freeze({ buildMainTabView, buildOnlineTabView, buildOnlineAvailabilityView });
+const UiTabView = Object.freeze({
+    buildMainTabView,
+    buildOnlineTabView,
+    buildOnlineAvailabilityView,
+    buildTabKeyboardPlan,
+});
 if (typeof module !== 'undefined' && module.exports) module.exports = UiTabView;
 if (typeof window !== 'undefined') window.UiTabView = UiTabView;
 if (typeof globalThis !== 'undefined') globalThis.UiTabView = UiTabView;
