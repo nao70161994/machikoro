@@ -43,6 +43,9 @@ jobs:
       - name: PWA test gate
         run: npm run test:pwa
 
+      - name: Online sync and reconnect E2E gate
+        run: npm run test:online
+
       - name: Release pseudo E2E gate
         run: npm run test:release
 

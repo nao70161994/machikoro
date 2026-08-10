@@ -2850,6 +2850,15 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(workflow.includes('if-no-files-found: error'));
 });
 
+runTest('PR release workflowはオンライン同期と再接続E2Eを必須gateにする', () => {
+    const workflow = fs.readFileSync(
+        path.join(__dirname, '..', '.github/workflows/release-test.yml'),
+        'utf8'
+    );
+    assert.ok(workflow.includes('name: Online sync and reconnect E2E gate'));
+    assert.ok(workflow.includes('run: npm run test:online'));
+});
+
 runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ', () => {
     const pages = [
         {
