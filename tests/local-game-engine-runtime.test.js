@@ -70,7 +70,12 @@ function createHarness(options = {}) {
             }),
         },
         scheduleCpu: () => calls.push(['scheduleCpu']),
-        sendAction: (action, data) => { calls.push(['send', action, data]); return 'sent'; },
+        sendAction: (action, data) => {
+            calls.push(['send', action, data]);
+            return Object.prototype.hasOwnProperty.call(options, 'sendResult')
+                ? options.sendResult
+                : 'sent';
+        },
         shopStock: {},
         snapshot: { serializeGameState: (value, stock, metadata) => ({ game: value, stock: { ...stock }, undoState: metadata.undoState }) },
         stationName: '駅',
@@ -95,6 +100,28 @@ runTest('local game engine runtimeはonline actionを送信だけで終える', 
     assert.strictEqual(h.runtime.runHuman('rollDice', { forceDice: 2 }, () => { fallback++; }), 'sent');
     assert.strictEqual(fallback, 0);
     assert.deepStrictEqual(h.calls.map(call => call[0]), ['checkpoint', 'send', 'checkpoint']);
+});
+
+for (const sendResult of [true, false]) {
+    runTest(`local game engine runtimeはonline CPU送信${sendResult ? '成功' : '拒否'}を正確に返す`, () => {
+        const h = createHarness({ online: true, sendResult });
+
+        assert.strictEqual(h.runtime.runCpu('resolveIT', { doSave: true }, () => true), sendResult);
+        assert.deepStrictEqual(h.calls.map(call => call[0]), ['send', 'checkpoint']);
+        assert.deepStrictEqual(h.calls[1], [
+            'checkpoint',
+            'cpu-action-online-send',
+            { action: 'resolveIT', sent: sendResult },
+        ]);
+        assert.strictEqual(h.calls.some(call => call[0] === 'render'), false);
+        assert.strictEqual(h.calls.some(call => call[0] === 'scheduleCpu'), false);
+    });
+}
+
+runTest('local game engine runtimeはonline CPUの非boolean送信結果をfail closedにする', () => {
+    const h = createHarness({ online: true, sendResult: 'sent' });
+    assert.strictEqual(h.runtime.runCpu('nextTurn', {}, () => true), false);
+    assert.strictEqual(h.calls[1][2].sent, false);
 });
 
 runTest('local game engine runtimeはprepared authority成功時にhuman fallbackを実行しない', () => {

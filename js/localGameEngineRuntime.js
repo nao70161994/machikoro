@@ -131,8 +131,12 @@ const LocalGameEngineRuntime = (() => {
             const proposal = dependencies.actionProposal.create(action, data);
             if (!proposal) return false;
             if (dependencies.getOnlineState().isOnlineGame) {
-                dependencies.sendAction(proposal.action, proposal.data);
-                return;
+                const sent = dependencies.sendAction(proposal.action, proposal.data) === true;
+                dependencies.checkpoint('cpu-action-online-send', {
+                    action: proposal.action,
+                    sent,
+                });
+                return sent;
             }
             const prepared = prepare(proposal.action, proposal.data);
             const direct = adoptPrepared(prepared);
