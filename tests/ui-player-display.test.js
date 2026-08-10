@@ -5,7 +5,7 @@ assert.strictEqual(UiPlayerDisplay.difficultyLabel('weak'), '弱');
 assert.strictEqual(UiPlayerDisplay.difficultyLabel('normal'), '普');
 assert.strictEqual(UiPlayerDisplay.difficultyLabel('strong'), '強');
 assert.strictEqual(UiPlayerDisplay.difficultyLabel('rl'), '深');
-assert.strictEqual(UiPlayerDisplay.difficultyLabel('expert'), 'AI');
+assert.strictEqual(UiPlayerDisplay.difficultyLabel('expert'), '最強');
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('expert'), 'expert');
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('unknown'), 'normal');
 assert.deepStrictEqual(UiPlayerDisplay.buildCoinAnimationView(3), {
@@ -47,6 +47,34 @@ assert.deepStrictEqual(UiPlayerDisplay.resolvePlayerSetting({
     type: 'cpu',
     difficulty: 'rl',
     name: 'CPU1',
+    missing: false,
+});
+
+const originalSettings = [
+    { type: 'human', difficulty: 'normal', name: 'Alice' },
+    { type: 'cpu', difficulty: 'strong', name: 'CPU1' },
+];
+const shuffledCpuPlayers = [{ difficulty: 'strong' }, null];
+assert.deepStrictEqual(UiPlayerDisplay.resolvePlayerSetting({
+    playerSettings: originalSettings,
+    cpuPlayers: shuffledCpuPlayers,
+    index: 0,
+    player: { name: 'CPU1' },
+}), {
+    type: 'cpu',
+    difficulty: 'strong',
+    name: 'CPU1',
+    missing: false,
+});
+assert.deepStrictEqual(UiPlayerDisplay.resolvePlayerSetting({
+    playerSettings: originalSettings,
+    cpuPlayers: shuffledCpuPlayers,
+    index: 1,
+    player: { name: 'Alice' },
+}), {
+    type: 'human',
+    difficulty: 'human',
+    name: 'Alice',
     missing: false,
 });
 

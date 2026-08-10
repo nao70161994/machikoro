@@ -8,7 +8,7 @@ const UiPlayerDisplay = (() => {
         if (difficulty === 'normal') return '普';
         if (difficulty === 'strong') return '強';
         if (difficulty === 'rl') return '深';
-        return 'AI';
+        return '最強';
     }
 
     function normalizeCpuDifficulty(value) {
@@ -22,7 +22,10 @@ const UiPlayerDisplay = (() => {
         const player = options.player;
         const setting = settings[index];
         const cpu = cpus[index] || null;
-        const inferredCpu = !!cpu || setting?.type === 'cpu' || player?.isCPU === true;
+        const hasRuntimeCpuSlot = Number.isInteger(index) && index >= 0 && index < cpus.length;
+        const inferredCpu = hasRuntimeCpuSlot
+            ? !!cpu
+            : setting?.type === 'cpu' || player?.isCPU === true;
         if (setting && (!inferredCpu || setting.difficulty || cpu?.difficulty)) {
             return {
                 type: inferredCpu ? 'cpu' : 'human',
