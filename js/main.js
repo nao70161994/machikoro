@@ -52,6 +52,11 @@ const cpuTurnSchedulerRuntime = CpuTurnSchedulerRuntime.createRuntime({
     isReconnectBlocked: () => isMainOnlineReconnectInputBlocked(),
     now: () => Date.now(),
     policy: CpuSchedulerState,
+    recoverBuildError({ game: failedGame }) {
+        if (!failedGame || mainGameRuntimeSnapshot().game !== failedGame ||
+                failedGame.phase !== GAME_PHASES.BUILD || failedGame.builtThisTurn) return false;
+        return cpuDo(MAIN_ACTIONS.NEXT_TURN, {}, () => failedGame.nextTurn()) === true;
+    },
     reportSlowStep(details) {
         if (typeof reportClientError !== 'function') return false;
         return reportClientError({

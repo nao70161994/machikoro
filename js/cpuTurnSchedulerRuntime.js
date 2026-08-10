@@ -5,7 +5,7 @@ const CpuTurnSchedulerRuntime = (() => {
         const required = [
             'checkpoint', 'getActionFlightState', 'getCpuSpeed', 'getGameState',
             'getOnlineState', 'getPhaseHandlers', 'isReconnectBlocked', 'now',
-            'setTimeout', 'unlockHumanTurn',
+            'recoverBuildError', 'setTimeout', 'unlockHumanTurn',
         ];
         for (const name of required) {
             if (typeof dependencies[name] !== 'function') {
@@ -244,8 +244,24 @@ const CpuTurnSchedulerRuntime = (() => {
                         });
                         if (dependencies.getOnlineState().isOnlineGame) return;
                         if (step.name === 'build' && stepGame.phase === dependencies.gamePhases.BUILD && !stepGame.builtThisTurn) {
-                            stepGame.nextTurn();
-                            runNextStep();
+                            let recovered = false;
+                            try {
+                                recovered = dependencies.recoverBuildError({
+                                    cpu,
+                                    error,
+                                    game: stepGame,
+                                    stepDetails,
+                                }) === true;
+                            } catch (recoveryError) {
+                                dependencies.checkpoint('scheduleCPU-build-error-recovery-error', {
+                                    ...stepDetails,
+                                    message: recoveryError && recoveryError.message || String(recoveryError),
+                                });
+                            }
+                            dependencies.checkpoint('scheduleCPU-build-error-recovery', {
+                                ...stepDetails,
+                                recovered,
+                            });
                         }
                         return;
                     }

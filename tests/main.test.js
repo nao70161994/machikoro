@@ -61,6 +61,7 @@ function loadMainRuntime(options = {}) {
         loadSettings: 0,
         drawCitySkyline: 0,
         resumeGame: 0,
+        render: 0,
     };
     const { storage: localStorageData, localStorage } = createStorage();
     if (options.pwaInstallDismissed) {
@@ -136,7 +137,7 @@ function loadMainRuntime(options = {}) {
         syncTutorialControls() {},
         onToggleTutorial(enabled) { localStorage.setItem('tutorialEnabled', enabled ? 'true' : 'false'); },
         onChangeTutorialLevel(level) { localStorage.setItem('tutorialLevel', level); },
-        render() {},
+        render() { counters.render++; },
         switchTab() {},
         scheduleCPU() {},
         saveSettings() {},
@@ -1106,6 +1107,27 @@ runTest('main local CPU actionはcanonical proposalを共有Game Engineへ適用
     assert.strictEqual(calls[0].game, game);
     assert.strictEqual(calls[0].action, 'nextTurn');
     assert.strictEqual(JSON.stringify(calls[0].data), '{}');
+});
+
+runTest('main local CPU build例外はcanonical nextTurn・render・human unlock経路で復旧する', () => {
+    const rt = loadMainRuntime();
+    const game = new rt.GameManager(2);
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = false;
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{
+        difficulty: 'strong',
+        chooseBuildAction() { throw new Error('build decision failed'); },
+        executeBuildAction() { throw new Error('must not execute'); },
+    }, null]);
+    const beforeRender = rt.__test.counters.render;
+
+    rt.__test.scheduleCPU();
+    rt.__test.flushTimeouts();
+
+    assert.strictEqual(game.currentPlayerIndex, 1);
+    assert.ok(rt.__test.counters.render >= beforeRender + 1);
+    assert.strictEqual(rt.__test.getCpuSchedulerHealth().blockedReason, 'human-turn');
 });
 
 runTest('main scheduleCPU は不正なTV targetを合法な相手へfallbackして解決する', () => {

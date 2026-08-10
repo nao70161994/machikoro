@@ -28,6 +28,13 @@ function createHarness(options = {}) {
         isReconnectBlocked: () => false,
         now: () => now,
         policy: CpuSchedulerState,
+        recoverBuildError: details => {
+            calls.push(['recoverBuildError', details]);
+            if (typeof options.recoverBuildError === 'function') {
+                return options.recoverBuildError(details);
+            }
+            return options.recoverBuildResult === true;
+        },
         reportSlowStep: options.reportSlowStep || (details => calls.push(['slow-report', details])),
         setTimeout: (fn, delay) => { timers.push({ fn, delay }); return timers.length; },
         slowStepThresholdMs: options.slowStepThresholdMs,
@@ -174,6 +181,59 @@ runTest('CPU turn scheduler runtimeはonline hostのstep例外を再予約しな
 
     assert.strictEqual(harness.timers.length, 0);
     assert.ok(harness.calls.some(call => call[1] === 'scheduleCPU-step-error'));
+});
+
+for (const online of [false, true]) {
+    runTest(`CPU turn scheduler runtimeは${online ? 'online' : 'local'} build例外を${online ? '自動復旧しない' : '注入action境界だけで復旧する'}`, () => {
+        const harness = createHarness({
+            online: online
+                ? { isOnlineGame: true, isRoomHost: true, socket: { connected: true } }
+                : undefined,
+            recoverBuildResult: true,
+            handlers: [{ name: 'build', run() { throw new Error('build failed'); } }],
+        });
+        harness.game.phase = 'build';
+        harness.runtime.schedule();
+        harness.timers.shift().fn();
+
+        assert.strictEqual(
+            harness.calls.filter(call => call[0] === 'recoverBuildError').length,
+            online ? 0 : 1
+        );
+        assert.strictEqual(harness.calls.some(call => call[0] === 'nextTurn'), false);
+        assert.strictEqual(
+            harness.calls.some(call => call[1] === 'scheduleCPU-build-error-recovery'),
+            !online
+        );
+    });
+}
+
+runTest('CPU turn scheduler runtimeはbuild例外復旧の例外を隔離して停止する', () => {
+    const harness = createHarness({
+        recoverBuildError() { throw new Error('recovery failed'); },
+        handlers: [{ name: 'build', run() { throw new Error('build failed'); } }],
+    });
+    harness.game.phase = 'build';
+    harness.runtime.schedule();
+    harness.timers.shift().fn();
+    assert.ok(harness.calls.some(call => call[1] === 'scheduleCPU-build-error-recovery-error'));
+    const result = harness.calls.find(call => call[1] === 'scheduleCPU-build-error-recovery')[2];
+    assert.strictEqual(result.recovered, false);
+    assert.strictEqual(harness.timers.length, 0);
+});
+
+runTest('CPU turn scheduler runtimeは拒否されたbuild例外復旧を成功扱いしない', () => {
+    const harness = createHarness({
+        recoverBuildResult: false,
+        handlers: [{ name: 'build', run() { throw new Error('build failed'); } }],
+    });
+    harness.game.phase = 'build';
+    harness.runtime.schedule();
+    harness.timers.shift().fn();
+
+    const result = harness.calls.find(call => call[1] === 'scheduleCPU-build-error-recovery')[2];
+    assert.strictEqual(result.recovered, false);
+    assert.strictEqual(harness.timers.length, 0);
 });
 
 runTest('CPU turn scheduler runtimeはstep実行中だけexecution leaseをhealthへ公開する', () => {
