@@ -447,6 +447,7 @@ const pageActivationRuntime = PageActivationRuntime.createRuntime({
     getWindow: () => typeof window !== 'undefined' ? window : null,
     now: () => Date.now(),
     pagePolicy: PageActivationPolicy,
+    resetWatchdog: () => resetFreezeWatchdogAfterPageActivation(),
     resumeOnline() {
         if (typeof resumeOnlineReconnectAfterPageActivation === 'function') {
             resumeOnlineReconnectAfterPageActivation();

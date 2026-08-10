@@ -595,6 +595,10 @@ const appShellWatchdogRuntime = UiWatchdogRuntime.createRuntime({
     hasActiveBlockingModal,
     hasUsablePendingAction,
     hasUsablePrimaryAction,
+    isPageHidden: () => {
+        const documentRef = appShellComposition.resolve('document');
+        return !!(documentRef && documentRef.hidden);
+    },
     monitor: freezeWatchdogMonitor,
     monitorActions: UiWatchdogMonitor.ACTIONS,
     now: () => Date.now(),
@@ -665,6 +669,10 @@ function recoverFreezeKind(freezeKind, snapshot) {
 
 function checkFreezeWatchdog() {
     return appShellWatchdogRuntime.check();
+}
+
+function resetFreezeWatchdogAfterPageActivation() {
+    return appShellWatchdogRuntime.reset();
 }
 
 function startFreezeWatchdog() {

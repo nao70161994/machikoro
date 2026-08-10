@@ -48,9 +48,11 @@ function createHarness(overrides = {}) {
         hasActiveBlockingModal: () => false,
         hasUsablePendingAction: () => false,
         hasUsablePrimaryAction: () => false,
+        isPageHidden: () => false,
         monitor: {
             observeProgress: () => ({ shouldClassify: true, stagnantMs: 5000 }),
             decideReport: () => 'report-and-recover',
+            reset: () => calls.push(['reset']),
         },
         monitorActions: {
             RECOVER: 'recover',
@@ -90,10 +92,23 @@ runTest('watchdog runtimeは重複report抑止時も回復だけを実行する'
         monitor: {
             observeProgress: () => ({ shouldClassify: true, stagnantMs: 6500 }),
             decideReport: () => 'recover',
+            reset: () => calls.push(['reset']),
         },
     });
     runtime.check();
     assert.deepStrictEqual(calls.map(call => call[0]), ['recover']);
+});
+
+runTest('watchdog runtimeはbackground中の経過を停止時間に数えない', () => {
+    const { calls, runtime } = createHarness({ isPageHidden: () => true });
+    assert.strictEqual(runtime.check(), false);
+    assert.deepStrictEqual(calls, [['reset']]);
+});
+
+runTest('watchdog runtimeはpage復帰時に観測基準を明示resetできる', () => {
+    const { calls, runtime } = createHarness();
+    runtime.reset();
+    assert.deepStrictEqual(calls, [['reset']]);
 });
 
 runTest('watchdog runtimeはACK timeoutと診断helperを注入境界で維持する', () => {

@@ -14,6 +14,7 @@ const UiWatchdogRuntime = (() => {
             hasActiveBlockingModal,
             hasUsablePendingAction,
             hasUsablePrimaryAction,
+            isPageHidden,
             monitor,
             monitorActions,
             now,
@@ -38,6 +39,7 @@ const UiWatchdogRuntime = (() => {
             hasActiveBlockingModal,
             hasUsablePendingAction,
             hasUsablePrimaryAction,
+            isPageHidden,
             now,
             recover,
             report,
@@ -137,19 +139,23 @@ const UiWatchdogRuntime = (() => {
         }
 
         function check() {
+            if (isPageHidden()) {
+                monitor.reset();
+                return false;
+            }
             const observedAt = now();
             const snapshot = buildSnapshot('freeze-watchdog');
             const progress = monitor.observeProgress(stateKey(snapshot), observedAt);
-            if (!progress.shouldClassify) return;
+            if (!progress.shouldClassify) return false;
             const freezeKind = classify(snapshot);
-            if (!freezeKind) return;
+            if (!freezeKind) return false;
             const reportKey = freezeKind + '|' + issueDedupeSignature(snapshot);
             const action = monitor.decideReport(freezeKind, reportKey, observedAt);
             if (action === monitorActions.RECOVER) {
                 recover(snapshot);
-                return;
+                return true;
             }
-            if (action !== monitorActions.REPORT_AND_RECOVER) return;
+            if (action !== monitorActions.REPORT_AND_RECOVER) return false;
             reporting.execute({
                 freezeKind,
                 stagnantMs: progress.stagnantMs,
@@ -163,6 +169,11 @@ const UiWatchdogRuntime = (() => {
                 buildStack: buildReportStack,
                 report,
             });
+            return true;
+        }
+
+        function reset() {
+            monitor.reset();
         }
 
         return Object.freeze({
@@ -180,6 +191,7 @@ const UiWatchdogRuntime = (() => {
             payloadStorageJson,
             buildReportStack,
             check,
+            reset,
         });
     }
 

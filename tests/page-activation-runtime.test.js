@@ -26,6 +26,7 @@ function createHarness() {
         getWindow: () => window,
         now: () => now,
         pagePolicy: PageActivationPolicy,
+        resetWatchdog: () => calls.push(['resetWatchdog']),
         resumeOnline: () => calls.push(['resumeOnline']),
         resumeRlLoads: () => calls.push(['resumeRl']),
         scheduleCpuTurn: reason => { calls.push(['scheduleCpu', reason]); health = { ...health, stepScheduled: true, scheduledUntil: now + 1000 }; },
@@ -59,12 +60,12 @@ runTest('page activation runtimeはRL・human・online・CPU・checkpoint順で�
     h.runtime.setHiddenAt(50);
     h.runtime.resume('pageshow-resume');
     assert.deepStrictEqual(h.calls.map(call => call[0]), [
-        'resumeRl', 'resumeOnline', 'cancelCpu', 'scheduleCpu', 'checkpoint',
+        'resetWatchdog', 'resumeRl', 'resumeOnline', 'cancelCpu', 'scheduleCpu', 'checkpoint',
     ]);
-    assert.deepStrictEqual(h.calls[2], ['cancelCpu', 'pageshow-resume-expire-stale']);
-    assert.strictEqual(h.calls[4][1], 'page-activation-resume');
-    assert.strictEqual(h.calls[4][2].hiddenForMs, 50);
-    assert.strictEqual(h.calls[4][2].cpuOutcome, 'rescheduled');
+    assert.deepStrictEqual(h.calls[3], ['cancelCpu', 'pageshow-resume-expire-stale']);
+    assert.strictEqual(h.calls[5][1], 'page-activation-resume');
+    assert.strictEqual(h.calls[5][2].hiddenForMs, 50);
+    assert.strictEqual(h.calls[5][2].cpuOutcome, 'rescheduled');
 });
 
 runTest('page activation runtimeはlistenerを一度だけbindしhidden時はCPUを再予約しない', () => {
