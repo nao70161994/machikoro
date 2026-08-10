@@ -1,20 +1,28 @@
 'use strict';
 
 const UiGameStatusEffects = (() => {
-    function createTurnStateController(initialPreviousPlayerIndex = -1) {
+    function createTurnStateController(initialPreviousPlayerIndex = -1,
+            initialPreviousTurnCount = -1, initialPreviousPhase = '') {
         let previousPlayerIndex = initialPreviousPlayerIndex;
+        let previousTurnCount = initialPreviousTurnCount;
+        let previousPhase = initialPreviousPhase;
 
         function snapshot() {
-            return Object.freeze({ previousPlayerIndex });
+            return Object.freeze({ previousPlayerIndex, previousTurnCount, previousPhase });
         }
 
-        function set(nextPreviousPlayerIndex) {
+        function set(nextPreviousPlayerIndex, nextPreviousTurnCount = previousTurnCount,
+                nextPreviousPhase = previousPhase) {
             previousPlayerIndex = nextPreviousPlayerIndex;
+            previousTurnCount = nextPreviousTurnCount;
+            previousPhase = nextPreviousPhase;
             return snapshot();
         }
 
         function reset() {
             previousPlayerIndex = -1;
+            previousTurnCount = -1;
+            previousPhase = '';
             return snapshot();
         }
 
@@ -58,7 +66,11 @@ const UiGameStatusEffects = (() => {
                 view.turnTransition.playerIndex
             );
         }
-        effects.setPreviousPlayerIndex(view.turnTransition.nextPreviousPlayerIndex);
+        effects.setPreviousPlayerIndex(
+            view.turnTransition.nextPreviousPlayerIndex,
+            view.turnTransition.nextPreviousTurnCount,
+            view.turnTransition.nextPreviousPhase
+        );
         effects.setRollDisabled(view.rollButton.disabled);
         effects.setSkipButton(view.skipButton);
         effects.hideReroll();

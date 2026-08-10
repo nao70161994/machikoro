@@ -281,13 +281,17 @@ function renderActiveGameState(current) {
     const onlineState = uiOnlineRuntimeSnapshot();
     const currentGame = gameState.game;
     const isCPUTurn = !!currentCpuPlayerAt(currentGame.currentPlayerIndex);
+    const previousTurnState = activeGameTurnStateController.snapshot();
     const view = UiGameStatusView.buildActiveGameView({
         current,
         players: currentGame.players,
         phase: currentGame.phase,
         rollPhase: GAME_PHASES.ROLL,
         currentPlayerIndex: currentGame.currentPlayerIndex,
-        previousPlayerIndex: activeGameTurnStateController.snapshot().previousPlayerIndex,
+        previousPlayerIndex: previousTurnState.previousPlayerIndex,
+        currentTurnCount: currentGame.turnCount,
+        previousTurnCount: previousTurnState.previousTurnCount,
+        previousPhase: previousTurnState.previousPhase,
         isReplaying: onlineState.isReplaying,
         currentName: current.name,
         isCpuTurn: isCPUTurn,
@@ -304,11 +308,11 @@ function renderActiveGameState(current) {
         setStatusText(text) {
             document.getElementById("status").textContent = text;
         },
-        announceTurn(name, isCpuTurn) {
-            showTurnAnnouncer(name, isCpuTurn);
+        announceTurn(name, isCpuTurn, playerIndex) {
+            showTurnAnnouncer(name, isCpuTurn, playerIndex);
         },
-        setPreviousPlayerIndex(playerIndex) {
-            activeGameTurnStateController.set(playerIndex);
+        setPreviousPlayerIndex(playerIndex, turnCount, phase) {
+            activeGameTurnStateController.set(playerIndex, turnCount, phase);
         },
         setRollDisabled(disabled) {
             document.getElementById("btnRoll").disabled = disabled;

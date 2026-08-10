@@ -989,6 +989,77 @@ runTest('renderActiveGameState は CPUターンと他人オンラインターン
     assert.strictEqual(elements.btnSkip.disabled, true);
 });
 
+runTest('renderActiveGameState は通常手番と同一player追加ターンを席番号付きで一度だけ通知する', () => {
+    const { context, elements } = loadUiRuntime();
+    const makePlayer = name => ({
+        name,
+        coins: 5,
+        cards: [],
+        landmarks: { 駅: false },
+        countCardIncludingDormant() { return 0; },
+        isDormant() { return false; },
+    });
+    const players = [makePlayer('Alice'), makePlayer('Bob')];
+    context.GameManager = { allowedActionsFor() { return new Set(); } };
+    context.game = {
+        phase: 'roll',
+        currentPlayerIndex: 0,
+        turnCount: 1,
+        builtThisTurn: false,
+        pendingRenovation: 0,
+        pendingTV: 0,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingIT: false,
+        lastDice1: 0,
+        lastDice2: 0,
+        lastDiceResult: 0,
+        log: [],
+        players,
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+    };
+    context.cpuPlayers = [null, null];
+    const turnStatus = context.document.getElementById('turnStatusAnnouncer');
+
+    context.renderActiveGameState(players[0]);
+    assert.strictEqual(turnStatus.textContent, '');
+
+    context.game.phase = 'build';
+    context.renderActiveGameState(players[0]);
+    context.game.phase = 'roll';
+    context.renderActiveGameState(players[0]);
+    assert.strictEqual(
+        turnStatus.textContent,
+        'プレイヤー1、人間、Alice のターン'
+    );
+
+    turnStatus.textContent = 'same-turn-marker';
+    context.renderActiveGameState(players[0]);
+    assert.strictEqual(turnStatus.textContent, 'same-turn-marker');
+
+    context.game.phase = 'build';
+    context.renderActiveGameState(players[0]);
+    context.game.phase = 'roll';
+    context.game.currentPlayerIndex = 1;
+    context.game.turnCount = 2;
+    context.renderActiveGameState(players[1]);
+    assert.strictEqual(
+        turnStatus.textContent,
+        'プレイヤー2、人間、Bob のターン'
+    );
+
+    turnStatus.textContent = 'replay-marker';
+    context.game.phase = 'build';
+    context.renderActiveGameState(players[1]);
+    context.isReplaying = true;
+    context.game.phase = 'roll';
+    context.game.currentPlayerIndex = 0;
+    context.game.turnCount = 3;
+    context.renderActiveGameState(players[0]);
+    assert.strictEqual(turnStatus.textContent, 'replay-marker');
+});
+
 runTest('renderBuildMenu は buildCard/buildLandmark/undoBuild を allowedActions と online gate に同期する', () => {
     const { context, elements } = loadUiRuntime();
     const player = {

@@ -13,6 +13,8 @@ function makeView(announce = true) {
             isCpuTurn: true,
             playerIndex: 2,
             nextPreviousPlayerIndex: 2,
+            nextPreviousTurnCount: 7,
+            nextPreviousPhase: 'roll',
         },
         rollButton: { disabled: false },
         skipButton: { disabled: true, textContent: 'skip' },
@@ -43,7 +45,7 @@ runTest('active game effect境界は既存描画順と値を維持する', () =>
     assert.deepStrictEqual(calls, [
         ['setStatusText', 'status'],
         ['announceTurn', 'Alice', true, 2],
-        ['setPreviousPlayerIndex', 2],
+        ['setPreviousPlayerIndex', 2, 7, 'roll'],
         ['setRollDisabled', false],
         ['setSkipButton', view.skipButton],
         ['hideReroll'],
@@ -80,7 +82,7 @@ runTest('active game effect境界はturn継続中にannouncerだけを省略す�
     assert.strictEqual(calls.some(call => call[0] === 'announceTurn'), false);
     assert.deepStrictEqual(calls.slice(0, 3), [
         ['setStatusText', 'status'],
-        ['setPreviousPlayerIndex', 2],
+        ['setPreviousPlayerIndex', 2, 7, 'roll'],
         ['setRollDisabled', false],
     ]);
 });
@@ -98,15 +100,25 @@ runTest('active game effect境界は不完全な配線を副作用前に拒否�
     assert.ok(Object.isFrozen(UiGameStatusEffects.REQUIRED_EFFECTS));
 });
 
-runTest('active game turn state controllerは前回player indexを一箇所で所有する', () => {
+runTest('active game turn state controllerは前回のturn identityを一箇所で所有する', () => {
     const controller = UiGameStatusEffects.createTurnStateController();
-    assert.deepStrictEqual(controller.snapshot(), { previousPlayerIndex: -1 });
-    assert.deepStrictEqual(controller.set(3), { previousPlayerIndex: 3 });
-    assert.deepStrictEqual(controller.snapshot(), { previousPlayerIndex: 3 });
-    assert.deepStrictEqual(controller.reset(), { previousPlayerIndex: -1 });
+    assert.deepStrictEqual(controller.snapshot(), {
+        previousPlayerIndex: -1, previousTurnCount: -1, previousPhase: '',
+    });
+    assert.deepStrictEqual(controller.set(3), {
+        previousPlayerIndex: 3, previousTurnCount: -1, previousPhase: '',
+    });
+    assert.deepStrictEqual(controller.set(3, 8, 'build'), {
+        previousPlayerIndex: 3, previousTurnCount: 8, previousPhase: 'build',
+    });
+    assert.deepStrictEqual(controller.reset(), {
+        previousPlayerIndex: -1, previousTurnCount: -1, previousPhase: '',
+    });
     assert.ok(Object.isFrozen(controller));
     assert.ok(Object.isFrozen(controller.snapshot()));
 
-    const restored = UiGameStatusEffects.createTurnStateController(2);
-    assert.deepStrictEqual(restored.snapshot(), { previousPlayerIndex: 2 });
+    const restored = UiGameStatusEffects.createTurnStateController(2, 7, 'pending');
+    assert.deepStrictEqual(restored.snapshot(), {
+        previousPlayerIndex: 2, previousTurnCount: 7, previousPhase: 'pending',
+    });
 });

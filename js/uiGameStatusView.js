@@ -26,17 +26,31 @@ function buildTurnTransitionView({
     rollPhase,
     currentPlayerIndex,
     previousPlayerIndex,
+    currentTurnCount,
+    previousTurnCount,
+    previousPhase,
     isReplaying,
     currentName,
     isCpuTurn,
 }) {
-    const changed = phase === rollPhase && currentPlayerIndex !== previousPlayerIndex;
+    const isRollPhase = phase === rollPhase;
+    const indexChanged = currentPlayerIndex !== previousPlayerIndex;
+    const hasTurnCounts = Number.isInteger(currentTurnCount) &&
+        Number.isInteger(previousTurnCount) && previousTurnCount >= 0;
+    const turnCountChanged = hasTurnCounts && currentTurnCount !== previousTurnCount;
+    const enteredRollPhase = isRollPhase && typeof previousPhase === 'string' &&
+        previousPhase !== '' && previousPhase !== rollPhase;
+    const changed = isRollPhase && (indexChanged || turnCountChanged || enteredRollPhase);
     return Object.freeze({
         announce: changed && previousPlayerIndex !== -1 && isReplaying !== true,
         name: currentName,
         isCpuTurn: isCpuTurn === true,
         playerIndex: currentPlayerIndex,
         nextPreviousPlayerIndex: changed ? currentPlayerIndex : previousPlayerIndex,
+        nextPreviousTurnCount: isRollPhase && Number.isInteger(currentTurnCount)
+            ? currentTurnCount
+            : previousTurnCount,
+        nextPreviousPhase: phase,
     });
 }
 

@@ -44,6 +44,9 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
         rollPhase: 'roll',
         currentPlayerIndex: 0,
         previousPlayerIndex: 1,
+        currentTurnCount: 4,
+        previousTurnCount: 3,
+        previousPhase: 'build',
         isReplaying: false,
         currentName: 'Alice',
         isCpuTurn: false,
@@ -69,6 +72,8 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
         isCpuTurn: false,
         playerIndex: 0,
         nextPreviousPlayerIndex: 0,
+        nextPreviousTurnCount: 4,
+        nextPreviousPhase: 'roll',
     });
     assert.deepStrictEqual(view.coinChanges, [{ playerIndex: 0, diff: 2 }]);
     assert.deepStrictEqual(view.nextCoins, [7, 3]);
@@ -84,6 +89,9 @@ runTest('UI turn transitionは初回とreplayで告知せず既存index更新を
         rollPhase: 'roll',
         currentPlayerIndex: 2,
         previousPlayerIndex: -1,
+        currentTurnCount: 0,
+        previousTurnCount: -1,
+        previousPhase: '',
         isReplaying: false,
         currentName: 'Carol',
         isCpuTurn: true,
@@ -93,14 +101,62 @@ runTest('UI turn transitionは初回とreplayで告知せず既存index更新を
         isCpuTurn: true,
         playerIndex: 2,
         nextPreviousPlayerIndex: 2,
+        nextPreviousTurnCount: 0,
+        nextPreviousPhase: 'roll',
     });
     assert.strictEqual(UiGameStatusView.buildTurnTransitionView({
         phase: 'build',
         rollPhase: 'roll',
         currentPlayerIndex: 2,
         previousPlayerIndex: 1,
+        currentTurnCount: 2,
+        previousTurnCount: 1,
+        previousPhase: 'roll',
         isReplaying: false,
         currentName: 'Carol',
         isCpuTurn: true,
     }).nextPreviousPlayerIndex, 1);
+});
+
+runTest('UI turn transitionは同じplayerのroll再入を追加ターンとして一度だけ告知する', () => {
+    const extraTurn = UiGameStatusView.buildTurnTransitionView({
+        phase: 'roll',
+        rollPhase: 'roll',
+        currentPlayerIndex: 0,
+        previousPlayerIndex: 0,
+        currentTurnCount: 3,
+        previousTurnCount: 3,
+        previousPhase: 'build',
+        isReplaying: false,
+        currentName: 'Alice',
+        isCpuTurn: false,
+    });
+    assert.strictEqual(extraTurn.announce, true);
+    assert.strictEqual(extraTurn.nextPreviousPhase, 'roll');
+
+    assert.strictEqual(UiGameStatusView.buildTurnTransitionView({
+        phase: 'roll',
+        rollPhase: 'roll',
+        currentPlayerIndex: 0,
+        previousPlayerIndex: 0,
+        currentTurnCount: 3,
+        previousTurnCount: 3,
+        previousPhase: 'roll',
+        isReplaying: false,
+        currentName: 'Alice',
+        isCpuTurn: false,
+    }).announce, false);
+
+    assert.strictEqual(UiGameStatusView.buildTurnTransitionView({
+        phase: 'roll',
+        rollPhase: 'roll',
+        currentPlayerIndex: 0,
+        previousPlayerIndex: 0,
+        currentTurnCount: 3,
+        previousTurnCount: 3,
+        previousPhase: 'build',
+        isReplaying: true,
+        currentName: 'Alice',
+        isCpuTurn: false,
+    }).announce, false);
 });
