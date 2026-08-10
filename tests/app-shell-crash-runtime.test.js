@@ -10,6 +10,7 @@ function createHarness(overrides = {}) {
     const reloadButton = { name: 'reload', focus() { calls.push(['focus', 'reload']); } };
     const resumeButton = { name: 'resume', style: {}, offsetParent: {}, focus() { calls.push(['focus', 'resume']); } };
     const message = {};
+    const background = { name: 'background' };
     const screen = {
         style: {},
         offsetParent: {},
@@ -31,6 +32,8 @@ function createHarness(overrides = {}) {
         },
         focusInitial: (targets, initialFocus) => calls.push(['focus-initial', initialFocus]),
         applyFocusTrap: (plan, event) => calls.push(['focus-trap', plan, event]),
+        disableBackground: targets => { calls.push(['disable-background', targets]); return ['restore']; },
+        restoreBackground: restore => calls.push(['restore-background', restore]),
         hide(target) { calls.push(['hide']); target.style.display = 'none'; },
     };
     let keydownHandler = null;
@@ -40,6 +43,7 @@ function createHarness(overrides = {}) {
         controller: CrashScreen.createController(),
         effects,
         getActiveElement: () => reloadButton,
+        getBackgroundElements: () => [background],
         getElementById: id => elements[id] || null,
         policy: CrashScreen,
         readSavedGame: () => '{"saved":true}',
@@ -53,7 +57,9 @@ function createHarness(overrides = {}) {
 runTest('app shell crash runtimeはCPU停止後にview・listener・focusを既存順で適用する', () => {
     const { calls, elements, runtime } = createHarness();
     runtime.show(new Error('boom'));
-    assert.deepStrictEqual(calls.map(call => call[0]), ['cancel-cpu', 'apply-view', 'add-keydown', 'focus-initial']);
+    assert.deepStrictEqual(calls.map(call => call[0]), [
+        'cancel-cpu', 'disable-background', 'apply-view', 'add-keydown', 'focus-initial',
+    ]);
     assert.ok(elements.crashMessage.textContent.includes('boom'));
     assert.strictEqual(elements.crashResumeBtn.style.display, 'block');
     runtime.show(new Error('duplicate'));
@@ -67,7 +73,9 @@ runTest('app shell crash runtimeは同一focus handlerをtrapとresume解除に�
     handler({ key: 'Tab', shiftKey: false });
     assert.ok(calls.some(call => call[0] === 'focus-trap' && call[1].focusTarget === 'first'));
     runtime.resume();
-    assert.deepStrictEqual(calls.slice(-3).map(call => call[0]), ['remove-keydown', 'hide', 'resume-game']);
+    assert.deepStrictEqual(calls.slice(-4).map(call => call[0]), [
+        'remove-keydown', 'hide', 'restore-background', 'resume-game',
+    ]);
     assert.strictEqual(calls.find(call => call[0] === 'remove-keydown')[1], true);
 });
 

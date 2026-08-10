@@ -8,6 +8,7 @@ const AppShellCrashRuntime = (() => {
             controller,
             effects,
             getActiveElement,
+            getBackgroundElements,
             getElementById,
             policy,
             readSavedGame,
@@ -18,6 +19,7 @@ const AppShellCrashRuntime = (() => {
             addKeydownListener,
             cancelCpu,
             getActiveElement,
+            getBackgroundElements,
             getElementById,
             readSavedGame,
             removeKeydownListener,
@@ -29,6 +31,7 @@ const AppShellCrashRuntime = (() => {
         if (!controller || !effects || !policy) {
             throw new TypeError('crash runtime dependencies are required');
         }
+        let backgroundRestore = [];
 
         function trapFocus(event) {
             const crashState = controller.snapshot();
@@ -58,6 +61,7 @@ const AppShellCrashRuntime = (() => {
                 resumeButton: getElementById('crashResumeBtn'),
                 reloadButton: screen.querySelector && screen.querySelector('[data-ui-action="reloadPage"]'),
             };
+            backgroundRestore = effects.disableBackground(getBackgroundElements());
             effects.applyView(elements, view);
             addKeydownListener(trapFocus);
             effects.focusInitial(elements, view.initialFocus);
@@ -67,6 +71,8 @@ const AppShellCrashRuntime = (() => {
             controller.hide();
             removeKeydownListener(trapFocus);
             effects.hide(getElementById('crashScreen'));
+            effects.restoreBackground(backgroundRestore);
+            backgroundRestore = [];
             resumeGame();
         }
 

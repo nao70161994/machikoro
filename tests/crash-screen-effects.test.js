@@ -12,6 +12,8 @@ function makeElement() {
         offsetParent: {},
         focusCount: 0,
         setAttribute(name, value) { this.attributes[name] = value; },
+        getAttribute(name) { return Object.hasOwn(this.attributes, name) ? this.attributes[name] : null; },
+        removeAttribute(name) { delete this.attributes[name]; },
         hasAttribute(name) { return Object.hasOwn(this.attributes, name); },
         focus() { this.focusCount += 1; },
     };
@@ -34,6 +36,28 @@ runTest('crash screen effectsはviewを既存DOM属性へ適用する', () => {
         'aria-modal': 'true',
         tabindex: '-1',
     });
+});
+
+runTest('crash screen effectsは背景lockを既存属性へ対称復元する', () => {
+    const plain = makeElement();
+    const locked = makeElement();
+    locked.inert = true;
+    locked.attributes['aria-hidden'] = 'false';
+    locked.style.pointerEvents = 'auto';
+
+    const restore = CrashScreenEffects.disableBackground([plain, locked]);
+    assert.strictEqual(plain.inert, true);
+    assert.strictEqual(plain.attributes['aria-hidden'], 'true');
+    assert.strictEqual(plain.style.pointerEvents, 'none');
+    assert.strictEqual(locked.inert, true);
+
+    CrashScreenEffects.restoreBackground(restore);
+    assert.strictEqual(plain.inert, false);
+    assert.strictEqual(Object.hasOwn(plain.attributes, 'aria-hidden'), false);
+    assert.strictEqual(plain.style.pointerEvents, '');
+    assert.strictEqual(locked.inert, true);
+    assert.strictEqual(locked.attributes['aria-hidden'], 'false');
+    assert.strictEqual(locked.style.pointerEvents, 'auto');
 });
 
 runTest('crash screen effectsは既存tabindexを保持して初期focusを選ぶ', () => {

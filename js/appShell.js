@@ -464,6 +464,13 @@ const appShellCrashRuntime = AppShellCrashRuntime.createRuntime({
     controller: CrashScreen.createController(),
     effects: CrashScreenEffects,
     getActiveElement: () => appShellComposition.resolve('document').activeElement,
+    getBackgroundElements: () => {
+        const documentRef = appShellComposition.resolve('document');
+        const children = documentRef && documentRef.body && documentRef.body.children;
+        return Array.from(children || []).filter(element =>
+            element && element.id !== 'crashScreen' && element.tagName !== 'SCRIPT'
+        );
+    },
     getElementById: id => appShellComposition.resolve('document').getElementById(id),
     policy: CrashScreen,
     readSavedGame: () => safeAppShellStorageGet('savedGame'),

@@ -44,6 +44,44 @@ const CrashScreenEffects = (() => {
         if (focusTarget && typeof focusTarget.focus === 'function') focusTarget.focus();
     }
 
+    function disableBackground(elements) {
+        const restore = [];
+        for (const element of Array.isArray(elements) ? elements : []) {
+            if (!element) continue;
+            restore.push({
+                element,
+                hadInert: Object.prototype.hasOwnProperty.call(element, 'inert'),
+                inert: element.inert,
+                ariaHidden: typeof element.getAttribute === 'function'
+                    ? element.getAttribute('aria-hidden')
+                    : null,
+                pointerEvents: element.style ? element.style.pointerEvents || '' : '',
+            });
+            element.inert = true;
+            if (typeof element.setAttribute === 'function') {
+                element.setAttribute('aria-hidden', 'true');
+            }
+            if (element.style) element.style.pointerEvents = 'none';
+        }
+        return restore;
+    }
+
+    function restoreBackground(entries) {
+        for (const entry of Array.isArray(entries) ? entries : []) {
+            const element = entry && entry.element;
+            if (!element) continue;
+            element.inert = entry.hadInert ? entry.inert : false;
+            if (entry.ariaHidden === null) {
+                if (typeof element.removeAttribute === 'function') {
+                    element.removeAttribute('aria-hidden');
+                }
+            } else if (typeof element.setAttribute === 'function') {
+                element.setAttribute('aria-hidden', entry.ariaHidden);
+            }
+            if (element.style) element.style.pointerEvents = entry.pointerEvents || '';
+        }
+    }
+
     function hide(screen) {
         screen.style.display = 'none';
     }
@@ -53,6 +91,8 @@ const CrashScreenEffects = (() => {
         applyView,
         focusInitial,
         applyFocusTrap,
+        disableBackground,
+        restoreBackground,
         hide,
     });
 })();
