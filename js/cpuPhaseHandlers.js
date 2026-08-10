@@ -148,11 +148,12 @@ const CpuPhaseHandlers = (() => {
                         if (dependencies.getOnlineState().isOnlineGame) return false;
                         if (!current.builtThisTurn) {
                             dependencies.checkpoint('scheduleCPU-build-failed-pass');
-                            dependencies.executeAction(
+                            const passResult = dependencies.executeAction(
                                 dependencies.actions.NEXT_TURN,
                                 {},
                                 () => current.nextTurn()
                             );
+                            return passResult === false ? false : true;
                         }
                         return true;
                     }

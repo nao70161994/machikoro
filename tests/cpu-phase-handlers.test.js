@@ -20,7 +20,7 @@ function createHarness(options = {}) {
         resolveIT: { action: 'resolveIT', data: { doSave: true } },
     };
     const handlers = CpuPhaseHandlers.create({
-        actions: { REROLL_DICE: 'rerollDice' },
+        actions: { REROLL_DICE: 'rerollDice', NEXT_TURN: 'nextTurn' },
         checkpoint: (event, details) => calls.push(['checkpoint', event, details]),
         chooseAction: name => proposals[name],
         executeAction: (action, data, fallback) => {
@@ -125,6 +125,20 @@ runTest('CPU phase build handlerはlocal proposalを共有action境界へ渡しo
     online.setOnline(true);
     assert.strictEqual(online.handlers.find(handler => handler.name === 'build').run(cpu), false);
     assert.deepStrictEqual(online.calls, []);
+});
+
+runTest('CPU phase build handlerはbuild失敗後の自動pass拒否をschedulerへ返す', () => {
+    const h = createHarness({
+        executeAction: (action, data, fallback) => action === 'buildCard' ? fallback() : false,
+    });
+    h.game.phase = h.phases.BUILD;
+    const cpu = { chooseBuildAction() {}, executeBuildAction: () => false };
+
+    assert.strictEqual(h.handlers.find(handler => handler.name === 'build').run(cpu), false);
+    assert.deepStrictEqual(h.calls.map(call => call[0]), [
+        'execute', 'checkpoint', 'execute',
+    ]);
+    assert.strictEqual(h.calls[2][1], 'nextTurn');
 });
 
 runTest('CPU phase pending handlerはproposal欠落を診断してno-progressを返す', () => {
