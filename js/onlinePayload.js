@@ -332,6 +332,7 @@ const REJOIN_ACTION_LOG_REASONS = Object.freeze({
     STORED_UNSIGNED_FULL_LOG: 'stored-unsigned-full-log',
     SERVER_UNSIGNED_FULL_LOG: 'server-unsigned-full-log',
     MERGED_UNSIGNED_FULL_LOG: 'merged-unsigned-full-log',
+    INCOMPLETE_UNSIGNED_HISTORY: 'incomplete-unsigned-history',
     SERVER_REPLAY_LOG: 'server-replay-log',
 });
 
@@ -404,11 +405,14 @@ function planRejoinActionLogPersistence(
         });
     }
     const merged = mergeContinuousActionLogs(actionLogs, targetSeq);
-    if (!merged && continuousActionLogPrefix(storedActionLog, targetSeq) &&
-            storedActionLog.length > replayActionLog.length) {
+    if (!merged && targetSeq > 0) {
+        const fallback = continuousActionLogPrefix(storedActionLog, targetSeq)
+            ? storedActionLog
+            : replayActionLog;
         return Object.freeze({
-            actionLog: storedActionLog,
-            reason: REJOIN_ACTION_LOG_REASONS.STORED_UNSIGNED_FULL_LOG,
+            actionLog: fallback,
+            persistBundle: false,
+            reason: REJOIN_ACTION_LOG_REASONS.INCOMPLETE_UNSIGNED_HISTORY,
         });
     }
     return Object.freeze({

@@ -68,6 +68,7 @@ function createHarness(options = {}) {
         clearPending: () => calls.push(['clearPending']),
         clearQuarantine: () => calls.push(['clearQuarantine']),
         clearRetry: () => calls.push(['clearRetry']),
+        clearRestoreBundleIncomplete: () => calls.push(['clearRestoreBundleIncomplete']),
         getDefaultLandmarks: () => { calls.push(['getDefaultLandmarks']); return ['役所']; },
         getOriginalPlayerIndex: () => { calls.push(['getOriginalPlayerIndex']); return 0; },
         incrementRestoreGeneration: () => {
@@ -84,6 +85,8 @@ function createHarness(options = {}) {
             return options.carry !== false;
         },
         isRestoreOfferPlanAuthorityEnabled: () => true,
+        markRestoreBundleIncomplete: (prepared, storedActionLog) =>
+            calls.push(['markRestoreBundleIncomplete', prepared.restoredThroughSeq, storedActionLog]),
         normalizeActionLog: value => {
             calls.push(['normalizeActionLog', value]);
             return Array.isArray(value) ? value.filter(entry => entry && entry.action) : [];
@@ -224,8 +227,9 @@ runTest('online rejoin preparation runtimeはexecutorでruntime・保存effect�
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
         'recordDiagnostic', 'setActionFlight', 'clearPending', 'clearRetry',
         'setCpuSpeed', 'replaceEnabledCards', 'replaceEnabledLandmarks',
-        'setPlayerIndexes', 'setHostState', 'writeRestoreJson', 'writeRestoreJson',
-        'writeRestoreJson', 'readActionLog', 'recordDiagnostic', 'writeRestoreJson',
+        'setPlayerIndexes', 'setHostState', 'readActionLog', 'recordDiagnostic',
+        'writeRestoreJson', 'writeRestoreJson', 'writeRestoreJson', 'writeRestoreJson',
+        'clearRestoreBundleIncomplete',
         'saveSession', 'invalidateCpuSchedule', 'resetUiLocks',
     ]);
     assert.deepStrictEqual(harness.calls.at(-1), [
@@ -235,7 +239,7 @@ runTest('online rejoin preparation runtimeはexecutorでruntime・保存effect�
 
 runTest('online rejoin preparation runtimeはlegacy persistenceとstorage失敗隔離を維持する', () => {
     const harness = createHarness({ effectSource: 'legacy', storageError: true });
-    const prepared = harness.runtime.prepare(prepareInput());
+    const prepared = harness.runtime.prepare(prepareInput({ restoreAudit: { signature: 'signed' } }));
     harness.calls.length = 0;
     assert.doesNotThrow(() => harness.runtime.persist(prepared));
     const names = harness.calls.map(call => call[0]);
@@ -292,6 +296,27 @@ runTest('online rejoin preparation runtimeは圧縮境界後も完全logを再�
     assert.strictEqual(
         harness.diagnostics.rejoinActionLogPlanSelection.plan.reason,
         OnlinePayload.rejoinActionLogReasons.SERVER_UNSIGNED_FULL_LOG
+    );
+});
+
+runTest('online rejoin preparation runtimeは旧serverの不完全履歴で既存bundleを上書きしない', () => {
+    const entries = (from, to) => Array.from({ length: to - from + 1 }, (_, index) => ({
+        action: 'nextTurn', data: {}, seq: from + index,
+    }));
+    const harness = createHarness({ storedActionLog: entries(1, 200) });
+    const prepared = harness.runtime.prepare(prepareInput({
+        actionLog: entries(202, 203),
+        stateSnapshot: { actionSeq: 201 },
+    }));
+    harness.calls.length = 0;
+
+    assert.strictEqual(harness.runtime.persistRestoreBundle(prepared), false);
+    assert.deepStrictEqual(harness.calls.map(call => call[0]), [
+        'readActionLog', 'recordDiagnostic', 'markRestoreBundleIncomplete',
+    ]);
+    assert.strictEqual(
+        harness.diagnostics.rejoinActionLogPlanSelection.plan.reason,
+        OnlinePayload.rejoinActionLogReasons.INCOMPLETE_UNSIGNED_HISTORY
     );
 });
 

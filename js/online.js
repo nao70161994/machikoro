@@ -429,6 +429,7 @@ const ONLINE_STORAGE_KEYS = Object.freeze({
     stateSnapshot: 'onlineStateSnapshot',
     restoreAudit: 'onlineRestoreAudit',
     pendingAction: 'onlinePendingAction',
+    restoreBundleStatus: 'onlineRestoreBundleStatus',
 });
 const ONLINE_RESTORE_ROOM_INDEX_KEY = 'onlineRestoreRoomIndex';
 const ONLINE_RESTORE_ROOM_INDEX_SCHEMA_VERSION = 1;
@@ -1005,8 +1006,37 @@ function _clearOnlineRestoreBundle() {
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.actionLog);
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.stateSnapshot);
     _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreAudit);
+    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreBundleStatus);
     _clearPendingOutboundAction();
     _removeOnlineRestoreRoomIndexEntry(roomIdBeforeClear);
+}
+
+function _readOnlineRestoreBundleStatus() {
+    return _readOnlineRoomStorageJson(ONLINE_STORAGE_KEYS.restoreBundleStatus, null);
+}
+
+function _isOnlineRestoreBundleIncomplete() {
+    const status = _readOnlineRestoreBundleStatus();
+    return !!status && status.schemaVersion === 1 && status.status === 'incomplete';
+}
+
+function _markOnlineRestoreBundleIncomplete(prepared, storedActionLog) {
+    const completeThroughSeq = Array.isArray(storedActionLog)
+        ? storedActionLog.reduce((highest, entry) =>
+            Number.isInteger(entry && entry.seq) ? Math.max(highest, entry.seq) : highest, 0)
+        : 0;
+    _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.restoreBundleStatus, {
+        schemaVersion: 1,
+        status: 'incomplete',
+        observedSeq: Number.isInteger(prepared && prepared.restoredThroughSeq)
+            ? prepared.restoredThroughSeq
+            : 0,
+        completeThroughSeq,
+    });
+}
+
+function _clearOnlineRestoreBundleIncomplete() {
+    _removeOnlineRestoreStorageItem(ONLINE_STORAGE_KEYS.restoreBundleStatus);
 }
 
 function _readOnlineStateSnapshot() {
@@ -1883,6 +1913,7 @@ function resetOnlineState() {
 
 function _saveActionLog(action, data, options = {}) {
     try {
+        if (_isOnlineRestoreBundleIncomplete()) return;
         const gameState = onlineGameRuntimeSnapshot();
         const log = _readOnlineActionLog();
         const hasExplicitSeq = Number.isInteger(options.seq);
@@ -1962,6 +1993,7 @@ function _readOnlineGameStartPayload() {
 
 function _writeOnlineGameStartPatch(patch) {
     try {
+        if (_isOnlineRestoreBundleIncomplete()) return;
         const payload = _readOnlineGameStartPayload();
         if (!payload) return;
         Object.assign(payload, patch);
@@ -2489,6 +2521,7 @@ function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
         _writeOnlineSessionStorageJson(session, session.roomId || runtimeSession.myRoomId);
     }
     try {
+        if (_isOnlineRestoreBundleIncomplete()) return;
         const gameStartPayload = _readOnlineGameStartPayload();
         if (gameStartPayload) {
             if (Number.isInteger(hostPlayerIndex)) {
@@ -2600,6 +2633,7 @@ function initSocket() {
         clearHostlessState: () => _hostlessRestoreState.clear(),
         clearPending: () => _clearPendingOutboundAction(),
         clearRejoinRetry: () => _clearRejoinRetry(),
+        clearRestoreBundleIncomplete: () => _clearOnlineRestoreBundleIncomplete(),
         clearRestoreEventQueue: () => _clearOnlineRestoreEventQueue(),
         clearRestoreQuarantine: () => _clearOnlineRestoreQuarantine(),
         console,
@@ -2651,6 +2685,7 @@ function initSocket() {
         },
         calculateRank: (gameStartPayload, stateSnapshot, actionLog) =>
             _onlineRestoreRank(gameStartPayload, stateSnapshot, actionLog),
+        clearRestoreBundleIncomplete: () => _clearOnlineRestoreBundleIncomplete(),
         clearHostlessState: () => _hostlessRestoreState.clear(),
         clearPending: () => _clearPendingOutboundAction(),
         clearQuarantine: () => _clearOnlineRestoreQuarantine(),
@@ -2670,6 +2705,8 @@ function initSocket() {
             _onlineRestoreLifecycleController.isQuarantined(),
         isRestoreOfferPlanAuthorityEnabled: () =>
             isLocalHostRestoreOfferPlanAuthorityEnabled(),
+        markRestoreBundleIncomplete: (prepared, storedActionLog) =>
+            _markOnlineRestoreBundleIncomplete(prepared, storedActionLog),
         normalizeActionLog: value => _normalizeOnlineActionLog(value),
         observeReconnect: event => _observeOnlineReconnectEvent(event),
         payload: OnlinePayload,
@@ -3281,6 +3318,10 @@ function sendAction(action, data = {}) {
 
 function _tryRestoreRoom() {
     try {
+        if (_isOnlineRestoreBundleIncomplete()) {
+            onlineDomEffects.setStatusText('❌ 完全な復元履歴を取得できないため、自動復元を停止しました');
+            return false;
+        }
         const gameStartPayload = _readOnlineGameStartPayload();
         if (!gameStartPayload) {
             onlineDomEffects.setStatusText('❌ 復元データが見つかりません');
@@ -3312,6 +3353,7 @@ function _tryRestoreRoom() {
 
 function _readLocalRestoreBundle() {
     try {
+        if (_isOnlineRestoreBundleIncomplete()) return null;
         const gameStartPayload = _readOnlineGameStartPayload();
         if (!gameStartPayload || gameStartPayload.schemaVersion !== ONLINE_RESTORE_SCHEMA_VERSION ||
                 !Array.isArray(gameStartPayload.reconnectTokenHashes)) return null;

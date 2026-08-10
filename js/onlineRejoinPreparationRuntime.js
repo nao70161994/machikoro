@@ -21,6 +21,7 @@ const OnlineRejoinPreparationRuntime = (() => {
             'isActionLogPlanAuthorityEnabled', 'isPendingPlanAuthorityEnabled',
             'isPersistencePlanAuthorityEnabled', 'isQueueCarryRequired',
             'isRestoreOfferPlanAuthorityEnabled', 'normalizeActionLog', 'observeReconnect',
+            'clearRestoreBundleIncomplete', 'markRestoreBundleIncomplete',
             'pendingBelongsToSession', 'pendingMatchesAccepted', 'readActionLog',
             'readLocalBundle', 'readPending', 'readRestoreQueue', 'recordDiagnostic',
             'recordQueueDiagnostic', 'removeRestoreItem', 'replaceEnabledCards',
@@ -263,6 +264,28 @@ const OnlineRejoinPreparationRuntime = (() => {
 
         function persistRestoreBundle(prepared) {
             try {
+                const storedActionLog = dependencies.readActionLog();
+                const legacyPlan = dependencies.payload.planRejoinActionLogPersistence(
+                    prepared.stateSnapshot,
+                    prepared.restoreAudit,
+                    storedActionLog,
+                    prepared.actionLog,
+                    prepared.fullActionLog
+                );
+                const selection = dependencies.payload.selectRejoinActionLogPersistencePlan(
+                    prepared.stateSnapshot,
+                    prepared.restoreAudit,
+                    storedActionLog,
+                    prepared.actionLog,
+                    legacyPlan,
+                    { authorityEnabled: dependencies.isActionLogPlanAuthorityEnabled() },
+                    prepared.fullActionLog
+                );
+                dependencies.recordDiagnostic('rejoinActionLogPlanSelection', selection);
+                if (selection.plan.persistBundle === false) {
+                    dependencies.markRestoreBundleIncomplete(prepared, storedActionLog);
+                    return false;
+                }
                 dependencies.writeRestoreJson(
                     dependencies.storageKeys.gameStart,
                     prepared.gameStartPayload
@@ -283,30 +306,15 @@ const OnlineRejoinPreparationRuntime = (() => {
                 } else {
                     dependencies.removeRestoreItem(dependencies.storageKeys.restoreAudit);
                 }
-                const storedActionLog = dependencies.readActionLog();
-                const legacyPlan = dependencies.payload.planRejoinActionLogPersistence(
-                    prepared.stateSnapshot,
-                    prepared.restoreAudit,
-                    storedActionLog,
-                    prepared.actionLog,
-                    prepared.fullActionLog
-                );
-                const selection = dependencies.payload.selectRejoinActionLogPersistencePlan(
-                    prepared.stateSnapshot,
-                    prepared.restoreAudit,
-                    storedActionLog,
-                    prepared.actionLog,
-                    legacyPlan,
-                    { authorityEnabled: dependencies.isActionLogPlanAuthorityEnabled() },
-                    prepared.fullActionLog
-                );
-                dependencies.recordDiagnostic('rejoinActionLogPlanSelection', selection);
                 dependencies.writeRestoreJson(
                     dependencies.storageKeys.actionLog,
                     selection.plan.actionLog
                 );
+                dependencies.clearRestoreBundleIncomplete();
+                return true;
             } catch (_) {
                 // Existing rejoin persistence is best effort.
+                return false;
             }
         }
 

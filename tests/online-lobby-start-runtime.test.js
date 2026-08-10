@@ -42,6 +42,7 @@ function createHarness(options = {}) {
         clearHostlessState: () => calls.push(['clearHostlessState']),
         clearPending: () => calls.push(['clearPending']),
         clearRejoinRetry: () => calls.push(['clearRejoinRetry']),
+        clearRestoreBundleIncomplete: () => calls.push(['clearRestoreBundleIncomplete']),
         clearRestoreEventQueue: () => calls.push(['clearRestoreEventQueue']),
         clearRestoreQuarantine: () => calls.push(['clearRestoreQuarantine']),
         console: { error: error => calls.push(['consoleError', error.message]) },
@@ -129,7 +130,8 @@ runTest('online game start runtimeはschemaからactive gameまで既存effect�
         'clearRestoreEventQueue', 'applyHostPayload', 'preloadModels',
         'getRestoreGeneration', 'resetReconnectCompletion', 'setOnline', 'setHostState',
         'setCpuSpeed', 'replaceEnabledCards', 'replaceEnabledLandmarks',
-        'writeRestoreJson', 'removeRestoreItem', 'writeRestoreJson', 'clearPending',
+        'writeRestoreJson', 'removeRestoreItem', 'writeRestoreJson',
+        'clearRestoreBundleIncomplete', 'clearPending',
         'saveSession', 'resetUiLocks', 'showGame', 'initGame', 'notifyLifecycleStart',
         'replaceActionSequence', 'getRestoreEventHandlers', 'flushRestoreEvents',
         'observeReconnect',
@@ -140,7 +142,7 @@ runTest('online game start runtimeはschemaからactive gameまで既存effect�
     assert.strictEqual(built.hostlessRestoreGeneration, 1);
     assert.deepStrictEqual(built.enabledCards, ['麦畑']);
     assert.notStrictEqual(built.enabledCards, payload.enabledCards);
-    assert.deepStrictEqual(harness.calls[22], [
+    assert.deepStrictEqual(harness.calls[23], [
         'resetUiLocks', OnlineLobbyStartRuntime.UI_RESET_REASON,
     ]);
 });

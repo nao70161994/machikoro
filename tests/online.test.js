@@ -292,6 +292,9 @@ function loadOnlineRuntime(options = {}) {
         this._readOnlineActionLog = _readOnlineActionLog;
         this._readOnlineGameStartPayload = _readOnlineGameStartPayload;
         this._readOnlineStateSnapshot = _readOnlineStateSnapshot;
+        this._readLocalRestoreBundle = _readLocalRestoreBundle;
+        this._isOnlineRestoreBundleIncomplete = _isOnlineRestoreBundleIncomplete;
+        this._writeOnlineGameStartPatch = _writeOnlineGameStartPatch;
         this._normalizePendingOutboundAction = _normalizePendingOutboundAction;
         this._readPendingOutboundAction = _readPendingOutboundAction;
         this._readPendingOutboundActionForCurrentSession = _readPendingOutboundActionForCurrentSession;
@@ -2547,7 +2550,9 @@ runTest('rejoinData は共通fixtureで stateSnapshot に畳み込まれた pend
     });
     rt.localStorage.setItem('onlinePendingAction', JSON.stringify(fixture.pendingAction));
 
-    rt.getSocketHandlers().rejoinData(fixture.snapshotCompactedBundle);
+    rt.getSocketHandlers().rejoinData(Object.assign({}, fixture.snapshotCompactedBundle, {
+        restoreAudit: { signature: 'signed' },
+    }));
 
     const stored = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(stored.actionSeq, fixture.snapshotCompactedBundle.gameStartPayload.actionSeq);
@@ -3742,6 +3747,38 @@ runTest('_saveActionLog はサーバー署名snapshot受信時にsnapshot以前�
     assert.strictEqual(JSON.parse(rt.localStorage.getItem('onlineGameStart')).actionSeq, 201);
 });
 
+runTest('不完全な署名なし履歴はlive restore書込みと自動復元をquarantineする', () => {
+    const rt = loadOnlineRuntime();
+    rt.setOnlineState({ myRoomId: 'ROOM01', myOriginalPlayerIndex: 0 });
+    const gameStart = {
+        schemaVersion: 2,
+        actionSeq: 200,
+        hostPlayerIndex: 0,
+        reconnectTokenHashes: ['hash-a', 'hash-b'],
+    };
+    const log = Array.from({ length: 200 }, (_, index) => ({
+        action: 'nextTurn', data: {}, seq: index + 1, playerIndex: index % 2,
+    }));
+    rt.localStorage.setItem('onlineGameStart', JSON.stringify(gameStart));
+    rt.localStorage.setItem('onlineActionLog', JSON.stringify(log));
+    rt.localStorage.setItem('onlineRestoreBundleStatus', JSON.stringify({
+        schemaVersion: 1, status: 'incomplete', observedSeq: 203, completeThroughSeq: 200,
+    }));
+
+    rt._saveActionLog('nextTurn', {}, { seq: 204, playerIndex: 0 });
+    rt._writeOnlineGameStartPatch({ actionSeq: 204 });
+
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineGameStart')), gameStart);
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineActionLog')), log);
+    assert.strictEqual(rt._isOnlineRestoreBundleIncomplete(), true);
+    assert.strictEqual(rt._readLocalRestoreBundle(), null);
+    assert.strictEqual(rt._tryRestoreRoom(), false);
+    assert.strictEqual(rt.getSocketEmits().some(entry => entry.event === 'recreateRoom'), false);
+
+    rt._clearOnlineRestoreBundle();
+    assert.strictEqual(rt.localStorage.getItem('onlineRestoreBundleStatus'), null);
+});
+
 runTest('_saveActionLog はしきい値超過時も署名済みactionLogを維持してsnapshotを補助保存する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
@@ -4546,7 +4583,12 @@ runTest('rejoinData hydrates and resolves TV, Business, and IT pending variants'
                 playerOrder: [0, 1], enabledCards: runtime.CARDS.map(card => card.name), enabledLandmarks: runtime.Player.landmarkNames(),
                 reconnectTokenHashes: ['hash-a', 'hash-b'], hostPlayerIndex: 0, actionSeq: 5,
             },
-            stateSnapshot: snapshot, actionLog: [], acceptedClientActions: [], playerIndex: 0, hostPlayerIndex: 0,
+            stateSnapshot: snapshot,
+            actionLog: [],
+            restoreAudit: { signature: 'signed' },
+            acceptedClientActions: [],
+            playerIndex: 0,
+            hostPlayerIndex: 0,
         });
         await Promise.resolve(); await Promise.resolve();
         assert.strictEqual(runtime.getGame().phase, runtime.GAME_PHASES.PENDING);

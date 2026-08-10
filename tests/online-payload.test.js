@@ -397,8 +397,9 @@ runTest('online payloadは署名なし履歴をlengthではなくseq連続性で
     const rejected = OnlinePayload.planRejoinActionLogPersistence(
         { actionSeq: 201 }, null, gappedStoredLog, residual, gappedServerLog
     );
-    assert.strictEqual(rejected.reason, OnlinePayload.rejoinActionLogReasons.SERVER_REPLAY_LOG);
+    assert.strictEqual(rejected.reason, OnlinePayload.rejoinActionLogReasons.INCOMPLETE_UNSIGNED_HISTORY);
     assert.strictEqual(rejected.actionLog, residual);
+    assert.strictEqual(rejected.persistBundle, false);
 
     const staleStored = stored.concat([
         { seq: 201 }, { seq: 202 }, { seq: 203 }, { seq: 204 },
@@ -411,21 +412,23 @@ runTest('online payloadは署名なし履歴をlengthではなくseq連続性で
     assert.strictEqual(bounded.actionLog.at(-1).seq, 203);
 });
 
-runTest('online payloadは旧server混在時も連続したlocal full logを残差より優先する', () => {
+runTest('online payloadは旧server混在時の不完全履歴を永続化不可として扱う', () => {
     const stored = Array.from({ length: 200 }, (_, index) => ({ seq: index + 1 }));
     const residual = [{ seq: 202 }, { seq: 203 }];
     const plan = OnlinePayload.planRejoinActionLogPersistence(
         { actionSeq: 201 }, null, stored, residual, []
     );
-    assert.strictEqual(plan.reason, OnlinePayload.rejoinActionLogReasons.STORED_UNSIGNED_FULL_LOG);
+    assert.strictEqual(plan.reason, OnlinePayload.rejoinActionLogReasons.INCOMPLETE_UNSIGNED_HISTORY);
     assert.strictEqual(plan.actionLog, stored);
+    assert.strictEqual(plan.persistBundle, false);
 
     const gapped = stored.filter(entry => entry.seq !== 150);
     const rejected = OnlinePayload.planRejoinActionLogPersistence(
         { actionSeq: 201 }, null, gapped, residual, []
     );
-    assert.strictEqual(rejected.reason, OnlinePayload.rejoinActionLogReasons.SERVER_REPLAY_LOG);
+    assert.strictEqual(rejected.reason, OnlinePayload.rejoinActionLogReasons.INCOMPLETE_UNSIGNED_HISTORY);
     assert.strictEqual(rejected.actionLog, residual);
+    assert.strictEqual(rejected.persistBundle, false);
 });
 
 runTest('online payloadはseq metadataのないlegacy replay logを空配列へ置換しない', () => {

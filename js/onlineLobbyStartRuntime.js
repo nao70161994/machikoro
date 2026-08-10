@@ -21,7 +21,7 @@ const OnlineLobbyStartRuntime = (() => {
         const requiredEffects = [
             'abortRestore', 'acceptRoom', 'acceptSchema', 'applyHostPayload',
             'clearHostlessState', 'clearPending', 'clearRejoinRetry', 'clearRestoreEventQueue',
-            'clearRestoreQuarantine', 'defaultLandmarks', 'flushRestoreEvents',
+            'clearRestoreBundleIncomplete', 'clearRestoreQuarantine', 'defaultLandmarks', 'flushRestoreEvents',
             'finishLobbyRequest', 'getGame', 'getRestoreEventHandlers',
             'getRestoreGeneration', 'getSession', 'initGame', 'incrementRestoreGeneration',
             'notifyLifecycleStart', 'observeReconnect',
@@ -89,6 +89,7 @@ const OnlineLobbyStartRuntime = (() => {
                 );
                 dependencies.removeRestoreItem(dependencies.restoreKeys.stateSnapshot);
                 dependencies.writeRestoreJson(dependencies.restoreKeys.actionLog, []);
+                dependencies.clearRestoreBundleIncomplete();
                 dependencies.clearPending();
             } catch (_) {
                 // The existing online start path treats local persistence as best effort.
