@@ -253,10 +253,14 @@ runTest('tutorial control wrapperはpure viewをcheckbox・button・levelへ反�
 runTest('turn announcer wrapperはpure viewと既存timer/DOM順を維持する', () => {
     const { context, elements } = loadUiRuntime();
 
-    context.showTurnAnnouncer('CPU 1', true);
+    context.showTurnAnnouncer('CPU 1', true, 1);
 
     assert.strictEqual(elements.turnAnnouncer.style.display, 'flex');
     assert.strictEqual(elements.turnAnnouncerText.textContent, '🤖 CPU 1 のターン');
+    assert.strictEqual(
+        elements.turnStatusAnnouncer.textContent,
+        'プレイヤー2、CPU、CPU 1 のターン'
+    );
     assert.strictEqual(elements.turnAnnouncer.classList.contains('hiding'), false);
     assert.deepStrictEqual(context.timeoutDelays, [1300]);
 
@@ -267,6 +271,10 @@ runTest('turn announcer wrapperはpure viewと既存timer/DOM順を維持する'
     context.lastTimeout();
     assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
     assert.strictEqual(elements.turnAnnouncer.classList.contains('hiding'), false);
+    assert.strictEqual(
+        elements.turnStatusAnnouncer.textContent,
+        'プレイヤー2、CPU、CPU 1 のターン'
+    );
     assert.strictEqual(context.announcerTimer, null);
 });
 

@@ -2301,6 +2301,7 @@ runTest('onlineStatus はライブリージョンとして宣言されている'
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
 });
 
 runTest('card detail button はカードに重ならない専用行へ配置する', () => {

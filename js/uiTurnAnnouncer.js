@@ -12,6 +12,13 @@ function buildTurnAnnouncerView(name, isCPU) {
     });
 }
 
+function buildTurnStatusText(name, isCPU, playerIndex) {
+    const position = Number.isInteger(playerIndex) && playerIndex >= 0
+        ? `プレイヤー${playerIndex + 1}、`
+        : '';
+    return `${position}${isCPU ? 'CPU' : '人間'}、${name} のターン`;
+}
+
 function createTimerController({
     schedule = (callback, delay) => setTimeout(callback, delay),
     cancel = timer => clearTimeout(timer),
@@ -43,6 +50,7 @@ function createTimerController({
 
 const UiTurnAnnouncer = Object.freeze({
     buildView: buildTurnAnnouncerView,
+    buildStatusText: buildTurnStatusText,
     createTimerController,
     showDurationMs: TURN_ANNOUNCER_SHOW_DURATION_MS,
     transitionDurationMs: TURN_ANNOUNCER_TRANSITION_DURATION_MS,

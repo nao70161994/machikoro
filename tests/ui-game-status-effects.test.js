@@ -11,6 +11,7 @@ function makeView(announce = true) {
             announce,
             name: 'Alice',
             isCpuTurn: true,
+            playerIndex: 2,
             nextPreviousPlayerIndex: 2,
         },
         rollButton: { disabled: false },
@@ -41,7 +42,7 @@ runTest('active game effect境界は既存描画順と値を維持する', () =>
     UiGameStatusEffects.execute(view, makeEffects(calls));
     assert.deepStrictEqual(calls, [
         ['setStatusText', 'status'],
-        ['announceTurn', 'Alice', true],
+        ['announceTurn', 'Alice', true, 2],
         ['setPreviousPlayerIndex', 2],
         ['setRollDisabled', false],
         ['setSkipButton', view.skipButton],

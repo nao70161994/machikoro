@@ -23,6 +23,21 @@ runTest('turn announcer viewは人間・CPU文言と既存timingをpureに固定
     assert.strictEqual(UiTurnAnnouncer.transitionDurationMs, 400);
 });
 
+runTest('turn announcer statusは同名playerも席順で区別して読み上げる', () => {
+    assert.strictEqual(
+        UiTurnAnnouncer.buildStatusText('Alice', false, 0),
+        'プレイヤー1、人間、Alice のターン'
+    );
+    assert.strictEqual(
+        UiTurnAnnouncer.buildStatusText('Alice', true, 1),
+        'プレイヤー2、CPU、Alice のターン'
+    );
+    assert.strictEqual(
+        UiTurnAnnouncer.buildStatusText('Guest', false),
+        '人間、Guest のターン'
+    );
+});
+
 runTest('turn announcer timer controllerは二段timerと置換時cancelを所有する', () => {
     const scheduled = [];
     const cancelled = [];

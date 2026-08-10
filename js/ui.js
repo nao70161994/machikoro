@@ -760,7 +760,7 @@ function bcSelectCard(btn, inputId) {
     });
 }
 
-function showTurnAnnouncer(name, isCPU) {
+function showTurnAnnouncer(name, isCPU, playerIndex) {
     const el = document.getElementById("turnAnnouncer");
     const text = document.getElementById("turnAnnouncerText");
     if (!el || !text) return;
@@ -768,6 +768,8 @@ function showTurnAnnouncer(name, isCPU) {
     const view = UiTurnAnnouncer.buildView(name, isCPU);
     el.style.display = view.display;
     text.textContent = view.text;
+    const status = document.getElementById("turnStatusAnnouncer");
+    if (status) status.textContent = UiTurnAnnouncer.buildStatusText(name, isCPU, playerIndex);
     turnAnnouncerTimerController.start(view, {
         beginHide() { el.classList.add("hiding"); },
         finishHide() {

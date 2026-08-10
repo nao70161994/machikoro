@@ -52,7 +52,11 @@ const UiGameStatusEffects = (() => {
 
         effects.setStatusText(view.statusText);
         if (view.turnTransition.announce) {
-            effects.announceTurn(view.turnTransition.name, view.turnTransition.isCpuTurn);
+            effects.announceTurn(
+                view.turnTransition.name,
+                view.turnTransition.isCpuTurn,
+                view.turnTransition.playerIndex
+            );
         }
         effects.setPreviousPlayerIndex(view.turnTransition.nextPreviousPlayerIndex);
         effects.setRollDisabled(view.rollButton.disabled);

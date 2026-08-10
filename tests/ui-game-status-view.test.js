@@ -67,6 +67,7 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
         announce: true,
         name: 'Alice',
         isCpuTurn: false,
+        playerIndex: 0,
         nextPreviousPlayerIndex: 0,
     });
     assert.deepStrictEqual(view.coinChanges, [{ playerIndex: 0, diff: 2 }]);
@@ -90,6 +91,7 @@ runTest('UI turn transitionは初回とreplayで告知せず既存index更新を
         announce: false,
         name: 'Carol',
         isCpuTurn: true,
+        playerIndex: 2,
         nextPreviousPlayerIndex: 2,
     });
     assert.strictEqual(UiGameStatusView.buildTurnTransitionView({

@@ -35,6 +35,7 @@ function buildTurnTransitionView({
         announce: changed && previousPlayerIndex !== -1 && isReplaying !== true,
         name: currentName,
         isCpuTurn: isCpuTurn === true,
+        playerIndex: currentPlayerIndex,
         nextPreviousPlayerIndex: changed ? currentPlayerIndex : previousPlayerIndex,
     });
 }
