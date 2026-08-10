@@ -2723,7 +2723,9 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('client-version-mismatch'));
     assert.ok(html.includes('reportClientError({'));
     assert.ok(html.includes('function checkOnlineDelivery()'));
-    assert.ok(html.includes("fetch('/socket.io/socket.io.js'"));
+    assert.ok(html.includes('SocketIoDelivery.load({'));
+    assert.ok(html.includes("src: '/socket.io/socket.io.js?recovery=' + Date.now()"));
+    assert.ok(html.includes("if (loaded && typeof io === 'function') return true;"));
     assert.ok(html.includes('online-delivery-check-failed'));
     assert.ok(html.includes('window.__machikoroCheckOnlineDelivery = checkOnlineDelivery;'));
     assert.ok(html.includes('function shouldKeepPwaUpdateBannerVisible()'));

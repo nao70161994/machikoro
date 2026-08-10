@@ -378,6 +378,7 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="js/socketIoDelivery.js"></script>
     <script src="js/Card.js"></script>
     <script src="js/Player.js"></script>
     <script src="js/gameSelectionState.js"></script>
@@ -689,17 +690,21 @@
           }
         }
         function checkOnlineDelivery() {
-          if (typeof fetch !== 'function') return Promise.resolve(false);
           if (typeof io === 'function') return Promise.resolve(true);
-          return fetch('/socket.io/socket.io.js', {
-            cache: 'no-store',
-            headers: { 'Cache-Control': 'no-cache' },
-          }).then(response => {
-            if (response && response.ok) return true;
-            _reportOnlineDeliveryIssue('socket-io-script-unavailable', { status: response ? response.status : 0 });
+          if (typeof SocketIoDelivery === 'undefined') {
+            _reportOnlineDeliveryIssue('socket-io-loader-unavailable');
+            return Promise.resolve(false);
+          }
+          return SocketIoDelivery.load({
+            document,
+            getIo: () => typeof io === 'function' ? io : undefined,
+            src: '/socket.io/socket.io.js?recovery=' + Date.now(),
+          }).then(loaded => {
+            if (loaded && typeof io === 'function') return true;
+            _reportOnlineDeliveryIssue('socket-io-script-unavailable');
             return false;
           }).catch(error => {
-            _reportOnlineDeliveryIssue('socket-io-script-fetch-failed', { message: error && error.message ? error.message : '' });
+            _reportOnlineDeliveryIssue('socket-io-script-load-failed', { message: error && error.message ? error.message : '' });
             return false;
           });
         }

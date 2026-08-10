@@ -180,6 +180,7 @@ const TEST_GROUPS = {
         'online-retry-policy.test.js',
         'online-integration.test.js',
         'online-delivery-smoke.test.js',
+        'socket-io-delivery.test.js',
         'online-delivery-handshake.test.js',
         'saved-game-validation.test.js',
         'storage-settings.test.js',

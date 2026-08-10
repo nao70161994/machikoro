@@ -153,6 +153,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/clientCheckpoint.js', 'js/appShell.js'],
             ['js/clientReporting.js', 'js/clientReportingTransport.js'],
             ['js/clientReportingTransport.js', 'js/appShell.js'],
+            ['js/socketIoDelivery.js', 'js/appShell.js'],
             ['js/appShellClientReportingRuntime.js', 'js/appShell.js'],
             ['js/lifecycleNotify.js', 'js/lifecycleRuntime.js', 'js/appShell.js'],
             ['js/lifecycleTransport.js', 'js/clientEventRuntime.js', 'js/appShell.js'],
