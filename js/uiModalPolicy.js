@@ -73,6 +73,12 @@ function createRuntimeController() {
     function getInertRestore() { return inertRestore; }
     function setInertRestore(entries) { inertRestore = Array.isArray(entries) ? entries : []; }
     function clearInertRestore() { inertRestore = []; }
+    function reset() {
+        activeModalId = null;
+        lastFocus = null;
+        inertRestore = [];
+        return snapshot();
+    }
 
     return Object.freeze({
         snapshot,
@@ -84,6 +90,7 @@ function createRuntimeController() {
         getInertRestore,
         setInertRestore,
         clearInertRestore,
+        reset,
     });
 }
 

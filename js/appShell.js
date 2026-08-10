@@ -205,6 +205,10 @@ const appShellUiLockRuntime = AppShellUiLockRuntime.createRuntime({
     recoveryEffects: appShellRecoveryEffects,
     removeFreezeSnapshot: () => safeAppShellStorageRemove('machikoroFreezeSnapshot'),
     resetAccessibleModalState() {
+        if (typeof resetAccessibleModalRuntimeState === 'function') {
+            resetAccessibleModalRuntimeState();
+            return;
+        }
         try { if (typeof activeModalId !== 'undefined') activeModalId = null; } catch (_) {}
         try { if (typeof lastModalFocus !== 'undefined') lastModalFocus = null; } catch (_) {}
         try { if (typeof modalInertRestore !== 'undefined') modalInertRestore = []; } catch (_) {}

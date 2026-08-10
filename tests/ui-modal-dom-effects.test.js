@@ -46,8 +46,9 @@ function createHarness(options = {}) {
         body,
         getElementById: id => roots[id] || options.modals && options.modals[id] || null,
     };
+    const controller = UiModalPolicy.createRuntimeController();
     const runtime = UiModalDomEffects.createRuntime({
-        controller: UiModalPolicy.createRuntimeController(),
+        controller,
         getDocument: () => document,
         getVisibleBlockingIds: () => options.blockingIds || [],
         getWindow: () => ({
@@ -57,7 +58,7 @@ function createHarness(options = {}) {
         policy: UiModalPolicy,
         recordTrace: (...args) => traces.push(args),
     });
-    return { body, roots, runtime, traces };
+    return { body, controller, roots, runtime, traces };
 }
 
 runTest('UI modal DOM effectsは操作可能な先頭要素へfocusする', () => {
@@ -95,6 +96,29 @@ runTest('UI modal DOM effectsはnative inert未定義でも解除時にfalseを�
     runtime.setAppInert(false);
     assert.strictEqual(roots.titleScreen.inert, false);
     assert.strictEqual(roots.gameScreen.inert, false);
+});
+
+runTest('UI modal DOM effectsはgame reset後の次回openでも背景lockを再取得する', () => {
+    const { controller, roots, runtime } = createHarness();
+    const focus = { focus() {} };
+    controller.setActiveModalId('rulesModal');
+    controller.rememberFocus(focus);
+    runtime.setAppInert(true);
+    assert.strictEqual(controller.snapshot().inertRestoreCount, 2);
+
+    assert.deepStrictEqual(runtime.resetRuntimeState(), {
+        activeModalId: null,
+        hasLastFocus: false,
+        inertRestoreCount: 0,
+    });
+    assert.strictEqual(roots.titleScreen.inert, false);
+
+    controller.setActiveModalId('confirmModal');
+    runtime.setAppInert(true);
+    assert.strictEqual(controller.snapshot().inertRestoreCount, 2);
+    assert.strictEqual(roots.titleScreen.inert, true);
+    assert.strictEqual(roots.titleScreen.getAttribute('aria-hidden'), 'true');
+    assert.strictEqual(roots.titleScreen.style.pointerEvents, 'none');
 });
 
 runTest('UI modal DOM effectsはblocking modal不在時だけ孤立lockを除去する', () => {
@@ -137,6 +161,7 @@ runTest('ui.jsはmodal DOM mechanicsを専用runtimeへ委譲する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/ui.js'), 'utf8');
     assert.ok(source.includes('UiModalDomEffects.createRuntime'));
     assert.ok(source.includes('uiModalDomEffects.setAppInert'));
+    assert.ok(source.includes('uiModalDomEffects.resetRuntimeState'));
     assert.ok(source.includes('uiModalDomEffects.clearOrphanLocks'));
     assert.strictEqual(source.includes("root.querySelectorAll('button, [href]"), false);
 });

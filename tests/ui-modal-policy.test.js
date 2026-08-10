@@ -70,6 +70,14 @@ runTest('UI modal runtime controllerはactive focus inert復元stateを一つの
         hasLastFocus: false,
         inertRestoreCount: 0,
     });
+    controller.setActiveModalId('confirmModal');
+    controller.rememberFocus(focus);
+    controller.setInertRestore(restore);
+    assert.deepStrictEqual(controller.reset(), {
+        activeModalId: null,
+        hasLastFocus: false,
+        inertRestoreCount: 0,
+    });
 });
 
 runTest('UI modal policy はvisible blocking modalだけを抽出する', () => {

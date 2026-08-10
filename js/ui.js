@@ -992,6 +992,10 @@ function setAppInertForModal(enabled) {
     uiModalDomEffects.setAppInert(enabled);
 }
 
+function resetAccessibleModalRuntimeState() {
+    return uiModalDomEffects.resetRuntimeState();
+}
+
 function modalPolicyFor(id) {
     return UiModalPolicy.policyFor(id);
 }

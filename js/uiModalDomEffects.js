@@ -164,6 +164,11 @@ const UiModalDomEffects = (() => {
             return changed;
         }
 
+        function resetRuntimeState() {
+            setAppInert(false);
+            return dependencies.controller.reset();
+        }
+
         return Object.freeze({
             clearOrphanLocks,
             focusModal,
@@ -172,6 +177,7 @@ const UiModalDomEffects = (() => {
             isVisibleFocusable,
             normalizeForOpen,
             setAppInert,
+            resetRuntimeState,
         });
     }
 
