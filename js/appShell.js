@@ -312,16 +312,20 @@ const clientErrorOutbox = ClientReportingTransport.createOutbox({
     maxAgeMs: 7 * 24 * 60 * 60 * 1000,
 });
 
-let clientErrorRetryTimer = null;
+const clientErrorRetryTimer = RetryTimer.create({
+    now: () => Date.now(),
+    setTimeout: (callback, delay) => {
+        const setTimeoutFn = appShellComposition.resolveFunction('setTimeout');
+        return typeof setTimeoutFn === 'function' ? setTimeoutFn(callback, delay) : null;
+    },
+    clearTimeout: handle => {
+        const clearTimeoutFn = appShellComposition.resolveFunction('clearTimeout');
+        if (typeof clearTimeoutFn === 'function') clearTimeoutFn(handle);
+    },
+    run: () => flushClientErrorReports(),
+});
 function scheduleClientErrorRetry(delayMs) {
-    if (clientErrorRetryTimer !== null) return false;
-    const setTimeoutFn = appShellComposition.resolveFunction('setTimeout');
-    if (typeof setTimeoutFn !== 'function') return false;
-    clientErrorRetryTimer = setTimeoutFn(() => {
-        clientErrorRetryTimer = null;
-        flushClientErrorReports();
-    }, Math.max(0, Number(delayMs) || 0));
-    return true;
+    return clientErrorRetryTimer.schedule(delayMs);
 }
 
 const appShellClientReportingRuntime = AppShellClientReportingRuntime.createRuntime({
@@ -369,17 +373,21 @@ function flushClientErrorReports() {
 // ===== ゲームライフサイクル通知 =====
 const GAME_LIFECYCLE_ENDPOINT = '/api/game-lifecycle';
 const GAME_LIFECYCLE_START_SUPPRESS_MS = 60 * 1000;
-let gameLifecycleRetryTimer = null;
+const gameLifecycleRetryTimer = RetryTimer.create({
+    now: () => Date.now(),
+    setTimeout: (callback, delay) => {
+        const setTimeoutFn = appShellComposition.resolveFunction('setTimeout');
+        return typeof setTimeoutFn === 'function' ? setTimeoutFn(callback, delay) : null;
+    },
+    clearTimeout: handle => {
+        const clearTimeoutFn = appShellComposition.resolveFunction('clearTimeout');
+        if (typeof clearTimeoutFn === 'function') clearTimeoutFn(handle);
+    },
+    run: () => flushGameLifecycleNotifications(),
+});
 
 function scheduleGameLifecycleRetry(delayMs) {
-    if (gameLifecycleRetryTimer !== null) return false;
-    const setTimeoutFn = appShellComposition.resolveFunction('setTimeout');
-    if (typeof setTimeoutFn !== 'function') return false;
-    gameLifecycleRetryTimer = setTimeoutFn(() => {
-        gameLifecycleRetryTimer = null;
-        flushGameLifecycleNotifications();
-    }, Math.max(0, Number(delayMs) || 0));
-    return true;
+    return gameLifecycleRetryTimer.schedule(delayMs);
 }
 
 const gameLifecycleOutbox = LifecycleTransport.createOutbox({

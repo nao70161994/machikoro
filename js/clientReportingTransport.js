@@ -80,6 +80,16 @@ const ClientReportingTransport = (() => {
                 (!Number.isFinite(entry.nextAttemptAt) || entry.nextAttemptAt <= currentTime));
         }
 
+        function nextDelayMs() {
+            const currentTime = now();
+            const delays = load()
+                .filter(entry => !inFlight.has(entry.id))
+                .map(entry => Number.isFinite(entry.nextAttemptAt)
+                    ? Math.max(0, entry.nextAttemptAt - currentTime)
+                    : 0);
+            return delays.length > 0 ? Math.min(...delays) : null;
+        }
+
         function begin(id) {
             if (inFlight.has(id)) return false;
             inFlight.add(id);
@@ -109,7 +119,7 @@ const ClientReportingTransport = (() => {
             release(id);
         }
 
-        return Object.freeze({ enqueue, pending, begin, release, defer, complete });
+        return Object.freeze({ enqueue, pending, nextDelayMs, begin, release, defer, complete });
     }
 
     function deliver(options, entry, retry = false) {
@@ -185,7 +195,12 @@ const ClientReportingTransport = (() => {
     function flush(options) {
         if (!options.outbox || typeof options.fetchImpl !== 'function') return 0;
         const entry = options.outbox.pending()[0];
-        return entry && deliver(options, entry, true) ? 1 : 0;
+        if (entry && deliver(options, entry, true)) return 1;
+        if (typeof options.scheduleRetry === 'function') {
+            const delayMs = options.outbox.nextDelayMs();
+            if (delayMs !== null) options.scheduleRetry(delayMs);
+        }
+        return 0;
     }
 
     return Object.freeze({ createOutbox, persistedReport, send, flush });

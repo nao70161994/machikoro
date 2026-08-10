@@ -346,6 +346,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(clientReportingSource, context, { filename: 'js/clientReporting.js' });
     const clientReportingTransportSource = fs.readFileSync(path.join(__dirname, '..', 'js/clientReportingTransport.js'), 'utf8');
     vm.runInContext(clientReportingTransportSource, context, { filename: 'js/clientReportingTransport.js' });
+    const retryTimerSource = fs.readFileSync(path.join(__dirname, '..', 'js/retryTimer.js'), 'utf8');
+    vm.runInContext(retryTimerSource, context, { filename: 'js/retryTimer.js' });
     const appShellClientReportingRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellClientReportingRuntime.js'), 'utf8');
     vm.runInContext(appShellClientReportingRuntimeSource, context, { filename: 'js/appShellClientReportingRuntime.js' });
     const lifecycleNotifySource = fs.readFileSync(path.join(__dirname, '..', 'js/lifecycleNotify.js'), 'utf8');

@@ -183,12 +183,34 @@ runTest('client reporting transportは失敗をoutboxへ残し次回flush成功�
         },
     });
     assert.strictEqual(ClientReportingTransport.flush(retry.options), 0);
+    assert.strictEqual(restartedOutbox.nextDelayMs(), 1000);
     currentTime = 2000;
     assert.strictEqual(ClientReportingTransport.flush(retry.options), 1);
     await Promise.resolve();
     await Promise.resolve();
     assert.deepStrictEqual(outbox.pending(), []);
     assert.strictEqual(retry.checkpoints[0].event, 'client-error-retry-start');
+});
+
+runTest('client reporting flushは将来時刻の最短entryを自然再送予約する', () => {
+    let stored = '[]';
+    let currentTime = 1000;
+    const scheduled = [];
+    const outbox = ClientReportingTransport.createOutbox({
+        read: () => stored,
+        write: value => { stored = value; },
+        now: () => currentTime,
+    });
+    const first = outbox.enqueue({ source: 'first', message: 'one' });
+    outbox.begin(first.id);
+    outbox.defer(first.id);
+    currentTime = 1200;
+    const second = outbox.enqueue({ source: 'second', message: 'two' });
+    outbox.begin(second.id);
+    outbox.defer(second.id);
+    const subject = createSubject({ outbox, scheduleRetry: delay => scheduled.push(delay) });
+    assert.strictEqual(ClientReportingTransport.flush(subject.options), 0);
+    assert.deepStrictEqual(scheduled, [800]);
 });
 
 runTest('client reporting transportは失敗後に自然再送を予約し成功後に次件を流す', async () => {

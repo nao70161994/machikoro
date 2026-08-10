@@ -101,6 +101,7 @@ const TEST_GROUPS = {
         'client-error-reporting.test.js',
         'client-error-gateway.test.js',
         'client-reporting-transport.test.js',
+        'retry-timer.test.js',
         'app-shell-client-reporting-runtime.test.js',
         'client-event-runtime.test.js',
         'reporting-policy.test.js',
