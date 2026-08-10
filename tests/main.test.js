@@ -2855,6 +2855,10 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('.stats-player-btn {\n    width: auto;'));
     assert.ok(css.includes('.crash-message {\n    font-size: 12px;\n    color: #a7a9be;'));
     assert.ok(css.includes('.model-load-status {\n    min-height: 1.4em;\n    margin-top: 6px;\n    color: #a7a9be;'));
+    for (const selector of ['.landmark-badge', '.card-stock', '.stats-empty', '.stats-hint', '.stats-rank', '.stats-count']) {
+        const rule = css.slice(css.indexOf(`${selector} {`), css.indexOf('}', css.indexOf(`${selector} {`)) + 1);
+        assert.ok(rule.includes('color: #a7a9be;'), `${selector} keeps readable small-text contrast`);
+    }
     assert.strictEqual((css.match(/padding: max\(16px, env\(safe-area-inset-top, 0px\)\) max\(16px, env\(safe-area-inset-right, 0px\)\) max\(16px, env\(safe-area-inset-bottom, 0px\)\) max\(16px, env\(safe-area-inset-left, 0px\)\);/g) || []).length, 2);
     assert.ok(css.includes('padding: max(24px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));'));
     assert.ok(css.includes('body.pwa-banner-open #gameScreen'));

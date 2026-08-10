@@ -1245,7 +1245,7 @@ button:not(:disabled):active {
     border-radius: 5px;
     background: #1a1a2e;
     border: 1px solid #2a2a4a;
-    color: #4a5a6a;
+    color: #a7a9be;
     transition: all 0.3s;
 }
 
@@ -2007,7 +2007,7 @@ button:not(:disabled):active {
 }
 
 .card-stock {
-    color: #4a5a6a;
+    color: #a7a9be;
     font-size: 9px;
 }
 
@@ -2226,7 +2226,7 @@ button:not(:disabled):active {
 
 /* ===== 統計タブ ===== */
 .stats-empty {
-    color: rgba(255,255,255,0.4);
+    color: #a7a9be;
     font-size: 13px;
     text-align: center;
     padding: 24px 0;
@@ -2343,7 +2343,7 @@ button:not(:disabled):active {
 .stats-hint {
     font-size: 11px;
     font-weight: normal;
-    color: rgba(255,255,255,0.35);
+    color: #a7a9be;
 }
 
 .stats-cards {
@@ -2362,7 +2362,7 @@ button:not(:disabled):active {
 .stats-rank {
     width: 18px;
     text-align: right;
-    color: rgba(255,255,255,0.4);
+    color: #a7a9be;
     flex-shrink: 0;
 }
 
@@ -2405,7 +2405,7 @@ button:not(:disabled):active {
 .stats-count {
     width: 32px;
     text-align: right;
-    color: rgba(255,255,255,0.35);
+    color: #a7a9be;
     flex-shrink: 0;
 }
 
