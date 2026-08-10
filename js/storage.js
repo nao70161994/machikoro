@@ -335,6 +335,44 @@ function resumeGame(options = {}) {
             Player.landmarkNames()
         );
         const runtimeResult = LocalResumePolicy.executeRuntime(runtimePlan, {
+            captureRuntime() {
+                const titleScreen = document.getElementById("titleScreen");
+                const gameScreen = document.getElementById("gameScreen");
+                return {
+                    game: GameRuntimeState.runtime.snapshot(),
+                    setup: GameSetupState.runtime.snapshot(),
+                    enabledCards: Array.from(getEnabledCardSelection()),
+                    enabledLandmarks: Array.from(getEnabledLandmarkSelection()),
+                    shopStock: Object.assign({}, SHOP_STOCK),
+                    winSoundPlayed,
+                    titleDisplay: titleScreen && titleScreen.style ? titleScreen.style.display : '',
+                    gameDisplay: gameScreen && gameScreen.style ? gameScreen.style.display : '',
+                };
+            },
+            rollbackRuntime(before) {
+                invalidateCpuScheduleChain();
+                if (typeof globalThis.cancelDelayedHumanAction === 'function') {
+                    globalThis.cancelDelayedHumanAction();
+                }
+                cancelAutoSkip();
+                if (typeof resetUiLocksForGameReset === 'function') {
+                    resetUiLocksForGameReset('resume-game-rollback-ui-locks');
+                }
+                GameSetupState.runtime.replace(before.setup);
+                replaceEnabledCardSelection(before.enabledCards);
+                replaceEnabledLandmarkSelection(before.enabledLandmarks);
+                for (const key of Object.keys(SHOP_STOCK)) delete SHOP_STOCK[key];
+                Object.assign(SHOP_STOCK, before.shopStock);
+                GameRuntimeState.runtime.setGame(before.game.game);
+                GameRuntimeState.runtime.setCpuPlayers(before.game.cpuPlayers);
+                GameRuntimeState.runtime.setPreviousCoins(before.game.prevCoins);
+                GameRuntimeState.runtime.setUndoState(before.game.undoState);
+                winSoundPlayed = before.winSoundPlayed;
+                const titleScreen = document.getElementById("titleScreen");
+                const gameScreen = document.getElementById("gameScreen");
+                if (titleScreen && titleScreen.style) titleScreen.style.display = before.titleDisplay;
+                if (gameScreen && gameScreen.style) gameScreen.style.display = before.gameDisplay;
+            },
             invalidateCpuSchedule() {
                 invalidateCpuScheduleChain();
             },
@@ -405,6 +443,10 @@ function resumeGame(options = {}) {
         setLocalResumePending(false);
         if (!validatedSave) repository.remove();
         updateResumeButton();
+        const resumeButton = document.getElementById("btnResume");
+        if (validatedSave && resumeButton && typeof resumeButton.focus === 'function') {
+            resumeButton.focus();
+        }
         showNotice("セーブデータの読み込みに失敗しました");
     }
 }

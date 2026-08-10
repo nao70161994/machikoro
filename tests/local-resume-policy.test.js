@@ -104,6 +104,8 @@ assert.ok(Object.isFrozen(runtimePlan.enabledLandmarks));
 const effectOrder = [];
 const effects = {};
 for (const name of [
+    'captureRuntime',
+    'rollbackRuntime',
     'invalidateCpuSchedule',
     'cancelDelayedHumanAction',
     'resetOnline',
@@ -119,6 +121,10 @@ for (const name of [
 ]) {
     effects[name] = () => effectOrder.push(name);
 }
+effects.captureRuntime = () => {
+    effectOrder.push('captureRuntime');
+    return { marker: 'before' };
+};
 effects.createAndHydrateGame = plan => {
     effectOrder.push('createAndHydrateGame');
     assert.strictEqual(plan, runtimePlan);
@@ -129,6 +135,7 @@ assert.deepStrictEqual(LocalResumePolicy.executeRuntime(runtimePlan, effects), {
     reason: 'resumed',
 });
 assert.deepStrictEqual(effectOrder, [
+    'captureRuntime',
     'invalidateCpuSchedule',
     'cancelDelayedHumanAction',
     'resetOnline',
@@ -152,17 +159,43 @@ const hydrationFailureEffects = Object.fromEntries(Object.keys(effects).map(name
         return name === 'createAndHydrateGame' ? false : undefined;
     },
 ]));
+hydrationFailureEffects.captureRuntime = () => {
+    hydrationFailureOrder.push('captureRuntime');
+    return { marker: 'before' };
+};
 assert.deepStrictEqual(LocalResumePolicy.executeRuntime(runtimePlan, hydrationFailureEffects), {
     ok: false,
     reason: 'hydrate-failed',
 });
 assert.deepStrictEqual(hydrationFailureOrder, [
+    'captureRuntime',
     'invalidateCpuSchedule',
     'cancelDelayedHumanAction',
     'resetOnline',
     'resetUiLocks',
     'applySettings',
     'createAndHydrateGame',
+    'rollbackRuntime',
+]);
+
+const runtimeFailureOrder = [];
+const runtimeFailureEffects = Object.fromEntries(Object.keys(effects).map(name => [
+    name,
+    value => {
+        runtimeFailureOrder.push([name, value]);
+        if (name === 'captureRuntime') return { marker: 'captured' };
+        if (name === 'createAndHydrateGame') return true;
+        if (name === 'render') throw new Error('temporary render failure');
+        return undefined;
+    },
+]));
+assert.deepStrictEqual(LocalResumePolicy.executeRuntime(runtimePlan, runtimeFailureEffects), {
+    ok: false,
+    reason: 'runtime-failed',
+});
+assert.deepStrictEqual(runtimeFailureOrder[runtimeFailureOrder.length - 1], [
+    'rollbackRuntime',
+    { marker: 'captured' },
 ]);
 assert.deepStrictEqual(LocalResumePolicy.executeRuntime(runtimePlan, {}), {
     ok: false,

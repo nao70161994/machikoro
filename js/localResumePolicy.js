@@ -88,6 +88,8 @@ const LocalResumePolicy = (() => {
 
     function executeRuntime(plan, effects) {
         const names = [
+            'captureRuntime',
+            'rollbackRuntime',
             'invalidateCpuSchedule',
             'cancelDelayedHumanAction',
             'resetOnline',
@@ -105,22 +107,31 @@ const LocalResumePolicy = (() => {
         if (!plan || !effects || names.some(name => typeof effects[name] !== 'function')) {
             return Object.freeze({ ok: false, reason: 'invalid-effects' });
         }
-        effects.invalidateCpuSchedule();
-        effects.cancelDelayedHumanAction();
-        effects.resetOnline();
-        effects.resetUiLocks();
-        effects.applySettings(plan);
-        if (effects.createAndHydrateGame(plan) !== true) {
-            return Object.freeze({ ok: false, reason: 'hydrate-failed' });
+        const before = effects.captureRuntime();
+        try {
+            effects.invalidateCpuSchedule();
+            effects.cancelDelayedHumanAction();
+            effects.resetOnline();
+            effects.resetUiLocks();
+            effects.applySettings(plan);
+            if (effects.createAndHydrateGame(plan) !== true) {
+                effects.rollbackRuntime(before);
+                return Object.freeze({ ok: false, reason: 'hydrate-failed' });
+            }
+            effects.createCpuPlayers(plan.cpuCreationPlan);
+            effects.resetPresentationState();
+            effects.cancelAutoSkip();
+            effects.clearUndo();
+            effects.showGame();
+            effects.render();
+            effects.scheduleCpu();
+            return Object.freeze({ ok: true, reason: 'resumed' });
+        } catch (error) {
+            try {
+                effects.rollbackRuntime(before);
+            } catch (_) {}
+            return Object.freeze({ ok: false, reason: 'runtime-failed' });
         }
-        effects.createCpuPlayers(plan.cpuCreationPlan);
-        effects.resetPresentationState();
-        effects.cancelAutoSkip();
-        effects.clearUndo();
-        effects.showGame();
-        effects.render();
-        effects.scheduleCpu();
-        return Object.freeze({ ok: true, reason: 'resumed' });
     }
 
     return Object.freeze({

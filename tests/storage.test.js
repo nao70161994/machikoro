@@ -519,12 +519,22 @@ runTest('storage resumeGame は検証済みsaveを一時的なruntime例外で�
     const rt = loadStorageRuntime();
     const serialized = JSON.stringify(makeSavedGameState());
     rt.localStorage.setItem('savedGame', serialized);
+    const previousGame = new rt.GameManager(2);
+    previousGame.players[0].name = 'Before resume';
+    rt.__test.setGame(previousGame);
+    rt.elements.titleScreen.style.display = 'block';
+    rt.elements.gameScreen.style.display = 'none';
     rt.render = () => { throw new Error('temporary render failure'); };
 
     rt.resumeGame();
 
     assert.strictEqual(rt.localStorage.getItem('savedGame'), serialized);
     assert.strictEqual(rt.elements.resumeSection.style.display, 'flex');
+    assert.strictEqual(rt.elements.titleScreen.style.display, 'block');
+    assert.strictEqual(rt.elements.gameScreen.style.display, 'none');
+    assert.strictEqual(rt.__test.getGame(), previousGame);
+    assert.strictEqual(rt.elements.btnResume.focused, true);
+    assert.strictEqual(rt.__test.getResetUiLocksReason(), 'resume-game-rollback-ui-locks');
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
