@@ -11,7 +11,13 @@ function runtime(overrides = {}) {
     const socket = {
         on(event, handler) { handlers[event] = handler; },
     };
+    let currentTime = 1000;
     registerRecreateSocketHandler(socket, Object.assign({
+        now: () => currentTime,
+        validateRawPayload(payload) {
+            calls.push(['preflight', payload]);
+            return true;
+        },
         decodePayload: payload => RecreateRoomPayload.decode(true, payload),
         emitAppError(_socket, message) { calls.push(['error', message]); },
         handleRecreateRoom(_socket, payload) {
@@ -20,7 +26,7 @@ function runtime(overrides = {}) {
         },
         hostRestored(roomId) { calls.push(['restored', roomId]); },
     }, overrides));
-    return { handlers, calls, socket };
+    return { handlers, calls, socket, advance(ms) { currentTime += ms; } };
 }
 
 runTest('recreate socket handlerは既存eventだけを登録する', () => {
@@ -33,6 +39,7 @@ runTest('recreate socket handlerはv1をdecodeして既存restore順を維持す
     const payload = { roomId: 'ABC123' };
     rt.handlers.recreateRoom({ schemaVersion: 1, recreateRoom: payload });
     assert.deepStrictEqual(rt.calls, [
+        ['preflight', { schemaVersion: 1, recreateRoom: payload }],
         ['handle', payload],
         ['restored', 'ABC123'],
     ]);
@@ -43,17 +50,38 @@ runTest('recreate socket handlerはlegacyを受理しdecode失敗を副作用前
     const legacy = { roomId: 'ABC123' };
     rt.handlers.recreateRoom(legacy);
     assert.deepStrictEqual(rt.calls, [
+        ['preflight', legacy],
         ['handle', legacy],
         ['restored', 'ABC123'],
     ]);
 
     const rejected = runtime();
     rejected.handlers.recreateRoom({ schemaVersion: 99, recreateRoom: legacy });
-    assert.deepStrictEqual(rejected.calls, [['error', '復元データが不完全です']]);
+    assert.deepStrictEqual(rejected.calls, [
+        ['preflight', { schemaVersion: 99, recreateRoom: legacy }],
+        ['error', '復元データが不完全です'],
+    ]);
 });
 
 runTest('recreate socket handlerはrestore失敗時にhostless coordinatorを進めない', () => {
     const rt = runtime({ handleRecreateRoom() { return { ok: false }; } });
     rt.handlers.recreateRoom({ roomId: 'ABC123' });
-    assert.deepStrictEqual(rt.calls, []);
+    assert.deepStrictEqual(rt.calls, [['preflight', { roomId: 'ABC123' }]]);
+});
+
+runTest('recreate socket handlerはraw上限をdecode前に拒否して連投を抑止する', () => {
+    let decoded = 0;
+    const oversized = runtime({
+        validateRawPayload: () => false,
+        decodePayload() { decoded++; return { ok: true, value: {} }; },
+    });
+    oversized.handlers.recreateRoom({ actionLog: Array.from({ length: 1001 }, () => ({})) });
+    assert.strictEqual(decoded, 0);
+    assert.deepStrictEqual(oversized.calls, [['error', '復元データが不完全です']]);
+
+    oversized.handlers.recreateRoom({ roomId: 'ABC123' });
+    assert.deepStrictEqual(oversized.calls[1], ['error', '復元処理を続けて実行できません']);
+    oversized.advance(1000);
+    oversized.handlers.recreateRoom({ roomId: 'ABC123' });
+    assert.strictEqual(decoded, 0);
 });

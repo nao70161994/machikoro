@@ -852,6 +852,13 @@ registerSocketConnectionRuntime({
     recreate(socket) {
         // サーバー再起動後にホストがルームを復元する
         registerRecreateSocketHandler(socket, {
+            validateRawPayload(payload) {
+                const raw = payload && payload.schemaVersion === 1 &&
+                    payload.recreateRoom && typeof payload.recreateRoom === 'object'
+                    ? payload.recreateRoom
+                    : payload;
+                return validateRestorePayloadLimits(raw).ok;
+            },
             decodePayload: payload => GameSchemaRecreateWire.decode(
                 GAME_SCHEMA_RECREATE_WIRE_ENABLED,
                 payload
