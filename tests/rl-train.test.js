@@ -494,7 +494,9 @@ runTest('rl train: JS CPU oracle state は pending queue を渡す', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'js_cpu_oracle.py'), 'utf8');
     const oracleSource = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'js_cpu_action_oracle.js'), 'utf8');
     assert.ok(source.includes('pendingActions'));
+    assert.ok(source.includes('cardDormantOrder'));
     assert.ok(oracleSource.includes('game.pendingActionQueue = Array.isArray(state.pendingActions)'));
+    assert.ok(oracleSource.includes('Array.isArray(source.cardDormantOrder)'));
     assert.ok(oracleSource.includes('runtime.GameManager.nextPendingActionFor(game)'));
 });
 
@@ -1005,6 +1007,110 @@ print(json.dumps({
     assert.deepStrictEqual(result.moverTarget, ['麦畑', 'パン屋', 'パン屋']);
     assert.deepStrictEqual(result.businessActor, ['麦畑', 'カフェ']);
     assert.deepStrictEqual(result.businessTarget, ['麦畑', 'パン屋', 'パン屋']);
+});
+
+runTest('rl envは同名のactive/休業が混在するBusinessとMoverでJSの取得順を保つ', () => {
+    const runtime = loadGameRuntime();
+    const resetPlayer = player => {
+        player.cards = [];
+        player.dormantCards = [];
+    };
+    const addCard = (player, name, dormant = false) => {
+        const card = runtime.createCardByName(name);
+        player.cards.push(card);
+        if (dormant) player.makeDormant(card);
+    };
+    const snapshotPlayer = player => ({
+        order: player.cards.map(card => card.name),
+        dormantOrder: player.cards.map(card => player.isDormant(card)),
+    });
+
+    const business = new runtime.GameManager(2);
+    business.phase = runtime.GAME_PHASES.PENDING;
+    business.pendingBusiness = 1;
+    business.pendingActionQueue = [{ field: 'pendingBusiness', action: 'resolveBusiness' }];
+    business.players.forEach(resetPlayer);
+    addCard(business.players[0], 'パン屋', true);
+    addCard(business.players[0], 'コンビニ');
+    addCard(business.players[0], 'パン屋');
+    addCard(business.players[1], 'カフェ', true);
+    addCard(business.players[1], 'コンビニ');
+    addCard(business.players[1], 'カフェ');
+    assert.strictEqual(business.resolveBusiness(0, 1, 2), true);
+
+    const mover = new runtime.GameManager(2);
+    mover.phase = runtime.GAME_PHASES.PENDING;
+    mover.pendingMover = 1;
+    mover.pendingActionQueue = [{ field: 'pendingMover', action: 'resolveMover' }];
+    mover.players.forEach(resetPlayer);
+    addCard(mover.players[0], 'カフェ');
+    addCard(mover.players[0], 'コンビニ');
+    addCard(mover.players[0], 'カフェ', true);
+    addCard(mover.players[1], '麦畑');
+    assert.strictEqual(mover.resolveMover(2, 1), true);
+
+    const output = runPython(`
+import json
+from scripts.rl.cards import CARD_INDEX
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_BC_BASE, ACT_MOVER_BASE
+from scripts.rl.js_cpu_oracle import env_to_js_state
+
+def reset_player(player):
+    for name in player.cards:
+        player.cards[name] = 0
+        player.dormant[name] = 0
+    player.card_order = []
+    player.card_order_dormant = []
+
+def snapshot(player):
+    return {"order": player.card_order, "dormantOrder": player.card_order_dormant}
+
+business = MachikoroEnv(player_count=2)
+business.phase = PHASE_PENDING
+business.pending_biz = 1
+business._append_pending("pendingBusiness")
+for player in business.players:
+    reset_player(player)
+business._add_one_card(business.players[0], "パン屋", True)
+business._add_one_card(business.players[0], "コンビニ")
+business._add_one_card(business.players[0], "パン屋")
+business._add_one_card(business.players[1], "カフェ", True)
+business._add_one_card(business.players[1], "コンビニ")
+business._add_one_card(business.players[1], "カフェ")
+give = CARD_INDEX["パン屋"]
+take = CARD_INDEX["カフェ"]
+business.step(ACT_BC_BASE + give * len(CARD_INDEX) + take)
+
+mover = MachikoroEnv(player_count=2)
+mover.phase = PHASE_PENDING
+mover.pending_mover = 1
+mover._append_pending("pendingMover")
+for player in mover.players:
+    reset_player(player)
+mover._add_one_card(mover.players[0], "カフェ")
+mover._add_one_card(mover.players[0], "コンビニ")
+mover._add_one_card(mover.players[0], "カフェ", True)
+mover._add_one_card(mover.players[1], "麦畑")
+mover.step(ACT_MOVER_BASE + CARD_INDEX["カフェ"])
+
+clone = mover.clone()
+oracle_state = env_to_js_state(mover)
+print(json.dumps({
+    "businessActor": snapshot(business.players[0]),
+    "businessTarget": snapshot(business.players[1]),
+    "moverActor": snapshot(mover.players[0]),
+    "moverTarget": snapshot(mover.players[1]),
+    "cloneTarget": snapshot(clone.players[1]),
+    "oracleDormantOrder": oracle_state["players"][1]["cardDormantOrder"],
+}, ensure_ascii=False))
+`);
+    const python = JSON.parse(output);
+    assert.deepStrictEqual(python.businessActor, snapshotPlayer(business.players[0]));
+    assert.deepStrictEqual(python.businessTarget, snapshotPlayer(business.players[1]));
+    assert.deepStrictEqual(python.moverActor, snapshotPlayer(mover.players[0]));
+    assert.deepStrictEqual(python.moverTarget, snapshotPlayer(mover.players[1]));
+    assert.deepStrictEqual(python.cloneTarget, snapshotPlayer(mover.players[1]));
+    assert.deepStrictEqual(python.oracleDormantOrder, snapshotPlayer(mover.players[1]).dormantOrder);
 });
 
 runTest('rl envは多人数の赤施設支払いを手番から反時計回りに処理する', () => {

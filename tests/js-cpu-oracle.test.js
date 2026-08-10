@@ -1,6 +1,7 @@
 const assert = require('assert');
 const { spawnSync } = require('child_process');
 const path = require('path');
+const { createGameFromState } = require('../scripts/rl/js_cpu_action_oracle.js');
 
 function queryOracle(payload) {
     const result = spawnSync(
@@ -29,6 +30,47 @@ function basePlayers() {
             landmarks: {},
         },
     ];
+}
+
+{
+    const game = createGameFromState({
+        phase: 'pending',
+        players: [
+            {
+                coins: 3,
+                cards: { 'カフェ': 2, 'コンビニ': 1 },
+                cardOrder: ['カフェ', 'コンビニ', 'カフェ'],
+                cardDormantOrder: [false, false, true],
+                dormant: { 'カフェ': 1 },
+                landmarks: {},
+            },
+            basePlayers()[1],
+        ],
+    });
+    assert.deepStrictEqual(
+        game.players[0].cards.map(card => game.players[0].isDormant(card)),
+        [false, false, true]
+    );
+}
+
+{
+    const game = createGameFromState({
+        phase: 'pending',
+        players: [
+            {
+                coins: 3,
+                cards: { 'カフェ': 2, 'コンビニ': 1 },
+                cardOrder: ['カフェ', 'コンビニ', 'カフェ'],
+                dormant: { 'カフェ': 1 },
+                landmarks: {},
+            },
+            basePlayers()[1],
+        ],
+    });
+    assert.deepStrictEqual(
+        game.players[0].cards.map(card => game.players[0].isDormant(card)),
+        [true, false, false]
+    );
 }
 
 {

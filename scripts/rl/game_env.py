@@ -67,6 +67,7 @@ class PlayerState:
         self.cards: dict = {n: 0 for n in CARD_NAMES}
         self.dormant: dict = {n: 0 for n in CARD_NAMES}
         self.card_order: list[str] = ["麦畑", "パン屋"]
+        self.card_order_dormant: list[bool] = [False, False]
         self.landmarks: dict = {n: False for n in LANDMARK_ORDER}
         self.it_venture_coins: int = 0
         # 初期カード
@@ -100,6 +101,7 @@ class PlayerState:
         p.cards = dict(self.cards)
         p.dormant = dict(self.dormant)
         p.card_order = list(self.card_order)
+        p.card_order_dormant = list(getattr(self, "card_order_dormant", []))
         p.landmarks = dict(self.landmarks)
         p.it_venture_coins = self.it_venture_coins
         return p
@@ -323,6 +325,7 @@ class MachikoroEnv:
                     n = pl.active(name)
                     if n > 0:
                         pl.dormant[name] = pl.dormant.get(name, 0) + n
+                        self._sync_card_order(pl)
                         reward += n
                 p.coins += reward
             self.pending_clean -= 1
@@ -565,6 +568,7 @@ class MachikoroEnv:
                 earn = p.cards["ブドウ園"] * cd.income * count
                 p.coins += earn
                 p.dormant[name] = count
+                self._sync_card_order(p)
                 continue
 
             earn = self._calc_green(cd, p, count)
@@ -771,8 +775,15 @@ class MachikoroEnv:
         dormant_count = player.dormant.get(name, 0)
         active_count = player.active(name)
         was_dormant = dormant_count > 0 if prefer_dormant else active_count <= 0
+        remove_index = next(
+            index for index, (card_name, dormant) in enumerate(
+                zip(player.card_order, player.card_order_dormant)
+            )
+            if card_name == name and dormant == was_dormant
+        )
         player.cards[name] -= 1
-        player.card_order.remove(name)
+        player.card_order.pop(remove_index)
+        player.card_order_dormant.pop(remove_index)
         if was_dormant:
             player.dormant[name] = max(0, player.dormant.get(name, 0) - 1)
         return was_dormant
@@ -781,27 +792,56 @@ class MachikoroEnv:
         active_before = player.active(name)
         if would_activate and player.dormant.get(name, 0) > 0:
             player.dormant[name] = 0
+            self._sync_card_order(player)
         return active_before
 
     def _add_one_card(self, player: PlayerState, name: str, dormant: bool = False):
         self._sync_card_order(player)
         player.cards[name] += 1
         player.card_order.append(name)
+        player.card_order_dormant.append(bool(dormant))
         if dormant:
             player.dormant[name] = player.dormant.get(name, 0) + 1
 
     def _sync_card_order(self, player: PlayerState) -> list[str]:
         """Keep acquisition order compatible with tests/fixtures that assign card counts directly."""
         remaining = {name: max(0, int(player.cards.get(name, 0))) for name in CARD_NAMES}
+        old_order = list(getattr(player, "card_order", []))
+        old_dormant = list(getattr(player, "card_order_dormant", []))
+        has_identity = len(old_dormant) == len(old_order)
         ordered = []
-        for name in getattr(player, "card_order", []):
+        dormant_order = []
+        for index, name in enumerate(old_order):
             if name not in remaining or remaining[name] <= 0:
                 continue
             ordered.append(name)
+            dormant_order.append(bool(old_dormant[index]) if has_identity else False)
             remaining[name] -= 1
         for name in CARD_NAMES:
-            ordered.extend([name] * remaining[name])
+            count = remaining[name]
+            ordered.extend([name] * count)
+            dormant_order.extend([False] * count)
+
+        for name in CARD_NAMES:
+            desired = min(max(0, int(player.dormant.get(name, 0))), int(player.cards.get(name, 0)))
+            indices = [index for index, card_name in enumerate(ordered) if card_name == name]
+            current = sum(1 for index in indices if dormant_order[index])
+            if current < desired:
+                for index in indices:
+                    if not dormant_order[index]:
+                        dormant_order[index] = True
+                        current += 1
+                        if current == desired:
+                            break
+            elif current > desired:
+                for index in reversed(indices):
+                    if dormant_order[index]:
+                        dormant_order[index] = False
+                        current -= 1
+                        if current == desired:
+                            break
         player.card_order = ordered
+        player.card_order_dormant = dormant_order
         return ordered
 
     def _ordered_distinct_card_names(self, player: PlayerState) -> list[str]:

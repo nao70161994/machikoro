@@ -73,14 +73,20 @@ function createGameFromState(state) {
             }
         }
         player.dormantCards = [];
-        const dormant = source.dormant || source.dormantCards || {};
-        for (const [name, count] of Object.entries(dormant)) {
-            let remaining = count;
-            for (const card of player.cards) {
-                if (remaining <= 0) break;
-                if (card.name !== name) continue;
-                player.dormantCards.push(card);
-                remaining--;
+        if (Array.isArray(source.cardDormantOrder) && source.cardDormantOrder.length === player.cards.length) {
+            for (let index = 0; index < player.cards.length; index++) {
+                if (source.cardDormantOrder[index]) player.dormantCards.push(player.cards[index]);
+            }
+        } else {
+            const dormant = source.dormant || source.dormantCards || {};
+            for (const [name, count] of Object.entries(dormant)) {
+                let remaining = count;
+                for (const card of player.cards) {
+                    if (remaining <= 0) break;
+                    if (card.name !== name) continue;
+                    player.dormantCards.push(card);
+                    remaining--;
+                }
             }
         }
         player.hasYakusho = source.hasYakusho !== false;
