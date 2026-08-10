@@ -6,15 +6,36 @@ const UiScreenFocus = (() => {
         title: Object.freeze({ screenId: 'titleScreen', targetId: 'titleHeading' }),
     });
 
-    function isUnavailable(element) {
-        if (!element || typeof element.focus !== 'function') return true;
-        if (element.isConnected === false || element.hidden === true || element.inert === true) return true;
-        if (element.disabled === true) return true;
-        if (element.style && (element.style.display === 'none' || element.style.visibility === 'hidden')) {
-            return true;
+    function hasHiddenAncestor(element, documentRef) {
+        let current = element;
+        while (current) {
+            if (current.isConnected === false || current.hidden === true || current.inert === true) {
+                return true;
+            }
+            if (current.style &&
+                    (current.style.display === 'none' || current.style.visibility === 'hidden')) {
+                return true;
+            }
+            if (typeof current.getAttribute === 'function' &&
+                    current.getAttribute('aria-hidden') === 'true') {
+                return true;
+            }
+            const view = documentRef && documentRef.defaultView;
+            if (view && typeof view.getComputedStyle === 'function') {
+                const computed = view.getComputedStyle(current);
+                if (computed && (computed.display === 'none' || computed.visibility === 'hidden')) {
+                    return true;
+                }
+            }
+            current = current.parentElement;
         }
-        return typeof element.getAttribute === 'function' &&
-            element.getAttribute('aria-hidden') === 'true';
+        return false;
+    }
+
+    function isUnavailable(element, documentRef) {
+        if (!element || typeof element.focus !== 'function') return true;
+        if (element.disabled === true) return true;
+        return hasHiddenAncestor(element, documentRef);
     }
 
     function blockingOverlayVisible(documentRef) {
@@ -31,8 +52,8 @@ const UiScreenFocus = (() => {
             (crashScreen.style.display === 'flex' || crashScreen.style.display === 'block'));
     }
 
-    function focusElement(element) {
-        if (isUnavailable(element)) return false;
+    function focusElement(element, documentRef) {
+        if (isUnavailable(element, documentRef)) return false;
         if (typeof element.hasAttribute !== 'function' || !element.hasAttribute('tabindex')) {
             if (typeof element.setAttribute === 'function') element.setAttribute('tabindex', '-1');
             else element.tabIndex = -1;
@@ -50,15 +71,29 @@ const UiScreenFocus = (() => {
         if (!target || !documentRef || typeof documentRef.getElementById !== 'function') return false;
         if (blockingOverlayVisible(documentRef)) return false;
         const screen = documentRef.getElementById(target.screenId);
-        if (isUnavailable(screen)) return false;
+        if (isUnavailable(screen, documentRef)) return false;
         const preferred = documentRef.getElementById(target.targetId);
-        return focusElement(preferred) || focusElement(screen);
+        return focusElement(preferred, documentRef) || focusElement(screen, documentRef);
+    }
+
+    function hasUsableFocus(documentRef) {
+        if (!documentRef) return false;
+        const active = documentRef.activeElement;
+        if (!active || active === documentRef.body || active === documentRef.documentElement) return false;
+        return !isUnavailable(active, documentRef);
+    }
+
+    function ensureCurrentScreenFocus(documentRef) {
+        if (hasUsableFocus(documentRef) || blockingOverlayVisible(documentRef)) return false;
+        return focusScreen(documentRef, 'game') || focusScreen(documentRef, 'title');
     }
 
     return Object.freeze({
+        ensureCurrentScreenFocus,
         focusGame: documentRef => focusScreen(documentRef, 'game'),
         focusScreen,
         focusTitle: documentRef => focusScreen(documentRef, 'title'),
+        hasUsableFocus,
         targets,
     });
 })();

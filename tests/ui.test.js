@@ -135,7 +135,7 @@ function loadUiRuntime(options = {}) {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/ui.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -532,6 +532,39 @@ runTest('showConfirm はOKでcallbackを一度だけ呼びmodal lockを解除す
     assert.strictEqual(context.__machikoroConfirmModalOpen, false);
     assert.strictEqual(elements.titleScreen.inert, false);
     assert.strictEqual(elements.gameScreen.inert, false);
+});
+
+runTest('showConfirm はOK後の再描画でopenerが消えた時だけ画面へfocusを補完する', () => {
+    const { context, elements } = loadUiRuntime();
+    const opener = makeElement();
+    elements.gameScreen.style.display = 'block';
+    elements.titleScreen.style.display = 'none';
+    elements.status.focus = () => {
+        elements.status.focused = true;
+        context.document.activeElement = elements.status;
+    };
+    opener.focus = () => { context.document.activeElement = opener; };
+    context.document.activeElement = opener;
+
+    context.showConfirm('再描画確認', () => { opener.isConnected = false; });
+    elements.confirmOkBtn.onclick();
+
+    assert.strictEqual(context.document.activeElement, elements.status);
+    assert.strictEqual(elements.status.focused, true);
+});
+
+runTest('showConfirm はOK callbackが移した有効focusを上書きしない', () => {
+    const { context, elements } = loadUiRuntime();
+    const callbackTarget = makeElement();
+    callbackTarget.focus = () => { context.document.activeElement = callbackTarget; };
+    elements.gameScreen.style.display = 'block';
+    elements.titleScreen.style.display = 'none';
+
+    context.showConfirm('focus確認', () => { callbackTarget.focus(); });
+    elements.confirmOkBtn.onclick();
+
+    assert.strictEqual(context.document.activeElement, callbackTarget);
+    assert.strictEqual(elements.status.focused, undefined);
 });
 
 runTest('showConfirm はCancelとEscapeで任意のcancel callbackを一度だけ呼ぶ', () => {

@@ -77,6 +77,37 @@ runTest('integration: セーブ→再開でゲーム状態を復元する', () =
     assert.strictEqual(rt.__test.elements.status.focused, true);
 });
 
+runTest('integration: 保存削除confirm後に消えたopenerからgame statusへfocusを戻す', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    rt.saveGameState();
+    rt.updateResumeButton();
+
+    const opener = rt.document.getElementById('btnDeleteSave');
+    opener.parentElement = rt.__test.elements.resumeSection;
+    opener.focus = () => { rt.document.activeElement = opener; };
+    rt.__test.elements.status.focused = false;
+    rt.__test.elements.status.focus = () => {
+        rt.__test.elements.status.focused = true;
+        rt.document.activeElement = rt.__test.elements.status;
+    };
+    rt.document.activeElement = opener;
+
+    rt.deleteSavedGame();
+    rt.__test.elements.confirmOkBtn.onclick();
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.strictEqual(rt.__test.elements.resumeSection.style.display, 'none');
+    assert.strictEqual(rt.document.activeElement, rt.__test.elements.status);
+    assert.strictEqual(rt.__test.elements.status.focused, true);
+});
+
 runTest('integration: 保存したstrong CPUのサイコロ後フェーズは再開後に人間手番まで完了する', () => {
     const cases = [
         {

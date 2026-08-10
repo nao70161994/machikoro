@@ -1384,7 +1384,11 @@ function showConfirm(message, onOk, onCancel) {
     confirmModalController.open(onCancel);
     okBtn.onclick = () => {
         closeConfirmModal(true);
-        onOk();
+        try {
+            onOk();
+        } finally {
+            UiScreenFocus.ensureCurrentScreenFocus(document);
+        }
     };
     cancelBtn.onclick = () => {
         closeConfirmModal(false);
