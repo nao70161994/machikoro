@@ -70,7 +70,17 @@ const AppShellCrashRuntime = (() => {
         }
 
         function resume() {
-            if (resumeGame() === false) return false;
+            let result;
+            try {
+                result = resumeGame();
+            } catch (error) {
+                effects.disableBackground(getBackgroundElements());
+                throw error;
+            }
+            if (result === false) {
+                effects.disableBackground(getBackgroundElements());
+                return false;
+            }
             controller.hide();
             removeKeydownListener(trapFocus);
             effects.hide(getElementById('crashScreen'));

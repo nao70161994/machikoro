@@ -44,6 +44,13 @@ function appShellGameRuntimeSnapshot() {
 function appShellOnlineRuntimeSnapshot() {
     return OnlineRuntimeState.runtime.snapshot();
 }
+function appShellHasActiveOnlineContext(snapshot = appShellOnlineRuntimeSnapshot()) {
+    let lobbyRequestPending = false;
+    try {
+        lobbyRequestPending = typeof _isOnlineFlowActive === 'function' && _isOnlineFlowActive();
+    } catch (_) {}
+    return OnlineRuntimeState.hasActiveContext(snapshot, { lobbyRequestPending });
+}
 
 // ===== クライアントエラー通知 =====
 const FREEZE_WATCHDOG_INTERVAL_MS = 1000;
@@ -487,7 +494,7 @@ const appShellCrashRuntime = AppShellCrashRuntime.createRuntime({
     policy: CrashScreen,
     readSavedGame: () => {
         const online = appShellOnlineRuntimeSnapshot();
-        return online.isOnlineGame || online.isReconnectingOnline
+        return appShellHasActiveOnlineContext(online)
             ? null
             : safeAppShellStorageGet('savedGame');
     },

@@ -23,6 +23,14 @@ runTest('online runtime stateは既知fieldだけを更新して一括resetで�
     assert.deepStrictEqual(controller.reset(), OnlineRuntimeState.defaults);
 });
 
+runTest('online runtime stateはロビー参加から再接続完了までをactive contextと判定する', () => {
+    assert.strictEqual(OnlineRuntimeState.hasActiveContext(OnlineRuntimeState.defaults), false);
+    assert.strictEqual(OnlineRuntimeState.hasActiveContext({ myRoomId: 'ABC123' }), true);
+    assert.strictEqual(OnlineRuntimeState.hasActiveContext({ isOnlineGame: true }), true);
+    assert.strictEqual(OnlineRuntimeState.hasActiveContext({ isReconnectingOnline: true }), true);
+    assert.strictEqual(OnlineRuntimeState.hasActiveContext({}, { lobbyRequestPending: true }), true);
+});
+
 runTest('online runtime state compatibility globalsは同じcontrollerを双方向投影する', () => {
     const controller = OnlineRuntimeState.createController();
     const root = {};

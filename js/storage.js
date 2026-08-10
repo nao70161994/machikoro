@@ -7,6 +7,13 @@ function storageGameRuntimeSnapshot() {
 function storageOnlineRuntimeSnapshot() {
     return OnlineRuntimeState.runtime.snapshot();
 }
+function storageHasActiveOnlineContext(snapshot = storageOnlineRuntimeSnapshot()) {
+    let lobbyRequestPending = false;
+    try {
+        lobbyRequestPending = typeof _isOnlineFlowActive === 'function' && _isOnlineFlowActive();
+    } catch (_) {}
+    return OnlineRuntimeState.hasActiveContext(snapshot, { lobbyRequestPending });
+}
 const LOCAL_SAVE_SCHEMA_WRITE_ENABLED = typeof window !== 'undefined' &&
     window.MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED === true;
 let localSaveRepository = null;
@@ -275,7 +282,7 @@ function reconnectOnline() {
 
 function resumeGame(options = {}) {
     const onlineState = storageOnlineRuntimeSnapshot();
-    if (onlineState.isOnlineGame === true || onlineState.isReconnectingOnline === true) return false;
+    if (storageHasActiveOnlineContext(onlineState)) return false;
     const resumePending = localResumePreloadController.snapshot().pending;
     if (!LocalResumePolicy.shouldInspectRepository({
         resumePending,

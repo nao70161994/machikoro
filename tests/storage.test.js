@@ -31,6 +31,7 @@ function loadStorageRuntime(options = {}) {
             MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED:
                 options.localSaveSchemaWriteEnabled === true,
         },
+        _isOnlineFlowActive: () => options.onlineFlowActive === true,
         elements,
         alerts,
         GameManager: class GameManager {
@@ -542,18 +543,33 @@ runTest('storage resumeGame はonline active/reconnecting中にlocal saveへ切�
     for (const onlineState of [
         { isOnlineGame: true, isReconnectingOnline: false },
         { isOnlineGame: false, isReconnectingOnline: true },
+        { isOnlineGame: false, isReconnectingOnline: false, myRoomId: 'ABC123' },
     ]) {
         const rt = loadStorageRuntime();
         const serialized = JSON.stringify(makeSavedGameState());
         rt.localStorage.setItem('savedGame', serialized);
         rt.OnlineRuntimeState.runtime.setOnline(onlineState.isOnlineGame);
         rt.OnlineRuntimeState.runtime.setReconnecting(onlineState.isReconnectingOnline);
+        if (onlineState.myRoomId) {
+            rt.OnlineRuntimeState.runtime.acceptRoom({
+                playerIndex: 0,
+                roomId: onlineState.myRoomId,
+                reconnectToken: 'token',
+            });
+        }
 
         assert.strictEqual(rt.resumeGame(), false);
         assert.strictEqual(rt.__test.getResetOnlineStateCalls(), 0);
         assert.strictEqual(rt.localStorage.getItem('savedGame'), serialized);
         assert.strictEqual(rt.__test.getGame(), null);
     }
+
+    const pendingRt = loadStorageRuntime({ onlineFlowActive: true });
+    const serialized = JSON.stringify(makeSavedGameState());
+    pendingRt.localStorage.setItem('savedGame', serialized);
+    assert.strictEqual(pendingRt.resumeGame(), false);
+    assert.strictEqual(pendingRt.__test.getResetOnlineStateCalls(), 0);
+    assert.strictEqual(pendingRt.localStorage.getItem('savedGame'), serialized);
 });
 
 runTest('storage resumeGame はv1 local-save envelopeをlegacyと同じ経路で復元する', () => {

@@ -1730,6 +1730,30 @@ runTest('main showCrashScreen はクラッシュ表示と保存データ復帰�
     assert.strictEqual(rt.__test.getCpuScheduleToken(), beforeToken + 1);
 });
 
+runTest('main showCrashScreen はオンラインロビー参加中にlocal save復帰を提示しない', () => {
+    const rt = loadMainRuntime();
+    rt.localStorage.setItem('savedGame', '{"ok":true}');
+    rt.OnlineRuntimeState.runtime.acceptRoom({
+        playerIndex: 0,
+        roomId: 'ABC123',
+        reconnectToken: 'token',
+    });
+
+    rt.showCrashScreen(new Error('lobby crash'));
+
+    assert.strictEqual(rt.__test.elements.crashResumeBtn.style.display, 'none');
+});
+
+runTest('main showCrashScreen はオンライン接続要求中にlocal save復帰を提示しない', () => {
+    const rt = loadMainRuntime();
+    rt.localStorage.setItem('savedGame', '{"ok":true}');
+    rt._isOnlineFlowActive = () => true;
+
+    rt.showCrashScreen(new Error('request crash'));
+
+    assert.strictEqual(rt.__test.elements.crashResumeBtn.style.display, 'none');
+});
+
 runTest('main crash focus trapは末尾Tabを先頭へ循環させる', () => {
     const rt = loadMainRuntime();
     const resume = rt.__test.elements.crashResumeBtn;

@@ -103,9 +103,20 @@ runTest('app shell crash runtimeはresume拒否時にoverlayと背景lockを維�
     runtime.show(new Error('boom'));
     assert.strictEqual(runtime.resume(), false);
     assert.strictEqual(runtime.trapFocus({ key: 'Tab', shiftKey: true }), undefined);
+    assert.strictEqual(calls.filter(call => call[0] === 'disable-background').length, 2);
     assert.strictEqual(calls.some(call => call[0] === 'hide'), false);
     assert.strictEqual(calls.some(call => call[0] === 'restore-background'), false);
     assert.strictEqual(calls.some(call => call[0] === 'remove-keydown'), false);
+});
+
+runTest('app shell crash runtimeはresume例外時も背景lockを再適用して例外を伝える', () => {
+    const { calls, runtime } = createHarness({
+        resumeGame() { calls.push(['resume-game']); throw new Error('resume failed'); },
+    });
+    runtime.show(new Error('boom'));
+    assert.throws(() => runtime.resume(), /resume failed/);
+    assert.strictEqual(calls.filter(call => call[0] === 'disable-background').length, 2);
+    assert.strictEqual(calls.some(call => call[0] === 'hide'), false);
 });
 
 runTest('app shell crash runtimeは必須依存欠落を初期化時に拒否する', () => {

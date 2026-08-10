@@ -157,12 +157,21 @@ const OnlineRuntimeState = (() => {
         });
     }
 
+    function hasActiveContext(snapshot = runtime.snapshot(), options = {}) {
+        return !!snapshot && (
+            snapshot.isOnlineGame === true ||
+            snapshot.isReconnectingOnline === true ||
+            (typeof snapshot.myRoomId === 'string' && snapshot.myRoomId.length > 0) ||
+            options.lobbyRequestPending === true
+        );
+    }
+
     const runtime = createController();
     const root = typeof globalThis !== 'undefined' ? globalThis : null;
     const browserRoot = typeof window !== 'undefined' ? window : null;
     if (root) runtime.bindGlobals(root, { writable: !browserRoot || browserRoot !== root });
 
-    return Object.freeze({ defaults, fields, createController, runtime });
+    return Object.freeze({ defaults, fields, createController, hasActiveContext, runtime });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = OnlineRuntimeState;
