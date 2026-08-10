@@ -1,6 +1,11 @@
 'use strict';
 
-function makeRejoinPayload({ acceptedClientActionRefs, buildRestoreSnapshotAudit, encodeSnapshotField }) {
+function makeRejoinPayload({
+    acceptedClientActionRefs,
+    buildRestoreSnapshotAudit,
+    encodeSnapshotField,
+    maxFullActionLogLength = 1000,
+}) {
     function buildRejoinDataPayload(room, playerIndex, overrides = {}) {
         const gameStartPayload = overrides.gameStartPayload || room.gameStartPayload;
         const stateSnapshot = overrides.stateSnapshot !== undefined ? overrides.stateSnapshot : (room.stateSnapshot || null);
@@ -17,6 +22,10 @@ function makeRejoinPayload({ acceptedClientActionRefs, buildRestoreSnapshotAudit
             ? overrides.restoreAudit
             : buildRestoreSnapshotAudit(room.roomId, gameStartPayload, stateSnapshot);
         if (restoreAudit) payload.restoreAudit = restoreAudit;
+        if (!restoreAudit && stateSnapshot && Array.isArray(room.fullActionLog)) {
+            const fullActionLog = room.fullActionLog.concat(payload.actionLog);
+            if (fullActionLog.length <= maxFullActionLogLength) payload.fullActionLog = fullActionLog;
+        }
         if (room.provisionalRestore === true) {
             payload.provisionalRestore = true;
             payload.hostlessRestoreGeneration = room.hostlessRestoreGeneration || 0;

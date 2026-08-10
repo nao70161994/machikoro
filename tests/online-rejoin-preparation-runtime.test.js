@@ -245,7 +245,11 @@ runTest('online rejoin preparation runtimeはlegacy persistenceとstorage失敗�
 });
 
 runTest('online rejoin preparation runtimeは署名なしsnapshotで長いlocal logを保持する', () => {
-    const storedLog = [{ action: 'a' }, { action: 'b' }];
+    const storedLog = [
+        { action: 'a', seq: 1 },
+        { action: 'b', seq: 2 },
+        { action: 'c', seq: 3 },
+    ];
     const harness = createHarness({ storedActionLog: storedLog });
     const prepared = harness.runtime.prepare(prepareInput({
         actionLog: [{ action: 'rollDice', data: {}, seq: 3 }],
@@ -260,6 +264,34 @@ runTest('online rejoin preparation runtimeは署名なしsnapshotで長いlocal 
     assert.strictEqual(
         harness.diagnostics.rejoinActionLogPlanSelection.source,
         'pure-plan'
+    );
+});
+
+runTest('online rejoin preparation runtimeは圧縮境界後も完全logを再起動復元用に保存する', () => {
+    const entries = (from, to) => Array.from({ length: to - from + 1 }, (_, index) => ({
+        action: (from + index) % 2 === 0 ? 'nextTurn' : 'rollDice',
+        data: {},
+        seq: from + index,
+    }));
+    const storedLog = entries(1, 200);
+    const serverFullLog = entries(1, 203);
+    const harness = createHarness({ storedActionLog: storedLog });
+    const prepared = harness.runtime.prepare(prepareInput({
+        actionLog: entries(202, 203),
+        fullActionLog: serverFullLog,
+        stateSnapshot: { actionSeq: 201 },
+    }));
+    harness.calls.length = 0;
+
+    harness.runtime.persistRestoreBundle(prepared);
+
+    const persisted = harness.calls.find(call =>
+        call[0] === 'writeRestoreJson' && call[1] === 'log');
+    assert.deepStrictEqual(persisted[2].map(entry => entry.seq),
+        Array.from({ length: 203 }, (_, index) => index + 1));
+    assert.strictEqual(
+        harness.diagnostics.rejoinActionLogPlanSelection.plan.reason,
+        OnlinePayload.rejoinActionLogReasons.SERVER_UNSIGNED_FULL_LOG
     );
 });
 

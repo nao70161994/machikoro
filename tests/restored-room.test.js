@@ -565,6 +565,7 @@ runTest('restored room builderは検証済み入力を既存room shapeへ写像�
         stateSnapshot: { sanitized: true, actionSeq: 7 },
         acceptedClientActions: {},
         actionLog: input.sanitizedActionLog,
+        fullActionLog: null,
         lastUndoState: null,
         lastTouchedAt: 12345,
         provisionalRestore: false,
@@ -577,6 +578,32 @@ runTest('restored room builderは検証済み入力を既存room shapeへ写像�
     assert.strictEqual(room.gameStartPayload, input.gameStartPayload);
     assert.strictEqual(room.actionLog, input.sanitizedActionLog);
     assert.deepStrictEqual(input, before);
+});
+
+runTest('署名なしfull replayから復元したroomはmirror圧縮後も完全履歴を一度だけ保持する', () => {
+    const fullActionLog = [
+        { action: 'rollDice', data: {}, seq: 1 },
+        { action: 'nextTurn', data: {}, seq: 2 },
+    ];
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => ({ actionSeq: 2 }),
+    });
+    const room = builder.buildRestoredRoom(fixture({
+        replayStateSnapshot: null,
+        sanitizedActionLog: fullActionLog,
+    }));
+    assert.deepStrictEqual(room.fullActionLog, fullActionLog);
+    assert.notStrictEqual(room.fullActionLog, fullActionLog);
+
+    builder.applyRestoredMirrorStatePlan(room, {
+        canonicalMirror: {},
+        lastUndoState: null,
+        stateSnapshot: { actionSeq: 2 },
+        actionLog: [],
+    });
+    assert.deepStrictEqual(room.fullActionLog.map(entry => entry.seq), [1, 2]);
+    assert.deepStrictEqual(room.actionLog, []);
 });
 
 runTest('restored room builderはhostless metadataと既存fallback値を維持する', () => {

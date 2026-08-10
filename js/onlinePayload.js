@@ -330,17 +330,91 @@ function selectPendingReconciliationPlan(
 
 const REJOIN_ACTION_LOG_REASONS = Object.freeze({
     STORED_UNSIGNED_FULL_LOG: 'stored-unsigned-full-log',
+    SERVER_UNSIGNED_FULL_LOG: 'server-unsigned-full-log',
+    MERGED_UNSIGNED_FULL_LOG: 'merged-unsigned-full-log',
     SERVER_REPLAY_LOG: 'server-replay-log',
 });
 
-function planRejoinActionLogPersistence(stateSnapshot, restoreAudit, storedActionLog, replayActionLog) {
-    const keepStored = !!stateSnapshot && !restoreAudit &&
-        Array.isArray(storedActionLog) &&
-        storedActionLog.length > replayActionLog.length;
+function continuousActionLogThrough(actionLog, targetSeq) {
+    if (!Array.isArray(actionLog) || targetSeq < 1 || actionLog.length !== targetSeq) return false;
+    return actionLog.every((entry, index) => entry && entry.seq === index + 1);
+}
+
+function continuousActionLogPrefix(actionLog, targetSeq) {
+    return Array.isArray(actionLog) && actionLog.length > 0 && actionLog.length < targetSeq &&
+        actionLog.every((entry, index) => entry && entry.seq === index + 1);
+}
+
+function mergeContinuousActionLogs(actionLogs, targetSeq) {
+    if (targetSeq < 1) return null;
+    const bySeq = new Map();
+    for (const actionLog of actionLogs) {
+        if (!Array.isArray(actionLog)) continue;
+        for (const entry of actionLog) {
+            if (entry && Number.isInteger(entry.seq) && entry.seq > 0 && entry.seq <= targetSeq) {
+                bySeq.set(entry.seq, entry);
+            }
+        }
+    }
+    const merged = [];
+    for (let seq = 1; seq <= targetSeq; seq++) {
+        if (!bySeq.has(seq)) return null;
+        merged.push(bySeq.get(seq));
+    }
+    return merged;
+}
+
+function planRejoinActionLogPersistence(
+    stateSnapshot,
+    restoreAudit,
+    storedActionLog,
+    replayActionLog,
+    serverFullActionLog
+) {
+    if (!stateSnapshot || restoreAudit) {
+        return Object.freeze({
+            actionLog: replayActionLog,
+            reason: REJOIN_ACTION_LOG_REASONS.SERVER_REPLAY_LOG,
+        });
+    }
+    const snapshotSeq = Number.isInteger(stateSnapshot.actionSeq) ? stateSnapshot.actionSeq : 0;
+    const serverLogs = [serverFullActionLog, replayActionLog];
+    const targetSeq = serverLogs.reduce((highest, actionLog) => {
+        if (!Array.isArray(actionLog)) return highest;
+        return actionLog.reduce((current, entry) =>
+            Number.isInteger(entry?.seq) ? Math.max(current, entry.seq) : current, highest);
+    }, snapshotSeq);
+    const actionLogs = [storedActionLog, serverFullActionLog, replayActionLog];
+    if (continuousActionLogThrough(serverFullActionLog, targetSeq)) {
+        return Object.freeze({
+            actionLog: serverFullActionLog,
+            reason: REJOIN_ACTION_LOG_REASONS.SERVER_UNSIGNED_FULL_LOG,
+        });
+    }
+    if (continuousActionLogThrough(storedActionLog, targetSeq)) {
+        return Object.freeze({
+            actionLog: storedActionLog,
+            reason: REJOIN_ACTION_LOG_REASONS.STORED_UNSIGNED_FULL_LOG,
+        });
+    }
+    if (continuousActionLogThrough(replayActionLog, targetSeq)) {
+        return Object.freeze({
+            actionLog: replayActionLog,
+            reason: REJOIN_ACTION_LOG_REASONS.SERVER_REPLAY_LOG,
+        });
+    }
+    const merged = mergeContinuousActionLogs(actionLogs, targetSeq);
+    if (!merged && continuousActionLogPrefix(storedActionLog, targetSeq) &&
+            storedActionLog.length > replayActionLog.length) {
+        return Object.freeze({
+            actionLog: storedActionLog,
+            reason: REJOIN_ACTION_LOG_REASONS.STORED_UNSIGNED_FULL_LOG,
+        });
+    }
     return Object.freeze({
-        actionLog: keepStored ? storedActionLog : replayActionLog,
-        reason: keepStored
-            ? REJOIN_ACTION_LOG_REASONS.STORED_UNSIGNED_FULL_LOG
+        actionLog: merged || replayActionLog,
+        reason: merged
+            ? REJOIN_ACTION_LOG_REASONS.MERGED_UNSIGNED_FULL_LOG
             : REJOIN_ACTION_LOG_REASONS.SERVER_REPLAY_LOG,
     });
 }
@@ -356,13 +430,15 @@ function selectRejoinActionLogPersistencePlan(
     storedActionLog,
     replayActionLog,
     legacyPlan,
-    options = {}
+    options = {},
+    serverFullActionLog
 ) {
     const purePlan = planRejoinActionLogPersistence(
         stateSnapshot,
         restoreAudit,
         storedActionLog,
-        replayActionLog
+        replayActionLog,
+        serverFullActionLog
     );
     const matched = rejoinActionLogPersistencePlansMatch(purePlan, legacyPlan);
     const enabled = options.authorityEnabled === true;

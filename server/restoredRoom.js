@@ -256,6 +256,9 @@ function makeRestoredRoom(dependencies = {}) {
             ),
             acceptedClientActions: {},
             actionLog: input.sanitizedActionLog,
+            fullActionLog: input.replayStateSnapshot
+                ? null
+                : input.sanitizedActionLog.slice(),
             lastUndoState: null,
             lastTouchedAt: input.now,
             provisionalRestore: input.approvedHostless === true,

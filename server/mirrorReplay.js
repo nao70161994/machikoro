@@ -10,6 +10,7 @@ const MAX_SNAPSHOT_LOG_ENTRIES = 30;
 function makeMirrorReplay({
     gameRuntime,
     maxActionLogLength,
+    maxFullActionLogLength,
     isPlainObject,
     isValidDieValue,
     validateActionPayloadForState,
@@ -99,6 +100,13 @@ function makeMirrorReplay({
         if (!mirror) return;
         room.lastUndoState = mirror.lastUndoState || null;
         room.stateSnapshot = serializeMirrorState(mirror.game, mirror.shopStock, room.lastUndoState, room.actionSeq || 0);
+        if (room.fullActionLog !== null) {
+            const priorHistory = Array.isArray(room.fullActionLog) ? room.fullActionLog : [];
+            const fullActionLog = priorHistory.concat(room.actionLog);
+            room.fullActionLog = fullActionLog.length <= maxFullActionLogLength
+                ? fullActionLog
+                : null;
+        }
         room.actionLog = [];
     }
 

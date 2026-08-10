@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 const GameEngine = require('../js/gameEngine');
+const { OnlinePayload } = require('../js/onlinePayload');
 const {
     APP_ERROR_EVENT,
     emitAppError,
@@ -4849,9 +4850,95 @@ runTest('compactRoomActionLog は長いログを stateSnapshot に圧縮して�
 
     assert.ok(room.stateSnapshot);
     assert.strictEqual(room.actionLog.length, 0);
+    assert.strictEqual(room.fullActionLog.length, 402);
     assert.strictEqual(after.game.currentPlayerIndex, before.game.currentPlayerIndex);
     assert.deepStrictEqual(after.game.players.map(p => p.coins), before.game.players.map(p => p.coins));
     assert.strictEqual(after.game.turnCount, before.game.turnCount);
+});
+
+runTest('署名なしrejoinはseq201圧縮境界を越えて完全logを再起動復元へ引き継ぐ', () => {
+    const crypto = require('crypto');
+    const previousRestoreSecret = process.env.RESTORE_AUDIT_SECRET;
+    const previousMachikoroRestoreSecret = process.env.MACHIKORO_RESTORE_AUDIT_SECRET;
+    const reconnectToken = 'boundary-host-token';
+    const room = makeRoom();
+    room.roomId = 'BOUNDARY_RESTORE';
+    room.players = [{
+        id: null,
+        index: 0,
+        name: 'A',
+        reconnectTokenHash: crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+    }];
+    room.gameStartPayload.reconnectTokenHashes = [
+        room.players[0].reconnectTokenHash,
+        crypto.createHash('sha256').update('boundary-b').digest('hex'),
+    ];
+    room.gameStartPayload.actionSeq = 203;
+    room.actionLog = [];
+    for (let turn = 0; turn < 100; turn++) {
+        const playerIndex = turn % 2;
+        room.actionLog.push({
+            action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] },
+            playerIndex, seq: turn * 2 + 1,
+        });
+        room.actionLog.push({ action: 'nextTurn', data: {}, playerIndex, seq: turn * 2 + 2 });
+    }
+    room.actionLog.push({
+        action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] },
+        playerIndex: 0, seq: 201,
+    });
+    room.actionSeq = 201;
+
+    compactRoomActionLog(room);
+    room.actionLog.push({ action: 'nextTurn', data: {}, playerIndex: 0, seq: 202 });
+    room.actionLog.push({
+        action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] },
+        playerIndex: 1, seq: 203,
+    });
+    room.actionSeq = 203;
+    const rejoinPayload = buildRejoinDataPayload(room, 0, { restoreAudit: null });
+    const storedBeforeDisconnect = rejoinPayload.fullActionLog.slice(0, 200);
+    const persistencePlan = OnlinePayload.planRejoinActionLogPersistence(
+        rejoinPayload.stateSnapshot,
+        rejoinPayload.restoreAudit,
+        storedBeforeDisconnect,
+        rejoinPayload.actionLog,
+        rejoinPayload.fullActionLog
+    );
+    assert.deepStrictEqual(persistencePlan.actionLog.map(entry => entry.seq),
+        Array.from({ length: 203 }, (_, index) => index + 1));
+
+    const emitted = [];
+    const socket = {
+        id: 'socket-boundary-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join() {},
+    };
+    try {
+        delete process.env.RESTORE_AUDIT_SECRET;
+        delete process.env.MACHIKORO_RESTORE_AUDIT_SECRET;
+        handleRecreateRoom(socket, {
+            roomId: room.roomId,
+            gameStartPayload: room.gameStartPayload,
+            stateSnapshot: null,
+            actionLog: persistencePlan.actionLog,
+            playerIndex: 0,
+            playerName: 'A',
+            reconnectToken,
+        });
+        assert.strictEqual(__rooms[room.roomId].stateSnapshot.actionSeq, 203);
+        assert.deepStrictEqual(__rooms[room.roomId].fullActionLog.map(entry => entry.seq),
+            Array.from({ length: 203 }, (_, index) => index + 1));
+        assert.ok(emitted.some(entry => entry.name === 'rejoinData'));
+    } finally {
+        if (previousRestoreSecret === undefined) delete process.env.RESTORE_AUDIT_SECRET;
+        else process.env.RESTORE_AUDIT_SECRET = previousRestoreSecret;
+        if (previousMachikoroRestoreSecret === undefined) {
+            delete process.env.MACHIKORO_RESTORE_AUDIT_SECRET;
+        } else {
+            process.env.MACHIKORO_RESTORE_AUDIT_SECRET = previousMachikoroRestoreSecret;
+        }
+    }
 });
 
 runTest('createRoomMirror は7人以上の大施設在庫を人数分にする', () => {

@@ -200,6 +200,7 @@ const OnlineRejoinPreparationRuntime = (() => {
             const restoreGeneration = beginRestore();
             const gameStartPayload = input.gameStartPayload;
             const replayActionLog = dependencies.normalizeActionLog(input.actionLog);
+            const fullActionLog = dependencies.normalizeActionLog(input.fullActionLog);
             const restoredThroughSeq = dependencies.serverActionSeq(
                 gameStartPayload,
                 input.stateSnapshot,
@@ -244,6 +245,7 @@ const OnlineRejoinPreparationRuntime = (() => {
             return Object.freeze({
                 acceptedPendingReconciliation: pendingResult.selection.plan.accepted,
                 actionLog: replayActionLog,
+                fullActionLog,
                 gameStartPayload,
                 pendingBeforeRejoin: pendingResult.pending,
                 persistenceSelection,
@@ -282,26 +284,21 @@ const OnlineRejoinPreparationRuntime = (() => {
                     dependencies.removeRestoreItem(dependencies.storageKeys.restoreAudit);
                 }
                 const storedActionLog = dependencies.readActionLog();
-                const keepStoredUnsignedLog = prepared.stateSnapshot &&
-                    !prepared.restoreAudit &&
-                    Array.isArray(storedActionLog) &&
-                    storedActionLog.length > prepared.actionLog.length;
-                const reasons = dependencies.payload.rejoinActionLogReasons;
-                const legacyPlan = Object.freeze({
-                    actionLog: keepStoredUnsignedLog
-                        ? storedActionLog
-                        : prepared.actionLog,
-                    reason: keepStoredUnsignedLog
-                        ? reasons.STORED_UNSIGNED_FULL_LOG
-                        : reasons.SERVER_REPLAY_LOG,
-                });
+                const legacyPlan = dependencies.payload.planRejoinActionLogPersistence(
+                    prepared.stateSnapshot,
+                    prepared.restoreAudit,
+                    storedActionLog,
+                    prepared.actionLog,
+                    prepared.fullActionLog
+                );
                 const selection = dependencies.payload.selectRejoinActionLogPersistencePlan(
                     prepared.stateSnapshot,
                     prepared.restoreAudit,
                     storedActionLog,
                     prepared.actionLog,
                     legacyPlan,
-                    { authorityEnabled: dependencies.isActionLogPlanAuthorityEnabled() }
+                    { authorityEnabled: dependencies.isActionLogPlanAuthorityEnabled() },
+                    prepared.fullActionLog
                 );
                 dependencies.recordDiagnostic('rejoinActionLogPlanSelection', selection);
                 dependencies.writeRestoreJson(

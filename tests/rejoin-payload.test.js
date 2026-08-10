@@ -25,6 +25,7 @@ runTest('rejoin payloadは既存room stateとACK metadataを同じshapeで返す
         roomId: 'ABC123',
         gameStartPayload: { playerNames: ['Alice', 'Bob'] },
         stateSnapshot: { actionSeq: 3 },
+        fullActionLog: [{ action: 'rollDice', data: {}, seq: 1 }],
         actionLog: [{ action: 'nextTurn', data: {}, seq: 4 }],
         hostPlayerIndex: 1,
         hostEpoch: 2,
@@ -46,6 +47,7 @@ runTest('rejoin payloadは既存room stateとACK metadataを同じshapeで返す
         ['accepted', room],
         ['audit', 'ABC123', room.gameStartPayload, room.stateSnapshot],
     ]);
+    assert.ok(!Object.prototype.hasOwnProperty.call(payload, 'fullActionLog'));
 });
 
 runTest('rejoin payload overrideはnullと空配列を含む既存の優先規則を維持する', () => {
@@ -99,6 +101,45 @@ runTest('暫定hostless restore metadataは対象roomにだけ付与する', () 
     assert.strictEqual(provisional.provisionalRestore, true);
     assert.strictEqual(provisional.hostlessRestoreGeneration, 5);
     assert.strictEqual(provisional.hostlessRestoreCount, 2);
+});
+
+runTest('署名なしsnapshotは圧縮境界を含む完全action logを追加fieldで返す', () => {
+    const subject = makeSubject();
+    const history = [
+        { action: 'rollDice', data: {}, seq: 1 },
+        { action: 'nextTurn', data: {}, seq: 2 },
+    ];
+    const residual = [{ action: 'rollDice', data: {}, seq: 3 }];
+    const room = {
+        roomId: 'ABC123',
+        gameStartPayload: { playerNames: ['Alice', 'Bob'] },
+        stateSnapshot: { actionSeq: 2 },
+        fullActionLog: history,
+        actionLog: residual,
+        hostPlayerIndex: 0,
+    };
+
+    const payload = subject.buildRejoinDataPayload(room, 0, { restoreAudit: null });
+
+    assert.deepStrictEqual(payload.fullActionLog, history.concat(residual));
+    assert.strictEqual(payload.actionLog, residual);
+    assert.deepStrictEqual(room.fullActionLog, history);
+});
+
+runTest('署名なし完全action logは既存restore件数上限を越えて送らない', () => {
+    const subject = makeSubject();
+    const room = {
+        roomId: 'ABC123',
+        gameStartPayload: { playerNames: ['Alice', 'Bob'] },
+        stateSnapshot: { actionSeq: 1000 },
+        fullActionLog: Array.from({ length: 1000 }, (_, index) => ({
+            action: 'rollDice', data: {}, seq: index + 1,
+        })),
+        actionLog: [{ action: 'nextTurn', data: {}, seq: 1001 }],
+        hostPlayerIndex: 0,
+    };
+    const payload = subject.buildRejoinDataPayload(room, 0, { restoreAudit: null });
+    assert.ok(!Object.prototype.hasOwnProperty.call(payload, 'fullActionLog'));
 });
 
 runTest('rejoin wire payloadはgame schema selectionと既存payloadをencoderへ渡す', () => {

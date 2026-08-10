@@ -214,6 +214,7 @@ const {
 } = require('./server/mirrorReplay')({
     gameRuntime,
     maxActionLogLength: MAX_ACTION_LOG_LENGTH,
+    maxFullActionLogLength: RESTORE_PAYLOAD_LIMITS.maxActionLogEntries,
     isPlainObject,
     isValidDieValue,
     validateActionPayloadForState,
@@ -683,6 +684,7 @@ const { buildWireRejoinDataPayload } = makeRejoinPayload({
     acceptedClientActionRefs,
     buildRestoreSnapshotAudit,
     encodeSnapshotField: GameSchemaWire.encodeSnapshotField,
+    maxFullActionLogLength: RESTORE_PAYLOAD_LIMITS.maxActionLogEntries,
 });
 
 function buildRejoinDataPayload(room, playerIndex, overrides = {}) {

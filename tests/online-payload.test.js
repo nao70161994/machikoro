@@ -381,6 +381,62 @@ runTest('online payload rejoin action log authorityは配列identityまで一致
     assert.strictEqual(fallback.fallbackReason, 'rejoin-action-log-plan-mismatch');
 });
 
+runTest('online payloadは署名なし履歴をlengthではなくseq連続性で統合する', () => {
+    const stored = Array.from({ length: 200 }, (_, index) => ({ seq: index + 1 }));
+    const serverHistory = Array.from({ length: 201 }, (_, index) => ({ seq: index + 1 }));
+    const residual = [{ seq: 202 }, { seq: 203 }];
+    const plan = OnlinePayload.planRejoinActionLogPersistence(
+        { actionSeq: 201 }, null, stored, residual, serverHistory
+    );
+    assert.strictEqual(plan.reason, OnlinePayload.rejoinActionLogReasons.MERGED_UNSIGNED_FULL_LOG);
+    assert.deepStrictEqual(plan.actionLog.map(entry => entry.seq),
+        Array.from({ length: 203 }, (_, index) => index + 1));
+
+    const gappedServerLog = serverHistory.filter(entry => entry.seq !== 150);
+    const gappedStoredLog = stored.filter(entry => entry.seq !== 150);
+    const rejected = OnlinePayload.planRejoinActionLogPersistence(
+        { actionSeq: 201 }, null, gappedStoredLog, residual, gappedServerLog
+    );
+    assert.strictEqual(rejected.reason, OnlinePayload.rejoinActionLogReasons.SERVER_REPLAY_LOG);
+    assert.strictEqual(rejected.actionLog, residual);
+
+    const staleStored = stored.concat([
+        { seq: 201 }, { seq: 202 }, { seq: 203 }, { seq: 204 },
+    ]);
+    const serverComplete = serverHistory.concat(residual);
+    const bounded = OnlinePayload.planRejoinActionLogPersistence(
+        { actionSeq: 201 }, null, staleStored, residual, serverComplete
+    );
+    assert.strictEqual(bounded.actionLog, serverComplete);
+    assert.strictEqual(bounded.actionLog.at(-1).seq, 203);
+});
+
+runTest('online payloadは旧server混在時も連続したlocal full logを残差より優先する', () => {
+    const stored = Array.from({ length: 200 }, (_, index) => ({ seq: index + 1 }));
+    const residual = [{ seq: 202 }, { seq: 203 }];
+    const plan = OnlinePayload.planRejoinActionLogPersistence(
+        { actionSeq: 201 }, null, stored, residual, []
+    );
+    assert.strictEqual(plan.reason, OnlinePayload.rejoinActionLogReasons.STORED_UNSIGNED_FULL_LOG);
+    assert.strictEqual(plan.actionLog, stored);
+
+    const gapped = stored.filter(entry => entry.seq !== 150);
+    const rejected = OnlinePayload.planRejoinActionLogPersistence(
+        { actionSeq: 201 }, null, gapped, residual, []
+    );
+    assert.strictEqual(rejected.reason, OnlinePayload.rejoinActionLogReasons.SERVER_REPLAY_LOG);
+    assert.strictEqual(rejected.actionLog, residual);
+});
+
+runTest('online payloadはseq metadataのないlegacy replay logを空配列へ置換しない', () => {
+    const replay = [{ action: 'nextTurn', data: {} }];
+    const plan = OnlinePayload.planRejoinActionLogPersistence(
+        { players: [] }, null, [{ action: 'stale', data: {} }], replay, []
+    );
+    assert.strictEqual(plan.reason, OnlinePayload.rejoinActionLogReasons.SERVER_REPLAY_LOG);
+    assert.strictEqual(plan.actionLog, replay);
+});
+
 runTest('online payload はpending ACK一致判定のclientActionId優先契約を維持する', () => {
     const pending = {
         action: 'buildCard',
