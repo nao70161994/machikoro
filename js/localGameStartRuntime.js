@@ -4,6 +4,7 @@ const LocalGameStartRuntime = (() => {
     function createRuntime(dependencies = {}) {
         const {
             document,
+            focusGame,
             getPortfolio,
             initializeGame,
             notifyLifecycleStart,
@@ -22,6 +23,7 @@ const LocalGameStartRuntime = (() => {
         }
         const requiredEffects = {
             getPortfolio,
+            focusGame,
             initializeGame,
             notifyLifecycleStart,
             resetOnline,
@@ -201,6 +203,7 @@ const LocalGameStartRuntime = (() => {
                     document.getElementById('gameScreen').style.display = 'block';
                 },
                 initializeGame,
+                focusGame,
                 notifyLifecycleStart,
             });
         }

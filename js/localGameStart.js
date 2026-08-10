@@ -15,6 +15,7 @@ const LocalGameStart = (() => {
         'resetUiLocks',
         'showGame',
         'initializeGame',
+        'focusGame',
         'notifyLifecycleStart',
     ]);
 
@@ -76,6 +77,7 @@ const LocalGameStart = (() => {
         handlers.resetUiLocks();
         handlers.showGame();
         handlers.initializeGame(plan.playerCount);
+        handlers.focusGame();
         handlers.notifyLifecycleStart();
         return Object.freeze({ ok: true, steps: EFFECT_STEPS });
     }

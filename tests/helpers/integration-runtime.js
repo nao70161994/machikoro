@@ -281,6 +281,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/localResumeView.js',
         'js/localResumeEffects.js',
         'js/storedOnlineReconnect.js',
+        'js/uiScreenFocus.js',
         'js/storage.js',
         'js/uiStatsView.js',
         'js/stats.js',

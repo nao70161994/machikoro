@@ -36,7 +36,7 @@
         <canvas id="cityCanvas"></canvas>
         <div class="title-content">
             <div class="title-header">
-                <h1>ダイスシティ</h1>
+                <h1 id="titleHeading">ダイスシティ</h1>
                 <p class="title-logo-sub">DICE CITY</p>
                 <div class="title-logo-deco"><span>ボードゲーム</span></div>
                 <div class="title-buttons-row">
@@ -174,7 +174,7 @@
         </div>
     </div>
 
-    <div id="gameScreen" style="display:none">
+    <div id="gameScreen" aria-label="ゲーム画面" style="display:none">
         <div id="status" class="status"></div>
         <div id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
         <div id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -490,6 +490,7 @@
     <script src="js/onlineDomEffects.js"></script>
     <script src="js/onlineSocketEffects.js"></script>
     <script src="js/onlineComposition.js"></script>
+    <script src="js/uiScreenFocus.js"></script>
     <script src="js/online.js"></script>
     <script src="js/uiNotice.js"></script>
     <script src="js/uiLogDisplay.js"></script>

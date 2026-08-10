@@ -13,7 +13,7 @@ const LocalGameRestartRuntime = (() => {
     function createRuntime(dependencies = {}) {
         const required = [
             'cancelAutoSkip', 'cancelCpuSchedule', 'cancelDelayedHumanAction',
-            'checkpoint', 'drawSkyline', 'getClearOnlineSessionStorage',
+            'checkpoint', 'drawSkyline', 'focusTitle', 'getClearOnlineSessionStorage',
             'refreshPwaUpdateState', 'removeStorage', 'renderPlayerSettings',
             'resetFullLog', 'resetLifecycle', 'resetOnline', 'resetUiLocks',
             'setWinSoundPlayed', 'showConfirm', 'stopConfetti', 'updateResumeButton',
@@ -62,6 +62,7 @@ const LocalGameRestartRuntime = (() => {
             dependencies.updateResumeButton();
             dependencies.drawSkyline();
             dependencies.refreshPwaUpdateState();
+            dependencies.focusTitle();
             dependencies.checkpoint('restart-game-confirmed-complete');
             return Object.freeze({ ok: true });
         }

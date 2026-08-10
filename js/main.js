@@ -129,6 +129,7 @@ function formatCpuSpeedLabel(value) {
 const localGameStartRuntime = LocalGameStartRuntime.createRuntime({
     console: typeof console !== 'undefined' ? console : null,
     document,
+    focusGame: () => UiScreenFocus.focusGame(document),
     getPortfolio: () => typeof RLModelPortfolio !== 'undefined' ? RLModelPortfolio : null,
     initializeGame: playerCount => init(playerCount),
     notifyLifecycleStart() {
@@ -222,6 +223,7 @@ const localGameRestartRuntime = LocalGameRestartRuntime.createRuntime({
     checkpoint: event => markMainCheckpoint(event),
     document,
     drawSkyline: () => drawCitySkyline(),
+    focusTitle: () => UiScreenFocus.focusTitle(document),
     gameRuntime: GameRuntimeState.runtime,
     getClearOnlineSessionStorage: () => typeof clearOnlineSessionStorage === 'function'
         ? clearOnlineSessionStorage

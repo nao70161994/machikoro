@@ -22,7 +22,7 @@ const OnlineLobbyStartRuntime = (() => {
             'abortRestore', 'acceptRoom', 'acceptSchema', 'applyHostPayload',
             'clearHostlessState', 'clearPending', 'clearRejoinRetry', 'clearRestoreEventQueue',
             'clearRestoreBundleIncomplete', 'clearRestoreQuarantine', 'defaultLandmarks', 'flushRestoreEvents',
-            'finishLobbyRequest', 'getGame', 'getRestoreEventHandlers',
+            'finishLobbyRequest', 'focusGame', 'getGame', 'getRestoreEventHandlers',
             'getRestoreGeneration', 'getSession', 'initGame', 'incrementRestoreGeneration',
             'notifyLifecycleStart', 'observeReconnect',
             'preloadModels', 'removeRestoreItem', 'replaceActionSequence',
@@ -160,6 +160,7 @@ const OnlineLobbyStartRuntime = (() => {
                     input.playerSettings,
                     input.playerOrder
                 );
+                dependencies.focusGame();
                 dependencies.notifyLifecycleStart();
                 if (hasVersionMismatch(input.versions)) {
                     dependencies.getGame().addLog(

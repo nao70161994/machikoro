@@ -237,6 +237,7 @@ const TEST_GROUPS = {
         'ui-dice-choice.test.js',
         'ui-dice-display.test.js',
         'ui-turn-announcer.test.js',
+        'ui-screen-focus.test.js',
         'ui-modal-open.test.js',
         'ui-modal-close.test.js',
         'ui-modal-policy.test.js',

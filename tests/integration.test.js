@@ -26,6 +26,7 @@ runTest('integration: ローカル開始→勝利→統計タブ表示まで連�
     ]);
 
     rt.startGame();
+    assert.strictEqual(rt.__test.elements.status.focused, true);
     const game = rt.__test.getGame();
     const winner = game.players[0];
     for (const landmark of rt.enabledLandmarks) {
@@ -63,6 +64,7 @@ runTest('integration: セーブ→再開でゲーム状態を復元する', () =
     rt.updateResumeButton();
 
     rt.__test.setGame(null);
+    rt.__test.elements.status.focused = false;
     rt.resumeGame();
 
     const resumed = rt.__test.getGame();
@@ -72,6 +74,7 @@ runTest('integration: セーブ→再開でゲーム状態を復元する', () =
     assert.strictEqual(resumed.phase, rt.GAME_PHASES.BUILD);
     assert.strictEqual(resumed.turnCount, 4);
     assert.strictEqual(rt.__test.elements.resumeSection.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.status.focused, true);
 });
 
 runTest('integration: 保存したstrong CPUのサイコロ後フェーズは再開後に人間手番まで完了する', () => {

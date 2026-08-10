@@ -52,6 +52,7 @@ function createHarness(options = {}) {
             calls.push(['flushRestoreEvents', ...args]);
             return options.flushed !== false;
         },
+        focusGame: () => calls.push(['focusGame']),
         getGame: () => ({ addLog: (...args) => calls.push(['addLog', ...args]) }),
         getPending: () => { calls.push(['getPending']); return currentPending; },
         getRestoreEventHandlers: () => {
@@ -121,6 +122,7 @@ runTest('online rejoin activation runtimeはreplay・active化・pending再送�
     assert.ok(names.indexOf('applyAction') < names.indexOf('resetReconnectCompletion'));
     assert.ok(names.indexOf('flushRestoreEvents') < names.indexOf('getPending'));
     assert.ok(names.indexOf('setActionFlight') < names.indexOf('emitAction'));
+    assert.ok(names.indexOf('emitAction') < names.indexOf('focusGame'));
     assert.deepStrictEqual(harness.calls.find(call => call[0] === 'emitAction'), [
         'emitAction', harness.input.pendingBeforeRejoin, harness.socket,
     ]);
@@ -169,6 +171,7 @@ runTest('online rejoin activation runtimeはreplay失敗を終了してabortす�
         ['abortRestore', 3, OnlineRejoinActivationRuntime.RESTORE_FAILED_ABORT],
     ]);
     assert.strictEqual(harness.calls.some(call => call[0] === 'setOnline'), false);
+    assert.strictEqual(harness.calls.some(call => call[0] === 'focusGame'), false);
 });
 
 runTest('online rejoin activation runtimeはlegacy replayのfalseを終了してabortする', () => {

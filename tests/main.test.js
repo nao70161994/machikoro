@@ -430,6 +430,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(localGameStartSource, context, { filename: 'js/localGameStart.js' });
     const localGameStartRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/localGameStartRuntime.js'), 'utf8');
     vm.runInContext(localGameStartRuntimeSource, context, { filename: 'js/localGameStartRuntime.js' });
+    const uiScreenFocusSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiScreenFocus.js'), 'utf8');
+    vm.runInContext(uiScreenFocusSource, context, { filename: 'js/uiScreenFocus.js' });
     const localGameInitializerSource = fs.readFileSync(path.join(__dirname, '..', 'js/localGameInitializer.js'), 'utf8');
     vm.runInContext(localGameInitializerSource, context, { filename: 'js/localGameInitializer.js' });
     const localGameRestartRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/localGameRestartRuntime.js'), 'utf8');
@@ -773,6 +775,7 @@ runTest('main restartGame はゲーム状態とUI lockを未開始状態へ完�
     assert.strictEqual(rt.document.getElementById('confirmModal').style.display, 'none');
     assert.strictEqual(rt.document.getElementById('pendingModal').style.display, 'none');
     assert.strictEqual(rt.document.body.classList.contains('modal-open'), false);
+    assert.strictEqual(rt.document.getElementById('titleHeading').focused, true);
     assert.strictEqual(rt.__test.getAutoSkipPending(), false);
     assert.ok(rt.__test.getCpuScheduleToken() > tokenBefore);
     assert.ok(rt.counters.stopConfetti >= 1);
@@ -2654,7 +2657,7 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.deepStrictEqual(webmanifest, manifest);
 
     assert.ok(html.includes('<title>ダイスシティ</title>'));
-    assert.ok(html.includes('<h1>ダイスシティ</h1>'));
+    assert.ok(html.includes('<h1 id="titleHeading">ダイスシティ</h1>'));
     const titleScreen = html.slice(html.indexOf('<div id="titleScreen"'), html.indexOf('<div id="gameScreen"'));
     const pwaBanners = html.slice(html.indexOf('<div id="pwaUpdateBanner"'), html.indexOf('<script src="js/Card.js"></script>'));
     assert.ok(!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(titleScreen));

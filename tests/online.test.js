@@ -201,6 +201,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineDomEffects.js');
     loadScript(context, 'js/onlineSocketEffects.js');
     loadScript(context, 'js/onlineComposition.js');
+    loadScript(context, 'js/uiScreenFocus.js');
     loadScript(context, 'js/onlineRuntimeState.js');
     loadScript(context, 'js/onlineSetupState.js');
     loadScript(context, 'js/gameSetupState.js');

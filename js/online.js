@@ -2644,6 +2644,7 @@ function initSocket() {
         finishLobbyRequest: kind => finishOnlineLobbyRequest(kind),
         flushRestoreEvents: (generation, sequence, handlers) =>
             _flushOnlineRestoreEvents(generation, sequence, handlers),
+        focusGame: () => UiScreenFocus.focusGame(document),
         getGame: () => onlineGameRuntimeSnapshot().game,
         getRestoreEventHandlers: () => ({
             gameAction: handleGameAction,
@@ -2782,6 +2783,7 @@ function initSocket() {
         }, targetSocket),
         flushRestoreEvents: (generation, sequence, handlers) =>
             _flushOnlineRestoreEvents(generation, sequence, handlers),
+        focusGame: () => UiScreenFocus.focusGame(document),
         getGame: () => onlineGameRuntimeSnapshot().game,
         getPending: () => _readPendingOutboundActionForCurrentSession(),
         getRestoreEventHandlers: () => ({

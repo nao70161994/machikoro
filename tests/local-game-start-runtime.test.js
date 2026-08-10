@@ -43,6 +43,7 @@ function createHarness(options = {}) {
     const runtime = LocalGameStartRuntime.createRuntime({
         console: { warn: error => calls.push(['warn', error]), error: error => calls.push(['error', error]) },
         document: { getElementById: id => elements[id] || null },
+        focusGame: () => calls.push(['focusGame']),
         getPortfolio: () => portfolio,
         initializeGame: count => calls.push(['initializeGame', count]),
         notifyLifecycleStart: () => calls.push(['notifyLifecycleStart']),
@@ -78,7 +79,7 @@ runTest('local game start runtimeは非RL開始の既存effect順と画面遷移
     runtime.start();
     assert.deepStrictEqual(calls.map(call => call[0]), [
         'saveSettings', 'resetStats', 'resetOnline', 'resetUiLocks',
-        'initializeGame', 'notifyLifecycleStart',
+        'initializeGame', 'focusGame', 'notifyLifecycleStart',
     ]);
     assert.strictEqual(calls[4][1], 2);
     assert.strictEqual(getState().cpuSpeed, 1500);

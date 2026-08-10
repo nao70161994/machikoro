@@ -52,6 +52,7 @@ runTest('online integration: gameStart はtitle modal lockを解除してlifecyc
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
     assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
     assert.strictEqual(rt.document.body.classList.contains('modal-open'), false);
+    assert.strictEqual(rt.__test.elements.status.focused, true);
     const lifecycleCalls = rt.__test.fetchCalls.filter(call => call.url === '/api/game-lifecycle');
     assert.strictEqual(lifecycleCalls.length, 1);
     const payload = JSON.parse(lifecycleCalls[0].options.body);
@@ -88,6 +89,7 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
     rt.__test.elements.gameScreen.inert = true;
     rt.__test.elements.gameScreen.setAttribute('aria-hidden', 'true');
     rt.document.body.classList.add('modal-open');
+    rt.__test.elements.status.focused = false;
 
     rt.__test.socketHandlers.rejoinData({
         gameStartPayload: {
@@ -110,6 +112,7 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
     assert.strictEqual(rt.__test.elements.gameScreen.getAttribute('aria-hidden'), null);
     assert.strictEqual(rt.document.body.classList.contains('modal-open'), false);
+    assert.strictEqual(rt.__test.elements.status.focused, true);
     assert.strictEqual(game.players[0].name, 'Alice');
     assert.ok(game.players[0].countCard('麦畑') >= 2);
     assert.strictEqual(game.currentPlayerIndex, 1);

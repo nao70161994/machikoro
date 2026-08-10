@@ -448,6 +448,7 @@ function resumeGame(options = {}) {
             scheduleCpu: scheduleCPU,
         });
         if (runtimeResult.ok !== true) throw new Error('Saved game hydration failed');
+        UiScreenFocus.focusGame(document);
         return true;
     } catch(e) {
         setLocalResumePending(false);

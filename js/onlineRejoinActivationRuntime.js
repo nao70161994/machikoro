@@ -17,7 +17,7 @@ const OnlineRejoinActivationRuntime = (() => {
         }
         const requiredEffects = [
             'abortRestore', 'applyReconnectStatus', 'canResendPending', 'clearPending',
-            'flushRestoreEvents', 'getGame', 'getPending', 'getRestoreEventHandlers',
+            'flushRestoreEvents', 'focusGame', 'getGame', 'getPending', 'getRestoreEventHandlers',
             'getRestoreGeneration', 'getSocket', 'initGame', 'isActivationPlanAuthorityEnabled',
             'isPendingResendPlanAuthorityEnabled', 'isReplayPlanAuthorityEnabled',
             'observeReconnect', 'replaceActionSequence',
@@ -195,6 +195,7 @@ const OnlineRejoinActivationRuntime = (() => {
             }
             if (!activate(input)) return false;
             resendPending(input);
+            dependencies.focusGame();
             return true;
         }
 

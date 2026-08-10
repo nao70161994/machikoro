@@ -49,6 +49,7 @@ function createHarness(options = {}) {
         defaultLandmarks: () => { calls.push(['defaultLandmarks']); return ['役所']; },
         finishLobbyRequest: kind => calls.push(['finishLobbyRequest', kind]),
         flushRestoreEvents: (...args) => { calls.push(['flushRestoreEvents', ...args]); return options.flushed !== false; },
+        focusGame: () => calls.push(['focusGame']),
         getGame: () => game,
         getRestoreEventHandlers: () => { calls.push(['getRestoreEventHandlers']); return handlers; },
         getRestoreGeneration: () => { calls.push(['getRestoreGeneration']); return generation; },
@@ -132,7 +133,7 @@ runTest('online game start runtimeはschemaからactive gameまで既存effect�
         'setCpuSpeed', 'replaceEnabledCards', 'replaceEnabledLandmarks',
         'writeRestoreJson', 'removeRestoreItem', 'writeRestoreJson',
         'clearRestoreBundleIncomplete', 'clearPending',
-        'saveSession', 'resetUiLocks', 'showGame', 'initGame', 'notifyLifecycleStart',
+        'saveSession', 'resetUiLocks', 'showGame', 'initGame', 'focusGame', 'notifyLifecycleStart',
         'replaceActionSequence', 'getRestoreEventHandlers', 'flushRestoreEvents',
         'observeReconnect',
     ]);
@@ -145,6 +146,8 @@ runTest('online game start runtimeはschemaからactive gameまで既存effect�
     assert.deepStrictEqual(harness.calls[23], [
         'resetUiLocks', OnlineLobbyStartRuntime.UI_RESET_REASON,
     ]);
+    assert.ok(harness.calls.findIndex(call => call[0] === 'initGame') <
+        harness.calls.findIndex(call => call[0] === 'focusGame'));
 });
 
 runTest('online game start runtimeは非対応schemaをrestore開始前に拒否する', () => {

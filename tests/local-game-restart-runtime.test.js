@@ -18,6 +18,7 @@ function createHarness(options = {}) {
         checkpoint: event => calls.push(['checkpoint', event]),
         document: { getElementById: id => elements[id] },
         drawSkyline: () => calls.push(['drawSkyline']),
+        focusTitle: () => calls.push(['focusTitle']),
         gameRuntime: {
             setGame: value => calls.push(['game', value]),
             setPreviousCoins: value => calls.push(['coins', value]),
@@ -51,7 +52,7 @@ runTest('local game restart runtimeは確認後の全effect順と既存理由を
         'cancelCpu', 'cancelDelayed', 'cancelAutoSkip', 'stopConfetti', 'resetOnline',
         'resetUi', 'resetLifecycle', 'game', 'coins', 'winSound', 'undo', 'resetLog',
         'setup', 'cpuPlayers', 'renderSettings', 'updateResume', 'drawSkyline',
-        'refreshPwa', 'checkpoint',
+        'refreshPwa', 'focusTitle', 'checkpoint',
     ]);
     assert.deepStrictEqual(calls.slice(2, 8).map(call => call[1]), [
         'savedGame', ...LocalGameRestartRuntime.ONLINE_STORAGE_KEYS,
