@@ -79,6 +79,7 @@ function loadOnlineRuntime(options = {}) {
         let clientFlowCheckpoints = [];
         let clientErrorReports = [];
         let confirmRequests = [];
+        let pwaRefreshSnapshots = [];
         function setTimeout(handler, ms) {
             timeoutHandlers.push({ handler, ms });
             return timeoutHandlers.length;
@@ -136,6 +137,12 @@ function loadOnlineRuntime(options = {}) {
         }
         function markClientFlowCheckpoint(name, details) { clientFlowCheckpoints.push({ name, details }); }
         function reportClientError(payload) { clientErrorReports.push(payload); }
+        function refreshPwaUpdateState() {
+            pwaRefreshSnapshots.push({
+                createPending: window.onlineCreateRoomPending,
+                joinPending: window.onlineJoinRoomPending,
+            });
+        }
         const alert = () => {};
         const showNotice = () => {};
         function showConfirm(message, onOk, onCancel) {
@@ -274,6 +281,7 @@ function loadOnlineRuntime(options = {}) {
         this.getSocketDisconnected = () => socketDisconnected;
         this.getClientFlowCheckpoints = () => clientFlowCheckpoints;
         this.getClientErrorReports = () => clientErrorReports;
+        this.getPwaRefreshSnapshots = () => pwaRefreshSnapshots.slice();
         this.getUndoState = () => undoState;
         this.setUndoState = (value) => { undoState = value; };
         this.getConfirmRequests = () => confirmRequests;
@@ -443,6 +451,27 @@ runTest('online lobby pendingはcontrollerだけが所有しlegacy globalをread
     context.finishOnlineLobbyRequest();
     assert.strictEqual(context.window.onlineCreateRoomPending, false);
     assert.strictEqual(context.window.onlineJoinRoomPending, false);
+});
+
+runTest('online lobby pending解除は同期的な再要求を待ってPWA状態を再評価する', async () => {
+    const context = loadOnlineRuntime();
+
+    context.setOnlineCreateRoomPending(true);
+    context.setOnlineCreateRoomPending(false);
+    context.setOnlineCreateRoomPending(true);
+    await Promise.resolve();
+
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(context.getPwaRefreshSnapshots())),
+        [{ createPending: true, joinPending: false }]
+    );
+
+    context.finishOnlineLobbyRequest('create');
+    await Promise.resolve();
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(context.getPwaRefreshSnapshots().at(-1))),
+        { createPending: false, joinPending: false }
+    );
 });
 
 runTest('hostless retry exhaustionは対応clientだけ軽量requestへ移行する', () => {

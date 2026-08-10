@@ -69,6 +69,8 @@ function createRuntime(options = {}) {
         fetch: () => Promise.resolve({ ok: true, json: () => Promise.resolve({}) }),
         isOnlineGame: options.online === true,
         isReconnectingOnline: false,
+        onlineCreateRoomPending: options.createPending === true,
+        onlineJoinRoomPending: false,
         location: {
             href: 'https://example.test/',
             origin: 'https://example.test',
@@ -87,6 +89,7 @@ function createRuntime(options = {}) {
         serviceWorkerListeners,
         testApi: windowRef.__pwaUpdateTest,
         applyUpdate: windowRef.pwaApplyUpdate,
+        setCreatePending(value) { context.onlineCreateRoomPending = value === true; },
         reloadCount: () => reloadCount,
     };
 }
@@ -179,6 +182,19 @@ runTest('PWA inline更新はonline context中の操作を引き続き保留す�
     assert.deepStrictEqual(waiting.messages, []);
     assert.strictEqual(runtime.elements.pwaUpdateBtn.disabled, true);
     assert.strictEqual(runtime.dismiss.style.display, 'none');
+});
+
+runTest('PWA inline更新はonline lobby timeout後の再評価でdeferred reloadを完了する', () => {
+    const runtime = createRuntime({ inGame: false, createPending: true });
+
+    runtime.serviceWorkerListeners.controllerchange();
+    assert.strictEqual(runtime.elements.pwaUpdateBtn.disabled, true);
+    assert.strictEqual(runtime.reloadCount(), 0);
+
+    runtime.setCreatePending(false);
+    assert.strictEqual(runtime.testApi.refresh(), true);
+
+    assert.strictEqual(runtime.reloadCount(), 1);
 });
 
 waitForTests();

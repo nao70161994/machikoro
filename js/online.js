@@ -3047,6 +3047,17 @@ function handleAppError(msg) {
 }
 
 let onlineLobbyRequestRuntime = null;
+let onlineLobbyPwaRefreshScheduled = false;
+
+function scheduleOnlineLobbyPwaRefresh() {
+    if (onlineLobbyPwaRefreshScheduled) return false;
+    onlineLobbyPwaRefreshScheduled = true;
+    Promise.resolve().then(() => {
+        onlineLobbyPwaRefreshScheduled = false;
+        if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
+    });
+    return true;
+}
 
 function getOnlineLobbyRequestRuntime() {
     if (onlineLobbyRequestRuntime) return onlineLobbyRequestRuntime;
@@ -3070,6 +3081,7 @@ function getOnlineLobbyRequestRuntime() {
         joinRoom: payload => onlineSocketEffects.joinRoom(payload),
         playerSettings: OnlinePlayerSettings,
         requestTimeoutMs: ONLINE_LOBBY_REQUEST_TIMEOUT_MS,
+        schedulePwaRefresh: () => scheduleOnlineLobbyPwaRefresh(),
         setHost: value => onlineComposition.sessionState.setHost(value),
         setPlayerName: value => onlineComposition.sessionState.setPlayerName(value),
         setStatusText: message => onlineDomEffects.setStatusText(message),

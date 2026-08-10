@@ -50,6 +50,7 @@ function createHarness(options = {}) {
         joinRoom: payload => calls.push(['joinRoom', payload]),
         playerSettings: OnlinePlayerSettings,
         requestTimeoutMs: 15000,
+        schedulePwaRefresh: () => calls.push(['schedulePwaRefresh']),
         setHost: value => calls.push(['setHost', value]),
         setPlayerName: value => calls.push(['setPlayerName', value]),
         setStatusText: value => calls.push(['status', value]),
@@ -165,7 +166,30 @@ runTest('online lobby request runtimeは現世代timeoutだけを終了・通知
         call[1] === OnlineLobbyRequestRuntime.TEXT.REQUEST_TIMEOUT_STATUS));
     assert.ok(calls.some(call => call[0] === 'notice' &&
         call[1] === OnlineLobbyRequestRuntime.TEXT.REQUEST_TIMEOUT_NOTICE));
+    assert.strictEqual(calls.filter(call => call[0] === 'schedulePwaRefresh').length, 1);
     assert.strictEqual(runtime.finish('join'), true);
+});
+
+runTest('online lobby request runtimeはRL preload失敗でPWA状態の再評価を予約する', async () => {
+    let rejectPreload;
+    const preload = new Promise((_, reject) => { rejectPreload = reject; });
+    const portfolio = {
+        eligibleLoadState: () => ({ status: 'idle', ready: 0, total: 1, errors: [] }),
+        preloadEligibleModels: () => preload,
+    };
+    const { calls, runtime } = createHarness({
+        playerSettings: [{ type: 'human' }, { type: 'cpu', difficulty: 'rl' }],
+        portfolio,
+    });
+
+    assert.strictEqual(runtime.showCreate(), true);
+    rejectPreload(new Error('model unavailable'));
+    await preload.catch(() => {});
+    await Promise.resolve();
+
+    assert.strictEqual(calls.filter(call => call[0] === 'schedulePwaRefresh').length, 1);
+    assert.ok(calls.some(call => call[0] === 'notice' &&
+        call[1] === OnlineLobbyRequestRuntime.TEXT.MODEL_FAILED));
 });
 
 runTest('online.jsはロビー要求とRL preloadを専用runtimeへ委譲する', () => {

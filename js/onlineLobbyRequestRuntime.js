@@ -23,8 +23,8 @@ const OnlineLobbyRequestRuntime = (() => {
             'applyButtonView', 'clearTimer', 'createRoom', 'freezeSettings',
             'getCapabilities', 'getClientVersion', 'getModelPortfolio',
             'getSelection', 'initSocket', 'inputValue', 'joinRoom', 'setHost',
-            'setPlayerName', 'setStatusText', 'setText', 'setTimer', 'showNotice',
-            'warn', 'withCapabilities',
+            'schedulePwaRefresh', 'setPlayerName', 'setStatusText', 'setText',
+            'setTimer', 'showNotice', 'warn', 'withCapabilities',
         ];
         for (const name of requiredFunctions) {
             if (typeof dependencies[name] !== 'function') {
@@ -108,6 +108,7 @@ const OnlineLobbyRequestRuntime = (() => {
             if (transition.timer) dependencies.clearTimer(transition.timer);
             updateReadinessUi();
             renderJoinPending();
+            dependencies.schedulePwaRefresh();
             return true;
         }
 
@@ -128,8 +129,11 @@ const OnlineLobbyRequestRuntime = (() => {
         }
 
         function setCreatePending(pending) {
-            dependencies.controller.setCreatePending(pending);
+            const state = dependencies.controller.setCreatePending(pending);
             updateReadinessUi();
+            if (!state.createPending && !state.joinPending) {
+                dependencies.schedulePwaRefresh();
+            }
         }
 
         function preloadForSettings(playerCount, settings) {
