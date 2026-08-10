@@ -4,7 +4,10 @@ const { createStorage, loadScript, runTest } = require('./helpers/test-utils');
 
 function loadStatsRuntime(options = {}) {
     const { storage, localStorage } = createStorage();
-    const statsEl = { innerHTML: '' };
+    const statsEl = {
+        innerHTML: '',
+        querySelectorAll() { return options.filterButtons || []; },
+    };
     const context = {
         console,
         storage,
@@ -315,6 +318,42 @@ runTest('handleStatsClick は data-action から統計表示を切り替える',
         },
     });
     assert.strictEqual(rt.localStorage.getItem('gameStats'), null);
+});
+
+runTest('handleStatsClick は再描画後の同じfilterへfocusを維持する', () => {
+    let focusCount = 0;
+    let focusOptions = null;
+    const replacement = {
+        dataset: { action: 'setStatsViewMode', statsMode: 'online' },
+        isConnected: true,
+        disabled: false,
+        hidden: false,
+        getAttribute() { return null; },
+        closest() { return null; },
+        focus(options) { focusCount++; focusOptions = options; },
+    };
+    const rt = loadStatsRuntime({ filterButtons: [replacement] });
+
+    rt.handleStatsClick({
+        preventDefault() {},
+        target: {
+            disabled: false,
+            dataset: { action: 'setStatsViewMode', statsMode: 'online' },
+            closest() { return this; },
+        },
+    });
+
+    assert.strictEqual(focusCount, 1);
+    assert.strictEqual(focusOptions.preventScroll, true);
+    assert.ok(rt.__test.statsEl.innerHTML.includes(
+        'data-stats-mode="online" aria-pressed="true"'
+    ));
+
+    replacement.isConnected = false;
+    assert.strictEqual(rt.restoreStatsFilterFocus({
+        action: 'setStatsViewMode', value: 'online',
+    }), false);
+    assert.strictEqual(focusCount, 1);
 });
 
 runTest('clearStats は showConfirm 経由で統計を削除する', () => {

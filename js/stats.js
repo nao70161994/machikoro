@@ -225,15 +225,68 @@ function statsActionFromEvent(event) {
     return target.dataset && target.dataset.action ? target : null;
 }
 
+function statsFilterFocusIdentity(action, dataset = {}) {
+    if (action === 'setStatsViewMode' && dataset.statsMode) {
+        return Object.freeze({ action, value: dataset.statsMode });
+    }
+    if (action === 'setStatsPlayerFilter' && dataset.playerName) {
+        return Object.freeze({ action, value: dataset.playerName });
+    }
+    if (action === 'setStatsPlayerFilter') {
+        return Object.freeze({ action: 'setStatsViewMode', value: _statsViewMode });
+    }
+    return null;
+}
+
+function canRestoreStatsFilterFocus(element) {
+    if (!element || typeof element.focus !== 'function' ||
+            element.isConnected === false || element.disabled === true ||
+            element.hidden === true) return false;
+    if ('offsetParent' in element && element.offsetParent === null) return false;
+    if (typeof element.getAttribute === 'function' &&
+            element.getAttribute('aria-hidden') === 'true') return false;
+    if (typeof element.closest === 'function' &&
+            element.closest('[hidden], [aria-hidden="true"]')) return false;
+    const windowRef = typeof window !== 'undefined' ? window : null;
+    if (windowRef && typeof windowRef.getComputedStyle === 'function') {
+        const style = windowRef.getComputedStyle(element);
+        if (style && (style.display === 'none' || style.visibility === 'hidden' ||
+                style.opacity === '0' || style.pointerEvents === 'none')) return false;
+    }
+    return true;
+}
+
+function restoreStatsFilterFocus(identity) {
+    if (!identity) return false;
+    const root = document.getElementById('tabContentStats');
+    if (!root || typeof root.querySelectorAll !== 'function') return false;
+    const candidates = /** @type {any[]} */ (
+        Array.from(root.querySelectorAll('[data-action]'))
+    );
+    const target = candidates.find(element => {
+        if (!element || !element.dataset || element.dataset.action !== identity.action) {
+            return false;
+        }
+        return identity.action === 'setStatsViewMode'
+            ? element.dataset.statsMode === identity.value
+            : element.dataset.playerName === identity.value;
+    });
+    if (!canRestoreStatsFilterFocus(target)) return false;
+    target.focus({ preventScroll: true });
+    return true;
+}
+
 function handleStatsClick(event) {
     const button = statsActionFromEvent(event);
     if (!button || button.disabled) return;
     const action = button.dataset.action;
     if (!action) return;
+    const focusIdentity = statsFilterFocusIdentity(action, button.dataset);
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
     if (action === 'setStatsViewMode') setStatsViewMode(button.dataset.statsMode);
     else if (action === 'setStatsPlayerFilter') setStatsPlayerFilter(button.dataset.playerName || '');
     else if (action === 'clearStats') clearStats();
+    restoreStatsFilterFocus(focusIdentity);
 }
 
 function bindStatsHandlers(el) {

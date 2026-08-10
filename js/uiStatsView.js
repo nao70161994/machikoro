@@ -26,17 +26,18 @@ function buildFilterTabsHtml(stats, viewMode, playerFilter, escapeHtml) {
     const escape = requireFunction(escapeHtml, 'escapeHtml');
     const playerNames = Object.keys(stats.players).sort((a, b) => a.localeCompare(b, 'ja'));
     const cpuLabels = Object.keys(stats.cpuTypes).sort((a, b) => a.localeCompare(b, 'ja'));
+    const modePressed = mode => !playerFilter && viewMode === mode;
     return `
         <div class="stats-filter-tabs">
-            <button class="stats-filter-btn ${!playerFilter && viewMode === 'all' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="all">全体</button>
-            <button class="stats-filter-btn ${!playerFilter && viewMode === 'local' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="local">ローカル</button>
-            <button class="stats-filter-btn ${!playerFilter && viewMode === 'online' ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="online">オンライン</button>
+            <button class="stats-filter-btn ${modePressed('all') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="all" aria-pressed="${modePressed('all')}">全体</button>
+            <button class="stats-filter-btn ${modePressed('local') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="local" aria-pressed="${modePressed('local')}">ローカル</button>
+            <button class="stats-filter-btn ${modePressed('online') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="online" aria-pressed="${modePressed('online')}">オンライン</button>
         </div>
         ${playerNames.length ? `<div class="stats-filter-group-label">プレイヤー別</div><div class="stats-player-filters">
-            ${playerNames.map(name => `<button class="stats-player-btn ${playerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escape(name)}">${escape(name)}</button>`).join('')}
+            ${playerNames.map(name => `<button class="stats-player-btn ${playerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escape(name)}" aria-pressed="${playerFilter === name}">${escape(name)}</button>`).join('')}
         </div>` : ''}
         ${cpuLabels.length ? `<div class="stats-filter-group-label">CPU別</div><div class="stats-player-filters">
-            ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${playerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escape(name)}">${escape(name)}</button>`).join('')}
+            ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${playerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escape(name)}" aria-pressed="${playerFilter === name}">${escape(name)}</button>`).join('')}
         </div>` : ''}
         ${playerFilter ? `<div class="stats-player-filters"><button class="stats-player-btn clear" data-action="setStatsPlayerFilter" data-player-name="">解除</button></div>` : ''}
     `;

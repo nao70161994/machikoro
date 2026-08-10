@@ -60,9 +60,20 @@ runTest('stats viewは空bucketのonline案内とfilter選択状態を純粋生�
     const html = UiStatsView.buildStatsHtml(stats, 'online', '', escapeHtml);
 
     assert.ok(html.includes('stats-filter-btn active'));
-    assert.ok(html.includes('data-stats-mode="online"'));
+    assert.ok(html.includes('data-stats-mode="online" aria-pressed="true"'));
+    assert.ok(html.includes('data-stats-mode="all" aria-pressed="false"'));
+    assert.ok(html.includes('data-player-name="CPU（強）" aria-pressed="false"'));
     assert.ok(html.includes('オンライン対戦を完了すると記録されます。'));
     assert.ok(html.includes('CPU（強）'));
+});
+
+runTest('stats viewはplayer filterの選択状態をaria-pressedへ反映する', () => {
+    const stats = makeStats();
+    stats.players.Alice = makeStats().all;
+    const html = UiStatsView.buildStatsHtml(stats, 'all', 'Alice', escapeHtml);
+
+    assert.ok(html.includes('data-stats-mode="all" aria-pressed="false"'));
+    assert.ok(html.includes('data-player-name="Alice" aria-pressed="true"'));
 });
 
 runTest('stats viewはescape関数未注入をfail-fastに拒否する', () => {
