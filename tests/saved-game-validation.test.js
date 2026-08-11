@@ -7,9 +7,10 @@ const { runTest } = require('./helpers/test-utils');
 function makeValidator() {
     return SavedGameValidation.createValidator({
         isKnownCardName: name => ['麦畑', 'パン屋', 'スタジアム'].includes(name),
-        isKnownLandmarkName: name => ['駅', 'ショッピングモール'].includes(name),
+        isKnownLandmarkName: name => ['駅', 'ショッピングモール', '役所'].includes(name),
         isMajorCardName: name => name === 'スタジアム',
         cardNameById: { wheat_field: '麦畑', bakery: 'パン屋' },
+        yakushoName: '役所',
     });
 }
 
@@ -125,6 +126,85 @@ runTest('saved game validatorはpending phaseをIT単独か通常pendingのど�
         phase: 'pending',
     })), false);
     assert.strictEqual(validator.isValidSavedGameState(mixedPending), false);
+});
+
+runTest('saved game validatorは清掃業の残り回数分の異なる稼働中施設名を要求する', () => {
+    const validator = makeValidator();
+    const pendingActions = Array.from({ length: 2 }, () => ({
+        field: 'pendingCleaning',
+        action: 'resolveCleaning',
+    }));
+    const state = makeState({
+        phase: 'pending',
+        pendingCleaning: 2,
+        pendingActions,
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑', 'パン屋'], dormantIndices: [], landmarks: {} },
+            { name: 'P2', coins: 3, cards: ['スタジアム'], dormantIndices: [], landmarks: {} },
+        ],
+    });
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
+    state.players[0].dormantIndices = [1];
+    assert.strictEqual(validator.isValidSavedGameState(state), false);
+    state.players[0] = {
+        name: 'P1', coins: 3, cards: ['麦畑', '麦畑'], dormantIndices: [], landmarks: {},
+    };
+    assert.strictEqual(validator.isValidSavedGameState(state), false);
+});
+
+runTest('saved game validatorは引越し屋の残り回数分の自分の通常施設を要求する', () => {
+    const validator = makeValidator();
+    const state = makeState({
+        phase: 'pending',
+        pendingMover: 2,
+        pendingActions: Array.from({ length: 2 }, () => ({
+            field: 'pendingMover',
+            action: 'resolveMover',
+        })),
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑', 'パン屋', 'スタジアム'], dormantIndices: [], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+    });
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
+    state.players[0].cards = ['麦畑', 'スタジアム'];
+    assert.strictEqual(validator.isValidSavedGameState(state), false);
+});
+
+runTest('saved game validatorは改装屋pendingに建設済み非役所landmarkを要求する', () => {
+    const validator = makeValidator();
+    const state = makeState({
+        phase: 'pending',
+        pendingRenovation: 2,
+        pendingActions: Array.from({ length: 2 }, () => ({
+            field: 'pendingRenovation',
+            action: 'resolveRenovation',
+        })),
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: {
+                駅: true, ショッピングモール: true, 役所: true,
+            } },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+    });
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
+    state.players[0].landmarks['ショッピングモール'] = false;
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
+    state.players[0].landmarks['駅'] = false;
+    assert.strictEqual(validator.isValidSavedGameState(state), false);
+});
+
+runTest('pending target検査は旧snapshotの対象field欠落を新たに拒否しない', () => {
+    const legacy = makeState({
+        phase: 'pending',
+        pendingMover: 1,
+        pendingActions: [{ field: 'pendingMover', action: 'resolveMover' }],
+    });
+    delete legacy.players[0].cards;
+    assert.strictEqual(SavedGameValidation.hasResolvablePendingTargets(legacy, {
+        isMajorCardName: name => name === 'スタジアム',
+        yakushoName: '役所',
+    }), true);
 });
 
 runTest('saved game validatorは復元logを構造化entryの直近30件へ正規化する', () => {

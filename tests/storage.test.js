@@ -562,6 +562,39 @@ runTest('storage resumeGame は空またはIT混在のpending phaseをhydrate前
     }
 });
 
+runTest('storage resumeGame は解決対象が不足するpendingをhydrate前に拒否する', () => {
+    const cases = [
+        {
+            pendingCleaning: 1,
+            pendingActions: [{ action: 'resolveCleaning', field: 'pendingCleaning' }],
+            players: [
+                { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [0], landmarks: {} },
+                { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+            ],
+        },
+        {
+            pendingMover: 1,
+            pendingActions: [{ action: 'resolveMover', field: 'pendingMover' }],
+        },
+        {
+            pendingRenovation: 1,
+            pendingActions: [{ action: 'resolveRenovation', field: 'pendingRenovation' }],
+        },
+    ];
+    for (const pending of cases) {
+        const rt = loadStorageRuntime();
+        rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState({
+            phase: 'pending',
+            ...pending,
+        })));
+
+        assert.strictEqual(rt.resumeGame(), false);
+        assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+        assert.strictEqual(rt.__test.getGame(), null);
+        assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+    }
+});
+
 runTest('storage resumeGame は検証済みsaveを一時的なruntime例外で削除しない', () => {
     const rt = loadStorageRuntime();
     const serialized = JSON.stringify(makeSavedGameState());

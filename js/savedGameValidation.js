@@ -14,6 +14,54 @@ function isPlainObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+function hasResolvablePendingTargets(state, options = {}) {
+    if (!isPlainObject(state) || !Array.isArray(state.players)) return false;
+    const isMajorCardName = typeof options.isMajorCardName === 'function'
+        ? options.isMajorCardName
+        : (() => false);
+    const yakushoName = typeof options.yakushoName === 'string'
+        ? options.yakushoName
+        : '役所';
+
+    const pendingCleaning = Number.isInteger(state.pendingCleaning) ? state.pendingCleaning : 0;
+    if (pendingCleaning > 0) {
+        // Older snapshots may omit cards and let GameManager retain its initial cards.
+        if (state.players.every(player => player && Array.isArray(player.cards))) {
+            const activeMinorNames = new Set();
+            for (const player of state.players) {
+                const dormantIndices = new Set(Array.isArray(player.dormantIndices)
+                    ? player.dormantIndices
+                    : []);
+                player.cards.forEach((name, index) => {
+                    if (!dormantIndices.has(index) && !isMajorCardName(name)) {
+                        activeMinorNames.add(name);
+                    }
+                });
+            }
+            if (activeMinorNames.size < pendingCleaning) return false;
+        }
+    }
+
+    const current = state.players[state.currentPlayerIndex];
+    const pendingMover = Number.isInteger(state.pendingMover) ? state.pendingMover : 0;
+    if (pendingMover > 0 && current && Array.isArray(current.cards)) {
+        const minorCardCount = current.cards.filter(name => !isMajorCardName(name)).length;
+        if (minorCardCount < pendingMover) return false;
+    }
+
+    const pendingRenovation = Number.isInteger(state.pendingRenovation)
+        ? state.pendingRenovation
+        : 0;
+    if (pendingRenovation > 0 && current && isPlainObject(current.landmarks)) {
+        const builtTargetCount = Object.entries(current.landmarks)
+            .filter(([name, built]) => built === true && name !== yakushoName)
+            .length;
+        // Remaining consecutive renovation actions are consumed as no-ops after the last target.
+        if (builtTargetCount === 0) return false;
+    }
+    return true;
+}
+
 function isNonnegativeSafeInteger(value) {
     return Number.isSafeInteger(value) && value >= 0;
 }
@@ -165,6 +213,10 @@ function createValidator(options = {}) {
             if (!isValidSavedPlayerState(playerState)) return false;
         }
         if (state.shopStock != null && !isValidSavedShopStock(state.shopStock, state.enabledCardsList)) return false;
+        if (!hasResolvablePendingTargets(state, {
+            isMajorCardName,
+            yakushoName: options.yakushoName,
+        })) return false;
         return true;
     }
 
@@ -182,6 +234,7 @@ const SavedGameValidation = Object.freeze({
     maxPendingCount: MAX_SAVED_PENDING_COUNT,
     pendingActionByField: SAVED_PENDING_ACTION_BY_FIELD,
     createValidator,
+    hasResolvablePendingTargets,
     normalizeCpuSettings,
     normalizeSavedLog,
 });

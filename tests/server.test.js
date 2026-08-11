@@ -1503,6 +1503,86 @@ runTest('createRoomMirror は snapshot の pending と phase 不整合や過大c
     }
 });
 
+runTest('createRoomMirror は解決対象数を超える清掃業pendingを拒否する', () => {
+    const validRoom = makeRoom();
+    validRoom.stateSnapshot = makeSnapshot({
+        phase: 'pending',
+        pendingCleaning: 2,
+        pendingActions: Array.from({ length: 2 }, () => ({
+            action: 'resolveCleaning', field: 'pendingCleaning',
+        })),
+    });
+    assert.ok(createRoomMirror(validRoom));
+
+    const invalidRoom = makeRoom();
+    invalidRoom.stateSnapshot = makeSnapshot({
+        phase: 'pending',
+        pendingCleaning: 3,
+        pendingActions: Array.from({ length: 3 }, () => ({
+            action: 'resolveCleaning', field: 'pendingCleaning',
+        })),
+    });
+    assert.strictEqual(createRoomMirror(invalidRoom), null);
+});
+
+runTest('createRoomMirror は自分の通常施設数を超える引越し屋pendingを拒否する', () => {
+    const room = makeRoom();
+    room.stateSnapshot = makeSnapshot({
+        phase: 'pending',
+        pendingMover: 3,
+        pendingActions: Array.from({ length: 3 }, () => ({
+            action: 'resolveMover', field: 'pendingMover',
+        })),
+    });
+    assert.strictEqual(createRoomMirror(room), null);
+});
+
+runTest('createRoomMirror は対象のない改装屋pendingを拒否する', () => {
+    const validRoom = makeRoom();
+    const valid = makeSnapshot({
+        phase: 'pending',
+        pendingRenovation: 2,
+        pendingActions: Array.from({ length: 2 }, () => ({
+            action: 'resolveRenovation', field: 'pendingRenovation',
+        })),
+    });
+    valid.players[0].landmarks['駅'] = true;
+    valid.players[0].landmarks['ショッピングモール'] = true;
+    validRoom.stateSnapshot = valid;
+    assert.ok(createRoomMirror(validRoom));
+
+    const invalidRoom = makeRoom();
+    const invalid = makeSnapshot({
+        phase: 'pending',
+        pendingRenovation: 2,
+        pendingActions: Array.from({ length: 2 }, () => ({
+            action: 'resolveRenovation', field: 'pendingRenovation',
+        })),
+    });
+    invalid.players[0].landmarks['駅'] = true;
+    invalidRoom.stateSnapshot = invalid;
+    assert.ok(createRoomMirror(invalidRoom));
+    invalid.players[0].landmarks['駅'] = false;
+    assert.strictEqual(createRoomMirror(invalidRoom), null);
+});
+
+runTest('createRoomMirror のpending対象検査は旧snapshotのcards欠落を許容する', () => {
+    const room = makeRoom();
+    const snapshot = makeSnapshot({
+        phase: 'pending',
+        pendingMover: 2,
+        pendingActions: Array.from({ length: 2 }, () => ({
+            action: 'resolveMover', field: 'pendingMover',
+        })),
+    });
+    delete snapshot.players[0].cards;
+    delete snapshot.players[0].dormantIndices;
+    room.stateSnapshot = snapshot;
+    const mirror = createRoomMirror(room);
+    assert.ok(mirror);
+    assert.strictEqual(mirror.game.currentPlayer().getMinorCards().length, 2);
+});
+
 runTest('createRoomMirror は旧snapshotのcards欠落時に初期カードを維持する', () => {
     const room = makeRoom();
     const snapshot = makeSnapshot();

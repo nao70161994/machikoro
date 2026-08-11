@@ -475,6 +475,7 @@ function getSavedGameValidator() {
         isKnownLandmarkName,
         isMajorCardName,
         cardNameById: typeof CARD_NAME_BY_ID !== 'undefined' ? CARD_NAME_BY_ID : {},
+        yakushoName: typeof LANDMARK_NAMES !== 'undefined' ? LANDMARK_NAMES.YAKUSHO : '役所',
     });
     return savedGameValidator;
 }

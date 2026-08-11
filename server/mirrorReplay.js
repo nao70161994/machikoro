@@ -3,6 +3,7 @@
 const GameSnapshot = require('../js/gameSnapshot');
 const GameEngine = require('../js/gameEngine');
 const GameSchemaCodec = require('../js/gameSchemaCodec');
+const SavedGameValidation = require('../js/savedGameValidation');
 
 const MAX_SNAPSHOT_PENDING_COUNT = 50;
 const MAX_SNAPSHOT_LOG_ENTRIES = 30;
@@ -264,6 +265,13 @@ function makeMirrorReplay({
             (!Array.isArray(state.pendingTunaDice) ||
                 state.pendingTunaDice.length !== 2 ||
                 state.pendingTunaDice.some(value => !isValidDieValue(value)))) return false;
+        if (!SavedGameValidation.hasResolvablePendingTargets(state, {
+            isMajorCardName: name => {
+                const card = createCardByName(name);
+                return !!card && card.category === gameRuntime.CARD_CATEGORIES.MAJOR;
+            },
+            yakushoName: gameRuntime.LANDMARK_NAMES.YAKUSHO,
+        })) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'undoState') &&
             state.undoState !== null &&
             !isValidUndoState(state.undoState, playerCount, createCardByName)) return false;
