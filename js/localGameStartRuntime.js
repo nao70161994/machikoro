@@ -117,6 +117,22 @@ const LocalGameStartRuntime = (() => {
             updateReadinessUi();
         }
 
+        function restorePlayerTypeFocus(plan) {
+            const root = document.getElementById('playerSettings');
+            return playerSettings.applyPlayerTypeFocusPlan(plan, {
+                findSelect(playerIndex) {
+                    if (!root || typeof root.querySelector !== 'function') return null;
+                    return root.querySelector(
+                        `[data-ui-change="localPlayerType"][data-player-index="${playerIndex}"]`
+                    );
+                },
+                getComputedStyle: document.defaultView &&
+                    typeof document.defaultView.getComputedStyle === 'function'
+                    ? element => document.defaultView.getComputedStyle(element)
+                    : undefined,
+            });
+        }
+
         function preloadInBackground(reason = 'local-rl-background-preload') {
             const setup = setupSnapshot();
             if (!hasLocalRlCpuSetting(setup.selectedCount, setup.playerSettings) || !canPreloadRlModels()) {
@@ -152,13 +168,16 @@ const LocalGameStartRuntime = (() => {
         }
 
         function changePlayerType(index, value) {
-            const settings = setupSnapshot().playerSettings;
+            const setup = setupSnapshot();
+            const settings = setup.playerSettings;
+            const focusPlan = playerSettings.playerTypeFocusPlan(index, setup.selectedCount);
             setupRuntime.setPlayerSetting(index, {
                 type: value === 'human' ? 'human' : 'cpu',
                 difficulty: value === 'human' ? 'normal' : value,
                 name: playerSettings.normalizePlayerName(settings[index]?.name, index),
             });
             renderPlayerSettings();
+            restorePlayerTypeFocus(focusPlan);
             if (value === 'rl') preloadInBackground('local-rl-selected-preload');
             saveSettings();
         }

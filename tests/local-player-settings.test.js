@@ -42,6 +42,74 @@ runTest('local player settingsの人間名inputは各playerを識別するaccess
     assert.strictEqual((html.match(/data-ui-input="localPlayerName"/g) || []).length, 2);
 });
 
+runTest('local player settingsは2人・10人の種別select focus identityをpureに計画する', () => {
+    assert.deepStrictEqual(LocalPlayerSettings.playerTypeFocusPlan(1, 2), {
+        restore: true,
+        playerIndex: 1,
+    });
+    assert.deepStrictEqual(LocalPlayerSettings.playerTypeFocusPlan(5, 10), {
+        restore: true,
+        playerIndex: 5,
+    });
+    assert.deepStrictEqual(LocalPlayerSettings.playerTypeFocusPlan(10, 10), {
+        restore: false,
+        playerIndex: -1,
+    });
+    assert.deepStrictEqual(LocalPlayerSettings.playerTypeFocusPlan('5', 10), {
+        restore: false,
+        playerIndex: -1,
+    });
+});
+
+runTest('local player settings focus effectは同じselectへpreventScrollで復元する', () => {
+    let focusOptions = null;
+    let requestedIndex = -1;
+    const select = {
+        isConnected: true,
+        disabled: false,
+        hidden: false,
+        getAttribute() { return null; },
+        closest() { return null; },
+        focus(options) { focusOptions = options; },
+    };
+    const restored = LocalPlayerSettings.applyPlayerTypeFocusPlan(
+        LocalPlayerSettings.playerTypeFocusPlan(5, 10),
+        {
+            findSelect(index) { requestedIndex = index; return select; },
+            getComputedStyle() { return { display: 'block', visibility: 'visible', opacity: '1', pointerEvents: 'auto' }; },
+        }
+    );
+
+    assert.strictEqual(restored, true);
+    assert.strictEqual(requestedIndex, 5);
+    assert.deepStrictEqual(focusOptions, { preventScroll: true });
+});
+
+runTest('local player settings focus effectは切断・hidden・disabledをfail closedにする', () => {
+    const plan = LocalPlayerSettings.playerTypeFocusPlan(1, 2);
+    for (const select of [
+        { isConnected: false },
+        { disabled: true },
+        { hidden: true },
+    ]) {
+        let focused = false;
+        select.focus = () => { focused = true; };
+        assert.strictEqual(LocalPlayerSettings.applyPlayerTypeFocusPlan(plan, {
+            findSelect: () => select,
+        }), false);
+        assert.strictEqual(focused, false);
+    }
+    const visuallyHidden = {
+        focus() { throw new Error('hidden select must not focus'); },
+        getAttribute() { return null; },
+        closest() { return null; },
+    };
+    assert.strictEqual(LocalPlayerSettings.applyPlayerTypeFocusPlan(plan, {
+        findSelect: () => visuallyHidden,
+        getComputedStyle: () => ({ display: 'none' }),
+    }), false);
+});
+
 runTest('local player settingsはCPU表示・相手設定・速度・RL判定を固定する', () => {
     const settings = [
         { type: 'human', difficulty: 'expert' },

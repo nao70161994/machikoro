@@ -17,6 +17,12 @@ function createHarness(options = {}) {
         playerSettings: makeElement(),
         titleScreen: makeElement(),
     };
+    if (options.playerTypeSelect) {
+        elements.playerSettings.querySelector = selector => {
+            calls.push(['findPlayerTypeSelect', selector]);
+            return options.playerTypeSelect;
+        };
+    }
     let state = {
         selectedCount: options.playerCount || 2,
         playerSettings: options.settings || [
@@ -74,6 +80,31 @@ runTest('local game start runtimeは人数・設定・RL表示のeffect境界を
     assert.ok(calls.some(call => call[0] === 'preload'));
     runtime.changePlayerName(0, 'Alice');
     assert.strictEqual(getState().playerSettings[0].name, 'Alice');
+});
+
+runTest('local game start runtimeは10人の中間playerをCPUへ変更後も同じselectへfocusを戻す', () => {
+    let focusOptions = null;
+    const select = makeElement({
+        focus(options) { focusOptions = options; },
+    });
+    const settings = Array.from({ length: 10 }, (_, index) => ({
+        type: 'human', difficulty: 'normal', name: `P${index + 1}`,
+    }));
+    const { calls, getState, runtime } = createHarness({
+        playerCount: 10,
+        settings,
+        playerTypeSelect: select,
+    });
+
+    runtime.changePlayerType(5, 'strong');
+
+    assert.deepStrictEqual(getState().playerSettings[5], {
+        type: 'cpu', difficulty: 'strong', name: 'P6',
+    });
+    assert.deepStrictEqual(focusOptions, { preventScroll: true });
+    assert.ok(calls.some(call => call[0] === 'findPlayerTypeSelect' &&
+        call[1].includes('data-player-index="5"')));
+    assert.strictEqual(calls.filter(call => call[0] === 'saveSettings').length, 1);
 });
 
 runTest('local game start runtimeは非RL開始の既存effect順と画面遷移を維持する', () => {

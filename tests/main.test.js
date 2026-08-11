@@ -1903,6 +1903,36 @@ runTest('main static UI handler は data-ui-action/input/change を処理する'
     assert.strictEqual(rt.__test.getPlayerSettings()[0].name, '新名');
 });
 
+runTest('main local player type変更は10人の同じselectへfocusを維持する', () => {
+    const rt = loadMainRuntime();
+    let focusOptions = null;
+    let requestedSelector = '';
+    const replacement = makeElement({
+        focus(options) { focusOptions = options; },
+    });
+    rt.__test.elements.playerSettings.querySelector = selector => {
+        requestedSelector = selector;
+        return replacement;
+    };
+    rt.__test.setSelectedCount(10);
+    rt.__test.setPlayerSettings(Array.from({ length: 10 }, (_, index) => ({
+        type: 'human', difficulty: 'normal', name: `P${index + 1}`,
+    })));
+
+    rt.__test.eventHandlers['document:change']({
+        target: {
+            value: 'expert',
+            dataset: { uiChange: 'localPlayerType', playerIndex: '5' },
+            closest() { return this; },
+        },
+    });
+
+    assert.strictEqual(rt.__test.getPlayerSettings()[5].type, 'cpu');
+    assert.strictEqual(rt.__test.getPlayerSettings()[5].difficulty, 'expert');
+    assert.ok(requestedSelector.includes('data-player-index="5"'));
+    assert.strictEqual(focusOptions.preventScroll, true);
+});
+
 runTest('main static UI handler は role button の Enter/Space を処理する', () => {
     const rt = loadMainRuntime();
     let prevented = false;

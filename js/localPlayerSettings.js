@@ -34,6 +34,46 @@ const LocalPlayerSettings = (() => {
         ));
     }
 
+    function playerTypeFocusPlan(index, playerCount) {
+        const restore = Number.isInteger(index) && index >= 0 &&
+            Number.isInteger(playerCount) && index < playerCount;
+        return Object.freeze({
+            restore,
+            playerIndex: restore ? index : -1,
+        });
+    }
+
+    function canRestorePlayerTypeFocus(element, getComputedStyle) {
+        if (!element || typeof element.focus !== 'function' ||
+                element.isConnected === false || element.disabled === true ||
+                element.hidden === true) return false;
+        if ('offsetParent' in element && element.offsetParent === null) return false;
+        if (typeof element.getAttribute === 'function' &&
+                element.getAttribute('aria-hidden') === 'true') return false;
+        if (typeof element.closest === 'function' &&
+                element.closest('[hidden], [aria-hidden="true"]')) return false;
+        if (typeof getComputedStyle === 'function') {
+            const style = getComputedStyle(element);
+            if (style && (style.display === 'none' || style.visibility === 'hidden' ||
+                    style.opacity === '0' || style.pointerEvents === 'none')) return false;
+        }
+        return true;
+    }
+
+    function applyPlayerTypeFocusPlan(plan, effects = {}) {
+        if (!plan || plan.restore !== true || typeof effects.findSelect !== 'function') {
+            return false;
+        }
+        const target = effects.findSelect(plan.playerIndex);
+        if (!canRestorePlayerTypeFocus(target, effects.getComputedStyle)) return false;
+        try {
+            target.focus({ preventScroll: true });
+        } catch (_) {
+            return false;
+        }
+        return true;
+    }
+
     function cpuLabel(difficulty) {
         if (difficulty === 'weak') return 'CPU（弱）';
         if (difficulty === 'normal') return 'CPU（普通）';
@@ -130,6 +170,9 @@ const LocalPlayerSettings = (() => {
         normalizePlayerName,
         normalizePlayerSetting,
         normalizeSettings,
+        playerTypeFocusPlan,
+        canRestorePlayerTypeFocus,
+        applyPlayerTypeFocusPlan,
         cpuLabel,
         rlSettingNote,
         buildSettingsHtml,
