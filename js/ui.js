@@ -2,6 +2,8 @@ const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
 const pendingModalFocusController = UiPendingEffects.createFocusController();
+const diceChoiceFocusController = UiDiceChoice.createFocusController();
+const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 
 function uiGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
@@ -328,6 +330,21 @@ function renderActiveGameState(current) {
         },
         updateDiceDisplay(diceValues) {
             updateDiceDisplay(diceValues);
+            const diceKey = [
+                currentGame.turnCount,
+                currentGame.currentPlayerIndex,
+                currentGame.usedReroll ? 1 : 0,
+                ...(diceValues || []),
+            ].join(':');
+            const announcementPlan = diceResultAnnouncementController.transition(diceValues, {
+                eligible: diceResultAnnouncementEligible(),
+                rerolled: currentGame.usedReroll === true,
+                resultKey: diceKey,
+            });
+            UiDiceDisplay.applyAnnouncementPlan(
+                announcementPlan,
+                document.getElementById('diceResultAnnouncer')
+            );
         },
         runRenderStep(name, callback) {
             safeRenderStep(name, callback);
@@ -437,8 +454,27 @@ function uiActionDisabledAttr(action) {
 
 function setDiceChooseContent(el, html) {
     if (!el) return;
-    el.innerHTML = html || "";
-    if (el.style) el.style.display = html ? "block" : "none";
+    const nextHtml = html || "";
+    const focusPlan = diceChoiceFocusController.transition(
+        !!nextHtml,
+        diceChoiceFocusEligible()
+    );
+    if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
+    if (el.style) el.style.display = nextHtml ? "block" : "none";
+    UiDiceChoice.applyFocusPlan(focusPlan, el);
+}
+
+function diceChoiceFocusEligible() {
+    return uiOnlineRuntimeSnapshot().isReplaying !== true && isCurrentHumanUiTurn();
+}
+
+function diceResultAnnouncementEligible() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const onlineState = uiOnlineRuntimeSnapshot();
+    if (!currentGame || onlineState.isReplaying === true ||
+            !!currentCpuPlayerAt(currentGame.currentPlayerIndex)) return false;
+    return !onlineState.isOnlineGame ||
+        currentGame.currentPlayerIndex === onlineState.myPlayerIndex;
 }
 
 function renderDiceChoose() {
@@ -1086,6 +1122,8 @@ function setAppInertForModal(enabled) {
 }
 
 function resetAccessibleModalRuntimeState() {
+    diceChoiceFocusController.reset();
+    diceResultAnnouncementController.reset();
     pendingModalFocusController.reset();
     return uiModalDomEffects.resetRuntimeState();
 }

@@ -25,6 +25,7 @@ function loadUiRuntime(options = {}) {
         btnSkip: makeElement(),
         btnReroll: makeElement(),
         diceChoose: makeElement(),
+        diceResultAnnouncer: makeElement(),
         buildMenu: makeElement(),
         log: makeElement(),
         logTitle: makeElement(),
@@ -135,7 +136,7 @@ function loadUiRuntime(options = {}) {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/ui.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -909,6 +910,10 @@ runTest('updatePendingModalContent は再入とDOM欠落を安全に扱う', () 
 
 runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択を表示する', () => {
     const { context, elements } = loadUiRuntime();
+    const firstChoice = makeElement();
+    let focusCount = 0;
+    firstChoice.focus = () => { focusCount++; };
+    elements.diceChoose.querySelector = () => firstChoice;
     context.GAME_PHASES.SELECT_DICE = 'selectDice';
     context.GAME_PHASES.REROLL_CONFIRM = 'rerollConfirm';
     context.GAME_PHASES.HARBOR_CHOICE = 'harborChoice';
@@ -930,6 +935,10 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     context.renderDiceChoose();
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="selectDiceCount"'));
     assert.strictEqual(elements.diceChoose.style.display, 'block');
+    assert.strictEqual(focusCount, 1);
+
+    context.renderDiceChoose();
+    assert.strictEqual(focusCount, 1);
 
     context.game.phase = 'rerollConfirm';
     context.game.allowed = ['rerollDice', 'skipReroll'];
@@ -955,6 +964,41 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="resolveHarbor"'));
     assert.ok(!elements.diceChoose.innerHTML.includes(' disabled'));
     assert.strictEqual(elements.diceChoose.style.display, 'block');
+    assert.strictEqual(focusCount, 2);
+});
+
+runTest('renderDiceChoose はCPU・online replay・相手手番でfocusを奪わない', () => {
+    const scenarios = [
+        { cpuPlayers: [{}, null] },
+        { isReplaying: true },
+        { isOnlineGame: true, myPlayerIndex: 1 },
+    ];
+    scenarios.forEach(scenario => {
+        const { context, elements } = loadUiRuntime();
+        context.GAME_PHASES.SELECT_DICE = 'selectDice';
+        context.GameManager = {
+            allowedActionsFor() { return new Set(['selectDice']); },
+        };
+        context.game = {
+            phase: 'selectDice',
+            currentPlayerIndex: 0,
+            players: [{ name: 'Alice' }, { name: 'Bob' }],
+            lastDiceResult: 0,
+        };
+        context.cpuPlayers = scenario.cpuPlayers || [null, null];
+        if (scenario.isReplaying) context.OnlineRuntimeState.runtime.setReplaying(true);
+        if (scenario.isOnlineGame) {
+            context.OnlineRuntimeState.runtime.setOnline(true);
+            context.OnlineRuntimeState.runtime.setPlayerIndexes({
+                originalPlayerIndex: scenario.myPlayerIndex,
+                playerIndex: scenario.myPlayerIndex,
+            });
+        }
+        let focusCount = 0;
+        elements.diceChoose.querySelector = () => ({ focus() { focusCount++; } });
+        context.renderDiceChoose();
+        assert.strictEqual(focusCount, 0);
+    });
 });
 
 runTest('renderPending は allowedActionsFor の先頭pending actionだけを表示する', () => {

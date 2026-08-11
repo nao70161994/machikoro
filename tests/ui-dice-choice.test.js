@@ -22,3 +22,25 @@ runTest('dice choice HTMLはphaseまたはaction不一致なら空にする', ()
     assert.strictEqual(build(phases.SELECT_DICE, []), '');
     assert.strictEqual(build('build', ['selectDice']), '');
 });
+
+runTest('dice choice focus controllerはeligibleなhidden→visibleだけ初回focusする', () => {
+    const controller = UiDiceChoice.createFocusController();
+    assert.deepStrictEqual(controller.transition(true, true), {
+        focusInitial: true,
+        visible: true,
+    });
+    assert.strictEqual(controller.transition(true, true).focusInitial, false);
+    assert.strictEqual(controller.transition(true, false).focusInitial, false);
+    assert.strictEqual(controller.transition(false, true).focusInitial, false);
+    assert.strictEqual(controller.transition(true, false).focusInitial, false);
+    assert.strictEqual(controller.reset(), false);
+    assert.strictEqual(controller.transition(true, true).focusInitial, true);
+
+    let focusCount = 0;
+    const target = { focus() { focusCount++; } };
+    assert.strictEqual(UiDiceChoice.applyFocusPlan(
+        { focusInitial: true },
+        { querySelector: () => target }
+    ), true);
+    assert.strictEqual(focusCount, 1);
+});

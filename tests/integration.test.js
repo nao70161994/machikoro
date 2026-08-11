@@ -770,6 +770,46 @@ runTest('integration: human pendingは初回だけ解決操作へfocusし完了�
     assert.strictEqual(rt.document.activeElement, rt.__test.elements.status);
 });
 
+runTest('integration: human dice choiceは初回focusし結果を一度だけ通知する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    const choice = makeElement();
+    let focusCount = 0;
+    choice.focus = () => {
+        focusCount++;
+        rt.document.activeElement = choice;
+    };
+    rt.__test.elements.diceChoose.querySelector = () => choice;
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    rt.render();
+    assert.strictEqual(focusCount, 1);
+    rt.render();
+    assert.strictEqual(focusCount, 1);
+
+    game.lastDice1 = 2;
+    game.lastDice2 = 6;
+    game.lastDiceResult = 8;
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.render();
+    assert.strictEqual(
+        rt.__test.elements.diceResultAnnouncer.textContent,
+        'サイコロの出目は2と6、合計8です'
+    );
+    rt.render();
+    assert.strictEqual(
+        rt.__test.elements.diceResultAnnouncer.textContent,
+        'サイコロの出目は2と6、合計8です'
+    );
+});
+
 runTest('integration: local pending save復帰は可視の解決操作へfocusを戻す', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

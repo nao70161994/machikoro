@@ -41,6 +41,7 @@ function loadIntegrationRuntime(options = {}) {
         btnReroll: makeElement(),
         diceChoose: makeElement(),
         diceResult: makeElement(),
+        diceResultAnnouncer: makeElement(),
         buildMenu: makeElement(),
         log: makeElement(),
         logTitle: makeElement(),

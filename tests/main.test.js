@@ -24,6 +24,7 @@ function loadMainRuntime(options = {}) {
         pwaInstallBanner: makeElement(),
         pwaUpdateBanner: makeElement({ style: { display: 'none' } }),
         diceResult: makeElement(),
+        diceResultAnnouncer: makeElement(),
         diceChoose: makeElement({
             addEventListener(name, handler) { eventHandlers[`diceChoose:${name}`] = handler; },
         }),
@@ -643,7 +644,7 @@ runTest('main dice displayはpure viewを既存DOMへ反映する', () => {
     assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '0.2');
     assert.strictEqual(
         rt.__test.elements.diceResult.innerHTML,
-        `<div class="dice-display">${rt.renderDiceFace(1)}</div>`
+        rt.UiDiceDisplay.buildView([]).html
     );
 
     rt.updateDiceDisplay([2, 6], false);
@@ -2306,6 +2307,7 @@ runTest('onlineStatus はライブリージョンとして宣言されている'
     assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
 });
 
 runTest('card detail button はカードに重ならない専用行へ配置する', () => {

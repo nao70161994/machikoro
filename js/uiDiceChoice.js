@@ -1,6 +1,43 @@
 'use strict';
 
 const UiDiceChoice = (() => {
+    function focusTransition(previousVisible, nextVisible, focusEligible) {
+        const visible = nextVisible === true;
+        return Object.freeze({
+            focusInitial: focusEligible === true && previousVisible !== true && visible,
+            visible,
+        });
+    }
+
+    function createFocusController(initialVisible = false) {
+        let visible = initialVisible === true;
+        return Object.freeze({
+            isVisible() { return visible; },
+            reset(nextVisible = false) {
+                visible = nextVisible === true;
+                return visible;
+            },
+            transition(nextVisible, focusEligible) {
+                const plan = focusTransition(visible, nextVisible, focusEligible);
+                visible = plan.visible;
+                return plan;
+            },
+        });
+    }
+
+    function applyFocusPlan(plan, content) {
+        if (!plan || plan.focusInitial !== true || !content ||
+                typeof content.querySelector !== 'function') return false;
+        const target = content.querySelector('button:not([disabled]), select:not([disabled])');
+        if (!target || typeof target.focus !== 'function') return false;
+        try {
+            target.focus();
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
     function buildHtml(options) {
         const allowedActions = options.allowedActions;
         const disabledAttr = options.disabledAttr;
@@ -20,7 +57,7 @@ const UiDiceChoice = (() => {
         return '';
     }
 
-    return Object.freeze({ buildHtml });
+    return Object.freeze({ applyFocusPlan, buildHtml, createFocusController, focusTransition });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiDiceChoice;
