@@ -1,8 +1,13 @@
 const assert = require('assert');
-global.OnlineRestoreMetadata = require('../js/onlineRestoreMetadata');
+delete global.OnlineRestoreMetadata;
 const { OnlinePayload } = require('../js/onlinePayload');
 const { HOSTLESS_RESTORE_EVENTS } = require('../server/hostlessRestoreRuntime');
 const { runTest } = require('./helpers/test-utils');
+
+runTest('online payloadはglobal未注入のCommonJSでもmetadata正本を解決する', () => {
+    assert.ok(global.OnlineRestoreMetadata);
+    assert.strictEqual(typeof OnlinePayload.buildHostlessRestoreRequest, 'function');
+});
 
 runTest('online payload は保存sessionの必須fieldを正規化し追加fieldを保持する', () => {
     assert.deepStrictEqual(OnlinePayload.normalizeSession({

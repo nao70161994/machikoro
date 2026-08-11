@@ -1,7 +1,8 @@
 'use strict';
 
 const ONLINE_HOSTLESS_RESTORE_SCHEMA_VERSION = 1;
-const onlinePayloadRestoreMetadata = /** @type {any} */ (globalThis).OnlineRestoreMetadata;
+const onlinePayloadRestoreMetadata = /** @type {any} */ (globalThis).OnlineRestoreMetadata ||
+    (typeof require === 'function' ? require('./onlineRestoreMetadata') : null);
 const ONLINE_HOSTLESS_RESTORE_MAX_ATTEMPTS = onlinePayloadRestoreMetadata.hostlessRestoreMaxAttempts;
 const ONLINE_HOSTLESS_RESTORE_EVENTS = Object.freeze({
     REQUEST: 'requestHostlessRestore',
