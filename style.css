@@ -16,6 +16,10 @@
     --touch-target-standard: 44px;
     --touch-target-compact: 36px;
     --touch-target-dense: 32px;
+    --setup-cta-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    --setup-cta-pwa-bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+    --setup-cta-focus-clearance: calc(var(--touch-target-standard) + 28px);
+    --setup-cta-pwa-focus-clearance: calc(var(--setup-cta-pwa-bottom) + var(--touch-target-standard) + 16px);
     --build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));
     --build-filter-focus-clearance: calc(var(--build-filter-sticky-top) + var(--touch-target-compact) + 22px);
     --z-pwa-banner: 500;
@@ -597,6 +601,36 @@ body.modal-open #gameScreen {
 
 #btnStart:active {
     opacity: 0.8;
+}
+
+@media (max-width: 480px) {
+    #btnStart.setup-primary-cta,
+    #onlineCreateSubmitButton.setup-primary-cta {
+        position: sticky;
+        bottom: var(--setup-cta-bottom);
+        z-index: 100;
+        min-height: var(--touch-target-standard);
+        box-shadow: 0 -8px 18px rgba(26,26,46,0.94);
+    }
+
+    body.pwa-banner-open #btnStart.setup-primary-cta,
+    body.pwa-banner-open #onlineCreateSubmitButton.setup-primary-cta {
+        bottom: var(--setup-cta-pwa-bottom);
+    }
+
+    #tabContentLocal input,
+    #tabContentLocal select,
+    #onlineCreate input,
+    #onlineCreate select {
+        scroll-margin-bottom: var(--setup-cta-focus-clearance);
+    }
+
+    body.pwa-banner-open #tabContentLocal input,
+    body.pwa-banner-open #tabContentLocal select,
+    body.pwa-banner-open #onlineCreate input,
+    body.pwa-banner-open #onlineCreate select {
+        scroll-margin-bottom: var(--setup-cta-pwa-focus-clearance);
+    }
 }
 
 /* ===== オンライン対戦UI ===== */

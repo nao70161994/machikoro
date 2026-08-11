@@ -2384,6 +2384,18 @@ runTest('頻用する補助操作は一覧密度に応じた共通tap領域を�
     assert.ok(rule('.card-badge').includes('min-height: var(--touch-target-dense);'));
 });
 
+runTest('狭幅の開始CTAは既存actionのまま設定内を追従しPWAとfocusを避ける', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.ok(html.includes('id="btnStart" class="setup-primary-cta" data-ui-action="startGame"'));
+    assert.ok(html.includes('id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom"'));
+    assert.ok(css.includes('@media (max-width: 480px) {\n    #btnStart.setup-primary-cta,\n    #onlineCreateSubmitButton.setup-primary-cta {'));
+    assert.ok(css.includes('bottom: var(--setup-cta-bottom);'));
+    assert.ok(css.includes('body.pwa-banner-open #btnStart.setup-primary-cta,\n    body.pwa-banner-open #onlineCreateSubmitButton.setup-primary-cta {\n        bottom: var(--setup-cta-pwa-bottom);'));
+    assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-focus-clearance);'));
+    assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-pwa-focus-clearance);'));
+});
+
 runTest('建設カードの色filterはカードsection内だけで安全に追従する', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     assert.ok(css.includes('--build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));'));

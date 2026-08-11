@@ -101,6 +101,65 @@ test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領�
     await expectPlayerSelectTapTargets(page, '#onlinePlayerSettings', 10);
 });
 
+test('320pxから480pxで2人・10人設定の開始CTAがPWAとfocusを隠さない', async ({ page }) => {
+    await prepare(page);
+
+    async function expectStickyCta(selector, focusSelector, width, height = 844) {
+        await page.setViewportSize({ width, height });
+        const focusTarget = page.locator(focusSelector);
+        await focusTarget.focus();
+        const layout = await page.locator(selector).evaluate((element, targetSelector) => {
+            const bounds = element.getBoundingClientRect();
+            const targetBounds = document.querySelector(targetSelector).getBoundingClientRect();
+            const bannerBounds = document.getElementById('pwaUpdateBanner').getBoundingClientRect();
+            return {
+                ctaTop: bounds.top,
+                ctaBottom: bounds.bottom,
+                ctaLeft: bounds.left,
+                ctaRight: bounds.right,
+                targetBottom: targetBounds.bottom,
+                bannerTop: bannerBounds.top,
+                viewportWidth: document.documentElement.clientWidth,
+                viewportHeight: window.innerHeight,
+                position: getComputedStyle(element).position,
+            };
+        }, focusSelector);
+        expect(layout.position).toBe('sticky');
+        expect(layout.ctaLeft).toBeGreaterThanOrEqual(0);
+        expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewportWidth);
+        expect(layout.ctaBottom).toBeLessThanOrEqual(layout.viewportHeight);
+        expect(layout.ctaBottom).toBeLessThanOrEqual(layout.bannerTop);
+        expect(layout.targetBottom).toBeLessThanOrEqual(layout.ctaTop);
+    }
+
+    await page.evaluate(() => {
+        document.body.classList.add('pwa-banner-open');
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
+    });
+    await page.waitForTimeout(400);
+    for (const width of [320, 360, 390, 480]) {
+        await expectStickyCta('#btnStart', '#tutorialLevel', width);
+    }
+
+    const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
+    for (let count = 2; count < 10; count++) await increasePlayerCount.click();
+    for (const width of [320, 360, 390, 480]) {
+        await expectStickyCta('#btnStart', '#tutorialLevel', width);
+    }
+    await expectStickyCta('#btnStart', '#tutorialLevel', 390, 500);
+
+    await page.locator('#tabOnline').click();
+    for (const width of [320, 360, 390, 480]) {
+        await expectStickyCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
+    }
+    const increaseOnlinePlayerCount = page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]');
+    for (let count = 2; count < 10; count++) await increaseOnlinePlayerCount.click();
+    for (const width of [320, 360, 390, 480]) {
+        await expectStickyCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
+    }
+    await expectStickyCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
+});
+
 test('320pxから480pxで長い手番名と終盤player情報が枠内に収まる', async ({ page }) => {
     await prepare(page);
     await page.evaluate(() => {
