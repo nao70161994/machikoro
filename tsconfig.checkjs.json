@@ -87,6 +87,7 @@
     "js/gameSchemaWire.js",
     "js/recreateRoomPayload.js",
     "js/gameSchemaRecreateWire.js",
+    "js/onlineRestoreMetadata.js",
     "js/onlinePayload.js",
     "js/onlineRestoreQueueState.js",
     "js/onlineRestoreLifecycleState.js",
