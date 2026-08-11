@@ -17,6 +17,7 @@ function makeFixture(overrides = {}) {
     const dependencies = {
         requirePlainSocketPayload() { events.push(['plain']); return true; },
         isValidRoomId() { events.push(['room-id']); return true; },
+        validateSocketCanEnterRoom() { events.push(['room-entry']); return { ok: true }; },
         emitAppError(_socket, message) { events.push(['error', message]); },
         rooms: { ROOM01: room },
         getExpectedReconnectTokenHash() { events.push(['expected-hash']); return 'hash'; },
@@ -65,6 +66,7 @@ runTest('rejoin handler preserves validation, attach, emit, and log order', () =
     assert.deepStrictEqual(fixture.events, [
         ['plain'],
         ['room-id'],
+        ['room-entry'],
         ['expected-hash'],
         ['hash-token'],
         ['detach'],
@@ -92,11 +94,32 @@ runTest('rejoin handler fails closed before detaching on token mismatch', () => 
     assert.deepStrictEqual(fixture.events, [
         ['plain'],
         ['room-id'],
+        ['room-entry'],
         ['expected-hash'],
         ['hash-token'],
         ['error', 'INVALID_TOKEN'],
     ]);
     assert.strictEqual(fixture.socket.roomId, undefined);
+});
+
+runTest('rejoin handler は別のactive roomからの再参加をidentity検証前に拒否する', () => {
+    const fixture = makeFixture({
+        validateSocketCanEnterRoom(_socket, roomId) {
+            fixture.events.push(['room-entry', roomId]);
+            return { ok: false, message: 'すでに別のルームに参加しています' };
+        },
+    });
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(validPayload);
+
+    assert.deepStrictEqual(fixture.events, [
+        ['plain'],
+        ['room-id'],
+        ['room-entry', 'ROOM01'],
+        ['error', 'すでに別のルームに参加しています'],
+    ]);
+    assert.strictEqual(fixture.socket.roomId, undefined);
+    assert.strictEqual(fixture.room.lastTouchedAt, 0);
 });
 
 runTest('rejoin handlerはhost不在時に先着playerをrejoinData前にhostへ再選出する', () => {
@@ -129,6 +152,7 @@ runTest('rejoin handlerはhost不在時に先着playerをrejoinData前にhostへ
     assert.deepStrictEqual(fixture.events, [
         ['plain'],
         ['room-id'],
+        ['room-entry'],
         ['expected-hash'],
         ['hash-token'],
         ['detach'],
@@ -166,7 +190,7 @@ runTest('rejoin handler は認証後にschema capabilityを検証し不正値で
     fixture.events.length = 0;
     fixture.handlers.rejoinRoom(Object.assign({}, validPayload, { gameSchemaCapabilities: {} }));
     assert.deepStrictEqual(fixture.events, [
-        ['plain'], ['room-id'], ['expected-hash'], ['hash-token'],
+        ['plain'], ['room-id'], ['room-entry'], ['expected-hash'], ['hash-token'],
         ['schema'], ['error', 'SCHEMA_CAPABILITY_INVALID'],
     ]);
 });
@@ -180,7 +204,7 @@ runTest('rejoin handler はroom選択schema非対応clientをdetach前に拒否�
     fixture.events.length = 0;
     fixture.handlers.rejoinRoom(validPayload);
     assert.deepStrictEqual(fixture.events, [
-        ['plain'], ['room-id'], ['expected-hash'], ['hash-token'],
+        ['plain'], ['room-id'], ['room-entry'], ['expected-hash'], ['hash-token'],
         ['supports-schema'], ['error', 'SCHEMA_VERSION_UNSUPPORTED'],
     ]);
 });

@@ -865,6 +865,7 @@ registerSocketConnectionRuntime({
         registerRejoinSocketHandler(socket, {
             requirePlainSocketPayload,
             isValidRoomId,
+            validateSocketCanEnterRoom,
             emitAppError,
             rooms,
             getExpectedReconnectTokenHash,

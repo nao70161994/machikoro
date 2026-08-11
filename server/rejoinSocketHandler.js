@@ -4,6 +4,7 @@ function registerRejoinSocketHandler(socket, dependencies) {
     const {
         requirePlainSocketPayload,
         isValidRoomId,
+        validateSocketCanEnterRoom,
         emitAppError,
         rooms,
         getExpectedReconnectTokenHash,
@@ -35,6 +36,8 @@ function registerRejoinSocketHandler(socket, dependencies) {
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         if (!room.started) { emitAppError(socket, 'ゲームはまだ開始されていません'); return; }
+        const roomEntry = validateSocketCanEnterRoom(socket, roomId, rooms);
+        if (!roomEntry.ok) { emitAppError(socket, roomEntry.message); return; }
         const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
         if (!expectedReconnectTokenHash || hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
             emitAppError(socket, 'INVALID_TOKEN');
