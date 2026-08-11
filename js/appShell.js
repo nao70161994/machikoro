@@ -518,6 +518,9 @@ function crashResume() {
 // ===== オフライン検知 / PWAインストールバナー =====
 const _pwaInstallController = PwaShell.createInstallController({
     document: appShellComposition.resolve('document'),
+    ensureCurrentScreenFocus: () => UiScreenFocus.ensureCurrentScreenFocus(
+        appShellComposition.resolve('document')
+    ),
     window: appShellComposition.resolve('root'),
     readStorage: safeAppShellStorageGet,
     writeStorage: safeAppShellStorageSet,

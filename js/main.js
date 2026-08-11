@@ -587,6 +587,7 @@ function resolveMainUiEffect(name) {
 const mainUiEventRuntime = MainUiEventRuntime.createRuntime({
     delegation: UiEventDelegation,
     document,
+    ensureCurrentScreenFocus: () => UiScreenFocus.ensureCurrentScreenFocus(document),
     formatCpuSpeedLabel,
     getWindow: () => typeof window !== 'undefined' ? window : null,
     resolveEffect: resolveMainUiEffect,

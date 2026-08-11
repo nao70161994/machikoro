@@ -15,6 +15,7 @@ const MainUiEventRuntime = (() => {
                 typeof dependencies.resolveEffect !== 'function' ||
                 typeof dependencies.formatCpuSpeedLabel !== 'function' ||
                 typeof dependencies.getWindow !== 'function' ||
+                typeof dependencies.ensureCurrentScreenFocus !== 'function' ||
                 !dependencies.tabView ||
                 typeof dependencies.tabView.buildTabKeyboardPlan !== 'function') {
             throw new TypeError('main UI event runtime dependencies are required');
@@ -38,6 +39,10 @@ const MainUiEventRuntime = (() => {
                 const keepVisible = dependencies.resolveEffect('shouldKeepPwaUpdateBannerVisible');
                 if (typeof keepVisible === 'function' && keepVisible()) return;
                 const banner = dependencies.document.getElementById('pwaUpdateBanner');
+                const activeElement = dependencies.document.activeElement;
+                const restoreScreenFocus = !!(banner && activeElement &&
+                    (activeElement === banner || (typeof banner.contains === 'function' &&
+                        banner.contains(activeElement))));
                 if (banner) banner.style.display = 'none';
                 const showInstall = dependencies.resolveEffect('maybeShowPwaInstallBanner');
                 if (typeof showInstall === 'function') showInstall();
@@ -48,6 +53,7 @@ const MainUiEventRuntime = (() => {
                         dependencies.document.body.classList.remove('pwa-banner-open');
                     }
                 }
+                if (restoreScreenFocus) dependencies.ensureCurrentScreenFocus();
             },
         });
 

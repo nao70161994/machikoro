@@ -9,7 +9,9 @@ function createHarness() {
     const calls = [];
     const handlers = {};
     const elements = Object.fromEntries(['diceChoose', 'pendingMenu', 'buildMenu', 'players', 'speedLabel', 'onlineSpeedLabel', 'pwaUpdateBanner', 'pwaInstallBanner'].map(id => [id, makeElement({ addEventListener: (name, fn) => { handlers[id + ':' + name] = fn; } })]));
+    elements.pwaUpdateBanner.contains = element => element && element.parentElement === elements.pwaUpdateBanner;
     const document = {
+        activeElement: null,
         body: makeElement(),
         addEventListener: (name, fn) => { handlers['document:' + name] = fn; },
         getElementById: id => elements[id] || null,
@@ -19,9 +21,14 @@ function createHarness() {
     const runtime = MainUiEventRuntime.createRuntime({
         delegation: UiEventDelegation,
         document,
+        ensureCurrentScreenFocus: () => calls.push(['ensureCurrentScreenFocus']),
         formatCpuSpeedLabel: value => `speed:${value}`,
         getWindow: () => window,
-        resolveEffect: name => name === 'pwaApplyUpdate' ? null : effects[name],
+        resolveEffect: name => name === 'pwaApplyUpdate'
+            ? null
+            : name === 'shouldKeepPwaUpdateBannerVisible'
+                ? () => false
+                : effects[name],
         tabView: UiTabView,
     });
     const event = (dataset, extra = {}) => {
@@ -62,6 +69,26 @@ runTest('main UI event runtimeはPWA apply effect不在時にreloadへfallback�
     const h = createHarness();
     h.runtime.handleStaticClick(h.event({ uiAction: 'pwaApplyUpdate' }));
     assert.deepStrictEqual(h.calls, [['preventDefault'], ['reload']]);
+});
+
+runTest('main UI event runtimeはupdate banner内のfocusだけを閉鎖後に画面へ戻す', () => {
+    const focused = createHarness();
+    const dismiss = makeElement({ parentElement: focused.elements.pwaUpdateBanner });
+    focused.document.activeElement = dismiss;
+    focused.runtime.handleStaticClick(focused.event({ uiAction: 'hidePwaUpdateBanner' }));
+    assert.strictEqual(focused.elements.pwaUpdateBanner.style.display, 'none');
+    assert.strictEqual(
+        focused.calls.filter(call => call[0] === 'ensureCurrentScreenFocus').length,
+        1
+    );
+
+    const outside = createHarness();
+    outside.document.activeElement = makeElement();
+    outside.runtime.handleStaticClick(outside.event({ uiAction: 'hidePwaUpdateBanner' }));
+    assert.strictEqual(
+        outside.calls.filter(call => call[0] === 'ensureCurrentScreenFocus').length,
+        0
+    );
 });
 
 runTest('main UI event runtimeはmainとonline tabを矢印・Home・Endでfocusしてactivateする', () => {

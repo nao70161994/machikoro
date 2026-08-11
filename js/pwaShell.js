@@ -6,6 +6,7 @@ const PwaShell = (() => {
         const windowRef = dependencies.window;
         const readStorage = dependencies.readStorage;
         const writeStorage = dependencies.writeStorage;
+        const ensureCurrentScreenFocus = dependencies.ensureCurrentScreenFocus;
         let installEvent = null;
         let promptPending = false;
         let handlersBound = false;
@@ -29,8 +30,15 @@ const PwaShell = (() => {
                     return;
                 }
             }
+            const activeElement = documentRef.activeElement;
+            const restoreScreenFocus = !visible && !!(activeElement &&
+                (activeElement === banner || (typeof banner.contains === 'function' &&
+                    banner.contains(activeElement))));
             banner.style.display = visible ? 'block' : 'none';
             updateBannerBodyState();
+            if (restoreScreenFocus && typeof ensureCurrentScreenFocus === 'function') {
+                ensureCurrentScreenFocus();
+            }
         }
 
         function maybeShowInstallBanner() {

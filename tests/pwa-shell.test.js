@@ -8,11 +8,20 @@ function createSubject(options = {}) {
     const listeners = {};
     const storage = {};
     const classes = new Set();
+    function banner() {
+        const element = {
+            style: { display: 'none' },
+            contains(candidate) { return candidate && candidate.parentElement === element; },
+        };
+        return element;
+    }
     const elements = {
-        pwaInstallBanner: { style: { display: 'none' } },
-        pwaUpdateBanner: { style: { display: 'none' } },
+        pwaInstallBanner: banner(),
+        pwaUpdateBanner: banner(),
     };
+    let focusRestoreCalls = 0;
     const document = {
+        activeElement: null,
         body: {
             classList: {
                 toggle(name, enabled) {
@@ -29,11 +38,18 @@ function createSubject(options = {}) {
     };
     const controller = PwaShell.createInstallController({
         document,
+        ensureCurrentScreenFocus() { focusRestoreCalls += 1; },
         window,
         readStorage(key) { return storage[key] || null; },
         writeStorage(key, value) { storage[key] = value; },
     });
-    return { controller, listeners, storage, classes, elements };
+    return {
+        controller, listeners, storage, classes, document, elements,
+        focusRestoreCalls: () => focusRestoreCalls,
+        focusInside(id) {
+            document.activeElement = { parentElement: elements[id] };
+        },
+    };
 }
 
 runTest('PWA shellはupdate banner表示中にinstall bannerを重ねない', () => {
@@ -60,12 +76,14 @@ runTest('PWA shellはbeforeinstallpromptを一度だけ登録してprompt完了�
         userChoice: Promise.resolve({ outcome: 'accepted' }),
     });
     assert.strictEqual(subject.elements.pwaInstallBanner.style.display, 'block');
+    subject.focusInside('pwaInstallBanner');
     subject.controller.promptInstall();
     await Promise.resolve();
 
     assert.strictEqual(prevented, 1);
     assert.strictEqual(prompted, 1);
     assert.strictEqual(subject.elements.pwaInstallBanner.style.display, 'none');
+    assert.strictEqual(subject.focusRestoreCalls(), 1);
 });
 
 runTest('PWA shellはinstall promptを呼出前に消費して二重操作を無視する', async () => {
@@ -108,20 +126,30 @@ runTest('PWA shellはpromptとuserChoiceの拒否を外へ伝播させずbanner�
             userChoice: Promise.reject(new Error('choice rejected')),
         });
 
+        subject.focusInside('pwaInstallBanner');
         assert.doesNotThrow(() => subject.controller.promptInstall());
         await Promise.resolve();
         await Promise.resolve();
         await Promise.resolve();
         assert.strictEqual(subject.elements.pwaInstallBanner.style.display, 'none');
+        assert.strictEqual(subject.focusRestoreCalls(), 1);
     }
 });
 
 runTest('PWA shellはdismiss契約とstandalone時の未登録を維持する', () => {
     const subject = createSubject();
     subject.controller.setBannerVisible('pwaInstallBanner', true);
+    subject.focusInside('pwaInstallBanner');
     subject.controller.dismissInstall();
     assert.strictEqual(subject.storage.pwaInstallDismissed, '1');
     assert.strictEqual(subject.elements.pwaInstallBanner.style.display, 'none');
+    assert.strictEqual(subject.focusRestoreCalls(), 1);
+
+    const outside = createSubject();
+    outside.controller.setBannerVisible('pwaInstallBanner', true);
+    outside.document.activeElement = {};
+    outside.controller.dismissInstall();
+    assert.strictEqual(outside.focusRestoreCalls(), 0);
 
     const standalone = createSubject({ standalone: true });
     standalone.controller.bindInstallHandlers();

@@ -6,16 +6,38 @@ function setNoticeAnnouncement(toast, enabled) {
     return true;
 }
 
+function noticeContainsActiveElement(toast) {
+    if (!toast || !document || !document.activeElement) return false;
+    const activeElement = document.activeElement;
+    if (activeElement === toast) return true;
+    if (typeof toast.contains === 'function') return toast.contains(activeElement);
+    let current = activeElement.parentElement;
+    while (current) {
+        if (current === toast) return true;
+        current = current.parentElement;
+    }
+    return false;
+}
+
+function hideNoticeSurface(toast) {
+    if (!toast) return;
+    const restoreScreenFocus = noticeContainsActiveElement(toast);
+    toast.style.display = 'none';
+    setNoticeAnnouncement(toast, true);
+    const screenFocus = typeof globalThis !== 'undefined' ? globalThis.UiScreenFocus : null;
+    if (restoreScreenFocus && screenFocus &&
+            typeof screenFocus.ensureCurrentScreenFocus === 'function') {
+        screenFocus.ensureCurrentScreenFocus(document);
+    }
+}
+
 function hideNotice() {
     const toast = document.getElementById('noticeToast');
     if (noticeTimer) {
         clearTimeout(noticeTimer);
         noticeTimer = null;
     }
-    if (toast) {
-        toast.style.display = 'none';
-        setNoticeAnnouncement(toast, true);
-    }
+    hideNoticeSurface(toast);
 }
 
 function showNotice(message, options = {}) {
@@ -31,8 +53,7 @@ function showNotice(message, options = {}) {
     toast.style.display = 'flex';
     if (noticeTimer) clearTimeout(noticeTimer);
     noticeTimer = setTimeout(() => {
-        toast.style.display = 'none';
-        setNoticeAnnouncement(toast, true);
+        hideNoticeSurface(toast);
         noticeTimer = null;
     }, 4500);
 }

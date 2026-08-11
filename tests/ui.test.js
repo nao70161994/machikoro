@@ -291,6 +291,32 @@ runTest('showNotice は non-blocking toast で通知する', () => {
     assert.strictEqual(elements.noticeToast.style.display, 'none');
 });
 
+runTest('notice toastは閉鎖時に内部focusだけを現在画面へ戻す', () => {
+    const manual = loadUiRuntime();
+    manual.context.showNotice('手動で閉じる通知');
+    manual.context.document.activeElement = makeElement({
+        parentElement: manual.elements.noticeToast,
+    });
+    manual.context.hideNotice();
+    assert.strictEqual(manual.elements.status.focused, true);
+
+    const automatic = loadUiRuntime();
+    automatic.context.showNotice('自動で閉じる通知');
+    automatic.context.document.activeElement = makeElement({
+        parentElement: automatic.elements.noticeToast,
+    });
+    automatic.context.lastTimeout();
+    assert.strictEqual(automatic.elements.status.focused, true);
+
+    const outside = loadUiRuntime();
+    const externalControl = makeElement();
+    outside.context.document.activeElement = externalControl;
+    outside.context.showNotice('他所にfocusがある通知');
+    outside.context.hideNotice();
+    assert.strictEqual(outside.elements.status.focused, undefined);
+    assert.strictEqual(outside.context.document.activeElement, externalControl);
+});
+
 runTest('showNotice は重複する視覚通知だけをlive regionから除外できる', () => {
     const { context, elements } = loadUiRuntime();
 
