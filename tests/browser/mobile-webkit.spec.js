@@ -33,6 +33,28 @@ async function expectPlayerSelectTapTargets(page, containerSelector, expectedCou
     }
 }
 
+async function expectPlayerSelectContained(page, containerSelector, expectedCount, options = {}) {
+    const rowSelector = options.rowSelector || '.player-setting-row';
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const layouts = await page.locator(`${containerSelector} ${rowSelector}`)
+            .evaluateAll(rows => rows.map(row => {
+                const select = row.querySelector('.player-setting-select');
+                const rowBounds = row.getBoundingClientRect();
+                const selectBounds = select.getBoundingClientRect();
+                return {
+                    flexDirection: getComputedStyle(row).flexDirection,
+                    contained: selectBounds.left >= rowBounds.left && selectBounds.right <= rowBounds.right,
+                    withinViewport: selectBounds.left >= 0 && selectBounds.right <= document.documentElement.clientWidth,
+                };
+            }));
+        expect(layouts).toHaveLength(expectedCount);
+        expect(layouts.every(layout => layout.contained && layout.withinViewport)).toBe(true);
+        const expectedDirection = (options.alwaysColumn || width <= 389) ? 'column' : 'row';
+        expect(layouts.every(layout => layout.flexDirection === expectedDirection)).toBe(true);
+    }
+}
+
 test('mobile WebKitでapp shellとService Workerが実動作する', async ({ page }) => {
     const errors = collectRuntimeErrors(page);
     await prepare(page);
@@ -46,34 +68,22 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ pa
     expect(errors).toEqual([]);
 });
 
-test('320pxと360pxでプレイヤー種別が設定枠内に収まる', async ({ page }) => {
+test('320pxから480pxでlocal/onlineの2人・10人設定が枠内に収まる', async ({ page }) => {
     await prepare(page);
+
+    await expectPlayerSelectContained(page, '#playerSettings', 2);
     const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increasePlayerCount.click();
     await expect(page.locator('#playerCount')).toHaveText('10');
+    await expectPlayerSelectContained(page, '#playerSettings', 10);
 
-    for (const width of [320, 360]) {
-        await page.setViewportSize({ width, height: 844 });
-        const layouts = await page.locator('.player-setting-row').evaluateAll(rows => rows.map(row => {
-            const select = row.querySelector('.player-setting-select');
-            const rowBounds = row.getBoundingClientRect();
-            const selectBounds = select.getBoundingClientRect();
-            return {
-                flexDirection: getComputedStyle(row).flexDirection,
-                contained: selectBounds.left >= rowBounds.left && selectBounds.right <= rowBounds.right,
-                withinViewport: selectBounds.left >= 0 && selectBounds.right <= document.documentElement.clientWidth,
-            };
-        }));
-        expect(layouts).toHaveLength(10);
-        expect(layouts.every(layout => layout.contained && layout.withinViewport)).toBe(true);
-        expect(layouts.every(layout => layout.flexDirection === 'column')).toBe(true);
-    }
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    const wideLayouts = await page.locator('.player-setting-row').evaluateAll(rows =>
-        rows.map(row => getComputedStyle(row).flexDirection)
-    );
-    expect(wideLayouts.every(flexDirection => flexDirection === 'row')).toBe(true);
+    await page.locator('#tabOnline').click();
+    const onlineLayout = { rowSelector: '.player-setting', alwaysColumn: true };
+    await expectPlayerSelectContained(page, '#onlinePlayerSettings', 2, onlineLayout);
+    const increaseOnlinePlayerCount = page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]');
+    for (let count = 2; count < 10; count++) await increaseOnlinePlayerCount.click();
+    await expect(page.locator('#onlinePlayerCount')).toHaveText('10');
+    await expectPlayerSelectContained(page, '#onlinePlayerSettings', 10, onlineLayout);
 });
 
 test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領域を持つ', async ({ page }) => {
