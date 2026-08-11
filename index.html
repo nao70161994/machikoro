@@ -86,7 +86,7 @@
                     <label class="setting-label" for="cpuSpeed">CPUの速さ</label>
                     <div class="speed-setting">
                         <input type="range" id="cpuSpeed" min="100" max="3000" step="100" value="1500"
-                            data-ui-input="cpuSpeed" aria-describedby="speedLabel">
+                            data-ui-input="cpuSpeed" aria-describedby="speedLabel" aria-valuetext="1.5秒">
                         <span id="speedLabel">1.5秒</span>
                     </div>
                 </div>
@@ -130,7 +130,7 @@
                         <label class="setting-label" for="onlineCpuSpeed">CPUの速さ</label>
                         <div class="speed-setting">
                             <input type="range" id="onlineCpuSpeed" min="100" max="3000" step="100" value="1500"
-                                data-ui-input="onlineCpuSpeed" aria-describedby="onlineSpeedLabel">
+                                data-ui-input="onlineCpuSpeed" aria-describedby="onlineSpeedLabel" aria-valuetext="1.5秒">
                             <span id="onlineSpeedLabel">1.5秒</span>
                         </div>
                     </div>
@@ -538,6 +538,7 @@
     <script src="js/localResumeView.js"></script>
     <script src="js/localResumeEffects.js"></script>
     <script src="js/storedOnlineReconnect.js"></script>
+    <script src="js/uiRangeControl.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/uiStatsView.js"></script>
     <script src="js/stats.js"></script>

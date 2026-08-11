@@ -160,7 +160,7 @@ function loadStorageRuntime(options = {}) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/storage.js']);
+    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiRangeControl.js', 'js/storage.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -1087,6 +1087,7 @@ runTest('storage loadSettings は旧設定にもローカル名の初期値を�
     assert.strictEqual(settings[1].name, 'プレイヤー2');
     assert.strictEqual(settings[2].name, '花子');
     assert.strictEqual(rt.elements.speedLabel.textContent, '超高速');
+    assert.strictEqual(rt.elements.cpuSpeed.getAttribute('aria-valuetext'), '超高速');
 });
 
 runTest('storage resumeGame はRL preload中の連打を一度だけ復元する', async () => {

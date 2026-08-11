@@ -274,6 +274,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/localActionPolicy.js',
         'js/mainHumanActionRuntime.js',
         'js/uiEventDelegation.js',
+        'js/uiRangeControl.js',
         'js/mainUiEventRuntime.js',
         'js/citySkyline.js',
         'js/savedGameValidation.js',

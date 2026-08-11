@@ -16,6 +16,9 @@ const MainUiEventRuntime = (() => {
                 typeof dependencies.formatCpuSpeedLabel !== 'function' ||
                 typeof dependencies.getWindow !== 'function' ||
                 typeof dependencies.ensureCurrentScreenFocus !== 'function' ||
+                !dependencies.rangeControl ||
+                typeof dependencies.rangeControl.buildValueView !== 'function' ||
+                typeof dependencies.rangeControl.applyValueView !== 'function' ||
                 !dependencies.tabView ||
                 typeof dependencies.tabView.buildTabKeyboardPlan !== 'function') {
             throw new TypeError('main UI event runtime dependencies are required');
@@ -90,11 +93,19 @@ const MainUiEventRuntime = (() => {
             return dependencies.delegation.executeCommand(command, {
                 cpuSpeed(value) {
                     const label = dependencies.document.getElementById('speedLabel');
-                    if (label) label.textContent = dependencies.formatCpuSpeedLabel(value);
+                    dependencies.rangeControl.applyValueView(
+                        element,
+                        label,
+                        dependencies.rangeControl.buildValueView(value, dependencies.formatCpuSpeedLabel)
+                    );
                 },
                 onlineCpuSpeed(value) {
                     const label = dependencies.document.getElementById('onlineSpeedLabel');
-                    if (label) label.textContent = dependencies.formatCpuSpeedLabel(value);
+                    dependencies.rangeControl.applyValueView(
+                        element,
+                        label,
+                        dependencies.rangeControl.buildValueView(value, dependencies.formatCpuSpeedLabel)
+                    );
                 },
                 localPlayerName: (...args) => invoke('onChangePlayerName', ...args),
             });

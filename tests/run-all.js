@@ -211,6 +211,7 @@ const TEST_GROUPS = {
         'main-human-action-runtime.test.js',
         'ui-event-delegation.test.js',
         'main-ui-event-runtime.test.js',
+        'ui-range-control.test.js',
         'city-skyline.test.js',
     'main.test.js',
         'client-reporting.test.js',

@@ -463,6 +463,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(mainHumanActionRuntimeSource, context, { filename: 'js/mainHumanActionRuntime.js' });
     const uiEventDelegationSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiEventDelegation.js'), 'utf8');
     vm.runInContext(uiEventDelegationSource, context, { filename: 'js/uiEventDelegation.js' });
+    const uiRangeControlSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiRangeControl.js'), 'utf8');
+    vm.runInContext(uiRangeControlSource, context, { filename: 'js/uiRangeControl.js' });
     const mainUiEventRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/mainUiEventRuntime.js'), 'utf8');
     vm.runInContext(mainUiEventRuntimeSource, context, { filename: 'js/mainUiEventRuntime.js' });
     const citySkylineSource = fs.readFileSync(path.join(__dirname, '..', 'js/citySkyline.js'), 'utf8');
@@ -2647,6 +2649,8 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/localActionPolicy.js', 'js/mainHumanActionRuntime.js');
     assertBefore('js/mainHumanActionRuntime.js', 'js/main.js');
     assertBefore('js/uiEventDelegation.js', 'js/mainUiEventRuntime.js');
+    assertBefore('js/uiRangeControl.js', 'js/storage.js');
+    assertBefore('js/uiRangeControl.js', 'js/mainUiEventRuntime.js');
     assertBefore('js/mainUiEventRuntime.js', 'js/main.js');
     assertBefore('js/citySkyline.js', 'js/main.js');
     assertBefore('js/stats.js', 'js/main.js');

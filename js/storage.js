@@ -605,9 +605,14 @@ function loadSettings() {
             const speedEl = document.getElementById('cpuSpeed');
             if (speedEl) {
                 speedEl.value = values.cpuSpeed;
-                document.getElementById('speedLabel').textContent = typeof formatCpuSpeedLabel === 'function'
-                    ? formatCpuSpeedLabel(values.cpuSpeed)
-                    : ((parseInt(values.cpuSpeed, 10) / 1000) + '秒');
+                const formatter = typeof formatCpuSpeedLabel === 'function'
+                    ? formatCpuSpeedLabel
+                    : value => (parseInt(value, 10) / 1000) + '秒';
+                UiRangeControl.applyValueView(
+                    speedEl,
+                    document.getElementById('speedLabel'),
+                    UiRangeControl.buildValueView(values.cpuSpeed, formatter)
+                );
             }
         }
         UiTutorialSettings.runtime.replace(values);

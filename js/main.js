@@ -590,6 +590,7 @@ const mainUiEventRuntime = MainUiEventRuntime.createRuntime({
     ensureCurrentScreenFocus: () => UiScreenFocus.ensureCurrentScreenFocus(document),
     formatCpuSpeedLabel,
     getWindow: () => typeof window !== 'undefined' ? window : null,
+    rangeControl: UiRangeControl,
     resolveEffect: resolveMainUiEffect,
     tabView: UiTabView,
 });

@@ -486,6 +486,7 @@ body.modal-open #gameScreen {
 
 .speed-setting input[type="range"] {
     flex: 1;
+    min-height: 44px;
     accent-color: #f0c040;
 }
 

@@ -215,6 +215,7 @@ const STATIC_ASSETS = [
   '/js/localActionPolicy.js',
   '/js/mainHumanActionRuntime.js',
   '/js/uiEventDelegation.js',
+  '/js/uiRangeControl.js',
   '/js/mainUiEventRuntime.js',
   '/js/citySkyline.js',
   '/js/main.js',

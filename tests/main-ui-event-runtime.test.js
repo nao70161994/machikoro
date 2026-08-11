@@ -3,6 +3,7 @@ const assert = require('assert');
 const MainUiEventRuntime = require('../js/mainUiEventRuntime');
 const UiEventDelegation = require('../js/uiEventDelegation');
 const UiTabView = require('../js/uiTabView');
+const UiRangeControl = require('../js/uiRangeControl');
 const { makeElement, runTest } = require('./helpers/test-utils');
 
 function createHarness() {
@@ -24,6 +25,7 @@ function createHarness() {
         ensureCurrentScreenFocus: () => calls.push(['ensureCurrentScreenFocus']),
         formatCpuSpeedLabel: value => `speed:${value}`,
         getWindow: () => window,
+        rangeControl: UiRangeControl,
         resolveEffect: name => name === 'pwaApplyUpdate'
             ? null
             : name === 'shouldKeepPwaUpdateBannerVisible'
@@ -47,6 +49,20 @@ runTest('main UI event runtimeはstatic/input/dice commandをdetached effectへ�
         ['preventDefault'], ['changeCount', 2], ['preventDefault'], ['selectDiceCount', true],
     ]);
     assert.strictEqual(h.elements.speedLabel.textContent, 'speed:500');
+});
+
+runTest('main UI event runtimeはlocal/online速度の表示とaria-valuetextを同期する', () => {
+    const h = createHarness();
+    const local = h.event({ uiInput: 'cpuSpeed' }, { value: '500' });
+    const online = h.event({ uiInput: 'onlineCpuSpeed' }, { value: '100' });
+
+    h.runtime.handleStaticInput(local);
+    h.runtime.handleStaticInput(online);
+
+    assert.strictEqual(h.elements.speedLabel.textContent, 'speed:500');
+    assert.strictEqual(local.target.getAttribute('aria-valuetext'), 'speed:500');
+    assert.strictEqual(h.elements.onlineSpeedLabel.textContent, 'speed:100');
+    assert.strictEqual(online.target.getAttribute('aria-valuetext'), 'speed:100');
 });
 
 runTest('main UI event runtimeはBusiness Center不使用を専用effectへ渡す', () => {
