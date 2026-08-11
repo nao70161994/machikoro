@@ -512,6 +512,12 @@ const OnlinePayload = Object.freeze({
     buildHostlessRestoreCandidate(bundle, identity) {
         if (!supportsHostlessRestore(bundle, identity)) return null;
         return Object.assign(hostlessIdentityFields(bundle, identity), {
+            generation: Number.isInteger(bundle.gameStartPayload.hostlessRestoreGeneration)
+                ? bundle.gameStartPayload.hostlessRestoreGeneration
+                : 0,
+            attemptCount: Number.isInteger(bundle.gameStartPayload.hostlessRestoreCount)
+                ? bundle.gameStartPayload.hostlessRestoreCount
+                : 0,
             stateSnapshot: bundle.stateSnapshot || null,
             actionLog: Array.isArray(bundle.actionLog) ? bundle.actionLog : [],
             restoreAudit: bundle.restoreAudit || null,

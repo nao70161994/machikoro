@@ -179,6 +179,8 @@ runTest('collection開始時だけrequesterへraw候補提出を要求する', (
     assert.strictEqual(runtime.submit(client, {
         roomId: 'ROOM01',
         playerIndex: 1,
+        generation: 0,
+        attemptCount: 0,
     }).ok, true);
 });
 
@@ -205,7 +207,7 @@ runTest('generation不一致・未登録socket・収集外提出を拒否する'
     }).reason, 'not-collecting');
     sessions.get('ROOM01').stage = 'collecting';
     assert.strictEqual(runtime.submit(client, {
-        roomId: 'ROOM01', playerIndex: 1, generation: 3,
+        roomId: 'ROOM01', playerIndex: 1, generation: 3, attemptCount: 0,
     }).reason, 'generation-mismatch');
     const stranger = socket('other');
     assert.strictEqual(runtime.submit(stranger, {
@@ -229,13 +231,67 @@ runTest('candidateは軽量identity gateとcooldown後だけ復元payloadを処�
     assert.strictEqual(active.runtime.submit(client, { roomId: 'ROOM01', playerIndex: 1 }).reason, 'not-collecting');
     assert.strictEqual(active.getPrepareCalls(), 0);
     active.sessions.get('ROOM01').stage = 'collecting';
-    assert.strictEqual(active.runtime.submit(client, { roomId: 'ROOM01', playerIndex: 1 }).ok, true);
+    const candidate = { roomId: 'ROOM01', playerIndex: 1, generation: 0, attemptCount: 0 };
+    assert.strictEqual(active.runtime.submit(client, candidate).ok, true);
     assert.strictEqual(active.getPrepareCalls(), 1);
-    assert.strictEqual(active.runtime.submit(client, { roomId: 'ROOM01', playerIndex: 1 }).reason, 'candidate-rate-limit');
+    assert.strictEqual(active.runtime.submit(client, candidate).reason, 'candidate-rate-limit');
     assert.strictEqual(active.getPrepareCalls(), 1);
     now += 1000;
-    assert.strictEqual(active.runtime.submit(client, { roomId: 'ROOM01', playerIndex: 1 }).ok, true);
+    assert.strictEqual(active.runtime.submit(client, candidate).ok, true);
     assert.strictEqual(active.getPrepareCalls(), 2);
+});
+
+runTest('candidateは世代と試行回数を整数で必須化して非zero sessionを処理する', () => {
+    const active = setup();
+    const client = socket('s1');
+    active.runtime.request(client, {
+        roomId: 'ROOM01', playerIndex: 1, generation: 2, attemptCount: 1,
+    });
+    active.sessions.get('ROOM01').stage = 'collecting';
+    for (const payload of [
+        { roomId: 'ROOM01', playerIndex: 1 },
+        { roomId: 'ROOM01', playerIndex: 1, generation: 2, attemptCount: '1' },
+    ]) {
+        assert.strictEqual(active.runtime.submit(client, payload).reason, 'invalid-payload');
+    }
+    assert.strictEqual(active.getPrepareCalls(), 0);
+    assert.strictEqual(active.runtime.submit(client, {
+        roomId: 'ROOM01', playerIndex: 1, generation: 2, attemptCount: 1,
+    }).ok, true);
+    assert.strictEqual(active.getPrepareCalls(), 1);
+});
+
+runTest('candidate cooldownは再request・別socket・切断を越えてroom/player単位で維持する', () => {
+    let now = 1000;
+    const active = setup({ now: () => now });
+    const first = socket('s1');
+    const second = socket('s2');
+    const third = socket('s3');
+    const request = { roomId: 'ROOM01', playerIndex: 1, generation: 0, attemptCount: 0 };
+    const candidate = { ...request };
+
+    active.runtime.request(first, request);
+    active.sessions.get('ROOM01').stage = 'collecting';
+    assert.strictEqual(active.runtime.submit(first, candidate).ok, true);
+    active.runtime.request(first, request);
+    assert.strictEqual(active.runtime.submit(first, candidate).reason, 'candidate-rate-limit');
+
+    active.runtime.request(second, request);
+    assert.strictEqual(active.runtime.submit(second, candidate).reason, 'candidate-rate-limit');
+    assert.strictEqual(active.runtime.disconnect(first), true);
+    assert.strictEqual(active.runtime.submit(second, candidate).reason, 'candidate-rate-limit');
+
+    now += 1000;
+    assert.strictEqual(active.runtime.submit(second, candidate).ok, true);
+    assert.strictEqual(active.runtime.disconnect(second), true);
+    active.runtime.request(third, request);
+    assert.strictEqual(active.runtime.submit(third, candidate).reason, 'candidate-rate-limit');
+    assert.strictEqual(active.getPrepareCalls(), 2);
+
+    active.runtime.handleCoordinatorEvent({
+        type: 'terminal', roomId: 'ROOM01', generation: 0, stage: 'collecting', reason: 'cancelled',
+    });
+    assert.strictEqual(active.runtime.inspect('ROOM01').requesterCount, 0);
 });
 
 runTest('confirmationはmalformed payloadとdisabled状態を例外なく拒否する', () => {

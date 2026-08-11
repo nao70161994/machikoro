@@ -503,6 +503,8 @@ runTest('hostless collection通知後だけraw候補を送信する', () => {
     handlers.hostlessRestoreCollect({ roomId: 'ROOM01', generation: 2 });
     const emitted = runtime.getSocketEmits().pop();
     assert.strictEqual(emitted.name, 'submitHostlessRestoreCandidate');
+    assert.strictEqual(emitted.payload.generation, 2);
+    assert.strictEqual(emitted.payload.attemptCount, 1);
     assert.strictEqual(emitted.payload.stateSnapshot.actionSeq, 4);
     assert.strictEqual(emitted.payload.actionLog.length, 0);
     assert.strictEqual(emitted.payload.restoreAudit.version, 1);

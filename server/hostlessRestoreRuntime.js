@@ -145,15 +145,19 @@ function createHostlessRestoreRuntime(options = {}) {
                 return started;
             }
         }
-        requesterMap(validation.roomId).set(validation.playerIndex, {
+        const roomRequesters = requesterMap(validation.roomId);
+        const previousRequester = roomRequesters.get(validation.playerIndex);
+        roomRequesters.set(validation.playerIndex, {
             socketId: socket.id,
             playerIndex: validation.playerIndex,
             generation: validation.generation,
             attemptCount: validation.attemptCount,
+            candidateSubmittedAt: Number.isFinite(previousRequester?.candidateSubmittedAt)
+                ? previousRequester.candidateSubmittedAt
+                : undefined,
         });
         socket.hostlessRestoreRoomId = validation.roomId;
         socket.hostlessRestorePlayerIndex = validation.playerIndex;
-        socket.hostlessRestoreCandidateSubmittedAt = undefined;
         const currentSession = coordinator.inspect(validation.roomId);
         socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
             roomId: validation.roomId,
@@ -187,18 +191,22 @@ function createHostlessRestoreRuntime(options = {}) {
         if (!session || session.stage !== 'collecting') {
             return { ok: false, reason: 'not-collecting' };
         }
-        const generation = Number.isInteger(payload.generation) ? payload.generation : 0;
-        const attemptCount = Number.isInteger(payload.attemptCount) ? payload.attemptCount : 0;
+        if (!Number.isInteger(payload.generation) || payload.generation < 0 ||
+                !Number.isInteger(payload.attemptCount) || payload.attemptCount < 0) {
+            return { ok: false, reason: 'invalid-payload' };
+        }
+        const generation = payload.generation;
+        const attemptCount = payload.attemptCount;
         if (session.generation !== generation || session.attemptCount !== attemptCount) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { roomId, reason: 'generation-mismatch' });
             return { ok: false, reason: 'generation-mismatch' };
         }
         const submittedAt = now();
-        if (Number.isFinite(socket.hostlessRestoreCandidateSubmittedAt) &&
-                submittedAt - socket.hostlessRestoreCandidateSubmittedAt < HOSTLESS_RESTORE_LIMITS.candidateCooldownMs) {
+        if (Number.isFinite(requester.candidateSubmittedAt) &&
+                submittedAt - requester.candidateSubmittedAt < HOSTLESS_RESTORE_LIMITS.candidateCooldownMs) {
             return { ok: false, reason: 'candidate-rate-limit' };
         }
-        socket.hostlessRestoreCandidateSubmittedAt = submittedAt;
+        requester.candidateSubmittedAt = submittedAt;
         const prepared = gateway.prepareCandidate(socket, payload);
         if (!prepared.ok) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { reason: prepared.reason });
@@ -266,8 +274,10 @@ function createHostlessRestoreRuntime(options = {}) {
         if (!roomId || !Number.isInteger(playerIndex)) return false;
         const map = requesters.get(roomId);
         const requester = map?.get(playerIndex);
-        if (requester?.socketId === socket.id) map.delete(playerIndex);
-        coordinator.confirmationOwnerDisconnected(roomId, playerIndex);
+        if (requester?.socketId === socket.id) {
+            requester.socketId = '';
+            coordinator.confirmationOwnerDisconnected(roomId, playerIndex);
+        }
         if (map && map.size === 0 && !coordinator.inspect(roomId)) requesters.delete(roomId);
         return true;
     }
@@ -294,9 +304,12 @@ function createHostlessRestoreRuntime(options = {}) {
 
     function inspect(roomId) {
         const normalized = typeof roomId === 'string' ? roomId.trim().toUpperCase() : '';
+        const roomRequesters = requesters.get(normalized);
         return {
             coordinator: coordinator.inspect(normalized),
-            requesterCount: requesters.get(normalized)?.size || 0,
+            requesterCount: roomRequesters
+                ? Array.from(roomRequesters.values()).filter(requester => requester.socketId).length
+                : 0,
         };
     }
 

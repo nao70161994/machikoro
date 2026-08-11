@@ -118,6 +118,18 @@ runTest('hostless raw候補は収集event用payloadにだけ含まれる', () =>
     assert.strictEqual(payload.actionLog, bundle.actionLog);
     assert.strictEqual(payload.restoreAudit, bundle.restoreAudit);
     assert.strictEqual(payload.capabilityVersion, 1);
+    assert.strictEqual(payload.generation, 2);
+    assert.strictEqual(payload.attemptCount, 1);
+});
+
+runTest('hostless raw候補は旧bundleの世代と試行回数を0へ正規化する', () => {
+    const bundle = hostlessBundle({
+        hostlessRestoreGeneration: undefined,
+        hostlessRestoreCount: undefined,
+    });
+    const payload = OnlinePayload.buildHostlessRestoreCandidate(bundle, hostlessIdentity);
+    assert.strictEqual(payload.generation, 0);
+    assert.strictEqual(payload.attemptCount, 0);
 });
 
 runTest('hostless payloadは元host・旧client混在・3回上限をfail closedする', () => {
