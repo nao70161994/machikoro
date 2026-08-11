@@ -2934,7 +2934,8 @@ function initSocket() {
 
     socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_STATUS, ({ roomId, reason, stage, candidateCount }) => {
         if (roomId && roomId !== onlineSessionSnapshot().myRoomId) return;
-        if (reason === 'host-restored') {
+        const disposition = OnlineHostlessRestoreState.statusDisposition(reason, stage);
+        if (disposition === OnlineHostlessRestoreState.statusDispositions.RESTORED) {
             _hostlessRestoreState.clear();
             _clearRejoinRetry();
             setOnlineReconnectLegacyFlag(true);
@@ -2942,32 +2943,26 @@ function initSocket() {
             _emitOnlineRejoinRequest();
             return;
         }
-        if (reason === 'waiting-for-host') {
+        if (reason === OnlineHostlessRestoreState.statusReasons.WAITING_FOR_HOST) {
             onlineDomEffects.setStatusText('⏳ 元のホストの復元を60秒待っています...');
             return;
         }
-        if (stage === 'confirming' && reason === 'quorum-ready') {
+        if (disposition === OnlineHostlessRestoreState.statusDispositions.PROGRESS) {
             onlineDomEffects.setStatusText(
                 `⏳ ${candidateCount || 0}人の候補が一致しました。ホスト承認を待っています...`
             );
             return;
         }
-        const terminalReasons = new Set([
-            'disabled',
-            'unsupported-client',
-            'original-host',
-            'generation-mismatch',
-            'insufficient-candidates',
-            'candidate-mismatch',
-            'completed-game',
-            'attempt-limit',
-            'confirmation-exhausted',
-            'retention-timeout',
-            'restore-failed',
-            'room-exists',
-        ]);
-        if (!terminalReasons.has(reason)) return;
+        if (disposition === OnlineHostlessRestoreState.statusDispositions.IGNORE) return;
         _hostlessRestoreState.clear();
+        if (disposition === OnlineHostlessRestoreState.statusDispositions.RETRYABLE) {
+            setOnlineReconnectLegacyFlag(true);
+            onlineDomEffects.setStatusText(
+                '⚠️ 復元要求が一時的に混み合っています。保存データは保持されています。' +
+                '時間をおいて再接続をやり直してください。'
+            );
+            return;
+        }
         _markOnlineRejoinAttemptExhausted();
         setOnlineReconnectLegacyFlag(true);
         _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED);

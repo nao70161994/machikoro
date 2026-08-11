@@ -1,6 +1,9 @@
 'use strict';
 
-const { HOSTLESS_RESTORE_LIMITS } = require('./hostlessRestoreCandidate');
+const {
+    HOSTLESS_RESTORE_LIMITS,
+    HOSTLESS_RESTORE_STATUS_REASONS,
+} = require('./hostlessRestoreCandidate');
 
 const HOSTLESS_RESTORE_EVENTS = Object.freeze({
     REQUEST: 'requestHostlessRestore',
@@ -160,9 +163,9 @@ function createHostlessRestoreRuntime(options = {}) {
         if (hasRoom(roomId)) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
                 roomId,
-                reason: 'host-restored',
+                reason: HOSTLESS_RESTORE_STATUS_REASONS.HOST_RESTORED,
             });
-            return { ok: false, reason: 'host-restored' };
+            return { ok: false, reason: HOSTLESS_RESTORE_STATUS_REASONS.HOST_RESTORED };
         }
         const existing = coordinator.inspect(roomId);
         if (existing && (existing.generation !== validation.generation ||
@@ -177,8 +180,11 @@ function createHostlessRestoreRuntime(options = {}) {
         if (!existing) {
             startRateKey = startRateKeyForSocket(socket);
             if (!canStartForRateKey(startRateKey, now())) {
-                socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { roomId, reason: 'start-rate-limit' });
-                return { ok: false, reason: 'start-rate-limit' };
+                socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
+                    roomId,
+                    reason: HOSTLESS_RESTORE_STATUS_REASONS.START_RATE_LIMIT,
+                });
+                return { ok: false, reason: HOSTLESS_RESTORE_STATUS_REASONS.START_RATE_LIMIT };
             }
         }
         releaseSocketRequester(socket, roomId, validation.playerIndex);
@@ -216,7 +222,7 @@ function createHostlessRestoreRuntime(options = {}) {
             roomId,
             generation: validation.generation,
             stage: currentSession?.stage || '',
-            reason: 'waiting-for-host',
+            reason: HOSTLESS_RESTORE_STATUS_REASONS.WAITING_FOR_HOST,
         });
         if (currentSession?.stage === 'collecting') {
             socket.emit(HOSTLESS_RESTORE_EVENTS.COLLECT, {

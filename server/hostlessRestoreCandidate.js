@@ -21,6 +21,14 @@ const HOSTLESS_RESTORE_RESULTS = Object.freeze({
     ATTEMPT_LIMIT: 'attempt-limit',
 });
 
+const HOSTLESS_RESTORE_STATUS_REASONS = Object.freeze({
+    WAITING_FOR_HOST: 'waiting-for-host',
+    QUORUM_READY: 'quorum-ready',
+    HOST_RESTORED: 'host-restored',
+    START_RATE_LIMIT: 'start-rate-limit',
+    SESSION_LIMIT: 'session-limit',
+});
+
 function stableJson(value) {
     if (value === null || typeof value === 'boolean' || typeof value === 'string') {
         return JSON.stringify(value);
@@ -163,6 +171,7 @@ module.exports = Object.freeze({
     HOSTLESS_RESTORE_SCHEMA_VERSION,
     HOSTLESS_RESTORE_LIMITS,
     HOSTLESS_RESTORE_RESULTS,
+    HOSTLESS_RESTORE_STATUS_REASONS,
     stableJson,
     canonicalCandidateHash,
     normalizeRestoreRank,

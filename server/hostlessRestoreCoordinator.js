@@ -3,6 +3,7 @@
 const {
     HOSTLESS_RESTORE_LIMITS,
     HOSTLESS_RESTORE_RESULTS,
+    HOSTLESS_RESTORE_STATUS_REASONS,
     candidateFingerprint,
     evaluateCandidateQuorum,
     nextConfirmationPlayerIndex,
@@ -114,7 +115,7 @@ function createHostlessRestoreCoordinator(options = {}) {
             canonicalHash: quorum.canonicalHash,
             rank: quorum.rank,
         });
-        moveConfirmation(session, 'quorum-ready');
+        moveConfirmation(session, HOSTLESS_RESTORE_STATUS_REASONS.QUORUM_READY);
         return quorum;
     }
 
@@ -141,7 +142,7 @@ function createHostlessRestoreCoordinator(options = {}) {
         if (sessions.has(roomId)) return { ok: false, reason: 'already-started' };
         if (Number.isInteger(limits.maxActiveSessions) && limits.maxActiveSessions >= 0 &&
                 sessions.size >= limits.maxActiveSessions) {
-            return { ok: false, reason: 'session-limit' };
+            return { ok: false, reason: HOSTLESS_RESTORE_STATUS_REASONS.SESSION_LIMIT };
         }
         const attemptCount = Number.isInteger(input.attemptCount) && input.attemptCount >= 0
             ? input.attemptCount

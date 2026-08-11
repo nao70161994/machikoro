@@ -555,6 +555,45 @@ runTest('hostless不一致statusはeffect flag有効でも固有案内とbundle�
     assert.strictEqual(runtime.getOnlineState().reconnectState, 'failed');
 });
 
+runTest('hostless rate/cap拒否はpendingを解除し保存を保持して再試行可能にする', () => {
+    for (const reason of ['start-rate-limit', 'session-limit']) {
+        const runtime = loadOnlineRuntime();
+        const { handlers, gameStartPayload } = seedHostlessRestoreBundle(runtime);
+        runtime._requestHostlessRestore();
+
+        handlers.hostlessRestoreStatus({ roomId: 'ROOM01', reason });
+
+        assert.strictEqual(runtime.getOnlineState().hostlessRestorePending, false, reason);
+        assert.strictEqual(runtime.getOnlineState().reconnectState === 'failed', false, reason);
+        assert.strictEqual(
+            runtime.localStorage.getItem('onlineGameStart'),
+            JSON.stringify(gameStartPayload),
+            reason
+        );
+        assert.match(runtime.document.getElementById('onlineStatus').textContent, /一時的に混み合っています/, reason);
+        assert.strictEqual(runtime._requestHostlessRestore(), true, reason);
+    }
+});
+
+runTest('hostless未知拒否はpendingを必ず解除してfailedへ遷移する', () => {
+    for (const reason of ['invalid-token', 'invalid-payload', 'future-server-rejection']) {
+        const runtime = loadOnlineRuntime();
+        const { handlers, gameStartPayload } = seedHostlessRestoreBundle(runtime);
+        runtime._requestHostlessRestore();
+
+        handlers.hostlessRestoreStatus({ roomId: 'ROOM01', reason });
+
+        assert.strictEqual(runtime.getOnlineState().hostlessRestorePending, false, reason);
+        assert.strictEqual(runtime.getOnlineState().reconnectState, 'failed', reason);
+        assert.strictEqual(
+            runtime.localStorage.getItem('onlineGameStart'),
+            JSON.stringify(gameStartPayload),
+            reason
+        );
+        assert.match(runtime.document.getElementById('onlineStatus').textContent, /明示的に破棄/, reason);
+    }
+});
+
 runTest('hostless承認後は新host以外だけ通常rejoinへ合流する', () => {
     const guestRuntime = loadOnlineRuntime();
     const { handlers } = seedHostlessRestoreBundle(guestRuntime);
