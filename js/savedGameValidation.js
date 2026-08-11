@@ -72,8 +72,10 @@ function hasResolvablePendingTargets(state, options = {}) {
                 }
             }
             if (renovationRunLengths.length > 0) {
-                // One built target starts each run; remaining consecutive entries auto-consume.
-                const requiredTargets = renovationRunLengths.length;
+                // Earlier runs consume every available target; only the final run can auto-consume its tail.
+                const requiredTargets = renovationRunLengths
+                    .slice(0, -1)
+                    .reduce((sum, runLength) => sum + runLength, 0) + 1;
                 if (builtTargetCount < requiredTargets) return false;
             }
         }

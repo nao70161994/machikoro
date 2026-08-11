@@ -602,6 +602,22 @@ runTest('storage resumeGame は解決対象が不足するpendingをhydrate前�
                 { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
             ],
         },
+        {
+            pendingTV: 1,
+            pendingRenovation: 3,
+            pendingActions: [
+                { action: 'resolveRenovation', field: 'pendingRenovation' },
+                { action: 'resolveRenovation', field: 'pendingRenovation' },
+                { action: 'resolveTV', field: 'pendingTV' },
+                { action: 'resolveRenovation', field: 'pendingRenovation' },
+            ],
+            players: [
+                { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: {
+                    駅: true, ショッピングモール: true,
+                } },
+                { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+            ],
+        },
     ];
     for (const pending of cases) {
         const rt = loadStorageRuntime();

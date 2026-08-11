@@ -1631,6 +1631,26 @@ runTest('createRoomMirror は非連続な改装屋runごとの対象消費を検
     const legacyRoom = makeRoom();
     legacyRoom.stateSnapshot = snapshot;
     assert.ok(createRoomMirror(legacyRoom));
+
+    const earlierLongRunRoom = makeRoom();
+    earlierLongRunRoom.gameStartPayload.enabledLandmarks.push('遊園地');
+    const earlierLongRun = makeSnapshot({
+        phase: 'pending',
+        pendingTV: 1,
+        pendingRenovation: 3,
+        pendingActions: [
+            { action: 'resolveRenovation', field: 'pendingRenovation' },
+            { action: 'resolveRenovation', field: 'pendingRenovation' },
+            { action: 'resolveTV', field: 'pendingTV' },
+            { action: 'resolveRenovation', field: 'pendingRenovation' },
+        ],
+    });
+    earlierLongRun.players[0].landmarks['駅'] = true;
+    earlierLongRun.players[0].landmarks['ショッピングモール'] = true;
+    earlierLongRunRoom.stateSnapshot = earlierLongRun;
+    assert.strictEqual(createRoomMirror(earlierLongRunRoom), null);
+    earlierLongRun.players[0].landmarks['遊園地'] = true;
+    assert.ok(createRoomMirror(earlierLongRunRoom));
 });
 
 runTest('createRoomMirror のpending対象検査は旧snapshotのcards欠落を許容する', () => {

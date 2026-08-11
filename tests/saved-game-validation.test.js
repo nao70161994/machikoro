@@ -229,10 +229,9 @@ runTest('saved game validatorは非連続な改装屋runごとの対象消費を
 
     state.pendingRenovation = 3;
     state.pendingActions = [renovation, renovation, tv, renovation];
-    assert.strictEqual(validator.isValidSavedGameState(state), true);
-    state.players[0].landmarks['ショッピングモール'] = false;
     assert.strictEqual(validator.isValidSavedGameState(state), false);
-    state.players[0].landmarks['ショッピングモール'] = true;
+    state.players[0].landmarks['遊園地'] = true;
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
 
     state.pendingRenovation = 2;
     state.pendingTV = 0;
