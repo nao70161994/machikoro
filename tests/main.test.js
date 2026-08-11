@@ -2988,6 +2988,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('aria-label="ルール説明を閉じる"'));
     assert.ok(html.includes('aria-label="カード選択を閉じる"'));
     assert.ok(html.includes('aria-label="カード詳細を閉じる"'));
+    assert.ok(html.includes('<canvas id="cityCanvas" aria-hidden="true"></canvas>'));
+    assert.ok(html.includes('<canvas id="confettiCanvas" aria-hidden="true"'));
     assert.ok(html.includes('id="noticeToast" class="notice-toast" role="status" aria-live="polite"'));
     assert.ok(html.includes('id="pendingModal" class="pending-modal" role="region" aria-label="追加効果の選択" aria-live="polite"'));
     assert.ok(!html.includes('id="pendingModal" class="pending-modal" role="dialog" aria-modal="true"'));
