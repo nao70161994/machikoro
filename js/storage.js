@@ -407,10 +407,23 @@ function resumeGame(options = {}) {
                 const currentGame = GameRuntimeState.runtime
                     .setGame(new GameManager(plan.playerCount)).game;
                 currentGame.enabledLandmarks = getEnabledLandmarkSelection();
+                const hasSavedShopStock = isPlainObject(plan.state.shopStock);
+                const restoredShopStock = hasSavedShopStock
+                    ? plan.state.shopStock
+                    : SavedGameValidation.reconstructMissingShopStock(plan.state, {
+                        cards: CARDS,
+                        getInitialCardStock,
+                        initialPlayerCardNames: [
+                            CARD_NAME_BY_ID[CARD_IDS.WHEAT_FIELD],
+                            CARD_NAME_BY_ID[CARD_IDS.BAKERY],
+                        ],
+                    });
+                if (!restoredShopStock) return false;
+                for (const key of Object.keys(SHOP_STOCK)) delete SHOP_STOCK[key];
                 return GameSnapshot.hydrateMutableGameState({
                     game: currentGame,
                     shopStock: SHOP_STOCK,
-                    state: plan.state,
+                    state: Object.assign({}, plan.state, { shopStock: restoredShopStock }),
                     createCardByName,
                     assignShopStockSnapshot: assignSavedShopStockSnapshot,
                     normalizePlayerCoins: value => value,

@@ -113,6 +113,41 @@ function normalizeSavedLog(log) {
         .map(entry => ({ type: entry.type, message: entry.message }));
 }
 
+function reconstructMissingShopStock(state, options = {}) {
+    if (!isPlainObject(state) || !Array.isArray(state.players)) return null;
+    const cards = Array.isArray(options.cards) ? options.cards : [];
+    const getInitialCardStock = typeof options.getInitialCardStock === 'function'
+        ? options.getInitialCardStock
+        : (() => -1);
+    const initialPlayerCardNames = new Set(Array.isArray(options.initialPlayerCardNames)
+        ? options.initialPlayerCardNames
+        : []);
+    const enabledCards = Array.isArray(state.enabledCardsList)
+        ? new Set(state.enabledCardsList)
+        : new Set(cards.map(card => card && card.name).filter(Boolean));
+    const ownedByName = new Map();
+    for (const player of state.players) {
+        if (!player || !Array.isArray(player.cards)) return null;
+        for (const name of player.cards) {
+            ownedByName.set(name, (ownedByName.get(name) || 0) + 1);
+        }
+    }
+    const playerCount = state.players.length;
+    const stock = {};
+    for (const card of cards) {
+        if (!card || typeof card.name !== 'string' || !card.name) return null;
+        const initialStock = enabledCards.has(card.name)
+            ? getInitialCardStock(card, playerCount)
+            : 0;
+        if (!isNonnegativeSafeInteger(initialStock)) return null;
+        const initialGrant = initialPlayerCardNames.has(card.name) ? playerCount : 0;
+        const purchased = Math.max(0, (ownedByName.get(card.name) || 0) - initialGrant);
+        if (purchased > initialStock) return null;
+        stock[card.name] = initialStock - purchased;
+    }
+    return stock;
+}
+
 function createValidator(options = {}) {
     const isKnownCardName = typeof options.isKnownCardName === 'function'
         ? options.isKnownCardName
@@ -278,6 +313,7 @@ const SavedGameValidation = Object.freeze({
     hasResolvablePendingTargets,
     normalizeCpuSettings,
     normalizeSavedLog,
+    reconstructMissingShopStock,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = SavedGameValidation;

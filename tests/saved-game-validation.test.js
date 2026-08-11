@@ -72,6 +72,42 @@ runTest('saved game validatorは現行保存shapeと旧CPU設定を保持する'
     ]);
 });
 
+runTest('saved game validatorは欠落した市場在庫を人数・所持数・custom setから再構築する', () => {
+    const cards = [
+        { id: 'wheat_field', name: '麦畑', category: 'minor' },
+        { id: 'bakery', name: 'パン屋', category: 'minor' },
+        { id: 'stadium', name: 'スタジアム', category: 'major' },
+    ];
+    const options = {
+        cards,
+        initialPlayerCardNames: ['麦畑', 'パン屋'],
+        getInitialCardStock: (card, playerCount) => card.category === 'major' ? playerCount : 6,
+    };
+    const twoPlayer = makeState({
+        enabledCardsList: cards.map(card => card.name),
+        players: [
+            { name: 'P1', cards: ['麦畑', 'パン屋', '麦畑', 'スタジアム'] },
+            { name: 'P2', cards: ['麦畑', 'パン屋'] },
+        ],
+    });
+    assert.deepStrictEqual(
+        SavedGameValidation.reconstructMissingShopStock(twoPlayer, options),
+        { 麦畑: 5, パン屋: 6, スタジアム: 1 }
+    );
+
+    const tenPlayer = makeState({
+        enabledCardsList: ['麦畑'],
+        players: Array.from({ length: 10 }, (_, index) => ({
+            name: `P${index + 1}`,
+            cards: ['麦畑', 'パン屋'].concat(index < 6 ? ['麦畑'] : []),
+        })),
+    });
+    assert.deepStrictEqual(
+        SavedGameValidation.reconstructMissingShopStock(tenPlayer, options),
+        { 麦畑: 0, パン屋: 0, スタジアム: 0 }
+    );
+});
+
 runTest('saved game validatorは既存の不正保存境界をfail closedにする', () => {
     const validator = makeValidator();
     const cases = [

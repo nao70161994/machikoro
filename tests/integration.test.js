@@ -111,10 +111,13 @@ runTest('integration: セーブ→再開でゲーム状態を復元する', () =
 
     rt.startGame();
     const game = rt.__test.getGame();
-    game.currentPlayer().coins = 7;
-    game.currentPlayer().addCard(rt.createCardByName('麦畑'));
+    game.currentPlayer().coins = 8;
     game.phase = rt.GAME_PHASES.BUILD;
-    game.turnCount = 4;
+    assert.strictEqual(
+        rt.__test.runLocalEngineAction('buildCard', { cardName: '麦畑' }),
+        true
+    );
+    rt.__test.getGame().turnCount = 4;
     rt.saveGameState();
     rt.updateResumeButton();
 

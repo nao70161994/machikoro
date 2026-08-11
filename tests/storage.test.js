@@ -874,6 +874,45 @@ runTest('storage resumeGame は旧保存データのshopStock/dormantIndices欠�
     assert.notStrictEqual(rt.localStorage.getItem('savedGame'), null);
 });
 
+runTest('storage resumeGame は欠落したshopStockをfresh/stale runtimeに依存せず再構築する', () => {
+    for (const playerCount of [2, 10]) {
+        const state = makeSavedGameState({
+            players: Array.from({ length: playerCount }, (_, index) => ({
+                name: `P${index + 1}`,
+                coins: 3,
+                cards: ['麦畑', 'パン屋'].concat(index < Math.min(6, playerCount) ? ['麦畑'] : []),
+                dormantIndices: [],
+                landmarks: {},
+                itVentureCoins: 0,
+                hasYakusho: true,
+            })),
+            cpuSettings: [],
+            enabledCardsList: ['麦畑'],
+        });
+        delete state.shopStock;
+        const expectedWheat = 6 - Math.min(6, playerCount);
+
+        const fresh = loadStorageRuntime();
+        fresh.localStorage.setItem('savedGame', JSON.stringify(state));
+        assert.strictEqual(fresh.resumeGame(), true);
+        assert.deepStrictEqual(
+            JSON.parse(JSON.stringify(fresh.__test.getShopStock())),
+            { 麦畑: expectedWheat, パン屋: 0, スタジアム: 0 }
+        );
+
+        const stale = loadStorageRuntime();
+        stale.SHOP_STOCK['麦畑'] = 99;
+        stale.SHOP_STOCK['パン屋'] = 99;
+        stale.SHOP_STOCK['スタジアム'] = 99;
+        stale.localStorage.setItem('savedGame', JSON.stringify(state));
+        assert.strictEqual(stale.resumeGame(), true);
+        assert.deepStrictEqual(
+            JSON.parse(JSON.stringify(stale.__test.getShopStock())),
+            { 麦畑: expectedWheat, パン屋: 0, スタジアム: 0 }
+        );
+    }
+});
+
 runTest('storage resumeGame は ID key の shopStock を名前keyへ復元する', () => {
     const rt = loadStorageRuntime();
     const state = makeSavedGameState({
@@ -885,6 +924,7 @@ runTest('storage resumeGame は ID key の shopStock を名前keyへ復元する
 
     assert.strictEqual(rt.__test.getShopStock()['麦畑'], 4);
     assert.strictEqual(rt.__test.getShopStock().wheat_field, undefined);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.__test.getShopStock())), { 麦畑: 4 });
 });
 
 runTest('storage resumeGame は欠落ランドマークkeyを既定値で補完する', () => {
