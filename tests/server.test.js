@@ -1566,6 +1566,43 @@ runTest('createRoomMirror は対象のない改装屋pendingを拒否する', ()
     assert.strictEqual(createRoomMirror(invalidRoom), null);
 });
 
+runTest('createRoomMirror は非連続な改装屋runごとの対象消費を検証する', () => {
+    const snapshot = makeSnapshot({
+        phase: 'pending',
+        pendingTV: 1,
+        pendingRenovation: 2,
+        pendingActions: [
+            { action: 'resolveRenovation', field: 'pendingRenovation' },
+            { action: 'resolveTV', field: 'pendingTV' },
+            { action: 'resolveRenovation', field: 'pendingRenovation' },
+        ],
+    });
+    snapshot.players[0].landmarks['駅'] = true;
+    const oneTargetRoom = makeRoom();
+    oneTargetRoom.stateSnapshot = snapshot;
+    assert.strictEqual(createRoomMirror(oneTargetRoom), null);
+
+    snapshot.players[0].landmarks['ショッピングモール'] = true;
+    const twoTargetRoom = makeRoom();
+    twoTargetRoom.stateSnapshot = snapshot;
+    assert.ok(createRoomMirror(twoTargetRoom));
+
+    snapshot.pendingTV = 0;
+    snapshot.pendingActions = [
+        { action: 'resolveRenovation', field: 'pendingRenovation' },
+        { action: 'resolveRenovation', field: 'pendingRenovation' },
+    ];
+    snapshot.players[0].landmarks['ショッピングモール'] = false;
+    const consecutiveRoom = makeRoom();
+    consecutiveRoom.stateSnapshot = snapshot;
+    assert.ok(createRoomMirror(consecutiveRoom));
+
+    delete snapshot.pendingActions;
+    const legacyRoom = makeRoom();
+    legacyRoom.stateSnapshot = snapshot;
+    assert.ok(createRoomMirror(legacyRoom));
+});
+
 runTest('createRoomMirror のpending対象検査は旧snapshotのcards欠落を許容する', () => {
     const room = makeRoom();
     const snapshot = makeSnapshot({

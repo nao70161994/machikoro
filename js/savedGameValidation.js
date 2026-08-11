@@ -58,6 +58,25 @@ function hasResolvablePendingTargets(state, options = {}) {
             .length;
         // Remaining consecutive renovation actions are consumed as no-ops after the last target.
         if (builtTargetCount === 0) return false;
+        if (Array.isArray(state.pendingActions)) {
+            const renovationRunLengths = [];
+            let inRenovationRun = false;
+            for (const pending of state.pendingActions) {
+                if (pending && pending.field === 'pendingRenovation') {
+                    if (!inRenovationRun) renovationRunLengths.push(0);
+                    const lastIndex = renovationRunLengths.length - 1;
+                    renovationRunLengths[lastIndex]++;
+                    inRenovationRun = true;
+                } else {
+                    inRenovationRun = false;
+                }
+            }
+            if (renovationRunLengths.length > 0) {
+                // One built target starts each run; remaining consecutive entries auto-consume.
+                const requiredTargets = renovationRunLengths.length;
+                if (builtTargetCount < requiredTargets) return false;
+            }
+        }
     }
     return true;
 }

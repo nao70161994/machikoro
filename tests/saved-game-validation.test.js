@@ -7,7 +7,7 @@ const { runTest } = require('./helpers/test-utils');
 function makeValidator() {
     return SavedGameValidation.createValidator({
         isKnownCardName: name => ['麦畑', 'パン屋', 'スタジアム'].includes(name),
-        isKnownLandmarkName: name => ['駅', 'ショッピングモール', '役所'].includes(name),
+        isKnownLandmarkName: name => ['駅', 'ショッピングモール', '遊園地', '役所'].includes(name),
         isMajorCardName: name => name === 'スタジアム',
         cardNameById: { wheat_field: '麦畑', bakery: 'パン屋' },
         yakushoName: '役所',
@@ -192,6 +192,43 @@ runTest('saved game validatorは改装屋pendingに建設済み非役所landmark
     assert.strictEqual(validator.isValidSavedGameState(state), true);
     state.players[0].landmarks['駅'] = false;
     assert.strictEqual(validator.isValidSavedGameState(state), false);
+});
+
+runTest('saved game validatorは非連続な改装屋runごとの対象消費を検証する', () => {
+    const validator = makeValidator();
+    const renovation = { field: 'pendingRenovation', action: 'resolveRenovation' };
+    const tv = { field: 'pendingTV', action: 'resolveTV' };
+    const state = makeState({
+        phase: 'pending',
+        pendingTV: 1,
+        pendingRenovation: 2,
+        pendingActions: [renovation, tv, renovation],
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: {
+                駅: true, ショッピングモール: false,
+            } },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+    });
+    assert.strictEqual(validator.isValidSavedGameState(state), false);
+    state.players[0].landmarks['ショッピングモール'] = true;
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
+
+    state.pendingRenovation = 3;
+    state.pendingActions = [renovation, renovation, tv, renovation];
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
+    state.players[0].landmarks['ショッピングモール'] = false;
+    assert.strictEqual(validator.isValidSavedGameState(state), false);
+    state.players[0].landmarks['ショッピングモール'] = true;
+
+    state.pendingRenovation = 2;
+    state.pendingTV = 0;
+    state.pendingActions = [renovation, renovation];
+    state.players[0].landmarks['ショッピングモール'] = false;
+    state.players[0].landmarks['遊園地'] = false;
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
+    delete state.pendingActions;
+    assert.strictEqual(validator.isValidSavedGameState(state), true);
 });
 
 runTest('pending target検査は旧snapshotの対象field欠落を新たに拒否しない', () => {
