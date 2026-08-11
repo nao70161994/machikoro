@@ -543,6 +543,20 @@ runTest('storage resumeGame はpending phase外のIT解決状態をhydrate前に
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
+runTest('storage resumeGame は空またはIT混在のpending phaseをhydrate前に拒否する', () => {
+    for (const overrides of [
+        { phase: 'pending' },
+        { phase: 'pending', pendingIT: true, pendingTV: 1 },
+    ]) {
+        const rt = loadStorageRuntime();
+        rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState(overrides)));
+
+        assert.strictEqual(rt.resumeGame(), false);
+        assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+        assert.strictEqual(rt.__test.getGame(), null);
+    }
+});
+
 runTest('storage resumeGame は検証済みsaveを一時的なruntime例外で削除しない', () => {
     const rt = loadStorageRuntime();
     const serialized = JSON.stringify(makeSavedGameState());
@@ -682,7 +696,7 @@ runTest('storage resumeGame は共有hydrateで既存の全主要状態を復元
         builtThisTurn: true,
         pendingTV: 1,
         pendingActions: [{ action: 'resolveTV', field: 'pendingTV' }],
-        pendingIT: true,
+        pendingIT: false,
         usedReroll: true,
         pendingTunaDice: [3, 5],
         turnCount: 7,
@@ -705,7 +719,7 @@ runTest('storage resumeGame は共有hydrateで既存の全主要状態を復元
     assert.deepStrictEqual(JSON.parse(JSON.stringify(game.pendingActionQueue)), [
         { action: 'resolveTV', field: 'pendingTV' },
     ]);
-    assert.strictEqual(game.pendingIT, true);
+    assert.strictEqual(game.pendingIT, false);
     assert.strictEqual(game.usedReroll, true);
     assert.deepStrictEqual(Array.from(game.pendingTunaDice), [3, 5]);
     assert.strictEqual(game.turnCount, 7);
@@ -718,6 +732,20 @@ runTest('storage resumeGame は共有hydrateで既存の全主要状態を復元
     assert.strictEqual(game.players[0].itVentureCoins, 4);
     assert.strictEqual(game.players[0].hasYakusho, false);
     assert.strictEqual(rt.__test.getShopStock()['麦畑'], 4);
+});
+
+runTest('storage resumeGame はIT単独のpending phaseを復元する', () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState({
+        phase: 'pending',
+        pendingIT: true,
+    })));
+
+    assert.strictEqual(rt.resumeGame(), true);
+    const game = rt.__test.getGame();
+    assert.strictEqual(game.phase, 'pending');
+    assert.strictEqual(game.pendingIT, true);
+    assert.deepStrictEqual(Array.from(game.pendingActionQueue), []);
 });
 
 runTest('storage resumeGame は旧保存データのcpuSettings欠落をnormal CPUとして復元する', () => {

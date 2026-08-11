@@ -105,6 +105,23 @@ runTest('saved game validatorはpending件数をserver snapshotと同じ50件へ
     }
 });
 
+runTest('saved game validatorはpending phaseをIT単独か通常pendingのどちらかに限定する', () => {
+    const validator = makeValidator();
+    const legacyNumericPending = makeState({ phase: 'pending', pendingTV: 1 });
+    delete legacyNumericPending.pendingActions;
+    const mixedPending = makeState({ phase: 'pending', pendingIT: true, pendingTV: 1 });
+    delete mixedPending.pendingActions;
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        phase: 'pending',
+        pendingIT: true,
+    })), true);
+    assert.strictEqual(validator.isValidSavedGameState(legacyNumericPending), true);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        phase: 'pending',
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(mixedPending), false);
+});
+
 runTest('saved game validatorは依存未注入時に未知cardとlandmarkを拒否する', () => {
     const validator = SavedGameValidation.createValidator();
     assert.strictEqual(validator.isValidSavedGameState(makeState()), false);

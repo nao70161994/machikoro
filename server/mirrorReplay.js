@@ -251,6 +251,8 @@ function makeMirrorReplay({
                 typeof state[field] !== 'boolean') return false;
         }
         if (state.pendingIT === true && state.phase && state.phase !== gameRuntime.GAME_PHASES.PENDING) return false;
+        if (state.phase === gameRuntime.GAME_PHASES.PENDING &&
+            ((state.pendingIT === true) === (pendingFieldTotal > 0))) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'pendingTunaDice') &&
             state.pendingTunaDice !== null &&
             (!Array.isArray(state.pendingTunaDice) ||

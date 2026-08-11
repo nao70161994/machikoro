@@ -1472,8 +1472,14 @@ runTest('createRoomMirror は snapshot の pending と phase 不整合や過大c
         phase: 'pending',
         pendingTV: 51,
     });
+    const emptyPending = makeSnapshot({ phase: 'pending' });
+    const mixedPending = makeSnapshot({
+        phase: 'pending',
+        pendingIT: true,
+        pendingTV: 1,
+    });
 
-    for (const snapshot of [phaseMismatch, pendingItMismatch, excessivePending]) {
+    for (const snapshot of [phaseMismatch, pendingItMismatch, excessivePending, emptyPending, mixedPending]) {
         const room = makeRoom();
         room.stateSnapshot = snapshot;
         assert.strictEqual(createRoomMirror(room), null);
