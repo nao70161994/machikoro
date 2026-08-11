@@ -5,21 +5,34 @@ const UiPendingEffects = (() => {
         const wasVisible = previousVisible === true;
         const visible = nextVisible === true;
         const eligible = facts.focusEligible === true;
+        const wasEligible = facts.previousEligible === true;
         return Object.freeze({
-            focusInitial: eligible && !wasVisible && visible,
+            focusInitial: eligible && visible && (!wasVisible || !wasEligible),
             restoreGame: eligible && wasVisible && !visible && facts.activeWithin === true,
             visible,
+            eligible,
         });
     }
 
-    function createFocusController(initialVisible = false) {
+    function createFocusController(initialVisible = false, initialEligible = false) {
         let visible = initialVisible === true;
+        let eligible = initialEligible === true;
 
         return Object.freeze({
             isVisible() { return visible; },
+            isEligible() { return eligible; },
+            reset(nextVisible = false, nextEligible = false) {
+                visible = nextVisible === true;
+                eligible = nextEligible === true;
+                return Object.freeze({ visible, eligible });
+            },
             transition(nextVisible, facts = {}) {
-                const plan = focusTransition(visible, nextVisible, facts);
+                const plan = focusTransition(visible, nextVisible, {
+                    ...facts,
+                    previousEligible: eligible,
+                });
                 visible = plan.visible;
+                eligible = plan.eligible;
                 return plan;
             },
         });

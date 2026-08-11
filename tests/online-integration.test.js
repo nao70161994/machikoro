@@ -1,5 +1,5 @@
 const assert = require('assert');
-const { runTest } = require('./helpers/test-utils');
+const { makeElement, runTest } = require('./helpers/test-utils');
 const { loadIntegrationRuntime } = require('./helpers/integration-runtime');
 
 runTest('online integration: reconnectOnline は rejoinRoom を送信して online タブを開く', () => {
@@ -116,6 +116,52 @@ runTest('online integration: gameStart から rejoinData で画面と状態を�
     assert.strictEqual(game.players[0].name, 'Alice');
     assert.ok(game.players[0].countCard('麦畑') >= 2);
     assert.strictEqual(game.currentPlayerIndex, 1);
+});
+
+runTest('online integration: rejoinDataのhuman pendingは復元完了後に解決操作へfocusする', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.initSocket();
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        playerOrder: [0, 1],
+        enabledCards: rt.CARDS.map(card => card.name),
+        enabledLandmarks: rt.Player.landmarkNames(),
+        hostPlayerIndex: 0,
+    };
+    rt.__test.socketHandlers.gameStart(gameStartPayload);
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    const snapshot = rt.buildOnlineSnapshot();
+    const pendingAction = makeElement();
+    let focusCount = 0;
+    pendingAction.focus = () => {
+        focusCount++;
+        rt.document.activeElement = pendingAction;
+    };
+    rt.__test.elements.pendingMenu.querySelector = () => pendingAction;
+    rt.__test.elements.pendingMenu.contains = target => target === pendingAction;
+    rt.__test.elements.pendingModal.contains = target => target === pendingAction;
+    rt.__test.elements.status.focus = () => {
+        rt.__test.elements.status.focused = true;
+        rt.document.activeElement = rt.__test.elements.status;
+    };
+
+    rt.__test.socketHandlers.rejoinData({
+        gameStartPayload,
+        stateSnapshot: snapshot,
+        actionLog: [],
+        playerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+
+    assert.strictEqual(rt.__test.elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(rt.document.activeElement, pendingAction);
+    assert.strictEqual(focusCount, 1);
 });
 
 runTest('online integration: 既定event authorityは開始・切断・再join・復元をclean parityで完了する', () => {

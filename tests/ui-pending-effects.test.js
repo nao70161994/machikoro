@@ -140,6 +140,7 @@ runTest('pending focus controllerはhidden→visibleだけ初期focusを要求�
         focusInitial: true,
         restoreGame: false,
         visible: true,
+        eligible: true,
     });
     assert.deepStrictEqual(controller.transition(true, {
         activeWithin: true,
@@ -148,6 +149,7 @@ runTest('pending focus controllerはhidden→visibleだけ初期focusを要求�
         focusInitial: false,
         restoreGame: false,
         visible: true,
+        eligible: true,
     });
     assert.strictEqual(controller.isVisible(), true);
 });
@@ -161,6 +163,7 @@ runTest('pending focus controllerはfocusがpending内に残る終了だけgame�
         focusInitial: false,
         restoreGame: true,
         visible: false,
+        eligible: true,
     });
     assert.deepStrictEqual(UiPendingEffects.focusTransition(true, false, {
         activeWithin: false,
@@ -169,10 +172,26 @@ runTest('pending focus controllerはfocusがpending内に残る終了だけgame�
         focusInitial: false,
         restoreGame: false,
         visible: false,
+        eligible: true,
     });
     assert.strictEqual(UiPendingEffects.focusTransition(false, true, {
         focusEligible: false,
     }).focusInitial, false);
+});
+
+runTest('pending focus controllerはreplay中visibleからeligible化した時に一度focusする', () => {
+    const controller = UiPendingEffects.createFocusController();
+    assert.deepStrictEqual(controller.transition(true, { focusEligible: false }), {
+        focusInitial: false,
+        restoreGame: false,
+        visible: true,
+        eligible: false,
+    });
+    assert.strictEqual(controller.transition(true, { focusEligible: true }).focusInitial, true);
+    assert.strictEqual(controller.transition(true, { focusEligible: true }).focusInitial, false);
+    assert.deepStrictEqual(controller.reset(), { visible: false, eligible: false });
+    assert.strictEqual(controller.isVisible(), false);
+    assert.strictEqual(controller.isEligible(), false);
 });
 
 runTest('pending focus effectは最初のenabled controlとgame復帰を排他的に適用する', () => {

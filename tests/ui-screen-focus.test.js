@@ -37,6 +37,65 @@ runTest('screen focusは描画後のゲームstatusをプログラムfocus対象
     assert.strictEqual(documentRef.elements.status.getAttribute('tabindex'), '-1');
 });
 
+runTest('screen focusはeligibleなpending操作をgame statusより優先する', () => {
+    const action = makeElement();
+    const pendingMenu = makeElement({
+        contains: target => target === action,
+        querySelector: selector => selector === UiScreenFocus.pendingActionSelector
+            ? action
+            : null,
+    });
+    const pendingModal = makeElement({
+        contains: target => target === action,
+        style: { display: 'flex', pointerEvents: 'auto', visibility: 'visible' },
+    });
+    action.parentElement = pendingMenu;
+    pendingMenu.parentElement = pendingModal;
+    const documentRef = createDocument({ pendingMenu, pendingModal });
+    action.focus = () => {
+        action.focused = true;
+        documentRef.activeElement = action;
+    };
+
+    assert.strictEqual(UiScreenFocus.focusGameOrPending(documentRef, {
+        pendingEligible: true,
+    }), true);
+    assert.strictEqual(documentRef.activeElement, action);
+    assert.strictEqual(documentRef.elements.status.focused, undefined);
+
+    action.focused = false;
+    documentRef.activeElement = null;
+    assert.strictEqual(UiScreenFocus.focusGameOrPending(documentRef, {
+        pendingEligible: false,
+    }), true);
+    assert.strictEqual(documentRef.activeElement, documentRef.elements.status);
+    assert.strictEqual(action.focused, false);
+});
+
+runTest('screen focusはpending内の既存focusを再実行せず維持する', () => {
+    let focusCount = 0;
+    const action = makeElement();
+    const pendingMenu = makeElement({
+        contains: target => target === action,
+        querySelector: () => action,
+    });
+    const pendingModal = makeElement({
+        contains: target => target === action,
+        style: { display: 'flex', pointerEvents: 'auto', visibility: 'visible' },
+    });
+    action.parentElement = pendingMenu;
+    pendingMenu.parentElement = pendingModal;
+    const documentRef = createDocument({ pendingMenu, pendingModal });
+    action.focus = () => { focusCount++; documentRef.activeElement = action; };
+    documentRef.activeElement = action;
+
+    assert.strictEqual(UiScreenFocus.focusGameOrPending(documentRef, {
+        pendingEligible: true,
+    }), true);
+    assert.strictEqual(focusCount, 0);
+    assert.strictEqual(documentRef.activeElement, action);
+});
+
 runTest('screen focusはpreferred target切断時に可視screenへfallbackする', () => {
     const documentRef = createDocument({ status: makeElement({ isConnected: false }) });
 

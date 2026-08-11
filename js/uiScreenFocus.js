@@ -1,6 +1,11 @@
 'use strict';
 
 const UiScreenFocus = (() => {
+    const PENDING_ACTION_SELECTOR = [
+        'button:not([disabled])',
+        'select:not([disabled])',
+        'input:not([disabled]):not([type="hidden"])',
+    ].join(', ');
     const targets = Object.freeze({
         game: Object.freeze({ screenId: 'gameScreen', targetId: 'status' }),
         title: Object.freeze({ screenId: 'titleScreen', targetId: 'titleHeading' }),
@@ -66,6 +71,57 @@ const UiScreenFocus = (() => {
         return true;
     }
 
+    function focusExistingElement(element, documentRef) {
+        if (isUnavailable(element, documentRef)) return false;
+        try {
+            element.focus({ preventScroll: true });
+        } catch (_) {
+            element.focus();
+        }
+        return true;
+    }
+
+    function isPendingSurfaceVisible(documentRef) {
+        if (!documentRef || typeof documentRef.getElementById !== 'function') return false;
+        const modal = documentRef.getElementById('pendingModal');
+        if (!modal || modal.hidden === true || modal.inert === true) return false;
+        if (modal.style && (modal.style.display === 'none' ||
+                modal.style.visibility === 'hidden' || modal.style.pointerEvents === 'none')) {
+            return false;
+        }
+        const view = documentRef.defaultView;
+        if (view && typeof view.getComputedStyle === 'function') {
+            const computed = view.getComputedStyle(modal);
+            if (computed && (computed.display === 'none' ||
+                    computed.visibility === 'hidden' || computed.pointerEvents === 'none')) {
+                return false;
+            }
+        }
+        return !!(modal.style && modal.style.display);
+    }
+
+    function focusPendingAction(documentRef) {
+        if (!isPendingSurfaceVisible(documentRef) || blockingOverlayVisible(documentRef)) {
+            return false;
+        }
+        const modal = documentRef.getElementById('pendingModal');
+        const content = documentRef.getElementById('pendingMenu');
+        const active = documentRef.activeElement;
+        const activeWithin = !!active && ((content && typeof content.contains === 'function' &&
+            content.contains(active)) || (modal && typeof modal.contains === 'function' &&
+            modal.contains(active)));
+        if (activeWithin && !isUnavailable(active, documentRef)) return true;
+        const target = content && typeof content.querySelector === 'function'
+            ? content.querySelector(PENDING_ACTION_SELECTOR)
+            : null;
+        return focusExistingElement(target, documentRef);
+    }
+
+    function focusGameOrPending(documentRef, options = {}) {
+        if (options.pendingEligible === true && focusPendingAction(documentRef)) return true;
+        return focusScreen(documentRef, 'game');
+    }
+
     function focusScreen(documentRef, screenName) {
         const target = targets[screenName];
         if (!target || !documentRef || typeof documentRef.getElementById !== 'function') return false;
@@ -91,9 +147,12 @@ const UiScreenFocus = (() => {
     return Object.freeze({
         ensureCurrentScreenFocus,
         focusGame: documentRef => focusScreen(documentRef, 'game'),
+        focusGameOrPending,
+        focusPendingAction,
         focusScreen,
         focusTitle: documentRef => focusScreen(documentRef, 'title'),
         hasUsableFocus,
+        pendingActionSelector: PENDING_ACTION_SELECTOR,
         targets,
     });
 })();

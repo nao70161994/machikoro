@@ -770,6 +770,44 @@ runTest('integration: human pendingは初回だけ解決操作へfocusし完了�
     assert.strictEqual(rt.document.activeElement, rt.__test.elements.status);
 });
 
+runTest('integration: local pending save復帰は可視の解決操作へfocusを戻す', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    const pendingAction = makeElement();
+    let focusCount = 0;
+    pendingAction.focus = () => {
+        focusCount++;
+        rt.document.activeElement = pendingAction;
+    };
+    rt.__test.elements.pendingMenu.querySelector = () => pendingAction;
+    rt.__test.elements.pendingMenu.contains = target => target === pendingAction;
+    rt.__test.elements.pendingModal.contains = target => target === pendingAction;
+    rt.__test.elements.status.focus = () => {
+        rt.__test.elements.status.focused = true;
+        rt.document.activeElement = rt.__test.elements.status;
+    };
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    rt.render();
+    assert.strictEqual(rt.document.activeElement, pendingAction);
+    assert.strictEqual(focusCount, 1);
+    rt.saveGameState();
+
+    rt.__test.setGame(null);
+    assert.strictEqual(rt.resumeGame(), true);
+    assert.strictEqual(rt.__test.elements.pendingModal.style.display, 'flex');
+    assert.strictEqual(rt.document.activeElement, pendingAction);
+    assert.strictEqual(focusCount, 2);
+});
+
 runTest('integration: Business Center pending modal の pointer-events none をwatchdogが復旧する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

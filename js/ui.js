@@ -1036,6 +1036,7 @@ function setAppInertForModal(enabled) {
 }
 
 function resetAccessibleModalRuntimeState() {
+    pendingModalFocusController.reset();
     return uiModalDomEffects.resetRuntimeState();
 }
 
