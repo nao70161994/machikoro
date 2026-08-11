@@ -35,4 +35,6 @@ const OnlineRestoreMetadata = (() => {
 
 if (typeof module !== 'undefined' && module.exports) module.exports = OnlineRestoreMetadata;
 if (typeof window !== 'undefined') window.OnlineRestoreMetadata = OnlineRestoreMetadata;
-if (typeof globalThis !== 'undefined') globalThis.OnlineRestoreMetadata = OnlineRestoreMetadata;
+if (typeof globalThis !== 'undefined') {
+    /** @type {any} */ (globalThis).OnlineRestoreMetadata = OnlineRestoreMetadata;
+}
