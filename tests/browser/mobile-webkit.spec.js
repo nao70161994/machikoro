@@ -236,6 +236,63 @@ test('320pxから480pxで頻用補助操作のtap領域が重ならずに収ま�
     }
 });
 
+test('320pxから480pxで建設filterがカード範囲だけを安全に追従する', async ({ page }) => {
+    await prepare(page);
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const middleCard = page.locator('.build-card-section .card-wrapper').nth(12);
+        await middleCard.evaluate(element => {
+            const top = element.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo(0, Math.max(0, top - 180));
+        });
+        const stickyLayout = await page.evaluate(() => {
+            const filter = document.querySelector('.build-card-section .card-filter-bar');
+            const card = document.querySelectorAll('.build-card-section .card-wrapper')[12];
+            const filterBounds = filter.getBoundingClientRect();
+            const cardBounds = card.getBoundingClientRect();
+            return {
+                filterTop: filterBounds.top,
+                filterBottom: filterBounds.bottom,
+                cardTop: cardBounds.top,
+                withinViewport: filterBounds.left >= 0 &&
+                    filterBounds.right <= document.documentElement.clientWidth,
+                contentFits: filter.scrollWidth <= filter.clientWidth,
+            };
+        });
+        expect(stickyLayout.filterTop).toBeGreaterThanOrEqual(7);
+        expect(stickyLayout.filterTop).toBeLessThanOrEqual(17);
+        expect(stickyLayout.filterBottom - stickyLayout.filterTop).toBeLessThanOrEqual(50);
+        expect(stickyLayout.filterBottom).toBeLessThanOrEqual(stickyLayout.cardTop);
+        expect(stickyLayout.withinViewport && stickyLayout.contentFits).toBe(true);
+
+        await middleCard.locator('.card-btn').evaluate(element => element.scrollIntoView({ block: 'start' }));
+        const focusClearance = await page.evaluate(() => {
+            const filterBounds = document.querySelector('.build-card-section .card-filter-bar').getBoundingClientRect();
+            const cardBounds = document.querySelectorAll('.build-card-section .card-wrapper')[12]
+                .querySelector('.card-btn').getBoundingClientRect();
+            return { filterBottom: filterBounds.bottom, cardTop: cardBounds.top };
+        });
+        expect(focusClearance.cardTop).toBeGreaterThanOrEqual(focusClearance.filterBottom + 8);
+
+        await page.locator('#buildMenu .build-section:not(.build-card-section)').evaluate(element => {
+            const top = element.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo(0, Math.max(0, top - 8));
+        });
+        const boundaryLayout = await page.evaluate(() => {
+            const filterBounds = document.querySelector('.build-card-section .card-filter-bar').getBoundingClientRect();
+            const landmarkBounds = document.querySelector('#buildMenu .build-section:not(.build-card-section)').getBoundingClientRect();
+            return {
+                filterBottom: filterBounds.bottom,
+                landmarkTop: landmarkBounds.top,
+            };
+        });
+        expect(boundaryLayout.filterBottom).toBeLessThanOrEqual(boundaryLayout.landmarkTop + 1);
+    }
+});
+
 test('mobile WebKitの2クライアントがonline開始後に再読込復帰できる', async ({ browser, baseURL }) => {
     const hostContext = await browser.newContext({
         ...MOBILE_CONTEXT,

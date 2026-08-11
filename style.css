@@ -16,6 +16,8 @@
     --touch-target-standard: 44px;
     --touch-target-compact: 36px;
     --touch-target-dense: 32px;
+    --build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));
+    --build-filter-focus-clearance: calc(var(--build-filter-sticky-top) + var(--touch-target-compact) + 22px);
     --z-pwa-banner: 500;
     --z-pending-modal: 600;
     --z-turn-announcer: 700;
@@ -1369,6 +1371,10 @@ button:not(:disabled):active {
     margin-bottom: 8px;
 }
 
+.build-card-section {
+    position: relative;
+}
+
 .build-section h4 {
     font-size: 11px;
     color: #a7a9be;
@@ -1387,13 +1393,21 @@ button:not(:disabled):active {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
+    position: sticky;
+    top: var(--build-filter-sticky-top);
+    z-index: 40;
     margin-bottom: 4px;
+    padding: 6px 0;
+    background: #0f0e17;
+    border-bottom: 1px solid #2a2a4a;
+    box-shadow: 0 6px 12px rgba(15,14,23,0.75);
 }
 
 .card-filter-btn {
     width: auto;
+    min-width: var(--touch-target-dense);
     min-height: var(--touch-target-compact);
-    padding: 5px 14px;
+    padding: 5px 8px;
     font-size: 12px;
     border-radius: 20px;
     background: rgba(255,255,255,0.06);
@@ -2085,6 +2099,10 @@ button:not(:disabled):active {
 
 .card-wrapper .card-btn {
     flex: 1;
+}
+
+.card-wrapper :is(.card-btn, .card-detail-btn) {
+    scroll-margin-top: var(--build-filter-focus-clearance);
 }
 
 .card-meta-row {

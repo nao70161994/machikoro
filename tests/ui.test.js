@@ -2312,6 +2312,7 @@ runTest('buildBuildMenuHtml はカード/ランドマーク領域をhelperで組
     };
 
     const html = context.buildBuildMenuHtml(current, true, true);
+    assert.ok(html.includes('class="build-section build-card-section"'));
 
     assert.ok(html.includes('建設する施設を選んでください'));
     assert.ok(html.includes('施設カード'));

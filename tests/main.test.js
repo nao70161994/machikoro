@@ -2368,6 +2368,22 @@ runTest('頻用する補助操作は一覧密度に応じた共通tap領域を�
     assert.ok(rule('.card-badge').includes('min-height: var(--touch-target-dense);'));
 });
 
+runTest('建設カードの色filterはカードsection内だけで安全に追従する', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.ok(css.includes('--build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));'));
+    assert.ok(css.includes('--build-filter-focus-clearance: calc(var(--build-filter-sticky-top) + var(--touch-target-compact) + 22px);'));
+    const filterMatch = css.match(/\.card-filter-bar\s*{([\s\S]*?)}/);
+    assert.ok(filterMatch);
+    assert.ok(filterMatch[1].includes('position: sticky;'));
+    assert.ok(filterMatch[1].includes('top: var(--build-filter-sticky-top);'));
+    assert.ok(filterMatch[1].includes('z-index: 40;'));
+    assert.ok(css.includes('.build-card-section {\n    position: relative;'));
+    assert.ok(css.includes('scroll-margin-top: var(--build-filter-focus-clearance);'));
+    assert.ok(css.includes('--z-pwa-banner: 500;'));
+    assert.ok(css.includes('--z-pending-modal: 600;'));
+    assert.ok(css.includes('--z-modal: 1000;'));
+});
+
 runTest('建設カードの判断情報は狭い画面でも読める文字サイズを保つ', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const rule = selector => {
