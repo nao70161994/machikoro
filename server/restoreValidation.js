@@ -9,6 +9,7 @@
  *     landmarkNames: () => ReadonlyArray<string>,
  *     sanitizeName: (name: unknown) => string,
  *     isValidGameSchemaMetadata?: (metadata: unknown) => boolean,
+ *     maxHostlessRestoreAttempts?: number,
  * }} options
  */
 function makeRestoreValidation({
@@ -19,7 +20,12 @@ function makeRestoreValidation({
     landmarkNames,
     sanitizeName,
     isValidGameSchemaMetadata = () => false,
+    maxHostlessRestoreAttempts = 3,
 }) {
+    function isOptionalNonnegativeSafeInteger(value) {
+        return value == null || (Number.isSafeInteger(value) && value >= 0);
+    }
+
     function buildRestoredHumanPlayers(gameStartPayload, reconnectingPlayerIndex, socketId) {
         const playerNames = Array.isArray(gameStartPayload?.playerNames) ? gameStartPayload.playerNames : [];
         const playerSettings = Array.isArray(gameStartPayload?.playerSettings) ? gameStartPayload.playerSettings : [];
@@ -77,7 +83,14 @@ function makeRestoreValidation({
             payload.enabledLandmarks.length === 0 ||
             payload.enabledLandmarks.some(name => !knownLandmarks.has(name)))) return false;
         if (payload.gameSchema != null && !isValidGameSchemaMetadata(payload.gameSchema)) return false;
-        if (payload.cpuSpeed != null && (!Number.isFinite(payload.cpuSpeed) || payload.cpuSpeed < 0)) return false;
+        if (payload.cpuSpeed != null &&
+            (!Number.isInteger(payload.cpuSpeed) || payload.cpuSpeed < 0 || payload.cpuSpeed > 5000)) return false;
+        for (const field of ['hostEpoch', 'actionSeq', 'hostlessRestoreGeneration']) {
+            if (!isOptionalNonnegativeSafeInteger(payload[field])) return false;
+        }
+        if (!isOptionalNonnegativeSafeInteger(payload.hostlessRestoreCount) ||
+            (payload.hostlessRestoreCount != null &&
+                payload.hostlessRestoreCount > maxHostlessRestoreAttempts)) return false;
         return true;
     }
 

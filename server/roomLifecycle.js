@@ -139,7 +139,13 @@ function makeRoomLifecycle(options) {
 
     function setRoomHostPlayerIndex(room, hostPlayerIndex) {
         if (room.hostPlayerIndex !== hostPlayerIndex) {
-            room.hostEpoch = (Number.isInteger(room.hostEpoch) ? room.hostEpoch : 0) + 1;
+            const currentHostEpoch = Number.isSafeInteger(room.hostEpoch) && room.hostEpoch >= 0
+                ? room.hostEpoch
+                : 0;
+            if (currentHostEpoch >= Number.MAX_SAFE_INTEGER) {
+                throw new RangeError('hostEpoch cannot be incremented safely');
+            }
+            room.hostEpoch = currentHostEpoch + 1;
         }
         room.hostPlayerIndex = hostPlayerIndex;
         if (room.gameStartPayload && typeof room.gameStartPayload === 'object') {
@@ -151,7 +157,8 @@ function makeRoomLifecycle(options) {
     function roomHostChangedPayload(room) {
         return {
             newHostPlayerIndex: room?.hostPlayerIndex,
-            hostEpoch: Number.isInteger(room?.hostEpoch) ? room.hostEpoch : 0,
+            hostEpoch: Number.isSafeInteger(room?.hostEpoch) && room.hostEpoch >= 0
+                ? room.hostEpoch : 0,
         };
     }
 

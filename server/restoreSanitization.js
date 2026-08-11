@@ -12,7 +12,7 @@ module.exports = function makeRestoreSanitization(options = {}) {
 
     function restoreSnapshotActionSeq(stateSnapshot) {
         return isPlainObject(stateSnapshot) &&
-            Number.isInteger(stateSnapshot.actionSeq) &&
+            Number.isSafeInteger(stateSnapshot.actionSeq) &&
             stateSnapshot.actionSeq >= 0
             ? stateSnapshot.actionSeq
             : 0;

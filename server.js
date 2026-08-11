@@ -116,6 +116,7 @@ const {
     HOSTLESS_RESTORE_COUNT_FIELD,
     makeHostlessRestoreGateway,
 } = require('./server/hostlessRestoreGateway');
+const { HOSTLESS_RESTORE_LIMITS } = require('./server/hostlessRestoreCandidate');
 const { createHostlessRestoreCoordinator } = require('./server/hostlessRestoreCoordinator');
 const {
     createHostlessRestoreRuntime,
@@ -235,6 +236,7 @@ const {
     landmarkNames: gameRuntime.Player.landmarkNames,
     sanitizeName,
     isValidGameSchemaMetadata,
+    maxHostlessRestoreAttempts: HOSTLESS_RESTORE_LIMITS.maxAttempts,
 });
 const {
     buildRestoredRoom,

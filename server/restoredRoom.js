@@ -1,5 +1,14 @@
 'use strict';
 
+function incrementSafeRestoreCounter(value, field) {
+    if (!Number.isSafeInteger(value) || value < 0 || value >= Number.MAX_SAFE_INTEGER) {
+        throw new RangeError(`${field} cannot be incremented safely`);
+    }
+    const incremented = value + 1;
+    if (!(incremented > value)) throw new RangeError(`${field} must increase`);
+    return incremented;
+}
+
 /**
  * Computes restore ownership/sequence metadata without mutating the payload.
  * @param {{playerIndex?: number, hostEpoch?: number, actionSeq?: number, approvedHostless?: boolean, hostlessRestoreGeneration?: *, hostlessRestoreCount?: *}} input
@@ -7,18 +16,20 @@
  */
 function planRestoredRoomMetadata(input = {}) {
     const approvedHostless = input.approvedHostless === true;
-    const hostlessRestoreGeneration = input.hostlessRestoreGeneration || 0;
-    const hostlessRestoreCount = input.hostlessRestoreCount || 0;
+    const hostlessRestoreGeneration = input.hostlessRestoreGeneration ?? 0;
+    const hostlessRestoreCount = input.hostlessRestoreCount ?? 0;
     return Object.freeze({
         hostPlayerIndex: input.playerIndex,
-        hostEpoch: approvedHostless ? input.hostEpoch + 1 : input.hostEpoch,
+        hostEpoch: approvedHostless
+            ? incrementSafeRestoreCounter(input.hostEpoch, 'hostEpoch')
+            : input.hostEpoch,
         actionSeq: input.actionSeq,
         applyHostlessMetadata: approvedHostless,
         hostlessRestoreGeneration: approvedHostless
-            ? hostlessRestoreGeneration + 1
+            ? incrementSafeRestoreCounter(hostlessRestoreGeneration, 'hostlessRestoreGeneration')
             : hostlessRestoreGeneration,
         hostlessRestoreCount: approvedHostless
-            ? hostlessRestoreCount + 1
+            ? incrementSafeRestoreCounter(hostlessRestoreCount, 'hostlessRestoreCount')
             : hostlessRestoreCount,
     });
 }

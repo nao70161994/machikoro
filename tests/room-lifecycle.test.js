@@ -42,6 +42,25 @@ runTest('room lifecycle はhost indexとepochを開始payloadへ同期する', (
     });
 });
 
+runTest('room lifecycle はhost epochをsafe integer内で厳密に増加させる', () => {
+    const maximumRoom = {
+        hostPlayerIndex: 0,
+        hostEpoch: Number.MAX_SAFE_INTEGER - 1,
+        gameStartPayload: {},
+    };
+    setRoomHostPlayerIndex(maximumRoom, 1);
+    assert.strictEqual(maximumRoom.hostEpoch, Number.MAX_SAFE_INTEGER);
+
+    const overflowRoom = {
+        hostPlayerIndex: 0,
+        hostEpoch: Number.MAX_SAFE_INTEGER,
+        gameStartPayload: {},
+    };
+    assert.throws(() => setRoomHostPlayerIndex(overflowRoom, 1), /cannot be incremented safely/);
+    assert.strictEqual(overflowRoom.hostPlayerIndex, 0);
+    assert.strictEqual(overflowRoom.hostEpoch, Number.MAX_SAFE_INTEGER);
+});
+
 runTest('room lifecycle はhostChanged wire payloadを既存fieldへ限定する', () => {
     assert.deepStrictEqual(roomHostChangedPayload({ hostPlayerIndex: 3, hostEpoch: 7, extra: true }), {
         newHostPlayerIndex: 3,

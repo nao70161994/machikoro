@@ -6,6 +6,7 @@ const {
     validateCanonicalStateStoreAdapter,
     isAuthoritativeCanonicalStateStore,
     buildCanonicalStateRecord,
+    validateCanonicalStateRecord,
     createNoopCanonicalStateStore,
     createMemoryCanonicalStateStore,
     createCanonicalStateStoreFromEnv,
@@ -30,6 +31,26 @@ runTest('canonical store retention env は明示した正のsafe integerだけ�
     assert.strictEqual(canonicalStateStoreRetentionMs({ CANONICAL_STATE_RETENTION_MS: '60000' }), 60_000);
     for (const value of ['', '0', '-1', '1.5', 'unsafe']) {
         assert.strictEqual(canonicalStateStoreRetentionMs({ CANONICAL_STATE_RETENTION_MS: value }), null);
+    }
+});
+
+runTest('canonical state record はepochとaction seqをnonnegative safe integerへ限定する', () => {
+    const maximum = record();
+    maximum.hostEpoch = Number.MAX_SAFE_INTEGER;
+    maximum.actionSeq = Number.MAX_SAFE_INTEGER;
+    assert.deepStrictEqual(validateCanonicalStateRecord(maximum), { ok: true });
+
+    for (const [field, value, reason] of [
+        ['hostEpoch', -1, 'host-epoch'],
+        ['hostEpoch', Number.MAX_SAFE_INTEGER + 1, 'host-epoch'],
+        ['hostEpoch', Number.MAX_VALUE, 'host-epoch'],
+        ['actionSeq', -1, 'action-seq'],
+        ['actionSeq', Number.MAX_SAFE_INTEGER + 1, 'action-seq'],
+        ['actionSeq', Number.MAX_VALUE, 'action-seq'],
+    ]) {
+        const invalid = record();
+        invalid[field] = value;
+        assert.deepStrictEqual(validateCanonicalStateRecord(invalid), { ok: false, reason });
     }
 });
 

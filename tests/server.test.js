@@ -4419,6 +4419,19 @@ runTest('restorePayloadRank は actionLog の巨大seqではなくreplay可能�
     );
 });
 
+runTest('restorePayloadRank はunsafe・負数metadataをrankへ取り込まずsafe上限を保持する', () => {
+    assert.deepStrictEqual(restorePayloadRank(
+        { hostEpoch: Number.MAX_VALUE, actionSeq: Number.MAX_SAFE_INTEGER + 1 },
+        { actionSeq: -1 },
+        []
+    ), { hostEpoch: 0, actionSeq: 0 });
+    assert.deepStrictEqual(restorePayloadRank(
+        { hostEpoch: Number.MAX_SAFE_INTEGER, actionSeq: Number.MAX_SAFE_INTEGER },
+        { actionSeq: Number.MAX_SAFE_INTEGER },
+        [{ action: 'nextTurn' }]
+    ), { hostEpoch: Number.MAX_SAFE_INTEGER, actionSeq: Number.MAX_SAFE_INTEGER });
+});
+
 runTest('restorePayloadRank は未知actionをreplay可能件数に含めない', () => {
     const details = restorePayloadRankDetails(
         { hostEpoch: 1, actionSeq: 20 },

@@ -45,15 +45,15 @@ function canonicalCandidateHash(cryptoModule, canonicalPayload) {
 
 function normalizeRestoreRank(rank) {
     return Object.freeze({
-        hostEpoch: Number.isInteger(rank?.hostEpoch) && rank.hostEpoch >= 0 ? rank.hostEpoch : 0,
-        actionSeq: Number.isInteger(rank?.actionSeq) && rank.actionSeq >= 0 ? rank.actionSeq : 0,
+        hostEpoch: Number.isSafeInteger(rank?.hostEpoch) && rank.hostEpoch >= 0 ? rank.hostEpoch : 0,
+        actionSeq: Number.isSafeInteger(rank?.actionSeq) && rank.actionSeq >= 0 ? rank.actionSeq : 0,
     });
 }
 
 function candidateFingerprint(candidate) {
     if (!candidate || typeof candidate.canonicalHash !== 'string' || !candidate.canonicalHash) return '';
     const rank = normalizeRestoreRank(candidate.rank);
-    const generation = Number.isInteger(candidate.generation) && candidate.generation >= 0
+    const generation = Number.isSafeInteger(candidate.generation) && candidate.generation >= 0
         ? candidate.generation
         : 0;
     const completed = candidate.completed === true ? 1 : 0;
@@ -70,7 +70,7 @@ function normalizeCandidate(candidate) {
         playerIndex: candidate.playerIndex,
         socketId: typeof candidate.socketId === 'string' ? candidate.socketId : '',
         capabilityVersion: HOSTLESS_RESTORE_SCHEMA_VERSION,
-        generation: Number.isInteger(candidate.generation) && candidate.generation >= 0
+        generation: Number.isSafeInteger(candidate.generation) && candidate.generation >= 0
             ? candidate.generation
             : 0,
         rank: normalizeRestoreRank(candidate.rank),
@@ -101,7 +101,8 @@ function uniquePlayerCandidates(candidates) {
 }
 
 function evaluateCandidateQuorum(candidates, options = {}) {
-    const attemptCount = Number.isInteger(options.attemptCount) && options.attemptCount >= 0
+    const attemptCount = Number.isSafeInteger(options.attemptCount) &&
+        options.attemptCount >= 0 && options.attemptCount <= HOSTLESS_RESTORE_LIMITS.maxAttempts
         ? options.attemptCount
         : 0;
     const maxAttempts = Number.isInteger(options.maxAttempts)

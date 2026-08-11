@@ -2,6 +2,7 @@
 
 const {
     HOSTLESS_RESTORE_SCHEMA_VERSION,
+    HOSTLESS_RESTORE_LIMITS,
     canonicalCandidateHash,
 } = require('./hostlessRestoreCandidate');
 
@@ -35,8 +36,8 @@ function makeHostlessRestoreGateway(options = {}) {
         return Object.freeze({ ok: false, reason });
     }
 
-    function normalizedCounter(value) {
-        return Number.isInteger(value) && value >= 0 ? value : 0;
+    function normalizedCounter(value, max = Number.MAX_SAFE_INTEGER) {
+        return Number.isSafeInteger(value) && value >= 0 && value <= max ? value : 0;
     }
 
     function humanPlayerIndices(gameStartPayload) {
@@ -82,7 +83,8 @@ function makeHostlessRestoreGateway(options = {}) {
             gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD]
         );
         canonical[HOSTLESS_RESTORE_COUNT_FIELD] = normalizedCounter(
-            gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD]
+            gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
+            HOSTLESS_RESTORE_LIMITS.maxAttempts
         );
         return canonical;
     }
@@ -123,7 +125,10 @@ function makeHostlessRestoreGateway(options = {}) {
             roomId,
             playerIndex,
             generation: normalizedCounter(gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD]),
-            attemptCount: normalizedCounter(gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD]),
+            attemptCount: normalizedCounter(
+                gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
+                HOSTLESS_RESTORE_LIMITS.maxAttempts
+            ),
         });
     }
 
@@ -208,7 +213,10 @@ function makeHostlessRestoreGateway(options = {}) {
         );
         if (!canonicalSnapshot) return failure('canonical-snapshot');
         const generation = normalizedCounter(gameStartPayload[HOSTLESS_RESTORE_GENERATION_FIELD]);
-        const attemptCount = normalizedCounter(gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD]);
+        const attemptCount = normalizedCounter(
+            gameStartPayload[HOSTLESS_RESTORE_COUNT_FIELD],
+            HOSTLESS_RESTORE_LIMITS.maxAttempts
+        );
         const completed = !!(mirror.game?.checkWinner && mirror.game.checkWinner());
         const canonicalPayload = {
             schemaVersion: HOSTLESS_RESTORE_SCHEMA_VERSION,

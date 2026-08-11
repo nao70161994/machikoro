@@ -176,8 +176,8 @@ function buildCanonicalStateRecord(roomId, room, options = {}) {
         actionLog: cloneJson(Array.isArray(room.actionLog) ? room.actionLog : []),
         acceptedClientActions: cloneJson(acceptedClientActionRefsFromRoom(room)),
         hostPlayerIndex: Number.isInteger(room.hostPlayerIndex) ? room.hostPlayerIndex : null,
-        hostEpoch: Number.isInteger(room.hostEpoch) ? room.hostEpoch : 0,
-        actionSeq: Number.isInteger(room.actionSeq) ? room.actionSeq : 0,
+        hostEpoch: Number.isSafeInteger(room.hostEpoch) && room.hostEpoch >= 0 ? room.hostEpoch : 0,
+        actionSeq: Number.isSafeInteger(room.actionSeq) && room.actionSeq >= 0 ? room.actionSeq : 0,
         lastTouchedAt: Number.isInteger(room.lastTouchedAt) ? room.lastTouchedAt : null,
     };
 }
@@ -188,8 +188,8 @@ function validateCanonicalStateRecord(record) {
     if (typeof record.roomId !== 'string' || !record.roomId.trim()) return { ok: false, reason: 'room-id' };
     if (!Array.isArray(record.actionLog)) return { ok: false, reason: 'action-log' };
     if (!Array.isArray(record.acceptedClientActions)) return { ok: false, reason: 'accepted-client-actions' };
-    if (!Number.isInteger(record.hostEpoch) || record.hostEpoch < 0) return { ok: false, reason: 'host-epoch' };
-    if (!Number.isInteger(record.actionSeq) || record.actionSeq < 0) return { ok: false, reason: 'action-seq' };
+    if (!Number.isSafeInteger(record.hostEpoch) || record.hostEpoch < 0) return { ok: false, reason: 'host-epoch' };
+    if (!Number.isSafeInteger(record.actionSeq) || record.actionSeq < 0) return { ok: false, reason: 'action-seq' };
     if (record.storeRevision != null &&
             (!Number.isSafeInteger(record.storeRevision) || record.storeRevision < 1)) {
         return { ok: false, reason: 'store-revision' };

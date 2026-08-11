@@ -47,6 +47,13 @@ runTest('restore validation preserves valid game-start payloads and legacy optio
         cpuSpeed: undefined,
         gameSchema: undefined,
     }), 2), true);
+    assert.strictEqual(validation.isValidGameStartPayload(validPayload({
+        cpuSpeed: 5000,
+        hostEpoch: Number.MAX_SAFE_INTEGER,
+        actionSeq: Number.MAX_SAFE_INTEGER,
+        hostlessRestoreGeneration: Number.MAX_SAFE_INTEGER,
+        hostlessRestoreCount: 3,
+    }), 2), true);
 });
 
 runTest('restore validation rejects malformed game-start fields by contract boundary', () => {
@@ -61,7 +68,16 @@ runTest('restore validation rejects malformed game-start fields by contract boun
         [validPayload({ enabledLandmarks: [] }), 2],
         [validPayload({ enabledLandmarks: ['Unknown'] }), 2],
         [validPayload({ cpuSpeed: -1 }), 2],
+        [validPayload({ cpuSpeed: 1.5 }), 2],
+        [validPayload({ cpuSpeed: 5001 }), 2],
         [validPayload({ cpuSpeed: Infinity }), 2],
+        [validPayload({ hostEpoch: -1 }), 2],
+        [validPayload({ hostEpoch: Number.MAX_SAFE_INTEGER + 1 }), 2],
+        [validPayload({ hostEpoch: Number.MAX_VALUE }), 2],
+        [validPayload({ actionSeq: -1 }), 2],
+        [validPayload({ actionSeq: Number.MAX_SAFE_INTEGER + 1 }), 2],
+        [validPayload({ hostlessRestoreGeneration: Number.MAX_VALUE }), 2],
+        [validPayload({ hostlessRestoreCount: 4 }), 2],
         [validPayload({ gameSchema: {} }), 2],
         [validPayload({ gameSchema: { actionVersion: 2, snapshotVersion: 1 } }), 2],
     ];

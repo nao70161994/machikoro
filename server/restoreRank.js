@@ -22,14 +22,20 @@ function isRestoreRankAction(entry) {
     return !!(entry && typeof entry.action === 'string' && RESTORE_RANK_ACTIONS.has(entry.action));
 }
 
+function nonnegativeSafeIntegerOrZero(value) {
+    return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+
 function restorePayloadRankDetails(gameStartPayload, stateSnapshot, actionLog) {
-    const hostEpoch = Number.isInteger(gameStartPayload?.hostEpoch) ? gameStartPayload.hostEpoch : 0;
-    const gameStartSeq = Number.isInteger(gameStartPayload?.actionSeq) ? gameStartPayload.actionSeq : 0;
-    const snapshotSeq = Number.isInteger(stateSnapshot?.actionSeq) ? stateSnapshot.actionSeq : 0;
+    const hostEpoch = nonnegativeSafeIntegerOrZero(gameStartPayload?.hostEpoch);
+    const gameStartSeq = nonnegativeSafeIntegerOrZero(gameStartPayload?.actionSeq);
+    const snapshotSeq = nonnegativeSafeIntegerOrZero(stateSnapshot?.actionSeq);
     const replayedActionCount = Array.isArray(actionLog)
         ? actionLog.filter(isRestoreRankAction).length
         : 0;
-    const logSeq = snapshotSeq + replayedActionCount;
+    const logSeq = Number.isSafeInteger(snapshotSeq + replayedActionCount)
+        ? snapshotSeq + replayedActionCount
+        : snapshotSeq;
     const actionSeq = Math.max(0, snapshotSeq, logSeq);
     const source = replayedActionCount > 0 && actionSeq === logSeq && logSeq > 0
         ? 'actionLog'
@@ -54,8 +60,10 @@ function restorePayloadRank(gameStartPayload, stateSnapshot, actionLog) {
 function isIncomingRestoreNewer(room, gameStartPayload, stateSnapshot, actionLog) {
     const currentRank = restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog);
     const current = {
-        hostEpoch: Number.isInteger(room.hostEpoch) ? room.hostEpoch : currentRank.hostEpoch,
-        actionSeq: Number.isInteger(room.actionSeq) ? room.actionSeq : currentRank.actionSeq,
+        hostEpoch: Number.isSafeInteger(room.hostEpoch) && room.hostEpoch >= 0
+            ? room.hostEpoch : currentRank.hostEpoch,
+        actionSeq: Number.isSafeInteger(room.actionSeq) && room.actionSeq >= 0
+            ? room.actionSeq : currentRank.actionSeq,
     };
     const incoming = restorePayloadRank(gameStartPayload, stateSnapshot, actionLog);
     return incoming.hostEpoch > current.hostEpoch ||
@@ -66,7 +74,8 @@ function canReplaceRestoredRoom(room, playerIndex, gameStartPayload, stateSnapsh
     if (!room || room.restored !== true) return false;
     if (!Number.isInteger(playerIndex) || gameStartPayload?.hostPlayerIndex !== playerIndex) return false;
     const currentRank = restorePayloadRank(room.gameStartPayload, room.stateSnapshot, room.actionLog);
-    const currentHostEpoch = Number.isInteger(room.hostEpoch) ? room.hostEpoch : currentRank.hostEpoch;
+    const currentHostEpoch = Number.isSafeInteger(room.hostEpoch) && room.hostEpoch >= 0
+        ? room.hostEpoch : currentRank.hostEpoch;
     const incomingRank = restorePayloadRank(gameStartPayload, stateSnapshot, actionLog);
     if (Number.isInteger(room.hostPlayerIndex) &&
             room.hostPlayerIndex !== playerIndex &&

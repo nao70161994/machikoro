@@ -454,15 +454,49 @@ runTest('restored room metadata planはhostless復元だけepochと世代を一�
         actionSeq: 9,
         approvedHostless: true,
         hostlessRestoreGeneration: 2,
-        hostlessRestoreCount: 3,
+        hostlessRestoreCount: 2,
     }), {
         hostPlayerIndex: 1,
         hostEpoch: 5,
         actionSeq: 9,
         applyHostlessMetadata: true,
         hostlessRestoreGeneration: 3,
-        hostlessRestoreCount: 4,
+        hostlessRestoreCount: 3,
     });
+});
+
+runTest('restored room metadata planはsafe integer上限まで厳密増加しoverflowを拒否する', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const plan = builder.planRestoredRoomMetadata({
+        playerIndex: 1,
+        hostEpoch: Number.MAX_SAFE_INTEGER - 1,
+        actionSeq: Number.MAX_SAFE_INTEGER,
+        approvedHostless: true,
+        hostlessRestoreGeneration: Number.MAX_SAFE_INTEGER - 1,
+        hostlessRestoreCount: 2,
+    });
+    assert.strictEqual(plan.hostEpoch, Number.MAX_SAFE_INTEGER);
+    assert.strictEqual(plan.hostlessRestoreGeneration, Number.MAX_SAFE_INTEGER);
+    assert.strictEqual(plan.hostlessRestoreCount, 3);
+    assert.strictEqual(plan.actionSeq, Number.MAX_SAFE_INTEGER);
+
+    for (const overrides of [
+        { hostEpoch: Number.MAX_SAFE_INTEGER },
+        { hostlessRestoreGeneration: Number.MAX_SAFE_INTEGER },
+    ]) {
+        assert.throws(() => builder.planRestoredRoomMetadata({
+            playerIndex: 1,
+            hostEpoch: 1,
+            actionSeq: 1,
+            approvedHostless: true,
+            hostlessRestoreGeneration: 1,
+            hostlessRestoreCount: 1,
+            ...overrides,
+        }), /cannot be incremented safely/);
+    }
 });
 
 runTest('restored room metadata適用は通常復元の代入順とpayload同一性を維持する', () => {

@@ -221,6 +221,8 @@ function makeMirrorReplay({
         }
         if (Object.prototype.hasOwnProperty.call(state, 'currentPlayerIndex') &&
             (!Number.isInteger(state.currentPlayerIndex) || state.currentPlayerIndex < 0 || state.currentPlayerIndex >= playerCount)) return false;
+        if (Object.prototype.hasOwnProperty.call(state, 'actionSeq') &&
+            (!Number.isSafeInteger(state.actionSeq) || state.actionSeq < 0)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'phase') &&
             !Object.values(gameRuntime.GAME_PHASES).includes(state.phase)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'log') && !isValidSnapshotLog(state.log)) return false;
