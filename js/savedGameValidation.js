@@ -121,6 +121,7 @@ function createValidator(options = {}) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
                 typeof state[field] !== 'boolean') return false;
         }
+        if (state.pendingIT === true && state.phase !== 'pending') return false;
         if (Object.prototype.hasOwnProperty.call(state, 'pendingTunaDice') &&
             state.pendingTunaDice !== null &&
             (!Array.isArray(state.pendingTunaDice) ||

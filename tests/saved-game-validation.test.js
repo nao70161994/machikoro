@@ -67,6 +67,7 @@ runTest('saved game validatorは既存の不正保存境界をfail closedにす�
         makeState({ phase: 'unknown' }),
         makeState({ pendingBusiness: 1, pendingActions: [] }),
         makeState({ pendingBusiness: 1, pendingActions: [{ field: 'pendingBusiness', action: 'resolveTV' }] }),
+        makeState({ phase: 'build', pendingIT: true }),
         makeState({ pendingTunaDice: [0, 7] }),
         makeState({ enabledCardsList: ['unknown'] }),
         makeState({ shopStock: { パン屋: 1 }, enabledCardsList: ['麦畑'] }),
