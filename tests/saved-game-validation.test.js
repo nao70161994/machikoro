@@ -141,6 +141,37 @@ runTest('saved game validatorは復元logを構造化entryの直近30件へ正�
     assert.deepStrictEqual(SavedGameValidation.normalizeSavedLog(null), []);
 });
 
+runTest('saved game validatorはruntimeへ渡す数値を安全な範囲に限定する', () => {
+    const validator = makeValidator();
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        lastDiceResult: 14,
+        lastDice1: 6,
+        lastDice2: 0,
+        turnCount: Number.MAX_SAFE_INTEGER,
+        cpuSpeed: 0,
+    })), true);
+    const unsafe = Number.MAX_SAFE_INTEGER + 1;
+    for (const state of [
+        makeState({ lastDiceResult: 15 }),
+        makeState({ lastDice1: 7 }),
+        makeState({ lastDice2: -1 }),
+        makeState({ turnCount: unsafe }),
+        makeState({ cpuSpeed: 'immediate' }),
+        makeState({ cpuSpeed: unsafe }),
+        makeState({ shopStock: { wheat_field: unsafe } }),
+        makeState({ players: [
+            { name: 'P1', coins: unsafe, cards: [], dormantIndices: [], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ] }),
+        makeState({ players: [
+            { name: 'P1', coins: 3, cards: [], dormantIndices: [], landmarks: {}, itVentureCoins: unsafe },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ] }),
+    ]) {
+        assert.strictEqual(validator.isValidSavedGameState(state), false);
+    }
+});
+
 runTest('saved game validatorは依存未注入時に未知cardとlandmarkを拒否する', () => {
     const validator = SavedGameValidation.createValidator();
     assert.strictEqual(validator.isValidSavedGameState(makeState()), false);

@@ -1525,6 +1525,32 @@ runTest('createRoomMirror は snapshot 内の小数コインを拒否する', ()
     assert.strictEqual(createRoomMirror(room), null);
 });
 
+runTest('createRoomMirror はsnapshotとundoのunsafe数値や不正diceを拒否する', () => {
+    const baseRoom = makeRoom();
+    const baseMirror = createRoomMirror(baseRoom);
+    const baseSnapshot = serializeMirrorState(baseMirror.game, baseMirror.shopStock);
+    const unsafe = Number.MAX_SAFE_INTEGER + 1;
+    const mutations = [
+        snapshot => { snapshot.players[0].coins = unsafe; },
+        snapshot => { snapshot.players[0].itVentureCoins = unsafe; },
+        snapshot => { snapshot.shopStock['麦畑'] = unsafe; },
+        snapshot => { snapshot.lastDiceResult = 15; },
+        snapshot => { snapshot.lastDice1 = 7; },
+        snapshot => { snapshot.turnCount = unsafe; },
+        snapshot => { snapshot.cpuSpeed = 'immediate'; },
+        snapshot => {
+            snapshot.undoState = makeUndoStateFromMirror(baseMirror.game, baseMirror.shopStock);
+            snapshot.undoState.playerCoins[0] = unsafe;
+        },
+    ];
+    for (const mutate of mutations) {
+        const room = makeRoom();
+        room.stateSnapshot = JSON.parse(JSON.stringify(baseSnapshot));
+        mutate(room.stateSnapshot);
+        assert.strictEqual(createRoomMirror(room), null);
+    }
+});
+
 runTest('createRoomMirror は旧snapshotの補完可能な欠落フィールドを許容する', () => {
     const room = makeRoom();
     const snapshot = makeSnapshot();

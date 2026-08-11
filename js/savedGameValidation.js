@@ -14,6 +14,10 @@ function isPlainObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isNonnegativeSafeInteger(value) {
+    return Number.isSafeInteger(value) && value >= 0;
+}
+
 function normalizeCpuSettings(state) {
     const defaults = state.players.map((_, index) => index === 0 ? null : { difficulty: 'normal' });
     if (!Array.isArray(state.cpuSettings)) return defaults;
@@ -78,7 +82,7 @@ function createValidator(options = {}) {
     function isValidSavedPlayerState(playerState) {
         if (!isPlainObject(playerState)) return false;
         if (typeof playerState.name !== 'string') return false;
-        if (!Number.isInteger(playerState.coins) || playerState.coins < 0) return false;
+        if (!isNonnegativeSafeInteger(playerState.coins)) return false;
         if (!Array.isArray(playerState.cards) || playerState.cards.some(name => !isKnownCardName(name))) return false;
         const dormantIndices = Array.isArray(playerState.dormantIndices) ? playerState.dormantIndices : [];
         if (new Set(dormantIndices).size !== dormantIndices.length ||
@@ -92,7 +96,7 @@ function createValidator(options = {}) {
             return false;
         }
         if (Object.prototype.hasOwnProperty.call(playerState, 'itVentureCoins') &&
-            (!Number.isInteger(playerState.itVentureCoins) || playerState.itVentureCoins < 0)) return false;
+            !isNonnegativeSafeInteger(playerState.itVentureCoins)) return false;
         if (Object.prototype.hasOwnProperty.call(playerState, 'hasYakusho') &&
             typeof playerState.hasYakusho !== 'boolean') return false;
         return true;
@@ -103,7 +107,7 @@ function createValidator(options = {}) {
         const enabled = Array.isArray(enabledCardsList) ? new Set(enabledCardsList) : null;
         for (const [key, count] of Object.entries(shopStock)) {
             const name = savedShopStockNameFromKey(key);
-            if (!name || !Number.isInteger(count) || count < 0) return false;
+            if (!name || !isNonnegativeSafeInteger(count)) return false;
             if (enabled && !enabled.has(name) && count !== 0) return false;
         }
         return true;
@@ -118,9 +122,15 @@ function createValidator(options = {}) {
         const phases = new Set(['roll', 'selectDice', 'rerollConfirm', 'harborChoice', 'pending', 'build']);
         if (typeof state.phase !== 'string' || !phases.has(state.phase)) return false;
         if (state.log != null && !Array.isArray(state.log)) return false;
-        for (const field of ['lastDiceResult', 'lastDice1', 'lastDice2', 'turnCount']) {
+        if (Object.prototype.hasOwnProperty.call(state, 'lastDiceResult') &&
+            (!isNonnegativeSafeInteger(state.lastDiceResult) || state.lastDiceResult > 14)) return false;
+        for (const field of ['lastDice1', 'lastDice2']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
-                (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+                (!isNonnegativeSafeInteger(state[field]) || state[field] > 6)) return false;
+        }
+        for (const field of ['turnCount', 'cpuSpeed']) {
+            if (Object.prototype.hasOwnProperty.call(state, field) &&
+                !isNonnegativeSafeInteger(state[field])) return false;
         }
         let pendingFieldTotal = 0;
         for (const field of ['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']) {

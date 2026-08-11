@@ -175,7 +175,7 @@ function makeMirrorReplay({
             if (Object.prototype.hasOwnProperty.call(playerState, 'name') &&
                 typeof playerState.name !== 'string') return false;
             if (Object.prototype.hasOwnProperty.call(playerState, 'coins') &&
-                (!Number.isInteger(playerState.coins) || playerState.coins < 0)) return false;
+                !isNonnegativeSafeInteger(playerState.coins)) return false;
             if (Object.prototype.hasOwnProperty.call(playerState, 'cards')) {
                 if (!Array.isArray(playerState.cards) ||
                     playerState.cards.some(name => !createCardByName(name))) return false;
@@ -198,14 +198,14 @@ function makeMirrorReplay({
                 }
             }
             if (Object.prototype.hasOwnProperty.call(playerState, 'itVentureCoins') &&
-                (!Number.isInteger(playerState.itVentureCoins) || playerState.itVentureCoins < 0)) return false;
+                !isNonnegativeSafeInteger(playerState.itVentureCoins)) return false;
             if (Object.prototype.hasOwnProperty.call(playerState, 'hasYakusho') &&
                 typeof playerState.hasYakusho !== 'boolean') return false;
         }
         if (Object.prototype.hasOwnProperty.call(state, 'shopStock')) {
             if (!isPlainObject(state.shopStock)) return false;
             for (const [key, count] of Object.entries(state.shopStock)) {
-                if (!gameRuntime.resolveCardStockName(key) || !Number.isInteger(count) || count < 0) return false;
+                if (!gameRuntime.resolveCardStockName(key) || !isNonnegativeSafeInteger(count)) return false;
             }
         }
         if (Object.prototype.hasOwnProperty.call(state, 'currentPlayerIndex') &&
@@ -213,9 +213,15 @@ function makeMirrorReplay({
         if (Object.prototype.hasOwnProperty.call(state, 'phase') &&
             !Object.values(gameRuntime.GAME_PHASES).includes(state.phase)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'log') && !isValidSnapshotLog(state.log)) return false;
-        for (const field of ['lastDiceResult', 'lastDice1', 'lastDice2', 'turnCount']) {
+        if (Object.prototype.hasOwnProperty.call(state, 'lastDiceResult') &&
+            (!isNonnegativeSafeInteger(state.lastDiceResult) || state.lastDiceResult > 14)) return false;
+        for (const field of ['lastDice1', 'lastDice2']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
-                (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+                (!isNonnegativeSafeInteger(state[field]) || state[field] > 6)) return false;
+        }
+        for (const field of ['turnCount', 'cpuSpeed']) {
+            if (Object.prototype.hasOwnProperty.call(state, field) &&
+                !isNonnegativeSafeInteger(state[field])) return false;
         }
         let pendingFieldTotal = 0;
         for (const field of ['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']) {
@@ -274,7 +280,7 @@ function makeMirrorReplay({
         if (!isPlainObject(state.shopStock)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'log') && !isValidSnapshotLog(state.log)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'builtThisTurn') && typeof state.builtThisTurn !== 'boolean') return false;
-        if (state.playerCoins.some(coins => !Number.isInteger(coins) || coins < 0)) return false;
+        if (state.playerCoins.some(coins => !isNonnegativeSafeInteger(coins))) return false;
         const landmarkNames = new Set(gameRuntime.Player.landmarkNames());
         for (let i = 0; i < playerCount; i++) {
             const cardNames = state.playerCardNames[i];
@@ -292,11 +298,11 @@ function makeMirrorReplay({
                 if (!landmarkNames.has(name) || typeof built !== 'boolean') return false;
             }
             const itVentureCoins = state.playerItVenture?.[i] ?? 0;
-            if (!Number.isInteger(itVentureCoins) || itVentureCoins < 0) return false;
+            if (!isNonnegativeSafeInteger(itVentureCoins)) return false;
             if (state.playerHasYakusho && typeof state.playerHasYakusho[i] !== 'boolean') return false;
         }
         return Object.entries(state.shopStock)
-            .every(([key, count]) => gameRuntime.resolveCardStockName(key) && Number.isInteger(count) && count >= 0);
+            .every(([key, count]) => gameRuntime.resolveCardStockName(key) && isNonnegativeSafeInteger(count));
     }
 
     function validateSnapshotAgainstRoomConfig(state, room, playerCount) {
@@ -368,6 +374,10 @@ function makeMirrorReplay({
 
     function hasDuplicateValues(values) {
         return new Set(values).size !== values.length;
+    }
+
+    function isNonnegativeSafeInteger(value) {
+        return Number.isSafeInteger(value) && value >= 0;
     }
 
     function isValidSnapshotLog(log) {
