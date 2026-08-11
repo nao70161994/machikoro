@@ -37,6 +37,8 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
     });
     assert.ok(human.includes('<div class="winner-title">Aliceの勝利！</div>'));
     assert.ok(human.includes('👤 人間プレイヤーが勝ちました　9ターン'));
+    assert.ok(human.includes('id="winnerRestartButton"'));
+    assert.ok(human.includes('data-ui-action="restartGame">タイトルへ戻る</button>'));
     assert.ok(human.endsWith('<div class="ad">ad</div></div>'));
     const cpu = UiWinner.buildWinnerScreenHtml({
         winner, players: [winner], isCpuWinner: true, turnCount: 10, winStreak: 2, escapeHtml,

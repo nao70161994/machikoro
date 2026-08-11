@@ -1872,6 +1872,17 @@ button:not(:disabled):active {
     padding: 4px 12px;
 }
 
+.winner-primary-action {
+    margin-top: 16px;
+    min-height: 44px;
+    background: linear-gradient(135deg, #f0c040, #e8a020);
+    border: none;
+    color: #0f0e17;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+}
+
 /* ===== アクティブプレイヤーアニメーション ===== */
 @keyframes activePulse {
     0%, 100% { box-shadow: 0 0 6px rgba(240,192,64,0.3); border-color: #f0c040; }

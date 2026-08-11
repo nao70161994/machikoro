@@ -234,7 +234,8 @@ function renderWinnerState(winner) {
     const firstPresentation = !winSoundPlayed;
     UiWinnerEffects.execute({ statusHtml, winnerStatusText, firstPresentation }, {
         setStatusHtml(html) {
-            document.getElementById("status").innerHTML = html;
+            const status = document.getElementById('status');
+            if (status.innerHTML !== html) status.innerHTML = html;
         },
         announceWinner(text) {
             const status = document.getElementById("turnStatusAnnouncer");
@@ -280,6 +281,10 @@ function renderWinnerState(winner) {
         renderTutorial,
         renderLog,
         renderPlayers,
+        focusWinnerAction() {
+            const action = document.getElementById('winnerRestartButton');
+            if (action && typeof action.focus === 'function') action.focus();
+        },
     });
 }
 

@@ -89,6 +89,12 @@ runTest('main UI event runtimeはBusiness Center不使用を専用effectへ渡�
     assert.deepStrictEqual(h.calls, [['preventDefault'], ['skipBusiness']]);
 });
 
+runTest('main UI event runtimeは勝利結果のCTAを既存restart effectへ渡す', () => {
+    const h = createHarness();
+    h.runtime.handleStaticClick(h.event({ uiAction: 'restartGame' }));
+    assert.deepStrictEqual(h.calls, [['preventDefault'], ['restartGame']]);
+});
+
 runTest('main UI event runtimeはfilter identityとクリック元を同じeffectへ渡す', () => {
     const h = createHarness();
     const event = h.event({ action: 'setCardFilter', cardFilter: 'red' });

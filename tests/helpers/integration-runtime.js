@@ -35,6 +35,7 @@ function loadIntegrationRuntime(options = {}) {
         titleScreen: makeElement(),
         gameScreen: makeElement(),
         status: makeElement(),
+        winnerRestartButton: makeElement(),
         coinChangeAnnouncer: makeElement(),
         tutorialBox: makeElement(),
         btnRoll: makeElement(),

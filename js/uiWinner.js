@@ -95,7 +95,7 @@ function buildWinnerScreenHtml(options = {}) {
     const streakHtml = buildWinStreakHtml(winner, options.winStreak, escapeHtml);
     const winnerType = options.isCpuWinner ? '🤖 CPU' : '👤 人間';
     const resultAdSlot = typeof options.resultAdSlot === 'string' ? options.resultAdSlot : '';
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div>${resultAdSlot}</div>`;
+    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div><button id="winnerRestartButton" class="winner-primary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;

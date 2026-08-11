@@ -34,6 +34,7 @@ runTest('winner effectsは初回のruntime/DOM副作用を既存順で一度実�
         'renderTutorial',
         'renderLog',
         'renderPlayers',
+        'focusWinnerAction',
     ]);
     assert.strictEqual(calls[0][1], '<winner>');
     assert.strictEqual(calls[2][1], 'ゲーム終了。Aliceの勝利。');
@@ -57,6 +58,7 @@ runTest('winner effectsは再描画時に一度限りの通知と統計だけを
         'renderLog',
         'renderPlayers',
     ]);
+    assert.strictEqual(calls.some(call => call[0] === 'focusWinnerAction'), false);
 });
 
 runTest('winner effectsは不完全なeffect配線をDOM変更前に拒否する', () => {

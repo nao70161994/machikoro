@@ -18,6 +18,7 @@ const UiWinnerEffects = (() => {
         'renderTutorial',
         'renderLog',
         'renderPlayers',
+        'focusWinnerAction',
     ]);
 
     const TERMINAL_CONTROLS = Object.freeze({
@@ -55,6 +56,7 @@ const UiWinnerEffects = (() => {
         effects.renderTutorial();
         effects.renderLog();
         effects.renderPlayers();
+        if (plan.firstPresentation === true) effects.focusWinnerAction();
     }
 
     return Object.freeze({ REQUIRED_EFFECTS, TERMINAL_CONTROLS, execute });
