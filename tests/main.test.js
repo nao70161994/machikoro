@@ -2344,9 +2344,26 @@ runTest('card detail button はカードに重ならない専用行へ配置す�
     const match = css.match(/\.card-detail-btn\s*{([\s\S]*?)}/);
     assert.ok(match);
     assert.ok(match[1].includes('width: auto;'));
-    assert.ok(match[1].includes('height: 24px;'));
+    assert.ok(match[1].includes('height: var(--touch-target-compact);'));
     assert.ok(!match[1].includes('position: absolute;'));
     assert.ok(css.includes('.card-meta-row {'));
+});
+
+runTest('頻用する補助操作は一覧密度に応じた共通tap領域を保つ', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const rule = selector => {
+        const match = css.match(new RegExp(`(?:^|\\n)\\${selector}\\s*{([\\s\\S]*?)}`));
+        assert.ok(match, `${selector} rule exists`);
+        return match[1];
+    };
+    assert.ok(css.includes('--touch-target-standard: 44px;'));
+    assert.ok(css.includes('--touch-target-compact: 36px;'));
+    assert.ok(css.includes('--touch-target-dense: 32px;'));
+    for (const selector of ['.card-filter-btn', '.tutorial-toggle-btn', '.stats-filter-btn', '.stats-player-btn']) {
+        assert.ok(rule(selector).includes('min-height: var(--touch-target-compact);'), `${selector} keeps compact target`);
+    }
+    assert.ok(rule('.rules-btn').includes('min-height: var(--touch-target-standard);'));
+    assert.ok(rule('.card-badge').includes('min-height: var(--touch-target-dense);'));
 });
 
 runTest('建設カードの判断情報は狭い画面でも読める文字サイズを保つ', () => {
@@ -2902,7 +2919,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(css.includes('.pwa-banner-btn {\n    width: auto;\n    min-width: 0;\n    flex: 1;'));
     assert.ok(css.includes('.pwa-banner-dismiss {\n    width: auto;\n    flex: 0 0 auto;'));
     assert.ok(css.includes('.player-cards {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 4px;'));
-    assert.ok(css.includes('.card-badge {\n    display: inline-block;\n    width: auto;\n    min-height: 24px;'));
+    assert.ok(css.includes('.card-badge {\n    display: inline-block;\n    width: auto;\n    min-height: var(--touch-target-dense);'));
     assert.ok(css.includes('.tutorial-toggle-btn {\n    width: auto;\n    flex: 0 0 auto;'));
     assert.ok(css.includes('.stats-player-btn {\n    width: auto;'));
     assert.ok(css.includes('.crash-message {\n    font-size: 12px;\n    color: #a7a9be;'));

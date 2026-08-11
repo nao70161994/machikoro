@@ -186,6 +186,56 @@ test('320pxから480pxで建設カードの判断情報が欠けずに収まる'
     }
 });
 
+test('320pxから480pxで頻用補助操作のtap領域が重ならずに収まる', async ({ page }) => {
+    await prepare(page);
+    const titleButtons = page.locator('.title-buttons-row .rules-btn');
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const titleTargets = await titleButtons.evaluateAll(elements => elements.map(element => {
+            const bounds = element.getBoundingClientRect();
+            return {
+                height: bounds.height,
+                left: bounds.left,
+                right: bounds.right,
+                viewportWidth: document.documentElement.clientWidth,
+            };
+        }));
+        expect(titleTargets.every(target => target.height >= 44)).toBe(true);
+        expect(titleTargets.every(target => target.left >= 0 && target.right <= target.viewportWidth)).toBe(true);
+        expect(titleTargets[0].right).toBeLessThanOrEqual(titleTargets[1].left);
+    }
+
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const targets = await page.locator([
+            '#buildMenu .card-filter-btn',
+            '#buildMenu .card-detail-btn',
+            '#players .card-badge',
+            '.tutorial-toggle-btn',
+        ].join(', ')).evaluateAll(elements => elements.map(element => {
+            const bounds = element.getBoundingClientRect();
+            return {
+                className: element.className,
+                height: bounds.height,
+                left: bounds.left,
+                right: bounds.right,
+                viewportWidth: document.documentElement.clientWidth,
+                contentFits: element.scrollWidth <= element.clientWidth && element.scrollHeight <= element.clientHeight,
+            };
+        }));
+        expect(targets.length).toBeGreaterThan(0);
+        expect(targets.every(target => target.left >= 0 && target.right <= target.viewportWidth)).toBe(true);
+        expect(targets.every(target => target.contentFits)).toBe(true);
+        expect(targets.filter(target => target.className.includes('card-badge'))
+            .every(target => target.height >= 32)).toBe(true);
+        expect(targets.filter(target => !target.className.includes('card-badge'))
+            .every(target => target.height >= 36)).toBe(true);
+    }
+});
+
 test('mobile WebKitの2クライアントがonline開始後に再読込復帰できる', async ({ browser, baseURL }) => {
     const hostContext = await browser.newContext({
         ...MOBILE_CONTEXT,
