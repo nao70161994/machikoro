@@ -42,13 +42,21 @@ const UiPlayerDisplay = (() => {
         };
     }
 
+    function buildLandmarkBadgeHtml(name, built, options = {}) {
+        const stateLabel = built ? '建設済み' : '未建設';
+        const safeLabel = options.escapeHtml(`${name}、${stateLabel}`);
+        const safeEmoji = options.escapeHtml(options.getLandmarkEmoji(name));
+        const safeName = options.escapeHtml(name);
+        return `<span class="landmark-badge ${built ? 'built' : ''}" aria-label="${safeLabel}">${safeEmoji} ${safeName}</span>`;
+    }
+
     function buildPlayerHtml(player, index, options = {}) {
         const isActive = index === options.currentPlayerIndex;
         const setting = options.settings[index];
         const cpuLabel = setting.type === 'cpu' ? `🤖${difficultyLabel(setting.difficulty)}` : '👤';
         const landmarks = Object.entries(player.landmarks)
             .filter(([name]) => options.enabledLandmarks.has(name))
-            .map(([name, built]) => `<span class="landmark-badge ${built ? 'built' : ''}">${options.getLandmarkEmoji(name)} ${name}</span>`)
+            .map(([name, built]) => buildLandmarkBadgeHtml(name, built, options))
             .join('');
         const cards = {};
         for (const card of player.cards) {
@@ -88,6 +96,7 @@ const UiPlayerDisplay = (() => {
         difficultyLabel,
         normalizeCpuDifficulty,
         resolvePlayerSetting,
+        buildLandmarkBadgeHtml,
         buildPlayerHtml,
         buildPlayersHtml,
         buildCoinAnimationView,

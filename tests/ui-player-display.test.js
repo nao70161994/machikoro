@@ -137,12 +137,13 @@ const html = UiPlayerDisplay.buildPlayersHtml(players, {
     enabledLandmarks: new Set(['駅']),
     getLandmarkEmoji: name => name === '駅' ? '🚉' : '?',
     compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
-    escapeHtml: value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
     loanEffect: 'loan',
 });
 assert(html.includes('<span class="player-icon">👤</span>'));
 assert(html.includes('<span class="player-name">&lt;Alice&gt;</span>'));
-assert(html.includes('<span class="landmark-badge built">🚉 駅</span>'));
+assert(html.includes('<span class="landmark-badge built" aria-label="駅、建設済み">🚉 駅</span>'));
+assert(html.includes('<span class="landmark-badge " aria-label="駅、未建設">🚉 駅</span>'));
 assert(!html.includes('空港'));
 assert(html.includes('パン屋×2（休2）'));
 assert(html.includes('<span class="it-badge">💻2</span>'));
@@ -150,5 +151,13 @@ assert(html.includes('<span class="loan-badge">💳×1</span>'));
 assert(html.includes('<div class="player-box active">'));
 assert(html.includes('<span class="player-icon">🤖強</span>'));
 assert(html.includes('<span class="player-name">▶ CPU</span>'));
+
+const escapedLandmark = UiPlayerDisplay.buildLandmarkBadgeHtml('<駅">', false, {
+    getLandmarkEmoji: () => '<🚉>',
+    escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+});
+assert(escapedLandmark.includes('aria-label="&lt;駅&quot;&gt;、未建設"'));
+assert(escapedLandmark.includes('&lt;🚉&gt; &lt;駅&quot;&gt;'));
+assert(!escapedLandmark.includes('<駅'));
 
 console.log('ui player display tests passed');
