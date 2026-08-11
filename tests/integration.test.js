@@ -810,6 +810,41 @@ runTest('integration: human dice choiceは初回focusし結果を一度だけ通
     );
 });
 
+runTest('integration: 駅→電波塔→港のchoice identity変化ごとに新しい操作へfocusする', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    let focusCount = 0;
+    rt.__test.elements.diceChoose.querySelector = () => ({
+        focus() { focusCount++; },
+    });
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.SELECT_DICE;
+    rt.render();
+    assert.strictEqual(focusCount, 1);
+    rt.render();
+    assert.strictEqual(focusCount, 1);
+
+    game.lastDiceResult = 10;
+    game.phase = rt.GAME_PHASES.REROLL_CONFIRM;
+    rt.render();
+    assert.strictEqual(focusCount, 2);
+    rt.render();
+    assert.strictEqual(focusCount, 2);
+
+    game.phase = rt.GAME_PHASES.HARBOR_CHOICE;
+    rt.render();
+    assert.strictEqual(focusCount, 3);
+    rt.render();
+    assert.strictEqual(focusCount, 3);
+});
+
 runTest('integration: local pending save復帰は可視の解決操作へfocusを戻す', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

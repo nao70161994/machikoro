@@ -1,28 +1,52 @@
 'use strict';
 
 const UiDiceChoice = (() => {
-    function focusTransition(previousVisible, nextVisible, focusEligible) {
+    function focusTransition(previousVisible, nextVisible, focusEligible,
+            previousIdentity = '', nextIdentity = '') {
         const visible = nextVisible === true;
+        const identity = visible ? String(nextIdentity || '') : '';
+        const identityChanged = previousVisible === true && visible &&
+            String(previousIdentity || '') !== identity;
         return Object.freeze({
-            focusInitial: focusEligible === true && previousVisible !== true && visible,
+            focusInitial: focusEligible === true && visible &&
+                (previousVisible !== true || identityChanged),
+            identity,
             visible,
         });
     }
 
-    function createFocusController(initialVisible = false) {
+    function createFocusController(initialVisible = false, initialIdentity = '') {
         let visible = initialVisible === true;
+        let identity = visible ? String(initialIdentity || '') : '';
         return Object.freeze({
+            identity() { return identity; },
             isVisible() { return visible; },
-            reset(nextVisible = false) {
+            reset(nextVisible = false, nextIdentity = '') {
                 visible = nextVisible === true;
+                identity = visible ? String(nextIdentity || '') : '';
                 return visible;
             },
-            transition(nextVisible, focusEligible) {
-                const plan = focusTransition(visible, nextVisible, focusEligible);
+            transition(nextVisible, focusEligible, nextIdentity = '') {
+                const plan = focusTransition(
+                    visible,
+                    nextVisible,
+                    focusEligible,
+                    identity,
+                    nextIdentity
+                );
                 visible = plan.visible;
+                identity = plan.identity;
                 return plan;
             },
         });
+    }
+
+    function choiceIdentity(options = {}) {
+        const phases = options.phases || {};
+        if (options.phase === phases.SELECT_DICE) return 'selectDice';
+        if (options.phase === phases.REROLL_CONFIRM) return 'rerollConfirm';
+        if (options.phase === phases.HARBOR_CHOICE) return 'harborChoice';
+        return '';
     }
 
     function applyFocusPlan(plan, content) {
@@ -57,7 +81,13 @@ const UiDiceChoice = (() => {
         return '';
     }
 
-    return Object.freeze({ applyFocusPlan, buildHtml, createFocusController, focusTransition });
+    return Object.freeze({
+        applyFocusPlan,
+        buildHtml,
+        choiceIdentity,
+        createFocusController,
+        focusTransition,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiDiceChoice;

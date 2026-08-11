@@ -27,6 +27,7 @@ runTest('dice choice focus controllerはeligibleなhidden→visibleだけ初回f
     const controller = UiDiceChoice.createFocusController();
     assert.deepStrictEqual(controller.transition(true, true), {
         focusInitial: true,
+        identity: '',
         visible: true,
     });
     assert.strictEqual(controller.transition(true, true).focusInitial, false);
@@ -43,4 +44,18 @@ runTest('dice choice focus controllerはeligibleなhidden→visibleだけ初回f
         { querySelector: () => target }
     ), true);
     assert.strictEqual(focusCount, 1);
+});
+
+runTest('dice choice focus controllerはidentity変化だけを新しい選択としてfocusする', () => {
+    const controller = UiDiceChoice.createFocusController();
+    assert.strictEqual(controller.transition(true, true, 'selectDice').focusInitial, true);
+    assert.strictEqual(controller.transition(true, true, 'selectDice').focusInitial, false);
+    assert.strictEqual(controller.transition(true, true, 'rerollConfirm').focusInitial, true);
+    assert.strictEqual(controller.transition(true, false, 'harborChoice').focusInitial, false);
+    assert.strictEqual(controller.identity(), 'harborChoice');
+    assert.strictEqual(controller.transition(true, true, 'harborChoice').focusInitial, false);
+    assert.strictEqual(UiDiceChoice.choiceIdentity({
+        phase: 'harbor',
+        phases: { HARBOR_CHOICE: 'harbor' },
+    }), 'harborChoice');
 });

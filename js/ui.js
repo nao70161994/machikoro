@@ -452,12 +452,13 @@ function uiActionDisabledAttr(action) {
     return canShowUiAction(action) ? '' : ' disabled';
 }
 
-function setDiceChooseContent(el, html) {
+function setDiceChooseContent(el, html, identity = '') {
     if (!el) return;
     const nextHtml = html || "";
     const focusPlan = diceChoiceFocusController.transition(
         !!nextHtml,
-        diceChoiceFocusEligible()
+        diceChoiceFocusEligible(),
+        nextHtml ? identity : ''
     );
     if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
     if (el.style) el.style.display = nextHtml ? "block" : "none";
@@ -482,14 +483,15 @@ function renderDiceChoose() {
     if (!el) return;
     if (!isCurrentHumanUiTurn()) { setDiceChooseContent(el, ""); return; }
     const currentGame = uiGameRuntimeSnapshot().game;
-    const html = UiDiceChoice.buildHtml({
+    const options = {
         phase: currentGame.phase,
         lastDiceResult: currentGame.lastDiceResult,
         allowedActions: currentUiAllowedActions(),
         disabledAttr: uiActionDisabledAttr,
         phases: GAME_PHASES,
-    });
-    setDiceChooseContent(el, html);
+    };
+    const html = UiDiceChoice.buildHtml(options);
+    setDiceChooseContent(el, html, UiDiceChoice.choiceIdentity(options));
 }
 
 function shouldShowPendingForCurrentPlayer() {

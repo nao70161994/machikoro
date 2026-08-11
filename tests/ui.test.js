@@ -964,7 +964,7 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="resolveHarbor"'));
     assert.ok(!elements.diceChoose.innerHTML.includes(' disabled'));
     assert.strictEqual(elements.diceChoose.style.display, 'block');
-    assert.strictEqual(focusCount, 2);
+    assert.strictEqual(focusCount, 3);
 });
 
 runTest('renderDiceChoose はCPU・online replay・相手手番でfocusを奪わない', () => {
