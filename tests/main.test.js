@@ -2386,6 +2386,20 @@ runTest('統計結果は名前・勝率・対戦数を対応付けるlistとし�
     assert.ok(statsView.includes('class="stats-bar-wrap" aria-hidden="true"'));
 });
 
+runTest('統計の長い名称は数値列を残して最大2行で表示する', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const nameRule = css.match(/\.stats-card-name\s*{([\s\S]*?)}/);
+    const barRule = css.match(/\.stats-bar-wrap\s*{([\s\S]*?)}/);
+    assert.ok(nameRule);
+    assert.ok(nameRule[1].includes('width: clamp(80px, 28vw, 120px);'));
+    assert.ok(nameRule[1].includes('-webkit-line-clamp: 2;'));
+    assert.ok(nameRule[1].includes('line-clamp: 2;'));
+    assert.ok(nameRule[1].includes('overflow-wrap: anywhere;'));
+    assert.ok(nameRule[1].includes('white-space: normal;'));
+    assert.ok(barRule);
+    assert.ok(barRule[1].includes('min-width: 12px;'));
+});
+
 runTest('操作ガイドは過剰に割り込まない名前付きregionとして宣言されている', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const match = html.match(/<div id="tutorialBox"[^>]*>/);

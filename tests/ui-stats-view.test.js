@@ -83,6 +83,28 @@ runTest('stats viewは順位・visible値を保ったlistをpureに生成する'
     assert.ok(landmarks.includes('aria-label="第2項目、港、勝率25%、4戦"'));
 });
 
+runTest('stats viewは長い実名称と999戦のaria全文・visible値を保つ', () => {
+    const bucket = makeStats().all;
+    bucket.cardStats = {
+        コンベンションセンター: { winWith: 999, loseWith: 0 },
+    };
+    bucket.landmarkStats = {
+        ショッピングモール: { winWith: 999, loseWith: 0 },
+    };
+
+    const cards = UiStatsView.buildCardRowsHtml(bucket, escapeHtml);
+    assert.ok(cards.includes('aria-label="第1位、コンベンションセンター、勝率100%、999戦"'));
+    assert.ok(cards.includes('<span class="stats-card-name">コンベンションセンター</span>'));
+    assert.ok(cards.includes('<span class="stats-pct">100%</span>'));
+    assert.ok(cards.includes('<span class="stats-count">999戦</span>'));
+
+    const landmarks = UiStatsView.buildLandmarkRowsHtml(bucket, escapeHtml);
+    assert.ok(landmarks.includes('aria-label="第1項目、ショッピングモール、勝率100%、999戦"'));
+    assert.ok(landmarks.includes('<span class="stats-card-name">ショッピングモール</span>'));
+    assert.ok(landmarks.includes('<span class="stats-pct">100%</span>'));
+    assert.ok(landmarks.includes('<span class="stats-count">999戦</span>'));
+});
+
 runTest('stats viewはempty stateをlistとして宣言しない', () => {
     const emptyBucket = makeStats().all;
     const cards = UiStatsView.buildCardRowsHtml(emptyBucket, escapeHtml);

@@ -282,6 +282,71 @@ test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達
     }
 });
 
+test('320pxから480pxで統計の長い実名称と999戦が2行以内に収まる', async ({ page }) => {
+    await prepare(page);
+    await page.evaluate(() => {
+        const bucket = {
+            totalGames: 999,
+            wins: 999,
+            totalTurns: 999,
+            cardStats: { 'コンベンションセンター': { winWith: 999, loseWith: 0 } },
+            landmarkStats: { 'ショッピングモール': { winWith: 999, loseWith: 0 } },
+        };
+        document.getElementById('tabContentStats').innerHTML = UiStatsView.buildStatsHtml({
+            all: bucket,
+            local: bucket,
+            online: bucket,
+            players: {},
+            cpuTypes: {},
+        }, 'all', '', value => String(value));
+        document.getElementById('tabContentLocal').style.display = 'none';
+        document.getElementById('tabContentStats').style.display = 'flex';
+    });
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const layouts = await page.locator('.stats-card-row').evaluateAll(rows => rows.map(row => {
+            const name = row.querySelector('.stats-card-name');
+            const bar = row.querySelector('.stats-bar-wrap');
+            const pct = row.querySelector('.stats-pct');
+            const count = row.querySelector('.stats-count');
+            const bounds = element => element.getBoundingClientRect();
+            const rowBounds = bounds(row);
+            const nameBounds = bounds(name);
+            const barBounds = bounds(bar);
+            const pctBounds = bounds(pct);
+            const countBounds = bounds(count);
+            const lineHeight = parseFloat(getComputedStyle(name).lineHeight);
+            return {
+                name: name.textContent,
+                ariaLabel: row.getAttribute('aria-label'),
+                lineCount: nameBounds.height / lineHeight,
+                nameClipped: name.scrollHeight > name.clientHeight || name.scrollWidth > name.clientWidth,
+                pct: pct.textContent,
+                count: count.textContent,
+                barWidth: barBounds.width,
+                ordered: nameBounds.right <= barBounds.left &&
+                    barBounds.right <= pctBounds.left && pctBounds.right <= countBounds.left,
+                contained: rowBounds.left >= 0 && rowBounds.right <= document.documentElement.clientWidth &&
+                    countBounds.right <= rowBounds.right,
+                rowOverflow: row.scrollWidth - row.clientWidth,
+                pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            };
+        }));
+        expect(layouts).toHaveLength(2);
+        expect(layouts.map(layout => layout.name)).toEqual([
+            'コンベンションセンター',
+            'ショッピングモール',
+        ]);
+        expect(layouts.every(layout => layout.ariaLabel.includes(layout.name))).toBe(true);
+        expect(layouts.every(layout => layout.pct === '100%' && layout.count === '999戦')).toBe(true);
+        expect(layouts.every(layout => layout.lineCount <= 2.01 && !layout.nameClipped)).toBe(true);
+        expect(layouts.every(layout => layout.barWidth >= 12)).toBe(true);
+        expect(layouts.every(layout => layout.ordered && layout.contained)).toBe(true);
+        expect(layouts.every(layout => layout.rowOverflow <= 0 && layout.pageOverflow <= 0)).toBe(true);
+    }
+});
+
 test('320pxから480pxで長い手番名と終盤player情報が枠内に収まる', async ({ page }) => {
     await prepare(page);
     await page.evaluate(() => {
