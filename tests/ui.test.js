@@ -319,15 +319,22 @@ runTest('tutorial control wrapperはpure viewをcheckbox・button・levelへ反�
     assert.strictEqual(elements.btnTutorialLevel.textContent, '🧠 上級者');
     assert.strictEqual(elements.btnTutorialToggle.classList.contains('active'), true);
     assert.strictEqual(elements.btnTutorialLevel.classList.contains('active'), true);
+    assert.strictEqual(elements.btnTutorialToggle.getAttribute('aria-pressed'), 'true');
+    assert.strictEqual(elements.btnTutorialLevel.getAttribute('aria-label'), 'チュートリアルの詳しさ、現在 上級者向け');
 
     context.onToggleTutorial(false);
-    context.onChangeTutorialLevel('invalid');
     assert.strictEqual(elements.tutorialEnabled.checked, false);
-    assert.strictEqual(elements.tutorialLevel.value, 'beginner');
+    assert.strictEqual(elements.tutorialLevel.value, 'advanced');
     assert.strictEqual(elements.btnTutorialToggle.textContent, '💡 ガイド OFF');
-    assert.strictEqual(elements.btnTutorialLevel.textContent, '🌱 初心者');
+    assert.strictEqual(elements.btnTutorialLevel.textContent, '🧠 上級者');
     assert.strictEqual(elements.btnTutorialToggle.classList.contains('active'), false);
     assert.strictEqual(elements.btnTutorialLevel.classList.contains('active'), false);
+    assert.strictEqual(elements.btnTutorialToggle.getAttribute('aria-pressed'), 'false');
+    assert.strictEqual(elements.btnTutorialLevel.getAttribute('aria-label'), 'チュートリアルの詳しさ、現在 上級者向け');
+
+    context.onChangeTutorialLevel('invalid');
+    assert.strictEqual(elements.tutorialLevel.value, 'beginner');
+    assert.strictEqual(elements.btnTutorialLevel.getAttribute('aria-label'), 'チュートリアルの詳しさ、現在 初心者向け');
 });
 
 runTest('turn announcer wrapperはpure viewと既存timer/DOM順を維持する', () => {

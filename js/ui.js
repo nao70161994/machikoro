@@ -154,11 +154,13 @@ function syncTutorialControls() {
     if (btn) {
         btn.textContent = view.toggleText;
         btn.classList.toggle("active", view.active);
+        btn.setAttribute("aria-pressed", view.toggleAriaPressed);
     }
     const levelBtn = document.getElementById("btnTutorialLevel");
     if (levelBtn) {
         levelBtn.textContent = view.levelText;
         levelBtn.classList.toggle("active", view.active);
+        levelBtn.setAttribute("aria-label", view.levelAriaLabel);
     }
 }
 

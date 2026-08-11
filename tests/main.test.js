@@ -2341,6 +2341,15 @@ runTest('onlineStatus はライブリージョンとして宣言されている'
     assert.ok(html.includes('id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
 });
 
+runTest('操作ガイドは過剰に割り込まない名前付きregionとして宣言されている', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const match = html.match(/<div id="tutorialBox"[^>]*>/);
+    assert.ok(match);
+    assert.ok(match[0].includes('role="region"'));
+    assert.ok(match[0].includes('aria-label="操作ガイド"'));
+    assert.ok(!match[0].includes('aria-live'));
+});
+
 runTest('card detail button はカードに重ならない専用行へ配置する', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const match = css.match(/\.card-detail-btn\s*{([\s\S]*?)}/);

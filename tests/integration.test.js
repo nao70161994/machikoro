@@ -16,6 +16,20 @@ function hideAllTestModals(rt) {
     if (rt.window) rt.window.__machikoroConfirmModalOpen = false;
 }
 
+runTest('integration: tutorialをOFFにしても詳しさと支援技術向け状態を保つ', () => {
+    const rt = loadIntegrationRuntime();
+    rt.onChangeTutorialLevel('advanced');
+    rt.onToggleTutorial(true);
+    rt.onToggleTutorial(false);
+
+    assert.strictEqual(rt.__test.elements.tutorialLevel.value, 'advanced');
+    assert.strictEqual(rt.__test.elements.btnTutorialToggle.getAttribute('aria-pressed'), 'false');
+    assert.strictEqual(
+        rt.__test.elements.btnTutorialLevel.getAttribute('aria-label'),
+        'チュートリアルの詳しさ、現在 上級者向け'
+    );
+});
+
 runTest('integration: ローカル開始→勝利→統計タブ表示まで連携する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
