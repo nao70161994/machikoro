@@ -118,7 +118,12 @@ function loadStorageRuntime(options = {}) {
         winSoundPlayed: false,
         undoState: null,
         CARD_NAME_BY_ID: { wheat_field: '麦畑', bakery: 'パン屋' },
-        createCardByName(name) { return ['麦畑', 'パン屋'].includes(name) ? { name } : null; },
+        CARD_CATEGORIES: { NORMAL: 'normal', MAJOR: 'major' },
+        createCardByName(name) {
+            if (['麦畑', 'パン屋'].includes(name)) return { name, category: 'normal' };
+            if (name === 'スタジアム') return { name, category: 'major' };
+            return null;
+        },
         render() { context.renderCount = (context.renderCount || 0) + 1; },
         scheduleCPU() { context.scheduleCount = (context.scheduleCount || 0) + 1; },
         cancelAutoSkip() {},
@@ -848,6 +853,21 @@ runTest('storage resumeGame は重複休業indexを含む保存データを破�
 
     assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
+runTest('storage resumeGame は大施設の休業indexをhydrate前に拒否する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        players: [
+            { name: 'P1', coins: 3, cards: ['スタジアム'], dormantIndices: [0], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    assert.strictEqual(rt.resumeGame(), false);
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.strictEqual(rt.__test.getGame(), null);
 });
 
 runTest('storage resumeGame は pendingActions の field/action 不一致を破棄する', () => {

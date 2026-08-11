@@ -35,6 +35,9 @@ function createValidator(options = {}) {
     const isKnownLandmarkName = typeof options.isKnownLandmarkName === 'function'
         ? options.isKnownLandmarkName
         : (() => false);
+    const isMajorCardName = typeof options.isMajorCardName === 'function'
+        ? options.isMajorCardName
+        : (() => false);
     const cardNameById = options.cardNameById && typeof options.cardNameById === 'object'
         ? options.cardNameById
         : Object.freeze({});
@@ -68,7 +71,8 @@ function createValidator(options = {}) {
         if (!Array.isArray(playerState.cards) || playerState.cards.some(name => !isKnownCardName(name))) return false;
         const dormantIndices = Array.isArray(playerState.dormantIndices) ? playerState.dormantIndices : [];
         if (new Set(dormantIndices).size !== dormantIndices.length ||
-            dormantIndices.some(idx => !Number.isInteger(idx) || idx < 0 || idx >= playerState.cards.length)) return false;
+            dormantIndices.some(idx => !Number.isInteger(idx) || idx < 0 ||
+                idx >= playerState.cards.length || isMajorCardName(playerState.cards[idx]))) return false;
         if (isPlainObject(playerState.landmarks)) {
             for (const [name, built] of Object.entries(playerState.landmarks)) {
                 if (!isKnownLandmarkName(name) || typeof built !== 'boolean') return false;

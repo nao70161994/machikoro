@@ -6,8 +6,9 @@ const { runTest } = require('./helpers/test-utils');
 
 function makeValidator() {
     return SavedGameValidation.createValidator({
-        isKnownCardName: name => ['麦畑', 'パン屋'].includes(name),
+        isKnownCardName: name => ['麦畑', 'パン屋', 'スタジアム'].includes(name),
         isKnownLandmarkName: name => ['駅', 'ショッピングモール'].includes(name),
+        isMajorCardName: name => name === 'スタジアム',
         cardNameById: { wheat_field: '麦畑', bakery: 'パン屋' },
     });
 }
@@ -77,6 +78,10 @@ runTest('saved game validatorは既存の不正保存境界をfail closedにす�
         ] }),
         makeState({ players: [
             { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [0, 0], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ] }),
+        makeState({ players: [
+            { name: 'P1', coins: 3, cards: ['スタジアム'], dormantIndices: [0], landmarks: {} },
             { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
         ] }),
     ];

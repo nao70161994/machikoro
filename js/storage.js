@@ -473,6 +473,7 @@ function getSavedGameValidator() {
     savedGameValidator = SavedGameValidation.createValidator({
         isKnownCardName,
         isKnownLandmarkName,
+        isMajorCardName,
         cardNameById: typeof CARD_NAME_BY_ID !== 'undefined' ? CARD_NAME_BY_ID : {},
     });
     return savedGameValidator;
@@ -484,6 +485,12 @@ function normalizeSavedCpuSettings(state) {
 
 function isKnownCardName(name) {
     return !!createCardByName(name);
+}
+
+function isMajorCardName(name) {
+    const card = createCardByName(name);
+    return !!card && typeof CARD_CATEGORIES !== 'undefined' &&
+        card.category === CARD_CATEGORIES.MAJOR;
 }
 
 function savedShopStockNameFromKey(key) {
