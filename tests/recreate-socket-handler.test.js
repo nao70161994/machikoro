@@ -45,7 +45,7 @@ runTest('recreate socket handlerはv1をdecodeして既存restore順を維持す
     ]);
 });
 
-runTest('recreate socket handlerはlegacyを受理しdecode失敗を副作用前に拒否する', () => {
+runTest('recreate socket handlerはlegacyを受理しdecode失敗を後続復元前に拒否する', () => {
     const rt = runtime();
     const legacy = { roomId: 'ABC123' };
     rt.handlers.recreateRoom(legacy);
@@ -63,6 +63,11 @@ runTest('recreate socket handlerはlegacyを受理しdecode失敗を副作用前
     ]);
     rejected.handlers.recreateRoom({ schemaVersion: 1, recreateRoom: legacy });
     assert.deepStrictEqual(rejected.calls.slice(2), [
+        ['error', '復元処理を続けて実行できません'],
+    ]);
+    rejected.advance(1000);
+    rejected.handlers.recreateRoom({ schemaVersion: 1, recreateRoom: legacy });
+    assert.deepStrictEqual(rejected.calls.slice(3), [
         ['preflight', { schemaVersion: 1, recreateRoom: legacy }],
         ['handle', legacy],
         ['restored', 'ABC123'],
@@ -90,4 +95,40 @@ runTest('recreate socket handlerはraw上限をdecode前に拒否して連投を
     oversized.advance(1000);
     oversized.handlers.recreateRoom({ roomId: 'ABC123' });
     assert.strictEqual(decoded, 0);
+});
+
+runTest('recreate socket handlerはraw・decode・handle拒否を同じcooldownで抑止する', () => {
+    const cases = [
+        {
+            name: 'raw',
+            overrides: { validateRawPayload: () => false },
+        },
+        {
+            name: 'decode',
+            overrides: { decodePayload: () => ({ ok: false }) },
+        },
+        {
+            name: 'handle',
+            overrides: { handleRecreateRoom: () => ({ ok: false }) },
+        },
+    ];
+    for (const testCase of cases) {
+        let handled = 0;
+        const rt = runtime(Object.assign({
+            handleRecreateRoom() {
+                handled++;
+                return { ok: false };
+            },
+        }, testCase.overrides));
+        rt.handlers.recreateRoom({ roomId: 'ABC123' });
+        const callsAfterFirst = rt.calls.length;
+        rt.handlers.recreateRoom({ roomId: 'ABC123' });
+        assert.deepStrictEqual(
+            rt.calls.slice(callsAfterFirst),
+            [['error', '復元処理を続けて実行できません']],
+            testCase.name
+        );
+        assert.ok(Number.isFinite(rt.socket.lastRecreateRoomAt), testCase.name);
+        assert.ok(handled <= 1, testCase.name);
+    }
 });
