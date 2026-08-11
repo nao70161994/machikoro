@@ -1,4 +1,5 @@
 const assert = require('assert');
+global.OnlineRestoreMetadata = require('../js/onlineRestoreMetadata');
 const { OnlineRestoreRank } = require('../js/onlineRestoreRank');
 const { runTest } = require('./helpers/test-utils');
 
@@ -43,6 +44,32 @@ runTest('online restore rank はhostEpochとreplay可能進捗だけで順位を
     assert.deepStrictEqual(OnlineRestoreRank.build(null, null, null, ACTIONS), {
         hostEpoch: 0,
         actionSeq: 0,
+    });
+});
+
+runTest('online restore rank はmetadataをnonnegative safe integerへ制限する', () => {
+    const invalidValues = [-1, Number.MAX_SAFE_INTEGER + 1, Number.MAX_VALUE];
+    for (const value of invalidValues) {
+        assert.strictEqual(OnlineRestoreRank.serverActionSeq(
+            { actionSeq: value },
+            { actionSeq: value },
+            [{ seq: value }]
+        ), 0);
+        assert.deepStrictEqual(OnlineRestoreRank.build(
+            { hostEpoch: value },
+            { actionSeq: value },
+            [],
+            ACTIONS
+        ), { hostEpoch: 0, actionSeq: 0 });
+    }
+    assert.deepStrictEqual(OnlineRestoreRank.build(
+        { hostEpoch: Number.MAX_SAFE_INTEGER },
+        { actionSeq: Number.MAX_SAFE_INTEGER },
+        [{ action: 'nextTurn' }],
+        ACTIONS
+    ), {
+        hostEpoch: Number.MAX_SAFE_INTEGER,
+        actionSeq: Number.MAX_SAFE_INTEGER,
     });
 });
 

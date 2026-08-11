@@ -79,6 +79,7 @@ const STATIC_ASSETS = [
   '/js/audio.js',
   '/js/clientStorage.js',
   '/js/onlineStorage.js',
+  '/js/onlineRestoreMetadata.js',
   '/js/onlinePayload.js',
   '/js/onlineRestoreQueueState.js',
   '/js/onlineRestoreLifecycleState.js',

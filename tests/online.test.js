@@ -154,6 +154,7 @@ function loadOnlineRuntime(options = {}) {
     // client / online storage facade と online.js をロード
     loadScript(context, 'js/clientStorage.js');
     loadScript(context, 'js/onlineStorage.js');
+    loadScript(context, 'js/onlineRestoreMetadata.js');
     loadScript(context, 'js/onlinePayload.js');
     loadScript(context, 'js/onlineRestoreQueueState.js');
     loadScript(context, 'js/onlineRestoreLifecycleState.js');
@@ -3540,11 +3541,13 @@ runTest('hostChanged 後のホスト復元payloadは新ホストindexを保存�
         enabledLandmarks: Player.landmarkNames(),
         reconnectTokenHashes: ['hash-a', 'hash-b'],
         hostPlayerIndex: 0,
+        hostEpoch: Number.MAX_SAFE_INTEGER,
     });
 
     handlers.hostChanged({ newHostPlayerIndex: 1 });
     const storedGameStart = JSON.parse(rt.localStorage.getItem('onlineGameStart'));
     assert.strictEqual(storedGameStart.hostPlayerIndex, 1);
+    assert.strictEqual(storedGameStart.hostEpoch, Number.MAX_SAFE_INTEGER);
 
     rt._tryRestoreRoom();
 

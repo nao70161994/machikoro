@@ -80,6 +80,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/clientStorage.js', 'js/onlineStorage.js'],
             ['js/clientStorage.js', 'js/online.js'],
             ['js/onlineStorage.js', 'js/online.js'],
+            ['js/onlineRestoreMetadata.js', 'js/onlinePayload.js', 'js/onlineRestoreRank.js', 'js/online.js'],
             ['js/onlinePayload.js', 'js/online.js'],
             ['js/onlineRestoreQueueState.js', 'js/online.js'],
             ['js/onlineRestoreLifecycleState.js', 'js/online.js'],

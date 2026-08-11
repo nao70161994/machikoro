@@ -2526,14 +2526,17 @@ function saveOnlineSession() {
 }
 
 function _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch) {
+    const restoreMetadata = /** @type {any} */ (globalThis).OnlineRestoreMetadata;
     if (!gameStartPayload || typeof gameStartPayload !== 'object') return gameStartPayload;
     if (Number.isInteger(hostPlayerIndex)) {
         gameStartPayload.hostPlayerIndex = hostPlayerIndex;
     }
-    if (Number.isInteger(hostEpoch)) {
+    if (restoreMetadata.isNonnegativeSafeInteger(hostEpoch)) {
         gameStartPayload.hostEpoch = hostEpoch;
-    } else if (!Number.isInteger(gameStartPayload.hostEpoch)) {
-        gameStartPayload.hostEpoch = 0;
+    } else {
+        gameStartPayload.hostEpoch = restoreMetadata.normalizeCounter(
+            gameStartPayload.hostEpoch
+        );
     }
     return gameStartPayload;
 }
@@ -2545,6 +2548,7 @@ function _setOnlineHostState(hostPlayerIndex) {
 }
 
 function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
+    const restoreMetadata = /** @type {any} */ (globalThis).OnlineRestoreMetadata;
     const runtimeSession = onlineSessionSnapshot();
     const session = _readOnlineStorageJson(ONLINE_SESSION_STORAGE_KEY, null);
     if (session && typeof session === 'object') {
@@ -2559,9 +2563,9 @@ function _persistOnlineHostState(hostPlayerIndex, hostEpoch) {
             if (Number.isInteger(hostPlayerIndex)) {
                 gameStartPayload.hostPlayerIndex = hostPlayerIndex;
             }
-            gameStartPayload.hostEpoch = Number.isInteger(hostEpoch)
+            gameStartPayload.hostEpoch = restoreMetadata.isNonnegativeSafeInteger(hostEpoch)
                 ? hostEpoch
-                : (Number.isInteger(gameStartPayload.hostEpoch) ? gameStartPayload.hostEpoch + 1 : 1);
+                : restoreMetadata.incrementEpoch(gameStartPayload.hostEpoch);
             _writeOnlineRestoreStorageJson(ONLINE_STORAGE_KEYS.gameStart, gameStartPayload);
         }
     } catch (_) {}

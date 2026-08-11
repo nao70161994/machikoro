@@ -323,6 +323,7 @@ function loadIntegrationRuntime(options = {}) {
     ];
     if (options.includeOnline) {
         files.push('js/onlineStorage.js');
+        files.push('js/onlineRestoreMetadata.js');
         files.push('js/onlinePayload.js');
         files.push('js/onlineRestoreQueueState.js');
         files.push('js/onlineRestoreLifecycleState.js');

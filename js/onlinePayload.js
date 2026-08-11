@@ -1,7 +1,8 @@
 'use strict';
 
 const ONLINE_HOSTLESS_RESTORE_SCHEMA_VERSION = 1;
-const ONLINE_HOSTLESS_RESTORE_MAX_ATTEMPTS = 3;
+const onlinePayloadRestoreMetadata = /** @type {any} */ (globalThis).OnlineRestoreMetadata;
+const ONLINE_HOSTLESS_RESTORE_MAX_ATTEMPTS = onlinePayloadRestoreMetadata.hostlessRestoreMaxAttempts;
 const ONLINE_HOSTLESS_RESTORE_EVENTS = Object.freeze({
     REQUEST: 'requestHostlessRestore',
     COLLECT: 'hostlessRestoreCollect',
@@ -40,7 +41,16 @@ function supportsHostlessRestore(bundle, identity) {
             capabilities.length !== gameStartPayload.playerNames?.length) return false;
     if (!Number.isInteger(identity?.playerIndex) ||
             identity.playerIndex === gameStartPayload.hostPlayerIndex) return false;
-    if ((gameStartPayload.hostlessRestoreCount || 0) >= ONLINE_HOSTLESS_RESTORE_MAX_ATTEMPTS) return false;
+    const generation = gameStartPayload.hostlessRestoreGeneration;
+    const attemptCount = gameStartPayload.hostlessRestoreCount;
+    if (generation != null && !onlinePayloadRestoreMetadata.isNonnegativeSafeInteger(generation)) return false;
+    if (attemptCount != null &&
+            (!onlinePayloadRestoreMetadata.isNonnegativeSafeInteger(attemptCount) ||
+            attemptCount > ONLINE_HOSTLESS_RESTORE_MAX_ATTEMPTS)) return false;
+    if (onlinePayloadRestoreMetadata.normalizeCounter(
+        attemptCount,
+        ONLINE_HOSTLESS_RESTORE_MAX_ATTEMPTS
+    ) >= ONLINE_HOSTLESS_RESTORE_MAX_ATTEMPTS) return false;
     return hostlessHumanIndices(gameStartPayload)
         .every(index => capabilities[index] === ONLINE_HOSTLESS_RESTORE_SCHEMA_VERSION);
 }
@@ -512,12 +522,13 @@ const OnlinePayload = Object.freeze({
     buildHostlessRestoreCandidate(bundle, identity) {
         if (!supportsHostlessRestore(bundle, identity)) return null;
         return Object.assign(hostlessIdentityFields(bundle, identity), {
-            generation: Number.isInteger(bundle.gameStartPayload.hostlessRestoreGeneration)
-                ? bundle.gameStartPayload.hostlessRestoreGeneration
-                : 0,
-            attemptCount: Number.isInteger(bundle.gameStartPayload.hostlessRestoreCount)
-                ? bundle.gameStartPayload.hostlessRestoreCount
-                : 0,
+            generation: onlinePayloadRestoreMetadata.normalizeCounter(
+                bundle.gameStartPayload.hostlessRestoreGeneration
+            ),
+            attemptCount: onlinePayloadRestoreMetadata.normalizeCounter(
+                bundle.gameStartPayload.hostlessRestoreCount,
+                ONLINE_HOSTLESS_RESTORE_MAX_ATTEMPTS
+            ),
             stateSnapshot: bundle.stateSnapshot || null,
             actionLog: Array.isArray(bundle.actionLog) ? bundle.actionLog : [],
             restoreAudit: bundle.restoreAudit || null,

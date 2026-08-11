@@ -1,5 +1,7 @@
 'use strict';
 
+const onlineRankRestoreMetadata = /** @type {any} */ (globalThis).OnlineRestoreMetadata;
+
 const LOCAL_HOST_RESTORE_OFFER_REASONS = Object.freeze({
     NOT_ORIGINAL_HOST_BUNDLE: 'not-original-host-bundle',
     SERVER_HOST_AUTHORITY: 'server-host-authority',
@@ -72,16 +74,14 @@ function selectLocalHostRestoreOfferPlan(
 const OnlineRestoreRank = Object.freeze({
     serverActionSeq(gameStartPayload, stateSnapshot, actionLog) {
         const logSeq = (actionLog || []).reduce(
-            (max, entry) => Number.isInteger(entry.seq) ? Math.max(max, entry.seq) : max,
+            (max, entry) => onlineRankRestoreMetadata.isNonnegativeSafeInteger(entry?.seq)
+                ? Math.max(max, entry.seq)
+                : max,
             0
         );
         return Math.max(
-            Number.isInteger(gameStartPayload && gameStartPayload.actionSeq)
-                ? gameStartPayload.actionSeq
-                : 0,
-            Number.isInteger(stateSnapshot && stateSnapshot.actionSeq)
-                ? stateSnapshot.actionSeq
-                : 0,
+            onlineRankRestoreMetadata.normalizeCounter(gameStartPayload?.actionSeq),
+            onlineRankRestoreMetadata.normalizeCounter(stateSnapshot?.actionSeq),
             logSeq
         );
     },
@@ -94,20 +94,16 @@ const OnlineRestoreRank = Object.freeze({
     },
 
     replaySeq(stateSnapshot, actionLog, actionRegistry) {
-        const snapshotSeq = Number.isInteger(stateSnapshot && stateSnapshot.actionSeq)
-            ? stateSnapshot.actionSeq
-            : 0;
+        const snapshotSeq = onlineRankRestoreMetadata.normalizeCounter(stateSnapshot?.actionSeq);
         const replayedActionCount = Array.isArray(actionLog)
             ? actionLog.filter(entry => OnlineRestoreRank.isRankAction(entry, actionRegistry)).length
             : 0;
-        return snapshotSeq + replayedActionCount;
+        return onlineRankRestoreMetadata.addProgress(snapshotSeq, replayedActionCount);
     },
 
     build(gameStartPayload, stateSnapshot, actionLog, actionRegistry) {
         return {
-            hostEpoch: Number.isInteger(gameStartPayload && gameStartPayload.hostEpoch)
-                ? gameStartPayload.hostEpoch
-                : 0,
+            hostEpoch: onlineRankRestoreMetadata.normalizeCounter(gameStartPayload?.hostEpoch),
             actionSeq: OnlineRestoreRank.replaySeq(
                 stateSnapshot || null,
                 actionLog || [],

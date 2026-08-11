@@ -1,4 +1,5 @@
 const assert = require('assert');
+global.OnlineRestoreMetadata = require('../js/onlineRestoreMetadata');
 const { OnlinePayload } = require('../js/onlinePayload');
 const { HOSTLESS_RESTORE_EVENTS } = require('../server/hostlessRestoreRuntime');
 const { runTest } = require('./helpers/test-utils');
@@ -130,6 +131,28 @@ runTest('hostless raw候補は旧bundleの世代と試行回数を0へ正規化�
     const payload = OnlinePayload.buildHostlessRestoreCandidate(bundle, hostlessIdentity);
     assert.strictEqual(payload.generation, 0);
     assert.strictEqual(payload.attemptCount, 0);
+});
+
+runTest('hostless payloadは世代と試行回数をnonnegative safe integerへ制限する', () => {
+    const invalidValues = [-1, Number.MAX_SAFE_INTEGER + 1, Number.MAX_VALUE];
+    for (const field of ['hostlessRestoreGeneration', 'hostlessRestoreCount']) {
+        for (const value of invalidValues) {
+            assert.strictEqual(OnlinePayload.buildHostlessRestoreCandidate(
+                hostlessBundle({ [field]: value }),
+                hostlessIdentity
+            ), null, `${field}=${value}`);
+        }
+    }
+    assert.strictEqual(OnlinePayload.buildHostlessRestoreCandidate(
+        hostlessBundle({ hostlessRestoreCount: 4 }),
+        hostlessIdentity
+    ), null);
+    const maximum = OnlinePayload.buildHostlessRestoreCandidate(hostlessBundle({
+        hostlessRestoreGeneration: Number.MAX_SAFE_INTEGER,
+        hostlessRestoreCount: 2,
+    }), hostlessIdentity);
+    assert.strictEqual(maximum.generation, Number.MAX_SAFE_INTEGER);
+    assert.strictEqual(maximum.attemptCount, 2);
 });
 
 runTest('hostless payloadは元host・旧client混在・3回上限をfail closedする', () => {
