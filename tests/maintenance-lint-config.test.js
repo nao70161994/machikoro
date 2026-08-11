@@ -18,6 +18,7 @@ runTest('maintenance lint script and scoped config contain the same file set', (
     assert.strictEqual(new Set(scriptedFiles).size, scriptedFiles.length);
     assert.ok(scriptedFiles.includes('js/snapshotInventoryValidation.js'));
     assert.ok(scriptedFiles.includes('js/onlineRestoreMetadata.js'));
+    assert.ok(scriptedFiles.includes('server/socketOriginPolicy.js'));
 });
 
 runTest('maintenance lint keeps bug-detection rules enabled as errors', () => {

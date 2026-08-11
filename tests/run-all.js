@@ -77,6 +77,7 @@ const TEST_GROUPS = {
         'hostless-restore-runtime.test.js',
         'static-assets.test.js',
         'socket-payload.test.js',
+        'socket-origin-policy.test.js',
         'socket-e2e-helper.test.js',
         'game-engine.test.js',
         'game-snapshot.test.js',
@@ -458,6 +459,7 @@ const TEST_GROUPS = {
         'hostless-restore-diagnostics.test.js',
         'hostless-restore-runtime.test.js',
         'socket-payload.test.js',
+        'socket-origin-policy.test.js',
         'socket-e2e-helper.test.js',
         'game-engine.test.js',
         'game-snapshot.test.js',
@@ -661,6 +663,7 @@ const REQUIRED_TEST_GROUPS = Object.freeze({
     'online-completion-e2e.test.js': ['online'],
     'game-schema-online-e2e.test.js': ['online'],
     'online-soak.test.js': ['soak'],
+    'socket-origin-policy.test.js': ['unit', 'online'],
     'pwa-shell.test.js': ['unit', 'pwa'],
     'app-shell-startup-runtime.test.js': ['unit', 'pwa'],
 });

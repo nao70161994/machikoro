@@ -8,6 +8,12 @@ const { makeGameRuntimeLoader } = require('./server/gameRuntimeLoader');
 const { startRoomGc } = require('./server/roomGcRuntime');
 const { registerServerProcessHandlers, startHttpServer } = require('./server/processRuntime');
 const { registerSocketConnectionRuntime } = require('./server/socketConnectionRuntime');
+const {
+    socketRequestBaseOrigin,
+    socketAllowedOrigins,
+    isSocketOriginAllowed,
+    makeSocketAllowRequest,
+} = require('./server/socketOriginPolicy');
 const loadGameRuntime = makeGameRuntimeLoader({
     baseDir: __dirname,
     runtimeConsole: console,
@@ -169,6 +175,7 @@ const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
 const server = http.createServer(app);
 const io = new Server(server, {
+    allowRequest: makeSocketAllowRequest(process.env),
     maxHttpBufferSize: SOCKET_IO_MAX_HTTP_BUFFER_SIZE,
 });
 const gameRuntime = loadGameRuntime();
@@ -1170,6 +1177,9 @@ module.exports = {
     handleGameLifecycleRequest,
     isDuplicateGameLifecycle,
     resolveTrustProxySetting,
+    socketRequestBaseOrigin,
+    socketAllowedOrigins,
+    isSocketOriginAllowed,
     normalizeClientErrorPayload,
     requestHeader,
     requestBaseOrigin,

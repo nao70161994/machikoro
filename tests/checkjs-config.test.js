@@ -161,6 +161,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/restoreValidation.js'));
     assert.ok(config.files.includes('server/reportingPolicy.js'));
     assert.ok(config.files.includes('server/reportingHttpRoutes.js'));
+    assert.ok(config.files.includes('server/socketOriginPolicy.js'));
 });
 
 runTest('production JavaScriptは5つのcomposition root以外すべて静的検査対象になる', () => {

@@ -35,6 +35,7 @@ Recommended for production observability:
 - `NTFY_TOPIC`: ntfy topic for browser error and lifecycle notifications when `NODE_ENV=production`. Without production env plus topic, client error and lifecycle reports only write server-side warnings.
 - GitHub Secret `NTFY_CI_TOPIC`: optional topic for GitHub Actions failure notifications. Set it in GitHub repository `Settings > Secrets and variables > Actions > Repository secrets`; success runs do not notify, and unset secrets skip the notification step.
 - `CLIENT_ERROR_ALLOWED_ORIGINS`: comma-separated allowed origins, for example `https://machikoro-9jv2.onrender.com`. Same-origin reports are always accepted; cross-origin reports are rejected unless allowlisted.
+- `SOCKET_ALLOWED_ORIGINS`: comma-separated additional browser origins allowed to connect to Socket.IO. Same-origin and Origin-less native/Node clients are accepted automatically; do not reuse the client-error allowlist implicitly.
 - `CLIENT_ERROR_SHARED_TOKEN`: optional shared token for scripted/no-origin diagnostics and `/api/client-error-test`. Same-origin browser `/api/client-error` stays tokenless; leave unset unless a test caller or non-browser sender will send `X-Client-Error-Token` or `Authorization: Bearer`.
 - `TRUST_PROXY=1`: set only when deployed behind a trusted proxy and paired with `CLIENT_ERROR_ALLOWED_ORIGINS` for the public HTTPS origin. Leave unset for direct serving.
 - `CLIENT_ERROR_ALLOW_NO_ORIGIN`: leave unset in production unless a controlled non-browser diagnostic sender requires no-origin reports.

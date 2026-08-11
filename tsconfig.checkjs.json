@@ -280,6 +280,7 @@
     "server/restoreValidation.js",
     "server/roomValidation.js",
     "server/socketPayload.js",
+    "server/socketOriginPolicy.js",
     "server/reportingPolicy.js",
     "server/reportThrottle.js",
     "server/restoreAuthorityPolicy.js",
