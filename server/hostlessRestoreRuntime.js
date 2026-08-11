@@ -128,7 +128,11 @@ function createHostlessRestoreRuntime(options = {}) {
                 timeoutMs: event.timeoutMs,
                 candidateCount: event.candidateCount || 0,
             });
-            notifyRoomRequesters(event.roomId, HOSTLESS_RESTORE_EVENTS.STATUS, publicStatus(event));
+            notifyRoomRequesters(event.roomId, HOSTLESS_RESTORE_EVENTS.STATUS, publicStatus(
+                Object.assign({}, event, {
+                    reason: HOSTLESS_RESTORE_STATUS_REASONS.QUORUM_READY,
+                })
+            ));
             return;
         }
         if (event.type === 'terminal') {

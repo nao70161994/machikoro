@@ -158,15 +158,25 @@ runTest('確認拒否・切断・timeoutは次のplayerへ移り全員失敗で�
     coordinator.submitCandidate('ROOM1', candidate(1));
     coordinator.submitCandidate('ROOM1', candidate(2));
     coordinator.submitCandidate('ROOM1', candidate(3));
+    coordinator.submitCandidate('ROOM1', candidate(4));
     clock.advance(30_000);
     assert.strictEqual(coordinator.inspect('ROOM1').confirmationPlayerIndex, 1);
     coordinator.respondToConfirmation('ROOM1', 1, false);
     assert.strictEqual(coordinator.inspect('ROOM1').confirmationPlayerIndex, 2);
-    coordinator.confirmationOwnerDisconnected('ROOM1', 2);
-    assert.strictEqual(coordinator.inspect('ROOM1').confirmationPlayerIndex, 3);
+    assert.strictEqual(events.at(-1).type, 'confirmation-requested');
+    assert.strictEqual(events.at(-1).reason, 'rejected');
     clock.advance(60_000);
+    assert.strictEqual(coordinator.inspect('ROOM1').confirmationPlayerIndex, 3);
+    assert.strictEqual(events.at(-1).type, 'confirmation-requested');
+    assert.strictEqual(events.at(-1).reason, 'timeout');
+    coordinator.confirmationOwnerDisconnected('ROOM1', 3);
+    assert.strictEqual(coordinator.inspect('ROOM1').confirmationPlayerIndex, 4);
+    assert.strictEqual(events.at(-1).type, 'confirmation-requested');
+    assert.strictEqual(events.at(-1).reason, 'disconnected');
+    coordinator.respondToConfirmation('ROOM1', 4, false);
     assert.strictEqual(coordinator.inspect('ROOM1'), null);
     assert.strictEqual(events.at(-1).reason, HOSTLESS_RESTORE_TERMINAL_REASONS.CONFIRMATION_EXHAUSTED);
+    assert.strictEqual(events.at(-1).confirmationReason, 'rejected');
 });
 
 runTest('確認中でもcollection開始から2分でraw候補を破棄する', () => {

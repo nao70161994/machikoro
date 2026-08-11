@@ -4,6 +4,7 @@ const {
     hostlessRestoreEnabled,
     createHostlessRestoreRuntime,
 } = require('../server/hostlessRestoreRuntime');
+const OnlineHostlessRestoreState = require('../js/onlineHostlessRestoreState');
 
 function runTest(name, fn) {
     try {
@@ -402,6 +403,47 @@ runTest('coordinator eventの公開statusにraw payloadやhashを含めない', 
     assert.strictEqual(status.name, HOSTLESS_RESTORE_EVENTS.STATUS);
     assert.strictEqual(JSON.stringify(status.payload).includes('secret-hash'), false);
     assert.strictEqual(JSON.stringify(status.payload).includes('raw'), false);
+});
+
+runTest('confirmation候補交代の内部理由は公開progress reasonへ正規化する', () => {
+    const { runtime, sockets } = setup();
+    const first = socket('s1');
+    const second = socket('s2');
+    sockets.set(first.id, first);
+    sockets.set(second.id, second);
+    runtime.request(first, { roomId: 'ROOM01', playerIndex: 1 });
+    runtime.request(second, { roomId: 'ROOM01', playerIndex: 2 });
+
+    for (const reason of ['rejected', 'timeout', 'disconnected']) {
+        runtime.handleCoordinatorEvent({
+            type: 'confirmation-requested',
+            roomId: 'ROOM01',
+            generation: 0,
+            stage: 'confirming',
+            playerIndex: 2,
+            reason,
+            candidateCount: 2,
+            timeoutMs: 60_000,
+        });
+        for (const client of [first, second]) {
+            const status = client.emitted.filter(entry =>
+                entry.name === HOSTLESS_RESTORE_EVENTS.STATUS
+            ).at(-1);
+            assert.strictEqual(status.payload.reason, 'quorum-ready', reason);
+            assert.strictEqual(
+                OnlineHostlessRestoreState.statusDisposition(
+                    status.payload.reason,
+                    status.payload.stage
+                ),
+                OnlineHostlessRestoreState.statusDispositions.PROGRESS,
+                reason
+            );
+        }
+    }
+    assert.strictEqual(
+        OnlineHostlessRestoreState.statusDisposition('future-rotation-reason', 'confirming'),
+        OnlineHostlessRestoreState.statusDispositions.FAILED
+    );
 });
 
 runTest('最後のactive requester切断はsessionを終了しhost復元はno-opになる', () => {
