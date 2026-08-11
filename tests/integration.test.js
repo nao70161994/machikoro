@@ -2236,6 +2236,34 @@ runTest('integration: 通常renderは主要action containerをrecoveryなしで�
     }
 });
 
+runTest('integration: 清掃業候補は稼働中施設の全プレイヤー合計枚数を表示する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    const game = rt.__test.getGame();
+    hideAllTestModals(rt);
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingCleaning = 1;
+    const activeOne = rt.createCardByName('森林');
+    const activeTwo = rt.createCardByName('森林');
+    const dormant = rt.createCardByName('森林');
+    game.players[0].cards.push(activeOne);
+    game.players[1].cards.push(activeTwo, dormant);
+    game.players[1].makeDormant(dormant);
+
+    rt.render();
+
+    const html = rt.__test.elements.pendingMenu.innerHTML;
+    assert.ok(html.includes('data-action="resolveCleaning" data-card-name="森林"'));
+    assert.ok(html.includes('森林（2枚）'));
+    assert.ok(!html.includes('森林（3枚）'));
+});
+
 runTest('integration: harborChoice の正常なresolveHarborボタンはfreeze扱いしない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

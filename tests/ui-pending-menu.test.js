@@ -131,6 +131,24 @@ runTest('ui pending menu はbusiness/renovation/ITの既存selectorを維持す�
     assert.ok(html.includes('パン屋 💤'));
 });
 
+runTest('ui pending menu は清掃業候補へ全プレイヤーの稼働中枚数を表示する', () => {
+    const game = makeGame();
+    game.players[0].cards.push({ name: '麦畑' });
+    game.players[1].cards.push({ name: '麦畑' }, { name: '<店>' });
+
+    assert.deepStrictEqual(UiPendingMenu.cleaningActiveCardCounts(game.players), [
+        { name: '麦畑', count: 3 },
+        { name: '牧場', count: 1 },
+        { name: '<店>', count: 1 },
+    ]);
+
+    const html = UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml);
+    assert.ok(html.includes('data-card-name="麦畑">麦畑（3枚）</button>'));
+    assert.ok(html.includes('data-card-name="牧場">牧場（1枚）</button>'));
+    assert.ok(html.includes('data-card-name="&lt;店&gt;">&lt;店&gt;（1枚）</button>'));
+    assert.ok(!html.includes('パン屋（'));
+});
+
 runTest('ui pending menu は引越し屋の施設selectへaccessible nameを関連付ける', () => {
     const html = UiPendingMenu.buildMenuHtml(
         makeGame(),

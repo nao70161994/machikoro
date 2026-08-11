@@ -85,9 +85,20 @@ const UiPendingMenu = (() => {
         return `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換できます</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}<button data-action="skipBusiness">使用しない</button></div>`;
     }
 
+    function cleaningActiveCardCounts(players) {
+        const counts = new Map();
+        for (const player of players) {
+            for (const card of player.getMinorCards()) {
+                if (player.isDormant(card)) continue;
+                counts.set(card.name, (counts.get(card.name) || 0) + 1);
+            }
+        }
+        return [...counts].map(([name, count]) => Object.freeze({ name, count }));
+    }
+
     function buildPendingCleaningHtml(game, escapeHtml) {
-        const allCardNames = [...new Set(game.players.flatMap(p => p.getMinorCards().filter(c => !p.isDormant(c)).map(c => c.name)))];
-        return `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${allCardNames.map(name => `<button data-action="resolveCleaning" data-card-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("")}</div>`;
+        const cardCounts = cleaningActiveCardCounts(game.players);
+        return `<div class="pending-box"><p>🧹 清掃業：休業にする施設を選んでください</p>${cardCounts.map(({ name, count }) => `<button data-action="resolveCleaning" data-card-name="${escapeHtml(name)}">${escapeHtml(name)}（${count}枚）</button>`).join("")}</div>`;
     }
 
     function buildPendingMoverHtml(game, escapeHtml) {
@@ -130,7 +141,7 @@ const UiPendingMenu = (() => {
             .join("");
     }
 
-    return Object.freeze({ isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingModalInteractionView, businessCardSelectionView, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
+    return Object.freeze({ isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingModalInteractionView, businessCardSelectionView, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, cleaningActiveCardCounts, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiPendingMenu;
