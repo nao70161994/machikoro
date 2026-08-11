@@ -71,7 +71,9 @@ function buildWinnerStatsRows(players, winner, escapeHtml) {
     if (!Array.isArray(players) || typeof escapeHtml !== 'function') return '';
     return players.slice().sort((left, right) => right.coins - left.coins).map(player => {
         const isWinner = player === winner;
-        return `<div class="winner-stats-row ${isWinner ? 'highlight' : ''}"><span>${isWinner ? '🏆 ' : ''}${escapeHtml(player.name)}</span><span>🪙 ${player.coins}</span></div>`;
+        const safeName = escapeHtml(player.name);
+        const playerKind = isWinner ? '勝者' : 'プレイヤー';
+        return `<div class="winner-stats-row ${isWinner ? 'highlight' : ''}" role="listitem" aria-label="${playerKind}、${safeName}、${player.coins}コイン"><span>${isWinner ? '🏆 ' : ''}${safeName}</span><span>🪙 ${player.coins}</span></div>`;
     }).join('');
 }
 
@@ -95,7 +97,7 @@ function buildWinnerScreenHtml(options = {}) {
     const streakHtml = buildWinStreakHtml(winner, options.winStreak, escapeHtml);
     const winnerType = options.isCpuWinner ? '🤖 CPU' : '👤 人間';
     const resultAdSlot = typeof options.resultAdSlot === 'string' ? options.resultAdSlot : '';
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats">${scoreRows}</div><button id="winnerRestartButton" class="winner-primary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
+    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div><button id="winnerRestartButton" class="winner-primary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;

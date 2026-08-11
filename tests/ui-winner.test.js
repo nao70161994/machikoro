@@ -5,7 +5,12 @@ const UiWinner = require('../js/uiWinner');
 const { runTest } = require('./helpers/test-utils');
 
 function escapeHtml(value) {
-    return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
 }
 
 runTest('ui winnerはscore順・winner強調・escape契約を維持する', () => {
@@ -14,10 +19,35 @@ runTest('ui winnerはscore順・winner強調・escape契約を維持する', () 
     const players = [winner, leader];
     const html = UiWinner.buildWinnerStatsRows(players, winner, escapeHtml);
     assert.strictEqual(html,
-        '<div class="winner-stats-row "><span>Bob &amp; Co</span><span>🪙 20</span></div>' +
-        '<div class="winner-stats-row highlight"><span>🏆 &lt;Alice&gt;</span><span>🪙 12</span></div>'
+        '<div class="winner-stats-row " role="listitem" aria-label="プレイヤー、Bob &amp; Co、20コイン"><span>Bob &amp; Co</span><span>🪙 20</span></div>' +
+        '<div class="winner-stats-row highlight" role="listitem" aria-label="勝者、&lt;Alice&gt;、12コイン"><span>🏆 &lt;Alice&gt;</span><span>🪙 12</span></div>'
     );
     assert.deepStrictEqual(players, [winner, leader]);
+});
+
+runTest('ui winnerは10人同点のstable順と危険な名前のlist labelを維持する', () => {
+    const players = Array.from({ length: 10 }, (_, index) => ({
+        name: index === 4 ? '悪"<&\'' : `P${index + 1}`,
+        coins: 7,
+    }));
+    const winner = players[4];
+    const html = UiWinner.buildWinnerStatsRows(players, winner, escapeHtml);
+
+    assert.strictEqual((html.match(/role="listitem"/g) || []).length, 10);
+    assert.ok(html.includes(
+        'aria-label="勝者、悪&quot;&lt;&amp;&#39;、7コイン"' +
+        '><span>🏆 悪&quot;&lt;&amp;&#39;</span><span>🪙 7</span>'
+    ));
+    for (let index = 0; index < players.length - 1; index++) {
+        assert.ok(
+            html.indexOf(escapeHtml(players[index].name)) <
+                html.indexOf(escapeHtml(players[index + 1].name)),
+            `同点時の表示順 ${index + 1} → ${index + 2}`
+        );
+    }
+    assert.deepStrictEqual(players.map(player => player.name), [
+        'P1', 'P2', 'P3', 'P4', '悪"<&\'', 'P6', 'P7', 'P8', 'P9', 'P10',
+    ]);
 });
 
 runTest('ui winnerは2連勝以上だけstreakを表示する', () => {
@@ -37,6 +67,7 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
     });
     assert.ok(human.includes('<div class="winner-title">Aliceの勝利！</div>'));
     assert.ok(human.includes('👤 人間プレイヤーが勝ちました　9ターン'));
+    assert.ok(human.includes('<div class="winner-stats" role="list" aria-label="最終コイン">'));
     assert.ok(human.includes('id="winnerRestartButton"'));
     assert.ok(human.includes('data-ui-action="restartGame">タイトルへ戻る</button>'));
     assert.ok(human.endsWith('<div class="ad">ad</div></div>'));
