@@ -16,6 +16,7 @@ process.env.GAME_SCHEMA_WIRE_ENABLED = '1';
 process.env.GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED = '1';
 process.env.GAME_SCHEMA_RECREATE_WIRE_ENABLED = '1';
 const serverModule = require('../server');
+const { DEFAULT_RECREATE_COOLDOWN_MS } = require('../server/recreateSocketHandler');
 const connectClient = require('socket.io-client');
 
 const CAPABILITIES = Object.freeze({ actionVersions: [0, 1], snapshotVersions: [0, 1] });
@@ -161,8 +162,7 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
         });
         assert.strictEqual(await malformedRecreatePromise, '復元データが不完全です');
 
-        const recreatedRejoinPromise = onceEvent(recreateProbe, 'rejoinData');
-        recreateProbe.emit('recreateRoom', {
+        const validRecreatePayload = {
             schemaVersion: 1,
             recreateRoom: {
                 roomId: currentRoom.created.roomId,
@@ -181,7 +181,14 @@ runTest('schema negotiation online e2e: opt-in・legacy fallback・rejoin gate�
                 playerName: 'Host-current',
                 reconnectToken: currentRoom.created.reconnectToken,
             },
-        });
+        };
+        const cooldownErrorPromise = onceEvent(recreateProbe, 'appError');
+        recreateProbe.emit('recreateRoom', validRecreatePayload);
+        assert.strictEqual(await cooldownErrorPromise, '復元処理を続けて実行できません');
+
+        await new Promise(resolve => setTimeout(resolve, DEFAULT_RECREATE_COOLDOWN_MS + 50));
+        const recreatedRejoinPromise = onceEvent(recreateProbe, 'rejoinData');
+        recreateProbe.emit('recreateRoom', validRecreatePayload);
         const recreatedRejoin = await recreatedRejoinPromise;
         assert.strictEqual(recreatedRejoin.playerIndex, currentRoom.created.playerIndex);
         assert.deepStrictEqual(recreatedRejoin.gameStartPayload.gameSchema, {
