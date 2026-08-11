@@ -73,10 +73,11 @@ const UiPendingMenu = (() => {
 
     function buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml) {
         const inputId = `theirCardSelect_${playerIndex}`;
+        const labelId = `businessTargetLabel_${playerIndex}`;
         const theirCards = businessCardOptionsForPlayer(player);
         const theirDefaultIdx = theirCards[0]?.index ?? 0;
         const theirChips = buildBusinessCardChipGroupHtml(player, theirCards, inputId, escapeHtml);
-        return `<p class="bc-label">${escapeHtml(player.name)}の施設：</p><div class="bc-chip-group">${theirChips}</div><input type="hidden" id="${inputId}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${playerIndex}">⇄ ${escapeHtml(player.name)}と交換</button>`;
+        return `<div class="bc-target-group"><p id="${labelId}" class="bc-label">${escapeHtml(player.name)}の施設：</p><div class="bc-chip-group" role="group" aria-labelledby="${labelId}">${theirChips}</div><input type="hidden" id="${inputId}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${playerIndex}">⇄ ${escapeHtml(player.name)}と交換</button></div>`;
     }
 
     function buildPendingBusinessHtml(game, escapeHtml) {
@@ -86,7 +87,7 @@ const UiPendingMenu = (() => {
         const myDefaultIdx = myCards[0]?.index ?? 0;
         const myChips = buildBusinessCardChipGroupHtml(current, myCards, 'myCardSelect', escapeHtml);
         const othersHtml = others.map(({ p, i }) => buildBusinessTargetExchangeHtml(p, i, escapeHtml)).join("");
-        return `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換できます</p><p class="bc-label">自分の施設：</p><div class="bc-chip-group">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}">${othersHtml}<button data-action="skipBusiness">使用しない</button></div>`;
+        return `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換できます</p><section class="bc-step" aria-labelledby="businessGiveHeading"><h3 id="businessGiveHeading" class="bc-step-title">1. 渡す自分の施設</h3><p class="bc-step-help">交換に出す施設を1つ選んでください。</p><div class="bc-chip-group" role="group" aria-labelledby="businessGiveHeading">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}"></section><section class="bc-step" aria-labelledby="businessReceiveHeading"><h3 id="businessReceiveHeading" class="bc-step-title">2. 受け取る相手の施設</h3><p class="bc-step-help">欲しい施設を選び、その相手の交換ボタンを押してください。</p>${othersHtml}</section><button data-action="skipBusiness">使用しない</button></div>`;
     }
 
     function cleaningActiveCardCounts(players) {

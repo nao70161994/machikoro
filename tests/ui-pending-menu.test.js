@@ -133,6 +133,43 @@ runTest('ui pending menu はbusiness/renovation/ITの既存selectorを維持す�
     assert.ok(html.includes('パン屋 💤'));
 });
 
+runTest('ui pending menu はBusiness Centerを渡す施設・受け取る施設の2段階で示す', () => {
+    const html = UiPendingMenu.buildPendingBusinessHtml(makeGame(), escapeHtml);
+    const giveHeading = html.indexOf('1. 渡す自分の施設');
+    const receiveHeading = html.indexOf('2. 受け取る相手の施設');
+
+    assert.ok(giveHeading >= 0);
+    assert.ok(receiveHeading > giveHeading);
+    assert.ok(html.includes('交換に出す施設を1つ選んでください。'));
+    assert.ok(html.includes('欲しい施設を選び、その相手の交換ボタンを押してください。'));
+    assert.strictEqual(html.indexOf('data-action="selectBusinessCard"') < html.indexOf('data-action="resolveBusiness"'), true);
+    assert.ok(html.includes('role="group" aria-labelledby="businessGiveHeading"'));
+    assert.ok(html.includes('role="group" aria-labelledby="businessTargetLabel_1"'));
+    assert.ok(html.includes('&lt;Bob&gt;の施設：'));
+    assert.ok(html.includes('data-target-index="1">⇄ &lt;Bob&gt;と交換</button>'));
+    assert.ok(!html.includes('<Bob>'));
+});
+
+runTest('ui pending menu は10人でも相手ごとの施設群と既存交換actionを維持する', () => {
+    const players = Array.from({ length: 10 }, (_, index) =>
+        makePlayer(index === 9 ? '<Player 10>' : `Player ${index + 1}`, [`施設${index + 1}`])
+    );
+    const game = {
+        currentPlayerIndex: 4,
+        players,
+        currentPlayer() { return players[this.currentPlayerIndex]; },
+    };
+    const html = UiPendingMenu.buildPendingBusinessHtml(game, escapeHtml);
+
+    assert.strictEqual((html.match(/class="bc-target-group"/g) || []).length, 9);
+    assert.strictEqual((html.match(/data-action="resolveBusiness"/g) || []).length, 9);
+    assert.strictEqual((html.match(/data-action="skipBusiness"/g) || []).length, 1);
+    assert.ok(!html.includes('data-target-index="4"'));
+    assert.ok(html.includes('id="theirCardSelect_9"'));
+    assert.ok(html.includes('&lt;Player 10&gt;の施設：'));
+    assert.ok(!html.includes('<Player 10>'));
+});
+
 runTest('ui pending menu は清掃業候補へ全プレイヤーの稼働中枚数を表示する', () => {
     const game = makeGame();
     game.players[0].cards.push({ name: '麦畑' });

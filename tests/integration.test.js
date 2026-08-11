@@ -1029,6 +1029,36 @@ runTest('integration: Business Center pending modal の pointer-events none をw
     assert.strictEqual(rt.__test.elements.pendingMenu.style.pointerEvents, 'auto');
 });
 
+runTest('integration: 10人Business Center pendingは2段階と相手別交換操作を描画する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.changeCount(8);
+    rt.__test.setPlayerSettings(Array.from({ length: 10 }, () => ({
+        type: 'human',
+        difficulty: 'normal',
+    })));
+
+    rt.startGame();
+    const game = rt.__test.getGame();
+    const firstAction = makeElement();
+    firstAction.focus = () => { rt.document.activeElement = firstAction; };
+    rt.__test.elements.pendingMenu.querySelector = () => firstAction;
+    rt.__test.elements.pendingMenu.contains = target => target === firstAction;
+    rt.__test.elements.pendingModal.contains = target => target === firstAction;
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    rt.render();
+
+    const html = rt.__test.elements.pendingMenu.innerHTML;
+    assert.ok(html.indexOf('1. 渡す自分の施設') < html.indexOf('2. 受け取る相手の施設'));
+    assert.strictEqual((html.match(/class="bc-target-group"/g) || []).length, 9);
+    assert.strictEqual((html.match(/data-action="resolveBusiness"/g) || []).length, 9);
+    assert.strictEqual((html.match(/data-action="skipBusiness"/g) || []).length, 1);
+    assert.ok(html.includes('class="bc-chip selected" aria-pressed="true"'));
+    assert.strictEqual(rt.document.activeElement, firstAction);
+});
+
 runTest('integration: buildMenu pointer-events none を共通UI invariantで検知して復旧する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
