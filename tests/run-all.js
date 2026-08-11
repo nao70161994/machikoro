@@ -548,6 +548,8 @@ const TEST_GROUPS = {
         'app-shell-composition.test.js',
         'app-shell-runtime-effects.test.js',
         'app-shell-observation-runtime.test.js',
+        'pwa-shell.test.js',
+        'app-shell-startup-runtime.test.js',
         'action-ui-registry.test.js',
         'main.test.js',
         'ui-color-contrast.test.js',
@@ -656,6 +658,8 @@ const REQUIRED_TEST_GROUPS = Object.freeze({
     'online-completion-e2e.test.js': ['online'],
     'game-schema-online-e2e.test.js': ['online'],
     'online-soak.test.js': ['soak'],
+    'pwa-shell.test.js': ['unit', 'pwa'],
+    'app-shell-startup-runtime.test.js': ['unit', 'pwa'],
 });
 
 function listActualTestFiles() {
