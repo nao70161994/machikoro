@@ -1001,6 +1001,74 @@ runTest('renderDiceChoose はCPU・online replay・相手手番でfocusを奪わ
     });
 });
 
+runTest('renderDiceChoose は駅・電波塔・港のactiveな選択完了後だけprimaryへfocusを戻す', () => {
+    const scenarios = [
+        { phase: 'selectDice', action: 'selectDice', target: 'btnRoll' },
+        { phase: 'rerollConfirm', action: 'rerollDice', target: 'btnSkip' },
+        { phase: 'harborChoice', action: 'resolveHarbor', target: 'btnSkip' },
+    ];
+    scenarios.forEach(scenario => {
+        const { context, elements } = loadUiRuntime();
+        const choice = makeElement();
+        choice.focus = () => { context.document.activeElement = choice; };
+        elements.diceChoose.querySelector = () => choice;
+        elements.diceChoose.contains = target => target === choice;
+        elements.btnRoll.disabled = scenario.target !== 'btnRoll';
+        elements.btnReroll.style.display = 'none';
+        elements.btnSkip.disabled = scenario.target !== 'btnSkip';
+        elements[scenario.target].focus = () => {
+            context.document.activeElement = elements[scenario.target];
+        };
+        Object.assign(context.GAME_PHASES, {
+            SELECT_DICE: 'selectDice',
+            REROLL_CONFIRM: 'rerollConfirm',
+            HARBOR_CHOICE: 'harborChoice',
+        });
+        context.GameManager = {
+            allowedActionsFor(game) { return new Set(game.allowed || []); },
+        };
+        context.game = {
+            phase: scenario.phase,
+            currentPlayerIndex: 0,
+            allowed: [scenario.action],
+            lastDiceResult: 10,
+        };
+        context.cpuPlayers = [null, null];
+
+        context.renderDiceChoose();
+        assert.strictEqual(context.document.activeElement, choice, scenario.phase);
+        context.game.phase = 'build';
+        context.game.allowed = ['nextTurn'];
+        context.renderDiceChoose();
+        assert.strictEqual(
+            context.document.activeElement,
+            elements[scenario.target],
+            scenario.phase
+        );
+    });
+
+    const { context, elements } = loadUiRuntime();
+    const choice = makeElement();
+    elements.diceChoose.querySelector = () => choice;
+    elements.diceChoose.contains = target => target === choice;
+    context.GAME_PHASES.SELECT_DICE = 'selectDice';
+    context.GameManager = { allowedActionsFor: game => new Set(game.allowed || []) };
+    context.game = {
+        phase: 'selectDice',
+        currentPlayerIndex: 0,
+        allowed: ['selectDice'],
+        lastDiceResult: 7,
+    };
+    context.cpuPlayers = [null, null];
+    context.renderDiceChoose();
+    const outside = makeElement();
+    context.document.activeElement = outside;
+    context.game.phase = 'build';
+    context.game.allowed = ['nextTurn'];
+    context.renderDiceChoose();
+    assert.strictEqual(context.document.activeElement, outside);
+});
+
 runTest('renderPending は allowedActionsFor の先頭pending actionだけを表示する', () => {
     const { context, elements } = loadUiRuntime();
     const makePlayer = (name, cardNames) => ({

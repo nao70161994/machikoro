@@ -2,7 +2,7 @@
 
 const UiDiceChoice = (() => {
     function focusTransition(previousVisible, nextVisible, focusEligible,
-            previousIdentity = '', nextIdentity = '') {
+            previousIdentity = '', nextIdentity = '', activeWithin = false) {
         const visible = nextVisible === true;
         const identity = visible ? String(nextIdentity || '') : '';
         const identityChanged = previousVisible === true && visible &&
@@ -10,6 +10,8 @@ const UiDiceChoice = (() => {
         return Object.freeze({
             focusInitial: focusEligible === true && visible &&
                 (previousVisible !== true || identityChanged),
+            restorePrimary: focusEligible === true && previousVisible === true &&
+                !visible && activeWithin === true,
             identity,
             visible,
         });
@@ -26,13 +28,14 @@ const UiDiceChoice = (() => {
                 identity = visible ? String(nextIdentity || '') : '';
                 return visible;
             },
-            transition(nextVisible, focusEligible, nextIdentity = '') {
+            transition(nextVisible, focusEligible, nextIdentity = '', activeWithin = false) {
                 const plan = focusTransition(
                     visible,
                     nextVisible,
                     focusEligible,
                     identity,
-                    nextIdentity
+                    nextIdentity,
+                    activeWithin
                 );
                 visible = plan.visible;
                 identity = plan.identity;
@@ -49,17 +52,24 @@ const UiDiceChoice = (() => {
         return '';
     }
 
-    function applyFocusPlan(plan, content) {
-        if (!plan || plan.focusInitial !== true || !content ||
-                typeof content.querySelector !== 'function') return false;
-        const target = content.querySelector('button:not([disabled]), select:not([disabled])');
-        if (!target || typeof target.focus !== 'function') return false;
-        try {
-            target.focus();
-            return true;
-        } catch (_) {
-            return false;
+    function applyFocusPlan(plan, content, options = {}) {
+        if (!plan) return false;
+        if (plan.focusInitial === true && content &&
+                typeof content.querySelector === 'function') {
+            const target = content.querySelector('button:not([disabled]), select:not([disabled])');
+            if (!target || typeof target.focus !== 'function') return false;
+            try {
+                target.focus();
+                return true;
+            } catch (_) {
+                return false;
+            }
         }
+        if (plan.restorePrimary === true &&
+                typeof options.restorePrimaryFocus === 'function') {
+            return options.restorePrimaryFocus() === true;
+        }
+        return false;
     }
 
     function buildHtml(options) {

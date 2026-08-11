@@ -6,6 +6,7 @@ const UiScreenFocus = (() => {
         'select:not([disabled])',
         'input:not([disabled]):not([type="hidden"])',
     ].join(', ');
+    const GAME_PRIMARY_ACTION_IDS = Object.freeze(['btnRoll', 'btnReroll', 'btnSkip']);
     const targets = Object.freeze({
         game: Object.freeze({ screenId: 'gameScreen', targetId: 'status' }),
         title: Object.freeze({ screenId: 'titleScreen', targetId: 'titleHeading' }),
@@ -122,6 +123,16 @@ const UiScreenFocus = (() => {
         return focusScreen(documentRef, 'game');
     }
 
+    function focusGamePrimary(documentRef) {
+        if (!documentRef || typeof documentRef.getElementById !== 'function' ||
+                blockingOverlayVisible(documentRef)) return false;
+        for (const id of GAME_PRIMARY_ACTION_IDS) {
+            const target = documentRef.getElementById(id);
+            if (focusExistingElement(target, documentRef)) return true;
+        }
+        return focusScreen(documentRef, 'game');
+    }
+
     function focusScreen(documentRef, screenName) {
         const target = targets[screenName];
         if (!target || !documentRef || typeof documentRef.getElementById !== 'function') return false;
@@ -148,6 +159,7 @@ const UiScreenFocus = (() => {
         ensureCurrentScreenFocus,
         focusGame: documentRef => focusScreen(documentRef, 'game'),
         focusGameOrPending,
+        focusGamePrimary,
         focusPendingAction,
         focusScreen,
         focusTitle: documentRef => focusScreen(documentRef, 'title'),

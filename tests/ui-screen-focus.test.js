@@ -72,6 +72,22 @@ runTest('screen focusはeligibleなpending操作をgame statusより優先する
     assert.strictEqual(action.focused, false);
 });
 
+runTest('screen focusは可視で有効なgame primaryを優先し、なければstatusへ戻す', () => {
+    const btnRoll = makeElement({ disabled: true });
+    const btnReroll = makeElement({ style: { display: 'none' } });
+    const btnSkip = makeElement();
+    const documentRef = createDocument({ btnRoll, btnReroll, btnSkip });
+
+    assert.strictEqual(UiScreenFocus.focusGamePrimary(documentRef), true);
+    assert.strictEqual(documentRef.activeElement, btnSkip);
+    assert.strictEqual(documentRef.elements.status.focused, undefined);
+
+    btnSkip.disabled = true;
+    documentRef.activeElement = null;
+    assert.strictEqual(UiScreenFocus.focusGamePrimary(documentRef), true);
+    assert.strictEqual(documentRef.activeElement, documentRef.elements.status);
+});
+
 runTest('screen focusはpending内の既存focusを再実行せず維持する', () => {
     let focusCount = 0;
     const action = makeElement();

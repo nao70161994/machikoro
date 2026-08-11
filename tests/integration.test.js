@@ -845,6 +845,49 @@ runTest('integration: 駅→電波塔→港のchoice identity変化ごとに新�
     assert.strictEqual(focusCount, 3);
 });
 
+runTest('integration: 駅・電波塔・港の選択完了後は次のprimary操作へfocusを戻す', () => {
+    const scenarios = [
+        { phase: 'SELECT_DICE', nextPhase: 'ROLL', expectedTarget: 'btnRoll' },
+        { phase: 'REROLL_CONFIRM', nextPhase: 'BUILD', expectedTarget: 'btnSkip' },
+        { phase: 'HARBOR_CHOICE', nextPhase: 'BUILD', expectedTarget: 'btnSkip' },
+    ];
+    scenarios.forEach(scenario => {
+        const rt = loadIntegrationRuntime();
+        rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+        rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+        rt.__test.setPlayerSettings([
+            { type: 'human', difficulty: 'normal' },
+            { type: 'human', difficulty: 'normal' },
+        ]);
+        const choice = makeElement();
+        choice.focus = () => { rt.document.activeElement = choice; };
+        rt.__test.elements.diceChoose.querySelector = () => choice;
+        rt.__test.elements.diceChoose.contains = target => target === choice;
+        ['btnRoll', 'btnSkip'].forEach(id => {
+            rt.__test.elements[id].focus = () => {
+                rt.document.activeElement = rt.__test.elements[id];
+            };
+        });
+
+        rt.startGame();
+        const game = rt.__test.getGame();
+        game.phase = rt.GAME_PHASES[scenario.phase];
+        game.lastDice1 = 5;
+        game.lastDice2 = 5;
+        game.lastDiceResult = 10;
+        rt.render();
+        assert.strictEqual(rt.document.activeElement, choice, scenario.phase);
+
+        game.phase = rt.GAME_PHASES[scenario.nextPhase];
+        rt.render();
+        assert.strictEqual(
+            rt.document.activeElement,
+            rt.__test.elements[scenario.expectedTarget],
+            scenario.phase
+        );
+    });
+});
+
 runTest('integration: local pending save復帰は可視の解決操作へfocusを戻す', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

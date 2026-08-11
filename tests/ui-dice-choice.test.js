@@ -27,6 +27,7 @@ runTest('dice choice focus controllerはeligibleなhidden→visibleだけ初回f
     const controller = UiDiceChoice.createFocusController();
     assert.deepStrictEqual(controller.transition(true, true), {
         focusInitial: true,
+        restorePrimary: false,
         identity: '',
         visible: true,
     });
@@ -44,6 +45,34 @@ runTest('dice choice focus controllerはeligibleなhidden→visibleだけ初回f
         { querySelector: () => target }
     ), true);
     assert.strictEqual(focusCount, 1);
+});
+
+runTest('dice choice focus controllerはactiveな選択肢が消える時だけprimary復帰を計画する', () => {
+    const controller = UiDiceChoice.createFocusController();
+    controller.transition(true, true, 'selectDice');
+    assert.strictEqual(
+        controller.transition(false, true, '', true).restorePrimary,
+        true
+    );
+
+    controller.transition(true, true, 'rerollConfirm');
+    assert.strictEqual(
+        controller.transition(false, true, '', false).restorePrimary,
+        false
+    );
+    controller.transition(true, false, 'harborChoice');
+    assert.strictEqual(
+        controller.transition(false, false, '', true).restorePrimary,
+        false
+    );
+
+    let restoreCount = 0;
+    assert.strictEqual(UiDiceChoice.applyFocusPlan(
+        { restorePrimary: true },
+        null,
+        { restorePrimaryFocus() { restoreCount++; return true; } }
+    ), true);
+    assert.strictEqual(restoreCount, 1);
 });
 
 runTest('dice choice focus controllerはidentity変化だけを新しい選択としてfocusする', () => {

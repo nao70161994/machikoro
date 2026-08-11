@@ -469,14 +469,20 @@ function uiActionDisabledAttr(action) {
 function setDiceChooseContent(el, html, identity = '') {
     if (!el) return;
     const nextHtml = html || "";
+    const active = document.activeElement;
+    const activeWithin = !!active && (active === el ||
+        (typeof el.contains === 'function' && el.contains(active)));
     const focusPlan = diceChoiceFocusController.transition(
         !!nextHtml,
         diceChoiceFocusEligible(),
-        nextHtml ? identity : ''
+        nextHtml ? identity : '',
+        activeWithin
     );
     if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
     if (el.style) el.style.display = nextHtml ? "block" : "none";
-    UiDiceChoice.applyFocusPlan(focusPlan, el);
+    UiDiceChoice.applyFocusPlan(focusPlan, el, {
+        restorePrimaryFocus: () => UiScreenFocus.focusGamePrimary(document),
+    });
 }
 
 function diceChoiceFocusEligible() {
