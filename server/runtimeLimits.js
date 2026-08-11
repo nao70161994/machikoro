@@ -29,6 +29,13 @@ const SOCKET_PAYLOAD_LIMITS = Object.freeze({
     maxDepth: 8,
 });
 
+const REJOIN_ADMISSION_LIMITS = Object.freeze({
+    socketCooldownMs: 1000,
+    identityRateLimitWindowMs: 60 * 1000,
+    identityRateLimitMax: 12,
+    identityRateLimitMaxBuckets: 2000,
+});
+
 const CLIENT_ERROR_LIMITS = Object.freeze({
     maxJsonBytes: 32 * 1024,
     maxStringLength: 4000,
@@ -53,6 +60,7 @@ module.exports = Object.freeze({
     RESTORE_PAYLOAD_LIMITS,
     SOCKET_IO_MAX_HTTP_BUFFER_SIZE,
     SOCKET_PAYLOAD_LIMITS,
+    REJOIN_ADMISSION_LIMITS,
     CLIENT_ERROR_LIMITS,
     GAME_LIFECYCLE_LIMITS,
 });

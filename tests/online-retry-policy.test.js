@@ -41,6 +41,8 @@ runTest('recreateの一時的appErrorをstable reasonへ分類する', () => {
         SOCKET_RATE_LIMIT: 'socket-rate-limit',
         IP_RATE_LIMIT: 'ip-rate-limit',
         ATTEMPT_RATE_LIMIT: 'attempt-rate-limit',
+        REJOIN_COOLDOWN: 'rejoin-cooldown',
+        REJOIN_IDENTITY_RATE_LIMIT: 'rejoin-identity-rate-limit',
     });
     const cases = [
         ['復元処理を続けて実行できません', reasons.RECREATE_COOLDOWN],
@@ -48,6 +50,8 @@ runTest('recreateの一時的appErrorをstable reasonへ分類する', () => {
         ['ルーム作成が短時間に連続しています。少し待ってから再試行してください', reasons.SOCKET_RATE_LIMIT],
         ['ルーム作成が短時間に集中しています。少し待ってから再試行してください', reasons.IP_RATE_LIMIT],
         ['復元処理が短時間に集中しています。少し待ってから再試行してください', reasons.ATTEMPT_RATE_LIMIT],
+        ['再接続処理を続けて実行できません', reasons.REJOIN_COOLDOWN],
+        ['再接続処理が短時間に集中しています。少し待ってから再試行してください', reasons.REJOIN_IDENTITY_RATE_LIMIT],
     ];
     for (const [message, reason] of cases) {
         assert.strictEqual(OnlineRetryPolicy.recreateRetryableAppErrorReason(message), reason);
@@ -55,6 +59,22 @@ runTest('recreateの一時的appErrorをstable reasonへ分類する', () => {
     assert.strictEqual(OnlineRetryPolicy.recreateRetryableAppErrorReason('INVALID_TOKEN'), '');
     assert.strictEqual(OnlineRetryPolicy.recreateRetryableAppErrorReason(null), '');
     assert.ok(Object.isFrozen(reasons));
+});
+
+runTest('rejoin rate appError planは通常guestの再接続データも保持扱いにする', () => {
+    for (const message of [
+        '再接続処理を続けて実行できません',
+        '再接続処理が短時間に集中しています。少し待ってから再試行してください',
+    ]) {
+        const plan = OnlineRetryPolicy.recreateAppErrorPlan(message, {
+            isReconnectingOnline: true,
+            isRoomHost: false,
+            hostlessRestorePending: false,
+        });
+        assert.strictEqual(plan.decision, OnlineRetryPolicy.recreateAppErrorDecisions.RETRYABLE);
+        assert.notStrictEqual(plan.reason, '');
+        assert.strictEqual(plan.clearHostlessPending, false);
+    }
 });
 
 runTest('recreate appError planは通常hostとhostless選出中だけ一時拒否を保持扱いにする', () => {

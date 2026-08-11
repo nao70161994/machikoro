@@ -149,6 +149,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/disconnectSocketHandler.js'));
     assert.ok(config.files.includes('server/hostlessRestoreRuntime.js'));
     assert.ok(config.files.includes('server/rejoinSocketHandler.js'));
+    assert.ok(config.files.includes('server/rejoinAdmission.js'));
     assert.ok(config.files.includes('server/hostlessRestoreCandidate.js'));
     assert.ok(config.files.includes('server/roomLifecycle.js'));
     assert.ok(config.files.includes('server/roomSocketRuntime.js'));

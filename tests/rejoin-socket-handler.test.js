@@ -22,6 +22,7 @@ function makeFixture(overrides = {}) {
         rooms: { ROOM01: room },
         getExpectedReconnectTokenHash() { events.push(['expected-hash']); return 'hash'; },
         hashReconnectToken() { events.push(['hash-token']); return 'hash'; },
+        admitRejoin() { events.push(['admit']); return { ok: true, message: '' }; },
         detachExistingPlayerSocket() { events.push(['detach']); },
         resolveRejoinPlayer() { events.push(['resolve']); return { index: 1, name: 'Bob' }; },
         buildRejoinDataPayload() { events.push(['payload']); return { state: 'canonical' }; },
@@ -69,6 +70,7 @@ runTest('rejoin handler preserves validation, attach, emit, and log order', () =
         ['room-entry'],
         ['expected-hash'],
         ['hash-token'],
+        ['admit'],
         ['detach'],
         ['resolve'],
         ['join', 'ROOM01'],
@@ -122,6 +124,24 @@ runTest('rejoin handler は別のactive roomからの再参加をidentity検証�
     assert.strictEqual(fixture.room.lastTouchedAt, 0);
 });
 
+runTest('rejoin handler は認証済み連投をdetachとpayload生成前に拒否する', () => {
+    const fixture = makeFixture({
+        admitRejoin() {
+            fixture.events.push(['admit']);
+            return { ok: false, message: '再接続処理を続けて実行できません' };
+        },
+    });
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(validPayload);
+
+    assert.deepStrictEqual(fixture.events, [
+        ['plain'], ['room-id'], ['room-entry'], ['expected-hash'], ['hash-token'],
+        ['admit'], ['error', '再接続処理を続けて実行できません'],
+    ]);
+    assert.strictEqual(fixture.socket.roomId, undefined);
+    assert.strictEqual(fixture.room.lastTouchedAt, 0);
+});
+
 runTest('rejoin handlerはhost不在時に先着playerをrejoinData前にhostへ再選出する', () => {
     const fixture = makeFixture({
         isRoomHostConnected() {
@@ -155,6 +175,7 @@ runTest('rejoin handlerはhost不在時に先着playerをrejoinData前にhostへ
         ['room-entry'],
         ['expected-hash'],
         ['hash-token'],
+        ['admit'],
         ['detach'],
         ['resolve'],
         ['join', 'ROOM01'],

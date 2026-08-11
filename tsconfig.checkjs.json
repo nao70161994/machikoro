@@ -247,6 +247,7 @@
     "server/reconnectIdentity.js",
     "server/rejoinPayload.js",
     "server/rejoinSocketHandler.js",
+    "server/rejoinAdmission.js",
     "server/recreateSocketHandler.js",
     "server/restoreAudit.js",
     "server/restoreAuditPayload.js",

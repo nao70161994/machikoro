@@ -9,6 +9,7 @@ function registerRejoinSocketHandler(socket, dependencies) {
         rooms,
         getExpectedReconnectTokenHash,
         hashReconnectToken,
+        admitRejoin,
         detachExistingPlayerSocket,
         resolveRejoinPlayer,
         buildRejoinDataPayload,
@@ -51,6 +52,8 @@ function registerRejoinSocketHandler(socket, dependencies) {
             return;
         }
         socket.gameSchemaCapabilities = schemaResolution.capabilities;
+        const admission = admitRejoin(socket, roomId, playerIndex);
+        if (!admission.ok) { emitAppError(socket, admission.message); return; }
         detachExistingPlayerSocket(room, roomId, playerIndex, socket.id);
         const player = resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken, socket.id);
         if (!player) { emitAppError(socket, '再接続情報が一致しません'); return; }

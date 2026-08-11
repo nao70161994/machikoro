@@ -33,6 +33,12 @@ runTest('server runtime limitsは既存の全上限値を一つのfrozen contrac
         maxTotalStringChars: 4000,
         maxDepth: 8,
     });
+    assert.deepStrictEqual(limits.REJOIN_ADMISSION_LIMITS, {
+        socketCooldownMs: 1000,
+        identityRateLimitWindowMs: 60000,
+        identityRateLimitMax: 12,
+        identityRateLimitMaxBuckets: 2000,
+    });
     assert.deepStrictEqual(limits.CLIENT_ERROR_LIMITS, {
         maxJsonBytes: 32768,
         maxStringLength: 4000,

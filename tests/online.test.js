@@ -4220,6 +4220,48 @@ runTest('一時的なrecreate拒否はsocketを閉じてもroom-scoped復元bund
     }
 });
 
+runTest('認証済みrejoinの一時拒否は通常guestのroom-scoped復元bundleを保持する', () => {
+    for (const message of [
+        '再接続処理を続けて実行できません',
+        '再接続処理が短時間に集中しています。少し待ってから再試行してください',
+    ]) {
+        const rt = loadOnlineRuntime();
+        let disconnected = false;
+        const session = {
+            roomId: 'ROOM01', playerIndex: 1, playerName: 'Bob',
+            reconnectToken: 'token-b', isRoomHost: false,
+        };
+        rt.localStorage.setItem('onlineSession', JSON.stringify(session));
+        rt.localStorage.setItem('onlineGameStart:room:ROOM01', JSON.stringify({
+            schemaVersion: 2,
+            playerNames: ['Alice', 'Bob'],
+        }));
+        rt.localStorage.setItem('onlineActionLog:room:ROOM01', '[{"action":"nextTurn","seq":4}]');
+        rt.localStorage.setItem('onlineRestoreRoomIndex', JSON.stringify([
+            { schemaVersion: 1, roomId: 'ROOM01', actionSeq: 4 },
+        ]));
+        rt.setOnlineState({
+            socket: { disconnect() { disconnected = true; } },
+            isReconnectingOnline: true,
+            isRoomHost: false,
+            hostlessRestorePending: false,
+            myRoomId: 'ROOM01',
+            myOriginalPlayerIndex: 1,
+            myPlayerName: 'Bob',
+            reconnectToken: 'token-b',
+        });
+
+        rt.handleAppError(message);
+
+        assert.strictEqual(disconnected, true, message);
+        assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineSession')), session, message);
+        assert.strictEqual(rt.localStorage.getItem('onlineGameStart:room:ROOM01') != null, true, message);
+        assert.strictEqual(rt.localStorage.getItem('onlineActionLog:room:ROOM01') != null, true, message);
+        assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false, message);
+        assert.match(rt.document.getElementById('onlineStatus').textContent, /復元データは保持/, message);
+    }
+});
+
 runTest('hostless選出中の一時的recreate拒否は非hostでも保存を保持してpendingを解除する', () => {
     for (const message of [
         '復元処理を続けて実行できません',

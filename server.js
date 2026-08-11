@@ -56,11 +56,13 @@ const {
     RESTORE_PAYLOAD_LIMITS,
     SOCKET_IO_MAX_HTTP_BUFFER_SIZE,
     SOCKET_PAYLOAD_LIMITS,
+    REJOIN_ADMISSION_LIMITS,
     CLIENT_ERROR_LIMITS,
     GAME_LIFECYCLE_LIMITS,
 } = require('./server/runtimeLimits');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
+const { makeRejoinAdmission } = require('./server/rejoinAdmission');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
 const {
     makeRecreateAttemptAdmission,
@@ -170,6 +172,7 @@ const GAME_ENGINE_TRANSITION_AUTHORITY_ENABLED = GAME_SCHEMA_SHADOW_ENABLED &&
     gameEngineTransitionAuthorityEnabled(process.env);
 const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED =
     OnlineReconnectState.eventAuthorityEnabled(process.env);
+const rejoinAdmission = makeRejoinAdmission({ limits: REJOIN_ADMISSION_LIMITS });
 
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
@@ -881,6 +884,8 @@ registerSocketConnectionRuntime({
             supportsSelectedGameSchema: (capabilities, selected) => supportsSelectedGameSchemaForRuntime(
                 capabilities, selected, GAME_SCHEMA_NEGOTIATION_ENABLED
             ),
+            admitRejoin: (targetSocket, roomId, playerIndex) =>
+                rejoinAdmission.admit(targetSocket, roomId, playerIndex),
             io,
         });
     },

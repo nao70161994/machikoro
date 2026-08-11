@@ -12,6 +12,8 @@ const RECREATE_RETRYABLE_APP_ERROR_REASONS = Object.freeze({
     SOCKET_RATE_LIMIT: 'socket-rate-limit',
     IP_RATE_LIMIT: 'ip-rate-limit',
     ATTEMPT_RATE_LIMIT: 'attempt-rate-limit',
+    REJOIN_COOLDOWN: 'rejoin-cooldown',
+    REJOIN_IDENTITY_RATE_LIMIT: 'rejoin-identity-rate-limit',
 });
 
 const RECREATE_RETRYABLE_APP_ERROR_MESSAGES = Object.freeze({
@@ -25,6 +27,10 @@ const RECREATE_RETRYABLE_APP_ERROR_MESSAGES = Object.freeze({
         RECREATE_RETRYABLE_APP_ERROR_REASONS.IP_RATE_LIMIT,
     '復元処理が短時間に集中しています。少し待ってから再試行してください':
         RECREATE_RETRYABLE_APP_ERROR_REASONS.ATTEMPT_RATE_LIMIT,
+    '再接続処理を続けて実行できません':
+        RECREATE_RETRYABLE_APP_ERROR_REASONS.REJOIN_COOLDOWN,
+    '再接続処理が短時間に集中しています。少し待ってから再試行してください':
+        RECREATE_RETRYABLE_APP_ERROR_REASONS.REJOIN_IDENTITY_RATE_LIMIT,
 });
 
 function recreateRetryableAppErrorReason(message) {
@@ -41,8 +47,10 @@ const RECREATE_APP_ERROR_DECISIONS = Object.freeze({
 function recreateAppErrorPlan(message, state = {}) {
     const reason = recreateRetryableAppErrorReason(message);
     const hostlessRestorePending = state.hostlessRestorePending === true;
+    const rejoinRateLimited = reason === RECREATE_RETRYABLE_APP_ERROR_REASONS.REJOIN_COOLDOWN ||
+        reason === RECREATE_RETRYABLE_APP_ERROR_REASONS.REJOIN_IDENTITY_RATE_LIMIT;
     const retryable = !!reason && state.isReconnectingOnline === true &&
-        (state.isRoomHost === true || hostlessRestorePending);
+        (rejoinRateLimited || state.isRoomHost === true || hostlessRestorePending);
     return Object.freeze({
         decision: retryable
             ? RECREATE_APP_ERROR_DECISIONS.RETRYABLE
