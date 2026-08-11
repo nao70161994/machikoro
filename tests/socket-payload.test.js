@@ -1,4 +1,7 @@
 const assert = require('assert');
+const path = require('path');
+const GameSnapshot = require('../js/gameSnapshot');
+const { makeGameRuntimeLoader } = require('../server/gameRuntimeLoader');
 const { makeSocketPayloadValidation, makeSocketPayloadGateway } = require('../server/socketPayload');
 const { RESTORE_PAYLOAD_LIMITS } = require('../server/runtimeLimits');
 const { runTest } = require('./helpers/test-utils');
@@ -163,33 +166,95 @@ runTest('socket payload helper はrestore文字列・深さ・循環入力を安
     assert.strictEqual(validation.validateRestorePayloadLimits(circular).reason, 'json');
 });
 
-runTest('socket payload helper は10人戦の合法なbuildとUndo履歴をnode上限内で許可する', () => {
+function makeProductionUndoLimitFixture({ signed }) {
+    const runtime = makeGameRuntimeLoader({ baseDir: path.join(__dirname, '..') })();
+    const game = new runtime.GameManager(10);
+    const shopStock = {};
+    let playerIndex = 0;
+
+    for (const card of runtime.CARDS) {
+        runtime.setShopStockCount(
+            shopStock,
+            card,
+            runtime.getInitialCardStock(card, game.players.length)
+        );
+        while (runtime.getShopStockCount(shopStock, card) > 0) {
+            game.players[playerIndex % game.players.length].cards.push(
+                runtime.createCardByName(card.name)
+            );
+            runtime.decrementShopStock(shopStock, card);
+            playerIndex++;
+        }
+    }
+    game.log = Array.from({ length: 30 }, (_, index) => ({
+        type: 'system',
+        message: `合法なゲームログ${index + 1}`,
+    }));
+
+    const undoState = GameSnapshot.serializeUndoState(game, shopStock, 30);
+    const actionLog = [];
+    for (let index = 0; index < 100; index++) {
+        const buildEntry = {
+            action: 'buildLandmark',
+            data: { landmarkName: '駅' },
+            playerIndex: 0,
+            seq: (index * 2) + 1,
+        };
+        const undoEntry = {
+            action: 'undoBuild',
+            data: { state: undoState },
+            playerIndex: 0,
+            seq: (index * 2) + 2,
+        };
+        if (signed) {
+            for (const entry of [buildEntry, undoEntry]) {
+                entry.restoreActionAudit = {
+                    schemaVersion: 1,
+                    roomId: 'ROOM01',
+                    signed: true,
+                    algorithm: 'hmac-sha256',
+                    keyId: 'restore-audit-v1',
+                    canonicalHash: 'a'.repeat(64),
+                    payloadHash: 'a'.repeat(64),
+                    signature: 'b'.repeat(64),
+                    createdAt: 1,
+                    source: 'server-action-log',
+                };
+            }
+        }
+        actionLog.push(buildEntry, undoEntry);
+    }
+    return {
+        roomId: 'ROOM01',
+        gameStartPayload: {
+            playerNames: Array.from({ length: 10 }, (_, index) => `P${index + 1}`),
+        },
+        actionLog,
+    };
+}
+
+runTest('socket payload helper はproduction形状の10人戦build・Undo履歴をnode上限内で許可する', () => {
     const productionValidation = makeSocketPayloadValidation({
         isPlainObject: value => !!value && typeof value === 'object' && !Array.isArray(value),
         byteLength: value => Buffer.byteLength(value, 'utf8'),
         socketLimits,
         restoreLimits: RESTORE_PAYLOAD_LIMITS,
     });
-    const undoState = {
-        players: Array.from({ length: 10 }, (_, playerIndex) => ({
-            name: `P${playerIndex + 1}`,
-            coins: 3,
-            cards: Array.from({ length: 28 }, () => '麦畑'),
-            dormantIndices: [],
-            landmarks: {},
-        })),
-        log: Array.from({ length: 30 }, () => ({ text: '建設を取り消しました' })),
-    };
-    const actionLog = [];
-    for (let index = 0; index < 100; index++) {
-        actionLog.push({ action: 'buildCard', data: { cardName: '麦畑' } });
-        actionLog.push({ action: 'undoBuild', data: { state: undoState } });
-    }
+    const unsigned = productionValidation.validateRestorePayloadLimits(
+        makeProductionUndoLimitFixture({ signed: false })
+    );
+    const signed = productionValidation.validateRestorePayloadLimits(
+        makeProductionUndoLimitFixture({ signed: true })
+    );
 
-    const result = productionValidation.validateRestorePayloadLimits({ roomId: 'ROOM01', actionLog });
-    assert.strictEqual(result.ok, true);
-    assert.ok(result.jsonBytes < RESTORE_PAYLOAD_LIMITS.maxJsonBytes);
-    assert.strictEqual(result.actionLogEntries, 200);
-    assert.strictEqual(result.playerCardRefs, 28000);
-    assert.ok(result.totalNodes < RESTORE_PAYLOAD_LIMITS.maxTotalNodes);
+    for (const result of [unsigned, signed]) {
+        assert.strictEqual(result.ok, true);
+        assert.ok(result.jsonBytes < RESTORE_PAYLOAD_LIMITS.maxJsonBytes);
+        assert.strictEqual(result.actionLogEntries, 200);
+        assert.strictEqual(result.playerCardRefs, 28000);
+        assert.ok(result.totalNodes < RESTORE_PAYLOAD_LIMITS.maxTotalNodes);
+    }
+    assert.ok(unsigned.totalNodes > 50000);
+    assert.ok(signed.totalNodes > unsigned.totalNodes);
+    assert.ok(signed.jsonBytes > unsigned.jsonBytes);
 });
