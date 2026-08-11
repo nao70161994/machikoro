@@ -176,6 +176,85 @@ runTest('ui pending modal更新stateはeffect controllerだけが所有する', 
     assert.strictEqual(source.includes('isUpdatingPendingModalContent'), false);
     assert.ok(source.includes('UiPendingEffects.createUpdateController()'));
     assert.ok(source.includes('pendingModalUpdateController.run('));
+    assert.ok(source.includes('UiPendingEffects.createFocusController()'));
+});
+
+runTest('pending modalは表示遷移時だけ最初の操作へfocusし終了時にgameへ戻す', () => {
+    const { context, elements } = loadUiRuntime();
+    const firstAction = makeElement();
+    let firstFocusCount = 0;
+    firstAction.focus = () => {
+        firstFocusCount++;
+        context.document.activeElement = firstAction;
+    };
+    elements.pendingMenu.querySelector = selector =>
+        selector === 'button:not([disabled]), select:not([disabled])' ? firstAction : null;
+    elements.pendingMenu.contains = target => target === firstAction;
+    elements.pendingModal.contains = target => target === firstAction;
+    elements.status.focus = () => {
+        elements.status.focused = true;
+        context.document.activeElement = elements.status;
+    };
+    context.game = {
+        currentPlayerIndex: 0,
+        players: [{ name: 'Alice' }, { name: 'Bob' }],
+    };
+    context.cpuPlayers = [null, null];
+
+    context.updatePendingModalContent(
+        elements.pendingMenu,
+        elements.pendingModal,
+        '<button data-action="resolveTV">Bob</button>'
+    );
+    assert.strictEqual(firstFocusCount, 1);
+    assert.strictEqual(context.document.activeElement, firstAction);
+
+    context.updatePendingModalContent(
+        elements.pendingMenu,
+        elements.pendingModal,
+        '<button data-action="resolveTV">Bob（3）</button>'
+    );
+    assert.strictEqual(firstFocusCount, 1);
+
+    context.updatePendingModalContent(elements.pendingMenu, elements.pendingModal, '');
+    assert.strictEqual(elements.status.focused, true);
+    assert.strictEqual(context.document.activeElement, elements.status);
+});
+
+runTest('pending modalはCPU・online replay・相手手番でfocusを奪わない', () => {
+    const scenarios = [
+        { cpuPlayers: [{ difficulty: 'strong' }, null] },
+        { isReplaying: true },
+        { isOnlineGame: true, myPlayerIndex: 1 },
+    ];
+    scenarios.forEach(scenario => {
+        const { context, elements } = loadUiRuntime();
+        const firstAction = makeElement();
+        let focusCount = 0;
+        firstAction.focus = () => { focusCount++; };
+        elements.pendingMenu.querySelector = () => firstAction;
+        context.game = {
+            currentPlayerIndex: 0,
+            players: [{ name: 'Alice' }, { name: 'Bob' }],
+        };
+        context.cpuPlayers = scenario.cpuPlayers || [null, null];
+        if (scenario.isReplaying) {
+            context.OnlineRuntimeState.runtime.setReplaying(true);
+        }
+        if (scenario.isOnlineGame) {
+            context.OnlineRuntimeState.runtime.setOnline(true);
+            context.OnlineRuntimeState.runtime.setPlayerIndexes({
+                originalPlayerIndex: scenario.myPlayerIndex,
+                playerIndex: scenario.myPlayerIndex,
+            });
+        }
+        context.updatePendingModalContent(
+            elements.pendingMenu,
+            elements.pendingModal,
+            '<button data-action="resolveTV">Bob</button>'
+        );
+        assert.strictEqual(focusCount, 0);
+    });
 });
 
 runTest('ui transient stateはeager controllerだけが所有する', () => {

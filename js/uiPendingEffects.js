@@ -1,6 +1,30 @@
 'use strict';
 
 const UiPendingEffects = (() => {
+    function focusTransition(previousVisible, nextVisible, facts = {}) {
+        const wasVisible = previousVisible === true;
+        const visible = nextVisible === true;
+        const eligible = facts.focusEligible === true;
+        return Object.freeze({
+            focusInitial: eligible && !wasVisible && visible,
+            restoreGame: eligible && wasVisible && !visible && facts.activeWithin === true,
+            visible,
+        });
+    }
+
+    function createFocusController(initialVisible = false) {
+        let visible = initialVisible === true;
+
+        return Object.freeze({
+            isVisible() { return visible; },
+            transition(nextVisible, facts = {}) {
+                const plan = focusTransition(visible, nextVisible, facts);
+                visible = plan.visible;
+                return plan;
+            },
+        });
+    }
+
     function createUpdateController() {
         let updating = false;
 
@@ -57,10 +81,44 @@ const UiPendingEffects = (() => {
         if (content && content.style) Object.assign(content.style, view.content);
     }
 
+    function containsActiveElement(modal, content, activeElement) {
+        if (!activeElement) return false;
+        if (activeElement === modal || activeElement === content) return true;
+        if (content && typeof content.contains === 'function' && content.contains(activeElement)) {
+            return true;
+        }
+        return !!(modal && typeof modal.contains === 'function' && modal.contains(activeElement));
+    }
+
+    function applyFocusPlan(plan, options = {}) {
+        if (!plan) return false;
+        if (plan.focusInitial) {
+            const content = options.content;
+            const target = content && typeof content.querySelector === 'function'
+                ? content.querySelector('button:not([disabled]), select:not([disabled])')
+                : null;
+            if (!target || typeof target.focus !== 'function') return false;
+            try {
+                target.focus();
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+        if (plan.restoreGame && typeof options.restoreGameFocus === 'function') {
+            return options.restoreGameFocus() !== false;
+        }
+        return false;
+    }
+
     return Object.freeze({
+        focusTransition,
+        createFocusController,
         createUpdateController,
         applyBusinessCardSelection,
         applyModalInteraction,
+        containsActiveElement,
+        applyFocusPlan,
     });
 })();
 

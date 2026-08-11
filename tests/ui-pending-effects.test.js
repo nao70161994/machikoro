@@ -133,3 +133,83 @@ runTest('pending effects update controllerは例外後も次の更新を受け�
     assert.strictEqual(controller.run(() => true), true);
     assert.strictEqual(controller.run(null), false);
 });
+
+runTest('pending focus controllerはhidden→visibleだけ初期focusを要求する', () => {
+    const controller = UiPendingEffects.createFocusController();
+    assert.deepStrictEqual(controller.transition(true, { focusEligible: true }), {
+        focusInitial: true,
+        restoreGame: false,
+        visible: true,
+    });
+    assert.deepStrictEqual(controller.transition(true, {
+        activeWithin: true,
+        focusEligible: true,
+    }), {
+        focusInitial: false,
+        restoreGame: false,
+        visible: true,
+    });
+    assert.strictEqual(controller.isVisible(), true);
+});
+
+runTest('pending focus controllerはfocusがpending内に残る終了だけgame復帰を要求する', () => {
+    const controller = UiPendingEffects.createFocusController(true);
+    assert.deepStrictEqual(controller.transition(false, {
+        activeWithin: true,
+        focusEligible: true,
+    }), {
+        focusInitial: false,
+        restoreGame: true,
+        visible: false,
+    });
+    assert.deepStrictEqual(UiPendingEffects.focusTransition(true, false, {
+        activeWithin: false,
+        focusEligible: true,
+    }), {
+        focusInitial: false,
+        restoreGame: false,
+        visible: false,
+    });
+    assert.strictEqual(UiPendingEffects.focusTransition(false, true, {
+        focusEligible: false,
+    }).focusInitial, false);
+});
+
+runTest('pending focus effectは最初のenabled controlとgame復帰を排他的に適用する', () => {
+    const calls = [];
+    const first = { focus() { calls.push('focus-first'); } };
+    const content = {
+        querySelector(selector) {
+            calls.push(selector);
+            return first;
+        },
+    };
+    assert.strictEqual(UiPendingEffects.applyFocusPlan({ focusInitial: true }, {
+        content,
+        restoreGameFocus() { calls.push('restore-game'); },
+    }), true);
+    assert.strictEqual(UiPendingEffects.applyFocusPlan({
+        focusInitial: false,
+        restoreGame: true,
+    }, {
+        content,
+        restoreGameFocus() { calls.push('restore-game'); return true; },
+    }), true);
+    assert.deepStrictEqual(calls, [
+        'button:not([disabled]), select:not([disabled])',
+        'focus-first',
+        'restore-game',
+    ]);
+});
+
+runTest('pending focus effectはfocus拒否をrender例外へ広げない', () => {
+    assert.doesNotThrow(() => {
+        assert.strictEqual(UiPendingEffects.applyFocusPlan({ focusInitial: true }, {
+            content: {
+                querySelector() {
+                    return { focus() { throw new Error('focus rejected'); } };
+                },
+            },
+        }), false);
+    });
+});

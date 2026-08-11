@@ -731,6 +731,45 @@ runTest('integration: pending操作不能ならwatchdogが縮約通知してrend
     assert.strictEqual(snapshot.freezeKind, 'pending-ui-locked');
 });
 
+runTest('integration: human pendingは初回だけ解決操作へfocusし完了後gameへ戻す', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    const game = rt.__test.getGame();
+    const pendingAction = makeElement();
+    let focusCount = 0;
+    pendingAction.focus = () => {
+        focusCount++;
+        rt.document.activeElement = pendingAction;
+    };
+    rt.__test.elements.pendingMenu.querySelector = () => pendingAction;
+    rt.__test.elements.pendingMenu.contains = target => target === pendingAction;
+    rt.__test.elements.pendingModal.contains = target => target === pendingAction;
+    rt.__test.elements.status.focus = () => {
+        rt.__test.elements.status.focused = true;
+        rt.document.activeElement = rt.__test.elements.status;
+    };
+
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    rt.render();
+    assert.strictEqual(focusCount, 1);
+    assert.strictEqual(rt.document.activeElement, pendingAction);
+
+    rt.render();
+    assert.strictEqual(focusCount, 1);
+
+    game.pendingTV = 0;
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.render();
+    assert.strictEqual(rt.document.activeElement, rt.__test.elements.status);
+});
+
 runTest('integration: Business Center pending modal の pointer-events none をwatchdogが復旧する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

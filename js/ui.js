@@ -1,6 +1,7 @@
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
+const pendingModalFocusController = UiPendingEffects.createFocusController();
 
 function uiGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
@@ -477,21 +478,34 @@ function normalizePendingModalInteraction(el, modal, hasContent) {
     );
 }
 
+function pendingModalFocusEligible() {
+    const onlineState = uiOnlineRuntimeSnapshot();
+    return onlineState.isReplaying !== true && isCurrentHumanUiTurn();
+}
+
 function updatePendingModalContent(el, modal, html) {
     if (!el || !modal) return false;
-    const nextHtml = html || "";
+    let nextHtml = html || "";
     if (nextHtml) {
         const blockingIds = visibleBlockingModalIds().filter(id => id !== 'pendingModal');
         if (blockingIds.length > 0) {
             recordModalPolicyViolation('pending-modal-open-denied', { parentModalId: blockingIds[0], childModalId: 'pendingModal', visibleBlockingModalIds: blockingIds });
-            if (el.innerHTML !== '') el.innerHTML = '';
-            normalizePendingModalInteraction(el, modal, false);
-            return true;
+            nextHtml = '';
         }
     }
     return pendingModalUpdateController.run(() => {
+        const documentRef = typeof document !== 'undefined' ? document : null;
+        const activeElement = documentRef && documentRef.activeElement;
+        const focusPlan = pendingModalFocusController.transition(!!nextHtml, {
+            activeWithin: UiPendingEffects.containsActiveElement(modal, el, activeElement),
+            focusEligible: pendingModalFocusEligible(),
+        });
         if (el.innerHTML !== nextHtml) el.innerHTML = nextHtml;
         normalizePendingModalInteraction(el, modal, !!nextHtml);
+        UiPendingEffects.applyFocusPlan(focusPlan, {
+            content: el,
+            restoreGameFocus: () => UiScreenFocus.focusGame(documentRef),
+        });
         return true;
     });
 }
