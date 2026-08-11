@@ -76,11 +76,61 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
         nextPreviousPhase: 'roll',
     });
     assert.deepStrictEqual(view.coinChanges, [{ playerIndex: 0, diff: 2 }]);
+    assert.strictEqual(view.coinChangeAnnouncement, 'Alice +2コイン');
     assert.deepStrictEqual(view.nextCoins, [7, 3]);
     assert.deepStrictEqual(previousCoins, [5, 3]);
     assert.ok(Object.isFrozen(view));
     assert.ok(Object.isFrozen(view.coinChanges));
     assert.ok(Object.isFrozen(view.coinChanges[0]));
+});
+
+runTest('UI coin change announcementはlocalの人間だけを1通知へ集約する', () => {
+    const facts = {
+        coinChanges: [
+            { playerIndex: 0, diff: 3 },
+            { playerIndex: 1, diff: -2 },
+            { playerIndex: 2, diff: 5 },
+        ],
+        players: [{ name: 'Alice' }, { name: 'Bob' }, { name: 'CPU' }],
+        cpuPlayerIndexes: [2],
+        isOnlineGame: false,
+        myPlayerIndex: -1,
+        isReplaying: false,
+    };
+    assert.strictEqual(
+        UiGameStatusView.buildCoinChangeAnnouncement(facts),
+        'Alice +3コイン、Bob -2コイン'
+    );
+    assert.strictEqual(UiGameStatusView.buildCoinChangeAnnouncement({
+        ...facts,
+        coinChanges: [{ playerIndex: 2, diff: 1 }],
+    }), '');
+});
+
+runTest('UI coin change announcementはonline相手とreplayを通知しない', () => {
+    const facts = {
+        coinChanges: [
+            { playerIndex: 0, diff: 3 },
+            { playerIndex: 1, diff: -2 },
+        ],
+        players: [{ name: 'Alice' }, { name: 'Bob' }],
+        cpuPlayerIndexes: [],
+        isOnlineGame: true,
+        myPlayerIndex: 0,
+        isReplaying: false,
+    };
+    assert.strictEqual(
+        UiGameStatusView.buildCoinChangeAnnouncement(facts),
+        'Alice +3コイン'
+    );
+    assert.strictEqual(UiGameStatusView.buildCoinChangeAnnouncement({
+        ...facts,
+        coinChanges: [{ playerIndex: 1, diff: -2 }],
+    }), '');
+    assert.strictEqual(UiGameStatusView.buildCoinChangeAnnouncement({
+        ...facts,
+        isReplaying: true,
+    }), '');
 });
 
 runTest('UI turn transitionは初回とreplayで告知せず既存index更新を維持する', () => {

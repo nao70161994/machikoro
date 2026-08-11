@@ -303,6 +303,11 @@ function renderActiveGameState(current) {
         pendingRenovation: currentGame.pendingRenovation,
         builtThisTurn: currentGame.builtThisTurn,
         previousCoins: gameState.prevCoins,
+        cpuPlayerIndexes: currentGame.players
+            .map((player, playerIndex) => currentCpuPlayerAt(playerIndex) ? playerIndex : -1)
+            .filter(playerIndex => playerIndex >= 0),
+        isOnlineGame: onlineState.isOnlineGame,
+        myPlayerIndex: onlineState.myPlayerIndex,
         lastDice1: currentGame.lastDice1,
         lastDice2: currentGame.lastDice2,
         lastDiceResult: currentGame.lastDiceResult,
@@ -369,6 +374,12 @@ function renderActiveGameState(current) {
         },
         showCoinAnimation(playerIndex, diff) {
             showCoinAnimation(playerIndex, diff);
+        },
+        announceCoinChanges(text) {
+            const announcer = document.getElementById('coinChangeAnnouncer');
+            if (!announcer) return;
+            announcer.textContent = '';
+            announcer.textContent = text;
         },
         setPreviousCoins(coins) {
             GameRuntimeState.runtime.setPreviousCoins(coins);

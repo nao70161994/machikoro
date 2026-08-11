@@ -2308,6 +2308,7 @@ runTest('onlineStatus はライブリージョンとして宣言されている'
     assert.ok(html.includes('id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
 });
 
 runTest('card detail button はカードに重ならない専用行へ配置する', () => {

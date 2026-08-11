@@ -23,6 +23,7 @@ function makeView(announce = true) {
             { playerIndex: 0, diff: 3 },
             { playerIndex: 2, diff: -1 },
         ],
+        coinChangeAnnouncement: 'Alice +3コイン',
         nextCoins: [6, 4, 2],
     };
 }
@@ -63,6 +64,7 @@ runTest('active game effect境界は既存描画順と値を維持する', () =>
         ['runRenderStep', 'coinAnimation'],
         ['showCoinAnimation', 0, 3],
         ['showCoinAnimation', 2, -1],
+        ['announceCoinChanges', 'Alice +3コイン'],
         ['setPreviousCoins', [6, 4, 2]],
         ['runRenderStep', 'renderBuildMenu'],
         ['renderBuildMenu'],
@@ -74,6 +76,14 @@ runTest('active game effect境界は既存描画順と値を維持する', () =>
     ]);
     const previousCoinsCall = calls.find(call => call[0] === 'setPreviousCoins');
     assert.notStrictEqual(previousCoinsCall[1], view.nextCoins);
+});
+
+runTest('active game effect境界は空のcoin通知をlive regionへ送らない', () => {
+    const calls = [];
+    const view = makeView();
+    view.coinChangeAnnouncement = '';
+    UiGameStatusEffects.execute(view, makeEffects(calls));
+    assert.strictEqual(calls.some(call => call[0] === 'announceCoinChanges'), false);
 });
 
 runTest('active game effect境界はturn継続中にannouncerだけを省略する', () => {

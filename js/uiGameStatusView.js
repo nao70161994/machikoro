@@ -54,6 +54,32 @@ function buildTurnTransitionView({
     });
 }
 
+function buildCoinChangeAnnouncement({
+    coinChanges,
+    players,
+    cpuPlayerIndexes,
+    isOnlineGame,
+    myPlayerIndex,
+    isReplaying,
+}) {
+    if (isReplaying === true) return '';
+    const playerList = Array.isArray(players) ? players : [];
+    const cpuIndexes = new Set(Array.isArray(cpuPlayerIndexes) ? cpuPlayerIndexes : []);
+    return (Array.isArray(coinChanges) ? coinChanges : [])
+        .filter(change => Number.isInteger(change.playerIndex) &&
+            Number.isFinite(change.diff) && change.diff !== 0 &&
+            !cpuIndexes.has(change.playerIndex) &&
+            (isOnlineGame !== true || change.playerIndex === myPlayerIndex))
+        .map(change => {
+            const player = playerList[change.playerIndex];
+            if (!player || typeof player.name !== 'string' || !player.name) return '';
+            const sign = change.diff > 0 ? '+' : '';
+            return `${player.name} ${sign}${change.diff}コイン`;
+        })
+        .filter(Boolean)
+        .join('、');
+}
+
 function buildActiveGameView(facts) {
     const players = Array.isArray(facts.players) ? facts.players : [];
     const previousCoins = facts.previousCoins;
@@ -74,6 +100,14 @@ function buildActiveGameView(facts) {
         diceValues: selectDiceValues(facts),
         turnTransition: buildTurnTransitionView(facts),
         coinChanges: Object.freeze(coinChanges),
+        coinChangeAnnouncement: buildCoinChangeAnnouncement({
+            coinChanges,
+            players,
+            cpuPlayerIndexes: facts.cpuPlayerIndexes,
+            isOnlineGame: facts.isOnlineGame,
+            myPlayerIndex: facts.myPlayerIndex,
+            isReplaying: facts.isReplaying,
+        }),
         nextCoins: Object.freeze(players.map(player => player.coins)),
     });
 }
@@ -84,6 +118,7 @@ const UiGameStatusView = Object.freeze({
     buildSkipButtonView,
     selectDiceValues,
     buildTurnTransitionView,
+    buildCoinChangeAnnouncement,
     buildActiveGameView,
 });
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusView;

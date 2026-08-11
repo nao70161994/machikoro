@@ -44,6 +44,7 @@ const UiGameStatusEffects = (() => {
         'renderLog',
         'renderPlayers',
         'showCoinAnimation',
+        'announceCoinChanges',
         'setPreviousCoins',
         'renderBuildMenu',
         'syncUiInteractabilityAfterRender',
@@ -85,6 +86,9 @@ const UiGameStatusEffects = (() => {
             view.coinChanges.forEach(change => {
                 effects.showCoinAnimation(change.playerIndex, change.diff);
             });
+            if (view.coinChangeAnnouncement) {
+                effects.announceCoinChanges(view.coinChangeAnnouncement);
+            }
             effects.setPreviousCoins(view.nextCoins.slice());
         });
         effects.runRenderStep('renderBuildMenu', effects.renderBuildMenu);
