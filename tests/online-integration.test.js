@@ -2,6 +2,29 @@ const assert = require('assert');
 const { makeElement, runTest } = require('./helpers/test-utils');
 const { loadIntegrationRuntime } = require('./helpers/integration-runtime');
 
+runTest('online integration: room IDのEnterは既存join経路で正規化payloadを一度だけ送る', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    const event = {
+        target: rt.__test.elements.roomIdInput,
+        key: 'Enter',
+        preventDefaultCalls: 0,
+        preventDefault() { this.preventDefaultCalls += 1; },
+    };
+    rt.__test.elements.playerNameInput.value = ' Alice ';
+    rt.__test.elements.roomIdInput.value = ' ab12cd ';
+
+    assert.strictEqual(rt.handleStaticUiKeydown(event), true);
+    assert.strictEqual(event.preventDefaultCalls, 1);
+    assert.strictEqual(rt.__test.socketEmits.length, 1);
+    assert.strictEqual(rt.__test.socketEmits[0].name, 'joinRoom');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.roomId, 'AB12CD');
+    assert.strictEqual(rt.__test.socketEmits[0].payload.playerName, 'Alice');
+    assert.strictEqual(rt.__test.elements.onlineJoinSubmitButton.disabled, true);
+
+    assert.strictEqual(rt.handleStaticUiKeydown(event), false);
+    assert.strictEqual(rt.__test.socketEmits.length, 1);
+});
+
 runTest('online integration: reconnectOnline は rejoinRoom を送信して online タブを開く', () => {
     const rt = loadIntegrationRuntime({ includeOnline: true });
     rt.localStorage.setItem('onlineSession', JSON.stringify({

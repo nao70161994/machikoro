@@ -31,7 +31,7 @@ function loadIntegrationRuntime(options = {}) {
         confirmOkBtn: makeElement(),
         confirmCancelBtn: makeElement(),
         onlineCreateSubmitButton: makeElement(),
-        onlineJoinSubmitButton: makeElement(),
+        onlineJoinSubmitButton: makeElement({ id: 'onlineJoinSubmitButton' }),
         titleScreen: makeElement(),
         gameScreen: makeElement(),
         status: makeElement(),
@@ -52,7 +52,7 @@ function loadIntegrationRuntime(options = {}) {
         players: makeElement(),
         onlineStatus: makeElement(),
         playerNameInput: makeElement({ value: 'Alice' }),
-        roomIdInput: makeElement({ value: 'ROOM01' }),
+        roomIdInput: makeElement({ id: 'roomIdInput', value: 'ROOM01' }),
     };
     const timeouts = [];
     const intervals = [];

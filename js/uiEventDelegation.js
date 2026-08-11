@@ -57,6 +57,20 @@ const UiEventDelegation = (() => {
         return !!element && !element.disabled && element.getAttribute('role') === 'button';
     }
 
+    function buildRoomJoinKeyboardPlan(event, state = {}) {
+        const isPlainEnter = !!event && event.key === 'Enter' &&
+            event.isComposing !== true && event.keyCode !== 229 && event.repeat !== true &&
+            event.shiftKey !== true && event.ctrlKey !== true &&
+            event.altKey !== true && event.metaKey !== true;
+        const handled = isPlainEnter && state.targetId === 'roomIdInput' &&
+            state.inputEnabled === true && state.joinButtonEnabled === true;
+        return Object.freeze({
+            handled,
+            preventDefault: handled,
+            effectName: handled ? 'joinRoom' : '',
+        });
+    }
+
     function commandFromElement(element, family) {
         if (!element || !element.dataset) return null;
         const key = family === 'static' ? 'uiAction'
@@ -118,6 +132,7 @@ const UiEventDelegation = (() => {
         elementFromEvent,
         isKeyboardActivationKey,
         isEnabledRoleButton,
+        buildRoomJoinKeyboardPlan,
         commandFromElement,
         executeCommand,
     });

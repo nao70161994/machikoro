@@ -51,6 +51,47 @@ runTest('ui event delegationはEnterとSpaceだけをkeyboard起動keyにする'
     assert.strictEqual(UiEventDelegation.isKeyboardActivationKey(null), false);
 });
 
+runTest('ui event delegationはroom IDの修飾なしEnterだけを参加planにする', () => {
+    const enabled = {
+        targetId: 'roomIdInput',
+        inputEnabled: true,
+        joinButtonEnabled: true,
+    };
+    const plan = UiEventDelegation.buildRoomJoinKeyboardPlan({ key: 'Enter' }, enabled);
+    assert.deepStrictEqual(plan, {
+        handled: true,
+        preventDefault: true,
+        effectName: 'joinRoom',
+    });
+    assert.ok(Object.isFrozen(plan));
+
+    for (const event of [
+        { key: ' ' },
+        { key: 'Escape' },
+        { key: 'Enter', isComposing: true },
+        { key: 'Enter', keyCode: 229 },
+        { key: 'Enter', repeat: true },
+        { key: 'Enter', shiftKey: true },
+        { key: 'Enter', ctrlKey: true },
+        { key: 'Enter', altKey: true },
+        { key: 'Enter', metaKey: true },
+    ]) {
+        assert.strictEqual(
+            UiEventDelegation.buildRoomJoinKeyboardPlan(event, enabled).handled,
+            false
+        );
+    }
+    assert.strictEqual(UiEventDelegation.buildRoomJoinKeyboardPlan(
+        { key: 'Enter' }, { ...enabled, targetId: 'playerNameInput' }
+    ).handled, false);
+    assert.strictEqual(UiEventDelegation.buildRoomJoinKeyboardPlan(
+        { key: 'Enter' }, { ...enabled, inputEnabled: false }
+    ).handled, false);
+    assert.strictEqual(UiEventDelegation.buildRoomJoinKeyboardPlan(
+        { key: 'Enter' }, { ...enabled, joinButtonEnabled: false }
+    ).handled, false);
+});
+
 runTest('ui event delegationは有効なrole buttonだけを起動対象にする', () => {
     const element = { disabled: false, getAttribute: name => name === 'role' ? 'button' : null };
     assert.strictEqual(UiEventDelegation.isEnabledRoleButton(element), true);

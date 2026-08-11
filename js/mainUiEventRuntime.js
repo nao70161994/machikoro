@@ -116,6 +116,21 @@ const MainUiEventRuntime = (() => {
             ]), 'data-ui-change');
         }
         function handleStaticKeydown(event) {
+            const target = event && event.target;
+            const joinButton = dependencies.document.getElementById('onlineJoinSubmitButton');
+            const joinPlan = dependencies.delegation.buildRoomJoinKeyboardPlan(event, {
+                targetId: target && target.id,
+                inputEnabled: !!target && target.disabled !== true,
+                joinButtonEnabled: !!joinButton && joinButton.disabled !== true,
+            });
+            if (joinPlan.handled) {
+                if (joinPlan.preventDefault && event &&
+                        typeof event.preventDefault === 'function') {
+                    event.preventDefault();
+                }
+                staticEffects[joinPlan.effectName]();
+                return true;
+            }
             const element = actionElement(event, 'data-ui-action');
             if (element && element.getAttribute('role') === 'tab') {
                 const tablist = typeof element.closest === 'function'

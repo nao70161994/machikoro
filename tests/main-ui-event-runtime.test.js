@@ -9,7 +9,7 @@ const { makeElement, runTest } = require('./helpers/test-utils');
 function createHarness() {
     const calls = [];
     const handlers = {};
-    const elements = Object.fromEntries(['diceChoose', 'pendingMenu', 'buildMenu', 'players', 'speedLabel', 'onlineSpeedLabel', 'pwaUpdateBanner', 'pwaInstallBanner'].map(id => [id, makeElement({ addEventListener: (name, fn) => { handlers[id + ':' + name] = fn; } })]));
+    const elements = Object.fromEntries(['diceChoose', 'pendingMenu', 'buildMenu', 'players', 'speedLabel', 'onlineSpeedLabel', 'pwaUpdateBanner', 'pwaInstallBanner', 'roomIdInput', 'onlineJoinSubmitButton'].map(id => [id, makeElement({ id, addEventListener: (name, fn) => { handlers[id + ':' + name] = fn; } })]));
     elements.pwaUpdateBanner.contains = element => element && element.parentElement === elements.pwaUpdateBanner;
     const document = {
         activeElement: null,
@@ -59,6 +59,38 @@ runTest('main UI event runtimeは待機中のroom IDをcopy effectへ渡す', ()
     assert.deepStrictEqual(h.calls, [
         ['preventDefault'], ['copyOnlineRoomId', 'ABC123'],
     ]);
+});
+
+runTest('main UI event runtimeはroom IDのEnterを既存join effectへ一度だけ渡す', () => {
+    const h = createHarness();
+    const keyEvent = (extra = {}) => ({
+        target: h.elements.roomIdInput,
+        key: 'Enter',
+        preventDefault: () => h.calls.push(['preventDefault']),
+        ...extra,
+    });
+
+    assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent()), true);
+    assert.deepStrictEqual(h.calls, [['preventDefault'], ['joinRoom']]);
+
+    h.calls.length = 0;
+    for (const extra of [
+        { key: ' ' },
+        { key: 'Escape' },
+        { isComposing: true },
+        { shiftKey: true },
+        { repeat: true },
+    ]) {
+        assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent(extra)), false);
+    }
+    assert.deepStrictEqual(h.calls, []);
+
+    h.elements.roomIdInput.disabled = true;
+    assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent()), false);
+    h.elements.roomIdInput.disabled = false;
+    h.elements.onlineJoinSubmitButton.disabled = true;
+    assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent()), false);
+    assert.deepStrictEqual(h.calls, []);
 });
 
 runTest('main UI event runtimeは建設候補shortcutをfocus effectへ渡す', () => {
