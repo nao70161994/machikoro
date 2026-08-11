@@ -61,6 +61,14 @@ runTest('main UI event runtimeは待機中のroom IDをcopy effectへ渡す', ()
     ]);
 });
 
+runTest('main UI event runtimeは建設候補shortcutをfocus effectへ渡す', () => {
+    const h = createHarness();
+    h.runtime.handleStaticClick(h.event({ uiAction: 'focusBuildMenu' }));
+    assert.deepStrictEqual(h.calls, [
+        ['preventDefault'], ['focusBuildMenu'],
+    ]);
+});
+
 runTest('main UI event runtimeはlocal/online速度の表示とaria-valuetextを同期する', () => {
     const h = createHarness();
     const local = h.event({ uiInput: 'cpuSpeed' }, { value: '500' });

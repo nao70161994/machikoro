@@ -2194,6 +2194,62 @@ runTest('UiBuildMenu action state はphase・pending・turn・allowedActionsをp
     }
 });
 
+runTest('UiBuildMenu 建設shortcutはCPU・online相手・replay・pending中に表示しない', () => {
+    const helper = require('../js/uiBuildMenu');
+    const base = {
+        phase: 'build',
+        buildPhase: 'build',
+        hasPending: false,
+        builtThisTurn: false,
+        isHumanTurn: true,
+        isReplaying: false,
+        inputBlocked: false,
+        allowedActions: new Set(['buildCard', 'buildLandmark', 'nextTurn']),
+    };
+    assert.deepStrictEqual({ ...helper.buildShortcutView(base) }, {
+        visible: true,
+        display: 'block',
+        disabled: false,
+        ariaHidden: 'false',
+    });
+    for (const [label, blocked] of [
+        ['別phase', { phase: 'roll' }],
+        ['pending', { hasPending: true }],
+        ['建設済み', { builtThisTurn: true }],
+        ['CPU手番', { isHumanTurn: false }],
+        ['online相手手番', { isHumanTurn: false }],
+        ['replay', { isReplaying: true }],
+        ['online入力block', { inputBlocked: true }],
+        ['建設actionなし', { allowedActions: new Set(['nextTurn']) }],
+    ]) {
+        assert.strictEqual(helper.buildShortcutView({ ...base, ...blocked }).visible, false, label);
+    }
+});
+
+runTest('UiBuildMenu 建設shortcut effectは表示同期と既存menuへのfocus/scrollを行う', () => {
+    const helper = require('../js/uiBuildMenu');
+    const button = {
+        style: {},
+        setAttribute(name, value) { this[name] = value; },
+    };
+    assert.strictEqual(helper.applyBuildShortcutView(button, helper.buildShortcutView({})), true);
+    assert.strictEqual(button.style.display, 'none');
+    assert.strictEqual(button.disabled, true);
+    assert.strictEqual(button['aria-hidden'], 'true');
+
+    const calls = [];
+    const target = {
+        focus(options) { calls.push(['focus', options]); },
+        scrollIntoView(options) { calls.push(['scrollIntoView', options]); },
+    };
+    assert.strictEqual(helper.focusAndScrollToBuildMenu(target), true);
+    assert.deepStrictEqual(calls, [
+        ['focus', { preventScroll: true }],
+        ['scrollIntoView', { block: 'start' }],
+    ]);
+    assert.strictEqual(helper.focusAndScrollToBuildMenu({ focus() {} }), false);
+});
+
 runTest('UiBuildMenu undo stateは表示条件とhuman入力gateをpureに分離する', () => {
     const helper = require('../js/uiBuildMenu');
     const visible = helper.undoBuildActionState({

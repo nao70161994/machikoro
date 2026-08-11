@@ -67,6 +67,47 @@ const UiBuildMenu = (() => {
         });
     }
 
+    function buildShortcutView(options = {}) {
+        const buildActionAvailable = includesAction(options.allowedActions, 'buildCard') ||
+            includesAction(options.allowedActions, 'buildLandmark');
+        const visible = options.phase === options.buildPhase &&
+            options.hasPending !== true && options.builtThisTurn !== true &&
+            options.isHumanTurn === true && options.isReplaying !== true &&
+            options.inputBlocked !== true && buildActionAvailable;
+        return Object.freeze({
+            visible,
+            display: visible ? 'block' : 'none',
+            disabled: !visible,
+            ariaHidden: visible ? 'false' : 'true',
+        });
+    }
+
+    function applyBuildShortcutView(button, view) {
+        if (!button || !view) return false;
+        button.style.display = view.display;
+        button.disabled = view.disabled;
+        if (typeof button.setAttribute === 'function') {
+            button.setAttribute('aria-hidden', view.ariaHidden);
+        }
+        return true;
+    }
+
+    function focusAndScrollToBuildMenu(target) {
+        if (!target || typeof target.focus !== 'function' ||
+                typeof target.scrollIntoView !== 'function') return false;
+        try {
+            target.focus({ preventScroll: true });
+        } catch (_) {
+            try {
+                target.focus();
+            } catch (_) {
+                return false;
+            }
+        }
+        target.scrollIntoView({ block: 'start' });
+        return true;
+    }
+
     function undoBuildActionState(options) {
         const visible = !!options.hasUndoState && !!options.hasGame && !!options.builtThisTurn &&
             includesAction(options.allowedActions, 'undoBuild');
@@ -226,7 +267,7 @@ const UiBuildMenu = (() => {
         return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section build-card-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
+    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

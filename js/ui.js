@@ -275,6 +275,7 @@ function renderWinnerState(winner) {
             document.getElementById("btnReroll").style.display = controls.rerollDisplay;
             document.getElementById("diceChoose").innerHTML = controls.diceChooseHtml;
             document.getElementById("buildMenu").innerHTML = controls.buildMenuHtml;
+            renderBuildShortcut(true);
         },
         renderTutorial,
         renderLog,
@@ -810,9 +811,43 @@ function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction)
     });
 }
 
+function hasPendingBuildChoice(currentGame) {
+    if (!currentGame) return false;
+    return UiPendingMenu.isPendingDisplayCandidate({
+        phase: currentGame.phase,
+        pendingPhase: GAME_PHASES.PENDING,
+        pendingIT: currentGame.pendingIT,
+        pendingRenovation: currentGame.pendingRenovation,
+    });
+}
+
+function renderBuildShortcut(forceHidden = false) {
+    const button = document.getElementById('btnBuildShortcut');
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const onlineState = uiOnlineRuntimeSnapshot();
+    const view = !forceHidden && currentGame
+        ? UiBuildMenu.buildShortcutView({
+            phase: currentGame.phase,
+            buildPhase: GAME_PHASES.BUILD,
+            hasPending: hasPendingBuildChoice(currentGame),
+            builtThisTurn: currentGame.builtThisTurn,
+            isHumanTurn: isCurrentHumanUiTurn(),
+            isReplaying: onlineState.isReplaying,
+            inputBlocked: isOnlineUiInputBlocked(),
+            allowedActions: currentUiAllowedActions(),
+        })
+        : UiBuildMenu.buildShortcutView({});
+    return UiBuildMenu.applyBuildShortcutView(button, view);
+}
+
+function focusBuildMenu() {
+    return UiBuildMenu.focusAndScrollToBuildMenu(document.getElementById('buildMenu'));
+}
+
 function renderBuildMenu() {
     const buildMenu = document.getElementById("buildMenu");
     const currentGame = uiGameRuntimeSnapshot().game;
+    renderBuildShortcut();
     if (!buildMenu || !currentGame) return;
     const activeElement = document.activeElement;
     let activeWithinBuildMenu = false;

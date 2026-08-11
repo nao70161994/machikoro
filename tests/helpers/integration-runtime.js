@@ -40,6 +40,7 @@ function loadIntegrationRuntime(options = {}) {
         btnRoll: makeElement(),
         btnSkip: makeElement(),
         btnReroll: makeElement(),
+        btnBuildShortcut: makeElement({ style: { display: 'none' } }),
         diceChoose: makeElement(),
         diceResult: makeElement(),
         diceResultAnnouncer: makeElement(),

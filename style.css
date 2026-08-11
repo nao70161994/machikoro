@@ -1164,6 +1164,15 @@ button:not(:disabled):active {
     text-align: center;
 }
 
+.build-shortcut-btn {
+    min-height: var(--touch-target-standard);
+    background: rgba(240,192,64,0.12);
+    border-color: rgba(240,192,64,0.45);
+    color: #f8d875;
+    font-weight: bold;
+    text-align: center;
+}
+
 #btnSkip {
     text-align: center;
     color: #a7a9be;

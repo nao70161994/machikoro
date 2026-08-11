@@ -293,6 +293,52 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
     }
 });
 
+test('320pxから480pxで建設shortcutが既存menuへ移動しPWA表示時も収まる', async ({ page }) => {
+    await prepare(page);
+    const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
+    for (let count = 2; count < 10; count++) await increasePlayerCount.click();
+    const playerTypes = page.locator('#playerSettings .player-setting-select');
+    for (let index = 0; index < 10; index++) await playerTypes.nth(index).selectOption('human');
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        const currentGame = GameRuntimeState.runtime.snapshot().game;
+        currentGame.phase = GAME_PHASES.BUILD;
+        currentGame.currentPlayerIndex = 0;
+        currentGame.builtThisTurn = false;
+        render();
+        document.body.classList.add('pwa-banner-open');
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
+    });
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const shortcut = page.locator('#btnBuildShortcut');
+        await expect(shortcut).toBeVisible();
+        const layout = await shortcut.evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            const banner = document.getElementById('pwaUpdateBanner').getBoundingClientRect();
+            return {
+                height: bounds.height,
+                left: bounds.left,
+                right: bounds.right,
+                bottom: bounds.bottom,
+                pwaTop: banner.top,
+                viewportWidth: document.documentElement.clientWidth,
+            };
+        });
+        expect(layout.height).toBeGreaterThanOrEqual(44);
+        expect(layout.left).toBeGreaterThanOrEqual(0);
+        expect(layout.right).toBeLessThanOrEqual(layout.viewportWidth);
+        expect(layout.bottom).toBeLessThanOrEqual(layout.pwaTop);
+        await shortcut.click();
+        await expect(page.locator('#buildMenu')).toBeFocused();
+        const buildTop = await page.locator('#buildMenu').evaluate(element => element.getBoundingClientRect().top);
+        expect(buildTop).toBeGreaterThanOrEqual(0);
+        expect(buildTop).toBeLessThan(80);
+    }
+});
+
 test('mobile WebKitの2クライアントがonline開始後に再読込復帰できる', async ({ browser, baseURL }) => {
     const hostContext = await browser.newContext({
         ...MOBILE_CONTEXT,

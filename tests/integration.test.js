@@ -16,6 +16,29 @@ function hideAllTestModals(rt) {
     if (rt.window) rt.window.__machikoroConfirmModalOpen = false;
 }
 
+runTest('integration: build phaseのshortcutは既存建設menuへfocusしてpending中は隠れる', () => {
+    const rt = loadIntegrationRuntime();
+    const game = rt.__test.startLocalGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.builtThisTurn = false;
+    game.currentPlayer().coins = 10;
+    rt.render();
+
+    const shortcut = rt.__test.elements.btnBuildShortcut;
+    assert.strictEqual(shortcut.style.display, 'block');
+    assert.strictEqual(shortcut.disabled, false);
+    let scrollOptions = null;
+    rt.__test.elements.buildMenu.scrollIntoView = options => { scrollOptions = options; };
+    assert.strictEqual(rt.focusBuildMenu(), true);
+    assert.strictEqual(rt.__test.elements.buildMenu.focused, true);
+    assert.strictEqual(scrollOptions.block, 'start');
+
+    game.pendingIT = true;
+    rt.render();
+    assert.strictEqual(shortcut.style.display, 'none');
+    assert.strictEqual(shortcut.disabled, true);
+});
+
 runTest('integration: tutorialをOFFにしても詳しさと支援技術向け状態を保つ', () => {
     const rt = loadIntegrationRuntime();
     rt.onChangeTutorialLevel('advanced');
