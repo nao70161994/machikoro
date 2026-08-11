@@ -102,6 +102,7 @@ interface Window {
     CPUBuildStrategy: typeof import("../js/cpuBuildStrategy").CPUBuildStrategy;
     OnlineReconnectRuntime: typeof import("../js/onlineReconnectRuntime");
     OnlineGameEngineRuntime: typeof import("../js/onlineGameEngineRuntime");
+    OnlineRestoreMetadata: typeof import("../js/onlineRestoreMetadata");
     CPUBuildExecution: unknown;
     CPULegalMoves: unknown;
     CPUProfile: unknown;
