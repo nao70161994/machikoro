@@ -3,6 +3,7 @@
 const OnlineRoomShare = (() => {
     const COPY_SUCCESS_MESSAGE = 'ルームIDをコピーしました。参加者に共有してください。';
     const COPY_FALLBACK_MESSAGE = '自動コピーできませんでした。選択した6文字を参加者に共有してください。';
+    const WAITING_SLOT_LABEL = '待機中...';
 
     function escapeText(value) {
         return String(value ?? '')
@@ -21,9 +22,13 @@ const OnlineRoomShare = (() => {
         const normalizedRoomId = normalizeRoomId(roomId);
         const safeRoomId = escapeText(normalizedRoomId);
         const hasPlayerList = Array.isArray(players);
+        const hasWaitingSlot = hasPlayerList && players.some(player => player === WAITING_SLOT_LABEL);
         const playerList = hasPlayerList
-            ? `<div class="waiting-players">プレイヤー: ${players.map(escapeText).join('、')} (${players.length}人)</div>`
+            ? `<div class="waiting-players">参加枠（${players.length}枠）: ${players.map(escapeText).join('、')}</div>`
             : '<div class="waiting-players">プレイヤーを待っています...</div>';
+        const startHelp = hasWaitingSlot
+            ? '<p class="room-share-start-help">参加枠が揃うと自動開始します。</p>'
+            : '';
         return `<div class="room-share-panel">
             ${hasPlayerList ? '' : '<div class="room-share-state">ルームを作成しました！</div>'}
             <div class="room-share-label">ルームID</div>
@@ -33,6 +38,7 @@ const OnlineRoomShare = (() => {
             </div>
             <p class="room-share-help">この6文字を参加者に共有してください。</p>
             ${playerList}
+            ${startHelp}
         </div>`;
     }
 
@@ -55,6 +61,7 @@ const OnlineRoomShare = (() => {
     return Object.freeze({
         COPY_FALLBACK_MESSAGE,
         COPY_SUCCESS_MESSAGE,
+        WAITING_SLOT_LABEL,
         buildWaitingHtml,
         copyRoomId,
         escapeText,

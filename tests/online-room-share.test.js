@@ -9,12 +9,16 @@ runTest('online room shareはroom IDと参加者をescapeして共有手順を�
     const createdHtml = OnlineRoomShare.buildWaitingHtml('ABC123');
     assert.ok(createdHtml.includes('ルームを作成しました！'));
     assert.ok(createdHtml.includes('プレイヤーを待っています...'));
-    const html = OnlineRoomShare.buildWaitingHtml(' ab<12 ', ['Alice', '<Bob>']);
+    const html = OnlineRoomShare.buildWaitingHtml(' ab<12 ', ['Alice', '<Bob>', '待機中...']);
     assert.ok(html.includes('data-ui-action="copyOnlineRoomId"'));
     assert.ok(html.includes('data-room-id="AB&lt;12"'));
     assert.ok(html.includes('この6文字を参加者に共有してください'));
-    assert.ok(html.includes('Alice、&lt;Bob&gt; (2人)'));
+    assert.ok(html.includes('参加枠（3枠）: Alice、&lt;Bob&gt;、待機中...'));
+    assert.ok(html.includes('参加枠が揃うと自動開始します'));
     assert.ok(!html.includes('<Bob>'));
+    const readyHtml = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob']);
+    assert.ok(readyHtml.includes('参加枠（2枠）: Alice、Bob'));
+    assert.ok(!readyHtml.includes('自動開始します'));
 });
 
 runTest('online room shareはClipboard成功時に正規化IDを通知する', async () => {

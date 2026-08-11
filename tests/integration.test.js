@@ -582,6 +582,20 @@ runTest('integration: online action ACK停止はwatchdogがpendingを保持し�
     assert.strictEqual(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-online-action-resync'), true);
 });
 
+runTest('integration: online待機一覧は参加枠と自動開始条件を説明する', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.initSocket();
+    rt.__test.socketHandlers.roomCreated({
+        roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-a',
+    });
+    rt.__test.socketHandlers.playerList(['Alice', '待機中...', 'CPU（普通）']);
+
+    const status = rt.__test.elements.onlineStatus.innerHTML;
+    assert.ok(status.includes('参加枠（3枠）: Alice、待機中...、CPU（普通）'));
+    assert.ok(status.includes('参加枠が揃うと自動開始します'));
+    assert.ok(!status.includes('(3人)'));
+});
+
 runTest('integration: 勝利表示後のbuild phaseをwatchdogがfreeze扱いしない', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

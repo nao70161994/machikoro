@@ -120,9 +120,10 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
     assert.strictEqual(harness.calls[3][1], 'ルーム ROOM01 に参加しました！');
 
     harness.calls.length = 0;
-    harness.runtime.handlePlayerList(['Alice', 'Bob']);
+    harness.runtime.handlePlayerList(['Alice', '待機中...']);
     assert.strictEqual(harness.calls[0][0], 'setStatusHtml');
-    assert.ok(harness.calls[0][1].includes('プレイヤー: Alice、Bob (2人)'));
+    assert.ok(harness.calls[0][1].includes('参加枠（2枠）: Alice、待機中...'));
+    assert.ok(harness.calls[0][1].includes('参加枠が揃うと自動開始します'));
     assert.ok(harness.calls[0][1].includes('data-ui-action="copyOnlineRoomId"'));
 });
 
