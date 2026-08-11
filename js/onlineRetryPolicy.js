@@ -33,6 +33,25 @@ function recreateRetryableAppErrorReason(message) {
         : '';
 }
 
+const RECREATE_APP_ERROR_DECISIONS = Object.freeze({
+    TERMINAL: 'terminal',
+    RETRYABLE: 'retryable',
+});
+
+function recreateAppErrorPlan(message, state = {}) {
+    const reason = recreateRetryableAppErrorReason(message);
+    const hostlessRestorePending = state.hostlessRestorePending === true;
+    const retryable = !!reason && state.isReconnectingOnline === true &&
+        (state.isRoomHost === true || hostlessRestorePending);
+    return Object.freeze({
+        decision: retryable
+            ? RECREATE_APP_ERROR_DECISIONS.RETRYABLE
+            : RECREATE_APP_ERROR_DECISIONS.TERMINAL,
+        reason,
+        clearHostlessPending: retryable && hostlessRestorePending,
+    });
+}
+
 function isRejoinExhausted(attemptCount, maxAttempts = ONLINE_RETRY_DEFAULTS.rejoinMaxAttempts) {
     return Number.isInteger(attemptCount) && attemptCount >= maxAttempts;
 }
@@ -295,6 +314,8 @@ const OnlineRetryPolicy = Object.freeze({
     defaults: ONLINE_RETRY_DEFAULTS,
     recreateRetryableReasons: RECREATE_RETRYABLE_APP_ERROR_REASONS,
     recreateRetryableAppErrorReason,
+    recreateAppErrorDecisions: RECREATE_APP_ERROR_DECISIONS,
+    recreateAppErrorPlan,
     isRejoinExhausted,
     rejoinDeadline,
     rejoinWaitingMessage,

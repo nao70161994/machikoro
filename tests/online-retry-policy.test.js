@@ -57,6 +57,45 @@ runTest('recreateの一時的appErrorをstable reasonへ分類する', () => {
     assert.ok(Object.isFrozen(reasons));
 });
 
+runTest('recreate appError planは通常hostとhostless選出中だけ一時拒否を保持扱いにする', () => {
+    const decisions = OnlineRetryPolicy.recreateAppErrorDecisions;
+    const message = 'ルーム数が上限に達しています。しばらくしてから再試行してください';
+    assert.deepStrictEqual(OnlineRetryPolicy.recreateAppErrorPlan(message, {
+        isReconnectingOnline: true,
+        isRoomHost: true,
+    }), {
+        decision: decisions.RETRYABLE,
+        reason: OnlineRetryPolicy.recreateRetryableReasons.ROOM_CAPACITY,
+        clearHostlessPending: false,
+    });
+    assert.deepStrictEqual(OnlineRetryPolicy.recreateAppErrorPlan(message, {
+        isReconnectingOnline: true,
+        isRoomHost: false,
+        hostlessRestorePending: true,
+    }), {
+        decision: decisions.RETRYABLE,
+        reason: OnlineRetryPolicy.recreateRetryableReasons.ROOM_CAPACITY,
+        clearHostlessPending: true,
+    });
+    for (const state of [
+        { isReconnectingOnline: false, isRoomHost: true },
+        { isReconnectingOnline: true, isRoomHost: false, hostlessRestorePending: false },
+    ]) {
+        assert.strictEqual(
+            OnlineRetryPolicy.recreateAppErrorPlan(message, state).decision,
+            decisions.TERMINAL
+        );
+    }
+    assert.deepStrictEqual(OnlineRetryPolicy.recreateAppErrorPlan('INVALID_TOKEN', {
+        isReconnectingOnline: true,
+        hostlessRestorePending: true,
+    }), {
+        decision: decisions.TERMINAL,
+        reason: '',
+        clearHostlessPending: false,
+    });
+});
+
 runTest('online retry timeout decisionは無視・再送・上限到達を純粋判定する', () => {
     const decisions = OnlineRetryPolicy.timeoutDecisions;
     assert.deepStrictEqual(decisions, {

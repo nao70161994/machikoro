@@ -4220,6 +4220,79 @@ runTest('一時的なrecreate拒否はsocketを閉じてもroom-scoped復元bund
     }
 });
 
+runTest('hostless選出中の一時的recreate拒否は非hostでも保存を保持してpendingを解除する', () => {
+    for (const message of [
+        '復元処理を続けて実行できません',
+        'ルーム数が上限に達しています。しばらくしてから再試行してください',
+        'ルーム作成が短時間に連続しています。少し待ってから再試行してください',
+        'ルーム作成が短時間に集中しています。少し待ってから再試行してください',
+        '復元処理が短時間に集中しています。少し待ってから再試行してください',
+    ]) {
+        const rt = loadOnlineRuntime();
+        let disconnected = false;
+        const session = {
+            roomId: 'ROOM01', playerIndex: 1, playerName: 'Bob',
+            reconnectToken: 'token-b', isRoomHost: false,
+        };
+        const gameStart = { schemaVersion: 2, playerNames: ['Alice', 'Bob'] };
+        rt.localStorage.setItem('onlineSession', JSON.stringify(session));
+        rt.localStorage.setItem('onlineGameStart:room:ROOM01', JSON.stringify(gameStart));
+        rt.localStorage.setItem('onlineRestoreRoomIndex', JSON.stringify([
+            { schemaVersion: 1, roomId: 'ROOM01', actionSeq: 4 },
+        ]));
+        rt.setOnlineState({
+            socket: { disconnect() { disconnected = true; } },
+            isReconnectingOnline: true,
+            isRoomHost: false,
+            hostlessRestorePending: true,
+            myRoomId: 'ROOM01',
+            myOriginalPlayerIndex: 1,
+            myPlayerName: 'Bob',
+            reconnectToken: 'token-b',
+        });
+
+        rt.handleAppError(message);
+
+        assert.strictEqual(disconnected, true, message);
+        assert.strictEqual(rt.getOnlineState().hostlessRestorePending, false, message);
+        assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false, message);
+        assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineSession')), session, message);
+        assert.deepStrictEqual(
+            JSON.parse(rt.localStorage.getItem('onlineGameStart:room:ROOM01')),
+            gameStart,
+            message
+        );
+        assert.strictEqual(rt.localStorage.getItem('onlineRestoreRoomIndex') != null, true, message);
+        assert.match(rt.document.getElementById('onlineStatus').textContent, /復元データは保持/, message);
+    }
+});
+
+runTest('hostless選出中でも明示的なrecreate不正は従来どおり保存を破棄する', () => {
+    const rt = loadOnlineRuntime();
+    let disconnected = false;
+    rt.localStorage.setItem('onlineSession', JSON.stringify({
+        roomId: 'ROOM01', playerIndex: 1, playerName: 'Bob', reconnectToken: 'token-b',
+    }));
+    rt.localStorage.setItem('onlineGameStart:room:ROOM01', JSON.stringify({ schemaVersion: 2 }));
+    rt.setOnlineState({
+        socket: { disconnect() { disconnected = true; } },
+        isReconnectingOnline: true,
+        isRoomHost: false,
+        hostlessRestorePending: true,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Bob',
+        reconnectToken: 'token-b',
+    });
+
+    rt.handleAppError('復元データが不完全です');
+
+    assert.strictEqual(disconnected, true);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineGameStart:room:ROOM01'), null);
+    assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false);
+});
+
 runTest('handleAppError cleanup authorityはclean event parity時に既存effect順を維持する', () => {
     const rt = loadOnlineRuntime();
     rt.initSocket();

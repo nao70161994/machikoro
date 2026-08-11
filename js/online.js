@@ -3054,8 +3054,9 @@ function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
     return effectSelection;
 }
 
-function _runOnlineReconnectRetryableCleanup() {
+function _runOnlineReconnectRetryableCleanup(plan) {
     const currentSocket = onlineSessionSnapshot().socket;
+    if (plan && plan.clearHostlessPending) _hostlessRestoreState.clear();
     _clearPendingOutboundActionForCurrentSession();
     setOnlineReconnectLegacyFlag(false);
     onlineClientEffects.updateResumeButton();
@@ -3087,9 +3088,13 @@ function handleAppError(msg) {
         _emitOnlineRejoinRequest();
         return;
     }
-    const retryableRecreateReason = OnlineRetryPolicy.recreateRetryableAppErrorReason(msg);
-    if (retryableRecreateReason && session.isReconnectingOnline && session.isRoomHost) {
-        _runOnlineReconnectRetryableCleanup();
+    const recreateErrorPlan = OnlineRetryPolicy.recreateAppErrorPlan(msg, {
+        isReconnectingOnline: session.isReconnectingOnline,
+        isRoomHost: session.isRoomHost,
+        hostlessRestorePending: _hostlessRestoreState.isPending(),
+    });
+    if (recreateErrorPlan.decision === OnlineRetryPolicy.recreateAppErrorDecisions.RETRYABLE) {
+        _runOnlineReconnectRetryableCleanup(recreateErrorPlan);
         onlineDomEffects.setStatusText(
             `⚠️ ${msg} 復元データは保持されています。時間をおいて「続きから」を押してください。`
         );
