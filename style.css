@@ -1206,18 +1206,24 @@ button:not(:disabled):active {
 
 .player-header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
+    gap: 6px 8px;
     margin-bottom: 8px;
 }
 
 .player-name {
+    min-width: 0;
     font-weight: bold;
     font-size: 16px;
+    overflow-wrap: anywhere;
 }
 
 .player-name-row {
     display: flex;
+    flex: 1 1 160px;
+    min-width: 0;
     align-items: center;
     gap: 6px;
 }
@@ -1231,8 +1237,13 @@ button:not(:disabled):active {
 
 .player-coin-row {
     display: flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    min-width: 0;
     align-items: center;
+    justify-content: flex-end;
     gap: 4px;
+    margin-left: auto;
 }
 
 .player-coins {
@@ -1683,9 +1694,12 @@ button:not(:disabled):active {
     background: linear-gradient(135deg, #1e1a30 0%, #0f0e1a 100%);
     border: 1px solid rgba(240,192,64,0.45);
     border-radius: 18px;
+    max-width: calc(100% - 32px);
     padding: 18px 36px;
     font-size: 20px;
     font-weight: 700;
+    overflow-wrap: anywhere;
+    text-align: center;
     color: #f0c040;
     text-shadow: 0 0 24px rgba(240,192,64,0.5);
     box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04);

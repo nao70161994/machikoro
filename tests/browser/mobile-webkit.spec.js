@@ -101,6 +101,59 @@ test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領�
     await expectPlayerSelectTapTargets(page, '#onlinePlayerSettings', 10);
 });
 
+test('320pxから480pxで長い手番名と終盤player情報が枠内に収まる', async ({ page }) => {
+    await prepare(page);
+    await page.evaluate(() => {
+        const announcer = document.getElementById('turnAnnouncer');
+        announcer.style.display = 'flex';
+        document.getElementById('turnAnnouncerText').textContent =
+            '👤 あいうえおかきくけこ のターン';
+        const players = document.getElementById('players');
+        players.innerHTML = [
+            '<div class="player-box active">',
+            '<div class="player-header">',
+            '<div class="player-name-row">',
+            '<span class="player-icon">👤</span>',
+            '<span class="player-name">▶ あいうえおかきくけこ</span>',
+            '</div>',
+            '<div class="player-coin-row">',
+            '<span class="player-coins">🪙 9999</span>',
+            '<span class="it-badge">💻999</span>',
+            '<span class="loan-badge">💳×6</span>',
+            '</div>',
+            '</div>',
+            '</div>',
+        ].join('');
+        document.getElementById('gameScreen').style.display = 'block';
+    });
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const layout = await page.evaluate(() => {
+            const viewportWidth = document.documentElement.clientWidth;
+            const announcer = document.querySelector('.turn-announcer-content');
+            const playerBox = document.querySelector('.player-box');
+            const playerHeader = document.querySelector('.player-header');
+            const bounds = element => element.getBoundingClientRect();
+            const isContained = element => {
+                const rect = bounds(element);
+                return rect.left >= 0 && rect.right <= viewportWidth &&
+                    element.scrollWidth <= element.clientWidth;
+            };
+            return {
+                announcerContained: isContained(announcer),
+                playerBoxContained: isContained(playerBox),
+                playerHeaderContained: isContained(playerHeader),
+                headerWrapped: bounds(playerHeader).height > 26,
+            };
+        });
+        expect(layout.announcerContained).toBe(true);
+        expect(layout.playerBoxContained).toBe(true);
+        expect(layout.playerHeaderContained).toBe(true);
+        if (width === 320) expect(layout.headerWrapped).toBe(true);
+    }
+});
+
 test('mobile WebKitの2クライアントがonline開始後に再読込復帰できる', async ({ browser, baseURL }) => {
     const hostContext = await browser.newContext({
         ...MOBILE_CONTEXT,
