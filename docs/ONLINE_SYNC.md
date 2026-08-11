@@ -113,15 +113,20 @@ Room作成入口は、正常な待ち合わせを妨げない範囲で緩いDoS�
 
 ## Restore payload limits
 
-After server restart の `recreateRoom` payload は client 由来の復元材料なので、room を作る前に `server.js` の `RESTORE_PAYLOAD_LIMITS` で早期拒否します。2026-05時点の上限は以下です。
+After server restart の `recreateRoom` payload は client 由来の復元材料なので、room を作る前に `server/runtimeLimits.js` の `RESTORE_PAYLOAD_LIMITS` で早期拒否します。2026-08時点の上限は以下です。
 
 - JSON概算サイズ: 1 MiB。
 - `actionLog`: 最大 1000 entries。live room は通常 200 entries を超えると snapshot へ圧縮されるため、restore 上限は余裕を持たせています。
 - 1文字列: 最大 4000 characters。
-- payload内の文字列合計: 最大 200000 characters。
-- snapshot / undoState 内の player card references: 最大 5000。
+- payload内の文字列合計: 最大 300000 characters。
+- snapshot / undoState 内の player card references: 最大 30000。
+- object / array / primitive の合計走査node数: 最大 65536。
 
-上限に当たった payload は `appError` の「復元データが大きすぎます」で拒否します。長時間対戦の復元を広げる場合は、client 側の snapshot compaction と server 側の上限を同じ PR で見直してください。
+上限に当たった payload は `appError` の「復元データが大きすぎます」で拒否します。Socket.IO transport は1 MiBにevent envelopeの64 KiB余裕を加え、application validatorへ到達する前の切断を避けます。長時間対戦の復元を広げる場合は、client側snapshot compaction、application上限、transport上限を同じPRで見直してください。
+
+新規roomをinstallする`recreateRoom`/hostless復元は、通常作成と同じ期限切れcleanup、500室上限、socket/IP作成枠を通ります。既存roomへのrejoin/replaceは新規roomを増やさないため容量枠を消費しません。Hostless復元は最大500 active sessions、1 socketにつき1 active room、1 playerにつき1候補に制限され、最後のrequesterが離れたsessionはtimerごと破棄されます。
+
+既存roomのrecreate tokenはaction-log sanitize/HMAC/replayより前に検証します。復元attemptにはroom作成成功枠と独立したIP入口制限があり、decodeやreplayで失敗する要求も連投できません。一方、cooldown・room上限・IP集中など再試行可能な拒否ではclientのroom-scoped restore bundle/sessionを削除しません。Hostless confirmationで候補が拒否・timeout・切断された場合も、次候補へのrotation中は既存の進行中statusを維持します。
 
 ## Restore rank
 

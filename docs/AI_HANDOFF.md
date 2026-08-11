@@ -3,6 +3,20 @@
 この文書は、途中参加した人間 / AI が最初に読む短い入口です。
 詳細は各専門 doc を参照し、このファイルは現在地と次の安全な一手だけを示します。
 
+## 2026-08-12 repository review status
+
+- Repository-wide review and repeated cross-review added restore traversal crash/DoS guards, hostless input admission/cooldown guards, and shared local/server snapshot validation before hydration or replay.
+- Local saves and server snapshots now accept only a real pending state: IT pending alone, or one-or-more resolvable normal queued effects. Counts are capped at 50, non-contiguous Renovation runs require enough targets, major cards cannot be restored as dormant, structured logs are bounded, unsafe numeric values are rejected, and card holdings remain within market/initial-deal limits.
+- Legacy local saves that omit `shopStock` reconstruct it deterministically from player count, enabled cards, owned cards, and the initial Wheat Field/Bakery grants; they no longer inherit a previous runtime's market.
+- Restore validation is iterative for nested card references and bounded by 1 MiB, 65,536 nodes, 300,000 string characters, 30,000 player-card references, and 1,000 actions. Socket.IO has an additional 64 KiB envelope allowance; ordinary events remain capped by the separate 16 KiB application validator.
+- Restore metadata uses nonnegative safe integers; `cpuSpeed` is limited to 0..5000. Absent-room restore passes the same 500-room/socket/IP creation admission as ordinary room creation, while existing-room rejoin/replace does not consume a new room slot.
+- Client restore ranking, host epochs, hostless generations, and retry counters use the same safe-integer contract as the server. Existing-room tokens are authenticated before action-log sanitization, and recreate attempts have a separate per-IP admission guard before decode/replay work.
+- Hostless restore allows at most 500 active sessions, one active room per socket, and one retained candidate per player. New-session starts share the existing per-IP room-creation bucket; switching or disconnecting the last requester cancels the old session and timer.
+- Temporary recreate cooldown/capacity/rate rejection keeps the room-scoped restore bundle and session, including while a non-host candidate is completing hostless confirmation. Confirmation-candidate rotation remains a progress state instead of being shown as terminal failure.
+- `CLIENT_ERROR_ALLOW_NO_ORIGIN` is enabled only by `1`, `true`, `yes`, or `on` (case-insensitive). Values such as `0`, `false`, `no`, and `off` remain fail-closed.
+- Waiting-room disconnect/rebind around `gameStart` delivery is deferred because the correct fix changes room lifecycle and reconnect semantics. See the High table in `MAINTENANCE_BACKLOG.md`; do not implement a client-only reconnect shortcut.
+- Python/NumPy CI pinning and GitHub Action full-SHA pinning remain operations-policy tasks: they require a verified update/Termux compatibility process rather than an unreviewed version guess.
+
 ## 2026-08-08 composition-root status
 
 - The five client side-effect roots now each have an explicit dependency/effect seam: `AppShellComposition`, `MainAutoSkipRuntime`, `OnlineComposition`, `LocalResumeEffects`, and `UiCardSelectEffects`.
