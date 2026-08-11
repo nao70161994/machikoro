@@ -599,7 +599,10 @@ function loadSettings() {
             tutorialLevel: storage.getItem('tutorialLevel'),
         }, normalizeName);
         GameSetupState.runtime.setSelectedCount(values.selectedCount);
-        document.getElementById("playerCount").textContent = values.selectedCount;
+        UiPlayerCount.applyView(
+            document.getElementById('playerCount'),
+            UiPlayerCount.buildView(values.selectedCount)
+        );
         if (values.playerSettings) GameSetupState.runtime.setPlayerSettings(values.playerSettings);
         if (values.cpuSpeed) {
             const speedEl = document.getElementById('cpuSpeed');

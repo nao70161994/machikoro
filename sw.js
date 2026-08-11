@@ -124,6 +124,7 @@ const STATIC_ASSETS = [
   '/js/onlineReconnectRuntime.js',
   '/js/onlineSchemaTransport.js',
   '/js/onlineClientEffects.js',
+  '/js/uiPlayerCount.js',
   '/js/onlineDomEffects.js',
   '/js/onlineSocketEffects.js',
   '/js/onlineComposition.js',

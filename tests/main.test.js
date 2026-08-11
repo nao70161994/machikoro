@@ -465,6 +465,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiEventDelegationSource, context, { filename: 'js/uiEventDelegation.js' });
     const uiRangeControlSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiRangeControl.js'), 'utf8');
     vm.runInContext(uiRangeControlSource, context, { filename: 'js/uiRangeControl.js' });
+    const uiPlayerCountSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiPlayerCount.js'), 'utf8');
+    vm.runInContext(uiPlayerCountSource, context, { filename: 'js/uiPlayerCount.js' });
     const mainUiEventRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/mainUiEventRuntime.js'), 'utf8');
     vm.runInContext(mainUiEventRuntimeSource, context, { filename: 'js/mainUiEventRuntime.js' });
     const citySkylineSource = fs.readFileSync(path.join(__dirname, '..', 'js/citySkyline.js'), 'utf8');
@@ -666,11 +668,11 @@ runTest('main changeCount は人数を2..10にクランプして表示を更新�
 
     rt.changeCount(-5);
     assert.strictEqual(rt.__test.getSelectedCount(), 2);
-    assert.strictEqual(rt.__test.elements.playerCount.textContent, 2);
+    assert.strictEqual(rt.__test.elements.playerCount.textContent, '2人');
 
     rt.changeCount(20);
     assert.strictEqual(rt.__test.getSelectedCount(), 10);
-    assert.strictEqual(rt.__test.elements.playerCount.textContent, 10);
+    assert.strictEqual(rt.__test.elements.playerCount.textContent, '10人');
 });
 
 runTest('main renderPlayerSettings は CPU（最強）オプションを表示する', () => {
@@ -2311,7 +2313,7 @@ runTest('ローカル保存の再開導線は新しいゲーム設定より先�
     const localEnd = html.indexOf('<div id="tabContentOnline"');
     const resumeStart = html.indexOf('<section id="resumeSection"');
     const newGameDivider = html.indexOf('<div class="new-game-divider"');
-    const playerCountSetting = html.indexOf('<span id="playerCount"');
+    const playerCountSetting = html.indexOf('<output id="playerCount"');
     const startButton = html.indexOf('<button id="btnStart"');
 
     assert.ok(localStart >= 0 && localEnd > localStart);
@@ -2666,6 +2668,9 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/localActionPolicy.js', 'js/mainHumanActionRuntime.js');
     assertBefore('js/mainHumanActionRuntime.js', 'js/main.js');
     assertBefore('js/uiEventDelegation.js', 'js/mainUiEventRuntime.js');
+    assertBefore('js/uiPlayerCount.js', 'js/online.js');
+    assertBefore('js/uiPlayerCount.js', 'js/storage.js');
+    assertBefore('js/uiPlayerCount.js', 'js/main.js');
     assertBefore('js/uiRangeControl.js', 'js/storage.js');
     assertBefore('js/uiRangeControl.js', 'js/mainUiEventRuntime.js');
     assertBefore('js/mainUiEventRuntime.js', 'js/main.js');

@@ -1,6 +1,7 @@
 'use strict';
 const assert = require('assert');
 const LocalGameRestartRuntime = require('../js/localGameRestartRuntime');
+const UiPlayerCount = require('../js/uiPlayerCount');
 const { makeElement, runTest } = require('./helpers/test-utils');
 
 function createHarness(options = {}) {
@@ -26,6 +27,7 @@ function createHarness(options = {}) {
             setCpuPlayers: value => calls.push(['cpuPlayers', value]),
         },
         getClearOnlineSessionStorage: () => options.clearOnline || null,
+        playerCount: UiPlayerCount,
         refreshPwaUpdateState: () => calls.push(['refreshPwa']),
         removeStorage: key => calls.push(['remove', key]),
         renderPlayerSettings: () => calls.push(['renderSettings']),
@@ -62,7 +64,7 @@ runTest('local game restart runtimeは確認後の全effect順と既存理由を
     assert.deepStrictEqual(calls[14], ['resetLifecycle', 'restart-game-lifecycle-reset']);
     assert.strictEqual(elements.gameScreen.style.display, 'none');
     assert.strictEqual(elements.titleScreen.style.display, 'block');
-    assert.strictEqual(elements.playerCount.textContent, 2);
+    assert.strictEqual(elements.playerCount.textContent, '2人');
 });
 
 runTest('local game restart runtimeはonline storage facadeをfallbackより優先する', () => {

@@ -76,9 +76,9 @@
                 <div class="setting-section">
                     <div class="setting-label">プレイ人数</div>
                     <div class="player-select">
-                        <button data-ui-action="changeCount" data-delta="-1" aria-label="プレイ人数を減らす">－</button>
-                        <span id="playerCount">2</span>人
-                        <button data-ui-action="changeCount" data-delta="1" aria-label="プレイ人数を増やす">＋</button>
+                        <button data-ui-action="changeCount" data-delta="-1" aria-label="プレイ人数を減らす" aria-controls="playerCount">－</button>
+                        <output id="playerCount" role="status" aria-live="polite" aria-atomic="true">2人</output>
+                        <button data-ui-action="changeCount" data-delta="1" aria-label="プレイ人数を増やす" aria-controls="playerCount">＋</button>
                     </div>
                 </div>
                 <div id="playerSettings" class="setting-section"></div>
@@ -120,9 +120,9 @@
                     <div class="setting-section">
                         <div class="setting-label">プレイ人数</div>
                         <div class="player-select">
-                            <button data-ui-action="changeOnlineCount" data-delta="-1" aria-label="オンライン人数を減らす">－</button>
-                            <span id="onlinePlayerCount">2</span>人
-                            <button data-ui-action="changeOnlineCount" data-delta="1" aria-label="オンライン人数を増やす">＋</button>
+                            <button data-ui-action="changeOnlineCount" data-delta="-1" aria-label="オンライン人数を減らす" aria-controls="onlinePlayerCount">－</button>
+                            <output id="onlinePlayerCount" role="status" aria-live="polite" aria-atomic="true">2人</output>
+                            <button data-ui-action="changeOnlineCount" data-delta="1" aria-label="オンライン人数を増やす" aria-controls="onlinePlayerCount">＋</button>
                         </div>
                     </div>
                     <div id="onlinePlayerSettings" class="setting-section"></div>
@@ -497,6 +497,7 @@
     <script src="js/onlineReconnectRuntime.js"></script>
     <script src="js/onlineSchemaTransport.js"></script>
     <script src="js/onlineClientEffects.js"></script>
+    <script src="js/uiPlayerCount.js"></script>
     <script src="js/onlineDomEffects.js"></script>
     <script src="js/onlineSocketEffects.js"></script>
     <script src="js/onlineComposition.js"></script>

@@ -3,6 +3,7 @@ const assert = require('assert');
 const LocalGameStart = require('../js/localGameStart');
 const LocalGameStartRuntime = require('../js/localGameStartRuntime');
 const LocalPlayerSettings = require('../js/localPlayerSettings');
+const UiPlayerCount = require('../js/uiPlayerCount');
 const { makeElement, runTest } = require('./helpers/test-utils');
 
 function createHarness(options = {}) {
@@ -47,6 +48,7 @@ function createHarness(options = {}) {
         getPortfolio: () => portfolio,
         initializeGame: count => calls.push(['initializeGame', count]),
         notifyLifecycleStart: () => calls.push(['notifyLifecycleStart']),
+        playerCount: UiPlayerCount,
         playerSettings: LocalPlayerSettings,
         resetOnline: () => calls.push(['resetOnline']),
         resetStats: () => calls.push(['resetStats']),
@@ -63,7 +65,7 @@ runTest('local game start runtimeは人数・設定・RL表示のeffect境界を
     const { calls, elements, getState, runtime } = createHarness();
     runtime.changeCount(20);
     assert.strictEqual(getState().selectedCount, 10);
-    assert.strictEqual(elements.playerCount.textContent, 10);
+    assert.strictEqual(elements.playerCount.textContent, '10人');
     assert.ok(elements.playerSettings.innerHTML.includes('プレイヤー10'));
     assert.strictEqual(calls.filter(call => call[0] === 'saveSettings').length, 1);
 

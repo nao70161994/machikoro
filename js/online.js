@@ -165,7 +165,10 @@ function buildOnlineRejoinPayload(session) {
 
 function changeOnlineCount(delta) {
     const state = onlineSetupStateController.changeCount(delta);
-    onlineDomEffects.setText(OnlineDomEffects.ids.playerCount, state.selectedCount);
+    UiPlayerCount.applyView(
+        onlineDomEffects.element(OnlineDomEffects.ids.playerCount),
+        UiPlayerCount.buildView(state.selectedCount)
+    );
     renderOnlinePlayerSettings();
     preloadOnlineRlModelsInBackground('online-player-count-preload');
 }

@@ -135,6 +135,7 @@ const localGameStartRuntime = LocalGameStartRuntime.createRuntime({
     notifyLifecycleStart() {
         if (typeof notifyGameLifecycleStart === 'function') notifyGameLifecycleStart();
     },
+    playerCount: UiPlayerCount,
     playerSettings: LocalPlayerSettings,
     resetOnline() {
         if (typeof resetOnlineState === 'function') resetOnlineState();
@@ -225,6 +226,7 @@ const localGameRestartRuntime = LocalGameRestartRuntime.createRuntime({
     drawSkyline: () => drawCitySkyline(),
     focusTitle: () => UiScreenFocus.focusTitle(document),
     gameRuntime: GameRuntimeState.runtime,
+    playerCount: UiPlayerCount,
     getClearOnlineSessionStorage: () => typeof clearOnlineSessionStorage === 'function'
         ? clearOnlineSessionStorage
         : null,

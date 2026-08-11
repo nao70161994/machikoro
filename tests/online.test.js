@@ -198,6 +198,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineReconnectRuntime.js');
     loadScript(context, 'js/onlineSchemaTransport.js');
     loadScript(context, 'js/onlineClientEffects.js');
+    loadScript(context, 'js/uiPlayerCount.js');
     loadScript(context, 'js/onlineDomEffects.js');
     loadScript(context, 'js/onlineSocketEffects.js');
     loadScript(context, 'js/onlineComposition.js');

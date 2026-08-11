@@ -23,7 +23,10 @@ const LocalGameRestartRuntime = (() => {
                 throw new TypeError(`local game restart dependency is required: ${name}`);
             }
         }
-        if (!dependencies.document || !dependencies.gameRuntime || !dependencies.setupRuntime) {
+        if (!dependencies.document || !dependencies.gameRuntime || !dependencies.setupRuntime ||
+                !dependencies.playerCount ||
+                typeof dependencies.playerCount.buildView !== 'function' ||
+                typeof dependencies.playerCount.applyView !== 'function') {
             throw new TypeError('local game restart runtime dependencies are required');
         }
 
@@ -57,7 +60,10 @@ const LocalGameRestartRuntime = (() => {
             dependencies.document.getElementById('titleScreen').style.display = 'block';
             dependencies.setupRuntime.replace({ selectedCount: 2, playerSettings: [] });
             dependencies.gameRuntime.setCpuPlayers([]);
-            dependencies.document.getElementById('playerCount').textContent = 2;
+            dependencies.playerCount.applyView(
+                dependencies.document.getElementById('playerCount'),
+                dependencies.playerCount.buildView(2)
+            );
             dependencies.renderPlayerSettings();
             dependencies.updateResumeButton();
             dependencies.drawSkyline();

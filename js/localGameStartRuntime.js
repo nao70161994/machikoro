@@ -8,6 +8,7 @@ const LocalGameStartRuntime = (() => {
             getPortfolio,
             initializeGame,
             notifyLifecycleStart,
+            playerCount,
             playerSettings,
             resetOnline,
             resetStats,
@@ -18,6 +19,8 @@ const LocalGameStartRuntime = (() => {
             startPolicy,
         } = dependencies;
         if (!document || typeof document.getElementById !== 'function' ||
+                !playerCount || typeof playerCount.buildView !== 'function' ||
+                typeof playerCount.applyView !== 'function' ||
                 !playerSettings || !setupRuntime || !startPolicy) {
             throw new TypeError('local game start runtime dependencies are required');
         }
@@ -142,7 +145,7 @@ const LocalGameStartRuntime = (() => {
                 Math.min(10, Math.max(2, setup.selectedCount + delta))
             );
             const count = document.getElementById('playerCount');
-            if (count) count.textContent = next.selectedCount;
+            playerCount.applyView(count, playerCount.buildView(next.selectedCount));
             renderPlayerSettings();
             preloadInBackground('local-player-count-preload');
             saveSettings();

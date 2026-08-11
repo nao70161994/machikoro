@@ -435,7 +435,8 @@ body.modal-open #gameScreen {
     color: #0f0e17;
 }
 
-#playerCount {
+#playerCount,
+#onlinePlayerCount {
     font-size: 48px;
     font-weight: bold;
     color: #f0c040;

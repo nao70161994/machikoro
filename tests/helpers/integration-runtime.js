@@ -5,7 +5,7 @@ function loadIntegrationRuntime(options = {}) {
     const { storage, localStorage } = createStorage();
     const alerts = [];
     const elements = {
-        playerCount: makeElement({ textContent: '2' }),
+        playerCount: makeElement({ textContent: '2人' }),
         playerSettings: makeElement(),
         cpuSpeed: makeElement({ value: '1500' }),
         speedLabel: makeElement(),
@@ -274,6 +274,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/localActionPolicy.js',
         'js/mainHumanActionRuntime.js',
         'js/uiEventDelegation.js',
+        'js/uiPlayerCount.js',
         'js/uiRangeControl.js',
         'js/mainUiEventRuntime.js',
         'js/citySkyline.js',
