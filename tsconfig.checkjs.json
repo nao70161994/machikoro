@@ -151,6 +151,7 @@
     "js/cpuPendingDecision.js",
     "js/cpuRollDecision.js",
     "js/cpuTuning.js",
+    "js/snapshotInventoryValidation.js",
     "js/savedGameValidation.js",
     "js/storageSettings.js",
     "js/uiBuildMenu.js",

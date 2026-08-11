@@ -118,7 +118,16 @@ function loadStorageRuntime(options = {}) {
         winSoundPlayed: false,
         undoState: null,
         CARD_NAME_BY_ID: { wheat_field: '麦畑', bakery: 'パン屋' },
+        CARD_IDS: { WHEAT_FIELD: 'wheat_field', BAKERY: 'bakery' },
+        CARDS: [
+            { id: 'wheat_field', name: '麦畑', category: 'normal' },
+            { id: 'bakery', name: 'パン屋', category: 'normal' },
+            { id: 'stadium', name: 'スタジアム', category: 'major' },
+        ],
         CARD_CATEGORIES: { NORMAL: 'normal', MAJOR: 'major' },
+        getInitialCardStock(card, playerCount) {
+            return card.category === 'major' ? playerCount : 6;
+        },
         createCardByName(name) {
             if (['麦畑', 'パン屋'].includes(name)) return { name, category: 'normal' };
             if (name === 'スタジアム') return { name, category: 'major' };
@@ -165,7 +174,7 @@ function loadStorageRuntime(options = {}) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiPlayerCount.js', 'js/uiRangeControl.js', 'js/storage.js']);
+    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlinePayload.js', 'js/snapshotInventoryValidation.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiPlayerCount.js', 'js/uiRangeControl.js', 'js/storage.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',

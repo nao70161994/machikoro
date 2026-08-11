@@ -470,12 +470,22 @@ let savedGameValidator = null;
 
 function getSavedGameValidator() {
     if (savedGameValidator) return savedGameValidator;
+    const inventoryValidator = SnapshotInventoryValidation.createValidator({
+        cards: CARDS,
+        getInitialCardStock,
+        isMajorCard: card => card.category === CARD_CATEGORIES.MAJOR,
+        initialPlayerCardNames: [
+            CARD_NAME_BY_ID[CARD_IDS.WHEAT_FIELD],
+            CARD_NAME_BY_ID[CARD_IDS.BAKERY],
+        ],
+    });
     savedGameValidator = SavedGameValidation.createValidator({
         isKnownCardName,
         isKnownLandmarkName,
         isMajorCardName,
         cardNameById: typeof CARD_NAME_BY_ID !== 'undefined' ? CARD_NAME_BY_ID : {},
         yakushoName: typeof LANDMARK_NAMES !== 'undefined' ? LANDMARK_NAMES.YAKUSHO : '役所',
+        inventoryValidator,
     });
     return savedGameValidator;
 }

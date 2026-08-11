@@ -123,6 +123,10 @@ function createValidator(options = {}) {
     const cardNameById = options.cardNameById && typeof options.cardNameById === 'object'
         ? options.cardNameById
         : Object.freeze({});
+    const inventoryValidator = options.inventoryValidator &&
+        typeof options.inventoryValidator.validate === 'function'
+        ? options.inventoryValidator
+        : null;
 
     function savedShopStockNameFromKey(key) {
         if (isKnownCardName(key)) return key;
@@ -232,6 +236,12 @@ function createValidator(options = {}) {
             if (!isValidSavedPlayerState(playerState)) return false;
         }
         if (state.shopStock != null && !isValidSavedShopStock(state.shopStock, state.enabledCardsList)) return false;
+        if (inventoryValidator && !inventoryValidator.validate({
+            playerCount: state.players.length,
+            playerCardNames: state.players.map(player => player.cards),
+            shopStock: state.shopStock,
+            enabledCardNames: state.enabledCardsList,
+        })) return false;
         if (!hasResolvablePendingTargets(state, {
             isMajorCardName,
             yakushoName: options.yakushoName,

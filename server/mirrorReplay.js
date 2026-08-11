@@ -4,6 +4,7 @@ const GameSnapshot = require('../js/gameSnapshot');
 const GameEngine = require('../js/gameEngine');
 const GameSchemaCodec = require('../js/gameSchemaCodec');
 const SavedGameValidation = require('../js/savedGameValidation');
+const SnapshotInventoryValidation = require('../js/snapshotInventoryValidation');
 
 const MAX_SNAPSHOT_PENDING_COUNT = 50;
 const MAX_SNAPSHOT_LOG_ENTRIES = 30;
@@ -17,6 +18,15 @@ function makeMirrorReplay({
     validateActionPayloadForState,
     getAllowedActions,
 }) {
+    const inventoryValidator = SnapshotInventoryValidation.createValidator({
+        cards: gameRuntime.CARDS,
+        getInitialCardStock: gameRuntime.getInitialCardStock,
+        isMajorCard: card => card.category === gameRuntime.CARD_CATEGORIES.MAJOR,
+        initialPlayerCardNames: gameRuntime.CARDS
+            .filter(card => card.id === gameRuntime.CARD_IDS.WHEAT_FIELD ||
+                card.id === gameRuntime.CARD_IDS.BAKERY)
+            .map(card => card.name),
+    });
     function serializeMirrorState(game, shopStock, undoState = null, actionSeq = 0) {
         return GameSnapshot.serializeGameState(game, shopStock, {
             undoState,
@@ -336,35 +346,12 @@ function makeMirrorReplay({
 
     function validateSnapshotCardAndStockConfig(playersState, shopStockState, enabledCards, playerCount) {
         if (!Array.isArray(playersState)) return false;
-        const stockState = isPlainObject(shopStockState) ? shopStockState : {};
-        const initialCardNames = new Set(['麦畑', 'パン屋']);
-        const disabledInitialCardCounts = {};
-        for (const playerState of playersState) {
-            const cardNames = Array.isArray(playerState?.cards) ? playerState.cards : [];
-            for (const name of cardNames) {
-                if (!enabledCards.has(name)) {
-                    if (!initialCardNames.has(name)) return false;
-                    disabledInitialCardCounts[name] = (disabledInitialCardCounts[name] || 0) + 1;
-                }
-            }
-        }
-        for (const count of Object.values(disabledInitialCardCounts)) {
-            if (count > playerCount) return false;
-        }
-        for (const card of gameRuntime.CARDS) {
-            if (!enabledCards.has(card.name)) {
-                if (gameRuntime.getShopStockCount(stockState, card) !== 0) return false;
-                continue;
-            }
-            const initialStock = enabledCards.has(card.name)
-                ? gameRuntime.getInitialCardStock(card, playerCount)
-                : 0;
-            const hasStock = Object.prototype.hasOwnProperty.call(stockState, card.name) ||
-                Object.prototype.hasOwnProperty.call(stockState, card.id);
-            const stockCount = hasStock ? gameRuntime.getShopStockCount(stockState, card) : initialStock;
-            if (!Number.isInteger(stockCount) || stockCount < 0 || stockCount > initialStock) return false;
-        }
-        return true;
+        return inventoryValidator.validate({
+            playerCount,
+            playerCardNames: playersState.map(player => Array.isArray(player?.cards) ? player.cards : []),
+            shopStock: shopStockState,
+            enabledCardNames: Array.from(enabledCards),
+        });
     }
 
     function validateSnapshotLandmarkConfig(playersState, enabledLandmarks) {

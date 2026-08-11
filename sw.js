@@ -160,6 +160,7 @@ const STATIC_ASSETS = [
   '/js/uiRuntimeSnapshot.js',
   '/js/uiRenderRuntime.js',
   '/js/ui.js',
+  '/js/snapshotInventoryValidation.js',
   '/js/savedGameValidation.js',
   '/js/storageSettings.js',
   '/js/localResumePolicy.js',

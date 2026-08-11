@@ -5,12 +5,23 @@ const SavedGameValidation = require('../js/savedGameValidation');
 const { runTest } = require('./helpers/test-utils');
 
 function makeValidator() {
+    const cards = [
+        { id: 'wheat_field', name: '麦畑', category: 'minor' },
+        { id: 'bakery', name: 'パン屋', category: 'minor' },
+        { id: 'stadium', name: 'スタジアム', category: 'major' },
+    ];
     return SavedGameValidation.createValidator({
         isKnownCardName: name => ['麦畑', 'パン屋', 'スタジアム'].includes(name),
         isKnownLandmarkName: name => ['駅', 'ショッピングモール', '遊園地', '役所'].includes(name),
         isMajorCardName: name => name === 'スタジアム',
         cardNameById: { wheat_field: '麦畑', bakery: 'パン屋' },
         yakushoName: '役所',
+        inventoryValidator: require('../js/snapshotInventoryValidation').createValidator({
+            cards,
+            initialPlayerCardNames: ['麦畑', 'パン屋'],
+            isMajorCard: card => card.category === 'major',
+            getInitialCardStock: (card, playerCount) => card.category === 'major' ? playerCount : 6,
+        }),
     });
 }
 
@@ -138,6 +149,7 @@ runTest('saved game validatorは清掃業の残り回数分の異なる稼働中
         phase: 'pending',
         pendingCleaning: 2,
         pendingActions,
+        enabledCardsList: ['麦畑', 'パン屋', 'スタジアム'],
         players: [
             { name: 'P1', coins: 3, cards: ['麦畑', 'パン屋'], dormantIndices: [], landmarks: {} },
             { name: 'P2', coins: 3, cards: ['スタジアム'], dormantIndices: [], landmarks: {} },
@@ -157,6 +169,7 @@ runTest('saved game validatorは引越し屋の残り回数分の自分の通常
     const state = makeState({
         phase: 'pending',
         pendingMover: 2,
+        enabledCardsList: ['麦畑', 'パン屋', 'スタジアム'],
         pendingActions: Array.from({ length: 2 }, () => ({
             field: 'pendingMover',
             action: 'resolveMover',
@@ -287,6 +300,39 @@ runTest('saved game validatorはruntimeへ渡す数値を安全な範囲に限�
     ]) {
         assert.strictEqual(validator.isValidSavedGameState(state), false);
     }
+});
+
+runTest('saved game validatorは所持cardと明示在庫の物量上限を共有検証する', () => {
+    const validator = makeValidator();
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        players: [
+            { name: 'P1', coins: 3, cards: Array(8).fill('麦畑'), dormantIndices: [], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+        shopStock: {},
+    })), true);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        players: [
+            { name: 'P1', coins: 3, cards: Array(9).fill('麦畑'), dormantIndices: [], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+        shopStock: {},
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        players: [
+            { name: 'P1', coins: 3, cards: ['スタジアム', 'スタジアム'], dormantIndices: [], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+        enabledCardsList: ['麦畑', 'スタジアム'],
+        shopStock: {},
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        players: [
+            { name: 'P1', coins: 3, cards: Array(5).fill('麦畑'), dormantIndices: [], landmarks: {} },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+        shopStock: { wheat_field: 4 },
+    })), false);
 });
 
 runTest('saved game validatorは依存未注入時に未知cardとlandmarkを拒否する', () => {

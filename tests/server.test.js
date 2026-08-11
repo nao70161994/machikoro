@@ -1406,6 +1406,36 @@ runTest('createRoomMirror は snapshot 内の有効カード初期在庫超過�
     assert.strictEqual(createRoomMirror(room), null);
 });
 
+runTest('createRoomMirror はsnapshotとundoの所持card物量超過を拒否する', () => {
+    const inflatedRoom = makeRoom();
+    const inflated = makeSnapshot();
+    inflated.players[0].cards = Array(9).fill('麦畑');
+    inflated.players[1].cards = [];
+    inflated.shopStock = {};
+    inflatedRoom.stateSnapshot = inflated;
+    assert.strictEqual(createRoomMirror(inflatedRoom), null);
+
+    const duplicateMajorRoom = makeRoom();
+    const duplicateMajor = makeSnapshot();
+    duplicateMajor.players[0].cards = ['ビジネスセンター', 'ビジネスセンター'];
+    duplicateMajor.players[1].cards = [];
+    duplicateMajor.shopStock = {};
+    duplicateMajorRoom.stateSnapshot = duplicateMajor;
+    assert.strictEqual(createRoomMirror(duplicateMajorRoom), null);
+
+    const undoRoom = makeRoom();
+    const undoSnapshot = makeSnapshot();
+    undoSnapshot.undoState = makeUndoStateFromMirror(
+        createRoomMirror(undoRoom).game,
+        createRoomMirror(undoRoom).shopStock
+    );
+    undoSnapshot.undoState.playerCardNames[0] = Array(9).fill('パン屋');
+    undoSnapshot.undoState.playerCardNames[1] = [];
+    undoSnapshot.undoState.shopStock = {};
+    undoRoom.stateSnapshot = undoSnapshot;
+    assert.strictEqual(createRoomMirror(undoRoom), null);
+});
+
 runTest('createRoomMirror は snapshot 内の無効化カード在庫復元を拒否する', () => {
     const room = makeRoom();
     const snapshot = makeSnapshot();

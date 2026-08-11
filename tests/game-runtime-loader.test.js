@@ -40,6 +40,7 @@ runTest('game runtime loaderはsource順と公開symbolをfrozen契約にする'
         'GAME_ACTIONS',
         'GAME_ACTION_REGISTRY',
         'GAME_PHASE_ACTIONS',
+        'CARD_IDS',
         'CARD_CATEGORIES',
         'LANDMARK_NAMES',
     ]);
