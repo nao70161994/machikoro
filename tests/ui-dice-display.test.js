@@ -77,3 +77,39 @@ runTest('dice result announcement controllerは新しいeligible結果だけを�
     }, target), true);
     assert.strictEqual(target.textContent, '結果');
 });
+
+runTest('dice result announcement identityは保持出目と同じ新規出目を区別する', () => {
+    const controller = UiDiceDisplay.createAnnouncementController();
+    const firstIdentity = UiDiceDisplay.resultIdentity(1, 'legacy-first');
+
+    controller.transition([], { eligible: true, resultKey: '' });
+    assert.strictEqual(controller.transition([4, 4], {
+        eligible: true,
+        rerolled: true,
+        resultKey: firstIdentity,
+    }).announce, true);
+
+    // 遊園地の追加ターン開始では出目を保持するため、同じresolutionは再通知しない。
+    assert.strictEqual(controller.transition([4, 4], {
+        eligible: true,
+        rerolled: false,
+        resultKey: firstIdentity,
+    }).announce, false);
+
+    // 実際に振った結果なら、同じ目でもsequenceが進むので通知する。
+    assert.strictEqual(controller.transition([4, 4], {
+        eligible: true,
+        rerolled: false,
+        resultKey: UiDiceDisplay.resultIdentity(2),
+    }).announce, true);
+    assert.deepStrictEqual(controller.transition([4, 4], {
+        eligible: true,
+        rerolled: true,
+        resultKey: UiDiceDisplay.resultIdentity(3),
+    }), {
+        announce: true,
+        clear: true,
+        text: '振り直し後、サイコロの出目は4と4、合計8です',
+    });
+    assert.strictEqual(UiDiceDisplay.resultIdentity(undefined, 'legacy'), 'legacy');
+});

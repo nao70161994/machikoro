@@ -58,6 +58,12 @@ function buildResultAnnouncement(values, options = {}) {
     return `${prefix}サイコロの出目は${dice.join('と')}、合計${total}です`;
 }
 
+function resultIdentity(resolutionSequence, fallbackKey = '') {
+    return Number.isSafeInteger(resolutionSequence) && resolutionSequence >= 0
+        ? `dice-resolution:${resolutionSequence}`
+        : String(fallbackKey || '');
+}
+
 function createAnnouncementController() {
     let initialized = false;
     let resultKey = '';
@@ -100,6 +106,7 @@ const UiDiceDisplay = Object.freeze({
     buildView: buildDiceDisplayView,
     createAnnouncementController,
     normalizeDiceValues,
+    resultIdentity,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiDiceDisplay;

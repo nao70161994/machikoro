@@ -108,6 +108,8 @@ class GameManager {
         this.usedReroll = false;
         this.pendingTunaDice = null;
         this.turnCount = 0;
+        // UI notification identity only. This is intentionally not serialized or sent on the wire.
+        this.diceResolutionSequence = 0;
         this.enabledLandmarks = new Set(Player.landmarkNames());
         this.hadAmusementParkAtRoll = false;
 
@@ -286,6 +288,7 @@ class GameManager {
         this.lastDice2 = plan.lastDice2;
         this.lastDiceResult = plan.lastDiceResult;
         this.hadAmusementParkAtRoll = plan.hadAmusementParkAtRoll;
+        this.diceResolutionSequence++;
     }
 
     rollDice(forceDice = null, tunaDice = null) {

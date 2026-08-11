@@ -339,7 +339,10 @@ function renderActiveGameState(current) {
             const announcementPlan = diceResultAnnouncementController.transition(diceValues, {
                 eligible: diceResultAnnouncementEligible(),
                 rerolled: currentGame.usedReroll === true,
-                resultKey: diceKey,
+                resultKey: UiDiceDisplay.resultIdentity(
+                    currentGame.diceResolutionSequence,
+                    diceKey
+                ),
             });
             UiDiceDisplay.applyAnnouncementPlan(
                 announcementPlan,
