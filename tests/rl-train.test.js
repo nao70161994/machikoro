@@ -353,6 +353,51 @@ print(agent.net.mover_target_head is not None)
     assert.strictEqual(lines[3], 'True');
 });
 
+runTest('rl train: 多人数用RLAgent公開APIは2人環境も353次元でencodeする', () => {
+    const output = runPython(`
+import random
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import STATE_DIM_4P
+from scripts.rl.game_env import MachikoroEnv
+
+random.seed(11)
+np.random.seed(11)
+agent = RLAgent(hidden=8, lr=0.0001, state_dim=STATE_DIM_4P, target_slots=3)
+env = MachikoroEnv(player_count=2)
+action = agent.select_action(env)
+agent.store_transition(0.0, env, False)
+print(len(agent.states[0]))
+print(len(agent.next_values))
+print(isinstance(action, int))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '353');
+    assert.strictEqual(lines[1], '1');
+    assert.strictEqual(lines[2], 'True');
+});
+
+runTest('rl train: RLAgent公開APIはstate schema不一致を説明付きで拒否する', () => {
+    const output = runPython(`
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import STATE_DIM
+from scripts.rl.game_env import MachikoroEnv
+
+cases = [
+    (RLAgent(hidden=8, lr=0.0001, state_dim=STATE_DIM), MachikoroEnv(player_count=3)),
+    (RLAgent(hidden=8, lr=0.0001, state_dim=999), MachikoroEnv(player_count=2)),
+]
+for agent, env in cases:
+    try:
+        agent.select_action(env)
+    except ValueError as error:
+        print(str(error))
+`);
+    const lines = output.split('\n');
+    assert.ok(lines[0].includes('cannot encode 3 players'));
+    assert.strictEqual(lines[1], 'unsupported RLAgent state_dim: 999');
+});
+
 runTest('rl train: target head 付き checkpoint を export できる', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-target-head-'));
     const ckptBase = path.join(tmpDir, 'model');

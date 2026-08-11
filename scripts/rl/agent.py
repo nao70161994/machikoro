@@ -2,7 +2,7 @@
 
 import numpy as np
 from .network import PolicyValueNet
-from .encode import encode_state, action_mask, STATE_DIM
+from .encode import encode_state, encode_state_v2, action_mask, STATE_DIM, STATE_DIM_4P
 from .game_env import NUM_ACTIONS, ACT_BC_BASE, ACT_BC_SIZE
 from .cards import NUM_CARDS
 
@@ -38,8 +38,20 @@ class RLAgent:
         self.next_values = []   # V(s_{t+1})  ← TD 用
         self.dones       = []   # ゲーム終了フラグ
 
+    def _encode_env(self, env) -> np.ndarray:
+        player_count = len(getattr(env, "players", []))
+        if self.state_dim == STATE_DIM_4P:
+            return encode_state_v2(env)
+        if self.state_dim == STATE_DIM:
+            if player_count > 2:
+                raise ValueError(
+                    f"2-player RLAgent state_dim={STATE_DIM} cannot encode {player_count} players"
+                )
+            return encode_state(env)
+        raise ValueError(f"unsupported RLAgent state_dim: {self.state_dim}")
+
     def select_action(self, env, epsilon: float = 0.0) -> int:
-        state = encode_state(env)
+        state = self._encode_env(env)
         mask  = action_mask(env)
         valid = np.where(mask > 0)[0]
 
@@ -85,7 +97,7 @@ class RLAgent:
         if done:
             self.next_values.append(0.0)
         else:
-            next_state = encode_state(next_env)
+            next_state = self._encode_env(next_env)
             _, v_next  = self.net.forward(next_state)
             self.next_values.append(float(v_next))
 
