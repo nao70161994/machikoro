@@ -3056,14 +3056,16 @@ function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
 
 function _runOnlineReconnectRetryableCleanup(plan) {
     const currentSocket = onlineSessionSnapshot().socket;
-    if (plan && plan.clearHostlessPending) _hostlessRestoreState.clear();
-    _clearPendingOutboundActionForCurrentSession();
-    setOnlineReconnectLegacyFlag(false);
-    onlineClientEffects.updateResumeButton();
     if (currentSocket) {
         currentSocket.disconnect();
         onlineComposition.sessionState.setSocket(null);
     }
+    if (plan && plan.clearHostlessPending) _hostlessRestoreState.clear();
+    _clearPendingOutboundActionForCurrentSession();
+    _setOnlineActionInFlight(false);
+    _clearRejoinRetry();
+    setOnlineReconnectLegacyFlag(false);
+    onlineClientEffects.updateResumeButton();
 }
 
 function handleAppError(msg) {

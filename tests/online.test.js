@@ -4267,6 +4267,85 @@ runTest('hostless選出中の一時的recreate拒否は非hostでも保存を保
     }
 });
 
+runTest('一時的recreate拒否は同期disconnect callback後に最終stateとresume UIを確定する', () => {
+    for (const testCase of [
+        { name: '通常host', isRoomHost: true, playerIndex: 0, hostlessRestorePending: false },
+        { name: 'hostless選出guest', isRoomHost: false, playerIndex: 1, hostlessRestorePending: true },
+    ]) {
+        const rt = loadOnlineRuntime();
+        rt.initSocket();
+        const handlers = rt.getSocketHandlers();
+        const trace = [];
+        rt.__retryCleanupTrace = trace;
+        vm.runInContext(`
+            updateResumeButton = function() {
+                const session = OnlineRuntimeState.runtime.snapshot();
+                __retryCleanupTrace.push({
+                    step: 'resume-ui',
+                    reconnecting: session.isReconnectingOnline,
+                    socketNull: session.socket === null,
+                });
+            };
+        `, rt);
+        const session = {
+            roomId: 'ROOM01',
+            playerIndex: testCase.playerIndex,
+            playerName: testCase.playerIndex === 0 ? 'Alice' : 'Bob',
+            reconnectToken: testCase.playerIndex === 0 ? 'token-a' : 'token-b',
+            isRoomHost: testCase.isRoomHost,
+        };
+        const gameStart = { schemaVersion: 2, playerNames: ['Alice', 'Bob'] };
+        rt.localStorage.setItem('onlineSession', JSON.stringify(session));
+        rt.localStorage.setItem('onlineGameStart:room:ROOM01', JSON.stringify(gameStart));
+        const synchronousSocket = {
+            connected: true,
+            disconnect() {
+                trace.push({ step: 'disconnect' });
+                handlers.disconnect();
+                trace.push({
+                    step: 'disconnect-callback-complete',
+                    reconnecting: rt.getOnlineState().isReconnectingOnline,
+                });
+            },
+        };
+        rt.setOnlineState({
+            socket: synchronousSocket,
+            isOnlineGame: true,
+            isReconnectingOnline: true,
+            isRoomHost: testCase.isRoomHost,
+            hostlessRestorePending: testCase.hostlessRestorePending,
+            onlineActionInFlight: true,
+            myRoomId: 'ROOM01',
+            myOriginalPlayerIndex: testCase.playerIndex,
+            myPlayerName: session.playerName,
+            reconnectToken: session.reconnectToken,
+        });
+
+        rt.handleAppError('ルーム数が上限に達しています。しばらくしてから再試行してください');
+
+        const state = rt.getOnlineState();
+        assert.strictEqual(state.isReconnectingOnline, false, testCase.name);
+        assert.strictEqual(state.socket, null, testCase.name);
+        assert.strictEqual(state.onlineActionInFlight, false, testCase.name);
+        assert.strictEqual(state.hostlessRestorePending, false, testCase.name);
+        assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineSession')), session, testCase.name);
+        assert.deepStrictEqual(
+            JSON.parse(rt.localStorage.getItem('onlineGameStart:room:ROOM01')),
+            gameStart,
+            testCase.name
+        );
+        assert.deepStrictEqual(trace.map(entry => entry.step), [
+            'disconnect',
+            'disconnect-callback-complete',
+            'resume-ui',
+        ], testCase.name);
+        assert.strictEqual(trace[1].reconnecting, true, testCase.name);
+        assert.strictEqual(trace[2].step, 'resume-ui', testCase.name);
+        assert.strictEqual(trace[2].reconnecting, false, testCase.name);
+        assert.strictEqual(trace[2].socketNull, true, testCase.name);
+    }
+});
+
 runTest('hostless選出中でも明示的なrecreate不正は従来どおり保存を破棄する', () => {
     const rt = loadOnlineRuntime();
     let disconnected = false;
