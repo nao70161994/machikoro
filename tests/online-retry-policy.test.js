@@ -36,12 +36,14 @@ runTest('online retry policy preserves deadline and waiting text', () => {
 runTest('recreateの一時的appErrorをstable reasonへ分類する', () => {
     const reasons = OnlineRetryPolicy.recreateRetryableReasons;
     assert.deepStrictEqual(reasons, {
+        RECREATE_COOLDOWN: 'recreate-cooldown',
         ROOM_CAPACITY: 'room-capacity',
         SOCKET_RATE_LIMIT: 'socket-rate-limit',
         IP_RATE_LIMIT: 'ip-rate-limit',
         ATTEMPT_RATE_LIMIT: 'attempt-rate-limit',
     });
     const cases = [
+        ['復元処理を続けて実行できません', reasons.RECREATE_COOLDOWN],
         ['ルーム数が上限に達しています。しばらくしてから再試行してください', reasons.ROOM_CAPACITY],
         ['ルーム作成が短時間に連続しています。少し待ってから再試行してください', reasons.SOCKET_RATE_LIMIT],
         ['ルーム作成が短時間に集中しています。少し待ってから再試行してください', reasons.IP_RATE_LIMIT],

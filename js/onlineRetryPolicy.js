@@ -7,6 +7,7 @@ const ONLINE_RETRY_DEFAULTS = Object.freeze({
 });
 
 const RECREATE_RETRYABLE_APP_ERROR_REASONS = Object.freeze({
+    RECREATE_COOLDOWN: 'recreate-cooldown',
     ROOM_CAPACITY: 'room-capacity',
     SOCKET_RATE_LIMIT: 'socket-rate-limit',
     IP_RATE_LIMIT: 'ip-rate-limit',
@@ -14,6 +15,8 @@ const RECREATE_RETRYABLE_APP_ERROR_REASONS = Object.freeze({
 });
 
 const RECREATE_RETRYABLE_APP_ERROR_MESSAGES = Object.freeze({
+    '復元処理を続けて実行できません':
+        RECREATE_RETRYABLE_APP_ERROR_REASONS.RECREATE_COOLDOWN,
     'ルーム数が上限に達しています。しばらくしてから再試行してください':
         RECREATE_RETRYABLE_APP_ERROR_REASONS.ROOM_CAPACITY,
     'ルーム作成が短時間に連続しています。少し待ってから再試行してください':
