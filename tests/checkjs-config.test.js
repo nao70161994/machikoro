@@ -4,6 +4,7 @@ const assert = require('assert');
 const eslintConfig = require('../eslint.config');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const packageJson = require('../package.json');
 const config = require('../tsconfig.checkjs.json');
 const { runTest } = require('./helpers/test-utils');
@@ -124,7 +125,13 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/onlineActionSequence.js'));
     assert.ok(config.files.includes('js/onlineActionLog.js'));
     assert.ok(config.files.includes('js/onlineStorage.js'));
+    assert.ok(config.files.includes('js/onlineRoomShare.js'));
+    assert.ok(config.files.includes('js/retryTimer.js'));
+    assert.ok(config.files.includes('js/socketIoDelivery.js'));
     assert.ok(config.files.includes('js/onlinePlayerSettings.js'));
+    assert.ok(config.files.includes('js/uiPlayerCount.js'));
+    assert.ok(config.files.includes('js/uiRangeControl.js'));
+    assert.ok(config.files.includes('js/uiScreenFocus.js'));
     assert.ok(config.files.includes('server/canonicalStateStore.js'));
     assert.ok(config.files.includes('server/canonicalMirrorRuntime.js'));
     assert.ok(config.files.includes('server/runtimeLimits.js'));
@@ -152,6 +159,33 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/restoreValidation.js'));
     assert.ok(config.files.includes('server/reportingPolicy.js'));
     assert.ok(config.files.includes('server/reportingHttpRoutes.js'));
+});
+
+runTest('production JavaScriptは5つのcomposition root以外すべて静的検査対象になる', () => {
+    const productionFiles = execFileSync(
+        'git',
+        ['ls-files', 'js/*.js', 'server/*.js', 'server.js'],
+        { cwd: path.join(__dirname, '..'), encoding: 'utf8' }
+    ).trim().split(/\r?\n/).filter(Boolean);
+    const excludedRoots = new Set([
+        'js/appShell.js',
+        'js/main.js',
+        'js/online.js',
+        'js/storage.js',
+        'js/ui.js',
+    ]);
+    const lintFiles = new Set(eslintConfig.flatMap(entry => entry.files || []));
+    const checkJsFiles = new Set(config.files);
+
+    for (const file of productionFiles) {
+        if (excludedRoots.has(file)) {
+            assert.ok(!lintFiles.has(file), file);
+            assert.ok(!checkJsFiles.has(file), file);
+            continue;
+        }
+        assert.ok(lintFiles.has(file), 'ESLint missing: ' + file);
+        assert.ok(checkJsFiles.has(file), 'checkJs missing: ' + file);
+    }
 });
 
 runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだけを除く', () => {
@@ -186,6 +220,12 @@ runTest('主要browser globalとadapter境界は実モジュール型で検査�
         'CPUBuildStrategy',
         'OnlineReconnectRuntime',
         'OnlineGameEngineRuntime',
+        'OnlineRoomShare',
+        'RetryTimer',
+        'SocketIoDelivery',
+        'UiPlayerCount',
+        'UiRangeControl',
+        'UiScreenFocus',
     ]) {
         assert.match(globals, new RegExp('\\b' + name + ': typeof import\\('));
         assert.ok(!globals.includes(name + ': unknown;'), name);

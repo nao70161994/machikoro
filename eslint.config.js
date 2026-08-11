@@ -147,6 +147,9 @@ const browserMaintenanceFiles = Object.freeze([
     'js/onlineActionLog.js',
     'js/onlineSessionLifecycle.js',
     'js/onlineStorage.js',
+    'js/onlineRoomShare.js',
+    'js/retryTimer.js',
+    'js/socketIoDelivery.js',
     'js/pwaShell.js',
     'js/appShellStartupRuntime.js',
     'js/savedGameValidation.js',
@@ -196,6 +199,9 @@ const browserMaintenanceFiles = Object.freeze([
     'js/appShellCrashRuntime.js',
     'js/uiWinner.js',
     'js/uiWinnerEffects.js',
+    'js/uiPlayerCount.js',
+    'js/uiRangeControl.js',
+    'js/uiScreenFocus.js',
 ]);
 
 const serverMaintenanceFiles = Object.freeze([

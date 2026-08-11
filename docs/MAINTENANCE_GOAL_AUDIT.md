@@ -16,7 +16,7 @@ The next maintenance pass thinned all five remaining client composition roots wi
 | `storage.js` | `LocalResumeEffects` owns injected resume/preload DOM writes over `LocalResumeView` projections. | `local-resume-effects`, storage, PWA, and Release tests. | `939fee83` |
 | `ui.js` | `UiCardSelectEffects` owns injected card/landmark selection DOM application over `UiCardSelect` view models. | `ui-card-select-effects`, UI, selector/load-order, PWA, and Release tests. | `939fee83` |
 
-All five boundaries preserve existing public browser APIs and script order. Storage keys/formats, modal focus/inert behavior, selectors/text, Socket.IO protocol/ACK/watermark/replay order, CPU policy/RNG, game rules, and PWA/SW semantics are unchanged. Each new boundary is admitted to JSDoc checkJs and limited ESLint; current allowlists contain 272 ESLint files and 271 checkJs JavaScript files.
+All five boundaries preserve existing public browser APIs and script order. Storage keys/formats, modal focus/inert behavior, selectors/text, Socket.IO protocol/ACK/watermark/replay order, CPU policy/RNG, game rules, and PWA/SW semantics are unchanged. Each new boundary is admitted to JSDoc checkJs and limited ESLint; current allowlists contain 278 ESLint files and 277 checkJs JavaScript files. The current contract inventories production JavaScript and permits only the same five explicit whole-file exclusions.
 
 Whole-file admission remains intentionally deferred. A reproducible ESLint `no-undef` inventory with ES2022 built-ins only reports the following remaining classic-script/browser dependencies:
 

@@ -85,6 +85,7 @@ interface Window {
     OnlineSocketEffects: unknown;
     OnlineSocketRegistry: unknown;
     OnlinePlayerSettings: unknown;
+    OnlineRoomShare: typeof import("../js/onlineRoomShare");
     OnlineActionLog: unknown;
     OnlineSessionLifecycle: unknown;
     OnlinePendingOutboundState: unknown;
@@ -143,6 +144,9 @@ interface Window {
     AppShellCrashRuntime: unknown;
     UiWinner: unknown;
     UiWinnerEffects: unknown;
+    UiPlayerCount: typeof import("../js/uiPlayerCount");
+    UiRangeControl: typeof import("../js/uiRangeControl");
+    UiScreenFocus: typeof import("../js/uiScreenFocus");
     UiRenderRuntime: unknown;
     LifecycleNotify: unknown;
     LifecycleRuntime: unknown;
@@ -162,4 +166,6 @@ interface Window {
     AppShellStorage: unknown;
     PwaShell: unknown;
     AppShellStartupRuntime: unknown;
+    RetryTimer: typeof import("../js/retryTimer");
+    SocketIoDelivery: typeof import("../js/socketIoDelivery");
 }

@@ -8,7 +8,7 @@
 - The five client side-effect roots now each have an explicit dependency/effect seam: `AppShellComposition`, `MainAutoSkipRuntime`, `OnlineComposition`, `LocalResumeEffects`, and `UiCardSelectEffects`.
 - `storage.js` must pass `LocalResumeView` projections to `LocalResumeEffects`; do not restore direct resume/preload DOM writes. `ui.js` must pass `UiCardSelect` view models to `UiCardSelectEffects`; modal focus/inert ownership remains unchanged.
 - `online.js` state snapshots and named transitions go through `OnlineComposition`; Socket registration and protocol order remain in `online.js`. `main.js` post-build auto-skip effect order belongs to `MainAutoSkipRuntime`. `appShell.js` late dependency lookup belongs to `AppShellComposition`.
-- Scoped gates cover 272 ESLint files and 271 checkJs JavaScript files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`.
+- Scoped gates cover 278 ESLint files and 277 checkJs JavaScript files. Whole-file exclusions remain `appShell.js`, `main.js`, `online.js`, `storage.js`, and `ui.js`. A production-file inventory contract prevents new modules from silently falling outside both gates.
 - The measured remaining ambient inventory is 85/69, 162/88, 300/102, 127/66, and 242/76 reference-occurrences/unique-identifiers in that order. See `MAINTENANCE_GOAL_AUDIT.md` for owners and method. Continue removing real dependencies; do not add broad browser-global declarations or suppressions.
 
 ## 2026-07-19 Current restore status
