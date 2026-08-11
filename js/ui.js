@@ -794,7 +794,8 @@ function buildUndoBuildButtonHtml() {
 
 function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction) {
     const filterBtnsHtml = buildCardFilterBarHtml();
-    const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction);
+    const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction) ||
+        UiBuildMenu.buildCardEmptyStateHtml(buildMenuFilterController.get());
     const landmarkHtml = buildLandmarkButtonsHtml(current, canBuildLandmarkAction);
     const undoBtn = buildUndoBuildButtonHtml();
     return UiBuildMenu.buildBuildMenuHtml({

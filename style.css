@@ -1410,6 +1410,17 @@ button:not(:disabled):active {
     color: #f0c040;
 }
 
+.build-filter-empty {
+    grid-column: 1 / -1;
+    padding: 14px 10px;
+    color: #c9cbdf;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
+    border: 1px dashed #4a4a68;
+    border-radius: 8px;
+}
+
 .card-filter-btn:not(:disabled):hover {
     background: rgba(240,192,64,0.1);
     border-color: rgba(240,192,64,0.35);

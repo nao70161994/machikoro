@@ -1453,6 +1453,45 @@ runTest('integration: card filter再描画は選択ARIAと同一filter focusを�
     assert.ok(/data-card-filter="red"[^>]+aria-pressed="true"/.test(buildMenu.innerHTML));
 });
 
+runTest('integration: 建設可filterは購入可能施設だけを表示し0件状態でもfocusを維持する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 1;
+    hideAllTestModals(rt);
+    rt.render();
+
+    const buildMenu = rt.__test.elements.buildMenu;
+    const oldAffordable = makeElement({
+        dataset: { action: 'setCardFilter', cardFilter: 'affordable' },
+    });
+    const newAffordable = makeElement({
+        dataset: { action: 'setCardFilter', cardFilter: 'affordable' },
+        parentElement: buildMenu,
+        isConnected: true,
+    });
+    buildMenu.querySelectorAll = selector => selector.includes('setCardFilter')
+        ? [newAffordable] : [];
+    rt.setCardFilter('affordable', oldAffordable);
+
+    assert.strictEqual(newAffordable.focused, true);
+    assert.ok(/data-card-name="麦畑"/.test(buildMenu.innerHTML));
+    assert.ok(!/data-card-name="森林"/.test(buildMenu.innerHTML));
+
+    game.builtThisTurn = true;
+    rt.render();
+    assert.ok(buildMenu.innerHTML.includes('現在建設できる施設はありません'));
+    const snapshot = rt.collectUiLockSnapshot('affordable-filter-empty');
+    assert.strictEqual(rt.classifyLikelyFreeze(snapshot), '');
+});
+
 runTest('integration: 建設確定後はskip、local Undo後は復元cardへfocusを移す', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

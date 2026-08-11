@@ -1915,6 +1915,8 @@ runTest('UiBuildMenu filter viewはactiveとaria-pressedを同じstateから生�
     assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1);
     assert.ok(/class="card-filter-btn active"[^>]+data-card-filter="red"[^>]+aria-pressed="true"/.test(html));
     assert.ok(/data-card-filter="blue"[^>]+aria-pressed="false"/.test(html));
+    assert.ok(/data-card-filter="affordable"[^>]+aria-pressed="false"/.test(html));
+    assert.ok(html.includes('建設可'));
 });
 
 runTest('UiBuildMenu filter focusは同一identityと操作可能な再描画後targetだけを許可する', () => {
@@ -1928,6 +1930,9 @@ runTest('UiBuildMenu filter focusは同一identityと操作可能な再描画後
     assert.strictEqual(helper.cardFilterFocusPlan('future-filter', {
         action: 'setCardFilter', cardFilter: 'future-filter',
     }).restore, false);
+    assert.deepStrictEqual(helper.cardFilterFocusPlan('affordable', {
+        action: 'setCardFilter', cardFilter: 'affordable',
+    }), { restore: true, cardFilter: 'affordable' });
     assert.strictEqual(helper.canRestoreCardFilterFocus({ connected: true }), true);
     for (const unavailable of [
         { connected: false },
@@ -2261,6 +2266,40 @@ runTest('UiBuildMenu helper は建設メニューのescapeとgateをpureに固�
         renderBuildCardButton: (_card, stock, canBuildThis) => String(stock) + ':' + String(canBuildThis),
     });
     assert.strictEqual(visible, '2:false');
+});
+
+runTest('UiBuildMenu 建設可filterは既存の合法性・在庫・所持金・紫重複判定を共有する', () => {
+    const helper = require('../js/uiBuildMenu');
+    const cards = [
+        { name: '安価', color: 'blue', cost: 1 },
+        { name: '高価', color: 'green', cost: 5 },
+        { name: '紫重複', color: 'purple', cost: 1 },
+        { name: '在庫切れ', color: 'red', cost: 1 },
+    ];
+    const current = {
+        coins: 2,
+        countCardIncludingDormant: name => name === '紫重複' ? 1 : 0,
+    };
+    const render = (card, stock, canBuildThis) => `${card.name}:${stock}:${canBuildThis};`;
+    const base = {
+        cards,
+        cardFilter: 'affordable',
+        enabledCards: new Set(cards.map(card => card.name)),
+        shopStock: { 安価: 2, 高価: 2, 紫重複: 2, 在庫切れ: 0 },
+        current,
+        compareCardsForDisplay: () => 0,
+        getShopStockCount: (stock, card) => stock[card.name],
+        renderBuildCardButton: render,
+    };
+
+    assert.strictEqual(helper.buildVisibleCardButtonsHtml({
+        ...base, canBuildCardAction: true,
+    }), '安価:2:true;');
+    assert.strictEqual(helper.buildVisibleCardButtonsHtml({
+        ...base, canBuildCardAction: false,
+    }), '');
+    assert.strictEqual(helper.buildCardEmptyStateHtml('affordable'),
+        '<p class="build-filter-empty">現在建設できる施設はありません</p>');
 });
 
 runTest('buildBuildMenuHtml はカード/ランドマーク領域をhelperで組み立てる', () => {

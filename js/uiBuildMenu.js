@@ -7,6 +7,7 @@ const UiBuildMenu = (() => {
         Object.freeze({ color: 'green', label: '緑' }),
         Object.freeze({ color: 'red', label: '赤' }),
         Object.freeze({ color: 'purple', label: '紫' }),
+        Object.freeze({ color: 'affordable', label: '建設可' }),
     ]);
 
     function cardFilterTransition(currentFilter, requestedFilter) {
@@ -180,15 +181,32 @@ const UiBuildMenu = (() => {
             : false;
     }
 
+    function canBuildCard(options) {
+        const { card, stock, current, canBuildCardAction } = options;
+        return !!canBuildCardAction && stock > 0 && current.coins >= card.cost &&
+            !(card.color === 'purple' && current.countCardIncludingDormant(card.name) > 0);
+    }
+
+    function cardMatchesFilter(card, cardFilter, canBuildThis) {
+        if (cardFilter === 'affordable') return canBuildThis;
+        return !cardFilter || card.color === cardFilter;
+    }
+
+    function buildCardEmptyStateHtml(cardFilter) {
+        return cardFilter === 'affordable'
+            ? '<p class="build-filter-empty">現在建設できる施設はありません</p>'
+            : '<p class="build-filter-empty">この条件に表示できる施設はありません</p>';
+    }
+
     function buildVisibleCardButtonsHtml(options) {
         const { cards, cardFilter, enabledCards, shopStock, current, canBuildCardAction, compareCardsForDisplay, getShopStockCount, renderBuildCardButton } = options;
         const sortedCards = [...cards].sort(compareCardsForDisplay);
-        const visibleCards = cardFilter ? sortedCards.filter(c => c.color === cardFilter) : sortedCards;
-        return visibleCards.map(card => {
+        return sortedCards.map(card => {
             if (!enabledCards.has(card.name)) return "";
             const stock = getShopStockCount(shopStock, card);
             if (stock <= 0) return "";
-            const canBuildThis = canBuildCardAction && current.coins >= card.cost && !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0);
+            const canBuildThis = canBuildCard({ card, stock, current, canBuildCardAction });
+            if (!cardMatchesFilter(card, cardFilter, canBuildThis)) return "";
             return renderBuildCardButton(card, stock, canBuildThis);
         }).join("");
     }
@@ -208,7 +226,7 @@ const UiBuildMenu = (() => {
         return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
+    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;
