@@ -15,6 +15,16 @@ const UiPlayerDisplay = (() => {
         return CPU_DIFFICULTIES.includes(value) ? value : 'normal';
     }
 
+    function playerKindAccessibleLabel(setting = {}) {
+        if (setting.type !== 'cpu') return '人間';
+        const difficulty = normalizeCpuDifficulty(setting.difficulty);
+        if (difficulty === 'weak') return 'CPU（弱）';
+        if (difficulty === 'strong') return 'CPU（強）';
+        if (difficulty === 'expert') return 'CPU（最強）';
+        if (difficulty === 'rl') return 'AI（深層学習・ランダム）';
+        return 'CPU（普通）';
+    }
+
     function resolvePlayerSetting(options = {}) {
         const settings = Array.isArray(options.playerSettings) ? options.playerSettings : [];
         const cpus = Array.isArray(options.cpuPlayers) ? options.cpuPlayers : [];
@@ -54,6 +64,9 @@ const UiPlayerDisplay = (() => {
         const isActive = index === options.currentPlayerIndex;
         const setting = options.settings[index];
         const cpuLabel = setting.type === 'cpu' ? `🤖${difficultyLabel(setting.difficulty)}` : '👤';
+        const playerSummary = options.escapeHtml(
+            `${player.name}、${isActive ? '現在の手番' : '待機中'}、${playerKindAccessibleLabel(setting)}`
+        );
         const landmarks = Object.entries(player.landmarks)
             .filter(([name]) => options.enabledLandmarks.has(name))
             .map(([name, built]) => buildLandmarkBadgeHtml(name, built, options))
@@ -76,7 +89,7 @@ const UiPlayerDisplay = (() => {
         const itCoins = player.itVentureCoins > 0 ? `<span class="it-badge">💻${player.itVentureCoins}</span>` : '';
         const loanCount = player.cards.filter(card => card.effect === options.loanEffect).length;
         const loanBadge = loanCount > 0 ? `<span class="loan-badge">💳×${loanCount}</span>` : '';
-        return `<div class="player-box ${isActive ? 'active' : ''}"><div class="player-header"><div class="player-name-row"><span class="player-icon">${cpuLabel}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span></div><div class="player-coin-row"><span class="player-coins">🪙 ${player.coins}</span>${itCoins}${loanBadge}</div></div><div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
+        return `<div class="player-box ${isActive ? 'active' : ''}" role="listitem" aria-label="${playerSummary}"><div class="player-header"><div class="player-name-row"><span class="player-icon">${cpuLabel}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span></div><div class="player-coin-row"><span class="player-coins">🪙 ${player.coins}</span>${itCoins}${loanBadge}</div></div><div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
     }
 
     function buildPlayersHtml(players, options = {}) {
@@ -95,6 +108,7 @@ const UiPlayerDisplay = (() => {
     return Object.freeze({
         difficultyLabel,
         normalizeCpuDifficulty,
+        playerKindAccessibleLabel,
         resolvePlayerSetting,
         buildLandmarkBadgeHtml,
         buildPlayerHtml,

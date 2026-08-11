@@ -8,6 +8,12 @@ assert.strictEqual(UiPlayerDisplay.difficultyLabel('rl'), '深');
 assert.strictEqual(UiPlayerDisplay.difficultyLabel('expert'), '最強');
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('expert'), 'expert');
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('unknown'), 'normal');
+assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'human' }), '人間');
+assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'cpu', difficulty: 'weak' }), 'CPU（弱）');
+assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'cpu', difficulty: 'normal' }), 'CPU（普通）');
+assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'cpu', difficulty: 'strong' }), 'CPU（強）');
+assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'cpu', difficulty: 'expert' }), 'CPU（最強）');
+assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'cpu', difficulty: 'rl' }), 'AI（深層学習・ランダム）');
 assert.deepStrictEqual(UiPlayerDisplay.buildCoinAnimationView(3), {
     playSound: true,
     className: 'coin-float coin-gain',
@@ -148,7 +154,8 @@ assert(!html.includes('空港'));
 assert(html.includes('パン屋×2（休2）'));
 assert(html.includes('<span class="it-badge">💻2</span>'));
 assert(html.includes('<span class="loan-badge">💳×1</span>'));
-assert(html.includes('<div class="player-box active">'));
+assert(html.includes('<div class="player-box " role="listitem" aria-label="&lt;Alice&gt;、待機中、人間">'));
+assert(html.includes('<div class="player-box active" role="listitem" aria-label="CPU、現在の手番、CPU（強）">'));
 assert(html.includes('<span class="player-icon">🤖強</span>'));
 assert(html.includes('<span class="player-name">▶ CPU</span>'));
 
@@ -159,5 +166,45 @@ const escapedLandmark = UiPlayerDisplay.buildLandmarkBadgeHtml('<駅">', false, 
 assert(escapedLandmark.includes('aria-label="&lt;駅&quot;&gt;、未建設"'));
 assert(escapedLandmark.includes('&lt;🚉&gt; &lt;駅&quot;&gt;'));
 assert(!escapedLandmark.includes('<駅'));
+
+function makeAccessiblePlayer(name) {
+    return {
+        name,
+        coins: 0,
+        itVentureCoins: 0,
+        landmarks: {},
+        cards: [],
+        isDormant() { return false; },
+    };
+}
+
+const tenPlayers = Array.from({ length: 10 }, (_, index) => makeAccessiblePlayer(
+    index === 0 ? '<悪意"名前>' : `プレイヤー${index + 1}`
+));
+const tenPlayerHtml = UiPlayerDisplay.buildPlayersHtml(tenPlayers, {
+    settings: [
+        { type: 'human', difficulty: 'human' },
+        { type: 'cpu', difficulty: 'weak' },
+        { type: 'cpu', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'strong' },
+        { type: 'cpu', difficulty: 'expert' },
+        { type: 'cpu', difficulty: 'rl' },
+        ...Array.from({ length: 4 }, () => ({ type: 'human', difficulty: 'human' })),
+    ],
+    currentPlayerIndex: 4,
+    enabledLandmarks: new Set(),
+    getLandmarkEmoji: () => '',
+    compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
+    escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+    loanEffect: 'loan',
+});
+assert.strictEqual((tenPlayerHtml.match(/role="listitem"/g) || []).length, 10);
+assert(tenPlayerHtml.includes('aria-label="&lt;悪意&quot;名前&gt;、待機中、人間"'));
+assert(tenPlayerHtml.includes('aria-label="プレイヤー2、待機中、CPU（弱）"'));
+assert(tenPlayerHtml.includes('aria-label="プレイヤー3、待機中、CPU（普通）"'));
+assert(tenPlayerHtml.includes('aria-label="プレイヤー4、待機中、CPU（強）"'));
+assert(tenPlayerHtml.includes('aria-label="プレイヤー5、現在の手番、CPU（最強）"'));
+assert(tenPlayerHtml.includes('aria-label="プレイヤー6、待機中、AI（深層学習・ランダム）"'));
+assert(!tenPlayerHtml.includes('<悪意'));
 
 console.log('ui player display tests passed');

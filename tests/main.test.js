@@ -2341,6 +2341,13 @@ runTest('onlineStatus はライブリージョンとして宣言されている'
     assert.ok(html.includes('id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
 });
 
+runTest('プレイヤー状況は多人数でも項目単位で辿れるlistとして宣言されている', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const playerDisplay = fs.readFileSync(path.join(__dirname, '..', 'js', 'uiPlayerDisplay.js'), 'utf8');
+    assert.ok(html.includes('id="players" role="list" aria-label="プレイヤー状況"'));
+    assert.ok(playerDisplay.includes('role="listitem" aria-label="${playerSummary}"'));
+});
+
 runTest('操作ガイドは過剰に割り込まない名前付きregionとして宣言されている', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const match = html.match(/<div id="tutorialBox"[^>]*>/);
