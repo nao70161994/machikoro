@@ -9,6 +9,7 @@ const SAVED_PENDING_ACTION_BY_FIELD = Object.freeze({
 });
 const MAX_SAVED_PENDING_COUNT = 50;
 const MAX_SAVED_LOG_ENTRIES = 30;
+const MAX_SAVED_CPU_SPEED = 5000;
 
 function isPlainObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -201,10 +202,11 @@ function createValidator(options = {}) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
                 (!isNonnegativeSafeInteger(state[field]) || state[field] > 6)) return false;
         }
-        for (const field of ['turnCount', 'cpuSpeed']) {
-            if (Object.prototype.hasOwnProperty.call(state, field) &&
-                !isNonnegativeSafeInteger(state[field])) return false;
-        }
+        if (Object.prototype.hasOwnProperty.call(state, 'turnCount') &&
+            !isNonnegativeSafeInteger(state.turnCount)) return false;
+        if (Object.prototype.hasOwnProperty.call(state, 'cpuSpeed') &&
+            (!isNonnegativeSafeInteger(state.cpuSpeed) ||
+            state.cpuSpeed > MAX_SAVED_CPU_SPEED)) return false;
         let pendingFieldTotal = 0;
         for (const field of ['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
@@ -270,6 +272,7 @@ function createValidator(options = {}) {
 const SavedGameValidation = Object.freeze({
     maxLogEntries: MAX_SAVED_LOG_ENTRIES,
     maxPendingCount: MAX_SAVED_PENDING_COUNT,
+    maxCpuSpeed: MAX_SAVED_CPU_SPEED,
     pendingActionByField: SAVED_PENDING_ACTION_BY_FIELD,
     createValidator,
     hasResolvablePendingTargets,

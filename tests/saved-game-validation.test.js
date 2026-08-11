@@ -278,8 +278,12 @@ runTest('saved game validatorはruntimeへ渡す数値を安全な範囲に限�
         lastDice1: 6,
         lastDice2: 0,
         turnCount: Number.MAX_SAFE_INTEGER,
-        cpuSpeed: 0,
+        cpuSpeed: SavedGameValidation.maxCpuSpeed,
     })), true);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({ cpuSpeed: 0 })), true);
+    const legacy = makeState();
+    delete legacy.cpuSpeed;
+    assert.strictEqual(validator.isValidSavedGameState(legacy), true);
     const unsafe = Number.MAX_SAFE_INTEGER + 1;
     for (const state of [
         makeState({ lastDiceResult: 15 }),
@@ -287,6 +291,8 @@ runTest('saved game validatorはruntimeへ渡す数値を安全な範囲に限�
         makeState({ lastDice2: -1 }),
         makeState({ turnCount: unsafe }),
         makeState({ cpuSpeed: 'immediate' }),
+        makeState({ cpuSpeed: SavedGameValidation.maxCpuSpeed + 1 }),
+        makeState({ cpuSpeed: Number.MAX_VALUE }),
         makeState({ cpuSpeed: unsafe }),
         makeState({ shopStock: { wheat_field: unsafe } }),
         makeState({ players: [

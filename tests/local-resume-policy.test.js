@@ -100,6 +100,16 @@ assert.deepStrictEqual(runtimePlan.enabledLandmarks, ['駅', '空港']);
 assert.ok(Object.isFrozen(runtimePlan));
 assert.ok(Object.isFrozen(runtimePlan.enabledCards));
 assert.ok(Object.isFrozen(runtimePlan.enabledLandmarks));
+assert.strictEqual(LocalResumePolicy.runtimePlan(
+    { players: [{}, {}] },
+    [],
+    []
+).cpuSpeed, 1500);
+assert.strictEqual(LocalResumePolicy.runtimePlan(
+    { players: [{}, {}], cpuSpeed: 0 },
+    [],
+    []
+).cpuSpeed, 1500);
 
 const effectOrder = [];
 const effects = {};
