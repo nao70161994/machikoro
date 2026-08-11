@@ -8,6 +8,7 @@ const SAVED_PENDING_ACTION_BY_FIELD = Object.freeze({
     pendingRenovation: 'resolveRenovation',
 });
 const MAX_SAVED_PENDING_COUNT = 50;
+const MAX_SAVED_LOG_ENTRIES = 30;
 
 function isPlainObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -26,6 +27,16 @@ function normalizeCpuSettings(state) {
             rlModelId: setting.rlModelId || setting.modelId || null,
         };
     });
+}
+
+function normalizeSavedLog(log) {
+    if (!Array.isArray(log)) return [];
+    return log
+        .filter(entry => isPlainObject(entry) &&
+            typeof entry.type === 'string' &&
+            typeof entry.message === 'string')
+        .slice(-MAX_SAVED_LOG_ENTRIES)
+        .map(entry => ({ type: entry.type, message: entry.message }));
 }
 
 function createValidator(options = {}) {
@@ -157,10 +168,12 @@ function createValidator(options = {}) {
 }
 
 const SavedGameValidation = Object.freeze({
+    maxLogEntries: MAX_SAVED_LOG_ENTRIES,
     maxPendingCount: MAX_SAVED_PENDING_COUNT,
     pendingActionByField: SAVED_PENDING_ACTION_BY_FIELD,
     createValidator,
     normalizeCpuSettings,
+    normalizeSavedLog,
 });
 
 if (typeof module !== 'undefined' && module.exports) module.exports = SavedGameValidation;

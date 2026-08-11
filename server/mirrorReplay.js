@@ -212,7 +212,7 @@ function makeMirrorReplay({
             (!Number.isInteger(state.currentPlayerIndex) || state.currentPlayerIndex < 0 || state.currentPlayerIndex >= playerCount)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'phase') &&
             !Object.values(gameRuntime.GAME_PHASES).includes(state.phase)) return false;
-        if (Object.prototype.hasOwnProperty.call(state, 'log') && !Array.isArray(state.log)) return false;
+        if (Object.prototype.hasOwnProperty.call(state, 'log') && !isValidSnapshotLog(state.log)) return false;
         for (const field of ['lastDiceResult', 'lastDice1', 'lastDice2', 'turnCount']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
                 (!Number.isInteger(state[field]) || state[field] < 0)) return false;
@@ -272,7 +272,7 @@ function makeMirrorReplay({
         if (Object.prototype.hasOwnProperty.call(state, 'playerItVenture') &&
             (!Array.isArray(state.playerItVenture) || state.playerItVenture.length !== playerCount)) return false;
         if (!isPlainObject(state.shopStock)) return false;
-        if (Object.prototype.hasOwnProperty.call(state, 'log') && !Array.isArray(state.log)) return false;
+        if (Object.prototype.hasOwnProperty.call(state, 'log') && !isValidSnapshotLog(state.log)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'builtThisTurn') && typeof state.builtThisTurn !== 'boolean') return false;
         if (state.playerCoins.some(coins => !Number.isInteger(coins) || coins < 0)) return false;
         const landmarkNames = new Set(gameRuntime.Player.landmarkNames());
@@ -368,6 +368,14 @@ function makeMirrorReplay({
 
     function hasDuplicateValues(values) {
         return new Set(values).size !== values.length;
+    }
+
+    function isValidSnapshotLog(log) {
+        return Array.isArray(log) &&
+            log.length <= MAX_SNAPSHOT_LOG_ENTRIES &&
+            log.every(entry => isPlainObject(entry) &&
+                typeof entry.type === 'string' &&
+                typeof entry.message === 'string');
     }
 
     function validateReplayAction(room, game, shopStock, entry, lastUndoState, cpuPlayers) {

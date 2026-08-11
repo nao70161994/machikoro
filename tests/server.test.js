@@ -1344,6 +1344,23 @@ runTest('server mirror snapshot は長いlogを末尾30件に制限する', () =
     assert.strictEqual(snapshot.log[29].message, 'log-39');
 });
 
+runTest('createRoomMirror は過大または壊れたsnapshot logを描画前に拒否する', () => {
+    const baseRoom = makeRoom();
+    const baseMirror = createRoomMirror(baseRoom);
+    const baseSnapshot = serializeMirrorState(baseMirror.game, baseMirror.shopStock);
+    const invalidLogs = [
+        Array.from({ length: 31 }, (_, index) => ({ type: 'system', message: `log-${index}` })),
+        [null],
+        [{ type: 'system' }],
+        [{ message: 'missing type' }],
+    ];
+    for (const log of invalidLogs) {
+        const room = makeRoom();
+        room.stateSnapshot = Object.assign({}, baseSnapshot, { log });
+        assert.strictEqual(createRoomMirror(room), null);
+    }
+});
+
 runTest('createRoomMirror は snapshot の undoState から undoBuild replay を復元する', () => {
     const room = makeRoom();
     room.actionLog = [

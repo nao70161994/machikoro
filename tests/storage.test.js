@@ -694,7 +694,7 @@ runTest('storage resumeGame は共有hydrateで既存の全主要状態を復元
         ],
         currentPlayerIndex: 1,
         phase: 'pending',
-        log: [{ text: 'restored' }],
+        log: [{ type: 'system', message: 'restored' }],
         lastDiceResult: 8,
         lastDice1: 3,
         lastDice2: 5,
@@ -715,7 +715,7 @@ runTest('storage resumeGame は共有hydrateで既存の全主要状態を復元
     const game = rt.__test.getGame();
     assert.strictEqual(game.currentPlayerIndex, 1);
     assert.strictEqual(game.phase, 'pending');
-    assert.deepStrictEqual(JSON.parse(JSON.stringify(game.log)), [{ text: 'restored' }]);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(game.log)), [{ type: 'system', message: 'restored' }]);
     assert.strictEqual(game.lastDiceResult, 8);
     assert.strictEqual(game.lastDice1, 3);
     assert.strictEqual(game.lastDice2, 5);

@@ -127,6 +127,20 @@ runTest('saved game validatorはpending phaseをIT単独か通常pendingのど�
     assert.strictEqual(validator.isValidSavedGameState(mixedPending), false);
 });
 
+runTest('saved game validatorは復元logを構造化entryの直近30件へ正規化する', () => {
+    const log = Array.from({ length: 31 }, (_, index) => ({
+        type: 'system',
+        message: `log-${index}`,
+    }));
+    log.splice(10, 0, null, { type: 'system' }, { message: 'missing type' });
+    const normalized = SavedGameValidation.normalizeSavedLog(log);
+    assert.strictEqual(SavedGameValidation.maxLogEntries, 30);
+    assert.strictEqual(normalized.length, 30);
+    assert.deepStrictEqual(normalized[0], { type: 'system', message: 'log-1' });
+    assert.deepStrictEqual(normalized.at(-1), { type: 'system', message: 'log-30' });
+    assert.deepStrictEqual(SavedGameValidation.normalizeSavedLog(null), []);
+});
+
 runTest('saved game validatorは依存未注入時に未知cardとlandmarkを拒否する', () => {
     const validator = SavedGameValidation.createValidator();
     assert.strictEqual(validator.isValidSavedGameState(makeState()), false);

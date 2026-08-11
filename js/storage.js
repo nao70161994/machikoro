@@ -420,7 +420,7 @@ function resumeGame(options = {}) {
                         makeDefaultLandmarks(),
                         isPlainObject(value) ? value : {}
                     ),
-                    readLog: value => Array.isArray(value) ? value : [],
+                    readLog: SavedGameValidation.normalizeSavedLog,
                     normalizeCurrentPlayerIndex: value => value,
                 });
             },
