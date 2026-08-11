@@ -12,6 +12,38 @@ const {
 } = require('./helpers/game-schema-parity');
 const { makeRoom, applyTraceStep, setPending } = makeGameSchemaParityHarness(server, runtime);
 
+function reconcileFixtureInventory(room) {
+    const mirror = room.canonicalMirror;
+    const playerCount = mirror.game.players.length;
+    const ownedByName = new Map();
+    for (const player of mirror.game.players) {
+        for (const card of player.cards) {
+            ownedByName.set(card.name, (ownedByName.get(card.name) || 0) + 1);
+        }
+    }
+    for (const card of runtime.CARDS) {
+        const initialStock = runtime.getInitialCardStock(card, playerCount);
+        const initialGrant = card.id === runtime.CARD_IDS.WHEAT_FIELD ||
+            card.id === runtime.CARD_IDS.BAKERY
+            ? playerCount
+            : 0;
+        const owned = ownedByName.get(card.name) || 0;
+        assert.ok(
+            owned <= initialStock + initialGrant,
+            `${card.name} fixture supply exceeded: ${owned}/${initialStock + initialGrant}`
+        );
+        const remainingStock = Math.min(
+            initialStock,
+            initialStock + initialGrant - owned
+        );
+        assert.strictEqual(
+            runtime.setShopStockCount(mirror.shopStock, card, remainingStock),
+            true,
+            `${card.name} fixture stock update failed`
+        );
+    }
+}
+
 
 runTest('pure snapshot採用は不正snapshotで既存mirrorを変更しない', () => {
     const room = makeRoom(2, SCHEMA_SELECTIONS[3]);
@@ -21,6 +53,17 @@ runTest('pure snapshot採用は不正snapshotで既存mirrorを変更しない',
         snapshot: { phase: 'broken' },
     }), false);
     assert.strictEqual(room.canonicalMirror, originalMirror);
+});
+
+runTest('schema parity fixtureはproduction市場上限を超える盤面を拒否する', () => {
+    const room = makeRoom(10, SCHEMA_SELECTIONS[0]);
+    for (let index = 0; index < 7; index++) {
+        room.canonicalMirror.game.players[index].cards = [runtime.createCardByName('カフェ')];
+    }
+    assert.throws(
+        () => reconcileFixtureInventory(room),
+        /カフェ fixture supply exceeded: 7\/6/
+    );
 });
 
 runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後も全action traceを維持する', () => {
@@ -202,12 +245,12 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                 game.players[0].landmarks['駅'] = true;
                 game.players[0].coins = 3;
                 for (const player of game.players) {
-                    player.cards = [runtime.createCardByName('カフェ')];
+                    player.cards = [runtime.createCardByName('パン屋')];
                     player.dormantCards = [];
                 }
             },
             actions: [
-                ['resolveCleaning', { cardName: 'カフェ' }],
+                ['resolveCleaning', { cardName: 'パン屋' }],
                 ['resolveRenovation', { landmarkName: '駅' }],
             ],
             assertAfter(game, stepIndex) {
@@ -278,7 +321,9 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                 game.players[0].landmarks['ショッピングモール'] = true;
                 game.players[0].coins = 100;
                 for (let index = 1; index < game.players.length; index++) {
-                    game.players[index].cards = [runtime.createCardByName('カフェ')];
+                    game.players[index].cards = index <= 6
+                        ? [runtime.createCardByName('カフェ')]
+                        : [];
                     game.players[index].dormantCards = [];
                     game.players[index].landmarks['ショッピングモール'] = true;
                     game.players[index].coins = 1;
@@ -286,9 +331,10 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             },
             actions: [['rollDice', { forceDice: 3, tunaDice: [1, 1] }]],
             assertAfter(game) {
-                assert.strictEqual(game.players[0].coins, 102 - 2 * (game.players.length - 1));
+                const cafeOwners = Math.min(6, game.players.length - 1);
+                assert.strictEqual(game.players[0].coins, 102 - 2 * cafeOwners);
                 for (let index = 1; index < game.players.length; index++) {
-                    assert.strictEqual(game.players[index].coins, 3);
+                    assert.strictEqual(game.players[index].coins, index <= 6 ? 3 : 1);
                 }
                 assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
             },
@@ -384,20 +430,16 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
                 game.players[0].landmarks['駅'] = true;
                 game.players[0].coins = 3;
                 for (let index = 1; index < game.players.length; index++) {
-                    game.players[index].cards = [
-                        runtime.createCardByName('カフェ'),
-                        runtime.createCardByName('カフェ'),
-                        runtime.createCardByName('パン屋'),
-                    ];
+                    game.players[index].cards = [runtime.createCardByName('パン屋')];
                     game.players[index].dormantCards = [];
                     game.players[index].coins = 10;
                 }
             },
             actions: [['selectDice', { useTwo: true, diceCount: 2, d1: 3, d2: 4, tunaDice: [1, 1] }]],
             assertAfter(game) {
-                assert.strictEqual(game.players[0].coins, 3 + 3 * (game.players.length - 1));
+                assert.strictEqual(game.players[0].coins, 3 + game.players.length - 1);
                 for (let index = 1; index < game.players.length; index++) {
-                    assert.strictEqual(game.players[index].coins, 7);
+                    assert.strictEqual(game.players[index].coins, 9);
                 }
                 assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
             },
@@ -675,6 +717,7 @@ runTest('schema shadow parityは2〜10人・独立v0/v1でpure snapshot採用後
             for (const fixture of fixtures) {
                 const room = makeRoom(playerCount, selection);
                 fixture.setup(room.canonicalMirror.game);
+                reconcileFixtureInventory(room);
                 for (const [stepIndex, [action, data]] of fixture.actions.entries()) {
                     coveredActions.add(action);
                     applyTraceStep(room, action, data);
