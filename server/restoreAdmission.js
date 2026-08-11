@@ -153,11 +153,11 @@ function makeRestoreAdmission({
             playerIndex,
             playerName
         );
-        const existingRestoreAuthenticated = Number.isInteger(playerIndex) &&
-            existingReconnectTokenHash &&
-            hashReconnectToken(reconnectToken) === existingReconnectTokenHash;
-        const existingHostRestoreAuthenticated = existingRestoreAuthenticated &&
-            room.hostPlayerIndex === playerIndex;
+        if (!Number.isInteger(playerIndex) || !existingReconnectTokenHash ||
+                hashReconnectToken(reconnectToken) !== existingReconnectTokenHash) {
+            return reject('INVALID_TOKEN');
+        }
+        const existingHostRestoreAuthenticated = room.hostPlayerIndex === playerIndex;
         const rawSanitizedActionLog = sanitizeRestoreActionLog(
             actionLog,
             roomId,
@@ -198,15 +198,6 @@ function makeRestoreAdmission({
         }
         if (decision.action === 'reject') {
             return reject('復元データが壊れています');
-        }
-        const expectedReconnectTokenHash = getExpectedReconnectTokenHash(
-            room,
-            playerIndex,
-            playerName
-        );
-        if (!expectedReconnectTokenHash ||
-            hashReconnectToken(reconnectToken) !== expectedReconnectTokenHash) {
-            return reject('INVALID_TOKEN');
         }
         return Object.freeze({ ok: true, action: 'rejoin' });
     }

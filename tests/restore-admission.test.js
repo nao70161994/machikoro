@@ -298,7 +298,7 @@ runTest('existing room restore admissionはnewerなhost復元破損を再join前
     ]);
 });
 
-runTest('existing room restore admissionは通常再join時に既存どおりtokenを再確認する', () => {
+runTest('existing room restore admissionは認証済みhostの通常再joinを維持する', () => {
     const harness = makeHarness({
         canReplaceRestoredRoom: () => { harness.calls.push('replace-existing'); return false; },
     });
@@ -309,7 +309,34 @@ runTest('existing room restore admissionは通常再join時に既存どおりtok
     assert.deepStrictEqual(harness.calls, [
         'expected-token', 'hash-token', 'secret-existing', 'sanitize-existing',
         'game-start', 'rl', 'replace-existing', 'newer-existing', 'decision-existing',
-        'expected-token', 'hash-token',
+    ]);
+});
+
+runTest('existing room restore admissionは不正tokenをsanitize前に即拒否する', () => {
+    const harness = makeHarness({
+        hashReconnectToken: () => { harness.calls.push('hash-token'); return 'wrong-hash'; },
+    });
+    assert.deepStrictEqual(harness.planExisting(existingRoomInput(harness)), {
+        ok: false,
+        errorMessage: 'INVALID_TOKEN',
+        result: undefined,
+    });
+    assert.deepStrictEqual(harness.calls, ['expected-token', 'hash-token']);
+});
+
+runTest('existing room restore admissionは認証済みguestを通常rejoinへ通す', () => {
+    const harness = makeHarness({
+        canReplaceRestoredRoom: () => { harness.calls.push('replace-existing'); return false; },
+    });
+    assert.deepStrictEqual(harness.planExisting(existingRoomInput(harness, {
+        room: { started: true, hostPlayerIndex: 0 },
+    })), {
+        ok: true,
+        action: 'rejoin',
+    });
+    assert.deepStrictEqual(harness.calls, [
+        'expected-token', 'hash-token', 'secret-existing', 'sanitize-existing',
+        'game-start', 'rl', 'decision-existing',
     ]);
 });
 
@@ -323,7 +350,7 @@ runTest('existing room restore admissionはsanitize失敗を置換根拠にせ�
     });
     assert.deepStrictEqual(harness.calls, [
         'expected-token', 'hash-token', 'secret-existing', 'sanitize-existing',
-        'newer-existing', 'decision-existing', 'expected-token', 'hash-token',
+        'newer-existing', 'decision-existing',
     ]);
 });
 
