@@ -195,7 +195,7 @@ runTest('saved game validatorは改装屋pendingに建設済み非役所landmark
         })),
         players: [
             { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: {
-                駅: true, ショッピングモール: true, 役所: true,
+                駅: true, ショッピングモール: true,
             } },
             { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
         ],
@@ -216,6 +216,7 @@ runTest('saved game validatorは非連続な改装屋runごとの対象消費を
         pendingTV: 1,
         pendingRenovation: 2,
         pendingActions: [renovation, tv, renovation],
+        enabledLandmarksList: ['駅', 'ショッピングモール', '遊園地'],
         players: [
             { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: {
                 駅: true, ショッピングモール: false,
@@ -332,6 +333,38 @@ runTest('saved game validatorは所持cardと明示在庫の物量上限を共�
         ],
         shopStock: { wheat_field: 4 },
     })), false);
+});
+
+runTest('saved game validatorは無効landmarkの建設済み状態を拒否する', () => {
+    const validator = makeValidator();
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        enabledLandmarksList: ['駅'],
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: {
+                駅: true, ショッピングモール: false,
+            } },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+    })), true);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        enabledLandmarksList: ['駅'],
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: {
+                駅: false, ショッピングモール: true,
+            } },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+    })), false);
+    const legacy = makeState({
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: {
+                ショッピングモール: true,
+            } },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+    });
+    delete legacy.enabledLandmarksList;
+    assert.strictEqual(validator.isValidSavedGameState(legacy), true);
 });
 
 runTest('saved game validatorは依存未注入時に未知cardとlandmarkを拒否する', () => {

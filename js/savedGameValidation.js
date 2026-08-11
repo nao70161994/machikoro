@@ -237,6 +237,13 @@ function createValidator(options = {}) {
         for (const playerState of state.players) {
             if (!isValidSavedPlayerState(playerState)) return false;
         }
+        if (Array.isArray(state.enabledLandmarksList)) {
+            const enabledLandmarks = new Set(state.enabledLandmarksList);
+            for (const playerState of state.players) {
+                if (Object.entries(playerState.landmarks || {}).some(([name, built]) =>
+                    built === true && !enabledLandmarks.has(name))) return false;
+            }
+        }
         if (state.shopStock != null && !isValidSavedShopStock(state.shopStock, state.enabledCardsList)) return false;
         if (inventoryValidator && !inventoryValidator.validate({
             playerCount: state.players.length,

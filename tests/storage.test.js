@@ -913,6 +913,17 @@ runTest('storage resumeGame は無効化カード在庫を含む保存データ�
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
+runTest('storage resumeGame は無効landmarkの建設済み保存を破棄する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({ enabledLandmarksList: ['駅'] });
+    state.players[0].landmarks = { 駅: false, ショッピングモール: true };
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    assert.strictEqual(rt.resumeGame(), false);
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.strictEqual(rt.__test.getGame(), null);
+});
+
 runTest('storage resumeGame は重複休業indexを含む保存データを破棄する', () => {
     const rt = loadStorageRuntime();
     const state = makeSavedGameState();
