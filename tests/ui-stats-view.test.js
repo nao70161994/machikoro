@@ -51,7 +51,45 @@ runTest('stats viewはfilter名とランキング名をescapeして既存HTMLを
     assert.ok(html.includes('&lt;img src=x onerror=alert(1)&gt;の成績'));
     assert.ok(html.includes('67%'));
     assert.ok(!html.includes('<img src=x onerror=alert(1)>'));
+    assert.ok(html.includes('role="list" aria-label="カード勝率ランキング"'));
+    assert.ok(html.includes('role="list" aria-label="ランドマーク建設時勝率"'));
+    assert.ok(html.includes('role="listitem" aria-label="第1位、&lt;img src=x onerror=alert(1)&gt;、勝率67%、3戦"'));
+    assert.ok(html.includes('role="listitem" aria-label="第1項目、&lt;img src=x onerror=alert(1)&gt;、勝率67%、3戦"'));
+    assert.strictEqual((html.match(/class="stats-bar-wrap" aria-hidden="true"/g) || []).length, 2);
     assert.ok(html.includes('data-action="clearStats"'));
+});
+
+runTest('stats viewは順位・visible値を保ったlistをpureに生成する', () => {
+    const bucket = makeStats().all;
+    bucket.cardStats = {
+        パン屋: { winWith: 3, loseWith: 1 },
+        麦畑: { winWith: 1, loseWith: 3 },
+        牧場: { winWith: 1, loseWith: 1 },
+    };
+    bucket.landmarkStats = {
+        駅: { winWith: 2, loseWith: 2 },
+        港: { winWith: 1, loseWith: 3 },
+    };
+
+    const cards = UiStatsView.buildCardRowsHtml(bucket, escapeHtml);
+    assert.ok(cards.includes('aria-label="第1位、パン屋、勝率75%、4戦"'));
+    assert.ok(cards.includes('aria-label="第2位、麦畑、勝率25%、4戦"'));
+    assert.ok(!cards.includes('牧場'));
+    assert.ok(cards.includes('<span class="stats-pct">75%</span>'));
+    assert.ok(cards.includes('<span class="stats-count">4戦</span>'));
+
+    const landmarks = UiStatsView.buildLandmarkRowsHtml(bucket, escapeHtml);
+    assert.ok(landmarks.includes('aria-label="第1項目、駅、勝率50%、4戦"'));
+    assert.ok(landmarks.includes('aria-label="第2項目、港、勝率25%、4戦"'));
+});
+
+runTest('stats viewはempty stateをlistとして宣言しない', () => {
+    const emptyBucket = makeStats().all;
+    const cards = UiStatsView.buildCardRowsHtml(emptyBucket, escapeHtml);
+    const landmarks = UiStatsView.buildLandmarkRowsHtml(emptyBucket, escapeHtml);
+    assert.ok(cards.includes('stats-empty'));
+    assert.ok(!cards.includes('role="list"'));
+    assert.strictEqual(landmarks, '');
 });
 
 runTest('stats viewは空bucketのonline案内とfilter選択状態を純粋生成する', () => {

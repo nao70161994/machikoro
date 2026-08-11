@@ -2348,6 +2348,14 @@ runTest('プレイヤー状況は多人数でも項目単位で辿れるlistと�
     assert.ok(playerDisplay.includes('role="listitem" aria-label="${playerSummary}"'));
 });
 
+runTest('統計結果は名前・勝率・対戦数を対応付けるlistとして生成される', () => {
+    const statsView = fs.readFileSync(path.join(__dirname, '..', 'js', 'uiStatsView.js'), 'utf8');
+    assert.ok(statsView.includes('role="list" aria-label="カード勝率ランキング"'));
+    assert.ok(statsView.includes('role="list" aria-label="ランドマーク建設時勝率"'));
+    assert.ok(statsView.includes('role="listitem" aria-label="${accessibleLabel}"'));
+    assert.ok(statsView.includes('class="stats-bar-wrap" aria-hidden="true"'));
+});
+
 runTest('操作ガイドは過剰に割り込まない名前付きregionとして宣言されている', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const match = html.match(/<div id="tutorialBox"[^>]*>/);

@@ -53,31 +53,37 @@ function buildCardRowsHtml(bucket, escapeHtml) {
         .filter(entry => entry.total >= 3)
         .sort((a, b) => b.rate - a.rate);
 
-    return cardEntries.slice(0, 15).map((entry, index) => {
+    const rows = cardEntries.slice(0, 15).map((entry, index) => {
         const pct = Math.round(entry.rate * 100);
-        return `<div class="stats-card-row">
+        const accessibleLabel = escape(`第${index + 1}位、${entry.name}、勝率${pct}%、${entry.total}戦`);
+        return `<div class="stats-card-row" role="listitem" aria-label="${accessibleLabel}">
             <span class="stats-rank">${index + 1}</span>
             <span class="stats-card-name">${escape(entry.name)}</span>
-            <div class="stats-bar-wrap"><div class="stats-bar" style="width:${pct}%"></div></div>
+            <div class="stats-bar-wrap" aria-hidden="true"><div class="stats-bar" style="width:${pct}%"></div></div>
             <span class="stats-pct">${pct}%</span>
             <span class="stats-count">${entry.total}戦</span>
         </div>`;
-    }).join('') || '<div class="stats-empty">3戦以上のデータがまだありません</div>';
+    }).join('');
+    return rows
+        ? `<div class="stats-cards" role="list" aria-label="カード勝率ランキング">${rows}</div>`
+        : '<div class="stats-empty">3戦以上のデータがまだありません</div>';
 }
 
 function buildLandmarkRowsHtml(bucket, escapeHtml) {
     const escape = requireFunction(escapeHtml, 'escapeHtml');
-    return Object.entries(bucket.landmarkStats)
-        .map(([name, result]) => {
+    const rows = Object.entries(bucket.landmarkStats)
+        .map(([name, result], index) => {
             const total = result.winWith + result.loseWith;
             const pct = total > 0 ? Math.round(result.winWith / total * 100) : 0;
-            return `<div class="stats-card-row">
+            const accessibleLabel = escape(`第${index + 1}項目、${name}、勝率${pct}%、${total}戦`);
+            return `<div class="stats-card-row" role="listitem" aria-label="${accessibleLabel}">
                 <span class="stats-card-name">${escape(name)}</span>
-                <div class="stats-bar-wrap"><div class="stats-bar stats-bar-lm" style="width:${pct}%"></div></div>
+                <div class="stats-bar-wrap" aria-hidden="true"><div class="stats-bar stats-bar-lm" style="width:${pct}%"></div></div>
                 <span class="stats-pct">${pct}%</span>
                 <span class="stats-count">${total}戦</span>
             </div>`;
         }).join('');
+    return rows ? `<div class="stats-cards" role="list" aria-label="ランドマーク建設時勝率">${rows}</div>` : '';
 }
 
 function buildStatsHtml(stats, viewMode, playerFilter, escapeHtml) {
@@ -116,10 +122,10 @@ function buildStatsHtml(stats, viewMode, playerFilter, escapeHtml) {
         </div>
 
         <div class="stats-section-title">🃏 カード勝率ランキング <span class="stats-hint">3戦以上・所持時の勝率</span></div>
-        <div class="stats-cards">${cardRows}</div>
+        ${cardRows}
 
         ${landmarkRows ? `<div class="stats-section-title">🏛️ ランドマーク建設時勝率</div>
-        <div class="stats-cards">${landmarkRows}</div>` : ''}
+        ${landmarkRows}` : ''}
 
         <button data-action="clearStats" class="delete-save-btn" style="margin-top:16px;width:100%">🗑 統計をリセット</button>
     `;
