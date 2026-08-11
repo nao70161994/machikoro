@@ -3059,6 +3059,17 @@ function _runOnlineReconnectTerminalCleanup(cleanupSelection) {
     return effectSelection;
 }
 
+function _runOnlineReconnectRetryableCleanup() {
+    const currentSocket = onlineSessionSnapshot().socket;
+    _clearPendingOutboundActionForCurrentSession();
+    setOnlineReconnectLegacyFlag(false);
+    onlineClientEffects.updateResumeButton();
+    if (currentSocket) {
+        currentSocket.disconnect();
+        onlineComposition.sessionState.setSocket(null);
+    }
+}
+
 function handleAppError(msg) {
     const session = onlineSessionSnapshot();
     finishOnlineLobbyRequest();
@@ -3079,6 +3090,14 @@ function handleAppError(msg) {
         onlineClientEffects.invalidateCpuSchedule();
         onlineDomEffects.setStatusText('⚠️ 操作がサーバーで拒否されました。状態を再同期しています...');
         _emitOnlineRejoinRequest();
+        return;
+    }
+    const retryableRecreateReason = OnlineRetryPolicy.recreateRetryableAppErrorReason(msg);
+    if (retryableRecreateReason && session.isReconnectingOnline && session.isRoomHost) {
+        _runOnlineReconnectRetryableCleanup();
+        onlineDomEffects.setStatusText(
+            `⚠️ ${msg} 復元データは保持されています。時間をおいて「続きから」を押してください。`
+        );
         return;
     }
     const cleanupSelection = _onlineReconnectCleanupAuthoritySelection(session.isReconnectingOnline);

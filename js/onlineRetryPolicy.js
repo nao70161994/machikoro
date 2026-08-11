@@ -6,6 +6,30 @@ const ONLINE_RETRY_DEFAULTS = Object.freeze({
     actionAckTimeoutMs: 15000,
 });
 
+const RECREATE_RETRYABLE_APP_ERROR_REASONS = Object.freeze({
+    ROOM_CAPACITY: 'room-capacity',
+    SOCKET_RATE_LIMIT: 'socket-rate-limit',
+    IP_RATE_LIMIT: 'ip-rate-limit',
+    ATTEMPT_RATE_LIMIT: 'attempt-rate-limit',
+});
+
+const RECREATE_RETRYABLE_APP_ERROR_MESSAGES = Object.freeze({
+    'ルーム数が上限に達しています。しばらくしてから再試行してください':
+        RECREATE_RETRYABLE_APP_ERROR_REASONS.ROOM_CAPACITY,
+    'ルーム作成が短時間に連続しています。少し待ってから再試行してください':
+        RECREATE_RETRYABLE_APP_ERROR_REASONS.SOCKET_RATE_LIMIT,
+    'ルーム作成が短時間に集中しています。少し待ってから再試行してください':
+        RECREATE_RETRYABLE_APP_ERROR_REASONS.IP_RATE_LIMIT,
+    '復元処理が短時間に集中しています。少し待ってから再試行してください':
+        RECREATE_RETRYABLE_APP_ERROR_REASONS.ATTEMPT_RATE_LIMIT,
+});
+
+function recreateRetryableAppErrorReason(message) {
+    return typeof message === 'string'
+        ? RECREATE_RETRYABLE_APP_ERROR_MESSAGES[message] || ''
+        : '';
+}
+
 function isRejoinExhausted(attemptCount, maxAttempts = ONLINE_RETRY_DEFAULTS.rejoinMaxAttempts) {
     return Number.isInteger(attemptCount) && attemptCount >= maxAttempts;
 }
@@ -266,6 +290,8 @@ function isActionAckTimedOut(startedAt, now = Date.now(), timeoutMs = ONLINE_RET
 
 const OnlineRetryPolicy = Object.freeze({
     defaults: ONLINE_RETRY_DEFAULTS,
+    recreateRetryableReasons: RECREATE_RETRYABLE_APP_ERROR_REASONS,
+    recreateRetryableAppErrorReason,
     isRejoinExhausted,
     rejoinDeadline,
     rejoinWaitingMessage,

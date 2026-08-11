@@ -4130,6 +4130,56 @@ runTest('handleAppError は再接続中にオンラインセッションを破�
     assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false);
 });
 
+runTest('一時的なrecreate拒否はsocketを閉じてもroom-scoped復元bundleを保持する', () => {
+    for (const message of [
+        'ルーム数が上限に達しています。しばらくしてから再試行してください',
+        'ルーム作成が短時間に連続しています。少し待ってから再試行してください',
+        'ルーム作成が短時間に集中しています。少し待ってから再試行してください',
+        '復元処理が短時間に集中しています。少し待ってから再試行してください',
+    ]) {
+        const rt = loadOnlineRuntime();
+        let disconnected = false;
+        const session = {
+            roomId: 'ROOM01', playerIndex: 0, playerName: 'Alice',
+            reconnectToken: 'token', isRoomHost: true,
+        };
+        const gameStart = { schemaVersion: 2, playerNames: ['Alice', 'Bob'] };
+        const roomIndex = [{ schemaVersion: 1, roomId: 'ROOM01', actionSeq: 4 }];
+        rt.localStorage.setItem('onlineSession', JSON.stringify(session));
+        rt.localStorage.setItem('onlineGameStart:room:ROOM01', JSON.stringify(gameStart));
+        rt.localStorage.setItem('onlineActionLog:room:ROOM01', '[{"action":"nextTurn","seq":4}]');
+        rt.localStorage.setItem('onlineRestoreRoomIndex', JSON.stringify(roomIndex));
+        rt.setOnlineState({
+            socket: { disconnect() { disconnected = true; } },
+            isReconnectingOnline: true,
+            isRoomHost: true,
+            myRoomId: 'ROOM01',
+            myOriginalPlayerIndex: 0,
+            myPlayerName: 'Alice',
+            reconnectToken: 'token',
+        });
+
+        rt.handleAppError(message);
+
+        assert.strictEqual(disconnected, true, message);
+        assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('onlineSession')), session, message);
+        assert.deepStrictEqual(
+            JSON.parse(rt.localStorage.getItem('onlineGameStart:room:ROOM01')),
+            gameStart,
+            message
+        );
+        assert.strictEqual(rt.localStorage.getItem('onlineActionLog:room:ROOM01') != null, true, message);
+        const retainedIndex = JSON.parse(rt.localStorage.getItem('onlineRestoreRoomIndex'));
+        assert.strictEqual(
+            retainedIndex.some(entry => entry.roomId === 'ROOM01' && entry.actionSeq === 4),
+            true,
+            message
+        );
+        assert.strictEqual(rt.getOnlineState().isReconnectingOnline, false, message);
+        assert.match(rt.document.getElementById('onlineStatus').textContent, /復元データは保持/, message);
+    }
+});
+
 runTest('handleAppError cleanup authorityはclean event parity時に既存effect順を維持する', () => {
     const rt = loadOnlineRuntime();
     rt.initSocket();

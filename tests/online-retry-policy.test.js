@@ -33,6 +33,28 @@ runTest('online retry policy preserves deadline and waiting text', () => {
     );
 });
 
+runTest('recreateの一時的appErrorをstable reasonへ分類する', () => {
+    const reasons = OnlineRetryPolicy.recreateRetryableReasons;
+    assert.deepStrictEqual(reasons, {
+        ROOM_CAPACITY: 'room-capacity',
+        SOCKET_RATE_LIMIT: 'socket-rate-limit',
+        IP_RATE_LIMIT: 'ip-rate-limit',
+        ATTEMPT_RATE_LIMIT: 'attempt-rate-limit',
+    });
+    const cases = [
+        ['ルーム数が上限に達しています。しばらくしてから再試行してください', reasons.ROOM_CAPACITY],
+        ['ルーム作成が短時間に連続しています。少し待ってから再試行してください', reasons.SOCKET_RATE_LIMIT],
+        ['ルーム作成が短時間に集中しています。少し待ってから再試行してください', reasons.IP_RATE_LIMIT],
+        ['復元処理が短時間に集中しています。少し待ってから再試行してください', reasons.ATTEMPT_RATE_LIMIT],
+    ];
+    for (const [message, reason] of cases) {
+        assert.strictEqual(OnlineRetryPolicy.recreateRetryableAppErrorReason(message), reason);
+    }
+    assert.strictEqual(OnlineRetryPolicy.recreateRetryableAppErrorReason('INVALID_TOKEN'), '');
+    assert.strictEqual(OnlineRetryPolicy.recreateRetryableAppErrorReason(null), '');
+    assert.ok(Object.isFrozen(reasons));
+});
+
 runTest('online retry timeout decisionは無視・再送・上限到達を純粋判定する', () => {
     const decisions = OnlineRetryPolicy.timeoutDecisions;
     assert.deepStrictEqual(decisions, {
