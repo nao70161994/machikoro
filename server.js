@@ -48,6 +48,7 @@ const {
     MAX_ACTION_LOG_LENGTH,
     ROOM_LIFECYCLE_LIMITS,
     RESTORE_PAYLOAD_LIMITS,
+    SOCKET_IO_MAX_HTTP_BUFFER_SIZE,
     SOCKET_PAYLOAD_LIMITS,
     CLIENT_ERROR_LIMITS,
     GAME_LIFECYCLE_LIMITS,
@@ -163,7 +164,9 @@ const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED =
 const app = express();
 app.set('trust proxy', resolveTrustProxySetting(process.env));
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    maxHttpBufferSize: SOCKET_IO_MAX_HTTP_BUFFER_SIZE,
+});
 const gameRuntime = loadGameRuntime();
 const {
     isPlainObject,
@@ -1123,6 +1126,7 @@ module.exports = {
     validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
+    SOCKET_IO_MAX_HTTP_BUFFER_SIZE,
     SOCKET_PAYLOAD_LIMITS,
     validateSocketPayloadLimits,
     validateRestorePayloadLimits,

@@ -23,6 +23,7 @@ const {
     validateSocketCanEnterRoom,
     validateCreateRoomLifecycle,
     RESTORE_PAYLOAD_LIMITS,
+    SOCKET_IO_MAX_HTTP_BUFFER_SIZE,
     validateRestorePayloadLimits,
     validateRestoreAuditRecord,
     buildUnsignedRestoreAuditRecord,
@@ -305,6 +306,11 @@ runTest('server module.exports は重複した公開名を持たない', () => {
         .filter(Boolean);
     const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
     assert.deepStrictEqual(duplicates, []);
+});
+
+runTest('Socket.IO transport上限はrestore validatorの上限とenvelope余裕を含む', () => {
+    assert.strictEqual(__io.engine.opts.maxHttpBufferSize, SOCKET_IO_MAX_HTTP_BUFFER_SIZE);
+    assert.ok(SOCKET_IO_MAX_HTTP_BUFFER_SIZE > RESTORE_PAYLOAD_LIMITS.maxJsonBytes);
 });
 
 runTest('generateRoomId は紛らわしい文字を含まない6文字IDを生成する', () => {

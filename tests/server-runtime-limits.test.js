@@ -19,10 +19,14 @@ runTest('server runtime limitsは既存の全上限値を一つのfrozen contrac
         maxJsonBytes: 1048576,
         maxActionLogEntries: 1000,
         maxStringLength: 4000,
-        maxTotalStringChars: 200000,
-        maxPlayerCardRefs: 5000,
-        maxTotalNodes: 20000,
+        maxTotalStringChars: 300000,
+        maxPlayerCardRefs: 30000,
+        maxTotalNodes: 65536,
     });
+    assert.strictEqual(limits.SOCKET_IO_MAX_HTTP_BUFFER_SIZE, 1114112);
+    assert.ok(
+        limits.SOCKET_IO_MAX_HTTP_BUFFER_SIZE >= limits.RESTORE_PAYLOAD_LIMITS.maxJsonBytes + 65536
+    );
     assert.deepStrictEqual(limits.SOCKET_PAYLOAD_LIMITS, {
         maxJsonBytes: 16384,
         maxStringLength: 1000,

@@ -16,10 +16,11 @@ const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxJsonBytes: 1024 * 1024,
     maxActionLogEntries: 1000,
     maxStringLength: 4000,
-    maxTotalStringChars: 200000,
-    maxPlayerCardRefs: 5000,
-    maxTotalNodes: 20000,
+    maxTotalStringChars: 300000,
+    maxPlayerCardRefs: 30000,
+    maxTotalNodes: 65536,
 });
+const SOCKET_IO_MAX_HTTP_BUFFER_SIZE = RESTORE_PAYLOAD_LIMITS.maxJsonBytes + 64 * 1024;
 
 const SOCKET_PAYLOAD_LIMITS = Object.freeze({
     maxJsonBytes: 16 * 1024,
@@ -50,6 +51,7 @@ module.exports = Object.freeze({
     MAX_ACTION_LOG_LENGTH,
     ROOM_LIFECYCLE_LIMITS,
     RESTORE_PAYLOAD_LIMITS,
+    SOCKET_IO_MAX_HTTP_BUFFER_SIZE,
     SOCKET_PAYLOAD_LIMITS,
     CLIENT_ERROR_LIMITS,
     GAME_LIFECYCLE_LIMITS,

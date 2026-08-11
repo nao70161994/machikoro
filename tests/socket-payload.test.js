@@ -1,5 +1,6 @@
 const assert = require('assert');
 const { makeSocketPayloadValidation, makeSocketPayloadGateway } = require('../server/socketPayload');
+const { RESTORE_PAYLOAD_LIMITS } = require('../server/runtimeLimits');
 const { runTest } = require('./helpers/test-utils');
 
 const socketLimits = Object.freeze({
@@ -160,4 +161,35 @@ runTest('socket payload helper はrestore文字列・深さ・循環入力を安
     const circular = {};
     circular.self = circular;
     assert.strictEqual(validation.validateRestorePayloadLimits(circular).reason, 'json');
+});
+
+runTest('socket payload helper は10人戦の合法なbuildとUndo履歴をnode上限内で許可する', () => {
+    const productionValidation = makeSocketPayloadValidation({
+        isPlainObject: value => !!value && typeof value === 'object' && !Array.isArray(value),
+        byteLength: value => Buffer.byteLength(value, 'utf8'),
+        socketLimits,
+        restoreLimits: RESTORE_PAYLOAD_LIMITS,
+    });
+    const undoState = {
+        players: Array.from({ length: 10 }, (_, playerIndex) => ({
+            name: `P${playerIndex + 1}`,
+            coins: 3,
+            cards: Array.from({ length: 28 }, () => '麦畑'),
+            dormantIndices: [],
+            landmarks: {},
+        })),
+        log: Array.from({ length: 30 }, () => ({ text: '建設を取り消しました' })),
+    };
+    const actionLog = [];
+    for (let index = 0; index < 100; index++) {
+        actionLog.push({ action: 'buildCard', data: { cardName: '麦畑' } });
+        actionLog.push({ action: 'undoBuild', data: { state: undoState } });
+    }
+
+    const result = productionValidation.validateRestorePayloadLimits({ roomId: 'ROOM01', actionLog });
+    assert.strictEqual(result.ok, true);
+    assert.ok(result.jsonBytes < RESTORE_PAYLOAD_LIMITS.maxJsonBytes);
+    assert.strictEqual(result.actionLogEntries, 200);
+    assert.strictEqual(result.playerCardRefs, 28000);
+    assert.ok(result.totalNodes < RESTORE_PAYLOAD_LIMITS.maxTotalNodes);
 });
