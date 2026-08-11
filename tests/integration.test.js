@@ -1453,6 +1453,57 @@ runTest('integration: card filter再描画は選択ARIAと同一filter focusを�
     assert.ok(/data-card-filter="red"[^>]+aria-pressed="true"/.test(buildMenu.innerHTML));
 });
 
+runTest('integration: 建設確定後はskip、local Undo後は復元cardへfocusを移す', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    hideAllTestModals(rt);
+    rt.render();
+
+    const buildMenu = rt.__test.elements.buildMenu;
+    const oldCard = makeElement({
+        dataset: { action: 'buildCard', cardName: '麦畑' },
+        parentElement: buildMenu,
+    });
+    oldCard.focus = () => { rt.document.activeElement = oldCard; };
+    const restoredCard = makeElement({
+        dataset: { action: 'buildCard', cardName: '麦畑' },
+        parentElement: buildMenu,
+    });
+    restoredCard.focus = () => { rt.document.activeElement = restoredCard; };
+    const undo = makeElement({
+        dataset: { action: 'undoBuild' },
+        parentElement: buildMenu,
+    });
+    const skip = rt.__test.elements.btnSkip;
+    skip.focus = () => { rt.document.activeElement = skip; };
+    buildMenu.querySelectorAll = selector => selector.includes('buildCard')
+        ? [restoredCard]
+        : [];
+
+    rt.document.activeElement = oldCard;
+    rt.saveUndoState();
+    assert.strictEqual(game.buildCard(rt.createCardByName('麦畑')), true);
+    restoredCard.disabled = true;
+    rt.render();
+    assert.strictEqual(game.builtThisTurn, true);
+    assert.strictEqual(rt.document.activeElement, skip);
+
+    rt.document.activeElement = undo;
+    restoredCard.disabled = false;
+    rt.doUndo();
+    assert.strictEqual(rt.__test.getGame().builtThisTurn, false);
+    assert.strictEqual(rt.document.activeElement, restoredCard);
+});
+
 runTest('integration: buildLandmark allowed かつ建設候補ありなら専用子ボタンを要求する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

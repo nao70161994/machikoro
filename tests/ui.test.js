@@ -1939,6 +1939,184 @@ runTest('UiBuildMenu filter focusは同一identityと操作可能な再描画後
     }
 });
 
+runTest('UiBuildMenu build focus controllerは建設identityをUndo後の復元先へ引き継ぐ', () => {
+    const helper = require('../js/uiBuildMenu');
+    const controller = helper.createActionFocusController();
+    const buildPlan = controller.plan({ action: 'buildCard', cardName: '麦畑' }, true);
+    assert.deepStrictEqual(buildPlan, {
+        restore: true,
+        identity: { action: 'buildCard', name: '麦畑' },
+        fallback: true,
+    });
+    assert.deepStrictEqual(controller.plan({ action: 'undoBuild' }, true), {
+        restore: true,
+        identity: { action: 'buildCard', name: '麦畑' },
+        fallback: true,
+    });
+    assert.strictEqual(controller.plan({ action: 'buildLandmark', landmarkName: '駅' }, false).restore, false);
+    assert.deepStrictEqual(controller.snapshot().previousBuildIdentity, {
+        action: 'buildCard', name: '麦畑',
+    });
+    assert.strictEqual(controller.plan({ action: 'showCardDetail', cardName: '麦畑' }, true).restore, false);
+    controller.reset();
+    assert.deepStrictEqual(controller.plan({ action: 'undoBuild' }, true), {
+        restore: true, identity: null, fallback: true,
+    });
+});
+
+runTest('UiBuildMenu build focus effectはidentityを優先し欠落時だけfallbackする', () => {
+    const helper = require('../js/uiBuildMenu');
+    const calls = [];
+    const plan = helper.buildActionFocusPlan(
+        helper.buildActionIdentity({ action: 'buildLandmark', landmarkName: '駅' }),
+        null,
+        true
+    );
+    assert.strictEqual(helper.applyBuildActionFocusPlan(plan, {
+        findIdentity(identity) { calls.push(['find', identity.name]); return { id: '駅' }; },
+        focusIdentity(target) { calls.push(['focus', target.id]); return true; },
+        focusFallback() { calls.push(['fallback']); return true; },
+    }), true);
+    assert.deepStrictEqual(calls, [['find', '駅'], ['focus', '駅']]);
+
+    assert.strictEqual(helper.applyBuildActionFocusPlan(plan, {
+        findIdentity: () => null,
+        focusIdentity: () => false,
+        focusFallback: () => true,
+    }), true);
+});
+
+runTest('renderBuildMenuは建設後はskip、Undo後は復元されたcardへfocusを移す', () => {
+    const { context, elements } = loadUiRuntime();
+    const player = {
+        coins: 10,
+        landmarks: { '駅': false },
+        countCardIncludingDormant() { return 0; },
+    };
+    context.GameManager = { allowedActionsFor: game => new Set(game.allowed) };
+    context.game = {
+        phase: 'build', currentPlayerIndex: 0, builtThisTurn: false, pendingRenovation: 0,
+        allowed: ['buildCard'], currentPlayer() { return player; },
+    };
+    context.cpuPlayers = [null];
+    const oldCard = makeElement({
+        dataset: { action: 'buildCard', cardName: '麦畑' },
+        parentElement: elements.buildMenu,
+    });
+    const restoredCard = makeElement({
+        dataset: { action: 'buildCard', cardName: '麦畑' },
+        parentElement: elements.buildMenu,
+    });
+    const undo = makeElement({
+        dataset: { action: 'undoBuild' },
+        parentElement: elements.buildMenu,
+    });
+    elements.buildMenu.querySelectorAll = selector => selector.includes('buildCard')
+        ? [restoredCard]
+        : [];
+    elements.btnSkip.focus = () => { elements.btnSkip.focused = true; };
+
+    context.document.activeElement = oldCard;
+    context.game.builtThisTurn = true;
+    context.game.allowed = ['undoBuild', 'nextTurn'];
+    context.undoState = { state: 'before-build' };
+    restoredCard.disabled = true;
+    context.renderBuildMenu();
+    assert.strictEqual(elements.btnSkip.focused, true);
+
+    context.document.activeElement = undo;
+    context.game.builtThisTurn = false;
+    context.game.allowed = ['buildCard'];
+    context.undoState = null;
+    restoredCard.disabled = false;
+    context.renderBuildMenu();
+    assert.strictEqual(restoredCard.focused, true);
+});
+
+runTest('renderBuildMenuはCPU・online replay・別領域のfocusを奪わない', () => {
+    for (const mode of ['cpu', 'replay', 'outside']) {
+        const { context, elements } = loadUiRuntime();
+        const player = {
+            coins: 10, landmarks: { '駅': false },
+            countCardIncludingDormant() { return 0; },
+        };
+        context.GameManager = { allowedActionsFor: () => new Set(['buildCard']) };
+        context.game = {
+            phase: 'build', currentPlayerIndex: 0, builtThisTurn: false, pendingRenovation: 0,
+            currentPlayer() { return player; },
+        };
+        context.cpuPlayers = mode === 'cpu' ? [{}] : [null];
+        context.isReplaying = mode === 'replay';
+        const source = makeElement({
+            dataset: { action: 'buildCard', cardName: '麦畑' },
+            parentElement: mode === 'outside' ? null : elements.buildMenu,
+        });
+        const target = makeElement({
+            dataset: { action: 'buildCard', cardName: '麦畑' },
+            parentElement: elements.buildMenu,
+        });
+        elements.buildMenu.querySelectorAll = () => [target];
+        context.document.activeElement = source;
+
+        context.renderBuildMenu();
+
+        assert.strictEqual(target.focused, undefined, mode);
+        assert.strictEqual(elements.btnSkip.focused, undefined, mode);
+    }
+});
+
+runTest('renderBuildMenuはonline ACK後のbuildとUndoで同じfocus identityを使う', () => {
+    const { context, elements } = loadUiRuntime();
+    const player = {
+        coins: 10,
+        landmarks: { '駅': false },
+        countCardIncludingDormant() { return 0; },
+    };
+    context.GameManager = { allowedActionsFor: game => new Set(game.allowed) };
+    context.game = {
+        phase: 'build', currentPlayerIndex: 0, builtThisTurn: false, pendingRenovation: 0,
+        allowed: ['buildLandmark'], currentPlayer() { return player; },
+    };
+    context.cpuPlayers = [null];
+    context.isOnlineGame = true;
+    context.myPlayerIndex = 0;
+    context.socket = { connected: true };
+    context.onlineActionInFlight = false;
+    context.isReconnectingOnline = false;
+    context.isReplaying = false;
+    const oldLandmark = makeElement({
+        dataset: { action: 'buildLandmark', landmarkName: '駅' },
+        parentElement: elements.buildMenu,
+    });
+    const restoredLandmark = makeElement({
+        dataset: { action: 'buildLandmark', landmarkName: '駅' },
+        parentElement: elements.buildMenu,
+        disabled: true,
+    });
+    const undo = makeElement({
+        dataset: { action: 'undoBuild' },
+        parentElement: elements.buildMenu,
+    });
+    elements.buildMenu.querySelectorAll = selector => selector.includes('buildLandmark')
+        ? [restoredLandmark]
+        : [];
+
+    context.document.activeElement = oldLandmark;
+    context.game.builtThisTurn = true;
+    context.game.allowed = ['undoBuild', 'nextTurn'];
+    context.undoState = { state: 'online-before-build' };
+    context.renderBuildMenu();
+    assert.strictEqual(elements.btnSkip.focused, true);
+
+    context.document.activeElement = undo;
+    context.game.builtThisTurn = false;
+    context.game.allowed = ['buildLandmark'];
+    context.undoState = null;
+    restoredLandmark.disabled = false;
+    context.renderBuildMenu();
+    assert.strictEqual(restoredLandmark.focused, true);
+});
+
 runTest('setCardFilterはinnerHTML再描画後の同一filterにだけfocusを復元する', () => {
     const { context, elements } = loadUiRuntime();
     const player = {

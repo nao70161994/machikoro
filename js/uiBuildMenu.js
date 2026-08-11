@@ -117,6 +117,69 @@ const UiBuildMenu = (() => {
         return facts.connected !== false && !facts.hidden && !facts.disabled && !facts.ancestorHidden;
     }
 
+    function buildActionIdentity(source = {}) {
+        if (source.action === 'buildCard' && source.cardName) {
+            return Object.freeze({ action: 'buildCard', name: source.cardName });
+        }
+        if (source.action === 'buildLandmark' && source.landmarkName) {
+            return Object.freeze({ action: 'buildLandmark', name: source.landmarkName });
+        }
+        if (source.action === 'undoBuild') {
+            return Object.freeze({ action: 'undoBuild', name: '' });
+        }
+        return null;
+    }
+
+    function buildActionFocusPlan(sourceIdentity, previousBuildIdentity, eligible) {
+        if (eligible !== true || !sourceIdentity) {
+            return Object.freeze({ restore: false, identity: null, fallback: false });
+        }
+        const identity = sourceIdentity.action === 'undoBuild'
+            ? previousBuildIdentity
+            : sourceIdentity;
+        return Object.freeze({
+            restore: true,
+            identity: identity || null,
+            fallback: true,
+        });
+    }
+
+    function createActionFocusController() {
+        let previousBuildIdentity = null;
+        return Object.freeze({
+            reset() {
+                previousBuildIdentity = null;
+            },
+            snapshot() {
+                return Object.freeze({ previousBuildIdentity });
+            },
+            plan(source = {}, eligible = false) {
+                const sourceIdentity = buildActionIdentity(source);
+                const plan = buildActionFocusPlan(
+                    sourceIdentity,
+                    previousBuildIdentity,
+                    eligible
+                );
+                if (eligible === true && sourceIdentity && sourceIdentity.action !== 'undoBuild') {
+                    previousBuildIdentity = sourceIdentity;
+                }
+                return plan;
+            },
+        });
+    }
+
+    function applyBuildActionFocusPlan(plan, effects = {}) {
+        if (!plan || plan.restore !== true) return false;
+        const target = typeof effects.findIdentity === 'function'
+            ? effects.findIdentity(plan.identity)
+            : null;
+        if (target && typeof effects.focusIdentity === 'function' &&
+                effects.focusIdentity(target) === true) return true;
+        return plan.fallback === true && typeof effects.focusFallback === 'function'
+            ? effects.focusFallback() === true
+            : false;
+    }
+
     function buildVisibleCardButtonsHtml(options) {
         const { cards, cardFilter, enabledCards, shopStock, current, canBuildCardAction, compareCardsForDisplay, getShopStockCount, renderBuildCardButton } = options;
         const sortedCards = [...cards].sort(compareCardsForDisplay);
@@ -145,7 +208,7 @@ const UiBuildMenu = (() => {
         return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
+    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

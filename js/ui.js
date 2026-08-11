@@ -4,6 +4,7 @@ const pendingModalUpdateController = UiPendingEffects.createUpdateController();
 const pendingModalFocusController = UiPendingEffects.createFocusController();
 const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
+const buildActionFocusController = UiBuildMenu.createActionFocusController();
 
 function uiGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
@@ -810,6 +811,24 @@ function renderBuildMenu() {
     const buildMenu = document.getElementById("buildMenu");
     const currentGame = uiGameRuntimeSnapshot().game;
     if (!buildMenu || !currentGame) return;
+    const activeElement = document.activeElement;
+    let activeWithinBuildMenu = false;
+    let ancestor = activeElement;
+    while (ancestor) {
+        if (ancestor === buildMenu) {
+            activeWithinBuildMenu = true;
+            break;
+        }
+        ancestor = ancestor.parentElement;
+    }
+    const actionElement = activeWithinBuildMenu && typeof activeElement?.closest === 'function'
+        ? activeElement.closest('[data-action]')
+        : activeElement;
+    const focusPlan = buildActionFocusController.plan(activeWithinBuildMenu ? {
+        action: actionElement?.dataset?.action,
+        cardName: actionElement?.dataset?.cardName,
+        landmarkName: actionElement?.dataset?.landmarkName,
+    } : {}, uiOnlineRuntimeSnapshot().isReplaying !== true && isCurrentHumanUiTurn());
     const current = currentGame.currentPlayer();
     const buildState = {
         phase: currentGame.phase,
@@ -824,6 +843,35 @@ function renderBuildMenu() {
         allowedActions: buildGateOpen ? currentUiAllowedActions() : new Set(),
     });
     buildMenu.innerHTML = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction);
+    UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
+        findIdentity(identity) {
+            if (!identity || typeof buildMenu.querySelectorAll !== 'function') return null;
+            return Array.from(buildMenu.querySelectorAll(`[data-action="${identity.action}"]`))
+                .find(element => identity.action === 'buildCard'
+                    ? element.dataset?.cardName === identity.name
+                    : element.dataset?.landmarkName === identity.name) || null;
+        },
+        focusIdentity: focusBuildActionElement,
+        focusFallback() {
+            const btnSkip = document.getElementById('btnSkip');
+            return focusBuildActionElement(btnSkip) || UiScreenFocus.focusGame(document);
+        },
+    });
+}
+
+function focusBuildActionElement(element) {
+    if (!element || typeof element.focus !== 'function' ||
+            !UiBuildMenu.canRestoreCardFilterFocus(cardFilterFocusFacts(element))) return false;
+    try {
+        element.focus({ preventScroll: true });
+    } catch (_) {
+        try {
+            element.focus();
+        } catch (_) {
+            return false;
+        }
+    }
+    return true;
 }
 
 function cardFilterFocusFacts(element) {
@@ -1144,6 +1192,7 @@ function setAppInertForModal(enabled) {
 }
 
 function resetAccessibleModalRuntimeState() {
+    buildActionFocusController.reset();
     diceChoiceFocusController.reset();
     diceResultAnnouncementController.reset();
     pendingModalFocusController.reset();
