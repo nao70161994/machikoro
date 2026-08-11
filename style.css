@@ -755,7 +755,7 @@ body.modal-open #gameScreen {
     font-size: 16px;
     text-align: center;
     padding: 0;
-    color: #e94560;
+    color: #ff8a95;
     transition: background 0.15s;
 }
 
@@ -913,7 +913,18 @@ body.modal-open #gameScreen {
 }
 
 .card-toggle-btn.on  { opacity: 1; border-color: #f0c040; }
-.card-toggle-btn.off { opacity: 0.4; }
+.card-toggle-btn.off {
+    background: #1a1a2e;
+    border-color: #6a7a8a;
+    color: #a7a9be;
+}
+
+.card-select-confirm-btn {
+    margin-top: 8px;
+    background: #c92f4b;
+    color: #fffffe;
+    text-align: center;
+}
 
 /* ===== 夜景Canvas ===== */
 .city-skyline {
@@ -1082,7 +1093,7 @@ button:not(:disabled):active {
 }
 
 #btnRoll {
-    background: linear-gradient(135deg, #e94560, #c73652);
+    background: linear-gradient(135deg, #c92f4b, #c73652);
     border: none;
     text-align: center;
     font-size: 16px;
@@ -2108,9 +2119,9 @@ button:not(:disabled):active {
     width: 40px;
     padding: 0;
     background: #1a1a2e;
-    border: 1px solid #2a2a4a;
+    border: 1px solid #6a7a8a;
     border-radius: 10px;
-    color: #6a7a8a;
+    color: #a7a9be;
     font-size: 16px;
     text-align: center;
 }
