@@ -154,6 +154,38 @@ test('320pxから480pxで長い手番名と終盤player情報が枠内に収ま�
     }
 });
 
+test('320pxから480pxで建設カードの判断情報が欠けずに収まる', async ({ page }) => {
+    await prepare(page);
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const cards = await page.locator('#buildMenu .card-btn').evaluateAll(elements => elements.map(card => {
+            const bounds = card.getBoundingClientRect();
+            const styles = selector => getComputedStyle(card.querySelector(selector));
+            return {
+                withinViewport: bounds.left >= 0 && bounds.right <= document.documentElement.clientWidth,
+                contentFits: card.scrollWidth <= card.clientWidth && card.scrollHeight <= card.clientHeight,
+                diceFontSize: styles('.card-dice-num').fontSize,
+                categoryFontSize: styles('.card-category-tag').fontSize,
+                nameFontSize: styles('.card-name').fontSize,
+                costFontSize: styles('.card-cost').fontSize,
+                effectFontSize: styles('.card-effect').fontSize,
+                effectLineHeight: styles('.card-effect').lineHeight,
+            };
+        }));
+        expect(cards.length).toBeGreaterThan(0);
+        expect(cards.every(card => card.withinViewport && card.contentFits)).toBe(true);
+        expect(cards.every(card => card.diceFontSize === '13px')).toBe(true);
+        expect(cards.every(card => card.categoryFontSize === '10px')).toBe(true);
+        expect(cards.every(card => card.nameFontSize === '13px')).toBe(true);
+        expect(cards.every(card => card.costFontSize === '13px')).toBe(true);
+        expect(cards.every(card => card.effectFontSize === '11px')).toBe(true);
+        expect(cards.every(card => Math.abs(parseFloat(card.effectLineHeight) - 15.95) < 0.1)).toBe(true);
+    }
+});
+
 test('mobile WebKitの2クライアントがonline開始後に再読込復帰できる', async ({ browser, baseURL }) => {
     const hostContext = await browser.newContext({
         ...MOBILE_CONTEXT,

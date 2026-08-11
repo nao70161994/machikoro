@@ -2347,6 +2347,21 @@ runTest('card detail button はカードに重ならない専用行へ配置す�
     assert.ok(css.includes('.card-meta-row {'));
 });
 
+runTest('建設カードの判断情報は狭い画面でも読める文字サイズを保つ', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const rule = selector => {
+        const match = css.match(new RegExp(`\\${selector}\\s*{([\\s\\S]*?)}`));
+        assert.ok(match, `${selector} rule exists`);
+        return match[1];
+    };
+    assert.ok(rule('.card-dice-num').includes('font-size: 13px;'));
+    assert.ok(rule('.card-category-tag').includes('font-size: 10px;'));
+    assert.ok(rule('.card-name').includes('font-size: 13px;'));
+    assert.ok(rule('.card-cost').includes('font-size: 13px;'));
+    assert.ok(rule('.card-effect').includes('font-size: 11px;'));
+    assert.ok(rule('.card-effect').includes('line-height: 1.45;'));
+});
+
 runTest('player setting select は local/online とも programmatic label を持つ', () => {
     const local = fs.readFileSync(path.join(__dirname, '..', 'js/localPlayerSettings.js'), 'utf8');
     const online = fs.readFileSync(path.join(__dirname, '..', 'js/onlinePlayerSettings.js'), 'utf8');
