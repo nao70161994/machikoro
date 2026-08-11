@@ -1031,6 +1031,12 @@ const recreateRoomRuntime = makeRecreateRoomRuntime({
     emitAppError,
     hasRoom: hasOwnRoom,
     roomForId: roomId => rooms[roomId],
+    validateCreateRoomLifecycle,
+    rooms,
+    markCreateRoomForSocket,
+    createRoomRateKeyForSocket,
+    markCreateRoomForRateKey,
+    now: Date.now,
     existingRoomRuntime: existingRoomRestoreRuntime,
     newRoomRuntime: newRoomRestoreRuntime,
 });
