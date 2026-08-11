@@ -2993,7 +2993,18 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(!html.includes('id="pendingModal" class="pending-modal" role="dialog" aria-modal="true"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle"'));
     assert.ok(html.includes('role="dialog" aria-modal="true" aria-labelledby="cardSelectModalTitle"'));
-    assert.ok(html.includes('data-action="toggleSet" data-set="basic"'));
+    for (const [set, id, label, controls] of [
+        ['basic', 'btnSetBasic', '基本セットを一括切り替え', 'cardListBasic'],
+        ['plus', 'btnSetPlus', 'プラスを一括切り替え', 'cardListPlus'],
+        ['sharp', 'btnSetSharp', 'シャープを一括切り替え', 'cardListSharp'],
+    ]) {
+        assert.ok(html.includes(
+            `data-action="toggleSet" data-set="${set}" id="${id}" class="set-toggle on"`
+        ));
+        assert.ok(html.includes(
+            `aria-label="${label}" aria-controls="${controls}" aria-pressed="true"`
+        ));
+    }
     assert.ok(html.includes('data-action="closeCardSelect"'));
     assert.ok(!html.includes('onclick="toggleSet'));
     assert.ok(!html.includes('onclick="closeCardSelect'));
