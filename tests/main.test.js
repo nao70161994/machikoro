@@ -2404,6 +2404,19 @@ runTest('狭幅の開始CTAは既存actionのまま設定内を追従しPWAとfo
     assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-pwa-focus-clearance);'));
 });
 
+runTest('pending中のnotice toastは上端safe-areaへ退避しoverlay階層を変えない', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.ok(css.includes('body.pending-surface-visible .notice-toast {'));
+    assert.ok(css.includes('top: max(12px, env(safe-area-inset-top, 0px));'));
+    assert.ok(css.includes('bottom: auto;'));
+    assert.ok(css.includes('max-height: calc(30dvh - 36px - env(safe-area-inset-top, 0px));'));
+    assert.ok(css.includes('#noticeToastMessage {\n    min-width: 0;\n    overflow-wrap: anywhere;'));
+    assert.ok(css.includes('--z-pending-modal: 600;'));
+    assert.ok(css.includes('--z-notice-toast: 800;'));
+    assert.ok(css.includes('--z-modal: 1000;'));
+    assert.ok(css.includes('--z-crash-screen: 2000;'));
+});
+
 runTest('建設カードの色filterはカードsection内だけで安全に追従する', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     assert.ok(css.includes('--build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));'));

@@ -16,6 +16,22 @@ function hideAllTestModals(rt) {
     if (rt.window) rt.window.__machikoroConfirmModalOpen = false;
 }
 
+runTest('integration: pending表示中だけtoast退避用body classを同期する', () => {
+    const rt = loadIntegrationRuntime();
+    const game = rt.__test.startLocalGame();
+    game.phase = rt.GAME_PHASES.PENDING;
+    game.pendingTV = 1;
+    rt.render();
+    assert.strictEqual(rt.document.body.classList.contains('pending-surface-visible'), true);
+    assert.strictEqual(rt.__test.elements.pendingModal.style.display, 'flex');
+
+    game.pendingTV = 0;
+    game.phase = rt.GAME_PHASES.BUILD;
+    rt.render();
+    assert.strictEqual(rt.document.body.classList.contains('pending-surface-visible'), false);
+    assert.strictEqual(rt.__test.elements.pendingModal.style.display, 'none');
+});
+
 runTest('integration: build phaseのshortcutは既存建設menuへfocusしてpending中は隠れる', () => {
     const rt = loadIntegrationRuntime();
     const game = rt.__test.startLocalGame();

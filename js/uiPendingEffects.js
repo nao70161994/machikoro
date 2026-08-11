@@ -84,6 +84,10 @@ const UiPendingEffects = (() => {
     function applyModalInteraction(view, options = {}) {
         const modal = options.modal;
         const content = options.content;
+        const body = options.body;
+        if (body && body.classList && view.body) {
+            body.classList.toggle(view.body.className, view.body.active === true);
+        }
         if (modal && modal.style) {
             Object.assign(modal.style, view.modal);
             if (view.inner && typeof modal.querySelector === 'function') {

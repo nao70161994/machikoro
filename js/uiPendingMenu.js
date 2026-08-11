@@ -12,6 +12,10 @@ const UiPendingMenu = (() => {
     function pendingModalInteractionView(hasContent) {
         const visible = !!hasContent;
         return Object.freeze({
+            body: Object.freeze({
+                className: 'pending-surface-visible',
+                active: visible,
+            }),
             modal: Object.freeze({
                 display: visible ? 'flex' : 'none',
                 visibility: visible ? 'visible' : '',

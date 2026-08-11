@@ -541,7 +541,7 @@ function shouldShowPendingForCurrentPlayer() {
 function normalizePendingModalInteraction(el, modal, hasContent) {
     UiPendingEffects.applyModalInteraction(
         UiPendingMenu.pendingModalInteractionView(hasContent),
-        { modal, content: el }
+        { body: document.body, modal, content: el }
     );
 }
 

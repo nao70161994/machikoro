@@ -76,11 +76,13 @@ runTest('ui pending menu はBusiness Center選択を既存class・ARIA・input v
 
 runTest('ui pending menu はcontent有無を既存modal styleへpureに投影する', () => {
     assert.deepStrictEqual(UiPendingMenu.pendingModalInteractionView(true), {
+        body: { className: 'pending-surface-visible', active: true },
         modal: { display: 'flex', visibility: 'visible', opacity: '1', pointerEvents: 'auto', transform: '' },
         content: { visibility: 'visible', opacity: '1', pointerEvents: 'auto' },
         inner: { visibility: 'visible', opacity: '1', pointerEvents: 'auto' },
     });
     assert.deepStrictEqual(UiPendingMenu.pendingModalInteractionView(false), {
+        body: { className: 'pending-surface-visible', active: false },
         modal: { display: 'none', visibility: '', opacity: '', pointerEvents: '', transform: '' },
         content: { visibility: '', opacity: '', pointerEvents: '' },
         inner: null,

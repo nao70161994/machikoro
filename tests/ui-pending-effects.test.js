@@ -87,19 +87,47 @@ runTest('ui pending effectsはmodal・inner・content viewを既存順で適用�
         },
     };
     const content = { style: style('content') };
+    const body = {
+        classList: {
+            toggle(name, active) { calls.push(['body', 'toggle', name, active]); },
+        },
+    };
 
     UiPendingEffects.applyModalInteraction({
+        body: { className: 'pending-surface-visible', active: true },
         modal: { display: 'flex', pointerEvents: 'auto' },
         inner: { pointerEvents: 'auto' },
         content: { pointerEvents: 'auto' },
-    }, { modal, content });
+    }, { body, modal, content });
 
     assert.deepStrictEqual(calls, [
+        ['body', 'toggle', 'pending-surface-visible', true],
         ['modal', 'display', 'flex'],
         ['modal', 'pointerEvents', 'auto'],
         ['query', '.pending-modal-inner'],
         ['inner', 'pointerEvents', 'auto'],
         ['content', 'pointerEvents', 'auto'],
+    ]);
+});
+
+runTest('ui pending effectsは表示と非表示でbody classを対称同期する', () => {
+    const states = [];
+    const body = {
+        classList: {
+            toggle(name, active) { states.push([name, active]); },
+        },
+    };
+    for (const active of [true, false]) {
+        UiPendingEffects.applyModalInteraction({
+            body: { className: 'pending-surface-visible', active },
+            modal: {},
+            content: {},
+            inner: null,
+        }, { body });
+    }
+    assert.deepStrictEqual(states, [
+        ['pending-surface-visible', true],
+        ['pending-surface-visible', false],
     ]);
 });
 

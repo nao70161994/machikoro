@@ -160,6 +160,57 @@ test('320pxから480pxで2人・10人設定の開始CTAがPWAとfocusを隠さ�
     await expectStickyCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
 });
 
+test('320pxから480pxでpending中の長文toastが選択肢を隠さない', async ({ page }) => {
+    await prepare(page);
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        const runtime = GameRuntimeState.runtime.snapshot();
+        const currentGame = runtime.game;
+        const humanIndex = runtime.cpuPlayers.findIndex(cpu => !cpu);
+        currentGame.currentPlayerIndex = humanIndex >= 0 ? humanIndex : 0;
+        currentGame.phase = GAME_PHASES.PENDING;
+        currentGame.pendingTV = 1;
+        render();
+        showNotice('長い通知です。'.repeat(40));
+        document.body.classList.add('pwa-banner-open');
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
+    });
+    await page.waitForTimeout(400);
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const layout = await page.evaluate(() => {
+            const toast = document.getElementById('noticeToast');
+            const pending = document.querySelector('.pending-modal-inner');
+            const close = toast.querySelector('.notice-toast-close');
+            const toastBounds = toast.getBoundingClientRect();
+            const pendingBounds = pending.getBoundingClientRect();
+            const closeBounds = close.getBoundingClientRect();
+            return {
+                bodyClass: document.body.classList.contains('pending-surface-visible'),
+                toastTop: toastBounds.top,
+                toastBottom: toastBounds.bottom,
+                toastLeft: toastBounds.left,
+                toastRight: toastBounds.right,
+                pendingTop: pendingBounds.top,
+                closeTop: closeBounds.top,
+                closeBottom: closeBounds.bottom,
+                viewportWidth: document.documentElement.clientWidth,
+                overflowY: getComputedStyle(toast).overflowY,
+            };
+        });
+        expect(layout.bodyClass).toBe(true);
+        expect(layout.toastTop).toBeGreaterThanOrEqual(11);
+        expect(layout.toastBottom).toBeLessThanOrEqual(layout.pendingTop);
+        expect(layout.toastLeft).toBeGreaterThanOrEqual(0);
+        expect(layout.toastRight).toBeLessThanOrEqual(layout.viewportWidth);
+        expect(layout.closeTop).toBeGreaterThanOrEqual(layout.toastTop);
+        expect(layout.closeBottom).toBeLessThanOrEqual(layout.toastBottom);
+        expect(layout.overflowY).toBe('auto');
+    }
+});
+
 test('320pxから480pxで長い手番名と終盤player情報が枠内に収まる', async ({ page }) => {
     await prepare(page);
     await page.evaluate(() => {
