@@ -664,6 +664,56 @@ body.modal-open #gameScreen {
     border-radius: 8px;
 }
 
+.room-share-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.room-share-state,
+.room-share-label,
+.room-share-help {
+    color: #c9cbdf;
+    font-size: 12px;
+}
+
+.room-share-state {
+    color: #f0c040;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.room-share-row {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    gap: 8px;
+}
+
+.room-share-row .room-id-display {
+    flex: 1;
+    min-width: 0;
+    user-select: all;
+}
+
+.room-id-copy-btn {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+@media (max-width: 389px) {
+    .room-share-row {
+        flex-direction: column;
+    }
+
+    .room-id-copy-btn {
+        width: 100%;
+        min-height: 44px;
+    }
+}
+
 .waiting-players {
     font-size: 13px;
     color: #a7a9be;

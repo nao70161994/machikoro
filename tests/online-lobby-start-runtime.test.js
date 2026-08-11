@@ -3,6 +3,7 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const OnlineLobbyStartRuntime = require('../js/onlineLobbyStartRuntime');
+const OnlineRoomShare = require('../js/onlineRoomShare');
 const { runTest } = require('./helpers/test-utils');
 
 function startPayload(overrides = {}) {
@@ -67,6 +68,7 @@ function createHarness(options = {}) {
         replaceEnabledLandmarks: values => calls.push(['replaceEnabledLandmarks', values]),
         resetReconnectCompletion: () => calls.push(['resetReconnectCompletion']),
         resetUiLocks: reason => calls.push(['resetUiLocks', reason]),
+        roomShare: OnlineRoomShare,
         restoreKeys: { gameStart: 'game-start', stateSnapshot: 'snapshot', actionLog: 'log' },
         restoreSchemaVersion: 2,
         saveSession: () => calls.push(['saveSession']),
@@ -105,6 +107,8 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
         playerIndex: 0, roomId: 'ROOM01', reconnectToken: 'token-a',
     });
     assert.ok(harness.calls[3][1].includes('プレイヤーを待っています'));
+    assert.ok(harness.calls[3][1].includes('data-ui-action="copyOnlineRoomId"'));
+    assert.ok(harness.calls[3][1].includes('この6文字を参加者に共有してください'));
 
     harness.calls.length = 0;
     harness.runtime.handleRoomJoined({
@@ -119,6 +123,7 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
     harness.runtime.handlePlayerList(['Alice', 'Bob']);
     assert.strictEqual(harness.calls[0][0], 'setStatusHtml');
     assert.ok(harness.calls[0][1].includes('プレイヤー: Alice、Bob (2人)'));
+    assert.ok(harness.calls[0][1].includes('data-ui-action="copyOnlineRoomId"'));
 });
 
 runTest('online game start runtimeはschemaからactive gameまで既存effect順を維持する', () => {

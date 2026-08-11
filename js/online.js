@@ -44,6 +44,32 @@ const onlineDomEffects = onlineComposition.domEffects;
 const onlineSocketEffects = onlineComposition.socketEffects;
 const onlineClientStorageFacade = onlineComposition.storage;
 
+function selectOnlineRoomIdText() {
+    const target = typeof document !== 'undefined'
+        ? document.querySelector('.room-id-display[data-room-id-value]')
+        : null;
+    const selection = typeof window !== 'undefined' && typeof window.getSelection === 'function'
+        ? window.getSelection() : null;
+    if (!target || !selection || typeof document.createRange !== 'function') return false;
+    const range = document.createRange();
+    range.selectNodeContents(target);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    if (typeof target.focus === 'function') target.focus({ preventScroll: true });
+    return true;
+}
+
+function copyOnlineRoomId(roomId) {
+    const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : null;
+    return OnlineRoomShare.copyRoomId(roomId, {
+        writeText: clipboard && typeof clipboard.writeText === 'function'
+            ? value => clipboard.writeText(value)
+            : null,
+        selectText: selectOnlineRoomIdText,
+        notify: message => onlineClientEffects.showNotice(message),
+    });
+}
+
 function onlineGameRuntimeSnapshot() {
     return onlineComposition.snapshotGame();
 }
@@ -2670,6 +2696,7 @@ function initSocket() {
         replaceEnabledLandmarks: values => replaceEnabledLandmarkSelection(values),
         resetReconnectCompletion: () => _onlineReconnectCompletionController.reset(),
         resetUiLocks: reason => onlineClientEffects.resetUiLocks(reason),
+        roomShare: OnlineRoomShare,
         restoreKeys: ONLINE_STORAGE_KEYS,
         restoreSchemaVersion: ONLINE_RESTORE_SCHEMA_VERSION,
         saveSession: () => saveOnlineSession(),

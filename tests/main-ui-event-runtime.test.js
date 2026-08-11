@@ -51,6 +51,16 @@ runTest('main UI event runtimeはstatic/input/dice commandをdetached effectへ�
     assert.strictEqual(h.elements.speedLabel.textContent, 'speed:500');
 });
 
+runTest('main UI event runtimeは待機中のroom IDをcopy effectへ渡す', () => {
+    const h = createHarness();
+    h.runtime.handleStaticClick(h.event({
+        uiAction: 'copyOnlineRoomId', roomId: 'ABC123',
+    }));
+    assert.deepStrictEqual(h.calls, [
+        ['preventDefault'], ['copyOnlineRoomId', 'ABC123'],
+    ]);
+});
+
 runTest('main UI event runtimeはlocal/online速度の表示とaria-valuetextを同期する', () => {
     const h = createHarness();
     const local = h.event({ uiInput: 'cpuSpeed' }, { value: '500' });

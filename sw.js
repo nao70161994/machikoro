@@ -98,6 +98,7 @@ const STATIC_ASSETS = [
   '/js/onlineGameEngineRuntime.js',
   '/js/onlineLobbyRequestRuntime.js',
   '/js/onlineGameInitializer.js',
+  '/js/onlineRoomShare.js',
   '/js/onlineLobbyStartRuntime.js',
   '/js/onlineSocketDisconnect.js',
   '/js/onlineHostChanged.js',

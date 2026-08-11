@@ -40,6 +40,10 @@ const OnlineLobbyStartRuntime = (() => {
         if (!Number.isInteger(dependencies.restoreSchemaVersion)) {
             throw new TypeError('online game start restore schema version is required');
         }
+        if (!dependencies.roomShare ||
+                typeof dependencies.roomShare.buildWaitingHtml !== 'function') {
+            throw new TypeError('online game start room share dependency is required');
+        }
 
         function buildRestorePayload(input) {
             const {
@@ -105,10 +109,7 @@ const OnlineLobbyStartRuntime = (() => {
             dependencies.finishLobbyRequest('create');
             dependencies.acceptRoom({ playerIndex, roomId, reconnectToken });
             dependencies.saveSession();
-            dependencies.setStatusHtml(`
-            <div>ルームを作成しました！</div>
-            <div class="room-id-display">${roomId}</div>
-            <div class="waiting-players">プレイヤーを待っています...</div>`);
+            dependencies.setStatusHtml(dependencies.roomShare.buildWaitingHtml(roomId));
         }
 
         function handleRoomJoined({ roomId, playerIndex, reconnectToken }) {
@@ -120,9 +121,7 @@ const OnlineLobbyStartRuntime = (() => {
 
         function handlePlayerList(players) {
             const roomId = dependencies.getSession().myRoomId;
-            dependencies.setStatusHtml(`
-            <div class="room-id-display">${roomId}</div>
-            <div class="waiting-players">プレイヤー: ${players.join('、')} (${players.length}人)</div>`);
+            dependencies.setStatusHtml(dependencies.roomShare.buildWaitingHtml(roomId, players));
         }
 
         function handle(input = {}) {
