@@ -2,7 +2,11 @@
 
 const assert = require('assert');
 const RecreateRoomPayload = require('../js/recreateRoomPayload');
-const { registerRecreateSocketHandler } = require('../server/recreateSocketHandler');
+const makeRoomLifecycle = require('../server/roomLifecycle');
+const {
+    makeRecreateAttemptAdmission,
+    registerRecreateSocketHandler,
+} = require('../server/recreateSocketHandler');
 const { runTest } = require('./helpers/test-utils');
 
 function runtime(overrides = {}) {
@@ -131,4 +135,88 @@ runTest('recreate socket handlerはraw・decode・handle拒否を同じcooldown�
         assert.ok(Number.isFinite(rt.socket.lastRecreateRoomAt), testCase.name);
         assert.ok(handled <= 1, testCase.name);
     }
+});
+
+runTest('recreate attempt admissionは同一IPのraw・decode・handle失敗を入口で制限する', () => {
+    const cases = [
+        { name: 'raw', overrides: { validateRawPayload: () => false } },
+        { name: 'decode', overrides: { decodePayload: () => ({ ok: false }) } },
+        { name: 'handle', overrides: { handleRecreateRoom: () => ({ ok: false }) } },
+    ];
+    for (const testCase of cases) {
+        const admission = makeRecreateAttemptAdmission({ windowMs: 1000, max: 2, maxBuckets: 10 });
+        let admitted = 0;
+        const overrides = Object.assign({
+            isAttemptRateLimited: (socket, now) =>
+                admission.isRateLimited(socket.handshake.address, now),
+            validateRawPayload: payload => { admitted++; return !!payload; },
+        }, testCase.overrides);
+        const first = runtime(overrides);
+        const second = runtime(overrides);
+        const limited = runtime(overrides);
+        for (const rt of [first, second, limited]) {
+            rt.socket.handshake = { address: 'same-ip' };
+        }
+        first.handlers.recreateRoom({ roomId: 'ROOM01' });
+        second.handlers.recreateRoom({ roomId: 'ROOM01' });
+        limited.handlers.recreateRoom({ roomId: 'ROOM01' });
+        assert.deepStrictEqual(limited.calls, [[
+            'error',
+            '復元処理が短時間に集中しています。少し待ってから再試行してください',
+        ]], testCase.name);
+        if (testCase.name !== 'raw') assert.strictEqual(admitted, 2, testCase.name);
+    }
+});
+
+runTest('recreate attempt admissionはIPを分離しwindow後にresetする', () => {
+    const admission = makeRecreateAttemptAdmission({ windowMs: 1000, max: 1, maxBuckets: 10 });
+    assert.strictEqual(admission.isRateLimited('ip-a', 1000), false);
+    assert.strictEqual(admission.isRateLimited('ip-a', 1001), true);
+    assert.strictEqual(admission.isRateLimited('ip-b', 1001), false);
+    assert.strictEqual(admission.isRateLimited('ip-a', 2000), false);
+});
+
+runTest('recreate attempt admissionは成功attemptを一度だけ数える', () => {
+    const admission = makeRecreateAttemptAdmission({ windowMs: 1000, max: 2, maxBuckets: 10 });
+    const shared = {
+        isAttemptRateLimited: (_socket, now) => admission.isRateLimited('same-ip', now),
+    };
+    const successful = runtime(shared);
+    const second = runtime(shared);
+    const limited = runtime(shared);
+    successful.handlers.recreateRoom({ roomId: 'ROOM01' });
+    second.handlers.recreateRoom({ roomId: 'ROOM02' });
+    limited.handlers.recreateRoom({ roomId: 'ROOM03' });
+    assert.strictEqual(successful.calls.some(call => call[0] === 'restored'), true);
+    assert.strictEqual(second.calls.some(call => call[0] === 'restored'), true);
+    assert.deepStrictEqual(limited.calls, [[
+        'error',
+        '復元処理が短時間に集中しています。少し待ってから再試行してください',
+    ]]);
+});
+
+runTest('recreate attempt admissionは通常room作成成功bucketと状態を共有しない', () => {
+    const limits = {
+        createRoomRateLimitMs: 1000,
+        createRoomIpRateLimitWindowMs: 1000,
+        createRoomIpRateLimitMax: 1,
+        createRoomIpRateLimitMaxBuckets: 10,
+        maxRooms: 10,
+        pendingRoomTtlMs: 1000,
+        startedRoomTtlMs: 1000,
+    };
+    const lifecycle = makeRoomLifecycle({ limits, defaultRooms: {}, log: { log() {} } });
+    const admission = makeRecreateAttemptAdmission({ windowMs: 1000, max: 1, maxBuckets: 10 });
+    const socket = { handshake: { address: 'same-ip' } };
+    const key = lifecycle.createRoomRateKeyForSocket(socket);
+
+    lifecycle.markCreateRoomForRateKey(key, 1000);
+    assert.strictEqual(lifecycle.canCreateRoomForRateKey(key, 1001), false);
+    assert.strictEqual(admission.isRateLimited(key, 1001), false);
+
+    const freshLifecycle = makeRoomLifecycle({ limits, defaultRooms: {}, log: { log() {} } });
+    const freshAdmission = makeRecreateAttemptAdmission({ windowMs: 1000, max: 1, maxBuckets: 10 });
+    assert.strictEqual(freshAdmission.isRateLimited(key, 1000), false);
+    assert.strictEqual(freshAdmission.isRateLimited(key, 1001), true);
+    assert.strictEqual(freshLifecycle.canCreateRoomForRateKey(key, 1001), true);
 });

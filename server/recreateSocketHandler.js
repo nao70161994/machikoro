@@ -1,6 +1,27 @@
 'use strict';
 
+const { isRateLimited } = require('./reportThrottle');
+
 const DEFAULT_RECREATE_COOLDOWN_MS = 1000;
+
+function makeRecreateAttemptAdmission(options = {}) {
+    const limits = Object.freeze({
+        windowMs: Number.isFinite(options.windowMs) && options.windowMs > 0
+            ? options.windowMs : 60_000,
+        max: Number.isSafeInteger(options.max) && options.max > 0
+            ? options.max : 20,
+        maxBuckets: Number.isSafeInteger(options.maxBuckets) && options.maxBuckets > 0
+            ? options.maxBuckets : 2000,
+    });
+    const buckets = options.buckets instanceof Map ? options.buckets : new Map();
+
+    function isAttemptRateLimited(rateKey, now = Date.now()) {
+        if (!rateKey) return false;
+        return isRateLimited(rateKey, now, buckets, limits);
+    }
+
+    return Object.freeze({ isRateLimited: isAttemptRateLimited });
+}
 
 function registerRecreateSocketHandler(socket, dependencies = {}) {
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
@@ -12,6 +33,11 @@ function registerRecreateSocketHandler(socket, dependencies = {}) {
         if (Number.isFinite(socket.lastRecreateRoomAt) &&
                 requestedAt - socket.lastRecreateRoomAt < cooldownMs) {
             dependencies.emitAppError(socket, '復元処理を続けて実行できません');
+            return;
+        }
+        if (typeof dependencies.isAttemptRateLimited === 'function' &&
+                dependencies.isAttemptRateLimited(socket, requestedAt)) {
+            dependencies.emitAppError(socket, '復元処理が短時間に集中しています。少し待ってから再試行してください');
             return;
         }
         socket.lastRecreateRoomAt = requestedAt;
@@ -30,4 +56,8 @@ function registerRecreateSocketHandler(socket, dependencies = {}) {
     });
 }
 
-module.exports = Object.freeze({ DEFAULT_RECREATE_COOLDOWN_MS, registerRecreateSocketHandler });
+module.exports = Object.freeze({
+    DEFAULT_RECREATE_COOLDOWN_MS,
+    makeRecreateAttemptAdmission,
+    registerRecreateSocketHandler,
+});

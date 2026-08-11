@@ -56,7 +56,10 @@ const {
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
 const { registerActionSocketHandler } = require('./server/actionSocketHandler');
-const { registerRecreateSocketHandler } = require('./server/recreateSocketHandler');
+const {
+    makeRecreateAttemptAdmission,
+    registerRecreateSocketHandler,
+} = require('./server/recreateSocketHandler');
 const { selectRestoreSource, decideExistingRoomRestore } = require('./server/restoreGateway');
 const makeRestoreAdmission = require('./server/restoreAdmission');
 const makeRestoreReplayAdmission = require('./server/restoreReplayAdmission');
@@ -330,6 +333,11 @@ const {
             player && player.id && io.sockets.sockets.has(player.id)
         );
     },
+});
+const recreateAttemptAdmission = makeRecreateAttemptAdmission({
+    windowMs: ROOM_LIFECYCLE_LIMITS.createRoomIpRateLimitWindowMs,
+    max: ROOM_LIFECYCLE_LIMITS.createRoomIpRateLimitMax,
+    maxBuckets: ROOM_LIFECYCLE_LIMITS.createRoomIpRateLimitMaxBuckets,
 });
 const {
     buildPlayerList: buildRoomPlayerList,
@@ -882,6 +890,11 @@ registerSocketConnectionRuntime({
                 GAME_SCHEMA_RECREATE_WIRE_ENABLED,
                 payload
             ),
+            isAttemptRateLimited: (targetSocket, requestedAt) =>
+                recreateAttemptAdmission.isRateLimited(
+                    createRoomRateKeyForSocket(targetSocket),
+                    requestedAt
+                ),
             emitAppError,
             handleRecreateRoom,
             hostRestored: roomId => hostlessRestoreRuntime.hostRestored(roomId),
