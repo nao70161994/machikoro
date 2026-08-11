@@ -29,9 +29,16 @@ function makeSocketPayloadValidation({ isPlainObject, byteLength, socketLimits, 
     }
 
     function countNestedStrings(value) {
-        if (typeof value === 'string') return 1;
-        if (!Array.isArray(value)) return 0;
-        return value.reduce((sum, item) => sum + countNestedStrings(item), 0);
+        let count = 0;
+        const pending = [value];
+        while (pending.length > 0) {
+            const current = pending.pop();
+            if (typeof current === 'string') count++;
+            else if (Array.isArray(current)) {
+                for (const item of current) pending.push(item);
+            }
+        }
+        return count;
     }
 
     function validateRestorePayloadLimits(payload, limits = restoreLimits) {
@@ -51,22 +58,22 @@ function makeSocketPayloadValidation({ isPlainObject, byteLength, socketLimits, 
             };
         }
 
-        const stats = { stringChars: 0, playerCardRefs: 0 };
-        const visit = (value, key = '', depth = 0) => {
+        const stats = { stringChars: 0, playerCardRefs: 0, totalNodes: 0 };
+        const visit = (value, key = '', depth = 0, countAsPlayerCard = false) => {
+            stats.totalNodes++;
+            if (stats.totalNodes > limits.maxTotalNodes) return false;
             if (depth > 20) return false;
             if (typeof value === 'string') {
                 if (value.length > limits.maxStringLength) return false;
                 stats.stringChars += value.length;
-                return stats.stringChars <= limits.maxTotalStringChars;
+                if (countAsPlayerCard) stats.playerCardRefs++;
+                return stats.stringChars <= limits.maxTotalStringChars &&
+                    stats.playerCardRefs <= limits.maxPlayerCardRefs;
             }
             if (Array.isArray(value)) {
-                if ((key === 'cards' || key === 'playerCardNames') &&
-                    value.every(item => typeof item === 'string' || Array.isArray(item))) {
-                    stats.playerCardRefs += countNestedStrings(value);
-                    if (stats.playerCardRefs > limits.maxPlayerCardRefs) return false;
-                }
+                const childIsPlayerCard = countAsPlayerCard || key === 'cards' || key === 'playerCardNames';
                 for (const item of value) {
-                    if (!visit(item, key, depth + 1)) return false;
+                    if (!visit(item, key, depth + 1, childIsPlayerCard)) return false;
                 }
                 return true;
             }
@@ -84,6 +91,7 @@ function makeSocketPayloadValidation({ isPlainObject, byteLength, socketLimits, 
                 reason: 'content-size',
                 stringChars: stats.stringChars,
                 playerCardRefs: stats.playerCardRefs,
+                totalNodes: stats.totalNodes,
             };
         }
         return {
@@ -91,6 +99,7 @@ function makeSocketPayloadValidation({ isPlainObject, byteLength, socketLimits, 
             jsonBytes,
             actionLogEntries: Array.isArray(payload.actionLog) ? payload.actionLog.length : 0,
             playerCardRefs: stats.playerCardRefs,
+            totalNodes: stats.totalNodes,
         };
     }
 

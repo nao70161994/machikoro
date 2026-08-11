@@ -21,6 +21,7 @@ runTest('server runtime limitsは既存の全上限値を一つのfrozen contrac
         maxStringLength: 4000,
         maxTotalStringChars: 200000,
         maxPlayerCardRefs: 5000,
+        maxTotalNodes: 20000,
     });
     assert.deepStrictEqual(limits.SOCKET_PAYLOAD_LIMITS, {
         maxJsonBytes: 16384,

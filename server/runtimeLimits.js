@@ -18,6 +18,7 @@ const RESTORE_PAYLOAD_LIMITS = Object.freeze({
     maxStringLength: 4000,
     maxTotalStringChars: 200000,
     maxPlayerCardRefs: 5000,
+    maxTotalNodes: 20000,
 });
 
 const SOCKET_PAYLOAD_LIMITS = Object.freeze({

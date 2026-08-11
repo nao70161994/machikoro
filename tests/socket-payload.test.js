@@ -14,6 +14,7 @@ const restoreLimits = Object.freeze({
     maxStringLength: 40,
     maxTotalStringChars: 100,
     maxPlayerCardRefs: 3,
+    maxTotalNodes: 12,
 });
 const validation = makeSocketPayloadValidation({
     isPlainObject(value) {
@@ -114,6 +115,7 @@ runTest('socket payload helper はrestore action件数とcard参照数を別契�
     assert.strictEqual(valid.ok, true);
     assert.strictEqual(valid.actionLogEntries, 0);
     assert.strictEqual(valid.playerCardRefs, 3);
+    assert.strictEqual(valid.totalNodes, 8);
 
     const tooManyCards = validation.validateRestorePayloadLimits({
         stateSnapshot: { playerCardNames: [['a', 'b'], ['c', 'd']] },
@@ -131,6 +133,29 @@ runTest('socket payload helper はrestore文字列・深さ・循環入力を安
     let nested = {};
     for (let index = 0; index < 22; index++) nested = { nested };
     assert.strictEqual(validation.validateRestorePayloadLimits(nested).reason, 'content-size');
+
+    let nestedCards = 'card';
+    for (let index = 0; index < 4000; index++) nestedCards = [nestedCards];
+    const deepValidation = makeSocketPayloadValidation({
+        isPlainObject: value => !!value && typeof value === 'object' && !Array.isArray(value),
+        byteLength: value => Buffer.byteLength(value, 'utf8'),
+        socketLimits,
+        restoreLimits: { ...restoreLimits, maxJsonBytes: 1024 * 1024, maxTotalNodes: 20000 },
+    });
+    assert.doesNotThrow(() => deepValidation.validateRestorePayloadLimits({ cards: nestedCards }));
+    assert.strictEqual(
+        deepValidation.validateRestorePayloadLimits({ cards: nestedCards }).reason,
+        'content-size'
+    );
+
+    const nodeBoundary = validation.validateRestorePayloadLimits({
+        padding: Array.from({ length: restoreLimits.maxTotalNodes - 2 }, () => 0),
+    });
+    assert.strictEqual(nodeBoundary.ok, true);
+    assert.strictEqual(nodeBoundary.totalNodes, restoreLimits.maxTotalNodes);
+    assert.strictEqual(validation.validateRestorePayloadLimits({
+        padding: Array.from({ length: restoreLimits.maxTotalNodes }, () => 0),
+    }).reason, 'content-size');
 
     const circular = {};
     circular.self = circular;
