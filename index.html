@@ -62,6 +62,17 @@
             </div>
 
             <div id="tabContentLocal" class="tab-content" role="tabpanel" aria-labelledby="tabLocal">
+                <section id="resumeSection" class="local-resume-notice" aria-labelledby="localResumeHeading" style="display:none">
+                    <div class="local-resume-copy">
+                        <h2 id="localResumeHeading">中断したゲーム</h2>
+                        <p>保存した対戦を続きから再開できます。</p>
+                    </div>
+                    <div class="local-resume-actions">
+                        <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">続きから再開</button>
+                        <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除">削除</button>
+                    </div>
+                </section>
+                <div class="new-game-divider"><span>新しいゲーム</span></div>
                 <div class="setting-section">
                     <div class="setting-label">プレイ人数</div>
                     <div class="player-select">
@@ -92,10 +103,6 @@
                 </div>
                 <button id="btnStart" data-ui-action="startGame">ゲーム開始</button>
                 <div id="localRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
-                <div id="resumeSection" style="display:none">
-                    <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">続きから再開</button>
-                    <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除">削除</button>
-                </div>
             </div>
 
             <div id="tabContentOnline" class="tab-content" role="tabpanel" aria-labelledby="tabOnline" style="display:none">

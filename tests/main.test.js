@@ -2302,6 +2302,32 @@ runTest('index.html は統計タブをオンラインタブの外に配置して
     assert.ok(scriptStats < scriptMain);
 });
 
+runTest('ローカル保存の再開導線は新しいゲーム設定より先に提示する', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const localStart = html.indexOf('<div id="tabContentLocal"');
+    const localEnd = html.indexOf('<div id="tabContentOnline"');
+    const resumeStart = html.indexOf('<section id="resumeSection"');
+    const newGameDivider = html.indexOf('<div class="new-game-divider"');
+    const playerCountSetting = html.indexOf('<span id="playerCount"');
+    const startButton = html.indexOf('<button id="btnStart"');
+
+    assert.ok(localStart >= 0 && localEnd > localStart);
+    assert.ok(resumeStart > localStart && resumeStart < localEnd);
+    assert.ok(resumeStart < newGameDivider);
+    assert.ok(newGameDivider < playerCountSetting);
+    assert.ok(playerCountSetting < startButton);
+    assert.ok(html.includes('aria-labelledby="localResumeHeading"'));
+    assert.ok(html.includes('<h2 id="localResumeHeading">中断したゲーム</h2>'));
+    const actionsRule = css.match(/\.local-resume-actions\s*{([\s\S]*?)}/);
+    const resumeButtonRule = css.match(/\.resume-btn\s*{([\s\S]*?)}/);
+    assert.ok(actionsRule);
+    assert.ok(actionsRule[1].includes('display: flex;'));
+    assert.ok(actionsRule[1].includes('min-width: 0;'));
+    assert.ok(resumeButtonRule);
+    assert.ok(resumeButtonRule[1].includes('min-width: 0;'));
+});
+
 runTest('onlineStatus はライブリージョンとして宣言されている', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true"'));

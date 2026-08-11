@@ -2113,12 +2113,62 @@ button:not(:disabled):active {
 /* ===== 続きから再開 ===== */
 #resumeSection {
     display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.local-resume-notice {
+    min-width: 0;
+    padding: 12px;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.35);
+    border-radius: 10px;
+}
+
+.local-resume-copy h2 {
+    margin: 0 0 4px;
+    color: #86efac;
+    font-size: 14px;
+}
+
+.local-resume-copy p {
+    margin: 0;
+    color: #c9cbdf;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.local-resume-actions {
+    display: flex;
+    min-width: 0;
     gap: 6px;
-    margin-top: -4px;
+}
+
+.new-game-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #c9cbdf;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.new-game-divider::before,
+.new-game-divider::after {
+    content: "";
+    flex: 1;
+    min-width: 0;
+    height: 1px;
+    background: #3a3a5a;
+}
+
+.new-game-divider span {
+    flex: 0 0 auto;
 }
 
 .resume-btn {
     flex: 1;
+    min-width: 0;
     padding: 10px;
     background: linear-gradient(135deg, #1a4a3a, #1a3a2a);
     border: 1px solid #22c55e;
