@@ -22,6 +22,7 @@
     --setup-cta-pwa-focus-clearance: calc(var(--setup-cta-pwa-bottom) + var(--touch-target-standard) + 16px);
     --build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));
     --build-filter-focus-clearance: calc(var(--build-filter-sticky-top) + var(--touch-target-compact) + 22px);
+    --modal-header-scroll-clearance: calc(max(16px, env(safe-area-inset-top, 0px)) + 104px);
     --z-pwa-banner: 500;
     --z-pending-modal: 600;
     --z-turn-announcer: 700;
@@ -801,6 +802,7 @@ body.modal-open #gameScreen {
     align-items: flex-start;
     justify-content: center;
     overflow-y: auto;
+    scroll-padding-top: var(--modal-header-scroll-clearance);
     padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
 }
 
@@ -823,24 +825,32 @@ body.modal-open #gameScreen {
 }
 
 .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 16px 18px;
     border-bottom: 1px solid rgba(233,69,96,0.2);
-    background: linear-gradient(90deg, rgba(233,69,96,0.12) 0%, transparent 70%);
+    background: linear-gradient(90deg, rgba(233,69,96,0.12) 0%, transparent 70%), #1e1e38;
     border-radius: 18px 18px 0 0;
 }
 
 .modal-header h2 {
+    min-width: 0;
     font-size: 18px;
+    line-height: 1.4;
     color: #f0c040;
     text-shadow: 0 0 18px rgba(240,192,64,0.45);
+    overflow-wrap: anywhere;
 }
 
 .modal-header button {
-    width: 32px;
-    height: 32px;
+    width: var(--touch-target-standard);
+    min-width: var(--touch-target-standard);
+    height: var(--touch-target-standard);
+    flex: 0 0 var(--touch-target-standard);
     background: rgba(233,69,96,0.15);
     border: 1px solid rgba(233,69,96,0.3);
     border-radius: 50%;

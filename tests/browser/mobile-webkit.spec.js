@@ -211,6 +211,77 @@ test('320pxから480pxでpending中の長文toastが選択肢を隠さない', a
     }
 });
 
+test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達可能', async ({ page }) => {
+    await prepare(page);
+    await page.evaluate(() => {
+        document.body.classList.add('pwa-banner-open');
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
+    });
+
+    const modalCases = [
+        { open: '[data-ui-action="showRules"]', modal: '#rulesModal', close: '[data-ui-action="closeRules"]' },
+        { open: '[data-ui-action="showCardSelect"]', modal: '#cardSelectModal', close: '[data-action="closeCardSelect"]' },
+    ];
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        for (const modalCase of modalCases) {
+            await page.locator(modalCase.open).click();
+            const modal = page.locator(modalCase.modal);
+            await expect(modal).toBeVisible();
+
+            for (const position of ['middle', 'end']) {
+                const layout = await modal.evaluate((element, requestedPosition) => {
+                    const maxScrollTop = element.scrollHeight - element.clientHeight;
+                    element.scrollTop = requestedPosition === 'middle'
+                        ? maxScrollTop / 2
+                        : maxScrollTop;
+                    const header = element.querySelector('.modal-header');
+                    const close = header.querySelector('button');
+                    const content = element.querySelector('.modal-content');
+                    const pwa = document.getElementById('pwaUpdateBanner');
+                    const headerBounds = header.getBoundingClientRect();
+                    const closeBounds = close.getBoundingClientRect();
+                    const contentBounds = content.getBoundingClientRect();
+                    return {
+                        scrollTop: element.scrollTop,
+                        headerTop: headerBounds.top,
+                        headerBottom: headerBounds.bottom,
+                        closeWidth: closeBounds.width,
+                        closeHeight: closeBounds.height,
+                        closeTop: closeBounds.top,
+                        closeBottom: closeBounds.bottom,
+                        contentLeft: contentBounds.left,
+                        contentRight: contentBounds.right,
+                        viewportWidth: document.documentElement.clientWidth,
+                        viewportHeight: window.innerHeight,
+                        pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                        contentOverflow: content.scrollWidth - content.clientWidth,
+                        scrollPaddingTop: parseFloat(getComputedStyle(element).scrollPaddingTop),
+                        modalZ: Number(getComputedStyle(element).zIndex),
+                        pwaZ: Number(getComputedStyle(pwa).zIndex),
+                    };
+                }, position);
+                expect(layout.scrollTop).toBeGreaterThan(0);
+                expect(layout.headerTop).toBeGreaterThanOrEqual(15);
+                expect(layout.headerBottom).toBeLessThanOrEqual(layout.viewportHeight);
+                expect(layout.closeWidth).toBeGreaterThanOrEqual(44);
+                expect(layout.closeHeight).toBeGreaterThanOrEqual(44);
+                expect(layout.closeTop).toBeGreaterThanOrEqual(layout.headerTop);
+                expect(layout.closeBottom).toBeLessThanOrEqual(layout.headerBottom);
+                expect(layout.contentLeft).toBeGreaterThanOrEqual(0);
+                expect(layout.contentRight).toBeLessThanOrEqual(layout.viewportWidth);
+                expect(layout.pageOverflow).toBeLessThanOrEqual(0);
+                expect(layout.contentOverflow).toBeLessThanOrEqual(0);
+                expect(layout.scrollPaddingTop).toBeGreaterThan(layout.headerBottom);
+                expect(layout.modalZ).toBeGreaterThan(layout.pwaZ);
+            }
+
+            await modal.locator(modalCase.close).first().click();
+            await expect(modal).toBeHidden();
+        }
+    }
+});
+
 test('320pxから480pxで長い手番名と終盤player情報が枠内に収まる', async ({ page }) => {
     await prepare(page);
     await page.evaluate(() => {

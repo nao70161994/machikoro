@@ -2447,6 +2447,15 @@ runTest('pending中のnotice toastは上端safe-areaへ退避しoverlay階層を
     assert.ok(css.includes('--z-crash-screen: 2000;'));
 });
 
+runTest('長い通常modalはsafe-area内へheaderを固定し44pxのcloseを保つ', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.ok(css.includes('--modal-header-scroll-clearance: calc(max(16px, env(safe-area-inset-top, 0px)) + 104px);'));
+    assert.ok(css.includes('scroll-padding-top: var(--modal-header-scroll-clearance);'));
+    assert.ok(css.includes('.modal-header {\n    position: sticky;\n    top: 0;\n    z-index: 1;'));
+    assert.ok(css.includes('.modal-header button {\n    width: var(--touch-target-standard);\n    min-width: var(--touch-target-standard);\n    height: var(--touch-target-standard);'));
+    assert.ok(css.includes('background: linear-gradient(90deg, rgba(233,69,96,0.12) 0%, transparent 70%), #1e1e38;'));
+});
+
 runTest('建設カードの色filterはカードsection内だけで安全に追従する', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     assert.ok(css.includes('--build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));'));
