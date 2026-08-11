@@ -82,6 +82,28 @@ runTest('saved game validatorは既存の不正保存境界をfail closedにす�
     for (const value of cases) assert.strictEqual(validator.isValidSavedGameState(value), false);
 });
 
+runTest('saved game validatorはpending件数をserver snapshotと同じ50件へ制限する', () => {
+    const validator = makeValidator();
+    const pendingTV = Array.from({ length: 50 }, () => ({
+        field: 'pendingTV',
+        action: 'resolveTV',
+    }));
+    assert.strictEqual(SavedGameValidation.maxPendingCount, 50);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        phase: 'pending',
+        pendingTV: 50,
+        pendingActions: pendingTV,
+    })), true);
+    for (const state of [
+        makeState({ phase: 'pending', pendingTV: 51, pendingActions: undefined }),
+        makeState({ phase: 'pending', pendingTV: 26, pendingBusiness: 25, pendingActions: undefined }),
+        makeState({ phase: 'pending', pendingTV: 51, pendingActions: pendingTV.concat(pendingTV[0]) }),
+        makeState({ phase: 'build', pendingTV: 1, pendingActions: [{ field: 'pendingTV', action: 'resolveTV' }] }),
+    ]) {
+        assert.strictEqual(validator.isValidSavedGameState(state), false);
+    }
+});
+
 runTest('saved game validatorは依存未注入時に未知cardとlandmarkを拒否する', () => {
     const validator = SavedGameValidation.createValidator();
     assert.strictEqual(validator.isValidSavedGameState(makeState()), false);

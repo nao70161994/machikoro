@@ -516,6 +516,21 @@ runTest('storage resumeGame は壊れた保存データを破棄して alert す
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
+runTest('storage resumeGame は巨大pending件数をhydrate前に拒否する', () => {
+    const rt = loadStorageRuntime();
+    const state = makeSavedGameState({
+        phase: 'pending',
+        pendingTV: 1000000000,
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(state));
+
+    assert.strictEqual(rt.resumeGame(), false);
+
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.strictEqual(rt.__test.getGame(), null);
+    assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+});
+
 runTest('storage resumeGame は検証済みsaveを一時的なruntime例外で削除しない', () => {
     const rt = loadStorageRuntime();
     const serialized = JSON.stringify(makeSavedGameState());

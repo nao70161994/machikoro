@@ -7,6 +7,7 @@ const SAVED_PENDING_ACTION_BY_FIELD = Object.freeze({
     pendingMover: 'resolveMover',
     pendingRenovation: 'resolveRenovation',
 });
+const MAX_SAVED_PENDING_COUNT = 50;
 
 function isPlainObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -46,7 +47,8 @@ function createValidator(options = {}) {
 
     function isValidSavedPendingActions(state) {
         if (!Object.prototype.hasOwnProperty.call(state, 'pendingActions')) return true;
-        if (!Array.isArray(state.pendingActions)) return false;
+        if (!Array.isArray(state.pendingActions) ||
+            state.pendingActions.length > MAX_SAVED_PENDING_COUNT) return false;
         const counts = Object.fromEntries(Object.keys(SAVED_PENDING_ACTION_BY_FIELD).map(field => [field, 0]));
         for (const pending of state.pendingActions) {
             if (!isPlainObject(pending)) return false;
@@ -105,10 +107,15 @@ function createValidator(options = {}) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
                 (!Number.isInteger(state[field]) || state[field] < 0)) return false;
         }
+        let pendingFieldTotal = 0;
         for (const field of ['pendingTV', 'pendingBusiness', 'pendingCleaning', 'pendingMover', 'pendingRenovation']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
-                (!Number.isInteger(state[field]) || state[field] < 0)) return false;
+                (!Number.isInteger(state[field]) || state[field] < 0 ||
+                state[field] > MAX_SAVED_PENDING_COUNT)) return false;
+            pendingFieldTotal += Number.isInteger(state[field]) ? state[field] : 0;
         }
+        if (pendingFieldTotal > MAX_SAVED_PENDING_COUNT) return false;
+        if (state.phase !== 'pending' && pendingFieldTotal > 0) return false;
         if (!isValidSavedPendingActions(state)) return false;
         for (const field of ['builtThisTurn', 'pendingIT', 'usedReroll', 'hadAmusementParkAtRoll']) {
             if (Object.prototype.hasOwnProperty.call(state, field) &&
@@ -143,6 +150,7 @@ function createValidator(options = {}) {
 }
 
 const SavedGameValidation = Object.freeze({
+    maxPendingCount: MAX_SAVED_PENDING_COUNT,
     pendingActionByField: SAVED_PENDING_ACTION_BY_FIELD,
     createValidator,
     normalizeCpuSettings,
