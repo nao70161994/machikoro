@@ -1,6 +1,14 @@
 'use strict';
 
 const UiBuildMenu = (() => {
+    const CARD_FILTER_DEFS = Object.freeze([
+        Object.freeze({ color: '', label: '全て' }),
+        Object.freeze({ color: 'blue', label: '青' }),
+        Object.freeze({ color: 'green', label: '緑' }),
+        Object.freeze({ color: 'red', label: '赤' }),
+        Object.freeze({ color: 'purple', label: '紫' }),
+    ]);
+
     function cardFilterTransition(currentFilter, requestedFilter) {
         return Object.freeze({
             cardFilter: requestedFilter,
@@ -83,11 +91,30 @@ const UiBuildMenu = (() => {
         return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${escapeHtml(getLandmarkEffectText(name))}</div></div></button><div class="card-meta-row card-meta-row-detail-only"><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ 詳細</button></div></div>`;
     }
 
+    function cardFilterButtonView(cardFilter, color) {
+        const active = cardFilter === color;
+        return Object.freeze({
+            active,
+            ariaPressed: active ? 'true' : 'false',
+            className: `card-filter-btn${active ? ' active' : ''}`,
+        });
+    }
+
     function buildCardFilterBarHtml(cardFilter) {
-        const filterDefs = [['', '全て'], ['blue', '青'], ['green', '緑'], ['red', '赤'], ['purple', '紫']];
-        return filterDefs.map(([c, label]) =>
-            `<button class="card-filter-btn${cardFilter === c ? ' active' : ''}" data-action="setCardFilter" data-card-filter="${c}">${label}</button>`
-        ).join('');
+        return CARD_FILTER_DEFS.map(({ color, label }) => {
+            const view = cardFilterButtonView(cardFilter, color);
+            return `<button class="${view.className}" data-action="setCardFilter" data-card-filter="${color}" aria-pressed="${view.ariaPressed}">${label}</button>`;
+        }).join('');
+    }
+
+    function cardFilterFocusPlan(requestedFilter, source = {}) {
+        const knownFilter = CARD_FILTER_DEFS.some(definition => definition.color === requestedFilter);
+        const restore = knownFilter && source.action === 'setCardFilter' && source.cardFilter === requestedFilter;
+        return Object.freeze({ restore, cardFilter: requestedFilter });
+    }
+
+    function canRestoreCardFilterFocus(facts = {}) {
+        return facts.connected !== false && !facts.hidden && !facts.disabled && !facts.ancestorHidden;
     }
 
     function buildVisibleCardButtonsHtml(options) {
@@ -118,7 +145,7 @@ const UiBuildMenu = (() => {
         return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, buildCardFilterBarHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
+    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

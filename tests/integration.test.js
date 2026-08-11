@@ -1304,6 +1304,37 @@ runTest('integration: card filterで建設可能カードが非表示ならbuild
     assert.strictEqual(rt.classifyLikelyFreeze(snapshot), '');
 });
 
+runTest('integration: card filter再描画は選択ARIAと同一filter focusを同期する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.startGame();
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 10;
+    hideAllTestModals(rt);
+    rt.render();
+
+    const buildMenu = rt.__test.elements.buildMenu;
+    const oldRed = makeElement({ dataset: { action: 'setCardFilter', cardFilter: 'red' } });
+    const newRed = makeElement({
+        dataset: { action: 'setCardFilter', cardFilter: 'red' },
+        parentElement: buildMenu,
+        isConnected: true,
+    });
+    buildMenu.querySelectorAll = selector => selector.includes('setCardFilter') ? [newRed] : [];
+
+    rt.setCardFilter('red', oldRed);
+
+    assert.strictEqual(newRed.focused, true);
+    assert.strictEqual((buildMenu.innerHTML.match(/aria-pressed="true"/g) || []).length, 1);
+    assert.ok(/data-card-filter="red"[^>]+aria-pressed="true"/.test(buildMenu.innerHTML));
+});
+
 runTest('integration: buildLandmark allowed かつ建設候補ありなら専用子ボタンを要求する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

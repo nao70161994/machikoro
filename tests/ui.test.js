@@ -1786,6 +1786,79 @@ runTest('UiBuildMenu filter controllerは選択・再選択・resetを単独所�
     assert.ok(Object.isFrozen(controller.snapshot()));
 });
 
+runTest('UiBuildMenu filter viewはactiveとaria-pressedを同じstateから生成する', () => {
+    const helper = require('../js/uiBuildMenu');
+    assert.deepStrictEqual({ ...helper.cardFilterButtonView('red', 'red') }, {
+        active: true,
+        ariaPressed: 'true',
+        className: 'card-filter-btn active',
+    });
+    assert.deepStrictEqual({ ...helper.cardFilterButtonView('red', 'blue') }, {
+        active: false,
+        ariaPressed: 'false',
+        className: 'card-filter-btn',
+    });
+
+    const html = helper.buildCardFilterBarHtml('red');
+    assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1);
+    assert.ok(/class="card-filter-btn active"[^>]+data-card-filter="red"[^>]+aria-pressed="true"/.test(html));
+    assert.ok(/data-card-filter="blue"[^>]+aria-pressed="false"/.test(html));
+});
+
+runTest('UiBuildMenu filter focusは同一identityと操作可能な再描画後targetだけを許可する', () => {
+    const helper = require('../js/uiBuildMenu');
+    assert.deepStrictEqual(helper.cardFilterFocusPlan('red', {
+        action: 'setCardFilter', cardFilter: 'red',
+    }), { restore: true, cardFilter: 'red' });
+    assert.strictEqual(helper.cardFilterFocusPlan('red', {
+        action: 'setCardFilter', cardFilter: 'blue',
+    }).restore, false);
+    assert.strictEqual(helper.cardFilterFocusPlan('future-filter', {
+        action: 'setCardFilter', cardFilter: 'future-filter',
+    }).restore, false);
+    assert.strictEqual(helper.canRestoreCardFilterFocus({ connected: true }), true);
+    for (const unavailable of [
+        { connected: false },
+        { hidden: true },
+        { disabled: true },
+        { ancestorHidden: true },
+    ]) {
+        assert.strictEqual(helper.canRestoreCardFilterFocus(unavailable), false);
+    }
+});
+
+runTest('setCardFilterはinnerHTML再描画後の同一filterにだけfocusを復元する', () => {
+    const { context, elements } = loadUiRuntime();
+    const player = {
+        coins: 10,
+        landmarks: { '駅': false },
+        countCardIncludingDormant() { return 0; },
+    };
+    context.GameManager = { allowedActionsFor: () => new Set(['buildCard']) };
+    context.game = {
+        phase: 'build', currentPlayerIndex: 0, builtThisTurn: false, pendingRenovation: 0,
+        currentPlayer() { return player; },
+    };
+    context.cpuPlayers = [null];
+    const oldRed = makeElement({ dataset: { action: 'setCardFilter', cardFilter: 'red' } });
+    const newRed = makeElement({
+        dataset: { action: 'setCardFilter', cardFilter: 'red' },
+        parentElement: elements.buildMenu,
+        isConnected: true,
+    });
+    elements.buildMenu.querySelectorAll = () => [newRed];
+
+    context.setCardFilter('red', oldRed);
+
+    assert.strictEqual(newRed.focused, true);
+    assert.ok(/data-card-filter="red"[^>]+aria-pressed="true"/.test(elements.buildMenu.innerHTML));
+
+    newRed.focused = false;
+    elements.buildMenu.style.display = 'none';
+    context.setCardFilter('red', oldRed);
+    assert.strictEqual(newRed.focused, false);
+});
+
 runTest('UiBuildMenu action state はphase・pending・turn・allowedActionsをpureに判定する', () => {
     const helper = require('../js/uiBuildMenu');
     const base = {

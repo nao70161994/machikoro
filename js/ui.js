@@ -768,9 +768,59 @@ function renderBuildMenu() {
     buildMenu.innerHTML = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction);
 }
 
-function setCardFilter(color) {
+function cardFilterFocusFacts(element) {
+    let ancestor = element;
+    let ancestorHidden = false;
+    while (ancestor) {
+        const style = ancestor.style || {};
+        const view = document.defaultView;
+        const computed = view && typeof view.getComputedStyle === 'function'
+            ? view.getComputedStyle(ancestor)
+            : null;
+        if (ancestor.hidden || ancestor.inert || ancestor.getAttribute?.('aria-hidden') === 'true' ||
+            style.display === 'none' || style.visibility === 'hidden' ||
+            computed?.display === 'none' || computed?.visibility === 'hidden') {
+            ancestorHidden = true;
+            break;
+        }
+        ancestor = ancestor.parentElement;
+    }
+    return {
+        connected: element?.isConnected !== false,
+        hidden: !!element?.hidden,
+        disabled: !!element?.disabled,
+        ancestorHidden,
+    };
+}
+
+function restoreCardFilterFocus(plan) {
+    if (!plan.restore) return false;
+    const buildMenu = document.getElementById('buildMenu');
+    if (!buildMenu || typeof buildMenu.querySelectorAll !== 'function') return false;
+    const target = Array.from(buildMenu.querySelectorAll('[data-action="setCardFilter"]'))
+        .find(button => button.dataset?.cardFilter === plan.cardFilter);
+    if (!target || typeof target.focus !== 'function') return false;
+    if (!UiBuildMenu.canRestoreCardFilterFocus(cardFilterFocusFacts(target))) return false;
+    try {
+        target.focus({ preventScroll: true });
+    } catch (_) {
+        try {
+            target.focus();
+        } catch (_) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function setCardFilter(color, sourceElement = null) {
+    const focusPlan = UiBuildMenu.cardFilterFocusPlan(color, {
+        action: sourceElement?.dataset?.action,
+        cardFilter: sourceElement?.dataset?.cardFilter,
+    });
     const transition = buildMenuFilterController.set(color);
     if (transition.shouldRender) renderBuildMenu();
+    restoreCardFilterFocus(focusPlan);
 }
 
 function bcSelectCard(btn, inputId) {

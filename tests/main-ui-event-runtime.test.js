@@ -55,6 +55,19 @@ runTest('main UI event runtimeはBusiness Center不使用を専用effectへ渡�
     assert.deepStrictEqual(h.calls, [['preventDefault'], ['skipBusiness']]);
 });
 
+runTest('main UI event runtimeはfilter identityとクリック元を同じeffectへ渡す', () => {
+    const h = createHarness();
+    const event = h.event({ action: 'setCardFilter', cardFilter: 'red' });
+
+    h.runtime.handleBuildClick(event);
+
+    assert.strictEqual(h.calls.length, 2);
+    assert.deepStrictEqual(h.calls[0], ['preventDefault']);
+    assert.strictEqual(h.calls[1][0], 'setCardFilter');
+    assert.strictEqual(h.calls[1][1], 'red');
+    assert.strictEqual(h.calls[1][2], event.target);
+});
+
 runTest('main UI event runtimeはstatic/delegated listenerを一度だけ所有する', () => {
     const h = createHarness();
     assert.strictEqual(h.runtime.bindDelegated(), true);

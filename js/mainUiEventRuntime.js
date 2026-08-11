@@ -144,10 +144,11 @@ const MainUiEventRuntime = (() => {
             }));
         }
         function handleBuildClick(event) {
-            return execute(event, 'build', () => Object.assign({}, effectMap([
+            return execute(event, 'build', button => Object.assign({}, effectMap([
                 'buildCard', 'buildLandmark', 'showCardDetail', 'setCardFilter', 'undoBuild',
             ]), {
                 showLandmarkDetail: (...args) => invoke('showCardDetail', ...args),
+                setCardFilter: color => invoke('setCardFilter', color, button),
             }));
         }
         function handlePlayerClick(event) {
