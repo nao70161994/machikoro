@@ -154,6 +154,7 @@ const TEST_GROUPS = {
         'online-inbound-action-runtime.test.js',
         'online-game-engine-runtime.test.js',
         'online-lobby-request-runtime.test.js',
+        'room-id-input.test.js',
         'online-game-initializer.test.js',
         'online-room-share.test.js',
         'online-lobby-start-runtime.test.js',
