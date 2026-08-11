@@ -605,6 +605,22 @@ runTest('client error auth は production ntfy の no-origin 無tokenを拒否�
     assert.deepStrictEqual(authorizeClientErrorRequest(tokenReq, { ...env, CLIENT_ERROR_SHARED_TOKEN: 'secret-token' }), { ok: true });
 });
 
+runTest('client error auth の no-origin 例外は明示的な真値だけを許可する', () => {
+    const noOriginReq = makeMockReq({ headers: { host: 'example.com' } });
+    const production = { NODE_ENV: 'production', NTFY_TOPIC: 'topic' };
+
+    for (const value of ['', '0', 'false', 'no', 'off', ' disabled ']) {
+        const env = { ...production, CLIENT_ERROR_ALLOW_NO_ORIGIN: value };
+        assert.strictEqual(isProductionNoOriginClientErrorBlocked(noOriginReq, env), true, value);
+        assert.strictEqual(authorizeClientErrorRequest(noOriginReq, env).error, 'forbidden_origin', value);
+    }
+    for (const value of ['1', 'true', 'TRUE', ' yes ', 'on']) {
+        const env = { ...production, CLIENT_ERROR_ALLOW_NO_ORIGIN: value };
+        assert.strictEqual(isProductionNoOriginClientErrorBlocked(noOriginReq, env), false, value);
+        assert.deepStrictEqual(authorizeClientErrorRequest(noOriginReq, env), { ok: true }, value);
+    }
+});
+
 runTest('client error request は no-origin tokenなしなら通知前に拒否する', () => {
     const res = makeMockRes();
     handleClientErrorRequest(makeMockReq({

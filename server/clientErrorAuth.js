@@ -52,10 +52,14 @@ function clientErrorSharedToken(env = process.env) {
     return String(env.CLIENT_ERROR_SHARED_TOKEN || env.CLIENT_ERROR_TOKEN || '').trim();
 }
 
+function isExplicitlyEnabled(value) {
+    return ['1', 'true', 'yes', 'on'].includes(String(value || '').trim().toLowerCase());
+}
+
 function isProductionNoOriginClientErrorBlocked(req, env = process.env) {
     if (hasClientReportOrigin(req)) return false;
     if (clientErrorSharedToken(env)) return false;
-    if (String(env.CLIENT_ERROR_ALLOW_NO_ORIGIN || '').trim()) return false;
+    if (isExplicitlyEnabled(env.CLIENT_ERROR_ALLOW_NO_ORIGIN)) return false;
     return String(env.NODE_ENV || '').toLowerCase() === 'production' &&
         !!String(env.NTFY_TOPIC || '').trim();
 }
@@ -91,6 +95,7 @@ module.exports = {
     hasClientReportOrigin,
     isClientErrorOriginAllowed,
     clientErrorSharedToken,
+    isExplicitlyEnabled,
     isProductionNoOriginClientErrorBlocked,
     requestClientErrorToken,
     authorizeClientErrorRequest,

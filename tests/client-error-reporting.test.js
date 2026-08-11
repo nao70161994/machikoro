@@ -198,3 +198,14 @@ runTest('server client error auth はproduction no-originと不正tokenをfail c
     };
     assert.deepStrictEqual(authorizeClientErrorRequest(bearer, tokenEnv), { ok: true });
 });
+
+runTest('server client error auth はfalse-likeなno-origin設定を有効化しない', () => {
+    const noOrigin = { headers: { host: 'example.com' }, protocol: 'https' };
+    const baseEnv = { NODE_ENV: 'production', NTFY_TOPIC: 'topic' };
+    for (const value of ['false', '0', 'no', 'off']) {
+        assert.deepStrictEqual(authorizeClientErrorRequest(noOrigin, {
+            ...baseEnv,
+            CLIENT_ERROR_ALLOW_NO_ORIGIN: value,
+        }), { ok: false, error: 'forbidden_origin' });
+    }
+});
