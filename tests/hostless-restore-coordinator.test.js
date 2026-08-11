@@ -131,6 +131,26 @@ runTest('候補不一致は多数決せず全raw候補を破棄する', () => {
     assert.strictEqual(events.at(-1).candidateCount, 3);
 });
 
+runTest('同一playerの再提出は置換し異なるfingerprintは即fail closedにする', () => {
+    const { clock, events, coordinator } = setup();
+    coordinator.start({ roomId: 'ROOM1' });
+    clock.advance(60_000);
+    assert.deepStrictEqual(coordinator.submitCandidate('ROOM1', candidate(1)), {
+        ok: true,
+        replaced: false,
+    });
+    assert.deepStrictEqual(coordinator.submitCandidate('ROOM1', candidate(1, { payload: { source: 'new' } })), {
+        ok: true,
+        replaced: true,
+    });
+    assert.strictEqual(coordinator.inspect('ROOM1').candidateCount, 1);
+    assert.strictEqual(coordinator.submitCandidate('ROOM1', candidate(1, {
+        canonicalHash: 'd'.repeat(64),
+    })).reason, HOSTLESS_RESTORE_RESULTS.MISMATCH);
+    assert.strictEqual(coordinator.inspect('ROOM1'), null);
+    assert.strictEqual(events.at(-1).reason, HOSTLESS_RESTORE_RESULTS.MISMATCH);
+});
+
 runTest('確認拒否・切断・timeoutは次のplayerへ移り全員失敗で終了する', () => {
     const { clock, events, coordinator } = setup();
     coordinator.start({ roomId: 'ROOM1' });

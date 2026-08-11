@@ -3,6 +3,7 @@
 const {
     HOSTLESS_RESTORE_LIMITS,
     HOSTLESS_RESTORE_RESULTS,
+    candidateFingerprint,
     evaluateCandidateQuorum,
     nextConfirmationPlayerIndex,
 } = require('./hostlessRestoreCandidate');
@@ -172,12 +173,28 @@ function createHostlessRestoreCoordinator(options = {}) {
         if (session.stage !== HOSTLESS_RESTORE_STAGES.COLLECTING) {
             return { ok: false, reason: session.stage };
         }
-        session.candidates.push(candidate);
+        const existingIndex = session.candidates.findIndex(item =>
+            item?.playerIndex === candidate?.playerIndex
+        );
+        if (existingIndex >= 0) {
+            if (candidateFingerprint(session.candidates[existingIndex]) !== candidateFingerprint(candidate)) {
+                finish(session, HOSTLESS_RESTORE_RESULTS.MISMATCH, {
+                    candidateCount: session.candidates.length,
+                });
+                return { ok: false, reason: HOSTLESS_RESTORE_RESULTS.MISMATCH };
+            }
+            session.candidates[existingIndex] = candidate;
+        } else {
+            if (session.candidates.length >= limits.maxCandidates) {
+                return { ok: false, reason: 'candidate-limit' };
+            }
+            session.candidates.push(candidate);
+        }
         emitEvent('candidate-received', session, {
             playerIndex: Number.isInteger(candidate?.playerIndex) ? candidate.playerIndex : null,
             candidateCount: session.candidates.length,
         });
-        return { ok: true };
+        return { ok: true, replaced: existingIndex >= 0 };
     }
 
     function respondToConfirmation(roomId, playerIndex, approved) {

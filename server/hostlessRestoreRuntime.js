@@ -1,5 +1,7 @@
 'use strict';
 
+const { HOSTLESS_RESTORE_LIMITS } = require('./hostlessRestoreCandidate');
+
 const HOSTLESS_RESTORE_EVENTS = Object.freeze({
     REQUEST: 'requestHostlessRestore',
     COLLECT: 'hostlessRestoreCollect',
@@ -26,6 +28,10 @@ function createHostlessRestoreRuntime(options = {}) {
         approveCandidate,
     } = options;
     const enabled = options.enabled !== false;
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    const validateControlPayload = typeof options.validateControlPayload === 'function'
+        ? options.validateControlPayload
+        : payload => ({ ok: !!payload && typeof payload === 'object' && !Array.isArray(payload) });
     const requesters = new Map();
 
     function requesterMap(roomId) {
@@ -99,6 +105,10 @@ function createHostlessRestoreRuntime(options = {}) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { reason: 'disabled' });
             return { ok: false, reason: 'disabled' };
         }
+        if (!validateControlPayload(payload).ok) {
+            socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { reason: 'invalid-payload' });
+            return { ok: false, reason: 'invalid-payload' };
+        }
         const validation = gateway.validateRequest(payload);
         if (!validation.ok) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { reason: validation.reason });
@@ -143,6 +153,7 @@ function createHostlessRestoreRuntime(options = {}) {
         });
         socket.hostlessRestoreRoomId = validation.roomId;
         socket.hostlessRestorePlayerIndex = validation.playerIndex;
+        socket.hostlessRestoreCandidateSubmittedAt = undefined;
         const currentSession = coordinator.inspect(validation.roomId);
         socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
             roomId: validation.roomId,
@@ -161,14 +172,37 @@ function createHostlessRestoreRuntime(options = {}) {
     }
 
     function submit(socket, payload) {
+        if (!enabled) return { ok: false, reason: 'disabled' };
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+            return { ok: false, reason: 'invalid-payload' };
+        }
+        const roomId = typeof payload.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
+        const playerIndex = socket?.hostlessRestorePlayerIndex;
+        const requester = requesters.get(roomId)?.get(playerIndex);
+        if (!requester || requester.socketId !== socket.id ||
+                socket.hostlessRestoreRoomId !== roomId) {
+            return { ok: false, reason: 'requester-mismatch' };
+        }
+        const session = coordinator.inspect(roomId);
+        if (!session || session.stage !== 'collecting') {
+            return { ok: false, reason: 'not-collecting' };
+        }
+        const generation = Number.isInteger(payload.generation) ? payload.generation : 0;
+        const attemptCount = Number.isInteger(payload.attemptCount) ? payload.attemptCount : 0;
+        if (session.generation !== generation || session.attemptCount !== attemptCount) {
+            socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { roomId, reason: 'generation-mismatch' });
+            return { ok: false, reason: 'generation-mismatch' };
+        }
+        const submittedAt = now();
+        if (Number.isFinite(socket.hostlessRestoreCandidateSubmittedAt) &&
+                submittedAt - socket.hostlessRestoreCandidateSubmittedAt < HOSTLESS_RESTORE_LIMITS.candidateCooldownMs) {
+            return { ok: false, reason: 'candidate-rate-limit' };
+        }
+        socket.hostlessRestoreCandidateSubmittedAt = submittedAt;
         const prepared = gateway.prepareCandidate(socket, payload);
         if (!prepared.ok) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { reason: prepared.reason });
             return prepared;
-        }
-        const session = coordinator.inspect(prepared.roomId);
-        if (!session || session.stage !== 'collecting') {
-            return { ok: false, reason: 'not-collecting' };
         }
         if (session.generation !== prepared.candidate.generation ||
                 session.attemptCount !== prepared.attemptCount) {
@@ -178,14 +212,17 @@ function createHostlessRestoreRuntime(options = {}) {
             });
             return { ok: false, reason: 'generation-mismatch' };
         }
-        const requester = requesters.get(prepared.roomId)?.get(prepared.candidate.playerIndex);
-        if (!requester || requester.socketId !== socket.id) {
+        if (prepared.roomId !== roomId || prepared.candidate.playerIndex !== playerIndex) {
             return { ok: false, reason: 'requester-mismatch' };
         }
         return coordinator.submitCandidate(prepared.roomId, prepared.candidate);
     }
 
     function confirm(socket, payload = {}) {
+        if (!enabled) return { ok: false, reason: 'disabled' };
+        if (!validateControlPayload(payload).ok) {
+            return { ok: false, reason: 'invalid-payload' };
+        }
         const roomId = typeof payload.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
         const requester = requesters.get(roomId)?.get(socket.hostlessRestorePlayerIndex);
         if (!requester || requester.socketId !== socket.id) {
@@ -242,9 +279,17 @@ function createHostlessRestoreRuntime(options = {}) {
     }
 
     function registerSocket(socket) {
-        socket.on(HOSTLESS_RESTORE_EVENTS.REQUEST, payload => request(socket, payload));
-        socket.on(HOSTLESS_RESTORE_EVENTS.CANDIDATE, payload => submit(socket, payload));
-        socket.on(HOSTLESS_RESTORE_EVENTS.CONFIRM, payload => confirm(socket, payload));
+        const safe = handler => payload => {
+            try {
+                return handler(socket, payload);
+            } catch (_error) {
+                socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { reason: 'invalid-request' });
+                return { ok: false, reason: 'invalid-request' };
+            }
+        };
+        socket.on(HOSTLESS_RESTORE_EVENTS.REQUEST, safe(request));
+        socket.on(HOSTLESS_RESTORE_EVENTS.CANDIDATE, safe(submit));
+        socket.on(HOSTLESS_RESTORE_EVENTS.CONFIRM, safe(confirm));
     }
 
     function inspect(roomId) {

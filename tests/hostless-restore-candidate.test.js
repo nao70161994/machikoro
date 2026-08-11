@@ -43,6 +43,8 @@ runTest('hostless restore limits は合意済み時間・人数・上限を固�
         retentionMs: 120_000,
         minDistinctHumans: 2,
         maxAttempts: 3,
+        maxCandidates: 10,
+        candidateCooldownMs: 1000,
     });
     assert.strictEqual(Object.isFrozen(HOSTLESS_RESTORE_LIMITS), true);
 });

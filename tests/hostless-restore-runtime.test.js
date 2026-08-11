@@ -72,6 +72,7 @@ function setup(overrides = {}) {
             return existed;
         },
     };
+    let prepareCalls = 0;
     const gateway = {
         validateRequest(payload) {
             if (payload.invalid) return { ok: false, reason: 'invalid-token' };
@@ -84,6 +85,7 @@ function setup(overrides = {}) {
             };
         },
         prepareCandidate(_socket, payload) {
+            prepareCalls++;
             if (payload.invalid) return { ok: false, reason: 'action-log' };
             return {
                 ok: true,
@@ -108,7 +110,15 @@ function setup(overrides = {}) {
             return { ok: true };
         },
     }, overrides));
-    return { sockets, sessions, coordinator, gateway, approvals, runtime };
+    return {
+        sockets,
+        sessions,
+        coordinator,
+        gateway,
+        approvals,
+        runtime,
+        getPrepareCalls: () => prepareCalls,
+    };
 }
 
 runTest('hostless restoreは既定有効で明示false値だけ緊急停止する', () => {
@@ -201,6 +211,46 @@ runTest('generation不一致・未登録socket・収集外提出を拒否する'
     assert.strictEqual(runtime.submit(stranger, {
         roomId: 'ROOM01', playerIndex: 1, generation: 2,
     }).reason, 'requester-mismatch');
+});
+
+runTest('candidateは軽量identity gateとcooldown後だけ復元payloadを処理する', () => {
+    let now = 1000;
+    const disabled = setup({ enabled: false, now: () => now });
+    const disabledClient = socket('disabled');
+    assert.strictEqual(disabled.runtime.submit(disabledClient, {}).reason, 'disabled');
+    assert.strictEqual(disabled.getPrepareCalls(), 0);
+
+    const active = setup({ now: () => now });
+    const client = socket('s1');
+    const stranger = socket('stranger');
+    assert.strictEqual(active.runtime.submit(stranger, { roomId: 'ROOM01', playerIndex: 1 }).reason, 'requester-mismatch');
+    assert.strictEqual(active.getPrepareCalls(), 0);
+    active.runtime.request(client, { roomId: 'ROOM01', playerIndex: 1 });
+    assert.strictEqual(active.runtime.submit(client, { roomId: 'ROOM01', playerIndex: 1 }).reason, 'not-collecting');
+    assert.strictEqual(active.getPrepareCalls(), 0);
+    active.sessions.get('ROOM01').stage = 'collecting';
+    assert.strictEqual(active.runtime.submit(client, { roomId: 'ROOM01', playerIndex: 1 }).ok, true);
+    assert.strictEqual(active.getPrepareCalls(), 1);
+    assert.strictEqual(active.runtime.submit(client, { roomId: 'ROOM01', playerIndex: 1 }).reason, 'candidate-rate-limit');
+    assert.strictEqual(active.getPrepareCalls(), 1);
+    now += 1000;
+    assert.strictEqual(active.runtime.submit(client, { roomId: 'ROOM01', playerIndex: 1 }).ok, true);
+    assert.strictEqual(active.getPrepareCalls(), 2);
+});
+
+runTest('confirmationはmalformed payloadとdisabled状態を例外なく拒否する', () => {
+    const disabled = setup({ enabled: false });
+    const disabledClient = socket('disabled');
+    assert.deepStrictEqual(disabled.runtime.confirm(disabledClient, null), { ok: false, reason: 'disabled' });
+
+    const { runtime } = setup();
+    const client = socket('s1');
+    runtime.registerSocket(client);
+    for (const payload of [null, [], 'ROOM01']) {
+        assert.doesNotThrow(() => runtime.confirm(client, payload));
+        assert.deepStrictEqual(runtime.confirm(client, payload), { ok: false, reason: 'invalid-payload' });
+        assert.doesNotThrow(() => client.handlers[HOSTLESS_RESTORE_EVENTS.CONFIRM](payload));
+    }
 });
 
 runTest('confirmationはownerだけ承認できcanonical候補をrestore callbackへ渡す', () => {

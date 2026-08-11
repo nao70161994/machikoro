@@ -750,6 +750,7 @@ hostlessRestoreRuntime = createHostlessRestoreRuntime({
     hasRoom: hasOwnRoom,
     approveCandidate: approveHostlessRestoreCandidate,
     enabled: hostlessRestoreEnabled(process.env),
+    validateControlPayload: validateSocketPayloadLimits,
 });
 const disconnectSocketHandler = createDisconnectSocketHandler({
     io,
