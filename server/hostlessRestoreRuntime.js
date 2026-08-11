@@ -32,7 +32,20 @@ function createHostlessRestoreRuntime(options = {}) {
     const validateControlPayload = typeof options.validateControlPayload === 'function'
         ? options.validateControlPayload
         : payload => ({ ok: !!payload && typeof payload === 'object' && !Array.isArray(payload) });
+    const startRateKeyForSocket = typeof options.startRateKeyForSocket === 'function'
+        ? options.startRateKeyForSocket
+        : () => null;
+    const canStartForRateKey = typeof options.canStartForRateKey === 'function'
+        ? options.canStartForRateKey
+        : () => true;
+    const markStartForRateKey = typeof options.markStartForRateKey === 'function'
+        ? options.markStartForRateKey
+        : () => {};
     const requesters = new Map();
+
+    function normalizeRoomId(roomId) {
+        return typeof roomId === 'string' ? roomId.trim().toUpperCase() : '';
+    }
 
     function requesterMap(roomId) {
         let map = requesters.get(roomId);
@@ -56,6 +69,31 @@ function createHostlessRestoreRuntime(options = {}) {
         const map = requesters.get(roomId);
         if (!map) return;
         for (const requester of map.values()) emitToRequester(requester, eventName, payload);
+    }
+
+    function activeRequesterCount(roomId) {
+        const map = requesters.get(roomId);
+        if (!map) return 0;
+        return Array.from(map.values()).filter(requester => requester.socketId).length;
+    }
+
+    function releaseSocketRequester(socket, nextRoomId = '', nextPlayerIndex = null) {
+        const roomId = normalizeRoomId(socket?.hostlessRestoreRoomId);
+        const playerIndex = socket?.hostlessRestorePlayerIndex;
+        if (!roomId || !Number.isInteger(playerIndex) ||
+                (roomId === nextRoomId && playerIndex === nextPlayerIndex)) return false;
+        const map = requesters.get(roomId);
+        const requester = map?.get(playerIndex);
+        if (requester?.socketId === socket.id) {
+            requester.socketId = '';
+            coordinator.confirmationOwnerDisconnected(roomId, playerIndex);
+            if (roomId !== nextRoomId && activeRequesterCount(roomId) === 0) {
+                coordinator.cancel(roomId);
+            }
+        }
+        socket.hostlessRestoreRoomId = '';
+        socket.hostlessRestorePlayerIndex = null;
+        return true;
     }
 
     function publicStatus(event) {
@@ -114,38 +152,53 @@ function createHostlessRestoreRuntime(options = {}) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { reason: validation.reason });
             return validation;
         }
-        if (hasRoom(validation.roomId)) {
+        const roomId = normalizeRoomId(validation.roomId);
+        if (!roomId) {
+            socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { reason: 'room-id' });
+            return { ok: false, reason: 'room-id' };
+        }
+        if (hasRoom(roomId)) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
-                roomId: validation.roomId,
+                roomId,
                 reason: 'host-restored',
             });
             return { ok: false, reason: 'host-restored' };
         }
-        const existing = coordinator.inspect(validation.roomId);
+        const existing = coordinator.inspect(roomId);
         if (existing && (existing.generation !== validation.generation ||
                 existing.attemptCount !== validation.attemptCount)) {
             socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
-                roomId: validation.roomId,
+                roomId,
                 reason: 'generation-mismatch',
             });
             return { ok: false, reason: 'generation-mismatch' };
         }
+        let startRateKey = null;
+        if (!existing) {
+            startRateKey = startRateKeyForSocket(socket);
+            if (!canStartForRateKey(startRateKey, now())) {
+                socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, { roomId, reason: 'start-rate-limit' });
+                return { ok: false, reason: 'start-rate-limit' };
+            }
+        }
+        releaseSocketRequester(socket, roomId, validation.playerIndex);
         if (!existing) {
             const started = coordinator.start({
-                roomId: validation.roomId,
+                roomId,
                 generation: validation.generation,
                 attemptCount: validation.attemptCount,
                 enabled,
             });
             if (!started.ok) {
                 socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
-                    roomId: validation.roomId,
+                    roomId,
                     reason: started.reason,
                 });
                 return started;
             }
+            markStartForRateKey(startRateKey, now());
         }
-        const roomRequesters = requesterMap(validation.roomId);
+        const roomRequesters = requesterMap(roomId);
         const previousRequester = roomRequesters.get(validation.playerIndex);
         roomRequesters.set(validation.playerIndex, {
             socketId: socket.id,
@@ -156,18 +209,18 @@ function createHostlessRestoreRuntime(options = {}) {
                 ? previousRequester.candidateSubmittedAt
                 : undefined,
         });
-        socket.hostlessRestoreRoomId = validation.roomId;
+        socket.hostlessRestoreRoomId = roomId;
         socket.hostlessRestorePlayerIndex = validation.playerIndex;
-        const currentSession = coordinator.inspect(validation.roomId);
+        const currentSession = coordinator.inspect(roomId);
         socket.emit(HOSTLESS_RESTORE_EVENTS.STATUS, {
-            roomId: validation.roomId,
+            roomId,
             generation: validation.generation,
             stage: currentSession?.stage || '',
             reason: 'waiting-for-host',
         });
         if (currentSession?.stage === 'collecting') {
             socket.emit(HOSTLESS_RESTORE_EVENTS.COLLECT, {
-                roomId: validation.roomId,
+                roomId,
                 generation: validation.generation,
                 timeoutMs: 0,
             });
@@ -220,10 +273,11 @@ function createHostlessRestoreRuntime(options = {}) {
             });
             return { ok: false, reason: 'generation-mismatch' };
         }
-        if (prepared.roomId !== roomId || prepared.candidate.playerIndex !== playerIndex) {
+        const preparedRoomId = normalizeRoomId(prepared.roomId);
+        if (preparedRoomId !== roomId || prepared.candidate.playerIndex !== playerIndex) {
             return { ok: false, reason: 'requester-mismatch' };
         }
-        return coordinator.submitCandidate(prepared.roomId, prepared.candidate);
+        return coordinator.submitCandidate(preparedRoomId, prepared.candidate);
     }
 
     function confirm(socket, payload = {}) {
@@ -242,7 +296,8 @@ function createHostlessRestoreRuntime(options = {}) {
             payload.approved === true
         );
         if (!result.ok || !result.approved) return result;
-        const approval = approveCandidate(socket, result.candidate.payload, {
+        const approvalPayload = Object.assign({}, result.candidate.payload, { roomId });
+        const approval = approveCandidate(socket, approvalPayload, {
             generation: result.generation,
             attemptCount: result.candidate.payload.gameStartPayload.hostlessRestoreCount || 0,
             candidateCount: result.candidateCount,
@@ -269,17 +324,7 @@ function createHostlessRestoreRuntime(options = {}) {
     }
 
     function disconnect(socket) {
-        const roomId = socket?.hostlessRestoreRoomId;
-        const playerIndex = socket?.hostlessRestorePlayerIndex;
-        if (!roomId || !Number.isInteger(playerIndex)) return false;
-        const map = requesters.get(roomId);
-        const requester = map?.get(playerIndex);
-        if (requester?.socketId === socket.id) {
-            requester.socketId = '';
-            coordinator.confirmationOwnerDisconnected(roomId, playerIndex);
-        }
-        if (map && map.size === 0 && !coordinator.inspect(roomId)) requesters.delete(roomId);
-        return true;
+        return releaseSocketRequester(socket);
     }
 
     function hostRestored(roomId) {
@@ -303,7 +348,7 @@ function createHostlessRestoreRuntime(options = {}) {
     }
 
     function inspect(roomId) {
-        const normalized = typeof roomId === 'string' ? roomId.trim().toUpperCase() : '';
+        const normalized = normalizeRoomId(roomId);
         const roomRequesters = requesters.get(normalized);
         return {
             coordinator: coordinator.inspect(normalized),

@@ -67,6 +67,9 @@ function setup(overrides = {}) {
             };
         },
         confirmationOwnerDisconnected() { return true; },
+        cancel(roomId) {
+            return sessions.delete(roomId);
+        },
         hostRestored(roomId) {
             const existed = sessions.delete(roomId);
             return existed;
@@ -150,6 +153,62 @@ runTest('軽量requestはroomごとにcoordinatorを開始し同一player tabを
     assert.strictEqual(runtime.request(second, { roomId: 'ROOM01', playerIndex: 1 }).ok, true);
     assert.strictEqual(runtime.inspect('ROOM01').requesterCount, 1);
     assert.strictEqual(first.emitted.at(-1).payload.reason, 'waiting-for-host');
+});
+
+runTest('requestはroom IDを大文字化し同一socketの旧sessionを解放する', () => {
+    const { runtime, sessions } = setup();
+    const client = socket('s1');
+    assert.strictEqual(runtime.request(client, { roomId: 'room01', playerIndex: 1 }).ok, true);
+    assert.strictEqual(client.hostlessRestoreRoomId, 'ROOM01');
+    assert.strictEqual(sessions.has('ROOM01'), true);
+
+    assert.strictEqual(runtime.request(client, { roomId: 'room02', playerIndex: 1 }).ok, true);
+    assert.strictEqual(sessions.has('ROOM01'), false);
+    assert.strictEqual(runtime.inspect('ROOM01').requesterCount, 0);
+    assert.strictEqual(sessions.has('ROOM02'), true);
+    assert.strictEqual(client.hostlessRestoreRoomId, 'ROOM02');
+});
+
+runTest('socket切替は旧roomの他requesterと置換後の現ownerを解除しない', () => {
+    const active = setup();
+    const first = socket('s1');
+    const other = socket('s2');
+    active.runtime.request(first, { roomId: 'ROOM01', playerIndex: 1 });
+    active.runtime.request(other, { roomId: 'ROOM01', playerIndex: 2 });
+    active.runtime.request(first, { roomId: 'ROOM02', playerIndex: 1 });
+    assert.strictEqual(active.sessions.has('ROOM01'), true);
+    assert.strictEqual(active.runtime.inspect('ROOM01').requesterCount, 1);
+
+    const replaced = setup();
+    const stale = socket('stale');
+    const current = socket('current');
+    replaced.runtime.request(stale, { roomId: 'ROOM01', playerIndex: 1 });
+    replaced.runtime.request(current, { roomId: 'ROOM01', playerIndex: 1 });
+    replaced.runtime.request(stale, { roomId: 'ROOM02', playerIndex: 1 });
+    assert.strictEqual(replaced.sessions.has('ROOM01'), true);
+    assert.strictEqual(replaced.runtime.inspect('ROOM01').requesterCount, 1);
+    assert.strictEqual(current.hostlessRestoreRoomId, 'ROOM01');
+});
+
+runTest('IP start-rateは新規sessionだけを制限し既存session参加を許可する', () => {
+    let allowed = true;
+    const marks = [];
+    const active = setup({
+        startRateKeyForSocket: () => 'ip:shared',
+        canStartForRateKey: key => allowed && key === 'ip:shared',
+        markStartForRateKey: key => marks.push(key),
+    });
+    const first = socket('s1');
+    const late = socket('s2');
+    const rejected = socket('s3');
+    assert.strictEqual(active.runtime.request(first, { roomId: 'ROOM01', playerIndex: 1 }).ok, true);
+    assert.deepStrictEqual(marks, ['ip:shared']);
+
+    allowed = false;
+    assert.strictEqual(active.runtime.request(late, { roomId: 'ROOM01', playerIndex: 2 }).ok, true);
+    assert.strictEqual(active.runtime.request(rejected, { roomId: 'ROOM02', playerIndex: 1 }).reason, 'start-rate-limit');
+    assert.deepStrictEqual(marks, ['ip:shared']);
+    assert.strictEqual(active.sessions.has('ROOM02'), false);
 });
 
 runTest('既存room・無効flag・不正identityはhost-only statusへ倒す', () => {
@@ -267,10 +326,12 @@ runTest('candidate cooldownは再request・別socket・切断を越えてroom/pl
     const first = socket('s1');
     const second = socket('s2');
     const third = socket('s3');
+    const keeper = socket('keeper');
     const request = { roomId: 'ROOM01', playerIndex: 1, generation: 0, attemptCount: 0 };
     const candidate = { ...request };
 
     active.runtime.request(first, request);
+    active.runtime.request(keeper, { ...request, playerIndex: 2 });
     active.sessions.get('ROOM01').stage = 'collecting';
     assert.strictEqual(active.runtime.submit(first, candidate).ok, true);
     active.runtime.request(first, request);
@@ -343,12 +404,12 @@ runTest('coordinator eventの公開statusにraw payloadやhashを含めない', 
     assert.strictEqual(JSON.stringify(status.payload).includes('raw'), false);
 });
 
-runTest('disconnectは確認rotationへ通知しhost復元はsessionを終了する', () => {
+runTest('最後のactive requester切断はsessionを終了しhost復元はno-opになる', () => {
     const { runtime, sockets } = setup();
     const client = socket('s1');
     sockets.set(client.id, client);
     runtime.request(client, { roomId: 'ROOM01', playerIndex: 1 });
     assert.strictEqual(runtime.disconnect(client), true);
-    assert.strictEqual(runtime.hostRestored('ROOM01'), true);
+    assert.strictEqual(runtime.hostRestored('ROOM01'), false);
     assert.strictEqual(runtime.inspect('ROOM01').requesterCount, 0);
 });

@@ -9,6 +9,7 @@ const HOSTLESS_RESTORE_LIMITS = Object.freeze({
     minDistinctHumans: 2,
     maxAttempts: 3,
     maxCandidates: 10,
+    maxActiveSessions: 500,
     candidateCooldownMs: 1000,
 });
 

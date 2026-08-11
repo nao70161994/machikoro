@@ -139,6 +139,10 @@ function createHostlessRestoreCoordinator(options = {}) {
         if (!roomId) return { ok: false, reason: 'room-id' };
         if (input.enabled === false) return { ok: false, reason: HOSTLESS_RESTORE_TERMINAL_REASONS.DISABLED };
         if (sessions.has(roomId)) return { ok: false, reason: 'already-started' };
+        if (Number.isInteger(limits.maxActiveSessions) && limits.maxActiveSessions >= 0 &&
+                sessions.size >= limits.maxActiveSessions) {
+            return { ok: false, reason: 'session-limit' };
+        }
         const attemptCount = Number.isInteger(input.attemptCount) && input.attemptCount >= 0
             ? input.attemptCount
             : 0;
@@ -268,6 +272,10 @@ function createHostlessRestoreCoordinator(options = {}) {
         });
     }
 
+    function activeCount() {
+        return sessions.size;
+    }
+
     return Object.freeze({
         start,
         beginCollection: roomId => beginCollection(sessions.get(typeof roomId === 'string' ? roomId.trim().toUpperCase() : '')),
@@ -278,6 +286,7 @@ function createHostlessRestoreCoordinator(options = {}) {
         hostRestored,
         cancel,
         inspect,
+        activeCount,
     });
 }
 

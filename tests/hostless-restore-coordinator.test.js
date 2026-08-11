@@ -204,6 +204,19 @@ runTest('disabled・重複開始・3回上限を副作用なしで拒否する',
     assert.strictEqual(coordinator.start({ roomId: 'LIMIT1', attemptCount: 3 }).reason, 'attempt-limit');
 });
 
+runTest('active session上限は新規開始だけを拒否しterminal後に枠を解放する', () => {
+    const { coordinator } = setup({ limits: { maxActiveSessions: 2 } });
+    assert.strictEqual(coordinator.start({ roomId: 'ROOM1' }).ok, true);
+    assert.strictEqual(coordinator.start({ roomId: 'ROOM2' }).ok, true);
+    assert.strictEqual(coordinator.activeCount(), 2);
+    assert.strictEqual(coordinator.start({ roomId: 'ROOM3' }).reason, 'session-limit');
+    assert.strictEqual(coordinator.start({ roomId: 'ROOM1' }).reason, 'already-started');
+    assert.strictEqual(coordinator.cancel('ROOM1'), true);
+    assert.strictEqual(coordinator.activeCount(), 1);
+    assert.strictEqual(coordinator.start({ roomId: 'ROOM3' }).ok, true);
+    assert.strictEqual(coordinator.activeCount(), 2);
+});
+
 runTest('coordinator診断はraw candidate payloadを公開しない', () => {
     const { clock, coordinator } = setup();
     coordinator.start({ roomId: 'ROOM1' });
