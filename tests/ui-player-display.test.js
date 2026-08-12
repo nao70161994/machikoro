@@ -192,6 +192,8 @@ const tenPlayerHtml = UiPlayerDisplay.buildPlayersHtml(tenPlayers, {
         ...Array.from({ length: 4 }, () => ({ type: 'human', difficulty: 'human' })),
     ],
     currentPlayerIndex: 4,
+    compactInactive: true,
+    myPlayerIndex: 0,
     enabledLandmarks: new Set(),
     getLandmarkEmoji: () => '',
     compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
@@ -199,6 +201,10 @@ const tenPlayerHtml = UiPlayerDisplay.buildPlayersHtml(tenPlayers, {
     loanEffect: 'loan',
 });
 assert.strictEqual((tenPlayerHtml.match(/role="listitem"/g) || []).length, 10);
+assert.strictEqual((tenPlayerHtml.match(/<details class="player-box player-box-compact"/g) || []).length, 8);
+assert(tenPlayerHtml.includes('<div class="player-box active"'));
+assert(tenPlayerHtml.includes('&lt;悪意&quot;名前&gt;</span>'));
+assert.strictEqual((tenPlayerHtml.match(/詳細を表示/g) || []).length, 8);
 assert(tenPlayerHtml.includes('aria-label="&lt;悪意&quot;名前&gt;、待機中、人間"'));
 assert(tenPlayerHtml.includes('aria-label="プレイヤー2、待機中、CPU（弱）"'));
 assert(tenPlayerHtml.includes('aria-label="プレイヤー3、待機中、CPU（普通）"'));

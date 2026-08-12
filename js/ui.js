@@ -697,6 +697,10 @@ function renderPlayers() {
     const html = UiPlayerDisplay.buildPlayersHtml(currentGame.players, {
         settings,
         currentPlayerIndex: currentGame.currentPlayerIndex,
+        compactInactive: currentGame.players.length >= 5,
+        myPlayerIndex: typeof isOnlineGame !== 'undefined' && isOnlineGame
+            ? myPlayerIndex
+            : -1,
         enabledLandmarks: getEnabledLandmarkSelection(),
         getLandmarkEmoji,
         compareCardNames: compareCardNamesForDisplay,

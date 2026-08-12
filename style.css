@@ -1404,6 +1404,36 @@ button:not(:disabled):active {
     border-color: #f0c040;
 }
 
+.player-box-compact {
+    padding: 0;
+}
+
+.player-box-compact > summary {
+    cursor: pointer;
+    list-style: none;
+    min-height: 44px;
+    padding: 10px 12px;
+}
+
+.player-box-compact > summary::-webkit-details-marker { display: none; }
+
+.player-box-compact > summary:focus-visible {
+    outline: 3px solid #f4c542;
+    outline-offset: 2px;
+}
+
+.player-box-compact .player-detail { padding: 0 12px 12px; }
+
+.player-detail-hint {
+    color: #a7a9be;
+    display: block;
+    font-size: 12px;
+    margin-top: 4px;
+    text-align: right;
+}
+
+.player-box-compact[open] .player-detail-hint::after { content: "中"; }
+
 .player-header {
     display: flex;
     flex-wrap: wrap;
