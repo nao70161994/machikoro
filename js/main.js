@@ -80,6 +80,7 @@ const cpuTurnSchedulerRuntime = CpuTurnSchedulerRuntime.createRuntime({
 const cpuSchedulerStateController = cpuTurnSchedulerRuntime.controller;
 const gameActivityStatusController = UiGameStatusView.createActivityStatusController();
 const watchdogActivityStatusController = UiGameStatusView.createWatchdogActivityController();
+let latestCpuActionExplanation = Object.freeze({ playerIndex: -1, turnCount: -1, text: '' });
 
 function invalidateCpuScheduleChain() { return cpuTurnSchedulerRuntime.invalidate(); }
 function cancelCpuSchedule(reason = 'cpu-schedule-cancel') { return cpuTurnSchedulerRuntime.cancel(reason); }
@@ -134,6 +135,11 @@ function updateGameActivityStatus(now = Date.now()) {
         currentName: currentGame && currentGame.currentPlayer ? currentGame.currentPlayer().name : '',
         isCpuTurn: !!(currentGame && gameState.cpuPlayers[currentGame.currentPlayerIndex]),
         cpuHealth: currentCpuTurnSchedulerHealth(),
+        cpuActionExplanation: currentGame &&
+            latestCpuActionExplanation.playerIndex === currentGame.currentPlayerIndex &&
+            latestCpuActionExplanation.turnCount === currentGame.turnCount
+            ? latestCpuActionExplanation.text
+            : '',
         isOnlineGame: onlineState.isOnlineGame,
         myPlayerIndex: onlineState.myPlayerIndex,
         ...connectionFacts,
@@ -458,13 +464,20 @@ function chooseCpuPendingAction(cpu) {
 }
 
 function chooseCpuTurnAction(stepName, cpu) {
-    return CpuTurnStrategy.chooseAction(stepName, {
-        game: mainGameRuntimeSnapshot().game,
+    const currentGame = mainGameRuntimeSnapshot().game;
+    const proposal = CpuTurnStrategy.chooseAction(stepName, {
+        game: currentGame,
         cpu,
         rollDie: rollRandomDie,
         choosePendingAction: chooseCpuPendingAction,
         shopStock: SHOP_STOCK,
     });
+    latestCpuActionExplanation = Object.freeze({
+        playerIndex: currentGame ? currentGame.currentPlayerIndex : -1,
+        turnCount: currentGame && Number.isInteger(currentGame.turnCount) ? currentGame.turnCount : -1,
+        text: CPUActionProposal.explanation(proposal),
+    });
+    return proposal;
 }
 
 // フェーズごとの CPU ハンドラテーブル。

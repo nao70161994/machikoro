@@ -136,7 +136,7 @@ function buildActivityStatusView(facts = {}) {
                 (activeStep && activeStep.stepExecutionId || facts.cpuHealth && facts.cpuHealth.token || ''),
             kind: 'waiting',
             label: `${facts.currentName || 'CPU'}が処理中`,
-            detail: '通常は数秒で進みます',
+            detail: facts.cpuActionExplanation || '次の行動を検討しています',
             startedAt: activeStep && activeStep.startedAt || 0,
         });
     }

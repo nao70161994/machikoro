@@ -106,3 +106,16 @@ runTest('CPU action proposalは未知actionとpayload key driftをfail closedに
     assert.ok(CPUActionProposal.create('resolveMover', { cardIndex: 0, targetIndex: 1 }));
     assert.ok(CPUActionProposal.create('resolveMover', { cardName: '麦畑', targetIndex: 1 }));
 });
+
+runTest('CPU action proposalは選んだcanonical actionを短い理由へ変換する', () => {
+    assert.strictEqual(CPUActionProposal.explanation(
+        CPUActionProposal.create('selectDice', { useTwo: true, diceCount: 2, d1: 1, d2: 2, tunaDice: [3, 4] })
+    ), '期待できる出目を増やすため2個振ります');
+    assert.strictEqual(CPUActionProposal.explanation(
+        CPUActionProposal.create('buildCard', { cardName: 'パン屋' })
+    ), 'パン屋を建設します');
+    assert.strictEqual(CPUActionProposal.explanation(
+        CPUActionProposal.create('nextTurn', {})
+    ), '建設せずターンを終了します');
+    assert.strictEqual(CPUActionProposal.explanation(null), '');
+});

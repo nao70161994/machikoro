@@ -70,6 +70,14 @@ runTest('ゲーム稼働状況は操作可能・CPU・通信待ちを区別す�
         cpuHealth: { token: 4, activeStep: { stepExecutionId: 9, startedAt: 2000 } },
     });
     assert.strictEqual(cpu.label, 'CPU 1が処理中');
+    assert.strictEqual(UiGameStatusView.buildActivityStatusView({
+        ...base,
+        currentPlayerIndex: 1,
+        currentName: 'CPU 1',
+        isCpuTurn: true,
+        cpuActionExplanation: 'パン屋を建設します',
+        cpuHealth: { token: 5 },
+    }).detail, 'パン屋を建設します');
     assert.strictEqual(cpu.identity, 'cpu:1:9');
     assert.strictEqual(cpu.startedAt, 2000);
     const flight = UiGameStatusView.buildActivityStatusView({

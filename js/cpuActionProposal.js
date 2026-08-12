@@ -52,8 +52,31 @@ function create(action, data = {}) {
     }
 }
 
+function explanation(proposal) {
+    if (!proposal || typeof proposal.action !== 'string' || !proposal.data) return '';
+    const data = proposal.data;
+    const labels = {
+        rollDice: 'サイコロを振ります',
+        selectDice: data.useTwo ? '期待できる出目を増やすため2個振ります' : '低い出目を狙って1個振ります',
+        rerollDice: 'より良い出目を狙って振り直します',
+        skipReroll: '今の出目を活かすため振り直しません',
+        resolveHarbor: data.useBonus ? '港のボーナスを使います' : '港のボーナスを使わず進みます',
+        resolveTV: 'コインを得る相手を選びました',
+        resolveBusiness: data.skip ? '交換せずに進みます' : '有利になる施設交換を選びました',
+        resolveCleaning: data.cardName ? `${data.cardName}を休業対象に選びました` : '休業対象を選びました',
+        resolveMover: '移動する施設と相手を選びました',
+        resolveRenovation: data.landmarkName ? `${data.landmarkName}を改装対象に選びました` : '改装対象を選びました',
+        resolveIT: data.doSave ? 'ITベンチャーへ投資します' : '今回は投資せず進みます',
+        buildCard: data.cardName ? `${data.cardName}を建設します` : '施設を建設します',
+        buildLandmark: data.name ? `${data.name}を建設します` : 'ランドマークを建設します',
+        nextTurn: '建設せずターンを終了します',
+    };
+    return labels[proposal.action] || '';
+}
+
 const CPUActionProposal = Object.freeze({
     create,
+    explanation,
     hasCanonicalPayloadShape,
 });
 
