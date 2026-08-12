@@ -80,6 +80,89 @@ function buildCoinChangeAnnouncement({
         .join('、');
 }
 
+function buildActivityStatusView(facts = {}) {
+    if (!facts.hasGame || facts.hasWinner) {
+        return Object.freeze({ visible: false, identity: 'hidden', kind: 'ready', label: '', detail: '', startedAt: 0 });
+    }
+    if (facts.isReconnecting) {
+        return Object.freeze({ visible: true, identity: 'reconnecting', kind: 'waiting', label: 'オンライン再接続中', detail: '接続を回復しています', startedAt: 0 });
+    }
+    if (facts.isReplaying) {
+        return Object.freeze({ visible: true, identity: 'replaying', kind: 'waiting', label: 'ゲーム状態を復元中', detail: '保存された進行を反映しています', startedAt: 0 });
+    }
+    if (facts.isOnlineGame && facts.socketConnected === false) {
+        return Object.freeze({ visible: true, identity: 'socket-disconnected', kind: 'checking', label: '通信状態を確認中', detail: '自動再接続を待っています', startedAt: 0 });
+    }
+    if (facts.actionInFlight) {
+        return Object.freeze({ visible: true, identity: 'online-action:' + (facts.actionStartedAt || 0), kind: 'waiting', label: 'サーバーの応答待ち', detail: '15秒で自動的に再同期します', startedAt: facts.actionStartedAt || 0 });
+    }
+    if (facts.isCpuTurn) {
+        const activeStep = facts.cpuHealth && facts.cpuHealth.activeStep;
+        return Object.freeze({
+            visible: true,
+            identity: 'cpu:' + facts.currentPlayerIndex + ':' +
+                (activeStep && activeStep.stepExecutionId || facts.cpuHealth && facts.cpuHealth.token || ''),
+            kind: 'waiting',
+            label: `${facts.currentName || 'CPU'}が処理中`,
+            detail: '通常は数秒で進みます',
+            startedAt: activeStep && activeStep.startedAt || 0,
+        });
+    }
+    const isOwnOnlineTurn = facts.isOnlineGame && facts.myPlayerIndex === facts.currentPlayerIndex;
+    const waitsForOwnPendingInput = facts.phase === facts.pendingPhase &&
+        (isOwnOnlineTurn || !facts.isOnlineGame);
+    const label = facts.phase === facts.pendingPhase
+        ? (waitsForOwnPendingInput ? '入力待ち：追加効果を選べます' : '相手の選択待ち')
+        : (facts.isOnlineGame && !isOwnOnlineTurn ? '相手の操作待ち' : '操作できます');
+    return Object.freeze({
+        visible: true,
+        identity: 'ready:' + facts.currentPlayerIndex + ':' + facts.phase,
+        kind: 'ready',
+        label,
+        detail: waitsForOwnPendingInput || label === '操作できます'
+            ? 'ボタンを選んで進めてください'
+            : '',
+        startedAt: 0,
+    });
+}
+
+function createActivityStatusController(options = {}) {
+    const checkingAfterMs = Number.isFinite(options.checkingAfterMs) ? Math.max(0, options.checkingAfterMs) : 10000;
+    let identity = '';
+    let observedAt = 0;
+    let announcedLabel = '';
+
+    function transition(view = {}, now = Date.now()) {
+        const safeNow = Number.isFinite(now) ? now : 0;
+        if (view.identity !== identity) {
+            identity = view.identity || '';
+            observedAt = Number.isFinite(view.startedAt) && view.startedAt > 0
+                ? Math.min(view.startedAt, safeNow)
+                : safeNow;
+        }
+        const elapsedMs = view.visible && view.kind !== 'ready' ? Math.max(0, safeNow - observedAt) : 0;
+        const checking = view.visible && view.kind === 'waiting' && elapsedMs >= checkingAfterMs;
+        const label = checking ? `${view.label}（応答を確認中）` : view.label || '';
+        const result = Object.freeze({
+            visible: view.visible === true,
+            kind: checking ? 'checking' : view.kind || 'ready',
+            label,
+            announceLabel: label !== announcedLabel ? label : '',
+            detail: checking ? '停止を検知した場合は自動復旧します' : view.detail || '',
+            elapsedText: elapsedMs > 0 ? `・${Math.floor(elapsedMs / 1000)}秒` : '',
+        });
+        announcedLabel = label;
+        return result;
+    }
+
+    function reset() {
+        identity = '';
+        observedAt = 0;
+        announcedLabel = '';
+    }
+    return Object.freeze({ transition, reset });
+}
+
 function buildActiveGameView(facts) {
     const players = Array.isArray(facts.players) ? facts.players : [];
     const previousCoins = facts.previousCoins;
@@ -119,6 +202,8 @@ const UiGameStatusView = Object.freeze({
     selectDiceValues,
     buildTurnTransitionView,
     buildCoinChangeAnnouncement,
+    buildActivityStatusView,
+    createActivityStatusController,
     buildActiveGameView,
 });
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusView;

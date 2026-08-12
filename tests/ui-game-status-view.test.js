@@ -33,6 +33,106 @@ runTest('UI game status viewは既存の二個・一個・未出目表示を選�
     assert.strictEqual(UiGameStatusView.selectDiceValues({ lastDice1: 0, lastDice2: 0, lastDiceResult: 0 }), null);
 });
 
+runTest('ゲーム稼働状況は操作可能・CPU・通信待ちを区別する', () => {
+    const base = {
+        hasGame: true,
+        hasWinner: false,
+        phase: 'roll',
+        pendingPhase: 'pending',
+        currentPlayerIndex: 0,
+        currentName: 'Alice',
+        isCpuTurn: false,
+        isOnlineGame: false,
+        myPlayerIndex: -1,
+        isReconnecting: false,
+        isReplaying: false,
+        socketConnected: true,
+        actionInFlight: false,
+    };
+    assert.deepStrictEqual(UiGameStatusView.buildActivityStatusView(base), {
+        visible: true,
+        identity: 'ready:0:roll',
+        kind: 'ready',
+        label: '操作できます',
+        detail: 'ボタンを選んで進めてください',
+        startedAt: 0,
+    });
+    assert.strictEqual(UiGameStatusView.buildActivityStatusView({
+        ...base,
+        phase: 'pending',
+    }).label, '入力待ち：追加効果を選べます');
+    const cpu = UiGameStatusView.buildActivityStatusView({
+        ...base,
+        currentPlayerIndex: 1,
+        currentName: 'CPU 1',
+        isCpuTurn: true,
+        cpuHealth: { token: 4, activeStep: { stepExecutionId: 9, startedAt: 2000 } },
+    });
+    assert.strictEqual(cpu.label, 'CPU 1が処理中');
+    assert.strictEqual(cpu.identity, 'cpu:1:9');
+    assert.strictEqual(cpu.startedAt, 2000);
+    const flight = UiGameStatusView.buildActivityStatusView({
+        ...base,
+        isOnlineGame: true,
+        myPlayerIndex: 0,
+        actionInFlight: true,
+        actionStartedAt: 3000,
+    });
+    assert.strictEqual(flight.label, 'サーバーの応答待ち');
+    assert.strictEqual(flight.startedAt, 3000);
+    assert.strictEqual(UiGameStatusView.buildActivityStatusView({
+        ...base,
+        isReconnecting: true,
+        actionInFlight: true,
+    }).label, 'オンライン再接続中');
+    assert.strictEqual(UiGameStatusView.buildActivityStatusView({
+        ...base,
+        isOnlineGame: true,
+        myPlayerIndex: 1,
+    }).label, '相手の操作待ち');
+});
+
+runTest('ゲーム稼働状況は10秒後に応答確認中と表示し秒数だけは再告知しない', () => {
+    const controller = UiGameStatusView.createActivityStatusController({ checkingAfterMs: 10000 });
+    const waiting = {
+        visible: true,
+        identity: 'cpu:1:4',
+        kind: 'waiting',
+        label: 'CPU 1が処理中',
+        detail: '通常は数秒で進みます',
+        startedAt: 1000,
+    };
+    assert.deepStrictEqual(controller.transition(waiting, 1000), {
+        visible: true,
+        kind: 'waiting',
+        label: 'CPU 1が処理中',
+        announceLabel: 'CPU 1が処理中',
+        detail: '通常は数秒で進みます',
+        elapsedText: '',
+    });
+    assert.strictEqual(controller.transition(waiting, 5000).announceLabel, '');
+    assert.strictEqual(controller.transition(waiting, 5000).elapsedText, '・4秒');
+    const checking = controller.transition(waiting, 11000);
+    assert.strictEqual(checking.kind, 'checking');
+    assert.strictEqual(checking.label, 'CPU 1が処理中（応答を確認中）');
+    assert.strictEqual(checking.detail, '停止を検知した場合は自動復旧します');
+    assert.strictEqual(controller.transition(waiting, 12000).announceLabel, '');
+    assert.strictEqual(controller.transition({
+        ...waiting,
+        identity: 'cpu:1:5',
+        startedAt: 12000,
+    }, 12000).kind, 'waiting');
+    controller.reset();
+    assert.strictEqual(controller.transition({
+        visible: true,
+        identity: 'ready:0:roll',
+        kind: 'ready',
+        label: '操作できます',
+        detail: '',
+        startedAt: 0,
+    }, 20000).elapsedText, '');
+});
+
 
 runTest('UI active game viewは手番遷移とコイン差分を入力非破壊で投影する', () => {
     const players = [{ name: 'Alice', coins: 7 }, { name: 'CPU', coins: 3 }];

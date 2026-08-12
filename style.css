@@ -1093,6 +1093,65 @@ body.pwa-banner-open #gameScreen {
     text-align: center;
 }
 
+.game-activity-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border: 1px solid #3b4a61;
+    border-radius: 10px;
+    background: rgba(30, 41, 59, 0.9);
+    color: #d9e2ef;
+    font-size: 13px;
+    text-align: center;
+}
+
+.game-activity-dot {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 9px;
+    border-radius: 50%;
+    background: #4ade80;
+}
+
+.game-activity-status.is-waiting .game-activity-dot {
+    background: #f8d875;
+    animation: activityPulse 1.2s ease-in-out infinite;
+}
+
+.game-activity-status.is-checking {
+    border-color: rgba(251, 146, 60, 0.75);
+    background: rgba(124, 45, 18, 0.28);
+}
+
+.game-activity-status.is-checking .game-activity-dot {
+    background: #fb923c;
+    animation: activityPulse 0.7s ease-in-out infinite;
+}
+
+.game-activity-elapsed,
+.game-activity-detail {
+    color: #aebbd0;
+}
+
+.game-activity-elapsed {
+    min-width: 3.5em;
+    font-variant-numeric: tabular-nums;
+}
+
+@keyframes activityPulse {
+    0%, 100% { opacity: 0.45; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 389px) {
+    .game-activity-status { flex-wrap: wrap; }
+    .game-activity-detail { flex-basis: 100%; }
+}
+
 .game-action-panel {
     background: #1a1a2e;
     border-radius: 12px;

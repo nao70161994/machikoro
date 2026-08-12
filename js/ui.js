@@ -187,6 +187,7 @@ function _render() {
         renderActiveGameState,
         persistAfterRender,
     });
+    if (typeof updateGameActivityStatus === 'function') updateGameActivityStatus();
 }
 
 function clearOnlineSessionAfterWin() {

@@ -78,12 +78,53 @@ const cpuTurnSchedulerRuntime = CpuTurnSchedulerRuntime.createRuntime({
     },
 });
 const cpuSchedulerStateController = cpuTurnSchedulerRuntime.controller;
+const gameActivityStatusController = UiGameStatusView.createActivityStatusController();
 
 function invalidateCpuScheduleChain() { return cpuTurnSchedulerRuntime.invalidate(); }
 function cancelCpuSchedule(reason = 'cpu-schedule-cancel') { return cpuTurnSchedulerRuntime.cancel(reason); }
 function markCpuStepScheduled(delay, leaseMs = 1500) { return cpuTurnSchedulerRuntime.markScheduled(delay, leaseMs); }
 function refreshCpuStepScheduleLease(leaseMs = 1500) { return cpuTurnSchedulerRuntime.refreshLease(leaseMs); }
 function isCpuStepScheduledNow() { return cpuTurnSchedulerRuntime.isStepScheduled(); }
+
+function updateGameActivityStatus(now = Date.now()) {
+    const gameState = mainGameRuntimeSnapshot();
+    const onlineState = mainOnlineRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const container = typeof document !== 'undefined' && document.getElementById
+        ? document.getElementById('gameActivityStatus')
+        : null;
+    if (!container) return null;
+    const actionFlight = mainOnlineActionFlightState();
+    const view = UiGameStatusView.buildActivityStatusView({
+        hasGame: !!currentGame,
+        hasWinner: !!(currentGame && currentGame.checkWinner && currentGame.checkWinner()),
+        phase: currentGame && currentGame.phase || '',
+        pendingPhase: GAME_PHASES.PENDING,
+        currentPlayerIndex: currentGame ? currentGame.currentPlayerIndex : -1,
+        currentName: currentGame && currentGame.currentPlayer ? currentGame.currentPlayer().name : '',
+        isCpuTurn: !!(currentGame && gameState.cpuPlayers[currentGame.currentPlayerIndex]),
+        cpuHealth: currentCpuTurnSchedulerHealth(),
+        isOnlineGame: onlineState.isOnlineGame,
+        myPlayerIndex: onlineState.myPlayerIndex,
+        isReconnecting: onlineState.isReconnectingOnline,
+        isReplaying: onlineState.isReplaying,
+        socketConnected: !onlineState.isOnlineGame || !!onlineState.socket && onlineState.socket.connected !== false,
+        actionInFlight: actionFlight.inFlight,
+        actionStartedAt: actionFlight.startedAt,
+    });
+    const activity = gameActivityStatusController.transition(view, now);
+    container.style.display = activity.visible ? 'flex' : 'none';
+    container.classList.toggle('is-ready', activity.kind === 'ready');
+    container.classList.toggle('is-waiting', activity.kind === 'waiting');
+    container.classList.toggle('is-checking', activity.kind === 'checking');
+    const label = document.getElementById('gameActivityStatusLabel');
+    const elapsed = document.getElementById('gameActivityStatusElapsed');
+    const detail = document.getElementById('gameActivityStatusDetail');
+    if (label && activity.announceLabel) label.textContent = activity.announceLabel;
+    if (elapsed) elapsed.textContent = activity.elapsedText;
+    if (detail) detail.textContent = activity.detail;
+    return activity;
+}
 
 function escapeAttribute(value) {
     return LocalPlayerSettings.escapeAttribute(value);

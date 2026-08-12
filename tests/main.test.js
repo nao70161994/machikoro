@@ -23,6 +23,10 @@ function loadMainRuntime(options = {}) {
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
         pwaUpdateBanner: makeElement({ style: { display: 'none' } }),
+        gameActivityStatus: makeElement({ style: { display: 'none' } }),
+        gameActivityStatusLabel: makeElement(),
+        gameActivityStatusElapsed: makeElement(),
+        gameActivityStatusDetail: makeElement(),
         diceResult: makeElement(),
         diceResultAnnouncer: makeElement(),
         diceChoose: makeElement({
@@ -475,6 +479,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiPlayerDisplaySource, context, { filename: 'js/uiPlayerDisplay.js' });
     const uiDiceDisplaySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiDiceDisplay.js'), 'utf8');
     vm.runInContext(uiDiceDisplaySource, context, { filename: 'js/uiDiceDisplay.js' });
+    const uiGameStatusViewSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiGameStatusView.js'), 'utf8');
+    vm.runInContext(uiGameStatusViewSource, context, { filename: 'js/uiGameStatusView.js' });
     const gameSetupStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameSetupState.js'), 'utf8');
     vm.runInContext(gameSetupStateSource, context, { filename: 'js/gameSetupState.js' });
     const uiTutorialSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTutorialSettings.js'), 'utf8');
@@ -525,6 +531,7 @@ function loadMainRuntime(options = {}) {
             setPageHiddenAt: (value) => { pageActivationRuntime.setHiddenAt(value); },
             scheduleCPU: () => scheduleCPU(),
             cpuDo: (action, data, fallback) => cpuDo(action, data, fallback),
+            updateGameActivityStatus: (now) => updateGameActivityStatus(now),
             counters,
         };
     `, context);
@@ -659,6 +666,32 @@ runTest('main dice displayはpure viewを既存DOMへ反映する', () => {
     rt.updateDiceDisplay(null, true);
     assert.ok(rt.__test.elements.diceResult.innerHTML.includes('dice-face rolling'));
     assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '1');
+});
+
+runTest('main 稼働状況は人間の操作可能とCPU処理中をDOMへ反映する', () => {
+    const rt = loadMainRuntime();
+    const game = {
+        phase: 'roll',
+        currentPlayerIndex: 0,
+        players: [{ name: 'Alice' }, { name: 'CPU 1' }],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+        checkWinner() { return null; },
+    };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, { difficulty: 'normal' }]);
+    let activity = rt.__test.updateGameActivityStatus(1000);
+    assert.strictEqual(activity.kind, 'ready');
+    assert.strictEqual(rt.__test.elements.gameActivityStatus.style.display, 'flex');
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '操作できます');
+
+    game.currentPlayerIndex = 1;
+    activity = rt.__test.updateGameActivityStatus(2000);
+    assert.strictEqual(activity.kind, 'waiting');
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, 'CPU 1が処理中');
+    activity = rt.__test.updateGameActivityStatus(13000);
+    assert.strictEqual(activity.kind, 'checking');
+    assert.strictEqual(rt.__test.elements.gameActivityStatus.classList.contains('is-checking'), true);
+    assert.strictEqual(rt.__test.elements.gameActivityStatusElapsed.textContent, '・11秒');
 });
 
 runTest('main changeCount は人数を2..10にクランプして表示を更新する', () => {
@@ -2366,6 +2399,9 @@ runTest('onlineStatus はライブリージョンとして宣言されている'
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="gameActivityStatus" class="game-activity-status is-ready"'));
+    assert.ok(html.includes('id="gameActivityStatusLabel" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="gameActivityStatusElapsed" class="game-activity-elapsed" aria-hidden="true"'));
     assert.ok(html.includes('id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));

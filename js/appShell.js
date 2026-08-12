@@ -702,6 +702,7 @@ function recoverFreezeKind(freezeKind, snapshot) {
 }
 
 function checkFreezeWatchdog() {
+    if (typeof updateGameActivityStatus === 'function') updateGameActivityStatus();
     return appShellWatchdogRuntime.check();
 }
 
