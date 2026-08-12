@@ -4,6 +4,17 @@ const assert = require('assert');
 const UiWinner = require('../js/uiWinner');
 const { runTest } = require('./helpers/test-utils');
 
+runTest('winner reviewは構造化log種別と最終coin差だけを集計する', () => {
+    const logTypes = { GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', DICE: 'dice' };
+    const html = UiWinner.buildGameReview([
+        { type: 'gain', message: '+1' }, { type: 'gain', message: '+2' },
+        { type: 'build', message: 'build' }, { type: 'special', message: 'special' },
+    ], logTypes, [{ coins: 12 }, { coins: 3 }], value => String(value));
+    assert(html.includes('対戦の振り返り'));
+    assert(html.includes('<span>収入イベント</span><strong>2</strong>'));
+    assert(html.includes('<span>建設</span><strong>1</strong>'));
+    assert(html.includes('<span>最終コイン差</span><strong>9</strong>'));
+});
 function escapeHtml(value) {
     return String(value)
         .replaceAll('&', '&amp;')

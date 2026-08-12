@@ -2073,6 +2073,31 @@ button:not(:disabled):active {
     text-align: center;
 }
 
+.winner-review {
+    margin: 18px auto;
+    max-width: 560px;
+    text-align: left;
+}
+
+.winner-review h3 { margin: 0 0 10px; text-align: center; }
+
+.winner-review-grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.winner-review-item {
+    align-items: center;
+    background: #202038;
+    border: 1px solid #4f4f6f;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    min-width: 0;
+    padding: 8px 10px;
+}
+
 /* ===== アクティブプレイヤーアニメーション ===== */
 @keyframes activePulse {
     0%, 100% { box-shadow: 0 0 6px rgba(240,192,64,0.3); border-color: #f0c040; }

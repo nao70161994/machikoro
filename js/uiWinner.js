@@ -82,6 +82,32 @@ function buildWinStreakHtml(winner, winStreak, escapeHtml) {
     return `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>`;
 }
 
+function buildGameReview(logEntries, logTypes, players, escapeHtml) {
+    if (!Array.isArray(logEntries) || !logTypes || typeof escapeHtml !== 'function') return '';
+    const counts = {
+        [logTypes.GAIN]: 0,
+        [logTypes.LOSE]: 0,
+        [logTypes.BUILD]: 0,
+        [logTypes.SPECIAL]: 0,
+        [logTypes.DICE]: 0,
+    };
+    for (const entry of logEntries) {
+        if (entry && Object.prototype.hasOwnProperty.call(counts, entry.type)) counts[entry.type]++;
+    }
+    const coinValues = (Array.isArray(players) ? players : [])
+        .map(player => Number.isFinite(player && player.coins) ? player.coins : 0);
+    const spread = coinValues.length ? Math.max(...coinValues) - Math.min(...coinValues) : 0;
+    const items = [
+        ['収入イベント', counts[logTypes.GAIN]],
+        ['支払いイベント', counts[logTypes.LOSE]],
+        ['建設', counts[logTypes.BUILD]],
+        ['特殊効果', counts[logTypes.SPECIAL]],
+        ['ダイス操作', counts[logTypes.DICE]],
+        ['最終コイン差', spread],
+    ];
+    return `<section class="winner-review" aria-labelledby="winnerReviewTitle"><h3 id="winnerReviewTitle">対戦の振り返り</h3><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
+}
+
 function buildWinnerStatusText(options = {}) {
     const winner = options.winner;
     if (!winner) return '';
@@ -97,7 +123,8 @@ function buildWinnerScreenHtml(options = {}) {
     const streakHtml = buildWinStreakHtml(winner, options.winStreak, escapeHtml);
     const winnerType = options.isCpuWinner ? '🤖 CPU' : '👤 人間';
     const resultAdSlot = typeof options.resultAdSlot === 'string' ? options.resultAdSlot : '';
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div><button id="winnerRestartButton" class="winner-primary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
+    const reviewHtml = buildGameReview(options.logEntries, options.logTypes, options.players, escapeHtml);
+    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}<button id="winnerRestartButton" class="winner-primary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;
@@ -114,6 +141,7 @@ const UiWinner = Object.freeze({
     streakRuntime,
     buildWinnerStatsRows,
     buildWinStreakHtml,
+    buildGameReview,
     buildWinnerStatusText,
     buildWinnerScreenHtml,
 });

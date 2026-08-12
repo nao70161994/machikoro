@@ -224,6 +224,8 @@ function renderWinnerState(winner) {
         isCpuWinner: isCPUWinner,
         turnCount: currentGame.turnCount,
         winStreak: streakState.winStreak,
+        logEntries: fullLog,
+        logTypes: LOG_TYPES,
         resultAdSlot,
         escapeHtml,
     });
