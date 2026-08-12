@@ -2082,6 +2082,15 @@ button:not(:disabled):active {
     text-align: center;
 }
 
+.winner-secondary-action {
+    min-height: 44px;
+    margin-top: 8px;
+    border: 1px solid #6a7a8a;
+    background: #1a1a2e;
+    color: #c9cbdf;
+    font-size: 15px;
+}
+
 .winner-review {
     margin: 18px auto;
     max-width: 560px;

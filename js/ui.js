@@ -226,6 +226,7 @@ function renderWinnerState(winner) {
         winStreak: streakState.winStreak,
         logEntries: fullLog,
         logTypes: LOG_TYPES,
+        canRematch: !uiOnlineRuntimeSnapshot().isOnlineGame,
         resultAdSlot,
         escapeHtml,
     });

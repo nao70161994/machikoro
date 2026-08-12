@@ -336,6 +336,14 @@ function restartGame() {
     return localGameRestartRuntime.restart();
 }
 
+function rematchLocalGame() {
+    if (mainOnlineRuntimeSnapshot().isOnlineGame || !mainGameRuntimeSnapshot().game) return false;
+    const setup = gameSetupSnapshot();
+    return showConfirm('同じ人数・プレイヤー設定でもう一度対戦しますか？', () => {
+        startGameNow(setup.selectedCount, setup.playerSettings);
+    });
+}
+
 const localGameInitializer = LocalGameInitializer.createRuntime({
     cancelAutoSkip: () => cancelAutoSkip(),
     cancelCpuSchedule: reason => cancelCpuSchedule(reason),

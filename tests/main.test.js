@@ -862,6 +862,33 @@ runTest('main restart後のstartGameは古いgameScreen lockを引き継がず�
     assert.strictEqual(rt.fetchCalls.filter(call => call.url === '/api/game-lifecycle').length, 2);
 });
 
+runTest('main local再戦は人数・player設定を保って新しいgameを開始する', () => {
+    const rt = loadMainRuntime();
+    const settings = [
+        { type: 'human', difficulty: 'normal', name: 'Alice' },
+        { type: 'cpu', difficulty: 'strong' },
+        { type: 'human', difficulty: 'normal', name: 'Carol' },
+    ];
+    rt.__test.setSelectedCount(3);
+    rt.__test.setPlayerSettings(settings);
+    rt.startGameNow(3, settings);
+    const firstGame = rt.__test.getGame();
+
+    assert.strictEqual(rt.rematchLocalGame(), undefined);
+    assert.notStrictEqual(rt.__test.getGame(), firstGame);
+    assert.strictEqual(rt.__test.getGame().players.length, 3);
+    assert.strictEqual(rt.__test.getCpuPlayers().filter(Boolean).length, 1);
+    assert.strictEqual(JSON.stringify(
+        Array.from(rt.__test.getPlayerSettings(), setting => ({
+            type: setting.type,
+            difficulty: setting.difficulty,
+        }))
+    ), JSON.stringify(settings.map(setting => ({
+        type: setting.type,
+        difficulty: setting.difficulty,
+    }))));
+});
+
 runTest('main createCpuPlayer は live v2simple 明示時も v2 既定modeを補う', () => {
     const rt = loadMainRuntime();
     const cpu = rt.createCpuPlayer('expert', {

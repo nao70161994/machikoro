@@ -133,7 +133,10 @@ function buildWinnerScreenHtml(options = {}) {
     const winnerType = options.isCpuWinner ? '🤖 CPU' : '👤 人間';
     const resultAdSlot = typeof options.resultAdSlot === 'string' ? options.resultAdSlot : '';
     const reviewHtml = buildGameReview(options.logEntries, options.logTypes, options.players, escapeHtml);
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}<button id="winnerRestartButton" class="winner-primary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
+    const rematchButton = options.canRematch
+        ? '<button id="winnerRematchButton" class="winner-primary-action" data-ui-action="rematchLocalGame">同じ設定でもう一度</button>'
+        : '';
+    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}${rematchButton}<button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;

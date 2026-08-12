@@ -80,18 +80,21 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
     const winner = { name: 'Alice', coins: 30 };
     const human = UiWinner.buildWinnerScreenHtml({
         winner, players: [winner], isCpuWinner: false, turnCount: 9, winStreak: 1,
-        resultAdSlot: '<div class="ad">ad</div>', escapeHtml,
+        canRematch: true, resultAdSlot: '<div class="ad">ad</div>', escapeHtml,
     });
     assert.ok(human.includes('<div class="winner-title">Aliceの勝利！</div>'));
     assert.ok(human.includes('👤 人間プレイヤーが勝ちました　9ターン'));
     assert.ok(human.includes('<div class="winner-stats" role="list" aria-label="最終コイン">'));
     assert.ok(human.includes('id="winnerRestartButton"'));
+    assert.ok(human.includes('id="winnerRematchButton"'));
+    assert.ok(human.includes('data-ui-action="rematchLocalGame">同じ設定でもう一度</button>'));
     assert.ok(human.includes('data-ui-action="restartGame">タイトルへ戻る</button>'));
     assert.ok(human.endsWith('<div class="ad">ad</div></div>'));
     const cpu = UiWinner.buildWinnerScreenHtml({
         winner, players: [winner], isCpuWinner: true, turnCount: 10, winStreak: 2, escapeHtml,
     });
     assert.ok(cpu.includes('🤖 CPUプレイヤーが勝ちました　10ターン'));
+    assert.ok(!cpu.includes('winnerRematchButton'));
     assert.ok(cpu.includes('2連勝中！'));
 });
 

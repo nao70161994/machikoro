@@ -135,6 +135,12 @@ runTest('main UI event runtimeは勝利結果のCTAを既存restart effectへ渡
     assert.deepStrictEqual(h.calls, [['preventDefault'], ['restartGame']]);
 });
 
+runTest('main UI event runtimeはローカル再戦CTAを専用effectへ渡す', () => {
+    const h = createHarness();
+    h.runtime.handleStaticClick(h.event({ uiAction: 'rematchLocalGame' }));
+    assert.deepStrictEqual(h.calls, [['preventDefault'], ['rematchLocalGame']]);
+});
+
 runTest('main UI event runtimeはfilter identityとクリック元を同じeffectへ渡す', () => {
     const h = createHarness();
     const event = h.event({ action: 'setCardFilter', cardFilter: 'red' });
