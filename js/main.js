@@ -79,6 +79,7 @@ const cpuTurnSchedulerRuntime = CpuTurnSchedulerRuntime.createRuntime({
 });
 const cpuSchedulerStateController = cpuTurnSchedulerRuntime.controller;
 const gameActivityStatusController = UiGameStatusView.createActivityStatusController();
+const watchdogActivityStatusController = UiGameStatusView.createWatchdogActivityController();
 
 function invalidateCpuScheduleChain() { return cpuTurnSchedulerRuntime.invalidate(); }
 function cancelCpuSchedule(reason = 'cpu-schedule-cancel') { return cpuTurnSchedulerRuntime.cancel(reason); }
@@ -112,11 +113,14 @@ function updateGameActivityStatus(now = Date.now()) {
         actionInFlight: actionFlight.inFlight,
         actionStartedAt: actionFlight.startedAt,
     });
-    const activity = gameActivityStatusController.transition(view, now);
+    const baseActivity = gameActivityStatusController.transition(view, now);
+    const activity = watchdogActivityStatusController.project(baseActivity, now);
     container.style.display = activity.visible ? 'flex' : 'none';
     container.classList.toggle('is-ready', activity.kind === 'ready');
     container.classList.toggle('is-waiting', activity.kind === 'waiting');
     container.classList.toggle('is-checking', activity.kind === 'checking');
+    container.classList.toggle('is-recovered', activity.kind === 'recovered');
+    container.classList.toggle('is-failed', activity.kind === 'failed');
     const label = document.getElementById('gameActivityStatusLabel');
     const elapsed = document.getElementById('gameActivityStatusElapsed');
     const detail = document.getElementById('gameActivityStatusDetail');
@@ -124,6 +128,11 @@ function updateGameActivityStatus(now = Date.now()) {
     if (elapsed) elapsed.textContent = activity.elapsedText;
     if (detail) detail.textContent = activity.detail;
     return activity;
+}
+
+function updateGameActivityWatchdogStatus(status, now = Date.now()) {
+    watchdogActivityStatusController.observe(status, now);
+    return updateGameActivityStatus(now);
 }
 
 function escapeAttribute(value) {

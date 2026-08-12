@@ -163,6 +163,83 @@ function createActivityStatusController(options = {}) {
     return Object.freeze({ transition, reset });
 }
 
+function createWatchdogActivityController(options = {}) {
+    const minimumRecoveringMs = Number.isFinite(options.minimumRecoveringMs)
+        ? Math.max(0, options.minimumRecoveringMs)
+        : 750;
+    const recoveredVisibleMs = Number.isFinite(options.recoveredVisibleMs)
+        ? Math.max(0, options.recoveredVisibleMs)
+        : 5000;
+    const failedVisibleMs = Number.isFinite(options.failedVisibleMs)
+        ? Math.max(0, options.failedVisibleMs)
+        : 10000;
+    let recoveringAt = 0;
+    let pendingResult = null;
+    let announcedStage = '';
+
+    function observe(status = {}, now = Date.now()) {
+        const safeNow = Number.isFinite(now) ? now : 0;
+        if (status.stage === 'recovering') {
+            recoveringAt = safeNow;
+            pendingResult = null;
+            return true;
+        }
+        if ((status.stage === 'recovered' || status.stage === 'failed') && recoveringAt > 0) {
+            pendingResult = Object.freeze({
+                stage: status.stage,
+                availableAt: recoveringAt + minimumRecoveringMs,
+                expiresAt: recoveringAt + minimumRecoveringMs +
+                    (status.stage === 'recovered' ? recoveredVisibleMs : failedVisibleMs),
+            });
+            return true;
+        }
+        return false;
+    }
+
+    function project(baseActivity, now = Date.now()) {
+        const safeNow = Number.isFinite(now) ? now : 0;
+        if (!recoveringAt) return baseActivity;
+        if (!pendingResult || safeNow < pendingResult.availableAt) {
+            const announceLabel = announcedStage === 'recovering' ? '' : '停止を検知：自動復旧中';
+            announcedStage = 'recovering';
+            return Object.freeze({
+                visible: true,
+                kind: 'checking',
+                label: '停止を検知：自動復旧中',
+                announceLabel,
+                detail: 'ゲーム状態を確認して操作を戻しています',
+                elapsedText: '',
+            });
+        }
+        if (safeNow >= pendingResult.expiresAt) {
+            reset();
+            return Object.freeze({ ...baseActivity, announceLabel: baseActivity.label || '' });
+        }
+        const failed = pendingResult.stage === 'failed';
+        const stage = failed ? 'failed' : 'recovered';
+        const label = failed ? '自動復旧できませんでした' : '自動復旧しました';
+        const announceLabel = announcedStage === stage ? '' : label;
+        announcedStage = stage;
+        return Object.freeze({
+            visible: true,
+            kind: stage,
+            label,
+            announceLabel,
+            detail: failed
+                ? '画面を再読み込みするか、保存データから再開してください'
+                : '操作を続けられます',
+            elapsedText: '',
+        });
+    }
+
+    function reset() {
+        recoveringAt = 0;
+        pendingResult = null;
+        announcedStage = '';
+    }
+    return Object.freeze({ observe, project, reset });
+}
+
 function buildActiveGameView(facts) {
     const players = Array.isArray(facts.players) ? facts.players : [];
     const previousCoins = facts.previousCoins;
@@ -204,6 +281,7 @@ const UiGameStatusView = Object.freeze({
     buildCoinChangeAnnouncement,
     buildActivityStatusView,
     createActivityStatusController,
+    createWatchdogActivityController,
     buildActiveGameView,
 });
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusView;

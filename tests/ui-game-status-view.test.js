@@ -133,6 +133,36 @@ runTest('ゲーム稼働状況は10秒後に応答確認中と表示し秒数だ
     }, 20000).elapsedText, '');
 });
 
+runTest('watchdog稼働状況は復旧中を確実に表示して成功・失敗後に通常表示へ戻る', () => {
+    const base = Object.freeze({
+        visible: true,
+        kind: 'ready',
+        label: '操作できます',
+        announceLabel: '',
+        detail: '',
+        elapsedText: '',
+    });
+    const controller = UiGameStatusView.createWatchdogActivityController({
+        minimumRecoveringMs: 500,
+        recoveredVisibleMs: 1000,
+        failedVisibleMs: 2000,
+    });
+    assert.strictEqual(controller.observe({ stage: 'recovering' }, 1000), true);
+    assert.strictEqual(controller.observe({ stage: 'recovered' }, 1000), true);
+    assert.strictEqual(controller.project(base, 1200).label, '停止を検知：自動復旧中');
+    assert.strictEqual(controller.project(base, 1300).announceLabel, '');
+    assert.strictEqual(controller.project(base, 1500).label, '自動復旧しました');
+    assert.strictEqual(controller.project(base, 1600).announceLabel, '');
+    const restored = controller.project(base, 2500);
+    assert.strictEqual(restored.kind, 'ready');
+    assert.strictEqual(restored.announceLabel, '操作できます');
+
+    controller.observe({ stage: 'recovering' }, 3000);
+    controller.observe({ stage: 'failed' }, 3000);
+    assert.strictEqual(controller.project(base, 3500).kind, 'failed');
+    assert.strictEqual(controller.project(base, 3500).detail, '画面を再読み込みするか、保存データから再開してください');
+});
+
 
 runTest('UI active game viewは手番遷移とコイン差分を入力非破壊で投影する', () => {
     const players = [{ name: 'Alice', coins: 7 }, { name: 'CPU', coins: 3 }];

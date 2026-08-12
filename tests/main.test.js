@@ -532,6 +532,7 @@ function loadMainRuntime(options = {}) {
             scheduleCPU: () => scheduleCPU(),
             cpuDo: (action, data, fallback) => cpuDo(action, data, fallback),
             updateGameActivityStatus: (now) => updateGameActivityStatus(now),
+            updateGameActivityWatchdogStatus: (status, now) => updateGameActivityWatchdogStatus(status, now),
             counters,
         };
     `, context);
@@ -692,6 +693,23 @@ runTest('main 稼働状況は人間の操作可能とCPU処理中をDOMへ反映
     assert.strictEqual(activity.kind, 'checking');
     assert.strictEqual(rt.__test.elements.gameActivityStatus.classList.contains('is-checking'), true);
     assert.strictEqual(rt.__test.elements.gameActivityStatusElapsed.textContent, '・11秒');
+});
+
+runTest('main 稼働状況はwatchdogの実復旧結果をDOMへ反映する', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setGame({
+        phase: 'roll',
+        currentPlayerIndex: 0,
+        players: [{ name: 'Alice' }],
+        currentPlayer() { return this.players[0]; },
+        checkWinner() { return null; },
+    });
+    rt.__test.updateGameActivityWatchdogStatus({ stage: 'recovering' }, 1000);
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '停止を検知：自動復旧中');
+    rt.__test.updateGameActivityWatchdogStatus({ stage: 'recovered' }, 1000);
+    rt.__test.updateGameActivityStatus(1750);
+    assert.strictEqual(rt.__test.elements.gameActivityStatus.classList.contains('is-recovered'), true);
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '自動復旧しました');
 });
 
 runTest('main changeCount は人数を2..10にクランプして表示を更新する', () => {

@@ -87,6 +87,29 @@ runTest('watchdog runtimeは分類から回復・保存・reportまで既存順�
     assert.strictEqual(getClassificationFacts().humanFreezeKind, 'human-turn-ui-locked');
 });
 
+runTest('watchdog runtimeは復旧開始と成否を任意の表示境界へ通知する', () => {
+    const statuses = [];
+    const { runtime } = createHarness({ onRecoveryStatus: status => statuses.push(status) });
+    assert.strictEqual(runtime.check(), true);
+    assert.deepStrictEqual(statuses.map(status => status.stage), ['recovering', 'recovered']);
+    assert.strictEqual(statuses[0].freezeKind, 'human-turn-ui-locked');
+    assert.strictEqual(statuses[0].stagnantMs, 5000);
+
+    const failedStatuses = [];
+    const failed = createHarness({
+        onRecoveryStatus: status => failedStatuses.push(status),
+        recover: () => false,
+    });
+    assert.strictEqual(failed.runtime.check(), true);
+    assert.deepStrictEqual(failedStatuses.map(status => status.stage), ['recovering', 'failed']);
+});
+
+runTest('watchdog runtimeは表示通知例外で復旧を止めない', () => {
+    const { calls, runtime } = createHarness({ onRecoveryStatus: () => { throw new Error('UI missing'); } });
+    assert.strictEqual(runtime.check(), true);
+    assert.deepStrictEqual(calls.map(call => call[0]), ['checkpoint', 'recover', 'store', 'report']);
+});
+
 runTest('watchdog runtimeは重複report抑止時も回復だけを実行する', () => {
     const { calls, runtime } = createHarness({
         monitor: {

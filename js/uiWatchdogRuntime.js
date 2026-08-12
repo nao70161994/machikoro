@@ -18,6 +18,7 @@ const UiWatchdogRuntime = (() => {
             monitor,
             monitorActions,
             now,
+            onRecoveryStatus,
             recover,
             report,
             reporting,
@@ -152,11 +153,14 @@ const UiWatchdogRuntime = (() => {
             const reportKey = freezeKind + '|' + issueDedupeSignature(snapshot);
             const action = monitor.decideReport(freezeKind, reportKey, observedAt);
             if (action === monitorActions.RECOVER) {
-                recover(snapshot);
+                notifyRecoveryStatus('recovering', freezeKind, progress.stagnantMs);
+                const recovered = recover(snapshot);
+                notifyRecoveryStatus(recovered ? 'recovered' : 'failed', freezeKind, progress.stagnantMs);
                 return true;
             }
             if (action !== monitorActions.REPORT_AND_RECOVER) return false;
-            reporting.execute({
+            notifyRecoveryStatus('recovering', freezeKind, progress.stagnantMs);
+            const reportResult = reporting.execute({
                 freezeKind,
                 stagnantMs: progress.stagnantMs,
                 snapshot,
@@ -169,7 +173,20 @@ const UiWatchdogRuntime = (() => {
                 buildStack: buildReportStack,
                 report,
             });
+            const recovered = !!(reportResult && reportResult.payload &&
+                reportResult.payload.recovery && reportResult.payload.recovery.success);
+            notifyRecoveryStatus(recovered ? 'recovered' : 'failed', freezeKind, progress.stagnantMs);
             return true;
+        }
+
+        function notifyRecoveryStatus(stage, freezeKind, stagnantMs) {
+            if (typeof onRecoveryStatus !== 'function') return false;
+            try {
+                onRecoveryStatus(Object.freeze({ stage, freezeKind, stagnantMs }));
+                return true;
+            } catch (_) {
+                return false;
+            }
         }
 
         function reset() {

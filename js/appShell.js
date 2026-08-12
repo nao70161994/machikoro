@@ -636,6 +636,11 @@ const appShellWatchdogRuntime = UiWatchdogRuntime.createRuntime({
     monitor: freezeWatchdogMonitor,
     monitorActions: UiWatchdogMonitor.ACTIONS,
     now: () => Date.now(),
+    onRecoveryStatus: status => {
+        if (typeof updateGameActivityWatchdogStatus === 'function') {
+            updateGameActivityWatchdogStatus(status);
+        }
+    },
     recover: snapshot => recoverUiInteractability(snapshot),
     report: input => reportClientError(input),
     reporting: UiWatchdogReporting,
