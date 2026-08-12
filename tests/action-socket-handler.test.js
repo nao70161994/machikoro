@@ -1,5 +1,8 @@
 const assert = require('assert');
-const { registerActionSocketHandler } = require('../server/actionSocketHandler');
+const {
+    buildAcceptedActionEntry,
+    registerActionSocketHandler,
+} = require('../server/actionSocketHandler');
 const { runTest } = require('./helpers/test-utils');
 
 function createSubject(overrides = {}) {
@@ -55,6 +58,36 @@ function createSubject(overrides = {}) {
     registerActionSocketHandler(socket, dependencies);
     return { handlers, emitted, broadcast, calls, room, mirror, socket };
 }
+
+runTest('accepted action entryは通常dataとUndo正本を同じwire形へ整形する', () => {
+    assert.deepStrictEqual(buildAcceptedActionEntry({
+        action: 'nextTurn',
+        canonicalData: { canonical: true },
+        undoState: { ignored: true },
+        playerIndex: 2,
+        seq: 7,
+        clientActionId: 'client-7',
+    }), {
+        action: 'nextTurn',
+        data: { canonical: true },
+        playerIndex: 2,
+        seq: 7,
+        clientActionId: 'client-7',
+    });
+    assert.deepStrictEqual(buildAcceptedActionEntry({
+        action: 'undoBuild',
+        canonicalData: { ignored: true },
+        undoState: { restored: true },
+        playerIndex: 1,
+        seq: 8,
+        clientActionId: '',
+    }), {
+        action: 'undoBuild',
+        data: { state: { restored: true } },
+        playerIndex: 1,
+        seq: 8,
+    });
+});
 
 runTest('action socket handlerは受理処理とACK/broadcast順を維持する', () => {
     const subject = createSubject();

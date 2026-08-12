@@ -1,5 +1,18 @@
 'use strict';
 
+function buildAcceptedActionEntry(input = {}) {
+    const actionEntry = {
+        action: input.action,
+        data: input.action === 'undoBuild'
+            ? { state: input.undoState }
+            : input.canonicalData,
+        playerIndex: input.playerIndex,
+        seq: input.seq,
+    };
+    if (input.clientActionId) actionEntry.clientActionId = input.clientActionId;
+    return actionEntry;
+}
+
 function registerActionSocketHandler(socket, dependencies) {
     const {
         requirePlainSocketPayload,
@@ -76,13 +89,16 @@ function registerActionSocketHandler(socket, dependencies) {
             emitAppError(socket, '無効な操作です');
             return;
         }
-        let safeData = canonicalizeActionData(action, validation.data);
-        if (action === 'undoBuild') {
-            safeData = { state: room.lastUndoState || validation.mirror.lastUndoState };
-        }
+        const canonicalData = canonicalizeActionData(action, validation.data);
         const actionSeq = planNextRoomActionSeq(room);
-        const actionEntry = { action, data: safeData, playerIndex: socket.playerIndex, seq: actionSeq };
-        if (safeClientActionId) actionEntry.clientActionId = safeClientActionId;
+        const actionEntry = buildAcceptedActionEntry({
+            action,
+            canonicalData,
+            undoState: room.lastUndoState || validation.mirror.lastUndoState,
+            playerIndex: socket.playerIndex,
+            seq: actionSeq,
+            clientActionId: safeClientActionId,
+        });
         const wirePreflight = encodeGameSchemaAction(room, actionEntry);
         if (!wirePreflight.ok) {
             emitAppError(socket, '無効な操作です');
@@ -154,4 +170,4 @@ function registerActionSocketHandler(socket, dependencies) {
     });
 }
 
-module.exports = Object.freeze({ registerActionSocketHandler });
+module.exports = Object.freeze({ buildAcceptedActionEntry, registerActionSocketHandler });
