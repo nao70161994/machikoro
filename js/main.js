@@ -88,13 +88,28 @@ function refreshCpuStepScheduleLease(leaseMs = 1500) { return cpuTurnSchedulerRu
 function isCpuStepScheduledNow() { return cpuTurnSchedulerRuntime.isStepScheduled(); }
 
 function updateGameActivityStatus(now = Date.now()) {
+    const documentRef = typeof document !== 'undefined' ? document : null;
+    const container = documentRef && documentRef.getElementById
+        ? documentRef.getElementById('gameActivityStatus')
+        : null;
+    if (!container) return null;
+    if (documentRef.hidden) {
+        gameActivityStatusController.reset();
+        watchdogActivityStatusController.reset();
+        const hiddenActivity = Object.freeze({
+            visible: false,
+            kind: 'ready',
+            label: '',
+            announceLabel: '',
+            detail: '',
+            elapsedText: '',
+        });
+        UiGameStatusEffects.applyActivityStatus(hiddenActivity, { container });
+        return hiddenActivity;
+    }
     const gameState = mainGameRuntimeSnapshot();
     const onlineState = mainOnlineRuntimeSnapshot();
     const currentGame = gameState.game;
-    const container = typeof document !== 'undefined' && document.getElementById
-        ? document.getElementById('gameActivityStatus')
-        : null;
-    if (!container) return null;
     const actionFlight = mainOnlineActionFlightState();
     const view = UiGameStatusView.buildActivityStatusView({
         hasGame: !!currentGame,
@@ -117,9 +132,9 @@ function updateGameActivityStatus(now = Date.now()) {
     const activity = watchdogActivityStatusController.project(baseActivity, now);
     UiGameStatusEffects.applyActivityStatus(activity, {
         container,
-        label: document.getElementById('gameActivityStatusLabel'),
-        elapsed: document.getElementById('gameActivityStatusElapsed'),
-        detail: document.getElementById('gameActivityStatusDetail'),
+        label: documentRef.getElementById('gameActivityStatusLabel'),
+        elapsed: documentRef.getElementById('gameActivityStatusElapsed'),
+        detail: documentRef.getElementById('gameActivityStatusDetail'),
     });
     return activity;
 }

@@ -2422,6 +2422,31 @@ runTest('integration: watchdog recovery 発火時はbefore/after診断をtrace�
     assert.ok(Array.isArray(trace.details.recentCheckpoints));
 });
 
+runTest('integration: バックグラウンド滞在時間を応答確認時間へ算入しない', () => {
+    const rt = loadIntegrationRuntime();
+    const game = rt.__test.startLocalGame([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+    game.currentPlayerIndex = 1;
+    game.phase = rt.GAME_PHASES.ROLL;
+    rt.__test.setCpuPlayers([null, {}]);
+
+    const beforeHidden = rt.updateGameActivityStatus();
+    assert.strictEqual(beforeHidden.kind, 'waiting');
+    rt.document.hidden = true;
+    rt.__test.advanceTime(60000);
+    const hidden = rt.updateGameActivityStatus();
+    assert.strictEqual(hidden.visible, false);
+    assert.strictEqual(rt.__test.elements.gameActivityStatus.style.display, 'none');
+
+    rt.document.hidden = false;
+    const resumed = rt.updateGameActivityStatus();
+    assert.strictEqual(resumed.kind, 'waiting');
+    assert.strictEqual(resumed.elapsedText, '');
+    assert.strictEqual(resumed.label.includes('応答を確認中'), false);
+});
+
 runTest('integration: ランドマーク購入後もskip操作へ進める', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
