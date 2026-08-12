@@ -7,7 +7,7 @@ const MainUiEventRuntime = (() => {
         'changeOnlineCount', 'showCreateRoom', 'joinRoom', 'toggleTutorial',
         'cycleTutorialLevel', 'onRoll', 'onReroll', 'onSkip', 'toggleLog', 'restartGame',
         'closeRules', 'closeCardDetail', 'hideNotice', 'crashResume', 'pwaInstallPrompt',
-        'pwaInstallDismiss', 'copyOnlineRoomId', 'focusBuildMenu',
+        'pwaInstallDismiss', 'copyOnlineRoomId', 'leaveOnlineLobby', 'focusBuildMenu',
     ]);
 
     function createRuntime(dependencies = {}) {

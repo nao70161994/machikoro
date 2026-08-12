@@ -39,6 +39,7 @@ const OnlineRoomShare = (() => {
             <p class="room-share-help">この6文字を参加者に共有してください。</p>
             ${playerList}
             ${startHelp}
+            <button type="button" class="room-leave-btn" data-ui-action="leaveOnlineLobby">待機室から退出</button>
         </div>`;
     }
 

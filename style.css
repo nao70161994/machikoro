@@ -741,6 +741,15 @@ body.modal-open #gameScreen {
     font-size: 13px;
 }
 
+.room-leave-btn {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 4px;
+    border: 1px solid #6a7a8a;
+    background: #1a1a2e;
+    color: #c9cbdf;
+}
+
 @media (max-width: 389px) {
     .room-share-row {
         flex-direction: column;

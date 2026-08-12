@@ -15,6 +15,8 @@ runTest('online room shareはroom IDと参加者をescapeして共有手順を�
     assert.ok(html.includes('この6文字を参加者に共有してください'));
     assert.ok(html.includes('参加枠（3枠）: Alice、&lt;Bob&gt;、待機中...'));
     assert.ok(html.includes('参加枠が揃うと自動開始します'));
+    assert.ok(html.includes('data-ui-action="leaveOnlineLobby"'));
+    assert.ok(html.includes('待機室から退出'));
     assert.ok(!html.includes('<Bob>'));
     const readyHtml = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob']);
     assert.ok(readyHtml.includes('参加枠（2枠）: Alice、Bob'));

@@ -70,6 +70,22 @@ function copyOnlineRoomId(roomId) {
     });
 }
 
+function leaveOnlineLobby() {
+    const session = onlineSessionSnapshot();
+    if (session.isOnlineGame || !session.myRoomId) return false;
+    const roomId = session.myRoomId;
+    return showConfirm('待機室から退出しますか？\n再参加にはルームIDが必要です', () => {
+        const input = typeof document !== 'undefined' ? document.getElementById('roomIdInput') : null;
+        if (input) input.value = roomId;
+        _removeOnlineSessionStorageItem(roomId);
+        resetOnlineState();
+        onlineDomEffects.setStatusText(`ルーム ${roomId} から退出しました。再参加する場合は参加ボタンを押してください。`);
+        if (typeof switchTab === 'function') switchTab('online');
+        if (typeof switchOnlineTab === 'function') switchOnlineTab('join');
+        onlineClientEffects.updateResumeButton();
+    });
+}
+
 function onlineGameRuntimeSnapshot() {
     return onlineComposition.snapshotGame();
 }

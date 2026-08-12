@@ -61,6 +61,14 @@ runTest('main UI event runtimeは待機中のroom IDをcopy effectへ渡す', ()
     ]);
 });
 
+runTest('main UI event runtimeは待機室退出を既存command経路へ渡す', () => {
+    const h = createHarness();
+    h.runtime.handleStaticClick(h.event({ uiAction: 'leaveOnlineLobby' }));
+    assert.deepStrictEqual(h.calls, [
+        ['preventDefault'], ['leaveOnlineLobby'],
+    ]);
+});
+
 runTest('main UI event runtimeはroom IDのEnterを既存join effectへ一度だけ渡す', () => {
     const h = createHarness();
     const keyEvent = (extra = {}) => ({

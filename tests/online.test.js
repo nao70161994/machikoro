@@ -333,6 +333,7 @@ function loadOnlineRuntime(options = {}) {
         this.buildOnlineSnapshot = buildOnlineSnapshot;
         this.handleAppError = handleAppError;
         this.resetOnlineState = resetOnlineState;
+        this.leaveOnlineLobby = leaveOnlineLobby;
         this.markOnlineGameFinished = markOnlineGameFinished;
         this.sendAction = sendAction;
         this.restoreOnlineSnapshot = restoreOnlineSnapshot;
@@ -1476,6 +1477,33 @@ runTest('roomCreated はゲーム開始前から再接続資格情報を保存�
     assert.strictEqual(session.roomId, 'ROOM01');
     assert.strictEqual(session.playerName, 'Alice');
     assert.strictEqual(session.reconnectToken, 'token-1');
+});
+
+runTest('待機室退出は確認後にsocketと資格情報を片付けroom IDを再参加欄へ残す', () => {
+    const rt = loadOnlineRuntime();
+    rt.document.getElementById('playerNameInput').value = 'Alice';
+    rt.document.getElementById('onlineCpuSpeed').value = '1500';
+    rt.showCreateRoom();
+    rt.getSocketHandlers().roomCreated({ roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-1' });
+
+    assert.strictEqual(rt.leaveOnlineLobby(), true);
+    const confirmation = rt.getConfirmRequests().at(-1);
+    assert.match(confirmation.message, /待機室から退出/);
+    confirmation.onOk();
+
+    assert.strictEqual(rt.getSocketDisconnected(), true);
+    assert.strictEqual(rt.getOnlineState().socket, null);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    assert.strictEqual(rt.document.getElementById('roomIdInput').value, 'ROOM01');
+    assert.match(rt.elements.onlineStatus.textContent, /再参加する場合は参加ボタン/);
+});
+
+runTest('待機室退出はゲーム開始後とroom identityなしでは実行しない', () => {
+    const rt = loadOnlineRuntime();
+    assert.strictEqual(rt.leaveOnlineLobby(), false);
+    rt.setOnlineState({ isOnlineGame: true, myRoomId: 'ROOM01' });
+    assert.strictEqual(rt.leaveOnlineLobby(), false);
+    assert.strictEqual(rt.getConfirmRequests().length, 0);
 });
 
 runTest('showCreateRoom はRL CPUモデルを作成payload内で固定する', async () => {
