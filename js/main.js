@@ -115,6 +115,7 @@ function updateGameActivityStatus(now = Date.now()) {
         hasGame: !!currentGame,
         hasWinner: !!(currentGame && currentGame.checkWinner && currentGame.checkWinner()),
         phase: currentGame && currentGame.phase || '',
+        phases: GAME_PHASES,
         pendingPhase: GAME_PHASES.PENDING,
         currentPlayerIndex: currentGame ? currentGame.currentPlayerIndex : -1,
         currentName: currentGame && currentGame.currentPlayer ? currentGame.currentPlayer().name : '',

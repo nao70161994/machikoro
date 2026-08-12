@@ -38,6 +38,7 @@ runTest('ゲーム稼働状況は操作可能・CPU・通信待ちを区別す�
         hasGame: true,
         hasWinner: false,
         phase: 'roll',
+        phases: { ROLL: 'roll', PENDING: 'pending' },
         pendingPhase: 'pending',
         currentPlayerIndex: 0,
         currentName: 'Alice',
@@ -53,14 +54,14 @@ runTest('ゲーム稼働状況は操作可能・CPU・通信待ちを区別す�
         visible: true,
         identity: 'ready:0:roll',
         kind: 'ready',
-        label: '操作できます',
-        detail: 'ボタンを選んで進めてください',
+        label: 'あなたの操作：サイコロを振ってください',
+        detail: '',
         startedAt: 0,
     });
     assert.strictEqual(UiGameStatusView.buildActivityStatusView({
         ...base,
         phase: 'pending',
-    }).label, '入力待ち：追加効果を選べます');
+    }).label, 'あなたの操作：追加効果の対象を選んでください');
     const cpu = UiGameStatusView.buildActivityStatusView({
         ...base,
         currentPlayerIndex: 1,
@@ -89,7 +90,49 @@ runTest('ゲーム稼働状況は操作可能・CPU・通信待ちを区別す�
         ...base,
         isOnlineGame: true,
         myPlayerIndex: 1,
-    }).label, '相手の操作待ち');
+    }).label, 'Aliceの操作待ち：サイコロを振ってください');
+});
+
+runTest('ゲーム稼働状況は全フェーズの次操作を具体的に案内する', () => {
+    const phases = {
+        ROLL: 'roll', SELECT_DICE: 'selectDice', REROLL_CONFIRM: 'rerollConfirm',
+        HARBOR_CHOICE: 'harborChoice', PENDING: 'pending', BUILD: 'build',
+    };
+    const expected = {
+        roll: 'サイコロを振ってください',
+        selectDice: '振るサイコロの個数を選んでください',
+        rerollConfirm: '振り直すか、そのまま進むか選んでください',
+        harborChoice: '港のボーナスを使うか選んでください',
+        pending: '追加効果の対象を選んでください',
+        build: '施設を建設するか、ターンを終了してください',
+    };
+    for (const [phase, guidance] of Object.entries(expected)) {
+        assert.strictEqual(UiGameStatusView.buildNextActionGuidance({ phase, phases }), guidance);
+        assert.strictEqual(UiGameStatusView.buildActivityStatusView({
+            hasGame: true,
+            hasWinner: false,
+            phase,
+            phases,
+            pendingPhase: phases.PENDING,
+            currentPlayerIndex: 0,
+            currentName: 'Alice',
+            isCpuTurn: false,
+            isOnlineGame: false,
+            myPlayerIndex: -1,
+        }).label, `あなたの操作：${guidance}`);
+    }
+    assert.strictEqual(UiGameStatusView.buildActivityStatusView({
+        hasGame: true,
+        hasWinner: false,
+        phase: phases.BUILD,
+        phases,
+        pendingPhase: phases.PENDING,
+        currentPlayerIndex: 1,
+        currentName: 'Bob',
+        isCpuTurn: false,
+        isOnlineGame: true,
+        myPlayerIndex: 0,
+    }).label, 'Bobの操作待ち：施設を建設するか、ターンを終了してください');
 });
 
 runTest('ゲーム稼働状況は10秒後に応答確認中と表示し秒数だけは再告知しない', () => {

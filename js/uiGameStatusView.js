@@ -80,6 +80,19 @@ function buildCoinChangeAnnouncement({
         .join('、');
 }
 
+function buildNextActionGuidance(facts = {}) {
+    const phases = facts.phases || {};
+    const labels = new Map([
+        [phases.ROLL, 'サイコロを振ってください'],
+        [phases.SELECT_DICE, '振るサイコロの個数を選んでください'],
+        [phases.REROLL_CONFIRM, '振り直すか、そのまま進むか選んでください'],
+        [phases.HARBOR_CHOICE, '港のボーナスを使うか選んでください'],
+        [phases.PENDING, '追加効果の対象を選んでください'],
+        [phases.BUILD, '施設を建設するか、ターンを終了してください'],
+    ]);
+    return labels.get(facts.phase) || '画面の操作を選んでください';
+}
+
 function buildActivityStatusView(facts = {}) {
     if (!facts.hasGame || facts.hasWinner) {
         return Object.freeze({ visible: false, identity: 'hidden', kind: 'ready', label: '', detail: '', startedAt: 0 });
@@ -109,19 +122,20 @@ function buildActivityStatusView(facts = {}) {
         });
     }
     const isOwnOnlineTurn = facts.isOnlineGame && facts.myPlayerIndex === facts.currentPlayerIndex;
+    const isHumanTurn = !facts.isOnlineGame || isOwnOnlineTurn;
     const waitsForOwnPendingInput = facts.phase === facts.pendingPhase &&
         (isOwnOnlineTurn || !facts.isOnlineGame);
-    const label = facts.phase === facts.pendingPhase
-        ? (waitsForOwnPendingInput ? '入力待ち：追加効果を選べます' : '相手の選択待ち')
-        : (facts.isOnlineGame && !isOwnOnlineTurn ? '相手の操作待ち' : '操作できます');
+    const guidance = buildNextActionGuidance(facts);
+    const actorName = facts.currentName || (facts.isOnlineGame ? '相手' : 'プレイヤー');
+    const label = isHumanTurn
+        ? `あなたの操作：${guidance}`
+        : `${actorName}の操作待ち：${guidance}`;
     return Object.freeze({
         visible: true,
         identity: 'ready:' + facts.currentPlayerIndex + ':' + facts.phase,
         kind: 'ready',
         label,
-        detail: waitsForOwnPendingInput || label === '操作できます'
-            ? 'ボタンを選んで進めてください'
-            : '',
+        detail: waitsForOwnPendingInput ? '追加効果を解決するとゲームが進みます' : '',
         startedAt: 0,
     });
 }
@@ -288,6 +302,7 @@ const UiGameStatusView = Object.freeze({
     buildActivityStatusView,
     createActivityStatusController,
     createWatchdogActivityController,
+    buildNextActionGuidance,
     buildActiveGameView,
 });
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusView;

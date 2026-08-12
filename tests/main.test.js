@@ -685,7 +685,7 @@ runTest('main 稼働状況は人間の操作可能とCPU処理中をDOMへ反映
     let activity = rt.__test.updateGameActivityStatus(1000);
     assert.strictEqual(activity.kind, 'ready');
     assert.strictEqual(rt.__test.elements.gameActivityStatus.style.display, 'flex');
-    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '操作できます');
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, 'あなたの操作：サイコロを振ってください');
 
     game.currentPlayerIndex = 1;
     activity = rt.__test.updateGameActivityStatus(2000);
