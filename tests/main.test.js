@@ -3193,6 +3193,9 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     );
     assert.ok(workflow.includes('name: Online sync and reconnect E2E gate'));
     assert.ok(workflow.includes('run: npm run test:online'));
+    assert.ok(workflow.includes('mobile-webkit:'));
+    assert.ok(workflow.includes('npx playwright install --with-deps webkit'));
+    assert.ok(workflow.includes('run: npm run test:browser-e2e'));
 });
 
 runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ', () => {

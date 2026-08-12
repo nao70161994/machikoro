@@ -402,6 +402,69 @@ test('320pxから480pxで長い手番名と終盤player情報が枠内に収ま�
     }
 });
 
+test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示する', async ({ page }) => {
+    await prepare(page);
+    const increase = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
+    for (let count = 2; count < 10; count++) await increase.click();
+    for (let index = 1; index < 10; index++) {
+        await page.locator(`select[data-ui-change="localPlayerType"][data-player-index="${index}"]`)
+            .selectOption('normal');
+    }
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const compact = page.locator('#players details.player-box-compact');
+        expect(await compact.count()).toBeGreaterThanOrEqual(8);
+        const summaries = await compact.locator('summary').evaluateAll(elements => elements.map(element => {
+            const bounds = element.getBoundingClientRect();
+            return {
+                height: bounds.height,
+                contained: bounds.left >= 0 && bounds.right <= document.documentElement.clientWidth,
+            };
+        }));
+        expect(summaries.every(summary => summary.height >= 44 && summary.contained)).toBe(true);
+        await compact.first().locator('summary').click();
+        await expect(compact.first()).toHaveAttribute('open', '');
+        await expect(page.locator('#gameActivityStatusLabel')).not.toHaveText('');
+        const activity = await page.locator('#gameActivityStatus').textContent();
+        expect(activity).toMatch(/CPU|あなたの操作|操作待ち/);
+    }
+});
+
+test('背景復帰時はオンライン応答待ち時間と通信表示を0秒から測り直す', async ({ page }) => {
+    await prepare(page);
+    const result = await page.evaluate(() => {
+        const view = {
+            visible: true,
+            identity: 'online-action:ROOM01:1',
+            kind: 'waiting',
+            label: 'サーバー応答待ち',
+            detail: '操作結果を待っています',
+            startedAt: 1000,
+        };
+        const controller = UiGameStatusView.createActivityStatusController({ checkingAfterMs: 10000 });
+        controller.transition(view, 1000);
+        controller.resumeAt(61000);
+        return {
+            activity: controller.transition(view, 61000),
+            connection: UiGameStatusView.buildConnectionQualityView({
+                isOnlineGame: true,
+                socketConnected: true,
+                actionInFlight: true,
+                actionStartedAt: 1000,
+                minimumObservedAt: 61000,
+            }, 61000),
+        };
+    });
+    expect(result.activity.kind).toBe('waiting');
+    expect(result.activity.elapsedText).toBe('');
+    expect(result.connection.kind).toBe('waiting');
+    expect(result.connection.label).toBe('通信：応答待ち');
+    await expect(page.locator('#gameConnectionQuality')).toHaveAttribute('aria-hidden', 'true');
+});
+
 test('320pxから480pxで建設カードの判断情報が欠けずに収まる', async ({ page }) => {
     await prepare(page);
     await page.locator('#btnStart').click();
