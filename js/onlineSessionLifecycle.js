@@ -2,8 +2,8 @@
 
 const COMPLETED_STEPS = Object.freeze([
     'markCompleted',
-    'disconnectSocket',
     'leaveOnlineGame',
+    'disconnectSocket',
     'clearReconnectFlag',
     'clearActionInFlight',
     'clearRejoinRetry',

@@ -39,7 +39,7 @@ runTest('online session lifecycleはeffect欠落を部分実行前に拒否す�
     assert.throws(() => OnlineSessionLifecycle.execute(
         OnlineSessionLifecycle.completedPlan(),
         { markCompleted() { calls.push('mutated'); } }
-    ), /disconnectSocket effect is required/);
+    ), /leaveOnlineGame effect is required/);
     assert.deepStrictEqual(calls, []);
     assert.throws(() => OnlineSessionLifecycle.execute({ kind: 'unknown' }, {}), /plan is required/);
 });

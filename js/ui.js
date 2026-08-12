@@ -218,6 +218,8 @@ function renderWinnerState(winner) {
     } catch (error) {
         resultAdSlot = '';
     }
+    const firstPresentation = !winSoundPlayed;
+    if (firstPresentation) UiWinner.gameOriginRuntime.record(uiOnlineRuntimeSnapshot().isOnlineGame);
     const statusHtml = UiWinner.buildWinnerScreenHtml({
         winner,
         players: currentGame.players,
@@ -226,7 +228,7 @@ function renderWinnerState(winner) {
         winStreak: streakState.winStreak,
         logEntries: fullLog,
         logTypes: LOG_TYPES,
-        canRematch: !uiOnlineRuntimeSnapshot().isOnlineGame,
+        canRematch: !UiWinner.gameOriginRuntime.wasOnline(),
         resultAdSlot,
         escapeHtml,
     });
@@ -235,7 +237,6 @@ function renderWinnerState(winner) {
         isCpuWinner: isCPUWinner,
         turnCount: currentGame.turnCount,
     });
-    const firstPresentation = !winSoundPlayed;
     UiWinnerEffects.execute({ statusHtml, winnerStatusText, firstPresentation }, {
         setStatusHtml(html) {
             const status = document.getElementById('status');
@@ -293,6 +294,7 @@ function renderWinnerState(winner) {
 }
 
 function renderActiveGameState(current) {
+    UiWinner.gameOriginRuntime.reset();
     const gameState = uiGameRuntimeSnapshot();
     const onlineState = uiOnlineRuntimeSnapshot();
     const currentGame = gameState.game;

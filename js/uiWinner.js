@@ -124,6 +124,15 @@ function buildWinnerStatusText(options = {}) {
     return `ゲーム終了。${String(winner.name || '')}の勝利。${winnerType}プレイヤー、${options.turnCount}ターン。`;
 }
 
+function createGameOriginController() {
+    let online = false;
+    return Object.freeze({
+        record(value) { online = value === true; return online; },
+        reset() { online = false; },
+        wasOnline() { return online; },
+    });
+}
+
 function buildWinnerScreenHtml(options = {}) {
     const winner = options.winner;
     const escapeHtml = options.escapeHtml;
@@ -142,6 +151,7 @@ function buildWinnerScreenHtml(options = {}) {
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;
 const streakBrowserRoot = typeof window !== 'undefined' ? window : null;
 const streakRuntime = createStreakController(currentStreakGlobals(streakRoot));
+const gameOriginRuntime = createGameOriginController();
 if (streakRoot) {
     streakRuntime.bindGlobals(streakRoot, {
         writable: !streakBrowserRoot || streakBrowserRoot !== streakRoot,
@@ -150,7 +160,9 @@ if (streakRoot) {
 
 const UiWinner = Object.freeze({
     createStreakController,
+    createGameOriginController,
     streakRuntime,
+    gameOriginRuntime,
     buildWinnerStatsRows,
     buildWinStreakHtml,
     buildGameReview,

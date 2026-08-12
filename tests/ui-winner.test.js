@@ -120,6 +120,15 @@ runTest('ui winnerは不正inputを空HTMLへfail closedにする', () => {
     assert.strictEqual(UiWinner.buildWinnerStatsRows(null, null, escapeHtml), '');
 });
 
+runTest('ui winner game originは終了後もonline由来を安定して保持する', () => {
+    const controller = UiWinner.createGameOriginController();
+    assert.strictEqual(controller.wasOnline(), false);
+    controller.record(true);
+    assert.strictEqual(controller.wasOnline(), true);
+    controller.reset();
+    assert.strictEqual(controller.wasOnline(), false);
+});
+
 runTest('ui winner streak controllerは同一勝者を加算し別勝者でresetする', () => {
     const controller = UiWinner.createStreakController({
         winStreak: 2,

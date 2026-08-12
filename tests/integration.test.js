@@ -2447,6 +2447,30 @@ runTest('integration: バックグラウンド滞在時間を応答確認時間�
     assert.strictEqual(resumed.label.includes('応答を確認中'), false);
 });
 
+runTest('integration: 背景復帰時は通信品質も古いonline action時刻を遅延扱いしない', () => {
+    const rt = loadIntegrationRuntime();
+    rt.__test.startLocalGame([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    rt.__test.setOnlineState({
+        isOnlineGame: true,
+        socket: { connected: true },
+        myRoomId: 'ROOM01',
+        myPlayerIndex: 0,
+    });
+    rt.__test.setOnlineActionFlight({ inFlight: true, startedAt: 1000 });
+
+    rt.document.hidden = true;
+    rt.__test.eventHandlers['document:visibilitychange']();
+    rt.__test.advanceTime(60000);
+    rt.document.hidden = false;
+    rt.__test.eventHandlers['document:visibilitychange']();
+
+    assert.strictEqual(rt.__test.elements.gameConnectionQuality.textContent, '通信：応答待ち');
+    assert.strictEqual(rt.__test.elements.gameConnectionQuality.classList.contains('is-delayed'), false);
+});
+
 runTest('integration: ランドマーク購入後もskip操作へ進める', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

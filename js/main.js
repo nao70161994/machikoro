@@ -337,9 +337,13 @@ function restartGame() {
 }
 
 function rematchLocalGame() {
-    if (mainOnlineRuntimeSnapshot().isOnlineGame || !mainGameRuntimeSnapshot().game) return false;
+    if (mainOnlineRuntimeSnapshot().isOnlineGame || UiWinner.gameOriginRuntime.wasOnline() ||
+            !mainGameRuntimeSnapshot().game) return false;
     const setup = gameSetupSnapshot();
     return showConfirm('同じ人数・プレイヤー設定でもう一度対戦しますか？', () => {
+        if (typeof resetGameLifecycleForRestart === 'function') {
+            resetGameLifecycleForRestart('local-rematch-lifecycle-reset');
+        }
         startGameNow(setup.selectedCount, setup.playerSettings);
     });
 }

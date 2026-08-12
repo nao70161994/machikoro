@@ -522,6 +522,12 @@ function loadIntegrationRuntime(options = {}) {
             `, context);
             delete context.__tmpOnlineState;
         },
+        setOnlineActionFlight(value) {
+            context.__tmpOnlineActionFlight = value;
+            vm.runInContext(`
+                getOnlineActionFlightState = () => __tmpOnlineActionFlight;
+            `, context);
+        },
         getOnlineState() {
             return vm.runInContext('({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken })', context);
         },

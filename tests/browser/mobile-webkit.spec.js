@@ -433,7 +433,7 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
     }
 });
 
-test('背景復帰時はオンライン応答待ち時間と通信表示を0秒から測り直す', async ({ page }) => {
+test('ブラウザ内pure viewも背景復帰floorでオンライン待機を0秒から分類する', async ({ page }) => {
     await prepare(page);
     const result = await page.evaluate(() => {
         const view = {

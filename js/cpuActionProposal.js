@@ -57,12 +57,12 @@ function explanation(proposal) {
     const data = proposal.data;
     const labels = {
         rollDice: 'サイコロを振ります',
-        selectDice: data.useTwo ? '期待できる出目を増やすため2個振ります' : '低い出目を狙って1個振ります',
-        rerollDice: 'より良い出目を狙って振り直します',
-        skipReroll: '今の出目を活かすため振り直しません',
+        selectDice: data.useTwo ? 'サイコロを2個振ります' : 'サイコロを1個振ります',
+        rerollDice: 'サイコロを振り直します',
+        skipReroll: '振り直さず進みます',
         resolveHarbor: data.useBonus ? '港のボーナスを使います' : '港のボーナスを使わず進みます',
-        resolveTV: 'コインを得る相手を選びました',
-        resolveBusiness: data.skip ? '交換せずに進みます' : '有利になる施設交換を選びました',
+        resolveTV: '対象のプレイヤーを選びました',
+        resolveBusiness: data.skip ? '交換せずに進みます' : '施設交換を選びました',
         resolveCleaning: data.cardName ? `${data.cardName}を休業対象に選びました` : '休業対象を選びました',
         resolveMover: '移動する施設と相手を選びました',
         resolveRenovation: data.landmarkName ? `${data.landmarkName}を改装対象に選びました` : '改装対象を選びました',
