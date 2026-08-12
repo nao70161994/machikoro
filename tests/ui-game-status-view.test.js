@@ -135,6 +135,23 @@ runTest('ゲーム稼働状況は全フェーズの次操作を具体的に案�
     }).label, 'Bobの操作待ち：施設を建設するか、ターンを終了してください');
 });
 
+runTest('通信品質は接続・ACK待ち・遅延・再接続を既存状態から分類する', () => {
+    const base = { isOnlineGame: true, socketConnected: true };
+    assert.deepStrictEqual(UiGameStatusView.buildConnectionQualityView(base, 10000), {
+        visible: true, kind: 'good', label: '通信：良好',
+    });
+    assert.strictEqual(UiGameStatusView.buildConnectionQualityView({
+        ...base, actionInFlight: true, actionStartedAt: 8000,
+    }, 10000).kind, 'waiting');
+    assert.strictEqual(UiGameStatusView.buildConnectionQualityView({
+        ...base, actionInFlight: true, actionStartedAt: 4000,
+    }, 10000).kind, 'delayed');
+    assert.strictEqual(UiGameStatusView.buildConnectionQualityView({
+        ...base, isReconnecting: true,
+    }, 10000).kind, 'reconnecting');
+    assert.strictEqual(UiGameStatusView.buildConnectionQualityView({ isOnlineGame: false }).visible, false);
+});
+
 runTest('ゲーム稼働状況は10秒後に応答確認中と表示し秒数だけは再告知しない', () => {
     const controller = UiGameStatusView.createActivityStatusController({ checkingAfterMs: 10000 });
     const waiting = {

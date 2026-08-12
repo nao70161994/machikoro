@@ -34,6 +34,7 @@ function loadIntegrationRuntime(options = {}) {
         onlineJoinSubmitButton: makeElement({ id: 'onlineJoinSubmitButton' }),
         titleScreen: makeElement(),
         gameScreen: makeElement(),
+        gameConnectionQuality: makeElement({ style: { display: 'none' } }),
         status: makeElement(),
         winnerRestartButton: makeElement(),
         coinChangeAnnouncer: makeElement(),

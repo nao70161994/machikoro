@@ -175,3 +175,27 @@ runTest('稼働状況effectは表示・種類・読み上げを同じviewから�
     assert.strictEqual(elapsed.textContent, '・3秒');
     assert.strictEqual(UiGameStatusEffects.applyActivityStatus({}, {}), false);
 });
+
+runTest('通信品質effectは状態classと文言を同じviewから反映する', () => {
+    const element = {
+        style: {},
+        textContent: '',
+        classes: new Set(),
+        classList: {
+            toggle(name, enabled) {
+                if (enabled) element.classes.add(name);
+                else element.classes.delete(name);
+            },
+        },
+    };
+    assert.strictEqual(UiGameStatusEffects.applyConnectionQuality({
+        visible: true,
+        kind: 'delayed',
+        label: '通信：遅延しています',
+    }, element), true);
+    assert.strictEqual(element.style.display, 'inline-flex');
+    assert.deepStrictEqual([...element.classes], ['is-delayed']);
+    assert.strictEqual(element.textContent, '通信：遅延しています');
+    UiGameStatusEffects.applyConnectionQuality({ visible: false, kind: 'good', label: '' }, element);
+    assert.strictEqual(element.style.display, 'none');
+});

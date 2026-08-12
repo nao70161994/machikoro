@@ -27,6 +27,7 @@ function loadMainRuntime(options = {}) {
         gameActivityStatusLabel: makeElement(),
         gameActivityStatusElapsed: makeElement(),
         gameActivityStatusDetail: makeElement(),
+        gameConnectionQuality: makeElement({ style: { display: 'none' } }),
         diceResult: makeElement(),
         diceResultAnnouncer: makeElement(),
         diceChoose: makeElement({

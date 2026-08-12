@@ -1146,6 +1146,22 @@ body.pwa-banner-open #gameScreen {
     background: #f87171;
 }
 
+.game-connection-quality {
+    align-items: center;
+    border: 1px solid #4f6b80;
+    border-radius: 999px;
+    color: #cbd5e1;
+    font-size: 12px;
+    margin: 0 0 8px;
+    min-height: 28px;
+    padding: 3px 10px;
+}
+
+.game-connection-quality.is-good { border-color: #4d7c5b; color: #a7f3b5; }
+.game-connection-quality.is-waiting { border-color: #8a6d3b; color: #fde68a; }
+.game-connection-quality.is-delayed,
+.game-connection-quality.is-reconnecting { border-color: #a74655; color: #ffb4bf; }
+
 .game-activity-elapsed,
 .game-activity-detail {
     color: #aebbd0;

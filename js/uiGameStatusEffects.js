@@ -112,7 +112,17 @@ const UiGameStatusEffects = (() => {
         return true;
     }
 
-    return Object.freeze({ createTurnStateController, REQUIRED_EFFECTS, execute, applyActivityStatus });
+    function applyConnectionQuality(view = {}, element) {
+        if (!element || !element.style || !element.classList) return false;
+        element.style.display = view.visible ? 'inline-flex' : 'none';
+        for (const kind of ['good', 'waiting', 'delayed', 'reconnecting']) {
+            element.classList.toggle(`is-${kind}`, view.kind === kind);
+        }
+        if (view.label && element.textContent !== view.label) element.textContent = view.label;
+        return true;
+    }
+
+    return Object.freeze({ createTurnStateController, REQUIRED_EFFECTS, execute, applyActivityStatus, applyConnectionQuality });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusEffects;

@@ -105,12 +105,25 @@ function updateGameActivityStatus(now = Date.now()) {
             elapsedText: '',
         });
         UiGameStatusEffects.applyActivityStatus(hiddenActivity, { container });
+        UiGameStatusEffects.applyConnectionQuality(hiddenActivity, documentRef.getElementById('gameConnectionQuality'));
         return hiddenActivity;
     }
     const gameState = mainGameRuntimeSnapshot();
     const onlineState = mainOnlineRuntimeSnapshot();
     const currentGame = gameState.game;
     const actionFlight = mainOnlineActionFlightState();
+    const connectionFacts = {
+        isOnlineGame: onlineState.isOnlineGame,
+        isReconnecting: onlineState.isReconnectingOnline,
+        isReplaying: onlineState.isReplaying,
+        socketConnected: !onlineState.isOnlineGame || !!onlineState.socket && onlineState.socket.connected !== false,
+        actionInFlight: actionFlight.inFlight,
+        actionStartedAt: actionFlight.startedAt,
+    };
+    UiGameStatusEffects.applyConnectionQuality(
+        UiGameStatusView.buildConnectionQualityView(connectionFacts, now),
+        documentRef.getElementById('gameConnectionQuality')
+    );
     const view = UiGameStatusView.buildActivityStatusView({
         hasGame: !!currentGame,
         hasWinner: !!(currentGame && currentGame.checkWinner && currentGame.checkWinner()),
@@ -123,11 +136,7 @@ function updateGameActivityStatus(now = Date.now()) {
         cpuHealth: currentCpuTurnSchedulerHealth(),
         isOnlineGame: onlineState.isOnlineGame,
         myPlayerIndex: onlineState.myPlayerIndex,
-        isReconnecting: onlineState.isReconnectingOnline,
-        isReplaying: onlineState.isReplaying,
-        socketConnected: !onlineState.isOnlineGame || !!onlineState.socket && onlineState.socket.connected !== false,
-        actionInFlight: actionFlight.inFlight,
-        actionStartedAt: actionFlight.startedAt,
+        ...connectionFacts,
     });
     const baseActivity = gameActivityStatusController.transition(view, now);
     const activity = watchdogActivityStatusController.project(baseActivity, now);

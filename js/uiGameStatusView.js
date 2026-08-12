@@ -93,6 +93,25 @@ function buildNextActionGuidance(facts = {}) {
     return labels.get(facts.phase) || '画面の操作を選んでください';
 }
 
+function buildConnectionQualityView(facts = {}, now = Date.now()) {
+    if (!facts.isOnlineGame) return Object.freeze({ visible: false, kind: 'good', label: '' });
+    if (facts.isReconnecting || facts.socketConnected === false) {
+        return Object.freeze({ visible: true, kind: 'reconnecting', label: '通信：再接続中' });
+    }
+    if (facts.isReplaying) {
+        return Object.freeze({ visible: true, kind: 'waiting', label: '通信：状態を同期中' });
+    }
+    if (facts.actionInFlight) {
+        const elapsed = Number.isFinite(facts.actionStartedAt) && facts.actionStartedAt > 0
+            ? Math.max(0, now - facts.actionStartedAt)
+            : 0;
+        return elapsed >= 5000
+            ? Object.freeze({ visible: true, kind: 'delayed', label: '通信：遅延しています' })
+            : Object.freeze({ visible: true, kind: 'waiting', label: '通信：応答待ち' });
+    }
+    return Object.freeze({ visible: true, kind: 'good', label: '通信：良好' });
+}
+
 function buildActivityStatusView(facts = {}) {
     if (!facts.hasGame || facts.hasWinner) {
         return Object.freeze({ visible: false, identity: 'hidden', kind: 'ready', label: '', detail: '', startedAt: 0 });
@@ -303,6 +322,7 @@ const UiGameStatusView = Object.freeze({
     createActivityStatusController,
     createWatchdogActivityController,
     buildNextActionGuidance,
+    buildConnectionQualityView,
     buildActiveGameView,
 });
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusView;
