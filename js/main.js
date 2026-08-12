@@ -510,6 +510,11 @@ const pageActivationRuntime = PageActivationRuntime.createRuntime({
     getWindow: () => typeof window !== 'undefined' ? window : null,
     now: () => Date.now(),
     pagePolicy: PageActivationPolicy,
+    resetActivityStatus: activationAt => {
+        gameActivityStatusController.resumeAt(activationAt);
+        watchdogActivityStatusController.reset();
+        updateGameActivityStatus(activationAt);
+    },
     resetWatchdog: () => resetFreezeWatchdogAfterPageActivation(),
     resumeOnline() {
         if (typeof resumeOnlineReconnectAfterPageActivation === 'function') {

@@ -117,6 +117,10 @@ runTest('ゲーム稼働状況は10秒後に応答確認中と表示し秒数だ
     assert.strictEqual(checking.label, 'CPU 1が処理中（応答を確認中）');
     assert.strictEqual(checking.detail, '停止を検知した場合は自動復旧します');
     assert.strictEqual(controller.transition(waiting, 12000).announceLabel, '');
+    controller.resumeAt(60000);
+    const resumed = controller.transition(waiting, 60000);
+    assert.strictEqual(resumed.kind, 'waiting');
+    assert.strictEqual(resumed.elapsedText, '');
     assert.strictEqual(controller.transition({
         ...waiting,
         identity: 'cpu:1:5',

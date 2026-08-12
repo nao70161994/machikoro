@@ -131,13 +131,14 @@ function createActivityStatusController(options = {}) {
     let identity = '';
     let observedAt = 0;
     let announcedLabel = '';
+    let minimumObservedAt = 0;
 
     function transition(view = {}, now = Date.now()) {
         const safeNow = Number.isFinite(now) ? now : 0;
         if (view.identity !== identity) {
             identity = view.identity || '';
             observedAt = Number.isFinite(view.startedAt) && view.startedAt > 0
-                ? Math.min(view.startedAt, safeNow)
+                ? Math.max(minimumObservedAt, Math.min(view.startedAt, safeNow))
                 : safeNow;
         }
         const elapsedMs = view.visible && view.kind !== 'ready' ? Math.max(0, safeNow - observedAt) : 0;
@@ -159,8 +160,13 @@ function createActivityStatusController(options = {}) {
         identity = '';
         observedAt = 0;
         announcedLabel = '';
+        minimumObservedAt = 0;
     }
-    return Object.freeze({ transition, reset });
+    function resumeAt(now = Date.now()) {
+        reset();
+        minimumObservedAt = Number.isFinite(now) ? Math.max(0, now) : 0;
+    }
+    return Object.freeze({ transition, reset, resumeAt });
 }
 
 function createWatchdogActivityController(options = {}) {

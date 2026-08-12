@@ -2435,12 +2435,12 @@ runTest('integration: バックグラウンド滞在時間を応答確認時間�
     const beforeHidden = rt.updateGameActivityStatus();
     assert.strictEqual(beforeHidden.kind, 'waiting');
     rt.document.hidden = true;
+    rt.__test.eventHandlers['document:visibilitychange']();
     rt.__test.advanceTime(60000);
-    const hidden = rt.updateGameActivityStatus();
-    assert.strictEqual(hidden.visible, false);
     assert.strictEqual(rt.__test.elements.gameActivityStatus.style.display, 'none');
 
     rt.document.hidden = false;
+    rt.__test.eventHandlers['document:visibilitychange']();
     const resumed = rt.updateGameActivityStatus();
     assert.strictEqual(resumed.kind, 'waiting');
     assert.strictEqual(resumed.elapsedText, '');

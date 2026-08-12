@@ -78,6 +78,7 @@ function loadIntegrationRuntime(options = {}) {
         document: {
             activeElement: null,
             body: makeElement(),
+            addEventListener(name, handler) { eventHandlers['document:' + name] = handler; },
             getElementById(id) {
                 if (!elements[id]) elements[id] = makeElement();
                 return elements[id];

@@ -5,7 +5,7 @@ const PageActivationRuntime = (() => {
         const required = [
             'canRunHumanAction', 'cancelCpuSchedule', 'checkpoint', 'clearTimeout',
             'currentCpuHealth', 'getDocument', 'getWindow', 'now', 'resumeOnline',
-            'resetWatchdog', 'resumeRlLoads', 'scheduleCpuTurn', 'setTimeout',
+            'resetActivityStatus', 'resetWatchdog', 'resumeRlLoads', 'scheduleCpuTurn', 'setTimeout',
         ];
         for (const name of required) {
             if (typeof dependencies[name] !== 'function') {
@@ -96,6 +96,7 @@ const PageActivationRuntime = (() => {
             const activation = lifecycleController.beginActivation(hidden, activationAt);
             const cpuBefore = dependencies.currentCpuHealth();
             dependencies.resetWatchdog();
+            dependencies.resetActivityStatus(activationAt);
             dependencies.resumeRlLoads();
             resumeDelayed();
             dependencies.resumeOnline();
