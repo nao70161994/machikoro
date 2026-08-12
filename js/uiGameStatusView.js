@@ -102,8 +102,11 @@ function buildConnectionQualityView(facts = {}, now = Date.now()) {
         return Object.freeze({ visible: true, kind: 'waiting', label: '通信：状態を同期中' });
     }
     if (facts.actionInFlight) {
-        const elapsed = Number.isFinite(facts.actionStartedAt) && facts.actionStartedAt > 0
-            ? Math.max(0, now - facts.actionStartedAt)
+        const startedAt = Number.isFinite(facts.actionStartedAt) && facts.actionStartedAt > 0
+            ? Math.max(facts.actionStartedAt, Number.isFinite(facts.minimumObservedAt) ? facts.minimumObservedAt : 0)
+            : 0;
+        const elapsed = startedAt > 0
+            ? Math.max(0, now - startedAt)
             : 0;
         return elapsed >= 5000
             ? Object.freeze({ visible: true, kind: 'delayed', label: '通信：遅延しています' })

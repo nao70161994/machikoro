@@ -80,6 +80,7 @@ const cpuTurnSchedulerRuntime = CpuTurnSchedulerRuntime.createRuntime({
 const cpuSchedulerStateController = cpuTurnSchedulerRuntime.controller;
 const gameActivityStatusController = UiGameStatusView.createActivityStatusController();
 const watchdogActivityStatusController = UiGameStatusView.createWatchdogActivityController();
+let connectionObservationFloor = 0;
 let latestCpuActionExplanation = Object.freeze({ playerIndex: -1, turnCount: -1, text: '' });
 
 function invalidateCpuScheduleChain() { return cpuTurnSchedulerRuntime.invalidate(); }
@@ -120,6 +121,7 @@ function updateGameActivityStatus(now = Date.now()) {
         socketConnected: !onlineState.isOnlineGame || !!onlineState.socket && onlineState.socket.connected !== false,
         actionInFlight: actionFlight.inFlight,
         actionStartedAt: actionFlight.startedAt,
+        minimumObservedAt: connectionObservationFloor,
     };
     UiGameStatusEffects.applyConnectionQuality(
         UiGameStatusView.buildConnectionQualityView(connectionFacts, now),
@@ -534,6 +536,7 @@ const pageActivationRuntime = PageActivationRuntime.createRuntime({
     now: () => Date.now(),
     pagePolicy: PageActivationPolicy,
     resetActivityStatus: activationAt => {
+        connectionObservationFloor = Number.isFinite(activationAt) ? Math.max(0, activationAt) : 0;
         gameActivityStatusController.resumeAt(activationAt);
         watchdogActivityStatusController.reset();
         updateGameActivityStatus(activationAt);

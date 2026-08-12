@@ -96,16 +96,25 @@ function buildGameReview(logEntries, logTypes, players, escapeHtml) {
     }
     const coinValues = (Array.isArray(players) ? players : [])
         .map(player => Number.isFinite(player && player.coins) ? player.coins : 0);
+    const finalFacilityCount = (Array.isArray(players) ? players : [])
+        .reduce((total, player) => total + (Array.isArray(player && player.cards) ? player.cards.length : 0), 0);
+    const finalLandmarkCount = (Array.isArray(players) ? players : [])
+        .reduce((total, player) => total + Object.values(player && player.landmarks || {})
+            .filter(Boolean).length, 0);
     const spread = coinValues.length ? Math.max(...coinValues) - Math.min(...coinValues) : 0;
     const items = [
-        ['収入イベント', counts[logTypes.GAIN]],
-        ['支払いイベント', counts[logTypes.LOSE]],
-        ['建設', counts[logTypes.BUILD]],
-        ['特殊効果', counts[logTypes.SPECIAL]],
-        ['ダイス操作', counts[logTypes.DICE]],
+        ['最終所持施設', finalFacilityCount],
+        ['建設済みランドマーク', finalLandmarkCount],
         ['最終コイン差', spread],
     ];
-    return `<section class="winner-review" aria-labelledby="winnerReviewTitle"><h3 id="winnerReviewTitle">対戦の振り返り</h3><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
+    const observedItems = [
+        ['収入ログ', counts[logTypes.GAIN]],
+        ['支払いログ', counts[logTypes.LOSE]],
+        ['建設ログ', counts[logTypes.BUILD]],
+        ['特殊効果ログ', counts[logTypes.SPECIAL]],
+        ['ダイスログ', counts[logTypes.DICE]],
+    ];
+    return `<section class="winner-review" aria-labelledby="winnerReviewTitle"><h3 id="winnerReviewTitle">対戦の振り返り</h3><h4>最終盤面</h4><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div><h4>この端末で観測した直近ログ</h4><p class="winner-review-note">最大300件。再開・再接続より前の記録を含まない場合があります。</p><div class="winner-review-grid">${observedItems.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
 }
 
 function buildWinnerStatusText(options = {}) {

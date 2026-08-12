@@ -4,15 +4,21 @@ const assert = require('assert');
 const UiWinner = require('../js/uiWinner');
 const { runTest } = require('./helpers/test-utils');
 
-runTest('winner reviewは構造化log種別と最終coin差だけを集計する', () => {
+runTest('winner reviewは正確な最終盤面と観測範囲を明示したlogを分ける', () => {
     const logTypes = { GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', DICE: 'dice' };
     const html = UiWinner.buildGameReview([
         { type: 'gain', message: '+1' }, { type: 'gain', message: '+2' },
         { type: 'build', message: 'build' }, { type: 'special', message: 'special' },
-    ], logTypes, [{ coins: 12 }, { coins: 3 }], value => String(value));
+    ], logTypes, [
+        { coins: 12, cards: [{}, {}], landmarks: { station: true, mall: false } },
+        { coins: 3, cards: [{}], landmarks: { station: true } },
+    ], value => String(value));
     assert(html.includes('対戦の振り返り'));
-    assert(html.includes('<span>収入イベント</span><strong>2</strong>'));
-    assert(html.includes('<span>建設</span><strong>1</strong>'));
+    assert(html.includes('<span>最終所持施設</span><strong>3</strong>'));
+    assert(html.includes('<span>建設済みランドマーク</span><strong>2</strong>'));
+    assert(html.includes('<span>収入ログ</span><strong>2</strong>'));
+    assert(html.includes('この端末で観測した直近ログ'));
+    assert(html.includes('最大300件。再開・再接続より前の記録を含まない場合があります。'));
     assert(html.includes('<span>最終コイン差</span><strong>9</strong>'));
 });
 function escapeHtml(value) {

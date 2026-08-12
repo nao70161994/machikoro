@@ -155,6 +155,9 @@ runTest('通信品質は接続・ACK待ち・遅延・再接続を既存状態�
         ...base, actionInFlight: true, actionStartedAt: 4000,
     }, 10000).kind, 'delayed');
     assert.strictEqual(UiGameStatusView.buildConnectionQualityView({
+        ...base, actionInFlight: true, actionStartedAt: 1000, minimumObservedAt: 60000,
+    }, 60000).kind, 'waiting');
+    assert.strictEqual(UiGameStatusView.buildConnectionQualityView({
         ...base, isReconnecting: true,
     }, 10000).kind, 'reconnecting');
     assert.strictEqual(UiGameStatusView.buildConnectionQualityView({ isOnlineGame: false }).visible, false);
