@@ -50,7 +50,12 @@ function planJoinRoomAdmission(input) {
             }
         }
     } else if (room.players.length < room.maxPlayers) {
-        playerIndex = room.players.length;
+        for (let index = 0; index < room.maxPlayers; index++) {
+            if (!room.players.some(player => player.index === index)) {
+                playerIndex = index;
+                break;
+            }
+        }
     }
     if (playerIndex === -1) return { ok: false, message: LOBBY_ADMISSION_ERRORS.NO_SLOT };
     return { ok: true, playerIndex };

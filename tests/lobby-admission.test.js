@@ -73,3 +73,19 @@ runTest('join admissionはlegacy room容量と満席を従来どおり判定す�
     room.players.push({ id: 'guest', name: 'Bob', index: 1 });
     assert.deepStrictEqual(planJoinRoomAdmission({ room, socketId: 'third', playerName: 'Carol' }), { ok: false, message: LOBBY_ADMISSION_ERRORS.NO_SLOT });
 });
+
+runTest('join admissionはlegacy roomの途中で空いた最小indexを再利用する', () => {
+    const room = {
+        started: false,
+        players: [
+            { id: 'host', name: 'Alice', index: 0 },
+            { id: 'third', name: 'Carol', index: 2 },
+        ],
+        playerSettings: [],
+        maxPlayers: 3,
+    };
+    assert.deepStrictEqual(
+        planJoinRoomAdmission({ room, socketId: 'guest', playerName: 'Bob' }),
+        { ok: true, playerIndex: 1 }
+    );
+});
