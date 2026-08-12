@@ -1903,6 +1903,11 @@ function markOnlineGameFinished() {
     const plan = OnlineSessionLifecycle.completedPlan();
     OnlineSessionLifecycle.execute(plan, {
         markCompleted() { _onlineReconnectCompletionController.markCompleted(); },
+        disconnectSocket() {
+            const currentSocket = onlineSessionSnapshot().socket;
+            if (currentSocket) currentSocket.disconnect();
+            onlineComposition.sessionState.setSocket(null);
+        },
         leaveOnlineGame() { onlineComposition.sessionState.setOnline(false); },
         clearReconnectFlag() { setOnlineReconnectLegacyFlag(false); },
         clearActionInFlight() { _setOnlineActionInFlight(false); },

@@ -852,8 +852,13 @@ runTest('online.jsのreconnect書き込みはruntime transitionでboolean契約�
 
 runTest('online.jsのreconnect観測状態は完了とresetを区別する', () => {
     const localRt = loadOnlineRuntime();
-    localRt.setOnlineState({ isOnlineGame: true });
+    localRt.initSocket();
+    localRt.setOnlineState({ isOnlineGame: true, isReconnectingOnline: true });
     localRt.markOnlineGameFinished();
+    assert.strictEqual(localRt.getSocketDisconnected(), true);
+    assert.strictEqual(localRt.getOnlineState().socket, null);
+    assert.strictEqual(localRt.getOnlineState().isOnlineGame, false);
+    assert.strictEqual(localRt.getOnlineState().isReconnectingOnline, false);
     const completedSnapshot = localRt.getOnlineState().reconnectStateSnapshot;
     assert.strictEqual(completedSnapshot.history.slice(-1)[0].event, 'game-completed');
     assert.strictEqual(localRt.getOnlineState().reconnectState, 'completed');
@@ -4113,6 +4118,7 @@ runTest('rejoin request plan authorityはstate履歴不一致時にlegacy plan�
         reconnectToken: 'token',
     });
     runtime.markOnlineGameFinished();
+    runtime.initSocket();
     runtime.window.MACHIKORO_ONLINE_RECONNECT_REQUEST_PLAN_AUTHORITY_ENABLED = true;
     runtime.window.MACHIKORO_ONLINE_RECONNECT_REQUEST_EFFECT_AUTHORITY_ENABLED = true;
 
