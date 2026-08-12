@@ -412,6 +412,21 @@ runTest('integration: 購入後操作不能をwatchdogが復旧できても通�
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
     assert.ok(rt.window.__machikoroClientCheckpoints.some(entry => entry.event === 'freeze-watchdog-recovered'));
+
+    const activity = rt.__test.elements.gameActivityStatus;
+    assert.strictEqual(activity.style.display, 'flex');
+    assert.strictEqual(activity.classList.contains('is-checking'), true);
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '停止を検知：自動復旧中');
+
+    rt.__test.advanceTime(800);
+    rt.updateGameActivityStatus();
+    assert.strictEqual(activity.classList.contains('is-recovered'), true);
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '自動復旧しました');
+    assert.strictEqual(rt.__test.elements.gameActivityStatusDetail.textContent, '操作を続けられます');
+
+    rt.__test.advanceTime(5001);
+    const resumedActivity = rt.updateGameActivityStatus();
+    assert.notStrictEqual(resumedActivity.kind, 'recovered');
 });
 
 
