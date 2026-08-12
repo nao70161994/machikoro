@@ -115,18 +115,12 @@ function updateGameActivityStatus(now = Date.now()) {
     });
     const baseActivity = gameActivityStatusController.transition(view, now);
     const activity = watchdogActivityStatusController.project(baseActivity, now);
-    container.style.display = activity.visible ? 'flex' : 'none';
-    container.classList.toggle('is-ready', activity.kind === 'ready');
-    container.classList.toggle('is-waiting', activity.kind === 'waiting');
-    container.classList.toggle('is-checking', activity.kind === 'checking');
-    container.classList.toggle('is-recovered', activity.kind === 'recovered');
-    container.classList.toggle('is-failed', activity.kind === 'failed');
-    const label = document.getElementById('gameActivityStatusLabel');
-    const elapsed = document.getElementById('gameActivityStatusElapsed');
-    const detail = document.getElementById('gameActivityStatusDetail');
-    if (label && activity.announceLabel) label.textContent = activity.announceLabel;
-    if (elapsed) elapsed.textContent = activity.elapsedText;
-    if (detail) detail.textContent = activity.detail;
+    UiGameStatusEffects.applyActivityStatus(activity, {
+        container,
+        label: document.getElementById('gameActivityStatusLabel'),
+        elapsed: document.getElementById('gameActivityStatusElapsed'),
+        detail: document.getElementById('gameActivityStatusDetail'),
+    });
     return activity;
 }
 

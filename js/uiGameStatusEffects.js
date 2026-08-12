@@ -99,7 +99,20 @@ const UiGameStatusEffects = (() => {
         effects.runRenderStep('checkAutoSkip', effects.checkAutoSkip);
     }
 
-    return Object.freeze({ createTurnStateController, REQUIRED_EFFECTS, execute });
+    function applyActivityStatus(activity = {}, elements = {}) {
+        const { container, label, elapsed, detail } = elements;
+        if (!container || !container.style || !container.classList) return false;
+        container.style.display = activity.visible ? 'flex' : 'none';
+        for (const kind of ['ready', 'waiting', 'checking', 'recovered', 'failed']) {
+            container.classList.toggle(`is-${kind}`, activity.kind === kind);
+        }
+        if (label && activity.announceLabel) label.textContent = activity.announceLabel;
+        if (elapsed) elapsed.textContent = activity.elapsedText || '';
+        if (detail) detail.textContent = activity.detail || '';
+        return true;
+    }
+
+    return Object.freeze({ createTurnStateController, REQUIRED_EFFECTS, execute, applyActivityStatus });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusEffects;

@@ -481,6 +481,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiDiceDisplaySource, context, { filename: 'js/uiDiceDisplay.js' });
     const uiGameStatusViewSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiGameStatusView.js'), 'utf8');
     vm.runInContext(uiGameStatusViewSource, context, { filename: 'js/uiGameStatusView.js' });
+    const uiGameStatusEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiGameStatusEffects.js'), 'utf8');
+    vm.runInContext(uiGameStatusEffectsSource, context, { filename: 'js/uiGameStatusEffects.js' });
     const gameSetupStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameSetupState.js'), 'utf8');
     vm.runInContext(gameSetupStateSource, context, { filename: 'js/gameSetupState.js' });
     const uiTutorialSettingsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTutorialSettings.js'), 'utf8');

@@ -132,3 +132,46 @@ runTest('active game turn state controllerは前回のturn identityを一箇所�
         previousPlayerIndex: 2, previousTurnCount: 7, previousPhase: 'pending',
     });
 });
+
+runTest('稼働状況effectは表示・種類・読み上げを同じviewから反映する', () => {
+    const makeElement = () => ({
+        style: {},
+        textContent: '',
+        classes: new Set(),
+        classList: {
+            toggle(name, enabled) {
+                if (enabled) this.owner.classes.add(name);
+                else this.owner.classes.delete(name);
+            },
+            owner: null,
+        },
+    });
+    const container = makeElement();
+    container.classList.owner = container;
+    const label = makeElement();
+    const elapsed = makeElement();
+    const detail = makeElement();
+    assert.strictEqual(UiGameStatusEffects.applyActivityStatus({
+        visible: true,
+        kind: 'recovered',
+        announceLabel: '自動復旧しました',
+        elapsedText: '',
+        detail: '操作を続けられます',
+    }, { container, label, elapsed, detail }), true);
+    assert.strictEqual(container.style.display, 'flex');
+    assert.deepStrictEqual([...container.classes], ['is-recovered']);
+    assert.strictEqual(label.textContent, '自動復旧しました');
+    assert.strictEqual(detail.textContent, '操作を続けられます');
+
+    UiGameStatusEffects.applyActivityStatus({
+        visible: true,
+        kind: 'waiting',
+        announceLabel: '',
+        elapsedText: '・3秒',
+        detail: '待機中',
+    }, { container, label, elapsed, detail });
+    assert.deepStrictEqual([...container.classes], ['is-waiting']);
+    assert.strictEqual(label.textContent, '自動復旧しました');
+    assert.strictEqual(elapsed.textContent, '・3秒');
+    assert.strictEqual(UiGameStatusEffects.applyActivityStatus({}, {}), false);
+});
