@@ -520,6 +520,9 @@ function loadIntegrationRuntime(options = {}) {
                 if (typeof __tmpOnlineState.myPlayerIndex !== 'undefined') myPlayerIndex = __tmpOnlineState.myPlayerIndex;
                 if (typeof __tmpOnlineState.myPlayerName !== 'undefined') myPlayerName = __tmpOnlineState.myPlayerName;
                 if (typeof __tmpOnlineState.reconnectToken !== 'undefined') reconnectToken = __tmpOnlineState.reconnectToken;
+                if (typeof __tmpOnlineState.gameGeneration !== 'undefined') {
+                    onlineComposition.sessionState.setGameGeneration(__tmpOnlineState.gameGeneration);
+                }
             `, context);
             delete context.__tmpOnlineState;
         },
@@ -530,7 +533,7 @@ function loadIntegrationRuntime(options = {}) {
             `, context);
         },
         getOnlineState() {
-            return vm.runInContext('({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken })', context);
+            return vm.runInContext('({ socket, isOnlineGame, isReconnectingOnline, reconnectState: getOnlineReconnectState(), reconnectStateSnapshot: getOnlineReconnectStateSnapshot(), isRoomHost, myRoomId, myOriginalPlayerIndex, myPlayerIndex, myPlayerName, reconnectToken, gameGeneration: onlineSessionSnapshot().gameGeneration })', context);
         },
     };
     return context;

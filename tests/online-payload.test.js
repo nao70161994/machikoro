@@ -43,12 +43,14 @@ runTest('online payload は再接続wire fieldを既存順序と値で生成す�
         playerIndex: 1,
         playerName: 'Alice',
         reconnectToken: 'token-1',
+        gameGeneration: 3,
         ignored: 'not-on-wire',
     }, 'build-123'), {
         roomId: 'ROOM01',
         playerIndex: 1,
         playerName: 'Alice',
         reconnectToken: 'token-1',
+        gameGeneration: 3,
         clientVersion: 'build-123',
         hostlessRestoreVersion: 1,
     });
@@ -59,8 +61,8 @@ runTest('online payload はopt-in時だけschema capability fieldを加える', 
     const payload = OnlinePayload.buildRejoin({ roomId: 'ROOM01' }, 'build-123', capabilities);
     assert.strictEqual(payload.gameSchemaCapabilities, capabilities);
     assert.deepStrictEqual(Object.keys(payload), [
-        'roomId', 'playerIndex', 'playerName', 'reconnectToken', 'clientVersion',
-        'hostlessRestoreVersion', 'gameSchemaCapabilities',
+        'roomId', 'playerIndex', 'playerName', 'reconnectToken', 'gameGeneration',
+        'clientVersion', 'hostlessRestoreVersion', 'gameSchemaCapabilities',
     ]);
 });
 
@@ -70,6 +72,7 @@ runTest('online payload は欠落sessionも旧undefined field契約を維持す�
         playerIndex: null,
         playerName: null,
         reconnectToken: null,
+        gameGeneration: 0,
         clientVersion: 'unknown',
         hostlessRestoreVersion: 1,
     });

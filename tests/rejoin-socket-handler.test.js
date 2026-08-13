@@ -12,7 +12,10 @@ function makeFixture(overrides = {}) {
         id: 'new-socket',
         on(event, handler) { handlers[event] = handler; events.push(['on', event]); },
         join(roomId) { events.push(['join', roomId]); },
-        emit(event, payload) { events.push(['socket.emit', event, payload]); },
+        emit(event, payload, acknowledge) {
+            events.push(['socket.emit', event, payload]);
+            if (typeof acknowledge === 'function') acknowledge();
+        },
     };
     const dependencies = {
         requirePlainSocketPayload() { events.push(['plain']); return true; },
@@ -116,6 +119,234 @@ runTest('rejoin handler fails closed before detaching on token mismatch', () => 
         ['error', 'INVALID_TOKEN'],
     ]);
     assert.strictEqual(fixture.socket.roomId, undefined);
+});
+
+runTest('rejoin handlerは直前世代の旧tokenを一度だけ新tokenへ更新する', () => {
+    const fixture = makeFixture({
+        getExpectedReconnectTokenHash() {
+            fixture.events.push(['expected-hash']);
+            return 'new-hash';
+        },
+        hashReconnectToken(token) {
+            fixture.events.push(['hash-token', token]);
+            return token === 'old-token' ? 'old-hash' : 'new-hash';
+        },
+        resolveRejoinPlayer(room, playerIndex, playerName, reconnectToken) {
+            fixture.events.push(['resolve', reconnectToken]);
+            const player = room.players.find(candidate =>
+                candidate.index === playerIndex && candidate.name === playerName) || null;
+            if (player) player.id = fixture.socket.id;
+            return player;
+        },
+        persistRoomCanonicalState(roomId, room, reason) {
+            fixture.events.push(['persist', roomId, room.gameGeneration, reason]);
+        },
+    });
+    fixture.room.gameGeneration = 2;
+    fixture.room.players = [{
+        id: null,
+        index: 1,
+        name: 'Bob',
+        reconnectToken: 'new-token',
+        reconnectTokenHash: 'new-hash',
+        previousReconnectTokenHash: 'old-hash',
+        previousReconnectTokenGeneration: 1,
+    }];
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom({
+        ...validPayload,
+        reconnectToken: 'old-token',
+        gameGeneration: 1,
+    });
+
+    assert.strictEqual('previousReconnectTokenHash' in fixture.room.players[0], false);
+    assert.strictEqual('previousReconnectTokenGeneration' in fixture.room.players[0], false);
+    assert.ok(fixture.events.some(event => event[0] === 'resolve' && event[1] === 'new-token'));
+    assert.ok(fixture.events.some(event => event[0] === 'persist' &&
+        event[3] === 'rematch-reconnect-token-consumed'));
+    assert.ok(fixture.events.some(event => event[0] === 'socket.emit' &&
+        event[1] === 'onlineRematchIdentity' &&
+        event[2].reconnectToken === 'new-token' && event[2].gameGeneration === 2));
+
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom({
+        ...validPayload,
+        reconnectToken: 'old-token',
+        gameGeneration: 1,
+    });
+    assert.ok(fixture.events.some(event => event[0] === 'error' && event[1] === 'INVALID_TOKEN'));
+    assert.strictEqual(fixture.events.some(event => event[0] === 'detach'), false);
+});
+
+runTest('rejoin handlerは旧tokenの欠落・古過ぎる世代を拒否する', () => {
+    for (const gameGeneration of [undefined, 0, -1, Number.MAX_VALUE]) {
+        const fixture = makeFixture({
+            getExpectedReconnectTokenHash() { return 'new-hash'; },
+            hashReconnectToken() { return 'old-hash'; },
+        });
+        fixture.room.gameGeneration = 2;
+        fixture.room.players = [{
+            id: null, index: 1, name: 'Bob', reconnectToken: 'new-token',
+            reconnectTokenHash: 'new-hash', previousReconnectTokenHash: 'old-hash',
+            previousReconnectTokenGeneration: 1,
+        }];
+        fixture.events.length = 0;
+        fixture.handlers.rejoinRoom({ ...validPayload, reconnectToken: 'old-token', gameGeneration });
+        assert.ok(fixture.events.some(event => event[0] === 'error' && event[1] === 'INVALID_TOKEN'));
+        assert.strictEqual(fixture.events.some(event => event[0] === 'detach'), false);
+        assert.strictEqual(fixture.room.players[0].previousReconnectTokenHash, 'old-hash');
+    }
+});
+
+runTest('rejoin handlerはgameStartだけ届いた旧tokenを現世代値でも救済する', () => {
+    const fixture = makeFixture({
+        getExpectedReconnectTokenHash() { return 'new-hash'; },
+        hashReconnectToken(token) { return token === 'old-token' ? 'old-hash' : 'new-hash'; },
+        resolveRejoinPlayer(room) { room.players[0].id = fixture.socket.id; return room.players[0]; },
+        persistRoomCanonicalState(roomId, room, reason) {
+            fixture.events.push(['persist', roomId, room.gameGeneration, reason]);
+        },
+    });
+    fixture.room.gameGeneration = 2;
+    fixture.room.players = [{
+        id: null, index: 1, name: 'Bob', reconnectToken: 'new-token',
+        reconnectTokenHash: 'new-hash', previousReconnectTokenHash: 'old-hash',
+        previousReconnectTokenGeneration: 1,
+    }];
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom({
+        ...validPayload, reconnectToken: 'old-token', gameGeneration: 2,
+    });
+    assert.strictEqual(fixture.events.some(event => event[0] === 'error'), false);
+    assert.ok(fixture.events.some(event => event[0] === 'socket.emit' &&
+        event[1] === 'onlineRematchIdentity' && event[2].gameGeneration === 2));
+    assert.strictEqual('previousReconnectTokenHash' in fixture.room.players[0], false);
+});
+
+runTest('rejoin handlerは接続中playerを旧tokenで置換しない', () => {
+    const fixture = makeFixture({
+        getExpectedReconnectTokenHash() { return 'new-hash'; },
+        hashReconnectToken() { return 'old-hash'; },
+    });
+    fixture.room.gameGeneration = 2;
+    fixture.room.players = [{
+        id: 'active-socket', index: 1, name: 'Bob', reconnectToken: 'new-token',
+        reconnectTokenHash: 'new-hash', previousReconnectTokenHash: 'old-hash',
+        previousReconnectTokenGeneration: 1,
+    }];
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom({
+        ...validPayload, reconnectToken: 'old-token', gameGeneration: 1,
+    });
+    assert.ok(fixture.events.some(event => event[0] === 'error' && event[1] === 'INVALID_TOKEN'));
+    assert.strictEqual(fixture.events.some(event => event[0] === 'detach'), false);
+    assert.strictEqual(fixture.room.players[0].id, 'active-socket');
+    assert.strictEqual(fixture.room.players[0].previousReconnectTokenHash, 'old-hash');
+});
+
+runTest('rejoin handlerは旧tokenの新identity通知失敗時にgraceを消費しない', () => {
+    const fixture = makeFixture({
+        getExpectedReconnectTokenHash() { return 'new-hash'; },
+        hashReconnectToken(token) { return token === 'old-token' ? 'old-hash' : 'new-hash'; },
+        resolveRejoinPlayer(room) { room.players[0].id = fixture.socket.id; return room.players[0]; },
+    });
+    fixture.room.gameGeneration = 2;
+    fixture.room.players = [{
+        id: null, index: 1, name: 'Bob', reconnectToken: 'new-token',
+        reconnectTokenHash: 'new-hash', previousReconnectTokenHash: 'old-hash',
+        previousReconnectTokenGeneration: 1,
+    }];
+    fixture.socket.emit = event => {
+        fixture.events.push(['socket.emit', event]);
+        if (event === 'onlineRematchIdentity') throw new Error('delivery failed');
+    };
+    fixture.handlers.rejoinRoom({
+        ...validPayload, reconnectToken: 'old-token', gameGeneration: 1,
+    });
+    assert.strictEqual(fixture.room.players[0].previousReconnectTokenHash, 'old-hash');
+    assert.strictEqual(fixture.room.players[0].previousReconnectTokenGeneration, 1);
+    assert.strictEqual(fixture.room.players[0].id, null);
+    assert.strictEqual(fixture.socket.roomId, undefined);
+    assert.strictEqual(fixture.events.some(event => event[0] === 'persist'), false);
+    assert.ok(fixture.events.some(event => event[0] === 'error' &&
+        event[1] === '再接続情報を更新できませんでした'));
+});
+
+runTest('rejoin handlerは旧tokenのidentity ACK前にgraceを消費しない', () => {
+    let acknowledgeIdentity = null;
+    const fixture = makeFixture({
+        getExpectedReconnectTokenHash() { return 'new-hash'; },
+        hashReconnectToken(token) { return token === 'old-token' ? 'old-hash' : 'new-hash'; },
+        resolveRejoinPlayer(room) { room.players[0].id = fixture.socket.id; return room.players[0]; },
+        persistRoomCanonicalState(roomId, room, reason) {
+            fixture.events.push(['persist', roomId, room.gameGeneration, reason]);
+        },
+    });
+    fixture.room.gameGeneration = 2;
+    fixture.room.players = [{
+        id: null, index: 1, name: 'Bob', reconnectToken: 'new-token',
+        reconnectTokenHash: 'new-hash', previousReconnectTokenHash: 'old-hash',
+        previousReconnectTokenGeneration: 1,
+    }];
+    fixture.socket.emit = (event, payload, acknowledge) => {
+        fixture.events.push(['socket.emit', event, payload]);
+        if (event === 'onlineRematchIdentity') acknowledgeIdentity = acknowledge;
+    };
+    fixture.handlers.rejoinRoom({
+        ...validPayload, reconnectToken: 'old-token', gameGeneration: 1,
+    });
+    assert.strictEqual(typeof acknowledgeIdentity, 'function');
+    assert.strictEqual(fixture.room.players[0].previousReconnectTokenHash, 'old-hash');
+    assert.strictEqual(fixture.events.some(event => event[0] === 'persist'), false);
+
+    acknowledgeIdentity();
+    assert.strictEqual('previousReconnectTokenHash' in fixture.room.players[0], false);
+    assert.ok(fixture.events.some(event => event[0] === 'persist' &&
+        event[3] === 'rematch-reconnect-token-consumed'));
+});
+
+runTest('rejoin handlerは次の再戦後に届いた古いidentity ACKを無視する', () => {
+    let acknowledgeIdentity = null;
+    const fixture = makeFixture({
+        getExpectedReconnectTokenHash() { return 'new-hash'; },
+        hashReconnectToken(token) { return token === 'old-token' ? 'old-hash' : 'new-hash'; },
+        resolveRejoinPlayer(room) { room.players[0].id = fixture.socket.id; return room.players[0]; },
+        persistRoomCanonicalState(roomId, room, reason) {
+            fixture.events.push(['persist', roomId, room.gameGeneration, reason]);
+        },
+    });
+    fixture.room.gameGeneration = 2;
+    fixture.room.players = [{
+        id: null, index: 1, name: 'Bob', reconnectToken: 'new-token',
+        reconnectTokenHash: 'new-hash', previousReconnectTokenHash: 'old-hash',
+        previousReconnectTokenGeneration: 1,
+    }];
+    fixture.socket.emit = (event, _payload, acknowledge) => {
+        if (event === 'onlineRematchIdentity') acknowledgeIdentity = acknowledge;
+    };
+    fixture.handlers.rejoinRoom({
+        ...validPayload, reconnectToken: 'old-token', gameGeneration: 1,
+    });
+    fixture.room.gameGeneration = 3;
+    fixture.room.players[0].previousReconnectTokenHash = 'newer-hash';
+    fixture.room.players[0].previousReconnectTokenGeneration = 2;
+    acknowledgeIdentity();
+    assert.strictEqual(fixture.room.players[0].previousReconnectTokenHash, 'newer-hash');
+    assert.strictEqual(fixture.room.players[0].previousReconnectTokenGeneration, 2);
+    assert.strictEqual(fixture.events.some(event => event[0] === 'persist'), false);
+});
+
+runTest('rejoin handlerは現tokenならgameGeneration欠落の旧clientも維持する', () => {
+    const fixture = makeFixture();
+    fixture.room.gameGeneration = 3;
+    fixture.room.players = [{
+        id: 'old-socket', index: 1, name: 'Bob', reconnectToken: 'token',
+        reconnectTokenHash: 'hash',
+    }];
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(validPayload);
+    assert.strictEqual(fixture.events.some(event => event[0] === 'error'), false);
+    assert.ok(fixture.events.some(event => event[0] === 'socket.emit' && event[1] === 'rejoinData'));
 });
 
 runTest('rejoin handler は別のactive roomからの再参加をidentity検証前に拒否する', () => {

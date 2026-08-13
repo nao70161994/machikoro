@@ -60,6 +60,7 @@ const OnlineLobbyStartRuntime = (() => {
                 hostPlayerIndex,
                 hostEpoch,
                 actionSeq,
+                gameGeneration,
                 hostlessRestoreCapabilities,
                 hostlessRestoreGeneration,
                 hostlessRestoreCount,
@@ -77,6 +78,8 @@ const OnlineLobbyStartRuntime = (() => {
                 reconnectTokenHashes,
                 hostPlayerIndex,
                 actionSeq: Number.isInteger(actionSeq) ? actionSeq : 0,
+                gameGeneration: Number.isSafeInteger(gameGeneration) && gameGeneration >= 0
+                    ? gameGeneration : 0,
                 hostlessRestoreCapabilities,
                 hostlessRestoreGeneration: Number.isInteger(hostlessRestoreGeneration)
                     ? hostlessRestoreGeneration : 0,

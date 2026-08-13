@@ -20,8 +20,8 @@ function createHarness(options = {}) {
         actionSeq: 42,
         acceptedClientActions: { old: {} },
         players: [
-            { id: 's0', index: 0, reconnectTokenHash: 'old-0' },
-            { id: 's1', index: 1, reconnectTokenHash: 'old-1' },
+            { id: 's0', index: 0, reconnectToken: 'old-token-0' },
+            { id: 's1', index: 1, reconnectToken: 'old-token-1' },
         ],
         canonicalMirror: { game: { checkWinner: () => ({ name: 'Alice' }) } },
     };
@@ -108,6 +108,8 @@ runTest('online rematchは全接続playerの明示同意後だけ世代とtoken�
     assert.strictEqual(first.privateEvents[0].event, 'onlineRematchIdentity');
     assert.strictEqual(first.privateEvents[0].payload.reconnectToken, 'token-1');
     assert.strictEqual(second.privateEvents[0].payload.reconnectToken, 'token-2');
+    assert.strictEqual(h.room.players[0].previousReconnectTokenHash, 'hash:old-token-0');
+    assert.strictEqual(h.room.players[0].previousReconnectTokenGeneration, 0);
     assert.strictEqual(h.broadcasts.at(-1).event, 'gameStart');
     assert.strictEqual(h.broadcasts.at(-1).payload.gameGeneration, 1);
     assert.strictEqual(h.broadcasts.at(-1).payload.hostEpoch, 0);
@@ -115,7 +117,7 @@ runTest('online rematchは全接続playerの明示同意後だけ世代とtoken�
     assert.strictEqual(h.timers[0].cleared, true);
 });
 
-runTest('online rematchは開始payload生成と送信の失敗時に旧対局状態とtokenをrollbackする', () => {
+runTest('online rematchは開始commit前の失敗をrollbackし配送失敗後は新世代を維持する', () => {
     const buildFailed = createHarness({ buildGameStartPayload: () => null });
     const first = buildFailed.socket('s0', 0);
     const second = buildFailed.socket('s1', 1);
@@ -132,8 +134,10 @@ runTest('online rematchは開始payload生成と送信の失敗時に旧対局�
     assert.strictEqual(buildFailed.room.actionSeq, 42);
     assert.strictEqual(buildFailed.room.acceptedClientActions, oldAccepted);
     assert.strictEqual(buildFailed.room.canonicalMirror, oldMirror);
-    assert.strictEqual(buildFailed.room.players[0].reconnectTokenHash, 'old-0');
-    assert.strictEqual(buildFailed.room.players[1].reconnectTokenHash, 'old-1');
+    assert.strictEqual('reconnectTokenHash' in buildFailed.room.players[0], false);
+    assert.strictEqual('reconnectTokenHash' in buildFailed.room.players[1], false);
+    assert.strictEqual('previousReconnectTokenHash' in buildFailed.room.players[0], false);
+    assert.strictEqual('previousReconnectTokenGeneration' in buildFailed.room.players[0], false);
 
     const emitFailed = createHarness();
     const emitFirst = emitFailed.socket('s0', 0);
@@ -146,21 +150,18 @@ runTest('online rematchは開始payload生成と送信の失敗時に旧対局�
     emitFailed.room.lastUndoState = { old: true };
     emitSecond.target.emit = () => { throw new Error('emit failed'); };
     emitFailed.runtime.request(emitFirst.target, { approved: true });
-    assert.strictEqual(emitFailed.runtime.request(emitSecond.target, { approved: true }), false);
-    assert.strictEqual(emitFailed.room.gameGeneration, 0);
-    assert.strictEqual(emitFailed.room.hostEpoch, 7);
-    assert.strictEqual(emitFailed.room.actionSeq, 42);
-    assert.strictEqual(emitFailed.room.acceptedClientActions, previousAccepted);
+    assert.strictEqual(emitFailed.runtime.request(emitSecond.target, { approved: true }), true);
+    assert.strictEqual(emitFailed.room.gameGeneration, 1);
+    assert.strictEqual(emitFailed.room.hostEpoch, 0);
+    assert.strictEqual(emitFailed.room.actionSeq, 0);
+    assert.notStrictEqual(emitFailed.room.acceptedClientActions, previousAccepted);
     assert.strictEqual(emitFailed.room.canonicalMirror, previousMirror);
-    assert.deepStrictEqual(emitFailed.room.gameStartPayload, { old: true });
-    assert.deepStrictEqual(emitFailed.room.actionLog, [{ seq: 42 }]);
-    assert.deepStrictEqual(emitFailed.room.stateSnapshot, { actionSeq: 40 });
-    assert.deepStrictEqual(emitFailed.room.lastUndoState, { old: true });
-    assert.strictEqual(emitFailed.room.players[0].reconnectTokenHash, 'old-0');
-    assert.strictEqual(emitFailed.room.players[1].reconnectTokenHash, 'old-1');
-    assert.deepStrictEqual(emitFailed.broadcasts.at(-1).payload, {
-        state: 'cancelled', reason: 'start-failed',
-    });
+    assert.strictEqual(emitFailed.room.gameStartPayload.gameGeneration, 1);
+    assert.deepStrictEqual(emitFailed.room.actionLog, []);
+    assert.strictEqual(emitFailed.room.stateSnapshot, null);
+    assert.strictEqual(emitFailed.room.lastUndoState, null);
+    assert.strictEqual(emitFailed.room.players[0].previousReconnectTokenHash, 'hash:old-token-0');
+    assert.strictEqual(emitFailed.room.players[1].previousReconnectTokenHash, 'hash:old-token-1');
 });
 
 runTest('online rematchは拒否・timeout・欠席をfail closedにする', () => {

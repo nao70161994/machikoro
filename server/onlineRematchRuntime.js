@@ -62,12 +62,24 @@ function createOnlineRematchRuntime(dependencies = {}) {
         if (!Number.isSafeInteger(generation)) return false;
         const identities = humans.map(player => {
             const reconnectToken = dependencies.generateReconnectToken();
+            const hadTokenHash = Object.prototype.hasOwnProperty.call(player, 'reconnectTokenHash');
+            const previousTokenHash = player.reconnectTokenHash ||
+                dependencies.hashReconnectToken(player.reconnectToken);
             return {
                 player,
                 reconnectToken,
                 reconnectTokenHash: dependencies.hashReconnectToken(reconnectToken),
                 previousToken: player.reconnectToken,
-                previousTokenHash: player.reconnectTokenHash,
+                hadTokenHash,
+                previousTokenHash,
+                hadPreviousGraceHash: Object.prototype.hasOwnProperty.call(
+                    player, 'previousReconnectTokenHash'
+                ),
+                previousGraceHash: player.previousReconnectTokenHash,
+                hadPreviousGraceGeneration: Object.prototype.hasOwnProperty.call(
+                    player, 'previousReconnectTokenGeneration'
+                ),
+                previousGraceGeneration: player.previousReconnectTokenGeneration,
             };
         });
         const previousRoomState = { ...room };
@@ -78,10 +90,26 @@ function createOnlineRematchRuntime(dependencies = {}) {
             Object.assign(room, previousRoomState);
             for (const identity of identities) {
                 identity.player.reconnectToken = identity.previousToken;
-                identity.player.reconnectTokenHash = identity.previousTokenHash;
+                if (identity.hadTokenHash) {
+                    identity.player.reconnectTokenHash = identity.previousTokenHash;
+                } else {
+                    delete identity.player.reconnectTokenHash;
+                }
+                if (identity.hadPreviousGraceHash) {
+                    identity.player.previousReconnectTokenHash = identity.previousGraceHash;
+                } else {
+                    delete identity.player.previousReconnectTokenHash;
+                }
+                if (identity.hadPreviousGraceGeneration) {
+                    identity.player.previousReconnectTokenGeneration = identity.previousGraceGeneration;
+                } else {
+                    delete identity.player.previousReconnectTokenGeneration;
+                }
             }
         };
         for (const identity of identities) {
+            identity.player.previousReconnectTokenHash = identity.previousTokenHash;
+            identity.player.previousReconnectTokenGeneration = room.gameGeneration;
             identity.player.reconnectToken = identity.reconnectToken;
             identity.player.reconnectTokenHash = identity.reconnectTokenHash;
         }
@@ -106,7 +134,14 @@ function createOnlineRematchRuntime(dependencies = {}) {
         payload.gameGeneration = generation;
         try {
             dependencies.markRoomGameStarted(room, payload, now());
-            for (const identity of identities) {
+        } catch (_) {
+            restorePreviousState();
+            try { persistRollback(roomId, room, 'online-rematch-start-rollback', now()); } catch (_) {}
+            clear(roomId, 'start-failed');
+            return false;
+        }
+        for (const identity of identities) {
+            try {
                 const target = dependencies.io.sockets.sockets.get(identity.player.id);
                 if (target) target.emit(ONLINE_REMATCH_EVENTS.IDENTITY, {
                     roomId,
@@ -114,13 +149,13 @@ function createOnlineRematchRuntime(dependencies = {}) {
                     reconnectToken: identity.reconnectToken,
                     gameGeneration: generation,
                 });
-            }
+            } catch (_) {}
+        }
+        try {
             dependencies.io.to(roomId).emit('gameStart', payload);
         } catch (_) {
-            restorePreviousState();
-            try { persistRollback(roomId, room, 'online-rematch-start-rollback', now()); } catch (_) {}
-            clear(roomId, 'start-failed');
-            return false;
+            // The new generation is already canonical. Clients that missed delivery
+            // recover with the immediately previous token grace during rejoin.
         }
         clearTimeoutFn(session.timer);
         sessions.delete(roomId);

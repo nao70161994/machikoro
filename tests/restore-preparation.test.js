@@ -86,6 +86,7 @@ function input(overrides = {}) {
             enabledCards: ['wheat'],
             enabledLandmarks: ['station'],
             cpuSpeed: 250,
+            gameGeneration: 2,
             restoreGeneration: 5,
             restoreCount: 2,
         },
@@ -170,6 +171,7 @@ runTest('restore preparationはadmissionからmirrorまでの既存順とpayload
     });
     assert.strictEqual(harness.captured.build.restoredPlayers, harness.restoredPlayers);
     assert.strictEqual(harness.captured.build.sanitizedActionLog, harness.sanitizedActionLog);
+    assert.strictEqual(harness.captured.build.gameGeneration, 2);
     assert.strictEqual(harness.captured.build.now, 1234);
     assert.strictEqual(harness.captured.build.hostlessRestoreGeneration, 3);
     assert.strictEqual(harness.captured.build.hostlessRestoreCount, 8);

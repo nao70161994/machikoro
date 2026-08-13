@@ -257,6 +257,8 @@ function makeRestoredRoom(dependencies = {}) {
             hostPlayerIndex: input.playerIndex,
             hostEpoch: input.restoredHostEpoch,
             actionSeq: input.restoredActionSeq,
+            gameGeneration: Number.isSafeInteger(input.gameGeneration) && input.gameGeneration >= 0
+                ? input.gameGeneration : 0,
             enabledCards: input.enabledCards || [],
             enabledLandmarks: input.enabledLandmarks || [],
             cpuSpeed: input.cpuSpeed || 1500,

@@ -51,6 +51,7 @@ runTest('restore validation preserves valid game-start payloads and legacy optio
         cpuSpeed: 5000,
         hostEpoch: Number.MAX_SAFE_INTEGER,
         actionSeq: Number.MAX_SAFE_INTEGER,
+        gameGeneration: Number.MAX_SAFE_INTEGER,
         hostlessRestoreGeneration: Number.MAX_SAFE_INTEGER,
         hostlessRestoreCount: 3,
     }), 2), true);
@@ -76,6 +77,8 @@ runTest('restore validation rejects malformed game-start fields by contract boun
         [validPayload({ hostEpoch: Number.MAX_VALUE }), 2],
         [validPayload({ actionSeq: -1 }), 2],
         [validPayload({ actionSeq: Number.MAX_SAFE_INTEGER + 1 }), 2],
+        [validPayload({ gameGeneration: -1 }), 2],
+        [validPayload({ gameGeneration: Number.MAX_SAFE_INTEGER + 1 }), 2],
         [validPayload({ hostlessRestoreGeneration: Number.MAX_VALUE }), 2],
         [validPayload({ hostlessRestoreCount: 4 }), 2],
         [validPayload({ gameSchema: {} }), 2],

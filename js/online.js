@@ -2564,7 +2564,8 @@ function buildOnlineUndoSnapshot() {
 
 function saveOnlineSession() {
     const session = onlineSessionSnapshot();
-    if (!session.myRoomId || session.myOriginalPlayerIndex < 0 || !session.myPlayerName || !session.reconnectToken) return;
+    if (!session.myRoomId || session.myOriginalPlayerIndex < 0 ||
+            !session.myPlayerName || !session.reconnectToken) return false;
     try {
         _writeOnlineSessionStorageJson({
             roomId: session.myRoomId,
@@ -2575,7 +2576,10 @@ function saveOnlineSession() {
             gameGeneration: session.gameGeneration,
         });
         onlineClientEffects.updateResumeButton();
-    } catch (e) {}
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
 
 function _applyOnlineHostPayload(gameStartPayload, hostPlayerIndex, hostEpoch) {
@@ -2970,13 +2974,13 @@ function initSocket() {
         }
         onlineDomEffects.setStatusText(`再戦の同意を待っています（${payload.votes}/${payload.required}）`);
     });
-    socketEvents.on(OnlineSocketRegistry.keys.ONLINE_REMATCH_IDENTITY, payload => {
+    socketEvents.on(OnlineSocketRegistry.keys.ONLINE_REMATCH_IDENTITY, (payload, acknowledge) => {
         const session = onlineSessionSnapshot();
         if (!payload || payload.roomId !== session.myRoomId ||
                 payload.playerIndex !== session.myOriginalPlayerIndex) return;
         onlineComposition.sessionState.setReconnectToken(payload.reconnectToken);
         onlineComposition.sessionState.setGameGeneration(payload.gameGeneration);
-        saveOnlineSession();
+        if (saveOnlineSession() && typeof acknowledge === 'function') acknowledge();
     });
 
     socketEvents.on(

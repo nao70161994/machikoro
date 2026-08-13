@@ -14,6 +14,7 @@ function fixture(overrides = {}) {
         playerIndex: 0,
         restoredHostEpoch: 3,
         restoredActionSeq: 8,
+        gameGeneration: 2,
         enabledCards: ['麦畑'],
         enabledLandmarks: ['駅'],
         cpuSpeed: 900,
@@ -592,6 +593,7 @@ runTest('restored room builderは検証済み入力を既存room shapeへ写像�
         hostPlayerIndex: 0,
         hostEpoch: 3,
         actionSeq: 8,
+        gameGeneration: 2,
         enabledCards: ['麦畑'],
         enabledLandmarks: ['駅'],
         cpuSpeed: 900,
@@ -612,6 +614,12 @@ runTest('restored room builderは検証済み入力を既存room shapeへ写像�
     assert.strictEqual(room.gameStartPayload, input.gameStartPayload);
     assert.strictEqual(room.actionLog, input.sanitizedActionLog);
     assert.deepStrictEqual(input, before);
+});
+
+runTest('restored room builderは再戦世代を復元しlegacy欠落を0へ正規化する', () => {
+    const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    assert.strictEqual(builder.buildRestoredRoom(fixture({ gameGeneration: 3 })).gameGeneration, 3);
+    assert.strictEqual(builder.buildRestoredRoom(fixture({ gameGeneration: undefined })).gameGeneration, 0);
 });
 
 runTest('署名なしfull replayから復元したroomはmirror圧縮後も完全履歴を一度だけ保持する', () => {

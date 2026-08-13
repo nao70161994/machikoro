@@ -85,7 +85,7 @@ function makeRestoreValidation({
         if (payload.gameSchema != null && !isValidGameSchemaMetadata(payload.gameSchema)) return false;
         if (payload.cpuSpeed != null &&
             (!Number.isInteger(payload.cpuSpeed) || payload.cpuSpeed < 0 || payload.cpuSpeed > 5000)) return false;
-        for (const field of ['hostEpoch', 'actionSeq', 'hostlessRestoreGeneration']) {
+        for (const field of ['hostEpoch', 'actionSeq', 'gameGeneration', 'hostlessRestoreGeneration']) {
             if (!isOptionalNonnegativeSafeInteger(payload[field])) return false;
         }
         if (!isOptionalNonnegativeSafeInteger(payload.hostlessRestoreCount) ||

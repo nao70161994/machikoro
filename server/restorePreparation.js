@@ -74,6 +74,7 @@ function makeRestorePreparation(dependencies = {}) {
             playerIndex: input.playerIndex,
             restoredHostEpoch: restoredMetadata.hostEpoch,
             restoredActionSeq: replayAdmission.restoredRank.actionSeq,
+            gameGeneration: gameStartPayload.gameGeneration,
             enabledCards: gameStartPayload.enabledCards,
             enabledLandmarks: gameStartPayload.enabledLandmarks,
             cpuSpeed: gameStartPayload.cpuSpeed,

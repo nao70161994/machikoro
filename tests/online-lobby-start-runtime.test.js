@@ -19,6 +19,7 @@ function startPayload(overrides = {}) {
         hostPlayerIndex: 0,
         hostEpoch: 2,
         actionSeq: 4,
+        gameGeneration: 3,
         hostlessRestoreCapabilities: null,
         hostlessRestoreGeneration: 1,
         hostlessRestoreCount: 2,
@@ -164,6 +165,7 @@ runTest('online game start runtimeはschemaからactive gameまで既存effect�
     const built = harness.calls[8][1];
     assert.strictEqual(built.schemaVersion, 2);
     assert.strictEqual(built.actionSeq, 4);
+    assert.strictEqual(built.gameGeneration, 3);
     assert.strictEqual(built.hostlessRestoreGeneration, 1);
     assert.deepStrictEqual(built.enabledCards, ['麦畑']);
     assert.notStrictEqual(built.enabledCards, payload.enabledCards);
@@ -172,6 +174,20 @@ runTest('online game start runtimeはschemaからactive gameまで既存effect�
     ]);
     assert.ok(harness.calls.findIndex(call => call[0] === 'initGame') <
         harness.calls.findIndex(call => call[0] === 'focusGame'));
+});
+
+runTest('online game start runtimeは再戦世代を保存しlegacy欠落を0へ正規化する', () => {
+    const current = createHarness();
+    current.runtime.handle(startPayload({ gameGeneration: 2 }));
+    const currentWrite = current.calls.find(call =>
+        call[0] === 'writeRestoreJson' && call[1] === 'game-start');
+    assert.strictEqual(currentWrite[2].gameGeneration, 2);
+
+    const legacy = createHarness();
+    legacy.runtime.handle(startPayload({ gameGeneration: undefined }));
+    const legacyWrite = legacy.calls.find(call =>
+        call[0] === 'writeRestoreJson' && call[1] === 'game-start');
+    assert.strictEqual(legacyWrite[2].gameGeneration, 0);
 });
 
 runTest('online game start runtimeは非対応schemaをrestore開始前に拒否する', () => {

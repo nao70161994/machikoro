@@ -68,6 +68,7 @@ runTest('online integration: gameStart はtitle modal lockを解除してlifecyc
         versions: ['x'],
         reconnectTokenHashes: ['hash-a', 'hash-b'],
         hostPlayerIndex: 0,
+        gameGeneration: 2,
     });
 
     assert.strictEqual(rt.document.getElementById('rulesModal').style.display, 'none');
@@ -83,6 +84,10 @@ runTest('online integration: gameStart はtitle modal lockを解除してlifecyc
     assert.strictEqual(payload.mode, 'online');
     assert.strictEqual(payload.roomId, undefined);
     assert.strictEqual(payload.playerName, undefined);
+    assert.strictEqual(
+        JSON.parse(rt.localStorage.getItem('onlineGameStart')).gameGeneration,
+        2
+    );
 });
 
 runTest('online integration: gameStart から rejoinData で画面と状態を復元する', () => {
@@ -1105,9 +1110,63 @@ runTest('online integration: rejoin retry は正規化済みsessionで再送す�
         playerIndex: 1,
         playerName: 'Bob',
         reconnectToken: 'token-bob',
+        gameGeneration: 0,
         clientVersion: 'integration-build',
         hostlessRestoreVersion: 1,
     });
+});
+
+runTest('online integration: 再戦identityは新tokenと世代を保存して次の再接続へ使う', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Bob',
+        reconnectToken: 'old-token',
+        gameGeneration: 1,
+    });
+
+    let acknowledged = false;
+    rt.__test.socketHandlers.onlineRematchIdentity({
+        roomId: 'ROOM01',
+        playerIndex: 1,
+        reconnectToken: 'new-token',
+        gameGeneration: 2,
+    }, () => { acknowledged = true; });
+
+    const state = rt.__test.getOnlineState();
+    const stored = JSON.parse(rt.localStorage.getItem('onlineSession'));
+    assert.strictEqual(state.reconnectToken, 'new-token');
+    assert.strictEqual(state.gameGeneration, 2);
+    assert.strictEqual(stored.reconnectToken, 'new-token');
+    assert.strictEqual(stored.gameGeneration, 2);
+    assert.strictEqual(acknowledged, true);
+
+    rt.__test.setOnlineState({ isReconnectingOnline: true });
+    rt._scheduleRejoinRetry();
+    rt.__test.flushTimeouts();
+    const emitted = rt.__test.socketEmits.filter(entry => entry.name === 'rejoinRoom').at(-1);
+    assert.strictEqual(emitted.payload.reconnectToken, 'new-token');
+    assert.strictEqual(emitted.payload.gameGeneration, 2);
+});
+
+runTest('online integration: 再戦identityはsession保存失敗時にACKしない', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.initSocket();
+    rt.__test.setOnlineState({
+        myRoomId: 'ROOM01', myOriginalPlayerIndex: 1, myPlayerName: 'Bob',
+        reconnectToken: 'old-token', gameGeneration: 1,
+    });
+    rt.localStorage.setItem = () => { throw new Error('quota exceeded'); };
+    let acknowledgeCalls = 0;
+    rt.__test.socketHandlers.onlineRematchIdentity({
+        roomId: 'ROOM01', playerIndex: 1,
+        reconnectToken: 'new-token', gameGeneration: 2,
+    }, () => { acknowledgeCalls += 1; });
+    assert.strictEqual(acknowledgeCalls, 0);
+    assert.strictEqual(rt.__test.getOnlineState().reconnectToken, 'new-token');
+    assert.strictEqual(rt.__test.getOnlineState().gameGeneration, 2);
 });
 
 runTest('online integration: 非ホストはホスト待機上限後もhostless復元を送らない', () => {

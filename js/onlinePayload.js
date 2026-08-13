@@ -505,11 +505,15 @@ const OnlinePayload = Object.freeze({
     shouldClearPendingForAcceptedAction,
     withGameSchemaCapabilities,
     buildRejoin(session, clientVersion, gameSchemaCapabilities = null) {
+        const gameGeneration = onlinePayloadRestoreMetadata.normalizeCounter(
+            session && session.gameGeneration
+        );
         const payload = {
             roomId: session && session.roomId,
             playerIndex: session && session.playerIndex,
             playerName: session && session.playerName,
             reconnectToken: session && session.reconnectToken,
+            gameGeneration,
             clientVersion,
             hostlessRestoreVersion: ONLINE_HOSTLESS_RESTORE_SCHEMA_VERSION,
         };
