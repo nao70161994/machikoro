@@ -98,7 +98,10 @@ function registerLobbySocketHandlers(socket, dependencies) {
         socket.emit('roomCreated', {
             roomId, playerIndex: hostIndex, reconnectToken, hostPlayerIndex: hostIndex,
         });
-        io.to(roomId).emit('playerList', buildPlayerList(rooms[roomId]));
+        io.to(roomId).emit('playerList', buildPlayerList(rooms[roomId]), {
+            hostPlayerIndex: rooms[roomId].hostPlayerIndex,
+            participants: rooms[roomId].players.map(player => ({ index: player.index, name: player.name, connected: !!player.id })),
+        });
         checkGameStart(io, roomId);
         log('ルーム作成: ' + roomId + ' (' + playerCount + '人)');
     });
@@ -133,8 +136,48 @@ function registerLobbySocketHandlers(socket, dependencies) {
         socket.emit('roomJoined', {
             roomId, playerIndex, reconnectToken, hostPlayerIndex: room.hostPlayerIndex,
         });
-        io.to(roomId).emit('playerList', buildPlayerList(room));
+        io.to(roomId).emit('playerList', buildPlayerList(room), {
+            hostPlayerIndex: room.hostPlayerIndex,
+            participants: room.players.map(player => ({ index: player.index, name: player.name, connected: !!player.id })),
+        });
         checkGameStart(io, roomId);
+    });
+
+    socket.on('removeWaitingPlayer', payload => {
+        if (!requirePlainSocketPayload(socket, payload)) return;
+        const roomId = typeof payload.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
+        const playerIndex = Number(payload.playerIndex);
+        const room = rooms[roomId];
+        if (!room || room.started || socket.roomId !== roomId ||
+                socket.playerIndex !== room.hostPlayerIndex ||
+                !Number.isInteger(playerIndex) || playerIndex < 0 ||
+                playerIndex === room.hostPlayerIndex) {
+            emitAppError(socket, '待機中の参加者を外せません');
+            return;
+        }
+        const target = room.players.find(player => player.index === playerIndex);
+        if (!target) {
+            emitAppError(socket, '待機中の参加者が見つかりません');
+            return;
+        }
+        room.players = room.players.filter(player => player !== target);
+        room.lastTouchedAt = now();
+        const targetSocket = target.id && io.sockets?.sockets?.get(target.id);
+        if (targetSocket) {
+            targetSocket.roomId = null;
+            targetSocket.playerIndex = null;
+            emitAppError(targetSocket, 'ホストが待機室から外しました');
+            if (typeof targetSocket.leave === 'function') targetSocket.leave(roomId);
+            if (typeof targetSocket.disconnect === 'function') targetSocket.disconnect(true);
+        }
+        io.to(roomId).emit('playerList', buildPlayerList(room), {
+            hostPlayerIndex: room.hostPlayerIndex,
+            participants: room.players.map(player => ({
+                index: player.index,
+                name: player.name,
+                connected: !!player.id,
+            })),
+        });
     });
 }
 

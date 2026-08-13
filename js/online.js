@@ -85,6 +85,19 @@ function leaveOnlineLobby() {
     });
 }
 
+function removeOnlineLobbyPlayer(playerIndex) {
+    const session = onlineSessionSnapshot();
+    if (session.isOnlineGame || !session.isRoomHost || !session.myRoomId ||
+            !Number.isInteger(playerIndex) || playerIndex < 0 ||
+            playerIndex === session.myOriginalPlayerIndex || !session.socket) return false;
+    return showConfirm('この参加者を待機室から外しますか？', () => {
+        onlineSocketEffects.removeWaitingPlayer({
+            roomId: session.myRoomId,
+            playerIndex,
+        }, session.socket);
+    });
+}
+
 function onlineGameRuntimeSnapshot() {
     return onlineComposition.snapshotGame();
 }
@@ -2921,7 +2934,7 @@ function initSocket() {
     );
     socketEvents.on(
         OnlineSocketRegistry.keys.PLAYER_LIST,
-        players => onlineLobbyStartRuntime.handlePlayerList(players)
+        (players, lobbyState) => onlineLobbyStartRuntime.handlePlayerList(players, lobbyState)
     );
 
     socketEvents.on(OnlineSocketRegistry.keys.GAME_START, payload => {

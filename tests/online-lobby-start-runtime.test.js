@@ -54,7 +54,7 @@ function createHarness(options = {}) {
         getGame: () => game,
         getRestoreEventHandlers: () => { calls.push(['getRestoreEventHandlers']); return handlers; },
         getRestoreGeneration: () => { calls.push(['getRestoreGeneration']); return generation; },
-        getSession: () => ({ myRoomId: 'ROOM01' }),
+        getSession: () => ({ myRoomId: 'ROOM01', isRoomHost: options.isRoomHost === true }),
         incrementRestoreGeneration: () => { generation++; calls.push(['incrementRestoreGeneration', generation]); return generation; },
         initGame: (...args) => calls.push(['initGame', ...args]),
         logTypes: { SYSTEM: 'system' },
@@ -128,6 +128,19 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
     assert.ok(harness.calls[0][1].includes('参加枠（2枠）: Alice、待機中...'));
     assert.ok(harness.calls[0][1].includes('参加枠が揃うと自動開始します'));
     assert.ok(harness.calls[0][1].includes('data-ui-action="copyOnlineRoomId"'));
+});
+
+runTest('online lobby start runtimeはhostへ参加者管理metadataを渡す', () => {
+    const harness = createHarness({ isRoomHost: true });
+    harness.runtime.handlePlayerList(['Alice', 'Bob'], {
+        hostPlayerIndex: 0,
+        participants: [
+            { index: 0, name: 'Alice', connected: true },
+            { index: 1, name: 'Bob', connected: true },
+        ],
+    });
+    assert.ok(harness.calls[0][1].includes('removeOnlineLobbyPlayer'));
+    assert.ok(harness.calls[0][1].includes('data-player-index="1"'));
 });
 
 runTest('online game start runtimeはschemaからactive gameまで既存effect順を維持する', () => {

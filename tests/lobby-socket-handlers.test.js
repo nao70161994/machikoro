@@ -51,12 +51,77 @@ function makeRuntime() {
     return { rooms, trace, dependencies };
 }
 
-runTest('lobby socket handler はcreateRoom/joinRoomだけを同じ順序で登録する', () => {
+runTest('lobby socket handler は待機室管理を含む既存順序で登録する', () => {
     const runtime = makeRuntime();
     const socket = makeSocket('host', runtime.trace);
     registerLobbySocketHandlers(socket, runtime.dependencies);
-    assert.deepStrictEqual(Object.keys(socket.handlers), ['createRoom', 'joinRoom']);
-    assert.deepStrictEqual(runtime.trace.slice(0, 2), [['on', 'createRoom'], ['on', 'joinRoom']]);
+    assert.deepStrictEqual(Object.keys(socket.handlers), ['createRoom', 'joinRoom', 'removeWaitingPlayer']);
+    assert.deepStrictEqual(runtime.trace.slice(0, 3), [
+        ['on', 'createRoom'], ['on', 'joinRoom'], ['on', 'removeWaitingPlayer'],
+    ]);
+});
+
+runTest('待機室hostだけが自分以外の参加者を外せる', () => {
+    const runtime = makeRuntime();
+    const guestTrace = [];
+    const guest = makeSocket('guest', guestTrace);
+    guest.roomId = 'ROOM01';
+    guest.playerIndex = 1;
+    guest.leave = roomId => guestTrace.push(['leave', roomId]);
+    guest.disconnect = force => guestTrace.push(['disconnect', force]);
+    runtime.dependencies.io.sockets = { sockets: new Map([['guest', guest]]) };
+    runtime.rooms.ROOM01 = {
+        roomId: 'ROOM01',
+        players: [
+            { id: 'host', name: 'Alice', index: 0 },
+            { id: 'guest', name: 'Bob', index: 1 },
+        ],
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        maxPlayers: 2,
+        hostPlayerIndex: 0,
+        started: false,
+    };
+    const host = makeSocket('host', runtime.trace);
+    host.roomId = 'ROOM01';
+    host.playerIndex = 0;
+    registerLobbySocketHandlers(host, runtime.dependencies);
+    runtime.trace.length = 0;
+
+    host.handlers.removeWaitingPlayer({ roomId: 'room01', playerIndex: 1 });
+
+    assert.deepStrictEqual(runtime.rooms.ROOM01.players.map(player => player.index), [0]);
+    assert.deepStrictEqual(guestTrace, [['leave', 'ROOM01'], ['disconnect', true]]);
+    assert.ok(runtime.trace.some(entry => entry[0] === 'error' && entry[1] === 'guest'));
+    assert.ok(runtime.trace.some(entry => entry[0] === 'room-emit' && entry[2] === 'playerList'));
+
+    runtime.trace.length = 0;
+    host.handlers.removeWaitingPlayer({ roomId: 'ROOM01', playerIndex: 0 });
+    assert.ok(runtime.trace.some(entry => entry[0] === 'error'));
+});
+
+runTest('待機室の非host・開始済みroomは参加者管理を変更しない', () => {
+    const runtime = makeRuntime();
+    runtime.rooms.ROOM01 = {
+        roomId: 'ROOM01',
+        players: [
+            { id: 'host', name: 'Alice', index: 0 },
+            { id: 'guest', name: 'Bob', index: 1 },
+        ],
+        playerSettings: [], maxPlayers: 2, hostPlayerIndex: 0, started: false,
+    };
+    const guest = makeSocket('guest', runtime.trace);
+    guest.roomId = 'ROOM01';
+    guest.playerIndex = 1;
+    registerLobbySocketHandlers(guest, runtime.dependencies);
+    runtime.trace.length = 0;
+    guest.handlers.removeWaitingPlayer({ roomId: 'ROOM01', playerIndex: 0 });
+    assert.strictEqual(runtime.rooms.ROOM01.players.length, 2);
+    assert.ok(runtime.trace.some(entry => entry[0] === 'error'));
+
+    runtime.rooms.ROOM01.started = true;
+    runtime.trace.length = 0;
+    guest.handlers.removeWaitingPlayer({ roomId: 'ROOM01', playerIndex: 0 });
+    assert.strictEqual(runtime.rooms.ROOM01.players.length, 2);
 });
 
 runTest('createRoom handler はroom作成からemit/start-checkまで既存順序を維持する', () => {

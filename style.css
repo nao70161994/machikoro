@@ -767,6 +767,27 @@ body.modal-open #gameScreen {
     text-align: center;
 }
 
+.room-host-controls {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid #3b3b58;
+    border-radius: 10px;
+}
+
+.room-host-controls h4 { margin: 0 0 8px; }
+.room-host-controls ul { margin: 0; padding: 0; list-style: none; }
+.room-host-controls li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+}
+.room-host-controls li + li { margin-top: 6px; }
+.room-host-controls li span { min-width: 0; overflow-wrap: anywhere; }
+.room-host-controls button { min-height: 44px; flex: 0 0 auto; }
+
 /* ===== ルール説明ボタン ===== */
 .title-buttons-row {
     display: flex;

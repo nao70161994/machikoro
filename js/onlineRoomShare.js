@@ -18,7 +18,7 @@ const OnlineRoomShare = (() => {
         return String(roomId ?? '').trim().toUpperCase();
     }
 
-    function buildWaitingHtml(roomId, players = null) {
+    function buildWaitingHtml(roomId, players = null, options = {}) {
         const normalizedRoomId = normalizeRoomId(roomId);
         const safeRoomId = escapeText(normalizedRoomId);
         const hasPlayerList = Array.isArray(players);
@@ -28,6 +28,15 @@ const OnlineRoomShare = (() => {
             : '<div class="waiting-players">プレイヤーを待っています...</div>';
         const startHelp = hasWaitingSlot
             ? '<p class="room-share-start-help">参加枠が揃うと自動開始します。</p>'
+            : '';
+        const participants = Array.isArray(options.participants) ? options.participants : [];
+        const hostControls = options.isHost === true
+            ? participants.filter(player => Number.isInteger(player.index) && player.index !== options.hostPlayerIndex)
+                .map(player => `<li><span>${escapeText(player.name)}${player.connected === false ? '（再接続待ち）' : ''}</span><button type="button" data-ui-action="removeOnlineLobbyPlayer" data-player-index="${player.index}">外す</button></li>`)
+                .join('')
+            : '';
+        const management = hostControls
+            ? `<section class="room-host-controls" aria-label="ホストの待機室管理"><h4>参加者の管理</h4><ul>${hostControls}</ul></section>`
             : '';
         return `<div class="room-share-panel">
             ${hasPlayerList ? '' : '<div class="room-share-state">ルームを作成しました！</div>'}
@@ -39,6 +48,7 @@ const OnlineRoomShare = (() => {
             <p class="room-share-help">この6文字を参加者に共有してください。</p>
             ${playerList}
             ${startHelp}
+            ${management}
             <button type="button" class="room-leave-btn" data-ui-action="leaveOnlineLobby">待機室から退出</button>
         </div>`;
     }

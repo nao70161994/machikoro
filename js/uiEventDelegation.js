@@ -86,6 +86,7 @@ const UiEventDelegation = (() => {
             else if (name === 'switchOnlineTab') args = [element.dataset.onlineTab];
             else if (name === 'changeOnlineCount') args = [parseInt(element.dataset.delta, 10)];
             else if (name === 'copyOnlineRoomId') args = [element.dataset.roomId];
+            else if (name === 'removeOnlineLobbyPlayer') args = [parseInt(element.dataset.playerIndex, 10)];
         } else if (family === 'input') {
             if (name === 'cpuSpeed' || name === 'onlineCpuSpeed') args = [element.value];
             else if (name === 'localPlayerName') {

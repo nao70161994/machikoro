@@ -23,6 +23,26 @@ runTest('online room shareはroom IDと参加者をescapeして共有手順を�
     assert.ok(!readyHtml.includes('自動開始します'));
 });
 
+runTest('online room shareはhostだけに自分以外の参加者管理を表示する', () => {
+    const html = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
+        isHost: true,
+        hostPlayerIndex: 0,
+        participants: [
+            { index: 0, name: 'Alice', connected: true },
+            { index: 1, name: '<Bob>', connected: false },
+        ],
+    });
+    assert.ok(html.includes('ホストの待機室管理'));
+    assert.ok(html.includes('data-ui-action="removeOnlineLobbyPlayer" data-player-index="1"'));
+    assert.ok(html.includes('&lt;Bob&gt;（再接続待ち）'));
+    assert.ok(!html.includes('data-player-index="0"'));
+    assert.ok(!OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
+        isHost: false,
+        hostPlayerIndex: 0,
+        participants: [{ index: 1, name: 'Bob', connected: true }],
+    }).includes('removeOnlineLobbyPlayer'));
+});
+
 runTest('online room shareはClipboard成功時に正規化IDを通知する', async () => {
     const calls = [];
     const result = await OnlineRoomShare.copyRoomId(' abc123 ', {

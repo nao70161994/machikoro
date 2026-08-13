@@ -130,9 +130,14 @@ const OnlineLobbyStartRuntime = (() => {
             dependencies.setStatusText(`ルーム ${roomId} に参加しました！`);
         }
 
-        function handlePlayerList(players) {
-            const roomId = dependencies.getSession().myRoomId;
-            dependencies.setStatusHtml(dependencies.roomShare.buildWaitingHtml(roomId, players));
+        function handlePlayerList(players, lobbyState = {}) {
+            const session = dependencies.getSession();
+            const roomId = session.myRoomId;
+            dependencies.setStatusHtml(dependencies.roomShare.buildWaitingHtml(roomId, players, {
+                isHost: session.isRoomHost === true,
+                hostPlayerIndex: lobbyState.hostPlayerIndex,
+                participants: lobbyState.participants,
+            }));
         }
 
         function handle(input = {}) {
