@@ -82,6 +82,7 @@ function makeSnapshot() {
         log: [{ type: 'system', message: 'turn' }],
         reviewSummary: {
             complete: false,
+            totalsComplete: true,
             counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
             totals: { gain: 0, lose: 0 },
         },
@@ -114,6 +115,7 @@ function makeSnapshot() {
             log: [],
             reviewSummary: {
                 complete: false,
+                totalsComplete: true,
                 counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
                 totals: { gain: 0, lose: 0 },
             },

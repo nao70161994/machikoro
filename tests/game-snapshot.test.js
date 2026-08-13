@@ -377,4 +377,7 @@ runTest('共有snapshotは収支欠落legacyのイベント完全性と収支不
     assert.strictEqual(GameSnapshot.isValidReviewSummary({
         ...legacy, totalsComplete: true,
     }), false);
+    assert.strictEqual(GameSnapshot.normalizeReviewSummary({
+        ...legacy, totalsComplete: true,
+    }, false).totalsComplete, false);
 });

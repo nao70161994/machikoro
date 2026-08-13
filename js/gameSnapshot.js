@@ -28,9 +28,7 @@ function normalizeReviewSummary(value, legacyComplete = false) {
     }));
     return {
         complete: source.complete === true || (value == null && legacyComplete === true),
-        totalsComplete: typeof source.totalsComplete === 'boolean'
-            ? source.totalsComplete
-            : !!hasStoredTotals,
+        totalsComplete: !!hasStoredTotals && source.totalsComplete !== false,
         counts,
         totals,
     };
