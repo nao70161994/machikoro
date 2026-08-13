@@ -27,6 +27,8 @@ function createOnlineRematchRuntime(dependencies = {}) {
         ? dependencies.setTimeoutFn : setTimeout;
     const clearTimeoutFn = typeof dependencies.clearTimeoutFn === 'function'
         ? dependencies.clearTimeoutFn : clearTimeout;
+    const persistRollback = typeof dependencies.persistRoomCanonicalState === 'function'
+        ? dependencies.persistRoomCanonicalState : (() => {});
     const sessions = new Map();
 
     function clear(roomId, reason = '') {
@@ -68,12 +70,28 @@ function createOnlineRematchRuntime(dependencies = {}) {
                 previousTokenHash: player.reconnectTokenHash,
             };
         });
+        const previousRoomState = { ...room };
+        const restorePreviousState = () => {
+            for (const key of Object.keys(room)) {
+                if (!Object.prototype.hasOwnProperty.call(previousRoomState, key)) delete room[key];
+            }
+            Object.assign(room, previousRoomState);
+            for (const identity of identities) {
+                identity.player.reconnectToken = identity.previousToken;
+                identity.player.reconnectTokenHash = identity.previousTokenHash;
+            }
+        };
         for (const identity of identities) {
             identity.player.reconnectToken = identity.reconnectToken;
             identity.player.reconnectTokenHash = identity.reconnectTokenHash;
         }
-        const previousGeneration = room.gameGeneration;
         room.gameGeneration = generation;
+        room.hostEpoch = 0;
+        room.actionSeq = 0;
+        room.acceptedClientActions = {};
+        room.fullActionLog = [];
+        room.started = false;
+        room.gameStartPayload = null;
         let payload;
         try {
             payload = dependencies.buildGameStartPayload(dependencies.io, room);
@@ -81,34 +99,31 @@ function createOnlineRematchRuntime(dependencies = {}) {
             payload = null;
         }
         if (!payload) {
-            room.gameGeneration = previousGeneration;
-            for (const identity of identities) {
-                identity.player.reconnectToken = identity.previousToken;
-                identity.player.reconnectTokenHash = identity.previousTokenHash;
-            }
+            restorePreviousState();
             clear(roomId, 'start-failed');
             return false;
         }
         payload.gameGeneration = generation;
-        room.hostEpoch = 0;
-        room.actionSeq = 0;
-        room.acceptedClientActions = {};
-        room.fullActionLog = [];
-        room.started = false;
-        room.gameStartPayload = null;
-        dependencies.markRoomGameStarted(room, payload, now());
-        for (const identity of identities) {
-            const target = dependencies.io.sockets.sockets.get(identity.player.id);
-            if (target) target.emit(ONLINE_REMATCH_EVENTS.IDENTITY, {
-                roomId,
-                playerIndex: identity.player.index,
-                reconnectToken: identity.reconnectToken,
-                gameGeneration: generation,
-            });
+        try {
+            dependencies.markRoomGameStarted(room, payload, now());
+            for (const identity of identities) {
+                const target = dependencies.io.sockets.sockets.get(identity.player.id);
+                if (target) target.emit(ONLINE_REMATCH_EVENTS.IDENTITY, {
+                    roomId,
+                    playerIndex: identity.player.index,
+                    reconnectToken: identity.reconnectToken,
+                    gameGeneration: generation,
+                });
+            }
+            dependencies.io.to(roomId).emit('gameStart', payload);
+        } catch (_) {
+            restorePreviousState();
+            try { persistRollback(roomId, room, 'online-rematch-start-rollback', now()); } catch (_) {}
+            clear(roomId, 'start-failed');
+            return false;
         }
         clearTimeoutFn(session.timer);
         sessions.delete(roomId);
-        dependencies.io.to(roomId).emit('gameStart', payload);
         return true;
     }
 

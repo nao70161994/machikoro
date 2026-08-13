@@ -230,3 +230,13 @@ runTest('online inbound runtimeは現在世代と異なる遅延action/ACKを適
     assert.strictEqual(runtime.handleActionAccepted({ action: 'nextTurn', data: {}, seq: 1, gameGeneration: 1 }), false);
     assert.deepStrictEqual(h.calls.map(call => call[0]), ['decode', 'decode']);
 });
+
+runTest('online inbound runtimeは再戦で旧seq42からreset後の最初のseq1を適用する', () => {
+    const h = createHarness({ lastAppliedSeq: 0 });
+    h.dependencies.getGameGeneration = () => 1;
+    const runtime = OnlineInboundActionRuntime.createRuntime(h.dependencies);
+
+    assert.strictEqual(runtime.handleGameAction(action({ seq: 1, gameGeneration: 1 })), 'committed');
+    assert.ok(h.calls.some(call => call[0] === 'apply'));
+    assert.ok(h.calls.some(call => call[0] === 'commit'));
+});
