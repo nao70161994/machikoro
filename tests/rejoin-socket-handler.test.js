@@ -30,6 +30,10 @@ function makeFixture(overrides = {}) {
         setRoomHostPlayerIndex(_room, playerIndex) { _room.hostPlayerIndex = playerIndex; },
         emitRoomHostChanged() {},
         persistRoomCanonicalState() {},
+        pruneExpiredWaitingReservations() {},
+        isWaitingReservation(player) { return !!player && !player.id; },
+        buildPlayerList(targetRoom) { return targetRoom.players.map(player => player.name); },
+        checkGameStart() { events.push(['check-start']); },
         io: {
             to(roomId) {
                 events.push(['io.to', roomId]);
@@ -140,6 +144,42 @@ runTest('rejoin handler は認証済み連投をdetachとpayload生成前に拒�
     ]);
     assert.strictEqual(fixture.socket.roomId, undefined);
     assert.strictEqual(fixture.room.lastTouchedAt, 0);
+});
+
+runTest('rejoin handlerは期限内の待機席を同一tokenで復元して開始判定する', () => {
+    const fixture = makeFixture();
+    fixture.room.started = false;
+    fixture.room.players = [{
+        id: null, index: 1, name: 'Bob', reconnectToken: 'token', reservedUntil: 9999,
+    }];
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(validPayload);
+    assert.strictEqual(fixture.room.players[0].id, 'new-socket');
+    assert.strictEqual('reservedUntil' in fixture.room.players[0], false);
+    assert.deepStrictEqual(fixture.events, [
+        ['plain'], ['room-id'], ['now'], ['room-entry'], ['expected-hash'], ['hash-token'],
+        ['now'], ['admit'], ['join', 'ROOM01'], ['now'],
+        ['socket.emit', 'roomJoined', {
+            roomId: 'ROOM01', playerIndex: 1, reconnectToken: 'token', hostPlayerIndex: undefined,
+        }],
+        ['io.to', 'ROOM01'], ['io.emit', 'playerList', ['Bob']],
+        ['check-start'], ['log', '待機室へ再接続: Bob (ルーム: ROOM01)'],
+    ]);
+});
+
+runTest('rejoin handlerは期限切れ待機席を復元しない', () => {
+    const fixture = makeFixture({
+        pruneExpiredWaitingReservations(room) { room.players = []; },
+        getExpectedReconnectTokenHash() { fixture.events.push(['expected-hash']); return ''; },
+    });
+    fixture.room.started = false;
+    fixture.room.players = [{ id: null, index: 1, name: 'Bob', reservedUntil: 1 }];
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(validPayload);
+    assert.deepStrictEqual(fixture.events, [
+        ['plain'], ['room-id'], ['now'], ['room-entry'], ['expected-hash'], ['error', 'INVALID_TOKEN'],
+    ]);
+    assert.strictEqual(fixture.socket.roomId, undefined);
 });
 
 runTest('rejoin handlerはhost不在時に先着playerをrejoinData前にhostへ再選出する', () => {

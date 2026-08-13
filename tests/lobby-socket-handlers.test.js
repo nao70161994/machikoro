@@ -91,7 +91,7 @@ runTest('createRoom handler はroom作成からemit/start-checkまで既存順�
     assert.deepStrictEqual(runtime.trace[4], [
         'socket-emit',
         'roomCreated',
-        { roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-1' },
+        { roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-1', hostPlayerIndex: 0 },
     ]);
 });
 

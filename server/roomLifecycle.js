@@ -5,6 +5,9 @@ function makeRoomLifecycle(options) {
     const isRoomConnected = room => typeof options.isRoomConnected === 'function' &&
         options.isRoomConnected(room);
     const createRoomRateBuckets = new Map();
+    const pruneWaitingRoomReservations = typeof options.pruneWaitingRoomReservations === 'function'
+        ? options.pruneWaitingRoomReservations
+        : (() => []);
 
     function roomTimestamp(value) {
         return Number.isFinite(value) ? value : 0;
@@ -22,6 +25,15 @@ function makeRoomLifecycle(options) {
     function cleanupExpiredRooms(now = Date.now(), targetRooms = defaultRooms) {
         let deleted = 0;
         for (const [id, room] of Object.entries(targetRooms)) {
+            if (room && !room.started) {
+                pruneWaitingRoomReservations(room, now);
+                if (Array.isArray(room.players) && room.players.length === 0) {
+                    delete targetRooms[id];
+                    deleted++;
+                    log.log(`ルーム削除（予約期限）: ${id}`);
+                    continue;
+                }
+            }
             if (room && room.started && isRoomConnected(room)) continue;
             if (isRoomExpired(room, now)) {
                 delete targetRooms[id];

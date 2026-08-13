@@ -4,7 +4,7 @@ const assert = require('assert');
 const { ROOM_GC_INTERVAL_MS, startRoomGc } = require('../server/roomGcRuntime');
 const { runTest } = require('./helpers/test-utils');
 
-runTest('room GC runtimeは10分周期・callback時刻・rooms identityを維持する', () => {
+runTest('room GC runtimeは30秒周期・callback時刻・rooms identityを維持する', () => {
     const calls = [];
     const rooms = { ABC123: { started: false } };
     const timer = { unrefCalls: 0, unref() { this.unrefCalls++; } };

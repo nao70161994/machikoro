@@ -1,6 +1,6 @@
 'use strict';
 
-const ROOM_GC_INTERVAL_MS = 10 * 60 * 1000;
+const ROOM_GC_INTERVAL_MS = 30 * 1000;
 
 function startRoomGc(options = {}) {
     const cleanupExpiredRooms = options.cleanupExpiredRooms;

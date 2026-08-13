@@ -1602,8 +1602,8 @@ function _legacyOnlineSocketConnectPlan() {
     const session = onlineSessionSnapshot();
     return Object.freeze({
         clearWaitingStatus: onlineDomEffects.isStatusWaiting(),
-        requestRejoin: !!((session.isOnlineGame || session.isReconnectingOnline || _onlineRestoreLifecycleController.isInProgress()) &&
-            session.myRoomId && session.myOriginalPlayerIndex >= 0 && session.myPlayerName && session.reconnectToken),
+        requestRejoin: !!(session.myRoomId && session.myOriginalPlayerIndex >= 0 &&
+            session.myPlayerName && session.reconnectToken),
     });
 }
 
@@ -2732,6 +2732,7 @@ function initSocket() {
         setCpuSpeed: value => GameSetupState.runtime.setCpuSpeed(value),
         setHostState: hostPlayerIndex => _setOnlineHostState(hostPlayerIndex),
         setOnline: value => onlineComposition.sessionState.setOnline(value),
+        setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
         setSchema: selection => onlineSchemaSelectionController.set(selection),
         setStatusHtml: html => onlineDomEffects.setStatusHtml(html),
         setStatusText: message => onlineDomEffects.setStatusText(message),

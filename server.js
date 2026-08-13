@@ -141,7 +141,13 @@ const {
 } = makeHostlessRestoreDiagnostics({
     hashRoomId: roomId => crypto.createHash('sha256').update(roomId).digest('hex'),
 });
-const { createDisconnectSocketHandler } = require('./server/disconnectSocketHandler');
+const {
+    createDisconnectSocketHandler,
+    isWaitingReservation,
+    pruneExpiredWaitingReservations,
+    reserveWaitingPlayer,
+    shouldRemoveWaitingPlayerImmediately,
+} = require('./server/disconnectSocketHandler');
 const {
     gameSchemaNegotiationEnabled,
     gameSchemaWireEnabled,
@@ -338,6 +344,7 @@ const {
 } = require('./server/roomLifecycle')({
     limits: ROOM_LIFECYCLE_LIMITS,
     defaultRooms: rooms,
+    pruneWaitingRoomReservations: pruneExpiredWaitingReservations,
     isRoomConnected(room) {
         return Array.isArray(room.players) && room.players.some(player =>
             player && player.id && io.sockets.sockets.has(player.id)
@@ -784,6 +791,9 @@ const disconnectSocketHandler = createDisconnectSocketHandler({
     emitRoomHostChanged,
     persistRoomCanonicalState,
     disconnectHostlessRestore: socket => hostlessRestoreRuntime.disconnect(socket),
+    waitingReservationTtlMs: ROOM_LIFECYCLE_LIMITS.waitingReservationTtlMs,
+    reserveWaitingPlayer,
+    shouldRemoveWaitingPlayerImmediately,
 });
 const {
     removeWaitingRoomSocket,
@@ -823,6 +833,7 @@ registerSocketConnectionRuntime({
             checkGameStart,
             validateSocketCanEnterRoom,
             isValidRoomId,
+            pruneExpiredWaitingReservations,
             resolveClientGameSchemaCapabilities: value => resolveClientGameSchemaCapabilities(value, GAME_SCHEMA_NEGOTIATION_ENABLED),
             negotiateRoomGameSchemaCandidate: (room, playerIndex, capabilities) => negotiateRoomGameSchemaCandidate(room, playerIndex, capabilities, GAME_SCHEMA_NEGOTIATION_ENABLED),
         });
@@ -887,6 +898,10 @@ registerSocketConnectionRuntime({
             admitRejoin: (targetSocket, roomId, playerIndex) =>
                 rejoinAdmission.admit(targetSocket, roomId, playerIndex),
             io,
+            pruneExpiredWaitingReservations,
+            isWaitingReservation,
+            buildPlayerList,
+            checkGameStart,
         });
     },
     recreate(socket) {

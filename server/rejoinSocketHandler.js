@@ -18,6 +18,10 @@ function registerRejoinSocketHandler(socket, dependencies) {
         emitRoomHostChanged,
         persistRoomCanonicalState,
         io,
+        pruneExpiredWaitingReservations,
+        isWaitingReservation,
+        buildPlayerList,
+        checkGameStart,
     } = dependencies;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
     const log = typeof dependencies.log === 'function' ? dependencies.log : console.log;
@@ -36,7 +40,7 @@ function registerRejoinSocketHandler(socket, dependencies) {
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
-        if (!room.started) { emitAppError(socket, 'ゲームはまだ開始されていません'); return; }
+        if (!room.started) pruneExpiredWaitingReservations(room, now());
         const roomEntry = validateSocketCanEnterRoom(socket, roomId, rooms);
         if (!roomEntry.ok) { emitAppError(socket, roomEntry.message); return; }
         const expectedReconnectTokenHash = getExpectedReconnectTokenHash(room, playerIndex, playerName);
@@ -47,6 +51,31 @@ function registerRejoinSocketHandler(socket, dependencies) {
 
         const schemaResolution = resolveGameSchemaCapabilities(gameSchemaCapabilities);
         if (!schemaResolution.ok) { emitAppError(socket, 'SCHEMA_CAPABILITY_INVALID'); return; }
+        if (!room.started) {
+            const reservedPlayer = room.players.find(player =>
+                player.index === playerIndex && player.name === playerName);
+            if (!isWaitingReservation(reservedPlayer, now())) {
+                emitAppError(socket, 'WAITING_RESERVATION_EXPIRED');
+                return;
+            }
+            socket.gameSchemaCapabilities = schemaResolution.capabilities;
+            const admission = admitRejoin(socket, roomId, playerIndex);
+            if (!admission.ok) { emitAppError(socket, admission.message); return; }
+            reservedPlayer.id = socket.id;
+            delete reservedPlayer.reservedUntil;
+            reservedPlayer.gameSchemaCapabilities = schemaResolution.capabilities;
+            socket.join(roomId);
+            socket.roomId = roomId;
+            socket.playerIndex = playerIndex;
+            room.lastTouchedAt = now();
+            socket.emit('roomJoined', {
+                roomId, playerIndex, reconnectToken, hostPlayerIndex: room.hostPlayerIndex,
+            });
+            io.to(roomId).emit('playerList', buildPlayerList(room));
+            checkGameStart(io, roomId);
+            log(`待機室へ再接続: ${playerName} (ルーム: ${roomId})`);
+            return;
+        }
         if (!supportsSelectedSchema(schemaResolution.capabilities, room.gameStartPayload && room.gameStartPayload.gameSchema)) {
             emitAppError(socket, 'SCHEMA_VERSION_UNSUPPORTED');
             return;

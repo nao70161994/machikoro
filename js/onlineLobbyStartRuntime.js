@@ -28,7 +28,7 @@ const OnlineLobbyStartRuntime = (() => {
             'preloadModels', 'removeRestoreItem', 'replaceActionSequence',
             'replaceEnabledCards', 'replaceEnabledLandmarks', 'resetReconnectCompletion',
             'resetUiLocks', 'saveSession', 'setActionFlight', 'setCpuSpeed',
-            'setHostState', 'setOnline', 'setSchema', 'setStatusHtml', 'setStatusText',
+            'setHostState', 'setOnline', 'setReconnectFlag', 'setSchema', 'setStatusHtml', 'setStatusText',
             'showGame',
             'startRestore', 'writeRestoreJson',
         ];
@@ -105,16 +105,27 @@ const OnlineLobbyStartRuntime = (() => {
                 new Set(versions).size > 1;
         }
 
-        function handleRoomCreated({ roomId, playerIndex, reconnectToken }) {
-            dependencies.finishLobbyRequest('create');
+        function acceptLobbyRoom({ roomId, playerIndex, reconnectToken, hostPlayerIndex }) {
             dependencies.acceptRoom({ playerIndex, roomId, reconnectToken });
+            if (Number.isInteger(hostPlayerIndex)) {
+                dependencies.setHostState(hostPlayerIndex);
+            }
+        }
+
+        function handleRoomCreated({ roomId, playerIndex, reconnectToken, hostPlayerIndex }) {
+            dependencies.finishLobbyRequest('create');
+            dependencies.clearRejoinRetry();
+            dependencies.setReconnectFlag(false);
+            acceptLobbyRoom({ roomId, playerIndex, reconnectToken, hostPlayerIndex });
             dependencies.saveSession();
             dependencies.setStatusHtml(dependencies.roomShare.buildWaitingHtml(roomId));
         }
 
-        function handleRoomJoined({ roomId, playerIndex, reconnectToken }) {
+        function handleRoomJoined({ roomId, playerIndex, reconnectToken, hostPlayerIndex }) {
             dependencies.finishLobbyRequest('join');
-            dependencies.acceptRoom({ playerIndex, roomId, reconnectToken });
+            dependencies.clearRejoinRetry();
+            dependencies.setReconnectFlag(false);
+            acceptLobbyRoom({ roomId, playerIndex, reconnectToken, hostPlayerIndex });
             dependencies.saveSession();
             dependencies.setStatusText(`ルーム ${roomId} に参加しました！`);
         }

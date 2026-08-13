@@ -14,8 +14,7 @@ const ONLINE_SOCKET_CONNECT_EFFECT_STEPS = Object.freeze([
 function planOnlineSocketConnect(state = {}) {
     return Object.freeze({
         clearWaitingStatus: state.waitingStatus === true,
-        requestRejoin: (state.onlineActive === true || state.reconnecting === true ||
-            state.restoreInProgress === true) && state.hasRoomId === true &&
+        requestRejoin: state.hasRoomId === true &&
             Number.isInteger(state.originalPlayerIndex) && state.originalPlayerIndex >= 0 &&
             state.hasPlayerName === true && state.hasReconnectToken === true,
     });

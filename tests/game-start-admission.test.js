@@ -22,10 +22,17 @@ runTest('game start admissionは開始条件を理由付きplanへ正規化す�
         decision: GAME_START_DECISIONS.SKIP,
         reason: GAME_START_SKIP_REASONS.WAITING_HUMAN_SLOTS,
     });
-    const room = { started: false, players: [{}, {}] };
+    const room = { started: false, players: [{ id: 'a' }, { id: 'b' }] };
     assert.deepStrictEqual(planGameStart(room, 2), {
         decision: GAME_START_DECISIONS.START,
         room,
+    });
+    assert.deepStrictEqual(planGameStart({
+        started: false,
+        players: [{ id: 'a' }, { id: null, reservedUntil: 9999 }],
+    }, 2), {
+        decision: GAME_START_DECISIONS.SKIP,
+        reason: GAME_START_SKIP_REASONS.WAITING_HUMAN_SLOTS,
     });
 });
 

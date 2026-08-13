@@ -50,6 +50,7 @@ function createSubject(overrides = {}) {
             calls.push('error');
         },
         now: () => 4321,
+        waitingReservationTtlMs: 60000,
     }, overrides);
     const subject = createDisconnectSocketHandler(dependencies);
     const socket = {
@@ -65,20 +66,61 @@ runTest('disconnect socket handlerはhostless復元処理の後にroom切断処�
     const subject = createSubject();
     subject.rooms.ROOM1 = {
         started: false,
-        players: [{ id: 'socket-1', name: 'Alice' }, { id: 'socket-2', name: 'Bob' }],
+        hostPlayerIndex: 0,
+        players: [{ id: 'socket-1', index: 0, name: 'Alice' }, { id: 'socket-2', index: 1, name: 'Bob' }],
     };
     subject.socket.roomId = 'ROOM1';
     subject.subject.registerSocket(subject.socket);
 
-    subject.handlers.disconnect();
+    subject.handlers.disconnect('client namespace disconnect');
 
     assert.deepStrictEqual(subject.calls, ['hostless', 'build-player-list', 'log']);
-    assert.deepStrictEqual(subject.rooms.ROOM1.players, [{ id: 'socket-2', name: 'Bob' }]);
+    assert.deepStrictEqual(subject.rooms.ROOM1.players, [{ id: 'socket-2', index: 1, name: 'Bob' }]);
     assert.deepStrictEqual(subject.emitted, [{
         roomId: 'ROOM1',
         event: 'playerList',
         payload: ['Bob'],
     }]);
+});
+
+runTest('disconnect socket handlerはtransport切断した待機席を60秒予約しhostを移譲する', () => {
+    const subject = createSubject();
+    subject.io.sockets.sockets.set('socket-2', {});
+    subject.rooms.ROOM1 = {
+        started: false,
+        hostPlayerIndex: 0,
+        players: [
+            { id: 'socket-1', index: 0, name: 'Alice' },
+            { id: 'socket-2', index: 1, name: 'Bob' },
+        ],
+    };
+    Object.assign(subject.socket, { roomId: 'ROOM1', playerIndex: 0 });
+    subject.subject.registerSocket(subject.socket);
+
+    subject.handlers.disconnect('transport close');
+
+    assert.deepStrictEqual(subject.rooms.ROOM1.players[0], {
+        id: null, index: 0, name: 'Alice', reservedUntil: 64321,
+    });
+    assert.strictEqual(subject.rooms.ROOM1.hostPlayerIndex, 1);
+    assert.deepStrictEqual(subject.emitted.at(-1), {
+        roomId: 'ROOM1', event: 'playerList', payload: ['Alice', 'Bob'],
+    });
+});
+
+runTest('waiting reservation helperは期限境界で席を除去する', () => {
+    const room = {
+        started: false,
+        players: [
+            { id: null, index: 0, reservedUntil: 1000 },
+            { id: null, index: 1, reservedUntil: 1001 },
+            { id: 'live', index: 2 },
+        ],
+    };
+    const removed = require('../server/disconnectSocketHandler')
+        .pruneExpiredWaitingReservations(room, 1000);
+    assert.deepStrictEqual(removed.map(player => player.index), [0]);
+    assert.deepStrictEqual(room.players.map(player => player.index), [1, 2]);
 });
 
 runTest('disconnect socket handlerは開始済みhost切断時の通知と永続化順を維持する', () => {

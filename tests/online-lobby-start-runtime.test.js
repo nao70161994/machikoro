@@ -76,6 +76,7 @@ function createHarness(options = {}) {
         setCpuSpeed: value => calls.push(['setCpuSpeed', value]),
         setHostState: value => calls.push(['setHostState', value]),
         setOnline: value => calls.push(['setOnline', value]),
+        setReconnectFlag: value => calls.push(['setReconnectFlag', value]),
         setSchema: value => calls.push(['setSchema', value]),
         setStatusHtml: value => calls.push(['setStatusHtml', value]),
         setStatusText: value => calls.push(['setStatusText', value]),
@@ -100,24 +101,26 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
     harness.runtime.handleRoomCreated({
         roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-a',
     });
-    assert.deepStrictEqual(harness.calls.slice(0, 4).map(call => call[0]), [
-        'finishLobbyRequest', 'acceptRoom', 'saveSession', 'setStatusHtml',
+    assert.deepStrictEqual(harness.calls.slice(0, 6).map(call => call[0]), [
+        'finishLobbyRequest', 'clearRejoinRetry', 'setReconnectFlag',
+        'acceptRoom', 'saveSession', 'setStatusHtml',
     ]);
-    assert.deepStrictEqual(harness.calls[1][1], {
+    assert.deepStrictEqual(harness.calls[3][1], {
         playerIndex: 0, roomId: 'ROOM01', reconnectToken: 'token-a',
     });
-    assert.ok(harness.calls[3][1].includes('プレイヤーを待っています'));
-    assert.ok(harness.calls[3][1].includes('data-ui-action="copyOnlineRoomId"'));
-    assert.ok(harness.calls[3][1].includes('この6文字を参加者に共有してください'));
+    assert.ok(harness.calls[5][1].includes('プレイヤーを待っています'));
+    assert.ok(harness.calls[5][1].includes('data-ui-action="copyOnlineRoomId"'));
+    assert.ok(harness.calls[5][1].includes('この6文字を参加者に共有してください'));
 
     harness.calls.length = 0;
     harness.runtime.handleRoomJoined({
         roomId: 'ROOM01', playerIndex: 1, reconnectToken: 'token-b',
     });
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
-        'finishLobbyRequest', 'acceptRoom', 'saveSession', 'setStatusText',
+        'finishLobbyRequest', 'clearRejoinRetry', 'setReconnectFlag',
+        'acceptRoom', 'saveSession', 'setStatusText',
     ]);
-    assert.strictEqual(harness.calls[3][1], 'ルーム ROOM01 に参加しました！');
+    assert.strictEqual(harness.calls[5][1], 'ルーム ROOM01 に参加しました！');
 
     harness.calls.length = 0;
     harness.runtime.handlePlayerList(['Alice', '待機中...']);

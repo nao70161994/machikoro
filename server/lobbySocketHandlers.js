@@ -22,6 +22,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         checkGameStart,
         validateSocketCanEnterRoom,
         isValidRoomId,
+        pruneExpiredWaitingReservations: pruneExpiredWaitingReservationsEffect = () => [],
     } = dependencies;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
     const log = typeof dependencies.log === 'function' ? dependencies.log : console.log;
@@ -93,7 +94,9 @@ function registerLobbySocketHandlers(socket, dependencies) {
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = hostIndex;
-        socket.emit('roomCreated', { roomId, playerIndex: hostIndex, reconnectToken });
+        socket.emit('roomCreated', {
+            roomId, playerIndex: hostIndex, reconnectToken, hostPlayerIndex: hostIndex,
+        });
         io.to(roomId).emit('playerList', buildPlayerList(rooms[roomId]));
         checkGameStart(io, roomId);
         log('ルーム作成: ' + roomId + ' (' + playerCount + '人)');
@@ -112,6 +115,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ルームが見つかりません'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ルームが見つかりません'); return; }
+        pruneExpiredWaitingReservationsEffect(room, now());
         const roomEntry = validateSocketCanEnterRoom(socket, roomId, rooms);
         if (!roomEntry.ok) { emitAppError(socket, roomEntry.message); return; }
         const admission = planJoinRoomAdmission({ room, socketId: socket.id, playerName });
@@ -125,7 +129,9 @@ function registerLobbySocketHandlers(socket, dependencies) {
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;
-        socket.emit('roomJoined', { roomId, playerIndex, reconnectToken });
+        socket.emit('roomJoined', {
+            roomId, playerIndex, reconnectToken, hostPlayerIndex: room.hostPlayerIndex,
+        });
         io.to(roomId).emit('playerList', buildPlayerList(room));
         checkGameStart(io, roomId);
     });

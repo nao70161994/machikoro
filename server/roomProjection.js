@@ -14,7 +14,10 @@ function makeRoomProjection({
                 return `CPU（${difficultyLabel}）`;
             }
             const player = room.players.find(candidate => candidate.index === index);
-            return player ? player.name : '待機中...';
+            if (!player) return '待機中...';
+            return player.id === null
+                ? `${player.name}（再接続待ち）`
+                : player.name;
         });
     }
 

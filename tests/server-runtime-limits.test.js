@@ -9,6 +9,7 @@ runTest('server runtime limitsは既存の全上限値を一つのfrozen contrac
     assert.deepStrictEqual(limits.ROOM_LIFECYCLE_LIMITS, {
         startedRoomTtlMs: 7200000,
         pendingRoomTtlMs: 1800000,
+        waitingReservationTtlMs: 60000,
         maxRooms: 500,
         createRoomRateLimitMs: 5000,
         createRoomIpRateLimitWindowMs: 60000,

@@ -24,7 +24,8 @@ function planGameStart(room, requiredHumanSlots) {
             reason: GAME_START_SKIP_REASONS.ALREADY_STARTED,
         });
     }
-    if (room.players.length < requiredHumanSlots) {
+    const connectedHumanPlayers = room.players.filter(player => player && player.id !== null).length;
+    if (connectedHumanPlayers < requiredHumanSlots) {
         return Object.freeze({
             decision: GAME_START_DECISIONS.SKIP,
             reason: GAME_START_SKIP_REASONS.WAITING_HUMAN_SLOTS,

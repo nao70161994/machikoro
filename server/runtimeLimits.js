@@ -5,6 +5,7 @@ const MAX_ACTION_LOG_LENGTH = 200;
 const ROOM_LIFECYCLE_LIMITS = Object.freeze({
     startedRoomTtlMs: 2 * 60 * 60 * 1000,
     pendingRoomTtlMs: 30 * 60 * 1000,
+    waitingReservationTtlMs: 60 * 1000,
     maxRooms: 500,
     createRoomRateLimitMs: 5000,
     createRoomIpRateLimitWindowMs: 60 * 1000,
