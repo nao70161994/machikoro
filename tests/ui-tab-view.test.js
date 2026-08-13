@@ -9,9 +9,11 @@ runTest('UI main tab viewは表示・class・aria・stats effect条件を純粋�
     assert.deepStrictEqual(local, {
         localDisplay: 'flex',
         onlineDisplay: 'none',
+        tournamentDisplay: 'none',
         statsDisplay: 'none',
         localButton: { className: 'tab-btn active', ariaSelected: 'true', tabIndex: 0 },
         onlineButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
+        tournamentButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
         statsButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
         renderStats: false,
     });

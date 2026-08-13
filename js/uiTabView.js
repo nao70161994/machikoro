@@ -26,9 +26,11 @@ function buildMainTabView(tab) {
     return Object.freeze({
         localDisplay: tab === 'local' ? 'flex' : 'none',
         onlineDisplay: tab === 'online' ? 'flex' : 'none',
+        tournamentDisplay: tab === 'tournament' ? 'flex' : 'none',
         statsDisplay: tab === 'stats' ? 'block' : 'none',
         localButton: buttonView('tab-btn', tab === 'local'),
         onlineButton: buttonView('tab-btn', tab === 'online'),
+        tournamentButton: buttonView('tab-btn', tab === 'tournament'),
         statsButton: buttonView('tab-btn', tab === 'stats'),
         renderStats: tab === 'stats',
     });

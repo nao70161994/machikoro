@@ -391,6 +391,112 @@ body.modal-open #gameScreen {
     margin-bottom: 80px;
 }
 
+/* ===== CPU大会 ===== */
+.cpu-tournament-intro h2 {
+    margin: 0 0 6px;
+    color: #f0c040;
+    font-size: 22px;
+}
+
+.cpu-tournament-intro p,
+.cpu-tournament-note {
+    margin: 0;
+    color: #a7a9be;
+    line-height: 1.6;
+}
+
+.cpu-tournament-settings,
+.cpu-tournament-actions,
+.cpu-tournament-overview {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cpu-tournament-settings label {
+    flex: 1 1 140px;
+    color: #fffffe;
+    font-size: 14px;
+}
+
+.cpu-tournament-settings select {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+}
+
+.cpu-tournament-actions > * {
+    flex: 1 1 140px;
+    min-height: 44px;
+}
+
+.cpu-tournament-status {
+    min-height: 24px;
+    color: #f0c040;
+    text-align: center;
+}
+
+.cpu-tournament-overview > div {
+    flex: 1 1 100px;
+    padding: 12px;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    text-align: center;
+    background: #0f0e17;
+}
+
+.cpu-tournament-overview strong,
+.cpu-tournament-overview span {
+    display: block;
+}
+
+.cpu-tournament-overview strong {
+    color: #f0c040;
+    font-size: 22px;
+}
+
+.cpu-tournament-overview span {
+    margin-top: 3px;
+    color: #a7a9be;
+    font-size: 12px;
+}
+
+.cpu-tournament-table-wrap {
+    margin-top: 12px;
+    overflow-x: auto;
+}
+
+.cpu-tournament-table {
+    width: 100%;
+    min-width: 600px;
+    border-collapse: collapse;
+    color: #fffffe;
+    font-size: 13px;
+}
+
+.cpu-tournament-table caption {
+    margin-bottom: 8px;
+    color: #f0c040;
+    font-weight: bold;
+}
+
+.cpu-tournament-table th,
+.cpu-tournament-table td {
+    padding: 9px 7px;
+    border-bottom: 1px solid #2a2a4a;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.cpu-tournament-table tbody tr:first-child {
+    background: rgba(240, 192, 64, 0.1);
+}
+
+.cpu-tournament-rank {
+    color: #f0c040;
+    font-weight: bold;
+}
+
 /* ===== オンラインタブ ===== */
 .online-tabs {
     display: flex;

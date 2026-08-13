@@ -9,6 +9,7 @@ const MainUiEventRuntime = (() => {
         'closeRules', 'closeCardDetail', 'hideNotice', 'crashResume', 'pwaInstallPrompt',
         'pwaInstallDismiss', 'copyOnlineRoomId', 'leaveOnlineLobby', 'removeOnlineLobbyPlayer',
         'changeOnlineLobbySlots', 'startOnlineLobbyNow', 'focusBuildMenu',
+        'startCpuTournament', 'cancelCpuTournament',
     ]);
 
     function createRuntime(dependencies = {}) {

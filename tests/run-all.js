@@ -212,6 +212,8 @@ const TEST_GROUPS = {
         'cpu-scheduler-state.test.js',
         'cpu-turn-scheduler-runtime.test.js',
         'cpu-turn-strategy.test.js',
+        'cpu-tournament.test.js',
+        'ui-cpu-tournament.test.js',
         'cpu-phase-handlers.test.js',
         'local-action-policy.test.js',
         'main-human-action-runtime.test.js',
@@ -573,6 +575,7 @@ const TEST_GROUPS = {
         'cpu.test.js',
     ],
     cpu: [
+        'cpu-tournament.test.js',
         'cpu.test.js',
         'cpu-pending-contract-matrix.test.js',
         'strong-live-performance.test.js',

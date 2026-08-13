@@ -1037,9 +1037,11 @@ function switchTab(tab) {
     UiTabEffects.applyMainTabView({
         localContent: document.getElementById("tabContentLocal"),
         onlineContent: document.getElementById("tabContentOnline"),
+        tournamentContent: document.getElementById("tabContentTournament"),
         statsContent: document.getElementById("tabContentStats"),
         localButton: document.getElementById("tabLocal"),
         onlineButton: document.getElementById("tabOnline"),
+        tournamentButton: document.getElementById("tabTournament"),
         statsButton: document.getElementById("tabStats"),
     }, view);
     if (view.renderStats) renderStats();

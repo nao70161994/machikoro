@@ -659,6 +659,34 @@ function onSelectDiceCount(useTwo) { return mainHumanActionRuntime.onSelectDiceC
 function onReroll() { return mainHumanActionRuntime.onReroll(); }
 function onSkipReroll() { return mainHumanActionRuntime.onSkipReroll(); }
 
+function cpuTournamentElements() {
+    return {
+        startButton: document.getElementById('cpuTournamentStart'),
+        cancelButton: document.getElementById('cpuTournamentCancel'),
+        gamesSelect: document.getElementById('cpuTournamentGames'),
+        playerCountSelect: document.getElementById('cpuTournamentPlayerCount'),
+        status: document.getElementById('cpuTournamentStatus'),
+        results: document.getElementById('cpuTournamentResults'),
+    };
+}
+
+const cpuTournamentController = CpuTournament.createController({
+    onUpdate: state => UiCpuTournament.applyState(cpuTournamentElements(), state),
+});
+
+function startCpuTournament() {
+    const elements = cpuTournamentElements();
+    return cpuTournamentController.start({
+        games: elements.gamesSelect && elements.gamesSelect.value,
+        playerCount: elements.playerCountSelect && elements.playerCountSelect.value,
+        seed: Date.now() % 0xffffffff || 1,
+    });
+}
+
+function cancelCpuTournament() {
+    return cpuTournamentController.cancel();
+}
+
 function resolveMainUiEffect(name) {
     const aliases = {
         toggleTutorialEnabled: 'onToggleTutorial',

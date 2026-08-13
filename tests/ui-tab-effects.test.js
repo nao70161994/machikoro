@@ -28,26 +28,29 @@ function traceTabIndex(elementValue, id, trace) {
 runTest('UI main tab effectはcontent→class→ariaの既存順で適用する', () => {
     const trace = [];
     const elements = {
-        localContent: element('local-content', trace), onlineContent: element('online-content', trace), statsContent: element('stats-content', trace),
-        localButton: element('local-button', trace), onlineButton: element('online-button', trace), statsButton: element('stats-button', trace),
+        localContent: element('local-content', trace), onlineContent: element('online-content', trace), tournamentContent: element('tournament-content', trace), statsContent: element('stats-content', trace),
+        localButton: element('local-button', trace), onlineButton: element('online-button', trace), tournamentButton: element('tournament-button', trace), statsButton: element('stats-button', trace),
     };
     traceClass(elements.localButton, 'local-button', trace);
     traceClass(elements.onlineButton, 'online-button', trace);
+    traceClass(elements.tournamentButton, 'tournament-button', trace);
     traceClass(elements.statsButton, 'stats-button', trace);
     traceTabIndex(elements.localButton, 'local-button', trace);
     traceTabIndex(elements.onlineButton, 'online-button', trace);
+    traceTabIndex(elements.tournamentButton, 'tournament-button', trace);
     traceTabIndex(elements.statsButton, 'stats-button', trace);
     UiTabEffects.applyMainTabView(elements, {
-        localDisplay: 'none', onlineDisplay: 'flex', statsDisplay: 'none',
+        localDisplay: 'none', onlineDisplay: 'flex', tournamentDisplay: 'none', statsDisplay: 'none',
         localButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
         onlineButton: { className: 'tab-btn active', ariaSelected: 'true', tabIndex: 0 },
+        tournamentButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
         statsButton: { className: 'tab-btn ', ariaSelected: 'false', tabIndex: -1 },
     });
     assert.deepStrictEqual(trace, [
-        ['local-content', 'style.display', 'none'], ['online-content', 'style.display', 'flex'], ['stats-content', 'style.display', 'none'],
-        ['local-button', 'className', 'tab-btn '], ['online-button', 'className', 'tab-btn active'], ['stats-button', 'className', 'tab-btn '],
-        ['local-button', 'aria-selected', 'false'], ['online-button', 'aria-selected', 'true'], ['stats-button', 'aria-selected', 'false'],
-        ['local-button', 'tabIndex', -1], ['online-button', 'tabIndex', 0], ['stats-button', 'tabIndex', -1],
+        ['local-content', 'style.display', 'none'], ['online-content', 'style.display', 'flex'], ['tournament-content', 'style.display', 'none'], ['stats-content', 'style.display', 'none'],
+        ['local-button', 'className', 'tab-btn '], ['online-button', 'className', 'tab-btn active'], ['tournament-button', 'className', 'tab-btn '], ['stats-button', 'className', 'tab-btn '],
+        ['local-button', 'aria-selected', 'false'], ['online-button', 'aria-selected', 'true'], ['tournament-button', 'aria-selected', 'false'], ['stats-button', 'aria-selected', 'false'],
+        ['local-button', 'tabIndex', -1], ['online-button', 'tabIndex', 0], ['tournament-button', 'tabIndex', -1], ['stats-button', 'tabIndex', -1],
     ]);
 });
 

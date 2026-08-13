@@ -424,6 +424,10 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiTabViewSource, context, { filename: 'js/uiTabView.js' });
     const uiTabEffectsSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiTabEffects.js'), 'utf8');
     vm.runInContext(uiTabEffectsSource, context, { filename: 'js/uiTabEffects.js' });
+    const cpuTournamentSource = fs.readFileSync(path.join(__dirname, '..', 'js/cpuTournament.js'), 'utf8');
+    vm.runInContext(cpuTournamentSource, context, { filename: 'js/cpuTournament.js' });
+    const uiCpuTournamentSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiCpuTournament.js'), 'utf8');
+    vm.runInContext(uiCpuTournamentSource, context, { filename: 'js/uiCpuTournament.js' });
     const gameRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameRuntimeState.js'), 'utf8');
     vm.runInContext(gameRuntimeStateSource, context, { filename: 'js/gameRuntimeState.js' });
     const onlineRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/onlineRuntimeState.js'), 'utf8');
@@ -2415,6 +2419,15 @@ runTest('index.html は統計タブをオンラインタブの外に配置して
     assert.ok(statsStart < gameScreen);
     assert.ok(scriptUi < scriptStats);
     assert.ok(scriptStats < scriptMain);
+});
+
+runTest('index.html はCPU大会を独立tabと取消可能な操作で提供する', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    assert.ok(html.includes('data-tab="tournament"'));
+    assert.ok(html.includes('id="tabContentTournament"'));
+    assert.ok(html.includes('data-ui-action="startCpuTournament"'));
+    assert.ok(html.includes('data-ui-action="cancelCpuTournament"'));
+    assert.ok(html.includes('id="cpuTournamentStatus"'));
 });
 
 runTest('ローカル保存の再開導線は新しいゲーム設定より先に提示する', () => {

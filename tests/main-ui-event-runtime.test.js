@@ -43,10 +43,15 @@ function createHarness() {
 runTest('main UI event runtimeはstatic/input/dice commandをdetached effectへ渡す', () => {
     const h = createHarness();
     h.runtime.handleStaticClick(h.event({ uiAction: 'changeCount', delta: '2' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'startCpuTournament' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'cancelCpuTournament' }));
     h.runtime.handleStaticInput(h.event({ uiInput: 'cpuSpeed' }, { value: '500' }));
     h.runtime.handleDiceClick(h.event({ action: 'selectDiceCount', useTwo: 'true' }));
     assert.deepStrictEqual(h.calls, [
-        ['preventDefault'], ['changeCount', 2], ['preventDefault'], ['selectDiceCount', true],
+        ['preventDefault'], ['changeCount', 2],
+        ['preventDefault'], ['startCpuTournament'],
+        ['preventDefault'], ['cancelCpuTournament'],
+        ['preventDefault'], ['selectDiceCount', true],
     ]);
     assert.strictEqual(h.elements.speedLabel.textContent, 'speed:500');
 });
@@ -215,6 +220,7 @@ runTest('main UI event runtimeはmainとonline tabを矢印・Home・Endでfocus
     const mainTabs = [
         tab({ uiAction: 'switchTab', tab: 'local' }, mainList),
         tab({ uiAction: 'switchTab', tab: 'online' }, mainList),
+        tab({ uiAction: 'switchTab', tab: 'tournament' }, mainList),
         tab({ uiAction: 'switchTab', tab: 'stats' }, mainList),
     ];
     const onlineList = { querySelectorAll: () => onlineTabs };
@@ -229,7 +235,7 @@ runTest('main UI event runtimeはmainとonline tabを矢印・Home・Endでfocus
     });
 
     assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent(mainTabs[0], 'ArrowLeft')), true);
-    assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent(mainTabs[2], 'Home')), true);
+    assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent(mainTabs[3], 'Home')), true);
     assert.strictEqual(h.runtime.handleStaticKeydown(keyEvent(onlineTabs[0], 'End')), true);
     assert.deepStrictEqual(h.calls, [
         ['preventDefault'], ['focus', 'stats'], ['switchTab', 'stats'],

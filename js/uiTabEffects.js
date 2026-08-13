@@ -3,15 +3,19 @@
 function applyMainTabView(elements, view) {
     elements.localContent.style.display = view.localDisplay;
     elements.onlineContent.style.display = view.onlineDisplay;
+    elements.tournamentContent.style.display = view.tournamentDisplay;
     elements.statsContent.style.display = view.statsDisplay;
     elements.localButton.className = view.localButton.className;
     elements.onlineButton.className = view.onlineButton.className;
+    elements.tournamentButton.className = view.tournamentButton.className;
     elements.statsButton.className = view.statsButton.className;
     elements.localButton.setAttribute('aria-selected', view.localButton.ariaSelected);
     elements.onlineButton.setAttribute('aria-selected', view.onlineButton.ariaSelected);
+    elements.tournamentButton.setAttribute('aria-selected', view.tournamentButton.ariaSelected);
     elements.statsButton.setAttribute('aria-selected', view.statsButton.ariaSelected);
     elements.localButton.tabIndex = view.localButton.tabIndex;
     elements.onlineButton.tabIndex = view.onlineButton.tabIndex;
+    elements.tournamentButton.tabIndex = view.tournamentButton.tabIndex;
     elements.statsButton.tabIndex = view.statsButton.tabIndex;
 }
 

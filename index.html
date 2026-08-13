@@ -58,6 +58,7 @@
             <div class="tab-bar" role="tablist" aria-label="ゲームモード">
                 <button class="tab-btn active" data-ui-action="switchTab" data-tab="local" id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal" tabindex="0">ローカル</button>
                 <button class="tab-btn" data-ui-action="switchTab" data-tab="online" id="tabOnline" role="tab" aria-selected="false" aria-controls="tabContentOnline" tabindex="-1">オンライン</button>
+                <button class="tab-btn" data-ui-action="switchTab" data-tab="tournament" id="tabTournament" role="tab" aria-selected="false" aria-controls="tabContentTournament" tabindex="-1">CPU大会</button>
                 <button class="tab-btn" data-ui-action="switchTab" data-tab="stats" id="tabStats" role="tab" aria-selected="false" aria-controls="tabContentStats" tabindex="-1">統計</button>
             </div>
 
@@ -157,6 +158,34 @@
 
             <div id="tabContentStats" class="tab-content" role="tabpanel" aria-labelledby="tabStats" style="display:none">
                 <div class="stats-empty">読み込み中...</div>
+            </div>
+            <div id="tabContentTournament" class="tab-content" role="tabpanel" aria-labelledby="tabTournament" style="display:none">
+                <div class="cpu-tournament-intro">
+                    <h2>CPU大会</h2>
+                    <p>弱・普通・強・最強のCPUが自動対戦します。席順を試合ごとに入れ替えて比較します。</p>
+                </div>
+                <div class="cpu-tournament-settings">
+                    <label>対戦人数
+                        <select id="cpuTournamentPlayerCount" class="text-input">
+                            <option value="2">2人</option>
+                            <option value="3">3人</option>
+                            <option value="4" selected>4人</option>
+                        </select>
+                    </label>
+                    <label>試合数
+                        <select id="cpuTournamentGames" class="text-input">
+                            <option value="10">10試合</option>
+                            <option value="20" selected>20試合</option>
+                            <option value="50">50試合</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="cpu-tournament-actions">
+                    <button id="cpuTournamentStart" class="setup-primary-cta" data-ui-action="startCpuTournament">大会開始</button>
+                    <button id="cpuTournamentCancel" data-ui-action="cancelCpuTournament" disabled>中止</button>
+                </div>
+                <div id="cpuTournamentStatus" class="cpu-tournament-status" role="status" aria-live="polite" aria-atomic="true">設定を選んで大会を開始してください</div>
+                <div id="cpuTournamentResults" aria-live="off"></div>
             </div>
             <section class="title-about" aria-labelledby="titleAboutHeading">
                 <p class="title-about-kicker">このゲームについて</p>
@@ -461,6 +490,7 @@
     <script src="js/cpuPendingDecision.js"></script>
     <script src="js/cpuRollDecision.js"></script>
     <script src="js/CPU.js"></script>
+    <script src="js/cpuTournament.js"></script>
     <script src="js/RLCPU.js"></script>
     <script src="js/rlModelCatalog.js"></script>
     <script src="js/RLModelPortfolio.js"></script>
@@ -548,6 +578,7 @@
     <script src="js/uiGameStatusEffects.js"></script>
     <script src="js/uiTabView.js"></script>
     <script src="js/uiTabEffects.js"></script>
+    <script src="js/uiCpuTournament.js"></script>
     <script src="js/uiRuntimeSnapshot.js"></script>
     <script src="js/uiRenderRuntime.js"></script>
     <script src="js/ui.js"></script>
