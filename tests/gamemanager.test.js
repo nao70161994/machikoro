@@ -36,13 +36,15 @@ runTest('GameManagerは構造化log件数を全対戦集計し表示専用logを
         Object.values(LOG_TYPES).slice().sort()
     );
 
-    game.addLog(LOG_TYPES.GAIN, '収入');
-    game.addLog(LOG_TYPES.BUILD, '建設');
+    game.addLog(LOG_TYPES.GAIN, '表示文に金額を書かない収入', { gainAmount: 7 });
+    game.addLog(LOG_TYPES.BUILD, '表示文に金額を書かない支出', { loseAmount: 3 });
     game.addLog(LOG_TYPES.SYSTEM, '表示専用', { review: false });
 
     assert.strictEqual(game.reviewSummary.counts[LOG_TYPES.GAIN], 1);
     assert.strictEqual(game.reviewSummary.counts[LOG_TYPES.BUILD], 1);
     assert.strictEqual(game.reviewSummary.counts[LOG_TYPES.SYSTEM], 0);
+    assert.strictEqual(game.reviewSummary.totals.gain, 7);
+    assert.strictEqual(game.reviewSummary.totals.lose, 3);
     assert.strictEqual(game.log.length, 3);
 });
 
@@ -1395,6 +1397,7 @@ runTest('青カード（麦畑）がダイス1で全プレイヤーに収入を�
     game.rollDice(1);
     assert.strictEqual(game.players[0].coins, coins0 + 1);
     assert.strictEqual(game.players[1].coins, coins1 + 1);
+    assert.strictEqual(game.reviewSummary.totals.gain, 2);
 });
 
 runTest('赤カード（カフェ）は現在プレイヤーから1コイン徴収する', () => {
@@ -1410,6 +1413,8 @@ runTest('赤カード（カフェ）は現在プレイヤーから1コイン徴�
     game.rollDice(3);
     assert.strictEqual(p0.coins, 4);
     assert.strictEqual(p1.coins, 1);
+    assert.strictEqual(game.reviewSummary.totals.gain, 1);
+    assert.strictEqual(game.reviewSummary.totals.lose, 1);
     assert.ok(game.log.some(e => e.type === 'lose'));
     // p0のコインが0なら徴収なし
     const game2 = new GameManager(2);
@@ -1582,12 +1587,14 @@ runTest('buildCardが成功するとコインが減りカードが追加され�
     assert.ok(p0.cards.some(c => c.name === '森林'));
     assert.strictEqual(game.builtThisTurn, true);
     assert.ok(game.log.some(e => e.type === 'build' && e.message.includes('森林')));
+    assert.strictEqual(game.reviewSummary.totals.lose, 3);
     // 貸金業はcost 0で建設後+5コイン付与
     const game2 = new GameManager(2);
     game2.phase = GAME_PHASES.BUILD;
     game2.currentPlayer().coins = 10;
     game2.buildCard(createCardByName('貸金業')); // cost 0, +5
     assert.strictEqual(game2.currentPlayer().coins, 15);
+    assert.strictEqual(game2.reviewSummary.totals.gain, 5);
 });
 
 runTest('buildLandmarkが成功するとコインが減りランドマークが建設される', () => {
@@ -1601,6 +1608,7 @@ runTest('buildLandmarkが成功するとコインが減りランドマークが�
     assert.strictEqual(p0.landmarks['駅'], true);
     assert.strictEqual(game.builtThisTurn, true);
     assert.ok(game.log.some(e => e.type === 'build' && e.message.includes('駅')));
+    assert.strictEqual(game.reviewSummary.totals.lose, 4);
     // 二重建設は拒否
     const game2 = new GameManager(2);
     game2.phase = GAME_PHASES.BUILD;
@@ -1820,6 +1828,8 @@ runTest('スタジアムが各相手から最大2コイン奪う', () => {
     assert.strictEqual(game.players[1].coins, 3); // 2奪われた
     assert.strictEqual(game.players[2].coins, 0); // 1奪われた
     assert.strictEqual(p0.coins, before + 3);     // 合計+3
+    assert.strictEqual(game.reviewSummary.totals.gain, 3);
+    assert.strictEqual(game.reviewSummary.totals.lose, 3);
 });
 
 runTest('5人以上でもスタジアムは全相手を対象にする', () => {
@@ -1986,6 +1996,8 @@ runTest('公園はコインを全員に均等分配する', () => {
     assert.strictEqual(p0.coins, 6);
     assert.strictEqual(game.players[1].coins, 6);
     assert.strictEqual(game.players[2].coins, 6);
+    assert.strictEqual(game.reviewSummary.totals.gain, 4);
+    assert.strictEqual(game.reviewSummary.totals.lose, 4);
 });
 
 runTest('公園は端数が出ると銀行から補填して全員を同額にする', () => {

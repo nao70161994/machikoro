@@ -443,7 +443,9 @@ class GameManager {
         const current = this.currentPlayer();
         if (completion.cityHallCoinDelta > 0) {
             current.coins += completion.cityHallCoinDelta;
-            this.addLog(LOG_TYPES.GAIN, `🏛️ 役所効果 → +1コイン`);
+            this.addLog(LOG_TYPES.GAIN, `🏛️ 役所効果 → +1コイン`, {
+                gainAmount: completion.cityHallCoinDelta,
+            });
         }
         this.phase = completion.phase;
     }
@@ -544,11 +546,20 @@ class GameManager {
             activations.forEach((activation, index) => {
                 const transfer = plan.transfers[index];
                 if (activation.kind === 'french') {
-                    this.addLog(LOG_TYPES.LOSE, `🍽️ ${other.name}の高級フレンチ発動 → ${transfer}コイン獲得`);
+                    this.addLog(LOG_TYPES.LOSE, `🍽️ ${other.name}の高級フレンチ発動 → ${transfer}コイン獲得`, {
+                        gainAmount: transfer,
+                        loseAmount: transfer,
+                    });
                 } else if (activation.kind === 'member-bar') {
-                    this.addLog(LOG_TYPES.LOSE, `🍸 ${other.name}の会員制BAR発動 → ${transfer}コイン全奪取`);
+                    this.addLog(LOG_TYPES.LOSE, `🍸 ${other.name}の会員制BAR発動 → ${transfer}コイン全奪取`, {
+                        gainAmount: transfer,
+                        loseAmount: transfer,
+                    });
                 } else {
-                    this.addLog(LOG_TYPES.LOSE, `💸 ${other.name}の${activation.card.name}発動 → ${transfer}コイン獲得`);
+                    this.addLog(LOG_TYPES.LOSE, `💸 ${other.name}の${activation.card.name}発動 → ${transfer}コイン獲得`, {
+                        gainAmount: transfer,
+                        loseAmount: transfer,
+                    });
                 }
             });
         }
@@ -572,13 +583,13 @@ class GameManager {
                 if (!plan.active) continue;
                 p.coins += plan.amount;
                 if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.CORNFIELD) {
-                    this.addLog(LOG_TYPES.GAIN, `🌽 ${p.name}のコーン畑発動 → +${plan.amount}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🌽 ${p.name}のコーン畑発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
                 } else if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.HARBOR) {
-                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${plan.amount}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}の${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
                 } else if (plan.kind === GameCardActivationPolicy.blueIncomeKinds.TUNA) {
-                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}のマグロ漁船発動 → 🎲${plan.dice[0]}+${plan.dice[1]}=${plan.amount}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🐟 ${p.name}のマグロ漁船発動 → 🎲${plan.dice[0]}+${plan.dice[1]}=${plan.amount}コイン`, { gainAmount: plan.amount });
                 } else {
-                    this.addLog(LOG_TYPES.GAIN, `🌾 ${p.name}の${card.name}発動 → +${plan.amount}コイン`);
+                    this.addLog(LOG_TYPES.GAIN, `🌾 ${p.name}の${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
                 }
             }
         }
@@ -611,7 +622,7 @@ class GameManager {
             });
             if (plan.kind === GameCardActivationPolicy.greenActivationKinds.WINERY) {
                 current.coins += plan.amount;
-                this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${plan.amount}コイン`);
+                this.addLog(LOG_TYPES.GAIN, `🍷 ワイナリー発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
                 if (plan.shouldDormant) current.makeDormant(card);
                 this.addLog(LOG_TYPES.SPECIAL, `💤 ワイナリーが休業`);
                 continue;
@@ -633,7 +644,7 @@ class GameManager {
             }
             if (plan.amount > 0) {
                 current.coins += plan.amount;
-                this.addLog(LOG_TYPES.GAIN, `💰 ${card.name}発動 → +${plan.amount}コイン`);
+                this.addLog(LOG_TYPES.GAIN, `💰 ${card.name}発動 → +${plan.amount}コイン`, { gainAmount: plan.amount });
             }
         }
 
@@ -649,7 +660,9 @@ class GameManager {
         });
         if (loanRepayment.active) {
             current.coins -= loanRepayment.amount;
-            this.addLog(LOG_TYPES.LOSE, `💳 貸金業×${loanRepayment.loanCount}：${loanRepayment.amount}コイン支払い`);
+            this.addLog(LOG_TYPES.LOSE, `💳 貸金業×${loanRepayment.loanCount}：${loanRepayment.amount}コイン支払い`, {
+                loseAmount: loanRepayment.amount,
+            });
         }
     }
 
@@ -677,7 +690,10 @@ class GameManager {
                     GameCardActivationPolicy.fixedCollectionRequests(this.players.length, ci, 2)
                 );
                 applyCoinTransactionPlan(this.players, plan);
-                this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${plan.total}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${plan.total}コイン`, {
+                    gainAmount: plan.total,
+                    loseAmount: plan.total,
+                });
             } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.TV) {
                 this._enqueuePendingAction(activation.pendingField);
                 this.addLog(LOG_TYPES.SPECIAL, `📺 テレビ局発動 → 対象プレイヤーを選んでください`);
@@ -705,7 +721,10 @@ class GameManager {
                 plan.transfers.forEach((transfer, index) => {
                     if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `📰 ${this.players[index].name}から${transfer}コイン`);
                 });
-                this.addLog(LOG_TYPES.SPECIAL, `📰 出版社発動 → 合計+${plan.total}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `📰 出版社発動 → 合計+${plan.total}コイン`, {
+                    gainAmount: plan.total,
+                    loseAmount: plan.total,
+                });
             } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.TAXOFFICE) {
                 const requestedAmounts = GameCardActivationPolicy.taxOfficeCollectionRequests(
                     this.players.map(player => player.coins),
@@ -720,7 +739,10 @@ class GameManager {
                 plan.transfers.forEach((transfer, index) => {
                     if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `🏛️ ${this.players[index].name}から${transfer}コイン`);
                 });
-                this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${plan.total}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${plan.total}コイン`, {
+                    gainAmount: plan.total,
+                    loseAmount: plan.total,
+                });
             } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.CLEANING) {
                 if (activation.hasTarget) {
                     this._enqueuePendingAction(activation.pendingField);
@@ -739,13 +761,26 @@ class GameManager {
                     )
                 );
                 applyCoinTransactionPlan(this.players, plan);
-                this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${plan.total}コイン`);
+                this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${plan.total}コイン`, {
+                    gainAmount: plan.total,
+                    loseAmount: plan.total,
+                });
             } else if (activation.kind === GameCardActivationPolicy.purpleActivationKinds.PARK) {
                 const plan = GameCoinTransaction.equalDistributionPlan(
                     this.players.map(player => player.coins)
                 );
+                const balancesBefore = this.players.map(player => player.coins);
                 applyCoinTransactionPlan(this.players, plan);
-                this.addLog(LOG_TYPES.SPECIAL, `🌳 公園発動 → 全員${plan.each}コインに均等分配`);
+                const parkTotals = plan.balances.reduce((totals, balance, index) => {
+                    const delta = balance - balancesBefore[index];
+                    if (delta > 0) totals.gain += delta;
+                    if (delta < 0) totals.lose -= delta;
+                    return totals;
+                }, { gain: 0, lose: 0 });
+                this.addLog(LOG_TYPES.SPECIAL, `🌳 公園発動 → 全員${plan.each}コインに均等分配`, {
+                    gainAmount: parkTotals.gain,
+                    loseAmount: parkTotals.lose,
+                });
             }
         }
     }
@@ -777,7 +812,10 @@ class GameManager {
         const transition = GamePendingTransition.tvTransferPlan(current.coins, target.coins);
         target.coins = transition.targetCoins;
         current.coins = transition.actorCoins;
-        this.addLog(LOG_TYPES.SPECIAL, `📺 ${target.name}から${transition.transfer}コイン奪いました`);
+        this.addLog(LOG_TYPES.SPECIAL, `📺 ${target.name}から${transition.transfer}コイン奪いました`, {
+            gainAmount: transition.transfer,
+            loseAmount: transition.transfer,
+        });
         this._consumePendingAction('pendingTV');
         this._checkPending();
         return true;
@@ -872,7 +910,9 @@ class GameManager {
         }
         if (cleaning.reward <= 0) return false;
         current.coins += cleaning.reward;
-        this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${cleaning.reward}軒を休業 → 銀行から+${cleaning.reward}コイン`);
+        this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${cleaning.reward}軒を休業 → 銀行から+${cleaning.reward}コイン`, {
+            gainAmount: cleaning.reward,
+        });
         this._consumePendingAction('pendingCleaning');
         this._checkPending();
         return true;
@@ -916,7 +956,9 @@ class GameManager {
         target.cards.push(transition.card);
         if (transition.dormant) target.makeDormant(transition.card);
         current.coins = transition.actorCoins;
-        this.addLog(LOG_TYPES.SPECIAL, `🚚 ${myCard.name}を${target.name}に渡して+4コイン`);
+        this.addLog(LOG_TYPES.SPECIAL, `🚚 ${myCard.name}を${target.name}に渡して+4コイン`, {
+            gainAmount: 4,
+        });
         this._consumePendingAction('pendingMover');
         this._checkPending();
         return true;
@@ -952,7 +994,9 @@ class GameManager {
         if (!transition) return false;
         current.landmarks[transition.landmarkName] = false;
         current.coins = transition.actorCoins;
-        this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+${transition.reward}コイン`);
+        this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+${transition.reward}コイン`, {
+            gainAmount: transition.reward,
+        });
         this._consumePendingAction('pendingRenovation');
 
         // 残りの改装屋発動回数があっても建設済みランドマークがなければスキップ
@@ -1000,7 +1044,9 @@ class GameManager {
         current.coins += plan.coinDelta;
         current.itVentureCoins += plan.ventureDelta;
         if (plan.outcome === GameTurnPolicy.itResolutionOutcomes.SAVED) {
-            this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー積立 → 合計${current.itVentureCoins}コイン`);
+            this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー積立 → 合計${current.itVentureCoins}コイン`, {
+                loseAmount: Math.max(0, -plan.coinDelta),
+            });
         } else if (plan.outcome === GameTurnPolicy.itResolutionOutcomes.INSUFFICIENT_COINS) {
             this.addLog(LOG_TYPES.ERROR, `❌ コインが足りません`);
         } else {
@@ -1042,9 +1088,13 @@ class GameManager {
         buildPlayer.addCard(cloneCard(card));
         if (transition.loanCoinDelta > 0) {
             buildPlayer.coins += transition.loanCoinDelta;
-            this.addLog(LOG_TYPES.BUILD, `💳 貸金業建設 → +5コイン（5か6が出たら-2コイン）`);
+            this.addLog(LOG_TYPES.BUILD, `💳 貸金業建設 → +5コイン（5か6が出たら-2コイン）`, {
+                gainAmount: transition.loanCoinDelta,
+            });
         }
-        this.addLog(LOG_TYPES.BUILD, `🏗️ ${card.name}を建設！`);
+        this.addLog(LOG_TYPES.BUILD, `🏗️ ${card.name}を建設！`, {
+            loseAmount: Math.max(0, -transition.purchaseCoinDelta),
+        });
         this.builtThisTurn = transition.builtThisTurn;
         return true;
     }
@@ -1075,7 +1125,9 @@ class GameManager {
         const transition = GameBuildPolicy.landmarkBuildTransition(name, buildCost);
         buildPlayer.coins += transition.coinDelta;
         buildPlayer.landmarks[transition.landmarkName] = true;
-        this.addLog(LOG_TYPES.BUILD, `🏆 ${name}を建設！`);
+        this.addLog(LOG_TYPES.BUILD, `🏆 ${name}を建設！`, {
+            loseAmount: Math.max(0, -transition.coinDelta),
+        });
         this.builtThisTurn = transition.builtThisTurn;
         return true;
     }
@@ -1097,7 +1149,9 @@ class GameManager {
         });
         if (airportPlan.award) {
             current.coins += airportPlan.coinDelta;
-            this.addLog(LOG_TYPES.GAIN, `✈️ 空港効果！建設なしで+10コイン`);
+            this.addLog(LOG_TYPES.GAIN, `✈️ 空港効果！建設なしで+10コイン`, {
+                gainAmount: airportPlan.coinDelta,
+            });
         }
         // ITベンチャー：任意で積立
         const hasActiveItStartup = GameTurnPolicy.hasActiveCardEffect(
@@ -1156,15 +1210,9 @@ class GameManager {
         if (!this.reviewSummary.totals || typeof this.reviewSummary.totals !== 'object') {
             this.reviewSummary.totals = { gain: 0, lose: 0 };
         }
-        if (type === LOG_TYPES.GAIN || type === LOG_TYPES.LOSE) {
-            /** @type {string[]} */
-            const matches = String(msg).match(/(?:\+|→\s*|：)(\d+)コイン/g) || [];
-            const amount = matches.reduce((sum, token) => {
-                const value = Number((token.match(/(\d+)/) || [])[1]);
-                return Number.isSafeInteger(value) ? sum + value : sum;
-            }, 0);
-            /** @type {'gain'|'lose'} */
-            const key = type === LOG_TYPES.GAIN ? 'gain' : 'lose';
+        for (const [key, optionName] of [['gain', 'gainAmount'], ['lose', 'loseAmount']]) {
+            const amount = options[optionName];
+            if (!Number.isSafeInteger(amount) || amount <= 0) continue;
             const current = Number.isSafeInteger(this.reviewSummary.totals[key])
                 ? this.reviewSummary.totals[key] : 0;
             this.reviewSummary.totals[key] = Math.min(current + amount, Number.MAX_SAFE_INTEGER);
