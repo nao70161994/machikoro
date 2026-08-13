@@ -28,7 +28,8 @@ const OnlineLobbyStartRuntime = (() => {
             'preloadModels', 'removeRestoreItem', 'replaceActionSequence',
             'replaceEnabledCards', 'replaceEnabledLandmarks', 'resetReconnectCompletion',
             'resetUiLocks', 'saveSession', 'setActionFlight', 'setCpuSpeed',
-            'setHostState', 'setOnline', 'setReconnectFlag', 'setSchema', 'setStatusHtml', 'setStatusText',
+            'setHostState', 'setOnline', 'setReconnectFlag', 'setSchema', 'setStatusText',
+            'renderWaitingLobby',
             'showGame',
             'startRestore', 'writeRestoreJson',
         ];
@@ -41,7 +42,8 @@ const OnlineLobbyStartRuntime = (() => {
             throw new TypeError('online game start restore schema version is required');
         }
         if (!dependencies.roomShare ||
-                typeof dependencies.roomShare.buildWaitingHtml !== 'function') {
+                typeof dependencies.roomShare.buildWaitingHtml !== 'function' ||
+                typeof dependencies.roomShare.buildWaitingStatus !== 'function') {
             throw new TypeError('online game start room share dependency is required');
         }
 
@@ -118,7 +120,10 @@ const OnlineLobbyStartRuntime = (() => {
             dependencies.setReconnectFlag(false);
             acceptLobbyRoom({ roomId, playerIndex, reconnectToken, hostPlayerIndex });
             dependencies.saveSession();
-            dependencies.setStatusHtml(dependencies.roomShare.buildWaitingHtml(roomId));
+            dependencies.renderWaitingLobby(
+                dependencies.roomShare.buildWaitingStatus(roomId),
+                dependencies.roomShare.buildWaitingHtml(roomId)
+            );
         }
 
         function handleRoomJoined({ roomId, playerIndex, reconnectToken, hostPlayerIndex }) {
@@ -133,11 +138,14 @@ const OnlineLobbyStartRuntime = (() => {
         function handlePlayerList(players, lobbyState = {}) {
             const session = dependencies.getSession();
             const roomId = session.myRoomId;
-            dependencies.setStatusHtml(dependencies.roomShare.buildWaitingHtml(roomId, players, {
-                isHost: session.isRoomHost === true,
-                hostPlayerIndex: lobbyState.hostPlayerIndex,
-                participants: lobbyState.participants,
-            }));
+            dependencies.renderWaitingLobby(
+                dependencies.roomShare.buildWaitingStatus(roomId, players),
+                dependencies.roomShare.buildWaitingHtml(roomId, players, {
+                    isHost: session.isRoomHost === true,
+                    hostPlayerIndex: lobbyState.hostPlayerIndex,
+                    participants: lobbyState.participants,
+                })
+            );
         }
 
         function handle(input = {}) {

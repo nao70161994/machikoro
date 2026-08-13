@@ -205,8 +205,10 @@ runTest('online integration: 既定event authorityは開始・切断・再join�
     rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
     rt.initSocket();
     rt.__test.socketHandlers.roomCreated({ roomId: 'ROOM01', playerIndex: 0, reconnectToken: 'token-1' });
-    assert.ok(rt.__test.elements.onlineStatus.innerHTML.includes('data-ui-action="copyOnlineRoomId"'));
-    assert.ok(rt.__test.elements.onlineStatus.innerHTML.includes('この6文字を参加者に共有してください'));
+    assert.ok(rt.__test.elements.onlineWaitingPanel.innerHTML.includes('data-ui-action="copyOnlineRoomId"'));
+    assert.ok(rt.__test.elements.onlineWaitingPanel.innerHTML.includes('この6文字を参加者に共有してください'));
+    assert.strictEqual(rt.__test.elements.onlineStatus.textContent,
+        'ルーム ROOM01 を作成しました。参加者を待っています。');
     rt.__test.setOnlineState({ myPlayerName: 'Alice' });
     const gameStartPayload = {
         playerNames: ['Alice', 'Bob'],

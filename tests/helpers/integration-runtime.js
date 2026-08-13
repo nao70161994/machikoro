@@ -52,6 +52,7 @@ function loadIntegrationRuntime(options = {}) {
         logSummary: makeElement(),
         players: makeElement(),
         onlineStatus: makeElement(),
+        onlineWaitingPanel: makeElement(),
         playerNameInput: makeElement({ value: 'Alice' }),
         roomIdInput: makeElement({ id: 'roomIdInput', value: 'ROOM01' }),
     };

@@ -14,6 +14,7 @@ const OnlineDomEffects = (() => {
         roomId: 'roomIdInput',
         status: 'onlineStatus',
         titleScreen: 'titleScreen',
+        waitingPanel: 'onlineWaitingPanel',
     });
 
     function createRuntime(options = {}) {
@@ -54,9 +55,63 @@ const OnlineDomEffects = (() => {
         }
 
         function setStatusText(value) {
+            setHtml(ids.waitingPanel, '');
             const lobbyChanged = setText(ids.status, value);
             const gameChanged = setGameStatusText(value);
             return lobbyChanged || gameChanged;
+        }
+
+        function focusedControlIdentity(container, documentRef) {
+            const active = documentRef && documentRef.activeElement;
+            if (!active || !container || typeof container.contains !== 'function' || !container.contains(active)) {
+                return null;
+            }
+            const attributeNames = [
+                'data-ui-action', 'data-player-index', 'data-delta', 'data-room-id',
+            ];
+            const attributes = {};
+            for (const name of attributeNames) {
+                const value = typeof active.getAttribute === 'function' ? active.getAttribute(name) : null;
+                if (value !== null) attributes[name] = value;
+            }
+            return attributes['data-ui-action'] ? attributes : null;
+        }
+
+        function focusWithoutScroll(target) {
+            if (!target || typeof target.focus !== 'function') return false;
+            try {
+                target.focus({ preventScroll: true });
+            } catch (_) {
+                target.focus();
+            }
+            return true;
+        }
+
+        function restoreWaitingControlFocus(container, identity, status) {
+            if (!identity || !container || typeof container.querySelectorAll !== 'function') return false;
+            const controls = Array.from(container.querySelectorAll('[data-ui-action]'));
+            const exact = controls.find(control => Object.entries(identity).every(([name, value]) =>
+                typeof control.getAttribute === 'function' && control.getAttribute(name) === value));
+            if (focusWithoutScroll(exact)) return true;
+            const safeHostControl = controls.find(control => {
+                const action = typeof control.getAttribute === 'function'
+                    ? control.getAttribute('data-ui-action') : '';
+                return action === 'changeOnlineLobbySlots' || action === 'startOnlineLobbyNow';
+            });
+            return focusWithoutScroll(safeHostControl) || focusWithoutScroll(status);
+        }
+
+        function renderWaitingLobby(statusText, html) {
+            const documentRef = getDocument();
+            const panel = element(ids.waitingPanel);
+            const status = element(ids.status);
+            if (!panel || !status) return false;
+            const identity = focusedControlIdentity(panel, documentRef);
+            status.textContent = String(statusText || '');
+            setGameStatusText('');
+            panel.innerHTML = String(html || '');
+            restoreWaitingControlFocus(panel, identity, status);
+            return true;
         }
 
         function setDisplay(id, value) {
@@ -98,6 +153,7 @@ const OnlineDomEffects = (() => {
             element,
             inputValue,
             isStatusWaiting: () => text(ids.status).startsWith('⏳'),
+            renderWaitingLobby,
             setHtml,
             setInputValue,
             setGameStatusText,

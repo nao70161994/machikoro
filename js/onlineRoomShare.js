@@ -18,6 +18,15 @@ const OnlineRoomShare = (() => {
         return String(roomId ?? '').trim().toUpperCase();
     }
 
+    function buildWaitingStatus(roomId, players = null) {
+        const normalizedRoomId = normalizeRoomId(roomId);
+        if (!Array.isArray(players)) {
+            return `ルーム ${normalizedRoomId} を作成しました。参加者を待っています。`;
+        }
+        const joinedCount = players.filter(player => player !== WAITING_SLOT_LABEL).length;
+        return `ルーム ${normalizedRoomId}。${players.length}枠中${joinedCount}人が参加しています。`;
+    }
+
     function buildWaitingHtml(roomId, players = null, options = {}) {
         const normalizedRoomId = normalizeRoomId(roomId);
         const safeRoomId = escapeText(normalizedRoomId);
@@ -79,6 +88,7 @@ const OnlineRoomShare = (() => {
         COPY_SUCCESS_MESSAGE,
         WAITING_SLOT_LABEL,
         buildWaitingHtml,
+        buildWaitingStatus,
         copyRoomId,
         escapeText,
         normalizeRoomId,

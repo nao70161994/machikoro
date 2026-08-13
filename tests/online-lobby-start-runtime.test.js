@@ -78,7 +78,7 @@ function createHarness(options = {}) {
         setOnline: value => calls.push(['setOnline', value]),
         setReconnectFlag: value => calls.push(['setReconnectFlag', value]),
         setSchema: value => calls.push(['setSchema', value]),
-        setStatusHtml: value => calls.push(['setStatusHtml', value]),
+        renderWaitingLobby: (...values) => calls.push(['renderWaitingLobby', ...values]),
         setStatusText: value => calls.push(['setStatusText', value]),
         showGame: () => calls.push(['showGame']),
         startRestore: () => calls.push(['startRestore']),
@@ -103,14 +103,15 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
     });
     assert.deepStrictEqual(harness.calls.slice(0, 6).map(call => call[0]), [
         'finishLobbyRequest', 'clearRejoinRetry', 'setReconnectFlag',
-        'acceptRoom', 'saveSession', 'setStatusHtml',
+        'acceptRoom', 'saveSession', 'renderWaitingLobby',
     ]);
     assert.deepStrictEqual(harness.calls[3][1], {
         playerIndex: 0, roomId: 'ROOM01', reconnectToken: 'token-a',
     });
-    assert.ok(harness.calls[5][1].includes('プレイヤーを待っています'));
-    assert.ok(harness.calls[5][1].includes('data-ui-action="copyOnlineRoomId"'));
-    assert.ok(harness.calls[5][1].includes('この6文字を参加者に共有してください'));
+    assert.strictEqual(harness.calls[5][1], 'ルーム ROOM01 を作成しました。参加者を待っています。');
+    assert.ok(harness.calls[5][2].includes('プレイヤーを待っています'));
+    assert.ok(harness.calls[5][2].includes('data-ui-action="copyOnlineRoomId"'));
+    assert.ok(harness.calls[5][2].includes('この6文字を参加者に共有してください'));
 
     harness.calls.length = 0;
     harness.runtime.handleRoomJoined({
@@ -124,10 +125,11 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
 
     harness.calls.length = 0;
     harness.runtime.handlePlayerList(['Alice', '待機中...']);
-    assert.strictEqual(harness.calls[0][0], 'setStatusHtml');
-    assert.ok(harness.calls[0][1].includes('参加枠（2枠）: Alice、待機中...'));
-    assert.ok(harness.calls[0][1].includes('参加枠が揃うと自動開始します'));
-    assert.ok(harness.calls[0][1].includes('data-ui-action="copyOnlineRoomId"'));
+    assert.strictEqual(harness.calls[0][0], 'renderWaitingLobby');
+    assert.strictEqual(harness.calls[0][1], 'ルーム ROOM01。2枠中1人が参加しています。');
+    assert.ok(harness.calls[0][2].includes('参加枠（2枠）: Alice、待機中...'));
+    assert.ok(harness.calls[0][2].includes('参加枠が揃うと自動開始します'));
+    assert.ok(harness.calls[0][2].includes('data-ui-action="copyOnlineRoomId"'));
 });
 
 runTest('online lobby start runtimeはhostへ参加者管理metadataを渡す', () => {
@@ -139,8 +141,8 @@ runTest('online lobby start runtimeはhostへ参加者管理metadataを渡す', 
             { index: 1, name: 'Bob', connected: true },
         ],
     });
-    assert.ok(harness.calls[0][1].includes('removeOnlineLobbyPlayer'));
-    assert.ok(harness.calls[0][1].includes('data-player-index="1"'));
+    assert.ok(harness.calls[0][2].includes('removeOnlineLobbyPlayer'));
+    assert.ok(harness.calls[0][2].includes('data-player-index="1"'));
 });
 
 runTest('online game start runtimeはschemaからactive gameまで既存effect順を維持する', () => {

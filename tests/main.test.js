@@ -2445,7 +2445,9 @@ runTest('ローカル保存の再開導線は新しいゲーム設定より先�
 
 runTest('onlineStatus はライブリージョンとして宣言されている', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1"'));
+    assert.ok(html.includes('<div id="onlineWaitingPanel"></div>'));
+    assert.ok(html.indexOf('id="onlineStatus"') < html.indexOf('id="onlineWaitingPanel"'));
     assert.ok(html.includes('id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="gameActivityStatus" class="game-activity-status is-ready"'));
     assert.ok(html.includes('id="gameActivityStatusLabel" role="status" aria-live="polite" aria-atomic="true"'));

@@ -6,6 +6,14 @@ const OnlineRoomShare = require('../js/onlineRoomShare');
 const { runTest } = require('./helpers/test-utils');
 
 runTest('online room shareはroom IDと参加者をescapeして共有手順を常設する', () => {
+    assert.strictEqual(
+        OnlineRoomShare.buildWaitingStatus(' abc123 '),
+        'ルーム ABC123 を作成しました。参加者を待っています。'
+    );
+    assert.strictEqual(
+        OnlineRoomShare.buildWaitingStatus('abc123', ['Alice', '待機中...', 'CPU（普通）']),
+        'ルーム ABC123。3枠中2人が参加しています。'
+    );
     const createdHtml = OnlineRoomShare.buildWaitingHtml('ABC123');
     assert.ok(createdHtml.includes('ルームを作成しました！'));
     assert.ok(createdHtml.includes('プレイヤーを待っています...'));

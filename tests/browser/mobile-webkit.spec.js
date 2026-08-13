@@ -766,7 +766,7 @@ test('mobile WebKitの2クライアントがonline開始後に再読込復帰で
         await host.locator('#tabOnline').click();
         await host.locator('#playerNameInput').fill('WebKitHost');
         await host.locator('#onlineCreateSubmitButton').click();
-        const roomId = (await host.locator('#onlineStatus .room-id-display').textContent()).trim();
+        const roomId = (await host.locator('#onlineWaitingPanel .room-id-display').textContent()).trim();
         expect(roomId).toMatch(/^[A-Z0-9]{6}$/);
         await guest.locator('#tabOnline').click();
         await guest.locator('#onlineTabJoin').click();

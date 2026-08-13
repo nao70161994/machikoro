@@ -2773,8 +2773,9 @@ function initSocket() {
                 UiWinner.gameOriginRuntime.reset();
             }
         },
+        renderWaitingLobby: (statusText, html) =>
+            onlineDomEffects.renderWaitingLobby(statusText, html),
         setSchema: selection => onlineSchemaSelectionController.set(selection),
-        setStatusHtml: html => onlineDomEffects.setStatusHtml(html),
         setStatusText: message => onlineDomEffects.setStatusText(message),
         showGame: () => onlineDomEffects.showGame(),
         startRestore: () => _startOnlineRestore(),
