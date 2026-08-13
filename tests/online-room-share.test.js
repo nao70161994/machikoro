@@ -37,7 +37,19 @@ runTest('online room shareはhostだけに自分以外の参加者管理を表�
     assert.ok(html.includes('data-ui-action="startOnlineLobbyNow"'));
     assert.ok(html.includes('data-ui-action="removeOnlineLobbyPlayer" data-player-index="1"'));
     assert.ok(html.includes('&lt;Bob&gt;（再接続待ち）'));
+    assert.ok(html.includes('aria-label="&lt;Bob&gt;（再接続待ち）を待機室から外す"'));
+    assert.ok(!html.includes('aria-label="<Bob>'));
     assert.ok(!html.includes('data-player-index="0"'));
+    const connectedHtml = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Carol'], {
+        isHost: true,
+        hostPlayerIndex: 0,
+        participants: [
+            { index: 0, name: 'Alice', connected: true },
+            { index: 2, name: 'Carol & Co.', connected: true },
+        ],
+    });
+    assert.ok(connectedHtml.includes('aria-label="Carol &amp; Co.を待機室から外す"'));
+    assert.ok(!connectedHtml.includes('aria-label="Carol &amp; Co.（再接続待ち）'));
     assert.ok(!OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
         isHost: false,
         hostPlayerIndex: 0,

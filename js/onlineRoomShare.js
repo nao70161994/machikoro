@@ -32,7 +32,12 @@ const OnlineRoomShare = (() => {
         const participants = Array.isArray(options.participants) ? options.participants : [];
         const hostControls = options.isHost === true
             ? participants.filter(player => Number.isInteger(player.index) && player.index !== options.hostPlayerIndex)
-                .map(player => `<li><span>${escapeText(player.name)}${player.connected === false ? '（再接続待ち）' : ''}</span><button type="button" data-ui-action="removeOnlineLobbyPlayer" data-player-index="${player.index}">外す</button></li>`)
+                .map(player => {
+                    const participantLabel = `${player.name}${player.connected === false ? '（再接続待ち）' : ''}`;
+                    const safeParticipantLabel = escapeText(participantLabel);
+                    const safeRemoveLabel = escapeText(`${participantLabel}を待機室から外す`);
+                    return `<li><span>${safeParticipantLabel}</span><button type="button" data-ui-action="removeOnlineLobbyPlayer" data-player-index="${player.index}" aria-label="${safeRemoveLabel}">外す</button></li>`;
+                })
                 .join('')
             : '';
         const management = options.isHost === true
