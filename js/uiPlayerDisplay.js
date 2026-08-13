@@ -60,6 +60,24 @@ const UiPlayerDisplay = (() => {
         return `<span class="landmark-badge ${built ? 'built' : ''}" aria-label="${safeLabel}">${safeEmoji} ${safeName}</span>`;
     }
 
+    function playerBoxId(index) {
+        return `playerBox${index}`;
+    }
+
+    function buildPlayerNavigationHtml(players, options = {}) {
+        if (!Array.isArray(players) || players.length < 5 || typeof options.escapeHtml !== 'function') {
+            return '';
+        }
+        return players.map((player, index) => {
+            const isActive = index === options.currentPlayerIndex;
+            const isSelf = index === options.myPlayerIndex;
+            const marker = isActive ? '▶ ' : (isSelf ? '自分：' : '');
+            const label = `${marker}${player?.name || `プレイヤー${index + 1}`}`;
+            const current = isActive ? ' aria-current="true"' : '';
+            return `<a class="player-navigation-link${isActive ? ' active' : ''}${isSelf ? ' self' : ''}" href="#${playerBoxId(index)}"${current}>${options.escapeHtml(label)}</a>`;
+        }).join('');
+    }
+
     function buildPlayerHtml(player, index, options = {}) {
         const isActive = index === options.currentPlayerIndex;
         const compact = options.compactInactive === true && !isActive && index !== options.myPlayerIndex;
@@ -93,9 +111,9 @@ const UiPlayerDisplay = (() => {
         const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${cpuLabel}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span></div><div class="player-coin-row"><span class="player-coins">🪙 ${player.coins}</span>${itCoins}${loanBadge}</div></div>`;
         const detail = `<div class="player-detail"><div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
         if (compact) {
-            return `<details class="player-box player-box-compact" role="listitem" aria-label="${playerSummary}"><summary>${header}<span class="player-detail-hint">詳細を表示</span></summary>${detail}</details>`;
+            return `<details id="${playerBoxId(index)}" class="player-box player-box-compact" role="listitem" aria-label="${playerSummary}"><summary>${header}<span class="player-detail-hint">詳細を表示</span></summary>${detail}</details>`;
         }
-        return `<div class="player-box ${isActive ? 'active' : ''}" role="listitem" aria-label="${playerSummary}">${header}${detail}</div>`;
+        return `<div id="${playerBoxId(index)}" class="player-box ${isActive ? 'active' : ''}" role="listitem" aria-label="${playerSummary}">${header}${detail}</div>`;
     }
 
     function buildPlayersHtml(players, options = {}) {
@@ -117,6 +135,8 @@ const UiPlayerDisplay = (() => {
         playerKindAccessibleLabel,
         resolvePlayerSetting,
         buildLandmarkBadgeHtml,
+        playerBoxId,
+        buildPlayerNavigationHtml,
         buildPlayerHtml,
         buildPlayersHtml,
         buildCoinAnimationView,

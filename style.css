@@ -1397,11 +1397,64 @@ button:not(:disabled):active {
 }
 
 /* ===== プレイヤー情報 ===== */
+.player-area {
+    position: relative;
+}
+
+.player-navigation {
+    position: sticky;
+    top: max(8px, env(safe-area-inset-top));
+    z-index: 35;
+    gap: 6px;
+    margin: 0 0 8px;
+    padding: 6px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    background: #121225;
+    border: 1px solid #343452;
+    border-radius: 10px;
+    scrollbar-width: thin;
+}
+
+.player-navigation-link {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    min-height: 44px;
+    max-width: 180px;
+    padding: 6px 10px;
+    color: #d7d8e6;
+    background: #1a1a2e;
+    border: 1px solid #4b4b68;
+    border-radius: 999px;
+    font-size: 13px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    text-decoration: none;
+}
+
+.player-navigation-link.active {
+    color: #171321;
+    background: #f0c040;
+    border-color: #f0c040;
+    font-weight: bold;
+}
+
+.player-navigation-link.self:not(.active) {
+    border-color: #8f7fd9;
+}
+
+.player-navigation-link:focus-visible {
+    outline: 3px solid #f4c542;
+    outline-offset: 2px;
+}
+
 #players {
     margin-bottom: 12px;
 }
 
 .player-box {
+    scroll-margin-top: 72px;
     background: #1a1a2e;
     border-radius: 10px;
     padding: 12px;

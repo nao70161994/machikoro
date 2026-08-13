@@ -154,8 +154,8 @@ assert(!html.includes('空港'));
 assert(html.includes('パン屋×2（休2）'));
 assert(html.includes('<span class="it-badge">💻2</span>'));
 assert(html.includes('<span class="loan-badge">💳×1</span>'));
-assert(html.includes('<div class="player-box " role="listitem" aria-label="&lt;Alice&gt;、待機中、人間">'));
-assert(html.includes('<div class="player-box active" role="listitem" aria-label="CPU、現在の手番、CPU（強）">'));
+assert(html.includes('<div id="playerBox0" class="player-box " role="listitem" aria-label="&lt;Alice&gt;、待機中、人間">'));
+assert(html.includes('<div id="playerBox1" class="player-box active" role="listitem" aria-label="CPU、現在の手番、CPU（強）">'));
 assert(html.includes('<span class="player-icon">🤖強</span>'));
 assert(html.includes('<span class="player-name">▶ CPU</span>'));
 
@@ -201,8 +201,8 @@ const tenPlayerHtml = UiPlayerDisplay.buildPlayersHtml(tenPlayers, {
     loanEffect: 'loan',
 });
 assert.strictEqual((tenPlayerHtml.match(/role="listitem"/g) || []).length, 10);
-assert.strictEqual((tenPlayerHtml.match(/<details class="player-box player-box-compact"/g) || []).length, 8);
-assert(tenPlayerHtml.includes('<div class="player-box active"'));
+assert.strictEqual((tenPlayerHtml.match(/<details id="playerBox\d+" class="player-box player-box-compact"/g) || []).length, 8);
+assert(tenPlayerHtml.includes('class="player-box active"'));
 assert(tenPlayerHtml.includes('&lt;悪意&quot;名前&gt;</span>'));
 assert.strictEqual((tenPlayerHtml.match(/詳細を表示/g) || []).length, 8);
 assert(tenPlayerHtml.includes('aria-label="&lt;悪意&quot;名前&gt;、待機中、人間"'));
@@ -212,5 +212,22 @@ assert(tenPlayerHtml.includes('aria-label="プレイヤー4、待機中、CPU（
 assert(tenPlayerHtml.includes('aria-label="プレイヤー5、現在の手番、CPU（最強）"'));
 assert(tenPlayerHtml.includes('aria-label="プレイヤー6、待機中、AI（深層学習・ランダム）"'));
 assert(!tenPlayerHtml.includes('<悪意'));
+
+const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(tenPlayers, {
+    currentPlayerIndex: 4,
+    myPlayerIndex: 0,
+    escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+});
+assert.strictEqual((navigationHtml.match(/class="player-navigation-link/g) || []).length, 10);
+assert(navigationHtml.includes('href="#playerBox0"'));
+assert(navigationHtml.includes('href="#playerBox4" aria-current="true"'));
+assert(navigationHtml.includes('自分：&lt;悪意&quot;名前&gt;'));
+assert(navigationHtml.includes('▶ プレイヤー5'));
+assert.strictEqual(UiPlayerDisplay.buildPlayerNavigationHtml(players, {
+    currentPlayerIndex: 0,
+    escapeHtml: String,
+}), '');
+assert(tenPlayerHtml.includes('id="playerBox0"'));
+assert(tenPlayerHtml.includes('id="playerBox9"'));
 
 console.log('ui player display tests passed');

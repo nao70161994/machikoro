@@ -719,6 +719,16 @@ function renderPlayers() {
         escapeHtml,
         loanEffect: CARD_EFFECTS.LOAN,
     });
+    const navigation = document.getElementById('playerNavigation');
+    const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(currentGame.players, {
+        currentPlayerIndex: currentGame.currentPlayerIndex,
+        myPlayerIndex: onlineState.isOnlineGame ? onlineState.myPlayerIndex : -1,
+        escapeHtml,
+    });
+    if (navigation) {
+        navigation.innerHTML = navigationHtml;
+        navigation.style.display = navigationHtml ? 'flex' : 'none';
+    }
     document.getElementById("players").innerHTML = html;
 }
 

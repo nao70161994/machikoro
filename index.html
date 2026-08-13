@@ -219,7 +219,10 @@
             <div id="logSummary" class="log-summary"></div>
             <div id="log" class="log"></div>
         </div>
-        <div id="players" role="list" aria-label="プレイヤー状況"></div>
+        <section class="player-area" aria-label="プレイヤー盤面">
+            <nav id="playerNavigation" class="player-navigation" aria-label="プレイヤーへ移動" style="display:none"></nav>
+            <div id="players" role="list" aria-label="プレイヤー状況"></div>
+        </section>
         <div id="buildMenu" role="region" aria-label="建設候補" tabindex="-1"></div>
         <button class="btn-restart" data-ui-action="restartGame">🔄 最初からやり直す</button>
     </div>
