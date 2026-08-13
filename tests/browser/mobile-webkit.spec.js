@@ -50,18 +50,21 @@ async function startGenerationServer(port, buildHash) {
         } catch (_) {}
         await new Promise(resolve => setTimeout(resolve, 100));
     }
-    child.kill('SIGTERM');
+    await stopGenerationServer(child);
     throw new Error(`generation server did not start: ${output}`);
 }
 
 async function stopGenerationServer(child) {
     if (!child || child.exitCode !== null) return;
+    const exited = new Promise(resolve => child.once('exit', resolve));
     child.kill('SIGTERM');
-    await Promise.race([
-        new Promise(resolve => child.once('exit', resolve)),
+    const stopped = await Promise.race([
+        exited.then(() => true),
         new Promise(resolve => setTimeout(resolve, 3000)),
     ]);
-    if (child.exitCode === null) child.kill('SIGKILL');
+    if (stopped === true || child.exitCode !== null) return;
+    child.kill('SIGKILL');
+    await exited;
 }
 
 async function expectPlayerSelectTapTargets(page, containerSelector, expectedCount) {
@@ -113,15 +116,17 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
     test.setTimeout(120000);
     const port = 3321;
     const origin = `http://127.0.0.1:${port}`;
-    let server = await startGenerationServer(port, 'webkit-e2e-v1');
-    const context = await browser.newContext({
-        ...MOBILE_CONTEXT,
-        baseURL: origin,
-        serviceWorkers: 'allow',
-    });
-    const page = await context.newPage();
-    const errors = collectRuntimeErrors(page);
+    let server = null;
+    let context = null;
     try {
+        server = await startGenerationServer(port, 'webkit-e2e-v1');
+        context = await browser.newContext({
+            ...MOBILE_CONTEXT,
+            baseURL: origin,
+            serviceWorkers: 'allow',
+        });
+        const page = await context.newPage();
+        const errors = collectRuntimeErrors(page);
         await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
         await page.goto(origin + '/');
         await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
@@ -143,17 +148,18 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
         await expect(page.locator('#pwaUpdateMsg')).toContainText('新バージョン');
         await expect(page.locator('#pwaUpdateBtn')).toBeDisabled();
 
-        // The fixture keeps a real game open to verify deferred installation. Enable the
-        // existing user action after that assertion so the same waiting worker is applied.
-        await page.locator('#pwaUpdateBtn').evaluate(button => { button.disabled = false; });
-        await page.locator('#pwaUpdateBtn').click();
+        await page.locator('[data-ui-action="restartGame"]').click();
+        await expect(page.locator('#confirmModal')).toBeVisible();
+        await page.locator('#confirmOkBtn').click();
+        // Returning to the title runs the production refresh path, which asks the
+        // already-waiting worker to activate without test-only DOM mutation.
         await page.waitForLoadState('load');
         await expect.poll(() => page.evaluate(() => window.MACHIKORO_CLIENT_VERSION)).toBe('webkit-e2e-v2');
         await expect.poll(() => page.evaluate(() => caches.keys())).toEqual(['machikoro-webkit-e2e-v2']);
         await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
         expect(errors).toEqual([]);
     } finally {
-        await context.close();
+        if (context) await context.close();
         await stopGenerationServer(server);
     }
 });
