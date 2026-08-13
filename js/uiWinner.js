@@ -82,7 +82,7 @@ function buildWinStreakHtml(winner, winStreak, escapeHtml) {
     return `<div class="win-streak">🔥 ${escapeHtml(winner.name)} ${winStreak}連勝中！</div>`;
 }
 
-function buildGameReview(logEntries, logTypes, players, escapeHtml) {
+function buildGameReview(logEntries, logTypes, players, escapeHtml, reviewSummary = null) {
     if (!Array.isArray(logEntries) || !logTypes || typeof escapeHtml !== 'function') return '';
     const counts = {
         [logTypes.GAIN]: 0,
@@ -107,14 +107,21 @@ function buildGameReview(logEntries, logTypes, players, escapeHtml) {
         ['建設済みランドマーク', finalLandmarkCount],
         ['最終コイン差', spread],
     ];
+    const summaryCounts = reviewSummary && reviewSummary.counts &&
+        typeof reviewSummary.counts === 'object' ? reviewSummary.counts : counts;
     const observedItems = [
-        ['収入ログ', counts[logTypes.GAIN]],
-        ['支払いログ', counts[logTypes.LOSE]],
-        ['建設ログ', counts[logTypes.BUILD]],
-        ['特殊効果ログ', counts[logTypes.SPECIAL]],
-        ['ダイスログ', counts[logTypes.DICE]],
+        ['収入ログ', summaryCounts[logTypes.GAIN] || 0],
+        ['支払いログ', summaryCounts[logTypes.LOSE] || 0],
+        ['建設ログ', summaryCounts[logTypes.BUILD] || 0],
+        ['特殊効果ログ', summaryCounts[logTypes.SPECIAL] || 0],
+        ['ダイスログ', summaryCounts[logTypes.DICE] || 0],
     ];
-    return `<section class="winner-review" aria-labelledby="winnerReviewTitle"><h3 id="winnerReviewTitle">対戦の振り返り</h3><h4>最終盤面</h4><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div><h4>この端末で観測した直近ログ</h4><p class="winner-review-note">最大300件。再開・再接続より前の記録を含まない場合があります。</p><div class="winner-review-grid">${observedItems.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
+    const complete = !!reviewSummary && reviewSummary.complete === true;
+    const historyTitle = complete ? '対戦全体のイベント' : 'この端末で観測した直近ログ';
+    const historyNote = complete
+        ? '保存・再接続を含む対戦開始からの構造化イベント集計です。'
+        : '最大300件。古い保存から再開した場合、以前の記録を含まないことがあります。';
+    return `<section class="winner-review" aria-labelledby="winnerReviewTitle"><h3 id="winnerReviewTitle">対戦の振り返り</h3><h4>最終盤面</h4><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div><h4>${historyTitle}</h4><p class="winner-review-note">${historyNote}</p><div class="winner-review-grid">${observedItems.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
 }
 
 function buildWinnerStatusText(options = {}) {
@@ -141,7 +148,9 @@ function buildWinnerScreenHtml(options = {}) {
     const streakHtml = buildWinStreakHtml(winner, options.winStreak, escapeHtml);
     const winnerType = options.isCpuWinner ? '🤖 CPU' : '👤 人間';
     const resultAdSlot = typeof options.resultAdSlot === 'string' ? options.resultAdSlot : '';
-    const reviewHtml = buildGameReview(options.logEntries, options.logTypes, options.players, escapeHtml);
+    const reviewHtml = buildGameReview(
+        options.logEntries, options.logTypes, options.players, escapeHtml, options.reviewSummary
+    );
     const rematchButton = options.canOnlineRematch
         ? '<div class="winner-rematch-actions"><button id="winnerRematchButton" class="winner-primary-action" data-ui-action="requestOnlineRematch">全員の同意で再戦</button><button class="winner-secondary-action" data-ui-action="declineOnlineRematch">今回は再戦しない</button></div>'
         : (options.canRematch

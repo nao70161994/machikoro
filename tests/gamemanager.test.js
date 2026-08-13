@@ -28,6 +28,24 @@ const PENDING_ACTION_SPEC_BY_FIELD = runtime.PENDING_ACTION_SPEC_BY_FIELD;
 const PENDING_ACTION_SPEC_BY_ACTION = runtime.PENDING_ACTION_SPEC_BY_ACTION;
 const PENDING_IT_QUEUE_POLICY = runtime.PENDING_IT_QUEUE_POLICY;
 
+runTest('GameManagerは構造化log件数を全対戦集計し表示専用logを除外する', () => {
+    const game = new GameManager(2);
+    assert.strictEqual(game.reviewSummary.complete, true);
+    assert.deepStrictEqual(
+        Object.keys(game.reviewSummary.counts).sort(),
+        Object.values(LOG_TYPES).slice().sort()
+    );
+
+    game.addLog(LOG_TYPES.GAIN, '収入');
+    game.addLog(LOG_TYPES.BUILD, '建設');
+    game.addLog(LOG_TYPES.SYSTEM, '表示専用', { review: false });
+
+    assert.strictEqual(game.reviewSummary.counts[LOG_TYPES.GAIN], 1);
+    assert.strictEqual(game.reviewSummary.counts[LOG_TYPES.BUILD], 1);
+    assert.strictEqual(game.reviewSummary.counts[LOG_TYPES.SYSTEM], 0);
+    assert.strictEqual(game.log.length, 3);
+});
+
 runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
     const effects = Object.values(CARD_EFFECTS);
     assert.deepStrictEqual(

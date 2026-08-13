@@ -10,6 +10,9 @@ const SAVED_PENDING_ACTION_BY_FIELD = Object.freeze({
 const MAX_SAVED_PENDING_COUNT = 50;
 const MAX_SAVED_LOG_ENTRIES = 30;
 const MAX_SAVED_CPU_SPEED = 5000;
+const savedGameSnapshot = typeof module !== 'undefined' && module.exports
+    ? require('./gameSnapshot')
+    : globalThis.GameSnapshot;
 
 function isPlainObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -231,6 +234,9 @@ function createValidator(options = {}) {
         const phases = new Set(['roll', 'selectDice', 'rerollConfirm', 'harborChoice', 'pending', 'build']);
         if (typeof state.phase !== 'string' || !phases.has(state.phase)) return false;
         if (state.log != null && !Array.isArray(state.log)) return false;
+        if (savedGameSnapshot &&
+                typeof savedGameSnapshot.isValidReviewSummary === 'function' &&
+                !savedGameSnapshot.isValidReviewSummary(state.reviewSummary)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'lastDiceResult') &&
             (!isNonnegativeSafeInteger(state.lastDiceResult) || state.lastDiceResult > 14)) return false;
         for (const field of ['lastDice1', 'lastDice2']) {

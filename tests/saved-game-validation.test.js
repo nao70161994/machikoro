@@ -409,6 +409,26 @@ runTest('saved game validatorは無効landmarkの建設済み状態を拒否す�
     assert.strictEqual(validator.isValidSavedGameState(legacy), true);
 });
 
+runTest('saved game validatorは構造化対戦集計をsafe integer境界で検証する', () => {
+    const validator = makeValidator();
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        reviewSummary: { complete: true, counts: { gain: 3, build: 1 } },
+    })), true);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        reviewSummary: { complete: true, counts: { gain: -1 } },
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        reviewSummary: { complete: true, counts: { unknown: 1 } },
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        reviewSummary: { complete: true, counts: { gain: Number.MAX_SAFE_INTEGER + 1 } },
+    })), false);
+
+    const legacy = makeState();
+    delete legacy.reviewSummary;
+    assert.strictEqual(validator.isValidSavedGameState(legacy), true);
+});
+
 runTest('saved game validatorは依存未注入時に未知cardとlandmarkを拒否する', () => {
     const validator = SavedGameValidation.createValidator();
     assert.strictEqual(validator.isValidSavedGameState(makeState()), false);

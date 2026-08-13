@@ -228,6 +228,7 @@ function renderWinnerState(winner) {
         winStreak: streakState.winStreak,
         logEntries: fullLog,
         logTypes: LOG_TYPES,
+        reviewSummary: currentGame.reviewSummary,
         canRematch: !UiWinner.gameOriginRuntime.wasOnline(),
         canOnlineRematch: UiWinner.gameOriginRuntime.wasOnline() &&
             !!uiOnlineRuntimeSnapshot().socket,

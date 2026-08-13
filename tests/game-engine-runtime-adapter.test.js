@@ -80,6 +80,10 @@ function makeSnapshot() {
         currentPlayerIndex: 0,
         phase: 'build',
         log: [{ type: 'system', message: 'turn' }],
+        reviewSummary: {
+            complete: false,
+            counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
+        },
         lastDiceResult: 6,
         lastDice1: 2,
         lastDice2: 4,
@@ -107,6 +111,10 @@ function makeSnapshot() {
             shopStock: { パン屋: 4 },
             builtThisTurn: false,
             log: [],
+            reviewSummary: {
+                complete: false,
+                counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
+            },
         },
         actionSeq: 9,
     };

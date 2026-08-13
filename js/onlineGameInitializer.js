@@ -81,7 +81,8 @@ const OnlineGameInitializer = (() => {
             );
             game.addLog(
                 dependencies.logTypes.SYSTEM,
-                `👤 ${game.currentPlayer().name}のターン`
+                `👤 ${game.currentPlayer().name}のターン`,
+                { review: false }
             );
             dependencies.render();
             dependencies.scheduleCpu();

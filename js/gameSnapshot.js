@@ -3,6 +3,35 @@
 const GAME_SNAPSHOT_SCHEMA_VERSION = 1;
 const GAME_SNAPSHOT_LEGACY_VERSION = 0;
 const GAME_SNAPSHOT_DEFAULT_LOG_LIMIT = 30;
+const GAME_REVIEW_LOG_TYPES = Object.freeze([
+    'dice', 'gain', 'lose', 'build', 'special', 'system', 'error',
+]);
+
+function normalizeReviewSummary(value, legacyComplete = false) {
+    const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const sourceCounts = source.counts && typeof source.counts === 'object' &&
+        !Array.isArray(source.counts) ? source.counts : {};
+    const counts = Object.fromEntries(GAME_REVIEW_LOG_TYPES.map(type => {
+        const count = sourceCounts[type];
+        return [type, Number.isSafeInteger(count) && count >= 0 ? count : 0];
+    }));
+    return {
+        complete: source.complete === true || (value == null && legacyComplete === true),
+        counts,
+    };
+}
+
+function isValidReviewSummary(value) {
+    if (value == null) return true;
+    if (!value || typeof value !== 'object' || Array.isArray(value) ||
+            typeof value.complete !== 'boolean' ||
+            !value.counts || typeof value.counts !== 'object' || Array.isArray(value.counts)) {
+        return false;
+    }
+    return Object.entries(value.counts).every(([type, count]) =>
+        GAME_REVIEW_LOG_TYPES.includes(type) && Number.isSafeInteger(count) && count >= 0
+    );
+}
 
 /**
  * @typedef {Record<string, *> & {
@@ -132,6 +161,7 @@ function serializeGameState(game, shopStock, options = {}) {
         currentPlayerIndex: game.currentPlayerIndex,
         phase: game.phase,
         log: copyRecentLog(game.log, logLimit),
+        reviewSummary: normalizeReviewSummary(game.reviewSummary, true),
         lastDiceResult: game.lastDiceResult,
         lastDice1: game.lastDice1,
         lastDice2: game.lastDice2,
@@ -219,6 +249,7 @@ function serializeUndoState(game, shopStock, logLimit = GAME_SNAPSHOT_DEFAULT_LO
         shopStock: Object.assign({}, shopStock),
         builtThisTurn: game.builtThisTurn,
         log: copyRecentLog(game.log, normalizedLogLimit),
+        reviewSummary: normalizeReviewSummary(game.reviewSummary, true),
     };
 }
 
@@ -264,6 +295,7 @@ function hydrateUndoState(options) {
     options.assignShopStockSnapshot(shopStock, state.shopStock);
     game.builtThisTurn = state.builtThisTurn === true;
     game.log = Array.isArray(state.log) ? [...state.log] : [];
+    game.reviewSummary = normalizeReviewSummary(state.reviewSummary, false);
     game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;
     return true;
 }
@@ -306,6 +338,7 @@ function hydrateMutableGameState(options) {
     );
     game.phase = state.phase || game.phase;
     game.log = options.readLog(state.log);
+    game.reviewSummary = normalizeReviewSummary(state.reviewSummary, false);
     game.lastDiceResult = state.lastDiceResult || 0;
     game.lastDice1 = state.lastDice1 || 0;
     game.lastDice2 = state.lastDice2 || 0;
@@ -337,6 +370,9 @@ const GameSnapshot = Object.freeze({
     schemaVersion: GAME_SNAPSHOT_SCHEMA_VERSION,
     legacyVersion: GAME_SNAPSHOT_LEGACY_VERSION,
     defaultLogLimit: GAME_SNAPSHOT_DEFAULT_LOG_LIMIT,
+    reviewLogTypes: GAME_REVIEW_LOG_TYPES,
+    normalizeReviewSummary,
+    isValidReviewSummary,
     snapshotVersionOf,
     isSupportedSnapshotVersion,
     createSnapshotEnvelope,

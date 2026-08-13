@@ -18,8 +18,23 @@ runTest('winner reviewは正確な最終盤面と観測範囲を明示したlog�
     assert(html.includes('<span>建設済みランドマーク</span><strong>2</strong>'));
     assert(html.includes('<span>収入ログ</span><strong>2</strong>'));
     assert(html.includes('この端末で観測した直近ログ'));
-    assert(html.includes('最大300件。再開・再接続より前の記録を含まない場合があります。'));
+    assert(html.includes('最大300件。古い保存から再開した場合、以前の記録を含まないことがあります。'));
     assert(html.includes('<span>最終コイン差</span><strong>9</strong>'));
+});
+
+runTest('winner reviewは保存済みの完全な構造化集計を直近logより優先する', () => {
+    const logTypes = { GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', DICE: 'dice' };
+    const html = UiWinner.buildGameReview(
+        [{ type: 'gain', message: '+1' }],
+        logTypes,
+        [{ coins: 12, cards: [], landmarks: {} }, { coins: 3, cards: [], landmarks: {} }],
+        value => String(value),
+        { complete: true, counts: { gain: 21, lose: 8, build: 14, special: 5, dice: 33 } }
+    );
+    assert(html.includes('対戦全体のイベント'));
+    assert(html.includes('保存・再接続を含む対戦開始から'));
+    assert(html.includes('<span>収入ログ</span><strong>21</strong>'));
+    assert.strictEqual(html.includes('最大300件'), false);
 });
 function escapeHtml(value) {
     return String(value)

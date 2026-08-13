@@ -110,6 +110,10 @@ runTest('共有serializerは既存のversionなしwire形状を保持する', ()
         currentPlayerIndex: 0,
         phase: 'build',
         log: [{ text: 'middle' }, { text: 'latest' }],
+        reviewSummary: {
+            complete: true,
+            counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
+        },
         lastDiceResult: 8,
         lastDice1: 3,
         lastDice2: 5,
@@ -208,6 +212,10 @@ runTest('共有undo serializerは既存形状とlog上限を保持する', () =>
         shopStock: { カフェ: 4 },
         builtThisTurn: true,
         log: [{ text: 'latest' }],
+        reviewSummary: {
+            complete: true,
+            counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
+        },
     });
     assert.deepStrictEqual(GameSnapshot.serializeUndoState(game, stock, 0).log, []);
 });
@@ -315,4 +323,33 @@ runTest('共有hydrate境界は復元policyと副作用adapterをcallerへ明示
     assert.strictEqual(game.rebuildCount, 1);
     assert.strictEqual(restoredUndo, undoState);
     assert.strictEqual(GameSnapshot.hydrateMutableGameState({ game, state: {} }), false);
+});
+
+runTest('共有snapshotは固定サイズの対戦集計をsave・Undo・hydrateで保持する', () => {
+    const game = makeGameFixture();
+    game.reviewSummary = {
+        complete: true,
+        counts: { dice: 9, gain: 7, lose: 3, build: 4, special: 2, system: 5, error: 1 },
+    };
+    const snapshot = GameSnapshot.serializeGameState(game, {});
+    const undo = GameSnapshot.serializeUndoState(game, {});
+    assert.deepStrictEqual(snapshot.reviewSummary, game.reviewSummary);
+    assert.deepStrictEqual(undo.reviewSummary, game.reviewSummary);
+    assert.notStrictEqual(snapshot.reviewSummary, game.reviewSummary);
+    assert.strictEqual(GameSnapshot.isValidReviewSummary(snapshot.reviewSummary), true);
+    assert.strictEqual(GameSnapshot.isValidReviewSummary({ complete: true, counts: { gain: -1 } }), false);
+
+    const target = makeGameFixture();
+    assert.strictEqual(GameSnapshot.hydrateUndoState({
+        game: target,
+        shopStock: {},
+        state: Object.assign(undo, {
+            playerCoins: [7], playerCardNames: [['カフェ']], playerLandmarks: [{ 駅: true }],
+            shopStock: {},
+        }),
+        createCardByName: name => ({ name }),
+        assignShopStockSnapshot: () => {},
+        mergePlayerLandmarks: (_current, saved) => saved,
+    }), true);
+    assert.deepStrictEqual(target.reviewSummary, game.reviewSummary);
 });

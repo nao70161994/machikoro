@@ -103,6 +103,10 @@ class GameManager {
         /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
         this.phase = GAME_PHASES.ROLL;
         this.log = [];
+        this.reviewSummary = {
+            complete: true,
+            counts: Object.fromEntries(Object.values(LOG_TYPES).map(type => [type, 0])),
+        };
         this.builtThisTurn = false;
         this.resetPendingState();
         this.usedReroll = false;
@@ -1136,5 +1140,17 @@ class GameManager {
         const index = GameTurnPolicy.winnerIndex(this.players, this.enabledLandmarks);
         return index >= 0 ? this.players[index] : null;
     }
-    addLog(type, msg) { this.log.push({ type, message: msg }); }
+    addLog(type, msg, options = {}) {
+        this.log.push({ type, message: msg });
+        if (options.review === false) return;
+        if (!this.reviewSummary || typeof this.reviewSummary !== 'object') {
+            this.reviewSummary = { complete: false, counts: {} };
+        }
+        if (!this.reviewSummary.counts || typeof this.reviewSummary.counts !== 'object') {
+            this.reviewSummary.counts = {};
+        }
+        const previous = this.reviewSummary.counts[type];
+        this.reviewSummary.counts[type] = Number.isSafeInteger(previous) && previous >= 0
+            ? Math.min(previous + 1, Number.MAX_SAFE_INTEGER) : 1;
+    }
 }

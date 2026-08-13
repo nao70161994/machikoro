@@ -226,6 +226,7 @@ function makeMirrorReplay({
         if (Object.prototype.hasOwnProperty.call(state, 'phase') &&
             !Object.values(gameRuntime.GAME_PHASES).includes(state.phase)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'log') && !isValidSnapshotLog(state.log)) return false;
+        if (!isValidSnapshotReview(state.reviewSummary)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'lastDiceResult') &&
             (!isNonnegativeSafeInteger(state.lastDiceResult) || state.lastDiceResult > 14)) return false;
         for (const field of ['lastDice1', 'lastDice2']) {
@@ -299,6 +300,7 @@ function makeMirrorReplay({
             (!Array.isArray(state.playerItVenture) || state.playerItVenture.length !== playerCount)) return false;
         if (!isPlainObject(state.shopStock)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'log') && !isValidSnapshotLog(state.log)) return false;
+        if (!isValidSnapshotReview(state.reviewSummary)) return false;
         if (Object.prototype.hasOwnProperty.call(state, 'builtThisTurn') && typeof state.builtThisTurn !== 'boolean') return false;
         if (state.playerCoins.some(coins => !isNonnegativeSafeInteger(coins))) return false;
         const landmarkNames = new Set(gameRuntime.Player.landmarkNames());
@@ -383,6 +385,10 @@ function makeMirrorReplay({
             log.every(entry => isPlainObject(entry) &&
                 typeof entry.type === 'string' &&
                 typeof entry.message === 'string');
+    }
+
+    function isValidSnapshotReview(summary) {
+        return GameSnapshot.isValidReviewSummary(summary);
     }
 
     function validateReplayAction(room, game, shopStock, entry, lastUndoState, cpuPlayers) {
