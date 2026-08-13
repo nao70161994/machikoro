@@ -48,6 +48,7 @@ function createDisconnectSocketHandler(dependencies) {
         emitRoomHostChanged,
         persistRoomCanonicalState,
         disconnectHostlessRestore,
+        cancelOnlineRematch = () => false,
         waitingReservationTtlMs,
         reserveWaitingPlayer: reserveWaitingPlayerEffect = reserveWaitingPlayer,
         shouldRemoveWaitingPlayerImmediately: shouldRemoveWaitingPlayerImmediatelyEffect = shouldRemoveWaitingPlayerImmediately,
@@ -120,6 +121,7 @@ function createDisconnectSocketHandler(dependencies) {
                 } else {
                     const result = handleStartedRoomSocketDisconnect(targetIo, roomId, room, socket);
                     if (result.ignored) return;
+                    cancelOnlineRematch(roomId, 'player-disconnected');
                 }
                 log(`切断: ${socket.id} (ルーム: ${roomId})`);
             }

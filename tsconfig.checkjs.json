@@ -248,6 +248,7 @@
     "server/rejoinPayload.js",
     "server/rejoinSocketHandler.js",
     "server/rejoinAdmission.js",
+    "server/onlineRematchRuntime.js",
     "server/recreateSocketHandler.js",
     "server/restoreAudit.js",
     "server/restoreAuditPayload.js",

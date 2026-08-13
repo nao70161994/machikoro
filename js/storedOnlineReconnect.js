@@ -25,6 +25,8 @@ const StoredOnlineReconnect = (() => {
                 originalPlayerIndex,
                 playerIndex: originalPlayerIndex,
                 reconnectToken: session.reconnectToken || '',
+                gameGeneration: Number.isSafeInteger(session.gameGeneration) && session.gameGeneration >= 0
+                    ? session.gameGeneration : 0,
             }),
         });
     }
@@ -37,6 +39,7 @@ const StoredOnlineReconnect = (() => {
             originalPlayerIndex: -1,
             playerIndex: -1,
             reconnectToken: '',
+            gameGeneration: 0,
         });
     }
 

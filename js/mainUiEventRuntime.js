@@ -5,7 +5,7 @@ const MainUiEventRuntime = (() => {
         'showRules', 'showCardSelect', 'reconnectOnline', 'deleteOnlineSession', 'switchTab',
         'changeCount', 'startGame', 'resumeGame', 'deleteSavedGame', 'switchOnlineTab',
         'changeOnlineCount', 'showCreateRoom', 'joinRoom', 'toggleTutorial',
-        'cycleTutorialLevel', 'onRoll', 'onReroll', 'onSkip', 'toggleLog', 'restartGame', 'rematchLocalGame',
+        'cycleTutorialLevel', 'onRoll', 'onReroll', 'onSkip', 'toggleLog', 'restartGame', 'rematchLocalGame', 'requestOnlineRematch', 'declineOnlineRematch',
         'closeRules', 'closeCardDetail', 'hideNotice', 'crashResume', 'pwaInstallPrompt',
         'pwaInstallDismiss', 'copyOnlineRoomId', 'leaveOnlineLobby', 'focusBuildMenu',
     ]);

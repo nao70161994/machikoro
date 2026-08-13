@@ -12,6 +12,7 @@ const OnlineRuntimeState = (() => {
         reconnectToken: '',
         isReplaying: false,
         isReconnectingOnline: false,
+        gameGeneration: 0,
     });
     const fields = Object.freeze(Object.keys(defaults));
 
@@ -59,11 +60,23 @@ const OnlineRuntimeState = (() => {
             return snapshot();
         }
 
+        function setReconnectToken(value) {
+            state.reconnectToken = typeof value === 'string' ? value : '';
+            return snapshot();
+        }
+
+        function setGameGeneration(value) {
+            state.gameGeneration = Number.isSafeInteger(value) && value >= 0 ? value : 0;
+            return snapshot();
+        }
+
         function acceptRoom(identity = {}) {
             state.myOriginalPlayerIndex = identity.playerIndex;
             state.myPlayerIndex = identity.playerIndex;
             state.myRoomId = identity.roomId;
             state.reconnectToken = identity.reconnectToken;
+            state.gameGeneration = Number.isSafeInteger(identity.gameGeneration) && identity.gameGeneration >= 0
+                ? identity.gameGeneration : 0;
             return snapshot();
         }
 
@@ -74,6 +87,8 @@ const OnlineRuntimeState = (() => {
             state.myOriginalPlayerIndex = identity.originalPlayerIndex;
             state.myPlayerIndex = identity.playerIndex;
             state.reconnectToken = identity.reconnectToken;
+            state.gameGeneration = Number.isSafeInteger(identity.gameGeneration) && identity.gameGeneration >= 0
+                ? identity.gameGeneration : 0;
             return snapshot();
         }
 
@@ -104,6 +119,7 @@ const OnlineRuntimeState = (() => {
 
         function clearReconnectToken() {
             state.reconnectToken = '';
+            state.gameGeneration = 0;
             return snapshot();
         }
 
@@ -143,6 +159,8 @@ const OnlineRuntimeState = (() => {
             setHost,
             setReplaying,
             setReconnecting,
+            setReconnectToken,
+            setGameGeneration,
             acceptRoom,
             restoreIdentity,
             setPlayerIndexes,

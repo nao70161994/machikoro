@@ -18,6 +18,9 @@ function makeRejoinPayload({
             hostPlayerIndex: overrides.hostPlayerIndex !== undefined ? overrides.hostPlayerIndex : room.hostPlayerIndex,
             hostEpoch: Number.isInteger(overrides.hostEpoch) ? overrides.hostEpoch : (room.hostEpoch || 0),
         };
+        if (Number.isSafeInteger(room.gameGeneration) && room.gameGeneration > 0) {
+            payload.gameGeneration = room.gameGeneration;
+        }
         const restoreAudit = overrides.restoreAudit !== undefined
             ? overrides.restoreAudit
             : buildRestoreSnapshotAudit(room.roomId, gameStartPayload, stateSnapshot);

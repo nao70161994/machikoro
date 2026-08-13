@@ -32,6 +32,9 @@ function makeGameStartPayload({
             hostlessRestoreGeneration: 0,
             hostlessRestoreCount: 0,
         };
+        if (Number.isSafeInteger(room.gameGeneration) && room.gameGeneration > 0) {
+            payload.gameGeneration = room.gameGeneration;
+        }
         if (gameSchema) payload.gameSchema = gameSchema;
         return payload;
     }

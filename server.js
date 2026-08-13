@@ -148,6 +148,7 @@ const {
     reserveWaitingPlayer,
     shouldRemoveWaitingPlayerImmediately,
 } = require('./server/disconnectSocketHandler');
+const { createOnlineRematchRuntime } = require('./server/onlineRematchRuntime');
 const {
     gameSchemaNegotiationEnabled,
     gameSchemaWireEnabled,
@@ -732,6 +733,7 @@ const { attachCompactedRestoreSnapshotToAction } = makeRestoreSnapshotAttachment
 });
 
 let hostlessRestoreRuntime = null;
+let onlineRematchRuntime = null;
 const hostlessRestoreCoordinator = createHostlessRestoreCoordinator({
     onEvent: event => {
         logHostlessRestoreCoordinatorEvent(event);
@@ -782,6 +784,17 @@ hostlessRestoreRuntime = createHostlessRestoreRuntime({
     canStartForRateKey: canCreateRoomForRateKey,
     markStartForRateKey: markCreateRoomForRateKey,
 });
+onlineRematchRuntime = createOnlineRematchRuntime({
+    rooms,
+    io,
+    emitAppError,
+    requirePlainSocketPayload,
+    isActiveRoomSocket,
+    generateReconnectToken,
+    hashReconnectToken,
+    buildGameStartPayload: (...args) => buildGameStartPayload(...args),
+    markRoomGameStarted: (...args) => markRoomGameStarted(...args),
+});
 const disconnectSocketHandler = createDisconnectSocketHandler({
     io,
     rooms,
@@ -791,6 +804,8 @@ const disconnectSocketHandler = createDisconnectSocketHandler({
     emitRoomHostChanged,
     persistRoomCanonicalState,
     disconnectHostlessRestore: socket => hostlessRestoreRuntime.disconnect(socket),
+    cancelOnlineRematch: (roomId, reason) => onlineRematchRuntime &&
+        onlineRematchRuntime.clear(roomId, reason),
     waitingReservationTtlMs: ROOM_LIFECYCLE_LIMITS.waitingReservationTtlMs,
     reserveWaitingPlayer,
     shouldRemoveWaitingPlayerImmediately,
@@ -839,6 +854,7 @@ registerSocketConnectionRuntime({
         });
     },
     action(socket) {
+        onlineRematchRuntime.registerSocket(socket);
         registerActionSocketHandler(socket, {
             requirePlainSocketPayload,
             rooms,

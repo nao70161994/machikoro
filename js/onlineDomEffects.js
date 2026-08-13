@@ -71,6 +71,13 @@ const OnlineDomEffects = (() => {
             return target && target.value !== undefined ? String(target.value) : '';
         }
 
+        function setInputValue(id, value) {
+            const target = element(id);
+            if (!target) return false;
+            target.value = String(value || '');
+            return true;
+        }
+
         function applyButtonView(id, view = {}) {
             const target = element(id);
             if (!target) return false;
@@ -92,6 +99,7 @@ const OnlineDomEffects = (() => {
             inputValue,
             isStatusWaiting: () => text(ids.status).startsWith('⏳'),
             setHtml,
+            setInputValue,
             setGameStatusText,
             setStatusHtml: value => setHtml(ids.status, value),
             setStatusText,

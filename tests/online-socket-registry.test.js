@@ -36,7 +36,8 @@ runTest('online socket registryは全eventを既存順で一度ずつ登録す�
     assert.strictEqual(binder.assertComplete(), true);
     assert.deepStrictEqual(calls.map(call => call[0]), [
         'roomCreated', 'roomJoined', 'playerList', 'gameStart', 'gameAction',
-        'actionAccepted', 'rejoinData', 'hostlessCollectWire',
+        'actionAccepted', 'onlineRematchStatus', 'onlineRematchIdentity',
+        'rejoinData', 'hostlessCollectWire',
         'hostlessConfirmationWire', 'hostlessStatusWire', 'hostlessApprovedWire',
         'playerRejoined', 'playerDisconnected', 'hostChanged', 'connect',
         'disconnect', 'connect_error', 'appError',

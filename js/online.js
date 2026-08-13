@@ -75,8 +75,7 @@ function leaveOnlineLobby() {
     if (session.isOnlineGame || !session.myRoomId) return false;
     const roomId = session.myRoomId;
     return showConfirm('待機室から退出しますか？\n再参加にはルームIDが必要です', () => {
-        const input = typeof document !== 'undefined' ? document.getElementById('roomIdInput') : null;
-        if (input) input.value = roomId;
+        onlineDomEffects.setInputValue(OnlineDomEffects.ids.roomId, roomId);
         _removeOnlineSessionStorageItem(roomId);
         resetOnlineState();
         onlineDomEffects.setStatusText(`ルーム ${roomId} から退出しました。再参加する場合は参加ボタンを押してください。`);
@@ -2541,6 +2540,7 @@ function saveOnlineSession() {
             playerName: session.myPlayerName,
             reconnectToken: session.reconnectToken,
             isRoomHost: session.isRoomHost,
+            gameGeneration: session.gameGeneration,
         });
         onlineClientEffects.updateResumeButton();
     } catch (e) {}
@@ -2615,6 +2615,7 @@ const onlineInboundActionRuntime = OnlineInboundActionRuntime.createRuntime({
         },
     },
     getGameState: onlineGameRuntimeSnapshot,
+    getGameGeneration: () => onlineSessionSnapshot().gameGeneration,
     getReconnectSnapshot: () => _onlineReconnectRuntime.rawSnapshot(),
     lastAppliedSeq: () => _lastAppliedOnlineActionSeq(),
     payload: OnlinePayload,
@@ -2733,6 +2734,13 @@ function initSocket() {
         setHostState: hostPlayerIndex => _setOnlineHostState(hostPlayerIndex),
         setOnline: value => onlineComposition.sessionState.setOnline(value),
         setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
+        setGameGeneration: value => onlineComposition.sessionState.setGameGeneration(value),
+        resetWinnerPresentation: () => {
+            winSoundPlayed = false;
+            if (typeof UiWinner !== 'undefined' && UiWinner.gameOriginRuntime) {
+                UiWinner.gameOriginRuntime.reset();
+            }
+        },
         setSchema: selection => onlineSchemaSelectionController.set(selection),
         setStatusHtml: html => onlineDomEffects.setStatusHtml(html),
         setStatusText: message => onlineDomEffects.setStatusText(message),
@@ -2922,6 +2930,21 @@ function initSocket() {
 
     socketEvents.on(OnlineSocketRegistry.keys.GAME_ACTION, handleGameAction);
     socketEvents.on(OnlineSocketRegistry.keys.ACTION_ACCEPTED, handleActionAccepted);
+    socketEvents.on(OnlineSocketRegistry.keys.ONLINE_REMATCH_STATUS, payload => {
+        if (!payload || payload.state === 'cancelled') {
+            onlineDomEffects.setStatusText('オンライン再戦は成立しませんでした。');
+            return;
+        }
+        onlineDomEffects.setStatusText(`再戦の同意を待っています（${payload.votes}/${payload.required}）`);
+    });
+    socketEvents.on(OnlineSocketRegistry.keys.ONLINE_REMATCH_IDENTITY, payload => {
+        const session = onlineSessionSnapshot();
+        if (!payload || payload.roomId !== session.myRoomId ||
+                payload.playerIndex !== session.myOriginalPlayerIndex) return;
+        onlineComposition.sessionState.setReconnectToken(payload.reconnectToken);
+        onlineComposition.sessionState.setGameGeneration(payload.gameGeneration);
+        saveOnlineSession();
+    });
 
     socketEvents.on(
         OnlineSocketRegistry.keys.REJOIN_DATA,
@@ -3404,7 +3427,10 @@ function sendAction(action, data = {}) {
         _setOnlineActionInFlight(true);
         onlineClientEffects.invalidateCpuSchedule();
         const pending = _savePendingOutboundAction(action, data);
-        const encodedWire = encodeOnlineGameSchemaAction({ action, data, clientActionId: pending.clientActionId });
+        const encodedWire = encodeOnlineGameSchemaAction({
+            action, data, clientActionId: pending.clientActionId,
+            gameGeneration: session.gameGeneration,
+        });
         if (!encodedWire.ok) {
             _setOnlineActionInFlight(false);
             _clearPendingOutboundAction();
@@ -3414,6 +3440,24 @@ function sendAction(action, data = {}) {
         return true;
     }
     return !session.isOnlineGame;
+}
+
+function requestOnlineRematch() {
+    const session = onlineSessionSnapshot();
+    if (!session.socket || session.socket.connected === false ||
+            !UiWinner.gameOriginRuntime.wasOnline()) return false;
+    onlineSocketEffects.requestOnlineRematch({ approved: true }, session.socket);
+    onlineDomEffects.setStatusText('再戦の同意を送信しました。全員の同意を待っています。');
+    return true;
+}
+
+function declineOnlineRematch() {
+    const session = onlineSessionSnapshot();
+    if (!session.socket || session.socket.connected === false ||
+            !UiWinner.gameOriginRuntime.wasOnline()) return false;
+    onlineSocketEffects.requestOnlineRematch({ approved: false }, session.socket);
+    onlineDomEffects.setStatusText('オンライン再戦を辞退しました。');
+    return true;
 }
 
 function _tryRestoreRoom() {

@@ -262,6 +262,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/mirrorReplay.js',
     'server/rejoinSocketHandler.js',
     'server/rejoinAdmission.js',
+    'server/onlineRematchRuntime.js',
     'server/recreateSocketHandler.js',
     'server/rejoinPayload.js',
     'server/reportingPolicy.js',

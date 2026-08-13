@@ -141,6 +141,9 @@ const OnlineLobbyStartRuntime = (() => {
                 return;
             }
             dependencies.setSchema(input.gameSchema);
+            if (typeof dependencies.setGameGeneration === 'function') {
+                dependencies.setGameGeneration(input.gameGeneration);
+            }
             dependencies.clearRejoinRetry();
             dependencies.clearHostlessState();
             dependencies.clearRestoreQuarantine();
@@ -152,6 +155,9 @@ const OnlineLobbyStartRuntime = (() => {
             const startOnlineGame = () => {
                 if (generation !== dependencies.getRestoreGeneration()) return;
                 dependencies.resetReconnectCompletion();
+                if (typeof dependencies.resetWinnerPresentation === 'function') {
+                    dependencies.resetWinnerPresentation();
+                }
                 dependencies.setOnline(true);
                 dependencies.setHostState(input.hostPlayerIndex);
                 dependencies.setCpuSpeed(input.cpuSpeed || 1500);

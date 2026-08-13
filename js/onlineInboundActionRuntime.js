@@ -108,6 +108,7 @@ const OnlineInboundActionRuntime = (() => {
                 restoreActionAudit,
                 stateSnapshot,
                 restoreAudit,
+                gameGeneration,
             } = value;
             return {
                 action,
@@ -118,7 +119,15 @@ const OnlineInboundActionRuntime = (() => {
                 restoreActionAudit,
                 stateSnapshot,
                 restoreAudit,
+                gameGeneration,
             };
+        }
+
+        function matchesCurrentGeneration(payload) {
+            const current = typeof dependencies.getGameGeneration === 'function'
+                ? dependencies.getGameGeneration() : 0;
+            const incoming = payload.gameGeneration == null ? 0 : payload.gameGeneration;
+            return Number.isSafeInteger(current) && current >= 0 && incoming === current;
         }
 
         function decode(channel, wirePayload) {
@@ -216,6 +225,7 @@ const OnlineInboundActionRuntime = (() => {
             const decoded = decode('incoming', wirePayload);
             if (decoded.ok === false) return decoded.result;
             const payload = decoded.payload;
+            if (!matchesCurrentGeneration(payload)) return false;
             if (dependencies.queueDuringRestore(CHANNELS.incoming.queueType, payload)) return;
             return dispatchSelected('incoming', payload, selectPlan('incoming', payload));
         }
@@ -224,6 +234,7 @@ const OnlineInboundActionRuntime = (() => {
             const decoded = decode('accepted', wirePayload);
             if (decoded.ok === false) return decoded.result;
             const payload = decoded.payload;
+            if (!matchesCurrentGeneration(payload)) return false;
             if (dependencies.queueDuringRestore(CHANNELS.accepted.queueType, payload)) return;
             const pending = dependencies.readPending();
             if (!dependencies.shouldClearPending(payload, pending)) return;

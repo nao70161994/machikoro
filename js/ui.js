@@ -229,6 +229,8 @@ function renderWinnerState(winner) {
         logEntries: fullLog,
         logTypes: LOG_TYPES,
         canRematch: !UiWinner.gameOriginRuntime.wasOnline(),
+        canOnlineRematch: UiWinner.gameOriginRuntime.wasOnline() &&
+            !!uiOnlineRuntimeSnapshot().socket,
         resultAdSlot,
         escapeHtml,
     });
@@ -263,10 +265,13 @@ function renderWinnerState(winner) {
             safeUiStorageRemove('savedGame');
         },
         clearOnlineSession() {
-            clearOnlineSessionAfterWin();
+            if (!UiWinner.gameOriginRuntime.wasOnline()) clearOnlineSessionAfterWin();
         },
         markOnlineFinished() {
-            if (typeof markOnlineGameFinished === 'function') markOnlineGameFinished();
+            if (!UiWinner.gameOriginRuntime.wasOnline() &&
+                    typeof markOnlineGameFinished === 'function') {
+                markOnlineGameFinished();
+            }
         },
         refreshPwaUpdateState() {
             if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
@@ -698,13 +703,14 @@ function getPlayerSettingForRender(index, player) {
 
 function renderPlayers() {
     const currentGame = uiGameRuntimeSnapshot().game;
+    const onlineState = uiOnlineRuntimeSnapshot();
     const settings = currentGame.players.map((player, index) => getPlayerSettingForRender(index, player));
     const html = UiPlayerDisplay.buildPlayersHtml(currentGame.players, {
         settings,
         currentPlayerIndex: currentGame.currentPlayerIndex,
         compactInactive: currentGame.players.length >= 5,
-        myPlayerIndex: typeof isOnlineGame !== 'undefined' && isOnlineGame
-            ? myPlayerIndex
+        myPlayerIndex: onlineState.isOnlineGame
+            ? onlineState.myPlayerIndex
             : -1,
         enabledLandmarks: getEnabledLandmarkSelection(),
         getLandmarkEmoji,

@@ -7,6 +7,7 @@ const session = {
     playerIndex: 2,
     reconnectToken: 'token',
     isRoomHost: true,
+    gameGeneration: 2,
 };
 const plan = StoredOnlineReconnect.plan(session);
 assert.strictEqual(plan.session, session);
@@ -17,6 +18,7 @@ assert.deepStrictEqual(plan.runtime, {
     originalPlayerIndex: 2,
     playerIndex: 2,
     reconnectToken: 'token',
+    gameGeneration: 2,
 });
 assert.deepStrictEqual(StoredOnlineReconnect.plan({ roomId: 'R' }).runtime, {
     isRoomHost: false,
@@ -25,6 +27,7 @@ assert.deepStrictEqual(StoredOnlineReconnect.plan({ roomId: 'R' }).runtime, {
     originalPlayerIndex: -1,
     playerIndex: -1,
     reconnectToken: '',
+    gameGeneration: 0,
 });
 assert.strictEqual(StoredOnlineReconnect.plan(null), null);
 

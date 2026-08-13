@@ -37,7 +37,7 @@ function createHarness(options = {}) {
             });
         },
     };
-    const runtime = OnlineInboundActionRuntime.createRuntime({
+    const dependencies = {
         applyReplayedAction(action, data) {
             calls.push(['apply', action, data]);
             if (options.applyError) throw new Error('apply failed');
@@ -101,8 +101,9 @@ function createHarness(options = {}) {
             calls.push(['shouldClearPending', accepted, pending]);
             return options.pendingMatches !== false;
         },
-    });
-    return { calls, diagnostics, gameState, runtime };
+    };
+    const runtime = OnlineInboundActionRuntime.createRuntime(dependencies);
+    return { calls, dependencies, diagnostics, gameState, runtime };
 }
 
 function action(overrides = {}) {
@@ -218,4 +219,14 @@ runTest('online inbound runtimeは必須adapter欠落を初期化前に拒否す
     const harness = createHarness();
     assert.ok(Object.isFrozen(harness.runtime));
     assert.ok(Object.isFrozen(OnlineInboundActionRuntime.CHANNELS));
+});
+
+runTest('online inbound runtimeは現在世代と異なる遅延action/ACKを適用しない', () => {
+    const h = createHarness();
+    h.dependencies.getGameGeneration = () => 2;
+    const runtime = OnlineInboundActionRuntime.createRuntime(h.dependencies);
+
+    assert.strictEqual(runtime.handleGameAction({ action: 'nextTurn', data: {}, seq: 1, gameGeneration: 1 }), false);
+    assert.strictEqual(runtime.handleActionAccepted({ action: 'nextTurn', data: {}, seq: 1, gameGeneration: 1 }), false);
+    assert.deepStrictEqual(h.calls.map(call => call[0]), ['decode', 'decode']);
 });

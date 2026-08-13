@@ -10,6 +10,9 @@ function buildAcceptedActionEntry(input = {}) {
         seq: input.seq,
     };
     if (input.clientActionId) actionEntry.clientActionId = input.clientActionId;
+    if (Number.isSafeInteger(input.gameGeneration) && input.gameGeneration > 0) {
+        actionEntry.gameGeneration = input.gameGeneration;
+    }
     return actionEntry;
 }
 
@@ -66,6 +69,14 @@ function registerActionSocketHandler(socket, dependencies) {
             return;
         }
         const { action, data, clientActionId } = decodedWire.value;
+        const roomGeneration = Number.isSafeInteger(room.gameGeneration) && room.gameGeneration >= 0
+            ? room.gameGeneration : 0;
+        const payloadGeneration = decodedWire.value.gameGeneration;
+        if ((roomGeneration > 0 && payloadGeneration !== roomGeneration) ||
+                (payloadGeneration != null && payloadGeneration !== roomGeneration)) {
+            emitAppError(socket, 'STALE_GAME_GENERATION');
+            return;
+        }
         const safeClientActionId = normalizeClientActionId(clientActionId);
         const acceptedAction = findAcceptedClientAction(room, safeClientActionId, socket.playerIndex);
         if (acceptedAction) {
@@ -98,6 +109,7 @@ function registerActionSocketHandler(socket, dependencies) {
             playerIndex: socket.playerIndex,
             seq: actionSeq,
             clientActionId: safeClientActionId,
+            gameGeneration: roomGeneration,
         });
         const wirePreflight = encodeGameSchemaAction(room, actionEntry);
         if (!wirePreflight.ok) {

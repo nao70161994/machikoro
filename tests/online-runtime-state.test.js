@@ -123,6 +123,7 @@ runTest('online runtime stateのnamed transitionはboolean正規化とidentity c
         reconnectToken: 'token',
         isReplaying: true,
         isReconnectingOnline: true,
+        gameGeneration: 0,
     });
     const cleared = controller.clearIdentity();
     assert.strictEqual(cleared.socket, socket);

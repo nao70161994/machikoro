@@ -857,7 +857,7 @@ runTest('render helper は勝利・通常描画・保存境界へ分かれてい
     assert.strictEqual(context.saveGameCalls, 1);
 });
 
-runTest('renderWinnerState はオンライン復元bundleをまとめて消す', () => {
+runTest('renderWinnerState はローカル終了時に既存オンライン復元bundleを消す', () => {
     const { context, elements } = loadUiRuntime();
     const winner = { name: 'Alice', coins: 20, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
     const opponent = { name: 'Bob', coins: 3, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
@@ -886,6 +886,29 @@ runTest('renderWinnerState はオンライン復元bundleをまとめて消す',
     elements.turnStatusAnnouncer.textContent = 'already-announced';
     context.renderWinnerState(winner);
     assert.strictEqual(elements.turnStatusAnnouncer.textContent, 'already-announced');
+});
+
+runTest('renderWinnerState はオンライン再戦投票中のsessionとsocketを保持する', () => {
+    const { context, elements } = loadUiRuntime();
+    const socket = { connected: true };
+    context.OnlineRuntimeState.runtime.setOnline(true);
+    context.OnlineRuntimeState.runtime.setSocket(socket);
+    context.localStorage.setItem('onlineSession', '{"roomId":"ABC123"}');
+    const winner = { name: 'Alice', coins: 20, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
+    context.game = {
+        players: [winner, { name: 'Bob', coins: 3, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } }],
+        currentPlayerIndex: 0,
+        turnCount: 12,
+    };
+
+    context.renderWinnerState(winner);
+
+    assert.strictEqual(context.localStorage.getItem('onlineSession'), '{"roomId":"ABC123"}');
+    assert.strictEqual(context.clearOnlineSessionStorageCalls, 0);
+    assert.strictEqual(context.markOnlineGameFinishedCalls, 0);
+    assert.ok(elements.status.innerHTML.includes('data-ui-action="requestOnlineRematch"'));
+    context.renderWinnerState(winner);
+    assert.ok(elements.status.innerHTML.includes('data-ui-action="requestOnlineRematch"'));
 });
 
 runTest('updatePendingModalContent は再入とDOM欠落を安全に扱う', () => {

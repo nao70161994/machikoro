@@ -90,6 +90,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
             playerSettings,
             cpuSpeed,
             started: false,
+            gameGeneration: 0,
         };
         socket.join(roomId);
         socket.roomId = roomId;

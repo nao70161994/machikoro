@@ -7,6 +7,7 @@ const OnlineSocketEffects = (() => {
         joinRoom: 'joinRoom',
         recreateRoom: 'recreateRoom',
         rejoinRoom: 'rejoinRoom',
+        requestOnlineRematch: 'requestOnlineRematch',
     });
 
     function createRuntime(options = {}) {
@@ -37,6 +38,8 @@ const OnlineSocketEffects = (() => {
             joinRoom: payload => emit(events.joinRoom, payload),
             recreateRoom: payload => emit(events.recreateRoom, payload),
             rejoinRoom: payload => emit(events.rejoinRoom, payload),
+            requestOnlineRematch: (payload = {}, socket = null) =>
+                emit(events.requestOnlineRematch, payload, socket),
             requestHostlessRestore: (payload, socket = null) => emit(hostlessEvent('REQUEST'), payload, socket),
             submitHostlessRestoreCandidate: (payload, socket = null) => emit(hostlessEvent('CANDIDATE'), payload, socket),
         });
