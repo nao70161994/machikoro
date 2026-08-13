@@ -106,6 +106,7 @@ class GameManager {
         this.reviewSummary = {
             complete: true,
             counts: Object.fromEntries(Object.values(LOG_TYPES).map(type => [type, 0])),
+            totals: { gain: 0, lose: 0 },
         };
         this.builtThisTurn = false;
         this.resetPendingState();
@@ -1144,7 +1145,7 @@ class GameManager {
         this.log.push({ type, message: msg });
         if (options.review === false) return;
         if (!this.reviewSummary || typeof this.reviewSummary !== 'object') {
-            this.reviewSummary = { complete: false, counts: {} };
+            this.reviewSummary = { complete: false, counts: {}, totals: { gain: 0, lose: 0 } };
         }
         if (!this.reviewSummary.counts || typeof this.reviewSummary.counts !== 'object') {
             this.reviewSummary.counts = {};
@@ -1152,5 +1153,21 @@ class GameManager {
         const previous = this.reviewSummary.counts[type];
         this.reviewSummary.counts[type] = Number.isSafeInteger(previous) && previous >= 0
             ? Math.min(previous + 1, Number.MAX_SAFE_INTEGER) : 1;
+        if (!this.reviewSummary.totals || typeof this.reviewSummary.totals !== 'object') {
+            this.reviewSummary.totals = { gain: 0, lose: 0 };
+        }
+        if (type === LOG_TYPES.GAIN || type === LOG_TYPES.LOSE) {
+            /** @type {string[]} */
+            const matches = String(msg).match(/(?:\+|→\s*|：)(\d+)コイン/g) || [];
+            const amount = matches.reduce((sum, token) => {
+                const value = Number((token.match(/(\d+)/) || [])[1]);
+                return Number.isSafeInteger(value) ? sum + value : sum;
+            }, 0);
+            /** @type {'gain'|'lose'} */
+            const key = type === LOG_TYPES.GAIN ? 'gain' : 'lose';
+            const current = Number.isSafeInteger(this.reviewSummary.totals[key])
+                ? this.reviewSummary.totals[key] : 0;
+            this.reviewSummary.totals[key] = Math.min(current + amount, Number.MAX_SAFE_INTEGER);
+        }
     }
 }

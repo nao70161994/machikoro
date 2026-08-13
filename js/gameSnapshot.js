@@ -15,9 +15,16 @@ function normalizeReviewSummary(value, legacyComplete = false) {
         const count = sourceCounts[type];
         return [type, Number.isSafeInteger(count) && count >= 0 ? count : 0];
     }));
+    const sourceTotals = source.totals && typeof source.totals === 'object' &&
+        !Array.isArray(source.totals) ? source.totals : {};
+    const totals = Object.fromEntries(['gain', 'lose'].map(type => {
+        const total = sourceTotals[type];
+        return [type, Number.isSafeInteger(total) && total >= 0 ? total : 0];
+    }));
     return {
         complete: source.complete === true || (value == null && legacyComplete === true),
         counts,
+        totals,
     };
 }
 
@@ -30,7 +37,12 @@ function isValidReviewSummary(value) {
     }
     return Object.entries(value.counts).every(([type, count]) =>
         GAME_REVIEW_LOG_TYPES.includes(type) && Number.isSafeInteger(count) && count >= 0
-    );
+    ) && (!Object.prototype.hasOwnProperty.call(value, 'totals') || (
+        value.totals && typeof value.totals === 'object' && !Array.isArray(value.totals) &&
+        Object.entries(value.totals).every(([type, total]) =>
+            ['gain', 'lose'].includes(type) && Number.isSafeInteger(total) && total >= 0
+        )
+    ));
 }
 
 /**

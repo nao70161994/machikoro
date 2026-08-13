@@ -83,6 +83,7 @@ function makeSnapshot() {
         reviewSummary: {
             complete: false,
             counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
+            totals: { gain: 0, lose: 0 },
         },
         lastDiceResult: 6,
         lastDice1: 2,
@@ -114,6 +115,7 @@ function makeSnapshot() {
             reviewSummary: {
                 complete: false,
                 counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
+                totals: { gain: 0, lose: 0 },
             },
         },
         actionSeq: 9,

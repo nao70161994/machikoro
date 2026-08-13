@@ -117,6 +117,12 @@ function buildGameReview(logEntries, logTypes, players, escapeHtml, reviewSummar
         ['ダイスログ', summaryCounts[logTypes.DICE] || 0],
     ];
     const complete = !!reviewSummary && reviewSummary.complete === true;
+    if (complete && reviewSummary.totals) {
+        observedItems.unshift(
+            ['収入総額', reviewSummary.totals.gain || 0],
+            ['支払い総額', reviewSummary.totals.lose || 0]
+        );
+    }
     const historyTitle = complete ? '対戦全体のイベント' : 'この端末で観測した直近ログ';
     const historyNote = complete
         ? '保存・再接続を含む対戦開始からの構造化イベント集計です。'
