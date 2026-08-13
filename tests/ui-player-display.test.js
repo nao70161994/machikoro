@@ -218,11 +218,13 @@ const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(tenPlayers, {
     myPlayerIndex: 0,
     escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
 });
-assert.strictEqual((navigationHtml.match(/class="player-navigation-link/g) || []).length, 10);
+assert.strictEqual((navigationHtml.match(/class="player-navigation-link/g) || []).length, 12);
 assert(navigationHtml.includes('href="#playerBox0"'));
 assert(navigationHtml.includes('href="#playerBox4" aria-current="true"'));
 assert(navigationHtml.includes('自分：&lt;悪意&quot;名前&gt;'));
 assert(navigationHtml.includes('▶ プレイヤー5'));
+assert(navigationHtml.includes('href="#gameLogContainer">📋 ログ'));
+assert(navigationHtml.includes('href="#buildMenu">🏗️ 建設'));
 assert.strictEqual(UiPlayerDisplay.buildPlayerNavigationHtml(players, {
     currentPlayerIndex: 0,
     escapeHtml: String,

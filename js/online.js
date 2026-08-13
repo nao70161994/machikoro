@@ -98,6 +98,25 @@ function removeOnlineLobbyPlayer(playerIndex) {
     });
 }
 
+function changeOnlineLobbySlots(delta) {
+    const session = onlineSessionSnapshot();
+    if (session.isOnlineGame || !session.isRoomHost || !session.myRoomId ||
+            (delta !== 1 && delta !== -1) || !session.socket) return false;
+    return onlineSocketEffects.manageWaitingRoom({
+        roomId: session.myRoomId,
+        action: 'slots',
+        delta,
+    }, session.socket);
+}
+
+function startOnlineLobbyNow() {
+    const session = onlineSessionSnapshot();
+    if (session.isOnlineGame || !session.isRoomHost || !session.myRoomId || !session.socket) return false;
+    return showConfirm('空いている参加枠をCPU（普通）にして開始しますか？', () => {
+        onlineSocketEffects.manageWaitingRoom({ roomId: session.myRoomId, action: 'start' }, session.socket);
+    });
+}
+
 function onlineGameRuntimeSnapshot() {
     return onlineComposition.snapshotGame();
 }

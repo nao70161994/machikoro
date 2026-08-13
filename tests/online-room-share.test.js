@@ -33,6 +33,8 @@ runTest('online room shareはhostだけに自分以外の参加者管理を表�
         ],
     });
     assert.ok(html.includes('ホストの待機室管理'));
+    assert.ok(html.includes('data-ui-action="changeOnlineLobbySlots"'));
+    assert.ok(html.includes('data-ui-action="startOnlineLobbyNow"'));
     assert.ok(html.includes('data-ui-action="removeOnlineLobbyPlayer" data-player-index="1"'));
     assert.ok(html.includes('&lt;Bob&gt;（再接続待ち）'));
     assert.ok(!html.includes('data-player-index="0"'));

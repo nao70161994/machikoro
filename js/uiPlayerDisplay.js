@@ -68,7 +68,7 @@ const UiPlayerDisplay = (() => {
         if (!Array.isArray(players) || players.length < 5 || typeof options.escapeHtml !== 'function') {
             return '';
         }
-        return players.map((player, index) => {
+        const playerLinks = players.map((player, index) => {
             const isActive = index === options.currentPlayerIndex;
             const isSelf = index === options.myPlayerIndex;
             const marker = isActive ? '▶ ' : (isSelf ? '自分：' : '');
@@ -76,6 +76,11 @@ const UiPlayerDisplay = (() => {
             const current = isActive ? ' aria-current="true"' : '';
             return `<a class="player-navigation-link${isActive ? ' active' : ''}${isSelf ? ' self' : ''}" href="#${playerBoxId(index)}"${current}>${options.escapeHtml(label)}</a>`;
         }).join('');
+        const destinationLinks = [
+            ['#gameLogContainer', '📋 ログ'],
+            ['#buildMenu', '🏗️ 建設'],
+        ].map(([href, label]) => `<a class="player-navigation-link destination" href="${href}">${label}</a>`).join('');
+        return playerLinks + destinationLinks;
     }
 
     function buildPlayerHtml(player, index, options = {}) {

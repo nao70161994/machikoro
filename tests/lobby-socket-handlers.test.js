@@ -55,10 +55,34 @@ runTest('lobby socket handler は待機室管理を含む既存順序で登録�
     const runtime = makeRuntime();
     const socket = makeSocket('host', runtime.trace);
     registerLobbySocketHandlers(socket, runtime.dependencies);
-    assert.deepStrictEqual(Object.keys(socket.handlers), ['createRoom', 'joinRoom', 'removeWaitingPlayer']);
+    assert.deepStrictEqual(Object.keys(socket.handlers), ['createRoom', 'joinRoom', 'removeWaitingPlayer', 'manageWaitingRoom']);
     assert.deepStrictEqual(runtime.trace.slice(0, 3), [
         ['on', 'createRoom'], ['on', 'joinRoom'], ['on', 'removeWaitingPlayer'],
     ]);
+});
+
+runTest('待機室hostは空席をCPU化して手動開始し末尾空き枠だけ変更できる', () => {
+    const runtime = makeRuntime();
+    runtime.rooms.ROOM01 = {
+        roomId: 'ROOM01', players: [{ id: 'host', name: 'Alice', index: 0 }],
+        playerSettings: [{ type: 'human' }, { type: 'human' }, { type: 'human' }],
+        maxPlayers: 3, hostPlayerIndex: 0, started: false,
+    };
+    const host = makeSocket('host', runtime.trace);
+    host.roomId = 'ROOM01';
+    host.playerIndex = 0;
+    registerLobbySocketHandlers(host, runtime.dependencies);
+    runtime.trace.length = 0;
+
+    host.handlers.manageWaitingRoom({ roomId: 'ROOM01', action: 'slots', delta: -1 });
+    assert.strictEqual(runtime.rooms.ROOM01.maxPlayers, 2);
+    assert.strictEqual(runtime.rooms.ROOM01.playerSettings.length, 2);
+    host.handlers.manageWaitingRoom({ roomId: 'ROOM01', action: 'slots', delta: 1 });
+    assert.strictEqual(runtime.rooms.ROOM01.maxPlayers, 3);
+
+    host.handlers.manageWaitingRoom({ roomId: 'ROOM01', action: 'start' });
+    assert.deepStrictEqual(runtime.rooms.ROOM01.playerSettings.map(setting => setting.type), ['human', 'cpu', 'cpu']);
+    assert.ok(runtime.trace.some(entry => entry[0] === 'check-start'));
 });
 
 runTest('待機室hostだけが自分以外の参加者を外せる', () => {

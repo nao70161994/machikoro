@@ -35,8 +35,8 @@ const OnlineRoomShare = (() => {
                 .map(player => `<li><span>${escapeText(player.name)}${player.connected === false ? '（再接続待ち）' : ''}</span><button type="button" data-ui-action="removeOnlineLobbyPlayer" data-player-index="${player.index}">外す</button></li>`)
                 .join('')
             : '';
-        const management = hostControls
-            ? `<section class="room-host-controls" aria-label="ホストの待機室管理"><h4>参加者の管理</h4><ul>${hostControls}</ul></section>`
+        const management = options.isHost === true
+            ? `<section class="room-host-controls" aria-label="ホストの待機室管理"><h4>ホスト操作</h4><div class="room-slot-controls"><button type="button" data-ui-action="changeOnlineLobbySlots" data-delta="-1" aria-label="参加枠を1つ減らす">−</button><span>参加枠 ${hasPlayerList ? players.length : 0}</span><button type="button" data-ui-action="changeOnlineLobbySlots" data-delta="1" aria-label="参加枠を1つ増やす">＋</button></div>${hostControls ? `<ul>${hostControls}</ul>` : ''}<button type="button" class="room-host-start-btn" data-ui-action="startOnlineLobbyNow">空席をCPU（普通）にして開始</button></section>`
             : '';
         return `<div class="room-share-panel">
             ${hasPlayerList ? '' : '<div class="room-share-state">ルームを作成しました！</div>'}

@@ -179,6 +179,72 @@ function registerLobbySocketHandlers(socket, dependencies) {
             })),
         });
     });
+
+    socket.on('manageWaitingRoom', payload => {
+        if (!requirePlainSocketPayload(socket, payload)) return;
+        const roomId = typeof payload.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
+        const room = rooms[roomId];
+        if (!room || room.started || socket.roomId !== roomId ||
+                socket.playerIndex !== room.hostPlayerIndex) {
+            emitAppError(socket, '待機室を管理できません');
+            return;
+        }
+        if (payload.action === 'start') {
+            if (room.players.some(player => !player.id) || room.players.length < 1) {
+                emitAppError(socket, '再接続待ちの参加者がいるため開始できません');
+                return;
+            }
+            if (room.playerSettings.length === 0) {
+                room.maxPlayers = Math.max(2, room.players.length);
+                room.playerSettings = Array.from({ length: room.maxPlayers }, (_, index) =>
+                    room.players.some(player => player.index === index)
+                        ? { type: 'human', name: '', difficulty: 'human' }
+                        : { type: 'cpu', name: '', difficulty: 'normal' }
+                );
+            } else {
+                room.playerSettings = room.playerSettings.map((setting, index) => {
+                    if (setting.type !== 'human' || room.players.some(player => player.index === index)) return setting;
+                    return { type: 'cpu', difficulty: 'normal' };
+                });
+            }
+            checkGameStart(io, roomId);
+            return;
+        }
+        if (payload.action === 'slots') {
+            const delta = Number(payload.delta);
+            if (delta !== 1 && delta !== -1) {
+                emitAppError(socket, '参加枠の変更が無効です');
+                return;
+            }
+            if (room.playerSettings.length === 0) {
+                const next = room.maxPlayers + delta;
+                if (next < 2 || next > 10 || (delta < 0 && room.players.some(player => player.index >= next))) {
+                    emitAppError(socket, '参加枠を変更できません');
+                    return;
+                }
+                room.maxPlayers = next;
+            } else if (delta > 0) {
+                if (room.playerSettings.length >= 10) { emitAppError(socket, '参加枠を変更できません'); return; }
+                room.playerSettings.push({ type: 'human', name: '', difficulty: 'human' });
+                room.maxPlayers = room.playerSettings.length;
+            } else {
+                const lastIndex = room.playerSettings.length - 1;
+                if (room.playerSettings.length <= 2 || room.players.some(player => player.index === lastIndex)) {
+                    emitAppError(socket, '参加枠を変更できません');
+                    return;
+                }
+                room.playerSettings.pop();
+                room.maxPlayers = room.playerSettings.length;
+            }
+            io.to(roomId).emit('playerList', buildPlayerList(room), {
+                hostPlayerIndex: room.hostPlayerIndex,
+                participants: room.players.map(player => ({ index: player.index, name: player.name, connected: !!player.id })),
+            });
+            checkGameStart(io, roomId);
+            return;
+        }
+        emitAppError(socket, '待機室の操作が無効です');
+    });
 }
 
 module.exports = { registerLobbySocketHandlers };

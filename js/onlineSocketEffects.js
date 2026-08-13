@@ -8,6 +8,7 @@ const OnlineSocketEffects = (() => {
         recreateRoom: 'recreateRoom',
         rejoinRoom: 'rejoinRoom',
         removeWaitingPlayer: 'removeWaitingPlayer',
+        manageWaitingRoom: 'manageWaitingRoom',
         requestOnlineRematch: 'requestOnlineRematch',
     });
 
@@ -43,6 +44,8 @@ const OnlineSocketEffects = (() => {
                 emit(events.requestOnlineRematch, payload, socket),
             removeWaitingPlayer: (payload = {}, socket = null) =>
                 emit(events.removeWaitingPlayer, payload, socket),
+            manageWaitingRoom: (payload = {}, socket = null) =>
+                emit(events.manageWaitingRoom, payload, socket),
             requestHostlessRestore: (payload, socket = null) => emit(hostlessEvent('REQUEST'), payload, socket),
             submitHostlessRestoreCandidate: (payload, socket = null) => emit(hostlessEvent('CANDIDATE'), payload, socket),
         });

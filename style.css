@@ -787,6 +787,9 @@ body.modal-open #gameScreen {
 .room-host-controls li + li { margin-top: 6px; }
 .room-host-controls li span { min-width: 0; overflow-wrap: anywhere; }
 .room-host-controls button { min-height: 44px; flex: 0 0 auto; }
+.room-slot-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
+.room-slot-controls button { min-width: 44px; }
+.room-host-start-btn { width: 100%; margin-top: 8px; }
 
 /* ===== ルール説明ボタン ===== */
 .title-buttons-row {
@@ -1481,6 +1484,11 @@ button:not(:disabled):active {
     padding: 12px;
     margin-bottom: 8px;
     border: 1px solid #2a2a4a;
+}
+
+#gameLogContainer,
+#buildMenu {
+    scroll-margin-top: 72px;
 }
 
 .player-box.active {
