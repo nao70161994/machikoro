@@ -2428,6 +2428,9 @@ runTest('index.html はCPU大会を独立tabと取消可能な操作で提供す
     assert.ok(html.includes('data-ui-action="startCpuTournament"'));
     assert.ok(html.includes('data-ui-action="cancelCpuTournament"'));
     assert.ok(html.includes('id="cpuTournamentStatus"'));
+    assert.ok(html.includes('id="cpuTournamentHistory"'));
+    assert.ok(html.includes('id="cpuTournamentReplay"'));
+    assert.ok(html.includes('data-ui-action="exportCpuTournamentJson"') === false);
 });
 
 runTest('ローカル保存の再開導線は新しいゲーム設定より先に提示する', () => {

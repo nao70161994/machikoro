@@ -9,6 +9,9 @@ const CpuTournament = (() => {
         expert: 'CPU（最強）',
     });
     const STARTING_CARDS = new Set(['麦畑', 'パン屋']);
+    const HISTORY_KEY = 'cpuTournamentHistoryV1';
+    const HISTORY_SCHEMA = 1;
+    const MAX_HISTORY = 10;
 
     function boundedInteger(value, allowed, fallback) {
         const parsed = Number.parseInt(value, 10);
@@ -42,6 +45,8 @@ const CpuTournament = (() => {
             completedGames: 0,
             exhaustedGames: 0,
             totalTurns: 0,
+            seed: normalized.seed,
+            games: [],
             competitors: Object.fromEntries(DIFFICULTIES.map(difficulty => [difficulty, {
                 difficulty,
                 label: LABELS[difficulty],
@@ -72,6 +77,19 @@ const CpuTournament = (() => {
         const turns = Number.isFinite(result.turns) ? Math.max(0, result.turns) : 0;
         summary.totalTurns += turns;
         if (result.exhausted) summary.exhaustedGames++;
+        summary.games.push({
+            index: summary.completedGames - 1,
+            seed: Number.isSafeInteger(result.seed) ? result.seed : summary.seed + summary.completedGames - 1,
+            difficulties: result.difficulties.slice(),
+            winner: result.winner,
+            turns,
+            exhausted: result.exhausted === true,
+            finalState: Array.isArray(result.finalState) ? result.finalState.map(state => ({
+                coins: Number.isFinite(state.coins) ? state.coins : 0,
+                cards: Array.isArray(state.cards) ? state.cards.slice() : [],
+                landmarks: Array.isArray(state.landmarks) ? state.landmarks.slice() : [],
+            })) : [],
+        });
         result.difficulties.forEach((difficulty, seat) => {
             const competitor = summary.competitors[difficulty];
             if (!competitor) return;
@@ -113,6 +131,10 @@ const CpuTournament = (() => {
             DIFFICULTIES.indexOf(left.difficulty) - DIFFICULTIES.indexOf(right.difficulty)
         );
         return Object.freeze({
+            schemaVersion: HISTORY_SCHEMA,
+            createdAt: Number.isSafeInteger(summary.createdAt) ? summary.createdAt : 0,
+            seed: summary.seed,
+            playerCount: summary.playerCount,
             completedGames,
             requestedGames: summary.requestedGames,
             exhaustedGames: summary.exhaustedGames,
@@ -120,7 +142,103 @@ const CpuTournament = (() => {
                 ? Math.round(summary.totalTurns * 10 / completedGames) / 10
                 : 0,
             rankings: Object.freeze(rankings.map(Object.freeze)),
+            games: Object.freeze((summary.games || []).map(game => Object.freeze({
+                index: game.index,
+                seed: game.seed,
+                difficulties: Object.freeze(game.difficulties.slice()),
+                winner: game.winner,
+                turns: game.turns,
+                exhausted: game.exhausted,
+                finalState: Object.freeze(game.finalState.map(state => Object.freeze({
+                    coins: state.coins,
+                    cards: Object.freeze(state.cards.slice()),
+                    landmarks: Object.freeze(state.landmarks.slice()),
+                }))),
+            }))),
         });
+    }
+
+    function analyzeTournament(view) {
+        const games = view && Array.isArray(view.games) ? view.games : [];
+        const seats = Array.from({ length: view && view.playerCount || 0 }, (_, seat) => {
+            const appearances = games.filter(game => game.difficulties[seat]).length;
+            const wins = games.filter(game => game.winner === seat).length;
+            return Object.freeze({ seat: seat + 1, appearances, wins,
+                winRate: appearances ? Math.round(wins * 1000 / appearances) / 10 : 0 });
+        });
+        const fastest = games.filter(game => !game.exhausted)
+            .sort((left, right) => left.turns - right.turns || left.index - right.index)[0] || null;
+        const longest = games.filter(game => !game.exhausted)
+            .sort((left, right) => right.turns - left.turns || left.index - right.index)[0] || null;
+        const leader = view && view.rankings && view.rankings[0] || null;
+        return Object.freeze({
+            leader: leader ? Object.freeze({ label: leader.label, winRate: leader.winRate }) : null,
+            fastest: fastest ? Object.freeze({ index: fastest.index, turns: fastest.turns }) : null,
+            longest: longest ? Object.freeze({ index: longest.index, turns: longest.turns }) : null,
+            seats: Object.freeze(seats),
+        });
+    }
+
+    function historyRecord(view, createdAt = Date.now()) {
+        return Object.assign({}, view, {
+            schemaVersion: HISTORY_SCHEMA,
+            createdAt: Number.isSafeInteger(createdAt) && createdAt >= 0 ? createdAt : 0,
+        });
+    }
+
+    function validHistoryRecord(record) {
+        return !!record && record.schemaVersion === HISTORY_SCHEMA &&
+            Number.isSafeInteger(record.createdAt) && record.createdAt >= 0 &&
+            [2, 3, 4].includes(record.playerCount) &&
+            Number.isSafeInteger(record.seed) && record.seed > 0 &&
+            Array.isArray(record.games) && record.games.length <= 50 &&
+            Array.isArray(record.rankings);
+    }
+
+    function createHistoryRepository(options = {}) {
+        const storage = options.storage;
+        const key = options.key || HISTORY_KEY;
+        function load() {
+            if (!storage || typeof storage.get !== 'function') return [];
+            try {
+                const parsed = JSON.parse(storage.get(key, '[]') || '[]');
+                return Array.isArray(parsed) ? parsed.filter(validHistoryRecord).slice(0, MAX_HISTORY) : [];
+            } catch (_) {
+                return [];
+            }
+        }
+        function save(records) {
+            return !!storage && typeof storage.set === 'function' &&
+                storage.set(key, JSON.stringify(records.slice(0, MAX_HISTORY)));
+        }
+        function add(view, createdAt) {
+            const record = historyRecord(view, createdAt);
+            const records = [record, ...load()].slice(0, MAX_HISTORY);
+            return save(records) ? record : null;
+        }
+        function clear() { return save([]); }
+        return Object.freeze({ load, add, clear });
+    }
+
+    function exportJson(records) {
+        return JSON.stringify({ schemaVersion: HISTORY_SCHEMA, exportedAt: new Date().toISOString(), records }, null, 2);
+    }
+
+    function csvCell(value) {
+        const text = String(value == null ? '' : value);
+        return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    }
+
+    function exportCsv(records) {
+        const rows = [['大会日時', '人数', '試合数', 'CPU', '勝数', '出場', '勝率', '平均ターン', '得意カード']];
+        for (const record of records || []) {
+            for (const rank of record.rankings || []) rows.push([
+                new Date(record.createdAt).toISOString(), record.playerCount, record.completedGames,
+                rank.label, rank.wins, rank.appearances, rank.winRate, rank.averageTurns,
+                rank.favoriteCard && rank.favoriteCard.name || '',
+            ]);
+        }
+        return rows.map(row => row.map(csvCell).join(',')).join('\n');
     }
 
     function createRng(seed) {
@@ -147,14 +265,33 @@ const CpuTournament = (() => {
         const rng = createRng(options.seed);
         const previousRandom = Math.random;
         let safety = 0;
+        const trace = [];
+        const capture = () => {
+            if (options.captureTrace !== true) return;
+            trace.push(Object.freeze({
+                step: safety,
+                turn: game.turnCount,
+                phase: game.phase,
+                playerIndex: game.currentPlayerIndex,
+                difficulty: difficulties[game.currentPlayerIndex],
+                dice: Object.freeze([game.lastDice1 || 0, game.lastDice2 || 0]),
+                players: Object.freeze(game.players.map(player => Object.freeze({
+                    coins: player.coins,
+                    cards: player.cards.length,
+                    landmarks: Object.values(player.landmarks).filter(Boolean).length,
+                }))),
+            }));
+        };
         try {
             Math.random = rng;
+            capture();
             while (!game.checkWinner() && safety < options.maxSteps) {
                 const cpu = cpuPlayers[game.currentPlayerIndex];
                 const progressed = CPUSimulation.runStep(
                     game, cpu, shopStock, rng, GAME_PHASES, CPUPendingResolution
                 );
                 safety++;
+                capture();
                 if (progressed === false) break;
             }
         } finally {
@@ -162,13 +299,18 @@ const CpuTournament = (() => {
         }
         const winner = game.checkWinner();
         return Object.freeze({
+            seed: options.seed,
             difficulties: Object.freeze(difficulties),
             winner: winner ? game.players.indexOf(winner) : -1,
             turns: game.turnCount,
             exhausted: !winner,
             finalState: Object.freeze(game.players.map(player => Object.freeze({
+                coins: player.coins,
                 cards: Object.freeze(player.cards.map(card => card.name)),
+                landmarks: Object.freeze(Object.entries(player.landmarks)
+                    .filter(([, built]) => built).map(([name]) => name)),
             }))),
+            trace: Object.freeze(trace),
         });
     }
 
@@ -249,6 +391,12 @@ const CpuTournament = (() => {
         recordResult,
         favoriteCard,
         projectSummary,
+        analyzeTournament,
+        historyRecord,
+        validHistoryRecord,
+        createHistoryRepository,
+        exportJson,
+        exportCsv,
         createRng,
         runGame,
         createController,

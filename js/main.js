@@ -2,6 +2,10 @@ const SHOP_STOCK = {};
 
 // live game / CPU / Undo / coin animation state は GameRuntimeState が所有する。
 const mainClientStorageFacade = ClientStorage.createFacade();
+const cpuTournamentHistoryRepository = CpuTournament.createHistoryRepository({
+    storage: mainClientStorageFacade,
+});
+let currentCpuTournamentView = null;
 
 function safeMainStorageGet(key, fallback = null) {
     return mainClientStorageFacade.get(key, fallback);
@@ -667,11 +671,26 @@ function cpuTournamentElements() {
         playerCountSelect: document.getElementById('cpuTournamentPlayerCount'),
         status: document.getElementById('cpuTournamentStatus'),
         results: document.getElementById('cpuTournamentResults'),
+        history: document.getElementById('cpuTournamentHistory'),
+        replay: document.getElementById('cpuTournamentReplay'),
     };
 }
 
+function renderCpuTournamentHistory() {
+    const element = document.getElementById('cpuTournamentHistory');
+    if (element) element.innerHTML = UiCpuTournament.buildHistoryHtml(cpuTournamentHistoryRepository.load());
+}
+
 const cpuTournamentController = CpuTournament.createController({
-    onUpdate: state => UiCpuTournament.applyState(cpuTournamentElements(), state),
+    onUpdate(state) {
+        if (state.summary) currentCpuTournamentView = state.summary;
+        if (state.status === 'complete' && state.summary) {
+            const saved = cpuTournamentHistoryRepository.add(state.summary);
+            if (saved) currentCpuTournamentView = saved;
+            renderCpuTournamentHistory();
+        }
+        UiCpuTournament.applyState(cpuTournamentElements(), state);
+    },
 });
 
 function startCpuTournament() {
@@ -685,6 +704,66 @@ function startCpuTournament() {
 
 function cancelCpuTournament() {
     return cpuTournamentController.cancel();
+}
+
+function cpuTournamentRecord(index) {
+    if (index === 'current') return currentCpuTournamentView;
+    const parsed = Number.parseInt(index, 10);
+    return Number.isInteger(parsed) ? cpuTournamentHistoryRepository.load()[parsed] || null : null;
+}
+
+function showCpuTournamentHistory(index) {
+    const record = cpuTournamentRecord(index);
+    const results = document.getElementById('cpuTournamentResults');
+    if (!record || !results) return false;
+    currentCpuTournamentView = record;
+    results.innerHTML = UiCpuTournament.buildRankingsHtml(record);
+    return true;
+}
+
+function replayCpuTournamentGame(historyIndex, gameIndex) {
+    const record = cpuTournamentRecord(historyIndex);
+    const gameRecord = record && record.games && record.games[Number.parseInt(gameIndex, 10)];
+    const target = document.getElementById('cpuTournamentReplay');
+    if (!gameRecord || !target) return false;
+    const result = CpuTournament.runGame({
+        difficulties: gameRecord.difficulties,
+        seed: gameRecord.seed,
+        maxSteps: 5000,
+        captureTrace: true,
+    });
+    target.innerHTML = UiCpuTournament.buildReplayHtml(result);
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return true;
+}
+
+function downloadCpuTournamentFile(filename, content, type) {
+    if (typeof Blob !== 'function' || typeof URL === 'undefined' ||
+            typeof URL.createObjectURL !== 'function') return false;
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+    return true;
+}
+
+function exportCpuTournamentJson() {
+    return downloadCpuTournamentFile('cpu-tournament-history.json',
+        CpuTournament.exportJson(cpuTournamentHistoryRepository.load()), 'application/json');
+}
+
+function exportCpuTournamentCsv() {
+    return downloadCpuTournamentFile('cpu-tournament-history.csv',
+        CpuTournament.exportCsv(cpuTournamentHistoryRepository.load()), 'text/csv;charset=utf-8');
+}
+
+function clearCpuTournamentHistory() {
+    showConfirm('CPU大会の履歴をすべて削除しますか？', () => {
+        cpuTournamentHistoryRepository.clear();
+        renderCpuTournamentHistory();
+    });
 }
 
 function resolveMainUiEffect(name) {
@@ -805,5 +884,6 @@ function cancelAutoSkip() { return mainAutoSkipRuntime.cancel(); }
 function checkAutoSkip() { return mainAutoSkipRuntime.check(); }
 // 初期表示
 initMainView();
+renderCpuTournamentHistory();
 bindDelegatedUiHandlers();
 bindCpuResumeScheduler();

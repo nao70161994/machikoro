@@ -497,6 +497,62 @@ body.modal-open #gameScreen {
     font-weight: bold;
 }
 
+.cpu-tournament-analysis,
+.cpu-tournament-replay,
+.cpu-tournament-history,
+.cpu-tournament-games {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    background: #0f0e17;
+    color: #fffffe;
+}
+
+.cpu-tournament-analysis h3,
+.cpu-tournament-replay h3,
+.cpu-tournament-history h3 {
+    margin: 0 0 8px;
+    color: #f0c040;
+}
+
+.cpu-tournament-analysis h4 {
+    margin-bottom: 4px;
+}
+
+.cpu-tournament-analysis ul,
+.cpu-tournament-replay ol,
+.cpu-tournament-games ol {
+    margin: 6px 0 0;
+    padding-left: 22px;
+}
+
+.cpu-tournament-games li,
+.cpu-tournament-history-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.cpu-tournament-history-actions {
+    flex-wrap: wrap;
+}
+
+.cpu-tournament-history-actions button,
+.cpu-tournament-games button,
+.cpu-tournament-table button {
+    min-height: 36px;
+}
+
+@media (max-width: 480px) {
+    .cpu-tournament-games li {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
 /* ===== オンラインタブ ===== */
 .online-tabs {
     display: flex;

@@ -107,6 +107,7 @@ interface Window {
     CPULegalMoves: unknown;
     CPUProfile: unknown;
     CPUSimulation: unknown;
+    CpuTournament: unknown;
     SavedGameValidation: unknown;
     StorageSettings: unknown;
     UiBuildMenu: unknown;
@@ -127,6 +128,7 @@ interface Window {
     UiGameStatusEffects: unknown;
     UiTabView: unknown;
     UiTabEffects: unknown;
+    UiCpuTournament: unknown;
     UiStatsView: unknown;
     UiDiceChoice: unknown;
     UiDiceDisplay: unknown;

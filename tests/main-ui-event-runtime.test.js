@@ -45,12 +45,14 @@ runTest('main UI event runtimeはstatic/input/dice commandをdetached effectへ�
     h.runtime.handleStaticClick(h.event({ uiAction: 'changeCount', delta: '2' }));
     h.runtime.handleStaticClick(h.event({ uiAction: 'startCpuTournament' }));
     h.runtime.handleStaticClick(h.event({ uiAction: 'cancelCpuTournament' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'replayCpuTournamentGame', historyIndex: '2', gameIndex: '3' }));
     h.runtime.handleStaticInput(h.event({ uiInput: 'cpuSpeed' }, { value: '500' }));
     h.runtime.handleDiceClick(h.event({ action: 'selectDiceCount', useTwo: 'true' }));
     assert.deepStrictEqual(h.calls, [
         ['preventDefault'], ['changeCount', 2],
         ['preventDefault'], ['startCpuTournament'],
         ['preventDefault'], ['cancelCpuTournament'],
+        ['preventDefault'], ['replayCpuTournamentGame', '2', 3],
         ['preventDefault'], ['selectDiceCount', true],
     ]);
     assert.strictEqual(h.elements.speedLabel.textContent, 'speed:500');

@@ -94,3 +94,69 @@ runTest('CPU大会は既存GameManagerとCPUで決着まで実走する', () => 
         }
     }
 });
+
+runTest('CPU大会履歴は最大10件を安全に保存しJSONとCSVへ出力する', () => {
+    const values = new Map();
+    const storage = {
+        get: (key, fallback) => values.has(key) ? values.get(key) : fallback,
+        set(key, value) { values.set(key, value); return true; },
+    };
+    const repository = CpuTournament.createHistoryRepository({ storage });
+    for (let index = 0; index < 12; index++) {
+        const summary = CpuTournament.createSummary({ games: 10, playerCount: 2, seed: index + 1 });
+        CpuTournament.recordResult(summary, {
+            seed: index + 1, difficulties: ['weak', 'normal'], winner: 1, turns: 8,
+            exhausted: false, finalState: [{ cards: [] }, { cards: ['森林'] }],
+        });
+        repository.add(CpuTournament.projectSummary(summary), 1000 + index);
+    }
+    const records = repository.load();
+    assert.strictEqual(records.length, 10);
+    assert.strictEqual(records[0].createdAt, 1011);
+    assert.ok(CpuTournament.exportJson(records).includes('"schemaVersion": 1'));
+    const csv = CpuTournament.exportCsv(records);
+    assert.ok(csv.startsWith('大会日時,人数,試合数,CPU'));
+    assert.ok(csv.includes('CPU（普通）'));
+    repository.clear();
+    assert.deepStrictEqual(repository.load(), []);
+});
+
+runTest('CPU大会分析は首位・決着幅・席順勝率を分離する', () => {
+    const view = {
+        playerCount: 2,
+        rankings: [{ label: 'CPU（強）', winRate: 75 }],
+        games: [
+            { index: 0, turns: 8, winner: 1, exhausted: false, difficulties: ['weak', 'strong'] },
+            { index: 1, turns: 14, winner: 0, exhausted: false, difficulties: ['strong', 'weak'] },
+        ],
+    };
+    const analysis = CpuTournament.analyzeTournament(view);
+    assert.deepStrictEqual(analysis.leader, { label: 'CPU（強）', winRate: 75 });
+    assert.deepStrictEqual(analysis.fastest, { index: 0, turns: 8 });
+    assert.deepStrictEqual(analysis.longest, { index: 1, turns: 14 });
+    assert.deepStrictEqual(analysis.seats.map(entry => entry.winRate), [50, 50]);
+});
+
+runTest('CPU大会リプレイは同じseedから同じ決着とtraceを再生成する', () => {
+    const runtime = loadRuntime();
+    const names = [
+        'GameManager', 'Player', 'CARDS', 'CPUSimulation', 'getInitialCardStock',
+        'CPU', 'GAME_PHASES', 'CPUPendingResolution',
+    ];
+    const previous = Object.fromEntries(names.map(name => [name, global[name]]));
+    try {
+        for (const name of names) global[name] = runtime[name];
+        const options = { difficulties: ['weak', 'normal'], seed: 73, maxSteps: 5000 };
+        const first = CpuTournament.runGame(options);
+        const replay = CpuTournament.runGame({ ...options, captureTrace: true });
+        assert.strictEqual(replay.winner, first.winner);
+        assert.strictEqual(replay.turns, first.turns);
+        assert.ok(replay.trace.length > replay.turns);
+        assert.deepStrictEqual(replay.finalState, first.finalState);
+    } finally {
+        for (const name of names) {
+            if (previous[name] === undefined) delete global[name];
+            else global[name] = previous[name];
+        }
+    }
+});
