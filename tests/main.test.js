@@ -3198,6 +3198,17 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     assert.ok(workflow.includes('run: npm run test:browser-e2e'));
 });
 
+runTest('Mobile WebKit release gateは実Service Worker二世代の更新を検証する', () => {
+    const spec = fs.readFileSync(path.join(__dirname, 'browser/mobile-webkit.spec.js'), 'utf8');
+    assert.ok(spec.includes("BUILD_HASH: buildHash"));
+    assert.ok(spec.includes("'webkit-e2e-v1'"));
+    assert.ok(spec.includes("'webkit-e2e-v2'"));
+    assert.ok(spec.includes('registration.update()'));
+    assert.ok(spec.includes("registration.waiting && registration.waiting.state"));
+    assert.ok(spec.includes("caches.keys()"));
+    assert.ok(spec.includes("page.locator('#pwaUpdateBtn').click()"));
+});
+
 runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ', () => {
     const pages = [
         {

@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test');
+const { spawn } = require('child_process');
+const path = require('path');
 
 const MOBILE_CONTEXT = Object.freeze({
     viewport: { width: 390, height: 844 },
@@ -21,6 +23,45 @@ function collectRuntimeErrors(page) {
 async function prepare(page) {
     await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
     await page.goto('/');
+}
+
+async function startGenerationServer(port, buildHash) {
+    const repoRoot = path.join(__dirname, '..', '..');
+    const child = spawn(process.execPath, ['server.js'], {
+        cwd: repoRoot,
+        env: {
+            ...process.env,
+            PORT: String(port),
+            BUILD_HASH: buildHash,
+            NODE_ENV: 'test',
+            NTFY_TOPIC: '',
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let output = '';
+    child.stdout.on('data', chunk => { output += chunk; });
+    child.stderr.on('data', chunk => { output += chunk; });
+    for (let attempt = 0; attempt < 80; attempt++) {
+        if (child.exitCode !== null) throw new Error(`generation server exited: ${output}`);
+        try {
+            const response = await fetch(`http://127.0.0.1:${port}/api/version`, { cache: 'no-store' });
+            const payload = response.ok ? await response.json() : null;
+            if (payload && payload.hash === buildHash) return child;
+        } catch (_) {}
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    child.kill('SIGTERM');
+    throw new Error(`generation server did not start: ${output}`);
+}
+
+async function stopGenerationServer(child) {
+    if (!child || child.exitCode !== null) return;
+    child.kill('SIGTERM');
+    await Promise.race([
+        new Promise(resolve => child.once('exit', resolve)),
+        new Promise(resolve => setTimeout(resolve, 3000)),
+    ]);
+    if (child.exitCode === null) child.kill('SIGKILL');
 }
 
 async function expectPlayerSelectTapTargets(page, containerSelector, expectedCount) {
@@ -66,6 +107,55 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ pa
         return !!registration;
     })).toBe(true);
     expect(errors).toEqual([]);
+});
+
+test('mobile WebKitでService Worker二世代の待機・適用・cache移行が実動作する', async ({ browser }) => {
+    test.setTimeout(120000);
+    const port = 3321;
+    const origin = `http://127.0.0.1:${port}`;
+    let server = await startGenerationServer(port, 'webkit-e2e-v1');
+    const context = await browser.newContext({
+        ...MOBILE_CONTEXT,
+        baseURL: origin,
+        serviceWorkers: 'allow',
+    });
+    const page = await context.newPage();
+    const errors = collectRuntimeErrors(page);
+    try {
+        await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
+        await page.goto(origin + '/');
+        await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+        await expect.poll(() => page.evaluate(() => caches.keys())).toContain('machikoro-webkit-e2e-v1');
+        await page.locator('#btnStart').click();
+        await expect(page.locator('#gameScreen')).toBeVisible();
+
+        await stopGenerationServer(server);
+        server = await startGenerationServer(port, 'webkit-e2e-v2');
+        await page.evaluate(async () => {
+            const registration = await navigator.serviceWorker.getRegistration();
+            await registration.update();
+        });
+        await expect.poll(() => page.evaluate(async () => {
+            const registration = await navigator.serviceWorker.getRegistration();
+            return registration.waiting && registration.waiting.state;
+        })).toBe('installed');
+        await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
+        await expect(page.locator('#pwaUpdateMsg')).toContainText('新バージョン');
+        await expect(page.locator('#pwaUpdateBtn')).toBeDisabled();
+
+        // The fixture keeps a real game open to verify deferred installation. Enable the
+        // existing user action after that assertion so the same waiting worker is applied.
+        await page.locator('#pwaUpdateBtn').evaluate(button => { button.disabled = false; });
+        await page.locator('#pwaUpdateBtn').click();
+        await page.waitForLoadState('load');
+        await expect.poll(() => page.evaluate(() => window.MACHIKORO_CLIENT_VERSION)).toBe('webkit-e2e-v2');
+        await expect.poll(() => page.evaluate(() => caches.keys())).toEqual(['machikoro-webkit-e2e-v2']);
+        await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+        expect(errors).toEqual([]);
+    } finally {
+        await context.close();
+        await stopGenerationServer(server);
+    }
 });
 
 test('320pxから480pxでlocal/onlineの2人・10人設定が枠内に収まる', async ({ page }) => {
