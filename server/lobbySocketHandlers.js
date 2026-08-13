@@ -18,6 +18,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         createRoomRateKeyForSocket,
         markCreateRoomForRateKey,
         buildPlayerList,
+        buildLobbyState,
         io,
         checkGameStart,
         validateSocketCanEnterRoom,
@@ -98,10 +99,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         socket.emit('roomCreated', {
             roomId, playerIndex: hostIndex, reconnectToken, hostPlayerIndex: hostIndex,
         });
-        io.to(roomId).emit('playerList', buildPlayerList(rooms[roomId]), {
-            hostPlayerIndex: rooms[roomId].hostPlayerIndex,
-            participants: rooms[roomId].players.map(player => ({ index: player.index, name: player.name, connected: !!player.id })),
-        });
+        io.to(roomId).emit('playerList', buildPlayerList(rooms[roomId]), buildLobbyState(rooms[roomId]));
         checkGameStart(io, roomId);
         log('ルーム作成: ' + roomId + ' (' + playerCount + '人)');
     });
@@ -136,10 +134,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         socket.emit('roomJoined', {
             roomId, playerIndex, reconnectToken, hostPlayerIndex: room.hostPlayerIndex,
         });
-        io.to(roomId).emit('playerList', buildPlayerList(room), {
-            hostPlayerIndex: room.hostPlayerIndex,
-            participants: room.players.map(player => ({ index: player.index, name: player.name, connected: !!player.id })),
-        });
+        io.to(roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room));
         checkGameStart(io, roomId);
     });
 
@@ -170,14 +165,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
             if (typeof targetSocket.leave === 'function') targetSocket.leave(roomId);
             if (typeof targetSocket.disconnect === 'function') targetSocket.disconnect(true);
         }
-        io.to(roomId).emit('playerList', buildPlayerList(room), {
-            hostPlayerIndex: room.hostPlayerIndex,
-            participants: room.players.map(player => ({
-                index: player.index,
-                name: player.name,
-                connected: !!player.id,
-            })),
-        });
+        io.to(roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room));
     });
 
     socket.on('manageWaitingRoom', payload => {
@@ -236,10 +224,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
                 room.playerSettings.pop();
                 room.maxPlayers = room.playerSettings.length;
             }
-            io.to(roomId).emit('playerList', buildPlayerList(room), {
-                hostPlayerIndex: room.hostPlayerIndex,
-                participants: room.players.map(player => ({ index: player.index, name: player.name, connected: !!player.id })),
-            });
+            io.to(roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room));
             checkGameStart(io, roomId);
             return;
         }

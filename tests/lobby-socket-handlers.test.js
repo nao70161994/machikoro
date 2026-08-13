@@ -41,6 +41,16 @@ function makeRuntime() {
         createRoomRateKeyForSocket(socket) { return 'rate:' + socket.id; },
         markCreateRoomForRateKey(key, now) { trace.push(['mark-rate', key, now]); },
         buildPlayerList(room) { return room.players.map(player => player.name); },
+        buildLobbyState(room) {
+            return {
+                hostPlayerIndex: room.hostPlayerIndex,
+                participants: room.players.map(player => ({
+                    index: player.index,
+                    name: player.name,
+                    connected: !!player.id,
+                })),
+            };
+        },
         io,
         checkGameStart(value, roomId) { assert.strictEqual(value, io); trace.push(['check-start', roomId]); },
         validateSocketCanEnterRoom() { return { ok: true }; },

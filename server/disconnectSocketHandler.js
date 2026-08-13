@@ -43,6 +43,7 @@ function createDisconnectSocketHandler(dependencies) {
         io,
         rooms,
         buildPlayerList,
+        buildLobbyState,
         getRemainingConnectedPlayers,
         setRoomHostPlayerIndex,
         emitRoomHostChanged,
@@ -57,17 +58,6 @@ function createDisconnectSocketHandler(dependencies) {
     const log = typeof dependencies.log === 'function' ? dependencies.log : console.log;
     const logError = typeof dependencies.logError === 'function' ? dependencies.logError : console.error;
 
-    function lobbyState(room) {
-        return {
-            hostPlayerIndex: room.hostPlayerIndex,
-            participants: room.players.map(player => ({
-                index: player.index,
-                name: player.name,
-                connected: !!player.id,
-            })),
-        };
-    }
-
     function removeWaitingRoomSocket(targetIo, roomId, room, socket) {
         room.players = room.players.filter(player => player.id !== socket.id);
         if (room.players.length === 0) {
@@ -75,7 +65,7 @@ function createDisconnectSocketHandler(dependencies) {
             return { removedRoom: true };
         }
         const playerList = buildPlayerList(room);
-        targetIo.to(roomId).emit('playerList', playerList, lobbyState(room));
+        targetIo.to(roomId).emit('playerList', playerList, buildLobbyState(room));
         return { removedRoom: false, playerList };
     }
 
@@ -91,7 +81,7 @@ function createDisconnectSocketHandler(dependencies) {
             }
         }
         const playerList = buildPlayerList(room);
-        targetIo.to(roomId).emit('playerList', playerList, lobbyState(room));
+        targetIo.to(roomId).emit('playerList', playerList, buildLobbyState(room));
         return { ignored: false, player, playerList };
     }
 

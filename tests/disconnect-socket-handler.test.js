@@ -26,6 +26,16 @@ function createSubject(overrides = {}) {
             calls.push('build-player-list');
             return room.players.map(player => player.name);
         },
+        buildLobbyState(room) {
+            return {
+                hostPlayerIndex: room.hostPlayerIndex,
+                participants: room.players.map(player => ({
+                    index: player.index,
+                    name: player.name,
+                    connected: !!player.id,
+                })),
+            };
+        },
         getRemainingConnectedPlayers(room) {
             calls.push('remaining');
             return room.players.filter(player => player.id);
