@@ -31,6 +31,7 @@ const PENDING_IT_QUEUE_POLICY = runtime.PENDING_IT_QUEUE_POLICY;
 runTest('GameManagerは構造化log件数を全対戦集計し表示専用logを除外する', () => {
     const game = new GameManager(2);
     assert.strictEqual(game.reviewSummary.complete, true);
+    assert.strictEqual(game.reviewSummary.totalsComplete, true);
     assert.deepStrictEqual(
         Object.keys(game.reviewSummary.counts).sort(),
         Object.values(LOG_TYPES).slice().sort()

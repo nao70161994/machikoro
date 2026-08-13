@@ -105,6 +105,7 @@ class GameManager {
         this.log = [];
         this.reviewSummary = {
             complete: true,
+            totalsComplete: true,
             counts: Object.fromEntries(Object.values(LOG_TYPES).map(type => [type, 0])),
             totals: { gain: 0, lose: 0 },
         };
@@ -1199,7 +1200,12 @@ class GameManager {
         this.log.push({ type, message: msg });
         if (options.review === false) return;
         if (!this.reviewSummary || typeof this.reviewSummary !== 'object') {
-            this.reviewSummary = { complete: false, counts: {}, totals: { gain: 0, lose: 0 } };
+            this.reviewSummary = {
+                complete: false,
+                totalsComplete: false,
+                counts: {},
+                totals: { gain: 0, lose: 0 },
+            };
         }
         if (!this.reviewSummary.counts || typeof this.reviewSummary.counts !== 'object') {
             this.reviewSummary.counts = {};

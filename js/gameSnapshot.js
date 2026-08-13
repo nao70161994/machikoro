@@ -9,6 +9,11 @@ const GAME_REVIEW_LOG_TYPES = Object.freeze([
 
 function normalizeReviewSummary(value, legacyComplete = false) {
     const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const hasStoredTotals = Object.prototype.hasOwnProperty.call(source, 'totals') &&
+        source.totals && typeof source.totals === 'object' && !Array.isArray(source.totals) &&
+        ['gain', 'lose'].every(type =>
+            Number.isSafeInteger(source.totals[type]) && source.totals[type] >= 0
+        );
     const sourceCounts = source.counts && typeof source.counts === 'object' &&
         !Array.isArray(source.counts) ? source.counts : {};
     const counts = Object.fromEntries(GAME_REVIEW_LOG_TYPES.map(type => {
@@ -23,6 +28,9 @@ function normalizeReviewSummary(value, legacyComplete = false) {
     }));
     return {
         complete: source.complete === true || (value == null && legacyComplete === true),
+        totalsComplete: typeof source.totalsComplete === 'boolean'
+            ? source.totalsComplete
+            : !!hasStoredTotals,
         counts,
         totals,
     };
@@ -32,17 +40,25 @@ function isValidReviewSummary(value) {
     if (value == null) return true;
     if (!value || typeof value !== 'object' || Array.isArray(value) ||
             typeof value.complete !== 'boolean' ||
+            (Object.prototype.hasOwnProperty.call(value, 'totalsComplete') &&
+                typeof value.totalsComplete !== 'boolean') ||
             !value.counts || typeof value.counts !== 'object' || Array.isArray(value.counts)) {
         return false;
     }
-    return Object.entries(value.counts).every(([type, count]) =>
-        GAME_REVIEW_LOG_TYPES.includes(type) && Number.isSafeInteger(count) && count >= 0
-    ) && (!Object.prototype.hasOwnProperty.call(value, 'totals') || (
+    const validTotals = !Object.prototype.hasOwnProperty.call(value, 'totals') || (
         value.totals && typeof value.totals === 'object' && !Array.isArray(value.totals) &&
         Object.entries(value.totals).every(([type, total]) =>
             ['gain', 'lose'].includes(type) && Number.isSafeInteger(total) && total >= 0
         )
-    ));
+    );
+    const completeTotalsValid = value.totalsComplete !== true || !!(
+        value.totals && ['gain', 'lose'].every(type =>
+            Number.isSafeInteger(value.totals[type]) && value.totals[type] >= 0
+        )
+    );
+    return Object.entries(value.counts).every(([type, count]) =>
+        GAME_REVIEW_LOG_TYPES.includes(type) && Number.isSafeInteger(count) && count >= 0
+    ) && validTotals && completeTotalsValid;
 }
 
 /**

@@ -112,6 +112,7 @@ runTest('共有serializerは既存のversionなしwire形状を保持する', ()
         log: [{ text: 'middle' }, { text: 'latest' }],
         reviewSummary: {
             complete: true,
+            totalsComplete: false,
             counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
             totals: { gain: 0, lose: 0 },
         },
@@ -215,6 +216,7 @@ runTest('共有undo serializerは既存形状とlog上限を保持する', () =>
         log: [{ text: 'latest' }],
         reviewSummary: {
             complete: true,
+            totalsComplete: false,
             counts: { dice: 0, gain: 0, lose: 0, build: 0, special: 0, system: 0, error: 0 },
             totals: { gain: 0, lose: 0 },
         },
@@ -331,6 +333,7 @@ runTest('共有snapshotは固定サイズの対戦集計をsave・Undo・hydrate
     const game = makeGameFixture();
     game.reviewSummary = {
         complete: true,
+        totalsComplete: true,
         counts: { dice: 9, gain: 7, lose: 3, build: 4, special: 2, system: 5, error: 1 },
         totals: { gain: 42, lose: 11 },
     };
@@ -355,4 +358,23 @@ runTest('共有snapshotは固定サイズの対戦集計をsave・Undo・hydrate
         mergePlayerLandmarks: (_current, saved) => saved,
     }), true);
     assert.deepStrictEqual(target.reviewSummary, game.reviewSummary);
+});
+
+runTest('共有snapshotは収支欠落legacyのイベント完全性と収支不完全性を分離する', () => {
+    const legacy = {
+        complete: true,
+        counts: { gain: 8, lose: 3, build: 2 },
+    };
+    const normalized = GameSnapshot.normalizeReviewSummary(legacy, false);
+
+    assert.strictEqual(normalized.complete, true);
+    assert.strictEqual(normalized.totalsComplete, false);
+    assert.deepStrictEqual(normalized.totals, { gain: 0, lose: 0 });
+    assert.strictEqual(GameSnapshot.isValidReviewSummary(legacy), true);
+    assert.strictEqual(GameSnapshot.isValidReviewSummary({
+        ...legacy, totalsComplete: 'true',
+    }), false);
+    assert.strictEqual(GameSnapshot.isValidReviewSummary({
+        ...legacy, totalsComplete: true,
+    }), false);
 });

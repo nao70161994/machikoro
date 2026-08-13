@@ -117,7 +117,7 @@ function buildGameReview(logEntries, logTypes, players, escapeHtml, reviewSummar
         ['ダイスログ', summaryCounts[logTypes.DICE] || 0],
     ];
     const complete = !!reviewSummary && reviewSummary.complete === true;
-    if (complete && reviewSummary.totals) {
+    if (complete && reviewSummary.totalsComplete === true && reviewSummary.totals) {
         observedItems.unshift(
             ['収入総額', reviewSummary.totals.gain || 0],
             ['支払い総額', reviewSummary.totals.lose || 0]

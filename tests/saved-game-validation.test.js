@@ -415,6 +415,17 @@ runTest('saved game validatorは構造化対戦集計をsafe integer境界で検
         reviewSummary: { complete: true, counts: { gain: 3, build: 1 } },
     })), true);
     assert.strictEqual(validator.isValidSavedGameState(makeState({
+        reviewSummary: { complete: true, totalsComplete: 'true', counts: { gain: 3 } },
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        reviewSummary: { complete: true, totalsComplete: true, counts: { gain: 3 } },
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        reviewSummary: {
+            complete: true, totalsComplete: true, counts: { gain: 3 }, totals: { gain: 7, lose: 2 },
+        },
+    })), true);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
         reviewSummary: { complete: true, counts: { gain: -1 } },
     })), false);
     assert.strictEqual(validator.isValidSavedGameState(makeState({

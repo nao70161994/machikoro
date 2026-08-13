@@ -36,6 +36,34 @@ runTest('winner reviewは保存済みの完全な構造化集計を直近logよ�
     assert(html.includes('<span>収入ログ</span><strong>21</strong>'));
     assert.strictEqual(html.includes('最大300件'), false);
 });
+
+runTest('winner reviewは収支欠落legacyを全対戦総額として表示しない', () => {
+    const logTypes = { GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', DICE: 'dice' };
+    const html = UiWinner.buildGameReview([], logTypes, [], value => String(value), {
+        complete: true,
+        totalsComplete: false,
+        counts: { gain: 21, lose: 8, build: 14, special: 5, dice: 33 },
+        totals: { gain: 0, lose: 0 },
+    });
+
+    assert(html.includes('対戦全体のイベント'));
+    assert(html.includes('<span>収入ログ</span><strong>21</strong>'));
+    assert.strictEqual(html.includes('収入総額'), false);
+    assert.strictEqual(html.includes('支払い総額'), false);
+});
+
+runTest('winner reviewは完全な収支だけを全対戦総額として表示する', () => {
+    const logTypes = { GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', DICE: 'dice' };
+    const html = UiWinner.buildGameReview([], logTypes, [], value => String(value), {
+        complete: true,
+        totalsComplete: true,
+        counts: {},
+        totals: { gain: 42, lose: 11 },
+    });
+
+    assert(html.includes('<span>収入総額</span><strong>42</strong>'));
+    assert(html.includes('<span>支払い総額</span><strong>11</strong>'));
+});
 function escapeHtml(value) {
     return String(value)
         .replaceAll('&', '&amp;')
