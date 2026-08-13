@@ -21,6 +21,17 @@ function makeRoomProjection({
         });
     }
 
+    function buildLobbyState(room) {
+        return {
+            hostPlayerIndex: room.hostPlayerIndex,
+            participants: room.players.map(player => ({
+                index: player.index,
+                name: player.name,
+                connected: !!player.id,
+            })),
+        };
+    }
+
     function countRoomHumanSlots(room) {
         return room.playerSettings.length > 0
             ? room.playerSettings.filter(setting => setting.type === 'human').length
@@ -79,6 +90,7 @@ function makeRoomProjection({
 
     return {
         buildPlayerList,
+        buildLobbyState,
         countRoomHumanSlots,
         buildGameStartPlayerNames,
         shuffledPlayerOrder,

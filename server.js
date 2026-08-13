@@ -359,6 +359,7 @@ const recreateAttemptAdmission = makeRecreateAttemptAdmission({
 });
 const {
     buildPlayerList: buildRoomPlayerList,
+    buildLobbyState,
     countRoomHumanSlots: countRoomHumanSlotsForRoom,
     buildGameStartPlayerNames: buildGameStartPlayerNamesForRoom,
     shuffledPlayerOrder: shuffledRoomPlayerOrder,
@@ -794,6 +795,7 @@ onlineRematchRuntime = createOnlineRematchRuntime({
     hashReconnectToken,
     buildGameStartPayload: (...args) => buildGameStartPayload(...args),
     markRoomGameStarted: (...args) => markRoomGameStarted(...args),
+    persistRoomCanonicalState,
 });
 const disconnectSocketHandler = createDisconnectSocketHandler({
     io,
@@ -917,6 +919,7 @@ registerSocketConnectionRuntime({
             pruneExpiredWaitingReservations,
             isWaitingReservation,
             buildPlayerList,
+            buildLobbyState,
             checkGameStart,
         });
     },

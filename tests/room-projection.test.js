@@ -36,6 +36,29 @@ runTest('room projection はロビー表示と開始名を同じroom設定から
         projection.buildGameStartPlayerNames(room),
         ['CPU1（学）', 'Alice', 'CPU2（強）', 'Bob']
     );
+    assert.deepStrictEqual(projection.buildLobbyState(room), {
+        hostPlayerIndex: undefined,
+        participants: [
+            { index: 1, name: 'Alice', connected: true },
+            { index: 3, name: 'Bob', connected: true },
+            { index: 9, name: 'Ghost', connected: true },
+        ],
+    });
+});
+
+runTest('room projection は予約席を待機室管理用の切断状態へ投影する', () => {
+    const room = makeRoom();
+    room.hostPlayerIndex = 1;
+    room.players[1].id = null;
+
+    assert.deepStrictEqual(projection.buildLobbyState(room), {
+        hostPlayerIndex: 1,
+        participants: [
+            { index: 1, name: 'Alice', connected: true },
+            { index: 3, name: 'Bob', connected: false },
+            { index: 9, name: 'Ghost', connected: true },
+        ],
+    });
 });
 
 runTest('room projection はlegacy roomの名前とhuman slot数を維持する', () => {

@@ -21,6 +21,7 @@ function registerRejoinSocketHandler(socket, dependencies) {
         pruneExpiredWaitingReservations,
         isWaitingReservation,
         buildPlayerList,
+        buildLobbyState,
         checkGameStart,
     } = dependencies;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
@@ -71,7 +72,7 @@ function registerRejoinSocketHandler(socket, dependencies) {
             socket.emit('roomJoined', {
                 roomId, playerIndex, reconnectToken, hostPlayerIndex: room.hostPlayerIndex,
             });
-            io.to(roomId).emit('playerList', buildPlayerList(room));
+            io.to(roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room));
             checkGameStart(io, roomId);
             log(`待機室へ再接続: ${playerName} (ルーム: ${roomId})`);
             return;
