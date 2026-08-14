@@ -160,7 +160,40 @@ runTest('通信品質は接続・ACK待ち・遅延・再接続を既存状態�
     assert.strictEqual(UiGameStatusView.buildConnectionQualityView({
         ...base, isReconnecting: true,
     }, 10000).kind, 'reconnecting');
+    assert.deepStrictEqual(UiGameStatusView.buildConnectionQualityView({
+        ...base, browserOnline: false,
+    }, 10000), {
+        visible: true, kind: 'offline', label: '通信：オフライン',
+    });
     assert.strictEqual(UiGameStatusView.buildConnectionQualityView({ isOnlineGame: false }).visible, false);
+});
+
+runTest('オンライン対戦のオフライン状態は未確認操作と自動再参加を案内する', () => {
+    const base = {
+        hasGame: true,
+        hasWinner: false,
+        isOnlineGame: true,
+        browserOnline: false,
+    };
+    assert.deepStrictEqual(UiGameStatusView.buildActivityStatusView(base), {
+        visible: true,
+        identity: 'browser-offline',
+        kind: 'offline',
+        label: 'オフライン中',
+        detail: '接続が戻ると自動的にルームへ再参加します',
+        startedAt: 0,
+    });
+    assert.strictEqual(UiGameStatusView.buildActivityStatusView({
+        ...base,
+        hasPendingOutboundAction: true,
+    }).detail, '未確認の操作があります。接続後に自動再同期します');
+    assert.strictEqual(UiGameStatusView.buildActivityStatusView({
+        ...base,
+        isOnlineGame: false,
+        phase: 'roll',
+        phases: { ROLL: 'roll' },
+        currentPlayerIndex: 0,
+    }).kind, 'ready');
 });
 
 runTest('ゲーム稼働状況は10秒後に応答確認中と表示し秒数だけは再告知しない', () => {

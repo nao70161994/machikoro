@@ -528,6 +528,9 @@ const _pwaInstallController = PwaShell.createInstallController({
 
 function updateOnlineTabState() {
     const result = appShellStartupRuntime.updateOnlineStatus();
+    if (typeof updateGameActivityStatus === 'function') {
+        try { updateGameActivityStatus(); } catch (_) {}
+    }
     const navigatorRef = appShellComposition.resolve('navigator');
     if (!navigatorRef || navigatorRef.onLine !== false) {
         flushClientErrorReports();

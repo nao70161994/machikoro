@@ -833,6 +833,32 @@ runTest('online.jsのdisconnect lifecycleはevent名付きshadow履歴を残す'
     assert.strictEqual(snapshot.history.slice(-1)[0].projectionMatched, true);
 });
 
+runTest('待機室のtransport切断は席保持を案内し接続後に自動再参加する', () => {
+    const localRt = loadOnlineRuntime();
+    localRt.initSocket();
+    localRt.setOnlineState({
+        isOnlineGame: false,
+        myRoomId: 'ROOM01',
+        myOriginalPlayerIndex: 1,
+        myPlayerName: 'Bob',
+        reconnectToken: 'token-b',
+    });
+    const socket = localRt.getOnlineState().socket;
+    socket.connected = false;
+    localRt.getSocketHandlers().disconnect();
+
+    assert.strictEqual(localRt.getOnlineState().isReconnectingOnline, true);
+    assert.match(localRt.elements.onlineStatus.textContent, /60秒間は席を保持/);
+
+    socket.connected = true;
+    localRt.getSocketHandlers().connect();
+    const rejoin = localRt.getSocketEmits().find(entry => entry.name === 'rejoinRoom');
+    assert.ok(rejoin);
+    assert.strictEqual(rejoin.payload.roomId, 'ROOM01');
+    assert.strictEqual(rejoin.payload.playerIndex, 1);
+    assert.strictEqual(rejoin.payload.reconnectToken, 'token-b');
+});
+
 runTest('online.jsのreconnect書き込みはruntime transitionでboolean契約を維持する', () => {
     const localRt = loadOnlineRuntime();
     assert.strictEqual(localRt.setOnlineReconnectLegacyFlag('true'), false);

@@ -18,6 +18,9 @@ runTest('online socket disconnect planはactiveとrestore中断をpureに判定�
     assert.deepStrictEqual(OnlineSocketDisconnect.plan({
         onlineActive: false, restoreInProgress: false,
     }), { active: false, abortRestore: false });
+    assert.deepStrictEqual(OnlineSocketDisconnect.plan({
+        onlineActive: false, waitingRoomActive: true, restoreInProgress: false,
+    }), { active: true, abortRestore: false });
 });
 
 runTest('online socket disconnect plan authorityはlegacy完全一致時だけpure planを選ぶ', () => {

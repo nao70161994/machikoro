@@ -4,6 +4,7 @@ const OnlineDomEffects = (() => {
     const ids = Object.freeze({
         createButton: 'onlineCreateSubmitButton',
         cpuSpeed: 'onlineCpuSpeed',
+        connectivityPanel: 'gameConnectivityPanel',
         gameStatus: 'onlineGameStatus',
         gameScreen: 'gameScreen',
         joinButton: 'onlineJoinSubmitButton',
@@ -51,6 +52,8 @@ const OnlineDomEffects = (() => {
             const message = String(value || '');
             target.textContent = message;
             if (target.style) target.style.display = message ? 'block' : 'none';
+            const panel = element(ids.connectivityPanel);
+            if (message && panel && panel.style) panel.style.display = 'grid';
             return true;
         }
 

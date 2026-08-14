@@ -13,11 +13,11 @@ const ONLINE_SOCKET_DISCONNECT_EFFECT_STEPS = Object.freeze([
     'updateStatus',
 ]);
 
-/** @param {{onlineActive?: boolean, restoreInProgress?: boolean}} state */
+/** @param {{onlineActive?: boolean, waitingRoomActive?: boolean, restoreInProgress?: boolean}} state */
 function planOnlineSocketDisconnect(state = {}) {
     const abortRestore = state.restoreInProgress === true;
     return Object.freeze({
-        active: state.onlineActive === true || abortRestore,
+        active: state.onlineActive === true || state.waitingRoomActive === true || abortRestore,
         abortRestore,
     });
 }

@@ -1292,8 +1292,18 @@ body.pwa-banner-open #gameScreen {
     border: 1px solid #2a2a4a;
 }
 
-.online-game-status {
+.game-connectivity-panel {
+    display: grid;
+    gap: 6px;
     margin-bottom: 8px;
+    padding: 8px;
+    border: 1px solid #34445d;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.72);
+}
+
+.online-game-status {
+    margin-bottom: 0;
     padding: 10px 12px;
     border: 1px solid rgba(240,192,64,0.45);
     border-radius: 10px;
@@ -1310,7 +1320,7 @@ body.pwa-banner-open #gameScreen {
     justify-content: center;
     gap: 6px;
     min-height: 32px;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     padding: 6px 10px;
     border: 1px solid #3b4a61;
     border-radius: 10px;
@@ -1357,13 +1367,22 @@ body.pwa-banner-open #gameScreen {
     background: #f87171;
 }
 
+.game-activity-status.is-offline {
+    border-color: rgba(248, 113, 113, 0.82);
+    background: rgba(127, 29, 29, 0.34);
+}
+
+.game-activity-status.is-offline .game-activity-dot {
+    background: #f87171;
+}
+
 .game-connection-quality {
     align-items: center;
     border: 1px solid #4f6b80;
     border-radius: 999px;
     color: #cbd5e1;
     font-size: 12px;
-    margin: 0 0 8px;
+    margin: 0;
     min-height: 28px;
     padding: 3px 10px;
 }
@@ -1372,6 +1391,7 @@ body.pwa-banner-open #gameScreen {
 .game-connection-quality.is-waiting { border-color: #8a6d3b; color: #fde68a; }
 .game-connection-quality.is-delayed,
 .game-connection-quality.is-reconnecting { border-color: #a74655; color: #ffb4bf; }
+.game-connection-quality.is-offline { border-color: #b91c1c; color: #fecaca; }
 
 .game-activity-elapsed,
 .game-activity-detail {

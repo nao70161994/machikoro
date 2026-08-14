@@ -118,6 +118,7 @@ function updateGameActivityStatus(now = Date.now()) {
     const onlineState = mainOnlineRuntimeSnapshot();
     const currentGame = gameState.game;
     const actionFlight = mainOnlineActionFlightState();
+    const navigatorRef = typeof navigator !== 'undefined' ? navigator : null;
     const connectionFacts = {
         isOnlineGame: onlineState.isOnlineGame,
         isReconnecting: onlineState.isReconnectingOnline,
@@ -125,10 +126,13 @@ function updateGameActivityStatus(now = Date.now()) {
         socketConnected: !onlineState.isOnlineGame || !!onlineState.socket && onlineState.socket.connected !== false,
         actionInFlight: actionFlight.inFlight,
         actionStartedAt: actionFlight.startedAt,
+        hasPendingOutboundAction: actionFlight.hasPendingOutboundAction === true,
         minimumObservedAt: connectionObservationFloor,
+        browserOnline: !navigatorRef || navigatorRef.onLine !== false,
     };
+    const connectionView = UiGameStatusView.buildConnectionQualityView(connectionFacts, now);
     UiGameStatusEffects.applyConnectionQuality(
-        UiGameStatusView.buildConnectionQualityView(connectionFacts, now),
+        connectionView,
         documentRef.getElementById('gameConnectionQuality')
     );
     const view = UiGameStatusView.buildActivityStatusView({
@@ -158,6 +162,15 @@ function updateGameActivityStatus(now = Date.now()) {
         elapsed: documentRef.getElementById('gameActivityStatusElapsed'),
         detail: documentRef.getElementById('gameActivityStatusDetail'),
     });
+    const connectivityPanel = documentRef.getElementById('gameConnectivityPanel');
+    const onlineGameStatus = documentRef.getElementById('onlineGameStatus');
+    if (connectivityPanel && connectivityPanel.style) {
+        const hasOnlineMessage = !!(onlineGameStatus && onlineGameStatus.textContent &&
+            (!onlineGameStatus.style || onlineGameStatus.style.display !== 'none'));
+        connectivityPanel.style.display = activity.visible || connectionView.visible || hasOnlineMessage
+            ? 'grid'
+            : 'none';
+    }
     return activity;
 }
 

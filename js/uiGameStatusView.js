@@ -95,6 +95,9 @@ function buildNextActionGuidance(facts = {}) {
 
 function buildConnectionQualityView(facts = {}, now = Date.now()) {
     if (!facts.isOnlineGame) return Object.freeze({ visible: false, kind: 'good', label: '' });
+    if (facts.browserOnline === false) {
+        return Object.freeze({ visible: true, kind: 'offline', label: '通信：オフライン' });
+    }
     if (facts.isReconnecting || facts.socketConnected === false) {
         return Object.freeze({ visible: true, kind: 'reconnecting', label: '通信：再接続中' });
     }
@@ -118,6 +121,18 @@ function buildConnectionQualityView(facts = {}, now = Date.now()) {
 function buildActivityStatusView(facts = {}) {
     if (!facts.hasGame || facts.hasWinner) {
         return Object.freeze({ visible: false, identity: 'hidden', kind: 'ready', label: '', detail: '', startedAt: 0 });
+    }
+    if (facts.isOnlineGame && facts.browserOnline === false) {
+        return Object.freeze({
+            visible: true,
+            identity: 'browser-offline',
+            kind: 'offline',
+            label: 'オフライン中',
+            detail: facts.hasPendingOutboundAction
+                ? '未確認の操作があります。接続後に自動再同期します'
+                : '接続が戻ると自動的にルームへ再参加します',
+            startedAt: 0,
+        });
     }
     if (facts.isReconnecting) {
         return Object.freeze({ visible: true, identity: 'reconnecting', kind: 'waiting', label: 'オンライン再接続中', detail: '接続を回復しています', startedAt: 0 });

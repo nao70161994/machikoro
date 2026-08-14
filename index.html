@@ -222,14 +222,16 @@
 
     <div id="gameScreen" aria-label="ゲーム画面" style="display:none">
         <div id="status" class="status"></div>
-        <div id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
-        <div id="gameActivityStatus" class="game-activity-status is-ready" style="display:none">
-            <span class="game-activity-dot" aria-hidden="true"></span>
-            <span id="gameActivityStatusLabel" role="status" aria-live="polite" aria-atomic="true"></span>
-            <span id="gameActivityStatusElapsed" class="game-activity-elapsed" aria-hidden="true"></span>
-            <span id="gameActivityStatusDetail" class="game-activity-detail"></span>
-        </div>
-        <div id="gameConnectionQuality" class="game-connection-quality is-good" aria-hidden="true" style="display:none"></div>
+        <section id="gameConnectivityPanel" class="game-connectivity-panel" aria-label="通信と進行状況" style="display:none">
+            <div id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+            <div id="gameActivityStatus" class="game-activity-status is-ready" style="display:none">
+                <span class="game-activity-dot" aria-hidden="true"></span>
+                <span id="gameActivityStatusLabel" role="status" aria-live="polite" aria-atomic="true"></span>
+                <span id="gameActivityStatusElapsed" class="game-activity-elapsed" aria-hidden="true"></span>
+                <span id="gameActivityStatusDetail" class="game-activity-detail"></span>
+            </div>
+            <div id="gameConnectionQuality" class="game-connection-quality is-good" aria-hidden="true" style="display:none"></div>
+        </section>
         <div id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="tutorialBox" class="tutorial-box" role="region" aria-label="操作ガイド" style="display:none"></div>

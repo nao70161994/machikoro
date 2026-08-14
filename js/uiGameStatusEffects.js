@@ -103,7 +103,7 @@ const UiGameStatusEffects = (() => {
         const { container, label, elapsed, detail } = elements;
         if (!container || !container.style || !container.classList) return false;
         container.style.display = activity.visible ? 'flex' : 'none';
-        for (const kind of ['ready', 'waiting', 'checking', 'recovered', 'failed']) {
+        for (const kind of ['ready', 'waiting', 'checking', 'recovered', 'failed', 'offline']) {
             container.classList.toggle(`is-${kind}`, activity.kind === kind);
         }
         if (label && activity.announceLabel) label.textContent = activity.announceLabel;
@@ -115,7 +115,7 @@ const UiGameStatusEffects = (() => {
     function applyConnectionQuality(view = {}, element) {
         if (!element || !element.style || !element.classList) return false;
         element.style.display = view.visible ? 'inline-flex' : 'none';
-        for (const kind of ['good', 'waiting', 'delayed', 'reconnecting']) {
+        for (const kind of ['good', 'waiting', 'delayed', 'reconnecting', 'offline']) {
             element.classList.toggle(`is-${kind}`, view.kind === kind);
         }
         if (view.label && element.textContent !== view.label) element.textContent = view.label;

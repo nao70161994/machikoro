@@ -540,7 +540,10 @@ const _onlineActionFlightController = OnlineRetryPolicy.createActionFlightContro
     now: () => Date.now(),
 });
 function getOnlineActionFlightState() {
-    return _onlineActionFlightController.snapshot();
+    return Object.freeze({
+        ..._onlineActionFlightController.snapshot(),
+        hasPendingOutboundAction: !!_readPendingOutboundActionForCurrentSession(),
+    });
 }
 
 function _setOnlineRejoinAttemptCount(value) {
@@ -1717,8 +1720,10 @@ function _runOnlineSocketConnectEffects() {
 }
 
 function _legacyOnlineSocketDisconnectPlan() {
+    const session = onlineSessionSnapshot();
     return Object.freeze({
-        active: onlineSessionSnapshot().isOnlineGame || _onlineRestoreLifecycleController.isInProgress(),
+        active: session.isOnlineGame || !!session.myRoomId ||
+            _onlineRestoreLifecycleController.isInProgress(),
         abortRestore: _onlineRestoreLifecycleController.isInProgress(),
     });
 }
@@ -1735,6 +1740,7 @@ function _onlineSocketDisconnectPlanSelection() {
     const stateReady = stateSelection.source === 'event';
     const selected = OnlineSocketDisconnect.selectPlan({
         onlineActive: online,
+        waitingRoomActive: !online && !!onlineSessionSnapshot().myRoomId,
         restoreInProgress: _onlineRestoreLifecycleController.isInProgress(),
     }, legacyPlan, {
         authorityEnabled: requested && stateReady,
@@ -1774,9 +1780,13 @@ function _runOnlineSocketDisconnectEffectsLegacy(plan) {
     _setOnlineActionInFlight(false);
     onlineClientEffects.invalidateCpuSchedule();
     _observeOnlineReconnectEvent(OnlineReconnectState.events.SOCKET_DISCONNECTED);
+    const waitingRoom = !onlineSessionSnapshot().isOnlineGame &&
+        !!onlineSessionSnapshot().myRoomId;
     _applyOnlineReconnectStatusEffectAuthority(
         OnlineReconnectState.events.SOCKET_DISCONNECTED,
-        '⏳ 接続が切れました。再接続しています...'
+        waitingRoom
+            ? '⏳ 待機室へ再接続中です。60秒間は席を保持します。'
+            : '⏳ 接続が切れました。再接続しています...'
     );
     return true;
 }
@@ -1801,10 +1811,16 @@ function _runOnlineSocketDisconnectEffects() {
         observeDisconnect: () => _observeOnlineReconnectEvent(
             OnlineReconnectState.events.SOCKET_DISCONNECTED
         ),
-        updateStatus: () => _applyOnlineReconnectStatusEffectAuthority(
-            OnlineReconnectState.events.SOCKET_DISCONNECTED,
-            '⏳ 接続が切れました。再接続しています...'
-        ),
+        updateStatus: () => {
+            const waitingRoom = !onlineSessionSnapshot().isOnlineGame &&
+                !!onlineSessionSnapshot().myRoomId;
+            _applyOnlineReconnectStatusEffectAuthority(
+                OnlineReconnectState.events.SOCKET_DISCONNECTED,
+                waitingRoom
+                    ? '⏳ 待機室へ再接続中です。60秒間は席を保持します。'
+                    : '⏳ 接続が切れました。再接続しています...'
+            );
+        },
     }).result;
 }
 

@@ -23,6 +23,8 @@ function loadMainRuntime(options = {}) {
         offlineNotice: makeElement(),
         pwaInstallBanner: makeElement(),
         pwaUpdateBanner: makeElement({ style: { display: 'none' } }),
+        gameConnectivityPanel: makeElement({ style: { display: 'none' } }),
+        onlineGameStatus: makeElement({ style: { display: 'none' } }),
         gameActivityStatus: makeElement({ style: { display: 'none' } }),
         gameActivityStatusLabel: makeElement(),
         gameActivityStatusElapsed: makeElement(),
@@ -700,6 +702,25 @@ runTest('main 稼働状況は人間の操作可能とCPU処理中をDOMへ反映
     assert.strictEqual(activity.kind, 'checking');
     assert.strictEqual(rt.__test.elements.gameActivityStatus.classList.contains('is-checking'), true);
     assert.strictEqual(rt.__test.elements.gameActivityStatusElapsed.textContent, '・11秒');
+});
+
+runTest('main 稼働状況はオンライン対戦のオフラインと復帰案内をDOMへ反映する', () => {
+    const rt = loadMainRuntime();
+    rt.__test.setGame({
+        phase: 'roll',
+        currentPlayerIndex: 0,
+        players: [{ name: 'Alice' }],
+        currentPlayer() { return this.players[0]; },
+        checkWinner() { return null; },
+    });
+    rt.OnlineRuntimeState.runtime.setOnline(true);
+    rt.navigator.onLine = false;
+    const activity = rt.__test.updateGameActivityStatus(1000);
+    assert.strictEqual(activity.kind, 'offline');
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.style.display, 'grid');
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, 'オフライン中');
+    assert.strictEqual(rt.__test.elements.gameConnectionQuality.textContent, '通信：オフライン');
+    assert.strictEqual(rt.__test.elements.gameConnectionQuality.classList.contains('is-offline'), true);
 });
 
 runTest('main 稼働状況はwatchdogの実復旧結果をDOMへ反映する', () => {
