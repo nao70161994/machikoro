@@ -33,6 +33,39 @@ runTest('UI game status viewは既存の二個・一個・未出目表示を選�
     assert.strictEqual(UiGameStatusView.selectDiceValues({ lastDice1: 0, lastDice2: 0, lastDiceResult: 0 }), null);
 });
 
+runTest('手番タイムラインはフェーズと建設状態から進行を投影する', () => {
+    const phases = {
+        ROLL: 'roll', SELECT_DICE: 'selectDice', REROLL_CONFIRM: 'rerollConfirm',
+        HARBOR_CHOICE: 'harborChoice', PENDING: 'pending', BUILD: 'build',
+    };
+    const view = facts => UiGameStatusView.buildTurnTimelineView({ phases, ...facts });
+    assert.deepStrictEqual(view({ phase: 'roll' }).stages.map(stage => stage.state), [
+        'current', 'upcoming', 'upcoming', 'upcoming',
+    ]);
+    assert.deepStrictEqual(view({ phase: 'pending', lastDiceResult: 8 }).stages, [
+        { key: 'dice', label: 'サイコロ', state: 'complete', detail: '出目 8' },
+        { key: 'effects', label: '効果解決', state: 'current', detail: '' },
+        { key: 'build', label: '建設', state: 'upcoming', detail: '' },
+        { key: 'finish', label: '手番終了', state: 'upcoming', detail: '' },
+    ]);
+    assert.deepStrictEqual(view({ phase: 'build', lastDiceResult: 8 }).stages.map(stage => stage.state), [
+        'complete', 'complete', 'current', 'upcoming',
+    ]);
+    assert.deepStrictEqual(view({
+        phase: 'build', lastDiceResult: 8, builtThisTurn: true,
+    }).stages.map(stage => stage.state), [
+        'complete', 'complete', 'complete', 'current',
+    ]);
+    const pendingIt = view({ phase: 'pending', lastDiceResult: 8, pendingIT: true });
+    assert.deepStrictEqual(pendingIt.stages.map(stage => stage.state), [
+        'complete', 'complete', 'complete', 'current',
+    ]);
+    assert.strictEqual(pendingIt.stages[3].detail, 'IT積立を選択');
+    assert.strictEqual(view({ phase: 'rerollConfirm', lastDiceResult: 9 }).stages[0].detail, '出目 9・振り直し確認');
+    assert.strictEqual(view({ phase: 'harborChoice', lastDiceResult: 10 }).stages[0].detail, '出目 10・港を確認');
+    assert.ok(Object.isFrozen(view({ phase: 'roll' }).stages));
+});
+
 runTest('ゲーム稼働状況は操作可能・CPU・通信待ちを区別する', () => {
     const base = {
         hasGame: true,

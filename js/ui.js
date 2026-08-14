@@ -275,6 +275,8 @@ function renderWinnerState(winner) {
     const gameState = uiGameRuntimeSnapshot();
     const currentGame = gameState.game;
     const winnerIdx = currentGame.players.indexOf(winner);
+    const turnTimeline = document.getElementById('turnTimeline');
+    if (turnTimeline) turnTimeline.style.display = 'none';
     const isCPUWinner = !!currentCpuPlayerAt(winnerIdx);
     let streakState = UiWinner.streakRuntime.snapshot();
     if (!winSoundPlayed) {
@@ -450,6 +452,7 @@ function renderActiveGameState(current) {
         current,
         players: currentGame.players,
         phase: currentGame.phase,
+        phases: GAME_PHASES,
         rollPhase: GAME_PHASES.ROLL,
         currentPlayerIndex: currentGame.currentPlayerIndex,
         previousPlayerIndex: previousTurnState.previousPlayerIndex,
@@ -462,6 +465,7 @@ function renderActiveGameState(current) {
         canRoll: canShowUiAction('rollDice'),
         canNextTurn: canShowUiAction('nextTurn'),
         pendingRenovation: currentGame.pendingRenovation,
+        pendingIT: currentGame.pendingIT,
         builtThisTurn: currentGame.builtThisTurn,
         previousCoins: gameState.prevCoins,
         cpuPlayerIndexes: currentGame.players
@@ -476,6 +480,14 @@ function renderActiveGameState(current) {
     UiGameStatusEffects.execute(view, {
         setStatusText(text) {
             document.getElementById("status").textContent = text;
+        },
+        renderTurnTimeline(timeline) {
+            const container = document.getElementById('turnTimeline');
+            if (container) container.style.display = 'block';
+            UiGameStatusEffects.applyTurnTimeline(
+                timeline,
+                document.getElementById('turnTimelineList')
+            );
         },
         announceTurn(name, isCpuTurn, playerIndex) {
             showTurnAnnouncer(name, isCpuTurn, playerIndex);

@@ -263,6 +263,8 @@ runTest('integration: 購入後もrender step例外で操作不能にならな�
     assert.notStrictEqual(rt.__test.elements.gameScreen.inert, true);
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
     assert.strictEqual(rt.__test.elements.btnSkip.textContent, '建設完了・ターン終了');
+    assert.ok(rt.__test.elements.turnTimelineList.innerHTML.includes('data-turn-stage="finish"'));
+    assert.ok(rt.__test.elements.turnTimelineList.innerHTML.includes('aria-label="手番終了、現在"'));
     assert.ok(rt.__test.elements.buildMenu.innerHTML.includes('施設一覧'));
     assert.notStrictEqual(rt.__test.elements.crashScreen.style.display, 'flex');
     assert.strictEqual(Array.isArray(rt.window.__machikoroFlowTrace), true);

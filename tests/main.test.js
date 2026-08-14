@@ -2622,6 +2622,9 @@ runTest('onlineStatus はライブリージョンとして宣言されている'
     assert.ok(html.includes('id="gameActivityStatus" class="game-activity-status is-ready"'));
     assert.ok(html.includes('id="gameActivityStatusLabel" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="gameActivityStatusElapsed" class="game-activity-elapsed" aria-hidden="true"'));
+    assert.ok(html.includes('id="turnTimeline" class="turn-timeline" aria-labelledby="turnTimelineHeading"'));
+    assert.ok(html.includes('<h2 id="turnTimelineHeading">この手番の進行</h2>'));
+    assert.ok(html.includes('id="turnTimelineList" class="turn-timeline-list"'));
     assert.ok(html.includes('id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"'));

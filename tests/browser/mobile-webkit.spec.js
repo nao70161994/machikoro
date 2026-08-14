@@ -529,6 +529,25 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
         expect(summaries.every(summary => summary.height >= 44 && summary.contained)).toBe(true);
         await compact.first().locator('summary').click();
         await expect(compact.first()).toHaveAttribute('open', '');
+        const timeline = await page.locator('#turnTimeline').evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            const steps = [...element.querySelectorAll('.turn-timeline-step')];
+            return {
+                left: bounds.left,
+                right: bounds.right,
+                pageWidth: document.documentElement.scrollWidth,
+                viewportWidth: document.documentElement.clientWidth,
+                stepCount: steps.length,
+                currentCount: steps.filter(step => step.getAttribute('aria-current') === 'step').length,
+                contentFits: steps.every(step => step.scrollWidth <= step.clientWidth),
+            };
+        });
+        expect(timeline.left).toBeGreaterThanOrEqual(0);
+        expect(timeline.right).toBeLessThanOrEqual(timeline.viewportWidth);
+        expect(timeline.pageWidth).toBeLessThanOrEqual(timeline.viewportWidth);
+        expect(timeline.stepCount).toBe(4);
+        expect(timeline.currentCount).toBe(1);
+        expect(timeline.contentFits).toBe(true);
         await expect(page.locator('#gameActivityStatusLabel')).not.toHaveText('');
         const activity = await page.locator('#gameActivityStatus').textContent();
         expect(activity).toMatch(/CPU|あなたの操作|操作待ち/);

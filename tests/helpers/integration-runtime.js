@@ -38,6 +38,7 @@ function loadIntegrationRuntime(options = {}) {
         status: makeElement(),
         winnerRestartButton: makeElement(),
         coinChangeAnnouncer: makeElement(),
+        turnTimelineList: makeElement(),
         tutorialBox: makeElement(),
         btnRoll: makeElement(),
         btnSkip: makeElement(),

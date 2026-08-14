@@ -7,6 +7,7 @@ const { runTest } = require('./helpers/test-utils');
 function makeView(announce = true) {
     return {
         statusText: 'status',
+        turnTimeline: { stages: [{ key: 'dice', label: 'サイコロ', state: 'current', detail: '' }] },
         turnTransition: {
             announce,
             name: 'Alice',
@@ -45,6 +46,7 @@ runTest('active game effect境界は既存描画順と値を維持する', () =>
     UiGameStatusEffects.execute(view, makeEffects(calls));
     assert.deepStrictEqual(calls, [
         ['setStatusText', 'status'],
+        ['renderTurnTimeline', view.turnTimeline],
         ['announceTurn', 'Alice', true, 2],
         ['setPreviousPlayerIndex', 2, 7, 'roll'],
         ['setRollDisabled', false],
@@ -90,11 +92,33 @@ runTest('active game effect境界はturn継続中にannouncerだけを省略す�
     const calls = [];
     UiGameStatusEffects.execute(makeView(false), makeEffects(calls));
     assert.strictEqual(calls.some(call => call[0] === 'announceTurn'), false);
-    assert.deepStrictEqual(calls.slice(0, 3), [
+    assert.deepStrictEqual(calls.slice(0, 4), [
         ['setStatusText', 'status'],
+        ['renderTurnTimeline', makeView(false).turnTimeline],
         ['setPreviousPlayerIndex', 2, 7, 'roll'],
         ['setRollDisabled', false],
     ]);
+});
+
+runTest('手番タイムラインeffectは現在位置と完了状態を意味付きHTMLへ反映する', () => {
+    const element = { innerHTML: '' };
+    const view = {
+        stages: [
+            { key: 'dice', label: 'サイコロ', state: 'complete', detail: '出目 7' },
+            { key: 'effects', label: '効果解決', state: 'current', detail: '' },
+            { key: 'build', label: '建設', state: 'upcoming', detail: '' },
+        ],
+    };
+    assert.strictEqual(UiGameStatusEffects.applyTurnTimeline(view, element), true);
+    assert.ok(element.innerHTML.includes('data-turn-stage="dice"'));
+    assert.ok(element.innerHTML.includes('class="turn-timeline-step is-complete"'));
+    assert.ok(element.innerHTML.includes('aria-label="サイコロ、完了、出目 7"'));
+    assert.ok(element.innerHTML.includes('data-turn-stage="effects" aria-label="効果解決、現在" aria-current="step"'));
+    assert.ok(element.innerHTML.includes('class="turn-timeline-step is-upcoming"'));
+    assert.strictEqual(UiGameStatusEffects.applyTurnTimeline(view, null), false);
+    assert.ok(UiGameStatusEffects.buildTurnTimelineHtml({
+        stages: [{ key: 'bad"', label: '<施設>', state: 'current', detail: 'A&B' }],
+    }).includes('data-turn-stage="bad&quot;" aria-label="&lt;施設&gt;、現在、A&amp;B"'));
 });
 
 runTest('active game effect境界は不完全な配線を副作用前に拒否する', () => {

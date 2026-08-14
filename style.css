@@ -1292,6 +1292,75 @@ body.pwa-banner-open #gameScreen {
     border: 1px solid #2a2a4a;
 }
 
+.turn-timeline {
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border: 1px solid #34445d;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.78);
+}
+
+.turn-timeline h2 {
+    margin: 0 0 8px;
+    color: #dbe7f5;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.turn-timeline-list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.turn-timeline-step {
+    min-width: 0;
+    padding: 7px 4px;
+    border: 1px solid #3b4a61;
+    border-radius: 8px;
+    color: #8290a5;
+    text-align: center;
+}
+
+.turn-timeline-step.is-complete {
+    border-color: #37634a;
+    color: #9fddb2;
+    background: rgba(20, 83, 45, 0.2);
+}
+
+.turn-timeline-step.is-current {
+    border-color: #d0a936;
+    color: #fff0b0;
+    background: rgba(120, 85, 16, 0.28);
+}
+
+.turn-timeline-marker,
+.turn-timeline-label,
+.turn-timeline-detail {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.turn-timeline-marker {
+    min-height: 16px;
+    font-size: 12px;
+}
+
+.turn-timeline-label {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.turn-timeline-detail {
+    margin-top: 2px;
+    color: #c2cddd;
+    font-size: 10px;
+    line-height: 1.35;
+}
+
 .game-connectivity-panel {
     display: grid;
     gap: 6px;

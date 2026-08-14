@@ -31,6 +31,7 @@ const UiGameStatusEffects = (() => {
 
     const REQUIRED_EFFECTS = Object.freeze([
         'setStatusText',
+        'renderTurnTimeline',
         'announceTurn',
         'setPreviousPlayerIndex',
         'setRollDisabled',
@@ -60,6 +61,7 @@ const UiGameStatusEffects = (() => {
         }
 
         effects.setStatusText(view.statusText);
+        effects.renderTurnTimeline(view.turnTimeline);
         if (view.turnTransition.announce) {
             effects.announceTurn(
                 view.turnTransition.name,
@@ -122,7 +124,43 @@ const UiGameStatusEffects = (() => {
         return true;
     }
 
-    return Object.freeze({ createTurnStateController, REQUIRED_EFFECTS, execute, applyActivityStatus, applyConnectionQuality });
+    function buildTurnTimelineHtml(view = {}) {
+        const stateLabels = Object.freeze({ complete: '完了', current: '現在', upcoming: '未完了' });
+        const stateMarks = Object.freeze({ complete: '✓', current: '●', upcoming: '○' });
+        const escapeMarkup = value => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        return (Array.isArray(view.stages) ? view.stages : []).map(stage => {
+            const state = Object.prototype.hasOwnProperty.call(stateLabels, stage.state)
+                ? stage.state
+                : 'upcoming';
+            const detail = stage.detail
+                ? `<span class="turn-timeline-detail">${escapeMarkup(stage.detail)}</span>`
+                : '';
+            const current = state === 'current' ? ' aria-current="step"' : '';
+            const label = `${stage.label}、${stateLabels[state]}${stage.detail ? `、${stage.detail}` : ''}`;
+            return `<li class="turn-timeline-step is-${state}" data-turn-stage="${escapeMarkup(stage.key)}" aria-label="${escapeMarkup(label)}"${current}><span class="turn-timeline-marker" aria-hidden="true">${stateMarks[state]}</span><span class="turn-timeline-label">${escapeMarkup(stage.label)}</span>${detail}</li>`;
+        }).join('');
+    }
+
+    function applyTurnTimeline(view = {}, element) {
+        if (!element) return false;
+        const html = buildTurnTimelineHtml(view);
+        if (element.innerHTML !== html) element.innerHTML = html;
+        return true;
+    }
+
+    return Object.freeze({
+        createTurnStateController,
+        REQUIRED_EFFECTS,
+        execute,
+        applyActivityStatus,
+        applyConnectionQuality,
+        buildTurnTimelineHtml,
+        applyTurnTimeline,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiGameStatusEffects;

@@ -21,6 +21,39 @@ function selectDiceValues({ lastDice1, lastDice2, lastDiceResult }) {
     return null;
 }
 
+function buildTurnTimelineView(facts = {}) {
+    const phases = facts.phases || {};
+    const dicePhases = new Set([
+        phases.ROLL,
+        phases.SELECT_DICE,
+        phases.REROLL_CONFIRM,
+        phases.HARBOR_CHOICE,
+    ]);
+    const phase = facts.phase;
+    const inDiceStep = dicePhases.has(phase);
+    const inFinishPendingStep = phase === phases.PENDING && facts.pendingIT === true;
+    const inEffectStep = phase === phases.PENDING && !inFinishPendingStep;
+    const inBuildStep = phase === phases.BUILD && facts.builtThisTurn !== true;
+    const inFinishStep = (phase === phases.BUILD && facts.builtThisTurn === true) || inFinishPendingStep;
+    const diceResult = Number.isFinite(facts.lastDiceResult) && facts.lastDiceResult > 0
+        ? Math.floor(facts.lastDiceResult)
+        : 0;
+    let diceDetail = '';
+    if (phase === phases.SELECT_DICE) diceDetail = '個数を選択';
+    if (phase === phases.REROLL_CONFIRM) diceDetail = diceResult ? `出目 ${diceResult}・振り直し確認` : '振り直し確認';
+    if (phase === phases.HARBOR_CHOICE) diceDetail = diceResult ? `出目 ${diceResult}・港を確認` : '港を確認';
+    if (!inDiceStep && diceResult) diceDetail = `出目 ${diceResult}`;
+
+    const stage = (key, label, state, detail = '') => Object.freeze({ key, label, state, detail });
+    const stages = [
+        stage('dice', 'サイコロ', inDiceStep ? 'current' : 'complete', diceDetail),
+        stage('effects', '効果解決', inEffectStep ? 'current' : ((phase === phases.BUILD || inFinishPendingStep) ? 'complete' : 'upcoming')),
+        stage('build', '建設', inBuildStep ? 'current' : (inFinishStep ? 'complete' : 'upcoming')),
+        stage('finish', '手番終了', inFinishStep ? 'current' : 'upcoming', inFinishPendingStep ? 'IT積立を選択' : ''),
+    ];
+    return Object.freeze({ stages: Object.freeze(stages) });
+}
+
 function buildTurnTransitionView({
     phase,
     rollPhase,
@@ -315,6 +348,7 @@ function buildActiveGameView(facts) {
             builtThisTurn: facts.builtThisTurn,
         }),
         diceValues: selectDiceValues(facts),
+        turnTimeline: buildTurnTimelineView(facts),
         turnTransition: buildTurnTransitionView(facts),
         coinChanges: Object.freeze(coinChanges),
         coinChangeAnnouncement: buildCoinChangeAnnouncement({
@@ -334,6 +368,7 @@ const UiGameStatusView = Object.freeze({
     buildRollButtonView,
     buildSkipButtonView,
     selectDiceValues,
+    buildTurnTimelineView,
     buildTurnTransitionView,
     buildCoinChangeAnnouncement,
     buildActivityStatusView,
