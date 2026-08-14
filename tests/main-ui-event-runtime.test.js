@@ -86,6 +86,16 @@ runTest('main UI event runtimeは待機室準備状態と結果共有を既存co
     ]);
 });
 
+runTest('main UI event runtimeは動作診断の更新とコピーを既存command経路へ渡す', () => {
+    const h = createHarness();
+    h.runtime.handleStaticClick(h.event({ uiAction: 'refreshAppDiagnostics' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'copyAppDiagnostics' }));
+    assert.deepStrictEqual(h.calls, [
+        ['preventDefault'], ['refreshAppDiagnostics'],
+        ['preventDefault'], ['copyAppDiagnostics'],
+    ]);
+});
+
 runTest('main UI event runtimeはroom IDのEnterを既存join effectへ一度だけ渡す', () => {
     const h = createHarness();
     const keyEvent = (extra = {}) => ({

@@ -108,6 +108,7 @@ interface Window {
     CPUProfile: unknown;
     CPUSimulation: unknown;
     CpuTournament: unknown;
+    AppDiagnostics: unknown;
     SavedGameValidation: unknown;
     StorageSettings: unknown;
     UiBuildMenu: unknown;

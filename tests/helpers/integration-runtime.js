@@ -262,6 +262,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiTabView.js',
         'js/uiTabEffects.js',
         'js/uiCpuTournament.js',
+        'js/appDiagnostics.js',
         'js/appShell.js',
         'js/localPlayerSettings.js',
         'js/localGameStart.js',

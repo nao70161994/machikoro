@@ -430,6 +430,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(cpuTournamentSource, context, { filename: 'js/cpuTournament.js' });
     const uiCpuTournamentSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiCpuTournament.js'), 'utf8');
     vm.runInContext(uiCpuTournamentSource, context, { filename: 'js/uiCpuTournament.js' });
+    const appDiagnosticsSource = fs.readFileSync(path.join(__dirname, '..', 'js/appDiagnostics.js'), 'utf8');
+    vm.runInContext(appDiagnosticsSource, context, { filename: 'js/appDiagnostics.js' });
     const gameRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameRuntimeState.js'), 'utf8');
     vm.runInContext(gameRuntimeStateSource, context, { filename: 'js/gameRuntimeState.js' });
     const onlineRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/onlineRuntimeState.js'), 'utf8');
@@ -2452,6 +2454,35 @@ runTest('index.html はCPU大会を独立tabと取消可能な操作で提供す
     assert.ok(html.includes('id="cpuTournamentHistory"'));
     assert.ok(html.includes('id="cpuTournamentReplay"'));
     assert.ok(html.includes('data-ui-action="exportCpuTournamentJson"') === false);
+});
+
+runTest('index.html は秘密情報を含めない動作診断の表示・コピー導線を持つ', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    assert.ok(html.includes('<summary>動作診断</summary>'));
+    assert.ok(html.includes('id="appDiagnosticsOutput"'));
+    assert.ok(html.includes('data-ui-action="refreshAppDiagnostics"'));
+    assert.ok(html.includes('data-ui-action="copyAppDiagnostics"'));
+    assert.ok(html.includes('ルームIDや再接続情報は含みません'));
+    assert.ok(html.indexOf('js/appDiagnostics.js') < html.indexOf('js/main.js'));
+});
+
+runTest('main 動作診断は実runtime状態を表示し同じ安全な文面をコピーする', async () => {
+    const rt = loadMainRuntime({ standalone: true });
+    let copied = '';
+    rt.navigator.clipboard = { writeText(text) { copied = text; return Promise.resolve(); } };
+    const snapshot = await rt.refreshAppDiagnostics();
+    assert.strictEqual(rt.fetchCalls.at(-1).url, '/api/version');
+    assert.strictEqual(snapshot.appVersion, 'test-version');
+    assert.strictEqual(snapshot.serverVersion, 'test');
+    assert.strictEqual(snapshot.serviceWorker, '非対応');
+    assert.strictEqual(snapshot.context, 'タイトル画面');
+    assert.strictEqual(snapshot.displayMode, 'インストール版');
+    assert.ok(rt.elements.appDiagnosticsOutput.innerHTML.includes('クライアント版'));
+    assert.strictEqual(await rt.copyAppDiagnostics(), true);
+    assert.ok(copied.includes('クライアント版: test-version'));
+    assert.ok(!copied.includes('roomId'));
+    assert.ok(!copied.includes('reconnectToken'));
+    assert.strictEqual(rt.alerts.at(-1), '診断情報をコピーしました');
 });
 
 runTest('ローカル保存の再開導線は新しいゲーム設定より先に提示する', () => {

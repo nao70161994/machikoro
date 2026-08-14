@@ -1601,6 +1601,42 @@ button:not(:disabled):active {
     gap: 10px;
     margin-top: 10px;
 }
+.app-diagnostics summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 700;
+}
+.app-diagnostics-help {
+    margin: 8px 0 12px;
+    color: var(--muted);
+    line-height: 1.55;
+}
+.app-diagnostics-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.app-diagnostics-actions button { min-height: 44px; }
+.app-diagnostics-output {
+    margin-top: 12px;
+    overflow-wrap: anywhere;
+}
+.app-diagnostics-list {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+}
+.app-diagnostics-list > div {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.4fr);
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.app-diagnostics-list dt { color: var(--muted); }
+.app-diagnostics-list dd { margin: 0; font-weight: 700; }
 .accessibility-large-text #gameScreen,
 .accessibility-large-text .tab-content,
 .accessibility-large-text .modal { font-size: 1.12rem; }

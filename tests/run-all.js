@@ -214,6 +214,7 @@ const TEST_GROUPS = {
         'cpu-turn-strategy.test.js',
         'cpu-tournament.test.js',
         'ui-cpu-tournament.test.js',
+        'app-diagnostics.test.js',
         'cpu-phase-handlers.test.js',
         'local-action-policy.test.js',
         'main-human-action-runtime.test.js',

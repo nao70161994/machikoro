@@ -15,6 +15,109 @@ function safeMainStorageRemove(key) {
     mainClientStorageFacade.remove(key);
 }
 
+function diagnosticContext(gameState, onlineState) {
+    if (onlineState.isReconnectingOnline) return 'reconnecting';
+    if (onlineState.isOnlineGame) return 'online';
+    if (onlineState.myRoomId) return 'lobby';
+    if (gameState.game) return 'local';
+    return 'title';
+}
+
+async function readDiagnosticServiceWorkerState() {
+    if (typeof navigator === 'undefined' || !navigator.serviceWorker) {
+        return Object.freeze({ supported: false, controlled: false, waiting: false });
+    }
+    let registration = null;
+    try {
+        if (typeof navigator.serviceWorker.getRegistration === 'function') {
+            registration = await navigator.serviceWorker.getRegistration();
+        }
+    } catch (_) {}
+    return Object.freeze({
+        supported: true,
+        controlled: !!navigator.serviceWorker.controller,
+        waiting: !!(registration && registration.waiting),
+    });
+}
+
+async function readDiagnosticServerVersion() {
+    if (typeof fetch !== 'function') return '';
+    let controller = null;
+    let timer = null;
+    try {
+        if (typeof AbortController === 'function') {
+            controller = new AbortController();
+            timer = setTimeout(() => controller.abort(), 2500);
+        }
+        const response = await fetch('/api/version', Object.assign({ cache: 'no-store' },
+            controller ? { signal: controller.signal } : {}));
+        if (!response || !response.ok) return '';
+        const payload = await response.json();
+        return payload && typeof payload.hash === 'string' ? payload.hash : '';
+    } catch (_) {
+        return '';
+    } finally {
+        if (timer !== null) clearTimeout(timer);
+    }
+}
+
+async function collectAppDiagnostics() {
+    const gameState = mainGameRuntimeSnapshot();
+    const onlineState = mainOnlineRuntimeSnapshot();
+    const [serviceWorker, serverVersion] = await Promise.all([
+        readDiagnosticServiceWorkerState(),
+        readDiagnosticServerVersion(),
+    ]);
+    const repository = typeof getLocalSaveRepository === 'function'
+        ? getLocalSaveRepository() : null;
+    const onlineResume = typeof readOnlineSession === 'function' ? readOnlineSession() : null;
+    const standalone = typeof window !== 'undefined' &&
+        ((typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) ||
+            (typeof navigator !== 'undefined' && navigator.standalone === true));
+    return AppDiagnostics.buildSnapshot({
+        appVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
+        serverVersion,
+        serviceWorkerSupported: serviceWorker.supported,
+        serviceWorkerControlled: serviceWorker.controlled,
+        serviceWorkerWaiting: serviceWorker.waiting,
+        networkOnline: typeof navigator === 'undefined' || navigator.onLine !== false,
+        socketConnected: !!(onlineState.socket && onlineState.socket.connected),
+        context: diagnosticContext(gameState, onlineState),
+        standalone,
+        localSaveExists: !!(repository && repository.exists()),
+        localHistoryCount: repository ? repository.readHistory().length : 0,
+        onlineResumeExists: !!onlineResume,
+        generatedAt: new Date().toISOString(),
+    });
+}
+
+async function refreshAppDiagnostics() {
+    const output = document.getElementById('appDiagnosticsOutput');
+    if (!output) return null;
+    output.textContent = '診断情報を収集中です...';
+    const snapshot = await collectAppDiagnostics();
+    output.innerHTML = AppDiagnostics.buildHtml(snapshot);
+    return snapshot;
+}
+
+async function copyAppDiagnostics() {
+    const snapshot = await refreshAppDiagnostics();
+    const text = snapshot && AppDiagnostics.formatText(snapshot);
+    if (!text || typeof navigator === 'undefined' || !navigator.clipboard ||
+            typeof navigator.clipboard.writeText !== 'function') {
+        showNotice('この端末では診断情報をコピーできませんでした');
+        return false;
+    }
+    try {
+        await navigator.clipboard.writeText(text);
+        showNotice('診断情報をコピーしました');
+        return true;
+    } catch (_) {
+        showNotice('この端末では診断情報をコピーできませんでした');
+        return false;
+    }
+}
+
 function gameSetupSnapshot() {
     return GameSetupState.runtime.snapshot();
 }

@@ -202,6 +202,7 @@ const STATIC_ASSETS = [
   '/js/appShellCrashRuntime.js',
   '/js/pwaShell.js',
   '/js/appShellStartupRuntime.js',
+  '/js/appDiagnostics.js',
   '/js/actionUiRegistry.js',
   '/js/appShell.js',
   '/js/localPlayerSettings.js',

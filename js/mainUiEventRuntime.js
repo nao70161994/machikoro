@@ -14,6 +14,7 @@ const MainUiEventRuntime = (() => {
         'showCpuTournamentHistory', 'replayCpuTournamentGame',
         'exportCpuTournamentJson', 'exportCpuTournamentCsv', 'clearCpuTournamentHistory',
         'shareGameResult',
+        'refreshAppDiagnostics', 'copyAppDiagnostics',
         'highlightLogEntry',
     ]);
 

@@ -128,6 +128,15 @@
                         <output id="soundVolumeLabel">100%</output>
                     </label>
                 </details>
+                <details class="setting-section app-diagnostics">
+                    <summary>動作診断</summary>
+                    <p class="app-diagnostics-help">問題報告に必要な版・通信・保存状態を確認できます。ルームIDや再接続情報は含みません。</p>
+                    <div class="app-diagnostics-actions">
+                        <button type="button" data-ui-action="refreshAppDiagnostics">診断情報を更新</button>
+                        <button type="button" data-ui-action="copyAppDiagnostics">診断情報をコピー</button>
+                    </div>
+                    <div id="appDiagnosticsOutput" class="app-diagnostics-output" role="status" aria-live="polite" aria-atomic="true">「診断情報を更新」を押してください。</div>
+                </details>
                 <button id="btnStart" class="setup-primary-cta" data-ui-action="startGame">ゲーム開始</button>
                 <div id="localRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
             </div>
@@ -655,6 +664,7 @@
     <script src="js/appShellCrashRuntime.js"></script>
     <script src="js/pwaShell.js"></script>
     <script src="js/appShellStartupRuntime.js"></script>
+    <script src="js/appDiagnostics.js"></script>
     <script src="js/actionUiRegistry.js"></script>
     <script src="js/appShell.js"></script>
     <script src="js/localPlayerSettings.js"></script>
