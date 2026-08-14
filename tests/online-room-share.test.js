@@ -22,7 +22,7 @@ runTest('online room shareはroom IDと参加者をescapeして共有手順を�
     assert.ok(html.includes('data-room-id="AB&lt;12"'));
     assert.ok(html.includes('この6文字を参加者に共有してください'));
     assert.ok(html.includes('参加枠（3枠）: Alice、&lt;Bob&gt;、待機中...'));
-    assert.ok(html.includes('参加枠が揃うと自動開始します'));
+    assert.ok(html.includes('参加枠が揃い、全員が準備完了になると自動開始します'));
     assert.ok(html.includes('data-ui-action="leaveOnlineLobby"'));
     assert.ok(html.includes('待機室から退出'));
     assert.ok(!html.includes('<Bob>'));
@@ -63,6 +63,29 @@ runTest('online room shareはhostだけに自分以外の参加者管理を表�
         hostPlayerIndex: 0,
         participants: [{ index: 1, name: 'Bob', connected: true }],
     }).includes('removeOnlineLobbyPlayer'));
+});
+
+runTest('online room shareは本人の準備状態と参加者全員の状態を明示する', () => {
+    const waiting = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
+        myPlayerIndex: 1,
+        hostPlayerIndex: 0,
+        participants: [
+            { index: 0, name: 'Alice', connected: true, ready: true },
+            { index: 1, name: '<Bob>', connected: true, ready: false },
+        ],
+    });
+    assert.ok(waiting.includes('aria-label="参加者の準備状態"'));
+    assert.ok(waiting.includes('Alice（ホスト）</span><strong>準備完了'));
+    assert.ok(waiting.includes('&lt;Bob&gt;（あなた）</span><strong>準備中'));
+    assert.ok(waiting.includes('data-ui-action="setOnlineLobbyReady" data-ready="true" aria-pressed="false"'));
+    assert.ok(waiting.includes('準備完了にする'));
+
+    const ready = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
+        myPlayerIndex: 1,
+        participants: [{ index: 1, name: 'Bob', connected: true, ready: true }],
+    });
+    assert.ok(ready.includes('data-ready="false" aria-pressed="true"'));
+    assert.ok(ready.includes('準備を取り消す'));
 });
 
 runTest('online room shareはClipboard成功時に正規化IDを通知する', async () => {

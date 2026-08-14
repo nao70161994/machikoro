@@ -137,6 +137,16 @@ function buildWinnerStatusText(options = {}) {
     return `ゲーム終了。${String(winner.name || '')}の勝利。${winnerType}プレイヤー、${options.turnCount}ターン。`;
 }
 
+function buildShareText(options = {}) {
+    const winner = options.winner;
+    const players = Array.isArray(options.players) ? options.players : [];
+    if (!winner || players.length === 0) return '';
+    const standings = players.slice().sort((left, right) => right.coins - left.coins)
+        .map((player, index) => `${index + 1}位 ${player.name} ${player.coins}コイン`)
+        .join('\n');
+    return `🏙️ ダイスシティ 対戦結果\n🏆 ${winner.name}の勝利\n${Number(options.turnCount) || 0}ターン\n${standings}`;
+}
+
 function createGameOriginController() {
     let online = false;
     return Object.freeze({
@@ -162,7 +172,7 @@ function buildWinnerScreenHtml(options = {}) {
         : (options.canRematch
             ? '<button id="winnerRematchButton" class="winner-primary-action" data-ui-action="rematchLocalGame">同じ設定でもう一度</button>'
             : '');
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}${rematchButton}<button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
+    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}${rematchButton}<button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;
@@ -184,6 +194,7 @@ const UiWinner = Object.freeze({
     buildWinStreakHtml,
     buildGameReview,
     buildWinnerStatusText,
+    buildShareText,
     buildWinnerScreenHtml,
 });
 

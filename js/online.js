@@ -117,6 +117,14 @@ function startOnlineLobbyNow() {
     });
 }
 
+function setOnlineLobbyReady(ready) {
+    const session = onlineSessionSnapshot();
+    if (session.isOnlineGame || !session.myRoomId || !session.socket || typeof ready !== 'boolean') {
+        return false;
+    }
+    return onlineSocketEffects.setWaitingReady({ roomId: session.myRoomId, ready }, session.socket);
+}
+
 function onlineGameRuntimeSnapshot() {
     return onlineComposition.snapshotGame();
 }

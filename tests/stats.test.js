@@ -63,11 +63,13 @@ function makeGame() {
         players: [
             {
                 name: 'Alice',
+                coins: 12,
                 cards: [{ name: '麦畑' }],
                 landmarks: { 駅: true, 港: false },
             },
             {
                 name: 'Bob',
+                coins: 6,
                 cards: [{ name: 'パン屋' }],
                 landmarks: { 駅: false, 港: false },
             },
@@ -125,6 +127,10 @@ runTest('recordGameStats はローカル成績を all と local に記録する'
     assert.strictEqual(stats.local.wins, 1);
     assert.strictEqual(stats.players.Alice.totalGames, 1);
     assert.strictEqual(stats.players.Bob.totalGames, 1);
+    assert.strictEqual(stats.playerCounts['2'].totalGames, 2);
+    assert.strictEqual(stats.playerCounts['2'].totalFinalCoins, 18);
+    assert.strictEqual(stats.playerCounts['2'].totalFinalFacilities, 2);
+    assert.strictEqual(stats.playerCounts['2'].totalFinalLandmarks, 1);
 });
 
 runTest('recordGameStats はオンライン成績を all と online に記録する', () => {
@@ -207,6 +213,17 @@ runTest('renderStats はCPU別フィルタを表示する', () => {
     rt.recordGameStats(game.players[0], game, [{ difficulty: 'expert' }, null]);
     rt.renderStats();
     assert.ok(rt.__test.statsEl.innerHTML.includes('data-player-name="CPU（最強）"'));
+});
+
+runTest('renderStats は人数別filterと最終盤面平均を表示する', () => {
+    const rt = loadStatsRuntime();
+    const game = makeGame();
+    rt.recordGameStats(game.players[0], game, [null, null]);
+    rt.renderStats();
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-player-name="人数:2"'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('2人戦'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('最終盤面の平均'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('施設枚数'));
 });
 
 runTest('loadStats は壊れた数値を表示前に正規化する', () => {

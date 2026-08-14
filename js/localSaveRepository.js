@@ -7,7 +7,9 @@ const LocalSaveRepositorySnapshot = typeof module !== 'undefined' && module.expo
 const LOCAL_SAVE_KEYS = Object.freeze({
     legacy: 'savedGame',
     versioned: 'savedGameV1',
+    history: 'savedGameHistoryV1',
 });
+const MAX_PREVIOUS_SAVES = 2;
 
 /**
  * @typedef {Object} LocalSaveStorage
@@ -35,7 +37,27 @@ function createLocalSaveRepository(options) {
     const snapshot = options.snapshot || LocalSaveRepositorySnapshot;
     const versionedEnabled = options.versionedEnabled === true;
 
+    function readHistoryEntries() {
+        const raw = storage.get(LOCAL_SAVE_KEYS.history, null);
+        if (typeof raw !== 'string' || !raw) return [];
+        try {
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed.filter(entry => entry && typeof entry === 'object' && entry.state)
+                .slice(0, MAX_PREVIOUS_SAVES) : [];
+        } catch (_) {
+            return [];
+        }
+    }
+
+    function rotateCurrentIntoHistory() {
+        const current = decode(LOCAL_SAVE_KEYS.legacy);
+        if (!current) return;
+        const entries = [{ state: current.state }, ...readHistoryEntries()].slice(0, MAX_PREVIOUS_SAVES);
+        storage.set(LOCAL_SAVE_KEYS.history, JSON.stringify(entries));
+    }
+
     function save(state) {
+        rotateCurrentIntoHistory();
         const legacyWritten = storage.set(LOCAL_SAVE_KEYS.legacy, JSON.stringify(state)) === true;
         let versionedWritten = false;
         if (legacyWritten && versionedEnabled) {
@@ -60,7 +82,14 @@ function createLocalSaveRepository(options) {
         }
     }
 
-    function read(validate) {
+    function read(validate, generationIndex = 0) {
+        if (Number.isInteger(generationIndex) && generationIndex > 0) {
+            const entry = readHistoryEntries()[generationIndex - 1];
+            const state = entry && entry.state;
+            if (!state || (typeof validate === 'function' && !validate(state))) return failedRead();
+            return Object.freeze({ ok: true, state, schemaVersion: 0,
+                sourceKey: LOCAL_SAVE_KEYS.history, legacy: true });
+        }
         if (!storage.get(LOCAL_SAVE_KEYS.legacy, null)) return failedRead();
         const keys = versionedEnabled
             ? [LOCAL_SAVE_KEYS.versioned, LOCAL_SAVE_KEYS.legacy]
@@ -92,13 +121,14 @@ function createLocalSaveRepository(options) {
     function remove() {
         storage.remove(LOCAL_SAVE_KEYS.legacy);
         storage.remove(LOCAL_SAVE_KEYS.versioned);
+        storage.remove(LOCAL_SAVE_KEYS.history);
     }
 
     function exists() {
         return !!storage.get(LOCAL_SAVE_KEYS.legacy, null);
     }
 
-    return Object.freeze({ save, read, remove, exists });
+    return Object.freeze({ save, read, readHistory: readHistoryEntries, remove, exists });
 }
 
 const LocalSaveRepository = Object.freeze({

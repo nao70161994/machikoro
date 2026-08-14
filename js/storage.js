@@ -190,6 +190,9 @@ function updateResumeButton() {
         readOnlineSession()
     );
     localResumeEffects.applyResumeSections(view);
+    localResumeEffects.applyGenerationOptions(
+        LocalResumeView.generationOptions(getLocalSaveRepository().readHistory().length)
+    );
 }
 
 function readOnlineSession() {
@@ -297,7 +300,12 @@ function resumeGame(options = {}) {
     if (initialDecision !== 'read-save') return false;
     let validatedSave = false;
     try {
-        const decoded = repository.read(isValidSavedGameState);
+        const generationElement = typeof document !== 'undefined'
+            ? document.getElementById('localSaveGeneration') : null;
+        const generationIndex = Number.isInteger(options.generationIndex)
+            ? options.generationIndex
+            : Number.parseInt(generationElement && generationElement.value || '0', 10) || 0;
+        const decoded = repository.read(isValidSavedGameState, generationIndex);
         const decodedState = decoded && decoded.state;
         const savedCpuSettings = decodedState ? normalizeSavedCpuSettings(decodedState) : [];
         const canPreloadRl = typeof RLModelPortfolio !== 'undefined' &&
@@ -329,7 +337,7 @@ function resumeGame(options = {}) {
                 showNotice("深層学習AIモデルを読み込んでいます。");
                 preload.then(() => {
                     if (!finishLocalResumePreload(resumeGeneration)) return;
-                    resumeGame({ fromPreload: true, skipRlPreload: true });
+                    resumeGame({ fromPreload: true, skipRlPreload: true, generationIndex });
                 }).catch(error => {
                     if (!finishLocalResumePreload(resumeGeneration)) return;
                     console.error(error);

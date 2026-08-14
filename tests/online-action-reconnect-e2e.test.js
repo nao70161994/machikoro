@@ -53,6 +53,7 @@ runTest('online action reconnect e2e: build/undo residual„Å®TV pending snapshot„
             clientVersion: 'action-reconnect-e2e',
         });
         const created = await createdPromise;
+        clients[0].emit('setWaitingReady', { roomId: created.roomId, ready: true });
         const joinedPromise = onceEvent(clients[1], 'roomJoined');
         clients[1].emit('joinRoom', {
             roomId: created.roomId,
@@ -60,6 +61,7 @@ runTest('online action reconnect e2e: build/undo residual„Å®TV pending snapshot„
             clientVersion: 'action-reconnect-e2e',
         });
         const joined = await joinedPromise;
+        clients[1].emit('setWaitingReady', { roomId: created.roomId, ready: true });
         const gameStarts = await Promise.all(starts);
         const start = gameStarts[0];
         const credentials = { roomId: created.roomId, tokens: [created.reconnectToken, joined.reconnectToken] };

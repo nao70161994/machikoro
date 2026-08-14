@@ -4,6 +4,7 @@ const LocalResumeEffects = (() => {
     /**
      * @typedef {{
      *   disabled?: boolean,
+     *   innerHTML?: string,
      *   textContent?: string | null,
      *   style?: { display: string },
      * }} ResumeElement
@@ -49,7 +50,18 @@ const LocalResumeEffects = (() => {
             if (onlineDescription) onlineDescription.textContent = view.onlineDescription;
         }
 
-        return Object.freeze({ applyPendingButton, applyResumeSections });
+        function applyGenerationOptions(options) {
+            const select = dependencies.getElementById('localSaveGeneration');
+            const label = dependencies.getElementById('localSaveGenerationLabel');
+            if (!select) return false;
+            select.innerHTML = (options || []).map(option =>
+                `<option value="${option.value}">${option.label}</option>`
+            ).join('');
+            if (label && label.style) label.style.display = options && options.length > 1 ? 'flex' : 'none';
+            return true;
+        }
+
+        return Object.freeze({ applyPendingButton, applyResumeSections, applyGenerationOptions });
     }
 
     return Object.freeze({ create });

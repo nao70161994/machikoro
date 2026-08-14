@@ -25,6 +25,7 @@ async function createStartedRoom(clients, names) {
         clientVersion: 'rejoin-room-lifecycle-e2e',
     });
     const created = await createdPromise;
+    clients[0].emit('setWaitingReady', { roomId: created.roomId, ready: true });
     const joinedPromise = onceEvent(clients[1], 'roomJoined');
     clients[1].emit('joinRoom', {
         roomId: created.roomId,
@@ -32,6 +33,7 @@ async function createStartedRoom(clients, names) {
         clientVersion: 'rejoin-room-lifecycle-e2e',
     });
     const joined = await joinedPromise;
+    clients[1].emit('setWaitingReady', { roomId: created.roomId, ready: true });
     await Promise.all(starts);
     return { roomId: created.roomId, tokens: [created.reconnectToken, joined.reconnectToken] };
 }

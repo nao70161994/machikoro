@@ -82,7 +82,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
             lastTouchedAt: createdAt,
             enabledCards: selectedCards,
             enabledLandmarks: selectedLandmarks,
-            players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken, gameSchemaCapabilities: schemaResolution.capabilities }],
+            players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken, ready: false, gameSchemaCapabilities: schemaResolution.capabilities }],
             hostPlayerIndex: hostIndex,
             hostEpoch: 0,
             actionSeq: 0,
@@ -127,7 +127,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         if (!schemaCandidate.ok) { emitAppError(socket, 'SCHEMA_VERSION_UNSUPPORTED'); return; }
         const reconnectToken = generateReconnectToken();
         room.lastTouchedAt = now();
-        room.players.push({ id: socket.id, name: playerName, index: playerIndex, reconnectToken, gameSchemaCapabilities: schemaResolution.capabilities });
+        room.players.push({ id: socket.id, name: playerName, index: playerIndex, reconnectToken, ready: false, gameSchemaCapabilities: schemaResolution.capabilities });
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;
@@ -168,6 +168,24 @@ function registerLobbySocketHandlers(socket, dependencies) {
         io.to(roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room));
     });
 
+    socket.on('setWaitingReady', payload => {
+        if (!requirePlainSocketPayload(socket, payload)) return;
+        const roomId = typeof payload.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
+        const room = rooms[roomId];
+        const player = room && room.players.find(candidate =>
+            candidate.index === socket.playerIndex && candidate.id === socket.id
+        );
+        if (!room || room.started || socket.roomId !== roomId || !player ||
+                typeof payload.ready !== 'boolean') {
+            emitAppError(socket, '準備状態を変更できません');
+            return;
+        }
+        player.ready = payload.ready;
+        room.lastTouchedAt = now();
+        io.to(roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room));
+        checkGameStart(io, roomId);
+    });
+
     socket.on('manageWaitingRoom', payload => {
         if (!requirePlainSocketPayload(socket, payload)) return;
         const roomId = typeof payload.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
@@ -180,6 +198,10 @@ function registerLobbySocketHandlers(socket, dependencies) {
         if (payload.action === 'start') {
             if (room.players.some(player => !player.id) || room.players.length < 1) {
                 emitAppError(socket, '再接続待ちの参加者がいるため開始できません');
+                return;
+            }
+            if (room.players.some(player => player.ready === false)) {
+                emitAppError(socket, '全員が準備完了になるまで開始できません');
                 return;
             }
             if (room.playerSettings.length === 0) {

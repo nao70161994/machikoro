@@ -76,6 +76,16 @@ runTest('main UI event runtimeは待機室退出を既存command経路へ渡す'
     ]);
 });
 
+runTest('main UI event runtimeは待機室準備状態と結果共有を既存command経路へ渡す', () => {
+    const h = createHarness();
+    h.runtime.handleStaticClick(h.event({ uiAction: 'setOnlineLobbyReady', ready: 'true' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'shareGameResult' }));
+    assert.deepStrictEqual(h.calls, [
+        ['preventDefault'], ['setOnlineLobbyReady', true],
+        ['preventDefault'], ['shareGameResult'],
+    ]);
+});
+
 runTest('main UI event runtimeはroom IDのEnterを既存join effectへ一度だけ渡す', () => {
     const h = createHarness();
     const keyEvent = (extra = {}) => ({

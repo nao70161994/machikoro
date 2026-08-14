@@ -39,9 +39,9 @@ runTest('room projection はロビー表示と開始名を同じroom設定から
     assert.deepStrictEqual(projection.buildLobbyState(room), {
         hostPlayerIndex: undefined,
         participants: [
-            { index: 1, name: 'Alice', connected: true },
-            { index: 3, name: 'Bob', connected: true },
-            { index: 9, name: 'Ghost', connected: true },
+            { index: 1, name: 'Alice', connected: true, ready: true },
+            { index: 3, name: 'Bob', connected: true, ready: true },
+            { index: 9, name: 'Ghost', connected: true, ready: true },
         ],
     });
 });
@@ -54,9 +54,9 @@ runTest('room projection は予約席を待機室管理用の切断状態へ投�
     assert.deepStrictEqual(projection.buildLobbyState(room), {
         hostPlayerIndex: 1,
         participants: [
-            { index: 1, name: 'Alice', connected: true },
-            { index: 3, name: 'Bob', connected: false },
-            { index: 9, name: 'Ghost', connected: true },
+            { index: 1, name: 'Alice', connected: true, ready: true },
+            { index: 3, name: 'Bob', connected: false, ready: true },
+            { index: 9, name: 'Ghost', connected: true, ready: true },
         ],
     });
 });

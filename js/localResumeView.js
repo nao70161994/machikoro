@@ -19,7 +19,15 @@ const LocalResumeView = (() => {
         });
     }
 
-    return Object.freeze({ pendingButton, resumeSections });
+    function generationOptions(previousCount) {
+        const count = Number.isInteger(previousCount) ? Math.max(0, Math.min(2, previousCount)) : 0;
+        return Object.freeze(Array.from({ length: count + 1 }, (_, index) => Object.freeze({
+            value: index,
+            label: index === 0 ? '最新の保存' : `${index}つ前の保存`,
+        })));
+    }
+
+    return Object.freeze({ pendingButton, resumeSections, generationOptions });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = LocalResumeView;

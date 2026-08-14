@@ -39,11 +39,13 @@ async function startPair(origin, host, guest, suffix, hostCapabilities, guestCap
         clientVersion: 'schema-e2e',
     }, hostCapabilities));
     const created = await createdPromise;
+    host.emit('setWaitingReady', { roomId: created.roomId, ready: true });
     const joinedPromise = onceEvent(guest, 'roomJoined');
     guest.emit('joinRoom', capabilityPayload({
         roomId: created.roomId, playerName: 'Guest-' + suffix, clientVersion: 'schema-e2e',
     }, guestCapabilities));
     const joined = await joinedPromise;
+    guest.emit('setWaitingReady', { roomId: created.roomId, ready: true });
     const gameStarts = await Promise.all(starts);
     return { created, joined, gameStarts };
 }

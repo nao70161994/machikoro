@@ -264,6 +264,8 @@ function renderWinnerState(winner) {
         },
         clearSavedGame() {
             safeUiStorageRemove('savedGame');
+            safeUiStorageRemove('savedGameV1');
+            safeUiStorageRemove('savedGameHistoryV1');
         },
         clearOnlineSession() {
             if (!UiWinner.gameOriginRuntime.wasOnline()) clearOnlineSessionAfterWin();
@@ -297,6 +299,29 @@ function renderWinnerState(winner) {
             if (action && typeof action.focus === 'function') action.focus();
         },
     });
+}
+
+async function shareGameResult() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const winner = currentGame && currentGame.checkWinner();
+    const text = currentGame && UiWinner.buildShareText({
+        winner,
+        players: currentGame.players,
+        turnCount: currentGame.turnCount,
+    });
+    if (!text || typeof navigator === 'undefined' || !navigator.clipboard ||
+            typeof navigator.clipboard.writeText !== 'function') {
+        showNotice('この端末では結果をコピーできませんでした');
+        return false;
+    }
+    try {
+        await navigator.clipboard.writeText(text);
+        showNotice('対戦結果をコピーしました。共有先へ貼り付けてください');
+        return true;
+    } catch (_) {
+        showNotice('この端末では結果をコピーできませんでした');
+        return false;
+    }
 }
 
 function renderActiveGameState(current) {

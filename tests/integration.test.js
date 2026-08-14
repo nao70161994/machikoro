@@ -665,7 +665,7 @@ runTest('integration: online待機一覧は参加枠と自動開始条件を説�
 
     const panel = rt.__test.elements.onlineWaitingPanel.innerHTML;
     assert.ok(panel.includes('参加枠（3枠）: Alice、待機中...、CPU（普通）'));
-    assert.ok(panel.includes('参加枠が揃うと自動開始します'));
+    assert.ok(panel.includes('参加枠が揃い、全員が準備完了になると自動開始します'));
     assert.ok(!panel.includes('(3人)'));
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent,
         'ルーム ROOM01。3枠中2人が参加しています。');

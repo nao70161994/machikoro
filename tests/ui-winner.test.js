@@ -85,6 +85,25 @@ runTest('ui winnerはscore順・winner強調・escape契約を維持する', () 
     assert.deepStrictEqual(players, [winner, leader]);
 });
 
+runTest('ui winnerは順位付きの共有テキストとコピー導線を生成する', () => {
+    const players = [
+        { name: 'Alice', coins: 18 },
+        { name: 'Bob', coins: 24 },
+    ];
+    assert.strictEqual(UiWinner.buildShareText({
+        winner: players[1],
+        players,
+        turnCount: 11,
+    }), '🏙️ ダイスシティ 対戦結果\n🏆 Bobの勝利\n11ターン\n1位 Bob 24コイン\n2位 Alice 18コイン');
+    const html = UiWinner.buildWinnerScreenHtml({
+        winner: players[1], players, turnCount: 11, escapeHtml,
+        logEntries: [], logTypes: {},
+    });
+    assert.ok(html.includes('data-ui-action="shareGameResult"'));
+    assert.ok(html.includes('結果を共有'));
+    assert.strictEqual(UiWinner.buildShareText({ players }), '');
+});
+
 runTest('ui winnerは10人同点のstable順と危険な名前のlist labelを維持する', () => {
     const players = Array.from({ length: 10 }, (_, index) => ({
         name: index === 4 ? '悪"<&\'' : `P${index + 1}`,

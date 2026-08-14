@@ -30,3 +30,15 @@ runTest('local resume viewはlocal saveとonline sessionの表示を独立投影
         onlineDescription: '🌐 オンラインゲームが中断されました',
     });
 });
+
+runTest('local resume viewは最新と最大2つ前までの世代選択肢を生成する', () => {
+    assert.deepStrictEqual(LocalResumeView.generationOptions(0), [
+        { value: 0, label: '最新の保存' },
+    ]);
+    assert.deepStrictEqual(LocalResumeView.generationOptions(3), [
+        { value: 0, label: '最新の保存' },
+        { value: 1, label: '1つ前の保存' },
+        { value: 2, label: '2つ前の保存' },
+    ]);
+    assert.ok(Object.isFrozen(LocalResumeView.generationOptions(2)));
+});

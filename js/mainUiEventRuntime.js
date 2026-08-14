@@ -9,9 +9,11 @@ const MainUiEventRuntime = (() => {
         'closeRules', 'closeCardDetail', 'hideNotice', 'crashResume', 'pwaInstallPrompt',
         'pwaInstallDismiss', 'copyOnlineRoomId', 'leaveOnlineLobby', 'removeOnlineLobbyPlayer',
         'changeOnlineLobbySlots', 'startOnlineLobbyNow', 'focusBuildMenu',
+        'setOnlineLobbyReady',
         'startCpuTournament', 'cancelCpuTournament',
         'showCpuTournamentHistory', 'replayCpuTournamentGame',
         'exportCpuTournamentJson', 'exportCpuTournamentCsv', 'clearCpuTournamentHistory',
+        'shareGameResult',
     ]);
 
     function createRuntime(dependencies = {}) {

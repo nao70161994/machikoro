@@ -10,6 +10,8 @@ function createElements() {
         resumeSection: { style: { display: '' } },
         onlineResumeSection: { style: { display: '' } },
         onlineResumeDescription: { textContent: '' },
+        localSaveGeneration: { innerHTML: '', style: { display: '' } },
+        localSaveGenerationLabel: { style: { display: 'none' } },
     };
 }
 
@@ -27,6 +29,22 @@ runTest('local resume effectsは既存selectorへpreload表示を反映する', 
         disabled: true,
         textContent: 'モデル読み込み中',
     });
+});
+
+runTest('local resume effectsは複数世代だけ選択UIを表示する', () => {
+    const elements = createElements();
+    const effects = LocalResumeEffects.create({
+        getElementById: id => elements[id] || null,
+    });
+    assert.strictEqual(effects.applyGenerationOptions([
+        { value: 0, label: '最新の保存' },
+        { value: 1, label: '1つ前の保存' },
+    ]), true);
+    assert.ok(elements.localSaveGeneration.innerHTML.includes('value="1"'));
+    assert.strictEqual(elements.localSaveGenerationLabel.style.display, 'flex');
+
+    effects.applyGenerationOptions([{ value: 0, label: '最新の保存' }]);
+    assert.strictEqual(elements.localSaveGenerationLabel.style.display, 'none');
 });
 
 runTest('local resume effectsはlocalとonlineの表示を同じ順序で反映する', () => {

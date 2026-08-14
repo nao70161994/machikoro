@@ -55,7 +55,11 @@ function createHarness(options = {}) {
         getGame: () => game,
         getRestoreEventHandlers: () => { calls.push(['getRestoreEventHandlers']); return handlers; },
         getRestoreGeneration: () => { calls.push(['getRestoreGeneration']); return generation; },
-        getSession: () => ({ myRoomId: 'ROOM01', isRoomHost: options.isRoomHost === true }),
+        getSession: () => ({
+            myRoomId: 'ROOM01',
+            isRoomHost: options.isRoomHost === true,
+            myOriginalPlayerIndex: Number.isInteger(options.myPlayerIndex) ? options.myPlayerIndex : 0,
+        }),
         incrementRestoreGeneration: () => { generation++; calls.push(['incrementRestoreGeneration', generation]); return generation; },
         initGame: (...args) => calls.push(['initGame', ...args]),
         logTypes: { SYSTEM: 'system' },
@@ -129,21 +133,23 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
     assert.strictEqual(harness.calls[0][0], 'renderWaitingLobby');
     assert.strictEqual(harness.calls[0][1], 'ルーム ROOM01。2枠中1人が参加しています。');
     assert.ok(harness.calls[0][2].includes('参加枠（2枠）: Alice、待機中...'));
-    assert.ok(harness.calls[0][2].includes('参加枠が揃うと自動開始します'));
+    assert.ok(harness.calls[0][2].includes('参加枠が揃い、全員が準備完了になると自動開始します'));
     assert.ok(harness.calls[0][2].includes('data-ui-action="copyOnlineRoomId"'));
 });
 
 runTest('online lobby start runtimeはhostへ参加者管理metadataを渡す', () => {
-    const harness = createHarness({ isRoomHost: true });
+    const harness = createHarness({ isRoomHost: true, myPlayerIndex: 0 });
     harness.runtime.handlePlayerList(['Alice', 'Bob'], {
         hostPlayerIndex: 0,
         participants: [
-            { index: 0, name: 'Alice', connected: true },
-            { index: 1, name: 'Bob', connected: true },
+            { index: 0, name: 'Alice', connected: true, ready: false },
+            { index: 1, name: 'Bob', connected: true, ready: true },
         ],
     });
     assert.ok(harness.calls[0][2].includes('removeOnlineLobbyPlayer'));
     assert.ok(harness.calls[0][2].includes('data-player-index="1"'));
+    assert.ok(harness.calls[0][2].includes('Alice（ホスト・あなた）'));
+    assert.ok(harness.calls[0][2].includes('data-ui-action="setOnlineLobbyReady" data-ready="true"'));
 });
 
 runTest('online game start runtimeはschemaからactive gameまで既存effect順を維持する', () => {

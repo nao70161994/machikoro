@@ -12,11 +12,15 @@ function statsModeLabel(mode) {
 }
 
 function emptyStatsBucket() {
-    return { totalGames: 0, wins: 0, totalTurns: 0, cardStats: {}, landmarkStats: {} };
+    return { totalGames: 0, wins: 0, totalTurns: 0, totalFinalCoins: 0,
+        totalFinalFacilities: 0, totalFinalLandmarks: 0, cardStats: {}, landmarkStats: {} };
 }
 
 function statsBucket(stats, viewMode, playerFilter) {
     if (playerFilter) {
+        if (playerFilter.startsWith('人数:')) {
+            return stats.playerCounts && stats.playerCounts[playerFilter.slice(3)] || emptyStatsBucket();
+        }
         return stats.players[playerFilter] || stats.cpuTypes[playerFilter] || emptyStatsBucket();
     }
     return stats[viewMode] || emptyStatsBucket();
@@ -26,6 +30,7 @@ function buildFilterTabsHtml(stats, viewMode, playerFilter, escapeHtml) {
     const escape = requireFunction(escapeHtml, 'escapeHtml');
     const playerNames = Object.keys(stats.players).sort((a, b) => a.localeCompare(b, 'ja'));
     const cpuLabels = Object.keys(stats.cpuTypes).sort((a, b) => a.localeCompare(b, 'ja'));
+    const playerCounts = Object.keys(stats.playerCounts || {}).sort((a, b) => Number(a) - Number(b));
     const modePressed = mode => !playerFilter && viewMode === mode;
     return `
         <div class="stats-filter-tabs">
@@ -38,6 +43,12 @@ function buildFilterTabsHtml(stats, viewMode, playerFilter, escapeHtml) {
         </div>` : ''}
         ${cpuLabels.length ? `<div class="stats-filter-group-label">CPU別</div><div class="stats-player-filters">
             ${cpuLabels.map(name => `<button class="stats-player-btn cpu ${playerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escape(name)}" aria-pressed="${playerFilter === name}">${escape(name)}</button>`).join('')}
+        </div>` : ''}
+        ${playerCounts.length ? `<div class="stats-filter-group-label">人数別</div><div class="stats-player-filters">
+            ${playerCounts.map(count => {
+                const value = `人数:${count}`;
+                return `<button class="stats-player-btn ${playerFilter === value ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${value}" aria-pressed="${playerFilter === value}">${count}人戦</button>`;
+            }).join('')}
         </div>` : ''}
         ${playerFilter ? `<div class="stats-player-filters"><button class="stats-player-btn clear" data-action="setStatsPlayerFilter" data-player-name="">解除</button></div>` : ''}
     `;
@@ -100,6 +111,9 @@ function buildStatsHtml(stats, viewMode, playerFilter, escapeHtml) {
 
     const winRate = Math.round(bucket.wins / bucket.totalGames * 100);
     const avgTurns = Math.round(bucket.totalTurns / bucket.totalGames);
+    const avgCoins = Math.round((bucket.totalFinalCoins || 0) / bucket.totalGames * 10) / 10;
+    const avgFacilities = Math.round((bucket.totalFinalFacilities || 0) / bucket.totalGames * 10) / 10;
+    const avgLandmarks = Math.round((bucket.totalFinalLandmarks || 0) / bucket.totalGames * 10) / 10;
     const cardRows = buildCardRowsHtml(bucket, escape);
     const landmarkRows = buildLandmarkRowsHtml(bucket, escape);
     return `
@@ -119,6 +133,13 @@ function buildStatsHtml(stats, viewMode, playerFilter, escapeHtml) {
                 <div class="stats-big">${avgTurns}</div>
                 <div class="stats-ov-label">平均ターン</div>
             </div>
+        </div>
+
+        <div class="stats-section-title">📊 最終盤面の平均</div>
+        <div class="stats-overview stats-final-overview">
+            <div class="stats-overview-item"><div class="stats-big">${avgCoins}</div><div class="stats-ov-label">コイン</div></div>
+            <div class="stats-overview-item"><div class="stats-big">${avgFacilities}</div><div class="stats-ov-label">施設枚数</div></div>
+            <div class="stats-overview-item"><div class="stats-big">${avgLandmarks}</div><div class="stats-ov-label">ランドマーク</div></div>
         </div>
 
         <div class="stats-section-title">🃏 カード勝率ランキング <span class="stats-hint">3戦以上・所持時の勝率</span></div>

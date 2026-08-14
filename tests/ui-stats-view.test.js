@@ -18,10 +18,13 @@ function makeStats() {
         totalGames: 0,
         wins: 0,
         totalTurns: 0,
+        totalFinalCoins: 0,
+        totalFinalFacilities: 0,
+        totalFinalLandmarks: 0,
         cardStats: {},
         landmarkStats: {},
     });
-    return { all: empty(), local: empty(), online: empty(), players: {}, cpuTypes: {} };
+    return { all: empty(), local: empty(), online: empty(), players: {}, cpuTypes: {}, playerCounts: {} };
 }
 
 runTest('stats viewはmode/player bucketを入力非変更で選ぶ', () => {
@@ -134,6 +137,26 @@ runTest('stats viewはplayer filterの選択状態をaria-pressedへ反映する
 
     assert.ok(html.includes('data-stats-mode="all" aria-pressed="false"'));
     assert.ok(html.includes('data-player-name="Alice" aria-pressed="true"'));
+});
+
+runTest('stats viewは人数別bucketと最終盤面平均を表示する', () => {
+    const stats = makeStats();
+    stats.playerCounts['4'] = {
+        ...makeStats().all,
+        totalGames: 2,
+        wins: 1,
+        totalTurns: 16,
+        totalFinalCoins: 15,
+        totalFinalFacilities: 9,
+        totalFinalLandmarks: 5,
+    };
+    const html = UiStatsView.buildStatsHtml(stats, 'all', '人数:4', escapeHtml);
+    assert.ok(html.includes('data-player-name="人数:4" aria-pressed="true"'));
+    assert.ok(html.includes('4人戦'));
+    assert.ok(html.includes('人数:4の成績'));
+    assert.ok(html.includes('<div class="stats-big">7.5</div><div class="stats-ov-label">コイン</div>'));
+    assert.ok(html.includes('<div class="stats-big">4.5</div><div class="stats-ov-label">施設枚数</div>'));
+    assert.ok(html.includes('<div class="stats-big">2.5</div><div class="stats-ov-label">ランドマーク</div>'));
 });
 
 runTest('stats viewはescape関数未注入をfail-fastに拒否する', () => {

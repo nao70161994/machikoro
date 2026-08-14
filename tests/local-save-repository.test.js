@@ -111,12 +111,39 @@ runTest('local save repositoryはflag OFFならv1 shadowをauthorityにしない
     assert.strictEqual(repository.read(() => true).ok, false);
 });
 
-runTest('local save repositoryの削除はlegacyとv1 shadowを同時に消す', () => {
-    const storage = makeStorage({ savedGame: '{}', savedGameV1: '{}' });
+runTest('local save repositoryは直前2世代を保持して世代指定で読み出す', () => {
+    const storage = makeStorage();
+    const repository = LocalSaveRepository.create({ storage });
+    repository.save({ players: [{ name: 'first' }] });
+    repository.save({ players: [{ name: 'second' }] });
+    repository.save({ players: [{ name: 'third' }] });
+    repository.save({ players: [{ name: 'latest' }] });
+
+    assert.deepStrictEqual(repository.readHistory().map(entry => entry.state.players[0].name), [
+        'third', 'second',
+    ]);
+    assert.strictEqual(repository.read(() => true, 0).state.players[0].name, 'latest');
+    assert.strictEqual(repository.read(() => true, 1).state.players[0].name, 'third');
+    assert.strictEqual(repository.read(() => true, 2).state.players[0].name, 'second');
+    assert.strictEqual(repository.read(() => true, 3).ok, false);
+});
+
+runTest('local save repositoryは不正な旧世代を検証してfail closedにする', () => {
+    const storage = makeStorage({
+        savedGame: JSON.stringify({ players: [{ name: 'latest' }] }),
+        savedGameHistoryV1: JSON.stringify([{ state: { invalid: true } }]),
+    });
+    const repository = LocalSaveRepository.create({ storage });
+    assert.strictEqual(repository.read(state => Array.isArray(state.players), 1).ok, false);
+});
+
+runTest('local save repositoryの削除はlegacy・v1 shadow・旧世代を同時に消す', () => {
+    const storage = makeStorage({ savedGame: '{}', savedGameV1: '{}', savedGameHistoryV1: '[]' });
     const repository = LocalSaveRepository.create({ storage, versionedEnabled: true });
 
     repository.remove();
 
     assert.strictEqual(storage.value(LocalSaveRepository.keys.legacy), null);
     assert.strictEqual(storage.value(LocalSaveRepository.keys.versioned), null);
+    assert.strictEqual(storage.value(LocalSaveRepository.keys.history), null);
 });

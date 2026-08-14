@@ -28,6 +28,7 @@ function makeRoomProjection({
                 index: player.index,
                 name: player.name,
                 connected: !!player.id,
+                ready: player.ready !== false,
             })),
         };
     }

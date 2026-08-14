@@ -147,6 +147,7 @@ const OnlineLobbyStartRuntime = (() => {
                     isHost: session.isRoomHost === true,
                     hostPlayerIndex: lobbyState.hostPlayerIndex,
                     participants: lobbyState.participants,
+                    myPlayerIndex: session.myOriginalPlayerIndex,
                 })
             );
         }

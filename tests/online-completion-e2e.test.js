@@ -201,6 +201,7 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
             clientVersion: 'completion-e2e',
         });
         const created = await createdPromise;
+        clients[0].emit('setWaitingReady', { roomId: created.roomId, ready: true });
         const tokens = [created.reconnectToken];
         for (let index = 1; index < clients.length; index++) {
             const joinedPromise = onceEvent(clients[index], 'roomJoined');
@@ -210,6 +211,7 @@ runTest('online completion e2e: 4人humanが通常ランドマーク戦を圧縮
                 clientVersion: 'completion-e2e',
             });
             tokens[index] = (await joinedPromise).reconnectToken;
+            clients[index].emit('setWaitingReady', { roomId: created.roomId, ready: true });
         }
         const gameStarts = await Promise.all(gameStartPromises);
         const gameStart = gameStarts[0];

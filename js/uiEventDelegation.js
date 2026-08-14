@@ -88,6 +88,7 @@ const UiEventDelegation = (() => {
             else if (name === 'copyOnlineRoomId') args = [element.dataset.roomId];
             else if (name === 'removeOnlineLobbyPlayer') args = [parseInt(element.dataset.playerIndex, 10)];
             else if (name === 'changeOnlineLobbySlots') args = [parseInt(element.dataset.delta, 10)];
+            else if (name === 'setOnlineLobbyReady') args = [element.dataset.ready === 'true'];
             else if (name === 'showCpuTournamentHistory') args = [element.dataset.historyIndex];
             else if (name === 'replayCpuTournamentGame') {
                 args = [element.dataset.historyIndex, parseInt(element.dataset.gameIndex, 10)];

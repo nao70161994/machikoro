@@ -36,9 +36,22 @@ const OnlineRoomShare = (() => {
             ? `<div class="waiting-players">参加枠（${players.length}枠）: ${players.map(escapeText).join('、')}</div>`
             : '<div class="waiting-players">プレイヤーを待っています...</div>';
         const startHelp = hasWaitingSlot
-            ? '<p class="room-share-start-help">参加枠が揃うと自動開始します。</p>'
+            ? '<p class="room-share-start-help">参加枠が揃い、全員が準備完了になると自動開始します。</p>'
             : '';
         const participants = Array.isArray(options.participants) ? options.participants : [];
+        const selfParticipant = participants.find(player => player.index === options.myPlayerIndex);
+        const readiness = participants.length > 0
+            ? `<section class="room-readiness" aria-label="参加者の準備状態"><h4>準備状態</h4><ul>${participants.map(player => {
+                const roles = [
+                    player.index === options.hostPlayerIndex ? 'ホスト' : '',
+                    player.index === options.myPlayerIndex ? 'あなた' : '',
+                    player.connected === false ? '再接続待ち' : '',
+                ].filter(Boolean);
+                const participantLabel = `${player.name}${roles.length ? `（${roles.join('・')}）` : ''}`;
+                const stateLabel = player.ready === false ? '準備中' : '準備完了';
+                return `<li><span>${escapeText(participantLabel)}</span><strong>${stateLabel}</strong></li>`;
+            }).join('')}</ul>${selfParticipant ? `<button type="button" class="room-ready-btn" data-ui-action="setOnlineLobbyReady" data-ready="${selfParticipant.ready === false ? 'true' : 'false'}" aria-pressed="${selfParticipant.ready === false ? 'false' : 'true'}">${selfParticipant.ready === false ? '準備完了にする' : '準備を取り消す'}</button>` : ''}<p class="room-ready-help">参加者が揃い、全員が準備完了になると開始します。</p></section>`
+            : '';
         const hostControls = options.isHost === true
             ? participants.filter(player => Number.isInteger(player.index) && player.index !== options.hostPlayerIndex)
                 .map(player => {
@@ -62,6 +75,7 @@ const OnlineRoomShare = (() => {
             <p class="room-share-help">この6文字を参加者に共有してください。</p>
             ${playerList}
             ${startHelp}
+            ${readiness}
             ${management}
             <button type="button" class="room-leave-btn" data-ui-action="leaveOnlineLobby">待機室から退出</button>
         </div>`;

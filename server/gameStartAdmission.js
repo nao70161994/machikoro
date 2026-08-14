@@ -9,6 +9,7 @@ const GAME_START_SKIP_REASONS = Object.freeze({
     MISSING_ROOM: 'missing-room',
     ALREADY_STARTED: 'already-started',
     WAITING_HUMAN_SLOTS: 'waiting-human-slots',
+    WAITING_READY_PLAYERS: 'waiting-ready-players',
 });
 
 function planGameStart(room, requiredHumanSlots) {
@@ -29,6 +30,12 @@ function planGameStart(room, requiredHumanSlots) {
         return Object.freeze({
             decision: GAME_START_DECISIONS.SKIP,
             reason: GAME_START_SKIP_REASONS.WAITING_HUMAN_SLOTS,
+        });
+    }
+    if (room.players.some(player => player && player.id !== null && player.ready === false)) {
+        return Object.freeze({
+            decision: GAME_START_DECISIONS.SKIP,
+            reason: GAME_START_SKIP_REASONS.WAITING_READY_PLAYERS,
         });
     }
     return Object.freeze({

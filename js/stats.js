@@ -26,7 +26,8 @@ function escapeStatsHtml(value) {
 }
 
 function createEmptyStatsBucket() {
-    return { totalGames: 0, wins: 0, totalTurns: 0, cardStats: {}, landmarkStats: {} };
+    return { totalGames: 0, wins: 0, totalTurns: 0, totalFinalCoins: 0,
+        totalFinalFacilities: 0, totalFinalLandmarks: 0, cardStats: {}, landmarkStats: {} };
 }
 
 function createDefaultStats() {
@@ -36,6 +37,7 @@ function createDefaultStats() {
         online: createEmptyStatsBucket(),
         players: {},
         cpuTypes: {},
+        playerCounts: {},
     };
 }
 
@@ -64,6 +66,9 @@ function cloneStatsBucket(bucket) {
         totalGames,
         wins,
         totalTurns: normalizeStatsNumber(source.totalTurns),
+        totalFinalCoins: normalizeStatsNumber(source.totalFinalCoins),
+        totalFinalFacilities: normalizeStatsNumber(source.totalFinalFacilities),
+        totalFinalLandmarks: normalizeStatsNumber(source.totalFinalLandmarks),
         cardStats: cloneStatsResultMap(source.cardStats),
         landmarkStats: cloneStatsResultMap(source.landmarkStats),
     };
@@ -75,11 +80,15 @@ function normalizeStats(raw) {
     if (raw.all && raw.local && raw.online) {
         const players = {};
         const cpuTypes = {};
+        const playerCounts = {};
         for (const [name, bucket] of Object.entries(raw.players || {})) {
             players[name] = cloneStatsBucket(bucket);
         }
         for (const [name, bucket] of Object.entries(raw.cpuTypes || {})) {
             cpuTypes[name] = cloneStatsBucket(bucket);
+        }
+        for (const [count, bucket] of Object.entries(raw.playerCounts || {})) {
+            if (/^[2-9]$|^10$/.test(count)) playerCounts[count] = cloneStatsBucket(bucket);
         }
         return {
             all: cloneStatsBucket(raw.all),
@@ -87,6 +96,7 @@ function normalizeStats(raw) {
             online: cloneStatsBucket(raw.online),
             players,
             cpuTypes,
+            playerCounts,
         };
     }
     // 旧形式はローカル統計として扱う
@@ -97,6 +107,7 @@ function normalizeStats(raw) {
         online: createEmptyStatsBucket(),
         players: {},
         cpuTypes: {},
+        playerCounts: {},
     };
 }
 
@@ -147,6 +158,9 @@ function updateStatsBucket(bucket, player, won, game) {
     bucket.totalGames++;
     if (won) bucket.wins++;
     bucket.totalTurns += game.turnCount || 0;
+    bucket.totalFinalCoins += Number.isFinite(player.coins) ? Math.max(0, Math.floor(player.coins)) : 0;
+    bucket.totalFinalFacilities += Array.isArray(player.cards) ? player.cards.length : 0;
+    bucket.totalFinalLandmarks += Object.values(player.landmarks || {}).filter(Boolean).length;
 
     for (const card of player.cards) {
         if (!bucket.cardStats[card.name]) bucket.cardStats[card.name] = { winWith: 0, loseWith: 0 };
@@ -188,6 +202,7 @@ function getFilteredStatsBucket(stats, filterName) {
     if (!filterName) return null;
     if (stats.players[filterName]) return stats.players[filterName];
     if (stats.cpuTypes[filterName]) return stats.cpuTypes[filterName];
+    if (filterName.startsWith('人数:')) return stats.playerCounts[filterName.slice(3)] || createEmptyStatsBucket();
     return createEmptyStatsBucket();
 }
 
@@ -207,6 +222,9 @@ function recordGameStats(winner, game, cpuPlayers) {
         updateStatsBucket(stats.all, player, won, game);
         updateStatsBucket(stats[mode], player, won, game);
         updateNamedStats(stats, target, player, won, game);
+        const countKey = String(game.players.length);
+        if (!stats.playerCounts[countKey]) stats.playerCounts[countKey] = createEmptyStatsBucket();
+        updateStatsBucket(stats.playerCounts[countKey], player, won, game);
     }
     saveStats(stats);
 }

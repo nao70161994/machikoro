@@ -34,6 +34,17 @@ runTest('game start admissionは開始条件を理由付きplanへ正規化す�
         decision: GAME_START_DECISIONS.SKIP,
         reason: GAME_START_SKIP_REASONS.WAITING_HUMAN_SLOTS,
     });
+    assert.deepStrictEqual(planGameStart({
+        started: false,
+        players: [{ id: 'a', ready: true }, { id: 'b', ready: false }],
+    }, 2), {
+        decision: GAME_START_DECISIONS.SKIP,
+        reason: GAME_START_SKIP_REASONS.WAITING_READY_PLAYERS,
+    });
+    assert.strictEqual(planGameStart({
+        started: false,
+        players: [{ id: 'a' }, { id: 'b' }],
+    }, 2).decision, GAME_START_DECISIONS.START);
 });
 
 runTest('game start runtimeはmark、emit、logを契約順に一度だけ実行する', () => {
