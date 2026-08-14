@@ -269,7 +269,7 @@ function renderWinnerState(winner) {
         isCpuWinner: isCPUWinner,
         turnCount: currentGame.turnCount,
         winStreak: streakState.winStreak,
-        logEntries: fullLog,
+        logEntries: logHistoryController.snapshot().entries,
         logTypes: LOG_TYPES,
         reviewSummary: currentGame.reviewSummary,
         canRematch: !UiWinner.gameOriginRuntime.wasOnline(),

@@ -73,7 +73,6 @@ function loadUiRuntime(options = {}) {
         tutorialLevel: 'beginner',
         prevPlayerIndex: -1,
         prevLogLength: 0,
-        fullLog: [],
         announcerTimer: null,
         timeoutDelays: [],
         cardFilter: '',
@@ -859,6 +858,7 @@ runTest('render helper は勝利・通常描画・保存境界へ分かれてい
 
 runTest('renderWinnerState はローカル終了時に既存オンライン復元bundleを消す', () => {
     const { context, elements } = loadUiRuntime();
+    assert.strictEqual(context.fullLog, undefined);
     const winner = { name: 'Alice', coins: 20, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
     const opponent = { name: 'Bob', coins: 3, cards: [], landmarks: {}, itVentureCoins: 0, isDormant() { return false; } };
     context.game = {
