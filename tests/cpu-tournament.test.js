@@ -121,6 +121,24 @@ runTest('CPU大会履歴は最大10件を安全に保存しJSONとCSVへ出力�
     assert.deepStrictEqual(repository.load(), []);
 });
 
+runTest('CPU大会履歴は描画不能な破損recordを読み込まない', () => {
+    const validSummary = CpuTournament.createSummary({ games: 10, playerCount: 2, seed: 9 });
+    CpuTournament.recordResult(validSummary, {
+        seed: 9, difficulties: ['weak', 'normal'], winner: 0, turns: 7,
+        exhausted: false, finalState: [{ coins: 3, cards: [], landmarks: [] },
+            { coins: 1, cards: [], landmarks: [] }],
+    });
+    const valid = CpuTournament.historyRecord(CpuTournament.projectSummary(validSummary), 100);
+    const emptyRankings = { ...valid, rankings: [] };
+    const malformedGame = { ...valid, games: [{ ...valid.games[0], finalState: [] }] };
+    const storage = {
+        get: () => JSON.stringify([emptyRankings, malformedGame, valid]),
+        set: () => true,
+    };
+    const repository = CpuTournament.createHistoryRepository({ storage });
+    assert.deepStrictEqual(repository.load(), [valid]);
+});
+
 runTest('CPU大会分析は首位・決着幅・席順勝率を分離する', () => {
     const view = {
         playerCount: 2,

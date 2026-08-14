@@ -186,13 +186,44 @@ const CpuTournament = (() => {
         });
     }
 
+    function validHistoryRanking(entry) {
+        return !!entry && DIFFICULTIES.includes(entry.difficulty) &&
+            typeof entry.label === 'string' && entry.label.length > 0 &&
+            Number.isSafeInteger(entry.appearances) && entry.appearances >= 0 &&
+            Number.isSafeInteger(entry.wins) && entry.wins >= 0 && entry.wins <= entry.appearances &&
+            Number.isFinite(entry.winRate) && entry.winRate >= 0 && entry.winRate <= 100 &&
+            Number.isFinite(entry.averageTurns) && entry.averageTurns >= 0 &&
+            !!entry.favoriteCard && typeof entry.favoriteCard.name === 'string' &&
+            Number.isSafeInteger(entry.favoriteCard.count) && entry.favoriteCard.count >= 0;
+    }
+
+    function validHistoryGame(game, playerCount) {
+        return !!game && Number.isSafeInteger(game.index) && game.index >= 0 &&
+            Number.isSafeInteger(game.seed) && game.seed > 0 &&
+            Array.isArray(game.difficulties) && game.difficulties.length === playerCount &&
+            game.difficulties.every(difficulty => DIFFICULTIES.includes(difficulty)) &&
+            Number.isInteger(game.winner) && game.winner >= -1 && game.winner < playerCount &&
+            Number.isFinite(game.turns) && game.turns >= 0 &&
+            typeof game.exhausted === 'boolean' &&
+            Array.isArray(game.finalState) && game.finalState.length === playerCount &&
+            game.finalState.every(state => !!state && Number.isFinite(state.coins) &&
+                Array.isArray(state.cards) && state.cards.every(name => typeof name === 'string') &&
+                Array.isArray(state.landmarks) && state.landmarks.every(name => typeof name === 'string'));
+    }
+
     function validHistoryRecord(record) {
         return !!record && record.schemaVersion === HISTORY_SCHEMA &&
             Number.isSafeInteger(record.createdAt) && record.createdAt >= 0 &&
             [2, 3, 4].includes(record.playerCount) &&
             Number.isSafeInteger(record.seed) && record.seed > 0 &&
-            Array.isArray(record.games) && record.games.length <= 50 &&
-            Array.isArray(record.rankings);
+            Number.isSafeInteger(record.completedGames) && record.completedGames >= 0 &&
+            Number.isSafeInteger(record.requestedGames) && [10, 20, 50].includes(record.requestedGames) &&
+            record.completedGames <= record.requestedGames &&
+            Array.isArray(record.games) && record.games.length === record.completedGames &&
+            record.games.every(game => validHistoryGame(game, record.playerCount)) &&
+            Array.isArray(record.rankings) && record.rankings.length === DIFFICULTIES.length &&
+            record.rankings.every(validHistoryRanking) &&
+            new Set(record.rankings.map(entry => entry.difficulty)).size === DIFFICULTIES.length;
     }
 
     function createHistoryRepository(options = {}) {
