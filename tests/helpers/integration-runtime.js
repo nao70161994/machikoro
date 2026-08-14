@@ -161,7 +161,6 @@ function loadIntegrationRuntime(options = {}) {
         isOnlineGame: false,
         myPlayerIndex: 0,
         isReplaying: false,
-        fullLog: [],
         prevLogLength: 0,
         prevPlayerIndex: -1,
         announcerTimer: null,

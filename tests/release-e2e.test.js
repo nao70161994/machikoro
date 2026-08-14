@@ -178,7 +178,6 @@ function loadUiModalRuntime() {
         tutorialLevel: 'beginner',
         prevPlayerIndex: -1,
         prevLogLength: 0,
-        fullLog: [],
         announcerTimer: null,
         cardFilter: '',
         cpuPlayers: [null, null],
