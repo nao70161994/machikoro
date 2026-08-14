@@ -87,6 +87,8 @@ const OnlineRoomShare = (() => {
                 <button type="button" class="room-id-copy-btn" data-ui-action="copyOnlineRoomId" data-room-id="${safeRoomId}">IDをコピー</button>
             </div>
             <p class="room-share-help">この6文字を参加者に共有してください。</p>
+            <button type="button" class="room-qr-toggle" data-ui-action="toggleOnlineRoomQr" data-room-id="${safeRoomId}" aria-expanded="false">QRを表示</button>
+            <div class="room-qr-container" data-room-qr-container aria-live="polite"></div>
             ${playerList}
             ${startHelp}
             ${readiness}

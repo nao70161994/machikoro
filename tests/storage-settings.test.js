@@ -61,6 +61,7 @@ runTest('storage settings は既存key向けの保存値形式をpureに組み�
         accessibilityFontScale: 'standard',
         accessibilityReducedMotion: 'false',
         accessibilityHighContrast: 'false',
+        accessibilityHaptics: 'false',
         soundVolume: '100',
     });
     assert.ok(Object.isFrozen(values));
@@ -93,6 +94,7 @@ runTest('storage settings は読込値を一度に正規化して未保存値を
         accessibilityFontScale: 'standard',
         accessibilityReducedMotion: false,
         accessibilityHighContrast: false,
+        accessibilityHaptics: false,
         soundVolume: 100,
     });
     assert.ok(Object.isFrozen(values));

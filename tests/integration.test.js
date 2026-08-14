@@ -1658,6 +1658,8 @@ runTest('integration: 建設確定後はskip、local Undo後は復元cardへfocu
     rt.document.activeElement = undo;
     restoredCard.disabled = false;
     rt.doUndo();
+    assert.strictEqual(typeof rt.__test.elements.confirmOkBtn.onclick, 'function');
+    rt.__test.elements.confirmOkBtn.onclick();
     assert.strictEqual(rt.__test.getGame().builtThisTurn, false);
     assert.strictEqual(rt.document.activeElement, restoredCard);
 });

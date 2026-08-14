@@ -15,6 +15,10 @@ function safeMainStorageRemove(key) {
     mainClientStorageFacade.remove(key);
 }
 
+function safeMainStorageSet(key, value) {
+    return mainClientStorageFacade.set(key, value);
+}
+
 function diagnosticContext(gameState, onlineState) {
     if (onlineState.isReconnectingOnline) return 'reconnecting';
     if (onlineState.isOnlineGame) return 'online';
@@ -116,6 +120,161 @@ async function copyAppDiagnostics() {
         showNotice('この端末では診断情報をコピーできませんでした');
         return false;
     }
+}
+
+function loadSetupPresetRecords() {
+    return GameSetupPresets.parse(safeMainStorageGet(GameSetupPresets.STORAGE_KEY, '[]'));
+}
+
+function renderSetupPresetList() {
+    const target = document.getElementById('setupPresetList');
+    if (target) target.innerHTML = GameSetupPresets.buildListHtml(loadSetupPresetRecords());
+}
+
+function saveSetupPreset() {
+    const input = document.getElementById('setupPresetName');
+    const name = input && input.value ? input.value.trim() : '';
+    if (!name) {
+        showNotice('プリセット名を入力してください');
+        if (input && typeof input.focus === 'function') input.focus();
+        return false;
+    }
+    const setup = GameSetupState.runtime.snapshot();
+    const selection = GameSelectionState.runtime.snapshot();
+    const records = GameSetupPresets.upsert(loadSetupPresetRecords(), {
+        name,
+        selectedCount: setup.selectedCount,
+        playerSettings: setup.playerSettings,
+        cpuSpeed: Number(document.getElementById('cpuSpeed')?.value || setup.cpuSpeed),
+        enabledCards: selection.enabledCards,
+        enabledLandmarks: selection.enabledLandmarks,
+    });
+    if (!safeMainStorageSet(GameSetupPresets.STORAGE_KEY, JSON.stringify(records))) {
+        showNotice('プリセットを保存できませんでした');
+        return false;
+    }
+    if (input) input.value = '';
+    renderSetupPresetList();
+    showNotice(`「${name.slice(0, 24)}」を保存しました`);
+    return true;
+}
+
+function applySetupPreset(presetId) {
+    const preset = loadSetupPresetRecords().find(item => item.id === presetId);
+    if (!preset) return false;
+    GameSetupState.runtime.replace({
+        selectedCount: preset.selectedCount,
+        playerSettings: preset.playerSettings,
+        cpuSpeed: preset.cpuSpeed,
+    });
+    replaceEnabledCardSelection(preset.enabledCards);
+    replaceEnabledLandmarkSelection(preset.enabledLandmarks);
+    if (typeof syncCardSelectStateFromRuntime === 'function') syncCardSelectStateFromRuntime();
+    UiPlayerCount.applyView(
+        document.getElementById('playerCount'),
+        UiPlayerCount.buildView(preset.selectedCount)
+    );
+    const speed = document.getElementById('cpuSpeed');
+    if (speed) {
+        speed.value = String(preset.cpuSpeed);
+        UiRangeControl.applyValueView(
+            speed,
+            document.getElementById('speedLabel'),
+            UiRangeControl.buildValueView(preset.cpuSpeed, formatCpuSpeedLabel)
+        );
+    }
+    renderPlayerSettings();
+    saveSettings();
+    showNotice(`「${preset.name}」を適用しました`);
+    return true;
+}
+
+function deleteSetupPreset(presetId) {
+    const records = loadSetupPresetRecords();
+    const preset = records.find(item => item.id === presetId);
+    if (!preset) return false;
+    return showConfirm(`プリセット「${preset.name}」を削除しますか？`, () => {
+        safeMainStorageSet(GameSetupPresets.STORAGE_KEY,
+            JSON.stringify(GameSetupPresets.remove(records, presetId)));
+        renderSetupPresetList();
+    });
+}
+
+function setAppBackupStatus(message) {
+    const status = document.getElementById('appBackupStatus');
+    if (status) status.textContent = message || '';
+}
+
+function validateImportedBackup(envelope) {
+    if (!envelope || !envelope.data) return false;
+    try {
+        if (envelope.data.savedGame && !isValidSavedGameState(JSON.parse(envelope.data.savedGame))) return false;
+        if (envelope.data.savedGameV1) {
+            const decoded = GameSnapshot.readLocalSaveState(JSON.parse(envelope.data.savedGameV1));
+            if (!decoded.ok || !isValidSavedGameState(decoded.state)) return false;
+        }
+        if (envelope.data.savedGameHistoryV1) {
+            const history = JSON.parse(envelope.data.savedGameHistoryV1);
+            if (!Array.isArray(history) || history.some(entry => !entry ||
+                    !isValidSavedGameState(entry.state))) return false;
+        }
+    } catch (_) { return false; }
+    return true;
+}
+
+function exportAppBackup() {
+    const envelope = AppBackup.buildEnvelope({
+        data: AppBackup.collect(key => safeMainStorageGet(key, null)),
+        createdAt: new Date().toISOString(),
+        clientVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
+    });
+    const date = new Date().toISOString().slice(0, 10);
+    const downloaded = downloadCpuTournamentFile(
+        `machikoro-backup-${date}.json`,
+        JSON.stringify(envelope, null, 2),
+        'application/json'
+    );
+    setAppBackupStatus(downloaded ? 'バックアップを書き出しました。' : '書き出しに失敗しました。');
+    return downloaded;
+}
+
+function selectAppBackupFile() {
+    const input = document.getElementById('appBackupFile');
+    if (!input || typeof input.click !== 'function') return false;
+    input.click();
+    return true;
+}
+
+async function importAppBackup(file) {
+    const input = document.getElementById('appBackupFile');
+    if (!file || typeof file.text !== 'function') return false;
+    let envelope = null;
+    try { envelope = AppBackup.parseEnvelope(await file.text()); } catch (_) {}
+    if (!envelope || !validateImportedBackup(envelope)) {
+        setAppBackupStatus('このバックアップは壊れているか、対応していません。');
+        if (input) input.value = '';
+        return false;
+    }
+    showConfirm('現在のローカル保存・設定・統計をバックアップ内容で置き換えますか？', () => {
+        const before = Object.fromEntries(AppBackup.ALLOWED_KEYS.map(key =>
+            [key, safeMainStorageGet(key, null)]));
+        for (const key of AppBackup.ALLOWED_KEYS) safeMainStorageRemove(key);
+        const applied = AppBackup.apply(envelope, (key, value) => safeMainStorageSet(key, value));
+        if (!applied) {
+            for (const [key, value] of Object.entries(before)) {
+                if (typeof value === 'string') safeMainStorageSet(key, value);
+                else safeMainStorageRemove(key);
+            }
+            setAppBackupStatus('容量不足などにより復元できませんでした。');
+            return;
+        }
+        setAppBackupStatus('復元しました。画面を再読み込みします。');
+        setTimeout(() => {
+            if (typeof window !== 'undefined' && window.location &&
+                    typeof window.location.reload === 'function') window.location.reload();
+        }, 100);
+    }, () => { if (input) input.value = ''; });
+    return true;
 }
 
 function gameSetupSnapshot() {
@@ -1000,6 +1159,7 @@ function cancelAutoSkip() { return mainAutoSkipRuntime.cancel(); }
 function checkAutoSkip() { return mainAutoSkipRuntime.check(); }
 // 初期表示
 initMainView();
+renderSetupPresetList();
 renderCpuTournamentHistory();
 bindDelegatedUiHandlers();
 bindCpuResumeScheduler();

@@ -85,7 +85,8 @@ const UiEventDelegation = (() => {
             else if (name === 'changeCount') args = [parseInt(element.dataset.delta, 10)];
             else if (name === 'switchOnlineTab') args = [element.dataset.onlineTab];
             else if (name === 'changeOnlineCount') args = [parseInt(element.dataset.delta, 10)];
-            else if (name === 'copyOnlineRoomId') args = [element.dataset.roomId];
+            else if (name === 'copyOnlineRoomId' || name === 'toggleOnlineRoomQr') args = [element.dataset.roomId];
+            else if (name === 'applySetupPreset' || name === 'deleteSetupPreset') args = [element.dataset.presetId];
             else if (name === 'removeOnlineLobbyPlayer') args = [parseInt(element.dataset.playerIndex, 10)];
             else if (name === 'changeOnlineLobbySlots') args = [parseInt(element.dataset.delta, 10)];
             else if (name === 'setOnlineLobbyReady') args = [element.dataset.ready === 'true'];

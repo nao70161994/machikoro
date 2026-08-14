@@ -70,6 +70,23 @@ function copyOnlineRoomId(roomId) {
     });
 }
 
+function toggleOnlineRoomQr(roomId) {
+    const normalized = OnlineRoomShare.normalizeRoomId(roomId);
+    const button = typeof document !== 'undefined'
+        ? document.querySelector(`.room-qr-toggle[data-room-id="${normalized}"]`) : null;
+    const container = button && button.parentElement
+        ? button.parentElement.querySelector('[data-room-qr-container]') : null;
+    if (!normalized || !button || !container) return false;
+    const visible = !container.classList.contains('is-visible');
+    container.classList.toggle('is-visible', visible);
+    button.setAttribute('aria-expanded', visible ? 'true' : 'false');
+    button.textContent = visible ? 'QRを隠す' : 'QRを表示';
+    if (visible && !container.innerHTML) {
+        container.innerHTML = RoomQrCode.buildSvg(normalized);
+    }
+    return true;
+}
+
 function leaveOnlineLobby() {
     const session = onlineSessionSnapshot();
     if (session.isOnlineGame || !session.myRoomId) return false;

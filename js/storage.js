@@ -588,19 +588,27 @@ function doUndo() {
         !gameState.game || gameState.game.currentPlayerIndex !== onlineState.myPlayerIndex
     )) return;
     const state = gameState.undoState;
-    if (onlineState.isOnlineGame) {
-        sendAction('undoBuild', { state });
+    const preview = UndoPreview.build({ game: gameState.game, state });
+    const executeUndo = () => {
+        if (onlineState.isOnlineGame) {
+            sendAction('undoBuild', { state });
+            return;
+        }
+        const restored = typeof runLocalOrSendOnline === 'function'
+            ? runLocalOrSendOnline(
+                'undoBuild',
+                { state },
+                () => restoreUndoSnapshot(state),
+                { effects: false }
+            )
+            : restoreUndoSnapshot(state);
+        if (restored !== false) render();
+    };
+    if (typeof showConfirm === 'function') {
+        showConfirm(preview ? preview.message : '建設前の状態へ戻しますか？', executeUndo);
         return;
     }
-    const restored = typeof runLocalOrSendOnline === 'function'
-        ? runLocalOrSendOnline(
-            'undoBuild',
-            { state },
-            () => restoreUndoSnapshot(state),
-            { effects: false }
-        )
-        : restoreUndoSnapshot(state);
-    if (restored !== false) render();
+    executeUndo();
 }
 
 function saveSettings() {
@@ -617,6 +625,7 @@ function saveSettings() {
             accessibilityFontScale: document.getElementById('accessibilityFontScale')?.value,
             accessibilityReducedMotion: document.getElementById('accessibilityReducedMotion')?.checked,
             accessibilityHighContrast: document.getElementById('accessibilityHighContrast')?.checked,
+            accessibilityHaptics: document.getElementById('accessibilityHaptics')?.checked,
             soundVolume: document.getElementById('soundVolume')?.value,
         });
         storage.setItem('selectedCount', values.selectedCount);
@@ -626,6 +635,7 @@ function saveSettings() {
         storage.setItem('accessibilityFontScale', values.accessibilityFontScale);
         storage.setItem('accessibilityReducedMotion', values.accessibilityReducedMotion);
         storage.setItem('accessibilityHighContrast', values.accessibilityHighContrast);
+        storage.setItem('accessibilityHaptics', values.accessibilityHaptics);
         storage.setItem('soundVolume', values.soundVolume);
         if (Object.prototype.hasOwnProperty.call(values, 'cpuSpeed')) {
             storage.setItem('cpuSpeed', values.cpuSpeed);
@@ -637,6 +647,7 @@ function applyAccessibilitySettings(values = {}) {
     const fontScale = StorageSettings.normalizeAccessibilityFontScale(values.accessibilityFontScale);
     const reducedMotion = values.accessibilityReducedMotion === true;
     const highContrast = values.accessibilityHighContrast === true;
+    const haptics = values.accessibilityHaptics === true;
     const volume = StorageSettings.normalizeSoundVolume(values.soundVolume);
     if (document.body && document.body.classList) {
         document.body.classList.toggle('accessibility-large-text', fontScale === 'large');
@@ -646,16 +657,18 @@ function applyAccessibilitySettings(values = {}) {
     const fontScaleEl = document.getElementById('accessibilityFontScale');
     const reducedMotionEl = document.getElementById('accessibilityReducedMotion');
     const highContrastEl = document.getElementById('accessibilityHighContrast');
+    const hapticsEl = document.getElementById('accessibilityHaptics');
     const volumeEl = document.getElementById('soundVolume');
     const volumeLabel = document.getElementById('soundVolumeLabel');
     if (fontScaleEl) fontScaleEl.value = fontScale;
     if (reducedMotionEl) reducedMotionEl.checked = reducedMotion;
     if (highContrastEl) highContrastEl.checked = highContrast;
+    if (hapticsEl) hapticsEl.checked = haptics;
     if (volumeEl) volumeEl.value = String(volume);
     if (volumeLabel) volumeLabel.textContent = `${volume}%`;
     if (typeof setSoundVolume === 'function') setSoundVolume(volume);
     if (reducedMotion && typeof stopConfetti === 'function') stopConfetti();
-    return Object.freeze({ fontScale, reducedMotion, highContrast, volume });
+    return Object.freeze({ fontScale, reducedMotion, highContrast, haptics, volume });
 }
 
 function onAccessibilitySettingsChange() {
@@ -663,6 +676,7 @@ function onAccessibilitySettingsChange() {
         accessibilityFontScale: document.getElementById('accessibilityFontScale')?.value,
         accessibilityReducedMotion: document.getElementById('accessibilityReducedMotion')?.checked,
         accessibilityHighContrast: document.getElementById('accessibilityHighContrast')?.checked,
+        accessibilityHaptics: document.getElementById('accessibilityHaptics')?.checked,
         soundVolume: document.getElementById('soundVolume')?.value,
     });
     saveSettings();
@@ -682,6 +696,7 @@ function loadSettings() {
             accessibilityFontScale: storage.getItem('accessibilityFontScale'),
             accessibilityReducedMotion: storage.getItem('accessibilityReducedMotion'),
             accessibilityHighContrast: storage.getItem('accessibilityHighContrast'),
+            accessibilityHaptics: storage.getItem('accessibilityHaptics'),
             soundVolume: storage.getItem('soundVolume'),
         }, normalizeName);
         GameSetupState.runtime.setSelectedCount(values.selectedCount);

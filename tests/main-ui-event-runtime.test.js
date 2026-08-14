@@ -96,6 +96,23 @@ runTest('main UI event runtimeは動作診断の更新とコピーを既存comma
     ]);
 });
 
+runTest('main UI event runtimeはpreset・backup・QR・引き渡し操作をidentity付きで渡す', () => {
+    const h = createHarness();
+    const file = { name: 'backup.json' };
+    h.runtime.handleStaticClick(h.event({ uiAction: 'applySetupPreset', presetId: 'preset-1' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'deleteSetupPreset', presetId: 'preset-1' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'toggleOnlineRoomQr', roomId: 'ABC123' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'acceptHotseatHandoff' }));
+    h.runtime.handleStaticChange(h.event({ uiChange: 'importAppBackup' }, { files: [file] }));
+    assert.deepStrictEqual(h.calls, [
+        ['preventDefault'], ['applySetupPreset', 'preset-1'],
+        ['preventDefault'], ['deleteSetupPreset', 'preset-1'],
+        ['preventDefault'], ['toggleOnlineRoomQr', 'ABC123'],
+        ['preventDefault'], ['acceptHotseatHandoff'],
+        ['preventDefault'], ['importAppBackup', file],
+    ]);
+});
+
 runTest('main UI event runtimeはroom IDのEnterを既存join effectへ一度だけ渡す', () => {
     const h = createHarness();
     const keyEvent = (extra = {}) => ({

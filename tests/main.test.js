@@ -8,6 +8,8 @@ function loadMainRuntime(options = {}) {
     const elements = {
         playerCount: makeElement(),
         playerSettings: makeElement(),
+        setupPresetName: makeElement(),
+        setupPresetList: makeElement(),
         cpuSpeed: makeElement({ value: '1500' }),
         speedLabel: makeElement(),
         resumeSection: makeElement(),
@@ -432,6 +434,10 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiCpuTournamentSource, context, { filename: 'js/uiCpuTournament.js' });
     const appDiagnosticsSource = fs.readFileSync(path.join(__dirname, '..', 'js/appDiagnostics.js'), 'utf8');
     vm.runInContext(appDiagnosticsSource, context, { filename: 'js/appDiagnostics.js' });
+    for (const file of ['appBackup', 'gameSetupPresets', 'roomQrCode', 'undoPreview', 'uiTurnPrivacy']) {
+        const source = fs.readFileSync(path.join(__dirname, '..', `js/${file}.js`), 'utf8');
+        vm.runInContext(source, context, { filename: `js/${file}.js` });
+    }
     const gameRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/gameRuntimeState.js'), 'utf8');
     vm.runInContext(gameRuntimeStateSource, context, { filename: 'js/gameRuntimeState.js' });
     const onlineRuntimeStateSource = fs.readFileSync(path.join(__dirname, '..', 'js/onlineRuntimeState.js'), 'utf8');
@@ -2483,6 +2489,63 @@ runTest('main 動作診断は実runtime状態を表示し同じ安全な文面�
     assert.ok(!copied.includes('roomId'));
     assert.ok(!copied.includes('reconnectToken'));
     assert.strictEqual(rt.alerts.at(-1), '診断情報をコピーしました');
+});
+
+runTest('index.html は引き渡し・backup・preset・hapticsの安全な導線を持つ', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    assert.ok(html.includes('id="hotseatHandoffOverlay"'));
+    assert.ok(html.includes('data-ui-action="acceptHotseatHandoff"'));
+    assert.ok(html.includes('id="accessibilityHaptics"'));
+    assert.ok(html.includes('data-ui-action="saveSetupPreset"'));
+    assert.ok(html.includes('data-ui-action="exportAppBackup"'));
+    assert.ok(html.includes('data-ui-change="importAppBackup"'));
+    assert.ok(html.includes('オンラインのルームIDや再接続情報は含みません'));
+});
+
+runTest('main setup presetは現在設定を保存・適用・削除できる', () => {
+    const rt = loadMainRuntime();
+    rt.elements.setupPresetName.value = '家族戦';
+    rt.GameSetupState.runtime.replace({
+        selectedCount: 3,
+        playerSettings: [
+            { type: 'human', difficulty: 'normal', name: 'Alice' },
+            { type: 'cpu', difficulty: 'strong', name: 'CPU' },
+            { type: 'human', difficulty: 'normal', name: 'Bob' },
+        ],
+        cpuSpeed: 900,
+    });
+    rt.replaceEnabledCardSelection(['麦畑', 'パン屋']);
+    rt.replaceEnabledLandmarkSelection(['駅']);
+    rt.elements.cpuSpeed.value = '900';
+    assert.strictEqual(rt.saveSetupPreset(), true);
+    const records = JSON.parse(rt.localStorage.getItem('machikoroSetupPresetsV1'));
+    assert.strictEqual(records.length, 1);
+    assert.strictEqual(records[0].name, '家族戦');
+    rt.GameSetupState.runtime.setSelectedCount(2);
+    assert.strictEqual(rt.applySetupPreset(records[0].id), true);
+    assert.strictEqual(rt.GameSetupState.runtime.snapshot().selectedCount, 3);
+    assert.deepStrictEqual([...rt.getEnabledCardSelection()], ['麦畑', 'パン屋']);
+    rt.deleteSetupPreset(records[0].id);
+    assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('machikoroSetupPresetsV1')), []);
+});
+
+runTest('main backup importは許可keyだけを確認後に復元しreloadする', async () => {
+    const rt = loadMainRuntime();
+    const envelope = rt.AppBackup.parseEnvelope(JSON.stringify({
+        schemaVersion: 1,
+        app: 'machikoro',
+        createdAt: '2026-08-14T00:00:00.000Z',
+        data: { selectedCount: '4', gameStats: '{}' },
+    }));
+    rt.localStorage.setItem('savedGame', '{"legacy":true}');
+    const imported = await rt.importAppBackup({ text: () => Promise.resolve(JSON.stringify(envelope)) });
+    assert.strictEqual(imported, true);
+    assert.strictEqual(rt.localStorage.getItem('selectedCount'), '4');
+    assert.strictEqual(rt.localStorage.getItem('gameStats'), '{}');
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+    rt.__test.flushTimeouts();
+    assert.strictEqual(rt.reloadCount, 1);
 });
 
 runTest('ローカル保存の再開導線は新しいゲーム設定より先に提示する', () => {

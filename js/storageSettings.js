@@ -50,6 +50,7 @@ function serializeSettings(values) {
         accessibilityFontScale: normalizeAccessibilityFontScale(values.accessibilityFontScale),
         accessibilityReducedMotion: values.accessibilityReducedMotion ? 'true' : 'false',
         accessibilityHighContrast: values.accessibilityHighContrast ? 'true' : 'false',
+        accessibilityHaptics: values.accessibilityHaptics ? 'true' : 'false',
         soundVolume: String(normalizeSoundVolume(values.soundVolume)),
     };
     if (values.cpuSpeed !== null && values.cpuSpeed !== undefined) {
@@ -69,6 +70,7 @@ function normalizeStoredSettings(values, normalizeName) {
         accessibilityFontScale: normalizeAccessibilityFontScale(values.accessibilityFontScale),
         accessibilityReducedMotion: normalizeStoredBoolean(values.accessibilityReducedMotion),
         accessibilityHighContrast: normalizeStoredBoolean(values.accessibilityHighContrast),
+        accessibilityHaptics: normalizeStoredBoolean(values.accessibilityHaptics),
         soundVolume: normalizeSoundVolume(values.soundVolume),
     });
 }

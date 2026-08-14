@@ -48,6 +48,31 @@ function tutorialSettingsSnapshot() {
     return UiTutorialSettings.runtime.snapshot();
 }
 
+function triggerUiHaptic(kind) {
+    const enabled = !!document.getElementById('accessibilityHaptics')?.checked;
+    const reducedMotion = !!document.body?.classList.contains('accessibility-reduced-motion');
+    return UiTurnPrivacy.vibrate(kind, {
+        enabled,
+        reducedMotion,
+        vibrate: typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
+            ? pattern => navigator.vibrate(pattern) : null,
+    });
+}
+
+function applyHotseatHandoff(view) {
+    return UiTurnPrivacy.applyHandoffView(view, {
+        overlay: document.getElementById('hotseatHandoffOverlay'),
+        name: document.getElementById('hotseatHandoffName'),
+        button: document.getElementById('hotseatHandoffButton'),
+    });
+}
+
+function acceptHotseatHandoff() {
+    applyHotseatHandoff(hotseatHandoffController.dismiss());
+    if (typeof ensureCurrentScreenFocus === 'function') ensureCurrentScreenFocus();
+    return true;
+}
+
 function renderLog() {
     const logEl = document.getElementById("log");
     const titleEl = document.getElementById("logTitle");
@@ -294,6 +319,7 @@ function renderWinnerState(winner) {
         },
         markPresented() {
             winSoundPlayed = true;
+            triggerUiHaptic('win');
         },
         playWinSound() {
             playSound('win');
@@ -407,6 +433,7 @@ function renderActiveGameState(current) {
         },
         announceTurn(name, isCpuTurn, playerIndex) {
             showTurnAnnouncer(name, isCpuTurn, playerIndex);
+            if (!isCpuTurn) triggerUiHaptic('turn');
         },
         setPreviousPlayerIndex(playerIndex, turnCount, phase) {
             activeGameTurnStateController.set(playerIndex, turnCount, phase);
@@ -486,6 +513,15 @@ function renderActiveGameState(current) {
             checkAutoSkip();
         },
     });
+    const handoff = hotseatHandoffController.observe({
+        turnChanged: view.turnTransition.announce &&
+            previousTurnState.previousPlayerIndex !== currentGame.currentPlayerIndex,
+        isOnlineGame: onlineState.isOnlineGame,
+        isCpuTurn: isCPUTurn,
+        playerIndex: currentGame.currentPlayerIndex,
+        playerName: current.name,
+    });
+    if (handoff.visible) applyHotseatHandoff(handoff);
 }
 
 function persistAfterRender() {
@@ -1171,6 +1207,7 @@ function applyCardSelectStateSnapshot() {
 }
 const logHistoryController = UiLogDisplay.createHistoryController();
 const activeGameTurnStateController = UiGameStatusEffects.createTurnStateController();
+const hotseatHandoffController = UiTurnPrivacy.createHandoffController();
 const turnAnnouncerTimerController = UiTurnAnnouncer.createTimerController();
 const buildMenuFilterController = UiBuildMenu.createFilterController();
 const modalRuntimeController = UiModalPolicy.createRuntimeController();
@@ -1297,7 +1334,12 @@ function compareCardNamesForDisplay(a, b) {
     return UiCardOrder.compareCardNamesForDisplay(a, b, CARDS, CARD_COLOR_ORDER);
 }
 
-function resetFullLog() { logHistoryController.reset(); activeGameTurnStateController.reset(); buildMenuFilterController.clear(); }
+function resetFullLog() {
+    logHistoryController.reset();
+    activeGameTurnStateController.reset();
+    applyHotseatHandoff(hotseatHandoffController.reset());
+    buildMenuFilterController.clear();
+}
 
 const uiModalDomEffects = UiModalDomEffects.createRuntime({
     controller: modalRuntimeController,

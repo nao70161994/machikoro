@@ -109,6 +109,11 @@ interface Window {
     CPUSimulation: unknown;
     CpuTournament: unknown;
     AppDiagnostics: unknown;
+    AppBackup: unknown;
+    GameSetupPresets: unknown;
+    RoomQrCode: unknown;
+    UndoPreview: unknown;
+    UiTurnPrivacy: unknown;
     SavedGameValidation: unknown;
     StorageSettings: unknown;
     UiBuildMenu: unknown;

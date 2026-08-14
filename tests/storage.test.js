@@ -16,6 +16,7 @@ function loadStorageRuntime(options = {}) {
         accessibilityFontScale: makeElement({ value: 'standard' }),
         accessibilityReducedMotion: makeElement({ checked: false }),
         accessibilityHighContrast: makeElement({ checked: false }),
+        accessibilityHaptics: makeElement({ checked: false }),
         soundVolume: makeElement({ value: '100' }),
         soundVolumeLabel: makeElement(),
         onlineStatus: makeElement(),
@@ -170,18 +171,19 @@ function loadStorageRuntime(options = {}) {
         renderPlayerSettings() { context.renderPlayerSettingsCalls = (context.renderPlayerSettingsCalls || 0) + 1; },
         stopConfetti() { context.stopConfettiCalls = (context.stopConfettiCalls || 0) + 1; },
         sendAction(name, payload) { context.sentActions.push({ name, payload }); },
-        showConfirm(message, cb) { confirmCount++; cb(); },
+        showConfirm(message, cb) { confirmCount++; context.confirmMessages.push(message); cb(); },
         alert(message) { alerts.push(message); },
         showNotice(message) { alerts.push(message); },
         emits: [],
         rejoinRequests: [],
         sentActions: [],
+        confirmMessages: [],
         createdCpuPlayers: [],
         reconnectFlagWrites: [],
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlineRestoreMetadata.js', 'js/onlinePayload.js', 'js/snapshotInventoryValidation.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiPlayerCount.js', 'js/uiRangeControl.js', 'js/storage.js']);
+    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlineRestoreMetadata.js', 'js/onlinePayload.js', 'js/snapshotInventoryValidation.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiPlayerCount.js', 'js/uiRangeControl.js', 'js/undoPreview.js', 'js/storage.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -1152,6 +1154,8 @@ runTest('storage doUndo はローカルで undoState を復元し送信しない
     rt.doUndo();
 
     assert.strictEqual(game.players[0].coins, 5);
+    assert.ok(rt.confirmMessages[0].includes('建設前の状態へ戻しますか？'));
+    assert.ok(rt.confirmMessages[0].includes('1 → 5コイン'));
     assert.deepStrictEqual(rt.sentActions, []);
     assert.strictEqual(rt.__test.getUndoState(), null);
 });
@@ -1266,6 +1270,7 @@ runTest('storage saveSettings は既存keyと値形式を共通facade経由で�
     assert.strictEqual(rt.localStorage.getItem('accessibilityFontScale'), 'standard');
     assert.strictEqual(rt.localStorage.getItem('accessibilityReducedMotion'), 'false');
     assert.strictEqual(rt.localStorage.getItem('accessibilityHighContrast'), 'false');
+    assert.strictEqual(rt.localStorage.getItem('accessibilityHaptics'), 'false');
     assert.strictEqual(rt.localStorage.getItem('soundVolume'), '100');
 });
 runTest('storage accessibility設定はclass・音量表示・紙吹雪停止を同期する', () => {
@@ -1273,22 +1278,25 @@ runTest('storage accessibility設定はclass・音量表示・紙吹雪停止を
     rt.elements.accessibilityFontScale.value = 'large';
     rt.elements.accessibilityReducedMotion.checked = true;
     rt.elements.accessibilityHighContrast.checked = true;
+    rt.elements.accessibilityHaptics.checked = true;
     rt.elements.soundVolume.value = '40';
 
     const view = rt.applyAccessibilitySettings({
         accessibilityFontScale: 'large',
         accessibilityReducedMotion: true,
         accessibilityHighContrast: true,
+        accessibilityHaptics: true,
         soundVolume: 40,
     });
 
     assert.deepStrictEqual(JSON.parse(JSON.stringify(view)), {
-        fontScale: 'large', reducedMotion: true, highContrast: true, volume: 40,
+        fontScale: 'large', reducedMotion: true, highContrast: true, haptics: true, volume: 40,
     });
     assert.strictEqual(rt.document.body.classList.contains('accessibility-large-text'), true);
     assert.strictEqual(rt.document.body.classList.contains('accessibility-reduced-motion'), true);
     assert.strictEqual(rt.document.body.classList.contains('accessibility-high-contrast'), true);
     assert.strictEqual(rt.elements.soundVolumeLabel.textContent, '40%');
+    assert.strictEqual(rt.elements.accessibilityHaptics.checked, true);
     assert.strictEqual(rt.stopConfettiCalls, 1);
 });
 runTest('storage settings はstorage例外を外へ伝播せず既存後処理を維持する', () => {

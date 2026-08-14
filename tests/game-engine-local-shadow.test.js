@@ -132,6 +132,7 @@ runTest('local human build/UndoはEngine shadow authorityでrollback前後を維
     assert.strictEqual(rt.__test.getGame().currentPlayer().countCard('麦畑'), beforeCount + 1);
 
     rt.doUndo();
+    rt.__test.elements.confirmOkBtn.onclick();
 
     outcome = rt.__test.getLocalGameEngineShadowOutcome();
     assert.strictEqual(outcome.report.status, 'authority-direct');

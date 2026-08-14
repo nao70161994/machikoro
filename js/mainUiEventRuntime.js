@@ -7,7 +7,7 @@ const MainUiEventRuntime = (() => {
         'changeOnlineCount', 'showCreateRoom', 'joinRoom', 'toggleTutorial',
         'cycleTutorialLevel', 'onRoll', 'onReroll', 'onSkip', 'toggleLog', 'restartGame', 'rematchLocalGame', 'requestOnlineRematch', 'declineOnlineRematch',
         'closeRules', 'closeCardDetail', 'hideNotice', 'crashResume', 'pwaInstallPrompt',
-        'pwaInstallDismiss', 'copyOnlineRoomId', 'leaveOnlineLobby', 'removeOnlineLobbyPlayer',
+        'pwaInstallDismiss', 'copyOnlineRoomId', 'toggleOnlineRoomQr', 'leaveOnlineLobby', 'removeOnlineLobbyPlayer',
         'changeOnlineLobbySlots', 'startOnlineLobbyNow', 'focusBuildMenu',
         'setOnlineLobbyReady',
         'startCpuTournament', 'cancelCpuTournament',
@@ -15,6 +15,8 @@ const MainUiEventRuntime = (() => {
         'exportCpuTournamentJson', 'exportCpuTournamentCsv', 'clearCpuTournamentHistory',
         'shareGameResult',
         'refreshAppDiagnostics', 'copyAppDiagnostics',
+        'saveSetupPreset', 'applySetupPreset', 'deleteSetupPreset',
+        'exportAppBackup', 'selectAppBackupFile', 'acceptHotseatHandoff',
         'highlightLogEntry',
     ]);
 
@@ -119,10 +121,12 @@ const MainUiEventRuntime = (() => {
             });
         }
         function handleStaticChange(event) {
-            return execute(event, 'change', () => effectMap([
+            return execute(event, 'change', element => Object.assign({}, effectMap([
                 'toggleTutorialEnabled', 'tutorialLevel', 'localPlayerType', 'onlinePlayerType',
                 'onAccessibilitySettingsChange',
-            ]), 'data-ui-change');
+            ]), {
+                importAppBackup: () => invoke('importAppBackup', element.files && element.files[0]),
+            }), 'data-ui-change');
         }
         function handleStaticKeydown(event) {
             const target = event && event.target;

@@ -49,6 +49,9 @@ function loadUiRuntime(options = {}) {
         tutorialLevel: makeElement(),
         btnTutorialToggle: makeElement(),
         btnTutorialLevel: makeElement(),
+        hotseatHandoffOverlay: makeElement({ style: { display: 'none' } }),
+        hotseatHandoffName: makeElement(),
+        hotseatHandoffButton: makeElement(),
     };
     const context = {
         console,
@@ -135,7 +138,7 @@ function loadUiRuntime(options = {}) {
     context.global = context;
     context.globalThis = context;
     vm.createContext(context);
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/ui.js']);
+    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/gameSelectionState.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/clientStorage.js', 'js/uiNotice.js', 'js/uiLogDisplay.js', 'js/uiCardOrder.js', 'js/uiPlayerDisplay.js', 'js/uiInputPolicy.js', 'js/uiBuildMenu.js', 'js/uiPendingMenu.js', 'js/uiPendingEffects.js', 'js/uiCardDetail.js', 'js/uiCardSelect.js', 'js/uiCardSelectEffects.js', 'js/uiTutorialSettings.js', 'js/uiTutorial.js', 'js/uiDiceChoice.js', 'js/uiDiceDisplay.js', 'js/uiTurnAnnouncer.js', 'js/uiModalPolicy.js', 'js/uiModalOpen.js', 'js/uiModalClose.js', 'js/uiModalDomEffects.js', 'js/uiModalRuntime.js', 'js/uiWinner.js', 'js/uiWinnerEffects.js', 'js/uiGameStatusView.js', 'js/uiGameStatusEffects.js', 'js/uiTabView.js', 'js/uiTabEffects.js', 'js/uiRuntimeSnapshot.js', 'js/uiRenderRuntime.js', 'js/uiScreenFocus.js', 'js/uiTurnPrivacy.js', 'js/ui.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -1313,6 +1316,7 @@ runTest('renderActiveGameState は通常手番と同一player追加ターンを�
         turnStatus.textContent,
         'プレイヤー1、人間、Alice のターン'
     );
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none');
 
     turnStatus.textContent = 'same-turn-marker';
     context.renderActiveGameState(players[0]);
@@ -1328,6 +1332,11 @@ runTest('renderActiveGameState は通常手番と同一player追加ターンを�
         turnStatus.textContent,
         'プレイヤー2、人間、Bob のターン'
     );
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'flex');
+    assert.strictEqual(elements.hotseatHandoffName.textContent, 'Bob');
+    assert.strictEqual(elements.hotseatHandoffButton.focused, true);
+    assert.strictEqual(context.acceptHotseatHandoff(), true);
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none');
 
     turnStatus.textContent = 'replay-marker';
     context.game.phase = 'build';
