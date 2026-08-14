@@ -34,6 +34,13 @@ function loadConfettiRuntime(options = {}) {
             },
         },
         document: {
+            body: {
+                classList: {
+                    contains(name) {
+                        return name === 'accessibility-reduced-motion' && options.appReducedMotion === true;
+                    },
+                },
+            },
             getElementById(id) {
                 return id === 'confettiCanvas' ? canvas : null;
             },
@@ -58,6 +65,16 @@ runTest('startConfetti は reduced motion 設定時にアニメーションを�
     runtime.context.startConfetti();
 
     assert.strictEqual(runtime.calls.matchMediaQuery, '(prefers-reduced-motion: reduce)');
+    assert.strictEqual(runtime.canvas.style.display, 'none');
+    assert.strictEqual(runtime.calls.setInterval, 0);
+    assert.strictEqual(runtime.calls.setTimeout, 0);
+});
+
+runTest('startConfetti はアプリ内の動きを減らす設定でも開始しない', () => {
+    const runtime = loadConfettiRuntime({ appReducedMotion: true });
+
+    runtime.context.startConfetti();
+
     assert.strictEqual(runtime.canvas.style.display, 'none');
     assert.strictEqual(runtime.calls.setInterval, 0);
     assert.strictEqual(runtime.calls.setTimeout, 0);

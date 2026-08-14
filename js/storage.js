@@ -654,6 +654,7 @@ function applyAccessibilitySettings(values = {}) {
     if (volumeEl) volumeEl.value = String(volume);
     if (volumeLabel) volumeLabel.textContent = `${volume}%`;
     if (typeof setSoundVolume === 'function') setSoundVolume(volume);
+    if (reducedMotion && typeof stopConfetti === 'function') stopConfetti();
     return Object.freeze({ fontScale, reducedMotion, highContrast, volume });
 }
 

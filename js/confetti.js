@@ -5,8 +5,10 @@ let confettiPieces = [];
 
 function prefersReducedMotion() {
     try {
-        return typeof window.matchMedia === 'function' &&
-            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const appSettingEnabled = document.body && document.body.classList &&
+            document.body.classList.contains('accessibility-reduced-motion');
+        return appSettingEnabled || (typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     } catch (e) {
         return false;
     }

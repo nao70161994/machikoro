@@ -26,6 +26,7 @@ function loadStorageRuntime(options = {}) {
         console,
         localStorage,
         document: {
+            body: makeElement(),
             getElementById(id) {
                 if (!elements[id]) elements[id] = makeElement();
                 return elements[id];
@@ -167,6 +168,7 @@ function loadStorageRuntime(options = {}) {
         updateResumeButton: null,
         syncTutorialControls() {},
         renderPlayerSettings() { context.renderPlayerSettingsCalls = (context.renderPlayerSettingsCalls || 0) + 1; },
+        stopConfetti() { context.stopConfettiCalls = (context.stopConfettiCalls || 0) + 1; },
         sendAction(name, payload) { context.sentActions.push({ name, payload }); },
         showConfirm(message, cb) { confirmCount++; cb(); },
         alert(message) { alerts.push(message); },
@@ -1265,6 +1267,29 @@ runTest('storage saveSettings は既存keyと値形式を共通facade経由で�
     assert.strictEqual(rt.localStorage.getItem('accessibilityReducedMotion'), 'false');
     assert.strictEqual(rt.localStorage.getItem('accessibilityHighContrast'), 'false');
     assert.strictEqual(rt.localStorage.getItem('soundVolume'), '100');
+});
+runTest('storage accessibility設定はclass・音量表示・紙吹雪停止を同期する', () => {
+    const rt = loadStorageRuntime();
+    rt.elements.accessibilityFontScale.value = 'large';
+    rt.elements.accessibilityReducedMotion.checked = true;
+    rt.elements.accessibilityHighContrast.checked = true;
+    rt.elements.soundVolume.value = '40';
+
+    const view = rt.applyAccessibilitySettings({
+        accessibilityFontScale: 'large',
+        accessibilityReducedMotion: true,
+        accessibilityHighContrast: true,
+        soundVolume: 40,
+    });
+
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(view)), {
+        fontScale: 'large', reducedMotion: true, highContrast: true, volume: 40,
+    });
+    assert.strictEqual(rt.document.body.classList.contains('accessibility-large-text'), true);
+    assert.strictEqual(rt.document.body.classList.contains('accessibility-reduced-motion'), true);
+    assert.strictEqual(rt.document.body.classList.contains('accessibility-high-contrast'), true);
+    assert.strictEqual(rt.elements.soundVolumeLabel.textContent, '40%');
+    assert.strictEqual(rt.stopConfettiCalls, 1);
 });
 runTest('storage settings はstorage例外を外へ伝播せず既存後処理を維持する', () => {
     const rt = loadStorageRuntime();
