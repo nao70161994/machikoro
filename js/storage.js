@@ -626,7 +626,13 @@ function saveSettings() {
             accessibilityReducedMotion: document.getElementById('accessibilityReducedMotion')?.checked,
             accessibilityHighContrast: document.getElementById('accessibilityHighContrast')?.checked,
             accessibilityHaptics: document.getElementById('accessibilityHaptics')?.checked,
+            hapticTurnEnabled: document.getElementById('hapticTurnEnabled')?.checked,
+            hapticWinEnabled: document.getElementById('hapticWinEnabled')?.checked,
             soundVolume: document.getElementById('soundVolume')?.value,
+            soundDiceEnabled: document.getElementById('soundDiceEnabled')?.checked,
+            soundCoinEnabled: document.getElementById('soundCoinEnabled')?.checked,
+            soundBuildEnabled: document.getElementById('soundBuildEnabled')?.checked,
+            soundWinEnabled: document.getElementById('soundWinEnabled')?.checked,
         });
         storage.setItem('selectedCount', values.selectedCount);
         storage.setItem('playerSettings', values.playerSettings);
@@ -636,7 +642,13 @@ function saveSettings() {
         storage.setItem('accessibilityReducedMotion', values.accessibilityReducedMotion);
         storage.setItem('accessibilityHighContrast', values.accessibilityHighContrast);
         storage.setItem('accessibilityHaptics', values.accessibilityHaptics);
+        storage.setItem('hapticTurnEnabled', values.hapticTurnEnabled);
+        storage.setItem('hapticWinEnabled', values.hapticWinEnabled);
         storage.setItem('soundVolume', values.soundVolume);
+        storage.setItem('soundDiceEnabled', values.soundDiceEnabled);
+        storage.setItem('soundCoinEnabled', values.soundCoinEnabled);
+        storage.setItem('soundBuildEnabled', values.soundBuildEnabled);
+        storage.setItem('soundWinEnabled', values.soundWinEnabled);
         if (Object.prototype.hasOwnProperty.call(values, 'cpuSpeed')) {
             storage.setItem('cpuSpeed', values.cpuSpeed);
         }
@@ -649,6 +661,14 @@ function applyAccessibilitySettings(values = {}) {
     const highContrast = values.accessibilityHighContrast === true;
     const haptics = values.accessibilityHaptics === true;
     const volume = StorageSettings.normalizeSoundVolume(values.soundVolume);
+    const effectValues = {
+        hapticTurnEnabled: values.hapticTurnEnabled !== false,
+        hapticWinEnabled: values.hapticWinEnabled !== false,
+        soundDiceEnabled: values.soundDiceEnabled !== false,
+        soundCoinEnabled: values.soundCoinEnabled !== false,
+        soundBuildEnabled: values.soundBuildEnabled !== false,
+        soundWinEnabled: values.soundWinEnabled !== false,
+    };
     if (document.body && document.body.classList) {
         document.body.classList.toggle('accessibility-large-text', fontScale === 'large');
         document.body.classList.toggle('accessibility-reduced-motion', reducedMotion);
@@ -666,9 +686,19 @@ function applyAccessibilitySettings(values = {}) {
     if (hapticsEl) hapticsEl.checked = haptics;
     if (volumeEl) volumeEl.value = String(volume);
     if (volumeLabel) volumeLabel.textContent = `${volume}%`;
+    Object.entries(effectValues).forEach(([id, checked]) => {
+        const element = document.getElementById(id);
+        if (element) element.checked = checked;
+    });
     if (typeof setSoundVolume === 'function') setSoundVolume(volume);
+    if (typeof setSoundEffectEnabled === 'function') {
+        setSoundEffectEnabled('dice', effectValues.soundDiceEnabled);
+        setSoundEffectEnabled('coin', effectValues.soundCoinEnabled);
+        setSoundEffectEnabled('build', effectValues.soundBuildEnabled);
+        setSoundEffectEnabled('win', effectValues.soundWinEnabled);
+    }
     if (reducedMotion && typeof stopConfetti === 'function') stopConfetti();
-    return Object.freeze({ fontScale, reducedMotion, highContrast, haptics, volume });
+    return Object.freeze({ fontScale, reducedMotion, highContrast, haptics, volume, ...effectValues });
 }
 
 function onAccessibilitySettingsChange() {
@@ -677,7 +707,13 @@ function onAccessibilitySettingsChange() {
         accessibilityReducedMotion: document.getElementById('accessibilityReducedMotion')?.checked,
         accessibilityHighContrast: document.getElementById('accessibilityHighContrast')?.checked,
         accessibilityHaptics: document.getElementById('accessibilityHaptics')?.checked,
+        hapticTurnEnabled: document.getElementById('hapticTurnEnabled')?.checked,
+        hapticWinEnabled: document.getElementById('hapticWinEnabled')?.checked,
         soundVolume: document.getElementById('soundVolume')?.value,
+        soundDiceEnabled: document.getElementById('soundDiceEnabled')?.checked,
+        soundCoinEnabled: document.getElementById('soundCoinEnabled')?.checked,
+        soundBuildEnabled: document.getElementById('soundBuildEnabled')?.checked,
+        soundWinEnabled: document.getElementById('soundWinEnabled')?.checked,
     });
     saveSettings();
 }
@@ -697,7 +733,13 @@ function loadSettings() {
             accessibilityReducedMotion: storage.getItem('accessibilityReducedMotion'),
             accessibilityHighContrast: storage.getItem('accessibilityHighContrast'),
             accessibilityHaptics: storage.getItem('accessibilityHaptics'),
+            hapticTurnEnabled: storage.getItem('hapticTurnEnabled'),
+            hapticWinEnabled: storage.getItem('hapticWinEnabled'),
             soundVolume: storage.getItem('soundVolume'),
+            soundDiceEnabled: storage.getItem('soundDiceEnabled'),
+            soundCoinEnabled: storage.getItem('soundCoinEnabled'),
+            soundBuildEnabled: storage.getItem('soundBuildEnabled'),
+            soundWinEnabled: storage.getItem('soundWinEnabled'),
         }, normalizeName);
         GameSetupState.runtime.setSelectedCount(values.selectedCount);
         UiPlayerCount.applyView(

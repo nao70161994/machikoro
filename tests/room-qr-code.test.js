@@ -22,3 +22,17 @@ runTest('room QR SVGはquiet zoneとaccessible nameを持ち外部通信を使�
     assert.ok(!svg.includes('http'));
     assert.strictEqual(RoomQrCode.buildSvg(''), '');
 });
+
+runTest('room QRは同一originの参加URLをversion 4へ格納しqueryからroomを復元する', () => {
+    const location = { origin: 'https://example.test', pathname: '/game/', search: '?room=abc123' };
+    const url = RoomQrCode.buildJoinUrl('abc123', location);
+    assert.strictEqual(url, 'https://example.test/game/?room=ABC123');
+    assert.strictEqual(RoomQrCode.parseJoinRoomId(location), 'ABC123');
+    assert.strictEqual(RoomQrCode.parseJoinRoomId({ search: '?room=bad' }), '');
+    const matrix = RoomQrCode.createMatrix(url);
+    assert.strictEqual(matrix.length, 33);
+    assert.ok(matrix.every(row => row.length === 33));
+    const svg = RoomQrCode.buildSvg(url);
+    assert.ok(svg.includes('viewBox="0 0 41 41"'));
+    assert.ok(svg.includes('aria-label="オンライン参加リンクのQRコード"'));
+});

@@ -49,7 +49,9 @@ function tutorialSettingsSnapshot() {
 }
 
 function triggerUiHaptic(kind) {
-    const enabled = !!document.getElementById('accessibilityHaptics')?.checked;
+    const kindToggle = document.getElementById(kind === 'win' ? 'hapticWinEnabled' : 'hapticTurnEnabled');
+    const enabled = !!document.getElementById('accessibilityHaptics')?.checked &&
+        (!kindToggle || kindToggle.checked === true);
     const reducedMotion = !!document.body?.classList.contains('accessibility-reduced-motion');
     return UiTurnPrivacy.vibrate(kind, {
         enabled,
@@ -389,6 +391,50 @@ async function shareGameResult() {
         return true;
     } catch (_) {
         showNotice('この端末では結果をコピーできませんでした');
+        return false;
+    }
+}
+
+async function shareGameResultImage() {
+    const currentGame = uiGameRuntimeSnapshot().game;
+    const winner = currentGame && currentGame.checkWinner();
+    const model = currentGame && UiWinner.buildResultCardModel({
+        winner,
+        players: currentGame.players,
+        turnCount: currentGame.turnCount,
+    });
+    if (!model || typeof document === 'undefined') return false;
+    const canvas = document.createElement('canvas');
+    if (!UiWinner.drawResultCard(canvas, model)) {
+        showNotice('結果画像を作成できませんでした');
+        return false;
+    }
+    const blob = await new Promise(resolve => {
+        if (typeof canvas.toBlob === 'function') canvas.toBlob(resolve, 'image/png');
+        else resolve(null);
+    });
+    if (!blob) {
+        showNotice('結果画像を作成できませんでした');
+        return false;
+    }
+    const file = typeof File === 'function'
+        ? new File([blob], 'dice-city-result.png', { type: 'image/png' }) : null;
+    try {
+        if (file && navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+            await navigator.share({ files: [file], title: 'ダイスシティ 対戦結果' });
+            showNotice('対戦結果を共有しました');
+            return true;
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'dice-city-result.png';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showNotice('対戦結果の画像を保存しました');
+        return true;
+    } catch (_) {
+        showNotice('結果画像を共有できませんでした');
         return false;
     }
 }

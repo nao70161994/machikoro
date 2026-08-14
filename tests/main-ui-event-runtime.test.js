@@ -80,9 +80,15 @@ runTest('main UI event runtimeは待機室準備状態と結果共有を既存co
     const h = createHarness();
     h.runtime.handleStaticClick(h.event({ uiAction: 'setOnlineLobbyReady', ready: 'true' }));
     h.runtime.handleStaticClick(h.event({ uiAction: 'shareGameResult' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'shareGameResultImage' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'reviewGameSetup' }));
+    h.runtime.handleStaticClick(h.event({ uiAction: 'checkOnlineReadiness' }));
     assert.deepStrictEqual(h.calls, [
         ['preventDefault'], ['setOnlineLobbyReady', true],
         ['preventDefault'], ['shareGameResult'],
+        ['preventDefault'], ['shareGameResultImage'],
+        ['preventDefault'], ['reviewGameSetup'],
+        ['preventDefault'], ['checkOnlineReadiness'],
     ]);
 });
 

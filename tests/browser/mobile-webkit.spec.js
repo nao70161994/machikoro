@@ -25,6 +25,12 @@ async function prepare(page) {
     await page.goto('/');
 }
 
+async function startLocalGame(page) {
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#confirmModal')).toBeVisible();
+    await page.locator('#confirmOkBtn').click();
+}
+
 async function startGenerationServer(port, buildHash) {
     const repoRoot = path.join(__dirname, '..', '..');
     const child = spawn(process.execPath, ['server.js'], {
@@ -131,7 +137,7 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
         await page.goto(origin + '/');
         await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
         await expect.poll(() => page.evaluate(() => caches.keys())).toContain('machikoro-webkit-e2e-v1');
-        await page.locator('#btnStart').click();
+        await startLocalGame(page);
         await expect(page.locator('#gameScreen')).toBeVisible();
 
         await stopGenerationServer(server);
@@ -258,7 +264,7 @@ test('320pxから480pxで2人・10人設定の開始CTAがPWAとfocusを隠さ�
 
 test('320pxから480pxでpending中の長文toastが選択肢を隠さない', async ({ page }) => {
     await prepare(page);
-    await page.locator('#btnStart').click();
+    await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
     await page.evaluate(() => {
         const runtime = GameRuntimeState.runtime.snapshot();
@@ -506,7 +512,7 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
         await page.locator(`select[data-ui-change="localPlayerType"][data-player-index="${index}"]`)
             .selectOption('normal');
     }
-    await page.locator('#btnStart').click();
+    await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
 
     for (const width of [320, 360, 390, 480]) {
@@ -563,7 +569,7 @@ test('ブラウザ内pure viewも背景復帰floorでオンライン待機を0�
 
 test('320pxから480pxで建設カードの判断情報が欠けずに収まる', async ({ page }) => {
     await prepare(page);
-    await page.locator('#btnStart').click();
+    await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
 
     for (const width of [320, 360, 390, 480]) {
@@ -613,7 +619,7 @@ test('320pxから480pxで頻用補助操作のtap領域が重ならずに収ま�
         expect(titleTargets[0].right).toBeLessThanOrEqual(titleTargets[1].left);
     }
 
-    await page.locator('#btnStart').click();
+    await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
     for (const width of [320, 360, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });
@@ -645,7 +651,7 @@ test('320pxから480pxで頻用補助操作のtap領域が重ならずに収ま�
 
 test('320pxから480pxで建設filterがカード範囲だけを安全に追従する', async ({ page }) => {
     await prepare(page);
-    await page.locator('#btnStart').click();
+    await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
 
     for (const width of [320, 360, 390, 480]) {
@@ -706,7 +712,7 @@ test('320pxから480pxで建設shortcutが既存menuへ移動しPWA表示時も�
     for (let count = 2; count < 10; count++) await increasePlayerCount.click();
     const playerTypes = page.locator('#playerSettings .player-setting-select');
     for (let index = 0; index < 10; index++) await playerTypes.nth(index).selectOption('human');
-    await page.locator('#btnStart').click();
+    await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
     await page.evaluate(() => {
         const currentGame = GameRuntimeState.runtime.snapshot().game;

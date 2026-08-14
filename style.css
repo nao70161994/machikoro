@@ -1601,6 +1601,53 @@ button:not(:disabled):active {
     gap: 10px;
     margin-top: 10px;
 }
+
+.effect-setting-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 12px;
+    margin: 6px 0 12px;
+}
+
+.online-readiness #onlineReadinessStatus {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow-wrap: anywhere;
+}
+
+.online-readiness-list {
+    margin: 0;
+    padding-left: 1.4em;
+}
+
+.rules-glossary dl {
+    display: grid;
+    grid-template-columns: minmax(5.5em, auto) 1fr;
+    gap: 8px 12px;
+    margin: 0;
+}
+
+.rules-glossary dt {
+    font-weight: 700;
+    color: #f6c85f;
+}
+
+.rules-glossary dd {
+    margin: 0;
+}
+
+@media (max-width: 480px) {
+    .rules-glossary dl {
+        grid-template-columns: 1fr;
+        gap: 3px;
+    }
+
+    .rules-glossary dd {
+        margin-bottom: 8px;
+    }
+}
 .app-diagnostics summary {
     min-height: 44px;
     display: flex;

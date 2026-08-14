@@ -134,13 +134,23 @@
                     </label>
                     <label class="toggle-setting">
                         <input id="accessibilityHaptics" type="checkbox" data-ui-change="onAccessibilitySettingsChange">
-                        <span>手番開始・勝利時に振動する</span>
+                        <span>振動を使う</span>
                     </label>
+                    <div class="effect-setting-grid" role="group" aria-label="振動する場面">
+                        <label class="toggle-setting"><input id="hapticTurnEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>手番開始</span></label>
+                        <label class="toggle-setting"><input id="hapticWinEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>勝利</span></label>
+                    </div>
                     <label class="accessibility-setting-row" for="soundVolume">
                         <span>効果音量</span>
                         <input id="soundVolume" type="range" min="0" max="100" step="10" value="100" data-ui-change="onAccessibilitySettingsChange" aria-describedby="soundVolumeLabel">
                         <output id="soundVolumeLabel">100%</output>
                     </label>
+                    <div class="effect-setting-grid" role="group" aria-label="効果音を鳴らす場面">
+                        <label class="toggle-setting"><input id="soundDiceEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>ダイス</span></label>
+                        <label class="toggle-setting"><input id="soundCoinEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>コイン</span></label>
+                        <label class="toggle-setting"><input id="soundBuildEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>建設</span></label>
+                        <label class="toggle-setting"><input id="soundWinEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>勝利</span></label>
+                    </div>
                 </details>
                 <details class="setting-section app-diagnostics">
                     <summary>動作診断</summary>
@@ -161,7 +171,7 @@
                     </div>
                     <div id="appBackupStatus" role="status" aria-live="polite"></div>
                 </details>
-                <button id="btnStart" class="setup-primary-cta" data-ui-action="startGame">ゲーム開始</button>
+                <button id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup">ゲーム開始</button>
                 <div id="localRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
             </div>
 
@@ -175,6 +185,13 @@
                     <button class="online-tab-btn active" data-ui-action="switchOnlineTab" data-online-tab="create" id="onlineTabCreate" role="tab" aria-selected="true" aria-controls="onlineCreate" tabindex="0">ルームを作る</button>
                     <button class="online-tab-btn" data-ui-action="switchOnlineTab" data-online-tab="join" id="onlineTabJoin" role="tab" aria-selected="false" aria-controls="onlineJoin" tabindex="-1">ルームに参加</button>
                 </div>
+
+                <details class="setting-section online-readiness">
+                    <summary>接続前チェック</summary>
+                    <p class="setting-help">通信・アプリ版・更新待ちの状態を、ルームへ入る前に確認します。</p>
+                    <button type="button" data-ui-action="checkOnlineReadiness">接続状態を確認</button>
+                    <div id="onlineReadinessStatus" role="status" aria-live="polite">未確認</div>
+                </details>
 
                 <div id="onlineCreate" role="tabpanel" aria-labelledby="onlineTabCreate">
                     <div class="setting-section">
@@ -372,6 +389,19 @@
                         <div class="color-item"><span class="color-badge red-badge">赤</span><span>他人のターンに発動。ダイスを振った人からコインを奪う</span></div>
                         <div class="color-item"><span class="color-badge purple-badge">紫</span><span>自分のターンのみ発動。強力な特殊効果。1枚しか持てない</span></div>
                     </div>
+                </div>
+                <div class="rules-section rules-glossary">
+                    <h3>🔎 ゲーム用語集</h3>
+                    <dl>
+                        <dt>施設</dt><dd>出目に応じて効果が発動するカードです。</dd>
+                        <dt>ランドマーク</dt><dd>建設すると追加能力を得ます。有効なものをすべて建設すると勝利です。</dd>
+                        <dt>休業</dt><dd>カードが裏向きになり、再開するまで効果が発動しない状態です。</dd>
+                        <dt>大施設</dt><dd>紫色の強力な施設です。同じ施設は1人1枚までです。</dd>
+                        <dt>建設フェーズ</dt><dd>施設かランドマークを1つ建設するか、建設せず手番を終える場面です。</dd>
+                        <dt>追加効果</dt><dd>テレビ局やビジネスセンターなど、対象を選んで解決する効果です。</dd>
+                        <dt>振り直し</dt><dd>電波塔が建設済みなら、1手番に1回だけダイスを振り直せます。</dd>
+                        <dt>休業解除</dt><dd>休業中の施設を再び表向きにし、効果が発動できる状態へ戻します。</dd>
+                    </dl>
                 </div>
                 <div class="rules-section">
                     <h3>🏛️ ランドマーク効果</h3>

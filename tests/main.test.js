@@ -112,6 +112,9 @@ function loadMainRuntime(options = {}) {
             innerWidth: 360,
             location: {
                 href: 'https://example.test/play',
+                origin: 'https://example.test',
+                pathname: '/play',
+                search: options.joinRoomId ? `?room=${options.joinRoomId}` : '',
                 reload() { context.reloadCount = (context.reloadCount || 0) + 1; },
             },
             MACHIKORO_CLIENT_VERSION: 'test-version',
@@ -148,7 +151,8 @@ function loadMainRuntime(options = {}) {
         onToggleTutorial(enabled) { localStorage.setItem('tutorialEnabled', enabled ? 'true' : 'false'); },
         onChangeTutorialLevel(level) { localStorage.setItem('tutorialLevel', level); },
         render() { counters.render++; },
-        switchTab() {},
+        switchTab(tab) { context.switchedTab = tab; },
+        switchOnlineTab(tab) { context.switchedOnlineTab = tab; },
         scheduleCPU() {},
         saveSettings() {},
         updateDiceDisplay() {},
@@ -1110,6 +1114,32 @@ runTest('main startGame はRL preload失敗時にゲームを開始しない', a
 
     assert.strictEqual(rt.__test.getGame(), undefined);
     assert.ok(rt.__test.alerts.some(message => message.includes('読み込めませんでした')));
+});
+
+runTest('main 開始前確認は人数・参加者・速度・選択内容を確認してから開始する', () => {
+    const rt = loadMainRuntime();
+    let message = '';
+    rt.beforeConfirm = value => { message = value; };
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: '花子' },
+        { type: 'cpu', difficulty: 'strong', name: 'CPU太郎' },
+    ]);
+    rt.reviewGameSetup();
+    assert.ok(message.includes('人数: 2人'));
+    assert.ok(message.includes('花子（人間）'));
+    assert.ok(message.includes('CPU太郎'));
+    assert.ok(message.includes('CPU速度: 1.5秒'));
+    assert.ok(message.includes('施設:'));
+    assert.ok(rt.__test.getGame());
+});
+
+runTest('main は参加URLのroom IDを入力してonline参加tabを開く', () => {
+    const rt = loadMainRuntime({ joinRoomId: 'abc123' });
+    assert.strictEqual(rt.elements.roomIdInput.value, 'ABC123');
+    assert.strictEqual(rt.switchedTab, 'online');
+    assert.strictEqual(rt.switchedOnlineTab, 'join');
+    assert.ok(rt.elements.onlineStatus.textContent.includes('ABC123'));
 });
 
 runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を表示する', () => {
@@ -2496,6 +2526,15 @@ runTest('index.html は引き渡し・backup・preset・hapticsの安全な導�
     assert.ok(html.includes('id="hotseatHandoffOverlay"'));
     assert.ok(html.includes('data-ui-action="acceptHotseatHandoff"'));
     assert.ok(html.includes('id="accessibilityHaptics"'));
+    assert.ok(html.includes('id="hapticTurnEnabled"'));
+    assert.ok(html.includes('id="hapticWinEnabled"'));
+    assert.ok(html.includes('id="soundDiceEnabled"'));
+    assert.ok(html.includes('id="soundCoinEnabled"'));
+    assert.ok(html.includes('id="soundBuildEnabled"'));
+    assert.ok(html.includes('id="soundWinEnabled"'));
+    assert.ok(html.includes('data-ui-action="checkOnlineReadiness"'));
+    assert.ok(html.includes('id="onlineReadinessStatus"'));
+    assert.ok(html.includes('ゲーム用語集'));
     assert.ok(html.includes('data-ui-action="saveSetupPreset"'));
     assert.ok(html.includes('data-ui-action="exportAppBackup"'));
     assert.ok(html.includes('data-ui-change="importAppBackup"'));
@@ -2656,7 +2695,7 @@ runTest('頻用する補助操作は一覧密度に応じた共通tap領域を�
 runTest('狭幅の開始CTAは既存actionのまま設定内を追従しPWAとfocusを避ける', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
-    assert.ok(html.includes('id="btnStart" class="setup-primary-cta" data-ui-action="startGame"'));
+    assert.ok(html.includes('id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom"'));
     assert.ok(css.includes('@media (max-width: 480px) {\n    #btnStart.setup-primary-cta,\n    #onlineCreateSubmitButton.setup-primary-cta {'));
     assert.ok(css.includes('bottom: var(--setup-cta-bottom);'));

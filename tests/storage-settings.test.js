@@ -62,7 +62,13 @@ runTest('storage settings は既存key向けの保存値形式をpureに組み�
         accessibilityReducedMotion: 'false',
         accessibilityHighContrast: 'false',
         accessibilityHaptics: 'false',
+        hapticTurnEnabled: 'true',
+        hapticWinEnabled: 'true',
         soundVolume: '100',
+        soundDiceEnabled: 'true',
+        soundCoinEnabled: 'true',
+        soundBuildEnabled: 'true',
+        soundWinEnabled: 'true',
     });
     assert.ok(Object.isFrozen(values));
     assert.strictEqual(Object.prototype.hasOwnProperty.call(
@@ -95,7 +101,13 @@ runTest('storage settings は読込値を一度に正規化して未保存値を
         accessibilityReducedMotion: false,
         accessibilityHighContrast: false,
         accessibilityHaptics: false,
+        hapticTurnEnabled: true,
+        hapticWinEnabled: true,
         soundVolume: 100,
+        soundDiceEnabled: true,
+        soundCoinEnabled: true,
+        soundBuildEnabled: true,
+        soundWinEnabled: true,
     });
     assert.ok(Object.isFrozen(values));
 });
@@ -105,6 +117,8 @@ runTest('storage settings はアクセシビリティ設定を安全な範囲へ
     assert.strictEqual(StorageSettings.normalizeAccessibilityFontScale('huge'), 'standard');
     assert.strictEqual(StorageSettings.normalizeStoredBoolean('true'), true);
     assert.strictEqual(StorageSettings.normalizeStoredBoolean('1'), false);
+    assert.strictEqual(StorageSettings.normalizeStoredBooleanDefaultTrue(null), true);
+    assert.strictEqual(StorageSettings.normalizeStoredBooleanDefaultTrue('false'), false);
     assert.strictEqual(StorageSettings.normalizeSoundVolume('-4'), 0);
     assert.strictEqual(StorageSettings.normalizeSoundVolume('55.6'), 56);
     assert.strictEqual(StorageSettings.normalizeSoundVolume('101'), 100);

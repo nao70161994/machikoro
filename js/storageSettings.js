@@ -34,6 +34,10 @@ function normalizeStoredBoolean(value) {
     return value === 'true';
 }
 
+function normalizeStoredBooleanDefaultTrue(value) {
+    return value === null || value === undefined ? true : value === 'true';
+}
+
 function normalizeSoundVolume(value) {
     if (value === null || value === undefined || value === '') return 100;
     const volume = Number(value);
@@ -51,7 +55,13 @@ function serializeSettings(values) {
         accessibilityReducedMotion: values.accessibilityReducedMotion ? 'true' : 'false',
         accessibilityHighContrast: values.accessibilityHighContrast ? 'true' : 'false',
         accessibilityHaptics: values.accessibilityHaptics ? 'true' : 'false',
+        hapticTurnEnabled: values.hapticTurnEnabled !== false ? 'true' : 'false',
+        hapticWinEnabled: values.hapticWinEnabled !== false ? 'true' : 'false',
         soundVolume: String(normalizeSoundVolume(values.soundVolume)),
+        soundDiceEnabled: values.soundDiceEnabled !== false ? 'true' : 'false',
+        soundCoinEnabled: values.soundCoinEnabled !== false ? 'true' : 'false',
+        soundBuildEnabled: values.soundBuildEnabled !== false ? 'true' : 'false',
+        soundWinEnabled: values.soundWinEnabled !== false ? 'true' : 'false',
     };
     if (values.cpuSpeed !== null && values.cpuSpeed !== undefined) {
         result.cpuSpeed = values.cpuSpeed;
@@ -71,7 +81,13 @@ function normalizeStoredSettings(values, normalizeName) {
         accessibilityReducedMotion: normalizeStoredBoolean(values.accessibilityReducedMotion),
         accessibilityHighContrast: normalizeStoredBoolean(values.accessibilityHighContrast),
         accessibilityHaptics: normalizeStoredBoolean(values.accessibilityHaptics),
+        hapticTurnEnabled: normalizeStoredBooleanDefaultTrue(values.hapticTurnEnabled),
+        hapticWinEnabled: normalizeStoredBooleanDefaultTrue(values.hapticWinEnabled),
         soundVolume: normalizeSoundVolume(values.soundVolume),
+        soundDiceEnabled: normalizeStoredBooleanDefaultTrue(values.soundDiceEnabled),
+        soundCoinEnabled: normalizeStoredBooleanDefaultTrue(values.soundCoinEnabled),
+        soundBuildEnabled: normalizeStoredBooleanDefaultTrue(values.soundBuildEnabled),
+        soundWinEnabled: normalizeStoredBooleanDefaultTrue(values.soundWinEnabled),
     });
 }
 
@@ -82,6 +98,7 @@ const StorageSettings = Object.freeze({
     normalizeTutorialLevel,
     normalizeAccessibilityFontScale,
     normalizeStoredBoolean,
+    normalizeStoredBooleanDefaultTrue,
     normalizeSoundVolume,
     serializeSettings,
     normalizeStoredSettings,

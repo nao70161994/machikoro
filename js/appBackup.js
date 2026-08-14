@@ -10,6 +10,8 @@ const AppBackup = (() => {
         'tutorialEnabled', 'tutorialLevel',
         'accessibilityFontScale', 'accessibilityReducedMotion',
         'accessibilityHighContrast', 'accessibilityHaptics', 'soundVolume',
+        'hapticTurnEnabled', 'hapticWinEnabled',
+        'soundDiceEnabled', 'soundCoinEnabled', 'soundBuildEnabled', 'soundWinEnabled',
         'machikoroSetupPresetsV1',
     ]);
     const JSON_KEYS = new Set([

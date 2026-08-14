@@ -100,8 +100,30 @@ runTest('ui winnerは順位付きの共有テキストとコピー導線を生�
         logEntries: [], logTypes: {},
     });
     assert.ok(html.includes('data-ui-action="shareGameResult"'));
+    assert.ok(html.includes('data-ui-action="shareGameResultImage"'));
     assert.ok(html.includes('結果を共有'));
     assert.strictEqual(UiWinner.buildShareText({ players }), '');
+});
+
+runTest('ui winnerは結果画像用modelを順位順に固定してCanvasへ描画する', () => {
+    const players = [{ name: 'Alice', coins: 12 }, { name: 'Bob', coins: 20 }];
+    const model = UiWinner.buildResultCardModel({ winner: players[1], players, turnCount: 9 });
+    assert.strictEqual(model.winnerName, 'Bob');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(model.standings)), [
+        { rank: 1, name: 'Bob', coins: 20 },
+        { rank: 2, name: 'Alice', coins: 12 },
+    ]);
+    const calls = [];
+    const context = {
+        fillRect: (...args) => calls.push(['fillRect', ...args]),
+        fillText: (...args) => calls.push(['fillText', ...args]),
+        createLinearGradient() { return { addColorStop() {} }; },
+        textAlign: 'left', fillStyle: '', font: '',
+    };
+    const canvas = { getContext: () => context };
+    assert.strictEqual(UiWinner.drawResultCard(canvas, model), true);
+    assert.deepStrictEqual([canvas.width, canvas.height], [1200, 630]);
+    assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('Bob')));
 });
 
 runTest('ui winnerは10人同点のstable順と危険な名前のlist labelを維持する', () => {

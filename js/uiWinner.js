@@ -147,6 +147,64 @@ function buildShareText(options = {}) {
     return `🏙️ ダイスシティ 対戦結果\n🏆 ${winner.name}の勝利\n${Number(options.turnCount) || 0}ターン\n${standings}`;
 }
 
+function buildResultCardModel(options = {}) {
+    const winner = options.winner;
+    const players = Array.isArray(options.players) ? options.players : [];
+    if (!winner || players.length === 0) return null;
+    return Object.freeze({
+        winnerName: String(winner.name || '').slice(0, 24),
+        turnCount: Math.max(0, Number(options.turnCount) || 0),
+        standings: Object.freeze(players.slice().sort((left, right) => right.coins - left.coins)
+            .map((player, index) => Object.freeze({
+                rank: index + 1,
+                name: String(player.name || '').slice(0, 20),
+                coins: Number.isFinite(player.coins) ? player.coins : 0,
+            }))),
+    });
+}
+
+function drawResultCard(canvas, model) {
+    if (!canvas || !model || typeof canvas.getContext !== 'function') return false;
+    const context = canvas.getContext('2d');
+    if (!context) return false;
+    canvas.width = 1200;
+    canvas.height = 630;
+    const gradient = typeof context.createLinearGradient === 'function'
+        ? context.createLinearGradient(0, 0, 1200, 630) : null;
+    if (gradient) {
+        gradient.addColorStop(0, '#11182d');
+        gradient.addColorStop(1, '#24506b');
+        context.fillStyle = gradient;
+    } else context.fillStyle = '#18243d';
+    context.fillRect(0, 0, 1200, 630);
+    context.fillStyle = '#f6c85f';
+    context.font = 'bold 42px sans-serif';
+    context.fillText('DICE CITY / 対戦結果', 64, 76);
+    context.fillStyle = '#ffffff';
+    context.font = 'bold 64px sans-serif';
+    context.fillText(`🏆 ${model.winnerName} の勝利`, 64, 162);
+    context.fillStyle = '#c8d7ee';
+    context.font = '28px sans-serif';
+    context.fillText(`${model.turnCount}ターン`, 68, 208);
+    const columnWidth = 520;
+    model.standings.slice(0, 10).forEach((player, index) => {
+        const column = index >= 5 ? 1 : 0;
+        const row = index % 5;
+        const x = 70 + column * columnWidth;
+        const y = 280 + row * 62;
+        context.fillStyle = player.rank === 1 ? '#f6c85f' : '#ffffff';
+        context.font = player.rank === 1 ? 'bold 28px sans-serif' : '26px sans-serif';
+        context.fillText(`${player.rank}位  ${player.name}`, x, y);
+        context.textAlign = 'right';
+        context.fillText(`${player.coins}コイン`, x + 450, y);
+        context.textAlign = 'left';
+    });
+    context.fillStyle = '#91a8c6';
+    context.font = '22px sans-serif';
+    context.fillText('ダイスシティで遊びました', 70, 600);
+    return true;
+}
+
 function createGameOriginController() {
     let online = false;
     return Object.freeze({
@@ -172,7 +230,7 @@ function buildWinnerScreenHtml(options = {}) {
         : (options.canRematch
             ? '<button id="winnerRematchButton" class="winner-primary-action" data-ui-action="rematchLocalGame">同じ設定でもう一度</button>'
             : '');
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}${rematchButton}<button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
+    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}${rematchButton}<button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">結果画像を保存・共有</button><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;
@@ -195,6 +253,8 @@ const UiWinner = Object.freeze({
     buildGameReview,
     buildWinnerStatusText,
     buildShareText,
+    buildResultCardModel,
+    drawResultCard,
     buildWinnerScreenHtml,
 });
 

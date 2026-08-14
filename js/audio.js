@@ -2,11 +2,18 @@
 let audioCtx = null;
 let winSoundPlayed = false;
 let soundVolume = 1;
+const soundEffectEnabled = { dice: true, coin: true, build: true, win: true };
 
 function setSoundVolume(value) {
     const normalized = Math.min(100, Math.max(0, Number(value) || 0));
     soundVolume = normalized / 100;
     return normalized;
+}
+
+function setSoundEffectEnabled(type, enabled) {
+    if (!Object.prototype.hasOwnProperty.call(soundEffectEnabled, type)) return false;
+    soundEffectEnabled[type] = enabled === true;
+    return soundEffectEnabled[type];
 }
 
 function getAudioCtx() {
@@ -16,7 +23,7 @@ function getAudioCtx() {
 
 function playSound(type) {
     try {
-        if (soundVolume <= 0) return;
+        if (soundVolume <= 0 || soundEffectEnabled[type] === false) return;
         const ctx = getAudioCtx();
         if (ctx.state === 'suspended') ctx.resume();
         switch (type) {

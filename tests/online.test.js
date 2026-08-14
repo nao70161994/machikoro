@@ -5235,3 +5235,18 @@ runTest('versioned action wireは明示flagとnegotiated selectionでだけv1 en
     });
     assert.notStrictEqual(rt.getGame().phase, GAME_PHASES.ROLL);
 });
+
+runTest('online接続前チェックは通信・版・更新待ちを一つの判定へまとめる', () => {
+    const rt = loadOnlineRuntime();
+    const ready = rt.buildOnlineReadinessView({
+        online: true, serverReachable: true, versionMatches: true, updateWaiting: false,
+    });
+    assert.strictEqual(ready.ready, true);
+    assert.ok(ready.html.includes('オンライン対戦を開始できます'));
+    const blocked = rt.buildOnlineReadinessView({
+        online: false, serverReachable: false, versionMatches: false, updateWaiting: true,
+    });
+    assert.strictEqual(blocked.ready, false);
+    assert.ok(blocked.text.includes('オフライン'));
+    assert.ok(blocked.text.includes('更新が必要'));
+});

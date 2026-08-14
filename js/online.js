@@ -82,9 +82,73 @@ function toggleOnlineRoomQr(roomId) {
     button.setAttribute('aria-expanded', visible ? 'true' : 'false');
     button.textContent = visible ? 'QRを隠す' : 'QRを表示';
     if (visible && !container.innerHTML) {
-        container.innerHTML = RoomQrCode.buildSvg(normalized);
+        const joinUrl = RoomQrCode.buildJoinUrl(normalized,
+            typeof window !== 'undefined' ? window.location : {});
+        container.innerHTML = RoomQrCode.buildSvg(joinUrl || normalized);
     }
     return true;
+}
+
+function buildOnlineReadinessView(input = {}) {
+    const online = input.online !== false;
+    const serverReachable = input.serverReachable === true;
+    const updateWaiting = input.updateWaiting === true;
+    const versionMatches = input.versionMatches !== false;
+    const items = [
+        `${online ? '✅' : '❌'} 端末のネット接続: ${online ? 'オンライン' : 'オフライン'}`,
+        `${serverReachable ? '✅' : '❌'} ゲームサーバー: ${serverReachable ? '応答あり' : '応答なし'}`,
+        `${versionMatches ? '✅' : '⚠️'} アプリ版: ${versionMatches ? '最新サーバーと一致' : '更新が必要'}`,
+        `${updateWaiting ? '⚠️' : '✅'} アプリ更新: ${updateWaiting ? '適用待ち' : '待機なし'}`,
+    ];
+    const ready = online && serverReachable && versionMatches && !updateWaiting;
+    return Object.freeze({
+        ready,
+        text: `${ready ? 'オンライン対戦を開始できます。' : '確認が必要な項目があります。'}\n${items.join('\n')}`,
+        html: `<strong>${ready ? 'オンライン対戦を開始できます。' : '確認が必要な項目があります。'}</strong><ul class="online-readiness-list">${items.map(item => `<li>${item}</li>`).join('')}</ul>`,
+    });
+}
+
+async function checkOnlineReadiness() {
+    onlineDomEffects.setText(OnlineDomEffects.ids.readiness, '確認中…');
+    const online = typeof navigator === 'undefined' || navigator.onLine !== false;
+    let serverReachable = false;
+    let serverVersion = '';
+    let controller = null;
+    let timer = null;
+    try {
+        if (typeof AbortController === 'function') {
+            controller = new AbortController();
+            timer = setTimeout(() => controller.abort(), 3000);
+        }
+        const response = await fetch('/api/version', Object.assign({ cache: 'no-store' },
+            controller ? { signal: controller.signal } : {}));
+        if (response && response.ok) {
+            const body = await response.json();
+            serverReachable = true;
+            serverVersion = typeof body.hash === 'string' ? body.hash : '';
+        }
+    } catch (_) {
+    } finally {
+        if (timer !== null) clearTimeout(timer);
+    }
+    let updateWaiting = false;
+    try {
+        const registration = navigator.serviceWorker &&
+            typeof navigator.serviceWorker.getRegistration === 'function'
+            ? await navigator.serviceWorker.getRegistration() : null;
+        updateWaiting = !!(registration && registration.waiting);
+    } catch (_) {}
+    const clientVersion = typeof window !== 'undefined' &&
+        typeof window.MACHIKORO_CLIENT_VERSION === 'string'
+        ? window.MACHIKORO_CLIENT_VERSION : '';
+    const view = buildOnlineReadinessView({
+        online,
+        serverReachable,
+        updateWaiting,
+        versionMatches: !clientVersion || !serverVersion || clientVersion === serverVersion,
+    });
+    onlineDomEffects.setHtml(OnlineDomEffects.ids.readiness, view.html);
+    return view;
 }
 
 function leaveOnlineLobby() {

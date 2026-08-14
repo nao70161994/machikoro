@@ -573,6 +573,27 @@ function startGame() {
     return localGameStartRuntime.start();
 }
 
+function reviewGameSetup() {
+    const setup = gameSetupSnapshot();
+    const cards = getEnabledCardSelection();
+    const landmarks = getEnabledLandmarkSelection();
+    const players = setup.playerSettings.slice(0, setup.selectedCount).map((setting, index) => {
+        const name = String(setting && setting.name || '').trim() || `プレイヤー${index + 1}`;
+        if (!setting || setting.type !== 'cpu') return `${index + 1}. ${name}（人間）`;
+        return `${index + 1}. ${name}（${getLocalCpuLabel(setting.difficulty || 'normal')}）`;
+    });
+    const speed = document.getElementById('cpuSpeed')?.value;
+    const message = [
+        'この設定でゲームを開始しますか？',
+        '',
+        `人数: ${setup.selectedCount}人`,
+        ...players,
+        `CPU速度: ${formatCpuSpeedLabel(speed || 1500)}`,
+        `施設: ${cards.size}種 / ランドマーク: ${landmarks.size}種`,
+    ].join('\n');
+    return showConfirm(message, () => startGame());
+}
+
 const localGameRestartRuntime = LocalGameRestartRuntime.createRuntime({
     cancelAutoSkip: () => cancelAutoSkip(),
     cancelCpuSchedule: reason => cancelCpuSchedule(reason),
@@ -1163,3 +1184,18 @@ renderSetupPresetList();
 renderCpuTournamentHistory();
 bindDelegatedUiHandlers();
 bindCpuResumeScheduler();
+
+function applyRoomJoinLinkFromLocation() {
+    if (typeof RoomQrCode === 'undefined' || typeof window === 'undefined') return false;
+    const roomId = RoomQrCode.parseJoinRoomId(window.location);
+    const input = document.getElementById('roomIdInput');
+    if (!roomId || !input) return false;
+    input.value = roomId;
+    if (typeof switchTab === 'function') switchTab('online');
+    if (typeof switchOnlineTab === 'function') switchOnlineTab('join');
+    const status = document.getElementById('onlineStatus');
+    if (status) status.textContent = `参加リンクからルーム ${roomId} を入力しました。名前を確認して参加してください。`;
+    return true;
+}
+
+applyRoomJoinLinkFromLocation();

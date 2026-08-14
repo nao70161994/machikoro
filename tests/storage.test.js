@@ -17,8 +17,14 @@ function loadStorageRuntime(options = {}) {
         accessibilityReducedMotion: makeElement({ checked: false }),
         accessibilityHighContrast: makeElement({ checked: false }),
         accessibilityHaptics: makeElement({ checked: false }),
+        hapticTurnEnabled: makeElement({ checked: true }),
+        hapticWinEnabled: makeElement({ checked: true }),
         soundVolume: makeElement({ value: '100' }),
         soundVolumeLabel: makeElement(),
+        soundDiceEnabled: makeElement({ checked: true }),
+        soundCoinEnabled: makeElement({ checked: true }),
+        soundBuildEnabled: makeElement({ checked: true }),
+        soundWinEnabled: makeElement({ checked: true }),
         onlineStatus: makeElement(),
     };
     const alerts = [];
@@ -170,6 +176,10 @@ function loadStorageRuntime(options = {}) {
         syncTutorialControls() {},
         renderPlayerSettings() { context.renderPlayerSettingsCalls = (context.renderPlayerSettingsCalls || 0) + 1; },
         stopConfetti() { context.stopConfettiCalls = (context.stopConfettiCalls || 0) + 1; },
+        setSoundEffectEnabled(type, enabled) {
+            context.soundEffectCalls = context.soundEffectCalls || [];
+            context.soundEffectCalls.push([type, enabled]);
+        },
         sendAction(name, payload) { context.sentActions.push({ name, payload }); },
         showConfirm(message, cb) { confirmCount++; context.confirmMessages.push(message); cb(); },
         alert(message) { alerts.push(message); },
@@ -1271,7 +1281,13 @@ runTest('storage saveSettings は既存keyと値形式を共通facade経由で�
     assert.strictEqual(rt.localStorage.getItem('accessibilityReducedMotion'), 'false');
     assert.strictEqual(rt.localStorage.getItem('accessibilityHighContrast'), 'false');
     assert.strictEqual(rt.localStorage.getItem('accessibilityHaptics'), 'false');
+    assert.strictEqual(rt.localStorage.getItem('hapticTurnEnabled'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('hapticWinEnabled'), 'true');
     assert.strictEqual(rt.localStorage.getItem('soundVolume'), '100');
+    assert.strictEqual(rt.localStorage.getItem('soundDiceEnabled'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('soundCoinEnabled'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('soundBuildEnabled'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('soundWinEnabled'), 'true');
 });
 runTest('storage accessibility設定はclass・音量表示・紙吹雪停止を同期する', () => {
     const rt = loadStorageRuntime();
@@ -1291,12 +1307,18 @@ runTest('storage accessibility設定はclass・音量表示・紙吹雪停止を
 
     assert.deepStrictEqual(JSON.parse(JSON.stringify(view)), {
         fontScale: 'large', reducedMotion: true, highContrast: true, haptics: true, volume: 40,
+        hapticTurnEnabled: true, hapticWinEnabled: true,
+        soundDiceEnabled: true, soundCoinEnabled: true,
+        soundBuildEnabled: true, soundWinEnabled: true,
     });
     assert.strictEqual(rt.document.body.classList.contains('accessibility-large-text'), true);
     assert.strictEqual(rt.document.body.classList.contains('accessibility-reduced-motion'), true);
     assert.strictEqual(rt.document.body.classList.contains('accessibility-high-contrast'), true);
     assert.strictEqual(rt.elements.soundVolumeLabel.textContent, '40%');
     assert.strictEqual(rt.elements.accessibilityHaptics.checked, true);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.soundEffectCalls)), [
+        ['dice', true], ['coin', true], ['build', true], ['win', true],
+    ]);
     assert.strictEqual(rt.stopConfettiCalls, 1);
 });
 runTest('storage settings はstorage例外を外へ伝播せず既存後処理を維持する', () => {

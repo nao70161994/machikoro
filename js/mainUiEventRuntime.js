@@ -3,7 +3,7 @@
 const MainUiEventRuntime = (() => {
     const STATIC_COMMANDS = Object.freeze([
         'showRules', 'showCardSelect', 'reconnectOnline', 'deleteOnlineSession', 'switchTab',
-        'changeCount', 'startGame', 'resumeGame', 'deleteSavedGame', 'switchOnlineTab',
+        'changeCount', 'startGame', 'reviewGameSetup', 'resumeGame', 'deleteSavedGame', 'switchOnlineTab',
         'changeOnlineCount', 'showCreateRoom', 'joinRoom', 'toggleTutorial',
         'cycleTutorialLevel', 'onRoll', 'onReroll', 'onSkip', 'toggleLog', 'restartGame', 'rematchLocalGame', 'requestOnlineRematch', 'declineOnlineRematch',
         'closeRules', 'closeCardDetail', 'hideNotice', 'crashResume', 'pwaInstallPrompt',
@@ -13,7 +13,7 @@ const MainUiEventRuntime = (() => {
         'startCpuTournament', 'cancelCpuTournament',
         'showCpuTournamentHistory', 'replayCpuTournamentGame',
         'exportCpuTournamentJson', 'exportCpuTournamentCsv', 'clearCpuTournamentHistory',
-        'shareGameResult',
+        'shareGameResult', 'shareGameResultImage', 'checkOnlineReadiness',
         'refreshAppDiagnostics', 'copyAppDiagnostics',
         'saveSetupPreset', 'applySetupPreset', 'deleteSetupPreset',
         'exportAppBackup', 'selectAppBackupFile', 'acceptHotseatHandoff',
