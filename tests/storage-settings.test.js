@@ -47,6 +47,10 @@ runTest('storage settings は既存key向けの保存値形式をpureに組み�
         tutorialEnabled: false,
         tutorialLevel: 'advanced',
         cpuSpeed: '500',
+        accessibilityFontScale: 'standard',
+        accessibilityReducedMotion: false,
+        accessibilityHighContrast: false,
+        soundVolume: '100',
     });
     assert.deepStrictEqual(values, {
         selectedCount: 4,
@@ -54,6 +58,10 @@ runTest('storage settings は既存key向けの保存値形式をpureに組み�
         tutorialEnabled: 'false',
         tutorialLevel: 'advanced',
         cpuSpeed: '500',
+        accessibilityFontScale: 'standard',
+        accessibilityReducedMotion: 'false',
+        accessibilityHighContrast: 'false',
+        soundVolume: '100',
     });
     assert.ok(Object.isFrozen(values));
     assert.strictEqual(Object.prototype.hasOwnProperty.call(
@@ -82,6 +90,23 @@ runTest('storage settings は読込値を一度に正規化して未保存値を
         cpuSpeed: null,
         tutorialEnabled: false,
         tutorialLevel: 'beginner',
+        accessibilityFontScale: 'standard',
+        accessibilityReducedMotion: false,
+        accessibilityHighContrast: false,
+        soundVolume: 100,
     });
     assert.ok(Object.isFrozen(values));
+});
+
+runTest('storage settings はアクセシビリティ設定を安全な範囲へ正規化する', () => {
+    assert.strictEqual(StorageSettings.normalizeAccessibilityFontScale('large'), 'large');
+    assert.strictEqual(StorageSettings.normalizeAccessibilityFontScale('huge'), 'standard');
+    assert.strictEqual(StorageSettings.normalizeStoredBoolean('true'), true);
+    assert.strictEqual(StorageSettings.normalizeStoredBoolean('1'), false);
+    assert.strictEqual(StorageSettings.normalizeSoundVolume('-4'), 0);
+    assert.strictEqual(StorageSettings.normalizeSoundVolume('55.6'), 56);
+    assert.strictEqual(StorageSettings.normalizeSoundVolume('101'), 100);
+    assert.strictEqual(StorageSettings.normalizeSoundVolume('invalid'), 100);
+    assert.strictEqual(StorageSettings.normalizeSoundVolume(null), 100);
+    assert.strictEqual(StorageSettings.normalizeSoundVolume(''), 100);
 });

@@ -5,6 +5,7 @@ const pendingModalFocusController = UiPendingEffects.createFocusController();
 const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
+let logRelatedHighlightTimer = null;
 
 function uiGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
@@ -66,6 +67,48 @@ function renderLog() {
     );
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml);
     logEl.scrollTop = logEl.scrollHeight;
+}
+
+function highlightLogEntry(playerName = '', targetName = '', cardName = '', logMessage = '') {
+    const highlighted = Array.from(document.querySelectorAll('.log-related-highlight'));
+    highlighted.forEach(element => element.classList.remove('log-related-highlight'));
+    if (logRelatedHighlightTimer !== null) {
+        clearTimeout(logRelatedHighlightTimer);
+        logRelatedHighlightTimer = null;
+    }
+    const currentGame = uiGameRuntimeSnapshot().game;
+    if (!currentGame || !Array.isArray(currentGame.players)) return false;
+    const relatedNames = new Set([playerName, targetName].filter(Boolean));
+    const matches = [];
+    currentGame.players.forEach((player, index) => {
+        if (!player || (!relatedNames.has(player.name) && !String(logMessage).includes(player.name))) return;
+        const box = document.getElementById(`playerBox${index}`);
+        if (!box) return;
+        if (box.tagName === 'DETAILS') box.open = true;
+        box.classList.add('log-related-highlight');
+        matches.push(box);
+    });
+    if (cardName) {
+        const roots = matches.length > 0 ? matches : [document.getElementById('players')];
+        roots.filter(Boolean).forEach(root => {
+            Array.from(root.querySelectorAll('[data-card-name]')).forEach(card => {
+                if (card.dataset.cardName !== cardName) return;
+                card.classList.add('log-related-highlight');
+                matches.push(card);
+            });
+        });
+    }
+    const first = matches[0];
+    if (!first) return false;
+    if (typeof first.scrollIntoView === 'function') {
+        const reduceMotion = document.body && document.body.classList.contains('accessibility-reduced-motion');
+        first.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    }
+    logRelatedHighlightTimer = setTimeout(() => {
+        matches.forEach(element => element.classList.remove('log-related-highlight'));
+        logRelatedHighlightTimer = null;
+    }, 2200);
+    return true;
 }
 
 function tutorialOptions() {

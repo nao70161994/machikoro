@@ -1,6 +1,13 @@
 // サウンド
 let audioCtx = null;
 let winSoundPlayed = false;
+let soundVolume = 1;
+
+function setSoundVolume(value) {
+    const normalized = Math.min(100, Math.max(0, Number(value) || 0));
+    soundVolume = normalized / 100;
+    return normalized;
+}
 
 function getAudioCtx() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -9,6 +16,7 @@ function getAudioCtx() {
 
 function playSound(type) {
     try {
+        if (soundVolume <= 0) return;
         const ctx = getAudioCtx();
         if (ctx.state === 'suspended') ctx.resume();
         switch (type) {
@@ -20,7 +28,7 @@ function playSound(type) {
                 const src = ctx.createBufferSource();
                 src.buffer = buffer;
                 const g = ctx.createGain();
-                g.gain.setValueAtTime(0.5, ctx.currentTime);
+                g.gain.setValueAtTime(0.5 * soundVolume, ctx.currentTime);
                 g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
                 src.connect(g); g.connect(ctx.destination);
                 src.start();
@@ -35,7 +43,7 @@ function playSound(type) {
                     const t = ctx.currentTime + i * 0.08;
                     osc.frequency.value = freq;
                     g.gain.setValueAtTime(0, t);
-                    g.gain.linearRampToValueAtTime(0.15, t + 0.02);
+                    g.gain.linearRampToValueAtTime(0.15 * soundVolume, t + 0.02);
                     g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
                     osc.start(t); osc.stop(t + 0.2);
                 });
@@ -48,7 +56,7 @@ function playSound(type) {
                 osc.connect(g); g.connect(ctx.destination);
                 osc.frequency.setValueAtTime(392, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(523, ctx.currentTime + 0.1);
-                g.gain.setValueAtTime(0.2, ctx.currentTime);
+                g.gain.setValueAtTime(0.2 * soundVolume, ctx.currentTime);
                 g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
                 osc.start(); osc.stop(ctx.currentTime + 0.35);
                 break;
@@ -61,7 +69,7 @@ function playSound(type) {
                     osc.frequency.value = freq;
                     const t = ctx.currentTime + i * 0.12;
                     g.gain.setValueAtTime(0, t);
-                    g.gain.linearRampToValueAtTime(0.2, t + 0.04);
+                    g.gain.linearRampToValueAtTime(0.2 * soundVolume, t + 0.04);
                     g.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
                     osc.start(t); osc.stop(t + 0.5);
                 });

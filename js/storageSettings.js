@@ -26,12 +26,31 @@ function normalizeTutorialLevel(value) {
     return value === 'advanced' ? 'advanced' : 'beginner';
 }
 
+function normalizeAccessibilityFontScale(value) {
+    return value === 'large' ? 'large' : 'standard';
+}
+
+function normalizeStoredBoolean(value) {
+    return value === 'true';
+}
+
+function normalizeSoundVolume(value) {
+    if (value === null || value === undefined || value === '') return 100;
+    const volume = Number(value);
+    if (!Number.isFinite(volume)) return 100;
+    return Math.min(100, Math.max(0, Math.round(volume)));
+}
+
 function serializeSettings(values) {
     const result = {
         selectedCount: values.selectedCount,
         playerSettings: JSON.stringify(values.playerSettings),
         tutorialEnabled: values.tutorialEnabled ? 'true' : 'false',
         tutorialLevel: values.tutorialLevel,
+        accessibilityFontScale: normalizeAccessibilityFontScale(values.accessibilityFontScale),
+        accessibilityReducedMotion: values.accessibilityReducedMotion ? 'true' : 'false',
+        accessibilityHighContrast: values.accessibilityHighContrast ? 'true' : 'false',
+        soundVolume: String(normalizeSoundVolume(values.soundVolume)),
     };
     if (values.cpuSpeed !== null && values.cpuSpeed !== undefined) {
         result.cpuSpeed = values.cpuSpeed;
@@ -47,6 +66,10 @@ function normalizeStoredSettings(values, normalizeName) {
         cpuSpeed: values.cpuSpeed,
         tutorialEnabled: normalizeTutorialEnabled(values.tutorialEnabled),
         tutorialLevel: normalizeTutorialLevel(values.tutorialLevel),
+        accessibilityFontScale: normalizeAccessibilityFontScale(values.accessibilityFontScale),
+        accessibilityReducedMotion: normalizeStoredBoolean(values.accessibilityReducedMotion),
+        accessibilityHighContrast: normalizeStoredBoolean(values.accessibilityHighContrast),
+        soundVolume: normalizeSoundVolume(values.soundVolume),
     });
 }
 
@@ -55,6 +78,9 @@ const StorageSettings = Object.freeze({
     normalizePlayerSettings,
     normalizeTutorialEnabled,
     normalizeTutorialLevel,
+    normalizeAccessibilityFontScale,
+    normalizeStoredBoolean,
+    normalizeSoundVolume,
     serializeSettings,
     normalizeStoredSettings,
 });

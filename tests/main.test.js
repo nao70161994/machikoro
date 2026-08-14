@@ -3430,6 +3430,21 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
     assert.deepStrictEqual(readPngSize('icons/icon-192.png'), { width: 192, height: 192 });
 });
 
+runTest('見やすさ設定は保存可能な4操作と適用classを提供する', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    for (const id of [
+        'accessibilityFontScale', 'accessibilityReducedMotion',
+        'accessibilityHighContrast', 'soundVolume',
+    ]) {
+        assert.match(html, new RegExp(`id="${id}"[^>]*data-ui-change="onAccessibilitySettingsChange"`));
+    }
+    assert.match(css, /\.accessibility-large-text/);
+    assert.match(css, /\.accessibility-high-contrast/);
+    assert.match(css, /\.accessibility-reduced-motion/);
+    assert.match(css, /scroll-behavior:\s*auto\s*!important/);
+});
+
 runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));

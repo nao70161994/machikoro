@@ -614,15 +614,57 @@ function saveSettings() {
             tutorialEnabled: tutorial.tutorialEnabled,
             tutorialLevel: tutorial.tutorialLevel,
             cpuSpeed: speedEl ? speedEl.value : null,
+            accessibilityFontScale: document.getElementById('accessibilityFontScale')?.value,
+            accessibilityReducedMotion: document.getElementById('accessibilityReducedMotion')?.checked,
+            accessibilityHighContrast: document.getElementById('accessibilityHighContrast')?.checked,
+            soundVolume: document.getElementById('soundVolume')?.value,
         });
         storage.setItem('selectedCount', values.selectedCount);
         storage.setItem('playerSettings', values.playerSettings);
         storage.setItem('tutorialEnabled', values.tutorialEnabled);
         storage.setItem('tutorialLevel', values.tutorialLevel);
+        storage.setItem('accessibilityFontScale', values.accessibilityFontScale);
+        storage.setItem('accessibilityReducedMotion', values.accessibilityReducedMotion);
+        storage.setItem('accessibilityHighContrast', values.accessibilityHighContrast);
+        storage.setItem('soundVolume', values.soundVolume);
         if (Object.prototype.hasOwnProperty.call(values, 'cpuSpeed')) {
             storage.setItem('cpuSpeed', values.cpuSpeed);
         }
     });
+}
+
+function applyAccessibilitySettings(values = {}) {
+    const fontScale = StorageSettings.normalizeAccessibilityFontScale(values.accessibilityFontScale);
+    const reducedMotion = values.accessibilityReducedMotion === true;
+    const highContrast = values.accessibilityHighContrast === true;
+    const volume = StorageSettings.normalizeSoundVolume(values.soundVolume);
+    if (document.body && document.body.classList) {
+        document.body.classList.toggle('accessibility-large-text', fontScale === 'large');
+        document.body.classList.toggle('accessibility-reduced-motion', reducedMotion);
+        document.body.classList.toggle('accessibility-high-contrast', highContrast);
+    }
+    const fontScaleEl = document.getElementById('accessibilityFontScale');
+    const reducedMotionEl = document.getElementById('accessibilityReducedMotion');
+    const highContrastEl = document.getElementById('accessibilityHighContrast');
+    const volumeEl = document.getElementById('soundVolume');
+    const volumeLabel = document.getElementById('soundVolumeLabel');
+    if (fontScaleEl) fontScaleEl.value = fontScale;
+    if (reducedMotionEl) reducedMotionEl.checked = reducedMotion;
+    if (highContrastEl) highContrastEl.checked = highContrast;
+    if (volumeEl) volumeEl.value = String(volume);
+    if (volumeLabel) volumeLabel.textContent = `${volume}%`;
+    if (typeof setSoundVolume === 'function') setSoundVolume(volume);
+    return Object.freeze({ fontScale, reducedMotion, highContrast, volume });
+}
+
+function onAccessibilitySettingsChange() {
+    applyAccessibilitySettings({
+        accessibilityFontScale: document.getElementById('accessibilityFontScale')?.value,
+        accessibilityReducedMotion: document.getElementById('accessibilityReducedMotion')?.checked,
+        accessibilityHighContrast: document.getElementById('accessibilityHighContrast')?.checked,
+        soundVolume: document.getElementById('soundVolume')?.value,
+    });
+    saveSettings();
 }
 
 function loadSettings() {
@@ -636,6 +678,10 @@ function loadSettings() {
             cpuSpeed: storage.getItem('cpuSpeed'),
             tutorialEnabled: storage.getItem('tutorialEnabled'),
             tutorialLevel: storage.getItem('tutorialLevel'),
+            accessibilityFontScale: storage.getItem('accessibilityFontScale'),
+            accessibilityReducedMotion: storage.getItem('accessibilityReducedMotion'),
+            accessibilityHighContrast: storage.getItem('accessibilityHighContrast'),
+            soundVolume: storage.getItem('soundVolume'),
         }, normalizeName);
         GameSetupState.runtime.setSelectedCount(values.selectedCount);
         UiPlayerCount.applyView(
@@ -658,6 +704,7 @@ function loadSettings() {
             }
         }
         UiTutorialSettings.runtime.replace(values);
+        applyAccessibilitySettings(values);
     });
     syncTutorialControls();
     renderPlayerSettings();

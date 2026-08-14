@@ -67,7 +67,12 @@ const UiLogDisplay = (() => {
             if (entry === '__SEP__') return '<div class="log-separator"></div>';
             const { cls } = classifyLogEntry(entry, display);
             const latestClass = index === lastEntryIndex ? ' log-latest' : '';
-            return `<div class="log-item ${cls}${latestClass}">${escapeHtml(entry.message)}</div>`;
+            const details = extractLogDetails(entry);
+            const hasRelatedBoardItem = !!(details.actor || details.target || details.subject);
+            if (!hasRelatedBoardItem) {
+                return `<div class="log-item ${cls}${latestClass}">${escapeHtml(entry.message)}</div>`;
+            }
+            return `<button type="button" class="log-item log-related-action ${cls}${latestClass}" data-ui-action="highlightLogEntry" data-player-name="${escapeHtml(details.actor)}" data-target-name="${escapeHtml(details.target)}" data-card-name="${escapeHtml(details.subject)}" data-log-message="${escapeHtml(entry.message)}" aria-label="関連する盤面を表示: ${escapeHtml(entry.message)}">${escapeHtml(entry.message)}</button>`;
         }).join('');
     }
 

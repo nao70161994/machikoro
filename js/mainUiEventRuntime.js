@@ -14,6 +14,7 @@ const MainUiEventRuntime = (() => {
         'showCpuTournamentHistory', 'replayCpuTournamentGame',
         'exportCpuTournamentJson', 'exportCpuTournamentCsv', 'clearCpuTournamentHistory',
         'shareGameResult',
+        'highlightLogEntry',
     ]);
 
     function createRuntime(dependencies = {}) {
@@ -119,6 +120,7 @@ const MainUiEventRuntime = (() => {
         function handleStaticChange(event) {
             return execute(event, 'change', () => effectMap([
                 'toggleTutorialEnabled', 'tutorialLevel', 'localPlayerType', 'onlinePlayerType',
+                'onAccessibilitySettingsChange',
             ]), 'data-ui-change');
         }
         function handleStaticKeydown(event) {

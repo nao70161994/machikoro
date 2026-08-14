@@ -169,3 +169,13 @@ assert.ok(Object.isFrozen(appendedControllerHistory.entries));
 assert.deepStrictEqual(historyController.reset(), {
     entries: [], currentLength: 0, entryCount: 0,
 });
+
+const relatedHtml = UiLogDisplay.buildLogEntriesHtml([
+    { type: 'build', message: '🏗️ パン屋を建設！' },
+], UiLogDisplay.makeLogTypeDisplay({ BUILD: 'build' }), value => String(value)
+    .replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;'));
+assert.match(relatedHtml, /data-ui-action="highlightLogEntry"/);
+assert.match(relatedHtml, /data-player-name=""/);
+assert.match(relatedHtml, /data-card-name="パン屋"/);
+assert.match(relatedHtml, /data-log-message="🏗️ パン屋を建設！"/);
+assert.match(relatedHtml, /aria-label="関連する盤面を表示:/);

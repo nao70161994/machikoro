@@ -13,6 +13,11 @@ function loadStorageRuntime(options = {}) {
         playerCount: makeElement(),
         speedLabel: makeElement(),
         cpuSpeed: makeElement({ value: '1500' }),
+        accessibilityFontScale: makeElement({ value: 'standard' }),
+        accessibilityReducedMotion: makeElement({ checked: false }),
+        accessibilityHighContrast: makeElement({ checked: false }),
+        soundVolume: makeElement({ value: '100' }),
+        soundVolumeLabel: makeElement(),
         onlineStatus: makeElement(),
     };
     const alerts = [];
@@ -1256,6 +1261,10 @@ runTest('storage saveSettings は既存keyと値形式を共通facade経由で�
     assert.strictEqual(rt.localStorage.getItem('tutorialEnabled'), 'true');
     assert.strictEqual(rt.localStorage.getItem('tutorialLevel'), 'beginner');
     assert.strictEqual(rt.localStorage.getItem('cpuSpeed'), '1500');
+    assert.strictEqual(rt.localStorage.getItem('accessibilityFontScale'), 'standard');
+    assert.strictEqual(rt.localStorage.getItem('accessibilityReducedMotion'), 'false');
+    assert.strictEqual(rt.localStorage.getItem('accessibilityHighContrast'), 'false');
+    assert.strictEqual(rt.localStorage.getItem('soundVolume'), '100');
 });
 runTest('storage settings はstorage例外を外へ伝播せず既存後処理を維持する', () => {
     const rt = loadStorageRuntime();

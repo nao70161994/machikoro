@@ -105,6 +105,29 @@
                         <option value="advanced">上級者向け</option>
                     </select>
                 </div>
+                <details class="setting-section accessibility-settings">
+                    <summary>見やすさ・効果音</summary>
+                    <label class="accessibility-setting-row" for="accessibilityFontScale">
+                        <span>文字サイズ</span>
+                        <select id="accessibilityFontScale" class="text-input" data-ui-change="onAccessibilitySettingsChange">
+                            <option value="standard">標準</option>
+                            <option value="large">大きめ</option>
+                        </select>
+                    </label>
+                    <label class="toggle-setting">
+                        <input id="accessibilityReducedMotion" type="checkbox" data-ui-change="onAccessibilitySettingsChange">
+                        <span>画面の動きを減らす</span>
+                    </label>
+                    <label class="toggle-setting">
+                        <input id="accessibilityHighContrast" type="checkbox" data-ui-change="onAccessibilitySettingsChange">
+                        <span>高コントラスト表示</span>
+                    </label>
+                    <label class="accessibility-setting-row" for="soundVolume">
+                        <span>効果音量</span>
+                        <input id="soundVolume" type="range" min="0" max="100" step="10" value="100" data-ui-change="onAccessibilitySettingsChange" aria-describedby="soundVolumeLabel">
+                        <output id="soundVolumeLabel">100%</output>
+                    </label>
+                </details>
                 <button id="btnStart" class="setup-primary-cta" data-ui-action="startGame">ゲーム開始</button>
                 <div id="localRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
             </div>

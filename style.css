@@ -1573,6 +1573,63 @@ button:not(:disabled):active {
 .log-item.log-system  { border-color: #a7a9be; background: transparent; color: #a7a9be; }
 .log-item.log-error   { border-color: #ef4444; color: #fca5a5; }
 .log-item.log-latest  { box-shadow: inset 0 0 0 1px rgba(240,192,64,0.25); }
+.log-related-action {
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    appearance: none;
+}
+.log-related-highlight {
+    outline: 3px solid #ffd54a;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px rgba(255, 213, 74, 0.22);
+}
+
+.accessibility-settings summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 700;
+}
+.accessibility-setting-row {
+    display: grid;
+    grid-template-columns: minmax(90px, 1fr) minmax(120px, 2fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+.accessibility-large-text #gameScreen,
+.accessibility-large-text .tab-content,
+.accessibility-large-text .modal { font-size: 1.12rem; }
+.accessibility-large-text .log-item,
+.accessibility-large-text .card-effect,
+.accessibility-large-text .player-name { font-size: 0.9rem; }
+.accessibility-high-contrast {
+    --gold: #ffe66d;
+    background: #000;
+    color: #fff;
+}
+.accessibility-high-contrast #titleScreen,
+.accessibility-high-contrast #gameScreen,
+.accessibility-high-contrast .modal { background-color: #000; color: #fff; }
+.accessibility-high-contrast .panel,
+.accessibility-high-contrast .setting-section,
+.accessibility-high-contrast .player-box,
+.accessibility-high-contrast .card-btn { border-color: #fff !important; }
+.accessibility-high-contrast button:focus-visible,
+.accessibility-high-contrast input:focus-visible,
+.accessibility-high-contrast select:focus-visible { outline: 4px solid #ffe66d !important; }
+.accessibility-reduced-motion *,
+.accessibility-reduced-motion *::before,
+.accessibility-reduced-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+}
 
 .log-separator {
     height: 1px;
