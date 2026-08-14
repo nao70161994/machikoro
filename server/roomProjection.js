@@ -24,12 +24,14 @@ function makeRoomProjection({
     function buildLobbyState(room) {
         return {
             hostPlayerIndex: room.hostPlayerIndex,
-            participants: room.players.map(player => ({
+            participants: room.players.map(player => Object.assign({
                 index: player.index,
                 name: player.name,
                 connected: !!player.id,
                 ready: player.ready !== false,
-            })),
+            }, !player.id && Number.isFinite(player.reservedUntil)
+                ? { reservedUntil: player.reservedUntil }
+                : {})),
         };
     }
 

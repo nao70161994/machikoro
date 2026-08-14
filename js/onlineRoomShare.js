@@ -18,6 +18,11 @@ const OnlineRoomShare = (() => {
         return String(roomId ?? '').trim().toUpperCase();
     }
 
+    function remainingReservationSeconds(reservedUntil, now = Date.now()) {
+        if (!Number.isFinite(reservedUntil) || !Number.isFinite(now)) return 0;
+        return Math.max(0, Math.ceil((reservedUntil - now) / 1000));
+    }
+
     function buildWaitingStatus(roomId, players = null) {
         const normalizedRoomId = normalizeRoomId(roomId);
         if (!Array.isArray(players)) {
@@ -42,14 +47,23 @@ const OnlineRoomShare = (() => {
         const selfParticipant = participants.find(player => player.index === options.myPlayerIndex);
         const readiness = participants.length > 0
             ? `<section class="room-readiness" aria-label="参加者の準備状態"><h4>準備状態</h4><ul>${participants.map(player => {
+                const remainingSeconds = player.connected === false
+                    ? remainingReservationSeconds(player.reservedUntil, options.now)
+                    : 0;
+                const reconnectLabel = player.connected === false
+                    ? `再接続待ち${remainingSeconds > 0 ? `・残り${remainingSeconds}秒` : ''}`
+                    : '';
                 const roles = [
                     player.index === options.hostPlayerIndex ? 'ホスト' : '',
                     player.index === options.myPlayerIndex ? 'あなた' : '',
-                    player.connected === false ? '再接続待ち' : '',
+                    reconnectLabel,
                 ].filter(Boolean);
                 const participantLabel = `${player.name}${roles.length ? `（${roles.join('・')}）` : ''}`;
                 const stateLabel = player.ready === false ? '準備中' : '準備完了';
-                return `<li><span>${escapeText(participantLabel)}</span><strong>${stateLabel}</strong></li>`;
+                const countdown = player.connected === false && remainingSeconds > 0
+                    ? ` data-reserved-until="${player.reservedUntil}" data-player-name="${escapeText(player.name)}"`
+                    : '';
+                return `<li><span${countdown}>${escapeText(participantLabel)}</span><strong>${stateLabel}</strong></li>`;
             }).join('')}</ul>${selfParticipant ? `<button type="button" class="room-ready-btn" data-ui-action="setOnlineLobbyReady" data-ready="${selfParticipant.ready === false ? 'true' : 'false'}" aria-pressed="${selfParticipant.ready === false ? 'false' : 'true'}">${selfParticipant.ready === false ? '準備完了にする' : '準備を取り消す'}</button>` : ''}<p class="room-ready-help">参加者が揃い、全員が準備完了になると開始します。</p></section>`
             : '';
         const hostControls = options.isHost === true
@@ -106,6 +120,7 @@ const OnlineRoomShare = (() => {
         copyRoomId,
         escapeText,
         normalizeRoomId,
+        remainingReservationSeconds,
     });
 })();
 

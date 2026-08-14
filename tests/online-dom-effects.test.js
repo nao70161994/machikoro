@@ -109,6 +109,23 @@ runTest('online DOM effectsは除外済み操作のfocusを安全なhost操作�
     assert.strictEqual(elements.onlineWaitingPanel.innerHTML, '');
 });
 
+runTest('online DOM effectsは予約席の残り秒数をDOMだけで更新する', () => {
+    const attributes = {
+        'data-reserved-until': '61500',
+        'data-player-name': 'Alice',
+    };
+    const countdown = {
+        textContent: '',
+        getAttribute: name => attributes[name] ?? null,
+    };
+    const panel = { querySelectorAll: () => [countdown] };
+    const runtime = OnlineDomEffects.createRuntime({
+        getDocument: () => ({ getElementById: id => id === 'onlineWaitingPanel' ? panel : null }),
+    });
+    assert.strictEqual(runtime.refreshWaitingReservationCountdowns(1500), 1);
+    assert.strictEqual(countdown.textContent, 'Alice（再接続待ち・残り60秒）');
+});
+
 runTest('online DOM effectsは画面切替・input・button viewを注入DOMへ限定する', () => {
     const { elements, runtime } = createRuntime();
     runtime.setStatusText('ロビー待機中');

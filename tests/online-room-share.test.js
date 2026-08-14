@@ -65,6 +65,20 @@ runTest('online room shareはhostだけに自分以外の参加者管理を表�
     }).includes('removeOnlineLobbyPlayer'));
 });
 
+runTest('online room shareは予約席の再接続残り時間を表示する', () => {
+    assert.strictEqual(OnlineRoomShare.remainingReservationSeconds(61001, 1000), 61);
+    assert.strictEqual(OnlineRoomShare.remainingReservationSeconds(999, 1000), 0);
+    const html = OnlineRoomShare.buildWaitingHtml('abc123', [], {
+        now: 1000,
+        participants: [{ index: 0, name: 'Alice', connected: false, ready: true, reservedUntil: 61000 }],
+        myPlayerIndex: 0,
+        hostPlayerIndex: 0,
+    });
+    assert.match(html, /Alice（ホスト・あなた・再接続待ち・残り60秒）/);
+    assert.match(html, /data-reserved-until="61000"/);
+    assert.match(html, /data-player-name="Alice"/);
+});
+
 runTest('online room shareは本人の準備状態と参加者全員の状態を明示する', () => {
     const waiting = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
         myPlayerIndex: 1,

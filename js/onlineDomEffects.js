@@ -20,6 +20,7 @@ const OnlineDomEffects = (() => {
 
     function createRuntime(options = {}) {
         const getDocument = typeof options.getDocument === 'function' ? options.getDocument : () => null;
+        let waitingCountdownTimer = null;
 
         function element(id) {
             const documentRef = getDocument();
@@ -58,10 +59,43 @@ const OnlineDomEffects = (() => {
         }
 
         function setStatusText(value) {
+            if (waitingCountdownTimer !== null && typeof clearTimeout === 'function') {
+                clearTimeout(waitingCountdownTimer);
+                waitingCountdownTimer = null;
+            }
             setHtml(ids.waitingPanel, '');
             const lobbyChanged = setText(ids.status, value);
             const gameChanged = setGameStatusText(value);
             return lobbyChanged || gameChanged;
+        }
+
+        function refreshWaitingReservationCountdowns(now = Date.now()) {
+            const panel = element(ids.waitingPanel);
+            if (!panel || typeof panel.querySelectorAll !== 'function') return 0;
+            const targets = Array.from(panel.querySelectorAll('[data-reserved-until]'));
+            for (const target of targets) {
+                const reservedUntil = Number(target.getAttribute('data-reserved-until'));
+                const playerName = target.getAttribute('data-player-name') || '参加者';
+                const seconds = Math.max(0, Math.ceil((reservedUntil - now) / 1000));
+                target.textContent = `${playerName}（再接続待ち・残り${seconds}秒）`;
+            }
+            return targets.length;
+        }
+
+        function scheduleWaitingReservationCountdown() {
+            if (waitingCountdownTimer !== null && typeof clearTimeout === 'function') {
+                clearTimeout(waitingCountdownTimer);
+                waitingCountdownTimer = null;
+            }
+            if (refreshWaitingReservationCountdowns() === 0 || typeof setTimeout !== 'function') return false;
+            waitingCountdownTimer = setTimeout(() => {
+                waitingCountdownTimer = null;
+                scheduleWaitingReservationCountdown();
+            }, 1000);
+            if (waitingCountdownTimer && typeof waitingCountdownTimer.unref === 'function') {
+                waitingCountdownTimer.unref();
+            }
+            return true;
         }
 
         function focusedControlIdentity(container, documentRef) {
@@ -113,6 +147,7 @@ const OnlineDomEffects = (() => {
             status.textContent = String(statusText || '');
             setGameStatusText('');
             panel.innerHTML = String(html || '');
+            scheduleWaitingReservationCountdown();
             restoreWaitingControlFocus(panel, identity, status);
             return true;
         }
@@ -156,6 +191,7 @@ const OnlineDomEffects = (() => {
             element,
             inputValue,
             isStatusWaiting: () => text(ids.status).startsWith('⏳'),
+            refreshWaitingReservationCountdowns,
             renderWaitingLobby,
             setHtml,
             setInputValue,

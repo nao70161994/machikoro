@@ -50,12 +50,13 @@ runTest('room projection は予約席を待機室管理用の切断状態へ投�
     const room = makeRoom();
     room.hostPlayerIndex = 1;
     room.players[1].id = null;
+    room.players[1].reservedUntil = 12345;
 
     assert.deepStrictEqual(projection.buildLobbyState(room), {
         hostPlayerIndex: 1,
         participants: [
             { index: 1, name: 'Alice', connected: true, ready: true },
-            { index: 3, name: 'Bob', connected: false, ready: true },
+            { index: 3, name: 'Bob', connected: false, ready: true, reservedUntil: 12345 },
             { index: 9, name: 'Ghost', connected: true, ready: true },
         ],
     });
