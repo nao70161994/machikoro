@@ -231,6 +231,8 @@ runTest('公式オプション市場はsnapshotとUndoで山札順を完全に�
         seed: 123,
         targetTypeCount: 10,
         deck: ['パン屋', 'カフェ', 'パン屋'],
+        refillSequence: 1,
+        refillHistory: [{ sequence: 1, cardNames: ['カフェ'] }],
     };
     const stock = { カフェ: 2, パン屋: 1 };
     const snapshot = GameSnapshot.serializeGameState(game, stock);
@@ -251,6 +253,8 @@ runTest('公式オプション市場はsnapshotとUndoで山札順を完全に�
     assert.deepStrictEqual(game.marketSupply, {
         mode: 'ten-type', seed: 123, targetTypeCount: 10,
         deck: ['パン屋', 'カフェ', 'パン屋'],
+        refillSequence: 1,
+        refillHistory: [{ sequence: 1, cardNames: ['カフェ'] }],
     });
 });
 

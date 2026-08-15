@@ -34,7 +34,9 @@ runTest('online room shareはroom IDと参加者をescapeして共有手順を�
     const optionHtml = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
         marketRule: 'ten-type',
     });
-    assert.ok(optionHtml.includes('市場：公式オプション（異なる10種類）'));
+    assert.ok(optionHtml.includes('公式10種類市場'));
+    assert.ok(optionHtml.includes('常に異なる10種類になるまで山札から補充します'));
+    assert.ok(createdHtml.includes('通常市場'));
 });
 
 runTest('online room shareはhostだけに自分以外の参加者管理を表示する', () => {

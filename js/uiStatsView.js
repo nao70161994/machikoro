@@ -8,6 +8,8 @@ function requireFunction(value, name) {
 function statsModeLabel(mode) {
     if (mode === 'local') return 'ローカル';
     if (mode === 'online') return 'オンライン';
+    if (mode === 'standard') return '通常市場';
+    if (mode === 'ten-type') return '公式10種類市場';
     return '全体';
 }
 
@@ -23,6 +25,9 @@ function statsBucket(stats, viewMode, playerFilter) {
         }
         return stats.players[playerFilter] || stats.cpuTypes[playerFilter] || emptyStatsBucket();
     }
+    if (viewMode === 'standard' || viewMode === 'ten-type') {
+        return stats.marketRules && stats.marketRules[viewMode] || emptyStatsBucket();
+    }
     return stats[viewMode] || emptyStatsBucket();
 }
 
@@ -37,6 +42,10 @@ function buildFilterTabsHtml(stats, viewMode, playerFilter, escapeHtml) {
             <button class="stats-filter-btn ${modePressed('all') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="all" aria-pressed="${modePressed('all')}">全体</button>
             <button class="stats-filter-btn ${modePressed('local') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="local" aria-pressed="${modePressed('local')}">ローカル</button>
             <button class="stats-filter-btn ${modePressed('online') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="online" aria-pressed="${modePressed('online')}">オンライン</button>
+        </div>
+        <div class="stats-filter-group-label">市場ルール別</div><div class="stats-filter-tabs stats-market-filters">
+            <button class="stats-filter-btn ${modePressed('standard') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="standard" aria-pressed="${modePressed('standard')}">通常市場</button>
+            <button class="stats-filter-btn ${modePressed('ten-type') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="ten-type" aria-pressed="${modePressed('ten-type')}">公式10種類</button>
         </div>
         ${playerNames.length ? `<div class="stats-filter-group-label">プレイヤー別</div><div class="stats-player-filters">
             ${playerNames.map(name => `<button class="stats-player-btn ${playerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escape(name)}" aria-pressed="${playerFilter === name}">${escape(name)}</button>`).join('')}

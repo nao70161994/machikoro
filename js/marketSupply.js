@@ -7,6 +7,8 @@ const MarketSupply = (() => {
     });
     const DEFAULT_MODE = MODES.STANDARD;
     const TARGET_TYPE_COUNT = 10;
+    const LOW_DECK_THRESHOLD = 10;
+    const MAX_REFILL_HISTORY = 20;
 
     function normalizeMode(value) {
         return value === MODES.TEN_TYPE ? MODES.TEN_TYPE : DEFAULT_MODE;
@@ -62,6 +64,35 @@ const MarketSupply = (() => {
         return refillNames(state, shopStock).length;
     }
 
+    function summarizeCardNames(names) {
+        const counts = new Map();
+        for (const name of names || []) {
+            if (typeof name !== 'string') continue;
+            counts.set(name, (counts.get(name) || 0) + 1);
+        }
+        return Array.from(counts, ([name, count]) => count > 1 ? `${name}×${count}` : name).join('、');
+    }
+
+    function recordRefill(state, revealedNames) {
+        if (!state || state.mode !== MODES.TEN_TYPE || !Array.isArray(revealedNames) ||
+                revealedNames.length === 0) return;
+        const previousSequence = Number.isSafeInteger(state.refillSequence) && state.refillSequence >= 0
+            ? state.refillSequence : 0;
+        state.refillSequence = previousSequence < Number.MAX_SAFE_INTEGER
+            ? previousSequence + 1 : previousSequence;
+        const history = Array.isArray(state.refillHistory) ? state.refillHistory : [];
+        history.push({ sequence: state.refillSequence, cardNames: revealedNames.slice() });
+        state.refillHistory = history.slice(-MAX_REFILL_HISTORY);
+        state.pendingHighlightNames = revealedNames.slice();
+    }
+
+    function consumePendingHighlightNames(state) {
+        if (!state || !Array.isArray(state.pendingHighlightNames)) return [];
+        const names = state.pendingHighlightNames.slice();
+        state.pendingHighlightNames = [];
+        return names;
+    }
+
     function initialize(options = {}) {
         const cards = Array.from(options.cards || []);
         const enabledNames = new Set(options.enabledCardNames || cards.map(card => card.name));
@@ -92,6 +123,8 @@ const MarketSupply = (() => {
             seed,
             targetTypeCount: Math.min(TARGET_TYPE_COUNT, enabledCards.length),
             deck: shuffled(supplyCards, seed),
+            refillSequence: 0,
+            refillHistory: [],
         };
         refill(state, stock);
         return state;
@@ -110,6 +143,17 @@ const MarketSupply = (() => {
                 : TARGET_TYPE_COUNT,
             deck: Array.isArray(value && value.deck)
                 ? value.deck.filter(name => typeof name === 'string').slice()
+                : [],
+            refillSequence: Number.isSafeInteger(value && value.refillSequence) &&
+                value.refillSequence >= 0 ? value.refillSequence : 0,
+            refillHistory: Array.isArray(value && value.refillHistory)
+                ? value.refillHistory.slice(-MAX_REFILL_HISTORY).map(entry => ({
+                    sequence: Number.isSafeInteger(entry && entry.sequence) && entry.sequence >= 0
+                        ? entry.sequence : 0,
+                    cardNames: Array.isArray(entry && entry.cardNames)
+                        ? entry.cardNames.filter(name => typeof name === 'string').slice()
+                        : [],
+                }))
                 : [],
         };
     }
@@ -132,8 +176,16 @@ const MarketSupply = (() => {
             : (knownNames == null
                 ? () => true
                 : name => knownNames.has(name));
-        return (value.targetTypeCount > 0 || value.deck.length === 0) && value.deck.length <= 1000 &&
-            value.deck.every(name => typeof name === 'string' && isKnown(name));
+        if (!(value.targetTypeCount > 0 || value.deck.length === 0) || value.deck.length > 1000 ||
+                !value.deck.every(name => typeof name === 'string' && isKnown(name))) return false;
+        if (value.refillSequence !== undefined && (!Number.isSafeInteger(value.refillSequence) ||
+                value.refillSequence < 0)) return false;
+        if (value.refillHistory === undefined) return true;
+        return Array.isArray(value.refillHistory) && value.refillHistory.length <= MAX_REFILL_HISTORY &&
+            value.refillHistory.every(entry => entry && typeof entry === 'object' &&
+                !Array.isArray(entry) && Number.isSafeInteger(entry.sequence) && entry.sequence >= 0 &&
+                Array.isArray(entry.cardNames) && entry.cardNames.length <= 1000 &&
+                entry.cardNames.every(name => typeof name === 'string' && isKnown(name)));
     }
 
     function purchaseResult(state, shopStock, cardRef) {
@@ -141,10 +193,19 @@ const MarketSupply = (() => {
         if (!cardName || !shopStock || !Number.isInteger(shopStock[cardName]) || shopStock[cardName] <= 0) {
             return Object.freeze({ ok: false, revealedNames: Object.freeze([]) });
         }
+        const deckCountBefore = Array.isArray(state && state.deck) ? state.deck.length : 0;
         shopStock[cardName]--;
+        const revealedNames = refillNames(state, shopStock);
+        recordRefill(state, revealedNames);
+        const deckCountAfter = Array.isArray(state && state.deck) ? state.deck.length : 0;
         return Object.freeze({
             ok: true,
-            revealedNames: Object.freeze(refillNames(state, shopStock)),
+            revealedNames: Object.freeze(revealedNames),
+            lowDeckReached: state && state.mode === MODES.TEN_TYPE &&
+                deckCountBefore > LOW_DECK_THRESHOLD && deckCountAfter <= LOW_DECK_THRESHOLD,
+            deckExhausted: state && state.mode === MODES.TEN_TYPE &&
+                deckCountBefore > 0 && deckCountAfter === 0,
+            deckCount: deckCountAfter,
         });
     }
 
@@ -158,13 +219,20 @@ const MarketSupply = (() => {
                 game && typeof game.addMarketRefillLog === 'function') {
             game.addMarketRefillLog(result.revealedNames);
         }
+        if (result.ok && game && typeof game.addMarketDeckStatusLog === 'function') {
+            if (result.deckExhausted) game.addMarketDeckStatusLog('empty', 0);
+            else if (result.lowDeckReached) game.addMarketDeckStatusLog('low', result.deckCount);
+        }
         return result.ok;
     }
 
     return Object.freeze({
         DEFAULT_MODE,
+        LOW_DECK_THRESHOLD,
+        MAX_REFILL_HISTORY,
         MODES,
         TARGET_TYPE_COUNT,
+        consumePendingHighlightNames,
         copyState,
         createRandom,
         decrementGameShopStock,
@@ -176,6 +244,7 @@ const MarketSupply = (() => {
         purchase,
         purchaseResult,
         refill,
+        summarizeCardNames,
         shuffled,
     });
 })();

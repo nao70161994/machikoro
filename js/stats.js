@@ -38,6 +38,10 @@ function createDefaultStats() {
         players: {},
         cpuTypes: {},
         playerCounts: {},
+        marketRules: {
+            standard: createEmptyStatsBucket(),
+            'ten-type': createEmptyStatsBucket(),
+        },
     };
 }
 
@@ -81,6 +85,10 @@ function normalizeStats(raw) {
         const players = {};
         const cpuTypes = {};
         const playerCounts = {};
+        const marketRules = {
+            standard: cloneStatsBucket(raw.marketRules && raw.marketRules.standard),
+            'ten-type': cloneStatsBucket(raw.marketRules && raw.marketRules['ten-type']),
+        };
         for (const [name, bucket] of Object.entries(raw.players || {})) {
             players[name] = cloneStatsBucket(bucket);
         }
@@ -97,6 +105,7 @@ function normalizeStats(raw) {
             players,
             cpuTypes,
             playerCounts,
+            marketRules,
         };
     }
     // 旧形式はローカル統計として扱う
@@ -108,6 +117,10 @@ function normalizeStats(raw) {
         players: {},
         cpuTypes: {},
         playerCounts: {},
+        marketRules: {
+            standard: cloneStatsBucket(legacy),
+            'ten-type': createEmptyStatsBucket(),
+        },
     };
 }
 
@@ -128,6 +141,9 @@ function getStatsModeLabel(mode) {
 }
 
 function getCurrentStatsBucket(stats, mode) {
+    if (mode === 'standard' || mode === 'ten-type') {
+        return stats.marketRules && stats.marketRules[mode] || createEmptyStatsBucket();
+    }
     return stats[mode] || createEmptyStatsBucket();
 }
 
@@ -213,6 +229,8 @@ function recordGameStats(winner, game, cpuPlayers) {
 
     const mode = (typeof isOnlineGame !== 'undefined' && isOnlineGame) ? 'online' : 'local';
     const stats = loadStats();
+    const marketRule = game && game.marketSupply && game.marketSupply.mode === 'ten-type'
+        ? 'ten-type' : 'standard';
     const targets = getRecordTargets(game, cpuPlayers);
     if (targets.length === 0) return;
 
@@ -221,6 +239,7 @@ function recordGameStats(winner, game, cpuPlayers) {
         const won = game.players.indexOf(winner) === index;
         updateStatsBucket(stats.all, player, won, game);
         updateStatsBucket(stats[mode], player, won, game);
+        updateStatsBucket(stats.marketRules[marketRule], player, won, game);
         updateNamedStats(stats, target, player, won, game);
         const countKey = String(game.players.length);
         if (!stats.playerCounts[countKey]) stats.playerCounts[countKey] = createEmptyStatsBucket();
@@ -329,7 +348,7 @@ function clearStats() {
 }
 
 function setStatsViewMode(mode) {
-    _statsViewMode = ['all', 'local', 'online'].includes(mode) ? mode : 'all';
+    _statsViewMode = ['all', 'local', 'online', 'standard', 'ten-type'].includes(mode) ? mode : 'all';
     _statsPlayerFilter = '';
     renderStats();
 }

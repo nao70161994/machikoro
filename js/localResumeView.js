@@ -9,9 +9,22 @@ const LocalResumeView = (() => {
         });
     }
 
-    function resumeSections(localSaveExists, onlineSession) {
+    function marketDetails(savedState) {
+        if (!savedState || typeof savedState !== 'object') return '';
+        const supply = savedState.marketSupply;
+        if (supply && supply.mode === 'ten-type') {
+            const deckCount = Array.isArray(supply.deck) ? supply.deck.length : 0;
+            const warning = deckCount === 0 ? '・山札切れ'
+                : deckCount <= 10 ? '・残りわずか' : '';
+            return `🏪 公式10種類市場・山札${deckCount}枚${warning}`;
+        }
+        return '🏪 通常市場';
+    }
+
+    function resumeSections(localSaveExists, onlineSession, savedState = null) {
         return Object.freeze({
             localDisplay: localSaveExists ? 'flex' : 'none',
+            localMarketDescription: localSaveExists ? marketDetails(savedState) : '',
             onlineDisplay: onlineSession ? 'block' : 'none',
             onlineDescription: onlineSession
                 ? `🌐 ${onlineSession.playerName} として ${onlineSession.roomId} に再接続できます`
@@ -27,7 +40,7 @@ const LocalResumeView = (() => {
         })));
     }
 
-    return Object.freeze({ pendingButton, resumeSections, generationOptions });
+    return Object.freeze({ pendingButton, marketDetails, resumeSections, generationOptions });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = LocalResumeView;

@@ -37,8 +37,8 @@ const OnlineRoomShare = (() => {
         const safeRoomId = escapeText(normalizedRoomId);
         const hasPlayerList = Array.isArray(players);
         const marketRule = options.marketRule === 'ten-type'
-            ? '<p class="room-market-rule">🏪 市場：公式オプション（異なる10種類）</p>'
-            : '';
+            ? '<section class="room-market-rule ten-type" aria-label="この対戦の市場ルール"><strong>🏪 公式10種類市場</strong><span>常に異なる10種類になるまで山札から補充します</span></section>'
+            : '<section class="room-market-rule standard" aria-label="この対戦の市場ルール"><strong>🏪 通常市場</strong><span>選択した施設をすべて公開します</span></section>';
         const hasWaitingSlot = hasPlayerList && players.some(player => player === WAITING_SLOT_LABEL);
         const playerList = hasPlayerList
             ? `<div class="waiting-players">参加枠（${players.length}枠）: ${players.map(escapeText).join('、')}</div>`

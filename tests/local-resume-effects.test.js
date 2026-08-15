@@ -8,6 +8,7 @@ function createElements() {
     return {
         btnResume: { disabled: false, textContent: '続きから再開' },
         resumeSection: { style: { display: '' } },
+        localResumeMarketDetails: { textContent: '' },
         onlineResumeSection: { style: { display: '' } },
         onlineResumeDescription: { textContent: '' },
         localSaveGeneration: { innerHTML: '', style: { display: '' } },
@@ -59,16 +60,19 @@ runTest('local resume effectsはlocalとonlineの表示を同じ順序で反映�
 
     effects.applyResumeSections({
         localDisplay: 'flex',
+        localMarketDescription: '🏪 公式10種類市場・山札7枚',
         onlineDisplay: 'block',
         onlineDescription: '🌐 Alice として ABC123 に再接続できます',
     });
 
     assert.deepStrictEqual(requestedIds, [
         'resumeSection',
+        'localResumeMarketDetails',
         'onlineResumeSection',
         'onlineResumeDescription',
     ]);
     assert.strictEqual(elements.resumeSection.style.display, 'flex');
+    assert.strictEqual(elements.localResumeMarketDetails.textContent, '🏪 公式10種類市場・山札7枚');
     assert.strictEqual(elements.onlineResumeSection.style.display, 'block');
     assert.strictEqual(
         elements.onlineResumeDescription.textContent,
@@ -84,6 +88,7 @@ runTest('local resume effectsは対象DOMがなくても安全に終了する', 
     }), false);
     assert.doesNotThrow(() => effects.applyResumeSections({
         localDisplay: 'none',
+        localMarketDescription: '',
         onlineDisplay: 'none',
         onlineDescription: '🌐 オンラインゲームが中断されました',
     }));

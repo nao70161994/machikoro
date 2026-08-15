@@ -24,7 +24,8 @@ function makeStats() {
         cardStats: {},
         landmarkStats: {},
     });
-    return { all: empty(), local: empty(), online: empty(), players: {}, cpuTypes: {}, playerCounts: {} };
+    return { all: empty(), local: empty(), online: empty(), players: {}, cpuTypes: {}, playerCounts: {},
+        marketRules: { standard: empty(), 'ten-type': empty() } };
 }
 
 runTest('stats viewはmode/player bucketを入力非変更で選ぶ', () => {
@@ -37,6 +38,18 @@ runTest('stats viewはmode/player bucketを入力非変更で選ぶ', () => {
     assert.strictEqual(UiStatsView.statsBucket(stats, 'all', 'Alice').totalGames, 3);
     assert.strictEqual(UiStatsView.statsBucket(stats, 'all', 'missing').totalGames, 0);
     assert.strictEqual(JSON.stringify(stats), before);
+    stats.marketRules['ten-type'].totalGames = 4;
+    assert.strictEqual(UiStatsView.statsBucket(stats, 'ten-type', '').totalGames, 4);
+});
+
+runTest('stats viewは市場ルール別filterと名称を表示する', () => {
+    const stats = makeStats();
+    stats.marketRules['ten-type'].totalGames = 1;
+    stats.marketRules['ten-type'].wins = 1;
+    const html = UiStatsView.buildStatsHtml(stats, 'ten-type', '', escapeHtml);
+    assert.ok(html.includes('data-stats-mode="standard"'));
+    assert.ok(html.includes('data-stats-mode="ten-type" aria-pressed="true"'));
+    assert.ok(html.includes('公式10種類市場の成績'));
 });
 
 runTest('stats viewはfilter名とランキング名をescapeして既存HTMLを生成する', () => {

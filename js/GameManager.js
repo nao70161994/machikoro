@@ -1202,18 +1202,36 @@ class GameManager {
 
     addMarketRefillLog(cardNames) {
         if (!Array.isArray(cardNames)) return false;
-        const counts = new Map();
-        for (const name of cardNames) {
-            if (typeof name !== 'string' || name.trim() === '') continue;
-            const normalizedName = name.trim();
-            counts.set(normalizedName, (counts.get(normalizedName) || 0) + 1);
+        let summary = typeof MarketSupply !== 'undefined' &&
+            typeof MarketSupply.summarizeCardNames === 'function'
+            ? MarketSupply.summarizeCardNames(cardNames)
+            : '';
+        if (!summary) {
+            const counts = new Map();
+            for (const name of cardNames) {
+                if (typeof name !== 'string' || name.trim() === '') continue;
+                const normalizedName = name.trim();
+                counts.set(normalizedName, (counts.get(normalizedName) || 0) + 1);
+            }
+            summary = Array.from(counts, ([name, count]) =>
+                count > 1 ? `${name}×${count}` : name
+            ).join('、');
         }
-        if (counts.size === 0) return false;
-        const summary = Array.from(counts, ([name, count]) =>
-            count > 1 ? `${name}×${count}` : name
-        ).join('、');
+        if (!summary) return false;
         this.addLog(LOG_TYPES.SYSTEM, `🏪 市場補充：${summary}を公開`, { review: false });
         return true;
+    }
+
+    addMarketDeckStatusLog(status, deckCount) {
+        if (status === 'empty') {
+            this.addLog(LOG_TYPES.SYSTEM, '⚠️ 市場の山札がなくなりました', { review: false });
+            return true;
+        }
+        if (status === 'low' && Number.isSafeInteger(deckCount) && deckCount >= 0) {
+            this.addLog(LOG_TYPES.SYSTEM, `⚠️ 市場の山札は残り${deckCount}枚です`, { review: false });
+            return true;
+        }
+        return false;
     }
 
     addLog(type, msg, options = {}) {

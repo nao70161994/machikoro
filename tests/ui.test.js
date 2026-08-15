@@ -2484,18 +2484,41 @@ runTest('カード詳細と建設ボタンは説明文と分類をescapeする',
     assert.ok(!detail.html.includes('+<b>9</b>コイン'));
 });
 
-runTest('公式オプション市場は公開種類数と山札枚数だけを簡潔に表示する', () => {
+runTest('公式オプション市場は公開種類数・山札警告・補充履歴を表示する', () => {
     const { context } = loadUiRuntime();
     assert.strictEqual(context.UiBuildMenu.buildMarketStatusHtml(
         { mode: 'standard', deck: [] }, { A: 1 }
     ), '');
     const html = context.UiBuildMenu.buildMarketStatusHtml(
-        { mode: 'ten-type', deck: ['A', 'B', 'C'] },
+        { mode: 'ten-type', deck: ['A', 'B', 'C'], refillHistory: [
+            { sequence: 1, cardNames: ['A', 'A', '<B>'] },
+        ] },
         { A: 2, B: 1, C: 0 }
     );
     assert.ok(html.includes('公開2種類'));
     assert.ok(html.includes('山札3枚'));
+    assert.ok(html.includes('残りわずか'));
+    assert.ok(html.includes('補充履歴（1件）'));
+    assert.ok(html.includes('A×2、&lt;B&gt;'));
+    assert.ok(!html.includes('<B>'));
     assert.ok(!html.includes('role="status"'), '頻繁な再描画をlive通知しない');
+});
+
+runTest('補充された建設カードだけ一時強調badgeを持つ', () => {
+    const { context } = loadUiRuntime();
+    const card = { name: 'パン屋', color: 'green', category: '小施設', cost: 1,
+        diceNums: [2, 3], income: 1, effect: 'bakery' };
+    const highlighted = context.UiBuildMenu.renderBuildCardButton({
+        card, stock: 2, canBuildThis: true, highlighted: true,
+        escapeHtml: context.escapeHtml, getEffectText: () => '効果',
+    });
+    const normal = context.UiBuildMenu.renderBuildCardButton({
+        card, stock: 2, canBuildThis: true, highlighted: false,
+        escapeHtml: context.escapeHtml, getEffectText: () => '効果',
+    });
+    assert.ok(highlighted.includes('market-refill-highlight'));
+    assert.ok(highlighted.includes('market-refill-badge">補充'));
+    assert.ok(!normal.includes('market-refill-highlight'));
 });
 
 runTest('ランドマーク詳細と建設ボタンは説明文をescapeする', () => {

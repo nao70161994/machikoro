@@ -46,6 +46,15 @@ const UiBuildMenu = (() => {
         return ['blue', 'green', 'red', 'purple'].includes(color) ? color : 'blue';
     }
 
+    function escapeText(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function isBuildGateOpen(options) {
         const { phase, buildPhase, pendingRenovation, builtThisTurn } = options;
         return phase === buildPhase && pendingRenovation <= 0 && !builtThisTurn;
@@ -121,10 +130,12 @@ const UiBuildMenu = (() => {
     }
 
     function renderBuildCardButton(options) {
-        const { card, stock, canBuildThis, escapeHtml, getEffectText } = options;
+        const { card, stock, canBuildThis, escapeHtml, getEffectText, highlighted = false } = options;
         const safeName = escapeHtml(card.name);
         const safeColor = safeCardColorName(card.color);
-        return `<div class="card-wrapper"><button class="card-btn card-color-${safeColor} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${escapeHtml(getEffectText(card))}</div></div></button><div class="card-meta-row"><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ 詳細</button><span class="card-stock">残り${stock}枚</span></div></div>`;
+        const highlightClass = highlighted ? ' market-refill-highlight' : '';
+        const highlightBadge = highlighted ? '<span class="market-refill-badge">補充</span>' : '';
+        return `<div class="card-wrapper${highlightClass}">${highlightBadge}<button class="card-btn card-color-${safeColor} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${escapeHtml(getEffectText(card))}</div></div></button><div class="card-meta-row"><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ 詳細</button><span class="card-stock">残り${stock}枚</span></div></div>`;
     }
 
     function renderLandmarkBuildButton(options) {
@@ -241,6 +252,7 @@ const UiBuildMenu = (() => {
 
     function buildVisibleCardButtonsHtml(options) {
         const { cards, cardFilter, enabledCards, shopStock, current, canBuildCardAction, compareCardsForDisplay, getShopStockCount, renderBuildCardButton } = options;
+        const highlightedNames = new Set(options.highlightedCardNames || []);
         const sortedCards = [...cards].sort(compareCardsForDisplay);
         return sortedCards.map(card => {
             if (!enabledCards.has(card.name)) return "";
@@ -248,7 +260,7 @@ const UiBuildMenu = (() => {
             if (stock <= 0) return "";
             const canBuildThis = canBuildCard({ card, stock, current, canBuildCardAction });
             if (!cardMatchesFilter(card, cardFilter, canBuildThis)) return "";
-            return renderBuildCardButton(card, stock, canBuildThis);
+            return renderBuildCardButton(card, stock, canBuildThis, highlightedNames.has(card.name));
         }).join("");
     }
 
@@ -271,7 +283,24 @@ const UiBuildMenu = (() => {
         if (!marketSupply || marketSupply.mode !== 'ten-type') return '';
         const visibleTypes = Object.values(shopStock || {}).filter(count => Number.isInteger(count) && count > 0).length;
         const deckCount = Array.isArray(marketSupply.deck) ? marketSupply.deck.length : 0;
-        return `<p class="market-rule-status">🏪 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚</p>`;
+        const warningClass = deckCount === 0 ? ' market-deck-empty'
+            : deckCount <= 10 ? ' market-deck-low' : '';
+        const warning = deckCount === 0 ? '<strong>山札切れ</strong>'
+            : deckCount <= 10 ? '<strong>残りわずか</strong>' : '';
+        const history = Array.isArray(marketSupply.refillHistory)
+            ? marketSupply.refillHistory.slice().reverse() : [];
+        const historyHtml = history.length > 0
+            ? `<details class="market-refill-history"><summary>補充履歴（${history.length}件）</summary><ol>${history.map(entry => {
+                const names = Array.isArray(entry && entry.cardNames) ? entry.cardNames : [];
+                const counts = new Map();
+                for (const name of names) counts.set(name, (counts.get(name) || 0) + 1);
+                const summary = Array.from(counts, ([name, count]) =>
+                    escapeText(count > 1 ? `${name}×${count}` : name)
+                ).join('、');
+                return `<li>${summary || '補充カードなし'}</li>`;
+            }).join('')}</ol></details>`
+            : '';
+        return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div>🏪 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${historyHtml}</section>`;
     }
 
     return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });

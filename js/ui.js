@@ -917,8 +917,8 @@ function safeCardColorName(color) {
     return UiBuildMenu.safeCardColorName(color);
 }
 
-function renderBuildCardButton(card, stock, canBuildThis) {
-    return UiBuildMenu.renderBuildCardButton({ card, stock, canBuildThis, escapeHtml, getEffectText });
+function renderBuildCardButton(card, stock, canBuildThis, highlighted = false) {
+    return UiBuildMenu.renderBuildCardButton({ card, stock, canBuildThis, highlighted, escapeHtml, getEffectText });
 }
 
 function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
@@ -929,7 +929,7 @@ function buildCardFilterBarHtml() {
     return UiBuildMenu.buildCardFilterBarHtml(buildMenuFilterController.get());
 }
 
-function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
+function buildVisibleCardButtonsHtml(current, canBuildCardAction, highlightedCardNames = []) {
     return UiBuildMenu.buildVisibleCardButtonsHtml({
         cards: CARDS,
         cardFilter: buildMenuFilterController.get(),
@@ -940,6 +940,7 @@ function buildVisibleCardButtonsHtml(current, canBuildCardAction) {
         compareCardsForDisplay,
         getShopStockCount,
         renderBuildCardButton,
+        highlightedCardNames,
     });
 }
 
@@ -994,8 +995,12 @@ function buildUndoBuildButtonHtml() {
 
 function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction) {
     const currentGame = uiGameRuntimeSnapshot().game;
+    const highlightedCardNames = typeof MarketSupply !== 'undefined' &&
+        typeof MarketSupply.consumePendingHighlightNames === 'function'
+        ? MarketSupply.consumePendingHighlightNames(currentGame && currentGame.marketSupply)
+        : [];
     const filterBtnsHtml = buildCardFilterBarHtml();
-    const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction) ||
+    const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction, highlightedCardNames) ||
         UiBuildMenu.buildCardEmptyStateHtml(buildMenuFilterController.get());
     const landmarkHtml = buildLandmarkButtonsHtml(current, canBuildLandmarkAction);
     const undoBtn = buildUndoBuildButtonHtml();

@@ -131,6 +131,20 @@ runTest('recordGameStats はローカル成績を all と local に記録する'
     assert.strictEqual(stats.playerCounts['2'].totalFinalCoins, 18);
     assert.strictEqual(stats.playerCounts['2'].totalFinalFacilities, 2);
     assert.strictEqual(stats.playerCounts['2'].totalFinalLandmarks, 1);
+    assert.strictEqual(stats.marketRules.standard.totalGames, 2);
+    assert.strictEqual(stats.marketRules['ten-type'].totalGames, 0);
+});
+
+runTest('recordGameStats は公式10種類市場を専用bucketへ記録する', () => {
+    const rt = loadStatsRuntime();
+    const game = makeGame();
+    game.marketSupply = { mode: 'ten-type' };
+    rt.recordGameStats(game.players[0], game, [null, null]);
+    const stats = rt.loadStats();
+    assert.strictEqual(stats.marketRules.standard.totalGames, 0);
+    assert.strictEqual(stats.marketRules['ten-type'].totalGames, 2);
+    rt.setStatsViewMode('ten-type');
+    assert.ok(rt.__test.statsEl.innerHTML.includes('公式10種類市場の成績'));
 });
 
 runTest('recordGameStats はオンライン成績を all と online に記録する', () => {

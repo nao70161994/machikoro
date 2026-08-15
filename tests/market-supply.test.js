@@ -66,6 +66,59 @@ runTest('公式市場は補充で公開した施設名を山札順で返す', ()
     assert.deepStrictEqual(result.revealedNames, ['施設1', '施設1', '施設11']);
     assert.strictEqual(shopStock['施設1'], 3);
     assert.strictEqual(shopStock['施設11'], 1);
+    assert.strictEqual(state.refillSequence, 1);
+    assert.deepStrictEqual(state.refillHistory, [{
+        sequence: 1,
+        cardNames: ['施設1', '施設1', '施設11'],
+    }]);
+    assert.deepStrictEqual(MarketSupply.consumePendingHighlightNames(state), [
+        '施設1', '施設1', '施設11',
+    ]);
+    assert.deepStrictEqual(MarketSupply.consumePendingHighlightNames(state), []);
+    assert.strictEqual(MarketSupply.summarizeCardNames(result.revealedNames), '施設1×2、施設11');
+});
+
+runTest('公式市場は補充履歴を20件に制限しsnapshotへ一時強調を含めない', () => {
+    const state = {
+        mode: MarketSupply.MODES.TEN_TYPE,
+        seed: 1,
+        targetTypeCount: 1,
+        deck: Array.from({ length: 21 }, () => '施設1'),
+        refillSequence: 0,
+        refillHistory: [],
+    };
+    const shopStock = { 施設1: 1 };
+    for (let index = 0; index < 21; index++) {
+        assert.strictEqual(MarketSupply.purchase(state, shopStock, '施設1'), true);
+    }
+    assert.strictEqual(state.refillSequence, 21);
+    assert.strictEqual(state.refillHistory.length, 20);
+    assert.strictEqual(state.refillHistory[0].sequence, 2);
+    assert.deepStrictEqual(MarketSupply.copyState(state), {
+        mode: 'ten-type', seed: 1, targetTypeCount: 1, deck: [],
+        refillSequence: 21,
+        refillHistory: state.refillHistory,
+    });
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(
+        MarketSupply.copyState(state), 'pendingHighlightNames'
+    ), false);
+});
+
+runTest('公式市場は山札10枚以下と山札切れの境界を一度だけ通知する', () => {
+    const logs = [];
+    const game = {
+        marketSupply: {
+            mode: 'ten-type', seed: 1, targetTypeCount: 1,
+            deck: Array(11).fill('施設1'), refillSequence: 0, refillHistory: [],
+        },
+        addMarketRefillLog() {},
+        addMarketDeckStatusLog(status, count) { logs.push([status, count]); },
+    };
+    const stock = { 施設1: 1 };
+    MarketSupply.decrementGameShopStock(game, stock, '施設1');
+    assert.deepStrictEqual(logs, [['low', 10]]);
+    for (let index = 0; index < 10; index++) MarketSupply.decrementGameShopStock(game, stock, '施設1');
+    assert.deepStrictEqual(logs, [['low', 10], ['empty', 0]]);
 });
 
 runTest('使用施設が10種類未満なら全種類を公開して山札残数を保持する', () => {
@@ -112,5 +165,11 @@ runTest('市場snapshotは未知カード・不正seed・過大山札を拒否�
     assert.strictEqual(MarketSupply.isValidState(Object.assign({}, valid, { deck: ['未知'] }), known), false);
     assert.strictEqual(MarketSupply.isValidState(Object.assign({}, valid, { seed: -1 }), known), false);
     assert.strictEqual(MarketSupply.isValidState(Object.assign({}, valid, { deck: Array(1001).fill('施設1') }), known), false);
+    assert.strictEqual(MarketSupply.isValidState(Object.assign({}, valid, {
+        refillHistory: [{ sequence: 1, cardNames: ['未知'] }],
+    }), known), false);
+    assert.strictEqual(MarketSupply.isValidState(Object.assign({}, valid, {
+        refillHistory: Array(21).fill({ sequence: 1, cardNames: ['施設1'] }),
+    }), known), false);
     assert.strictEqual(MarketSupply.isValidState(null, known), true, 'legacy snapshotを許可');
 });

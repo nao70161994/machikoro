@@ -37,15 +37,18 @@ const LocalResumeEffects = (() => {
         /**
          * @param {{
          *   localDisplay: string,
+         *   localMarketDescription: string,
          *   onlineDisplay: string,
          *   onlineDescription: string,
          * }} view
          */
         function applyResumeSections(view) {
             const localSection = dependencies.getElementById('resumeSection');
+            const localMarketDetails = dependencies.getElementById('localResumeMarketDetails');
             const onlineSection = dependencies.getElementById('onlineResumeSection');
             const onlineDescription = dependencies.getElementById('onlineResumeDescription');
             if (localSection && localSection.style) localSection.style.display = view.localDisplay;
+            if (localMarketDetails) localMarketDetails.textContent = view.localMarketDescription;
             if (onlineSection && onlineSection.style) onlineSection.style.display = view.onlineDisplay;
             if (onlineDescription) onlineDescription.textContent = view.onlineDescription;
         }

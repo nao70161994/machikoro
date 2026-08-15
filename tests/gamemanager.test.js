@@ -59,6 +59,17 @@ runTest('GameManagerは市場補充の施設名と同名枚数を進行ログへ
     assert.strictEqual(game.addMarketRefillLog([]), false);
 });
 
+runTest('GameManagerは市場山札の残りわずかと山札切れを進行ログへ表示する', () => {
+    const game = new GameManager(2);
+    const beforeSystemCount = game.reviewSummary.counts[LOG_TYPES.SYSTEM];
+    assert.strictEqual(game.addMarketDeckStatusLog('low', 10), true);
+    assert.strictEqual(game.log.at(-1).message, '⚠️ 市場の山札は残り10枚です');
+    assert.strictEqual(game.addMarketDeckStatusLog('empty', 0), true);
+    assert.strictEqual(game.log.at(-1).message, '⚠️ 市場の山札がなくなりました');
+    assert.strictEqual(game.reviewSummary.counts[LOG_TYPES.SYSTEM], beforeSystemCount);
+    assert.strictEqual(game.addMarketDeckStatusLog('low', -1), false);
+});
+
 runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
     const effects = Object.values(CARD_EFFECTS);
     assert.deepStrictEqual(

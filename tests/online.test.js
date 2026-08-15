@@ -4133,7 +4133,10 @@ runTest('公式オプション市場はonline建設・補充・snapshot復元で
         'online action適用でも補充された施設名をログへ残す'
     );
     const snapshot = JSON.parse(JSON.stringify(rt.buildOnlineSnapshot()));
-    const expectedMarket = JSON.parse(JSON.stringify(game.marketSupply));
+    const expectedMarket = JSON.parse(JSON.stringify(snapshot.marketSupply));
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(
+        snapshot.marketSupply, 'pendingHighlightNames'
+    ), false, '一時強調は再接続snapshotへ保存しない');
     rt.restoreOnlineSnapshot(snapshot);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.getGame().marketSupply)), expectedMarket);
     assert.deepStrictEqual(

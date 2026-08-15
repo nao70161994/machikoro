@@ -883,6 +883,34 @@ body.modal-open #gameScreen {
     font-weight: bold;
 }
 
+.room-market-rule {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin: 4px 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    border-radius: 10px;
+    background: rgba(148, 163, 184, 0.08);
+    text-align: left;
+}
+
+.room-market-rule.ten-type {
+    border-color: rgba(245, 158, 11, 0.7);
+    background: rgba(245, 158, 11, 0.13);
+}
+
+.room-market-rule strong {
+    color: #fcd34d;
+    font-size: 14px;
+}
+
+.room-market-rule span {
+    color: #c9cbdf;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
 .room-share-row {
     display: flex;
     align-items: stretch;
@@ -2144,6 +2172,74 @@ button:not(:disabled):active {
     line-height: 1.45;
 }
 
+.market-rule-status.market-deck-low {
+    border-color: rgba(251, 146, 60, 0.75);
+    background: rgba(251, 146, 60, 0.14);
+}
+
+.market-rule-status.market-deck-empty {
+    border-color: rgba(248, 113, 113, 0.75);
+    background: rgba(248, 113, 113, 0.14);
+}
+
+.market-rule-status strong {
+    margin-left: 6px;
+    color: #fbbf24;
+}
+
+.market-deck-empty strong {
+    color: #fca5a5;
+}
+
+.market-refill-history {
+    margin-top: 8px;
+    color: #c9cbdf;
+}
+
+.market-refill-history summary {
+    min-height: 36px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.market-refill-history ol {
+    max-height: 180px;
+    margin: 4px 0 0;
+    padding-left: 24px;
+    overflow-y: auto;
+}
+
+.card-wrapper.market-refill-highlight {
+    position: relative;
+    animation: marketRefillHighlight 2.8s ease-out;
+}
+
+.market-refill-badge {
+    position: absolute;
+    top: -5px;
+    right: -4px;
+    z-index: 2;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #f59e0b;
+    color: #17120a;
+    font-size: 10px;
+    font-weight: 800;
+    opacity: 0;
+    pointer-events: none;
+    animation: marketRefillBadge 2.8s ease-out forwards;
+}
+
+@keyframes marketRefillHighlight {
+    0%, 28% { filter: drop-shadow(0 0 9px rgba(251, 191, 36, 0.9)); transform: translateY(-2px); }
+    100% { filter: none; transform: none; }
+}
+
+@keyframes marketRefillBadge {
+    0%, 72% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
 .build-card-section {
     position: relative;
 }
@@ -3067,6 +3163,12 @@ button:not(:disabled):active {
     color: #c9cbdf;
     font-size: 12px;
     line-height: 1.5;
+}
+
+.local-resume-copy .local-resume-market-details {
+    margin-top: 5px;
+    color: #fcd34d;
+    font-weight: 700;
 }
 
 .local-resume-actions {

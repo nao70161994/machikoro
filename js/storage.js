@@ -185,13 +185,17 @@ function saveGameState() {
 }
 
 function updateResumeButton() {
+    const repository = getLocalSaveRepository();
+    const localSaveExists = repository.exists();
+    const decodedSave = localSaveExists ? repository.read() : null;
     const view = LocalResumeView.resumeSections(
-        getLocalSaveRepository().exists(),
-        readOnlineSession()
+        localSaveExists,
+        readOnlineSession(),
+        decodedSave && decodedSave.ok ? decodedSave.state : null
     );
     localResumeEffects.applyResumeSections(view);
     localResumeEffects.applyGenerationOptions(
-        LocalResumeView.generationOptions(getLocalSaveRepository().readHistory().length)
+        LocalResumeView.generationOptions(repository.readHistory().length)
     );
 }
 
