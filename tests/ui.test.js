@@ -1338,6 +1338,15 @@ runTest('renderActiveGameState は通常手番と同一player追加ターンを�
     assert.strictEqual(context.acceptHotseatHandoff(), true);
     assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none');
 
+    context.cpuPlayers = [null, {}];
+    context.game.phase = 'build';
+    context.renderActiveGameState(players[1]);
+    context.game.phase = 'roll';
+    context.game.currentPlayerIndex = 0;
+    context.game.turnCount = 3;
+    context.renderActiveGameState(players[0]);
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none', '人間1人なら端末受け渡しを表示しない');
+
     turnStatus.textContent = 'replay-marker';
     context.game.phase = 'build';
     context.renderActiveGameState(players[1]);

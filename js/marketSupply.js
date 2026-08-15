@@ -42,20 +42,24 @@ const MarketSupply = (() => {
         return Object.values(shopStock || {}).filter(count => Number.isInteger(count) && count > 0).length;
     }
 
-    function refill(state, shopStock) {
+    function refillNames(state, shopStock) {
         if (!state || state.mode !== MODES.TEN_TYPE || !Array.isArray(state.deck) || !shopStock) {
-            return 0;
+            return [];
         }
-        let revealed = 0;
+        const revealedNames = [];
         while (state.deck.length > 0 && marketTypeCount(shopStock) < state.targetTypeCount) {
             const cardName = state.deck.shift();
             if (typeof cardName !== 'string' || !Object.prototype.hasOwnProperty.call(shopStock, cardName)) {
                 continue;
             }
             shopStock[cardName] = Math.max(0, Number(shopStock[cardName]) || 0) + 1;
-            revealed++;
+            revealedNames.push(cardName);
         }
-        return revealed;
+        return revealedNames;
+    }
+
+    function refill(state, shopStock) {
+        return refillNames(state, shopStock).length;
     }
 
     function initialize(options = {}) {
@@ -132,14 +136,29 @@ const MarketSupply = (() => {
             value.deck.every(name => typeof name === 'string' && isKnown(name));
     }
 
-    function purchase(state, shopStock, cardRef) {
+    function purchaseResult(state, shopStock, cardRef) {
         const cardName = typeof cardRef === 'string' ? cardRef : cardRef && cardRef.name;
         if (!cardName || !shopStock || !Number.isInteger(shopStock[cardName]) || shopStock[cardName] <= 0) {
-            return false;
+            return Object.freeze({ ok: false, revealedNames: Object.freeze([]) });
         }
         shopStock[cardName]--;
-        refill(state, shopStock);
-        return true;
+        return Object.freeze({
+            ok: true,
+            revealedNames: Object.freeze(refillNames(state, shopStock)),
+        });
+    }
+
+    function purchase(state, shopStock, cardRef) {
+        return purchaseResult(state, shopStock, cardRef).ok;
+    }
+
+    function decrementGameShopStock(game, shopStock, cardRef) {
+        const result = purchaseResult(game && game.marketSupply, shopStock, cardRef);
+        if (result.ok && result.revealedNames.length > 0 &&
+                game && typeof game.addMarketRefillLog === 'function') {
+            game.addMarketRefillLog(result.revealedNames);
+        }
+        return result.ok;
     }
 
     return Object.freeze({
@@ -148,19 +167,21 @@ const MarketSupply = (() => {
         TARGET_TYPE_COUNT,
         copyState,
         createRandom,
+        decrementGameShopStock,
         initialize,
         isValidState,
         marketTypeCount,
         normalizeMode,
         normalizeSeed,
         purchase,
+        purchaseResult,
         refill,
         shuffled,
     });
 })();
 
 function decrementMarketShopStock(game, shopStock, cardRef) {
-    return MarketSupply.purchase(game && game.marketSupply, shopStock, cardRef);
+    return MarketSupply.decrementGameShopStock(game, shopStock, cardRef);
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = MarketSupply;

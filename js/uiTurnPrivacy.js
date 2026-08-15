@@ -13,7 +13,8 @@ const UiTurnPrivacy = (() => {
 
         function observe(input = {}) {
             const shouldShow = input.turnChanged === true && input.isOnlineGame !== true &&
-                input.isCpuTurn !== true && Number.isInteger(input.playerIndex) &&
+                input.isCpuTurn !== true && Number.isInteger(input.humanPlayerCount) &&
+                input.humanPlayerCount > 1 && Number.isInteger(input.playerIndex) &&
                 input.playerIndex >= 0 && typeof input.playerName === 'string' &&
                 input.playerName.trim() !== '';
             if (shouldShow) {

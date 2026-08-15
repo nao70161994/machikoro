@@ -4128,6 +4128,10 @@ runTest('公式オプション市場はonline建設・補充・snapshot復元で
         assert.strictEqual(rt.applyAction('buildCard', { cardName: card.name }), true);
     }
     assert.ok(game.marketSupply.deck.length < beforeDeck, '売切れ時に山札から補充する');
+    assert.ok(
+        game.log.some(entry => entry.type === LOG_TYPES.SYSTEM && entry.message.startsWith('🏪 市場補充：')),
+        'online action適用でも補充された施設名をログへ残す'
+    );
     const snapshot = JSON.parse(JSON.stringify(rt.buildOnlineSnapshot()));
     const expectedMarket = JSON.parse(JSON.stringify(game.marketSupply));
     rt.restoreOnlineSnapshot(snapshot);

@@ -49,6 +49,16 @@ runTest('GameManagerは構造化log件数を全対戦集計し表示専用logを
     assert.strictEqual(game.log.length, 3);
 });
 
+runTest('GameManagerは市場補充の施設名と同名枚数を進行ログへ表示する', () => {
+    const game = new GameManager(2);
+    const beforeSystemCount = game.reviewSummary.counts[LOG_TYPES.SYSTEM];
+    assert.strictEqual(game.addMarketRefillLog(['森林', '森林', 'カフェ']), true);
+    assert.strictEqual(game.log.at(-1).type, LOG_TYPES.SYSTEM);
+    assert.strictEqual(game.log.at(-1).message, '🏪 市場補充：森林×2、カフェを公開');
+    assert.strictEqual(game.reviewSummary.counts[LOG_TYPES.SYSTEM], beforeSystemCount);
+    assert.strictEqual(game.addMarketRefillLog([]), false);
+});
+
 runTest('CARD_EFFECT_METADATA は CARD_EFFECTS を網羅する', () => {
     const effects = Object.values(CARD_EFFECTS);
     assert.deepStrictEqual(

@@ -447,6 +447,8 @@ function renderActiveGameState(current) {
     const onlineState = uiOnlineRuntimeSnapshot();
     const currentGame = gameState.game;
     const isCPUTurn = !!currentCpuPlayerAt(currentGame.currentPlayerIndex);
+    const humanPlayerCount = currentGame.players.reduce((count, player, playerIndex) =>
+        count + (currentCpuPlayerAt(playerIndex) ? 0 : 1), 0);
     const previousTurnState = activeGameTurnStateController.snapshot();
     const view = UiGameStatusView.buildActiveGameView({
         current,
@@ -576,6 +578,7 @@ function renderActiveGameState(current) {
             previousTurnState.previousPlayerIndex !== currentGame.currentPlayerIndex,
         isOnlineGame: onlineState.isOnlineGame,
         isCpuTurn: isCPUTurn,
+        humanPlayerCount,
         playerIndex: currentGame.currentPlayerIndex,
         playerName: current.name,
     });

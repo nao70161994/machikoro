@@ -7,9 +7,10 @@ const { runTest } = require('./helpers/test-utils');
 runTest('turn privacyはローカル人間の手番変更だけを引き渡し対象にする', () => {
     const controller = UiTurnPrivacy.createHandoffController();
     assert.strictEqual(controller.observe({ turnChanged: false, playerIndex: 0, playerName: 'Alice' }).visible, false);
-    assert.strictEqual(controller.observe({ turnChanged: true, isOnlineGame: true, playerIndex: 1, playerName: 'Bob' }).visible, false);
-    assert.strictEqual(controller.observe({ turnChanged: true, isCpuTurn: true, playerIndex: 1, playerName: 'CPU' }).visible, false);
-    assert.deepStrictEqual(controller.observe({ turnChanged: true, playerIndex: 1, playerName: ' Bob ' }), {
+    assert.strictEqual(controller.observe({ turnChanged: true, isOnlineGame: true, humanPlayerCount: 2, playerIndex: 1, playerName: 'Bob' }).visible, false);
+    assert.strictEqual(controller.observe({ turnChanged: true, isCpuTurn: true, humanPlayerCount: 2, playerIndex: 1, playerName: 'CPU' }).visible, false);
+    assert.strictEqual(controller.observe({ turnChanged: true, humanPlayerCount: 1, playerIndex: 0, playerName: 'Alice' }).visible, false);
+    assert.deepStrictEqual(controller.observe({ turnChanged: true, humanPlayerCount: 2, playerIndex: 1, playerName: ' Bob ' }), {
         visible: true, playerIndex: 1, playerName: 'Bob',
     });
     assert.strictEqual(controller.dismiss().visible, false);

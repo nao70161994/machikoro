@@ -52,6 +52,22 @@ runTest('公式市場は同名をstackし、種類が9以下になると10種類
     assert.deepStrictEqual(state.deck, []);
 });
 
+runTest('公式市場は補充で公開した施設名を山札順で返す', () => {
+    const shopStock = Object.fromEntries(cards(11).map(card => [card.name, 0]));
+    for (let index = 0; index < 10; index++) shopStock[`施設${index + 1}`] = 1;
+    const state = {
+        mode: MarketSupply.MODES.TEN_TYPE,
+        seed: 1,
+        targetTypeCount: 10,
+        deck: ['施設1', '施設1', '施設11'],
+    };
+    const result = MarketSupply.purchaseResult(state, shopStock, '施設10');
+    assert.strictEqual(result.ok, true);
+    assert.deepStrictEqual(result.revealedNames, ['施設1', '施設1', '施設11']);
+    assert.strictEqual(shopStock['施設1'], 3);
+    assert.strictEqual(shopStock['施設11'], 1);
+});
+
 runTest('使用施設が10種類未満なら全種類を公開して山札残数を保持する', () => {
     const definitions = cards(7);
     const result = initialize({ cards: definitions, seed: 7 });

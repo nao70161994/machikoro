@@ -121,12 +121,14 @@ runTest('共有Game Engine executorは公式市場の売切れ後に次の種類
     const cards = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'];
     const shopStock = Object.fromEntries(cards.map(name => [name, 0]));
     for (const name of cards.slice(0, 10)) shopStock[name] = 1;
+    const refillLogs = [];
     const game = {
         marketSupply: {
             mode: 'ten-type', seed: 9, targetTypeCount: 10,
             deck: ['A', 'K'],
         },
         buildCard: () => true,
+        addMarketRefillLog(names) { refillLogs.push(names.slice()); },
     };
     assert.strictEqual(GameEngine.applyMutableAction({
         game,
@@ -135,12 +137,13 @@ runTest('共有Game Engine executorは公式市場の売切れ後に次の種類
         data: { cardName: 'J' },
         createCardByName: name => ({ name }),
         decrementShopStock: (stock, card, runtimeGame) =>
-            MarketSupply.purchase(runtimeGame.marketSupply, stock, card),
+            MarketSupply.decrementGameShopStock(runtimeGame, stock, card),
     }), true);
     assert.strictEqual(shopStock.A, 2);
     assert.strictEqual(shopStock.J, 0);
     assert.strictEqual(shopStock.K, 1);
     assert.deepStrictEqual(game.marketSupply.deck, []);
+    assert.deepStrictEqual(refillLogs, [['A', 'K']]);
     assert.strictEqual(MarketSupply.marketTypeCount(shopStock), 10);
 });
 

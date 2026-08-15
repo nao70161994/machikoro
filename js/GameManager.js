@@ -1199,6 +1199,23 @@ class GameManager {
         const index = GameTurnPolicy.winnerIndex(this.players, this.enabledLandmarks);
         return index >= 0 ? this.players[index] : null;
     }
+
+    addMarketRefillLog(cardNames) {
+        if (!Array.isArray(cardNames)) return false;
+        const counts = new Map();
+        for (const name of cardNames) {
+            if (typeof name !== 'string' || name.trim() === '') continue;
+            const normalizedName = name.trim();
+            counts.set(normalizedName, (counts.get(normalizedName) || 0) + 1);
+        }
+        if (counts.size === 0) return false;
+        const summary = Array.from(counts, ([name, count]) =>
+            count > 1 ? `${name}×${count}` : name
+        ).join('、');
+        this.addLog(LOG_TYPES.SYSTEM, `🏪 市場補充：${summary}を公開`, { review: false });
+        return true;
+    }
+
     addLog(type, msg, options = {}) {
         this.log.push({ type, message: msg });
         if (options.review === false) return;
