@@ -13,6 +13,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         generateRoomId,
         generateReconnectToken,
         normalizeEnabledCards,
+        normalizeMarketRule,
         landmarkNames,
         markCreateRoomForSocket,
         createRoomRateKeyForSocket,
@@ -26,6 +27,9 @@ function registerLobbySocketHandlers(socket, dependencies) {
         pruneExpiredWaitingReservations: pruneExpiredWaitingReservationsEffect = () => [],
     } = dependencies;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
+    const normalizedMarketRule = typeof normalizeMarketRule === 'function'
+        ? normalizeMarketRule
+        : value => value === 'ten-type' ? 'ten-type' : 'standard';
     const log = typeof dependencies.log === 'function' ? dependencies.log : console.log;
     const resolveGameSchemaCapabilities = typeof dependencies.resolveClientGameSchemaCapabilities === 'function'
         ? dependencies.resolveClientGameSchemaCapabilities
@@ -36,7 +40,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
 
     socket.on('createRoom', payload => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, clientVersion, hostlessRestoreVersion, gameSchemaCapabilities } = payload;
+        let { playerName, playerCount, playerSettings, cpuSpeed, enabledCards, enabledLandmarks, marketRule, marketRuleVersion, clientVersion, hostlessRestoreVersion, gameSchemaCapabilities } = payload;
         const schemaResolution = resolveGameSchemaCapabilities(gameSchemaCapabilities);
         if (!schemaResolution.ok) { emitAppError(socket, 'SCHEMA_CAPABILITY_INVALID'); return; }
         socket.gameSchemaCapabilities = schemaResolution.capabilities;
@@ -64,6 +68,10 @@ function registerLobbySocketHandlers(socket, dependencies) {
         const roomId = generateRoomId();
         const reconnectToken = generateReconnectToken();
         const selectedCards = normalizeEnabledCards(enabledCards);
+        if (normalizedMarketRule(marketRule) === 'ten-type' && marketRuleVersion !== 1) {
+            emitAppError(socket, 'この市場ルールで遊ぶにはアプリを更新してください');
+            return;
+        }
         const admission = planCreateRoomAdmission({
             enabledLandmarks,
             allLandmarks: landmarkNames(),
@@ -82,6 +90,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
             lastTouchedAt: createdAt,
             enabledCards: selectedCards,
             enabledLandmarks: selectedLandmarks,
+            marketRule: normalizedMarketRule(marketRule),
             players: [{ id: socket.id, name: playerName, index: hostIndex, reconnectToken, ready: false, gameSchemaCapabilities: schemaResolution.capabilities }],
             hostPlayerIndex: hostIndex,
             hostEpoch: 0,
@@ -106,7 +115,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
 
     socket.on('joinRoom', payload => {
         if (!requirePlainSocketPayload(socket, payload)) return;
-        let { roomId, playerName, clientVersion, hostlessRestoreVersion, gameSchemaCapabilities } = payload;
+        let { roomId, playerName, clientVersion, hostlessRestoreVersion, marketRuleVersion, gameSchemaCapabilities } = payload;
         const schemaResolution = resolveGameSchemaCapabilities(gameSchemaCapabilities);
         if (!schemaResolution.ok) { emitAppError(socket, 'SCHEMA_CAPABILITY_INVALID'); return; }
         socket.gameSchemaCapabilities = schemaResolution.capabilities;
@@ -117,6 +126,10 @@ function registerLobbySocketHandlers(socket, dependencies) {
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ルームが見つかりません'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ルームが見つかりません'); return; }
+        if (room.marketRule === 'ten-type' && marketRuleVersion !== 1) {
+            emitAppError(socket, 'この市場ルールで遊ぶにはアプリを更新してください');
+            return;
+        }
         pruneExpiredWaitingReservationsEffect(room, now());
         const roomEntry = validateSocketCanEnterRoom(socket, roomId, rooms);
         if (!roomEntry.ok) { emitAppError(socket, roomEntry.message); return; }

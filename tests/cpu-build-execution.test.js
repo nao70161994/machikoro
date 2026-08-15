@@ -63,6 +63,24 @@ runTest('CPU build execution はlocal card成功時だけstockを減らす', () 
     assert.strictEqual(stock.麦畑, 1);
 });
 
+runTest('CPU build execution は市場補充adapterへstock・card・game順で委譲する', () => {
+    const actor = cpu();
+    const card = { name: '麦畑' };
+    const stock = { 麦畑: 1 };
+    const game = {
+        builtThisTurn: false,
+        buildCard() { return true; },
+    };
+    const calls = [];
+    assert.strictEqual(CPUBuildExecution.buyCard(actor, card, game, stock, {
+        decrementShopStock(...args) {
+            calls.push(args);
+            stock.麦畑 = 0;
+        },
+    }), true);
+    assert.deepStrictEqual(calls, [[stock, card, game]]);
+});
+
 runTest('CPU build execution はonline cardを同じpayloadで一度だけ送信する', () => {
     const actor = cpu();
     const stock = { 麦畑: 2 };

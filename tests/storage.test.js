@@ -1,5 +1,6 @@
 const assert = require('assert');
 const vm = require('vm');
+const MarketSupplyModule = require('../js/marketSupply');
 const { createStorage, loadScripts, makeElement, runTest } = require('./helpers/test-utils');
 
 function loadStorageRuntime(options = {}) {
@@ -29,6 +30,7 @@ function loadStorageRuntime(options = {}) {
     };
     const alerts = [];
     let confirmCount = 0;
+    let marketRule = 'standard';
     const context = {
         console,
         localStorage,
@@ -97,6 +99,10 @@ function loadStorageRuntime(options = {}) {
             context.enabledLandmarks = new Set(values);
             return context.enabledLandmarks;
         },
+        replaceMarketRuleSelection(value) {
+            marketRule = value === 'ten-type' ? 'ten-type' : 'standard';
+            return marketRule;
+        },
         getEnabledCardSelection() { return new Set(context.enabledCards); },
         getEnabledLandmarkSelection() { return new Set(context.enabledLandmarks); },
         GameSelectionState: {
@@ -105,6 +111,7 @@ function loadStorageRuntime(options = {}) {
                     return {
                         enabledCards: [...context.enabledCards],
                         enabledLandmarks: [...context.enabledLandmarks],
+                        marketRule,
                     };
                 },
             },
@@ -193,7 +200,7 @@ function loadStorageRuntime(options = {}) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlineRestoreMetadata.js', 'js/onlinePayload.js', 'js/snapshotInventoryValidation.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiPlayerCount.js', 'js/uiRangeControl.js', 'js/undoPreview.js', 'js/storage.js']);
+    loadScripts(context, ['js/marketSupply.js', 'js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlineRestoreMetadata.js', 'js/onlinePayload.js', 'js/snapshotInventoryValidation.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiPlayerCount.js', 'js/uiRangeControl.js', 'js/undoPreview.js', 'js/storage.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -827,6 +834,47 @@ runTest('storage resumeGame は共有hydrateで既存の全主要状態を復元
     assert.strictEqual(game.players[0].itVentureCoins, 4);
     assert.strictEqual(game.players[0].hasYakusho, false);
     assert.strictEqual(rt.__test.getShopStock()['麦畑'], 4);
+});
+
+runTest('storage resumeGame は公式オプション市場の山札と公開在庫を復元する', () => {
+    const rt = loadStorageRuntime();
+    const shopStock = {};
+    const marketSupply = MarketSupplyModule.initialize({
+        mode: MarketSupplyModule.MODES.TEN_TYPE,
+        seed: 24680,
+        cards: rt.CARDS,
+        enabledCardNames: rt.CARDS.map(card => card.name),
+        playerCount: 2,
+        shopStock,
+        initialStock: rt.getInitialCardStock,
+    });
+    const players = ['P1', 'P2'].map(name => ({
+        name,
+        coins: 3,
+        cards: ['麦畑', 'パン屋'],
+        dormantIndices: [],
+        landmarks: {},
+        itVentureCoins: 0,
+        hasYakusho: true,
+    }));
+    rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState({
+        players,
+        enabledCardsList: rt.CARDS.map(card => card.name),
+        shopStock,
+        marketSupply,
+    })));
+
+    rt.resumeGame();
+
+    assert.strictEqual(rt.__test.getGame().marketSupply.mode, 'ten-type');
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(rt.__test.getGame().marketSupply)),
+        JSON.parse(JSON.stringify(marketSupply))
+    );
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(rt.__test.getShopStock())),
+        JSON.parse(JSON.stringify(shopStock))
+    );
 });
 
 runTest('storage resumeGame はIT単独のpending phaseを復元する', () => {

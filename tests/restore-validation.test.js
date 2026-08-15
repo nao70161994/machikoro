@@ -55,6 +55,9 @@ runTest('restore validation preserves valid game-start payloads and legacy optio
         hostlessRestoreGeneration: Number.MAX_SAFE_INTEGER,
         hostlessRestoreCount: 3,
     }), 2), true);
+    assert.strictEqual(validation.isValidGameStartPayload(validPayload({
+        marketRule: 'ten-type', marketSeed: 0xffffffff,
+    }), 2), true);
 });
 
 runTest('restore validation rejects malformed game-start fields by contract boundary', () => {
@@ -68,6 +71,11 @@ runTest('restore validation rejects malformed game-start fields by contract boun
         [validPayload({ enabledCards: ['Unknown'] }), 2],
         [validPayload({ enabledLandmarks: [] }), 2],
         [validPayload({ enabledLandmarks: ['Unknown'] }), 2],
+        [validPayload({ marketRule: 'ten-type' }), 2],
+        [validPayload({ marketSeed: 1 }), 2],
+        [validPayload({ marketRule: 'unknown', marketSeed: 1 }), 2],
+        [validPayload({ marketRule: 'ten-type', marketSeed: -1 }), 2],
+        [validPayload({ marketRule: 'ten-type', marketSeed: 0x100000000 }), 2],
         [validPayload({ cpuSpeed: -1 }), 2],
         [validPayload({ cpuSpeed: 1.5 }), 2],
         [validPayload({ cpuSpeed: 5001 }), 2],

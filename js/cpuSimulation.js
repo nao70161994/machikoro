@@ -49,6 +49,14 @@ const CPUSimulation = Object.freeze({
         }
         const clone = adapters.createGame(game.players.length);
         clone.enabledLandmarks = new Set(game.enabledLandmarks || adapters.defaultLandmarks());
+        clone.marketSupply = game.marketSupply && game.marketSupply.mode === 'ten-type'
+            ? {
+                mode: 'ten-type',
+                seed: game.marketSupply.seed,
+                targetTypeCount: game.marketSupply.targetTypeCount,
+                deck: Array.isArray(game.marketSupply.deck) ? game.marketSupply.deck.slice() : [],
+            }
+            : { mode: 'standard', seed: 0, targetTypeCount: 0, deck: [] };
         clone.players.forEach((player, index) => {
             const source = game.players[index];
             player.name = source.name;

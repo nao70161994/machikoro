@@ -13,6 +13,7 @@ runTest('game selection controllerは重複を除いた順序付きsnapshotを�
     assert.deepStrictEqual(controller.snapshot(), {
         enabledCards: ['麦畑', 'パン屋'],
         enabledLandmarks: ['駅', '港'],
+        marketRule: 'standard',
     });
     assert.ok(Object.isFrozen(controller.snapshot()));
     assert.ok(Object.isFrozen(controller.snapshot().enabledCards));
@@ -31,6 +32,7 @@ runTest('game selection controllerは外部Set変更から内部状態を分離�
     assert.deepStrictEqual(controller.snapshot(), {
         enabledCards: ['パン屋', '森林'],
         enabledLandmarks: ['駅', '空港'],
+        marketRule: 'standard',
     });
 });
 
@@ -40,5 +42,13 @@ runTest('game selection controllerはnullを空選択として正規化する', 
     assert.deepStrictEqual(controller.snapshot(), {
         enabledCards: [],
         enabledLandmarks: [],
+        marketRule: 'standard',
     });
+});
+
+runTest('game selection controllerは公式オプション市場を明示選択し未知値を通常へ戻す', () => {
+    const controller = GameSelectionState.createController({ marketRule: 'ten-type' });
+    assert.strictEqual(controller.snapshot().marketRule, 'ten-type');
+    controller.replaceMarketRule('future-rule');
+    assert.strictEqual(controller.snapshot().marketRule, 'standard');
 });

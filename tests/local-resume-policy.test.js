@@ -97,6 +97,7 @@ assert.strictEqual(runtimePlan.playerCount, 2);
 assert.strictEqual(runtimePlan.cpuSpeed, 800);
 assert.deepStrictEqual(runtimePlan.enabledCards, ['麦畑']);
 assert.deepStrictEqual(runtimePlan.enabledLandmarks, ['駅', '空港']);
+assert.strictEqual(runtimePlan.marketRule, 'standard');
 assert.ok(Object.isFrozen(runtimePlan));
 assert.ok(Object.isFrozen(runtimePlan.enabledCards));
 assert.ok(Object.isFrozen(runtimePlan.enabledLandmarks));
@@ -110,6 +111,11 @@ assert.strictEqual(LocalResumePolicy.runtimePlan(
     [],
     []
 ).cpuSpeed, 1500);
+assert.strictEqual(LocalResumePolicy.runtimePlan(
+    { players: [{}, {}], marketSupply: { mode: 'ten-type' } },
+    [],
+    []
+).marketRule, 'ten-type');
 
 const effectOrder = [];
 const effects = {};

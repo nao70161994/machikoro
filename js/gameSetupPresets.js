@@ -44,6 +44,7 @@ const GameSetupPresets = (() => {
             enabledLandmarks: Object.freeze(Array.isArray(value.enabledLandmarks)
                 ? Array.from(new Set(value.enabledLandmarks.filter(name => typeof name === 'string'))).slice(0, 20)
                 : []),
+            marketRule: value.marketRule === 'ten-type' ? 'ten-type' : 'standard',
         });
     }
 

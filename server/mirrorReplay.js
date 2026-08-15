@@ -72,7 +72,8 @@ function makeMirrorReplay({
                     shopStock,
                     undoState: snapshot.undoState || null,
                     createCardByName: gameRuntime.createCardByName,
-                    decrementShopStock: gameRuntime.decrementShopStock,
+                    decrementShopStock: (stock, card, runtimeGame) =>
+                        gameRuntime.decrementMarketShopStock(runtimeGame, stock, card),
                 };
                 if (options.action === 'buildCard' || options.action === 'buildLandmark') {
                     runtime.undoState = makeUndoStateFromMirror(game, shopStock);
@@ -123,16 +124,23 @@ function makeMirrorReplay({
 
     function createRoomMirror(room) {
         if (!room.gameStartPayload) return null;
-        const { GameManager, CARDS, createCardByName, getInitialCardStock, setShopStockCount, Player } = gameRuntime;
-        const { playerNames, playerSettings, playerOrder, enabledCards, enabledLandmarks } = room.gameStartPayload;
+        const { GameManager, CARDS, createCardByName, getInitialCardStock, Player } = gameRuntime;
+        const { playerNames, playerSettings, playerOrder, enabledCards, enabledLandmarks, marketRule, marketSeed } = room.gameStartPayload;
         const game = new GameManager(playerNames.length);
         game.enabledLandmarks = new Set((enabledLandmarks && enabledLandmarks.length > 0) ? enabledLandmarks : Player.landmarkNames());
                 /** @type {Record<string, number>} */
         const shopStock = {};
         const enabled = new Set(enabledCards || CARDS.map(c => c.name));
-        for (const card of CARDS) {
-            setShopStockCount(shopStock, card, enabled.has(card.name) ? getInitialCardStock(card, playerNames.length) : 0);
-        }
+        game.marketSupply = gameRuntime.MarketSupply.initialize({
+            mode: marketRule,
+            seed: marketSeed,
+            cards: CARDS,
+            enabledCardNames: enabled,
+            playerCount: playerNames.length,
+            shopStock,
+            initialStock: getInitialCardStock,
+            setStock: gameRuntime.setShopStockCount,
+        });
 
         const order = playerOrder || playerNames.map((_, i) => i);
         for (let i = 0; i < playerNames.length; i++) {
@@ -293,6 +301,10 @@ function makeMirrorReplay({
 
     function isValidUndoState(state, playerCount, createCardByName) {
         if (!isPlainObject(state)) return false;
+        if (!gameRuntime.MarketSupply.isValidState(
+            state.marketSupply,
+            name => !!createCardByName(name)
+        )) return false;
         if (!Array.isArray(state.playerCoins) || state.playerCoins.length !== playerCount) return false;
         if (!Array.isArray(state.playerCardNames) || state.playerCardNames.length !== playerCount) return false;
         if (!Array.isArray(state.playerLandmarks) || state.playerLandmarks.length !== playerCount) return false;
@@ -329,16 +341,21 @@ function makeMirrorReplay({
 
     function validateSnapshotAgainstRoomConfig(state, room, playerCount) {
         if (!isPlainObject(state)) return false;
+        if (!gameRuntime.MarketSupply.isValidState(
+            state.marketSupply,
+            name => !!gameRuntime.createCardByName(name)
+        )) return false;
         const enabledCards = new Set(room.gameStartPayload?.enabledCards || gameRuntime.CARDS.map(card => card.name));
         const enabledLandmarks = new Set(room.gameStartPayload?.enabledLandmarks || gameRuntime.Player.landmarkNames());
-        if (!validateSnapshotCardAndStockConfig(state.players, state.shopStock, enabledCards, playerCount)) return false;
+        if (!validateSnapshotCardAndStockConfig(state.players, state.shopStock, enabledCards, playerCount, state.marketSupply)) return false;
         if (!validateSnapshotLandmarkConfig(state.players, enabledLandmarks)) return false;
         if (state.undoState) {
             if (!validateSnapshotCardAndStockConfig(
                 state.undoState.playerCardNames?.map((cardNames, index) => ({ cards: cardNames, landmarks: state.undoState.playerLandmarks?.[index] })),
                 state.undoState.shopStock,
                 enabledCards,
-                playerCount
+                playerCount,
+                state.undoState.marketSupply
             )) return false;
             if (!validateSnapshotLandmarkConfig(
                 state.undoState.playerLandmarks?.map(landmarks => ({ landmarks })),
@@ -348,13 +365,14 @@ function makeMirrorReplay({
         return true;
     }
 
-    function validateSnapshotCardAndStockConfig(playersState, shopStockState, enabledCards, playerCount) {
+    function validateSnapshotCardAndStockConfig(playersState, shopStockState, enabledCards, playerCount, marketSupply = null) {
         if (!Array.isArray(playersState)) return false;
         return inventoryValidator.validate({
             playerCount,
             playerCardNames: playersState.map(player => Array.isArray(player?.cards) ? player.cards : []),
             shopStock: shopStockState,
             enabledCardNames: Array.from(enabledCards),
+            marketSupply,
         });
     }
 
@@ -464,7 +482,8 @@ function makeMirrorReplay({
             action,
             data,
             createCardByName,
-            decrementShopStock: gameRuntime.decrementShopStock,
+            decrementShopStock: (stock, card, runtimeGame) =>
+                gameRuntime.decrementMarketShopStock(runtimeGame, stock, card),
             restoreUndoState: state => restoreUndoMirror(game, shopStock, state, createCardByName),
         });
     }

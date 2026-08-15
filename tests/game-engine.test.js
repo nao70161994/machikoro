@@ -4,6 +4,7 @@ const assert = require('assert');
 const GameActionContract = require('../js/actionContract');
 const GameEngine = require('../js/gameEngine');
 const GameSnapshot = require('../js/gameSnapshot');
+const MarketSupply = require('../js/marketSupply');
 const { restoreMirrorState, serializeMirrorState, applyActionToMirror, restoreUndoMirror } = require('../server');
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 const { runTest } = require('./helpers/test-utils');
@@ -114,6 +115,33 @@ runTest('共有Game Engine executorは失敗結果・建設在庫・Undo adapter
         },
     }), true);
     assert.strictEqual(restored, undoState);
+});
+
+runTest('共有Game Engine executorは公式市場の売切れ後に次の種類を補充する', () => {
+    const cards = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'];
+    const shopStock = Object.fromEntries(cards.map(name => [name, 0]));
+    for (const name of cards.slice(0, 10)) shopStock[name] = 1;
+    const game = {
+        marketSupply: {
+            mode: 'ten-type', seed: 9, targetTypeCount: 10,
+            deck: ['A', 'K'],
+        },
+        buildCard: () => true,
+    };
+    assert.strictEqual(GameEngine.applyMutableAction({
+        game,
+        shopStock,
+        action: 'buildCard',
+        data: { cardName: 'J' },
+        createCardByName: name => ({ name }),
+        decrementShopStock: (stock, card, runtimeGame) =>
+            MarketSupply.purchase(runtimeGame.marketSupply, stock, card),
+    }), true);
+    assert.strictEqual(shopStock.A, 2);
+    assert.strictEqual(shopStock.J, 0);
+    assert.strictEqual(shopStock.K, 1);
+    assert.deepStrictEqual(game.marketSupply.deck, []);
+    assert.strictEqual(MarketSupply.marketTypeCount(shopStock), 10);
 });
 
 runTest('共有Game Engine executorは未知actionと非object payloadを副作用なく拒否する', () => {

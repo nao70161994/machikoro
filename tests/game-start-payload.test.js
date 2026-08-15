@@ -63,3 +63,16 @@ runTest('game start payloadはhost epoch/action seq欠落時の既存0 fallback�
     assert.strictEqual(payload.hostEpoch, 0);
     assert.strictEqual(payload.actionSeq, 0);
 });
+
+runTest('game start payloadは公式オプション市場だけに共有seedを追加する', () => {
+    const randomValues = [0.25, 0.75];
+    const payload = createBuilder()({}, {
+        ...room,
+        marketRule: 'ten-type',
+    }, () => randomValues.shift());
+    assert.strictEqual(payload.marketRule, 'ten-type');
+    assert.strictEqual(payload.marketSeed, 0xc0000000);
+    const standard = createBuilder()({}, { ...room, marketRule: 'standard' }, () => 0.5);
+    assert.strictEqual(Object.hasOwn(standard, 'marketRule'), false);
+    assert.strictEqual(Object.hasOwn(standard, 'marketSeed'), false);
+});

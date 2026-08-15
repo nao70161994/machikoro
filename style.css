@@ -2133,6 +2133,17 @@ button:not(:disabled):active {
     margin-bottom: 8px;
 }
 
+.market-rule-status {
+    margin: 8px 0 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 193, 7, 0.45);
+    border-radius: 10px;
+    background: rgba(255, 193, 7, 0.1);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
 .build-card-section {
     position: relative;
 }

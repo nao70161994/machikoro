@@ -61,6 +61,8 @@ function makeHostlessRestoreGateway(options = {}) {
         const fields = [
             'enabledCards',
             'enabledLandmarks',
+            'marketRule',
+            'marketSeed',
             'playerNames',
             'playerSettings',
             'cpuSpeed',

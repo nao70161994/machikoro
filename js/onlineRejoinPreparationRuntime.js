@@ -25,7 +25,7 @@ const OnlineRejoinPreparationRuntime = (() => {
             'pendingBelongsToSession', 'pendingMatchesAccepted', 'readActionLog',
             'readLocalBundle', 'readPending', 'readRestoreQueue', 'recordDiagnostic',
             'recordQueueDiagnostic', 'removeRestoreItem', 'replaceEnabledCards',
-            'replaceEnabledLandmarks', 'replaceRestoreQueue', 'resetUiLocks',
+            'replaceEnabledLandmarks', 'replaceMarketRule', 'replaceRestoreQueue', 'resetUiLocks',
             'saveSession', 'selectPersistenceEffect', 'selectQueueTransition',
             'sendLocalBundle', 'serverActionSeq', 'setActionFlight', 'setCpuSpeed',
             'setHostState', 'setPlayerIndexes', 'setReconnectFlag', 'setStatusText',
@@ -339,6 +339,7 @@ const OnlineRejoinPreparationRuntime = (() => {
             if (!prepared || prepared.ready !== true || !selection) {
                 throw new TypeError('prepared online rejoin context is required');
             }
+            dependencies.replaceMarketRule(prepared.gameStartPayload.marketRule);
             const effectSelection = dependencies.selectPersistenceEffect(selection);
             dependencies.recordDiagnostic(
                 'onlineRejoinPersistenceEffectSelection',

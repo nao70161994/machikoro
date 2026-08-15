@@ -13,6 +13,9 @@ const MAX_SAVED_CPU_SPEED = 5000;
 const savedGameSnapshot = typeof module !== 'undefined' && module.exports
     ? require('./gameSnapshot')
     : globalThis.GameSnapshot;
+const savedMarketSupply = typeof module !== 'undefined' && module.exports
+    ? require('./marketSupply')
+    : globalThis.MarketSupply;
 
 function isPlainObject(value) {
     return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -227,6 +230,7 @@ function createValidator(options = {}) {
 
     function isValidSavedGameState(state) {
         if (!isPlainObject(state)) return false;
+        if (savedMarketSupply && !savedMarketSupply.isValidState(state.marketSupply, isKnownCardName)) return false;
         if (!Array.isArray(state.players) || state.players.length < 2 || state.players.length > 10) return false;
         if (!Number.isInteger(state.currentPlayerIndex) ||
             state.currentPlayerIndex < 0 ||
@@ -293,6 +297,7 @@ function createValidator(options = {}) {
             playerCardNames: state.players.map(player => player.cards),
             shopStock: state.shopStock,
             enabledCardNames: state.enabledCardsList,
+            marketSupply: state.marketSupply,
         })) return false;
         if (!hasResolvablePendingTargets(state, {
             isMajorCardName,

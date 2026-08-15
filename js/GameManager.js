@@ -117,6 +117,9 @@ class GameManager {
         // UI notification identity only. This is intentionally not serialized or sent on the wire.
         this.diceResolutionSequence = 0;
         this.enabledLandmarks = new Set(Player.landmarkNames());
+        this.marketSupply = typeof MarketSupply !== 'undefined'
+            ? MarketSupply.copyState(null)
+            : { mode: 'standard', seed: 0, targetTypeCount: 0, deck: [] };
         this.hadAmusementParkAtRoll = false;
 
         for (let i = 0; i < playerCount; i++) {

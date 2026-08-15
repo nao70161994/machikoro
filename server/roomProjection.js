@@ -22,7 +22,7 @@ function makeRoomProjection({
     }
 
     function buildLobbyState(room) {
-        return {
+        return Object.assign({
             hostPlayerIndex: room.hostPlayerIndex,
             participants: room.players.map(player => Object.assign({
                 index: player.index,
@@ -32,7 +32,9 @@ function makeRoomProjection({
             }, !player.id && Number.isFinite(player.reservedUntil)
                 ? { reservedUntil: player.reservedUntil }
                 : {})),
-        };
+        }, room.marketRule === 'ten-type'
+            ? { marketRule: 'ten-type' }
+            : {});
     }
 
     function countRoomHumanSlots(room) {

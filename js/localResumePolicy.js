@@ -82,6 +82,8 @@ const LocalResumePolicy = (() => {
             cpuSpeed: state && state.cpuSpeed ? state.cpuSpeed : 1500,
             enabledCards,
             enabledLandmarks,
+            marketRule: state && state.marketSupply && state.marketSupply.mode === 'ten-type'
+                ? 'ten-type' : 'standard',
             cpuCreationPlan: cpuCreationPlan(cpuSettings, playerCount),
         });
     }

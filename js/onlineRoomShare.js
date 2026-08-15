@@ -36,6 +36,9 @@ const OnlineRoomShare = (() => {
         const normalizedRoomId = normalizeRoomId(roomId);
         const safeRoomId = escapeText(normalizedRoomId);
         const hasPlayerList = Array.isArray(players);
+        const marketRule = options.marketRule === 'ten-type'
+            ? '<p class="room-market-rule">🏪 市場：公式オプション（異なる10種類）</p>'
+            : '';
         const hasWaitingSlot = hasPlayerList && players.some(player => player === WAITING_SLOT_LABEL);
         const playerList = hasPlayerList
             ? `<div class="waiting-players">参加枠（${players.length}枠）: ${players.map(escapeText).join('、')}</div>`
@@ -90,6 +93,7 @@ const OnlineRoomShare = (() => {
             <button type="button" class="room-qr-toggle" data-ui-action="toggleOnlineRoomQr" data-room-id="${safeRoomId}" aria-expanded="false">QRを表示</button>
             <div class="room-qr-container" data-room-qr-container aria-live="polite"></div>
             ${playerList}
+            ${marketRule}
             ${startHelp}
             ${readiness}
             ${management}

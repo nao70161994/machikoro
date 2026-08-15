@@ -5,7 +5,7 @@ const LocalGameInitializer = (() => {
         const requiredFunctions = [
             'cancelAutoSkip', 'cancelCpuSchedule', 'cancelDelayedHumanAction',
             'cpuLabel', 'createCpu', 'createGame', 'getEnabledCards',
-            'getEnabledLandmarks', 'initialCardStock', 'landmarkNames',
+            'getEnabledLandmarks', 'getMarketRule', 'initialCardStock', 'landmarkNames',
             'normalizePlayerName', 'normalizePlayerSetting', 'opponentDifficulties',
             'random', 'render', 'replaceEnabledLandmarks', 'resetFullLog',
             'scheduleCpu', 'setShopStockCount', 'setWinSoundPlayed', 'stopConfetti',
@@ -16,6 +16,7 @@ const LocalGameInitializer = (() => {
             }
         }
         if (!dependencies.cards || !dependencies.gameRuntime || !dependencies.setupRuntime ||
+                !dependencies.marketSupply ||
                 !dependencies.shopStock || !dependencies.logTypes) {
             throw new TypeError('local game initializer runtime dependencies are required');
         }
@@ -41,21 +42,26 @@ const LocalGameInitializer = (() => {
 
             const initialized = dependencies.gameRuntime.setGame(dependencies.createGame(playerCount));
             const game = initialized.game;
+            const order = shuffledIndexes(playerCount);
             let enabledLandmarks = dependencies.getEnabledLandmarks();
             if (enabledLandmarks.size === 0) {
                 enabledLandmarks = dependencies.replaceEnabledLandmarks(dependencies.landmarkNames());
             }
             const enabledCards = dependencies.getEnabledCards();
+            const marketRule = dependencies.getMarketRule();
             game.enabledLandmarks = new Set(enabledLandmarks);
-            for (const card of dependencies.cards) {
-                dependencies.setShopStockCount(
-                    dependencies.shopStock,
-                    card,
-                    enabledCards.has(card.name)
-                        ? dependencies.initialCardStock(card, playerCount)
-                        : 0
-                );
-            }
+            game.marketSupply = dependencies.marketSupply.initialize({
+                mode: marketRule,
+                seed: marketRule === dependencies.marketSupply.MODES.TEN_TYPE
+                    ? Math.floor((dependencies.random() || 0) * 0x100000000) >>> 0
+                    : 0,
+                cards: dependencies.cards,
+                enabledCardNames: enabledCards,
+                playerCount,
+                shopStock: dependencies.shopStock,
+                initialStock: dependencies.initialCardStock,
+                setStock: dependencies.setShopStockCount,
+            });
 
             const setup = dependencies.setupRuntime.snapshot();
             const normalized = dependencies.setupRuntime.setPlayerSettings(
@@ -63,7 +69,6 @@ const LocalGameInitializer = (() => {
                     dependencies.normalizePlayerSetting(setup.playerSettings[index], index, playerCount)
                 )
             );
-            const order = shuffledIndexes(playerCount);
             const shuffledSettings = order.map(originalIndex => normalized.playerSettings[originalIndex] || {});
             const opponentDifficulties = dependencies.opponentDifficulties(shuffledSettings);
             const cpuPlayers = [];

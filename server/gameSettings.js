@@ -64,6 +64,10 @@ function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds
         return selected.length > 0 ? [...new Set(selected)] : cardNames.slice();
     }
 
+    function normalizeMarketRule(value) {
+        return value === 'ten-type' ? 'ten-type' : 'standard';
+    }
+
     return {
         normalizePlayerSettings,
         cpuDifficultyLabel,
@@ -72,6 +76,7 @@ function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds
         hasInvalidOnlineRlModelSettings,
         normalizeCpuSpeed,
         normalizeEnabledCards,
+        normalizeMarketRule,
     };
 }
 

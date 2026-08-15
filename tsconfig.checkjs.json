@@ -17,6 +17,7 @@
     "server.js",
     "scripts/check-static-files.js",
     "js/Card.js",
+    "js/marketSupply.js",
     "js/Player.js",
     "js/gameSelectionState.js",
     "js/gameSetupState.js",

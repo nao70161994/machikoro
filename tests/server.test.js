@@ -1295,6 +1295,22 @@ runTest('createRoomMirror は build action replay から lastUndoState を復元
     assert.strictEqual(mirror.lastUndoState.shopStock['カフェ'], 6);
 });
 
+runTest('createRoomMirror は公式オプション市場を共有seedから決定論的に再構築する', () => {
+    const runtime = loadGameRuntime();
+    const enabledCards = runtime.CARDS.slice(0, 12).map(card => card.name);
+    const leftRoom = makeRoom();
+    leftRoom.gameStartPayload.enabledCards = enabledCards;
+    leftRoom.gameStartPayload.marketRule = 'ten-type';
+    leftRoom.gameStartPayload.marketSeed = 987654321;
+    const rightRoom = JSON.parse(JSON.stringify(leftRoom));
+    const left = createRoomMirror(leftRoom);
+    const right = createRoomMirror(rightRoom);
+    assert.ok(left && right);
+    assert.deepStrictEqual(left.game.marketSupply, right.game.marketSupply);
+    assert.deepStrictEqual(left.shopStock, right.shopStock);
+    assert.strictEqual(runtime.MarketSupply.marketTypeCount(left.shopStock), 10);
+});
+
 runTest('server mirror snapshot は serialize/restore/serialize でroundtripできる', () => {
     const { GameManager, createCardByName } = makeGame();
     const game = new GameManager(2);

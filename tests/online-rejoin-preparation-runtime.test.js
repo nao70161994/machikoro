@@ -117,6 +117,7 @@ function createHarness(options = {}) {
         removeRestoreItem: key => calls.push(['removeRestoreItem', key]),
         replaceEnabledCards: value => calls.push(['replaceEnabledCards', value]),
         replaceEnabledLandmarks: value => calls.push(['replaceEnabledLandmarks', value]),
+        replaceMarketRule: value => calls.push(['replaceMarketRule', value]),
         replaceRestoreQueue: value => calls.push(['replaceRestoreQueue', value]),
         resetUiLocks: reason => calls.push(['resetUiLocks', reason]),
         restoreQueueState: OnlineRestoreQueueState,
@@ -225,7 +226,7 @@ runTest('online rejoin preparation runtimeはexecutorでruntime・保存effect�
     harness.calls.length = 0;
     harness.runtime.persist(prepared);
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
-        'recordDiagnostic', 'setActionFlight', 'clearPending', 'clearRetry',
+        'replaceMarketRule', 'recordDiagnostic', 'setActionFlight', 'clearPending', 'clearRetry',
         'setCpuSpeed', 'replaceEnabledCards', 'replaceEnabledLandmarks',
         'setPlayerIndexes', 'setHostState', 'readActionLog', 'recordDiagnostic',
         'writeRestoreJson', 'writeRestoreJson', 'writeRestoreJson', 'writeRestoreJson',

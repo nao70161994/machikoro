@@ -117,6 +117,32 @@ runTest('online rematchは全接続playerの明示同意後だけ世代とtoken�
     assert.strictEqual(h.timers[0].cleared, true);
 });
 
+runTest('online rematchは公式オプション市場を維持して新しい共有seedで開始する', () => {
+    const h = createHarness({
+        buildGameStartPayload: (_io, room) => ({
+            playerNames: ['Alice', 'Bob'],
+            gameGeneration: room.gameGeneration,
+            hostEpoch: room.hostEpoch,
+            actionSeq: room.actionSeq,
+            marketRule: room.marketRule,
+            marketSeed: 1000 + room.gameGeneration,
+        }),
+    });
+    h.room.marketRule = 'ten-type';
+    const first = h.socket('s0', 0);
+    const second = h.socket('s1', 1);
+    h.runtime.registerSocket(first.target);
+    h.runtime.registerSocket(second.target);
+
+    first.handlers.requestOnlineRematch({ approved: true });
+    second.handlers.requestOnlineRematch({ approved: true });
+
+    assert.strictEqual(h.room.marketRule, 'ten-type');
+    assert.strictEqual(h.room.gameStartPayload.marketRule, 'ten-type');
+    assert.strictEqual(h.room.gameStartPayload.marketSeed, 1001);
+    assert.strictEqual(h.broadcasts.at(-1).payload.marketSeed, 1001);
+});
+
 runTest('online rematchは開始commit前の失敗をrollbackし配送失敗後は新世代を維持する', () => {
     const buildFailed = createHarness({ buildGameStartPayload: () => null });
     const first = buildFailed.socket('s0', 0);

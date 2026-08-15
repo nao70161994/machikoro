@@ -360,6 +360,7 @@ function resumeGame(options = {}) {
                     setup: GameSetupState.runtime.snapshot(),
                     enabledCards: Array.from(getEnabledCardSelection()),
                     enabledLandmarks: Array.from(getEnabledLandmarkSelection()),
+                    marketRule: GameSelectionState.runtime.snapshot().marketRule,
                     shopStock: Object.assign({}, SHOP_STOCK),
                     winSoundPlayed,
                     titleDisplay: titleScreen && titleScreen.style ? titleScreen.style.display : '',
@@ -378,6 +379,7 @@ function resumeGame(options = {}) {
                 GameSetupState.runtime.replace(before.setup);
                 replaceEnabledCardSelection(before.enabledCards);
                 replaceEnabledLandmarkSelection(before.enabledLandmarks);
+                replaceMarketRuleSelection(before.marketRule);
                 for (const key of Object.keys(SHOP_STOCK)) delete SHOP_STOCK[key];
                 Object.assign(SHOP_STOCK, before.shopStock);
                 GameRuntimeState.runtime.setGame(before.game.game);
@@ -410,6 +412,7 @@ function resumeGame(options = {}) {
                 GameSetupState.runtime.setCpuSpeed(plan.cpuSpeed);
                 if (plan.enabledCards) replaceEnabledCardSelection(plan.enabledCards);
                 replaceEnabledLandmarkSelection(plan.enabledLandmarks);
+                replaceMarketRuleSelection(plan.marketRule);
             },
             createAndHydrateGame(plan) {
                 const currentGame = GameRuntimeState.runtime

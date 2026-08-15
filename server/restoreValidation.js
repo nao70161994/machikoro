@@ -77,6 +77,10 @@ function makeRestoreValidation({
         const knownCards = new Set(cards.map(card => card.name));
         if (payload.enabledCards != null &&
             (!Array.isArray(payload.enabledCards) || payload.enabledCards.some(name => !knownCards.has(name)))) return false;
+        if (payload.marketRule != null && payload.marketRule !== 'standard' && payload.marketRule !== 'ten-type') return false;
+        if (payload.marketSeed != null &&
+            (!Number.isSafeInteger(payload.marketSeed) || payload.marketSeed < 0 || payload.marketSeed > 0xffffffff)) return false;
+        if ((payload.marketRule === 'ten-type') !== (payload.marketSeed != null)) return false;
         const knownLandmarks = new Set(landmarkNames());
         if (payload.enabledLandmarks != null &&
             (!Array.isArray(payload.enabledLandmarks) ||

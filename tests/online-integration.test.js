@@ -1113,6 +1113,7 @@ runTest('online integration: rejoin retry は正規化済みsessionで再送す�
         gameGeneration: 0,
         clientVersion: 'integration-build',
         hostlessRestoreVersion: 1,
+        marketRuleVersion: 1,
     });
 });
 

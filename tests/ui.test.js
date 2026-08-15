@@ -2475,6 +2475,20 @@ runTest('カード詳細と建設ボタンは説明文と分類をescapeする',
     assert.ok(!detail.html.includes('+<b>9</b>コイン'));
 });
 
+runTest('公式オプション市場は公開種類数と山札枚数だけを簡潔に表示する', () => {
+    const { context } = loadUiRuntime();
+    assert.strictEqual(context.UiBuildMenu.buildMarketStatusHtml(
+        { mode: 'standard', deck: [] }, { A: 1 }
+    ), '');
+    const html = context.UiBuildMenu.buildMarketStatusHtml(
+        { mode: 'ten-type', deck: ['A', 'B', 'C'] },
+        { A: 2, B: 1, C: 0 }
+    );
+    assert.ok(html.includes('公開2種類'));
+    assert.ok(html.includes('山札3枚'));
+    assert.ok(!html.includes('role="status"'), '頻繁な再描画をlive通知しない');
+});
+
 runTest('ランドマーク詳細と建設ボタンは説明文をescapeする', () => {
     const { context } = loadUiRuntime();
     const originalEffect = vm.runInContext("Player._LANDMARK_DEFS.find(def => def.name === '駅').effect", context);

@@ -707,6 +707,9 @@ class CPU {
             isReconnectingOnline: typeof isReconnectingOnline !== 'undefined' && isReconnectingOnline,
             socketConnected: typeof socket === 'undefined' || !socket ? null : socket.connected,
             sendAction: typeof sendAction === 'function' ? sendAction : null,
+            decrementShopStock: typeof decrementMarketShopStock === 'function'
+                ? (stock, card, game) => decrementMarketShopStock(game, stock, card)
+                : null,
         };
     }
 

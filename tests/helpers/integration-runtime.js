@@ -175,6 +175,7 @@ function loadIntegrationRuntime(options = {}) {
     vm.createContext(context);
     const files = [
         'js/Card.js',
+        'js/marketSupply.js',
         'js/Player.js',
         'js/gameSelectionState.js',
         'js/gameSetupState.js',

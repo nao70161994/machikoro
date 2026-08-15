@@ -6,6 +6,7 @@ const vm = require('vm');
 
 const GAME_RUNTIME_SOURCE_FILES = Object.freeze([
     'js/Card.js',
+    'js/marketSupply.js',
     'js/Player.js',
     'js/actionContract.js',
     'js/pendingActionQueue.js',
@@ -29,6 +30,8 @@ const GAME_RUNTIME_EXPORT_NAMES = Object.freeze([
     'setShopStockCount',
     'decrementShopStock',
     'assignShopStockSnapshot',
+    'MarketSupply',
+    'decrementMarketShopStock',
     'resolveCardStockName',
     'GAME_PHASES',
     'GAME_ACTIONS',

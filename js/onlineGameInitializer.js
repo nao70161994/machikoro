@@ -14,7 +14,7 @@ const OnlineGameInitializer = (() => {
                 throw new TypeError(`online game initializer dependency is required: ${name}`);
             }
         }
-        if (!dependencies.cards || !dependencies.gameRuntime ||
+        if (!dependencies.cards || !dependencies.gameRuntime || !dependencies.marketSupply ||
                 !dependencies.logTypes || !dependencies.shopStock) {
             throw new TypeError('online game initializer runtime dependencies are required');
         }
@@ -41,15 +41,16 @@ const OnlineGameInitializer = (() => {
                 : dependencies.landmarkNames();
             const selectedCards = new Set(selection.enabledCards);
             game.enabledLandmarks = new Set(selectedLandmarks);
-            for (const card of dependencies.cards) {
-                dependencies.setShopStockCount(
-                    dependencies.shopStock,
-                    card,
-                    selectedCards.has(card.name)
-                        ? dependencies.initialCardStock(card, playerCount)
-                        : 0
-                );
-            }
+            game.marketSupply = dependencies.marketSupply.initialize({
+                mode: selection.marketRule,
+                seed: input.marketSeed,
+                cards: dependencies.cards,
+                enabledCardNames: selectedCards,
+                playerCount,
+                shopStock: dependencies.shopStock,
+                initialStock: dependencies.initialCardStock,
+                setStock: dependencies.setShopStockCount,
+            });
 
             const order = input.playerOrder || playerNames.map((_, index) => index);
             for (let index = 0; index < playerCount; index++) {

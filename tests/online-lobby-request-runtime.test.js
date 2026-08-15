@@ -39,6 +39,7 @@ function createHarness(options = {}) {
         getSelection: () => ({
             enabledCards: new Set(['麦畑']),
             enabledLandmarks: new Set(['駅']),
+            marketRule: options.marketRule || 'standard',
         }),
         hostlessRestoreVersion: 1,
         ids: {
@@ -93,6 +94,8 @@ runTest('online lobby request runtimeは部屋作成payloadとeffect順を固定
         cpuSpeed: 1200,
         enabledCards: ['麦畑'],
         enabledLandmarks: ['駅'],
+        marketRule: 'standard',
+        marketRuleVersion: 1,
         clientVersion: 'v-test',
         hostlessRestoreVersion: 1,
         capabilities: { actionVersions: [0, 1] },
@@ -113,11 +116,20 @@ runTest('online lobby request runtimeは参加入力を正規化してhost解除
         playerName: 'Alice',
         clientVersion: 'v-test',
         hostlessRestoreVersion: 1,
+        marketRuleVersion: 1,
         capabilities: { actionVersions: [0, 1] },
     });
     const names = calls.map(call => call[0]);
     assert.ok(names.indexOf('setPlayerName') < names.indexOf('setHost'));
     assert.ok(names.indexOf('setHost') < names.indexOf('joinRoom'));
+});
+
+runTest('online lobby request runtimeは公式オプション市場を能力情報つきで送る', () => {
+    const { calls, runtime } = createHarness({ marketRule: 'ten-type' });
+    assert.strictEqual(runtime.showCreate(), true);
+    const payload = calls.find(call => call[0] === 'createRoom')[1];
+    assert.strictEqual(payload.marketRule, 'ten-type');
+    assert.strictEqual(payload.marketRuleVersion, 1);
 });
 
 runTest('online lobby request runtimeは入力不正とSocket未準備で送信しない', () => {

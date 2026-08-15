@@ -261,6 +261,8 @@ function makeRestoredRoom(dependencies = {}) {
                 ? input.gameGeneration : 0,
             enabledCards: input.enabledCards || [],
             enabledLandmarks: input.enabledLandmarks || [],
+            marketRule: input.gameStartPayload?.marketRule === 'ten-type'
+                ? 'ten-type' : 'standard',
             cpuSpeed: input.cpuSpeed || 1500,
             gameStartPayload: input.gameStartPayload,
             stateSnapshot: dependencies.sanitizeStateSnapshot(

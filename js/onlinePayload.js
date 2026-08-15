@@ -516,6 +516,7 @@ const OnlinePayload = Object.freeze({
             gameGeneration,
             clientVersion,
             hostlessRestoreVersion: ONLINE_HOSTLESS_RESTORE_SCHEMA_VERSION,
+            marketRuleVersion: 1,
         };
         return withGameSchemaCapabilities(payload, gameSchemaCapabilities);
     },

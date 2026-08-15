@@ -377,6 +377,11 @@
                     </ul>
                 </div>
                 <div class="rules-section">
+                    <h3>🏪 公式オプション：10種類市場</h3>
+                    <p>ゲーム開始前のカード選択で有効にできます。使用する施設カードをすべて混ぜ、異なる施設が10種類になるまで公開します。同名カードは同じ山に重ねます。</p>
+                    <p>購入によって公開中の施設が9種類以下になったら、山札から再び10種類になるまで補充します。山札がなくなった場合は、残っている種類だけで続けます。</p>
+                </div>
+                <div class="rules-section">
                     <h3>🔄 発動順序</h3>
                     <div class="order-list">
                         <div class="order-item red">① 赤カード：ダイスを振ったプレイヤーからコインを奪う</div>
@@ -432,6 +437,16 @@
             </div>
             <div class="modal-body">
                 <p style="color:#a7a9be;font-size:13px;margin-bottom:8px">使用するカードとランドマークを選んでください（ランドマークは最低1つ必要です）</p>
+                <div class="card-set-section market-rule-section">
+                    <label class="card-set-header" for="marketRuleSelect">
+                        <span>🏪 市場ルール</span>
+                    </label>
+                    <select id="marketRuleSelect" class="text-input">
+                        <option value="standard">通常市場（全種類）</option>
+                        <option value="ten-type">公式オプション（異なる10種類）</option>
+                    </select>
+                    <p class="setting-help">公式オプションでは施設を山札にし、異なる10種類を公開します。種類が減ると自動で補充します。</p>
+                </div>
                 <div class="card-set-section">
                     <div class="card-set-header">
                         <span>📦 基本セット</span>
@@ -545,6 +560,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/socketIoDelivery.js"></script>
     <script src="js/Card.js"></script>
+    <script src="js/marketSupply.js"></script>
     <script src="js/Player.js"></script>
     <script src="js/gameSelectionState.js"></script>
     <script src="js/gameSetupState.js"></script>

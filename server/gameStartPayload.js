@@ -32,6 +32,10 @@ function makeGameStartPayload({
             hostlessRestoreGeneration: 0,
             hostlessRestoreCount: 0,
         };
+        if (room.marketRule === 'ten-type') {
+            payload.marketRule = 'ten-type';
+            payload.marketSeed = Math.floor(randomFn() * 0x100000000) >>> 0;
+        }
         if (Number.isSafeInteger(room.gameGeneration) && room.gameGeneration > 0) {
             payload.gameGeneration = room.gameGeneration;
         }

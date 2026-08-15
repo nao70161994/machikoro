@@ -262,12 +262,19 @@ const UiBuildMenu = (() => {
     }
 
     function buildBuildMenuHtml(options) {
-        const { canBuildCardAction, canBuildLandmarkAction, filterBtnsHtml, cardHtml, landmarkHtml, undoBtn } = options;
+        const { canBuildCardAction, canBuildLandmarkAction, filterBtnsHtml, cardHtml, landmarkHtml, undoBtn, marketStatusHtml = '' } = options;
         const canBuild = canBuildCardAction || canBuildLandmarkAction;
-        return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}<div class="build-section build-card-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
+        return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}${marketStatusHtml}<div class="build-section build-card-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml });
+    function buildMarketStatusHtml(marketSupply, shopStock) {
+        if (!marketSupply || marketSupply.mode !== 'ten-type') return '';
+        const visibleTypes = Object.values(shopStock || {}).filter(count => Number.isInteger(count) && count > 0).length;
+        const deckCount = Array.isArray(marketSupply.deck) ? marketSupply.deck.length : 0;
+        return `<p class="market-rule-status">🏪 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚</p>`;
+    }
+
+    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

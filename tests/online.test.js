@@ -32,7 +32,7 @@ function loadOnlineRuntime(options = {}) {
     vm.createContext(context);
 
     // ゲームロジック本体をロード
-    loadScripts(context, ['js/Card.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameEngineRuntimeAdapter.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js', 'js/gameEngine.js', 'js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js']);
+    loadScripts(context, ['js/Card.js', 'js/marketSupply.js', 'js/Player.js', 'js/actionContract.js', 'js/gameSchemaNegotiation.js', 'js/gameSnapshot.js', 'js/gameEngineRuntimeAdapter.js', 'js/gameSchemaCodec.js', 'js/gameSchemaWire.js', 'js/recreateRoomPayload.js', 'js/gameSchemaRecreateWire.js', 'js/gameEngine.js', 'js/gameEngineAuthority.js', 'js/gameEngineClientShadow.js', 'js/pendingActionQueue.js', 'js/gameTurnPolicy.js', 'js/gameDicePolicy.js', 'js/gameCardActivationPolicy.js', 'js/gameBuildPolicy.js', 'js/gameCoinTransaction.js', 'js/gamePendingTransition.js', 'js/gamePendingResolutionPolicy.js', 'js/GameManager.js']);
 
     context.__onlineRuntimeOptions = options;
     loadScript(context, 'js/gameRuntimeState.js');
@@ -45,6 +45,7 @@ function loadOnlineRuntime(options = {}) {
         cpuPlayers = [];
         let enabledCards = new Set();
         let enabledLandmarks = new Set();
+        let marketRule = 'standard';
         function replaceEnabledCardSelection(values) {
             enabledCards = new Set(values);
             return enabledCards;
@@ -52,6 +53,10 @@ function loadOnlineRuntime(options = {}) {
         function replaceEnabledLandmarkSelection(values) {
             enabledLandmarks = new Set(values);
             return enabledLandmarks;
+        }
+        function replaceMarketRuleSelection(value) {
+            marketRule = value === 'ten-type' ? 'ten-type' : 'standard';
+            return marketRule;
         }
         function getEnabledCardSelection() { return new Set(enabledCards); }
         function getEnabledLandmarkSelection() { return new Set(enabledLandmarks); }
@@ -61,6 +66,7 @@ function loadOnlineRuntime(options = {}) {
                     return {
                         enabledCards: [...enabledCards],
                         enabledLandmarks: [...enabledLandmarks],
+                        marketRule,
                     };
                 },
             },
@@ -217,6 +223,7 @@ function loadOnlineRuntime(options = {}) {
         this.Player = Player;
         this.CARDS = CARDS;
         this.CARD_IDS = CARD_IDS;
+        this.CARD_CATEGORIES = CARD_CATEGORIES;
         this.createCardByName = createCardByName;
         this.GAME_PHASES = GAME_PHASES;
         this.GAME_ACTIONS = GAME_ACTIONS;
@@ -370,7 +377,16 @@ function loadOnlineRuntime(options = {}) {
 }
 
 const rt = loadOnlineRuntime();
-const { GameManager, Player, CARDS, CARD_IDS, createCardByName, GAME_PHASES, LOG_TYPES } = rt;
+const {
+    GameManager,
+    Player,
+    CARDS,
+    CARD_IDS,
+    CARD_CATEGORIES,
+    createCardByName,
+    GAME_PHASES,
+    LOG_TYPES,
+} = rt;
 
 function makeGame(count = 2) {
     const g = new GameManager(count);
@@ -928,6 +944,7 @@ runTest('buildOnlineRejoinPayload はclientVersionを含める', () => {
         gameGeneration: 0,
         clientVersion: 'build-rejoin-1',
         hostlessRestoreVersion: 1,
+        marketRuleVersion: 1,
     });
 });
 
@@ -3044,6 +3061,7 @@ runTest('sendAction はack timeoutでpendingを残して再同期する', () => 
         gameGeneration: 0,
         clientVersion: 'unknown',
         hostlessRestoreVersion: 1,
+        marketRuleVersion: 1,
     });
 });
 
@@ -4089,6 +4107,37 @@ runTest('online snapshot は build/restore/build でroundtripできる', () => {
     assert.deepStrictEqual(roundtrip, snapshot);
 });
 
+runTest('公式オプション市場はonline建設・補充・snapshot復元で山札順を保つ', () => {
+    const rt = loadOnlineRuntime();
+    rt.setEnabledCards(new Set(rt.CARDS.map(card => card.name)));
+    rt.setEnabledLandmarks(new Set(rt.Player.landmarkNames()));
+    rt.replaceMarketRuleSelection('ten-type');
+    rt.initOnlineGame(['Alice', 'Bob'], null, [0, 1], { marketSeed: 24680 });
+    const game = rt.getGame();
+    const stock = rt.getShopStock();
+    const card = rt.CARDS.find(candidate =>
+        candidate.category !== CARD_CATEGORIES.MAJOR && stock[candidate.name] > 0
+    );
+    assert.ok(card);
+    const beforeDeck = game.marketSupply.deck.length;
+    const copies = stock[card.name];
+    for (let index = 0; index < copies; index++) {
+        game.phase = GAME_PHASES.BUILD;
+        game.builtThisTurn = false;
+        game.currentPlayer().coins = 1000;
+        assert.strictEqual(rt.applyAction('buildCard', { cardName: card.name }), true);
+    }
+    assert.ok(game.marketSupply.deck.length < beforeDeck, '売切れ時に山札から補充する');
+    const snapshot = JSON.parse(JSON.stringify(rt.buildOnlineSnapshot()));
+    const expectedMarket = JSON.parse(JSON.stringify(game.marketSupply));
+    rt.restoreOnlineSnapshot(snapshot);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(rt.getGame().marketSupply)), expectedMarket);
+    assert.deepStrictEqual(
+        JSON.parse(JSON.stringify(rt.buildOnlineSnapshot().marketSupply)),
+        snapshot.marketSupply
+    );
+});
+
 runTest('buildOnlineSnapshot は建設後のUndo状態を保持する', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(CARDS.map(c => c.name)));
@@ -4587,9 +4636,9 @@ runTest('handleAppError は無効操作時にオンライン状態を再同期�
         gameGeneration: 0,
         clientVersion: 'unknown',
         hostlessRestoreVersion: 1,
+        marketRuleVersion: 1,
     });
 });
-
 
 runTest('live gameAction duplicate is ignored and sequence gap starts rejoin', () => {
     const runtime = loadOnlineRuntime(); runtime.initSocket();

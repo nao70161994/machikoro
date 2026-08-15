@@ -63,6 +63,25 @@ const SnapshotInventoryValidation = (() => {
                 }
             }
 
+            const marketSupply = input.marketSupply;
+            const tenTypeMarket = marketSupply && marketSupply.mode === 'ten-type';
+            const deckByName = new Map();
+            if (tenTypeMarket) {
+                if (!Array.isArray(marketSupply.deck)) return false;
+                for (const name of marketSupply.deck) {
+                    if (!cardByName.has(name) || !enabled.has(name)) return false;
+                    deckByName.set(name, (deckByName.get(name) || 0) + 1);
+                }
+                const expectedTypeCount = Math.min(10, enabled.size);
+                if (marketSupply.targetTypeCount !== expectedTypeCount) return false;
+                const visibleTypeCount = Array.from(explicitStockByName.values())
+                    .filter(count => count > 0).length;
+                if (visibleTypeCount > expectedTypeCount ||
+                        marketSupply.deck.length > 0 && visibleTypeCount !== expectedTypeCount) {
+                    return false;
+                }
+            }
+
             for (const [name, card] of cardByName.entries()) {
                 const shopLimit = enabled.has(name) ? getInitialCardStock(card, playerCount) : 0;
                 if (!Number.isSafeInteger(shopLimit) || shopLimit < 0) return false;
@@ -74,6 +93,13 @@ const SnapshotInventoryValidation = (() => {
                 if (explicitStockByName.has(name)) {
                     const stock = explicitStockByName.get(name);
                     if (stock > shopLimit || owned + stock > ownedLimit) return false;
+                }
+                if (tenTypeMarket) {
+                    if (!explicitStockByName.has(name) || owned < grantLimit) return false;
+                    const purchased = owned - grantLimit;
+                    const stock = explicitStockByName.get(name);
+                    const deck = deckByName.get(name) || 0;
+                    if (purchased + stock + deck !== shopLimit) return false;
                 }
             }
             return true;

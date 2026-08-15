@@ -990,6 +990,7 @@ function buildUndoBuildButtonHtml() {
 }
 
 function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction) {
+    const currentGame = uiGameRuntimeSnapshot().game;
     const filterBtnsHtml = buildCardFilterBarHtml();
     const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction) ||
         UiBuildMenu.buildCardEmptyStateHtml(buildMenuFilterController.get());
@@ -1002,6 +1003,10 @@ function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction)
         cardHtml,
         landmarkHtml,
         undoBtn,
+        marketStatusHtml: UiBuildMenu.buildMarketStatusHtml(
+            currentGame && currentGame.marketSupply,
+            SHOP_STOCK
+        ),
     });
 }
 
@@ -1650,6 +1655,11 @@ function bindCardSelectModalHandlers() {
     const modal = document.getElementById('cardSelectModal');
     if (modal && typeof modal.addEventListener === 'function') {
         modal.addEventListener('click', handleCardSelectModalClick);
+        modal.addEventListener('change', event => {
+            if (event && event.target && event.target.id === 'marketRuleSelect') {
+                replaceMarketRuleSelection(event.target.value);
+            }
+        });
     }
 
 }
@@ -1694,6 +1704,8 @@ function renderCardSelectModal() {
         buildLandmarkHtml: buildLandmarkSelectToggleButtonHtml,
     });
     uiCardSelectEffects.apply(view);
+    const marketRuleSelect = document.getElementById('marketRuleSelect');
+    if (marketRuleSelect) marketRuleSelect.value = GameSelectionState.runtime.snapshot().marketRule;
 }
 
 function toggleCard(name) {

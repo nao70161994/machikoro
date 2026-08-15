@@ -14,12 +14,14 @@ runTest('setup presetは人数・CPU・選択setを正規化して最大8件を�
             playerSettings: [{ type: 'cpu', difficulty: 'expert', name: 'CPU' }],
             enabledCards: ['麦畑', '麦畑'],
             enabledLandmarks: ['駅'],
+            marketRule: 'ten-type',
         }, index + 1);
     }
     assert.strictEqual(presets.length, 8);
     assert.strictEqual(presets[0].selectedCount, 10);
     assert.strictEqual(presets[0].cpuSpeed, 3000);
     assert.deepStrictEqual(presets[0].enabledCards, ['麦畑']);
+    assert.strictEqual(presets[0].marketRule, 'ten-type');
     assert.strictEqual(GameSetupPresets.parse(JSON.stringify(presets)).length, 8);
 });
 
@@ -35,6 +37,7 @@ runTest('setup presetは未知CPU難易度を通常へ戻し12文字の名前を
     assert.strictEqual(preset.playerSettings[0].difficulty, 'normal');
     assert.strictEqual(preset.playerSettings[0].name, 'ABCDEFGHIJKL');
     assert.strictEqual(preset.playerSettings[1].difficulty, 'normal');
+    assert.strictEqual(preset.marketRule, 'standard');
 });
 
 runTest('setup preset HTMLは名前をescapeし適用・削除identityを保持する', () => {

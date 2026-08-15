@@ -53,6 +53,7 @@ runTest('online payload は再接続wire fieldを既存順序と値で生成す�
         gameGeneration: 3,
         clientVersion: 'build-123',
         hostlessRestoreVersion: 1,
+        marketRuleVersion: 1,
     });
 });
 
@@ -62,7 +63,8 @@ runTest('online payload はopt-in時だけschema capability fieldを加える', 
     assert.strictEqual(payload.gameSchemaCapabilities, capabilities);
     assert.deepStrictEqual(Object.keys(payload), [
         'roomId', 'playerIndex', 'playerName', 'reconnectToken', 'gameGeneration',
-        'clientVersion', 'hostlessRestoreVersion', 'gameSchemaCapabilities',
+        'clientVersion', 'hostlessRestoreVersion', 'marketRuleVersion',
+        'gameSchemaCapabilities',
     ]);
 });
 
@@ -75,6 +77,7 @@ runTest('online payload は欠落sessionも旧undefined field契約を維持す�
         gameGeneration: 0,
         clientVersion: 'unknown',
         hostlessRestoreVersion: 1,
+        marketRuleVersion: 1,
     });
 });
 

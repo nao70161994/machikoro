@@ -677,6 +677,7 @@ const {
     hasInvalidOnlineRlModelSettings,
     normalizeCpuSpeed,
     normalizeEnabledCards,
+    normalizeMarketRule,
 } = gameSettings;
 
 const {
@@ -842,6 +843,7 @@ registerSocketConnectionRuntime({
             generateRoomId,
             generateReconnectToken,
             normalizeEnabledCards,
+            normalizeMarketRule,
             landmarkNames: gameRuntime.Player.landmarkNames,
             markCreateRoomForSocket,
             createRoomRateKeyForSocket,
@@ -1265,6 +1267,7 @@ module.exports = {
     hasInvalidOnlineRlModelSettings,
     normalizeCpuSpeed,
     normalizeEnabledCards,
+    normalizeMarketRule,
     isActiveRoomSocket,
     findAcceptedClientAction,
     rememberAcceptedClientAction,

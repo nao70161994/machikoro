@@ -33,6 +33,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
         assert.ok(!config.files.includes(excluded), excluded);
     }
     assert.ok(config.files.includes('js/Card.js'));
+    assert.ok(config.files.includes('js/marketSupply.js'));
     assert.ok(config.files.includes('server.js'));
     assert.ok(config.files.includes('js/Player.js'));
     assert.ok(config.files.includes('js/gameSelectionState.js'));

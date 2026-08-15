@@ -3,11 +3,13 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const OnlineGameInitializer = require('../js/onlineGameInitializer');
+const MarketSupply = require('../js/marketSupply');
 const { runTest } = require('./helpers/test-utils');
 
-function createHarness() {
+function createHarness(options = {}) {
     const calls = [];
-    const cards = [{ name: 'enabled' }, { name: 'disabled' }];
+    const cards = options.cards || [{ name: 'enabled' }, { name: 'disabled' }];
+    const shopStock = {};
     const game = {
         players: [{}, {}, {}],
         currentPlayer() { return this.players[0]; },
@@ -26,10 +28,15 @@ function createHarness() {
             setGame: value => { calls.push(['setGame', value]); return { game: value }; },
             setCpuPlayers: value => calls.push(['cpuPlayers', value]),
         },
-        getSelection: () => ({ enabledCards: ['enabled'], enabledLandmarks: [] }),
-        initialCardStock: (card, count) => count + card.name.length,
+        getSelection: () => ({
+            enabledCards: options.enabledCards || ['enabled'],
+            enabledLandmarks: [],
+            marketRule: options.marketRule || 'standard',
+        }),
+        initialCardStock: options.initialCardStock || ((card, count) => count + card.name.length),
         landmarkNames: () => ['station'],
         logTypes: { SYSTEM: 'system' },
+        marketSupply: MarketSupply,
         opponentDifficulties: settings => settings.map(value => value && value.difficulty),
         render: () => calls.push(['render']),
         resetFullLog: () => calls.push(['resetLog']),
@@ -40,9 +47,9 @@ function createHarness() {
             stock[card.name] = count;
             calls.push(['stock', card.name, count]);
         },
-        shopStock: {},
+        shopStock,
     });
-    return { calls, game, runtime };
+    return { calls, game, runtime, shopStock };
 }
 
 runTest('online game initializerは順序・CPU設定・自分位置を同じ入力から構築する', () => {
@@ -80,6 +87,28 @@ runTest('online game initializerはresetから描画・CPU予約までのeffect�
         'cpuPlayers', 'playerIndex', 'addLog', 'render', 'scheduleCpu',
     ]);
     assert.deepStrictEqual(calls.find(call => call[0] === 'playerIndex'), ['playerIndex', 0]);
+});
+
+runTest('online game initializerは同じseedから公式オプション市場を再現する', () => {
+    const cards = Array.from({ length: 12 }, (_, index) => ({ name: `施設${index + 1}` }));
+    const options = {
+        cards,
+        enabledCards: cards.map(card => card.name),
+        marketRule: 'ten-type',
+        initialCardStock: () => 2,
+    };
+    const left = createHarness(options);
+    const right = createHarness(options);
+    const input = {
+        playerNames: ['A', 'B', 'C'],
+        playerOrder: [0, 1, 2],
+        marketSeed: 123456,
+    };
+    left.runtime.initialize(input);
+    right.runtime.initialize(input);
+    assert.deepStrictEqual(left.game.marketSupply, right.game.marketSupply);
+    assert.deepStrictEqual(left.shopStock, right.shopStock);
+    assert.strictEqual(MarketSupply.marketTypeCount(left.shopStock), 10);
 });
 
 runTest('online game initializerは必須依存欠落を初期化前に拒否する', () => {

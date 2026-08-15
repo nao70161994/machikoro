@@ -64,13 +64,18 @@ function registerRejoinSocketHandler(socket, dependencies) {
         if (!requirePlainSocketPayload(socket, payload)) return;
         const {
             roomId, playerIndex, playerName, reconnectToken, gameGeneration,
-            clientVersion, hostlessRestoreVersion, gameSchemaCapabilities,
+            clientVersion, hostlessRestoreVersion, marketRuleVersion, gameSchemaCapabilities,
         } = payload;
         socket.clientVersion = clientVersion || 'unknown';
         socket.hostlessRestoreVersion = hostlessRestoreVersion === 1 ? 1 : 0;
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
+        if ((room.marketRule === 'ten-type' || room.gameStartPayload?.marketRule === 'ten-type') &&
+                marketRuleVersion !== 1) {
+            emitAppError(socket, 'この市場ルールで遊ぶにはアプリを更新してください');
+            return;
+        }
         if (!room.started) pruneExpiredWaitingReservations(room, now());
         const roomEntry = validateSocketCanEnterRoom(socket, roomId, rooms);
         if (!roomEntry.ok) { emitAppError(socket, roomEntry.message); return; }

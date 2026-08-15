@@ -224,6 +224,36 @@ runTest('共有undo serializerは既存形状とlog上限を保持する', () =>
     assert.deepStrictEqual(GameSnapshot.serializeUndoState(game, stock, 0).log, []);
 });
 
+runTest('公式オプション市場はsnapshotとUndoで山札順を完全に復元する', () => {
+    const game = makeGameFixture();
+    game.marketSupply = {
+        mode: 'ten-type',
+        seed: 123,
+        targetTypeCount: 10,
+        deck: ['パン屋', 'カフェ', 'パン屋'],
+    };
+    const stock = { カフェ: 2, パン屋: 1 };
+    const snapshot = GameSnapshot.serializeGameState(game, stock);
+    const undo = GameSnapshot.serializeUndoState(game, stock, 1);
+    assert.deepStrictEqual(snapshot.marketSupply, game.marketSupply);
+    assert.deepStrictEqual(undo.marketSupply, game.marketSupply);
+    assert.notStrictEqual(snapshot.marketSupply.deck, game.marketSupply.deck);
+
+    game.marketSupply = { mode: 'standard', seed: 0, targetTypeCount: 0, deck: [] };
+    assert.strictEqual(GameSnapshot.hydrateUndoState({
+        game,
+        shopStock: {},
+        state: undo,
+        createCardByName: name => ({ name }),
+        assignShopStockSnapshot: (target, value) => Object.assign(target, value),
+        mergePlayerLandmarks: (current, saved) => Object.assign({}, current, saved),
+    }), true);
+    assert.deepStrictEqual(game.marketSupply, {
+        mode: 'ten-type', seed: 123, targetTypeCount: 10,
+        deck: ['パン屋', 'カフェ', 'パン屋'],
+    });
+});
+
 runTest('共有undo hydrate境界はcallerのlandmarkと在庫policyを維持する', () => {
     const cafe = { name: 'カフェ' };
     const game = {

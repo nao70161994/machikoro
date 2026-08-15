@@ -180,6 +180,7 @@ function loadMainRuntime(options = {}) {
         io() { return { on() {}, emit() {}, disconnect() {} }; },
         enabledCards: new Set(),
         enabledLandmarks: new Set(),
+        marketRule: 'standard',
         replaceEnabledCardSelection(values) {
             context.enabledCards = new Set(values);
             return context.enabledCards;
@@ -187,6 +188,10 @@ function loadMainRuntime(options = {}) {
         replaceEnabledLandmarkSelection(values) {
             context.enabledLandmarks = new Set(values);
             return context.enabledLandmarks;
+        },
+        replaceMarketRuleSelection(value) {
+            context.marketRule = value === 'ten-type' ? 'ten-type' : 'standard';
+            return context.marketRule;
         },
         getEnabledCardSelection() { return new Set(context.enabledCards); },
         getEnabledLandmarkSelection() { return new Set(context.enabledLandmarks); },
@@ -196,6 +201,7 @@ function loadMainRuntime(options = {}) {
                     return {
                         enabledCards: [...context.enabledCards],
                         enabledLandmarks: [...context.enabledLandmarks],
+                        marketRule: context.marketRule,
                     };
                 },
             },
@@ -457,6 +463,8 @@ function loadMainRuntime(options = {}) {
     const uiScreenFocusSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiScreenFocus.js'), 'utf8');
     vm.runInContext(uiScreenFocusSource, context, { filename: 'js/uiScreenFocus.js' });
     const localGameInitializerSource = fs.readFileSync(path.join(__dirname, '..', 'js/localGameInitializer.js'), 'utf8');
+    const marketSupplySource = fs.readFileSync(path.join(__dirname, '..', 'js/marketSupply.js'), 'utf8');
+    vm.runInContext(marketSupplySource, context, { filename: 'js/marketSupply.js' });
     vm.runInContext(localGameInitializerSource, context, { filename: 'js/localGameInitializer.js' });
     const localGameRestartRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/localGameRestartRuntime.js'), 'utf8');
     vm.runInContext(localGameRestartRuntimeSource, context, { filename: 'js/localGameRestartRuntime.js' });
@@ -1131,6 +1139,7 @@ runTest('main 開始前確認は人数・参加者・速度・選択内容を確
     assert.ok(message.includes('CPU太郎'));
     assert.ok(message.includes('CPU速度: 1.5秒'));
     assert.ok(message.includes('施設:'));
+    assert.ok(message.includes('市場: 通常市場（全種類）'));
     assert.ok(rt.__test.getGame());
 });
 
@@ -2451,6 +2460,14 @@ runTest('index.html はオンライン待機室と接続要求中のPWA更新を
     assert.ok(html.includes("typeof onlineJoinRoomPending !== 'undefined' && onlineJoinRoomPending"));
     assert.ok(html.includes("if (!_isInGame() && !_isOnlineFlowActive())"));
     assert.ok(html.includes("if ((_isInGame() || _isOnlineFlowActive()) && !updateRequestedByUser)"));
+});
+
+runTest('index.html は通常市場と公式10種類市場をlabel付きで選択できる', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    assert.ok(html.includes('for="marketRuleSelect"'));
+    assert.ok(html.includes('id="marketRuleSelect"'));
+    assert.ok(html.includes('<option value="standard">通常市場（全種類）</option>'));
+    assert.ok(html.includes('<option value="ten-type">公式オプション（異なる10種類）</option>'));
 });
 
 runTest('index.html は統計タブをオンラインタブの外に配置している', () => {

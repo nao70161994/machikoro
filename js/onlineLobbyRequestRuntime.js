@@ -189,6 +189,8 @@ const OnlineLobbyRequestRuntime = (() => {
                 cpuSpeed: setup.cpuSpeed,
                 enabledCards: [...selection.enabledCards],
                 enabledLandmarks: [...selection.enabledLandmarks],
+                marketRule: selection.marketRule,
+                marketRuleVersion: 1,
                 clientVersion: dependencies.getClientVersion(),
                 hostlessRestoreVersion: dependencies.hostlessRestoreVersion,
             };
@@ -263,6 +265,7 @@ const OnlineLobbyRequestRuntime = (() => {
                 playerName: name,
                 clientVersion: dependencies.getClientVersion(),
                 hostlessRestoreVersion: dependencies.hostlessRestoreVersion,
+                marketRuleVersion: 1,
             };
             dependencies.joinRoom(dependencies.withCapabilities(
                 payload,

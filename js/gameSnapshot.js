@@ -1,5 +1,9 @@
 'use strict';
 
+const GameSnapshotMarketSupplyApi = typeof module !== 'undefined' && module.exports
+    ? require('./marketSupply')
+    : globalThis.MarketSupply;
+
 const GAME_SNAPSHOT_SCHEMA_VERSION = 1;
 const GAME_SNAPSHOT_LEGACY_VERSION = 0;
 const GAME_SNAPSHOT_DEFAULT_LOG_LIMIT = 30;
@@ -172,7 +176,7 @@ function serializeGameState(game, shopStock, options = {}) {
     const pendingActionsFor = typeof options.pendingActionsFor === 'function'
         ? options.pendingActionsFor
         : () => [];
-    return {
+    const state = {
         players: game.players.map(player => ({
             name: player.name,
             coins: player.coins,
@@ -208,6 +212,10 @@ function serializeGameState(game, shopStock, options = {}) {
         actionSeq: Object.prototype.hasOwnProperty.call(options, 'actionSeq')
             ? options.actionSeq : 0,
     };
+    if (game.marketSupply && game.marketSupply.mode === 'ten-type') {
+        state.marketSupply = GameSnapshotMarketSupplyApi.copyState(game.marketSupply);
+    }
+    return state;
 }
 
 /**
@@ -260,7 +268,7 @@ function serializeUndoState(game, shopStock, logLimit = GAME_SNAPSHOT_DEFAULT_LO
     const normalizedLogLimit = Number.isInteger(logLimit) && logLimit >= 0
         ? logLimit
         : GAME_SNAPSHOT_DEFAULT_LOG_LIMIT;
-    return {
+    const state = {
         playerCoins: game.players.map(player => player.coins),
         playerCardNames: game.players.map(player => player.cards.map(card => card.name)),
         playerDormantIndices: game.players.map(player =>
@@ -277,6 +285,10 @@ function serializeUndoState(game, shopStock, logLimit = GAME_SNAPSHOT_DEFAULT_LO
         log: copyRecentLog(game.log, normalizedLogLimit),
         reviewSummary: normalizeReviewSummary(game.reviewSummary, true),
     };
+    if (game.marketSupply && game.marketSupply.mode === 'ten-type') {
+        state.marketSupply = GameSnapshotMarketSupplyApi.copyState(game.marketSupply);
+    }
+    return state;
 }
 
 /**
@@ -319,6 +331,7 @@ function hydrateUndoState(options) {
         player.hasYakusho = state.playerHasYakusho?.[index] !== false;
     });
     options.assignShopStockSnapshot(shopStock, state.shopStock);
+    game.marketSupply = GameSnapshotMarketSupplyApi.copyState(state.marketSupply);
     game.builtThisTurn = state.builtThisTurn === true;
     game.log = Array.isArray(state.log) ? [...state.log] : [];
     game.reviewSummary = normalizeReviewSummary(state.reviewSummary, false);
@@ -359,6 +372,7 @@ function hydrateMutableGameState(options) {
         player.hasYakusho = playerState.hasYakusho !== false;
     });
     options.assignShopStockSnapshot(shopStock, state.shopStock || {});
+    game.marketSupply = GameSnapshotMarketSupplyApi.copyState(state.marketSupply);
     game.currentPlayerIndex = options.normalizeCurrentPlayerIndex(
         state.currentPlayerIndex, game.currentPlayerIndex, game.players.length
     );

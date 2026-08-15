@@ -83,6 +83,7 @@ const TEST_GROUPS = {
         'socket-e2e-helper.test.js',
         'game-engine.test.js',
         'game-snapshot.test.js',
+        'market-supply.test.js',
         'local-save-repository.test.js',
         'local-save-runtime.test.js',
         'game-schema-negotiation.test.js',
@@ -475,6 +476,7 @@ const TEST_GROUPS = {
         'socket-e2e-helper.test.js',
         'game-engine.test.js',
         'game-snapshot.test.js',
+        'market-supply.test.js',
         'game-schema-negotiation.test.js',
         'game-schema-codec.test.js',
         'game-schema-wire.test.js',
@@ -660,6 +662,7 @@ const REQUIRED_TEST_GROUPS = Object.freeze({
     // placement choices when the test catalog is reorganized.
     'action-contract.test.js': ['unit'],
     'game-snapshot.test.js': ['unit', 'online'],
+    'market-supply.test.js': ['unit', 'online'],
     'snapshot-contract.test.js': ['unit', 'online'],
     'snapshot-inventory-validation.test.js': ['unit', 'online'],
     'local-save-repository.test.js': ['unit'],

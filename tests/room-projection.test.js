@@ -62,6 +62,14 @@ runTest('room projection は予約席を待機室管理用の切断状態へ投�
     });
 });
 
+runTest('room projection は公式オプション市場だけを待機室へ明示する', () => {
+    const room = makeRoom();
+    room.marketRule = 'ten-type';
+    assert.strictEqual(projection.buildLobbyState(room).marketRule, 'ten-type');
+    room.marketRule = 'standard';
+    assert.strictEqual(Object.hasOwn(projection.buildLobbyState(room), 'marketRule'), false);
+});
+
 runTest('room projection はlegacy roomの名前とhuman slot数を維持する', () => {
     const room = {
         maxPlayers: 2,

@@ -2,6 +2,7 @@
 
 const browserMaintenanceFiles = Object.freeze([
     'js/Card.js',
+    'js/marketSupply.js',
     'js/GameManager.js',
     'js/pendingActionQueue.js',
     'js/gameTurnPolicy.js',
@@ -337,6 +338,8 @@ module.exports = [
                 escapeHtml: 'readonly',
                 fetch: 'readonly',
                 getInitialCardStock: 'readonly',
+                MarketSupply: 'readonly',
+                decrementMarketShopStock: 'readonly',
                 getCardActivationProfile: 'readonly',
                 isOnlineGame: 'readonly',
                 isCardInCategoryGroup: 'readonly',

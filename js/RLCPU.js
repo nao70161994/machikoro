@@ -931,7 +931,9 @@ class RLCPU {
                     return typeof sendAction === "function" && sendAction("buildCard", { cardName: card.name }) === true;
                 }
                 if (game.buildCard(card)) {
-                    if (shopStock && Number.isFinite(shopStock[card.name])) {
+                    if (typeof decrementMarketShopStock === 'function') {
+                        decrementMarketShopStock(game, shopStock, card);
+                    } else if (shopStock && Number.isFinite(shopStock[card.name])) {
                         shopStock[card.name] = Math.max(0, shopStock[card.name] - 1);
                     }
                     return true;

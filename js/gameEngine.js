@@ -95,7 +95,7 @@ const GAME_ACTION_HANDLERS = Object.freeze({
                 typeof context.decrementShopStock !== 'function') return false;
         const card = context.createCardByName(data.cardName);
         if (!card || !context.game.buildCard(card)) return false;
-        context.decrementShopStock(context.shopStock, card);
+        context.decrementShopStock(context.shopStock, card, context.game);
         return true;
     },
     buildLandmark(context, data) {

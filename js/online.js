@@ -2853,8 +2853,9 @@ function initSocket() {
         getRestoreGeneration: () => _onlineRestoreLifecycleController.getGeneration(),
         getSession: onlineSessionSnapshot,
         incrementRestoreGeneration: () => _incrementOnlineRestoreGeneration(),
-        initGame: (names, settings, order) => initOnlineGame(names, settings, order),
+        initGame: (names, settings, order, options) => initOnlineGame(names, settings, order, options),
         logTypes: LOG_TYPES,
+        marketSupply: MarketSupply,
         notifyLifecycleStart: () => onlineClientEffects.notifyLifecycleStart(),
         observeReconnect: event => _observeOnlineReconnectEvent(event),
         preloadModels: (playerCount, settings) =>
@@ -2863,6 +2864,7 @@ function initSocket() {
         removeRestoreItem: key => _removeOnlineRestoreStorageItem(key),
         replaceActionSequence: sequence => _onlineActionSequenceController.replace(sequence),
         replaceEnabledCards: values => replaceEnabledCardSelection(values),
+        replaceMarketRule: value => replaceMarketRuleSelection(value),
         replaceEnabledLandmarks: values => replaceEnabledLandmarkSelection(values),
         resetReconnectCompletion: () => _onlineReconnectCompletionController.reset(),
         resetUiLocks: reason => onlineClientEffects.resetUiLocks(reason),
@@ -2952,6 +2954,7 @@ function initSocket() {
         removeRestoreItem: key => _removeOnlineRestoreStorageItem(key),
         replaceEnabledCards: values => replaceEnabledCardSelection(values),
         replaceEnabledLandmarks: values => replaceEnabledLandmarkSelection(values),
+        replaceMarketRule: value => replaceMarketRuleSelection(value),
         replaceRestoreQueue: queue => _replaceOnlineRestoreEventQueue(queue),
         resetUiLocks: reason => onlineClientEffects.resetUiLocks(reason),
         restoreQueueState: OnlineRestoreQueueState,
@@ -3441,6 +3444,7 @@ function getOnlineGameInitializer() {
         initialCardStock: (card, playerCount) => getInitialCardStock(card, playerCount),
         landmarkNames: () => Player.landmarkNames(),
         logTypes: LOG_TYPES,
+        marketSupply: MarketSupply,
         opponentDifficulties: settings => onlineCpuOpponentDifficultiesFromSettings(settings),
         render: () => onlineClientEffects.render(),
         resetFullLog: () => resetFullLog(),
@@ -3457,12 +3461,13 @@ function getOnlineGameInitializer() {
     return onlineGameInitializer;
 }
 
-function initOnlineGame(playerNames, playerSettings, playerOrder) {
+function initOnlineGame(playerNames, playerSettings, playerOrder, options = {}) {
     return getOnlineGameInitializer().initialize({
         myOriginalPlayerIndex: onlineSessionSnapshot().myOriginalPlayerIndex,
         playerNames,
         playerOrder,
         playerSettings,
+        marketSeed: options.marketSeed,
     });
 }
 
@@ -3476,7 +3481,7 @@ function _createOnlineGameEngineRuntimeAdapter() {
         landmarkNames: Player.landmarkNames,
         createCardByName,
         assignShopStockSnapshot,
-        decrementShopStock,
+        decrementShopStock: (stock, card, game) => decrementMarketShopStock(game || currentGame, stock, card),
         pendingActionsFor: GameManager.serializedPendingActionsFor,
         logLimit: ONLINE_SNAPSHOT_LOG_LIMIT,
     });
@@ -3489,7 +3494,7 @@ function applyAction(action, data) {
         action,
         data,
         createCardByName: name => CARDS.find(card => card.name === name),
-        decrementShopStock,
+        decrementShopStock: (stock, card, game) => decrementMarketShopStock(game || onlineGameRuntimeSnapshot().game, stock, card),
         restoreUndoState: restoreUndoSnapshot,
     });
 }

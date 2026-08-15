@@ -92,3 +92,31 @@ runTest('snapshot inventoryは不正shapeと未知cardをfail closedにする', 
     assert.strictEqual(check.validate(input(2, { enabledCardNames: ['未知'] })), false);
     assert.strictEqual(check.validate(input(2, { shopStock: { unknown: 0 } })), false);
 });
+
+runTest('snapshot inventoryは公式市場の所持・公開・山札をcard別に保存する', () => {
+    const check = validator();
+    const marketSupply = {
+        mode: 'ten-type', seed: 7, targetTypeCount: 4,
+        deck: [
+            ...Array(5).fill('麦畑'),
+            ...Array(5).fill('パン屋'),
+            'スタジアム',
+        ],
+    };
+    const valid = input(2, {
+        playerCardNames: [['麦畑', 'パン屋'], ['麦畑', 'パン屋']],
+        shopStock: { 麦畑: 1, パン屋: 1, カフェ: 1, スタジアム: 1 },
+        marketSupply: Object.assign({}, marketSupply, {
+            deck: marketSupply.deck.concat(Array(5).fill('カフェ')),
+        }),
+    });
+    assert.strictEqual(check.validate(valid), true);
+    valid.marketSupply.deck.push('カフェ');
+    assert.strictEqual(check.validate(valid), false, '山札のカード増殖を拒否');
+    valid.marketSupply.deck.pop();
+    delete valid.shopStock.カフェ;
+    assert.strictEqual(check.validate(valid), false, '公式市場では全在庫keyを要求');
+    valid.shopStock.カフェ = 1;
+    valid.marketSupply.targetTypeCount = 3;
+    assert.strictEqual(check.validate(valid), false, '公開種類数の改変を拒否');
+});

@@ -55,6 +55,8 @@ const OnlineLobbyStartRuntime = (() => {
                 playerOrder,
                 enabledCards,
                 enabledLandmarks,
+                marketRule,
+                marketSeed,
                 versions,
                 reconnectTokenHashes,
                 hostPlayerIndex,
@@ -86,6 +88,11 @@ const OnlineLobbyStartRuntime = (() => {
                 hostlessRestoreCount: Number.isInteger(hostlessRestoreCount)
                     ? hostlessRestoreCount : 0,
             }, hostPlayerIndex, hostEpoch);
+            if (marketRule === 'ten-type') {
+                payload.marketRule = 'ten-type';
+                payload.marketSeed = Number.isSafeInteger(marketSeed) && marketSeed >= 0 && marketSeed <= 0xffffffff
+                    ? marketSeed : 0;
+            }
             if (gameSchema) payload.gameSchema = gameSchema;
             return payload;
         }
@@ -148,6 +155,7 @@ const OnlineLobbyStartRuntime = (() => {
                     hostPlayerIndex: lobbyState.hostPlayerIndex,
                     participants: lobbyState.participants,
                     myPlayerIndex: session.myOriginalPlayerIndex,
+                    marketRule: lobbyState.marketRule,
                 })
             );
         }
@@ -179,6 +187,9 @@ const OnlineLobbyStartRuntime = (() => {
                 dependencies.setHostState(input.hostPlayerIndex);
                 dependencies.setCpuSpeed(input.cpuSpeed || 1500);
                 if (input.enabledCards) dependencies.replaceEnabledCards(input.enabledCards);
+                if (typeof dependencies.replaceMarketRule === 'function') {
+                    dependencies.replaceMarketRule(input.marketRule);
+                }
                 dependencies.replaceEnabledLandmarks(
                     input.enabledLandmarks && input.enabledLandmarks.length > 0
                         ? input.enabledLandmarks
@@ -191,7 +202,8 @@ const OnlineLobbyStartRuntime = (() => {
                 dependencies.initGame(
                     input.playerNames,
                     input.playerSettings,
-                    input.playerOrder
+                    input.playerOrder,
+                    { marketSeed: input.marketSeed }
                 );
                 dependencies.focusGame();
                 dependencies.notifyLifecycleStart();

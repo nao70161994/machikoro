@@ -148,6 +148,7 @@ function saveSetupPreset() {
         cpuSpeed: Number(document.getElementById('cpuSpeed')?.value || setup.cpuSpeed),
         enabledCards: selection.enabledCards,
         enabledLandmarks: selection.enabledLandmarks,
+        marketRule: selection.marketRule,
     });
     if (!safeMainStorageSet(GameSetupPresets.STORAGE_KEY, JSON.stringify(records))) {
         showNotice('プリセットを保存できませんでした');
@@ -169,6 +170,7 @@ function applySetupPreset(presetId) {
     });
     replaceEnabledCardSelection(preset.enabledCards);
     replaceEnabledLandmarkSelection(preset.enabledLandmarks);
+    replaceMarketRuleSelection(preset.marketRule);
     if (typeof syncCardSelectStateFromRuntime === 'function') syncCardSelectStateFromRuntime();
     UiPlayerCount.applyView(
         document.getElementById('playerCount'),
@@ -577,6 +579,9 @@ function reviewGameSetup() {
     const setup = gameSetupSnapshot();
     const cards = getEnabledCardSelection();
     const landmarks = getEnabledLandmarkSelection();
+    const marketRule = GameSelectionState.runtime.snapshot().marketRule === 'ten-type'
+        ? '公式オプション（異なる10種類）'
+        : '通常市場（全種類）';
     const players = setup.playerSettings.slice(0, setup.selectedCount).map((setting, index) => {
         const name = String(setting && setting.name || '').trim() || `プレイヤー${index + 1}`;
         if (!setting || setting.type !== 'cpu') return `${index + 1}. ${name}（人間）`;
@@ -590,6 +595,7 @@ function reviewGameSetup() {
         ...players,
         `CPU速度: ${formatCpuSpeedLabel(speed || 1500)}`,
         `施設: ${cards.size}種 / ランドマーク: ${landmarks.size}種`,
+        `市場: ${marketRule}`,
     ].join('\n');
     return showConfirm(message, () => startGame());
 }
@@ -659,9 +665,11 @@ const localGameInitializer = LocalGameInitializer.createRuntime({
     gameRuntime: GameRuntimeState.runtime,
     getEnabledCards: () => getEnabledCardSelection(),
     getEnabledLandmarks: () => getEnabledLandmarkSelection(),
+    getMarketRule: () => GameSelectionState.runtime.snapshot().marketRule,
     initialCardStock: (card, playerCount) => getInitialCardStock(card, playerCount),
     landmarkNames: () => Player.landmarkNames(),
     logTypes: LOG_TYPES,
+    marketSupply: MarketSupply,
     normalizePlayerName: (name, index) => normalizeLocalPlayerName(name, index),
     normalizePlayerSetting: (setting, index, playerCount) =>
         normalizeLocalPlayerSetting(setting, index, playerCount),
@@ -712,7 +720,7 @@ const localGameEngineRuntime = LocalGameEngineRuntime.createRuntime({
             landmarkNames: Player.landmarkNames,
             createCardByName,
             assignShopStockSnapshot,
-            decrementShopStock,
+            decrementShopStock: (stock, card, game) => decrementMarketShopStock(game || currentGame, stock, card),
             pendingActionsFor: GameManager.serializedPendingActionsFor,
             logLimit: Number.MAX_SAFE_INTEGER,
         };
@@ -909,7 +917,7 @@ const mainHumanActionRuntime = MainHumanActionRuntime.createRuntime({
     checkpoint: (event, details) => markMainCheckpoint(event, details),
     clearUndoState: () => GameRuntimeState.runtime.setUndoState(null),
     document,
-    decrementStock: (stock, card) => decrementShopStock(stock, card),
+    decrementStock: (stock, card) => decrementMarketShopStock(mainGameRuntimeSnapshot().game, stock, card),
     getActionFlightState: () => mainOnlineActionFlightState(),
     getGameState: mainGameRuntimeSnapshot,
     getLandmarkEmoji: name => getLandmarkEmoji(name),

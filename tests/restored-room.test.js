@@ -596,6 +596,7 @@ runTest('restored room builderは検証済み入力を既存room shapeへ写像�
         gameGeneration: 2,
         enabledCards: ['麦畑'],
         enabledLandmarks: ['駅'],
+        marketRule: 'standard',
         cpuSpeed: 900,
         gameStartPayload: input.gameStartPayload,
         stateSnapshot: { sanitized: true, actionSeq: 7 },
@@ -620,6 +621,18 @@ runTest('restored room builderは再戦世代を復元しlegacy欠落を0へ正�
     const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
     assert.strictEqual(builder.buildRestoredRoom(fixture({ gameGeneration: 3 })).gameGeneration, 3);
     assert.strictEqual(builder.buildRestoredRoom(fixture({ gameGeneration: undefined })).gameGeneration, 0);
+});
+
+runTest('restored room builderは公式オプション市場を再戦用room設定へ復元する', () => {
+    const builder = makeRestoredRoom({ sanitizeStateSnapshot: snapshot => snapshot });
+    const gameStartPayload = {
+        playerNames: ['Alice', 'Bob'],
+        marketRule: 'ten-type',
+        marketSeed: 24680,
+    };
+    const room = builder.buildRestoredRoom(fixture({ gameStartPayload }));
+    assert.strictEqual(room.marketRule, 'ten-type');
+    assert.strictEqual(room.gameStartPayload.marketSeed, 24680);
 });
 
 runTest('署名なしfull replayから復元したroomはmirror圧縮後も完全履歴を一度だけ保持する', () => {

@@ -267,6 +267,39 @@ runTest('lobby handler はinvalid payloadを副作用なしで拒否する', () 
     assert.deepStrictEqual(Object.keys(runtime.rooms), []);
 });
 
+runTest('lobby handler は公式オプション市場を対応clientだけに許可する', () => {
+    const runtime = makeRuntime();
+    const host = makeSocket('host', runtime.trace);
+    registerLobbySocketHandlers(host, runtime.dependencies);
+    runtime.trace.length = 0;
+    host.handlers.createRoom({
+        playerName: 'Alice', playerCount: 2, playerSettings: [],
+        enabledLandmarks: ['駅'], marketRule: 'ten-type',
+    });
+    assert.strictEqual(runtime.rooms.ROOM01, undefined);
+    assert.ok(runtime.trace.some(entry => entry[0] === 'error'));
+
+    runtime.trace.length = 0;
+    host.handlers.createRoom({
+        playerName: 'Alice', playerCount: 2, playerSettings: [],
+        enabledLandmarks: ['駅'], marketRule: 'ten-type', marketRuleVersion: 1,
+    });
+    assert.strictEqual(runtime.rooms.ROOM01.marketRule, 'ten-type');
+
+    const guest = makeSocket('guest', runtime.trace);
+    registerLobbySocketHandlers(guest, runtime.dependencies);
+    runtime.trace.length = 0;
+    guest.handlers.joinRoom({ roomId: 'ROOM01', playerName: 'Bob' });
+    assert.strictEqual(runtime.rooms.ROOM01.players.length, 1);
+    assert.ok(runtime.trace.some(entry => entry[0] === 'error'));
+
+    runtime.trace.length = 0;
+    guest.handlers.joinRoom({
+        roomId: 'ROOM01', playerName: 'Bob', marketRuleVersion: 1,
+    });
+    assert.strictEqual(runtime.rooms.ROOM01.players.length, 2);
+});
+
 runTest('lobby handler はschema capabilityをplayerへ保存し不正値を副作用前に拒否する', () => {
     const runtime = makeRuntime();
     runtime.dependencies.resolveClientGameSchemaCapabilities = value => value && value.valid

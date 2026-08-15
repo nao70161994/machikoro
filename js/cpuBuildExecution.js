@@ -57,7 +57,11 @@ function buyCard(cpu, card, game, shopStock, context = {}) {
         );
     }
     if (game.buildCard(card)) {
-        shopStock[card.name]--;
+        if (typeof context.decrementShopStock === 'function') {
+            context.decrementShopStock(shopStock, card, game);
+        } else {
+            shopStock[card.name]--;
+        }
         return setBuildActionResult(cpu, true);
     }
     return setBuildActionResult(cpu, false);
@@ -111,8 +115,12 @@ function executeAction(cpu, proposal, game, shopStock, context = {}) {
             action: proposal.action,
             data: proposal.data,
             createCardByName: context.resolveCard,
-            decrementShopStock(stock, card) {
-                stock[card.name]--;
+            decrementShopStock(stock, card, currentGame) {
+                if (typeof context.decrementShopStock === 'function') {
+                    context.decrementShopStock(stock, card, currentGame);
+                } else {
+                    stock[card.name]--;
+                }
             },
         }) === true;
         return setBuildActionResult(cpu, applied);

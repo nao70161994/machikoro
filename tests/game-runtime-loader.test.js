@@ -12,6 +12,7 @@ const { runTest } = require('./helpers/test-utils');
 runTest('game runtime loaderはsource順と公開symbolをfrozen契約にする', () => {
     assert.deepStrictEqual(GAME_RUNTIME_SOURCE_FILES, [
         'js/Card.js',
+        'js/marketSupply.js',
         'js/Player.js',
         'js/actionContract.js',
         'js/pendingActionQueue.js',
@@ -35,6 +36,8 @@ runTest('game runtime loaderはsource順と公開symbolをfrozen契約にする'
         'setShopStockCount',
         'decrementShopStock',
         'assignShopStockSnapshot',
+        'MarketSupply',
+        'decrementMarketShopStock',
         'resolveCardStockName',
         'GAME_PHASES',
         'GAME_ACTIONS',
