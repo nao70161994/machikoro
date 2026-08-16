@@ -58,8 +58,8 @@
             <div class="tab-bar" role="tablist" aria-label="ゲームモード">
                 <button class="tab-btn active" data-ui-action="switchTab" data-tab="local" id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal" tabindex="0">ローカル</button>
                 <button class="tab-btn" data-ui-action="switchTab" data-tab="online" id="tabOnline" role="tab" aria-selected="false" aria-controls="tabContentOnline" tabindex="-1">オンライン</button>
-                <button class="tab-btn" data-ui-action="switchTab" data-tab="tournament" id="tabTournament" role="tab" aria-selected="false" aria-controls="tabContentTournament" tabindex="-1">CPU大会</button>
                 <button class="tab-btn" data-ui-action="switchTab" data-tab="stats" id="tabStats" role="tab" aria-selected="false" aria-controls="tabContentStats" tabindex="-1">統計</button>
+                <button class="tab-btn" data-ui-action="switchTab" data-tab="tournament" id="tabTournament" role="tab" aria-selected="false" aria-controls="tabContentTournament" tabindex="-1">その他</button>
             </div>
 
             <div id="tabContentLocal" class="tab-content" role="tabpanel" aria-labelledby="tabLocal">
@@ -87,25 +87,28 @@
                     </div>
                 </div>
                 <div id="playerSettings" class="setting-section"></div>
-                <div class="setting-section">
-                    <label class="setting-label" for="cpuSpeed">CPUの速さ</label>
-                    <div class="speed-setting">
-                        <input type="range" id="cpuSpeed" min="100" max="3000" step="100" value="1500"
-                            data-ui-input="cpuSpeed" aria-describedby="speedLabel" aria-valuetext="1.5秒">
-                        <span id="speedLabel">1.5秒</span>
+                <details class="setting-section play-flow-settings">
+                    <summary>CPU速度・チュートリアル</summary>
+                    <div class="setting-section">
+                        <label class="setting-label" for="cpuSpeed">CPUの速さ</label>
+                        <div class="speed-setting">
+                            <input type="range" id="cpuSpeed" min="100" max="3000" step="100" value="1500"
+                                data-ui-input="cpuSpeed" aria-describedby="speedLabel" aria-valuetext="1.5秒">
+                            <span id="speedLabel">1.5秒</span>
+                        </div>
                     </div>
-                </div>
-                <div class="setting-section">
-                    <div class="setting-label">チュートリアル表示</div>
-                    <label class="toggle-setting">
-                        <input id="tutorialEnabled" type="checkbox" data-ui-change="toggleTutorialEnabled">
-                        <span>現在のフェーズに応じたガイドを表示する</span>
-                    </label>
-                    <select id="tutorialLevel" class="text-input" data-ui-change="tutorialLevel" aria-label="チュートリアルの詳しさ">
-                        <option value="beginner">初心者向け</option>
-                        <option value="advanced">上級者向け</option>
-                    </select>
-                </div>
+                    <div class="setting-section">
+                        <div class="setting-label">チュートリアル表示</div>
+                        <label class="toggle-setting">
+                            <input id="tutorialEnabled" type="checkbox" data-ui-change="toggleTutorialEnabled">
+                            <span>現在のフェーズに応じたガイドを表示する</span>
+                        </label>
+                        <select id="tutorialLevel" class="text-input" data-ui-change="tutorialLevel" aria-label="チュートリアルの詳しさ">
+                            <option value="beginner">初心者向け</option>
+                            <option value="advanced">上級者向け</option>
+                        </select>
+                    </div>
+                </details>
                 <details class="setting-section setup-presets">
                     <summary>ゲーム設定プリセット</summary>
                     <p class="setting-help">人数・プレイヤー種別・CPU速度・使用カードをまとめて保存します。</p>
@@ -152,25 +155,6 @@
                         <label class="toggle-setting"><input id="soundBuildEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>建設</span></label>
                         <label class="toggle-setting"><input id="soundWinEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>勝利</span></label>
                     </div>
-                </details>
-                <details class="setting-section app-diagnostics">
-                    <summary>動作診断</summary>
-                    <p class="app-diagnostics-help">問題報告に必要な版・通信・保存・ゲーム状態・直近操作を確認できます。ルームID、再接続情報、プレイヤー名は含みません。</p>
-                    <div class="app-diagnostics-actions">
-                        <button type="button" data-ui-action="refreshAppDiagnostics">診断情報を更新</button>
-                        <button type="button" data-ui-action="copyAppDiagnostics">診断情報をコピー</button>
-                    </div>
-                    <div id="appDiagnosticsOutput" class="app-diagnostics-output" role="status" aria-live="polite" aria-atomic="true">「診断情報を更新」を押してください。</div>
-                </details>
-                <details class="setting-section app-backup">
-                    <summary>バックアップセンター</summary>
-                    <p class="setting-help">ローカル保存・設定・統計を端末へ書き出します。オンラインのルームIDや再接続情報は含みません。</p>
-                    <div class="app-backup-actions">
-                        <button type="button" data-ui-action="exportAppBackup">バックアップを書き出す</button>
-                        <button type="button" data-ui-action="selectAppBackupFile">バックアップを復元</button>
-                        <input id="appBackupFile" class="visually-hidden" type="file" accept="application/json,.json" data-ui-change="importAppBackup" tabindex="-1">
-                    </div>
-                    <div id="appBackupStatus" role="status" aria-live="polite"></div>
                 </details>
                 <button id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup">ゲーム開始</button>
                 <div id="localRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
@@ -237,57 +221,73 @@
                 <div class="stats-empty">読み込み中...</div>
             </div>
             <div id="tabContentTournament" class="tab-content" role="tabpanel" aria-labelledby="tabTournament" style="display:none">
-                <div class="cpu-tournament-intro">
-                    <h2>CPU大会</h2>
-                    <p>弱・普通・強・最強のCPUが自動対戦します。席順を試合ごとに入れ替えて比較します。</p>
-                </div>
-                <div class="cpu-tournament-settings">
-                    <label>対戦人数
-                        <select id="cpuTournamentPlayerCount" class="text-input">
-                            <option value="2">2人</option>
-                            <option value="3">3人</option>
-                            <option value="4" selected>4人</option>
-                        </select>
-                    </label>
-                    <label>試合数
-                        <select id="cpuTournamentGames" class="text-input">
-                            <option value="10">10試合</option>
-                            <option value="20" selected>20試合</option>
-                            <option value="50">50試合</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="cpu-tournament-actions">
-                    <button id="cpuTournamentStart" class="setup-primary-cta" data-ui-action="startCpuTournament">大会開始</button>
-                    <button id="cpuTournamentCancel" data-ui-action="cancelCpuTournament" disabled>中止</button>
-                </div>
-                <div id="cpuTournamentStatus" class="cpu-tournament-status" role="status" aria-live="polite" aria-atomic="true">設定を選んで大会を開始してください</div>
-                <div id="cpuTournamentResults" aria-live="off"></div>
-                <div id="cpuTournamentReplay" aria-live="off"></div>
-                <section class="cpu-tournament-history" aria-labelledby="cpuTournamentHistoryHeading">
-                    <h3 id="cpuTournamentHistoryHeading">大会履歴</h3>
-                    <div id="cpuTournamentHistory"></div>
-                </section>
+                <h2 class="utility-heading">その他</h2>
+                <p class="utility-intro">大会・データ管理・問題報告用の機能です。</p>
+                <details class="utility-section cpu-tournament-section">
+                    <summary>CPU大会</summary>
+                    <div class="cpu-tournament-intro">
+                        <p>弱・普通・強・最強のCPUが自動対戦します。席順を試合ごとに入れ替えて比較します。</p>
+                    </div>
+                    <div class="cpu-tournament-settings">
+                        <label>対戦人数
+                            <select id="cpuTournamentPlayerCount" class="text-input">
+                                <option value="2">2人</option>
+                                <option value="3">3人</option>
+                                <option value="4" selected>4人</option>
+                            </select>
+                        </label>
+                        <label>試合数
+                            <select id="cpuTournamentGames" class="text-input">
+                                <option value="10">10試合</option>
+                                <option value="20" selected>20試合</option>
+                                <option value="50">50試合</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="cpu-tournament-actions">
+                        <button id="cpuTournamentStart" class="setup-primary-cta" data-ui-action="startCpuTournament">大会開始</button>
+                        <button id="cpuTournamentCancel" data-ui-action="cancelCpuTournament" disabled>中止</button>
+                    </div>
+                    <div id="cpuTournamentStatus" class="cpu-tournament-status" role="status" aria-live="polite" aria-atomic="true">設定を選んで大会を開始してください</div>
+                    <div id="cpuTournamentResults" aria-live="off"></div>
+                    <div id="cpuTournamentReplay" aria-live="off"></div>
+                    <section class="cpu-tournament-history" aria-labelledby="cpuTournamentHistoryHeading">
+                        <h3 id="cpuTournamentHistoryHeading">大会履歴</h3>
+                        <div id="cpuTournamentHistory"></div>
+                    </section>
+                </details>
+                <details class="utility-section app-diagnostics">
+                    <summary>動作診断</summary>
+                    <p class="app-diagnostics-help">問題報告に必要な版・通信・保存・ゲーム状態・直近操作を確認できます。ルームID、再接続情報、プレイヤー名は含みません。</p>
+                    <div class="app-diagnostics-actions">
+                        <button type="button" data-ui-action="refreshAppDiagnostics">診断情報を更新</button>
+                        <button type="button" data-ui-action="copyAppDiagnostics">診断情報をコピー</button>
+                    </div>
+                    <div id="appDiagnosticsOutput" class="app-diagnostics-output" role="status" aria-live="polite" aria-atomic="true">「診断情報を更新」を押してください。</div>
+                </details>
+                <details class="utility-section app-backup">
+                    <summary>バックアップセンター</summary>
+                    <p class="setting-help">ローカル保存・設定・統計を端末へ書き出します。オンラインのルームIDや再接続情報は含みません。</p>
+                    <div class="app-backup-actions">
+                        <button type="button" data-ui-action="exportAppBackup">バックアップを書き出す</button>
+                        <button type="button" data-ui-action="selectAppBackupFile">バックアップを復元</button>
+                        <input id="appBackupFile" class="visually-hidden" type="file" accept="application/json,.json" data-ui-change="importAppBackup" tabindex="-1">
+                    </div>
+                    <div id="appBackupStatus" role="status" aria-live="polite"></div>
+                </details>
             </div>
             <section class="title-about" aria-labelledby="titleAboutHeading">
                 <p class="title-about-kicker">このゲームについて</p>
                 <h2 id="titleAboutHeading">サイコロで街を育てる対戦ゲーム</h2>
-                <p>ダイスシティは、サイコロの出目で施設カードを発動し、集めたコインで街を広げるブラウザボードゲームです。登録不要で始められ、ローカル対戦、CPUを混ぜた練習、ルームIDを使ったオンライン対戦に対応しています。</p>
-                <p>勝利条件は、今回の対戦で有効なランドマークをすべて建設することです。安い施設で収入を作るか、相手のターンに赤カードでコインを受け取るか、高い出目のカードへ伸ばすかで展開が変わります。</p>
-                <p>ホーム画面に追加するとPWAとして起動でき、主要な画面や説明ページを開きやすくなります。オンライン対戦には通信が必要ですが、ローカル対戦やルール確認はブラウザだけで進められます。</p>
+                <p>サイコロの出目で施設を発動し、コインを集めてランドマーク完成を目指します。登録不要で、ローカル・CPU・オンライン対戦を遊べます。ホーム画面への追加後はPWAとして起動できます。</p>
                 <div class="title-guide-links" aria-label="ダイスシティの説明ページ">
                     <a href="how-to-play.html">遊び方</a>
                     <a href="cards.html">カードとランドマーク</a>
                     <a href="ai-cpu.html">CPUとAI</a>
-                    <a href="rules.html">ルール</a>
-                    <a href="privacy.html">プライバシーポリシー</a>
                 </div>
             </section>
             <div id="adSlotTitleBottom" class="ad-slot-host" data-ad-slot-host="title-bottom"></div>
             <nav class="legal-links" aria-label="サイト情報">
-                <a href="how-to-play.html">遊び方</a>
-                <a href="cards.html">カード</a>
-                <a href="ai-cpu.html">CPUとAI</a>
                 <a href="rules.html">ルール</a>
                 <a href="privacy.html">プライバシーポリシー</a>
             </nav>

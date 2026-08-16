@@ -364,10 +364,12 @@ body.modal-open #gameScreen {
 
 .tab-btn {
     flex: 1;
-    padding: 10px;
+    min-width: 0;
+    padding: 10px 4px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 13px;
     text-align: center;
+    white-space: nowrap;
     background: transparent;
     color: #a7a9be;
     border: none;
@@ -769,7 +771,10 @@ body.modal-open #gameScreen {
 @media (max-width: 480px) {
     #btnStart.setup-primary-cta,
     #onlineCreateSubmitButton.setup-primary-cta {
-        position: sticky;
+        position: fixed;
+        left: 50%;
+        width: min(calc(100% - 64px), 416px);
+        transform: translateX(-50%);
         bottom: var(--setup-cta-bottom);
         z-index: 100;
         min-height: var(--touch-target-standard);
@@ -1785,6 +1790,35 @@ button:not(:disabled):active {
     align-items: center;
     cursor: pointer;
     font-weight: 700;
+}
+.play-flow-settings > summary,
+.utility-section > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 700;
+}
+.play-flow-settings[open],
+.utility-section[open] {
+    gap: 12px;
+}
+.utility-heading {
+    margin: 0;
+    color: #f0c040;
+    font-size: 22px;
+}
+.utility-intro {
+    margin: -4px 0 4px;
+    color: #a7a9be;
+    line-height: 1.55;
+}
+.utility-section {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.utility-section:last-child {
+    border-bottom: 0;
 }
 .app-diagnostics-help {
     margin: 8px 0 12px;

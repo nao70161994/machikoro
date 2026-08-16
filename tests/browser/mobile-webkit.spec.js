@@ -203,10 +203,10 @@ test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領�
     await expectPlayerSelectTapTargets(page, '#onlinePlayerSettings', 10);
 });
 
-test('320pxから480pxで2人・10人設定の開始CTAがPWAとfocusを隠さない', async ({ page }) => {
+test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWAとfocusを隠さない', async ({ page }) => {
     await prepare(page);
 
-    async function expectStickyCta(selector, focusSelector, width, height = 844) {
+    async function expectFixedCta(selector, focusSelector, width, height = 844) {
         await page.setViewportSize({ width, height });
         const focusTarget = page.locator(focusSelector);
         await focusTarget.focus();
@@ -226,7 +226,7 @@ test('320pxから480pxで2人・10人設定の開始CTAがPWAとfocusを隠さ�
                 position: getComputedStyle(element).position,
             };
         }, focusSelector);
-        expect(layout.position).toBe('sticky');
+        expect(layout.position).toBe('fixed');
         expect(layout.ctaLeft).toBeGreaterThanOrEqual(0);
         expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewportWidth);
         expect(layout.ctaBottom).toBeLessThanOrEqual(layout.viewportHeight);
@@ -240,26 +240,26 @@ test('320pxから480pxで2人・10人設定の開始CTAがPWAとfocusを隠さ�
     });
     await page.waitForTimeout(400);
     for (const width of [320, 360, 390, 480]) {
-        await expectStickyCta('#btnStart', '#tutorialLevel', width);
+        await expectFixedCta('#btnStart', '#playerSettings select', width);
     }
 
     const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increasePlayerCount.click();
     for (const width of [320, 360, 390, 480]) {
-        await expectStickyCta('#btnStart', '#tutorialLevel', width);
+        await expectFixedCta('#btnStart', '#playerSettings select', width);
     }
-    await expectStickyCta('#btnStart', '#tutorialLevel', 390, 500);
+    await expectFixedCta('#btnStart', '#playerSettings select', 390, 500);
 
     await page.locator('#tabOnline').click();
     for (const width of [320, 360, 390, 480]) {
-        await expectStickyCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
+        await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
     }
     const increaseOnlinePlayerCount = page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increaseOnlinePlayerCount.click();
     for (const width of [320, 360, 390, 480]) {
-        await expectStickyCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
+        await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
     }
-    await expectStickyCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
+    await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
 });
 
 test('320pxから480pxでpending中の長文toastが選択肢を隠さない', async ({ page }) => {

@@ -2497,10 +2497,18 @@ runTest('index.html は統計タブをオンラインタブの外に配置して
     assert.ok(scriptStats < scriptMain);
 });
 
-runTest('index.html はCPU大会を独立tabと取消可能な操作で提供する', () => {
+runTest('index.html は低頻度機能をその他tabへまとめCPU大会を取消可能にする', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     assert.ok(html.includes('data-tab="tournament"'));
+    assert.ok(html.includes('aria-controls="tabContentTournament" tabindex="-1">その他</button>'));
     assert.ok(html.includes('id="tabContentTournament"'));
+    const otherStart = html.indexOf('id="tabContentTournament"');
+    const otherEnd = html.indexOf('<section class="title-about"');
+    assert.ok(otherStart >= 0 && otherEnd > otherStart);
+    const otherHtml = html.slice(otherStart, otherEnd);
+    assert.ok(otherHtml.includes('<summary>CPU大会</summary>'));
+    assert.ok(otherHtml.includes('<summary>動作診断</summary>'));
+    assert.ok(otherHtml.includes('<summary>バックアップセンター</summary>'));
     assert.ok(html.includes('data-ui-action="startCpuTournament"'));
     assert.ok(html.includes('data-ui-action="cancelCpuTournament"'));
     assert.ok(html.includes('id="cpuTournamentStatus"'));
@@ -2737,12 +2745,14 @@ runTest('頻用する補助操作は一覧密度に応じた共通tap領域を�
     assert.ok(rule('.card-badge').includes('min-height: var(--touch-target-dense);'));
 });
 
-runTest('狭幅の開始CTAは既存actionのまま設定内を追従しPWAとfocusを避ける', () => {
+runTest('狭幅の開始CTAは初期表示から固定しPWAとfocusを避ける', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     assert.ok(html.includes('id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom"'));
     assert.ok(css.includes('@media (max-width: 480px) {\n    #btnStart.setup-primary-cta,\n    #onlineCreateSubmitButton.setup-primary-cta {'));
+    assert.ok(css.includes('position: fixed;'));
+    assert.ok(css.includes('width: min(calc(100% - 64px), 416px);'));
     assert.ok(css.includes('bottom: var(--setup-cta-bottom);'));
     assert.ok(css.includes('body.pwa-banner-open #btnStart.setup-primary-cta,\n    body.pwa-banner-open #onlineCreateSubmitButton.setup-primary-cta {\n        bottom: var(--setup-cta-pwa-bottom);'));
     assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-focus-clearance);'));
@@ -3710,8 +3720,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     }
     const legalLinksEndIndex = html.indexOf('</nav>', legalLinksIndex);
     const legalLinksHtml = html.slice(legalLinksIndex, legalLinksEndIndex);
-    assert.deepStrictEqual([...legalLinksHtml.matchAll(/href="([^"]+)"/g)].map((match) => match[1]), ['how-to-play.html', 'cards.html', 'ai-cpu.html', 'rules.html', 'privacy.html']);
-    assert.deepStrictEqual([...legalLinksHtml.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map((match) => match[1]), ['遊び方', 'カード', 'CPUとAI', 'ルール', 'プライバシーポリシー']);
+    assert.deepStrictEqual([...legalLinksHtml.matchAll(/href="([^"]+)"/g)].map((match) => match[1]), ['rules.html', 'privacy.html']);
+    assert.deepStrictEqual([...legalLinksHtml.matchAll(/<a href="[^"]+">([^<]+)<\/a>/g)].map((match) => match[1]), ['ルール', 'プライバシーポリシー']);
     assert.ok(!legalLinksHtml.includes('target="_blank"'));
     assert.ok(!legalLinksHtml.includes('download'));
     const unsafeHrefPattern = /^(?:https?:)?\/\/|^javascript:|^data:/i;
