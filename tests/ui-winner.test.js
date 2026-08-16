@@ -105,6 +105,26 @@ runTest('ui winnerは順位付きの共有テキストとコピー導線を生�
     assert.strictEqual(UiWinner.buildShareText({ players }), '');
 });
 
+runTest('ui winnerは公式10種類市場の正確な終了サマリーを表示する', () => {
+    const players = [{ name: 'Alice', coins: 20 }, { name: 'Bob', coins: 12 }];
+    const html = UiWinner.buildWinnerScreenHtml({
+        winner: players[0], players, turnCount: 9, escapeHtml,
+        logEntries: [], logTypes: {},
+        marketSupply: {
+            mode: 'ten-type', deck: ['パン屋', 'カフェ'], refillSequence: 4,
+            revealedCardCount: 16, totalsComplete: true,
+        },
+    });
+    assert.ok(html.includes('市場の振り返り'));
+    assert.ok(html.includes('補充回数'));
+    assert.ok(html.includes('<strong>4</strong>'));
+    assert.ok(html.includes('公開したカード'));
+    assert.ok(html.includes('<strong>16</strong>'));
+    assert.ok(html.includes('最終山札'));
+    assert.ok(html.includes('<strong>2</strong>'));
+    assert.strictEqual(UiWinner.buildMarketReview({ mode: 'standard' }, escapeHtml), '');
+});
+
 runTest('ui winnerは結果画像用modelを順位順に固定してCanvasへ描画する', () => {
     const players = [{ name: 'Alice', coins: 12 }, { name: 'Bob', coins: 20 }];
     const model = UiWinner.buildResultCardModel({ winner: players[1], players, turnCount: 9 });

@@ -123,7 +123,7 @@ const MainUiEventRuntime = (() => {
         function handleStaticChange(event) {
             return execute(event, 'change', element => Object.assign({}, effectMap([
                 'toggleTutorialEnabled', 'tutorialLevel', 'localPlayerType', 'onlinePlayerType',
-                'onAccessibilitySettingsChange',
+                'localSaveGeneration', 'onAccessibilitySettingsChange',
             ]), {
                 importAppBackup: () => invoke('importAppBackup', element.files && element.files[0]),
             }), 'data-ui-change');

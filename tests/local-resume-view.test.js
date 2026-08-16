@@ -19,9 +19,11 @@ runTest('local resume viewはlocal saveとonline sessionの表示を独立投影
     assert.deepStrictEqual(LocalResumeView.resumeSections(true, {
         playerName: 'Alice',
         roomId: 'ABC123',
-    }, { marketSupply: { mode: 'ten-type', deck: Array(7).fill('パン屋') } }), {
+    }, { turnCount: 12, marketSupply: {
+        mode: 'ten-type', deck: Array(7).fill('パン屋'), refillSequence: 3,
+    } }), {
         localDisplay: 'flex',
-        localMarketDescription: '🏪 公式10種類市場・山札7枚・残りわずか',
+        localMarketDescription: '🏪 公式10種類市場・12ターン・補充3回・山札7枚・残りわずか',
         onlineDisplay: 'block',
         onlineDescription: '🌐 Alice として ABC123 に再接続できます',
     });
@@ -35,9 +37,10 @@ runTest('local resume viewはlocal saveとonline sessionの表示を独立投影
 
 runTest('local resume viewは通常市場と山札切れを区別する', () => {
     assert.strictEqual(LocalResumeView.marketDetails({}), '🏪 通常市場');
+    assert.strictEqual(LocalResumeView.marketDetails({ turnCount: 8 }), '🏪 通常市場・8ターン');
     assert.strictEqual(LocalResumeView.marketDetails({
         marketSupply: { mode: 'ten-type', deck: [] },
-    }), '🏪 公式10種類市場・山札0枚・山札切れ');
+    }), '🏪 公式10種類市場・0ターン・補充0回・山札0枚・山札切れ');
 });
 
 runTest('local resume viewは最新と最大2つ前までの世代選択肢を生成する', () => {

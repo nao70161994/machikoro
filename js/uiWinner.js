@@ -130,6 +130,25 @@ function buildGameReview(logEntries, logTypes, players, escapeHtml, reviewSummar
     return `<section class="winner-review" aria-labelledby="winnerReviewTitle"><h3 id="winnerReviewTitle">対戦の振り返り</h3><h4>最終盤面</h4><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div><h4>${historyTitle}</h4><p class="winner-review-note">${historyNote}</p><div class="winner-review-grid">${observedItems.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
 }
 
+function buildMarketReview(marketSupply, escapeHtml) {
+    if (!marketSupply || marketSupply.mode !== 'ten-type' || typeof escapeHtml !== 'function') return '';
+    const refillCount = Number.isSafeInteger(marketSupply.refillSequence) &&
+        marketSupply.refillSequence >= 0 ? marketSupply.refillSequence : 0;
+    const deckCount = Array.isArray(marketSupply.deck) ? marketSupply.deck.length : 0;
+    const revealedCount = Number.isSafeInteger(marketSupply.revealedCardCount) &&
+        marketSupply.revealedCardCount >= 0 ? marketSupply.revealedCardCount : 0;
+    const complete = marketSupply.totalsComplete === true;
+    const items = [
+        ['補充回数', refillCount],
+        [complete ? '公開したカード' : '記録に残る公開カード', revealedCount],
+        ['最終山札', deckCount],
+    ];
+    const note = complete
+        ? '対戦開始時の公開分を含む公式10種類市場の集計です。'
+        : '古い保存から再開したため、保持された履歴の範囲だけを表示しています。';
+    return `<section class="winner-market-review" aria-labelledby="winnerMarketReviewTitle"><h3 id="winnerMarketReviewTitle">🏪 市場の振り返り</h3><p class="winner-review-note">${escapeHtml(note)}</p><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
+}
+
 function buildWinnerStatusText(options = {}) {
     const winner = options.winner;
     if (!winner) return '';
@@ -225,12 +244,13 @@ function buildWinnerScreenHtml(options = {}) {
     const reviewHtml = buildGameReview(
         options.logEntries, options.logTypes, options.players, escapeHtml, options.reviewSummary
     );
+    const marketReviewHtml = buildMarketReview(options.marketSupply, escapeHtml);
     const rematchButton = options.canOnlineRematch
         ? '<div class="winner-rematch-actions"><button id="winnerRematchButton" class="winner-primary-action" data-ui-action="requestOnlineRematch">全員の同意で再戦</button><button class="winner-secondary-action" data-ui-action="declineOnlineRematch">今回は再戦しない</button></div>'
         : (options.canRematch
             ? '<button id="winnerRematchButton" class="winner-primary-action" data-ui-action="rematchLocalGame">同じ設定でもう一度</button>'
             : '');
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}${rematchButton}<button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">結果画像を保存・共有</button><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
+    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewHtml}${marketReviewHtml}${rematchButton}<button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">結果画像を保存・共有</button><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;
@@ -251,6 +271,7 @@ const UiWinner = Object.freeze({
     buildWinnerStatsRows,
     buildWinStreakHtml,
     buildGameReview,
+    buildMarketReview,
     buildWinnerStatusText,
     buildShareText,
     buildResultCardModel,

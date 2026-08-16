@@ -295,6 +295,47 @@ runTest('storage updateResumeButton はローカルとオンラインの再開�
     assert.strictEqual(rt.elements.onlineResumeDescription.textContent, '🌐 P1 として ROOM-1 に再接続できます');
 });
 
+runTest('storage 保存世代変更は選択した市場ルールと進行情報だけを更新する', () => {
+    const rt = loadStorageRuntime();
+    const latest = makeSavedGameState({ turnCount: 9, marketSupply: {
+        mode: 'standard', seed: 0, targetTypeCount: 0, deck: [],
+    } });
+    const shopStock = {};
+    const marketSupply = MarketSupplyModule.initialize({
+        mode: MarketSupplyModule.MODES.TEN_TYPE,
+        seed: 1,
+        cards: rt.CARDS,
+        enabledCardNames: rt.CARDS.map(card => card.name),
+        playerCount: 2,
+        shopStock,
+        initialStock: rt.getInitialCardStock,
+    });
+    marketSupply.refillSequence = 2;
+    const previous = makeSavedGameState({
+        turnCount: 5,
+        players: ['P1', 'P2'].map(name => ({
+            name, coins: 3, cards: ['麦畑', 'パン屋'], dormantIndices: [], landmarks: {},
+            itVentureCoins: 0, hasYakusho: true,
+        })),
+        enabledCardsList: rt.CARDS.map(card => card.name),
+        shopStock,
+        marketSupply,
+    });
+    rt.localStorage.setItem('savedGame', JSON.stringify(latest));
+    rt.localStorage.setItem('savedGameHistoryV1', JSON.stringify([{ state: previous }]));
+
+    assert.strictEqual(rt.onChangeLocalSaveGeneration(1), true);
+    assert.strictEqual(
+        rt.elements.localResumeMarketDetails.textContent,
+        `🏪 公式10種類市場・5ターン・補充2回・山札${marketSupply.deck.length}枚${marketSupply.deck.length <= 10 ? '・残りわずか' : ''}`
+    );
+    assert.strictEqual(rt.onChangeLocalSaveGeneration(2), false);
+    assert.strictEqual(
+        rt.elements.localResumeMarketDetails.textContent,
+        '選択した保存データを読み込めません'
+    );
+});
+
 runTest('storage updateResumeButton は壊れたオンライン再接続データを表示しない', () => {
     const rt = loadStorageRuntime();
     rt.elements.onlineResumeDescription.textContent = '🌐 P1 として room-1 に再接続できます';

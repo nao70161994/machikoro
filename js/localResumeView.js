@@ -14,11 +14,17 @@ const LocalResumeView = (() => {
         const supply = savedState.marketSupply;
         if (supply && supply.mode === 'ten-type') {
             const deckCount = Array.isArray(supply.deck) ? supply.deck.length : 0;
+            const refillCount = Number.isSafeInteger(supply.refillSequence) &&
+                supply.refillSequence >= 0 ? supply.refillSequence : 0;
+            const turnCount = Number.isSafeInteger(savedState.turnCount) && savedState.turnCount >= 0
+                ? savedState.turnCount : 0;
             const warning = deckCount === 0 ? '・山札切れ'
                 : deckCount <= 10 ? '・残りわずか' : '';
-            return `🏪 公式10種類市場・山札${deckCount}枚${warning}`;
+            return `🏪 公式10種類市場・${turnCount}ターン・補充${refillCount}回・山札${deckCount}枚${warning}`;
         }
-        return '🏪 通常市場';
+        const turnCount = Number.isSafeInteger(savedState.turnCount) && savedState.turnCount >= 0
+            ? `・${savedState.turnCount}ターン` : '';
+        return `🏪 通常市場${turnCount}`;
     }
 
     function resumeSections(localSaveExists, onlineSession, savedState = null) {

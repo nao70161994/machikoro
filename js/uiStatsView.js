@@ -13,6 +13,24 @@ function statsModeLabel(mode) {
     return '全体';
 }
 
+function statsFilters(viewKey) {
+    if (viewKey === 'standard' || viewKey === 'ten-type') {
+        return Object.freeze({ mode: 'all', marketRule: viewKey });
+    }
+    const [rawMode, rawMarketRule] = String(viewKey || 'all').split('|');
+    return Object.freeze({
+        mode: ['all', 'local', 'online'].includes(rawMode) ? rawMode : 'all',
+        marketRule: ['standard', 'ten-type'].includes(rawMarketRule) ? rawMarketRule : 'all',
+    });
+}
+
+function combinedStatsLabel(filters) {
+    const labels = [];
+    if (filters.mode !== 'all') labels.push(statsModeLabel(filters.mode));
+    if (filters.marketRule !== 'all') labels.push(statsModeLabel(filters.marketRule));
+    return labels.length ? labels.join(' × ') : '全体';
+}
+
 function emptyStatsBucket() {
     return { totalGames: 0, wins: 0, totalTurns: 0, totalFinalCoins: 0,
         totalFinalFacilities: 0, totalFinalLandmarks: 0, cardStats: {}, landmarkStats: {} };
@@ -25,10 +43,15 @@ function statsBucket(stats, viewMode, playerFilter) {
         }
         return stats.players[playerFilter] || stats.cpuTypes[playerFilter] || emptyStatsBucket();
     }
-    if (viewMode === 'standard' || viewMode === 'ten-type') {
-        return stats.marketRules && stats.marketRules[viewMode] || emptyStatsBucket();
+    const filters = statsFilters(viewMode);
+    if (filters.marketRule !== 'all') {
+        if (filters.mode !== 'all') {
+            return stats.combinations && stats.combinations[filters.mode] &&
+                stats.combinations[filters.mode][filters.marketRule] || emptyStatsBucket();
+        }
+        return stats.marketRules && stats.marketRules[filters.marketRule] || emptyStatsBucket();
     }
-    return stats[viewMode] || emptyStatsBucket();
+    return stats[filters.mode] || emptyStatsBucket();
 }
 
 function buildFilterTabsHtml(stats, viewMode, playerFilter, escapeHtml) {
@@ -36,7 +59,9 @@ function buildFilterTabsHtml(stats, viewMode, playerFilter, escapeHtml) {
     const playerNames = Object.keys(stats.players).sort((a, b) => a.localeCompare(b, 'ja'));
     const cpuLabels = Object.keys(stats.cpuTypes).sort((a, b) => a.localeCompare(b, 'ja'));
     const playerCounts = Object.keys(stats.playerCounts || {}).sort((a, b) => Number(a) - Number(b));
-    const modePressed = mode => !playerFilter && viewMode === mode;
+    const filters = statsFilters(viewMode);
+    const modePressed = mode => !playerFilter && filters.mode === mode;
+    const marketPressed = rule => !playerFilter && filters.marketRule === rule;
     return `
         <div class="stats-filter-tabs">
             <button class="stats-filter-btn ${modePressed('all') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="all" aria-pressed="${modePressed('all')}">全体</button>
@@ -44,8 +69,9 @@ function buildFilterTabsHtml(stats, viewMode, playerFilter, escapeHtml) {
             <button class="stats-filter-btn ${modePressed('online') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="online" aria-pressed="${modePressed('online')}">オンライン</button>
         </div>
         <div class="stats-filter-group-label">市場ルール別</div><div class="stats-filter-tabs stats-market-filters">
-            <button class="stats-filter-btn ${modePressed('standard') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="standard" aria-pressed="${modePressed('standard')}">通常市場</button>
-            <button class="stats-filter-btn ${modePressed('ten-type') ? 'active' : ''}" data-action="setStatsViewMode" data-stats-mode="ten-type" aria-pressed="${modePressed('ten-type')}">公式10種類</button>
+            <button class="stats-filter-btn ${marketPressed('all') ? 'active' : ''}" data-action="setStatsMarketRule" data-market-rule="all" aria-pressed="${marketPressed('all')}">すべて</button>
+            <button class="stats-filter-btn ${marketPressed('standard') ? 'active' : ''}" data-action="setStatsMarketRule" data-market-rule="standard" aria-pressed="${marketPressed('standard')}">通常市場</button>
+            <button class="stats-filter-btn ${marketPressed('ten-type') ? 'active' : ''}" data-action="setStatsMarketRule" data-market-rule="ten-type" aria-pressed="${marketPressed('ten-type')}">公式10種類</button>
         </div>
         ${playerNames.length ? `<div class="stats-filter-group-label">プレイヤー別</div><div class="stats-player-filters">
             ${playerNames.map(name => `<button class="stats-player-btn ${playerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escape(name)}" aria-pressed="${playerFilter === name}">${escape(name)}</button>`).join('')}
@@ -109,12 +135,13 @@ function buildLandmarkRowsHtml(bucket, escapeHtml) {
 function buildStatsHtml(stats, viewMode, playerFilter, escapeHtml) {
     const escape = requireFunction(escapeHtml, 'escapeHtml');
     const bucket = statsBucket(stats, viewMode, playerFilter);
-    const label = playerFilter || statsModeLabel(viewMode);
+    const filters = statsFilters(viewMode);
+    const label = playerFilter || combinedStatsLabel(filters);
     const filterTabsHtml = buildFilterTabsHtml(stats, viewMode, playerFilter, escape);
     if (bucket.totalGames === 0) {
         return `
             ${filterTabsHtml}
-            <div class="stats-empty">まだ${escape(label)}の記録がありません。<br>${viewMode === 'online' ? 'オンライン対戦を完了すると記録されます。' : 'ゲームをプレイすると記録されます。'}</div>
+            <div class="stats-empty">まだ${escape(label)}の記録がありません。<br>${filters.mode === 'online' ? 'オンライン対戦を完了すると記録されます。' : 'ゲームをプレイすると記録されます。'}</div>
         `;
     }
 
@@ -163,6 +190,8 @@ function buildStatsHtml(stats, viewMode, playerFilter, escapeHtml) {
 
 const UiStatsView = Object.freeze({
     statsModeLabel,
+    statsFilters,
+    combinedStatsLabel,
     statsBucket,
     buildFilterTabsHtml,
     buildCardRowsHtml,

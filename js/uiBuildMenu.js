@@ -279,7 +279,7 @@ const UiBuildMenu = (() => {
         return `<h3>🏗️ ${canBuild ? "建設する施設を選んでください" : "施設一覧"}</h3>${undoBtn}${marketStatusHtml}<div class="build-section build-card-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
-    function buildMarketStatusHtml(marketSupply, shopStock) {
+    function buildMarketStatusHtml(marketSupply, shopStock, players = []) {
         if (!marketSupply || marketSupply.mode !== 'ten-type') return '';
         const visibleTypes = Object.values(shopStock || {}).filter(count => Number.isInteger(count) && count > 0).length;
         const deckCount = Array.isArray(marketSupply.deck) ? marketSupply.deck.length : 0;
@@ -289,6 +289,13 @@ const UiBuildMenu = (() => {
             : deckCount <= 10 ? '<strong>残りわずか</strong>' : '';
         const history = Array.isArray(marketSupply.refillHistory)
             ? marketSupply.refillHistory.slice().reverse() : [];
+        const revealedCount = Number.isSafeInteger(marketSupply.revealedCardCount) &&
+            marketSupply.revealedCardCount >= 0 ? marketSupply.revealedCardCount : 0;
+        const totalCards = revealedCount + deckCount;
+        const gaugePercent = marketSupply.totalsComplete === true && totalCards > 0
+            ? Math.max(0, Math.min(100, Math.round(revealedCount / totalCards * 100))) : null;
+        const gaugeHtml = gaugePercent === null ? ''
+            : `<div class="market-deck-gauge" aria-hidden="true"><span style="width:${gaugePercent}%"></span></div>`;
         const historyHtml = history.length > 0
             ? `<details class="market-refill-history"><summary>補充履歴（${history.length}件）</summary><ol>${history.map(entry => {
                 const names = Array.isArray(entry && entry.cardNames) ? entry.cardNames : [];
@@ -297,10 +304,17 @@ const UiBuildMenu = (() => {
                 const summary = Array.from(counts, ([name, count]) =>
                     escapeText(count > 1 ? `${name}×${count}` : name)
                 ).join('、');
-                return `<li>${summary || '補充カードなし'}</li>`;
+                const player = Number.isSafeInteger(entry && entry.playerIndex)
+                    ? players[entry.playerIndex] : null;
+                const turn = Number.isSafeInteger(entry && entry.turnCount) && entry.turnCount >= 0
+                    ? `${entry.turnCount + 1}ターン目` : '';
+                const actor = player && typeof player.name === 'string'
+                    ? `${escapeText(player.name)}の建設後` : '';
+                const context = [turn, actor].filter(Boolean).join('・');
+                return `<li>${context ? `<span class="market-refill-context">${context}</span>` : ''}${summary || '補充カードなし'}</li>`;
             }).join('')}</ol></details>`
             : '';
-        return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div>🏪 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${historyHtml}</section>`;
+        return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div>🏪 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
     }
 
     return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });

@@ -133,6 +133,8 @@ runTest('recordGameStats はローカル成績を all と local に記録する'
     assert.strictEqual(stats.playerCounts['2'].totalFinalLandmarks, 1);
     assert.strictEqual(stats.marketRules.standard.totalGames, 2);
     assert.strictEqual(stats.marketRules['ten-type'].totalGames, 0);
+    assert.strictEqual(stats.combinations.local.standard.totalGames, 2);
+    assert.strictEqual(stats.combinations.online.standard.totalGames, 0);
 });
 
 runTest('recordGameStats は公式10種類市場を専用bucketへ記録する', () => {
@@ -143,6 +145,7 @@ runTest('recordGameStats は公式10種類市場を専用bucketへ記録する',
     const stats = rt.loadStats();
     assert.strictEqual(stats.marketRules.standard.totalGames, 0);
     assert.strictEqual(stats.marketRules['ten-type'].totalGames, 2);
+    assert.strictEqual(stats.combinations.local['ten-type'].totalGames, 2);
     rt.setStatsViewMode('ten-type');
     assert.ok(rt.__test.statsEl.innerHTML.includes('公式10種類市場の成績'));
 });
@@ -158,6 +161,7 @@ runTest('recordGameStats はオンライン成績を all と online に記録す
     assert.strictEqual(stats.online.totalGames, 2);
     assert.strictEqual(stats.local.totalGames, 0);
     assert.strictEqual(stats.online.wins, 1);
+    assert.strictEqual(stats.combinations.online.standard.totalGames, 2);
     assert.strictEqual(stats.players.Alice.totalGames, 1);
     assert.strictEqual(stats.players.Bob.totalGames, 1);
 });

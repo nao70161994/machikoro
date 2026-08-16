@@ -301,6 +301,7 @@ function renderWinnerState(winner) {
         logEntries: logHistoryController.snapshot().entries,
         logTypes: LOG_TYPES,
         reviewSummary: currentGame.reviewSummary,
+        marketSupply: currentGame.marketSupply,
         canRematch: !UiWinner.gameOriginRuntime.wasOnline(),
         canOnlineRematch: UiWinner.gameOriginRuntime.wasOnline() &&
             !!uiOnlineRuntimeSnapshot().socket,
@@ -1013,7 +1014,8 @@ function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction)
         undoBtn,
         marketStatusHtml: UiBuildMenu.buildMarketStatusHtml(
             currentGame && currentGame.marketSupply,
-            SHOP_STOCK
+            SHOP_STOCK,
+            currentGame && currentGame.players
         ),
     });
 }

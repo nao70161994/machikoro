@@ -105,6 +105,7 @@ const UiEventDelegation = (() => {
         } else if (family === 'change') {
             if (name === 'toggleTutorialEnabled') args = [element.checked];
             else if (name === 'tutorialLevel') args = [element.value];
+            else if (name === 'localSaveGeneration') args = [parseInt(element.value, 10)];
             else if (name === 'localPlayerType' || name === 'onlinePlayerType') {
                 args = [parseInt(element.dataset.playerIndex, 10), element.value];
             }

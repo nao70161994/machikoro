@@ -25,7 +25,11 @@ function makeStats() {
         landmarkStats: {},
     });
     return { all: empty(), local: empty(), online: empty(), players: {}, cpuTypes: {}, playerCounts: {},
-        marketRules: { standard: empty(), 'ten-type': empty() } };
+        marketRules: { standard: empty(), 'ten-type': empty() },
+        combinations: {
+            local: { standard: empty(), 'ten-type': empty() },
+            online: { standard: empty(), 'ten-type': empty() },
+        } };
 }
 
 runTest('stats viewはmode/player bucketを入力非変更で選ぶ', () => {
@@ -47,9 +51,20 @@ runTest('stats viewは市場ルール別filterと名称を表示する', () => {
     stats.marketRules['ten-type'].totalGames = 1;
     stats.marketRules['ten-type'].wins = 1;
     const html = UiStatsView.buildStatsHtml(stats, 'ten-type', '', escapeHtml);
-    assert.ok(html.includes('data-stats-mode="standard"'));
-    assert.ok(html.includes('data-stats-mode="ten-type" aria-pressed="true"'));
+    assert.ok(html.includes('data-market-rule="standard"'));
+    assert.ok(html.includes('data-market-rule="ten-type" aria-pressed="true"'));
     assert.ok(html.includes('公式10種類市場の成績'));
+});
+
+runTest('stats viewは対戦形式と市場ルールを複合して選ぶ', () => {
+    const stats = makeStats();
+    stats.combinations.online['ten-type'].totalGames = 3;
+    stats.combinations.online['ten-type'].wins = 2;
+    const html = UiStatsView.buildStatsHtml(stats, 'online|ten-type', '', escapeHtml);
+    assert.strictEqual(UiStatsView.statsBucket(stats, 'online|ten-type', '').totalGames, 3);
+    assert.ok(html.includes('オンライン × 公式10種類市場の成績'));
+    assert.ok(html.includes('data-stats-mode="online" aria-pressed="true"'));
+    assert.ok(html.includes('data-market-rule="ten-type" aria-pressed="true"'));
 });
 
 runTest('stats viewはfilter名とランキング名をescapeして既存HTMLを生成する', () => {

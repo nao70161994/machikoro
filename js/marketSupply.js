@@ -10,6 +10,10 @@ const MarketSupply = (() => {
     const LOW_DECK_THRESHOLD = 10;
     const MAX_REFILL_HISTORY = 20;
 
+    function safeNonnegativeInteger(value, fallback = 0) {
+        return Number.isSafeInteger(value) && value >= 0 ? value : fallback;
+    }
+
     function normalizeMode(value) {
         return value === MODES.TEN_TYPE ? MODES.TEN_TYPE : DEFAULT_MODE;
     }
@@ -73,7 +77,17 @@ const MarketSupply = (() => {
         return Array.from(counts, ([name, count]) => count > 1 ? `${name}×${count}` : name).join('、');
     }
 
-    function recordRefill(state, revealedNames) {
+    function refillContext(value) {
+        const source = value && typeof value === 'object' ? value : {};
+        return Object.freeze({
+            turnCount: Number.isSafeInteger(source.turnCount) && source.turnCount >= 0
+                ? source.turnCount : null,
+            playerIndex: Number.isSafeInteger(source.playerIndex) && source.playerIndex >= 0 &&
+                source.playerIndex <= 9 ? source.playerIndex : null,
+        });
+    }
+
+    function recordRefill(state, revealedNames, context = {}) {
         if (!state || state.mode !== MODES.TEN_TYPE || !Array.isArray(revealedNames) ||
                 revealedNames.length === 0) return;
         const previousSequence = Number.isSafeInteger(state.refillSequence) && state.refillSequence >= 0
@@ -81,8 +95,20 @@ const MarketSupply = (() => {
         state.refillSequence = previousSequence < Number.MAX_SAFE_INTEGER
             ? previousSequence + 1 : previousSequence;
         const history = Array.isArray(state.refillHistory) ? state.refillHistory : [];
-        history.push({ sequence: state.refillSequence, cardNames: revealedNames.slice() });
+        const normalizedContext = refillContext(context);
+        const historyEntry = {
+            sequence: state.refillSequence,
+            cardNames: revealedNames.slice(),
+        };
+        if (normalizedContext.turnCount !== null) historyEntry.turnCount = normalizedContext.turnCount;
+        if (normalizedContext.playerIndex !== null) historyEntry.playerIndex = normalizedContext.playerIndex;
+        history.push(historyEntry);
         state.refillHistory = history.slice(-MAX_REFILL_HISTORY);
+        const previousRevealed = safeNonnegativeInteger(state.revealedCardCount);
+        state.revealedCardCount = Math.min(
+            Number.MAX_SAFE_INTEGER,
+            previousRevealed + revealedNames.length
+        );
         state.pendingHighlightNames = revealedNames.slice();
     }
 
@@ -125,8 +151,11 @@ const MarketSupply = (() => {
             deck: shuffled(supplyCards, seed),
             refillSequence: 0,
             refillHistory: [],
+            revealedCardCount: 0,
+            totalsComplete: true,
         };
         refill(state, stock);
+        state.revealedCardCount = supplyCards.length - state.deck.length;
         return state;
     }
 
@@ -147,14 +176,33 @@ const MarketSupply = (() => {
             refillSequence: Number.isSafeInteger(value && value.refillSequence) &&
                 value.refillSequence >= 0 ? value.refillSequence : 0,
             refillHistory: Array.isArray(value && value.refillHistory)
-                ? value.refillHistory.slice(-MAX_REFILL_HISTORY).map(entry => ({
-                    sequence: Number.isSafeInteger(entry && entry.sequence) && entry.sequence >= 0
-                        ? entry.sequence : 0,
-                    cardNames: Array.isArray(entry && entry.cardNames)
-                        ? entry.cardNames.filter(name => typeof name === 'string').slice()
-                        : [],
-                }))
+                ? value.refillHistory.slice(-MAX_REFILL_HISTORY).map(entry => {
+                    const copy = {
+                        sequence: Number.isSafeInteger(entry && entry.sequence) && entry.sequence >= 0
+                            ? entry.sequence : 0,
+                        cardNames: Array.isArray(entry && entry.cardNames)
+                            ? entry.cardNames.filter(name => typeof name === 'string').slice()
+                            : [],
+                    };
+                    if (Number.isSafeInteger(entry && entry.turnCount) && entry.turnCount >= 0) {
+                        copy.turnCount = entry.turnCount;
+                    }
+                    if (Number.isSafeInteger(entry && entry.playerIndex) &&
+                            entry.playerIndex >= 0 && entry.playerIndex <= 9) {
+                        copy.playerIndex = entry.playerIndex;
+                    }
+                    return copy;
+                })
                 : [],
+            revealedCardCount: safeNonnegativeInteger(
+                value && value.revealedCardCount,
+                Array.isArray(value && value.refillHistory)
+                    ? value.refillHistory.reduce((total, entry) => total +
+                        (Array.isArray(entry && entry.cardNames) ? entry.cardNames.length : 0), 0)
+                    : 0
+            ),
+            totalsComplete: !!value && value.totalsComplete === true &&
+                Number.isSafeInteger(value.revealedCardCount) && value.revealedCardCount >= 0,
         };
     }
 
@@ -180,15 +228,23 @@ const MarketSupply = (() => {
                 !value.deck.every(name => typeof name === 'string' && isKnown(name))) return false;
         if (value.refillSequence !== undefined && (!Number.isSafeInteger(value.refillSequence) ||
                 value.refillSequence < 0)) return false;
+        if (value.revealedCardCount !== undefined && (!Number.isSafeInteger(value.revealedCardCount) ||
+                value.revealedCardCount < 0)) return false;
+        if (value.totalsComplete !== undefined && typeof value.totalsComplete !== 'boolean') return false;
         if (value.refillHistory === undefined) return true;
         return Array.isArray(value.refillHistory) && value.refillHistory.length <= MAX_REFILL_HISTORY &&
             value.refillHistory.every(entry => entry && typeof entry === 'object' &&
                 !Array.isArray(entry) && Number.isSafeInteger(entry.sequence) && entry.sequence >= 0 &&
+                (entry.turnCount === undefined || Number.isSafeInteger(entry.turnCount) &&
+                    entry.turnCount >= 0) &&
+                (entry.playerIndex === undefined || entry.playerIndex === null ||
+                    Number.isSafeInteger(entry.playerIndex) && entry.playerIndex >= 0 &&
+                    entry.playerIndex <= 9) &&
                 Array.isArray(entry.cardNames) && entry.cardNames.length <= 1000 &&
                 entry.cardNames.every(name => typeof name === 'string' && isKnown(name)));
     }
 
-    function purchaseResult(state, shopStock, cardRef) {
+    function purchaseResult(state, shopStock, cardRef, context = {}) {
         const cardName = typeof cardRef === 'string' ? cardRef : cardRef && cardRef.name;
         if (!cardName || !shopStock || !Number.isInteger(shopStock[cardName]) || shopStock[cardName] <= 0) {
             return Object.freeze({ ok: false, revealedNames: Object.freeze([]) });
@@ -196,7 +252,7 @@ const MarketSupply = (() => {
         const deckCountBefore = Array.isArray(state && state.deck) ? state.deck.length : 0;
         shopStock[cardName]--;
         const revealedNames = refillNames(state, shopStock);
-        recordRefill(state, revealedNames);
+        recordRefill(state, revealedNames, context);
         const deckCountAfter = Array.isArray(state && state.deck) ? state.deck.length : 0;
         return Object.freeze({
             ok: true,
@@ -214,7 +270,10 @@ const MarketSupply = (() => {
     }
 
     function decrementGameShopStock(game, shopStock, cardRef) {
-        const result = purchaseResult(game && game.marketSupply, shopStock, cardRef);
+        const result = purchaseResult(game && game.marketSupply, shopStock, cardRef, {
+            turnCount: game && game.turnCount,
+            playerIndex: game && game.currentPlayerIndex,
+        });
         if (result.ok && result.revealedNames.length > 0 &&
                 game && typeof game.addMarketRefillLog === 'function') {
             game.addMarketRefillLog(result.revealedNames);

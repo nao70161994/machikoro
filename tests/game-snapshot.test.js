@@ -232,7 +232,9 @@ runTest('公式オプション市場はsnapshotとUndoで山札順を完全に�
         targetTypeCount: 10,
         deck: ['パン屋', 'カフェ', 'パン屋'],
         refillSequence: 1,
-        refillHistory: [{ sequence: 1, cardNames: ['カフェ'] }],
+        refillHistory: [{ sequence: 1, turnCount: 8, playerIndex: 0, cardNames: ['カフェ'] }],
+        revealedCardCount: 13,
+        totalsComplete: true,
     };
     const stock = { カフェ: 2, パン屋: 1 };
     const snapshot = GameSnapshot.serializeGameState(game, stock);
@@ -254,7 +256,9 @@ runTest('公式オプション市場はsnapshotとUndoで山札順を完全に�
         mode: 'ten-type', seed: 123, targetTypeCount: 10,
         deck: ['パン屋', 'カフェ', 'パン屋'],
         refillSequence: 1,
-        refillHistory: [{ sequence: 1, cardNames: ['カフェ'] }],
+        refillHistory: [{ sequence: 1, turnCount: 8, playerIndex: 0, cardNames: ['カフェ'] }],
+        revealedCardCount: 13,
+        totalsComplete: true,
     });
 });
 

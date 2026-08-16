@@ -58,6 +58,14 @@ runTest('main UI event runtimeはstatic/input/dice commandをdetached effectへ�
     assert.strictEqual(h.elements.speedLabel.textContent, 'speed:500');
 });
 
+runTest('main UI event runtimeは保存世代selectを数値で委譲する', () => {
+    const h = createHarness();
+    h.runtime.handleStaticChange(h.event({ uiChange: 'localSaveGeneration' }, { value: '2' }));
+    assert.deepStrictEqual(h.calls, [
+        ['preventDefault'], ['localSaveGeneration', 2],
+    ]);
+});
+
 runTest('main UI event runtimeは待機中のroom IDをcopy effectへ渡す', () => {
     const h = createHarness();
     h.runtime.handleStaticClick(h.event({

@@ -1076,6 +1076,7 @@ function resolveMainUiEffect(name) {
         tutorialLevel: 'onChangeTutorialLevel',
         localPlayerType: 'onChangePlayerType',
         onlinePlayerType: 'onChangeOnlinePlayerType',
+        localSaveGeneration: 'onChangeLocalSaveGeneration',
         selectDiceCount: 'onSelectDiceCount',
         rerollDice: 'onReroll',
         skipReroll: 'onSkipReroll',

@@ -71,7 +71,7 @@
                     </div>
                     <div class="local-resume-actions">
                         <label id="localSaveGenerationLabel" class="local-save-generation-label" for="localSaveGeneration" style="display:none">復旧する世代
-                            <select id="localSaveGeneration" class="text-input"><option value="0">最新の保存</option></select>
+                            <select id="localSaveGeneration" class="text-input" data-ui-change="localSaveGeneration"><option value="0">最新の保存</option></select>
                         </label>
                         <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">続きから再開</button>
                         <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除">削除</button>

@@ -2490,16 +2490,21 @@ runTest('公式オプション市場は公開種類数・山札警告・補充�
         { mode: 'standard', deck: [] }, { A: 1 }
     ), '');
     const html = context.UiBuildMenu.buildMarketStatusHtml(
-        { mode: 'ten-type', deck: ['A', 'B', 'C'], refillHistory: [
-            { sequence: 1, cardNames: ['A', 'A', '<B>'] },
+        { mode: 'ten-type', deck: ['A', 'B', 'C'], revealedCardCount: 9,
+            totalsComplete: true, refillHistory: [
+            { sequence: 1, turnCount: 12, playerIndex: 0, cardNames: ['A', 'A', '<B>'] },
         ] },
-        { A: 2, B: 1, C: 0 }
+        { A: 2, B: 1, C: 0 },
+        [{ name: '<Alice>' }]
     );
     assert.ok(html.includes('公開2種類'));
     assert.ok(html.includes('山札3枚'));
     assert.ok(html.includes('残りわずか'));
     assert.ok(html.includes('補充履歴（1件）'));
     assert.ok(html.includes('A×2、&lt;B&gt;'));
+    assert.ok(html.includes('13ターン目・&lt;Alice&gt;の建設後'));
+    assert.ok(html.includes('class="market-deck-gauge"'));
+    assert.ok(html.includes('style="width:75%"'));
     assert.ok(!html.includes('<B>'));
     assert.ok(!html.includes('role="status"'), '頻繁な再描画をlive通知しない');
 });

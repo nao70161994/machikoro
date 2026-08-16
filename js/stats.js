@@ -13,6 +13,7 @@ const StatsViewApi = typeof module !== 'undefined' && module.exports
 
 let _statsRecorded = false;
 let _statsViewMode = 'all';
+let _statsMarketFilter = 'all';
 let _statsPlayerFilter = '';
 
 function escapeStatsHtml(value) {
@@ -41,6 +42,10 @@ function createDefaultStats() {
         marketRules: {
             standard: createEmptyStatsBucket(),
             'ten-type': createEmptyStatsBucket(),
+        },
+        combinations: {
+            local: { standard: createEmptyStatsBucket(), 'ten-type': createEmptyStatsBucket() },
+            online: { standard: createEmptyStatsBucket(), 'ten-type': createEmptyStatsBucket() },
         },
     };
 }
@@ -89,6 +94,15 @@ function normalizeStats(raw) {
             standard: cloneStatsBucket(raw.marketRules && raw.marketRules.standard),
             'ten-type': cloneStatsBucket(raw.marketRules && raw.marketRules['ten-type']),
         };
+        const combinations = {};
+        for (const mode of ['local', 'online']) {
+            combinations[mode] = {
+                standard: cloneStatsBucket(raw.combinations && raw.combinations[mode] &&
+                    raw.combinations[mode].standard),
+                'ten-type': cloneStatsBucket(raw.combinations && raw.combinations[mode] &&
+                    raw.combinations[mode]['ten-type']),
+            };
+        }
         for (const [name, bucket] of Object.entries(raw.players || {})) {
             players[name] = cloneStatsBucket(bucket);
         }
@@ -106,6 +120,7 @@ function normalizeStats(raw) {
             cpuTypes,
             playerCounts,
             marketRules,
+            combinations,
         };
     }
     // 旧形式はローカル統計として扱う
@@ -121,6 +136,7 @@ function normalizeStats(raw) {
             standard: cloneStatsBucket(legacy),
             'ten-type': createEmptyStatsBucket(),
         },
+        combinations: base.combinations,
     };
 }
 
@@ -240,6 +256,7 @@ function recordGameStats(winner, game, cpuPlayers) {
         updateStatsBucket(stats.all, player, won, game);
         updateStatsBucket(stats[mode], player, won, game);
         updateStatsBucket(stats.marketRules[marketRule], player, won, game);
+        updateStatsBucket(stats.combinations[mode][marketRule], player, won, game);
         updateNamedStats(stats, target, player, won, game);
         const countKey = String(game.players.length);
         if (!stats.playerCounts[countKey]) stats.playerCounts[countKey] = createEmptyStatsBucket();
@@ -265,6 +282,9 @@ function statsActionFromEvent(event) {
 function statsFilterFocusIdentity(action, dataset = {}) {
     if (action === 'setStatsViewMode' && dataset.statsMode) {
         return Object.freeze({ action, value: dataset.statsMode });
+    }
+    if (action === 'setStatsMarketRule' && dataset.marketRule) {
+        return Object.freeze({ action, value: dataset.marketRule });
     }
     if (action === 'setStatsPlayerFilter' && dataset.playerName) {
         return Object.freeze({ action, value: dataset.playerName });
@@ -304,9 +324,9 @@ function restoreStatsFilterFocus(identity) {
         if (!element || !element.dataset || element.dataset.action !== identity.action) {
             return false;
         }
-        return identity.action === 'setStatsViewMode'
-            ? element.dataset.statsMode === identity.value
-            : element.dataset.playerName === identity.value;
+        if (identity.action === 'setStatsViewMode') return element.dataset.statsMode === identity.value;
+        if (identity.action === 'setStatsMarketRule') return element.dataset.marketRule === identity.value;
+        return element.dataset.playerName === identity.value;
     });
     if (!canRestoreStatsFilterFocus(target)) return false;
     target.focus({ preventScroll: true });
@@ -321,6 +341,7 @@ function handleStatsClick(event) {
     const focusIdentity = statsFilterFocusIdentity(action, button.dataset);
     if (event && typeof event.preventDefault === 'function') event.preventDefault();
     if (action === 'setStatsViewMode') setStatsViewMode(button.dataset.statsMode);
+    else if (action === 'setStatsMarketRule') setStatsMarketRule(button.dataset.marketRule);
     else if (action === 'setStatsPlayerFilter') setStatsPlayerFilter(button.dataset.playerName || '');
     else if (action === 'clearStats') clearStats();
     restoreStatsFilterFocus(focusIdentity);
@@ -348,7 +369,20 @@ function clearStats() {
 }
 
 function setStatsViewMode(mode) {
-    _statsViewMode = ['all', 'local', 'online', 'standard', 'ten-type'].includes(mode) ? mode : 'all';
+    if (mode === 'standard' || mode === 'ten-type') {
+        _statsViewMode = 'all';
+        _statsMarketFilter = mode;
+        _statsPlayerFilter = '';
+        renderStats();
+        return;
+    }
+    _statsViewMode = ['all', 'local', 'online'].includes(mode) ? mode : 'all';
+    _statsPlayerFilter = '';
+    renderStats();
+}
+
+function setStatsMarketRule(rule) {
+    _statsMarketFilter = ['all', 'standard', 'ten-type'].includes(rule) ? rule : 'all';
     _statsPlayerFilter = '';
     renderStats();
 }
@@ -360,7 +394,7 @@ function setStatsPlayerFilter(playerName) {
 
 function buildStatsFilterTabsHtml(stats) {
     return StatsViewApi.buildFilterTabsHtml(
-        stats, _statsViewMode, _statsPlayerFilter, escapeStatsHtml
+        stats, `${_statsViewMode}|${_statsMarketFilter}`, _statsPlayerFilter, escapeStatsHtml
     );
 }
 
@@ -379,6 +413,6 @@ function renderStats() {
 
     const stats = loadStats();
     el.innerHTML = StatsViewApi.buildStatsHtml(
-        stats, _statsViewMode, _statsPlayerFilter, escapeStatsHtml
+        stats, `${_statsViewMode}|${_statsMarketFilter}`, _statsPlayerFilter, escapeStatsHtml
     );
 }

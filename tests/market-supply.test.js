@@ -71,11 +71,33 @@ runTest('公式市場は補充で公開した施設名を山札順で返す', ()
         sequence: 1,
         cardNames: ['施設1', '施設1', '施設11'],
     }]);
+    assert.strictEqual(state.revealedCardCount, 3);
     assert.deepStrictEqual(MarketSupply.consumePendingHighlightNames(state), [
         '施設1', '施設1', '施設11',
     ]);
     assert.deepStrictEqual(MarketSupply.consumePendingHighlightNames(state), []);
     assert.strictEqual(MarketSupply.summarizeCardNames(result.revealedNames), '施設1×2、施設11');
+});
+
+runTest('ゲーム市場の補充履歴はターンと建設プレイヤーを保持する', () => {
+    const shopStock = Object.fromEntries(cards(11).map(card => [card.name, 0]));
+    for (let index = 0; index < 10; index++) shopStock[`施設${index + 1}`] = 1;
+    const game = {
+        turnCount: 14,
+        currentPlayerIndex: 2,
+        marketSupply: {
+            mode: 'ten-type', seed: 1, targetTypeCount: 10,
+            deck: ['施設11'], refillSequence: 0, refillHistory: [],
+            revealedCardCount: 10, totalsComplete: true,
+        },
+        addMarketRefillLog() {},
+        addMarketDeckStatusLog() {},
+    };
+    assert.strictEqual(MarketSupply.decrementGameShopStock(game, shopStock, '施設10'), true);
+    assert.deepStrictEqual(game.marketSupply.refillHistory, [{
+        sequence: 1, turnCount: 14, playerIndex: 2, cardNames: ['施設11'],
+    }]);
+    assert.strictEqual(game.marketSupply.revealedCardCount, 11);
 });
 
 runTest('公式市場は補充履歴を20件に制限しsnapshotへ一時強調を含めない', () => {
@@ -98,6 +120,8 @@ runTest('公式市場は補充履歴を20件に制限しsnapshotへ一時強調�
         mode: 'ten-type', seed: 1, targetTypeCount: 1, deck: [],
         refillSequence: 21,
         refillHistory: state.refillHistory,
+        revealedCardCount: 21,
+        totalsComplete: false,
     });
     assert.strictEqual(Object.prototype.hasOwnProperty.call(
         MarketSupply.copyState(state), 'pendingHighlightNames'

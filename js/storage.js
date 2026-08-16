@@ -199,6 +199,20 @@ function updateResumeButton() {
     );
 }
 
+function onChangeLocalSaveGeneration(generationIndex) {
+    const repository = getLocalSaveRepository();
+    const normalizedIndex = Number.isInteger(generationIndex) && generationIndex >= 0
+        ? generationIndex : 0;
+    const decoded = repository.read(isValidSavedGameState, normalizedIndex);
+    const details = document.getElementById('localResumeMarketDetails');
+    if (details) {
+        details.textContent = decoded && decoded.ok
+            ? LocalResumeView.marketDetails(decoded.state)
+            : '選択した保存データを読み込めません';
+    }
+    return !!(decoded && decoded.ok);
+}
+
 function readOnlineSession() {
     try {
         const storageFacade = getStorageOnlineStorageFacade();
