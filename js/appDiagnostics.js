@@ -8,6 +8,14 @@ const AppDiagnostics = (() => {
         online: 'オンライン対戦中',
         reconnecting: 'オンライン再接続中',
     });
+    const PHASE_LABELS = Object.freeze({
+        roll: 'ダイス待ち',
+        selectDice: 'ダイス数選択中',
+        rerollConfirm: '振り直し確認中',
+        harborChoice: '港の追加ダイス確認中',
+        pending: '効果解決中',
+        build: '建設中',
+    });
 
     function safeText(value, fallback = '不明', maxLength = 80) {
         const text = typeof value === 'string' ? value.trim() : '';
@@ -16,6 +24,23 @@ const AppDiagnostics = (() => {
 
     function boundedCount(value) {
         return Number.isSafeInteger(value) ? Math.max(0, Math.min(99, value)) : 0;
+    }
+
+    function safeEventNames(values) {
+        if (!Array.isArray(values)) return [];
+        return values.filter(value => typeof value === 'string' &&
+            /^[A-Za-z][A-Za-z0-9:_-]{0,39}$/.test(value)).slice(-5);
+    }
+
+    function gameStateLabel(input) {
+        if (input.gameActive !== true) return 'ゲームなし';
+        const playerCount = Number.isSafeInteger(input.playerCount) && input.playerCount >= 2
+            ? Math.min(10, input.playerCount) : 0;
+        const turnCount = Number.isSafeInteger(input.turnCount) && input.turnCount >= 0
+            ? input.turnCount : 0;
+        const phase = Object.prototype.hasOwnProperty.call(PHASE_LABELS, input.phase)
+            ? PHASE_LABELS[input.phase] : '状態不明';
+        return `${phase}・${turnCount}ターン経過${playerCount ? `・${playerCount}人` : ''}`;
     }
 
     function buildSnapshot(input = {}) {
@@ -27,6 +52,13 @@ const AppDiagnostics = (() => {
                 ? '更新待機中'
                 : input.serviceWorkerControlled === true ? '稼働中' : '未制御';
         const onlineContext = context === 'lobby' || context === 'online' || context === 'reconnecting';
+        const pendingActions = safeEventNames(input.pendingActions);
+        const recentEvents = safeEventNames(input.recentEvents);
+        const delivery = !onlineContext
+            ? '未使用'
+            : context === 'reconnecting' || input.reconnecting === true ? '再接続中'
+                : input.actionInFlight === true ? '応答待ち'
+                    : input.pendingOutbound === true ? '再送待ち' : '待機なし';
         return Object.freeze({
             appVersion: safeText(input.appVersion, '開発版'),
             serverVersion: safeText(input.serverVersion, '取得不可'),
@@ -41,6 +73,14 @@ const AppDiagnostics = (() => {
                 ? `あり（過去${boundedCount(input.localHistoryCount)}件）`
                 : 'なし',
             onlineResume: input.onlineResumeExists === true ? 'あり' : 'なし',
+            gameState: gameStateLabel(input),
+            pendingActions: pendingActions.length > 0 ? pendingActions.join(' → ') : 'なし',
+            recentEvents: recentEvents.length > 0 ? recentEvents.join(' → ') : 'なし',
+            actionDelivery: delivery,
+            gameGeneration: onlineContext
+                ? String(Number.isSafeInteger(input.gameGeneration) && input.gameGeneration >= 0
+                    ? input.gameGeneration : 0)
+                : '未使用',
             generatedAt: safeText(input.generatedAt, '不明', 40),
         });
     }
@@ -56,6 +96,11 @@ const AppDiagnostics = (() => {
             ['表示方式', snapshot.displayMode],
             ['ローカル保存', snapshot.localSave],
             ['オンライン再開データ', snapshot.onlineResume],
+            ['ゲーム状態', snapshot.gameState],
+            ['保留中の処理', snapshot.pendingActions],
+            ['直近イベント', snapshot.recentEvents],
+            ['オンライン操作送信', snapshot.actionDelivery],
+            ['ゲーム世代', snapshot.gameGeneration],
             ['診断生成時刻', snapshot.generatedAt],
         ]);
     }
@@ -80,7 +125,7 @@ const AppDiagnostics = (() => {
             `${label}: ${value}`)].join('\n');
     }
 
-    return Object.freeze({ buildHtml, buildSnapshot, escapeHtml, formatText, rows });
+    return Object.freeze({ buildHtml, buildSnapshot, escapeHtml, formatText, gameStateLabel, rows, safeEventNames });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = AppDiagnostics;

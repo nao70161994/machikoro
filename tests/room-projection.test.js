@@ -21,6 +21,10 @@ function makeRoom() {
             { id: 'socket-b', index: 3, name: 'Bob', reconnectToken: 'tb' },
             { id: 'socket-stale', index: 9, name: 'Ghost' },
         ],
+        cpuSpeed: 900,
+        enabledCards: ['麦畑', 'パン屋'],
+        enabledLandmarks: ['駅', '港'],
+        marketRule: 'standard',
     };
 }
 
@@ -43,6 +47,13 @@ runTest('room projection はロビー表示と開始名を同じroom設定から
             { index: 3, name: 'Bob', connected: true, ready: true },
             { index: 9, name: 'Ghost', connected: true, ready: true },
         ],
+        setupSummary: {
+            playerSlots: ['CPU（学）', '人間', 'CPU（強）', '人間'],
+            cpuSpeed: 900,
+            enabledCards: ['麦畑', 'パン屋'],
+            enabledLandmarks: ['駅', '港'],
+            marketRule: 'standard',
+        },
     });
 });
 
@@ -59,6 +70,13 @@ runTest('room projection は予約席を待機室管理用の切断状態へ投�
             { index: 3, name: 'Bob', connected: false, ready: true, reservedUntil: 12345 },
             { index: 9, name: 'Ghost', connected: true, ready: true },
         ],
+        setupSummary: {
+            playerSlots: ['CPU（学）', '人間', 'CPU（強）', '人間'],
+            cpuSpeed: 900,
+            enabledCards: ['麦畑', 'パン屋'],
+            enabledLandmarks: ['駅', '港'],
+            marketRule: 'standard',
+        },
     });
 });
 
@@ -80,6 +98,13 @@ runTest('room projection はlegacy roomの名前とhuman slot数を維持する'
     assert.deepStrictEqual(projection.buildPlayerList(room), ['Alice', 'Bob']);
     assert.strictEqual(projection.countRoomHumanSlots(room), 2);
     assert.deepStrictEqual(projection.buildGameStartPlayerNames(room), ['Alice', 'Bob']);
+    assert.deepStrictEqual(projection.buildLobbySetupSummary(room), {
+        playerSlots: ['人間', '人間'],
+        cpuSpeed: 1500,
+        enabledCards: [],
+        enabledLandmarks: [],
+        marketRule: 'standard',
+    });
 });
 
 runTest('room projection はshuffleの乱数順と入力非破壊を維持する', () => {

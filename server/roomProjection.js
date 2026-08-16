@@ -32,9 +32,35 @@ function makeRoomProjection({
             }, !player.id && Number.isFinite(player.reservedUntil)
                 ? { reservedUntil: player.reservedUntil }
                 : {})),
+            setupSummary: buildLobbySetupSummary(room),
         }, room.marketRule === 'ten-type'
             ? { marketRule: 'ten-type' }
             : {});
+    }
+
+    function buildLobbySetupSummary(room) {
+        const configuredSettings = Array.isArray(room.playerSettings) && room.playerSettings.length > 0
+            ? room.playerSettings
+            : Array.from({ length: Number.isInteger(room.maxPlayers) ? room.maxPlayers : 0 }, () => ({
+                type: 'human',
+            }));
+        const playerSlots = configuredSettings.slice(0, 10).map(setting => setting && setting.type === 'cpu'
+            ? `CPU（${cpuDifficultyLabel(setting.difficulty)}）`
+            : '人間');
+        const enabledCards = Array.isArray(room.enabledCards)
+            ? room.enabledCards.filter(name => typeof name === 'string').slice(0, 100)
+            : [];
+        const enabledLandmarks = Array.isArray(room.enabledLandmarks)
+            ? room.enabledLandmarks.filter(name => typeof name === 'string').slice(0, 20)
+            : [];
+        return {
+            playerSlots,
+            cpuSpeed: Number.isInteger(room.cpuSpeed) && room.cpuSpeed >= 0
+                ? room.cpuSpeed : 1500,
+            enabledCards,
+            enabledLandmarks,
+            marketRule: room.marketRule === 'ten-type' ? 'ten-type' : 'standard',
+        };
     }
 
     function countRoomHumanSlots(room) {
@@ -96,6 +122,7 @@ function makeRoomProjection({
     return {
         buildPlayerList,
         buildLobbyState,
+        buildLobbySetupSummary,
         countRoomHumanSlots,
         buildGameStartPlayerNames,
         shuffledPlayerOrder,

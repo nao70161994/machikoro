@@ -27,6 +27,38 @@ function diagnosticContext(gameState, onlineState) {
     return 'title';
 }
 
+function diagnosticPendingActions(currentGame) {
+    if (!currentGame || currentGame.phase !== GAME_PHASES.PENDING) return [];
+    if (currentGame.pendingIT) return [GAME_ACTIONS.RESOLVE_IT];
+    const pendingFields = [
+        ['pendingTV', GAME_ACTIONS.RESOLVE_TV],
+        ['pendingBusiness', GAME_ACTIONS.RESOLVE_BUSINESS],
+        ['pendingCleaning', GAME_ACTIONS.RESOLVE_CLEANING],
+        ['pendingMover', GAME_ACTIONS.RESOLVE_MOVER],
+        ['pendingRenovation', GAME_ACTIONS.RESOLVE_RENOVATION],
+    ];
+    return pendingFields.flatMap(([field, action]) => {
+        const count = Number.isInteger(currentGame[field]) && currentGame[field] > 0
+            ? Math.min(50, currentGame[field]) : 0;
+        return Array.from({ length: count }, () => action);
+    }).slice(0, 5);
+}
+
+function diagnosticRecentEvents(currentGame, onlineState) {
+    if (onlineState && (onlineState.isOnlineGame || onlineState.isReconnectingOnline)) {
+        try {
+            if (typeof _readOnlineActionLog === 'function') {
+                return _readOnlineActionLog().slice(-5).map(entry => entry && entry.action);
+            }
+        } catch (_) {}
+    }
+    const knownLogTypes = typeof LOG_TYPES !== 'undefined' ? new Set(Object.values(LOG_TYPES)) : new Set();
+    return Array.isArray(currentGame && currentGame.log)
+        ? currentGame.log.slice(-5).map(entry => entry && entry.type)
+            .filter(type => knownLogTypes.has(type)).map(type => `log:${type}`)
+        : [];
+}
+
 async function readDiagnosticServiceWorkerState() {
     if (typeof navigator === 'undefined' || !navigator.serviceWorker) {
         return Object.freeze({ supported: false, controlled: false, waiting: false });
@@ -68,6 +100,8 @@ async function readDiagnosticServerVersion() {
 async function collectAppDiagnostics() {
     const gameState = mainGameRuntimeSnapshot();
     const onlineState = mainOnlineRuntimeSnapshot();
+    const currentGame = gameState.game;
+    const actionFlight = mainOnlineActionFlightState();
     const [serviceWorker, serverVersion] = await Promise.all([
         readDiagnosticServiceWorkerState(),
         readDiagnosticServerVersion(),
@@ -91,6 +125,16 @@ async function collectAppDiagnostics() {
         localSaveExists: !!(repository && repository.exists()),
         localHistoryCount: repository ? repository.readHistory().length : 0,
         onlineResumeExists: !!onlineResume,
+        gameActive: !!currentGame,
+        playerCount: currentGame && Array.isArray(currentGame.players) ? currentGame.players.length : 0,
+        turnCount: currentGame && currentGame.turnCount,
+        phase: currentGame && currentGame.phase,
+        pendingActions: diagnosticPendingActions(currentGame),
+        recentEvents: diagnosticRecentEvents(currentGame, onlineState),
+        actionInFlight: actionFlight.inFlight === true,
+        pendingOutbound: actionFlight.hasPendingOutboundAction === true,
+        reconnecting: onlineState.isReconnectingOnline === true,
+        gameGeneration: onlineState.gameGeneration,
         generatedAt: new Date().toISOString(),
     });
 }

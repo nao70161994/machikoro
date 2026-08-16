@@ -73,6 +73,27 @@ runTest('online room shareはhostだけに自分以外の参加者管理を表�
     }).includes('removeOnlineLobbyPlayer'));
 });
 
+runTest('online room shareは全参加者へ対戦設定と選択内容を安全に表示する', () => {
+    const html = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'CPU（強）', 'Bob'], {
+        setupSummary: {
+            playerSlots: ['人間', 'CPU（強）', '人間'],
+            cpuSpeed: 800,
+            enabledCards: ['麦畑', '<危険な施設>'],
+            enabledLandmarks: ['駅', '港 & 空港'],
+            marketRule: 'ten-type',
+        },
+    });
+    assert.ok(html.includes('id="roomSetupSummaryTitle"'));
+    assert.ok(html.includes('3人（人間2・CPU1）'));
+    assert.ok(html.includes('1. 人間 / 2. CPU（強） / 3. 人間'));
+    assert.ok(html.includes('<dt>CPU速度</dt><dd>0.8秒</dd>'));
+    assert.ok(html.includes('<dt>市場</dt><dd>公式10種類市場</dd>'));
+    assert.ok(html.includes('<dt>施設</dt><dd>2種類</dd>'));
+    assert.ok(html.includes('&lt;危険な施設&gt;'));
+    assert.ok(html.includes('港 &amp; 空港'));
+    assert.ok(!html.includes('<危険な施設>'));
+});
+
 runTest('online room shareは予約席の再接続残り時間を表示する', () => {
     assert.strictEqual(OnlineRoomShare.remainingReservationSeconds(61001, 1000), 61);
     assert.strictEqual(OnlineRoomShare.remainingReservationSeconds(999, 1000), 0);

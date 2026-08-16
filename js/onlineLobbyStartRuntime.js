@@ -156,6 +156,7 @@ const OnlineLobbyStartRuntime = (() => {
                     participants: lobbyState.participants,
                     myPlayerIndex: session.myOriginalPlayerIndex,
                     marketRule: lobbyState.marketRule,
+                    setupSummary: lobbyState.setupSummary,
                 })
             );
         }

@@ -216,7 +216,7 @@ function loadMainRuntime(options = {}) {
         } : {}),
         myPlayerIndex: 0,
         winSoundPlayed: false,
-        LOG_TYPES: { SYSTEM: 'system' },
+        LOG_TYPES: { SYSTEM: 'system', GAIN: 'gain', BUILD: 'build' },
         CARD_CATEGORIES: { MAJOR: '大施設' },
         GAME_PHASES: {
             ROLL: 'roll',
@@ -2515,7 +2515,7 @@ runTest('index.html は秘密情報を含めない動作診断の表示・コピ
     assert.ok(html.includes('id="appDiagnosticsOutput"'));
     assert.ok(html.includes('data-ui-action="refreshAppDiagnostics"'));
     assert.ok(html.includes('data-ui-action="copyAppDiagnostics"'));
-    assert.ok(html.includes('ルームIDや再接続情報は含みません'));
+    assert.ok(html.includes('ルームID、再接続情報、プレイヤー名は含みません'));
     assert.ok(html.indexOf('js/appDiagnostics.js') < html.indexOf('js/main.js'));
 });
 
@@ -2530,12 +2530,37 @@ runTest('main 動作診断は実runtime状態を表示し同じ安全な文面�
     assert.strictEqual(snapshot.serviceWorker, '非対応');
     assert.strictEqual(snapshot.context, 'タイトル画面');
     assert.strictEqual(snapshot.displayMode, 'インストール版');
+    assert.strictEqual(snapshot.gameState, 'ゲームなし');
+    assert.strictEqual(snapshot.recentEvents, 'なし');
     assert.ok(rt.elements.appDiagnosticsOutput.innerHTML.includes('クライアント版'));
     assert.strictEqual(await rt.copyAppDiagnostics(), true);
     assert.ok(copied.includes('クライアント版: test-version'));
     assert.ok(!copied.includes('roomId'));
     assert.ok(!copied.includes('reconnectToken'));
     assert.strictEqual(rt.alerts.at(-1), '診断情報をコピーしました');
+
+    rt.__test.setGame({
+        players: [{ name: '秘密の名前' }, { name: 'CPU' }],
+        turnCount: 4,
+        phase: 'pending',
+        pendingIT: false,
+        pendingTV: 1,
+        pendingBusiness: 0,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        log: [
+            { type: 'gain', message: '秘密の名前が3コイン獲得' },
+            { type: 'build', message: '秘密の名前が麦畑を建設' },
+        ],
+    });
+    const active = await rt.refreshAppDiagnostics();
+    assert.strictEqual(active.gameState, '効果解決中・4ターン経過・2人');
+    assert.strictEqual(active.pendingActions, 'resolveTV');
+    assert.strictEqual(active.recentEvents, 'log:gain → log:build');
+    const activeText = rt.AppDiagnostics.formatText(active);
+    assert.ok(!activeText.includes('秘密の名前'));
+    assert.ok(!activeText.includes('麦畑'));
 });
 
 runTest('index.html は引き渡し・backup・preset・hapticsの安全な導線を持つ', () => {

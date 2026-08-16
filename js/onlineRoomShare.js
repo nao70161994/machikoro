@@ -32,6 +32,51 @@ const OnlineRoomShare = (() => {
         return `ルーム ${normalizedRoomId}。${players.length}枠中${joinedCount}人が参加しています。`;
     }
 
+    function formatCpuSpeed(value) {
+        const milliseconds = Number.isInteger(value) && value >= 0 ? value : 1500;
+        return milliseconds < 1000
+            ? `${milliseconds / 1000}秒`
+            : `${(milliseconds / 1000).toFixed(milliseconds % 1000 === 0 ? 0 : 1)}秒`;
+    }
+
+    function buildSetupSummaryHtml(value) {
+        if (!value || typeof value !== 'object') return '';
+        const playerSlots = Array.isArray(value.playerSlots)
+            ? value.playerSlots.filter(label => typeof label === 'string').slice(0, 10)
+            : [];
+        const enabledCards = Array.isArray(value.enabledCards)
+            ? value.enabledCards.filter(name => typeof name === 'string').slice(0, 100)
+            : [];
+        const enabledLandmarks = Array.isArray(value.enabledLandmarks)
+            ? value.enabledLandmarks.filter(name => typeof name === 'string').slice(0, 20)
+            : [];
+        if (playerSlots.length === 0 && enabledCards.length === 0 && enabledLandmarks.length === 0) return '';
+        const humanCount = playerSlots.filter(label => label === '人間').length;
+        const cpuCount = playerSlots.length - humanCount;
+        const marketLabel = value.marketRule === 'ten-type' ? '公式10種類市場' : '通常市場';
+        const slots = playerSlots.map((label, index) => `${index + 1}. ${escapeText(label)}`).join(' / ');
+        const cards = enabledCards.map(escapeText).join('、') || 'なし';
+        const landmarks = enabledLandmarks.map(escapeText).join('、') || 'なし';
+        const speed = cpuCount > 0
+            ? `<div><dt>CPU速度</dt><dd>${escapeText(formatCpuSpeed(value.cpuSpeed))}</dd></div>`
+            : '';
+        return `<section class="room-setup-summary" aria-labelledby="roomSetupSummaryTitle">
+            <h4 id="roomSetupSummaryTitle">対戦設定</h4>
+            <dl>
+                <div><dt>人数構成</dt><dd>${playerSlots.length}人（人間${humanCount}・CPU${cpuCount}）</dd></div>
+                <div><dt>参加枠</dt><dd>${slots}</dd></div>
+                ${speed}
+                <div><dt>市場</dt><dd>${marketLabel}</dd></div>
+                <div><dt>施設</dt><dd>${enabledCards.length}種類</dd></div>
+                <div><dt>ランドマーク</dt><dd>${enabledLandmarks.length}種類</dd></div>
+            </dl>
+            <details><summary>選択した施設・ランドマークを確認</summary>
+                <p><strong>施設:</strong> ${cards}</p>
+                <p><strong>ランドマーク:</strong> ${landmarks}</p>
+            </details>
+        </section>`;
+    }
+
     function buildWaitingHtml(roomId, players = null, options = {}) {
         const normalizedRoomId = normalizeRoomId(roomId);
         const safeRoomId = escapeText(normalizedRoomId);
@@ -39,6 +84,7 @@ const OnlineRoomShare = (() => {
         const marketRule = options.marketRule === 'ten-type'
             ? '<section class="room-market-rule ten-type" aria-label="この対戦の市場ルール"><strong>🏪 公式10種類市場</strong><span>常に異なる10種類になるまで山札から補充します</span></section>'
             : '<section class="room-market-rule standard" aria-label="この対戦の市場ルール"><strong>🏪 通常市場</strong><span>選択した施設をすべて公開します</span></section>';
+        const setupSummary = buildSetupSummaryHtml(options.setupSummary);
         const hasWaitingSlot = hasPlayerList && players.some(player => player === WAITING_SLOT_LABEL);
         const playerList = hasPlayerList
             ? `<div class="waiting-players">参加枠（${players.length}枠）: ${players.map(escapeText).join('、')}</div>`
@@ -93,6 +139,7 @@ const OnlineRoomShare = (() => {
             <button type="button" class="room-qr-toggle" data-ui-action="toggleOnlineRoomQr" data-room-id="${safeRoomId}" aria-expanded="false">QRを表示</button>
             <div class="room-qr-container" data-room-qr-container aria-live="polite"></div>
             ${playerList}
+            ${setupSummary}
             ${marketRule}
             ${startHelp}
             ${readiness}
@@ -121,6 +168,7 @@ const OnlineRoomShare = (() => {
         COPY_FALLBACK_MESSAGE,
         COPY_SUCCESS_MESSAGE,
         WAITING_SLOT_LABEL,
+        buildSetupSummaryHtml,
         buildWaitingHtml,
         buildWaitingStatus,
         copyRoomId,

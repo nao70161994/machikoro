@@ -145,11 +145,21 @@ runTest('online lobby start runtimeはhostへ参加者管理metadataを渡す', 
             { index: 0, name: 'Alice', connected: true, ready: false },
             { index: 1, name: 'Bob', connected: true, ready: true },
         ],
+        setupSummary: {
+            playerSlots: ['人間', '人間'],
+            cpuSpeed: 1500,
+            enabledCards: ['麦畑', 'パン屋'],
+            enabledLandmarks: ['駅'],
+            marketRule: 'standard',
+        },
     });
     assert.ok(harness.calls[0][2].includes('removeOnlineLobbyPlayer'));
     assert.ok(harness.calls[0][2].includes('data-player-index="1"'));
     assert.ok(harness.calls[0][2].includes('Alice（ホスト・あなた）'));
     assert.ok(harness.calls[0][2].includes('data-ui-action="setOnlineLobbyReady" data-ready="true"'));
+    assert.ok(harness.calls[0][2].includes('対戦設定'));
+    assert.ok(harness.calls[0][2].includes('2人（人間2・CPU0）'));
+    assert.ok(harness.calls[0][2].includes('麦畑、パン屋'));
 });
 
 runTest('online game start runtimeはschemaからactive gameまで既存effect順を維持する', () => {
