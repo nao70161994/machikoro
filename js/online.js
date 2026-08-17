@@ -110,6 +110,7 @@ function buildOnlineReadinessView(input = {}) {
 
 async function checkOnlineReadiness() {
     onlineDomEffects.setText(OnlineDomEffects.ids.readiness, '確認中…');
+    onlineDomEffects.setText(OnlineDomEffects.ids.readinessSummary, '確認中…');
     const online = typeof navigator === 'undefined' || navigator.onLine !== false;
     let serverReachable = false;
     let serverVersion = '';
@@ -148,6 +149,7 @@ async function checkOnlineReadiness() {
         versionMatches: !clientVersion || !serverVersion || clientVersion === serverVersion,
     });
     onlineDomEffects.setHtml(OnlineDomEffects.ids.readiness, view.html);
+    onlineDomEffects.setText(OnlineDomEffects.ids.readinessSummary, view.ready ? 'OK' : '要確認');
     return view;
 }
 

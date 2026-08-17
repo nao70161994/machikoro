@@ -84,17 +84,17 @@ runTest('ゲーム稼働状況は操作可能・CPU・通信待ちを区別す�
         actionInFlight: false,
     };
     assert.deepStrictEqual(UiGameStatusView.buildActivityStatusView(base), {
-        visible: true,
-        identity: 'ready:0:roll',
+        visible: false,
+        identity: 'local-human',
         kind: 'ready',
-        label: 'あなたの操作：サイコロを振ってください',
+        label: '',
         detail: '',
         startedAt: 0,
     });
     assert.strictEqual(UiGameStatusView.buildActivityStatusView({
         ...base,
         phase: 'pending',
-    }).label, 'あなたの操作：追加効果の対象を選んでください');
+    }).visible, false);
     const cpu = UiGameStatusView.buildActivityStatusView({
         ...base,
         currentPlayerIndex: 1,
@@ -158,8 +158,8 @@ runTest('ゲーム稼働状況は全フェーズの次操作を具体的に案�
             currentPlayerIndex: 0,
             currentName: 'Alice',
             isCpuTurn: false,
-            isOnlineGame: false,
-            myPlayerIndex: -1,
+            isOnlineGame: true,
+            myPlayerIndex: 0,
         }).label, `あなたの操作：${guidance}`);
     }
     assert.strictEqual(UiGameStatusView.buildActivityStatusView({

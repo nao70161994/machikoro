@@ -32,7 +32,7 @@
      crossorigin="anonymous"></script>
 </head>
 <body>
-    <div id="titleScreen">
+    <div id="titleScreen" role="main" aria-labelledby="titleHeading">
         <canvas id="cityCanvas" aria-hidden="true"></canvas>
         <div class="title-content">
             <div class="title-header">
@@ -41,7 +41,6 @@
                 <div class="title-logo-deco"><span>ボードゲーム</span></div>
                 <div class="title-buttons-row">
                     <button class="rules-btn" data-ui-action="showRules">ルール</button>
-                    <button class="rules-btn" data-ui-action="showCardSelect">カード選択</button>
                 </div>
             </div>
 
@@ -87,6 +86,17 @@
                     </div>
                 </div>
                 <div id="playerSettings" class="setting-section"></div>
+                <div class="setting-section game-content-settings">
+                    <div>
+                        <div class="setting-label">使用するゲーム内容</div>
+                        <p id="localGameSelectionSummary" class="setting-help">全カード・全ランドマーク・通常市場</p>
+                    </div>
+                    <button type="button" class="setup-secondary-action" data-ui-action="showCardSelect">使用カード・市場ルール</button>
+                </div>
+                <div class="setup-action-footer">
+                    <button id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup">ゲーム開始</button>
+                    <div id="localRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
+                </div>
                 <details class="setting-section play-flow-settings">
                     <summary>CPU速度・チュートリアル</summary>
                     <div class="setting-section">
@@ -156,8 +166,6 @@
                         <label class="toggle-setting"><input id="soundWinEnabled" type="checkbox" checked data-ui-change="onAccessibilitySettingsChange"><span>勝利</span></label>
                     </div>
                 </details>
-                <button id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup">ゲーム開始</button>
-                <div id="localRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
             </div>
 
             <div id="tabContentOnline" class="tab-content" role="tabpanel" aria-labelledby="tabOnline" style="display:none">
@@ -172,7 +180,7 @@
                 </div>
 
                 <details class="setting-section online-readiness">
-                    <summary>接続前チェック</summary>
+                    <summary>接続前チェック <span id="onlineReadinessSummary" class="online-readiness-summary">未確認</span></summary>
                     <p class="setting-help">通信・アプリ版・更新待ちの状態を、ルームへ入る前に確認します。</p>
                     <button type="button" data-ui-action="checkOnlineReadiness">接続状態を確認</button>
                     <div id="onlineReadinessStatus" role="status" aria-live="polite">未確認</div>
@@ -188,6 +196,13 @@
                         </div>
                     </div>
                     <div id="onlinePlayerSettings" class="setting-section"></div>
+                    <div class="setting-section game-content-settings">
+                        <div>
+                            <div class="setting-label">使用するゲーム内容</div>
+                            <p id="onlineGameSelectionSummary" class="setting-help">全カード・全ランドマーク・通常市場</p>
+                        </div>
+                        <button type="button" class="setup-secondary-action" data-ui-action="showCardSelect">使用カード・市場ルール</button>
+                    </div>
                     <div class="setting-section">
                         <label class="setting-label" for="onlineCpuSpeed">CPUの速さ</label>
                         <div class="speed-setting">
@@ -196,8 +211,10 @@
                             <span id="onlineSpeedLabel">1.5秒</span>
                         </div>
                     </div>
-                    <button id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom">ルームを作る</button>
-                    <div id="onlineRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
+                    <div class="setup-action-footer">
+                        <button id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom">ルームを作る</button>
+                        <div id="onlineRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>
+                    </div>
                 </div>
 
                 <div id="onlineJoin" role="tabpanel" aria-labelledby="onlineTabJoin" style="display:none">
@@ -294,7 +311,7 @@
         </div>
     </div>
 
-    <div id="gameScreen" aria-label="ゲーム画面" style="display:none">
+    <div id="gameScreen" role="main" aria-label="ゲーム画面" style="display:none">
         <div id="status" class="status"></div>
         <section id="gameConnectivityPanel" class="game-connectivity-panel" aria-label="通信と進行状況" style="display:none">
             <div id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
@@ -314,10 +331,13 @@
         </section>
         <div id="tutorialBox" class="tutorial-box" role="region" aria-label="操作ガイド" style="display:none"></div>
         <div class="game-action-panel">
-            <div class="panel-tools">
-                <button id="btnTutorialToggle" class="tutorial-toggle-btn" data-ui-action="toggleTutorial" aria-label="チュートリアル表示を切り替える"></button>
-                <button id="btnTutorialLevel" class="tutorial-toggle-btn" data-ui-action="cycleTutorialLevel" aria-label="チュートリアルの詳しさを切り替える"></button>
-            </div>
+            <details class="game-guide-settings">
+                <summary>ガイド設定</summary>
+                <div class="panel-tools">
+                    <button id="btnTutorialToggle" class="tutorial-toggle-btn" data-ui-action="toggleTutorial" aria-label="チュートリアル表示を切り替える"></button>
+                    <button id="btnTutorialLevel" class="tutorial-toggle-btn" data-ui-action="cycleTutorialLevel" aria-label="チュートリアルの詳しさを切り替える"></button>
+                </div>
+            </details>
             <div id="diceResult"></div>
             <div id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
             <div id="diceChoose"></div>
@@ -547,10 +567,10 @@
     </div>
 
     <!-- PWAインストールバナー -->
-    <div id="pwaInstallBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true" style="display:none">
+    <div id="pwaInstallBanner" class="pwa-banner" role="region" aria-labelledby="pwaInstallMessage" style="display:none">
         <div class="pwa-banner-text">
             <span class="pwa-banner-icon">追加</span>
-            <span>ホーム画面に追加するとオフラインでも遊べます</span>
+            <span id="pwaInstallMessage" aria-live="polite" aria-atomic="true">ホーム画面に追加するとオフラインでも遊べます</span>
         </div>
         <div class="pwa-banner-actions">
             <button class="pwa-banner-btn" data-ui-action="pwaInstallPrompt">追加する</button>

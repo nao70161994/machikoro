@@ -149,6 +149,7 @@ runTest('online DOM effectsの既存element ID契約はfrozenである', () => {
     assert.ok(Object.isFrozen(OnlineDomEffects.ids));
     assert.strictEqual(OnlineDomEffects.ids.status, 'onlineStatus');
     assert.strictEqual(OnlineDomEffects.ids.waitingPanel, 'onlineWaitingPanel');
+    assert.strictEqual(OnlineDomEffects.ids.readinessSummary, 'onlineReadinessSummary');
     assert.strictEqual(OnlineDomEffects.ids.gameStatus, 'onlineGameStatus');
     assert.strictEqual(OnlineDomEffects.ids.createButton, 'onlineCreateSubmitButton');
     assert.strictEqual(OnlineDomEffects.ids.roomId, 'roomIdInput');

@@ -211,7 +211,8 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
         const focusTarget = page.locator(focusSelector);
         await focusTarget.focus();
         const layout = await page.locator(selector).evaluate((element, targetSelector) => {
-            const bounds = element.getBoundingClientRect();
+            const footer = element.closest('.setup-action-footer');
+            const bounds = footer.getBoundingClientRect();
             const targetBounds = document.querySelector(targetSelector).getBoundingClientRect();
             const bannerBounds = document.getElementById('pwaUpdateBanner').getBoundingClientRect();
             return {
@@ -223,10 +224,13 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
                 bannerTop: bannerBounds.top,
                 viewportWidth: document.documentElement.clientWidth,
                 viewportHeight: window.innerHeight,
-                position: getComputedStyle(element).position,
+                position: getComputedStyle(footer).position,
+                buttonContained: element.getBoundingClientRect().bottom <= bounds.bottom &&
+                    element.getBoundingClientRect().top >= bounds.top,
             };
         }, focusSelector);
         expect(layout.position).toBe('fixed');
+        expect(layout.buttonContained).toBe(true);
         expect(layout.ctaLeft).toBeGreaterThanOrEqual(0);
         expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewportWidth);
         expect(layout.ctaBottom).toBeLessThanOrEqual(layout.viewportHeight);
@@ -260,6 +264,24 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
         await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
     }
     await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
+});
+
+test('install案内はタイトルだけに表示しゲーム操作へ持ち込まない', async ({ page }) => {
+    await prepare(page);
+    await page.evaluate(() => {
+        document.getElementById('pwaInstallBanner').style.display = 'block';
+    });
+    await expect(page.locator('#pwaInstallBanner')).toBeVisible();
+    await startLocalGame(page);
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await expect(page.locator('#pwaInstallBanner')).toBeHidden();
+});
+
+test('オンラインtabは接続前チェックを自動実行する', async ({ page }) => {
+    await prepare(page);
+    await page.locator('#tabOnline').click();
+    await expect(page.locator('#onlineReadinessSummary')).not.toHaveText('未確認');
+    await expect(page.locator('#onlineReadinessStatus')).not.toHaveText('未確認');
 });
 
 test('320pxから480pxでpending中の長文toastが選択肢を隠さない', async ({ page }) => {

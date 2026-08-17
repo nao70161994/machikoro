@@ -1221,6 +1221,10 @@ function switchTab(tab) {
         tournamentButton: document.getElementById("tabTournament"),
         statsButton: document.getElementById("tabStats"),
     }, view);
+    updateGameSelectionSummary();
+    if (tab === 'online' && typeof checkOnlineReadiness === 'function') {
+        checkOnlineReadiness();
+    }
     if (view.renderStats) renderStats();
 }
 
@@ -1277,6 +1281,19 @@ function applyCardSelectStateSnapshot() {
     const snapshot = cardSelectState.snapshot();
     replaceEnabledCardSelection(snapshot.enabledCards);
     replaceEnabledLandmarkSelection(snapshot.enabledLandmarks);
+}
+
+function updateGameSelectionSummary() {
+    const selection = GameSelectionState.runtime.snapshot();
+    const cardCount = Array.isArray(selection.enabledCards) ? selection.enabledCards.length : 0;
+    const landmarkCount = Array.isArray(selection.enabledLandmarks) ? selection.enabledLandmarks.length : 0;
+    const marketLabel = selection.marketRule === 'ten-type' ? '公式10種市場' : '通常市場';
+    const text = `カード${cardCount}種・ランドマーク${landmarkCount}種・${marketLabel}`;
+    for (const id of ['localGameSelectionSummary', 'onlineGameSelectionSummary']) {
+        const element = document.getElementById(id);
+        if (element) element.textContent = text;
+    }
+    return text;
 }
 const logHistoryController = UiLogDisplay.createHistoryController();
 const activeGameTurnStateController = UiGameStatusEffects.createTurnStateController();
@@ -1668,6 +1685,7 @@ function bindCardSelectModalHandlers() {
         modal.addEventListener('change', event => {
             if (event && event.target && event.target.id === 'marketRuleSelect') {
                 replaceMarketRuleSelection(event.target.value);
+                updateGameSelectionSummary();
             }
         });
     }
@@ -1682,6 +1700,7 @@ function showCardSelect() {
 }
 
 function closeCardSelect() {
+    updateGameSelectionSummary();
     closeAccessibleModal("cardSelectModal");
 }
 
@@ -1716,6 +1735,7 @@ function renderCardSelectModal() {
     uiCardSelectEffects.apply(view);
     const marketRuleSelect = document.getElementById('marketRuleSelect');
     if (marketRuleSelect) marketRuleSelect.value = GameSelectionState.runtime.snapshot().marketRule;
+    updateGameSelectionSummary();
 }
 
 function toggleCard(name) {

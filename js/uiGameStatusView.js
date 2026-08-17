@@ -191,6 +191,9 @@ function buildActivityStatusView(facts = {}) {
             startedAt: activeStep && activeStep.startedAt || 0,
         });
     }
+    if (!facts.isOnlineGame) {
+        return Object.freeze({ visible: false, identity: 'local-human', kind: 'ready', label: '', detail: '', startedAt: 0 });
+    }
     const isOwnOnlineTurn = facts.isOnlineGame && facts.myPlayerIndex === facts.currentPlayerIndex;
     const isHumanTurn = !facts.isOnlineGame || isOwnOnlineTurn;
     const waitsForOwnPendingInput = facts.phase === facts.pendingPhase &&

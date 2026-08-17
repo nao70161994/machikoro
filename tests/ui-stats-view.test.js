@@ -52,7 +52,8 @@ runTest('stats viewは市場ルール別filterと名称を表示する', () => {
     stats.marketRules['ten-type'].wins = 1;
     const html = UiStatsView.buildStatsHtml(stats, 'ten-type', '', escapeHtml);
     assert.ok(html.includes('data-market-rule="standard"'));
-    assert.ok(html.includes('data-market-rule="ten-type" aria-pressed="true"'));
+    assert.ok(html.includes('data-market-rule="ten-type"'));
+    assert.ok(html.includes('aria-label="公式10種類市場" aria-pressed="true"'));
     assert.ok(html.includes('公式10種類市場の成績'));
 });
 
@@ -64,7 +65,7 @@ runTest('stats viewは対戦形式と市場ルールを複合して選ぶ', () =
     assert.strictEqual(UiStatsView.statsBucket(stats, 'online|ten-type', '').totalGames, 3);
     assert.ok(html.includes('オンライン × 公式10種類市場の成績'));
     assert.ok(html.includes('data-stats-mode="online" aria-pressed="true"'));
-    assert.ok(html.includes('data-market-rule="ten-type" aria-pressed="true"'));
+    assert.ok(html.includes('aria-label="公式10種類市場" aria-pressed="true"'));
 });
 
 runTest('stats viewはfilter名とランキング名をescapeして既存HTMLを生成する', () => {
@@ -147,6 +148,7 @@ runTest('stats viewはempty stateをlistとして宣言しない', () => {
 
 runTest('stats viewは空bucketのonline案内とfilter選択状態を純粋生成する', () => {
     const stats = makeStats();
+    stats.all.totalGames = 1;
     stats.cpuTypes['CPU（強）'] = makeStats().all;
     const html = UiStatsView.buildStatsHtml(stats, 'online', '', escapeHtml);
 
@@ -158,9 +160,18 @@ runTest('stats viewは空bucketのonline案内とfilter選択状態を純粋生�
     assert.ok(html.includes('CPU（強）'));
 });
 
+runTest('stats viewは全記録が空ならfilterを隠して開始導線を表示する', () => {
+    const html = UiStatsView.buildStatsHtml(makeStats(), 'all', '', escapeHtml);
+    assert.ok(html.includes('まだ対戦記録がありません'));
+    assert.ok(html.includes('data-ui-action="switchTab" data-tab="local"'));
+    assert.ok(html.includes('data-ui-action="switchTab" data-tab="online"'));
+    assert.ok(!html.includes('stats-filter-tabs'));
+});
+
 runTest('stats viewはplayer filterの選択状態をaria-pressedへ反映する', () => {
     const stats = makeStats();
     stats.players.Alice = makeStats().all;
+    stats.players.Alice.totalGames = 1;
     const html = UiStatsView.buildStatsHtml(stats, 'all', 'Alice', escapeHtml);
 
     assert.ok(html.includes('data-stats-mode="all" aria-pressed="false"'));

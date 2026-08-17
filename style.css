@@ -768,23 +768,53 @@ body.modal-open #gameScreen {
     opacity: 0.8;
 }
 
+.game-content-settings {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.game-content-settings > div { min-width: 0; }
+.game-content-settings .setting-help { margin: 3px 0 0; }
+
+.setup-secondary-action {
+    width: auto;
+    flex: 0 0 auto;
+    min-height: var(--touch-target-standard);
+    padding: 8px 12px;
+}
+
+.setup-action-footer { width: 100%; }
+.setup-action-footer .setup-primary-cta { width: 100%; }
+
 @media (max-width: 480px) {
-    #btnStart.setup-primary-cta,
-    #onlineCreateSubmitButton.setup-primary-cta {
+    .setup-action-footer {
         position: fixed;
         left: 50%;
         width: min(calc(100% - 64px), 416px);
         transform: translateX(-50%);
         bottom: var(--setup-cta-bottom);
         z-index: 100;
-        min-height: var(--touch-target-standard);
+        padding: 6px;
+        border: 1px solid rgba(240,192,64,0.3);
+        border-radius: 14px;
+        background: rgba(15,14,23,0.96);
         box-shadow: 0 -8px 18px rgba(26,26,46,0.94);
     }
 
-    body.pwa-banner-open #btnStart.setup-primary-cta,
-    body.pwa-banner-open #onlineCreateSubmitButton.setup-primary-cta {
+    body.pwa-banner-open .setup-action-footer {
         bottom: var(--setup-cta-pwa-bottom);
     }
+
+    .setup-action-footer .model-load-status:empty { display: none; }
+
+    .game-content-settings {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .setup-secondary-action { width: 100%; }
 
     #tabContentLocal input,
     #tabContentLocal select,
@@ -3015,6 +3045,24 @@ button:not(:disabled):active {
     margin-bottom: 10px;
 }
 
+.game-guide-settings {
+    margin: 0 0 10px auto;
+    width: fit-content;
+}
+
+.game-guide-settings > summary {
+    color: #a7a9be;
+    font-size: 12px;
+    cursor: pointer;
+    min-height: var(--touch-target-compact);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.game-guide-settings[open] { width: 100%; }
+.game-guide-settings .panel-tools { margin: 6px 0 0; }
+
 .tutorial-toggle-btn {
     width: auto;
     flex: 0 0 auto;
@@ -3459,6 +3507,24 @@ button:not(:disabled):active {
     line-height: 1.8;
 }
 
+.stats-empty-onboarding strong {
+    color: #fffffe;
+    font-size: 16px;
+}
+
+.stats-empty-onboarding p {
+    margin: 8px auto 16px;
+    max-width: 32em;
+}
+
+.stats-empty-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.stats-empty-actions button { min-height: var(--touch-target-standard); }
+
 .stats-filter-tabs {
     display: flex;
     gap: 6px;
@@ -3660,6 +3726,31 @@ button:not(:disabled):active {
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
     z-index: var(--z-pwa-banner);
     animation: pwaSlideUp 0.3s ease;
+}
+
+#gameScreen[style*="display: block"] ~ #pwaInstallBanner {
+    display: none !important;
+}
+
+#pwaInstallBanner[style*="display: block"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+}
+
+#pwaInstallBanner .pwa-banner-text {
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+#pwaInstallBanner .pwa-banner-actions { flex: 0 0 auto; }
+
+.online-readiness-summary {
+    display: inline-block;
+    margin-left: 6px;
+    color: #7ed321;
+    font-size: 12px;
 }
 
 #pwaUpdateBanner {

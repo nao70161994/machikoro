@@ -314,8 +314,9 @@ runTest('renderStats は保存済みプレイヤー名をラベルと空状態�
     emptyStats.players[name] = rt.createEmptyStatsBucket();
     rt.localStorage.setItem('gameStats', JSON.stringify(emptyStats));
     rt.renderStats();
-    assert.ok(rt.__test.statsEl.innerHTML.includes('まだ&lt;img src=x onerror=alert(1)&gt;の記録がありません'));
-    assert.ok(!rt.__test.statsEl.innerHTML.includes('まだ<img'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('まだ対戦記録がありません'));
+    assert.ok(rt.__test.statsEl.innerHTML.includes('data-ui-action="switchTab"'));
+    assert.ok(!rt.__test.statsEl.innerHTML.includes(name));
 });
 
 runTest('handleStatsClick は data-action から統計表示を切り替える', () => {
@@ -368,6 +369,9 @@ runTest('handleStatsClick は再描画後の同じfilterへfocusを維持する'
         focus(options) { focusCount++; focusOptions = options; },
     };
     const rt = loadStatsRuntime({ filterButtons: [replacement] });
+    const stats = rt.createDefaultStats();
+    stats.online.totalGames = 1;
+    rt.localStorage.setItem('gameStats', JSON.stringify(stats));
 
     rt.handleStatsClick({
         preventDefault() {},

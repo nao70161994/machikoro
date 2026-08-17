@@ -12,6 +12,7 @@ const OnlineDomEffects = (() => {
         playerName: 'playerNameInput',
         playerSettings: 'onlinePlayerSettings',
         readiness: 'onlineReadinessStatus',
+        readinessSummary: 'onlineReadinessSummary',
         rlStatus: 'onlineRlModelStatus',
         roomId: 'roomIdInput',
         status: 'onlineStatus',

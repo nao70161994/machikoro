@@ -71,7 +71,7 @@ function buildFilterTabsHtml(stats, viewMode, playerFilter, escapeHtml) {
         <div class="stats-filter-group-label">市場ルール別</div><div class="stats-filter-tabs stats-market-filters">
             <button class="stats-filter-btn ${marketPressed('all') ? 'active' : ''}" data-action="setStatsMarketRule" data-market-rule="all" aria-pressed="${marketPressed('all')}">すべて</button>
             <button class="stats-filter-btn ${marketPressed('standard') ? 'active' : ''}" data-action="setStatsMarketRule" data-market-rule="standard" aria-pressed="${marketPressed('standard')}">通常市場</button>
-            <button class="stats-filter-btn ${marketPressed('ten-type') ? 'active' : ''}" data-action="setStatsMarketRule" data-market-rule="ten-type" aria-pressed="${marketPressed('ten-type')}">公式10種類</button>
+            <button class="stats-filter-btn ${marketPressed('ten-type') ? 'active' : ''}" data-action="setStatsMarketRule" data-market-rule="ten-type" aria-label="公式10種類市場" aria-pressed="${marketPressed('ten-type')}">公式10種</button>
         </div>
         ${playerNames.length ? `<div class="stats-filter-group-label">プレイヤー別</div><div class="stats-player-filters">
             ${playerNames.map(name => `<button class="stats-player-btn ${playerFilter === name ? 'active' : ''}" data-action="setStatsPlayerFilter" data-player-name="${escape(name)}" aria-pressed="${playerFilter === name}">${escape(name)}</button>`).join('')}
@@ -132,8 +132,25 @@ function buildLandmarkRowsHtml(bucket, escapeHtml) {
     return rows ? `<div class="stats-cards" role="list" aria-label="ランドマーク建設時勝率">${rows}</div>` : '';
 }
 
+function hasRecordedStats(value) {
+    if (!value || typeof value !== 'object') return false;
+    if (Number(value.totalGames) > 0) return true;
+    return Object.values(value).some(hasRecordedStats);
+}
+
 function buildStatsHtml(stats, viewMode, playerFilter, escapeHtml) {
     const escape = requireFunction(escapeHtml, 'escapeHtml');
+    const hasAnyStats = hasRecordedStats(stats);
+    if (!hasAnyStats) {
+        return `<div class="stats-empty stats-empty-onboarding">
+            <strong>まだ対戦記録がありません</strong>
+            <p>ゲームを最後まで遊ぶと、勝率や最終盤面をここで比較できます。</p>
+            <div class="stats-empty-actions">
+                <button data-ui-action="switchTab" data-tab="local">ローカルで遊ぶ</button>
+                <button data-ui-action="switchTab" data-tab="online">オンラインで遊ぶ</button>
+            </div>
+        </div>`;
+    }
     const bucket = statsBucket(stats, viewMode, playerFilter);
     const filters = statsFilters(viewMode);
     const label = playerFilter || combinedStatsLabel(filters);

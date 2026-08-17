@@ -230,6 +230,7 @@ function applySetupPreset(presetId) {
         );
     }
     renderPlayerSettings();
+    if (typeof updateGameSelectionSummary === 'function') updateGameSelectionSummary();
     saveSettings();
     showNotice(`「${preset.name}」を適用しました`);
     return true;
@@ -1233,6 +1234,7 @@ function cancelAutoSkip() { return mainAutoSkipRuntime.cancel(); }
 function checkAutoSkip() { return mainAutoSkipRuntime.check(); }
 // 初期表示
 initMainView();
+if (typeof updateGameSelectionSummary === 'function') updateGameSelectionSummary();
 renderSetupPresetList();
 renderCpuTournamentHistory();
 bindDelegatedUiHandlers();

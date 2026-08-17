@@ -698,7 +698,7 @@ runTest('main dice displayはpure viewを既存DOMへ反映する', () => {
     assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '1');
 });
 
-runTest('main 稼働状況は人間の操作可能とCPU処理中をDOMへ反映する', () => {
+runTest('main 稼働状況は通常の人間手番を省略してCPU処理中だけDOMへ反映する', () => {
     const rt = loadMainRuntime();
     const game = {
         phase: 'roll',
@@ -711,8 +711,8 @@ runTest('main 稼働状況は人間の操作可能とCPU処理中をDOMへ反映
     rt.__test.setCpuPlayers([null, { difficulty: 'normal' }]);
     let activity = rt.__test.updateGameActivityStatus(1000);
     assert.strictEqual(activity.kind, 'ready');
-    assert.strictEqual(rt.__test.elements.gameActivityStatus.style.display, 'flex');
-    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, 'あなたの操作：サイコロを振ってください');
+    assert.strictEqual(rt.__test.elements.gameActivityStatus.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '');
 
     game.currentPlayerIndex = 1;
     activity = rt.__test.updateGameActivityStatus(2000);
@@ -2663,6 +2663,26 @@ runTest('ローカル保存の再開導線は新しいゲーム設定より先�
     assert.ok(resumeButtonRule[1].includes('min-width: 0;'));
 });
 
+runTest('ゲーム内容設定は作成画面に限定し現在の選択概要を示す', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const header = html.slice(html.indexOf('<div class="title-header">'), html.indexOf('<div id="onlineResumeSection"'));
+    assert.ok(!header.includes('showCardSelect'));
+    assert.strictEqual((html.match(/data-ui-action="showCardSelect"/g) || []).length, 2);
+    assert.ok(html.includes('id="localGameSelectionSummary"'));
+    assert.ok(html.includes('id="onlineGameSelectionSummary"'));
+    assert.ok(html.includes('使用カード・市場ルール'));
+});
+
+runTest('主要画面とPWA install案内は重複告知しないlandmarkを持つ', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.ok(html.includes('id="titleScreen" role="main" aria-labelledby="titleHeading"'));
+    assert.ok(html.includes('id="gameScreen" role="main" aria-label="ゲーム画面"'));
+    assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="region" aria-labelledby="pwaInstallMessage"'));
+    assert.ok(html.includes('id="pwaInstallMessage" aria-live="polite" aria-atomic="true"'));
+    assert.ok(css.includes('#gameScreen[style*="display: block"] ~ #pwaInstallBanner'));
+});
+
 runTest('onlineStatus はライブリージョンとして宣言されている', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1"'));
@@ -2750,11 +2770,11 @@ runTest('狭幅の開始CTAは初期表示から固定しPWAとfocusを避ける
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     assert.ok(html.includes('id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom"'));
-    assert.ok(css.includes('@media (max-width: 480px) {\n    #btnStart.setup-primary-cta,\n    #onlineCreateSubmitButton.setup-primary-cta {'));
+    assert.ok(css.includes('@media (max-width: 480px) {\n    .setup-action-footer {'));
     assert.ok(css.includes('position: fixed;'));
     assert.ok(css.includes('width: min(calc(100% - 64px), 416px);'));
     assert.ok(css.includes('bottom: var(--setup-cta-bottom);'));
-    assert.ok(css.includes('body.pwa-banner-open #btnStart.setup-primary-cta,\n    body.pwa-banner-open #onlineCreateSubmitButton.setup-primary-cta {\n        bottom: var(--setup-cta-pwa-bottom);'));
+    assert.ok(css.includes('body.pwa-banner-open .setup-action-footer {\n        bottom: var(--setup-cta-pwa-bottom);'));
     assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-focus-clearance);'));
     assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-pwa-focus-clearance);'));
 });
@@ -3297,7 +3317,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(mainSource.includes("if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();"));
     assert.ok(html.includes('id="pwaUpdateBanner" class="pwa-banner" role="region" aria-labelledby="pwaUpdateMsg"'));
     assert.ok(html.includes('id="pwaUpdateMsg" aria-live="polite" aria-atomic="true"'));
-    assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="status" aria-live="polite" aria-atomic="true"'));
+    assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="region" aria-labelledby="pwaInstallMessage"'));
+    assert.ok(html.includes('id="pwaInstallMessage" aria-live="polite" aria-atomic="true"'));
     assert.ok(html.includes('aria-label="ルール説明を閉じる"'));
     assert.ok(html.includes('aria-label="カード選択を閉じる"'));
     assert.ok(html.includes('aria-label="カード詳細を閉じる"'));
