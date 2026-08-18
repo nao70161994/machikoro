@@ -557,6 +557,14 @@ sh scripts/rl/eval-adopted-stability.sh
 
 引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定は `200` 戦、`self-only-4p-h256-lr1e5-5000-seed103`、`models/rl_model/eval-adopted-stability-{3p,4p,5p,10p}.json/csv`。各人数で3種類のlineupを評価し、対局ごとの席ローテーションから席別勝率も記録する。
 
+10人戦の席依存を複数seedで確認するときは次を使う。
+
+```sh
+sh scripts/rl/eval-adopted-seat-stability.sh
+```
+
+引数は `[GAMES] [MODEL_ID] [OUT_PREFIX] [SEEDS]`。既定は各lineup 200戦、seed `1,101,201,301,401`。合計後は各席100戦となり、`*-summary.json` に試合数加重の席別勝率・seed別席差・全lineup最大席差を保存する。
+
 旧採用 `seed102` の2026-04-20 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。
 
 敗戦時にランドマーク競争でどれだけ遅れているかを見る場合は landmark race 診断を使う。勝率そのものの採用判断ではなく、報酬設計や checkpoint selection の仮説確認用。
@@ -895,7 +903,7 @@ npm run report-rl-registry -- --format json --output models/rl_model/reports/reg
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
 | `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
-| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | 2026-08-18安定性評価（各lineup 200戦）: 3人 53.0〜70.5%、4人 46.5〜68.0%、5人 50.5〜64.5%、10人 43.5〜66.5%。最大席差は順に16.4 / 22.0 / 25.0 / 50.0pt、全lineup exhausted=0 | 多人数用。5人以上は上位3相手射影。強さは維持するが席依存が次の改善対象 |
+| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | 2026-08-18安定性評価: 3人 53.0〜70.5%、4人 46.5〜68.0%、5人 50.5〜64.5%（各200戦）。10人は5seed・各lineup 1000戦で44.9〜65.3%、席差19.0〜24.0pt、全lineup exhausted=0 | 多人数用。5人以上は上位3相手射影。単一seed最大50.0ptは縮小したが、残る席依存が次の改善対象 |
 | `self-only-4p-h256-lr1e5-5000-seed102` | candidate-4p | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 旧採用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
 | `strong-select-seed21` | archive | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り。strong 性能が低く除外 |

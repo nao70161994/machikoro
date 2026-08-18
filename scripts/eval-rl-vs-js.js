@@ -190,6 +190,8 @@ function summarizeEvaluationEntry(entry) {
             second: rlSecondGames > 0 ? rlSecondWins / rlSecondGames : 0,
         },
         rlSeatWinRatesByIndex,
+        rlSeatGamesByIndex: seatGames.map(value => value || 0),
+        rlSeatWinsByIndex: seatGames.map((_, index) => seatWins[index] || 0),
         rlSeatWinRateRange,
         rlBuildStats: rlBuildStats ? {
             total: rlBuildStats.total || 0,

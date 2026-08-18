@@ -60,7 +60,7 @@
                 "id": "self-only-4p-h256-lr1e5-5000-seed103",
                 "role": "adopted-3p-10p",
                 "style": "wheat-vineyard-pizza",
-                "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. The 2026-08-18 stability audit ran three 200-game lineups for 3p/4p/5p/10p. Win rates remained competitive, while seat gaps reached 16.4pt/22.0pt/25.0pt/50.0pt respectively and remain the main follow-up risk."
+                "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. The 2026-08-18 stability audit ran three 200-game lineups for 3p/4p/5p and five seeds totaling 1000 games per lineup for 10p. Win rates remained competitive; 10p aggregate seat gaps were 19.0pt/24.0pt/23.0pt, lower than the 50.0pt single-seed peak but still the main follow-up risk."
             },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
@@ -1374,7 +1374,7 @@
             },
             "style": {
                 "label": "4p-wheat-vineyard-pizza",
-                "summary": "4人自己対戦候補から採用。2026-08-18に3/4/5/10人を各3lineup・各200戦で再監査し、全人数帯で競争力と低pass率を維持した。最大席差は3人16.4pt、4人22.0pt、5人25.0pt、10人50.0pt。5人以上は上位3相手射影で動作するため、次の改善対象は平均勝率より席依存と多人数一般化。"
+                "summary": "4人自己対戦候補から採用。2026-08-18に3/4/5人を各3lineup・各200戦、10人を5seed・各lineup合計1000戦で再監査し、全人数帯で競争力と低pass率を維持した。10人の集計席差は19.0〜24.0ptで、単一seed最大50.0ptの多くは標本揺れだったが席依存は残る。5人以上は上位3相手射影で動作するため、次の改善対象は平均勝率より席依存と多人数一般化。"
             },
             "evals": [
                 {
@@ -1423,17 +1423,18 @@
                 {
                     "date": "2026-08-18",
                     "type": "js-lineup-10p-stability",
-                    "gamesPerLineup": 200,
-                    "seed": 1,
+                    "gamesPerLineup": 1000,
+                    "seeds": [1, 101, 201, 301, 401],
+                    "gamesPerSeat": 100,
                     "maxSteps": 5000,
                     "projection": "top3-opponents",
                     "lineups": {
-                        "rl+weak+normal+strong+expert+weak+normal+strong+expert+normal": { "winRate": 0.56, "seatGap": 0.2 },
-                        "rl+normal+normal+strong+expert+weak+normal+strong+expert+strong": { "winRate": 0.665, "seatGap": 0.5 },
-                        "rl+weak+weak+normal+strong+expert+weak+normal+strong+expert": { "winRate": 0.435, "seatGap": 0.3 }
+                        "rl+weak+normal+strong+expert+weak+normal+strong+expert+normal": { "winRate": 0.52, "seatGap": 0.19, "seatWinRates": [0.53, 0.62, 0.54, 0.57, 0.47, 0.48, 0.52, 0.5, 0.43, 0.54] },
+                        "rl+normal+normal+strong+expert+weak+normal+strong+expert+strong": { "winRate": 0.653, "seatGap": 0.24, "seatWinRates": [0.76, 0.59, 0.69, 0.63, 0.67, 0.68, 0.66, 0.52, 0.7, 0.63] },
+                        "rl+weak+weak+normal+strong+expert+weak+normal+strong+expert": { "winRate": 0.449, "seatGap": 0.23, "seatWinRates": [0.46, 0.61, 0.47, 0.46, 0.4, 0.43, 0.5, 0.38, 0.38, 0.4] }
                     },
                     "exhausted": 0,
-                    "maxPassRate": 0.000363
+                    "maxPassRate": 0.000216
                 },
                 {
                     "date": "2026-05-11",

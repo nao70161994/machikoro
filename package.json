@@ -31,6 +31,7 @@
     "search-expert-top-tier": "node scripts/search-expert-top-tier.js",
     "eval-rl-vs-js": "node scripts/eval-rl-vs-js.js",
     "eval-rl-models": "node scripts/eval-rl-models.js",
+    "review-rl-seat-stability": "node scripts/review-rl-seat-stability.js",
     "eval-rl-business-scenario": "node scripts/eval-rl-business-scenario.js",
     "eval-rl-special-scenarios": "node scripts/eval-rl-special-scenarios.js",
     "render-rl-registry-evals": "node scripts/render-rl-registry-evals.js",
