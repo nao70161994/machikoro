@@ -655,13 +655,17 @@ test('320pxから480pxで頻用補助操作のtap領域が重ならずに収ま�
                 viewportWidth: document.documentElement.clientWidth,
             };
         }));
+        expect(titleTargets.length).toBeGreaterThan(0);
         expect(titleTargets.every(target => target.height >= 44)).toBe(true);
         expect(titleTargets.every(target => target.left >= 0 && target.right <= target.viewportWidth)).toBe(true);
-        expect(titleTargets[0].right).toBeLessThanOrEqual(titleTargets[1].left);
+        for (let index = 1; index < titleTargets.length; index++) {
+            expect(titleTargets[index - 1].right).toBeLessThanOrEqual(titleTargets[index].left);
+        }
     }
 
     await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.locator('.game-guide-settings > summary').click();
     for (const width of [320, 360, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });
         const targets = await page.locator([
@@ -669,6 +673,7 @@ test('320pxから480pxで頻用補助操作のtap領域が重ならずに収ま�
             '#buildMenu .card-detail-btn',
             '#players .card-badge',
             '.tutorial-toggle-btn',
+            '.game-diagnostics-copy',
         ].join(', ')).evaluateAll(elements => elements.map(element => {
             const bounds = element.getBoundingClientRect();
             return {

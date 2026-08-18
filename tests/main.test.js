@@ -1140,7 +1140,24 @@ runTest('main 開始前確認は人数・参加者・速度・選択内容を確
     assert.ok(message.includes('CPU速度: 1.5秒'));
     assert.ok(message.includes('施設:'));
     assert.ok(message.includes('市場: 通常市場（全種類）'));
+    assert.ok(message.includes('標準設定との差分:'));
+    assert.ok(message.includes('・CPU（強）1人'));
     assert.ok(rt.__test.getGame());
+});
+
+runTest('main 開始前確認は標準設定なら変更なしと明示する', () => {
+    const rt = loadMainRuntime();
+    let message = '';
+    rt.beforeConfirm = value => { message = value; };
+    rt.__test.setSelectedCount(2);
+    rt.__test.setPlayerSettings([
+        { type: 'human', difficulty: 'normal', name: 'A' },
+        { type: 'human', difficulty: 'normal', name: 'B' },
+    ]);
+    rt.replaceEnabledCardSelection(rt.CARDS.map(card => card.name));
+    rt.replaceEnabledLandmarkSelection(rt.Player.landmarkNames());
+    rt.reviewGameSetup();
+    assert.ok(message.includes('・標準設定のまま'));
 });
 
 runTest('main は参加URLのroom IDを入力してonline参加tabを開く', () => {
@@ -2523,6 +2540,8 @@ runTest('index.html は秘密情報を含めない動作診断の表示・コピ
     assert.ok(html.includes('id="appDiagnosticsOutput"'));
     assert.ok(html.includes('data-ui-action="refreshAppDiagnostics"'));
     assert.ok(html.includes('data-ui-action="copyAppDiagnostics"'));
+    assert.ok(html.includes('class="game-diagnostics-copy"'));
+    assert.ok(html.includes('問題報告用の対局診断をコピー'));
     assert.ok(html.includes('ルームID、再接続情報、プレイヤー名は含みません'));
     assert.ok(html.indexOf('js/appDiagnostics.js') < html.indexOf('js/main.js'));
 });
@@ -2562,8 +2581,13 @@ runTest('main 動作診断は実runtime状態を表示し同じ安全な文面�
             { type: 'build', message: '秘密の名前が麦畑を建設' },
         ],
     });
+    rt.window.__machikoroClientCheckpoints = [{
+        event: 'action-local-applied',
+        details: { action: 'buildCard', result: true, playerName: '秘密の名前' },
+    }];
     const active = await rt.refreshAppDiagnostics();
     assert.strictEqual(active.gameState, '効果解決中・4ターン経過・2人');
+    assert.strictEqual(active.lastSuccessfulOperation, 'ローカル操作: buildCard');
     assert.strictEqual(active.pendingActions, 'resolveTV');
     assert.strictEqual(active.recentEvents, 'log:gain → log:build');
     const activeText = rt.AppDiagnostics.formatText(active);

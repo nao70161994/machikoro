@@ -44,7 +44,7 @@ function diagnosticPendingActions(currentGame) {
     }).slice(0, 5);
 }
 
-function diagnosticRecentEvents(currentGame, onlineState) {
+function diagnosticAcceptedOnlineActions(onlineState) {
     if (onlineState && (onlineState.isOnlineGame || onlineState.isReconnectingOnline)) {
         try {
             if (typeof _readOnlineActionLog === 'function') {
@@ -52,6 +52,12 @@ function diagnosticRecentEvents(currentGame, onlineState) {
             }
         } catch (_) {}
     }
+    return [];
+}
+
+function diagnosticRecentEvents(currentGame, onlineState) {
+    const onlineActions = diagnosticAcceptedOnlineActions(onlineState);
+    if (onlineActions.length > 0) return onlineActions;
     const knownLogTypes = typeof LOG_TYPES !== 'undefined' ? new Set(Object.values(LOG_TYPES)) : new Set();
     return Array.isArray(currentGame && currentGame.log)
         ? currentGame.log.slice(-5).map(entry => entry && entry.type)
@@ -112,6 +118,10 @@ async function collectAppDiagnostics() {
     const standalone = typeof window !== 'undefined' &&
         ((typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches) ||
             (typeof navigator !== 'undefined' && navigator.standalone === true));
+    const checkpoints = typeof window !== 'undefined' && Array.isArray(window.__machikoroClientCheckpoints)
+        ? window.__machikoroClientCheckpoints : [];
+    const acceptedOnlineActions = diagnosticAcceptedOnlineActions(onlineState);
+    const onlineContext = onlineState.isOnlineGame === true || onlineState.isReconnectingOnline === true;
     return AppDiagnostics.buildSnapshot({
         appVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
         serverVersion,
@@ -129,6 +139,10 @@ async function collectAppDiagnostics() {
         playerCount: currentGame && Array.isArray(currentGame.players) ? currentGame.players.length : 0,
         turnCount: currentGame && currentGame.turnCount,
         phase: currentGame && currentGame.phase,
+        lastSuccessfulOperation: AppDiagnostics.successfulOperationLabel({
+            onlineActions: acceptedOnlineActions,
+            checkpoints: onlineContext ? [] : checkpoints,
+        }),
         pendingActions: diagnosticPendingActions(currentGame),
         recentEvents: diagnosticRecentEvents(currentGame, onlineState),
         actionInFlight: actionFlight.inFlight === true,
@@ -624,6 +638,7 @@ function reviewGameSetup() {
     const setup = gameSetupSnapshot();
     const cards = getEnabledCardSelection();
     const landmarks = getEnabledLandmarkSelection();
+    const allLandmarks = Player.landmarkNames();
     const marketRule = GameSelectionState.runtime.snapshot().marketRule === 'ten-type'
         ? '公式オプション（異なる10種類）'
         : '通常市場（全種類）';
@@ -633,6 +648,17 @@ function reviewGameSetup() {
         return `${index + 1}. ${name}（${getLocalCpuLabel(setting.difficulty || 'normal')}）`;
     });
     const speed = document.getElementById('cpuSpeed')?.value;
+    const differences = GameSetupState.standardDifferenceLabels({
+        selectedCount: setup.selectedCount,
+        playerSettings: setup.playerSettings,
+        cpuSpeed: Number(speed || 1500),
+        cpuSpeedLabel: formatCpuSpeedLabel(speed || 1500),
+        enabledCards: Array.from(cards, card => card && card.name || card),
+        allCards: CARDS.map(card => card.name),
+        enabledLandmarks: Array.from(landmarks),
+        allLandmarks,
+        marketRule: GameSelectionState.runtime.snapshot().marketRule,
+    });
     const message = [
         'この設定でゲームを開始しますか？',
         '',
@@ -641,6 +667,9 @@ function reviewGameSetup() {
         `CPU速度: ${formatCpuSpeedLabel(speed || 1500)}`,
         `施設: ${cards.size}種 / ランドマーク: ${landmarks.size}種`,
         `市場: ${marketRule}`,
+        '',
+        '標準設定との差分:',
+        ...(differences.length > 0 ? differences.map(label => `・${label}`) : ['・標準設定のまま']),
     ].join('\n');
     return showConfirm(message, () => startGame());
 }

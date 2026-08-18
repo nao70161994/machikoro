@@ -275,7 +275,7 @@
                 </details>
                 <details class="utility-section app-diagnostics">
                     <summary>動作診断</summary>
-                    <p class="app-diagnostics-help">問題報告に必要な版・通信・保存・ゲーム状態・直近操作を確認できます。ルームID、再接続情報、プレイヤー名は含みません。</p>
+                    <p class="app-diagnostics-help">問題報告に必要な版・通信・保存・ゲーム状態・最後に成功した操作を確認できます。ルームID、再接続情報、プレイヤー名は含みません。</p>
                     <div class="app-diagnostics-actions">
                         <button type="button" data-ui-action="refreshAppDiagnostics">診断情報を更新</button>
                         <button type="button" data-ui-action="copyAppDiagnostics">診断情報をコピー</button>
@@ -331,13 +331,17 @@
         </section>
         <div id="tutorialBox" class="tutorial-box" role="region" aria-label="操作ガイド" style="display:none"></div>
         <div class="game-action-panel">
-            <details class="game-guide-settings">
-                <summary>ガイド設定</summary>
-                <div class="panel-tools">
-                    <button id="btnTutorialToggle" class="tutorial-toggle-btn" data-ui-action="toggleTutorial" aria-label="チュートリアル表示を切り替える"></button>
-                    <button id="btnTutorialLevel" class="tutorial-toggle-btn" data-ui-action="cycleTutorialLevel" aria-label="チュートリアルの詳しさを切り替える"></button>
-                </div>
-            </details>
+            <div class="game-action-toolbar">
+                <details class="game-guide-settings">
+                    <summary>ガイド設定</summary>
+                    <div class="panel-tools">
+                        <button id="btnTutorialToggle" class="tutorial-toggle-btn" data-ui-action="toggleTutorial" aria-label="チュートリアル表示を切り替える"></button>
+                        <button id="btnTutorialLevel" class="tutorial-toggle-btn" data-ui-action="cycleTutorialLevel" aria-label="チュートリアルの詳しさを切り替える"></button>
+                    </div>
+                </details>
+                <button type="button" class="game-diagnostics-copy" data-ui-action="copyAppDiagnostics"
+                    aria-label="問題報告用の対局診断をコピー">診断をコピー</button>
+            </div>
             <div id="diceResult"></div>
             <div id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
             <div id="diceChoose"></div>

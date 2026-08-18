@@ -15,6 +15,44 @@ runTest('game setup stateは既存初期値をdetached snapshotへ投影する',
     assert.ok(Object.isFrozen(controller.snapshot().playerSettings));
 });
 
+runTest('game setup stateは標準設定との差分だけを表示用labelへ投影する', () => {
+    assert.deepStrictEqual(GameSetupState.standardDifferenceLabels({
+        selectedCount: 2,
+        playerSettings: [{ type: 'human' }, { type: 'human' }],
+        cpuSpeed: 1500,
+        enabledCards: ['麦畑', 'パン屋'],
+        allCards: ['麦畑', 'パン屋'],
+        enabledLandmarks: ['駅', '港'],
+        allLandmarks: ['駅', '港'],
+        marketRule: 'standard',
+    }), []);
+
+    assert.deepStrictEqual(GameSetupState.standardDifferenceLabels({
+        selectedCount: 4,
+        playerSettings: [
+            { type: 'human' },
+            { type: 'cpu', difficulty: 'strong' },
+            { type: 'cpu', difficulty: 'strong' },
+            { type: 'cpu', difficulty: 'rl' },
+        ],
+        cpuSpeed: 500,
+        cpuSpeedLabel: '高速（0.5秒）',
+        enabledCards: ['麦畑'],
+        allCards: ['麦畑', 'パン屋'],
+        enabledLandmarks: ['駅'],
+        allLandmarks: ['駅', '港'],
+        marketRule: 'ten-type',
+    }), [
+        '人数 4人',
+        'CPU（強）2人',
+        'CPU（深層学習）1人',
+        'CPU速度 高速（0.5秒）',
+        '施設 1/2種',
+        '未使用ランドマーク 港',
+        '公式10種類市場',
+    ]);
+});
+
 runTest('game setup stateは設定配列の入出力をdetached read-only値にする', () => {
     const sourceSetting = { type: 'human', name: 'Alice' };
     const controller = GameSetupState.createController({ playerSettings: [sourceSetting] });

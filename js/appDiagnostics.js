@@ -32,6 +32,40 @@ const AppDiagnostics = (() => {
             /^[A-Za-z][A-Za-z0-9:_-]{0,39}$/.test(value)).slice(-5);
     }
 
+    function safeOperationName(value) {
+        return typeof value === 'string' && /^[A-Za-z][A-Za-z0-9:_-]{0,39}$/.test(value)
+            ? value : '';
+    }
+
+    function successfulOperationLabel(input = {}) {
+        const onlineActions = safeEventNames(input.onlineActions);
+        if (onlineActions.length > 0) return `オンライン操作: ${onlineActions.at(-1)}`;
+        const checkpoints = Array.isArray(input.checkpoints) ? input.checkpoints.slice(-80) : [];
+        for (let index = checkpoints.length - 1; index >= 0; index--) {
+            const checkpoint = checkpoints[index];
+            const details = checkpoint && checkpoint.details && typeof checkpoint.details === 'object'
+                ? checkpoint.details : {};
+            if (checkpoint && checkpoint.event === 'action-local-applied' && details.result !== false) {
+                const action = safeOperationName(details.action);
+                if (action) return `ローカル操作: ${action}`;
+            }
+            if (checkpoint && checkpoint.event === 'scheduleCPU-step-result' &&
+                    details.stepResult !== false) {
+                const step = safeOperationName(details.step);
+                if (step) return `CPU処理: ${step}`;
+            }
+            if (checkpoint && checkpoint.event === 'skip-nextTurn-returned' &&
+                    details.result === true) return 'ローカル操作: nextTurn';
+        }
+        return '記録なし';
+    }
+
+    function safeOperationLabel(value) {
+        return typeof value === 'string' &&
+            /^(オンライン操作|ローカル操作|CPU処理): [A-Za-z][A-Za-z0-9:_-]{0,39}$/.test(value)
+            ? value : '記録なし';
+    }
+
     function gameStateLabel(input) {
         if (input.gameActive !== true) return 'ゲームなし';
         const playerCount = Number.isSafeInteger(input.playerCount) && input.playerCount >= 2
@@ -74,6 +108,7 @@ const AppDiagnostics = (() => {
                 : 'なし',
             onlineResume: input.onlineResumeExists === true ? 'あり' : 'なし',
             gameState: gameStateLabel(input),
+            lastSuccessfulOperation: safeOperationLabel(input.lastSuccessfulOperation),
             pendingActions: pendingActions.length > 0 ? pendingActions.join(' → ') : 'なし',
             recentEvents: recentEvents.length > 0 ? recentEvents.join(' → ') : 'なし',
             actionDelivery: delivery,
@@ -97,6 +132,7 @@ const AppDiagnostics = (() => {
             ['ローカル保存', snapshot.localSave],
             ['オンライン再開データ', snapshot.onlineResume],
             ['ゲーム状態', snapshot.gameState],
+            ['最後に成功した操作', snapshot.lastSuccessfulOperation],
             ['保留中の処理', snapshot.pendingActions],
             ['直近イベント', snapshot.recentEvents],
             ['オンライン操作送信', snapshot.actionDelivery],
@@ -125,7 +161,16 @@ const AppDiagnostics = (() => {
             `${label}: ${value}`)].join('\n');
     }
 
-    return Object.freeze({ buildHtml, buildSnapshot, escapeHtml, formatText, gameStateLabel, rows, safeEventNames });
+    return Object.freeze({
+        buildHtml,
+        buildSnapshot,
+        escapeHtml,
+        formatText,
+        gameStateLabel,
+        rows,
+        safeEventNames,
+        successfulOperationLabel,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = AppDiagnostics;

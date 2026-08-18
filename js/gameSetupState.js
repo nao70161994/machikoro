@@ -2,6 +2,15 @@
 
 const GameSetupState = (() => {
     const fields = Object.freeze(['selectedCount', 'playerSettings', 'cpuSpeed']);
+    const STANDARD_PLAYER_COUNT = 2;
+    const STANDARD_CPU_SPEED = 1500;
+    const CPU_LABELS = Object.freeze({
+        weak: '弱',
+        normal: '普通',
+        strong: '強',
+        expert: '最強',
+        rl: '深層学習',
+    });
 
     function clonePlayerSetting(setting) {
         return setting && typeof setting === 'object' ? Object.assign({}, setting) : setting;
@@ -15,6 +24,49 @@ const GameSetupState = (() => {
         return Object.freeze(clonePlayerSettings(settings).map(setting =>
             setting && typeof setting === 'object' ? Object.freeze(setting) : setting
         ));
+    }
+
+    function standardDifferenceLabels(input = {}) {
+        const playerCount = Number.isSafeInteger(input.selectedCount)
+            ? Math.min(10, Math.max(2, input.selectedCount)) : STANDARD_PLAYER_COUNT;
+        const cpuSpeed = Number.isSafeInteger(Number(input.cpuSpeed))
+            ? Number(input.cpuSpeed) : STANDARD_CPU_SPEED;
+        const playerSettings = Array.isArray(input.playerSettings)
+            ? input.playerSettings.slice(0, playerCount) : [];
+        const labels = [];
+        if (playerCount !== STANDARD_PLAYER_COUNT) labels.push(`人数 ${playerCount}人`);
+
+        const cpuCounts = new Map();
+        for (const setting of playerSettings) {
+            if (!setting || setting.type !== 'cpu') continue;
+            const difficulty = Object.prototype.hasOwnProperty.call(CPU_LABELS, setting.difficulty)
+                ? setting.difficulty : 'normal';
+            cpuCounts.set(difficulty, (cpuCounts.get(difficulty) || 0) + 1);
+        }
+        for (const difficulty of Object.keys(CPU_LABELS)) {
+            const count = cpuCounts.get(difficulty) || 0;
+            if (count > 0) labels.push(`CPU（${CPU_LABELS[difficulty]}）${count}人`);
+        }
+        if (cpuSpeed !== STANDARD_CPU_SPEED) {
+            const speedLabel = typeof input.cpuSpeedLabel === 'string' && input.cpuSpeedLabel.trim()
+                ? input.cpuSpeedLabel.trim().slice(0, 24) : `${cpuSpeed}ms`;
+            labels.push(`CPU速度 ${speedLabel}`);
+        }
+
+        const allCards = Array.isArray(input.allCards) ? input.allCards : [];
+        const enabledCards = new Set(Array.isArray(input.enabledCards) ? input.enabledCards : []);
+        if (allCards.length > 0 && enabledCards.size !== allCards.length) {
+            labels.push(`施設 ${enabledCards.size}/${allCards.length}種`);
+        }
+        const allLandmarks = Array.isArray(input.allLandmarks) ? input.allLandmarks : [];
+        const enabledLandmarks = new Set(Array.isArray(input.enabledLandmarks)
+            ? input.enabledLandmarks : []);
+        const disabledLandmarks = allLandmarks.filter(name => !enabledLandmarks.has(name));
+        if (disabledLandmarks.length > 0) {
+            labels.push(`未使用ランドマーク ${disabledLandmarks.join('・')}`);
+        }
+        if (input.marketRule === 'ten-type') labels.push('公式10種類市場');
+        return Object.freeze(labels);
     }
 
     function createController(initial = {}) {
@@ -113,7 +165,14 @@ const GameSetupState = (() => {
     const browserRoot = typeof window !== 'undefined' ? window : null;
     const runtime = createController();
     if (root) runtime.bindGlobals(root, { writable: !browserRoot || browserRoot !== root });
-    return Object.freeze({ fields, createController, runtime });
+    return Object.freeze({
+        STANDARD_CPU_SPEED,
+        STANDARD_PLAYER_COUNT,
+        fields,
+        createController,
+        runtime,
+        standardDifferenceLabels,
+    });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = GameSetupState;
