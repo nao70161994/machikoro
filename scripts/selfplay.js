@@ -1241,9 +1241,25 @@ function rotatePlayers(players, offset) {
     return players.map((_, index) => players[(index + offset) % players.length]);
 }
 
+const SERIES_SEED_POLICIES = Object.freeze({
+    INDEPENDENT: 'independent',
+    PAIRED_SEATS: 'paired-seats',
+});
+
+function seriesSeedForGame(baseSeed, gameIndex, playerCount, seedPolicy = SERIES_SEED_POLICIES.INDEPENDENT) {
+    if (seedPolicy === SERIES_SEED_POLICIES.PAIRED_SEATS) {
+        return baseSeed + Math.floor(gameIndex / playerCount);
+    }
+    return baseSeed + gameIndex;
+}
+
 function runSeries(options = {}) {
     const games = integerOrDefault(options.games, 20);
     const players = options.players || ['expert', 'strong'];
+    const seedPolicy = options.seedPolicy || SERIES_SEED_POLICIES.INDEPENDENT;
+    if (seedPolicy === SERIES_SEED_POLICIES.PAIRED_SEATS && games % players.length !== 0) {
+        throw new Error(`paired-seats requires games to be a multiple of player count: games=${games}, players=${players.length}`);
+    }
     const runtime = options.runtime || loadRuntime({ includeRL: options.includeRL });
     const collectMatchLog = options.collectMatchLog !== false;
     const collectBuildStats = options.collectBuildStats !== false;
@@ -1270,7 +1286,7 @@ function runSeries(options = {}) {
 
     for (let i = 0; i < games; i++) {
         const lineup = rotatePlayers(players, i % players.length);
-        const seed = integerOrDefault(options.seed, 1) + i;
+        const seed = seriesSeedForGame(integerOrDefault(options.seed, 1), i, players.length, seedPolicy);
         const simulator = options.lightweightCpuOnly ? simulateGameLightweight : simulateGame;
         const result = simulator({
             runtime,
@@ -1499,6 +1515,8 @@ module.exports = {
     simulateGame,
     simulateGameLightweight,
     runSeries,
+    SERIES_SEED_POLICIES,
+    seriesSeedForGame,
     runDifficultyLadder,
     comparePresets,
     integerOrDefault,

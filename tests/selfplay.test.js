@@ -12,6 +12,8 @@ const {
     simulateGameLightweight,
     collectBuildDiagnostics,
     runSeries,
+    SERIES_SEED_POLICIES,
+    seriesSeedForGame,
     runDifficultyLadder,
     comparePresets,
     createBusinessStatsBucket,
@@ -452,6 +454,25 @@ runTest('runSeries は games/maxSteps の 0 指定を既定値で上書きしな
     assert.strictEqual(result.games, 0);
     assert.strictEqual(result.wins.expert + result.wins.weak, 0);
     assert.deepStrictEqual(result.matchLog, []);
+});
+
+runTest('paired-seats seed方針は同じ基準seedで全席を一巡する', () => {
+    const seeds = Array.from({ length: 8 }, (_, gameIndex) => (
+        seriesSeedForGame(7, gameIndex, 4, SERIES_SEED_POLICIES.PAIRED_SEATS)
+    ));
+    assert.deepStrictEqual(seeds, [7, 7, 7, 7, 8, 8, 8, 8]);
+    assert.deepStrictEqual(
+        Array.from({ length: 4 }, (_, gameIndex) => seriesSeedForGame(7, gameIndex, 4)),
+        [7, 8, 9, 10]
+    );
+});
+
+runTest('runSeries は不完全なpaired seatブロックを試合開始前に拒否する', () => {
+    assert.throws(() => runSeries({
+        games: 5,
+        players: ['rl', 'weak', 'normal', 'strong'],
+        seedPolicy: SERIES_SEED_POLICIES.PAIRED_SEATS,
+    }), /multiple of player count/);
 });
 
 runTest('runSeries は席ローテーション後もbuildStatsByDifficultyを難易度別に集計する', () => {

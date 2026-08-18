@@ -55,6 +55,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
         '--csv', 'out.csv',
         '--markdown', 'out.md',
         '--independent-seeds',
+        '--paired-seats',
     ]);
     assert.deepStrictEqual(args.models, ['a', 'b']);
     assert.deepStrictEqual(args.runLabels, ['run1', 'run2']);
@@ -67,6 +68,7 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
     assert.strictEqual(args.csv, 'out.csv');
     assert.strictEqual(args.markdown, 'out.md');
     assert.strictEqual(args.independentSeeds, true);
+    assert.strictEqual(args.pairedSeats, true);
 });
 
 runTest('eval-rl-models parseArgs は数値 CLI の 0 指定を保持する', () => {
@@ -207,6 +209,21 @@ runTest('eval-rl-models は複数モデルを同一seed scheduleで評価する'
     assert.deepStrictEqual(calls.map(call => call.sharedSeeds), [true, true]);
     assert.deepStrictEqual(results.map(result => result.evaluationConfig.seed), [5, 5]);
     assert.deepStrictEqual(results.map(result => result.evaluationConfig.sharedSeeds), [true, true]);
+});
+
+runTest('eval-rl-models はpaired seat方針を評価器とartifactへ伝える', () => {
+    const specs = [{ id: 'a', label: 'a', path: 'a.json', source: 'test', status: '' }];
+    const calls = [];
+    const results = evaluateModelSpecs(
+        specs,
+        { games: 20, seed: 5, maxSteps: 100, opponents: ['normal'], lineups: [], pairedSeats: true },
+        (options) => {
+            calls.push(options);
+            return [entry('normal', 0.5)];
+        }
+    );
+    assert.strictEqual(calls[0].pairedSeats, true);
+    assert.strictEqual(results[0].evaluationConfig.pairedSeats, true);
 });
 
 runTest('eval-rl-models は明示指定時だけモデルごとにseed windowを分ける', () => {

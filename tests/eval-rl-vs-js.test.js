@@ -74,13 +74,14 @@ function buildRlModel(overrides = {}) {
 }
 
 runTest('parseArgs は RL vs JS 評価 CLI 引数を解釈する', () => {
-    const args = parseArgs(['--model', 'tmp/model.json', '--games', '6', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--shared-seeds', '--opponents', 'strong,expert', '--lineups', 'rl,weak,normal,strong;rl,normal,normal,strong']);
+    const args = parseArgs(['--model', 'tmp/model.json', '--games', '6', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--shared-seeds', '--paired-seats', '--opponents', 'strong,expert', '--lineups', 'rl,weak,normal,strong;rl,normal,normal,strong']);
     assert.strictEqual(args.modelPath, 'tmp/model.json');
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
     assert.strictEqual(args.maxSteps, 7000);
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.sharedSeeds, true);
+    assert.strictEqual(args.pairedSeats, true);
     assert.deepStrictEqual(args.opponents, ['strong', 'expert']);
     assert.deepStrictEqual(args.lineups, [
         ['rl', 'weak', 'normal', 'strong'],
@@ -119,6 +120,9 @@ runTest('buildRlEvalRunSeriesOptions は full-fidelity simulator を明示する
     assert.strictEqual(options.fast, false);
     assert.strictEqual(options.lite, false);
     assert.strictEqual(options.lightweightCpuOnly, false);
+    assert.strictEqual(options.seedPolicy, 'independent');
+    const paired = buildRlEvalRunSeriesOptions({ games: 4, pairedSeats: true }, ['rl', 'weak'], 7, buildRlModel());
+    assert.strictEqual(paired.seedPolicy, 'paired-seats');
 });
 
 runTest('loadModel は export 済み JSON を読み込む', () => {

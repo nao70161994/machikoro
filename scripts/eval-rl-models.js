@@ -36,6 +36,7 @@ function parseArgs(argv) {
         csv: '',
         markdown: '',
         independentSeeds: false,
+        pairedSeats: false,
         allowSmoke: false,
     };
 
@@ -57,6 +58,7 @@ function parseArgs(argv) {
         else if (arg === '--csv') args.csv = argv[++i] || '';
         else if (arg === '--markdown') args.markdown = argv[++i] || '';
         else if (arg === '--independent-seeds') args.independentSeeds = true;
+        else if (arg === '--paired-seats') args.pairedSeats = true;
         else if (arg === '--allow-smoke') args.allowSmoke = true;
     }
     return args;
@@ -224,6 +226,7 @@ function evaluateModelSpecs(specs, args, evaluator = evaluateRlVsJs) {
             opponents: args.opponents,
             lineups: args.lineups,
             sharedSeeds,
+            pairedSeats: !!args.pairedSeats,
         };
         return summarizeModel(spec, evaluator(options), {
             games: args.games,
@@ -234,6 +237,7 @@ function evaluateModelSpecs(specs, args, evaluator = evaluateRlVsJs) {
             lineups: args.lineups,
             sharedSeeds,
             independentSeeds: !!args.independentSeeds,
+            pairedSeats: !!args.pairedSeats,
         });
     }).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 }

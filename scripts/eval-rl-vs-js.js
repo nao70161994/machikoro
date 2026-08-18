@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { integerOrDefault, parseIntegerOrDefault } = require(path.join(__dirname, 'cli-args.js'));
-const { runSeries } = require(path.join(__dirname, 'selfplay.js'));
+const { runSeries, SERIES_SEED_POLICIES } = require(path.join(__dirname, 'selfplay.js'));
 
 const RL_EVAL_SIMULATION_MODE = Object.freeze({
     fast: false,
@@ -31,6 +31,7 @@ function parseArgs(argv) {
     let opponents = ['weak', 'normal', 'strong', 'expert'];
     let lineups = [];
     let sharedSeeds = false;
+    let pairedSeats = false;
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -40,6 +41,7 @@ function parseArgs(argv) {
         else if (arg === '--max-steps') maxSteps = parseIntegerOrDefault(argv[++i], 5000);
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--shared-seeds' || arg === '--same-seed') sharedSeeds = true;
+        else if (arg === '--paired-seats') pairedSeats = true;
         else if (arg === '--opponents') opponents = (argv[++i] || 'weak,normal,strong,expert').split(',').filter(Boolean);
         else if (arg === '--lineups') {
             lineups = (argv[++i] || '')
@@ -49,7 +51,7 @@ function parseArgs(argv) {
         }
     }
 
-    return { modelPath, games, seed, maxSteps, format, opponents, lineups, sharedSeeds };
+    return { modelPath, games, seed, maxSteps, format, opponents, lineups, sharedSeeds, pairedSeats };
 }
 
 function loadModel(modelPath) {
@@ -78,6 +80,7 @@ function buildRlEvalRunSeriesOptions(options, lineup, seed, rlModelData) {
         fast: RL_EVAL_SIMULATION_MODE.fast,
         lite: RL_EVAL_SIMULATION_MODE.lite,
         lightweightCpuOnly: RL_EVAL_SIMULATION_MODE.lightweightCpuOnly,
+        seedPolicy: options.pairedSeats ? SERIES_SEED_POLICIES.PAIRED_SEATS : SERIES_SEED_POLICIES.INDEPENDENT,
     };
 }
 
