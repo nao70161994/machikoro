@@ -555,7 +555,7 @@ sh scripts/rl/eval-run-topk.sh self-only-both-h256-lr2e5-5000-seed71-rewardcap 1
 sh scripts/rl/eval-adopted-stability.sh
 ```
 
-引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定は `200` 戦、`self-only-4p-h256-lr1e5-5000-seed103`、`models/rl_model/eval-adopted-stability-{3p,4p}.json/csv`。
+引数は `[GAMES] [MODEL_ID] [OUT_PREFIX]`。既定は `200` 戦、`self-only-4p-h256-lr1e5-5000-seed103`、`models/rl_model/eval-adopted-stability-{3p,4p,5p,10p}.json/csv`。各人数で3種類のlineupを評価し、対局ごとの席ローテーションから席別勝率も記録する。
 
 旧採用 `seed102` の2026-04-20 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。
 
@@ -895,7 +895,7 @@ npm run report-rl-registry -- --format json --output models/rl_model/reports/reg
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
 | `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
-| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | runtime 4人100戦: weak+normal+strong 57% / normal+normal+strong 51% / weak+weak+normal 78%、3人50戦: normal+strong 72% / weak+strong 72%、5人50戦: weak+normal+strong+expert 56%、10人50戦: mixed 50% | 多人数用。5人以上は上位3相手射影。麦畑・ブドウ園・ピザ屋寄り |
+| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | 2026-08-18安定性評価（各lineup 200戦）: 3人 53.0〜70.5%、4人 46.5〜68.0%、5人 50.5〜64.5%、10人 43.5〜66.5%。最大席差は順に16.4 / 22.0 / 25.0 / 50.0pt、全lineup exhausted=0 | 多人数用。5人以上は上位3相手射影。強さは維持するが席依存が次の改善対象 |
 | `self-only-4p-h256-lr1e5-5000-seed102` | candidate-4p | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 旧採用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
 | `strong-select-seed21` | archive | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り。strong 性能が低く除外 |

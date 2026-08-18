@@ -251,7 +251,8 @@ function renderText(results) {
         for (const summary of result.summaries) {
             const lineup = Array.isArray(summary.lineup) ? summary.lineup : [];
             const seat = lineup.length > 2 && Array.isArray(summary.rlSeatWinRatesByIndex)
-                ? ` seat(${summary.rlSeatWinRatesByIndex.map((rate, index) => `${index}=${(rate * 100).toFixed(1)}%`).join(',')})`
+                ? ` seat(${summary.rlSeatWinRatesByIndex.map((rate, index) => `${index}=${(rate * 100).toFixed(1)}%`).join(',')})` +
+                    (summary.rlSeatWinRateRange ? ` seatGap=${(summary.rlSeatWinRateRange.gap * 100).toFixed(1)}pt` : '')
                 : '';
             const players = lineup.length > 0 ? ` players=${lineup.length}` : '';
             lines.push(
@@ -271,7 +272,7 @@ function renderText(results) {
 }
 
 function renderCsv(results) {
-    const rows = ['rank,id,score,buildSignatureCards,buildSignatureLandmarks,opponent,games,winRate,avgTurns,passRate,businessTotal,businessSkipRate,businessGive,businessTake,businessExchanges,topCards,topLandmarks'];
+    const rows = ['rank,id,score,buildSignatureCards,buildSignatureLandmarks,opponent,games,winRate,seatMinWinRate,seatMaxWinRate,seatGap,avgTurns,passRate,businessTotal,businessSkipRate,businessGive,businessTake,businessExchanges,topCards,topLandmarks'];
     for (const [index, result] of results.entries()) {
         const signatureCards = result.buildSignature
             ? result.buildSignature.cards.map(entry => `${entry.name}x${entry.count}`).join('|')
@@ -296,6 +297,9 @@ function renderCsv(results) {
                 summary.opponent,
                 summary.games,
                 summary.rlWinRate.toFixed(6),
+                summary.rlSeatWinRateRange ? summary.rlSeatWinRateRange.min.toFixed(6) : '',
+                summary.rlSeatWinRateRange ? summary.rlSeatWinRateRange.max.toFixed(6) : '',
+                summary.rlSeatWinRateRange ? summary.rlSeatWinRateRange.gap.toFixed(6) : '',
                 summary.averageTurns.toFixed(3),
                 build ? build.passRate.toFixed(6) : '',
                 business ? business.total : '',
@@ -338,8 +342,8 @@ function renderMarkdown(results) {
         `- minGames: ${gate.minGames === null ? 'n/a' : gate.minGames}`,
         gate.smokeOnly ? '- note: smokeOnly results are not adoption candidates.' : '- note: meets minimum game count for adoption review.',
         '',
-        '| rank | id | score | style | opponents | pass | avgTurns |',
-        '|---:|---|---:|---|---|---|---|',
+        '| rank | id | score | style | opponents | seat gap | pass | avgTurns |',
+        '|---:|---|---:|---|---|---|---|---|',
     ];
     for (const [index, result] of results.entries()) {
         const style = result.buildSignature && result.buildSignature.cardKey
@@ -352,6 +356,10 @@ function renderMarkdown(results) {
             `${summary.opponent} ` +
             `${summary.rlBuildStats ? formatPercent(summary.rlBuildStats.passRate) : 'n/a'}`
         )).join('<br>');
+        const seatGap = result.summaries.map(summary => (
+            `${summary.opponent} ` +
+            `${summary.rlSeatWinRateRange ? `${(summary.rlSeatWinRateRange.gap * 100).toFixed(1)}pt` : 'n/a'}`
+        )).join('<br>');
         const avgTurns = result.summaries.map(summary => (
             `${summary.opponent} ${summary.averageTurns.toFixed(1)}`
         )).join('<br>');
@@ -361,6 +369,7 @@ function renderMarkdown(results) {
             formatPercent(result.score),
             style,
             opponents,
+            seatGap,
             pass,
             avgTurns,
         ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'));

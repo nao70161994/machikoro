@@ -1,6 +1,6 @@
 {
     "schemaVersion": 1,
-    "updatedAt": "2026-05-11",
+    "updatedAt": "2026-08-18",
     "primaryMetric": "jsWinRateVsWeakNormalStrong",
     "notes": [
         "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
@@ -60,7 +60,7 @@
                 "id": "self-only-4p-h256-lr1e5-5000-seed103",
                 "role": "adopted-3p-10p",
                 "style": "wheat-vineyard-pizza",
-                "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. Latest 50-game extended lineup evaluation reached 56% on 5p weak+normal+strong+expert and 50% on 10p mixed weak/normal/strong/expert."
+                "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. The 2026-08-18 stability audit ran three 200-game lineups for 3p/4p/5p/10p. Win rates remained competitive, while seat gaps reached 16.4pt/22.0pt/25.0pt/50.0pt respectively and remain the main follow-up risk."
             },
             {
                 "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
@@ -1374,9 +1374,67 @@
             },
             "style": {
                 "label": "4p-wheat-vineyard-pizza",
-                "summary": "4人自己対戦候補から採用。seed102との100戦比較で総合61.7%対54.0%。mover/cleaning runtime fallback 後の4人100戦は rl+weak+normal+strong 57%、rl+normal+normal+strong 51%、rl+weak+weak+normal 78%。3人50戦lineupは normal+strong / weak+strong ともに72%。5人50戦は56%、10人50戦は50%。5人以上は上位3相手射影で動作する。"
+                "summary": "4人自己対戦候補から採用。2026-08-18に3/4/5/10人を各3lineup・各200戦で再監査し、全人数帯で競争力と低pass率を維持した。最大席差は3人16.4pt、4人22.0pt、5人25.0pt、10人50.0pt。5人以上は上位3相手射影で動作するため、次の改善対象は平均勝率より席依存と多人数一般化。"
             },
             "evals": [
+                {
+                    "date": "2026-08-18",
+                    "type": "js-lineup-3p-stability",
+                    "gamesPerLineup": 200,
+                    "seed": 1,
+                    "maxSteps": 5000,
+                    "lineups": {
+                        "rl+normal+strong": { "winRate": 0.53, "seatGap": 0.149254 },
+                        "rl+weak+normal": { "winRate": 0.705, "seatGap": 0.109905 },
+                        "rl+weak+strong": { "winRate": 0.615, "seatGap": 0.164179 }
+                    },
+                    "exhausted": 0,
+                    "maxPassRate": 0.023134
+                },
+                {
+                    "date": "2026-08-18",
+                    "type": "js-lineup-stability",
+                    "gamesPerLineup": 200,
+                    "seed": 1,
+                    "maxSteps": 5000,
+                    "lineups": {
+                        "rl+weak+normal+strong": { "winRate": 0.51, "seatGap": 0.22 },
+                        "rl+normal+normal+strong": { "winRate": 0.465, "seatGap": 0.14 },
+                        "rl+weak+weak+normal": { "winRate": 0.68, "seatGap": 0.12 }
+                    },
+                    "exhausted": 0,
+                    "maxPassRate": 0.008844
+                },
+                {
+                    "date": "2026-08-18",
+                    "type": "js-lineup-5p-stability",
+                    "gamesPerLineup": 200,
+                    "seed": 1,
+                    "maxSteps": 5000,
+                    "projection": "top3-opponents",
+                    "lineups": {
+                        "rl+weak+normal+strong+expert": { "winRate": 0.505, "seatGap": 0.25 },
+                        "rl+normal+normal+strong+expert": { "winRate": 0.525, "seatGap": 0.25 },
+                        "rl+weak+weak+normal+strong": { "winRate": 0.645, "seatGap": 0.225 }
+                    },
+                    "exhausted": 0,
+                    "maxPassRate": 0.003776
+                },
+                {
+                    "date": "2026-08-18",
+                    "type": "js-lineup-10p-stability",
+                    "gamesPerLineup": 200,
+                    "seed": 1,
+                    "maxSteps": 5000,
+                    "projection": "top3-opponents",
+                    "lineups": {
+                        "rl+weak+normal+strong+expert+weak+normal+strong+expert+normal": { "winRate": 0.56, "seatGap": 0.2 },
+                        "rl+normal+normal+strong+expert+weak+normal+strong+expert+strong": { "winRate": 0.665, "seatGap": 0.5 },
+                        "rl+weak+weak+normal+strong+expert+weak+normal+strong+expert": { "winRate": 0.435, "seatGap": 0.3 }
+                    },
+                    "exhausted": 0,
+                    "maxPassRate": 0.000363
+                },
                 {
                     "date": "2026-05-11",
                     "type": "js-lineup-5p",

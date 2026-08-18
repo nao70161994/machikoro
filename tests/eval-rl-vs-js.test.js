@@ -263,6 +263,8 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
     assert.strictEqual(summary.drawRate, 0.1);
     assert.strictEqual(summary.rlSeatWinRates.first, 0.5);
     assert.strictEqual(summary.rlSeatWinRates.second, 1);
+    assert.deepStrictEqual(summary.rlSeatWinRatesByIndex, [0.5, 1]);
+    assert.deepStrictEqual(summary.rlSeatWinRateRange, { min: 0.5, max: 1, gap: 0.5 });
     assert.strictEqual(summary.rlBuildStats.total, 6);
     assert.strictEqual(summary.rlBuildStats.pass, 2);
     assert.strictEqual(summary.rlBuildStats.passRate, 2 / 6);

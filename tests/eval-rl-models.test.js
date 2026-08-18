@@ -277,6 +277,7 @@ runTest('eval-rl-models renderCsv は集計行を出力する', () => {
                     opponent: 'weak',
                     games: 10,
                     rlWinRate: 0.8,
+                    rlSeatWinRateRange: { min: 0.4, max: 0.9, gap: 0.5 },
                     averageTurns: 50,
                     rlBuildStats: {
                         passRate: 0.1,
@@ -299,6 +300,8 @@ runTest('eval-rl-models renderCsv は集計行を出力する', () => {
     assert.ok(csv.includes('m1'));
     assert.ok(csv.includes('パン屋x10'));
     assert.ok(csv.includes('businessTotal'));
+    assert.ok(csv.includes('seatMinWinRate,seatMaxWinRate,seatGap'));
+    assert.ok(csv.includes('0.400000,0.900000,0.500000'));
     assert.ok(csv.includes('麦畑->パン屋x2'));
 });
 
@@ -315,6 +318,7 @@ runTest('eval-rl-models renderText は5人lineupの人数と席別指標を出�
                     rlWinRate: 0.4,
                     averageTurns: 24,
                     rlSeatWinRatesByIndex: [1, 0, 0, 1, 0],
+                    rlSeatWinRateRange: { min: 0, max: 1, gap: 1 },
                     rlBuildStats: { passRate: 0, topCards: [], topLandmarks: [] },
                 },
             ],
@@ -322,6 +326,7 @@ runTest('eval-rl-models renderText は5人lineupの人数と席別指標を出�
     ]);
     assert.ok(text.includes('players=5'));
     assert.ok(text.includes('seat(0=100.0%,1=0.0%,2=0.0%,3=100.0%,4=0.0%)'));
+    assert.ok(text.includes('seatGap=100.0pt'));
 });
 
 runTest('eval-rl-models renderMarkdown は貼り付け用の順位表を出力する', () => {
@@ -347,7 +352,7 @@ runTest('eval-rl-models renderMarkdown は貼り付け用の順位表を出力�
             ],
         },
     ]);
-    assert.ok(markdown.includes('| rank | id | score | style | opponents | pass | avgTurns |'));
+    assert.ok(markdown.includes('| rank | id | score | style | opponents | seat gap | pass | avgTurns |'));
     assert.ok(markdown.includes('- gate: smokeOnly'));
     assert.ok(markdown.includes('not adoption candidates'));
     assert.ok(markdown.includes('`m1`'));

@@ -168,6 +168,13 @@ function summarizeEvaluationEntry(entry) {
             .slice(0, 5)
             .map(([name, count]) => ({ name, count }))
         : [];
+    const rlSeatWinRatesByIndex = seatGames.map((games, index) => games > 0 ? (seatWins[index] || 0) / games : 0);
+    const observedSeatRates = rlSeatWinRatesByIndex.filter((_, index) => (seatGames[index] || 0) > 0);
+    const rlSeatWinRateRange = observedSeatRates.length > 0 ? {
+        min: Math.min(...observedSeatRates),
+        max: Math.max(...observedSeatRates),
+        gap: Math.max(...observedSeatRates) - Math.min(...observedSeatRates),
+    } : { min: 0, max: 0, gap: 0 };
     return {
         opponent: entry.opponent,
         games,
@@ -182,7 +189,8 @@ function summarizeEvaluationEntry(entry) {
             first: rlFirstGames > 0 ? rlFirstWins / rlFirstGames : 0,
             second: rlSecondGames > 0 ? rlSecondWins / rlSecondGames : 0,
         },
-        rlSeatWinRatesByIndex: seatGames.map((games, index) => games > 0 ? (seatWins[index] || 0) / games : 0),
+        rlSeatWinRatesByIndex,
+        rlSeatWinRateRange,
         rlBuildStats: rlBuildStats ? {
             total: rlBuildStats.total || 0,
             pass: rlBuildStats.pass || 0,
