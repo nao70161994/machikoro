@@ -571,7 +571,17 @@ sh scripts/rl/eval-adopted-seat-stability.sh
 sh scripts/rl/eval-adopted-paired-seat.sh
 ```
 
-引数は `[BLOCKS] [MODEL_ID] [OUT_PREFIX] [SEED]`。1 blockは同じseedでlineup全体を10席へ循環配置する10試合で、既定20 blockは各lineup 200試合・各席20試合になる。`--paired-seats` の試合数は人数の倍数でなければ開始前に拒否される。
+引数は `[BLOCKS] [MODEL_ID] [OUT_PREFIX] [SEED]`。1 blockは同じseedでlineup全体を10席へ循環配置する10試合で、既定100 blockは各lineup 1000試合・各席100試合になる。20 block（各席20試合）では席差の振れを安定して分離できなかったため、採用判断には100 block以上を使う。`--paired-seats` の試合数は人数の倍数でなければ開始前に拒否される。
+
+RL固有の席依存か、ゲームルール由来の席差かを分けるには、タグ付けしたCPU個体を同じnormal 9体・同じ乱数で全席へ循環させる。
+
+```sh
+npm run diagnose-cpu-seat-effect -- --blocks 100 --output models/rl_model/cpu-seat-effect.json
+```
+
+`normal` は同型10体の基準なのでルール由来の絶対席profile、`rl/weak/strong/expert` は同じnormal 9体に対する個体別profileになる。`residualVsNormal` は平均勝率差を除いたnormal基準からの最大席偏差。100 blockなら各CPU・各席100試合となる。検定は期待度数が十分な対象だけを結論に使い、勝数が少ないCPUの見かけの席差を有意差として扱わない。
+
+2026-08-19の10人・100 block診断では、normalは1000戦100勝・席勝率7〜14%・一様性 `χ²=3.40`、RLは1000戦596勝（59.6%, 95% CI 56.5〜62.6%）・席勝率53〜66%・一様性 `χ²=3.16`だった。RLとnormalの勝利席分布差も `χ²=4.48`（9自由度、5%閾値16.919）で有意でない。したがって、以前の各席20戦で25〜40ptに見えた差の主因は標本誤差と判定した。これはルール上の席効果が完全に0だと証明するものではなく、このlineupで大きな絶対席効果やRL固有の席欠陥を支持する証拠がない、という結論である。
 
 旧採用 `seed102` の2026-04-20 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。
 
@@ -911,7 +921,7 @@ npm run report-rl-registry -- --format json --output models/rl_model/reports/reg
 | `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
 | `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
-| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | 2026-08-18安定性評価: 3人 53.0〜70.5%、4人 46.5〜68.0%、5人 50.5〜64.5%（各200戦）。10人は5seed・各lineup 1000戦で44.9〜65.3%、席差19.0〜24.0pt。paired 20 blockでも席差25.0〜40.0pt、全lineup exhausted=0 | 多人数用。5人以上は上位3相手射影。pairedは各席20戦の診断値だが、残る絶対席依存が次の改善対象 |
+| `self-only-4p-h256-lr1e5-5000-seed103` | adopted | 2026-08-18安定性評価: 3人 53.0〜70.5%、4人 46.5〜68.0%、5人 50.5〜64.5%（各200戦）。10人は5seed・各lineup 1000戦で44.9〜65.3%。2026-08-19の10人100 blockでRL 59.6%、席差13.0pt、RL対normal席分布差は非有意 | 多人数用。5人以上は上位3相手射影。旧20戦/席の大差は標本誤差主導と結論し、採用席評価を100戦/席へ強化 |
 | `self-only-4p-h256-lr1e5-5000-seed102` | candidate-4p | 4人100戦: weak+normal+strong 73% / normal+normal+strong 72%、3人100戦: normal+strong 73% | 旧採用。ブドウ園・牧場・ピザ屋寄り |
 | `terminal-shaped-h128-lr1e4` | archive | 100戦 weak 99% / normal 53% / strong 39% | パン屋・牧場・マグロ漁船・寿司屋・コンビニ寄り、normal 不安定で active から除外 |
 | `strong-select-seed21` | archive | weak 85% / normal 75% / strong 10% | 麦畑・ブドウ園・バーガーショップ寄り。strong 性能が低く除外 |
