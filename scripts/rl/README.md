@@ -581,6 +581,32 @@ npm run diagnose-cpu-seat-effect -- --blocks 100 --output models/rl_model/cpu-se
 
 `normal` は同型10体の基準なのでルール由来の絶対席profile、`rl/weak/strong/expert` は同じnormal 9体に対する個体別profileになる。`residualVsNormal` は平均勝率差を除いたnormal基準からの最大席偏差。100 blockなら各CPU・各席100試合となる。検定は期待度数が十分な対象だけを結論に使い、勝数が少ないCPUの見かけの席差を有意差として扱わない。
 
+JS CPUの難易度順序を人数別に確認する場合も同じpaired seat診断を使う。
+
+```sh
+npm run diagnose-cpu-seat-effect -- \
+  --player-count 4 \
+  --blocks 100 \
+  --targets normal,strong,expert \
+  --output models/rl_model/cpu-difficulty-4p.json
+```
+
+`--player-count` は2〜10。RLをtargetへ含めない場合はregistry/modelを読み込まない。`difficultyOrder` は各個体の総勝率95%区間を比較し、normalより明確に弱いstrong/expert、またはstrongより明確に弱いexpertがある場合を `difficulty-inversion` とする。区間が重なる場合は `order-unproven` であり、順序が逆だとも成立したとも断定しない。
+
+2026-08-21の初回診断は学習用`expert`構成を使っており、4人100 blockが `normal 25.0% / strong 48.3% / expert 62.0%`、5人100 blockが `20.0% / 39.0% / 38.0%`、8人30 blockが `12.5% / 9.6% / 3.8%`、10人100 blockが `10.0% / 4.4% / 3.1%` だった。この結果から8〜10人専用profileの必要性は確認できたが、実ゲームの`v2simple/realtime`とは異なるため、製品CPUの採用値としては使わない。
+
+2026-08-22から診断の既定を`--cpu-purpose live`へ変更し、実ゲームと同じCPU optionで再評価した。現行`expert`は10 blockで8人40.0%、10人33.0%となり、弱さではなく処理時間だけが注意点だった。`strong`は建設・rollをnormal基準にし、赤/紫/全体妨害を大人数向けに残す`interaction-core`が10 blockで8人20.0%、9人11.1%、10人10.0%となったため、少なくともnormalを下回る逆転を解消する候補として採用した。候補探索は次で再現でき、候補ごとの開始・終了と所要時間を表示する。
+
+```bash
+npm run diagnose-cpu-seat-effect -- \
+  --search-large-crowd --blocks 10 --player-counts 8,9,10 \
+  --difficulties strong --candidate-ids native,balanced-core,interaction-core
+```
+
+探索候補は同一seed・全席循環で比較する。短い2〜10 blockは足切り専用で、最終判断では十分なblock数、4〜6人の非回帰、step budget、`test:cpu`を合わせて確認する。4人向けcrowd購入補正だけを反転する旧試行は改善せず計算時間も延びたため不採用のままとする。
+
+採用後は、8人50 blockでnormal 12.5%に対してstrong 18.3%（各400試合）、9人30 blockで11.1%対13.3%（各270試合）、10人100 blockで10.0%対12.6%（各1000試合）となり、全条件で打切り0件だった。旧10人strong 4.4%の難易度逆転を解消し、8人で最大の勝率差があり、9〜10人でもnormalを下回らなかった。同じTermux実機でnormal/strongは8人約138/169秒、9人約130/179秒、10人約630/722秒。個別stepは既存hard budget内を維持した。10 blockのexpertは8人40.0%、10人33.0%でnormalを明確に上回り、現行live expertの戦略変更は不要と判断した。
+
 2026-08-19の10人・100 block診断では、normalは1000戦100勝・席勝率7〜14%・一様性 `χ²=3.40`、RLは1000戦596勝（59.6%, 95% CI 56.5〜62.6%）・席勝率53〜66%・一様性 `χ²=3.16`だった。RLとnormalの勝利席分布差も `χ²=4.48`（9自由度、5%閾値16.919）で有意でない。したがって、以前の各席20戦で25〜40ptに見えた差の主因は標本誤差と判定した。これはルール上の席効果が完全に0だと証明するものではなく、このlineupで大きな絶対席効果やRL固有の席欠陥を支持する証拠がない、という結論である。
 
 旧採用 `seed102` の2026-04-20 200戦評価では、4人は `weak+normal+strong` 70.0%、`normal+normal+strong` 67.5%、`weak+weak+normal` 91.5%。3人は `normal+strong` 72.5%、`weak+normal` 88.0%、`weak+strong` 76.5%。4人評価でBC発動は0回、3人評価では合計23回発動し skip 0.0%。

@@ -103,6 +103,14 @@ function resolveSelfplayDifficulties(difficulties) {
 function createPlayers(runtime, difficulties, options = {}) {
     const resolvedDifficulties = resolveSelfplayDifficulties(difficulties);
     return resolvedDifficulties.map(difficulty => {
+        const playerCountProfileTunings = options.playerCountProfileTuningsByDifficulty &&
+            options.playerCountProfileTuningsByDifficulty[difficulty]
+            ? options.playerCountProfileTuningsByDifficulty[difficulty]
+            : options.playerCountProfileTunings;
+        const largeCrowdStrategy = options.largeCrowdStrategiesByDifficulty &&
+            options.largeCrowdStrategiesByDifficulty[difficulty]
+            ? options.largeCrowdStrategiesByDifficulty[difficulty]
+            : {};
         if (difficulty === 'rl') {
             if (!options.rlModelData || !runtime.RLCPU) {
                 throw new Error('rlModelData is required when using rl difficulty');
@@ -113,17 +121,29 @@ function createPlayers(runtime, difficulties, options = {}) {
             return new runtime.RLCPU(options.rlModelData);
         }
         if (difficulty !== 'expert') {
-            return new runtime.CPU(difficulty, {
+            const cpuOptions = {
                 profileStats: options.profileStats,
+                playerCountProfileTunings,
+                largeCrowdBuildMode: largeCrowdStrategy.buildMode,
+                largeCrowdRollMode: largeCrowdStrategy.rollMode,
                 simulationMode: difficulty === 'strong'
                     ? options.strongSimulationMode
                     : undefined,
-            });
+            };
+            const resolvedOptions = options.cpuPurpose === 'live' && runtime.resolveLiveCpuOptions
+                ? runtime.resolveLiveCpuOptions(difficulty, cpuOptions)
+                : cpuOptions;
+            return new runtime.CPU(difficulty, resolvedOptions);
         }
-        return new runtime.CPU(difficulty, {
-            expertPurpose: options.expertPurpose || 'training',
-            simulationMode: options.lite ? 'lite' : (options.fast ? 'fast' : 'full'),
+        const cpuOptions = {
+            expertPurpose: options.cpuPurpose === 'live' ? 'live' : (options.expertPurpose || 'training'),
+            simulationMode: options.cpuPurpose === 'live'
+                ? undefined
+                : (options.lite ? 'lite' : (options.fast ? 'fast' : 'full')),
             profileStats: options.profileStats,
+            playerCountProfileTunings,
+            largeCrowdBuildMode: largeCrowdStrategy.buildMode,
+            largeCrowdRollMode: largeCrowdStrategy.rollMode,
             expertPreset: options.expertPreset,
             expertDiceMode: options.expertDiceMode,
             expertRerollMode: options.expertRerollMode,
@@ -157,7 +177,11 @@ function createPlayers(runtime, difficulties, options = {}) {
             expertBehaviorFlags: options.expertBehaviorFlags,
             expertProfilePresets: options.expertProfilePresets,
             expertProfileTunings: options.expertProfileTunings,
-        });
+        };
+        const resolvedOptions = options.cpuPurpose === 'live' && runtime.resolveLiveCpuOptions
+            ? runtime.resolveLiveCpuOptions(difficulty, cpuOptions)
+            : cpuOptions;
+        return new runtime.CPU(difficulty, resolvedOptions);
     });
 }
 
@@ -1159,10 +1183,14 @@ function simulateGame(options = {}) {
             seed,
             expertPreset: options.expertPreset || 'default',
             expertPurpose: options.expertPurpose || 'training',
+            cpuPurpose: options.cpuPurpose || 'training',
             expertTuning: options.expertTuning || null,
             expertBehaviorFlags: options.expertBehaviorFlags || null,
             expertProfilePresets: options.expertProfilePresets || null,
             expertProfileTunings: options.expertProfileTunings || null,
+            playerCountProfileTunings: options.playerCountProfileTunings || null,
+            playerCountProfileTuningsByDifficulty: options.playerCountProfileTuningsByDifficulty || null,
+            largeCrowdStrategiesByDifficulty: options.largeCrowdStrategiesByDifficulty || null,
             rlModel: options.rlModelData ? {
                 stateDim: options.rlModelData.stateDim,
                 hiddenSize: options.rlModelData.hiddenSize,
@@ -1294,11 +1322,17 @@ function runSeries(options = {}) {
             seed,
             maxSteps: options.maxSteps,
             profileStats: options.profileStats,
+            cpuPurpose: options.cpuPurpose,
+            expertPurpose: options.expertPurpose,
+            strongSimulationMode: options.strongSimulationMode,
             expertPreset: options.expertPreset,
             expertTuning: options.expertTuning,
             expertBehaviorFlags: options.expertBehaviorFlags,
             expertProfilePresets: options.expertProfilePresets,
             expertProfileTunings: options.expertProfileTunings,
+            playerCountProfileTunings: options.playerCountProfileTunings,
+            playerCountProfileTuningsByDifficulty: options.playerCountProfileTuningsByDifficulty,
+            largeCrowdStrategiesByDifficulty: options.largeCrowdStrategiesByDifficulty,
             rlModelData: options.rlModelData,
             fast: options.fast,
             lite: options.lite,

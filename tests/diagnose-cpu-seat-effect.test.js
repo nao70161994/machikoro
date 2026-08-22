@@ -11,17 +11,86 @@ const {
     hasAdequateExpectedCounts,
     addBaselineResiduals,
     classifySeatEffect,
+    compareWinRateIntervals,
+    classifyDifficultyOrder,
+    LARGE_CROWD_CANDIDATES,
+    largeCrowdCandidateOptions,
+    evaluateLargeCrowdCandidates,
     combineSeatEffectReports,
     evaluateSeatEffects,
 } = require('../scripts/diagnose-cpu-seat-effect.js');
 
 runTest('CPU seat診断argsはblock/target/modelを解釈する', () => {
     assert.strictEqual(parseArgs([]).blocks, 100);
-    const args = parseArgs(['--blocks', '30', '--seed', '11', '--targets', 'rl,strong', '--model-id', 'm']);
+    const args = parseArgs(['--blocks', '30', '--seed', '11', '--player-count', '4', '--targets', 'rl,strong', '--model-id', 'm']);
     assert.strictEqual(args.blocks, 30);
     assert.strictEqual(args.seed, 11);
+    assert.strictEqual(args.playerCount, 4);
+    assert.strictEqual(args.cpuPurpose, 'live');
     assert.deepStrictEqual(args.targets, ['rl', 'strong']);
     assert.strictEqual(args.modelId, 'm');
+});
+
+runTest('large-crowd候補は対象難易度だけへ戦略とprofileを投影する', () => {
+    const native = LARGE_CROWD_CANDIDATES.find(entry => entry.id === 'native');
+    assert.deepStrictEqual(largeCrowdCandidateOptions('strong', native), {
+        largeCrowdStrategiesByDifficulty: {
+            strong: { buildMode: 'native', rollMode: 'native' },
+        },
+        playerCountProfileTuningsByDifficulty: {
+            strong: { largeCrowd: Object.assign({}, native.profile) },
+        },
+    });
+    const candidate = LARGE_CROWD_CANDIDATES.find(entry => entry.id === 'tempo-core');
+    assert.deepStrictEqual(largeCrowdCandidateOptions('strong', candidate), {
+        largeCrowdStrategiesByDifficulty: {
+            strong: { buildMode: 'normal', rollMode: 'normal' },
+        },
+        playerCountProfileTuningsByDifficulty: {
+            strong: { largeCrowd: Object.assign({}, candidate.profile) },
+        },
+    });
+});
+
+runTest('large-crowd探索は同一seedの全席評価と速度を候補別に集計する', () => {
+    let clock = 0;
+    const calls = [];
+    const report = evaluateLargeCrowdCandidates({
+        blocks: 2,
+        seed: 7,
+        maxSteps: 100,
+        cpuPurpose: 'live',
+        playerCounts: [8, 10],
+        candidateIds: ['native', 'normal-core'],
+        difficulties: ['strong', 'expert'],
+    }, {
+        now: () => (clock += 5),
+        runSeries: options => {
+            calls.push(options);
+            const playerCount = options.players.length;
+            return {
+                exhausted: 0,
+                matchLog: Array.from({ length: options.games }, (_, gameIndex) => ({
+                    winnerIndex: gameIndex % playerCount,
+                })),
+            };
+        },
+    });
+
+    assert.strictEqual(calls.length, 8);
+    assert.ok(calls.every(call => call.cpuPurpose === 'live'));
+    assert.ok(calls.every(call => call.seedPolicy === 'paired-seats'));
+    assert.deepStrictEqual(report.playerCounts, [8, 10]);
+    assert.strictEqual(report.rows.length, 4);
+    assert.ok(report.rows.every(row => row.elapsedMs === 5));
+    assert.throws(() => evaluateLargeCrowdCandidates(Object.assign({}, parseArgs([]), {
+        searchLargeCrowd: true,
+        playerCounts: [],
+    })), /player-counts/);
+    assert.throws(() => evaluateLargeCrowdCandidates(Object.assign({}, parseArgs([]), {
+        searchLargeCrowd: true,
+        candidateIds: [],
+    })), /candidate/);
 });
 
 runTest('tagged subjectはlineup循環後の元index 0を追跡する', () => {
@@ -103,6 +172,22 @@ runTest('席効果分類はルール・RL固有・方策一般・標本誤差を
     ]).classification, 'sampling-dominant');
 });
 
+runTest('難易度順序は95%区間で逆転・順序成立・未確定を分ける', () => {
+    const entry = (target, low, high) => ({ target, winRate95: { low, high } });
+    assert.strictEqual(compareWinRateIntervals(entry('strong', 0.3, 0.4), entry('normal', 0.1, 0.2)), 'above');
+    assert.strictEqual(compareWinRateIntervals(entry('strong', 0.1, 0.2), entry('normal', 0.3, 0.4)), 'below');
+    assert.strictEqual(compareWinRateIntervals(entry('strong', 0.15, 0.3), entry('normal', 0.2, 0.4)), 'overlap');
+    assert.strictEqual(classifyDifficultyOrder([
+        entry('normal', 0.2, 0.25), entry('strong', 0.1, 0.15), entry('expert', 0.26, 0.31),
+    ]).classification, 'difficulty-inversion');
+    assert.strictEqual(classifyDifficultyOrder([
+        entry('normal', 0.1, 0.15), entry('strong', 0.2, 0.25), entry('expert', 0.3, 0.35),
+    ]).classification, 'fully-ordered');
+    assert.strictEqual(classifyDifficultyOrder([
+        entry('normal', 0.1, 0.2), entry('strong', 0.15, 0.25), entry('expert', 0.18, 0.28),
+    ]).classification, 'order-unproven');
+});
+
 runTest('分割seat診断は同一条件のtargetを結合してnormal残差を再計算する', () => {
     const base = {
         modelId: 'm', blocks: 20, seedRange: [1, 20], playerCount: 10,
@@ -132,6 +217,7 @@ runTest('seat診断は全targetを同じnormal相手・paired方針で評価す�
     const report = evaluateSeatEffects({
         blocks: 1,
         seed: 5,
+        playerCount: 4,
         maxSteps: 10,
         modelId: 'm',
         registryPath: '',
@@ -141,14 +227,36 @@ runTest('seat診断は全targetを同じnormal相手・paired方針で評価す�
         rlModelData: {},
         runSeries(options) {
             calls.push(options);
-            return { matchLog: Array.from({ length: 10 }, (_, index) => ({ winnerIndex: taggedSubjectSeat(index, 10) })), exhausted: 0 };
+            return { matchLog: Array.from({ length: 4 }, (_, index) => ({ winnerIndex: taggedSubjectSeat(index, 4) })), exhausted: 0 };
         },
     });
     assert.strictEqual(calls.length, 2);
-    assert.strictEqual(calls.every(call => call.games === 10 && call.seedPolicy === 'paired-seats'), true);
+    assert.strictEqual(calls.every(call => call.games === 4 && call.seedPolicy === 'paired-seats'), true);
     assert.strictEqual(calls.every(call => call.players.slice(1).every(value => value === 'normal')), true);
     assert.strictEqual(calls.every(call => call.collectBuildStats === false && call.collectBusinessStats === false && call.includeFinalState === false), true);
     assert.strictEqual(report.entries.every(entry => entry.winRate === 1), true);
     assert.strictEqual(report.maxSteps, 10);
     assert.strictEqual(report.seedPolicy, 'paired-seats');
+});
+
+runTest('JS CPUだけの人数別診断はRL registryを要求しない', () => {
+    const report = evaluateSeatEffects({
+        blocks: 1,
+        seed: 1,
+        playerCount: 2,
+        maxSteps: 10,
+        modelId: 'missing',
+        registryPath: 'missing',
+        targets: ['normal', 'strong', 'expert'],
+    }, {
+        runSeries() {
+            return { matchLog: [{ winnerIndex: 0 }, { winnerIndex: 1 }], exhausted: 0 };
+        },
+    });
+    assert.strictEqual(report.playerCount, 2);
+    assert.strictEqual(report.difficultyOrder.classification, 'order-unproven');
+    assert.throws(() => evaluateSeatEffects(Object.assign({}, parseArgs([]), {
+        playerCount: 11,
+        targets: ['normal'],
+    }), { runSeries() {} }), /2〜10/);
 });

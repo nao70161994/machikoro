@@ -667,6 +667,22 @@ runTest('simulateGame は expert 指定なしでも default を既定プリセ�
     assert.strictEqual(cpu.expertBehaviorFlags.lookaheadLeaderStrongOnly, true);
 });
 
+runTest('simulateGame はlive CPU構成で実ゲームと同じpresetとsimulationを使う', () => {
+    const options = {
+        difficulties: ['expert', 'strong'],
+        seed: 7,
+        maxSteps: 1,
+        cpuPurpose: 'live',
+    };
+    const result = simulateGame(options);
+
+    assert.strictEqual(result.cpuPurpose, 'live');
+    assert.strictEqual(options.cpuPlayers[0].expertPurpose, 'live');
+    assert.strictEqual(options.cpuPlayers[0].expertPreset, 'v2simple');
+    assert.strictEqual(options.cpuPlayers[0].simulationMode, 'realtime');
+    assert.strictEqual(options.cpuPlayers[1].simulationMode, 'realtime');
+});
+
 runTest('simulateGame は人数別 expert tuning を受け渡せる', () => {
     const result = simulateGame({
         difficulties: ['expert', 'strong', 'strong', 'normal'],
@@ -679,6 +695,39 @@ runTest('simulateGame は人数別 expert tuning を受け渡せる', () => {
     });
 
     assert.strictEqual(result.expertProfileTunings.crowd.lookaheadWeight, 0.42);
+});
+
+runTest('simulateGame は難易度別large-crowd profileを対象CPUだけへ渡す', () => {
+    const options = {
+        difficulties: ['strong', 'normal', 'normal', 'normal', 'normal', 'normal', 'normal', 'normal'],
+        seed: 11,
+        maxSteps: 1,
+        playerCountProfileTuningsByDifficulty: {
+            strong: { largeCrowd: { redFactor: 1.25 } },
+        },
+    };
+    const result = simulateGame(options);
+
+    assert.strictEqual(result.playerCountProfileTuningsByDifficulty.strong.largeCrowd.redFactor, 1.25);
+    assert.strictEqual(options.cpuPlayers[0]._playerCountProfile({ players: options.cpuPlayers }).redFactor, 1.25);
+    assert.strictEqual(options.cpuPlayers[1]._playerCountProfile({ players: options.cpuPlayers }).redFactor, 0.92);
+});
+
+runTest('simulateGame はlarge-crowd戦略を対象難易度だけへ渡す', () => {
+    const options = {
+        difficulties: ['expert', 'strong', 'normal', 'normal', 'normal', 'normal', 'normal', 'normal'],
+        seed: 13,
+        maxSteps: 1,
+        largeCrowdStrategiesByDifficulty: {
+            expert: { buildMode: 'normal', rollMode: 'normal' },
+        },
+    };
+    const result = simulateGame(options);
+
+    assert.strictEqual(result.largeCrowdStrategiesByDifficulty.expert.buildMode, 'normal');
+    assert.strictEqual(options.cpuPlayers[0].largeCrowdBuildMode, 'normal');
+    assert.strictEqual(options.cpuPlayers[0].largeCrowdRollMode, 'normal');
+    assert.strictEqual(options.cpuPlayers[1].largeCrowdBuildMode, 'native');
 });
 
 runTest('simulateGame は expert behavior flags を受け渡せる', () => {
