@@ -80,14 +80,17 @@ runTest('paired summaryは同一seed・席の勝敗差と95%区間を集計す�
         ties: 3,
     });
     assert.strictEqual(summary.meanDifference, 1 / 6);
+    assert.ok(summary.nonInferiority95Low < summary.meanDifference);
     assert.strictEqual(comparisonPass(summary, 1), true);
     assert.strictEqual(comparisonClassification(summary, 0.1), 'inverted');
     assert.strictEqual(comparisonClassification(Object.assign({}, summary, {
         meanDifference: -0.01,
+        nonInferiority95Low: -0.04,
         difference95: { low: -0.05, high: 0.03 },
     }), 0.1), 'non-inferior');
     assert.strictEqual(comparisonClassification(Object.assign({}, summary, {
         meanDifference: 0.01,
+        nonInferiority95Low: -0.04,
         difference95: { low: -0.05, high: 0.07 },
     }), 0.1), 'ordered');
     const combined = combinePairedSummaries([summary, summary]);

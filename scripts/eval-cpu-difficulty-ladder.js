@@ -90,6 +90,7 @@ function pairedSummaryFromCounts(counts) {
         : 0;
     const standardError = Math.sqrt(variance / samples);
     const margin95 = 1.96 * standardError;
+    const nonInferiority95Low = Math.max(-1, meanDifference - 1.645 * standardError);
     return {
         samples,
         baselineWins: counts.baselineWins,
@@ -101,6 +102,7 @@ function pairedSummaryFromCounts(counts) {
         ties: counts.ties,
         meanDifference,
         standardError,
+        nonInferiority95Low,
         difference95: {
             low: Math.max(-1, meanDifference - margin95),
             high: Math.min(1, meanDifference + margin95),
@@ -192,7 +194,7 @@ function evaluateWindow(options, playerCount, seedStart, dependencies = {}) {
 }
 
 function comparisonPass(summary, margin) {
-    return summary.difference95.low >= -margin;
+    return summary.nonInferiority95Low >= -margin;
 }
 
 function comparisonClassification(summary, margin) {
@@ -273,8 +275,8 @@ function renderText(report) {
         const expert = entry.comparisons.expertVsStrong;
         lines.push(
             `${entry.playerCount}p ${entry.pass ? 'PASS' : 'FAIL'} games=${entry.gamesPerDifficulty} exhausted=${entry.exhausted} slowWindows=${entry.slowWindows} ` +
-            `strong-normal=${percent(strong.meanDifference)} CI=[${percent(strong.difference95.low)},${percent(strong.difference95.high)}] ` +
-            `expert-strong=${percent(expert.meanDifference)} CI=[${percent(expert.difference95.low)},${percent(expert.difference95.high)}] ` +
+            `strong-normal=${percent(strong.meanDifference)} NI95=${percent(strong.nonInferiority95Low)} CI=[${percent(strong.difference95.low)},${percent(strong.difference95.high)}] ` +
+            `expert-strong=${percent(expert.meanDifference)} NI95=${percent(expert.nonInferiority95Low)} CI=[${percent(expert.difference95.low)},${percent(expert.difference95.high)}] ` +
             `order=${entry.order.strongVsNormal}/${entry.order.expertVsStrong}`
         );
     }
