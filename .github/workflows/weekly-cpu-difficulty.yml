@@ -1,0 +1,32 @@
+name: Weekly CPU Difficulty Regression
+
+on:
+    schedule:
+        # Sunday 04:23 JST. Statistical runs are intentionally separate from the PR smoke gate.
+        - cron: '23 19 * * 6'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    cpu-difficulty-statistical:
+        runs-on: ubuntu-latest
+        timeout-minutes: 90
+        steps:
+            - uses: actions/checkout@v6
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: '20'
+                  cache: npm
+            - name: Install dependencies
+              run: npm ci
+            - name: Multi-seed paired difficulty regression
+              run: npm run test:cpu-difficulty-weekly
+            - name: Upload CPU difficulty artifact
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v7
+              with:
+                  name: cpu-difficulty-weekly
+                  path: artifacts/cpu-difficulty-weekly.json
+                  if-no-files-found: error

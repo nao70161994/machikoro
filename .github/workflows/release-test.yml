@@ -95,3 +95,24 @@ jobs:
             playwright-report/
             test-results/
           if-no-files-found: ignore
+
+  cpu-difficulty-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: CPU difficulty paired smoke
+        run: npm run test:cpu-difficulty-smoke
+      - name: Upload CPU difficulty smoke artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: cpu-difficulty-smoke
+          path: artifacts/cpu-difficulty-smoke.json
+          if-no-files-found: error

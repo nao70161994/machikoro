@@ -541,6 +541,21 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(apkWorkflow.indexOf('npm run test:static') < apkWorkflow.indexOf('npm test'));
 });
 
+runTest('CPU難易度gateはPR smokeと週次paired統計artifactを分離する', () => {
+    const releaseWorkflow = readRepoFile('.github/workflows/release-test.yml');
+    const weeklyWorkflow = readRepoFile('.github/workflows/weekly-cpu-difficulty.yml');
+    const packageJson = JSON.parse(readRepoFile('package.json'));
+
+    assert.ok(releaseWorkflow.includes('npm run test:cpu-difficulty-smoke'));
+    assert.ok(releaseWorkflow.includes('cpu-difficulty-smoke.json'));
+    assert.ok(weeklyWorkflow.includes("cron: '23 19 * * 6'"));
+    assert.ok(weeklyWorkflow.includes('npm run test:cpu-difficulty-weekly'));
+    assert.ok(weeklyWorkflow.includes('cpu-difficulty-weekly.json'));
+    assert.ok(packageJson.scripts['test:cpu-difficulty-smoke'].includes('--gate-mode smoke'));
+    assert.ok(packageJson.scripts['test:cpu-difficulty-weekly'].includes('--gate-mode statistical'));
+    assert.ok(packageJson.scripts['test:cpu-difficulty-weekly'].includes('--player-counts 2,3,4,5,6,7,8,9,10'));
+});
+
 runTest('release shortened long-run smoke は 60分相当を短縮して snapshot roundtrip を繰り返す', () => {
     const runtime = loadGameRuntime();
     const game = new runtime.GameManager(2);

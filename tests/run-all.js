@@ -323,6 +323,7 @@ const TEST_GROUPS = {
         'eval-adopted-paired-seat.test.js',
         'review-rl-seat-stability.test.js',
         'diagnose-cpu-seat-effect.test.js',
+        'eval-cpu-difficulty-ladder.test.js',
         'diagnose-rl-build-pass.test.js',
         'diagnose-rl-landmark-race.test.js',
         'render-rl-registry-evals.test.js',
@@ -625,6 +626,7 @@ const TEST_GROUPS = {
         'summarize-expert-losses-json.test.js',
         'diagnose-expert-v2-branches.test.js',
         'search-expert-top-tier.test.js',
+        'eval-cpu-difficulty-ladder.test.js',
     ],
     rl: [
         'rlcpu.test.js',
@@ -682,6 +684,7 @@ const REQUIRED_TEST_GROUPS = Object.freeze({
     'cpu-action-proposal.test.js': ['unit', 'cpu'],
     'cpu-decision-baseline.test.js': ['unit', 'cpu'],
     'cpu-selfplay-regression.test.js': ['cpu'],
+    'eval-cpu-difficulty-ladder.test.js': ['unit', 'cpu'],
     'checkjs-config.test.js': ['unit', 'core'],
     'release-e2e.test.js': ['release'],
     'online-action-reconnect-e2e.test.js': ['online'],
