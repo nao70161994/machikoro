@@ -165,7 +165,7 @@ runTest('CPU build strategy はexpert-v2-simple候補なしのtrace順を維持�
 
 runTest('CPU.jsのbuild strategy public APIは専用境界へ委譲する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/CPU.js'), 'utf8');
-    assert.match(source, /chooseBuildAction\(game, shopStock\) \{[\s\S]*?CPUBuildStrategy\.chooseBuildAction\(this, game, shopStock\);[\s\S]*?return proposal;\s*\}/);
+    assert.match(source, /chooseBuildAction\(game, shopStock\) \{\s*this\._pendingNearTieDecision = null;\s*return finalizeBuildDecisionReason\(this, CPUBuildStrategy\.chooseBuildAction\(this, game, shopStock\)\);\s*\}/);
     for (const name of ['buildWeak', 'buildNormal', 'buildStrong', 'buildExpert']) {
         assert.match(source, new RegExp(`${name}\\(game, shopStock\\) \\{\\s*return CPUBuildStrategy\\.${name}\\(this, game, shopStock\\);\\s*\\}`));
     }

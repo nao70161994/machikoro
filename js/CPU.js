@@ -4,6 +4,45 @@ const CPU_SIMULATION_GAME_ADAPTER = Object.freeze({
     cloneCard: card => cloneCard(card),
     defaultLandmarks: () => Player.landmarkNames(),
 });
+
+function selectNearTieForCpu(cpu, ranked, scoreOf, game, domain) {
+    const seed = cpu._signatureCache('_cachedDecisionSeed', game, signature => ({ signature })).signature;
+    const selected = CPUSelection.nearTieChoice(
+        ranked,
+        scoreOf,
+        cpu._nearTieThreshold(),
+        `${cpu.difficulty}:${domain}:${seed}`
+    );
+    if (selected && ranked && ranked[0] && selected !== ranked[0]) {
+        const value = selected.option || selected;
+        const cardName = value.card && value.card.name || value.cardName || '';
+        const landmarkName = value.type === 'landmark' && value.name || '';
+        cpu._pendingNearTieDecision = {
+            action: cardName ? 'buildCard' : landmarkName ? 'buildLandmark' : '',
+            name: cardName || landmarkName,
+            reason: {
+                code: CPUActionProposal.reasonCodes.SEEDED_NEAR_TIE_BUILD,
+                values: {
+                    bestScore: Number(scoreOf(ranked[0])),
+                    selectedScore: Number(scoreOf(selected)),
+                    delta: Number(scoreOf(ranked[0])) - Number(scoreOf(selected)),
+                },
+            },
+        };
+    }
+    return selected;
+}
+
+function finalizeBuildDecisionReason(cpu, proposal) {
+    const pending = cpu._pendingNearTieDecision;
+    cpu._pendingNearTieDecision = null;
+    const selectedName = proposal && proposal.data && (proposal.data.cardName || proposal.data.name);
+    if (pending && proposal && proposal.action === pending.action && selectedName === pending.name) {
+        cpu._lastDecisionReason = pending.reason;
+    }
+    return proposal;
+}
+
 class CPU {
     constructor(difficulty, options = {}) {
         const runtimeConfig = /** @type {any} */ (globalThis).resolveCpuRuntimeConfig(
@@ -113,31 +152,7 @@ class CPU {
     }
 
     _selectNearTie(ranked, scoreOf, game, domain) {
-        const seed = this._signatureCache('_cachedDecisionSeed', game, signature => ({ signature })).signature;
-        const selected = CPUSelection.nearTieChoice(
-            ranked,
-            scoreOf,
-            this._nearTieThreshold(),
-            `${this.difficulty}:${domain}:${seed}`
-        );
-        if (selected && ranked && ranked[0] && selected !== ranked[0]) {
-            const value = selected.option || selected;
-            const cardName = value.card && value.card.name || value.cardName || '';
-            const landmarkName = value.type === 'landmark' && value.name || '';
-            this._pendingNearTieDecision = {
-                action: cardName ? 'buildCard' : landmarkName ? 'buildLandmark' : '',
-                name: cardName || landmarkName,
-                reason: {
-                    code: CPUActionProposal.reasonCodes.SEEDED_NEAR_TIE_BUILD,
-                    values: {
-                        bestScore: Number(scoreOf(ranked[0])),
-                        selectedScore: Number(scoreOf(selected)),
-                        delta: Number(scoreOf(ranked[0])) - Number(scoreOf(selected)),
-                    },
-                },
-            };
-        }
-        return selected;
+        return selectNearTieForCpu(this, ranked, scoreOf, game, domain);
     }
 
     _clearDecisionReason() {
@@ -761,14 +776,7 @@ class CPU {
      */
     chooseBuildAction(game, shopStock) {
         this._pendingNearTieDecision = null;
-        const proposal = CPUBuildStrategy.chooseBuildAction(this, game, shopStock);
-        const pending = this._pendingNearTieDecision;
-        this._pendingNearTieDecision = null;
-        const selectedName = proposal && proposal.data && (proposal.data.cardName || proposal.data.name);
-        if (pending && proposal && proposal.action === pending.action && selectedName === pending.name) {
-            this._lastDecisionReason = pending.reason;
-        }
-        return proposal;
+        return finalizeBuildDecisionReason(this, CPUBuildStrategy.chooseBuildAction(this, game, shopStock));
     }
 
     _buildExecutionContext() {
