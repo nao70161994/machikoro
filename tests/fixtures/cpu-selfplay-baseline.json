@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "sourceCommit": "87e7f1f0b9ed8579b0a4352452ad105455b3fda5",
+  "sourceCommit": "e073cb54bff16c628ded44d509b013d962a020e0",
   "maxSteps": 1800,
   "difficulties": [
     "weak",
@@ -104,24 +104,24 @@
       "difficulty": "normal",
       "playerCount": 3,
       "seed": 1731,
-      "winner": 2,
-      "turns": 77,
+      "winner": 1,
+      "turns": 82,
       "exhausted": false
     },
     {
       "difficulty": "normal",
       "playerCount": 4,
       "seed": 1741,
-      "winner": 3,
-      "turns": 107,
+      "winner": 1,
+      "turns": 105,
       "exhausted": false
     },
     {
       "difficulty": "normal",
       "playerCount": 5,
       "seed": 1751,
-      "winner": 1,
-      "turns": 91,
+      "winner": 2,
+      "turns": 102,
       "exhausted": false
     },
     {
@@ -136,24 +136,24 @@
       "difficulty": "normal",
       "playerCount": 7,
       "seed": 1771,
-      "winner": 6,
-      "turns": 118,
+      "winner": 2,
+      "turns": 135,
       "exhausted": false
     },
     {
       "difficulty": "normal",
       "playerCount": 8,
       "seed": 1781,
-      "winner": 0,
-      "turns": 112,
+      "winner": 5,
+      "turns": 133,
       "exhausted": false
     },
     {
       "difficulty": "normal",
       "playerCount": 9,
       "seed": 1791,
-      "winner": 0,
-      "turns": 108,
+      "winner": 7,
+      "turns": 115,
       "exhausted": false
     },
     {
@@ -169,7 +169,7 @@
       "playerCount": 2,
       "seed": 1722,
       "winner": 1,
-      "turns": 61,
+      "turns": 73,
       "exhausted": false
     },
     {
@@ -177,7 +177,7 @@
       "playerCount": 3,
       "seed": 1732,
       "winner": 1,
-      "turns": 100,
+      "turns": 88,
       "exhausted": false
     },
     {
@@ -241,15 +241,15 @@
       "playerCount": 2,
       "seed": 1723,
       "winner": 1,
-      "turns": 67,
+      "turns": 43,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 3,
       "seed": 1733,
-      "winner": 2,
-      "turns": 80,
+      "winner": 1,
+      "turns": 52,
       "exhausted": false
     },
     {
@@ -257,15 +257,15 @@
       "playerCount": 4,
       "seed": 1743,
       "winner": 1,
-      "turns": 97,
+      "turns": 121,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 5,
       "seed": 1753,
-      "winner": 3,
-      "turns": 123,
+      "winner": 4,
+      "turns": 129,
       "exhausted": false
     },
     {
@@ -273,39 +273,39 @@
       "playerCount": 6,
       "seed": 1763,
       "winner": 0,
-      "turns": 138,
+      "turns": 174,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 7,
       "seed": 1773,
-      "winner": 2,
-      "turns": 184,
+      "winner": 4,
+      "turns": 214,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 8,
       "seed": 1783,
-      "winner": 0,
-      "turns": 184,
+      "winner": 2,
+      "turns": 186,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 9,
       "seed": 1793,
-      "winner": 1,
-      "turns": 244,
+      "winner": 3,
+      "turns": 201,
       "exhausted": false
     },
     {
       "difficulty": "expert",
       "playerCount": 10,
       "seed": 1803,
-      "winner": 7,
-      "turns": 227,
+      "winner": 0,
+      "turns": 200,
       "exhausted": false
     }
   ]
