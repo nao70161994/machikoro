@@ -6,6 +6,9 @@ const CPUBuildProposalCollectorApi = typeof module !== 'undefined' && module.exp
 const CPUBuildExecutionApi = typeof module !== 'undefined' && module.exports
     ? require('./cpuBuildExecution').CPUBuildExecution
     : globalThis.CPUBuildExecution;
+const CPUBuildProfileApi = typeof module !== 'undefined' && module.exports
+    ? require('./cpuProfile').CPUProfile
+    : globalThis.CPUProfile;
 
 /**
  * @typedef {Object} CPUBuildStrategyAction
@@ -42,7 +45,28 @@ const CPUBuildStrategy = Object.freeze({
         });
         const selectionCpu = createBuildSelectionCpu(cpu, collector);
         cpu._syncExpertTuningForGame(game);
-        if (cpu.difficulty === "weak") {
+        const playerCount = game && Array.isArray(game.players) ? game.players.length : 0;
+        const largeCrowdBuildMode = CPUBuildProfileApi.largeCrowdMode(playerCount, cpu.largeCrowdBuildMode);
+        const useLargeCrowdNormal = largeCrowdBuildMode === "normal";
+        const useLargeCrowdStrong = largeCrowdBuildMode === "strong";
+        const useLargeCrowdExpert = largeCrowdBuildMode === "expert";
+        const useFivePlayerExpertStrong = cpu.difficulty === "expert" &&
+            typeof cpu._isLiveExpert === 'function' && cpu._isLiveExpert() &&
+            CPUBuildProfileApi.expertUsesStrongCrowdPolicy(playerCount);
+        const useThreePlayerStrongNormal = cpu.difficulty === "strong" &&
+            cpu.largeCrowdBuildMode === 'normal' &&
+            CPUBuildProfileApi.strongUsesNormalTrioPolicy(playerCount);
+        if (useThreePlayerStrongNormal) {
+            selectionCpu.buildNormal(game, shopStock);
+        } else if (useFivePlayerExpertStrong) {
+            selectionCpu.buildStrong(game, shopStock);
+        } else if (useLargeCrowdNormal) {
+            selectionCpu.buildNormal(game, shopStock);
+        } else if (useLargeCrowdStrong) {
+            selectionCpu.buildStrong(game, shopStock);
+        } else if (useLargeCrowdExpert) {
+            selectionCpu.buildExpert(game, shopStock);
+        } else if (cpu.difficulty === "weak") {
             selectionCpu.buildWeak(game, shopStock);
         } else if (cpu.difficulty === "normal") {
             selectionCpu.buildNormal(game, shopStock);
@@ -102,13 +126,14 @@ const CPUBuildStrategy = Object.freeze({
             !(card.color === "purple" && current.countCardIncludingDormant(card.name) > 0)
         );
         const sorted = cpu._sortAffordableForDifficulty(affordable, game, current, "normal");
-        if (sorted.length > 0 && cpu._shouldHoldForLandmark(current, game, sorted[0].score, 2)) return;
-        if (sorted.length > 0 && sorted[0].score >= 0.9) {
-            cpu._buyCard(sorted[0].card, game, shopStock);
+        const selected = cpu._selectNearTie(sorted, entry => entry.score, game, 'build-normal');
+        if (selected && cpu._shouldHoldForLandmark(current, game, selected.score, 2)) return;
+        if (selected && selected.score >= 0.9) {
+            cpu._buyCard(selected.card, game, shopStock);
             return;
         }
         if (cpu._maybeBuyLandmark(current, game, 0, 4)) return;
-        if (sorted.length > 0) cpu._buyCard(sorted[0].card, game, shopStock);
+        if (selected) cpu._buyCard(selected.card, game, shopStock);
     },
 
     // 強いCPU：状況判断型
@@ -198,7 +223,7 @@ const CPUBuildStrategy = Object.freeze({
                 option => option.score
             );
             if (options.length === 0) return;
-            const best = options[0];
+            const best = cpu._selectNearTie(options, option => option.score, game, 'build-strong');
             if (best.type === 'landmark') {
                 cpu._buyLandmark(best.name, game);
                 return;
@@ -450,11 +475,23 @@ const CPUBuildStrategy = Object.freeze({
             const score = option.type === 'landmark'
                 ? cpu._scoreExpertV2SimpleLandmarkOption(game, option.name)
                 : cpu._scoreExpertV2SimpleCardOptionForLandmarkComparison(game, option, breakdown, affordableLandmarks.length > 0);
-            scoredOptions.push({ option, breakdown });
+            scoredOptions.push({ option, breakdown, score });
             if (score > bestScore) {
                 bestScore = score;
                 bestOption = option;
             }
+        }
+
+        const rankedOptions = CPUSelection.stableRankDescending(scoredOptions, entry => entry.score);
+        const selectedEntry = cpu._selectNearTie(
+            rankedOptions,
+            entry => entry.score,
+            game,
+            'build-expert-v2simple'
+        );
+        if (selectedEntry) {
+            bestOption = selectedEntry.option;
+            bestScore = selectedEntry.score;
         }
 
         if (bestLandmark && bestOption && bestOption.type === 'card') {

@@ -2,6 +2,7 @@
 
 const assert = require('assert');
 const CpuTurnStrategy = require('../js/cpuTurnStrategy');
+const { CPUActionProposal } = require('../js/cpuActionProposal');
 const { runTest } = require('./helpers/test-utils');
 
 function sequence(values, calls) {
@@ -42,6 +43,28 @@ runTest('CPU turn strategyはdice選択を乱数より先に評価する', () =>
         action: 'selectDice',
         data: { useTwo: true, diceCount: 2, d1: 1, d2: 2, tunaDice: [3, 4] },
     });
+});
+
+runTest('CPU turn strategyは判断器のreason sidecarをcanonical actionへ混ぜず引き渡す', () => {
+    const cpu = {
+        reason: null,
+        _clearDecisionReason() { this.reason = null; },
+        _consumeDecisionReason() { const reason = this.reason; this.reason = null; return reason; },
+        chooseDiceCount() {
+            this.reason = {
+                code: 'dice-score-comparison',
+                values: { oneScore: 1, twoScore: 2, threshold: 0.8 },
+            };
+            return true;
+        },
+    };
+    const action = CpuTurnStrategy.chooseAction('selectDice', {
+        game: {}, cpu, rollDie: sequence([1, 2, 3, 4], []),
+    });
+
+    assert.deepStrictEqual(Object.keys(action), ['action', 'data']);
+    assert.strictEqual(CPUActionProposal.decisionReason(action).code, 'dice-score-comparison');
+    assert.strictEqual(cpu.reason, null);
 });
 
 runTest('CPU turn strategyはreroll拒否時に乱数を消費しない', () => {

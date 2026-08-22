@@ -113,6 +113,16 @@
         v2simple: {},
     });
 
+    const CPU_STRONG_LARGE_CROWD_TUNING = Object.freeze({
+        landmarkBias: 1.1,
+        blueFactor: 1,
+        redFactor: 1.15,
+        greenFactor: 1,
+        purpleFactor: 1.2,
+        massAttackFactor: 1.15,
+        airportBias: 1,
+    });
+
 
     /**
      * @param {string} difficulty
@@ -142,8 +152,17 @@
 
     function resolveLiveCpuOptions(difficulty, options = {}) {
         const resolved = resolveLiveExpertOptions(difficulty, options);
-        if (difficulty === "strong" && !resolved.simulationMode) {
-            resolved.simulationMode = "realtime";
+        if (difficulty === "strong") {
+            if (!resolved.simulationMode) resolved.simulationMode = "realtime";
+            if (!resolved.largeCrowdBuildMode) resolved.largeCrowdBuildMode = "normal";
+            if (!resolved.largeCrowdRollMode) resolved.largeCrowdRollMode = "normal";
+            const profileTunings = Object.assign({}, resolved.playerCountProfileTunings || {});
+            profileTunings.largeCrowd = Object.assign(
+                {},
+                CPU_STRONG_LARGE_CROWD_TUNING,
+                profileTunings.largeCrowd || {}
+            );
+            resolved.playerCountProfileTunings = profileTunings;
         }
         return resolved;
     }
@@ -214,6 +233,9 @@
                 ? options.expertOpponentDifficulties.slice()
                 : null,
             profileStats: options.profileStats || null,
+            playerCountProfileTunings: Object.assign({}, options.playerCountProfileTunings || {}),
+            largeCrowdBuildMode: options.largeCrowdBuildMode || "native",
+            largeCrowdRollMode: options.largeCrowdRollMode || "native",
             expertProfilePresets: Object.assign({}, options.expertProfilePresets || {}),
             expertProfileTunings: Object.assign(
                 {},
@@ -281,10 +303,23 @@
             lateLandmarkActionBonus: 14,
             lookaheadWeight: 0.28,
         },
+        largeCrowd: {
+            coinWeight: 1.22,
+            turnWeight: 3.35,
+            stableIncomeWeight: 3.4,
+            redPressureWeight: 0.14,
+            leaderThreatWeight: 0.08,
+            lateCoinWeight: 2.05,
+            finalCoinWeight: 2.55,
+            landmarkActionBonus: 18,
+            lateLandmarkActionBonus: 14,
+            lookaheadWeight: 0.28,
+        },
     });
 
     global.CPU_EXPERT_DEFAULT_OPTIONS = CPU_EXPERT_DEFAULT_OPTIONS;
     global.CPU_EXPERT_PRESETS = CPU_EXPERT_PRESETS;
+    global.CPU_STRONG_LARGE_CROWD_TUNING = CPU_STRONG_LARGE_CROWD_TUNING;
     global.CPU_EXPERT_PROFILE_TUNINGS = CPU_EXPERT_PROFILE_TUNINGS;
     global.resolveLiveExpertOptions = resolveLiveExpertOptions;
     global.resolveLiveCpuOptions = resolveLiveCpuOptions;
@@ -295,6 +330,7 @@
         module.exports = {
             CPU_EXPERT_DEFAULT_OPTIONS,
             CPU_EXPERT_PRESETS,
+            CPU_STRONG_LARGE_CROWD_TUNING,
             CPU_EXPERT_PROFILE_TUNINGS,
             resolveLiveExpertOptions,
             resolveLiveCpuOptions,

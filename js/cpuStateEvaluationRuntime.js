@@ -2,7 +2,7 @@
 
 const CPUStateEvaluationRuntime = Object.freeze({
     _playerCountProfile(cpu, game) {
-        return CPUProfile.playerCountProfile(game.players.length);
+        return CPUProfile.playerCountProfile(game.players.length, cpu.playerCountProfileTunings);
     },
 
     _expertProfileName(cpu, game) {

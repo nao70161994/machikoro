@@ -3,6 +3,14 @@
 const CPUActionContractApi = typeof module !== 'undefined' && module.exports
     ? require('./actionContract')
     : globalThis.GameActionContract;
+const decisionReasons = new WeakMap();
+const CPU_DECISION_REASON_CODES = Object.freeze({
+    DICE_SCORE_COMPARISON: 'dice-score-comparison',
+    REROLL_SCORE_COMPARISON: 'reroll-score-comparison',
+    HARBOR_SCORE_COMPARISON: 'harbor-score-comparison',
+    RANDOM_CHOICE: 'random-choice',
+    SEEDED_NEAR_TIE_BUILD: 'seeded-near-tie-build',
+});
 
 /**
  * @template {string} TAction
@@ -52,9 +60,51 @@ function create(action, data = {}) {
     }
 }
 
+function normalizeReason(reason) {
+    if (!reason || typeof reason.code !== 'string' || !/^[a-z][a-z0-9-]*$/.test(reason.code)) return null;
+    const values = {};
+    for (const [key, value] of Object.entries(reason.values || {})) {
+        if (!/^[a-z][A-Za-z0-9]*$/.test(key)) continue;
+        if (typeof value === 'number' && Number.isFinite(value) ||
+                typeof value === 'string' || typeof value === 'boolean') {
+            values[key] = value;
+        }
+    }
+    return Object.freeze({ code: reason.code, values: Object.freeze(values) });
+}
+
+function withDecisionReason(proposal, reason) {
+    if (!proposal || typeof proposal !== 'object') return proposal;
+    const normalized = normalizeReason(reason);
+    if (normalized) decisionReasons.set(proposal, normalized);
+    return proposal;
+}
+
+function decisionReason(proposal) {
+    return proposal && decisionReasons.get(proposal) || null;
+}
+
+function formatScore(value) {
+    return Number.isFinite(value) ? Number(value).toFixed(2) : '?';
+}
+
 function explanation(proposal) {
     if (!proposal || typeof proposal.action !== 'string' || !proposal.data) return '';
     const data = proposal.data;
+    const reason = decisionReason(proposal);
+    if (reason && reason.code === CPU_DECISION_REASON_CODES.DICE_SCORE_COMPARISON) {
+        return `${data.useTwo ? '2個' : '1個'}振りを選択（1個 ${formatScore(reason.values.oneScore)} / 2個 ${formatScore(reason.values.twoScore)}、切替基準 ${formatScore(reason.values.threshold)}）`;
+    }
+    if (reason && reason.code === CPU_DECISION_REASON_CODES.REROLL_SCORE_COMPARISON) {
+        return `${proposal.action === 'rerollDice' ? '振り直します' : '振り直さず進みます'}（現在 ${formatScore(reason.values.keepScore)} / 振り直し ${formatScore(reason.values.rerollScore)}）`;
+    }
+    if (reason && reason.code === CPU_DECISION_REASON_CODES.HARBOR_SCORE_COMPARISON) {
+        return `${data.useBonus ? '港のボーナスを使います' : '港のボーナスを使わず進みます'}（そのまま ${formatScore(reason.values.keepScore)} / +2 ${formatScore(reason.values.bonusScore)}）`;
+    }
+    if (reason && reason.code === CPU_DECISION_REASON_CODES.SEEDED_NEAR_TIE_BUILD) {
+        const selected = data.cardName || data.name || '建設候補';
+        return `${selected}を建設します（評価差 ${formatScore(reason.values.delta)} の僅差候補から選択）`;
+    }
     const labels = {
         rollDice: 'サイコロを振ります',
         selectDice: data.useTwo ? 'サイコロを2個振ります' : 'サイコロを1個振ります',
@@ -71,17 +121,24 @@ function explanation(proposal) {
         buildLandmark: data.name ? `${data.name}を建設します` : 'ランドマークを建設します',
         nextTurn: '建設せずターンを終了します',
     };
-    return labels[proposal.action] || '';
+    const label = labels[proposal.action] || '';
+    if (label && reason && reason.code === CPU_DECISION_REASON_CODES.RANDOM_CHOICE) {
+        return `${label}（ランダム選択）`;
+    }
+    return label;
 }
 
 const CPUActionProposal = Object.freeze({
     create,
     explanation,
+    withDecisionReason,
+    decisionReason,
+    reasonCodes: CPU_DECISION_REASON_CODES,
     hasCanonicalPayloadShape,
 });
 
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { CPUActionProposal };
+    module.exports = { CPUActionProposal, CPU_DECISION_REASON_CODES };
 }
 if (typeof window !== 'undefined') window.CPUActionProposal = CPUActionProposal;
 if (typeof globalThis !== 'undefined') globalThis.CPUActionProposal = CPUActionProposal;

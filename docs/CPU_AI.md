@@ -135,6 +135,17 @@ npm test
 
 RL oracle や多人数評価に影響する場合は、対象に応じて `npm run test:rl` と trace 比較も検討します。
 
+## 難易度カーブと回帰gate
+
+- `npm run test:cpu-difficulty-smoke` はPRごとに4/8/10人、複数seed、同一seed・全席ローテーションを軽く実行する。打切りとwindow時間をfail closedにし、勝率差と95%区間はartifactへ残す。
+- `npm run test:cpu-difficulty-weekly` は2〜10人を十分なblock数で実行し、特に8/9/10人の大人数も含めて`normal → strong → expert` のpaired差分を片側95%非劣性gateとして判定する。artifactには比較用の両側95%区間も残す。
+- paired評価は同じseed・同じ元席の勝敗を比較する。単純な総勝率だけで採否を決めない。
+- 2〜10人の代表局面はCPU unit/pending matrix、実対局相当はself-play artifact、オンライン決定性はcanonical action/replay testsで分けて確認する。
+- `strong` / `expert` の行動多様性は、最高評価との差がdifficulty別の小さな閾値以内にある合法建設候補だけを盤面署名由来の安定seedで選ぶ。action payloadへseedやscoreは追加しない。
+- live 4/5人戦の`expert`はpaired評価で確認したstrong crowdの建設・出目方針を使い、pending解決などexpert固有の判断は維持する。学習・診断用expertには適用しない。
+- live 3人戦の`strong`はpaired評価で確認したnormal coreの建設・出目方針を使い、strong固有のpending判断は維持する。学習・診断用strongには適用しない。
+- CPUの説明は判断器が記録したreason codeと実測値だけをsidecarで表示する。canonical action、保存、online wire、replayには診断値を混ぜない。
+
 
 ## CPU diagnostics helper
 

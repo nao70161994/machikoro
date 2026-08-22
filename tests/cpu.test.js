@@ -84,10 +84,29 @@ runTest('CPU live expert option policyは既存v2simple既定値を入力非破�
         expertPurpose: 'live',
         expertBuildTempoWeight: 0,
         simulationMode: 'realtime',
+        largeCrowdBuildMode: 'normal',
+        largeCrowdRollMode: 'normal',
+        playerCountProfileTunings: {
+            largeCrowd: plain(runtime.CPU_STRONG_LARGE_CROWD_TUNING),
+        },
     });
     assert.deepStrictEqual(plain(runtime.resolveLiveCpuOptions('strong', {
         simulationMode: 'full',
-    })), { simulationMode: 'full' });
+    })), {
+        simulationMode: 'full',
+        largeCrowdBuildMode: 'normal',
+        largeCrowdRollMode: 'normal',
+        playerCountProfileTunings: {
+            largeCrowd: plain(runtime.CPU_STRONG_LARGE_CROWD_TUNING),
+        },
+    });
+    const customCrowd = runtime.resolveLiveCpuOptions('strong', {
+        largeCrowdBuildMode: 'native',
+        playerCountProfileTunings: { largeCrowd: { redFactor: 0.75 } },
+    });
+    assert.strictEqual(customCrowd.largeCrowdBuildMode, 'native');
+    assert.strictEqual(customCrowd.playerCountProfileTunings.largeCrowd.redFactor, 0.75);
+    assert.strictEqual(customCrowd.playerCountProfileTunings.largeCrowd.purpleFactor, 1.2);
     assert.deepStrictEqual(plain(runtime.resolveLiveExpertOptions('expert', {
         expertPurpose: 'live',
         expertPreset: 'rush',
@@ -105,6 +124,9 @@ runTest('CPU runtime configはconstructor optionを入力非破壊で完全投�
         expertBehaviorFlags: { futureLandmarkHold: false },
         expertOpponentDifficulties: ['human', 'strong'],
         expertProfileTunings: { duel: { coinWeight: 9 } },
+        playerCountProfileTunings: { largeCrowd: { airportBias: 1.2 } },
+        largeCrowdBuildMode: 'normal',
+        largeCrowdRollMode: 'normal',
     };
     const original = structuredClone(source);
     const config = runtime.resolveCpuRuntimeConfig('expert', source);
@@ -123,6 +145,7 @@ runTest('CPU runtime configはconstructor optionを入力非破壊で完全投�
     assert.notStrictEqual(config.expertBehaviorFlags, source.expertBehaviorFlags);
     assert.notStrictEqual(config.expertOpponentDifficulties, source.expertOpponentDifficulties);
     assert.notStrictEqual(config.expertProfileTunings, source.expertProfileTunings);
+    assert.notStrictEqual(config.playerCountProfileTunings, source.playerCountProfileTunings);
     assert.notStrictEqual(config.expertTuning, config.baseExpertTuning);
 });
 
@@ -200,6 +223,48 @@ runTest('CPU evaluation cacheは不変評価scope内で重い盤面署名を一�
     const readsAfterFailure = cardReads;
     cpu._signatureCache('_scopeC', game, signature => ({ signature }));
     assert.strictEqual(cardReads, readsAfterFailure + game.players.length);
+});
+
+runTest('CPU roll decision scopeは多人数の複数評価cacheで盤面署名を一度だけ作る', () => {
+    const profileStats = {};
+    const cpu = new CPU('strong', Object.assign(
+        { profileStats },
+        runtime.resolveLiveCpuOptions('strong', {})
+    ));
+    const game = new GameManager(10);
+    game.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+
+    const diceChoice = cpu.chooseDiceCount(game);
+    assert.strictEqual(typeof diceChoice, 'boolean');
+    assert.strictEqual(profileStats.evaluationSignature.count, 1);
+});
+
+runTest('CPU roll decision scopeは判断結果を変えず多人数盤面の署名走査を削減する', () => {
+    function measuredGame() {
+        const game = new GameManager(10);
+        let reads = 0;
+        for (const player of game.players) {
+            const cards = player.cards;
+            Object.defineProperty(player, 'cards', {
+                configurable: true,
+                get() { reads++; return cards; },
+                set(value) { cards.splice(0, cards.length, ...value); },
+            });
+        }
+        return { game, reads: () => reads };
+    }
+    const optimized = measuredGame();
+    const optimizedCpu = new CPU('normal');
+    const optimizedChoice = optimizedCpu.chooseDiceCount(optimized.game);
+
+    const baseline = measuredGame();
+    const baselineCpu = new CPU('normal');
+    baselineCpu._withStableEvaluationSignature = (_game, fn) => fn();
+    const baselineChoice = baselineCpu.chooseDiceCount(baseline.game);
+
+    assert.strictEqual(optimizedChoice, baselineChoice);
+    assert.ok(baseline.reads() > optimized.reads());
+    assert.ok(baseline.reads() - optimized.reads() >= optimized.game.players.length * 10);
 });
 
 runTest('CPU progress income helper は休業カードと特殊pending系を除外する', () => {
@@ -1187,6 +1252,10 @@ runTest('chooseDiceCount: strong は有利局面で妥当な真偽値を返す',
     current.dormantCards = [];
     const result = cpu.chooseDiceCount(game);
     assert.strictEqual(typeof result, 'boolean');
+    const reason = cpu._consumeDecisionReason();
+    assert.strictEqual(reason.code, runtime.CPUActionProposal.reasonCodes.DICE_SCORE_COMPARISON);
+    assert.ok(Number.isFinite(reason.values.oneScore));
+    assert.ok(Number.isFinite(reason.values.twoScore));
 });
 
 runTest('chooseDiceCount: 1個振りが有利な場合falseを返す（strong）', () => {
@@ -1887,6 +1956,9 @@ runTest('chooseReroll: 現在スコアが高い場合はリロールしない（
     const result = cpu.chooseReroll(game);
     // 現在スコア=15（3鉱山×5）、期待値は低いのでfalseになるはず
     assert.strictEqual(result, false);
+    const reason = cpu._consumeDecisionReason();
+    assert.strictEqual(reason.code, runtime.CPUActionProposal.reasonCodes.REROLL_SCORE_COMPARISON);
+    assert.strictEqual(reason.values.keepScore, 15);
 });
 
 runTest('chooseReroll: expert は先読み評価でリロール可否を返す', () => {

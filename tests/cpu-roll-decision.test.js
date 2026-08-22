@@ -54,6 +54,57 @@ runTest('CPU roll decision はnormalの閾値と評価順を維持する', () =>
     ]);
 });
 
+runTest('CPU roll decision は8人以上だけ指定large-crowd閾値へ切り替える', () => {
+    const calls = [];
+    const cpu = createNormalCpu(calls);
+    cpu.difficulty = 'strong';
+    cpu.largeCrowdRollMode = 'normal';
+    cpu._expectedDiceScore = (game, useTwo) => {
+        calls.push(['expected', useTwo]);
+        return useTwo ? 5.9 : 5;
+    };
+    const eightPlayers = Array.from({ length: 8 }, () => ({}));
+
+    assert.strictEqual(CPURollDecision.chooseDiceCount(cpu, { players: eightPlayers }), true);
+    assert.deepStrictEqual(calls, [
+        ['profile', 'chooseDiceCount'],
+        ['expected', false],
+        ['expected', true],
+    ]);
+});
+
+runTest('CPU roll decision はlive 4/5人expertだけ実測済みstrong crowd閾値を使う', () => {
+    const calls = [];
+    const cpu = createNormalCpu(calls);
+    cpu.difficulty = 'expert';
+    cpu._isLiveExpert = () => true;
+    for (const playerCount of [4, 5]) {
+        const players = Array.from({ length: playerCount }, () => ({}));
+        assert.strictEqual(CPURollDecision.chooseDiceCount(cpu, { players }), true);
+        assert.deepStrictEqual(calls, [
+            ['profile', 'chooseDiceCount'],
+            ['expected', false],
+            ['expected', true],
+        ]);
+        calls.length = 0;
+    }
+});
+
+runTest('CPU roll decision はlive 3人strongだけ実測済みnormal閾値を使う', () => {
+    const calls = [];
+    const cpu = createNormalCpu(calls);
+    cpu.difficulty = 'strong';
+    cpu.largeCrowdRollMode = 'normal';
+    const players = Array.from({ length: 3 }, () => ({}));
+
+    assert.strictEqual(CPURollDecision.chooseDiceCount(cpu, { players }), true);
+    assert.deepStrictEqual(calls, [
+        ['profile', 'chooseDiceCount'],
+        ['expected', false],
+        ['expected', true],
+    ]);
+});
+
 runTest('CPU roll decision はexpert crowdの1個振り閾値を適用する', () => {
     const calls = [];
     const cpu = createNormalCpu(calls);
@@ -106,6 +157,6 @@ runTest('CPU roll decision はweak各判断で乱数をちょうど1回ずつ消
 runTest('CPU.jsのroll判断public APIは専用境界へ委譲する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/CPU.js'), 'utf8');
     for (const name of ['chooseDiceCount', 'chooseReroll', 'chooseHarbor']) {
-        assert.match(source, new RegExp(`${name}\\(game\\) \\{\\s*return CPURollDecision\\.${name}\\(this, game\\);\\s*\\}`));
+        assert.match(source, new RegExp(`${name}\\(game\\) \\{\\s*return this\\._withStableEvaluationSignature\\(game, \\(\\) =>\\s*CPURollDecision\\.${name}\\(this, game\\)\\s*\\);\\s*\\}`));
     }
 });

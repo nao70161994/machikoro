@@ -16,6 +16,24 @@ runTest('CPU selection random choiceは既存floor indexと参照を保持する
     assert.strictEqual(CPUSelection.randomChoice(items, () => 0.999), items[2]);
 });
 
+runTest('CPU selection near tieは閾値内だけを安定seedで選ぶ', () => {
+    const ranked = [
+        { id: 'best', score: 5 },
+        { id: 'near', score: 4.98 },
+        { id: 'outside', score: 4.8 },
+    ];
+    const choices = new Set(Array.from({ length: 40 }, (_, seed) =>
+        CPUSelection.nearTieChoice(ranked, item => item.score, 0.05, `seed-${seed}`).id
+    ));
+    assert.deepStrictEqual([...choices].sort(), ['best', 'near']);
+    assert.strictEqual(
+        CPUSelection.nearTieChoice(ranked, item => item.score, 0.05, 'same-seed'),
+        CPUSelection.nearTieChoice(ranked, item => item.score, 0.05, 'same-seed')
+    );
+    assert.notStrictEqual(CPUSelection.stableSeedIndex('seed', 3), -1);
+    assert.strictEqual(CPUSelection.stableSeedIndex('seed', 0), -1);
+});
+
 runTest('CPU selection firstMaxは最大scoreの最初の候補を保持する', () => {
     const items = [{ id: 'a', score: 2 }, { id: 'b', score: 5 }, { id: 'c', score: 5 }];
     assert.strictEqual(CPUSelection.firstMax(items, item => item.score), items[1]);

@@ -44,6 +44,9 @@ class CPU {
         this.expertTraceStats = runtimeConfig.expertTraceStats;
         this.expertOpponentDifficulties = runtimeConfig.expertOpponentDifficulties;
         this.profileStats = runtimeConfig.profileStats;
+        this.playerCountProfileTunings = runtimeConfig.playerCountProfileTunings;
+        this.largeCrowdBuildMode = runtimeConfig.largeCrowdBuildMode;
+        this.largeCrowdRollMode = runtimeConfig.largeCrowdRollMode;
         this.expertProfilePresets = runtimeConfig.expertProfilePresets;
         this.expertProfileTunings = runtimeConfig.expertProfileTunings;
         this.baseExpertTuning = runtimeConfig.baseExpertTuning;
@@ -96,6 +99,60 @@ class CPU {
 
     _profileDecision(label, fn) {
         return this._profileMeasure(`${this.difficulty}.${label}`, fn);
+    }
+
+    _withStableEvaluationSignature(game, fn) {
+        return CPUEvaluationCache.withStableSignature(this, game, fn);
+    }
+
+    _nearTieThreshold() {
+        if (this.difficulty === 'expert') return 0.005;
+        if (this.difficulty === 'strong') return 0.01;
+        if (this.difficulty === 'normal') return 0.03;
+        return 0;
+    }
+
+    _selectNearTie(ranked, scoreOf, game, domain) {
+        const seed = this._signatureCache('_cachedDecisionSeed', game, signature => ({ signature })).signature;
+        const selected = CPUSelection.nearTieChoice(
+            ranked,
+            scoreOf,
+            this._nearTieThreshold(),
+            `${this.difficulty}:${domain}:${seed}`
+        );
+        if (selected && ranked && ranked[0] && selected !== ranked[0]) {
+            const value = selected.option || selected;
+            const cardName = value.card && value.card.name || value.cardName || '';
+            const landmarkName = value.type === 'landmark' && value.name || '';
+            this._pendingNearTieDecision = {
+                action: cardName ? 'buildCard' : landmarkName ? 'buildLandmark' : '',
+                name: cardName || landmarkName,
+                reason: {
+                    code: CPUActionProposal.reasonCodes.SEEDED_NEAR_TIE_BUILD,
+                    values: {
+                        bestScore: Number(scoreOf(ranked[0])),
+                        selectedScore: Number(scoreOf(selected)),
+                        delta: Number(scoreOf(ranked[0])) - Number(scoreOf(selected)),
+                    },
+                },
+            };
+        }
+        return selected;
+    }
+
+    _clearDecisionReason() {
+        this._lastDecisionReason = null;
+        this._pendingNearTieDecision = null;
+    }
+
+    _recordDecisionReason(code, values = {}) {
+        this._lastDecisionReason = { code, values: Object.assign({}, values) };
+    }
+
+    _consumeDecisionReason() {
+        const reason = this._lastDecisionReason || null;
+        this._lastDecisionReason = null;
+        return reason;
     }
 
     _rollEvaluationSignature(game) {
@@ -412,7 +469,9 @@ class CPU {
 
 
     chooseDiceCount(game) {
-        return CPURollDecision.chooseDiceCount(this, game);
+        return this._withStableEvaluationSignature(game, () =>
+            CPURollDecision.chooseDiceCount(this, game)
+        );
     }
 
     _expertV2SimpleStrongCrowdDiceThreshold(game) {
@@ -421,11 +480,15 @@ class CPU {
 
 
     chooseReroll(game) {
-        return CPURollDecision.chooseReroll(this, game);
+        return this._withStableEvaluationSignature(game, () =>
+            CPURollDecision.chooseReroll(this, game)
+        );
     }
 
     chooseHarbor(game) {
-        return CPURollDecision.chooseHarbor(this, game);
+        return this._withStableEvaluationSignature(game, () =>
+            CPURollDecision.chooseHarbor(this, game)
+        );
     }
 
     chooseTVTarget(game) {
@@ -697,7 +760,15 @@ class CPU {
      * @returns {CPUBuildActionProposal|null}
      */
     chooseBuildAction(game, shopStock) {
-        return CPUBuildStrategy.chooseBuildAction(this, game, shopStock);
+        this._pendingNearTieDecision = null;
+        const proposal = CPUBuildStrategy.chooseBuildAction(this, game, shopStock);
+        const pending = this._pendingNearTieDecision;
+        this._pendingNearTieDecision = null;
+        const selectedName = proposal && proposal.data && (proposal.data.cardName || proposal.data.name);
+        if (pending && proposal && proposal.action === pending.action && selectedName === pending.name) {
+            this._lastDecisionReason = pending.reason;
+        }
+        return proposal;
     }
 
     _buildExecutionContext() {

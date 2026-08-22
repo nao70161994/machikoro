@@ -39,6 +39,67 @@ runTest('CPU build strategy はdifficulty別delegateを局所selection adapter�
     }
 });
 
+runTest('CPU build strategy は8人以上だけ指定large-crowd戦略へ切り替える', () => {
+    const calls = [];
+    const cpu = {
+        difficulty: 'strong',
+        largeCrowdBuildMode: 'normal',
+        _syncExpertTuningForGame: () => {},
+        buildNormal() { calls.push('normal'); },
+        buildStrong() { calls.push('strong'); },
+    };
+    const makeGame = playerCount => ({
+        phase: 'build',
+        builtThisTurn: false,
+        players: Array.from({ length: playerCount }, () => ({})),
+    });
+
+    assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, makeGame(7), {}), null);
+    assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, makeGame(8), {}), null);
+    assert.deepStrictEqual(calls, ['strong', 'normal']);
+});
+
+runTest('CPU build strategy はlive 4/5人expertだけ実測済みstrong crowd方策を使う', () => {
+    const calls = [];
+    const cpu = {
+        difficulty: 'expert',
+        largeCrowdBuildMode: 'native',
+        _isLiveExpert: () => true,
+        _syncExpertTuningForGame: () => {},
+        buildStrong() { calls.push('strong'); },
+        buildExpert() { calls.push('expert'); },
+    };
+    const makeGame = playerCount => ({
+        phase: 'build',
+        builtThisTurn: false,
+        players: Array.from({ length: playerCount }, () => ({})),
+    });
+
+    assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, makeGame(4), {}), null);
+    assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, makeGame(5), {}), null);
+    assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, makeGame(6), {}), null);
+    assert.deepStrictEqual(calls, ['strong', 'strong', 'expert']);
+});
+
+runTest('CPU build strategy はlive 3人strongだけ実測済みnormal方策を使う', () => {
+    const calls = [];
+    const cpu = {
+        difficulty: 'strong',
+        largeCrowdBuildMode: 'normal',
+        _syncExpertTuningForGame: () => {},
+        buildNormal() { calls.push('normal'); },
+        buildStrong() { calls.push('strong'); },
+    };
+    const game = {
+        phase: 'build',
+        builtThisTurn: false,
+        players: Array.from({ length: 3 }, () => ({})),
+    };
+
+    assert.strictEqual(CPUBuildStrategy.chooseBuildAction(cpu, game, {}), null);
+    assert.deepStrictEqual(calls, ['normal']);
+});
+
 runTest('CPU build strategy はinvalid stateでadapter生成もdispatchもしない', () => {
     const cpu = {
         difficulty: 'normal',
@@ -104,7 +165,8 @@ runTest('CPU build strategy はexpert-v2-simple候補なしのtrace順を維持�
 
 runTest('CPU.jsのbuild strategy public APIは専用境界へ委譲する', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'js/CPU.js'), 'utf8');
-    for (const name of ['chooseBuildAction', 'buildWeak', 'buildNormal', 'buildStrong', 'buildExpert']) {
+    assert.match(source, /chooseBuildAction\(game, shopStock\) \{[\s\S]*?CPUBuildStrategy\.chooseBuildAction\(this, game, shopStock\);[\s\S]*?return proposal;\s*\}/);
+    for (const name of ['buildWeak', 'buildNormal', 'buildStrong', 'buildExpert']) {
         assert.match(source, new RegExp(`${name}\\(game, shopStock\\) \\{\\s*return CPUBuildStrategy\\.${name}\\(this, game, shopStock\\);\\s*\\}`));
     }
     for (const legacyField of ['_selectedBuildAction', '_collectingBuildAction', '_buildProposalCollector']) {

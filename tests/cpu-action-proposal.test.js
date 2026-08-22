@@ -119,3 +119,44 @@ runTest('CPU action proposalは推測理由を足さず選んだcanonical action
     ), '建設せずターンを終了します');
     assert.strictEqual(CPUActionProposal.explanation(null), '');
 });
+
+runTest('CPU action proposalはreason codeをcanonical payload外のimmutable sidecarに保持する', () => {
+    const proposal = CPUActionProposal.create('selectDice', {
+        useTwo: true,
+        diceCount: 2,
+        d1: 1,
+        d2: 2,
+        tunaDice: [3, 4],
+    });
+    CPUActionProposal.withDecisionReason(proposal, {
+        code: 'dice-score-comparison',
+        values: { oneScore: 2.5, twoScore: 4.25, threshold: 0.8, ignored: Infinity },
+    });
+
+    assert.deepStrictEqual(Object.keys(proposal), ['action', 'data']);
+    assert.deepStrictEqual(CPUActionProposal.decisionReason(proposal), {
+        code: 'dice-score-comparison',
+        values: { oneScore: 2.5, twoScore: 4.25, threshold: 0.8 },
+    });
+    assert.ok(Object.isFrozen(CPUActionProposal.decisionReason(proposal)));
+    assert.ok(Object.isFrozen(CPUActionProposal.decisionReason(proposal).values));
+    assert.strictEqual(
+        CPUActionProposal.explanation(proposal),
+        '2個振りを選択（1個 2.50 / 2個 4.25、切替基準 0.80）'
+    );
+});
+
+runTest('CPU action proposalはrandom reasonを推測せず明示する', () => {
+    const proposal = CPUActionProposal.create('selectDice', {
+        useTwo: false,
+        diceCount: 1,
+        d1: 1,
+        d2: 1,
+        tunaDice: [1, 1],
+    });
+    CPUActionProposal.withDecisionReason(proposal, {
+        code: CPUActionProposal.reasonCodes.RANDOM_CHOICE,
+        values: { optionCount: 2 },
+    });
+    assert.strictEqual(CPUActionProposal.explanation(proposal), 'サイコロを1個振ります（ランダム選択）');
+});

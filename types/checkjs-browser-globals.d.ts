@@ -44,6 +44,7 @@ declare var CPUPendingDecision: typeof import("../js/cpuPendingDecision").CPUPen
 declare var CPURollDecision: typeof import("../js/cpuRollDecision").CPURollDecision;
 declare var CPU_EXPERT_DEFAULT_OPTIONS: typeof import("../js/cpuTuning").CPU_EXPERT_DEFAULT_OPTIONS;
 declare var CPU_EXPERT_PRESETS: typeof import("../js/cpuTuning").CPU_EXPERT_PRESETS;
+declare var CPU_STRONG_LARGE_CROWD_TUNING: typeof import("../js/cpuTuning").CPU_STRONG_LARGE_CROWD_TUNING;
 declare var CPU_EXPERT_PROFILE_TUNINGS: typeof import("../js/cpuTuning").CPU_EXPERT_PROFILE_TUNINGS;
 declare var resolveLiveExpertOptions: typeof import("../js/cpuTuning").resolveLiveExpertOptions;
 declare var resolveLiveCpuOptions: typeof import("../js/cpuTuning").resolveLiveCpuOptions;

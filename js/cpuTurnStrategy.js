@@ -9,9 +9,15 @@ const CpuTurnStrategy = (() => {
         return CpuTurnActionProposal.create(action, data);
     }
 
+    function complete(cpu, selected) {
+        if (!selected || !cpu || typeof cpu._consumeDecisionReason !== 'function') return selected;
+        return CpuTurnActionProposal.withDecisionReason(selected, cpu._consumeDecisionReason());
+    }
+
     function chooseAction(stepName, context = {}) {
         const { game, cpu, rollDie, choosePendingAction, shopStock } = context;
         if (!game || !cpu) return null;
+        if (typeof cpu._clearDecisionReason === 'function') cpu._clearDecisionReason();
 
         switch (stepName) {
         case 'roll': {
@@ -24,26 +30,26 @@ const CpuTurnStrategy = (() => {
             const d1 = rollDie();
             const d2 = rollDie();
             const tunaDice = [rollDie(), rollDie()];
-            return proposal('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice });
+            return complete(cpu, proposal('selectDice', { useTwo, diceCount: useTwo ? 2 : 1, d1, d2, tunaDice }));
         }
         case 'rerollConfirm':
-            if (!cpu.chooseReroll(game)) return proposal('skipReroll', {});
-            return proposal('rerollDice', {
+            if (!cpu.chooseReroll(game)) return complete(cpu, proposal('skipReroll', {}));
+            return complete(cpu, proposal('rerollDice', {
                 forceDice: rollDie(),
                 tunaDice: [rollDie(), rollDie()],
-            });
+            }));
         case 'harborChoice':
-            return proposal('resolveHarbor', { useBonus: cpu.chooseHarbor(game) });
+            return complete(cpu, proposal('resolveHarbor', { useBonus: cpu.chooseHarbor(game) }));
         case 'pending':
-            return typeof choosePendingAction === 'function' ? choosePendingAction(cpu) : null;
+            return complete(cpu, typeof choosePendingAction === 'function' ? choosePendingAction(cpu) : null);
         case 'build':
-            return typeof cpu.chooseBuildAction === 'function'
+            return complete(cpu, typeof cpu.chooseBuildAction === 'function'
                 ? cpu.chooseBuildAction(game, shopStock)
-                : null;
+                : null);
         case 'nextTurn':
             return proposal('nextTurn', {});
         case 'resolveIT':
-            return proposal('resolveIT', { doSave: cpu.chooseITInvest(game) });
+            return complete(cpu, proposal('resolveIT', { doSave: cpu.chooseITInvest(game) }));
         default:
             return null;
         }

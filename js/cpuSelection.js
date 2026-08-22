@@ -1,6 +1,30 @@
 'use strict';
 
 const CPUSelection = Object.freeze({
+    stableSeedIndex(seedKey, size) {
+        if (!Number.isInteger(size) || size <= 0) return -1;
+        const text = String(seedKey == null ? '' : seedKey);
+        let hash = 2166136261;
+        for (let index = 0; index < text.length; index++) {
+            hash ^= text.charCodeAt(index);
+            hash = Math.imul(hash, 16777619);
+        }
+        return (hash >>> 0) % size;
+    },
+
+    nearTieChoice(ranked, scoreOf, maxDelta, seedKey) {
+        if (!Array.isArray(ranked) || ranked.length === 0 || typeof scoreOf !== 'function') return null;
+        const threshold = Number(maxDelta);
+        const bestScore = Number(scoreOf(ranked[0]));
+        if (!Number.isFinite(threshold) || threshold < 0 || !Number.isFinite(bestScore)) return ranked[0];
+        const candidates = ranked.filter(item => {
+            const score = Number(scoreOf(item));
+            return Number.isFinite(score) && bestScore - score <= threshold;
+        });
+        if (candidates.length <= 1) return ranked[0];
+        return candidates[CPUSelection.stableSeedIndex(seedKey, candidates.length)];
+    },
+
     randomChoice(items, random = Math.random) {
         if (!Array.isArray(items) || items.length === 0) return null;
         return items[Math.floor(random() * items.length)];
