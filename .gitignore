@@ -32,6 +32,7 @@ models/rl_model/*.md
 models/rl_model/*.review.txt
 models/rl_model/archive/
 models/rl_model/runs/
+models/rl_model/eval-*/
 models/rl_model/pids/
 !models/rl_model/registry.json
 !models/rl_model/portfolio/

@@ -1,5 +1,5 @@
 class RLCPU {
-    constructor(modelData) {
+    constructor(modelData, options = {}) {
         if (!modelData || !modelData.layers) {
             throw new Error("RLCPU requires exported model data");
         }
@@ -9,9 +9,14 @@ class RLCPU {
         this.hiddenSize = modelData.hiddenSize;
         this.numCards = modelData.numCards;
         this.numTargetSlots = modelData.numTargetSlots || RLCPU._inferTargetSlots(modelData.layers);
+        this.businessSkipGateVersion = modelData.businessSkipGateVersion || 0;
         this.schema = RLCPU.resolveModelSchema(modelData);
         this.hasExplicitActionSchema = typeof modelData.actionSchema === "string";
+        this.allowLegacyVocabulary = options.allowLegacyVocabulary === true ||
+            modelData.legacyVocabulary === true;
+        this.requireFormatVersion = options.requireFormatVersion === true;
         this._validateSchemaCompatibility();
+        this._validateVocabularyCompatibility();
         this._validateModel();
     }
 
@@ -46,6 +51,15 @@ class RLCPU {
             LANDMARK_NAMES.HARBOR,
             LANDMARK_NAMES.AIRPORT,
         ];
+    }
+
+    static get CARD_NAMES() {
+        return CARDS.map(card => card.name);
+    }
+
+    static vocabularyFingerprint(cardNames = RLCPU.CARD_NAMES,
+            landmarkNames = RLCPU.LANDMARK_ORDER) {
+        return `v1:${Array.from(cardNames).join("\u001f")}\u001e${Array.from(landmarkNames).join("\u001f")}`;
     }
 
     static get ACTIONS() {
@@ -103,7 +117,14 @@ class RLCPU {
     }
 
     static fromGlobal(modelData = globalThis.RL_MODEL_DATA) {
-        return new RLCPU(modelData);
+        return new RLCPU(modelData, {
+            allowLegacyVocabulary: modelData && modelData.formatVersion === 1,
+        });
+    }
+
+    static validateModelData(modelData, options = {}) {
+        new RLCPU(modelData, options);
+        return modelData;
     }
 
     _validateSchemaCompatibility() {
@@ -122,7 +143,57 @@ class RLCPU {
         }
     }
 
+    _validateVocabularyCompatibility() {
+        if (this.schema.state === RLCPU.STATE_SCHEMAS.CUSTOM) return;
+        const cardNames = this.model.cardNames;
+        const landmarkNames = this.model.landmarkNames;
+        if (!Array.isArray(cardNames) || !Array.isArray(landmarkNames)) {
+            if ((this.allowLegacyVocabulary && this.model.formatVersion !== 2) || this.model.formatVersion === 1 ||
+                    this.model.formatVersion === undefined) return;
+            throw new Error("RLCPU model vocabulary metadata is missing");
+        }
+        const expectedCards = CARDS.map(card => card.name);
+        const expectedLandmarks = RLCPU.LANDMARK_ORDER;
+        if (cardNames.length !== expectedCards.length ||
+                cardNames.some((name, index) => name !== expectedCards[index])) {
+            throw new Error("RLCPU card vocabulary mismatch");
+        }
+        if (landmarkNames.length !== expectedLandmarks.length ||
+                landmarkNames.some((name, index) => name !== expectedLandmarks[index])) {
+            throw new Error("RLCPU landmark vocabulary mismatch");
+        }
+        const expectedFingerprint = RLCPU.vocabularyFingerprint(expectedCards, expectedLandmarks);
+        if (this.model.formatVersion === 2 &&
+                this.model.vocabularyFingerprint !== expectedFingerprint) {
+            throw new Error("RLCPU vocabulary fingerprint mismatch");
+        }
+    }
+
     _validateModel() {
+        if (this.requireFormatVersion) {
+            if (![1, 2].includes(this.model.formatVersion)) {
+                throw new Error("RLCPU invalid model metadata: formatVersion");
+            }
+            if (!Number.isSafeInteger(this.model.schemaVersion) || this.model.schemaVersion <= 0) {
+                throw new Error("RLCPU invalid model metadata: schemaVersion");
+            }
+        }
+        for (const [label, value] of [
+            ["stateDim", this.stateDim],
+            ["hiddenSize", this.hiddenSize],
+            ["numActions", this.numActions],
+            ["numCards", this.numCards],
+        ]) {
+            if (!Number.isSafeInteger(value) || value <= 0) {
+                throw new Error(`RLCPU invalid model metadata: ${label}`);
+            }
+        }
+        if (!Number.isSafeInteger(this.numTargetSlots) || this.numTargetSlots < 0) {
+            throw new Error("RLCPU invalid model metadata: numTargetSlots");
+        }
+        if (![0, 1].includes(this.businessSkipGateVersion)) {
+            throw new Error("RLCPU invalid model metadata: businessSkipGateVersion");
+        }
         const shared = this.model.layers.shared || [];
         if (shared.length !== 2) {
             throw new Error("RLCPU expects 2 shared layers");
@@ -142,6 +213,10 @@ class RLCPU {
         if (!layer || !Array.isArray(layer.weights) || !Array.isArray(layer.bias)) {
             throw new Error(`RLCPU invalid layer: ${label}`);
         }
+        if (layer.shape && (layer.shape.input !== input ||
+                layer.shape.output !== output)) {
+            throw new Error(`RLCPU layer metadata mismatch: ${label}`);
+        }
         if (layer.weights.length !== input) {
             throw new Error(`RLCPU layer input mismatch: ${label}`);
         }
@@ -152,6 +227,12 @@ class RLCPU {
             if (!Array.isArray(row) || row.length !== output) {
                 throw new Error(`RLCPU layer shape mismatch: ${label}`);
             }
+            if (row.some(value => !Number.isFinite(value))) {
+                throw new Error(`RLCPU layer contains non-finite weights: ${label}`);
+            }
+        }
+        if (layer.bias.some(value => !Number.isFinite(value))) {
+            throw new Error(`RLCPU layer contains non-finite bias: ${label}`);
         }
     }
 
@@ -161,15 +242,23 @@ class RLCPU {
     }
 
     _matVec(layer, input) {
-        const out = new Array(layer.bias.length);
-        for (let j = 0; j < layer.bias.length; j++) {
-            let sum = layer.bias[j];
-            for (let i = 0; i < input.length; i++) {
-                sum += input[i] * layer.weights[i][j];
+        const out = layer.bias.slice();
+        for (let i = 0; i < input.length; i++) {
+            const value = input[i];
+            const weights = layer.weights[i];
+            for (let j = 0; j < out.length; j++) {
+                out[j] += value * weights[j];
             }
-            out[j] = sum;
         }
         return out;
+    }
+
+    _matVecColumn(layer, input, column) {
+        let sum = layer.bias[column];
+        for (let i = 0; i < input.length; i++) {
+            sum += input[i] * layer.weights[i][column];
+        }
+        return sum;
     }
 
     _relu(values) {
@@ -276,27 +365,43 @@ class RLCPU {
         return null;
     }
 
+    _validatedDecision(action, confidence, value, mask) {
+        if (!Number.isSafeInteger(action) || action < 0 || action >= this.numActions || !(mask[action] > 0)) {
+            throw new Error("RLCPU produced an illegal action");
+        }
+        if (!Number.isFinite(confidence) || !Number.isFinite(value)) {
+            throw new Error("RLCPU produced a non-finite decision");
+        }
+        return { action, confidence, value };
+    }
+
     chooseAction(state, mask) {
         const hidden = this._sharedForward(state);
-        const policyLogits = this._matVec(this.model.layers.policyHead, hidden);
-        const policy = this._softmax(policyLogits);
         const valueRaw = this._matVec(this.model.layers.valueHead, hidden);
         const value = this._tanh(valueRaw[0]);
-        const masked = this.maskPolicy(policy, mask);
-        const total = masked.reduce((sum, score) => sum + score, 0);
-        if (total <= 0) {
-            const fallbackAction = this._argmaxMaskedLogits(policyLogits, mask);
-            return { action: fallbackAction, confidence: fallbackAction >= 0 ? 1 : 0, value };
+        const legalLogits = [];
+        let maxLogit = -Infinity;
+        const policyHead = this.model.layers.policyHead;
+        for (let action = 0; action < mask.length; action++) {
+            if (!(mask[action] > 0)) continue;
+            const logit = this._matVecColumn(policyHead, hidden, action);
+            legalLogits.push({ action, logit });
+            if (logit > maxLogit) maxLogit = logit;
         }
         let bestAction = -1;
-        let bestScore = -1;
-        for (let i = 0; i < masked.length; i++) {
-            if (masked[i] > bestScore) {
-                bestScore = masked[i];
-                bestAction = i;
+        let bestLogit = -Infinity;
+        let total = 0;
+        for (const entry of legalLogits) {
+            total += Math.exp(entry.logit - maxLogit);
+            if (bestAction < 0 || entry.logit > bestLogit) {
+                bestAction = entry.action;
+                bestLogit = entry.logit;
             }
         }
-        return { action: bestAction, confidence: bestScore, value };
+        const confidence = bestAction >= 0 && total > 0
+            ? Math.exp(bestLogit - maxLogit) / total
+            : 0;
+        return this._validatedDecision(bestAction, confidence, value, mask);
     }
 
     chooseBusinessAction(state, mask) {
@@ -325,8 +430,16 @@ class RLCPU {
         const giveTotal = maskedGive.reduce((sum, score) => sum + score, 0);
         const takeTotal = maskedTake.reduce((sum, score) => sum + score, 0);
         if (giveTotal <= 0 || takeTotal <= 0) {
-            const fallbackAction = this._argmaxMaskedLogits(mask.map((enabled, index) => enabled > 0 ? (giveLogits[Math.floor((index - actionConstants.BC_BASE) / this.numCards)] + takeLogits[(index - actionConstants.BC_BASE) % this.numCards]) : -Infinity), mask);
-            return { action: fallbackAction, confidence: fallbackAction >= 0 ? 1 : 0, value };
+            const fallbackLogits = new Array(this.numActions).fill(-Infinity);
+            for (let action = actionConstants.BC_BASE;
+                    action < actionConstants.BC_BASE + actionConstants.BC_SIZE; action++) {
+                if (!mask[action]) continue;
+                const combo = action - actionConstants.BC_BASE;
+                fallbackLogits[action] = giveLogits[Math.floor(combo / this.numCards)] +
+                    takeLogits[combo % this.numCards];
+            }
+            const fallbackAction = this._argmaxMaskedLogits(fallbackLogits, mask);
+            return this._validatedDecision(fallbackAction, fallbackAction >= 0 ? 1 : 0, value, mask);
         }
         let bestAction = -1;
         let bestScore = -1;
@@ -341,7 +454,18 @@ class RLCPU {
                 }
             }
         }
-        return { action: bestAction, confidence: bestScore, value };
+        if (this.businessSkipGateVersion > 0 && mask[actionConstants.PASS] > 0) {
+            const policyHead = this.model.layers.policyHead;
+            const gate = this._softmax([
+                this._matVecColumn(policyHead, hidden, actionConstants.PASS),
+                this._matVecColumn(policyHead, hidden, bestAction),
+            ]);
+            if (gate[0] >= gate[1]) {
+                return this._validatedDecision(actionConstants.PASS, gate[0], value, mask);
+            }
+            bestScore = gate[1];
+        }
+        return this._validatedDecision(bestAction, bestScore, value, mask);
     }
 
     _currentAndOpponent(game) {
@@ -418,9 +542,7 @@ class RLCPU {
                 mask[RLCPU.ACTIONS.BC_BASE + giveIndex * CARDS.length + takeIndex] = 1;
             }
         }
-        if (!mask.some(Boolean)) {
-            mask[RLCPU.ACTIONS.PASS] = 1;
-        }
+        mask[RLCPU.ACTIONS.PASS] = 1;
         return mask;
     }
 
@@ -718,7 +840,7 @@ class RLCPU {
                         if (businessMask[action]) mask[action] = 1;
                     }
                 }
-                if (!mask.some(Boolean)) mask[actionConstants.PASS] = 1;
+                mask[actionConstants.PASS] = businessMask[actionConstants.PASS] ? 1 : 0;
                 return mask;
             }
             if (shouldMaskPendingField('pendingCleaning') && game.pendingCleaning > 0) {
@@ -826,6 +948,7 @@ class RLCPU {
                 ? this.chooseBusinessAction(this.encodeGameState(game), preferredMask).action
                 : this._chooseForGame(game).action;
         }
+        if (action === RLCPU.ACTIONS.PASS) return Object.freeze({ skip: true });
         if (action < RLCPU.ACTIONS.BC_BASE || action >= RLCPU.ACTIONS.BC_BASE + RLCPU.ACTIONS.BC_SIZE) return null;
         const combo = action - RLCPU.ACTIONS.BC_BASE;
         const giveIndex = Math.floor(combo / CARDS.length);

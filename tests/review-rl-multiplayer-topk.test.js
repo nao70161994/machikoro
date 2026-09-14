@@ -5,6 +5,7 @@ const {
     parseArgs,
     playerCountOfSummary,
     minGamesAcrossSummaries,
+    strategyDiversityKey,
     buildEntry,
     buildDiversifiedPicks,
     buildNearTiePairs,
@@ -47,10 +48,19 @@ runTest('review-rl-multiplayer-topk playerCountOfSummary は lineup 長から人
     assert.strictEqual(playerCountOfSummary({ opponent: 'strong' }), 2);
 });
 
+runTest('review-rl-multiplayer-topk strategyDiversityKey は3軸を0.1刻みで固定する', () => {
+    assert.strictEqual(strategyDiversityKey({
+        primary: '資産エンジン型',
+        axes: { interaction: 0.14, engine: 0.76, landmarkTempo: 0.25 },
+    }), '資産エンジン型|interaction=0.1|engine=0.8|landmark=0.3');
+    assert.strictEqual(strategyDiversityKey(null), '');
+});
+
 runTest('review-rl-multiplayer-topk buildEntry は3p/4p平均と総合点を作る', () => {
     const entry = buildEntry({
         id: 'top2',
         buildSignature: { cardKey: 'パン屋/寿司屋', landmarkKey: '港/駅' },
+        strategyProfile: { primary: '対人干渉型', axes: { interaction: 0.4, engine: 0.6, landmarkTempo: 0.2 } },
         summaries: [
             { lineup: ['rl', 'weak', 'normal'], rlWinRate: 0.7, games: 50 },
             { lineup: ['rl', 'normal', 'strong'], rlWinRate: 0.5, games: 50 },
@@ -62,8 +72,39 @@ runTest('review-rl-multiplayer-topk buildEntry は3p/4p平均と総合点を作�
     assert.strictEqual(entry.avg4p, 0.5);
     assert.strictEqual(entry.combinedScore, 0.55);
     assert.strictEqual(entry.cardStyle, 'パン屋/寿司屋');
+    assert.ok(entry.diversityKey.startsWith('対人干渉型|'));
     assert.strictEqual(entry.minGames, 50);
     assert.strictEqual(entry.smokeOnly, false);
+    assert.strictEqual(entry.mainAdoptionReady, false);
+    assert.strictEqual(entry.highConfidence, false);
+    assert.ok(renderText({ totalModels: 1, minGamesPerLineup: 50, entries: [entry], diversifiedPicks: [], nearTiePairs: [] }).includes('gate=candidateGate'));
+});
+
+runTest('review-rl-multiplayer-topk は100/300戦の主採用段階を区別する', () => {
+    const result = games => buildEntry({
+        id: `games-${games}`,
+        evaluationConfig: { pairedSeats: true },
+        summaries: [{ lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.5, games }],
+    });
+    assert.strictEqual(result(100).mainAdoptionReady, true);
+    assert.strictEqual(result(100).highConfidence, false);
+    assert.strictEqual(result(300).highConfidence, true);
+    const unpaired = buildEntry({
+        id: 'unpaired',
+        evaluationConfig: { pairedSeats: false },
+        summaries: [{ lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.5, games: 300 }],
+    });
+    assert.strictEqual(unpaired.mainSampleReady, true);
+    assert.strictEqual(unpaired.mainAdoptionReady, false);
+    assert.strictEqual(unpaired.highConfidence, false);
+    const unstable = buildEntry({
+        id: 'unstable',
+        evaluationConfig: { pairedSeats: true },
+        summaries: [{ lineup: ['rl', 'weak', 'normal', 'strong'], rlWinRate: 0.5, games: 300, exhausted: 1 }],
+    });
+    assert.strictEqual(unstable.runtimeStable, false);
+    assert.strictEqual(unstable.mainAdoptionReady, false);
+    assert.ok(renderText({ totalModels: 1, minGamesPerLineup: 50, entries: [unstable], diversifiedPicks: [], nearTiePairs: [] }).includes('gate=runtimeUnstable'));
 });
 
 runTest('review-rl-multiplayer-topk は50戦未満を smokeOnly として扱う', () => {

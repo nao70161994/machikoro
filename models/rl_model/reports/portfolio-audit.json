@@ -1,25 +1,46 @@
 {
-  "updatedAt": "2026-05-11",
-  "warnings": [],
+  "updatedAt": "2026-09-13",
+  "warnings": [
+    "mp-mixed-34510-target-only-seed145-4p と mp-mover-legal-curriculum-seed415-4p-strength: topCards が 4/5 重複しています"
+  ],
   "errors": [],
   "recommended": [
     {
       "id": "self-only-4p-h256-lr1e5-5000-seed103",
       "role": "adopted-3p-10p",
-      "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. Latest 50-game extended lineup evaluation reached 56% on 5p weak+normal+strong+expert and 50% on 10p mixed weak/normal/strong/expert.",
+      "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. The 2026-08-18 stability audit kept competitive win rates across 3p-10p. A 2026-08-19 100-block common-random-number audit compared the RL subject with a tagged normal subject against the same nine normal opponents. Neither the normal absolute-seat distribution nor the RL-vs-normal distribution differed at the 5% chi-square threshold, so the earlier 20-games-per-seat gaps are classified as sampling-dominant rather than evidence of an RL-specific seat defect.",
       "status": "adopted",
       "style": "4p-wheat-vineyard-pizza",
       "portfolioPath": true,
       "best2pGames": 0,
       "has2pOpponents": false,
-      "best3pGames": 50,
+      "best3pGames": 200,
       "has3pLineups": true,
-      "best4pGames": 100,
+      "best4pGames": 200,
       "has4pLineups": true,
-      "best5pGames": 50,
+      "best5pGames": 200,
       "has5pLineups": true,
-      "best10pGames": 50,
+      "best10pGames": 1000,
       "has10pLineups": true,
+      "targetDiagnostics": null
+    },
+    {
+      "id": "mp-mixed-34510-target-only-seed145-4p",
+      "role": "adopted-4p-specialist",
+      "reason": "Added only for 4-player games after a 2026-08-25 paired-seat 300-game comparison against the adopted seed103 model. The candidate won 105 direct games to 76, with a 58.0% share and a 95% confidence lower bound of 50.7%. It passed all 17 special pending checks with zero exhausted games. The existing seed103 model remains the higher-weight general 3-10 player model because mixed-lineup score was 1.0 point lower.",
+      "status": "adopted",
+      "style": "target-wheat-vineyard-forest",
+      "portfolioPath": true,
+      "best2pGames": 0,
+      "has2pOpponents": false,
+      "best3pGames": 0,
+      "has3pLineups": false,
+      "best4pGames": 300,
+      "has4pLineups": true,
+      "best5pGames": 0,
+      "has5pLineups": false,
+      "best10pGames": 0,
+      "has10pLineups": false,
       "targetDiagnostics": null
     },
     {

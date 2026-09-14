@@ -24,15 +24,14 @@ jobs:
 
       - uses: actions/setup-python@v6
         with:
-          python-version: '3.x'
+          python-version: '3.12'
           cache: pip
-          cache-dependency-path: scripts/rl/requirements.txt
+          cache-dependency-path: scripts/rl/requirements-ci.txt
 
       - name: Install dependencies
         run: |
           npm ci
-          python -m pip install --upgrade pip
-          pip install -r scripts/rl/requirements.txt
+          pip install -r scripts/rl/requirements-ci.txt
 
       - name: Static safety gate
         run: npm run test:static

@@ -24,13 +24,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
 
 from scripts.rl.game_env import (
     MachikoroEnv, NUM_ACTIONS, ACT_BC_BASE, ACT_BC_SIZE,
-    ACT_RENO_BASE, ACT_BUY_CARD_BASE, ACT_BUY_LM_BASE, ACT_PASS,
-    PHASE_BUILD,
+    ACT_TV_TARGET, ACT_MOVER_BASE, ACT_RENO_BASE,
+    ACT_BUY_CARD_BASE, ACT_BUY_LM_BASE, ACT_PASS,
+    PHASE_PENDING, PHASE_BUILD,
 )
 from scripts.rl.encode import encode_state, encode_state_v2, action_mask, state_dim_for_player_count, STATE_DIM_4P
 from scripts.rl.agent import RLAgent
-from scripts.rl.network import SchemaVersionError
-from scripts.rl.cards import NUM_CARDS, CARD_NAMES, CARD_DEF, LANDMARK_ORDER, LANDMARK_COSTS
+from scripts.rl.network import SchemaVersionError, softmax
+from scripts.rl.cards import (
+    NUM_CARDS, CARD_NAMES, CARD_INDEX, CARD_DEF, LANDMARK_ORDER, LANDMARK_COSTS,
+    BLUE, GREEN, RED, PURPLE, FISHERY, HARBOR, HARBOR_RED, TUNA, LM_HARBOR,
+)
 from scripts.rl.export_model import export_checkpoint
 
 
@@ -222,9 +226,26 @@ def _reward_shaping_defaults() -> dict:
         "opp_asset": 0.0,
         "landmark": 0.2,
         "opp_landmark": 0.0,
+        "interaction_build": 0.0,
+        "harbor_build": 0.0,
+        "engine_build": 0.0,
         "build_pass_affordable_penalty": 0.0,
         "clip": 0.3,
     }
+
+
+def _reward_training_metadata(reward_config: dict, terminal_config: dict,
+                              curriculum_config=None) -> dict:
+    metadata = {
+        "rewardAccrualVersion": 2,
+        "rewardAccrualMethod": "between-own-decisions-v2",
+        "rewardConfigSchemaVersion": 2,
+        "rewardConfig": dict(reward_config),
+        "terminalConfig": dict(terminal_config),
+    }
+    if curriculum_config is not None:
+        metadata["curriculumConfig"] = dict(curriculum_config)
+    return metadata
 
 
 def _terminal_reward_defaults() -> dict:
@@ -293,6 +314,20 @@ def _compute_shaped_reward(env_before, env_after, agent_player: int, config: dic
     reward -= config.get("opp_asset", 0.0) * opp_asset_delta
     reward += config.get("landmark", 0.0) * my_landmark_delta
     reward -= config.get("opp_landmark", 0.0) * opp_landmark_delta
+    if action is not None and ACT_BUY_CARD_BASE <= action < ACT_BUY_CARD_BASE + NUM_CARDS:
+        card_name = CARD_NAMES[action - ACT_BUY_CARD_BASE]
+        card = CARD_DEF[card_name]
+        card_built = after_me.cards.get(card_name, 0) > before_me.cards.get(card_name, 0)
+        if card_built:
+            if card.color in (RED, PURPLE):
+                reward += config.get("interaction_build", 0.0)
+            if card.category == FISHERY or card.effect in (HARBOR, HARBOR_RED, TUNA):
+                reward += config.get("harbor_build", 0.0)
+            if card.color in (BLUE, GREEN):
+                reward += config.get("engine_build", 0.0)
+    elif action == ACT_BUY_LM_BASE + LANDMARK_ORDER.index(LM_HARBOR):
+        if after_me.landmarks.get(LM_HARBOR) and not before_me.landmarks.get(LM_HARBOR):
+            reward += config.get("harbor_build", 0.0)
     if _is_affordable_build_pass(env_before, agent_player, action):
         reward -= config.get("build_pass_affordable_penalty", 0.0)
 
@@ -300,6 +335,17 @@ def _compute_shaped_reward(env_before, env_after, agent_player: int, config: dic
     if clip and clip > 0:
         reward = float(np.clip(reward, -clip, clip))
     return float(reward)
+
+
+def _accrue_interturn_rewards(reward_lists, env_before, env_after,
+                              active_player: int, config: dict) -> None:
+    """Credit state changes between a player's decisions to its last action."""
+    for player, rewards in enumerate(reward_lists):
+        if player == active_player or not rewards:
+            continue
+        rewards[-1] += _compute_shaped_reward(
+            env_before, env_after, player, config, action=None
+        )
 
 
 def _compute_terminal_reward(env, agent_player: int, config: dict) -> float:
@@ -348,7 +394,11 @@ def _select_action(net, state, mask, epsilon):
     bc_available = bool(mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].any())
 
     if bc_available:
-        bc_give_p, bc_take_p, value, bc_give_logits, bc_take_logits = net.forward_bc_details(state)
+        gate_enabled = int(getattr(net, "bc_skip_gate_version", 0)) > 0
+        if gate_enabled:
+            policy, bc_give_p, bc_take_p, value, policy_logits, bc_give_logits, bc_take_logits = net.forward_bc_gate_details(state)
+        else:
+            bc_give_p, bc_take_p, value, bc_give_logits, bc_take_logits = net.forward_bc_details(state)
         if epsilon > 0 and random.random() < epsilon:
             return int(random.choice(valid)), value
         bc_joint  = mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].reshape(NUM_CARDS, NUM_CARDS)
@@ -368,6 +418,12 @@ def _select_action(net, state, mask, epsilon):
         if mask[action] == 0:
             fallback = _sample_masked_logits(np.zeros_like(mask), mask)
             action = int(fallback if fallback is not None else random.choice(valid))
+        if gate_enabled and mask[ACT_PASS] > 0:
+            gate_p = softmax(np.asarray([
+                policy_logits[ACT_PASS],
+                policy_logits[action],
+            ], dtype=np.float32))
+            action = ACT_PASS if int(np.random.choice(2, p=gate_p)) == 0 else action
         return action, value
     else:
         policy, value, logits = net.forward_details(state)
@@ -388,7 +444,11 @@ def _greedy_action(net, state, mask):
     bc_available = bool(mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].any())
 
     if bc_available:
-        bc_give_p, bc_take_p, _, bc_give_logits, bc_take_logits = net.forward_bc_details(state)
+        gate_enabled = int(getattr(net, "bc_skip_gate_version", 0)) > 0
+        if gate_enabled:
+            _, bc_give_p, bc_take_p, _, policy_logits, bc_give_logits, bc_take_logits = net.forward_bc_gate_details(state)
+        else:
+            bc_give_p, bc_take_p, _, bc_give_logits, bc_take_logits = net.forward_bc_details(state)
         bc_joint  = mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].reshape(NUM_CARDS, NUM_CARDS)
         give_mask = (bc_joint.sum(axis=1) > 0).astype(np.float32)
         take_mask = (bc_joint.sum(axis=0) > 0).astype(np.float32)
@@ -400,6 +460,8 @@ def _greedy_action(net, state, mask):
         if mask[action] == 0:
             fallback = _argmax_masked_logits(np.zeros_like(mask), mask)
             return int(fallback if fallback is not None else random.choice(valid))
+        if gate_enabled and mask[ACT_PASS] > 0 and policy_logits[ACT_PASS] >= policy_logits[action]:
+            return ACT_PASS
         return action
     else:
         policy, _, logits = net.forward_details(state)
@@ -540,6 +602,29 @@ def _append_episode_to_agent(agent: RLAgent, ep_states, ep_actions, ep_masks, ep
         agent.dones.append(dones[i])
 
 
+def _replay_losing_episode(agent: RLAgent, episodes, winner, probability: float,
+                           random_value=None) -> dict:
+    """Append one complete losing episode, preserving its terminal boundary."""
+    probability = min(max(float(probability), 0.0), 1.0)
+    candidates = [
+        episode for player, episode in episodes
+        if winner is not None and player != winner and episode.get("states")
+    ]
+    if not candidates or probability <= 0:
+        return {"episodes": 0, "steps": 0}
+    draw = random.random() if random_value is None else float(random_value)
+    if draw >= probability:
+        return {"episodes": 0, "steps": 0}
+    episode = random.choice(candidates) if len(candidates) > 1 else candidates[0]
+    _append_episode_to_agent(
+        agent,
+        episode["states"], episode["actions"], episode["masks"], episode["values"],
+        episode["rewards"], episode.get("target_kinds"), episode.get("target_slots"),
+        episode.get("target_masks"),
+    )
+    return {"episodes": 1, "steps": len(episode["states"])}
+
+
 def _has_trainable_target_transition(agent: RLAgent, index: int) -> bool:
     if int(getattr(agent.net, "target_slots", 0) or 0) <= 0:
         return False
@@ -556,26 +641,20 @@ def _has_trainable_target_transition(agent: RLAgent, index: int) -> bool:
     return getattr(agent.net, head_name, None) is not None
 
 
-def _copy_agent_transition(agent: RLAgent, source_index: int):
-    agent.states.append(np.array(agent.states[source_index], copy=True))
-    agent.actions.append(agent.actions[source_index])
-    agent.masks.append(np.array(agent.masks[source_index], copy=True))
-    agent.target_kinds.append(agent.target_kinds[source_index] if source_index < len(agent.target_kinds) else None)
-    agent.target_slots.append(agent.target_slots[source_index] if source_index < len(agent.target_slots) else None)
-    target_mask = agent.target_masks[source_index] if source_index < len(agent.target_masks) else None
-    if target_mask is None:
-        target_mask = np.zeros(int(getattr(agent.net, "target_slots", 0) or 0), dtype=np.float32)
-    agent.target_masks.append(np.array(target_mask, copy=True))
-    if len(agent.log_probs) == len(agent.rewards):
-        agent.log_probs.append(agent.log_probs[source_index])
-    agent.values.append(agent.values[source_index])
-    agent.rewards.append(agent.rewards[source_index])
-    agent.next_values.append(agent.next_values[source_index])
-    agent.dones.append(agent.dones[source_index])
+def _oversample_weight(total: int, selected: int, target_ratio: float, max_multiplier: float) -> tuple[float, int]:
+    if total <= 0 or selected <= 0 or target_ratio <= 0:
+        return 1.0, 0
+    target_ratio = min(max(float(target_ratio), 0.0), 0.95)
+    if selected / total >= target_ratio:
+        return 1.0, 0
+    desired_extra = int(np.ceil((target_ratio * total - selected) / max(1.0 - target_ratio, 1e-9)))
+    max_extra = max(0, int(np.ceil(selected * max(float(max_multiplier), 1.0))) - selected)
+    desired_extra = min(desired_extra, max_extra)
+    return 1.0 + desired_extra / selected, desired_extra
 
 
 def _oversample_target_transitions(agent: RLAgent, target_ratio: float, max_multiplier: float = 4.0) -> int:
-    """Duplicate target-pending transitions before train() to increase target-head updates.
+    """Configure target-head gradient weight without changing episode boundaries.
 
     Default training passes target_ratio=0. 2p models have target_slots=0, so this is a no-op
     even when the flag is accidentally enabled.
@@ -589,24 +668,43 @@ def _oversample_target_transitions(agent: RLAgent, target_ratio: float, max_mult
     if not target_indices:
         return 0
 
-    target_ratio = min(max(float(target_ratio), 0.0), 0.95)
     target_count = len(target_indices)
-    current_ratio = target_count / total
-    if current_ratio >= target_ratio:
-        return 0
+    weight, desired_extra = _oversample_weight(total, target_count, target_ratio, max_multiplier)
+    agent.target_loss_weight = weight
+    return desired_extra
 
-    desired_extra = int(np.ceil((target_ratio * total - target_count) / max(1.0 - target_ratio, 1e-9)))
-    max_total = max(total, int(np.ceil(total * max(float(max_multiplier), 1.0))))
-    desired_extra = min(desired_extra, max(0, max_total - total))
-    for _ in range(desired_extra):
-        _copy_agent_transition(agent, random.choice(target_indices))
+
+def _has_rare_pending_transition(agent: RLAgent, index: int) -> bool:
+    if index < 0 or index >= len(agent.rewards) or index >= len(agent.actions):
+        return False
+    mask = agent.masks[index] if index < len(agent.masks) else None
+    if mask is not None and len(mask) >= ACT_BC_BASE + ACT_BC_SIZE:
+        if np.any(mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE] > 0):
+            return int(np.sum(mask)) > 1
+    return False
+
+
+def _oversample_rare_pending_transitions(agent: RLAgent, target_ratio: float, max_multiplier: float = 4.0) -> int:
+    """Weight Business gate/give/take transitions without copying episode boundaries."""
+    if target_ratio <= 0:
+        return 0
+    total = len(agent.rewards)
+    if total <= 0:
+        return 0
+    rare_indices = [index for index in range(total) if _has_rare_pending_transition(agent, index)]
+    if not rare_indices:
+        return 0
+    rare_count = len(rare_indices)
+    weight, desired_extra = _oversample_weight(total, rare_count, target_ratio, max_multiplier)
+    agent.rare_pending_loss_weight = weight
     return desired_extra
 
 
 def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_steps: int = 3000,
                        reward_config=None, terminal_config=None, self_learn_both_sides: bool = False,
                        player_count: int = 2, debug_game_label: str = "",
-                       debug_game_interval_seconds: float = 0.0) -> dict:
+                       debug_game_interval_seconds: float = 0.0,
+                       loss_episode_replay_probability: float = 0.0) -> dict:
     env = MachikoroEnv(player_count=player_count)
     agent_player = random.randrange(len(env.players))
     reward_config = reward_config or _reward_shaping_defaults()
@@ -664,6 +762,13 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
             episodes[player]["target_masks"].append(target_mask)
             episodes[player]["values"].append(float(value))
             episodes[player]["rewards"].append(_compute_shaped_reward(before_env, env, player, reward_config, action=action))
+            _accrue_interturn_rewards(
+                [episode["rewards"] for episode in episodes],
+                before_env,
+                env,
+                player,
+                reward_config,
+            )
 
         recorded_steps = 0
         for player, episode in enumerate(episodes):
@@ -683,6 +788,13 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
                 episode["target_masks"],
             )
 
+        replay = _replay_losing_episode(
+            agent,
+            list(enumerate(episodes)),
+            env.winner,
+            loss_episode_replay_probability,
+        )
+
         if recorded_steps == 0:
             return {}
 
@@ -693,6 +805,8 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
             "opponent": "self",
             "self_both_sides": True,
             "recorded_steps": recorded_steps,
+            "loss_replay_episodes": replay["episodes"],
+            "loss_replay_steps": replay["steps"],
         }
 
     ep_states = []
@@ -728,7 +842,20 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
             ep_values.append(float(value))
             ep_rewards.append(_compute_shaped_reward(before_env, env, agent_player, reward_config, action=action))
         else:
+            before_env = copy.deepcopy(env)
+            active_player = env.current
             env.step(_opponent_action(env, opponent))
+            reward_lists = [
+                ep_rewards if player == agent_player else []
+                for player in range(len(env.players))
+            ]
+            _accrue_interturn_rewards(
+                reward_lists,
+                before_env,
+                env,
+                active_player,
+                reward_config,
+            )
 
     if not ep_states:
         return {}
@@ -740,12 +867,25 @@ def play_training_game(agent: RLAgent, epsilon: float = 0.1, opponent=None, max_
         ep_states, ep_actions, ep_masks, ep_values, ep_rewards,
         ep_target_kinds, ep_target_slots, ep_target_masks,
     )
+    replay = _replay_losing_episode(
+        agent,
+        [(agent_player, {
+            "states": ep_states, "actions": ep_actions, "masks": ep_masks,
+            "values": ep_values, "rewards": ep_rewards,
+            "target_kinds": ep_target_kinds, "target_slots": ep_target_slots,
+            "target_masks": ep_target_masks,
+        })],
+        env.winner,
+        loss_episode_replay_probability,
+    )
 
     return {
         "winner": env.winner,
         "agent_player": agent_player,
         "turns": env.turn_count,
         "opponent": (opponent or {}).get("kind", "random"),
+        "loss_replay_episodes": replay["episodes"],
+        "loss_replay_steps": replay["steps"],
     }
 
 
@@ -755,26 +895,57 @@ def _train_imitation_step(agent: RLAgent, state, mask, action) -> dict:
         return {"trained": False, "loss": 0.0}
 
     is_bc = (ACT_BC_BASE <= action < ACT_BC_BASE + ACT_BC_SIZE)
-    if is_bc:
+    bc_available = bool(mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].any())
+    gate_enabled = int(getattr(agent.net, "bc_skip_gate_version", 0)) > 0
+    if bc_available and (is_bc or (gate_enabled and action == ACT_PASS)):
         bc_joint = mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE].reshape(NUM_CARDS, NUM_CARDS)
         give_mask = (bc_joint.sum(axis=1) > 0).astype(np.float32)
         take_mask = (bc_joint.sum(axis=0) > 0).astype(np.float32)
-        give_idx = (action - ACT_BC_BASE) // NUM_CARDS
-        take_idx = (action - ACT_BC_BASE) % NUM_CARDS
+        if gate_enabled:
+            policy, bc_give_p, bc_take_p, _, policy_logits, _, _ = agent.net.forward_bc_gate_details(state)
+        else:
+            bc_give_p, bc_take_p, _, _, _ = agent.net.forward_bc_details(state)
+            policy = np.zeros(NUM_ACTIONS, dtype=np.float32)
+        give_p = _normalize_masked_probs(bc_give_p, give_mask)
+        take_p = _normalize_masked_probs(bc_take_p, take_mask)
+        if is_bc:
+            give_idx = (action - ACT_BC_BASE) // NUM_CARDS
+            take_idx = (action - ACT_BC_BASE) % NUM_CARDS
+            exchange_action = action
+        else:
+            scores = np.outer(give_p, take_p).reshape(-1)
+            scores *= mask[ACT_BC_BASE:ACT_BC_BASE + ACT_BC_SIZE]
+            combo = int(np.argmax(scores))
+            give_idx, take_idx = divmod(combo, NUM_CARDS)
+            exchange_action = ACT_BC_BASE + combo
         if give_mask[give_idx] <= 0 or take_mask[take_idx] <= 0:
             return {"trained": False, "loss": 0.0}
 
-        bc_give_p, bc_take_p, _, _, _ = agent.net.forward_bc_details(state)
-        give_p = _normalize_masked_probs(bc_give_p, give_mask)
-        take_p = _normalize_masked_probs(bc_take_p, take_mask)
-        d_give = give_p.astype(np.float32)
-        d_take = take_p.astype(np.float32)
-        d_give[give_idx] -= 1.0
-        d_take[take_idx] -= 1.0
-        d_give *= give_mask
-        d_take *= take_mask
-        agent.net.backward_bc(d_give, d_take, 0.0)
-        loss = -np.log(give_p[give_idx] + 1e-9) - np.log(take_p[take_idx] + 1e-9)
+        d_give = np.zeros(NUM_CARDS, dtype=np.float32)
+        d_take = np.zeros(NUM_CARDS, dtype=np.float32)
+        loss = 0.0
+        if is_bc:
+            d_give = give_p.astype(np.float32)
+            d_take = take_p.astype(np.float32)
+            d_give[give_idx] -= 1.0
+            d_take[take_idx] -= 1.0
+            d_give *= give_mask
+            d_take *= take_mask
+            loss = -np.log(give_p[give_idx] + 1e-9) - np.log(take_p[take_idx] + 1e-9)
+        if gate_enabled:
+            gate_p = softmax(np.asarray([
+                policy_logits[ACT_PASS],
+                policy_logits[exchange_action],
+            ], dtype=np.float32))
+            d_policy = np.zeros(NUM_ACTIONS, dtype=np.float32)
+            d_policy[ACT_PASS] = gate_p[0]
+            d_policy[exchange_action] = gate_p[1]
+            d_policy[action] -= 1.0
+            agent.net.backward_bc_gate(d_policy, d_give, d_take, 0.0)
+            chosen_gate_index = 0 if action == ACT_PASS else 1
+            loss += -np.log(gate_p[chosen_gate_index] + 1e-9)
+        else:
+            agent.net.backward_bc(d_give, d_take, 0.0)
         return {"trained": True, "loss": float(loss)}
 
     policy, _, _ = agent.net.forward_details(state)
@@ -786,7 +957,224 @@ def _train_imitation_step(agent: RLAgent, state, mask, action) -> dict:
     return {"trained": True, "loss": float(-np.log(masked[action] + 1e-9))}
 
 
-def run_imitation_pretraining(agent: RLAgent, games: int, opponents, max_steps: int = 1200) -> dict:
+def _train_target_imitation_step(agent: RLAgent, state, kind: str,
+                                 target_slot: int, target_mask) -> dict:
+    target_mask = np.asarray(target_mask, dtype=np.float32)
+    valid = np.where(target_mask > 0)[0]
+    if (
+        kind not in ("tv", "bc", "mover")
+        or target_slot is None
+        or int(target_slot) not in valid
+        or len(valid) <= 1
+    ):
+        return {"trained": False, "correct": False, "loss": 0.0}
+    try:
+        probs, _, _ = agent.net.forward_target_details(state, kind)
+    except (AttributeError, ValueError):
+        return {"trained": False, "correct": False, "loss": 0.0}
+    masked = _normalize_masked_probs(probs, target_mask)
+    selected = int(target_slot)
+    d_target = masked.astype(np.float32)
+    d_target[selected] -= 1.0
+    d_target *= target_mask
+    agent.net.backward_target(kind, d_target)
+    return {
+        "trained": True,
+        "correct": int(np.argmax(masked)) == selected,
+        "loss": float(-np.log(masked[selected] + 1e-9)),
+    }
+
+
+def _replace_curriculum_cards(env: MachikoroEnv, player_index: int,
+                              card_names) -> None:
+    """Install a small synthetic inventory while keeping acquisition order valid."""
+    player = env.players[player_index]
+    player.cards = {name: 0 for name in CARD_NAMES}
+    player.dormant = {name: 0 for name in CARD_NAMES}
+    player.card_order = []
+    player.card_order_dormant = []
+    for name in card_names:
+        env._add_one_card(player, name)
+
+
+def _configure_pending_curriculum_env(sample_index: int, player_count: int):
+    env = MachikoroEnv(player_count=player_count)
+    env.current = sample_index % player_count
+    opponents = [index for index in range(player_count) if index != env.current]
+    random.shuffle(opponents)
+    for rank, player_index in enumerate(opponents):
+        env.players[player_index].coins = 3 + rank * 3 + random.randint(0, 1)
+
+    kinds = ("tv", "businessExchange", "businessSkip", "mover")
+    kind = kinds[sample_index % len(kinds)]
+    env.phase = PHASE_PENDING
+    if kind == "tv":
+        env.pending_tv = 1
+        env._append_pending("pendingTV")
+    elif kind.startswith("business"):
+        env.pending_biz = 1
+        env._append_pending("pendingBusiness")
+        if kind == "businessExchange":
+            highest = env._target_opponent_slots()[0]
+            premium_cards = ("鉱山", "サンマ漁船", "マグロ漁船")
+            target_card = premium_cards[(sample_index // len(kinds)) % len(premium_cards)]
+            _replace_curriculum_cards(env, env.current, ("麦畑", "パン屋", "食品倉庫"))
+            for player_index in opponents:
+                _replace_curriculum_cards(env, player_index, ("麦畑", "パン屋", "改装屋"))
+            env._add_one_card(env.players[highest], target_card)
+        else:
+            # Force the skip example to be genuinely harmful: the current player
+            # can only give a valuable engine card for an opponent's cheap card.
+            _replace_curriculum_cards(env, env.current, ("食品倉庫", "ピザ屋"))
+            for player_index in opponents:
+                _replace_curriculum_cards(env, player_index, ("麦畑",))
+    else:
+        env.pending_mover = 1
+        env._append_pending("pendingMover")
+        # Keep Mover curriculum actions grounded in a deterministic, legal
+        # inventory instead of labeling random initial cards.  Include both
+        # active and dormant low-value cards so the head learns the same
+        # choices exercised by the special regression scenarios.
+        _replace_curriculum_cards(env, env.current, ("食品倉庫", "麦畑", "パン屋", "貸金業"))
+        for player_index in opponents:
+            _replace_curriculum_cards(env, player_index, ("麦畑", "パン屋"))
+        if (sample_index // len(kinds)) % 3 == 2:
+            # Keep the teacher action (麦畑 or パン屋) legal while still
+            # exposing a dormant card in the state for the target head.
+            env.players[env.current].dormant["食品倉庫"] = 1
+            env.players[env.current].cards["食品倉庫"] = 0
+            env.players[env.current].card_order_dormant.append("食品倉庫")
+
+    slots = env._target_opponent_slots()
+    visible_slots = slots[:min(3, len(slots))]
+    if kind == "mover":
+        # Mover should avoid helping the leader; keep the target label on the
+        # safest visible recipient while varying the legal card inventory.
+        target_index = visible_slots[-1]
+    else:
+        target_index = visible_slots[0]
+
+    if kind == "tv":
+        action = ACT_TV_TARGET
+    elif kind == "businessExchange":
+        give_name = "パン屋" if (sample_index // len(kinds)) % 2 == 0 else "麦畑"
+        give_index = CARD_INDEX[give_name]
+        take_index = CARD_INDEX[target_card]
+        action = ACT_BC_BASE + give_index * NUM_CARDS + take_index
+    elif kind == "businessSkip":
+        action = ACT_PASS
+    else:
+        give_name = "麦畑" if (sample_index // len(kinds)) % 2 == 0 else "パン屋"
+        action = ACT_MOVER_BASE + CARD_INDEX[give_name]
+    return env, kind, target_index, action
+
+
+def run_pending_curriculum(agent: RLAgent, samples: int,
+                           player_count_range: tuple[int, int],
+                           head_learning_rate: float = 0.0,
+                           player_counts=None) -> dict:
+    if samples <= 0:
+        return {
+            "samples": 0, "targetExamples": 0, "targetTrained": 0,
+            "targetAccuracy": float("nan"), "targetLoss": float("nan"),
+            "actionExamples": 0, "actionTrained": 0, "actionLoss": float("nan"),
+            "kinds": {},
+        }
+    # Legacy checkpoints predate the explicit exchange/skip gate.  A
+    # curriculum that contains skip examples must opt into the gate before
+    # training, otherwise those examples only touch zero give/take gradients.
+    if int(getattr(agent.net, "bc_skip_gate_version", 0)) == 0:
+        agent.net.bc_skip_gate_version = 1
+    min_count, max_count = player_count_range
+    curriculum_counts = tuple(sorted(set(
+        int(count) for count in (player_counts or range(min_count, max_count + 1))
+        if min_count <= int(count) <= max_count
+    )))
+    curriculum_heads = (
+        agent.net.policy_head,
+        agent.net.bc_give_head,
+        agent.net.bc_take_head,
+    )
+    original_head_rates = [head.lr for head in curriculum_heads]
+    curriculum_rate = float(head_learning_rate or 0.0)
+    if curriculum_rate > 0:
+        for head in curriculum_heads:
+            head.lr = curriculum_rate
+    target_examples = target_trained = target_correct = 0
+    action_examples = action_trained = 0
+    target_loss = action_loss = 0.0
+    kind_counts = {}
+    try:
+        for sample_index in range(samples):
+            if max_count <= 2:
+                player_count = 2
+                curriculum_index = 1 if sample_index % 2 == 0 else 2
+            else:
+                multiplayer_counts = [count for count in curriculum_counts if count >= 3]
+                player_count = random.choice(multiplayer_counts)
+                curriculum_index = sample_index
+            env, curriculum_kind, target_index, action = _configure_pending_curriculum_env(
+                curriculum_index, player_count
+            )
+            kind_counts[curriculum_kind] = kind_counts.get(curriculum_kind, 0) + 1
+            state = _encode_for_agent(env, agent)
+            target_kind = _pending_target_kind(env)
+            target_slots = int(getattr(agent.net, "target_slots", 0) or 0)
+            target_mask = _target_slot_mask(env, target_slots, target_kind)
+            slots = env._target_opponent_slots()
+            target_slot = slots.index(target_index) if target_index in slots else None
+            target_result = _train_target_imitation_step(
+                agent, state, target_kind, target_slot, target_mask
+            )
+            target_examples += 1
+            if target_result["trained"]:
+                target_trained += 1
+                target_correct += int(target_result["correct"])
+                target_loss += target_result["loss"]
+
+            env.set_pending_target_index(target_index)
+            mask = action_mask(env)
+            action_result = _train_imitation_step(agent, state, mask, action)
+            action_examples += 1
+            if action_result["trained"]:
+                action_trained += 1
+                action_loss += action_result["loss"]
+    finally:
+        for head, original_rate in zip(curriculum_heads, original_head_rates):
+            head.lr = original_rate
+
+    return {
+        "samples": samples,
+        "targetExamples": target_examples,
+        "targetTrained": target_trained,
+        "targetAccuracy": _safe_ratio(target_correct, target_trained),
+        "targetLoss": _safe_ratio(target_loss, target_trained),
+        "actionExamples": action_examples,
+        "actionTrained": action_trained,
+        "actionLoss": _safe_ratio(action_loss, action_trained),
+        "kinds": kind_counts,
+    }
+
+
+def _format_pending_curriculum_stats(prefix: str, stats: dict) -> str:
+    return (
+        f"{prefix}: samples={stats.get('samples', 0)} "
+        f"target={stats.get('targetTrained', 0)}/{stats.get('targetExamples', 0)} "
+        f"accuracy={stats.get('targetAccuracy', float('nan')):.1%} "
+        f"targetLoss={stats.get('targetLoss', float('nan')):.4f} "
+        f"action={stats.get('actionTrained', 0)}/{stats.get('actionExamples', 0)} "
+        f"actionLoss={stats.get('actionLoss', float('nan')):.4f}"
+    )
+
+
+def run_imitation_pretraining(
+    agent: RLAgent,
+    games: int,
+    opponents,
+    max_steps: int = 1200,
+    progress_every: int = 0,
+    progress_callback=None,
+) -> dict:
     if games <= 0:
         return {"examples": 0, "trained": 0, "accuracy": float("nan"), "loss": float("nan")}
 
@@ -801,7 +1189,7 @@ def run_imitation_pretraining(agent: RLAgent, games: int, opponents, max_steps: 
     correct_before = 0
     total_loss = 0.0
 
-    for _ in range(games):
+    for game_index in range(games):
         env = MachikoroEnv()
         player_levels = [random.choice(levels), random.choice(levels)]
         for _ in range(max_steps):
@@ -823,6 +1211,14 @@ def run_imitation_pretraining(agent: RLAgent, games: int, opponents, max_steps: 
                 trained += 1
                 total_loss += result["loss"]
             env.step(teacher)
+
+        completed_games = game_index + 1
+        if (
+            progress_callback is not None
+            and progress_every > 0
+            and (completed_games % progress_every == 0 or completed_games == games)
+        ):
+            progress_callback(completed_games, games)
 
     return {
         "examples": examples,
@@ -1093,13 +1489,15 @@ def _sanitize_run_label_part(value):
     return ''.join(chars).strip('_')
 
 
-def _make_run_label(args, now=None):
+def _make_run_label(args, now=None, process_id=None):
     if getattr(args, "run_label", ""):
         return args.run_label
     now = now or datetime.now()
-    timestamp = now.strftime("%Y%m%d-%H%M%S")
+    timestamp = now.strftime("%Y%m%d-%H%M%S-%f")
+    process_id = os.getpid() if process_id is None else process_id
     parts = [
         timestamp,
+        f"p{process_id}",
         f"h{getattr(args, 'hidden', 'na')}",
         f"lr{_sanitize_run_label_part(getattr(args, 'lr', 'na'))}",
         f"ev{getattr(args, 'eval_every', 'na')}",
@@ -1108,6 +1506,16 @@ def _make_run_label(args, now=None):
     if js_eval_games:
         parts.append(f"js{js_eval_games}")
     return "-".join(parts)
+
+
+def _resolve_run_model_path(run_label, configured_path=""):
+    if configured_path:
+        path = str(configured_path)
+        return path[:-4] if path.endswith(".npz") else path
+    safe_label = _sanitize_run_label_part(run_label)
+    if not safe_label:
+        raise ValueError("run label must contain at least one safe path character")
+    return os.path.join(MODEL_DIR, "runs", safe_label, "model")
 
 
 def _build_metrics_summary_command(metrics_csv, output_path, options=None):
@@ -1250,7 +1658,13 @@ def _best_checkpoint_artifact_paths(best_checkpoint_path, summary_path=None, run
 
 def _export_browser_checkpoint(src_model_path, dst_browser_path):
     _ensure_parent_dir(dst_browser_path)
-    export_checkpoint(src_model_path + ".npz", dst_browser_path, fmt="json")
+    temporary_path = dst_browser_path + ".tmp"
+    try:
+        export_checkpoint(src_model_path + ".npz", temporary_path, fmt="json")
+        os.replace(temporary_path, dst_browser_path)
+    finally:
+        if os.path.exists(temporary_path):
+            os.remove(temporary_path)
 
 
 def _write_best_checkpoint_metadata(meta_path, payload):
@@ -1422,6 +1836,13 @@ def _build_metrics_rows(
         "tv_target_rate": metadata.get("tv_target_rate"),
         "bc_target_rate": metadata.get("bc_target_rate"),
         "mover_target_rate": metadata.get("mover_target_rate"),
+        "bc_action_rate": metadata.get("bc_action_rate"),
+        "bc_skip_rate": metadata.get("bc_skip_rate"),
+        "target_loss_weight": metadata.get("target_loss_weight"),
+        "rare_pending_loss_weight": metadata.get("rare_pending_loss_weight"),
+        "loss_replay_probability": metadata.get("loss_replay_probability"),
+        "loss_replay_episodes": metadata.get("loss_replay_episodes"),
+        "loss_replay_steps": metadata.get("loss_replay_steps"),
         "js_opponent": "",
         "js_win_rate": None,
         "js_first_rate": None,
@@ -1476,7 +1897,9 @@ def _append_metrics_csv(csv_path, rows):
         "cpu_opponent_impl",
         "epsilon", "rnd", "weak", "normal", "strong", "expert", "pool", "train",
         "policy_loss", "value_loss", "mean_adv",
-        "target_pending_rate", "target_update_rate", "tv_target_rate", "bc_target_rate", "mover_target_rate",
+        "target_pending_rate", "target_update_rate", "tv_target_rate", "bc_target_rate", "mover_target_rate", "bc_action_rate", "bc_skip_rate",
+        "target_loss_weight", "rare_pending_loss_weight",
+        "loss_replay_probability", "loss_replay_episodes", "loss_replay_steps",
         "js_opponent", "js_win_rate", "js_first_rate", "js_second_rate", "js_draw_rate", "js_exhausted", "js_avg_turns",
     ]
     directory = os.path.dirname(csv_path)
@@ -1528,6 +1951,34 @@ def eval_vs_js_cpu(model_path, opponents, games=10, max_steps=5000, lineups=None
     return json.loads(result.stdout)
 
 
+def _save_progress_checkpoint(agent, model_path, game_i, run_label="", trained_through_game=None,
+                              training_metadata=None):
+    """Persist the latest trainable and browser checkpoints without running evaluation."""
+    progress_path = model_path + ".progress"
+    browser_path = progress_path + ".browser.json"
+    browser_tmp_path = browser_path + ".tmp"
+    agent.save(progress_path)
+    try:
+        export_checkpoint(progress_path + ".npz", browser_tmp_path, fmt="json")
+        os.replace(browser_tmp_path, browser_path)
+    finally:
+        if os.path.exists(browser_tmp_path):
+            os.remove(browser_tmp_path)
+    _write_best_checkpoint_metadata(
+        progress_path + ".meta.json",
+        {
+            "runLabel": run_label,
+            "game": int(game_i),
+            "trainedThroughGame": int(game_i if trained_through_game is None else trained_through_game),
+            "checkpointPath": progress_path + ".npz",
+            "browserCheckpointPath": browser_path,
+            "kind": "progress",
+            **(training_metadata or {}),
+        },
+    )
+    return progress_path
+
+
 def _safe_ratio(value, total):
     if total <= 0:
         return 0.0
@@ -1558,6 +2009,35 @@ def _sample_player_count(player_count_range: tuple[int, int]) -> int:
     return random.randint(min_count, max_count)
 
 
+def _resolve_player_count_choices(value: str, player_count_range: tuple[int, int]) -> tuple[int, ...]:
+    text = str(value or "").strip()
+    if not text:
+        min_count, max_count = player_count_range
+        return tuple(range(min_count, max_count + 1))
+    choices = []
+    for token in text.split(","):
+        stripped = token.strip()
+        if not stripped:
+            continue
+        try:
+            count = int(stripped)
+        except ValueError as exc:
+            raise ValueError(f"invalid player count: {stripped}") from exc
+        if not 2 <= count <= 10:
+            raise ValueError(f"player count must be 2..10: {count}")
+        if count not in choices:
+            choices.append(count)
+    if not choices:
+        raise ValueError("player counts must not be empty")
+    return tuple(choices)
+
+
+def _sample_player_count_choices(player_counts: tuple[int, ...]) -> int:
+    if not player_counts:
+        raise ValueError("player counts must not be empty")
+    return int(random.choice(player_counts))
+
+
 def _state_dim_for_player_count_range(player_count_range: tuple[int, int]) -> int:
     return state_dim_for_player_count(player_count_range[1])
 
@@ -1566,6 +2046,23 @@ def _target_slots_for_player_count_range(player_count_range: tuple[int, int]) ->
     if player_count_range[1] <= 2:
         return 0
     return min(3, max(0, player_count_range[1] - 1))
+
+
+def _set_target_head_learning_rate(agent: RLAgent, learning_rate: float) -> int:
+    rate = float(learning_rate or 0.0)
+    if rate <= 0:
+        return 0
+    updated = 0
+    for head in (
+        getattr(agent.net, "tv_target_head", None),
+        getattr(agent.net, "bc_target_head", None),
+        getattr(agent.net, "mover_target_head", None),
+    ):
+        if head is None:
+            continue
+        head.lr = rate
+        updated += 1
+    return updated
 
 
 def main():
@@ -1580,16 +2077,25 @@ def main():
     parser.add_argument("--player-count", type=int, default=2, help="Python学習環境の固定プレイヤー人数（2〜10、3人以上は多人数用状態表現）")
     parser.add_argument("--player-count-min", type=int, default=None, help="学習ゲームごとにランダム化する最小プレイヤー人数（2〜10）。未指定なら --player-count 固定")
     parser.add_argument("--player-count-max", type=int, default=None, help="学習ゲームごとにランダム化する最大プレイヤー人数（2〜10）。未指定なら --player-count 固定")
+    parser.add_argument("--player-counts", default="", help="学習対象人数のCSV（例: 3,4,5,10）。指定時は範囲内の中間人数を含めない")
     parser.add_argument("--self-learn-both-sides", action="store_true", help="opponent=self の学習ゲームで両席の行動を学習対象にする")
-    parser.add_argument("--target-oversample-ratio", type=float, default=0.0, help="train()直前にtarget pending遷移を複製して目標比率まで増やす（0で無効）")
-    parser.add_argument("--target-oversample-max-multiplier", type=float, default=4.0, help="target oversampling後の最大buffer倍率")
+    parser.add_argument("--target-oversample-ratio", type=float, default=0.0, help="target head勾配を目標比率相当まで重み付けする（0で無効）")
+    parser.add_argument("--target-oversample-max-multiplier", type=float, default=4.0, help="target head勾配の最大重み倍率")
+    parser.add_argument("--target-head-lr", type=float, default=0.0, help="target head専用学習率（0なら共有学習率を継承）")
+    parser.add_argument("--rare-pending-oversample-ratio", type=float, default=0.0, help="Business gate/give/take遷移を目標比率相当まで重み付けする（0で無効）")
+    parser.add_argument("--rare-pending-oversample-max-multiplier", type=float, default=4.0, help="Business head勾配の最大重み倍率")
     parser.add_argument("--cpu-opponent-impl", choices=("python", "js-oracle"), default="python", help="weak以外のCPU相手の実装 python/js-oracle")
     parser.add_argument("--js-cpu-oracle", action="store_true", help="互換エイリアス: --cpu-opponent-impl js-oracle")
     parser.add_argument("--imitation-games", type=int, default=0, help="RL前にCPU教師行動で模倣学習するゲーム数（0で無効）")
     parser.add_argument("--imitation-opponents", default="normal,strong", help="模倣学習で教師に使うCPU difficulty CSV")
     parser.add_argument("--imitation-max-steps", type=int, default=1200, help="模倣学習1試合あたりの最大 step 数")
+    parser.add_argument("--imitation-progress-every", type=int, default=10, help="模倣学習の進捗を表示するゲーム間隔（0で無効）")
     parser.add_argument("--imitation-refresh-games", type=int, default=0, help="学習中に周期的に追加する模倣学習ゲーム数（0で無効）")
     parser.add_argument("--imitation-refresh-every", type=int, default=0, help="模倣リフレッシュを実行する学習ゲーム間隔（0で無効）")
+    parser.add_argument("--pending-curriculum-samples", type=int, default=0, help="学習前に生成するTV/Business/Mover教師局面数（0で無効）")
+    parser.add_argument("--pending-curriculum-refresh-samples", type=int, default=0, help="学習中に周期追加するpending教師局面数（0で無効）")
+    parser.add_argument("--pending-curriculum-refresh-every", type=int, default=0, help="pending curriculumを追加する学習ゲーム間隔（0で無効）")
+    parser.add_argument("--pending-curriculum-head-lr", type=float, default=0.0, help="curriculum中だけ使うpolicy/Business head学習率（0なら通常値）")
     parser.add_argument("--load",       action="store_true",       help="既存モデルを読み込む")
     parser.add_argument("--load-checkpoint", default="", help="指定checkpointから読み込む（.npz 拡張子あり/なし両対応）")
     parser.add_argument("--js-eval-games", type=int, default=0,    help="JS CPU 相手の評価ゲーム数（0で無効）")
@@ -1605,9 +2111,11 @@ def main():
     parser.add_argument("--pool-update-every", type=int, default=5000, help="過去モデルpoolへsnapshotを追加するゲーム間隔（0で無効）")
     parser.add_argument("--pool-max-size", type=int, default=5, help="保持する過去モデルsnapshot数")
     parser.add_argument("--progress-every", type=int, default=0, help="軽量な進捗表示を出すゲーム間隔（0で無効）")
+    parser.add_argument("--checkpoint-every", type=int, default=0, help="評価なしで progress checkpoint を保存するゲーム間隔（0で無効）")
     parser.add_argument("--debug-game-seconds", type=float, default=0.0, help="指定秒数ごとに学習ゲーム内の軽量debugログを出す（0で無効）")
     parser.add_argument("--debug-train-batch", action="store_true", help="train() batch の件数と所要時間をdebug表示する")
     parser.add_argument("--train-batch-size", type=int, default=8, help="何ゲーム分の遷移をまとめて train() するか")
+    parser.add_argument("--loss-episode-replay-probability", type=float, default=0.0, help="終局した敗戦episodeを完全な境界のまま1回再学習する確率（0〜1）")
     parser.add_argument("--max-steps", type=int, default=3000, help="学習ゲーム1試合あたりの最大 step 数")
     parser.add_argument("--eval-max-steps", type=int, default=3000, help="評価ゲーム1試合あたりの最大 step 数")
     parser.add_argument("--reward-coin", type=float, default=0.0, help="自分のコイン増加に対する中間報酬係数")
@@ -1616,6 +2124,9 @@ def main():
     parser.add_argument("--reward-opp-asset", type=float, default=0.0, help="相手の総資産増加に対するペナルティ係数")
     parser.add_argument("--reward-landmark", type=float, default=0.2, help="自分のランドマーク建設に対する中間報酬係数")
     parser.add_argument("--reward-opp-landmark", type=float, default=0.0, help="相手のランドマーク建設に対するペナルティ係数")
+    parser.add_argument("--reward-interaction-build", type=float, default=0.0, help="赤・紫カード建設に対する戦略報酬（0で無効）")
+    parser.add_argument("--reward-harbor-build", type=float, default=0.0, help="港・漁船系の建設に対する戦略報酬（0で無効）")
+    parser.add_argument("--reward-engine-build", type=float, default=0.0, help="青・緑カード建設に対する戦略報酬（0で無効）")
     parser.add_argument("--build-pass-affordable-penalty", type=float, default=0.0, help="購入可能なbuild phaseでpassした時の中間報酬ペナルティ（0で無効）")
     parser.add_argument("--reward-clip", type=float, default=0.3, help="1行動あたりの中間報酬クリップ値（0で無効）")
     parser.add_argument("--terminal-win", type=float, default=1.0, help="終局時の勝利報酬")
@@ -1630,6 +2141,7 @@ def main():
     parser.add_argument("--terminal-airport-progress-clip", type=float, default=30.0, help="空港進捗報酬の所持コイン上限（0で無効）")
     parser.add_argument("--metrics-csv", default="", help="評価指標を追記する CSV パス")
     parser.add_argument("--run-label", default="", help="metrics CSV に残す run ラベル")
+    parser.add_argument("--model-path", default="", help="run-local checkpoint の保存先（既定: models/rl_model/runs/<run-label>/model）")
     parser.add_argument("--summary-output", default="", help="metrics CSV 集計の出力パス")
     parser.add_argument("--summary-format", default="text", help="metrics 集計の出力形式（text/json）")
     parser.add_argument("--summary-baseline-run", default="", help="metrics 集計時の baseline run")
@@ -1654,12 +2166,18 @@ def main():
         np.random.seed(args.seed)
 
     player_count_range = _resolve_player_count_range(args.player_count, args.player_count_min, args.player_count_max)
+    try:
+        player_count_choices = _resolve_player_count_choices(args.player_counts, player_count_range)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.player_counts:
+        player_count_range = (min(player_count_choices), max(player_count_choices))
     args.player_count = player_count_range[0] if player_count_range[0] == player_count_range[1] else player_count_range[1]
     state_dim = _state_dim_for_player_count_range(player_count_range)
     target_slots = _target_slots_for_player_count_range(player_count_range)
     agent = RLAgent(hidden=args.hidden, lr=args.lr, state_dim=state_dim, target_slots=target_slots)
 
-    model_path = os.path.join(MODEL_DIR, "model")
+    model_path = _resolve_run_model_path(args.run_label, args.model_path)
     checkpoint_path = model_path + ".npz"
     if args.load_checkpoint:
         try:
@@ -1684,10 +2202,16 @@ def main():
             )
             sys.exit(1)
 
+    configured_target_heads = _set_target_head_learning_rate(agent, args.target_head_lr)
+    if configured_target_heads > 0:
+        print(f"target head学習率: {args.target_head_lr:g} ({configured_target_heads} heads)")
+
     oracle_text = f", cpu_opponent_impl={args.cpu_opponent_impl}"
     seed_text = f", seed={args.seed}" if args.seed is not None else ""
     player_count_label = (
-        str(player_count_range[0])
+        ",".join(str(count) for count in player_count_choices)
+        if args.player_counts
+        else str(player_count_range[0])
         if player_count_range[0] == player_count_range[1]
         else f"{player_count_range[0]}-{player_count_range[1]} random"
     )
@@ -1704,6 +2228,9 @@ def main():
         "opp_asset": args.reward_opp_asset,
         "landmark": args.reward_landmark,
         "opp_landmark": args.reward_opp_landmark,
+        "interaction_build": args.reward_interaction_build,
+        "harbor_build": args.reward_harbor_build,
+        "engine_build": args.reward_engine_build,
         "build_pass_affordable_penalty": args.build_pass_affordable_penalty,
         "clip": args.reward_clip,
     }
@@ -1719,6 +2246,12 @@ def main():
         "airport_progress": args.terminal_airport_progress,
         "airport_progress_clip": args.terminal_airport_progress_clip,
     }
+    curriculum_config = {
+        "lossEpisodeReplayVersion": 1,
+        "lossEpisodeReplayProbability": min(max(args.loss_episode_replay_probability, 0.0), 1.0),
+        "lossEpisodeReplayEpisodes": 0,
+        "lossEpisodeReplaySteps": 0,
+    }
 
     if args.initial_eval_games > 0:
         win_rate = eval_vs_random(agent, args.initial_eval_games, max_steps=args.eval_max_steps)
@@ -1733,8 +2266,23 @@ def main():
             args.imitation_games,
             imitation_opponents,
             max_steps=args.imitation_max_steps,
+            progress_every=args.imitation_progress_every,
+            progress_callback=lambda completed, total: print(
+                f"模倣事前学習進捗: {completed}/{total}",
+                flush=True,
+            ),
         )
         print(_format_imitation_stats("模倣事前学習", args.imitation_games, stats))
+
+    if args.pending_curriculum_samples > 0:
+        stats = run_pending_curriculum(
+            agent,
+            args.pending_curriculum_samples,
+            player_count_range,
+            head_learning_rate=args.pending_curriculum_head_lr,
+            player_counts=player_count_choices,
+        )
+        print(_format_pending_curriculum_stats("pending事前学習", stats))
 
     # 累積統計
     total_pl  = 0.0
@@ -1745,8 +2293,15 @@ def main():
     total_tv_target = 0.0
     total_bc_target = 0.0
     total_mover_target = 0.0
+    total_bc_action = 0.0
+    total_bc_skip = 0.0
+    total_target_weight = 0.0
+    total_rare_pending_weight = 0.0
     train_calls = 0
     agent_wins  = 0  # 学習ゲームでのエージェント勝利数
+    loss_replay_episodes = 0
+    loss_replay_steps = 0
+    trained_through_game = 0
 
     batch_size = max(1, args.train_batch_size)
 
@@ -1771,7 +2326,7 @@ def main():
             print(f"  [pool] snapshot {pool_action} #{len(pool_agents)}/{args.pool_max_size} at game {game_i}")
 
         opponent = _choose_training_opponent(train_opponents, pool_agents, current_agent=agent)
-        game_player_count = _sample_player_count(player_count_range)
+        game_player_count = _sample_player_count_choices(player_count_choices)
         info = play_training_game(
             agent,
             epsilon=epsilon,
@@ -1783,7 +2338,12 @@ def main():
             player_count=game_player_count,
             debug_game_label=f"{game_i}/{args.games}",
             debug_game_interval_seconds=args.debug_game_seconds,
+            loss_episode_replay_probability=curriculum_config["lossEpisodeReplayProbability"],
         )
+        loss_replay_episodes += info.get("loss_replay_episodes", 0)
+        loss_replay_steps += info.get("loss_replay_steps", 0)
+        curriculum_config["lossEpisodeReplayEpisodes"] = loss_replay_episodes
+        curriculum_config["lossEpisodeReplaySteps"] = loss_replay_steps
         if info.get("winner") == info.get("agent_player"):
             agent_wins += 1
 
@@ -1801,8 +2361,14 @@ def main():
                 args.target_oversample_ratio,
                 max_multiplier=args.target_oversample_max_multiplier,
             )
+            _oversample_rare_pending_transitions(
+                agent,
+                args.rare_pending_oversample_ratio,
+                max_multiplier=args.rare_pending_oversample_max_multiplier,
+            )
             train_buffer_after = len(agent.rewards)
             stats = agent.train()
+            trained_through_game = game_i
             if args.debug_train_batch:
                 print(
                     f"[debug-train-batch {game_i}/{args.games}] "
@@ -1820,6 +2386,10 @@ def main():
                 total_tv_target += stats.get("tv_target_rate", 0)
                 total_bc_target += stats.get("bc_target_rate", 0)
                 total_mover_target += stats.get("mover_target_rate", 0)
+                total_bc_action += stats.get("bc_action_rate", 0)
+                total_bc_skip += stats.get("bc_skip_rate", 0)
+                total_target_weight += stats.get("target_loss_weight", 1)
+                total_rare_pending_weight += stats.get("rare_pending_loss_weight", 1)
 
         if (
             args.imitation_refresh_games > 0
@@ -1831,14 +2401,53 @@ def main():
                 args.imitation_refresh_games,
                 imitation_opponents,
                 max_steps=args.imitation_max_steps,
+                progress_every=args.imitation_progress_every,
+                progress_callback=lambda completed, total: print(
+                    f"[模倣 {game_i:6d}] 進捗: {completed}/{total}",
+                    flush=True,
+                ),
             )
             print(_format_imitation_stats(f"[模倣 {game_i:6d}]", args.imitation_refresh_games, stats))
 
-        if args.progress_every > 0 and game_i % args.progress_every == 0 and game_i % args.eval_every != 0:
-            recent_train_wr = _safe_ratio(agent_wins, game_i % args.eval_every if args.eval_every > 0 else game_i)
-            print(f"[進捗 {game_i:6d}/{args.games}] train={recent_train_wr:.0%} eps={epsilon:.3f}")
+        if (
+            args.pending_curriculum_refresh_samples > 0
+            and args.pending_curriculum_refresh_every > 0
+            and game_i % args.pending_curriculum_refresh_every == 0
+        ):
+            stats = run_pending_curriculum(
+                agent,
+                args.pending_curriculum_refresh_samples,
+                player_count_range,
+                head_learning_rate=args.pending_curriculum_head_lr,
+                player_counts=player_count_choices,
+            )
+            print(_format_pending_curriculum_stats(f"[pending {game_i:6d}]", stats))
 
-        if game_i % args.eval_every == 0:
+        is_periodic_eval = args.eval_every > 0 and game_i % args.eval_every == 0
+        if args.progress_every > 0 and game_i % args.progress_every == 0 and not is_periodic_eval:
+            recent_train_wr = _safe_ratio(agent_wins, game_i % args.eval_every if args.eval_every > 0 else game_i)
+            print(
+                f"[進捗 {game_i:6d}/{args.games}] train={recent_train_wr:.0%} "
+                f"lossReplay={loss_replay_episodes}/{loss_replay_steps} eps={epsilon:.3f}"
+            )
+
+        if args.checkpoint_every > 0 and game_i % args.checkpoint_every == 0:
+            progress_path = _save_progress_checkpoint(
+                agent,
+                model_path,
+                game_i,
+                args.run_label,
+                trained_through_game=trained_through_game,
+                training_metadata=_reward_training_metadata(
+                    reward_config, terminal_config, curriculum_config
+                ),
+            )
+            print(
+                f"[checkpoint {game_i:6d}/{args.games}] trainedThrough={trained_through_game} "
+                f"{progress_path}.npz"
+            )
+
+        if is_periodic_eval:
             eval_rnd = eval_vs_random(agent, args.eval_random_games, max_steps=args.eval_max_steps, return_stats=True)
             eval_weak = eval_vs_heuristic(agent, 'weak', args.eval_heuristic_games, max_steps=args.eval_max_steps, return_stats=True)
             eval_normal = eval_vs_heuristic(agent, 'normal', args.eval_heuristic_games, max_steps=args.eval_max_steps, return_stats=True)
@@ -1858,6 +2467,10 @@ def main():
             avg_tv_target = total_tv_target / denom
             avg_bc_target = total_bc_target / denom
             avg_mover_target = total_mover_target / denom
+            avg_bc_action = total_bc_action / denom
+            avg_bc_skip = total_bc_skip / denom
+            avg_target_weight = total_target_weight / denom
+            avg_rare_pending_weight = total_rare_pending_weight / denom
             train_wr = agent_wins / args.eval_every
 
             pool_str = f"{wr_pool:.0%}" if wr_pool == wr_pool else "  n/a"
@@ -1872,7 +2485,9 @@ def main():
                   f"train={train_wr:.0%}  "
                   f"pl={avg_pl:.3f}  vl={avg_vl:.3f}  adv={avg_adv:.3f}  "
                   f"tgt={avg_target_pending:.0%}/{avg_target_update:.0%}"
-                  f"(tv={avg_tv_target:.0%} bc={avg_bc_target:.0%} mv={avg_mover_target:.0%})  "
+                  f"(tv={avg_tv_target:.0%} bc={avg_bc_target:.0%} mv={avg_mover_target:.0%} bcAction={avg_bc_action:.0%} bcSkip={avg_bc_skip:.0%} "
+                  f"w={avg_target_weight:.2f}/{avg_rare_pending_weight:.2f})  "
+                  f"lossReplay={loss_replay_episodes}/{loss_replay_steps}  "
                   f"eps={epsilon:.3f}")
             print(
                 f"         build(eval) "
@@ -1891,6 +2506,9 @@ def main():
             total_pl = total_vl = total_adv = 0.0
             total_target_pending = total_target_update = 0.0
             total_tv_target = total_bc_target = total_mover_target = 0.0
+            total_bc_action = 0.0
+            total_bc_skip = 0.0
+            total_target_weight = total_rare_pending_weight = 0.0
             train_calls = agent_wins = 0
 
             agent.save(model_path)
@@ -1917,6 +2535,13 @@ def main():
                         "tv_target_rate": avg_tv_target,
                         "bc_target_rate": avg_bc_target,
                         "mover_target_rate": avg_mover_target,
+                        "bc_action_rate": avg_bc_action,
+                        "bc_skip_rate": avg_bc_skip,
+                        "target_loss_weight": avg_target_weight,
+                        "rare_pending_loss_weight": avg_rare_pending_weight,
+                        "loss_replay_probability": curriculum_config["lossEpisodeReplayProbability"],
+                        "loss_replay_episodes": loss_replay_episodes,
+                        "loss_replay_steps": loss_replay_steps,
                     },
                 )
                 _append_metrics_csv(args.metrics_csv, rows)
@@ -1980,6 +2605,9 @@ def main():
                                 "strong": entry.get("strong"),
                                 "expert": entry.get("expert"),
                                 "cpuOpponentImpl": args.cpu_opponent_impl,
+                                **_reward_training_metadata(
+                                    reward_config, terminal_config, curriculum_config
+                                ),
                                 "jsSummary": entry.get("jsSummary", []),
                             },
                         )
@@ -2012,6 +2640,9 @@ def main():
                                 "strong": entry.get("strong"),
                                 "expert": entry.get("expert"),
                                 "cpuOpponentImpl": args.cpu_opponent_impl,
+                                **_reward_training_metadata(
+                                    reward_config, terminal_config, curriculum_config
+                                ),
                                 "jsSummary": entry.get("jsSummary", []),
                             },
                         )
@@ -2022,24 +2653,38 @@ def main():
     # 末尾の未学習データをフラッシュ
     if len(agent.rewards) > 0:
         agent.train()
-        agent.save(model_path)
+    # Always persist the final in-memory model.  In particular, a
+    # curriculum-only run (--games 0) has no episode buffer to flush but is a
+    # valid way to build upgraded target/Business heads.
+    agent.save(model_path)
 
     if args.restore_best_at_end and args.best_checkpoint and os.path.exists(args.best_checkpoint + ".npz"):
         _copy_checkpoint(args.best_checkpoint, model_path)
         agent.load(model_path)
-        export_checkpoint(model_path + ".npz", os.path.join(MODEL_DIR, "model.browser.json"), fmt="json")
+        export_checkpoint(model_path + ".npz", model_path + ".browser.json", fmt="json")
         print(f"best checkpointを最終モデルへ復元: {args.best_checkpoint}.npz")
 
     print(f"\n学習完了。モデル保存先: {model_path}.npz")
+    print(
+        "最終評価開始: "
+        f"random={args.final_eval_random_games} "
+        f"heuristic={args.final_eval_heuristic_games}x4 "
+        f"pool={args.final_eval_pool_games} "
+        f"js={args.js_eval_games}"
+    )
     final_eval_rnd = eval_vs_random(agent, args.final_eval_random_games, max_steps=args.eval_max_steps, return_stats=True)
+    print(f"最終評価進捗: random完了 ({final_eval_rnd['winRate']:.1%})")
     final_eval_weak = eval_vs_heuristic(agent, 'weak', args.final_eval_heuristic_games, max_steps=args.eval_max_steps, return_stats=True)
+    print(f"最終評価進捗: weak完了 ({final_eval_weak['winRate']:.1%})")
     final_eval_normal = eval_vs_heuristic(agent, 'normal', args.final_eval_heuristic_games, max_steps=args.eval_max_steps, return_stats=True)
+    print(f"最終評価進捗: normal完了 ({final_eval_normal['winRate']:.1%})")
     final_rnd = final_eval_rnd["winRate"]
     final_weak = final_eval_weak["winRate"]
     final_normal = final_eval_normal["winRate"]
     final_strong = eval_vs_heuristic(agent, 'strong', args.final_eval_heuristic_games, max_steps=args.eval_max_steps)
     final_expert = eval_vs_heuristic(agent, 'expert', args.final_eval_heuristic_games, max_steps=args.eval_max_steps)
     final_pool   = eval_vs_pool(agent, pool_agents, args.final_eval_pool_games, max_steps=args.eval_max_steps)
+    print("最終評価進捗: strong/expert/pool完了")
     pool_str = f"{final_pool:.1%}" if final_pool == final_pool else "n/a"
     print(f"最終勝率: rnd={final_rnd:.1%}  weak={final_weak:.1%}  "
           f"normal={final_normal:.1%}  strong={final_strong:.1%}  "
@@ -2057,6 +2702,7 @@ def main():
         f"{_format_build_stats('nrm', final_eval_normal['opponentBuildStats'])}"
     )
     if args.js_eval_games > 0 and (js_eval_opponents or js_eval_lineups):
+        print("最終評価進捗: JS CPU評価開始")
         try:
             js_entries = eval_vs_js_cpu(model_path, js_eval_opponents, games=args.js_eval_games, max_steps=args.eval_max_steps, lineups=js_eval_lineups)
             print(f"JS評価: {_format_js_eval_summary(js_entries)}")

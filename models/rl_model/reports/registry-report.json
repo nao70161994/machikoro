@@ -1,13 +1,15 @@
 {
-  "updatedAt": "2026-05-11",
+  "updatedAt": "2026-09-13",
   "statusCounts": {
     "archive": 10,
-    "adopted": 2,
-    "candidate": 3,
-    "rejected": 5,
+    "adopted": 3,
+    "candidate": 4,
+    "rejected": 6,
     "candidate-4p": 1
   },
-  "warnings": [],
+  "warnings": [
+    "mp-mixed-34510-target-only-seed145-4p と mp-mover-legal-curriculum-seed415-4p-strength: topCards が 4/5 重複しています"
+  ],
   "errors": [],
   "models": [
     {
@@ -141,7 +143,7 @@
       "status": "adopted",
       "style": "vineyard-farm-winery-strong",
       "bestEvalGames": 300,
-      "latestEval": "300 games/opponent",
+      "latestEval": "100 games/opponent",
       "coverage": {
         "portfolioPath": true,
         "best2pGames": 300,
@@ -161,8 +163,8 @@
       "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap",
       "status": "candidate",
       "style": "vineyard-farm-burger",
-      "bestEvalGames": 50,
-      "latestEval": "50 games/opponent",
+      "bestEvalGames": 100,
+      "latestEval": "100 games/opponent",
       "coverage": {
         "portfolioPath": false,
         "best2pGames": 50,
@@ -431,23 +433,86 @@
       "targetDiagnostics": null
     },
     {
-      "id": "self-only-4p-h256-lr1e5-5000-seed103",
+      "id": "mp-mixed-34510-target-only-seed145-4p",
       "status": "adopted",
-      "style": "4p-wheat-vineyard-pizza",
-      "bestEvalGames": 100,
-      "latestEval": "50 games/lineup",
+      "style": "target-wheat-vineyard-forest",
+      "bestEvalGames": 300,
+      "latestEval": "300 games/lineup",
       "coverage": {
         "portfolioPath": true,
         "best2pGames": 0,
         "has2pOpponents": false,
-        "best4pGames": 100,
+        "best4pGames": 300,
         "has4pLineups": true,
-        "best3pGames": 50,
+        "best3pGames": 0,
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
+      },
+      "targetDiagnostics": null
+    },
+    {
+      "id": "business-curriculum-probe-seed149-2p",
+      "status": "rejected",
+      "style": "2p-vineyard-ranch-winery-business-curriculum",
+      "bestEvalGames": 100,
+      "latestEval": "100 games/opponent",
+      "coverage": {
+        "portfolioPath": false,
+        "best2pGames": 100,
+        "has2pOpponents": true,
+        "best4pGames": 0,
+        "has4pLineups": false,
+        "best3pGames": 0,
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
+      },
+      "targetDiagnostics": null
+    },
+    {
+      "id": "self-only-4p-h256-lr1e5-5000-seed103",
+      "status": "adopted",
+      "style": "4p-wheat-vineyard-pizza",
+      "bestEvalGames": 1000,
+      "latestEval": "eval-recorded",
+      "coverage": {
+        "portfolioPath": true,
+        "best2pGames": 0,
+        "has2pOpponents": false,
+        "best4pGames": 200,
+        "has4pLineups": true,
+        "best3pGames": 200,
         "has3pLineups": true,
-        "best5pGames": 50,
+        "best5pGames": 200,
         "has5pLineups": true,
-        "best10pGames": 50,
+        "best10pGames": 1000,
         "has10pLineups": true
+      },
+      "targetDiagnostics": null
+    },
+    {
+      "id": "mp-mover-legal-curriculum-seed415-4p-strength",
+      "status": "candidate",
+      "style": "asset-engine-mover-curriculum",
+      "bestEvalGames": 300,
+      "latestEval": "300 games/lineup",
+      "coverage": {
+        "portfolioPath": true,
+        "best2pGames": 0,
+        "has2pOpponents": false,
+        "best4pGames": 300,
+        "has4pLineups": true,
+        "best3pGames": 0,
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     }
@@ -462,14 +527,34 @@
         "portfolioPath": true,
         "best2pGames": 0,
         "has2pOpponents": false,
-        "best4pGames": 100,
+        "best4pGames": 200,
         "has4pLineups": true,
-        "best3pGames": 50,
+        "best3pGames": 200,
         "has3pLineups": true,
-        "best5pGames": 50,
+        "best5pGames": 200,
         "has5pLineups": true,
-        "best10pGames": 50,
+        "best10pGames": 1000,
         "has10pLineups": true
+      },
+      "targetDiagnostics": null
+    },
+    {
+      "id": "mp-mixed-34510-target-only-seed145-4p",
+      "role": "adopted-4p-specialist",
+      "style": "target-wheat-vineyard-forest",
+      "status": "adopted",
+      "coverage": {
+        "portfolioPath": true,
+        "best2pGames": 0,
+        "has2pOpponents": false,
+        "best4pGames": 300,
+        "has4pLineups": true,
+        "best3pGames": 0,
+        "has3pLineups": false,
+        "best5pGames": 0,
+        "has5pLineups": false,
+        "best10pGames": 0,
+        "has10pLineups": false
       },
       "targetDiagnostics": null
     },
@@ -534,5 +619,10 @@
       "targetDiagnostics": null
     }
   ],
-  "actions": []
+  "actions": [
+    {
+      "type": "review-diversity",
+      "warning": "mp-mixed-34510-target-only-seed145-4p と mp-mover-legal-curriculum-seed415-4p-strength: topCards が 4/5 重複しています"
+    }
+  ]
 }

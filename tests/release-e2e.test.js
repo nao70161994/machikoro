@@ -578,3 +578,19 @@ runTest('release shortened long-run smoke は 60分相当を短縮して snapsho
 
     assert.ok(game.turnCount > 50, 'long-run smoke should advance many turns');
 });
+
+runTest('release workflows は再現可能なPythonとNumPyを使用する', () => {
+    const workflows = [
+        readRepoFile('.github/workflows/release-test.yml'),
+        readRepoFile('.github/workflows/nightly-release-test.yml'),
+        readRepoFile('.github/workflows/build-apk.yml'),
+    ];
+    for (const workflow of workflows) {
+        assert.ok(workflow.includes("python-version: '3.12'"));
+        assert.ok(workflow.includes('cache-dependency-path: scripts/rl/requirements-ci.txt'));
+        assert.ok(workflow.includes('pip install -r scripts/rl/requirements-ci.txt'));
+        assert.ok(!workflow.includes('python -m pip install --upgrade pip'));
+    }
+    assert.strictEqual(readRepoFile('scripts/rl/requirements-ci.txt').trim(), 'numpy==2.2.6');
+    assert.strictEqual(readRepoFile('scripts/rl/requirements.txt').trim(), 'numpy>=2.0,<3');
+});

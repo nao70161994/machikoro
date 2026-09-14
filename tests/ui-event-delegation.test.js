@@ -113,6 +113,10 @@ runTest('ui event delegationは各dataset familyをdetached commandへ変換す�
         value: 'Alice',
     }, 'input'), { family: 'input', name: 'localPlayerName', args: [2, 'Alice'] });
     assert.deepStrictEqual(UiEventDelegation.commandFromElement({
+        dataset: { uiChange: 'localRlModel', playerIndex: '2' },
+        value: 'seed145',
+    }, 'change'), { family: 'change', name: 'localRlModel', args: [2, 'seed145'] });
+    assert.deepStrictEqual(UiEventDelegation.commandFromElement({
         dataset: { uiAction: 'setOnlineLobbyReady', ready: 'true' },
     }, 'static'), { family: 'static', name: 'setOnlineLobbyReady', args: [true] });
     assert.deepStrictEqual(UiEventDelegation.commandFromElement({

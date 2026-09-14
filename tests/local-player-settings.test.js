@@ -19,7 +19,7 @@ runTest('local player settings HTMLは既存option・label・escape契約を維�
     const html = LocalPlayerSettings.buildSettingsHtml([
         { type: 'human', difficulty: 'normal', name: '"<&' },
         { type: 'cpu', difficulty: 'rl', name: 'CPU' },
-    ], 2);
+    ], 2, [{ id: 'model<&"', label: '専門<&"' }]);
     assert.ok(html.includes('aria-label="プレイヤー1の種類"'));
     assert.ok(html.includes('aria-label="プレイヤー1の名前"'));
     assert.ok(html.includes('value="human" selected'));
@@ -27,8 +27,19 @@ runTest('local player settings HTMLは既存option・label・escape契約を維�
     assert.ok(html.includes('placeholder="プレイヤー1"'));
     assert.ok(html.includes('value="rl" selected'));
     assert.ok(html.includes('AI（深層学習）として統計を記録'));
+    assert.ok(html.includes('data-ui-change="localRlModel"'));
+    assert.ok(html.includes('value="model&lt;&amp;&quot;"'));
+    assert.ok(html.includes('専門&lt;&amp;&quot;'));
     assert.ok(html.includes('2人用の複数モデル'));
     assert.ok(!html.includes('value=""<&"'));
+});
+
+runTest('local player settingsはRL model選択方式を正規化する', () => {
+    assert.deepStrictEqual(LocalPlayerSettings.normalizePlayerSetting({
+        type: 'cpu', difficulty: 'rl', name: 'AI', modelId: 'legacy', rlModelSelection: 'manual',
+    }, 0), {
+        type: 'cpu', difficulty: 'rl', name: 'AI', rlModelId: 'legacy', rlModelSelection: 'manual',
+    });
 });
 
 runTest('local player settingsの人間名inputは各playerを識別するaccessible nameを持つ', () => {

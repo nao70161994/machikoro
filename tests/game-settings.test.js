@@ -6,18 +6,19 @@ const settings = makeGameSettings({
     cardNames: ['麦畑', 'パン屋', 'カフェ'],
     allowedCpuDifficulties: new Set(['weak', 'normal', 'strong', 'expert', 'rl']),
     allowedRlModelIds: new Set(['approved-model']),
+    allowedRlModelDigests: new Map([['approved-model', 'a'.repeat(64)]]),
 });
 
 runTest('game settings はplayer設定を人数分へ正規化する', () => {
     assert.deepStrictEqual(settings.normalizePlayerSettings([
         { type: 'cpu', difficulty: 'strong' },
         { type: 'cpu', difficulty: 'invalid' },
-        { type: 'cpu', difficulty: 'rl', rlModelId: 'approved-model' },
+        { type: 'cpu', difficulty: 'rl', rlModelId: 'approved-model', rlModelSha256: 'a'.repeat(64) },
         { type: 'cpu', difficulty: 'rl', rlModelId: 'unknown-model' },
     ], 5), [
         { type: 'cpu', difficulty: 'strong' },
         { type: 'cpu', difficulty: 'normal' },
-        { type: 'cpu', difficulty: 'rl', rlModelId: 'approved-model' },
+        { type: 'cpu', difficulty: 'rl', rlModelId: 'approved-model', rlModelSha256: 'a'.repeat(64) },
         { type: 'cpu', difficulty: 'rl' },
         { type: 'human', difficulty: 'normal' },
     ]);
@@ -32,6 +33,12 @@ runTest('game settings はonline RL model欠落と未知IDだけを拒否対象�
     ]), true);
     assert.strictEqual(settings.hasInvalidOnlineRlModelSettings([
         { type: 'cpu', difficulty: 'rl', rlModelId: 'approved-model' },
+    ]), true);
+    assert.strictEqual(settings.hasInvalidOnlineRlModelSettings([
+        { type: 'cpu', difficulty: 'rl', rlModelId: 'approved-model', rlModelSha256: 'b'.repeat(64) },
+    ]), true);
+    assert.strictEqual(settings.hasInvalidOnlineRlModelSettings([
+        { type: 'cpu', difficulty: 'rl', rlModelId: 'approved-model', rlModelSha256: 'a'.repeat(64) },
     ]), false);
     assert.strictEqual(settings.hasInvalidOnlineRlModelSettings(null), false);
 });

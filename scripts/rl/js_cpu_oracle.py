@@ -75,7 +75,7 @@ def env_to_js_state(env) -> dict[str, Any]:
 
 
 class JsCpuOracle:
-    def __init__(self, timeout_seconds: float = 5.0) -> None:
+    def __init__(self, timeout_seconds: float = 30.0) -> None:
         self._timeout_seconds = timeout_seconds
         self._proc = subprocess.Popen(
             ["node", str(ORACLE_SCRIPT)],

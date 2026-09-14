@@ -665,11 +665,13 @@ function cpuDifficultyLabel(difficulty) {
 
 const ALLOWED_CPU_DIFFICULTIES = new Set(['weak', 'normal', 'strong', 'expert', 'rl']);
 const ALLOWED_RL_MODEL_IDS = new Set(RLModelCatalog.modelIds);
+const ALLOWED_RL_MODEL_DIGESTS = new Map(Object.entries(RLModelCatalog.modelDigests));
 
 const gameSettings = makeGameSettings({
     cardNames: gameRuntime.CARDS.map(card => card.name),
     allowedCpuDifficulties: ALLOWED_CPU_DIFFICULTIES,
     allowedRlModelIds: ALLOWED_RL_MODEL_IDS,
+    allowedRlModelDigests: ALLOWED_RL_MODEL_DIGESTS,
 });
 
 const {
@@ -1263,6 +1265,7 @@ module.exports = {
     sanitizeName,
     cpuDifficultyLabel,
     ALLOWED_RL_MODEL_IDS,
+    ALLOWED_RL_MODEL_DIGESTS,
     normalizePlayerSettings,
     hasInvalidOnlineRlModelSettings,
     normalizeCpuSpeed,

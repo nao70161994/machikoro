@@ -1466,6 +1466,80 @@ runTest('storage resumeGame はRL preload中の連打を一度だけ復元する
     assert.strictEqual(rt.elements.btnResume.disabled, false);
 });
 
+runTest('storage resumeGame はpreload前に選んだRLモデルを再入後も維持する', async () => {
+    const rt = loadStorageRuntime();
+    const saved = makeSavedGameState();
+    saved.playerSettings = [
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+    ];
+    saved.cpuSettings = [null, { type: 'cpu', difficulty: 'rl' }];
+    let resolvePreload;
+    let assignments = 0;
+    let selectedSettings = null;
+    rt.RLModelPortfolio = {
+        assignModelIds(settings) {
+            assignments++;
+            return settings.map((setting, index) => index === 1
+                ? Object.assign({}, setting, {
+                    modelId: setting.modelId || `selected-model-${assignments}`,
+                })
+                : setting);
+        },
+        selectedLoadState(_playerCount, settings) {
+            selectedSettings = settings;
+            return { status: 'idle' };
+        },
+        preloadSelectedModels() {
+            return new Promise(resolve => { resolvePreload = resolve; });
+        },
+    };
+    rt.localStorage.setItem('savedGame', JSON.stringify(saved));
+
+    assert.strictEqual(rt.resumeGame(), true);
+    assert.strictEqual(assignments, 1);
+    assert.strictEqual(selectedSettings[1].modelId, 'selected-model-1');
+    resolvePreload([]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.strictEqual(assignments, 2);
+    assert.strictEqual(selectedSettings[1].modelId, 'selected-model-1');
+    assert.strictEqual(rt.createdCpuPlayers[0].options.rlModelId, 'selected-model-1');
+});
+
+runTest('storage resumeGame はRL preload中に保存が消えても安全に終了する', async () => {
+    const rt = loadStorageRuntime();
+    const saved = makeSavedGameState();
+    saved.playerSettings = [
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+    ];
+    saved.cpuSettings = [null, { type: 'cpu', difficulty: 'rl' }];
+    let resolvePreload;
+    rt.RLModelPortfolio = {
+        assignModelIds(settings) {
+            return settings.map((setting, index) => index === 1
+                ? Object.assign({}, setting, { rlModelId: 'selected-model' })
+                : setting);
+        },
+        selectedLoadState() { return { status: 'idle' }; },
+        preloadSelectedModels() {
+            return new Promise(resolve => { resolvePreload = resolve; });
+        },
+    };
+    rt.localStorage.setItem('savedGame', JSON.stringify(saved));
+
+    assert.strictEqual(rt.resumeGame(), true);
+    rt.localStorage.removeItem('savedGame');
+    resolvePreload([]);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.strictEqual(rt.renderCount || 0, 0);
+    assert.strictEqual(rt.elements.btnResume.disabled, false);
+});
+
 if (process.exitCode) {
     throw new Error('storageテストで失敗が発生しました');
 }

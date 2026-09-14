@@ -20,11 +20,16 @@ const LocalPlayerSettings = (() => {
 
     function normalizePlayerSetting(setting, index) {
         const current = setting || {};
-        return {
+        const normalized = {
             type: current.type === 'cpu' ? 'cpu' : 'human',
             difficulty: current.difficulty || 'normal',
             name: normalizePlayerName(current.name, index),
         };
+        if (normalized.type === 'cpu' && normalized.difficulty === 'rl') {
+            normalized.rlModelId = current.rlModelId || current.modelId || null;
+            normalized.rlModelSelection = current.rlModelSelection === 'manual' ? 'manual' : 'auto';
+        }
+        return normalized;
     }
 
     function normalizeSettings(settings, playerCount) {
@@ -89,7 +94,19 @@ const LocalPlayerSettings = (() => {
         return 'AI（深層学習・ランダム）は2人用の複数モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。';
     }
 
-    function buildSettingsHtml(settings, playerCount) {
+    function buildModelSelectHtml(setting, index, models) {
+        if (!setting || setting.type !== 'cpu' || setting.difficulty !== 'rl') return '';
+        const manual = setting.rlModelSelection === 'manual';
+        const options = (models || []).map(model => `
+                    <option value="${escapeAttribute(model.id)}" ${manual && setting.rlModelId === model.id ? 'selected' : ''}>${escapeAttribute(model.label || model.id)}</option>`).join('');
+        return `<label class="rl-model-setting">モデル
+                <select data-ui-change="localRlModel" data-player-index="${index}" class="player-setting-select" aria-label="プレイヤー${index + 1}の深層学習モデル">
+                    <option value="auto" ${manual ? '' : 'selected'}>自動（おすすめ）</option>${options}
+                </select>
+            </label>`;
+    }
+
+    function buildSettingsHtml(settings, playerCount, models = []) {
         const rows = settings.map((setting, index) => `
         <div class="player-setting">
             <div class="player-setting-row">
@@ -114,7 +131,8 @@ const LocalPlayerSettings = (() => {
                     data-ui-input="localPlayerName"
                     data-player-index="${index}"
                 >
-            ` : `<div class="player-setting-cpu-label">${cpuLabel(setting.difficulty)}として統計を記録</div>`}
+            ` : `<div class="player-setting-cpu-label">${cpuLabel(setting.difficulty)}として統計を記録</div>
+            ${buildModelSelectHtml(setting, index, models)}`}
         </div>
     `).join('');
         return rows + `<div class="player-setting-note">${rlSettingNote(playerCount)}</div>`;
@@ -176,6 +194,7 @@ const LocalPlayerSettings = (() => {
         cpuLabel,
         rlSettingNote,
         buildSettingsHtml,
+        buildModelSelectHtml,
         opponentDifficulties,
         formatCpuSpeedLabel,
         hasRlCpu,

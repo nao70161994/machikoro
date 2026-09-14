@@ -521,6 +521,10 @@ class CPU {
 
     resolveBusiness(game) {
         const move = this.chooseBusinessMove(game);
+        if (move && move.skip === true) {
+            game.skipBusiness();
+            return;
+        }
         if (!move) {
             game.pendingBusiness = false;
             game.phase = GAME_PHASES.BUILD;

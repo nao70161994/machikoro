@@ -38,12 +38,37 @@ runTest('動作診断は版・通信・保存状態を秘密値なしで投影�
         recentEvents: 'なし',
         actionDelivery: '再接続中',
         gameGeneration: '0',
+        rlModels: '未使用',
+        rlMemory: '未使用',
         generatedAt: '2026-08-14T00:00:00.000Z',
     });
     const text = AppDiagnostics.formatText(snapshot);
     assert.ok(text.includes('クライアント版: client-123'));
     assert.ok(!text.includes('SECRET'));
     assert.ok(!text.includes('TOKEN'));
+});
+
+runTest('動作診断はRL戦略・hash検証・容量予算を秘密値なしで表示する', () => {
+    const snapshot = AppDiagnostics.buildSnapshot({
+        rlModels: [{
+            modelId: 'seed-test',
+            label: '攻撃型 <test>',
+            status: 'ready',
+            expectedSha256: 'a'.repeat(64),
+            verified: true,
+        }],
+        rlMemory: {
+            artifactBytes: 12 * 1024 * 1024,
+            limitBytes: 32 * 1024 * 1024,
+            withinBudget: true,
+        },
+    });
+    assert.strictEqual(snapshot.rlModels,
+        `攻撃型 <test>（seed-test）・読込済み・SHA検証済み:${'a'.repeat(12)}`);
+    assert.strictEqual(snapshot.rlMemory, '12.0 MiB / 32.0 MiB・予算内');
+    const html = AppDiagnostics.buildHtml(snapshot);
+    assert.ok(html.includes('攻撃型 &lt;test&gt;'));
+    assert.ok(AppDiagnostics.formatText(snapshot).includes('モデル容量予算: 12.0 MiB'));
 });
 
 runTest('動作診断は匿名化したゲーム進行・pending・直近操作を上限付きで表示する', () => {
@@ -101,4 +126,32 @@ runTest('動作診断HTMLは外部文字列をescapeし非対応状態を明示�
     assert.ok(html.includes('<dd>オフライン</dd>'));
     assert.ok(html.includes('<dd>未使用</dd>'));
     assert.ok(!html.includes('<client>'));
+});
+
+runTest('対局exportは名前と接続資格を除きsnapshotとactionを回帰可能に保つ', () => {
+    const envelope = AppDiagnostics.buildMatchExport({
+        snapshot: {
+            players: [{ name: 'Alice', coins: 12, cards: ['麦畑'] }],
+            phase: 'build',
+            log: [{ type: 'system', message: 'Aliceのターン' }],
+            roomId: 'SECRET',
+            reconnectToken: 'TOKEN',
+        },
+        actions: [{
+            action: 'buildCard', playerIndex: 0, seq: 3,
+            data: { cardName: '麦畑', reconnectToken: 'TOKEN' },
+        }],
+        mode: 'online',
+        generatedAt: '2026-08-25T00:00:00.000Z',
+    });
+    assert.strictEqual(envelope.snapshot.players[0].name, 'プレイヤー1');
+    assert.deepStrictEqual(envelope.snapshot.log, []);
+    assert.strictEqual(envelope.snapshot.roomId, undefined);
+    assert.strictEqual(envelope.actions[0].data.cardName, '麦畑');
+    assert.strictEqual(envelope.actions[0].data.reconnectToken, undefined);
+    const text = JSON.stringify(envelope);
+    assert.ok(!text.includes('Alice'));
+    assert.ok(!text.includes('SECRET'));
+    assert.ok(!text.includes('TOKEN'));
+    assert.ok(AppDiagnostics.parseMatchExport(text));
 });

@@ -112,6 +112,10 @@ class PolicyValueNet:
         # 渡すカード (38) と受け取るカード (38) を独立して選択
         self.bc_give_head = Layer(hidden, NUM_CARDS, activation=False, lr=lr)
         self.bc_take_head = Layer(hidden, NUM_CARDS, activation=False, lr=lr)
+        # Version 1 checkpoints learn a binary choice between the best
+        # factored exchange and the already-existing PASS action.  Missing
+        # metadata on legacy checkpoints keeps their exchange-only behavior.
+        self.bc_skip_gate_version = 1
         self.target_slots = int(target_slots or 0)
         self.tv_target_head = None
         self.bc_target_head = None
@@ -172,6 +176,13 @@ class PolicyValueNet:
         bc_give_p, bc_take_p, value, _, _ = self.forward_bc_details(state)
         return bc_give_p, bc_take_p, value
 
+    def forward_bc_gate_details(self, state: np.ndarray):
+        """Return policy + factored BC heads from one shared forward pass."""
+        bc_give_p, bc_take_p, value, bc_give_logits, bc_take_logits = self.forward_bc_details(state)
+        policy_logits = self.policy_head.forward(self._h)
+        policy = softmax(policy_logits)
+        return policy, bc_give_p, bc_take_p, value, policy_logits, bc_give_logits, bc_take_logits
+
     def forward_target_details(self, state: np.ndarray, kind: str):
         """
         多人数戦 target head 用 forward。
@@ -226,12 +237,32 @@ class PolicyValueNet:
         for layer in reversed(self.shared):
             dh = layer.backward(dh)
 
+    def backward_target(self, kind: str, d_target: np.ndarray):
+        """Supervised target-head update used by rare pending curriculum."""
+        target_head = self._target_head_for_kind(kind)
+        if target_head is None:
+            raise ValueError(f"target head unavailable: {kind}")
+        dh = target_head.backward(d_target)
+        for layer in reversed(self.shared):
+            dh = layer.backward(dh)
+
     def backward_bc(self, d_give: np.ndarray, d_take: np.ndarray, d_value: float):
         """ビジネスセンターフェーズ用 backward"""
         dh_v    = self.value_head.backward(np.array([d_value], dtype=np.float32))
         dh_give = self.bc_give_head.backward(d_give)
         dh_take = self.bc_take_head.backward(d_take)
         dh = dh_give + dh_take + dh_v
+        for layer in reversed(self.shared):
+            dh = layer.backward(dh)
+
+    def backward_bc_gate(self, d_policy: np.ndarray, d_give: np.ndarray,
+                         d_take: np.ndarray, d_value: float):
+        """Business Center exchange/skip gate + factored heads."""
+        dh_v = self.value_head.backward(np.array([d_value], dtype=np.float32))
+        dh_p = self.policy_head.backward(d_policy)
+        dh_give = self.bc_give_head.backward(d_give)
+        dh_take = self.bc_take_head.backward(d_take)
+        dh = dh_p + dh_give + dh_take + dh_v
         for layer in reversed(self.shared):
             dh = layer.backward(dh)
 
@@ -245,6 +276,22 @@ class PolicyValueNet:
         dh_give = self.bc_give_head.backward(d_give)
         dh_take = self.bc_take_head.backward(d_take)
         dh = dh_t + dh_give + dh_take + dh_v
+        for layer in reversed(self.shared):
+            dh = layer.backward(dh)
+
+    def backward_bc_target_gate(self, kind: str, d_policy: np.ndarray,
+                                d_target: np.ndarray, d_give: np.ndarray,
+                                d_take: np.ndarray, d_value: float):
+        """Business Center target + exchange/skip gate + factored heads."""
+        target_head = self._target_head_for_kind(kind)
+        if target_head is None:
+            return self.backward_bc_gate(d_policy, d_give, d_take, d_value)
+        dh_v = self.value_head.backward(np.array([d_value], dtype=np.float32))
+        dh_p = self.policy_head.backward(d_policy)
+        dh_t = target_head.backward(d_target)
+        dh_give = self.bc_give_head.backward(d_give)
+        dh_take = self.bc_take_head.backward(d_take)
+        dh = dh_p + dh_t + dh_give + dh_take + dh_v
         for layer in reversed(self.shared):
             dh = layer.backward(dh)
 
@@ -265,9 +312,35 @@ class PolicyValueNet:
             specs.append(("mover_target", self.mover_target_head))
         return specs
 
+    def ensure_target_heads(self, target_slots: int):
+        """Add missing multiplayer target heads without replacing loaded shared weights."""
+        requested_slots = int(target_slots or 0)
+        if requested_slots <= 0:
+            return False
+        if self.target_slots not in (0, requested_slots):
+            raise ValueError(
+                f"target slot mismatch: expected {requested_slots}, got {self.target_slots}"
+            )
+        if self.target_slots == requested_slots and all((
+            self.tv_target_head is not None,
+            self.bc_target_head is not None,
+            self.mover_target_head is not None,
+        )):
+            return False
+        hidden = self.shared[-1].W.shape[1]
+        lr = self.policy_head.lr
+        self.target_slots = requested_slots
+        self.tv_target_head = Layer(hidden, requested_slots, activation=False, lr=lr)
+        self.bc_target_head = Layer(hidden, requested_slots, activation=False, lr=lr)
+        self.mover_target_head = Layer(hidden, requested_slots, activation=False, lr=lr)
+        return True
+
     def save(self, path: str):
         _ensure_parent_dir(path)
-        params = {"schema_version": np.array(CHECKPOINT_SCHEMA_VERSION, dtype=np.int64)}
+        params = {
+            "schema_version": np.array(CHECKPOINT_SCHEMA_VERSION, dtype=np.int64),
+            "bc_skip_gate_version": np.array(self.bc_skip_gate_version, dtype=np.int64),
+        }
         for prefix, layer in self._layer_specs():
             params[f"{prefix}_W"]  = layer.W
             params[f"{prefix}_b"]  = layer.b
@@ -296,8 +369,12 @@ class PolicyValueNet:
                 schema_version = data.get("schema_version")
                 if schema_version is None or int(schema_version) != CHECKPOINT_SCHEMA_VERSION:
                     raise SchemaVersionError(
-                        "非互換なチェックポイントです。models/rl_model/model.npz を削除して再実行してください。"
+                        f"非互換なチェックポイントです。{checkpoint_path} を退避または削除して再実行してください。"
                     )
+                gate_version = int(data.get("bc_skip_gate_version", 0))
+                if gate_version not in (0, 1):
+                    raise ValueError(f"unsupported bc_skip_gate_version: {gate_version}")
+                self.bc_skip_gate_version = gate_version
                 target_prefixes = {
                     "tv_target": "tv_target_head",
                     "bc_target": "bc_target_head",

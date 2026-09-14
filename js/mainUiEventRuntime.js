@@ -15,6 +15,7 @@ const MainUiEventRuntime = (() => {
         'exportCpuTournamentJson', 'exportCpuTournamentCsv', 'clearCpuTournamentHistory',
         'shareGameResult', 'shareGameResultImage', 'checkOnlineReadiness',
         'refreshAppDiagnostics', 'copyAppDiagnostics',
+        'exportMatchData',
         'saveSetupPreset', 'applySetupPreset', 'deleteSetupPreset',
         'exportAppBackup', 'selectAppBackupFile', 'acceptHotseatHandoff',
         'highlightLogEntry',
@@ -123,6 +124,7 @@ const MainUiEventRuntime = (() => {
         function handleStaticChange(event) {
             return execute(event, 'change', element => Object.assign({}, effectMap([
                 'toggleTutorialEnabled', 'tutorialLevel', 'localPlayerType', 'onlinePlayerType',
+                'localRlModel', 'onlineRlModel',
                 'localSaveGeneration', 'onAccessibilitySettingsChange',
             ]), {
                 importAppBackup: () => invoke('importAppBackup', element.files && element.files[0]),

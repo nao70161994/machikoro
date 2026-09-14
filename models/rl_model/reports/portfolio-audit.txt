@@ -1,6 +1,9 @@
-RL portfolio audit updatedAt=2026-05-11
+RL portfolio audit updatedAt=2026-09-13
+warnings:
+- mp-mixed-34510-target-only-seed145-4p と mp-mover-legal-curriculum-seed415-4p-strength: topCards が 4/5 重複しています
 recommended:
-- self-only-4p-h256-lr1e5-5000-seed103 [adopted-3p-10p] status=adopted style=4p-wheat-vineyard-pizza portfolio=yes 2p=missing 3p=50 4p=100 5p=50 10p=50 target=n/a
+- self-only-4p-h256-lr1e5-5000-seed103 [adopted-3p-10p] status=adopted style=4p-wheat-vineyard-pizza portfolio=yes 2p=missing 3p=200 4p=200 5p=200 10p=1000 target=n/a
+- mp-mixed-34510-target-only-seed145-4p [adopted-4p-specialist] status=adopted style=target-wheat-vineyard-forest portfolio=yes 2p=missing 3p=missing 4p=300 5p=missing 10p=missing target=n/a
 - self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3 [adopted-2p-main] status=adopted style=vineyard-farm-winery-strong portfolio=yes 2p=300 3p=missing 4p=missing 5p=missing 10p=missing target=n/a
 - self-only-both-h256-lr2e5-5000-seed70-rewardcap [sushi-warehouse-variant] status=candidate style=sushi-warehouse-farm portfolio=yes 2p=100 3p=missing 4p=missing 5p=missing 10p=missing target=n/a
 - self-only-both-h256-lr2e5-5000-seed69-rewardcap [burger-warehouse-variant] status=candidate style=burger-warehouse-wheat portfolio=yes 2p=100 3p=missing 4p=missing 5p=missing 10p=missing target=n/a

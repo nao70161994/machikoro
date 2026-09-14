@@ -4,6 +4,15 @@ PyTorch / TensorFlow が使えない Android + Termux 環境で動作する、
 numpy のみで実装した Actor-Critic 強化学習 AI。
 ゲームエンジンも Python で再実装し、全カード効果を再現している。
 
+Termuxでの開発・学習は `python3 -m pip install -r scripts/rl/requirements.txt` を使い、対応するNumPy major範囲を導入する。GitHub ActionsはPython 3.12と `requirements-ci.txt` の完全固定版を使い、依存更新による無関係なCI・export差分を防ぐ。CI固定版を更新する場合はRL parityとexportテストを同時に実行する。
+
+## ゴール監査
+
+改善ゴールの要件と証拠パスは、リポジトリ直下の
+[`docs/RL_CPU_GOAL_AUDIT.md`](../../docs/RL_CPU_GOAL_AUDIT.md)（閲覧用）と
+[`docs/RL_CPU_GOAL_AUDIT.json`](../../docs/RL_CPU_GOAL_AUDIT.json)（機械可読）で管理する。
+採用モデル、候補ゲート、runtime/UI回帰、環境外の検証項目を更新した場合は、両方の監査表を同時に更新する。
+
 ---
 
 ## ファイル構成
@@ -47,6 +56,7 @@ numpy のみで実装した Actor-Critic 強化学習 AI。
 | `../review-rl-multiplayer-topk.js` | top-k 多人数後評価 JSON を、現状は3人/4人総合点+多様性で並べる。5人/10人は評価出力として確認する |
 | `../review-rl-multiplayer-experiment-set.js` | 複数 run の top10 review JSON を、run 間の総合点+多様性で比較する |
 | `../eval-rl-models.js` | 複数の registry model / run-label をまとめてJS評価し、ランキングJSON/CSVを出力 |
+| `../eval-rl-head-to-head.js` | 候補RLと基準RLを同じ対局へ入れ、paired-seatで直接勝率・席差・構築・step枯渇を比較 |
 | `../eval-rl-special-scenarios.js` | テレビ局 / ビジネスセンター / 清掃業 / 引越し屋 / 改装屋などの固定局面で target / pending action 選択を診断 |
 | `../validate-rl-registry.js` | `models/rl_model/registry.json` のID重複・推奨モデル参照を検証 |
 
@@ -165,7 +175,11 @@ ACT_PASS          = 1579
 ```
 
 ビジネスセンターは joint 1444 次元でなく、渡す/受け取る を独立した 38 次元で学習する
-**factored head** を使う。組み合わせ構造を活かして、学習効率を改善する。
+**factored head** を使う。新規checkpointはさらに既存の通常policy headを使い、factored headが選んだ最良交換と
+`PASS`（交換しない）の二択を学習する。checkpointの `bc_skip_gate_version=1`、browser
+bundleの `businessSkipGateVersion=1` がこの挙動を明示する。metadataがない既存モデルは
+交換のみの従来挙動を保つため、再exportだけで戦略が変わることはない。
+組み合わせ構造を活かして、学習効率を改善する。
 
 ---
 
@@ -188,6 +202,40 @@ ACT_PASS          = 1579
 
 opponent pool は `--pool-update-every` ごとに現在モデルを deepcopy し、`--pool-max-size` 個まで保持する。
 短い実験では既定の `5000` だと pool が効かないため、現行カリキュラムでは `250` を使う。
+
+3〜10人を一様な連続範囲で学習すると、主評価する3 / 4 / 5 / 10人の比率が6〜9人に薄められる。
+主評価人数を均等に学習するrunでは `--player-counts 3,4,5,10` を使う。従来の
+`--player-count-min 3 --player-count-max 10` は全整数人数を含む実験として維持される。
+
+特殊pendingの観測が少ないrunでは、`--target-oversample-ratio 0.05` で3人以上のTV / Business / Mover
+target head勾配を5%相当まで重み付けできる。2人戦のBusiness give/take headも補強する場合は
+`--rare-pending-oversample-ratio 0.05` を使う。後者は人数を問わずBusinessのgate / give / take遷移だけを対象にし、
+TV / Business / Moverの対象選択は前者へ分離する。
+実装はepisodeやdone境界を複製せず、該当headの勾配だけを安全な上限内で重み付けする。
+遷移自体は複製しないため、GAE / MC returnのepisode境界は変わらない。
+どちらも既定は0で、通常学習を暗黙に変えない。metricsの `target_*_rate` と `bc_action_rate`、固定特殊局面評価を
+併用し、比率を上げただけで実際の選択品質が悪化していないことを確認する。
+
+自然対局で該当遷移が0件のままなら、oversamplingだけでは教師信号を増やせない。その場合は
+`--pending-curriculum-samples 200` を使い、学習前にTV / Business交換 / Business見送り / Moverを
+均等に含むランダム多人数局面を生成する。継続学習では
+`--pending-curriculum-refresh-samples 40 --pending-curriculum-refresh-every 250` を併用できる。
+多人数では脅威度上位3枠のtarget headとBusiness give / take / skipを教師付き更新し、2人戦ではtarget headを
+作らずBusiness交換と見送りだけを更新する。これらも既定は0である。
+Business教師局面は、低価値施設を渡して高価値施設を取る交換、自分のエンジンを守る交換、価値が上がらない
+交換の見送りを分けて生成する。見送りgateを持たない旧checkpointへcurriculumを適用した場合はgate version 1へ
+明示的に移行してから学習し、見送りサンプルがno-opになることを防ぐ。
+
+低い学習率で旧モデルを微調整する場合、新設target headまで同じ学習率にすると立ち上がりが遅い。
+`--target-head-lr 0.001` のように専用学習率を指定すると、共有方策の低い学習率を維持したまま3 headだけを
+速く学習できる。既定0では共有学習率を継承するため、既存runの挙動は変わらない。
+Business give / take / skipも低い微調整率から立ち上げる場合は、
+`--pending-curriculum-head-lr 0.001` を指定する。この値はcurriculum実行中だけpolicy / Business出力headへ
+適用され、通常の対局学習へ戻る前に元の学習率へ復元される。
+
+3人以上のrunをtarget headなしの旧checkpointから開始した場合、共有層・方策・価値・Business headは読み継ぎ、
+要求されたTV / Business / Mover target headだけを新規初期化する。更新後checkpointには3 headが保存されるため、
+次回以降は学習済みheadをそのまま復元する。
 
 **エージェント席はゲームごとにランダム化**（先手/後手を均等に経験）。
 
@@ -234,10 +282,43 @@ reward =
 - reward_opp_asset    * 相手の盤面資産増加
 + reward_landmark     * 自分のランドマーク建設数増加
 - reward_opp_landmark * 相手のランドマーク建設数増加
++ reward_interaction_build * 成立した赤・紫カード建設
++ reward_harbor_build      * 成立した港・漁船系カード／港ランドマーク建設
++ reward_engine_build      * 成立した青・緑カード建設
 ```
 
 盤面資産は `カード購入額合計 + 建設済みランドマーク額合計`。手元コインは含めない。
 手元コインは `reward_coin` / `terminal_coin_diff` で別評価する。
+
+報酬帰属v2では、自分の行動直後だけでなく、次の自分の意思決定までに起きた相手ターンの
+コイン・資産・ランドマーク変化も直前の行動へ加算する。これにより、赤施設の収奪や
+相手の成長抑制を `reward_opp_coin` / `reward_opp_asset` で学習できる。
+戦略別建設報酬は、該当アクションを選択しただけでは加算せず、状態差分で購入成立を確認して加算する。
+戦略run plannerでは攻撃型・港湾型・商業エンジン型へ各建設報酬を設定し、ランドマーク速攻型は
+標準の `reward_landmark=0.2` より高い `0.30` を使う。
+plannerは既定で `rewardv2-build-lossreplay-v1` をrun labelへ付け、旧報酬profileの同seed成果物を上書きしない。
+別仮説を試す場合は `--tag` でさらに固有の安全な識別子を指定する。
+checkpoint metadataの `rewardConfigSchemaVersion=2` は戦略別建設報酬を含む設定schemaを表す。
+これは、報酬をどの意思決定へ帰属させるかを表す `rewardAccrualVersion=2` とは別の軸である。
+戦略runは `--loss-episode-replay-probability 0.25` により、終局した敗戦episodeを25%の確率で
+もう1回だけ学習bufferへ追加する。複製単位はepisode全体で、最後の `done=true` を維持するため、
+GAE / MC returnが別対局へ越境しない。勝利episode・未決着対局は複製せず、多人数自己対戦では
+敗者のうち1席だけを選ぶので人数増加による無制限な重み増加も避ける。実行数／step数は進捗ログ、
+metrics CSV、checkpointの `curriculumConfig` に記録する。
+summary JSONとrun/config索引CSVにも `lossReplayProbability`、`lossReplayEpisodes`、
+`lossReplaySteps` を保持する。古いCSVの未記録値は0と推定せずnullで表す。
+複数runを含むCSVはrun labelとgameの組で集計し、同じ学習回数の別seedを混ぜない。
+
+plannerのpool更新間隔は250ゲームで、初期poolは空である。50ゲームの短期runでは
+pool相手が作成されず、poolを候補から除いて残り相手の重みを再正規化するため、短期runの結果を
+league/pool学習の効果の証拠として扱わない。poolを使う長期runでは進捗の `[pool] snapshot`
+とpool評価の実績を確認する。学習ゲーム数を変えてもrun labelは自動では変わらないため、
+同seedの長期実験は `--tag rewardv2-build-lossreplay-long1000-v1` など別tagで生成し、
+短期runのcheckpointと評価metadataを上書きしない。
+新しいcheckpointの `best_model.meta.json` には
+`rewardAccrualVersion: 2`、`rewardAccrualMethod: between-own-decisions-v2`、
+`rewardConfig`、`terminalConfig` を保存する。これらが無い既存checkpointは、
+自分の行動直後だけを評価した旧方式として扱い、比較時に混同しない。
 
 改装屋で自分のランドマークを破壊した場合、破壊収入による正の `coin/asset` 中間報酬は無効化する。
 これは安いランドマークを破壊して再建設する報酬ループを避けるため。
@@ -269,12 +350,11 @@ terminal =
 ## 学習の実行
 
 ```bash
-# 標準学習（新規）
-rm -f models/rl_model/model.npz
-python3 -m scripts.rl.train --games 30000 --eval-every 1000
+# 標準学習（新規。checkpointはrun別に保存）
+python3 -m scripts.rl.train --run-label experiment-a --games 30000 --eval-every 1000
 
 # 継続学習（既存モデルを読み込む）
-python3 -m scripts.rl.train --games 30000 --eval-every 1000 --load
+python3 -m scripts.rl.train --run-label experiment-a --games 30000 --eval-every 1000 --load
 
 # baseline 用ラッパースクリプト（Termux での実行向け）
 sh scripts/rl/run-baseline.sh
@@ -364,7 +444,8 @@ python3 -m scripts.rl.train \
   --lr 3e-4           # 学習率
   --seed 11           # Python random / numpy のseed（再現実験用）
   --epsilon 0.20      # 初期探索率（線形減衰 → 0.02 まで）
-  --load              # models/rl_model/model.npz を読み込んで継続学習
+  --load              # models/rl_model/runs/<run-label>/model.npz を読み込んで継続学習
+  --model-path models/rl_model/runs/baseline/model  # 明示する場合のrun-local checkpoint path
   --load-checkpoint models/rl_model/runs/<run-label>/best_model  # 指定checkpointから継続学習
   --cpu-opponent-impl js-oracle  # normal/strong/expert 相手に JS CPU oracle を使う
   --train-opponents random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1  # 学習相手比率
@@ -402,7 +483,7 @@ python3 -m scripts.rl.train \
 > **注意**: `--hidden` の値が保存済みモデルと異なる場合は読み込みエラーになる。
 > 必ず保存時と同じ値を指定すること。
 
-> **注意**: `--load` が読むのは run 別 best ではなく `models/rl_model/model.npz`。特定 run の best から再開する場合は、共有モデルを手動コピーで差し替えず、同じ `--hidden` / `--player-count` を指定して `--load-checkpoint models/rl_model/runs/<run-label>/best_model` を使う。`.npz` 拡張子は付けても付けなくてもよい。
+> **注意**: `--load` は同じ `--run-label` の `models/rl_model/runs/<run-label>/model.npz` を読む。特定 run の best から再開する場合は、同じ `--hidden` / `--player-count` を指定して `--load-checkpoint models/rl_model/runs/<run-label>/best_model` を使う。`.npz` 拡張子は付けても付けなくてもよい。異なるrun-labelはcheckpoint・browser exportとも共有しない。run-label未指定時はマイクロ秒とprocess IDを含む一意名を生成し、同時起動した学習同士の上書きを防ぐ。
 
 > **運用メモ**: Termux では `--eval-every 1000` や `--js-eval-games 20` のような重い設定だと、学習より定期評価の時間が支配的になりやすい。baseline の既定値は、まず短時間で動作確認できて進捗が見えることを優先して `games=1000`, `eval-every=500`, `js-eval-games=1`, `js-eval-opponents=weak,normal,strong`、さらに初期評価スキップ、軽量評価回数、`max_steps=1200` にしている。
 
@@ -526,11 +607,20 @@ npm run eval-rl-models -- \
 ```
 
 スコアは `weak=1, normal=2, strong=3, expert=2` の重み付き平均。4人 lineup では各 lineup を同重みで平均する。
-20戦評価は smoke test として扱い、active 採用は最低50戦、主採用は100戦以上、可能なら300戦で確認する。
-`eval-rl-models` の text/markdown 出力は50戦未満を `smokeOnly` と表示する。短期結果は候補の足切りや異常検出に使い、registry / portfolio への採用判断には使わない。
+20戦評価は smoke test として扱い、候補の足切りは最低50戦、主採用審査は100戦以上、可能なら300戦で確認する。
+`eval-rl-models` の text/markdown 出力は50戦未満を `smokeOnly`、50〜99戦を `candidateGate`、
+100〜299戦を `mainAdoptionReview`、300戦以上を `highConfidence` と表示する。短期結果は候補の足切りや異常検出に使い、
+100戦未満の結果だけで主採用モデルを置換しない。`mainAdoptionReview` / `highConfidence` には `--paired-seats` が必要で、
+step枯渇が1件でもあれば `runtimeUnstable` として主採用を止める。
 `run-label` の2位/3位 checkpoint を比較する場合は `--rank 2` / `--rank 3` を付ける。
+
+評価JSONには勝率・席別勝率・平均ターン・step枯渇に加えて、RLのカード/ランドマーク建設、Business交換/見送り、通常対局中のテレビ局・Business・引越し屋の対象難易度と対象席を保存する。特殊pending fixtureの期待対象と合わせて、target headが単に合法であるだけでなく誰を選んだかも候補間で比較する。
 同じ `run-label` の best/top2/top3 をまとめて比較する場合は `--run-ranks 1,2,3` を使う。
-CSV / Markdown にはモデルごとの構築シグネチャも出るため、勝率だけでなく戦略の重複も見やすい。
+JSON / CSV / Markdown にはモデルごとの構築シグネチャに加え、全建設履歴から算出した戦略プロファイルも出る。
+プロファイルは赤・大施設の比率を「対人干渉」、青・緑施設の比率を「資産エンジン」、
+全建設に占めるランドマーク比率と平均決着ターンを「ランドマーク速攻」として比較する
+`observed-build-v1` の観測用ヒューリスティックである。これは勝率やルール上の強さを直接表す値ではなく、
+同程度の候補から異なる戦略を選ぶために使う。JSON には元となる全カード・ランドマーク件数も残る。
 CSV には `businessTotal` / `businessSkipRate` / `businessGive` / `businessTake` / `businessExchanges` も含める。
 
 ```bash
@@ -547,6 +637,22 @@ npm run eval-rl-models -- \
 
 ```bash
 sh scripts/rl/eval-run-topk.sh self-only-both-h256-lr2e5-5000-seed71-rewardcap 100
+```
+
+候補と現行RLを同じ対局で直接比較する場合は `eval-rl-head-to-head` を使う。
+`candidate` / `baseline` はlineup内に各1回だけ指定し、残りへJS CPUを置ける。既定はpaired-seatで、
+試合数はlineup人数の倍数にする。JSON/textには、candidateまたはbaselineが勝った対局だけを母数にした
+candidate shareとWilson 95%区間も出力する。候補の統計的優位は生の勝率差ではなく、十分な試合数で
+この区間の下限が50%を超えることを根拠にする。区間が50%をまたぐ結果は同等または未確定として扱う。
+
+```bash
+npm run eval-rl-head-to-head -- \
+  --candidate models/rl_model/runs/<run-label>/best_model.browser.json \
+  --baseline models/rl_model/portfolio/seed103-4p.browser.json \
+  --games 100 \
+  --lineups "candidate,baseline,normal,strong;candidate,baseline,weak,normal" \
+  --format json \
+  --output models/rl_model/head-to-head.json
 ```
 
 採用済み多人数モデルの安定性確認は、3人・4人をまとめて評価する短縮ラッパーを使う。
@@ -631,7 +737,7 @@ sh scripts/rl/eval-2p-candidates.sh
 
 既定では `seed71-top3` / `seed70` / `seed69` / `h128-lr1e4` を `weak,normal,strong` 各100戦で比較し、`models/rl_model/eval-2p-candidates.json/csv/md` に出力する。`.md` はドキュメントや issue にそのまま貼るための順位表。
 
-2026-04-20の2人用候補100戦比較では、`seed71-top3` が `weak 100% / normal 96% / strong 76%` で明確に最上位。`seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%` で、構築傾向の違う補助候補として残す。`terminal-shaped-h128-lr1e4` は `weak 99% / normal 53% / strong 39%` で、normal が弱いため active portfolio から外して archive 扱いにした。
+2026-04-20の2人用候補100戦比較では、`seed71-top3` が `weak 100% / normal 96% / strong 76%` で明確に最上位。`seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%` で構築傾向は違うが、現行主採用からの退行が大きいため研究候補としてだけ残し、本番自動選択から外す。`terminal-shaped-h128-lr1e4` は `weak 99% / normal 53% / strong 39%` で、normal が弱いため active portfolio から外して archive 扱いにした。
 
 `seed71-top3` は追加の300戦評価でも `weak 99.3% / normal 93.3% / strong 63.3%`。100戦評価より strong は下がったが、他の active 2人候補より明確に高いため主採用を維持する。
 
@@ -658,7 +764,23 @@ npm run summarize-rl-metrics -- \
 `--run-index-csv ...` と `--config-index-csv ...` を付けると、run 全体順位と設定全体順位を CSV で別保存できる。
 `--run-label` を省略した場合は `YYYYMMDD-HHMMSS-h256-lr0.0003-ev1000-js20` のような形式で自動生成され、学習開始ログと CSV の両方に残る。
 `train.py` 側でも `--summary-output` を付ければ、学習終了時に同じ summarize 処理を自動実行できる。`--summary-run-index-csv` と `--summary-config-index-csv` も併用すれば、run/config 順位 CSV までまとめて自動生成される。
-`scripts/rl/run-baseline.sh` は baseline 用の既定引数を固定したラッパーで、末尾に追加オプションも渡せる。既定値は `--games 1000 --eval-every 500 --hidden 128 --js-eval-games 1 --js-eval-opponents weak,normal,strong` に加えて、初期評価はスキップし、定期評価・最終評価のゲーム数もかなり軽くしている。さらに `--max-steps 1200 --eval-max-steps 1200` で1試合の長さも抑え、`--progress-every 50` で進捗表示を出す。出力先は既定で `models/rl_model/runs/<run-label>/` になり、`--run-label` を変えれば衝突せず並列に回せる。例えば `sh scripts/rl/run-baseline.sh --games 5000` でゲーム数だけ上書きできる。
+`scripts/rl/run-baseline.sh` は baseline 用の既定引数を固定したラッパーで、末尾に追加オプションも渡せる。既定値は `--games 1000 --eval-every 500 --hidden 128 --js-eval-games 1 --js-eval-opponents weak,normal,strong` に加えて、初期評価はスキップし、定期評価・最終評価のゲーム数もかなり軽くしている。さらに `--max-steps 1200 --eval-max-steps 1200` で1試合の長さも抑え、`--progress-every 50` で進捗表示、`--checkpoint-every 50` で評価とは独立した `model.progress.npz` / `model.progress.browser.json` / metadata を上書き保存する。metadataは観測済みの `game` と、batch学習が反映済みの `trainedThroughGame` を分けるため、端末停止時も過大な再開位置を誤認せず直近50戦以内の重みから候補評価や再開判断ができる。出力先は既定で `models/rl_model/runs/<run-label>/` になり、`--run-label` を変えれば衝突せず並列に回せる。例えば `sh scripts/rl/run-baseline.sh --games 5000` でゲーム数だけ上書きできる。
+
+候補checkpointの最初の足切りは `npm run screen-rl-candidate -- <2p|mp> <candidate.browser.json> <baseline.browser.json> <output-dir>` を使う。最低50戦（`RL_SCREEN_GAMES` で増加のみ可）をpaired-seatで実行し、席順を完全に均等化するため実効戦数は2人用なら2、4人screenなら4の倍数へ切り上げる（既定の多人数screenは52戦）。2人用は weak/normal/strong/expert と現行2人RL、多人数用は4人の `normal,normal,strong` / `strong,strong,strong` と現行多人数RLを直接比較する。どちらも特殊pending局面を同じ出力先へ保存する。このscreenを通った候補だけ3p/5p/10p、100戦、300戦へ進める。多人数promotionは3/4/5/10人すべての席順cycleを揃えるため、100戦段階を実効120戦、300戦段階を300戦で評価する。モデル単位の並列数はTermux向け既定1で、余裕のある環境では `RL_EVAL_PARALLEL_MODELS=2` などへ上書きできる。いずれも同じseed scheduleを使うためpaired比較条件は変わらない。学習・標準評価と同じ `max_steps=1200` を採用gateにも使い、到達した対局はstep枯渇として候補を拒否する。長時間評価は標準エラーへ10戦ごとの進捗とstep枯渇数を表示する。
+
+端末切断後もscreenを継続する場合は `sh scripts/rl/run-candidate-screen-background.sh <2p|mp> <candidate.browser.json> <baseline.browser.json> <output-dir> [reuse-results.json]` を使う。独立sessionで起動し、出力先へ `screen.pid`、`screen.status`、`screen.log`、`screen.cmd` を保存する。同じ出力先の生存PIDがある場合と、指定した再利用artifactが存在しない場合はfail closedで起動しない。
+
+戦略の多様性を増やす実験は `npm run plan-rl-strategies` で再現可能なrun一覧を生成する。攻撃型、ランドマーク速攻型、港湾型、商業エンジン型、妨害耐性型、逆転型を、2人用と多人数用それぞれ3 seedで計画する。最初は `--games 50 --family <id> --scope <2p|mp>` で1 runだけsanity実行し、50戦screenを通過した系統だけ100戦・300戦へ進める。100局以下では内部評価を軽くするが、外部paired screenの最低50戦は省略しない。各runはtop3 checkpoint、metrics CSV、summary JSONをrun固有directoryへ保存し、評価上のbest checkpointを最終モデルへ復元して終える。計画上のfamily名は学習仮説であり、採用時の戦略ラベルは実際のbuild/event集計から決める。
+
+実対局で再現したRLの失敗局面は、ゲーム画面の「対局を書き出す」で匿名化済みJSONを保存し、`npm run import-rl-match-fixture -- <export.json> <fixture-id>` で `tests/fixtures/rl-failures/` の固定fixtureへ変換する。fixtureは初期状態では `pending-review` とし、期待行動を人間が確認してから回帰テストへ昇格する。room ID、token、署名、ログ、Undoはexport対象から除外される。
+
+配布容量は `npm run report-rl-compression` で実artifactのraw/gzip/Brotliを比較できる。これはHTTP transport/precompressionの評価だけで、重み量子化やJSON schema、runtimeの意味は変更しない。採用モデルの完全性は展開後のraw JSON SHA-256で引き続き検証する。
+
+学習中checkpointを待つ `await-rl-candidate-screen` は、`RL_AWAIT_CANDIDATE_SHA256=<評価済みdigest>` を指定すると同じファイルの再評価を避け、内容が更新され、SHA-256が2回連続で一致した時だけ学習PGIDを一時停止してscreenする。screen終了・失敗・signal受信のいずれでもproducerを再開する。
+
+長時間学習の途中checkpointを自動で足切りする場合は `sh scripts/rl/await-candidate-screen.sh <2p|mp> <candidate.browser.json> <baseline.browser.json> <output-dir> <producer-pgid>` を別processで起動する。checkpoint出現後に学習process groupを一時停止し、`candidate.snapshot.browser.json` へ固定してからscreenを実行し、成功・失敗どちらでも学習を再開する。結果は通常のscreen artifactに加えて `await-screen.status` へ残る。
+
+screenの `review.json` が `advance-strength-100` または `advance-diversity-100` の候補は、`npm run promote-rl-candidate -- <2p|mp> <100|300> <candidate.browser.json> <baseline.browser.json> <output-dir>` で次段へ進める。2人用は同じ直接比較を100/300戦へ拡大し、100戦では `advance-*-300`、300戦で初めて `adopt-*` を返す。多人数用は3p/4p/5p/10pを各同一ゲーム数・paired-seatで候補と現行モデルの両方について測り、各人数で候補と現行RLを同席させた直接対戦も保存する。`review-rl-candidate-promotion` は全人数帯・直接対戦・特殊pendingをまとめ、step枯渇、特殊局面退行、人数別10ポイント超の退行、不完全な統計証拠をfail closedで拒否する。300戦は100戦で根拠を維持した主採用候補だけに使う。
 `--best-checkpoint` を付けると、各評価時点で最良だったモデルを `.npz` と `.browser.json`、さらに参照用の `.meta.json` で別保存する。判定は JS 評価があればその重み付き score、無ければ `expert/strong/normal/rnd` の重み付き代替スコアを使う。`--summary-output` も併用していれば、学習終了後に `meta.json` へ `bestRuns` / `bestConfigs` の抜粋に加えて、この run 自身に対応する `summaryRunContext` も追記される。`summaryRunContext` には `runIndexEntry` として run 全体順位、`configIndexEntry` として設定全体順位、`combinedTop` に入っていればその順位と entry も入る。`meta.json` には `artifacts` として `checkpointPath` / `browserCheckpointPath` / `metaPath` / `summaryPath` / `runIndexCsvPath` / `configIndexCsvPath` もまとまって入る。
 集計結果には run 別だけでなく `hidden/lr` ごとの best config も含まれる。
 
@@ -670,7 +792,7 @@ npm run summarize-rl-metrics -- \
 - 現行カリキュラムは `random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1`。`strong` は学習相手から一旦外し、評価対象としてだけ残す。
 - `self` は既定では現在モデルを相手にする片側自己対戦。`--self-learn-both-sides` で `opponent=self` のゲームだけ両席を学習対象にできる。
 - `pool` は過去モデル snapshot との対戦。短期実験でも効くよう `--pool-update-every 250 --pool-max-size 4` を使う。
-- `--restore-best-at-end` で、学習終了時に途中 best checkpoint を `models/rl_model/model.npz` / `model.browser.json` へ復元する。長く回すと最終モデルが劣化することがあるため、現行スクリプトでは有効化している。
+- `--restore-best-at-end` で、学習終了時に途中 best checkpoint をそのrunの `model.npz` / `model.browser.json` へ復元する。長く回すと最終モデルが劣化することがあるため、現行スクリプトでは有効化している。
 - `hidden=128` と `hidden=256` は比較対象。従来の混合相手では `hidden=256` が pass 方策へ崩れやすかったが、`lr=2e-5〜3e-5`、完全自己対戦、両側学習では採用候補が出た。現行の多人数用採用は後評価で安定した `seed103` を維持する。
 - 学習済みモデル本体は git 管理しない。採用候補・評価結果・構築傾向は `models/rl_model/registry.json` に記録する。
 
@@ -680,7 +802,7 @@ npm run summarize-rl-metrics -- \
 - 模倣なしで行動直後のコイン/資産中間報酬を入れる方式は、報酬ハックや方策崩れが疑われ、安定しなかった。
 - 終局時だけ勝敗・ランドマーク建設済コスト差・盤面資産差・手元コイン差を加える方式へ移行中。
 - 2人用モデルは300戦 JS 評価で `seed71-top3` が `weak 99.3% / normal 93.3% / strong 63.3%` となり、現時点の主採用モデル。
-- `seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%`。どちらも `seed71-top3` より弱いが構築傾向が違うため、戦略バリエーション用に active portfolio へ低重みで残す。
+- `seed69` は `weak 93% / normal 75% / strong 40%`、`seed70` は `weak 100% / normal 77% / strong 33%`。構築傾向は違うが `seed71-top3` からの退行が非劣化基準を超えるため、本番自動選択には使わず保存互換・研究候補としてだけ残す。
 - `terminal-shaped-h128-lr1e4` は100戦評価で `weak 99% / normal 53% / strong 39%`。normal が不安定なので active portfolio から外し、archive 扱いにした。
 - `terminal-shaped-h128-long` は `weak 90% / normal 70% / strong 15%`。`h128-lr1e4` とは構築傾向が違うが、strong 性能が低く現時点の候補価値も薄いため archive 扱いにした。
 - 旧来の混合相手 `hidden=256` 系は `lr=0.0003` で pass 99% 付近まで崩壊し、`lr=0.0001` でも pass 40〜50% 台が残った。一方、低学習率・完全自己対戦・両側学習・報酬クリップでは改善しており、多人数用には `self-only-4p-h256-lr1e5-5000-seed103` を採用している。
@@ -837,8 +959,8 @@ npm run eval-rl-models -- \
 
 2026-05-11時点では、seed123〜126 の pass / JS mix / imitation 系と allStrong gate は採用筋が薄く、現行 `seed103` を維持します。次のRL実験は、seed103 の敗戦診断から単一の強い報酬仮説が出た場合だけ再開します。短期gateは足切り専用で、採用判断には使いません。
 
-- `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す
-- `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped を返す
+- `run-background.sh`: detached 起動し、`logs/` と `pids/` に log / pid / exit code / command を残す。Python出力はbufferせず、進捗を実行中のlogへ逐次反映する
+- `bg-status.sh`: 実際の `python3 -m scripts.rl.train` を見て running/stopped/done、経過時間、CPU時間/使用率、最終log更新からの秒数を返す
 - `bg-status.sh` は `--run-label <job>` の完全一致で train process を探す。`foo` と `foo-rerun` のような prefix 重複でも誤判定しない
 - `bg-tail.sh`: 最新ログの末尾を表示する
 - `bg-stop.sh`: PID を解決して停止する
@@ -856,8 +978,18 @@ npm run eval-rl-models -- \
 現時点の実運用:
 
 - 2人戦主採用: `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3`
-- 2人戦の補助多様性候補: `self-only-both-h256-lr2e5-5000-seed70-rewardcap`, `self-only-both-h256-lr2e5-5000-seed69-rewardcap`
+- 2人戦の研究用多様性候補（本番自動選択外）: `self-only-both-h256-lr2e5-5000-seed70-rewardcap`, `self-only-both-h256-lr2e5-5000-seed69-rewardcap`
 - 多人数戦採用: `self-only-4p-h256-lr1e5-5000-seed103`
+- 4人戦の追加候補: `mp-mixed-34510-target-only-seed145-4p`。4人だけに限定し、汎用モデルとの選択weightは3:1
+
+2026-08-25のrare pending / target head実験では、現行採用モデルを共通基準にseed 144 / 145 / 146 / 149を
+衝突しないrun-labelで比較した。5人特化seed144は現行66%に対し38%、2人seed146はnormal / strongを含む
+総合scoreが現行を下回ったため足切りした。2人seed149はBusiness固定局面を5/9から9/9へ改善したが、100戦の
+現行直接比較は53勝47敗で95%区間が50%をまたぎ、normal戦も56%から50%へ退行したため採用しない。
+多人数seed145は3/4/5/10人を明示集合で学習し、5人では改善した一方10人では21.7ポイント退行したため
+汎用置換を拒否した。ただし4人限定300戦では現行に105勝76敗、候補share 58.0%、95%区間
+50.7〜65.0%、特殊pending 17/17、step枯渇0となったため、3・5・10人には出さない低weightの4人専用候補として採用した。
+混成相手への平均scoreは現行より1.0ポイント低いので、現行汎用モデルのweightを高く保ち置換はしていない。
 
 台帳に記録する主な情報:
 
@@ -925,7 +1057,7 @@ text 出力に加えて markdown/json と `actions` セクションを持ち、�
 多人数戦の自己対戦安定化では、`sh scripts/rl/eval-run-top10-multiplayer.sh <run-label> 50` を標準後評価フローにする。必要なら第4引数で `run-ranks` を `1,2,3` のように絞る。内部では指定 checkpoint を 3p / 4p / 5p / 10p の標準 lineup で各50戦評価し、続けて `review-rl-multiplayer-topk` の text/markdown/json を出す。review の総合点は現状 3人平均50% + 4人平均50% で、5p / 10p は `rl,weak,normal,strong,expert` と `rl,weak,weak,normal,normal,strong,strong,expert,expert,expert` の評価出力として確認する。近い総合点では多様性を優先して見る前提。50戦未満の review は `smokeOnly` / `promotionBlocked` と表示され、足切りには使えるが採用判断には使わない。
 
 複数 run を比較するときは、各 run の top10 review JSON を `review-rl-multiplayer-experiment-set` へ渡す。`bg-finalize-experiment-set-top10-multiplayer.sh` はこの運用をまとめたもので、完走待ちから run 間比較レポートまでを一発で生成する。
-`npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review / diversity-report をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。
+`npm run refresh-rl-ops-reports` は report / audit / next-actions / adoption-review / diversity-report / model cards / reproducibility manifest / compression report をまとめて `models/rl_model/reports/` へ書き出す。学習や評価の後処理を一発で更新したいときに使う。
 `npm run update-rl-registry-from-eval -- --input <json>` は `eval-rl-models` の JSON を registry に追記し、続けて report / audit / next-actions / adoption-review / diversity-report を更新する。評価後の標準フローとして使える。
 `npm run report-rl-diversity` は active 候補を style.label と topCards 重複で束ね、比較すべき pair と `eval-rl-models` コマンドを出す。多様性の棚卸しを個別判断から外したいときに使う。
 履歴として残す場合は `--output` を付ける。`models/rl_model/*.md` / `*.json` は生成物として git 管理しない。
@@ -943,8 +1075,8 @@ npm run report-rl-registry -- --format json --output models/rl_model/reports/reg
 |----|--------|-------------|----------|
 | `self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3` | adopted | 300戦 weak 99.3% / normal 93.3% / strong 63.3% | ブドウ園・牧場・ワイナリー寄り、2人用主採用 |
 | `self-only-both-h256-lr2e5-5000-seed71-rewardcap` | candidate | 50戦 weak 96% / normal 94% / strong 68% | ブドウ園・牧場・バーガー寄り |
-| `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | candidate | 100戦 weak 100% / normal 77% / strong 33% | 寿司屋・食品倉庫・牧場寄り、補助採用 |
-| `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、補助採用 |
+| `self-only-both-h256-lr2e5-5000-seed70-rewardcap` | candidate | 100戦 weak 100% / normal 77% / strong 33% | 寿司屋・食品倉庫・牧場寄り、本番自動選択外 |
+| `self-only-both-h256-lr2e5-5000-seed69-rewardcap` | candidate | 100戦 weak 93% / normal 75% / strong 40% | バーガー・食品倉庫・麦畑寄り、本番自動選択外 |
 | `self-only-both-h256-lr3e5-5000-seed62` | archive | 100戦 weak 99% / normal 56% / strong 65% | パン屋・食品倉庫・寿司屋寄り。seed71-top3 より normal が大きく弱いため除外 |
 | `self-only-both-h256-lr2e5-5000-seed66-rewardcap` | archive | shared-seeds 100戦 weak 98% / normal 50% / strong 66% | パン屋・食品倉庫・ピザ屋寄り。seed71-top3 より総合で弱く除外 |
 | `self-only-4p-h256-lr1e5-5000-seed103` | adopted | 2026-08-18安定性評価: 3人 53.0〜70.5%、4人 46.5〜68.0%、5人 50.5〜64.5%（各200戦）。10人は5seed・各lineup 1000戦で44.9〜65.3%。2026-08-19の10人100 blockでRL 59.6%、席差13.0pt、RL対normal席分布差は非有意 | 多人数用。5人以上は上位3相手射影。旧20戦/席の大差は標本誤差主導と結論し、採用席評価を100戦/席へ強化 |
@@ -979,7 +1111,7 @@ active 採用や主採用の判断では、台帳の `minimumAdoptionGamesPerOpp
 ## チェックポイント管理
 
 ```
-models/rl_model/model.npz   ← 学習済みモデル（numpy形式）
+models/rl_model/runs/<run-label>/model.npz   ← run固有の学習済みモデル（numpy形式）
 ```
 
 - 保存内容: 全レイヤーの重み・バイアス・Adam の m/v/t 状態
@@ -993,8 +1125,8 @@ models/rl_model/model.npz   ← 学習済みモデル（numpy形式）
 `STATE_DIM`・`NUM_ACTIONS`・hidden サイズが変わった場合は削除して再学習:
 
 ```bash
-rm -f models/rl_model/model.npz
-python3 -m scripts.rl.train --games 30000
+rm -f models/rl_model/runs/<run-label>/model.npz
+python3 -m scripts.rl.train --run-label <run-label> --games 30000
 ```
 
 ---

@@ -1,4 +1,5 @@
 const assert = require('assert');
+const path = require('path');
 const { runTest } = require('./helpers/test-utils');
 
 const {
@@ -6,17 +7,28 @@ const {
     parseLineups,
     parseNumberList,
     browserPathForRunLabel,
+    modelIdForPath,
     defaultRegistryModelIds,
     resolveModelSpecs,
     scoreSummaries,
+    modelSha256,
     buildSignature,
+    buildStrategyProfile,
     evaluateModelSpecs,
+    evaluateModelSpecsParallel,
     evaluationGate,
     assertEvaluationGateAllowsOutput,
     renderText,
     renderCsv,
     renderMarkdown,
 } = require('../scripts/eval-rl-models.js');
+
+runTest('eval-rl-models は評価モデルのSHA-256を記録する', () => {
+    const modelPath = path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed71-top3.browser.json');
+    const hash = modelSha256(modelPath);
+    assert.match(hash, /^[0-9a-f]{64}$/);
+    assert.strictEqual(modelSha256(path.join(__dirname, 'missing-model.json')), null);
+});
 
 function entry(opponent, winRate, passRate = 0) {
     const games = 10;
@@ -54,6 +66,10 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
         '--lineups', 'rl,weak,normal;rl,normal,strong',
         '--csv', 'out.csv',
         '--markdown', 'out.md',
+        '--reuse-results', 'previous.json',
+        '--progress-every', '10',
+        '--parallel-models', '2',
+        '--abort-on-exhaustion',
         '--independent-seeds',
         '--paired-seats',
     ]);
@@ -67,8 +83,24 @@ runTest('eval-rl-models parseArgs は主要CLI引数を解釈する', () => {
     assert.deepStrictEqual(args.lineups, [['rl', 'weak', 'normal'], ['rl', 'normal', 'strong']]);
     assert.strictEqual(args.csv, 'out.csv');
     assert.strictEqual(args.markdown, 'out.md');
+    assert.strictEqual(args.reuseResults, 'previous.json');
     assert.strictEqual(args.independentSeeds, true);
     assert.strictEqual(args.pairedSeats, true);
+    assert.strictEqual(args.progressEvery, 10);
+    assert.strictEqual(args.parallelModels, 2);
+    assert.strictEqual(args.abortOnExhaustion, true);
+});
+
+runTest('eval-rl-models はモデル単位をworkerへ分けても同一seed scheduleを維持する', async () => {
+    const modelPath = path.join(__dirname, '..', 'models', 'rl_model', 'portfolio', 'seed71-top3.browser.json');
+    const args = parseArgs(['--games', '0', '--seed', '19', '--parallel-models', '2']);
+    const results = await evaluateModelSpecsParallel([
+        { id: 'candidate', label: 'candidate', source: 'test', status: 'candidate', path: modelPath },
+        { id: 'baseline', label: 'baseline', source: 'test', status: 'adopted', path: modelPath },
+    ], args);
+    assert.deepStrictEqual(results.map(result => result.id), ['baseline', 'candidate']);
+    assert.ok(results.every(result => result.evaluationConfig.seed === 19));
+    assert.ok(results.every(result => result.evaluationConfig.sharedSeeds === true));
 });
 
 runTest('eval-rl-models parseArgs は数値 CLI の 0 指定を保持する', () => {
@@ -142,9 +174,21 @@ runTest('eval-rl-models は任意の model path を評価対象へ解決する',
         { models: [], runLabels: [], modelPaths: ['tmp/candidate-1250.browser.json'], rank: 1, runRanks: [] },
         { models: [{ id: 'registry-default', status: 'adopted', path: 'default.json' }] }
     );
-    assert.deepStrictEqual(specs.map(spec => spec.id), ['candidate-1250.browser']);
+    assert.deepStrictEqual(specs.map(spec => spec.id), ['candidate-1250']);
     assert.strictEqual(specs[0].source, 'path');
     assert.strictEqual(specs[0].path, 'tmp/candidate-1250.browser.json');
+});
+
+runTest('eval-rl-models は run 配下の汎用ファイル名を監査可能なモデルIDへ変換する', () => {
+    assert.strictEqual(
+        modelIdForPath('models/rl_model/runs/strategy-2p-commercial-engine-seed227/model.browser.json'),
+        'strategy-2p-commercial-engine-seed227'
+    );
+    assert.strictEqual(
+        modelIdForPath('models/rl_model/runs/strategy-2p-commercial-engine-seed227/best_model.top3.browser.json'),
+        'strategy-2p-commercial-engine-seed227-top3'
+    );
+    assert.strictEqual(modelIdForPath('models/rl_model/portfolio/seed71-top3.browser.json'), 'seed71-top3');
 });
 
 runTest('eval-rl-models scoreSummaries は strong を重く見る', () => {
@@ -173,6 +217,40 @@ runTest('eval-rl-models buildSignature は相手別の構築傾向を集約す�
     ]);
     assert.strictEqual(signature.cardKey, 'パン屋/寿司屋/麦畑');
     assert.strictEqual(signature.landmarkKey, '港/駅');
+});
+
+runTest('eval-rl-models buildStrategyProfile は全建設から戦略3軸を分類する', () => {
+    const catalog = new Map([
+        ['カフェ', { name: 'カフェ', color: 'red' }],
+        ['パン屋', { name: 'パン屋', color: 'green' }],
+        ['テレビ局', { name: 'テレビ局', color: 'purple' }],
+    ]);
+    const profile = buildStrategyProfile([{
+        games: 10,
+        averageTurns: 50,
+        rlBuildStats: {
+            total: 30,
+            pass: 2,
+            cards: { 'カフェ': 4, 'パン屋': 6, 'テレビ局': 2, '未知': 1 },
+            landmarks: { '駅': 5, '遊園地': 3 },
+        },
+    }], catalog);
+    assert.deepStrictEqual(profile.axes, {
+        interaction: 0.5,
+        engine: 0.5,
+        landmarkTempo: 0.381,
+    });
+    assert.strictEqual(profile.primary, 'ランドマーク速攻型');
+    assert.strictEqual(profile.totals.unknownCardBuilds, 1);
+    assert.strictEqual(profile.method, 'observed-build-v1');
+});
+
+runTest('eval-rl-models buildStrategyProfile は対戦数で平均ターンを加重する', () => {
+    const profile = buildStrategyProfile([
+        { games: 10, averageTurns: 40, rlBuildStats: { total: 0, pass: 0, cards: {}, landmarks: {} } },
+        { games: 30, averageTurns: 80, rlBuildStats: { total: 0, pass: 0, cards: {}, landmarks: {} } },
+    ], new Map());
+    assert.strictEqual(profile.averageTurns, 70);
 });
 
 runTest('eval-rl-models は複数モデルをスコア順に並べる', () => {
@@ -209,6 +287,78 @@ runTest('eval-rl-models は複数モデルを同一seed scheduleで評価する'
     assert.deepStrictEqual(calls.map(call => call.sharedSeeds), [true, true]);
     assert.deepStrictEqual(results.map(result => result.evaluationConfig.seed), [5, 5]);
     assert.deepStrictEqual(results.map(result => result.evaluationConfig.sharedSeeds), [true, true]);
+});
+
+runTest('eval-rl-models はSHAと評価条件が一致する結果だけを再利用する', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-eval-reuse-'));
+    const modelPath = path.join(dir, 'model.browser.json');
+    const cachePath = path.join(dir, 'results.json');
+    fs.writeFileSync(modelPath, '{"model":1}');
+    const spec = { id: 'candidate', label: 'candidate', path: modelPath, source: 'test', status: '' };
+    const args = {
+        games: 10,
+        seed: 5,
+        maxSteps: 100,
+        opponents: ['normal'],
+        lineups: [],
+        independentSeeds: false,
+        pairedSeats: true,
+        abortOnExhaustion: true,
+        progressEvery: 0,
+        reuseResults: '',
+    };
+    try {
+        const initial = evaluateModelSpecs([spec], args, () => [entry('normal', 0.6)]);
+        fs.writeFileSync(cachePath, JSON.stringify(initial));
+        let calls = 0;
+        const reused = evaluateModelSpecs(
+            [{ ...spec, id: 'renamed', label: 'renamed' }],
+            { ...args, reuseResults: cachePath },
+            () => {
+                calls++;
+                return [entry('normal', 0.1)];
+            }
+        );
+        assert.strictEqual(calls, 0);
+        assert.strictEqual(reused[0].id, 'renamed');
+        assert.strictEqual(reused[0].reusedFrom, cachePath);
+
+        fs.writeFileSync(modelPath, '{"model":2}');
+        evaluateModelSpecs([spec], { ...args, reuseResults: cachePath }, () => {
+            calls++;
+            return [entry('normal', 0.7)];
+        });
+        assert.strictEqual(calls, 1);
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+runTest('eval-rl-models は並列指定でも全件一致する結果をworkerなしで再利用する', async () => {
+    const fs = require('fs');
+    const os = require('os');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-eval-reuse-parallel-'));
+    const modelPath = path.join(dir, 'model.browser.json');
+    const cachePath = path.join(dir, 'results.json');
+    fs.writeFileSync(modelPath, '{"model":1}');
+    const args = parseArgs(['--games', '10', '--seed', '5', '--parallel-models', '2']);
+    const spec = { id: 'cached', label: 'cached', path: modelPath, source: 'test', status: '' };
+    try {
+        const initial = evaluateModelSpecs([spec], args, () => [
+            entry('weak', 0.5), entry('normal', 0.5), entry('strong', 0.5),
+        ]);
+        fs.writeFileSync(cachePath, JSON.stringify(initial));
+        const reused = await evaluateModelSpecsParallel(
+            [spec, { ...spec, id: 'cached-copy', label: 'cached-copy' }],
+            { ...args, reuseResults: cachePath }
+        );
+        assert.strictEqual(reused.length, 2);
+        assert.ok(reused.every(result => result.reusedFrom === cachePath));
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
 });
 
 runTest('eval-rl-models はpaired seat方針を評価器とartifactへ伝える', () => {
@@ -369,7 +519,7 @@ runTest('eval-rl-models renderMarkdown は貼り付け用の順位表を出力�
             ],
         },
     ]);
-    assert.ok(markdown.includes('| rank | id | score | style | opponents | seat gap | pass | avgTurns |'));
+    assert.ok(markdown.includes('| rank | id | score | archetype | style | opponents | seat gap | pass | avgTurns |'));
     assert.ok(markdown.includes('- gate: smokeOnly'));
     assert.ok(markdown.includes('not adoption candidates'));
     assert.ok(markdown.includes('`m1`'));
@@ -393,6 +543,13 @@ runTest('eval-rl-models evaluationGate/renderText は短期評価を smokeOnly �
     assert.deepStrictEqual(evaluationGate(results), {
         minGames: 20,
         smokeOnly: true,
+        candidateReady: false,
+        mainSampleReady: false,
+        pairedSeats: false,
+        exhaustedGames: 0,
+        runtimeStable: true,
+        mainAdoptionReady: false,
+        highConfidence: false,
         name: 'smokeOnly',
     });
     const text = renderText(results);
@@ -400,15 +557,31 @@ runTest('eval-rl-models evaluationGate/renderText は短期評価を smokeOnly �
     assert.ok(text.includes('not for adoption'));
 });
 
-runTest('eval-rl-models evaluationGate は50戦以上を adoptionCandidate と表示する', () => {
+runTest('eval-rl-models evaluationGate は50/100/300戦の審査段階を区別する', () => {
     const gate = evaluationGate([{
         summaries: [{ games: 50 }, { games: 100 }],
     }]);
     assert.deepStrictEqual(gate, {
         minGames: 50,
         smokeOnly: false,
-        name: 'adoptionCandidate',
+        candidateReady: true,
+        mainSampleReady: false,
+        pairedSeats: false,
+        exhaustedGames: 0,
+        runtimeStable: true,
+        mainAdoptionReady: false,
+        highConfidence: false,
+        name: 'candidateGate',
     });
+    assert.strictEqual(evaluationGate([{ summaries: [{ games: 100 }], evaluationConfig: { pairedSeats: false } }]).name, 'candidateGate');
+    assert.strictEqual(evaluationGate([{ summaries: [{ games: 100 }], evaluationConfig: { pairedSeats: true } }]).name, 'mainAdoptionReview');
+    assert.strictEqual(evaluationGate([{ summaries: [{ games: 300 }], evaluationConfig: { pairedSeats: true } }]).name, 'highConfidence');
+    const unstable = evaluationGate([{
+        summaries: [{ games: 300, exhausted: 1 }],
+        evaluationConfig: { pairedSeats: true },
+    }]);
+    assert.strictEqual(unstable.name, 'runtimeUnstable');
+    assert.strictEqual(unstable.mainAdoptionReady, false);
 });
 
 runTest('eval-rl-models write gate は短期評価artifactを明示なしで拒否する', () => {
@@ -422,6 +595,13 @@ runTest('eval-rl-models evaluationGate はgames不明を smokeOnly と表示す�
     assert.deepStrictEqual(gate, {
         minGames: null,
         smokeOnly: true,
+        candidateReady: false,
+        mainSampleReady: false,
+        pairedSeats: false,
+        exhaustedGames: 0,
+        runtimeStable: true,
+        mainAdoptionReady: false,
+        highConfidence: false,
         name: 'smokeOnly',
     });
 });

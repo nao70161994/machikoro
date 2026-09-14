@@ -325,16 +325,32 @@ function resumeGame(options = {}) {
             : Number.parseInt(generationElement && generationElement.value || '0', 10) || 0;
         const decoded = repository.read(isValidSavedGameState, generationIndex);
         const decodedState = decoded && decoded.state;
-        const savedCpuSettings = decodedState ? normalizeSavedCpuSettings(decodedState) : [];
+        let savedCpuSettings = Array.isArray(options.rlCpuSettings)
+            ? options.rlCpuSettings.map(setting => setting ? Object.assign({}, setting) : null)
+            : (decodedState ? normalizeSavedCpuSettings(decodedState) : []);
         const canPreloadRl = typeof RLModelPortfolio !== 'undefined' &&
-            typeof RLModelPortfolio.preloadEligibleModels === 'function';
+            (typeof RLModelPortfolio.preloadSelectedModels === 'function' ||
+                typeof RLModelPortfolio.preloadEligibleModels === 'function');
+        if (decodedState && canPreloadRl && typeof RLModelPortfolio.assignModelIds === 'function') {
+            savedCpuSettings = RLModelPortfolio.assignModelIds(
+                savedCpuSettings,
+                decodedState.players.length
+            );
+            decodedState.cpuSettings = savedCpuSettings.map(setting => setting
+                ? Object.assign({}, setting)
+                : null);
+        }
         const inspectRlLoadState = LocalResumePolicy.shouldInspectRlLoadState(
             savedCpuSettings,
             options.skipRlPreload,
             canPreloadRl
         );
-        const loadState = inspectRlLoadState && typeof RLModelPortfolio.eligibleLoadState === 'function'
-            ? RLModelPortfolio.eligibleLoadState(decodedState.players.length)
+        const loadState = inspectRlLoadState
+            ? (typeof RLModelPortfolio.selectedLoadState === 'function'
+                ? RLModelPortfolio.selectedLoadState(decodedState.players.length, savedCpuSettings)
+                : (typeof RLModelPortfolio.eligibleLoadState === 'function'
+                    ? RLModelPortfolio.eligibleLoadState(decodedState.players.length)
+                    : null))
             : null;
         const decision = LocalResumePolicy.decide({
             decoded,
@@ -349,13 +365,20 @@ function resumeGame(options = {}) {
         const state = decision.state;
         validatedSave = true;
         if (decision.kind === LocalResumePolicy.DECISIONS.PRELOAD_RL) {
-            const preload = RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
+            const preload = typeof RLModelPortfolio.preloadSelectedModels === 'function'
+                ? RLModelPortfolio.preloadSelectedModels(state.players.length, savedCpuSettings, { attempts: 3 })
+                : RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
             if (preload && typeof preload.then === 'function') {
                 const resumeGeneration = startLocalResumePreload();
                 showNotice("深層学習AIモデルを読み込んでいます。");
                 preload.then(() => {
                     if (!finishLocalResumePreload(resumeGeneration)) return;
-                    resumeGame({ fromPreload: true, skipRlPreload: true, generationIndex });
+                    resumeGame({
+                        fromPreload: true,
+                        skipRlPreload: true,
+                        generationIndex,
+                        rlCpuSettings: savedCpuSettings,
+                    });
                 }).catch(error => {
                     if (!finishLocalResumePreload(resumeGeneration)) return;
                     console.error(error);

@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-11",
+  "updatedAt": "2026-09-13",
   "styleGroups": [
     {
       "style": "4p-wheat-vineyard-pizza",
@@ -8,8 +8,26 @@
           "id": "self-only-4p-h256-lr1e5-5000-seed103",
           "status": "adopted",
           "score": null,
-          "games": 100,
+          "games": 1000,
           "topCards": []
+        }
+      ]
+    },
+    {
+      "style": "asset-engine-mover-curriculum",
+      "entries": [
+        {
+          "id": "mp-mover-legal-curriculum-seed415-4p-strength",
+          "status": "candidate",
+          "score": null,
+          "games": 300,
+          "topCards": [
+            "wheat_field",
+            "vineyard",
+            "ranch",
+            "forest",
+            "publisher"
+          ]
         }
       ]
     },
@@ -38,13 +56,31 @@
       ]
     },
     {
+      "style": "target-wheat-vineyard-forest",
+      "entries": [
+        {
+          "id": "mp-mixed-34510-target-only-seed145-4p",
+          "status": "adopted",
+          "score": null,
+          "games": 300,
+          "topCards": [
+            "wheat_field",
+            "vineyard",
+            "forest",
+            "ranch",
+            "it_venture"
+          ]
+        }
+      ]
+    },
+    {
       "style": "vineyard-farm-burger",
       "entries": [
         {
           "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap",
           "status": "candidate",
           "score": 0.813333,
-          "games": 50,
+          "games": 100,
           "topCards": []
         }
       ]
@@ -68,5 +104,27 @@
       ]
     }
   ],
-  "overlapPairs": []
+  "overlapPairs": [
+    {
+      "left": "mp-mixed-34510-target-only-seed145-4p",
+      "right": "mp-mover-legal-curriculum-seed415-4p-strength",
+      "overlap": 4,
+      "sameStyle": false,
+      "compareCommand": "npm run eval-rl-models -- --models mp-mixed-34510-target-only-seed145-4p,mp-mover-legal-curriculum-seed415-4p-strength --games 100 --markdown models/rl_model/mp-mixed-34510-target-only-seed145-4p-mp-mover-legal-curriculum-seed415-4p-strength.md"
+    },
+    {
+      "left": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+      "right": "mp-mixed-34510-target-only-seed145-4p",
+      "overlap": 2,
+      "sameStyle": false,
+      "compareCommand": "npm run eval-rl-models -- --models self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3,mp-mixed-34510-target-only-seed145-4p --games 100 --markdown models/rl_model/self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3-mp-mixed-34510-target-only-seed145-4p.md"
+    },
+    {
+      "left": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+      "right": "mp-mover-legal-curriculum-seed415-4p-strength",
+      "overlap": 2,
+      "sameStyle": false,
+      "compareCommand": "npm run eval-rl-models -- --models self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3,mp-mover-legal-curriculum-seed415-4p-strength --games 100 --markdown models/rl_model/self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3-mp-mover-legal-curriculum-seed415-4p-strength.md"
+    }
+  ]
 }

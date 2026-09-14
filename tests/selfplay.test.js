@@ -17,8 +17,10 @@ const {
     runDifficultyLadder,
     comparePresets,
     createBusinessStatsBucket,
+    createTargetStatsBucket,
     resolveBusinessMoveCards,
     recordBusinessStat,
+    recordTargetStat,
     listLegalActions,
     parseArgs,
     printSeries,
@@ -66,6 +68,24 @@ runTest('playCpuStep は CPU pending helper の fallback business を trace 付�
     assert.ok(traceEntries[0].chosenAction.label.startsWith('BUSINESS:'));
     assert.ok(traceEntries[0].after);
     assert.strictEqual(runtime.__selfplayOptions.businessStats.normal.total, 1);
+});
+
+runTest('playCpuStep はIT積立の実行actionをtraceへ記録する', () => {
+    const runtime = loadRuntime();
+    const game = new runtime.GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingIT = true;
+    const cpu = new runtime.CPU('normal');
+    cpu.chooseITInvest = () => true;
+    const traceEntries = [];
+    runtime.__selfplayOptions = { traceEntries };
+
+    playCpuStep(runtime, game, cpu, createShopStock(runtime.CARDS), () => 0.5);
+
+    assert.strictEqual(traceEntries.length, 1);
+    assert.strictEqual(traceEntries[0].chosenAction.action, runtime.RLCPU.ACTIONS.IT_SAVE);
+    assert.strictEqual(traceEntries[0].chosenAction.label, 'IT_SAVE');
+    assert.strictEqual(game.pendingIT, false);
 });
 
 runTest('simulateGame は CPU 同士の試合を最後まで進められる', () => {
@@ -133,6 +153,24 @@ runTest('simulateGame は4人以下のrl混在lineupをrlとして進める', ()
     assert.ok(result.winner >= 0);
     assert.strictEqual(result.finalState.length, 4);
     assert.strictEqual(result.difficulties[0], 'rl');
+});
+
+runTest('simulateGame は異なるRLモデルを役割名ごとに直接対戦できる', () => {
+    const model = loadMultiplayerRlModel();
+    const result = simulateGame({
+        difficulties: ['rl-candidate', 'rl-baseline', 'normal', 'strong'],
+        seed: 155,
+        maxSteps: 5000,
+        rlModelDataByDifficulty: {
+            'rl-candidate': model,
+            'rl-baseline': model,
+        },
+        lite: true,
+    });
+
+    assert.strictEqual(result.exhausted, false);
+    assert.ok(result.winner >= 0);
+    assert.deepStrictEqual(result.difficulties, ['rl-candidate', 'rl-baseline', 'normal', 'strong']);
 });
 
 runTest('simulateGame は2人用rlモデルの3人以上lineupを拒否する', () => {
@@ -420,6 +458,7 @@ runTest('collectBuildDiagnostics は非finite scoreをnullへ正規化する', (
 });
 
 runTest('runSeries は難易度ごとの勝利数を集計する', () => {
+    const progress = [];
     const result = runSeries({
         games: 3,
         seed: 10,
@@ -427,6 +466,8 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
         players: ['expert', 'strong'],
         expertPreset: 'economy',
         lite: true,
+        progressEvery: 2,
+        onProgress: entry => progress.push(entry),
     });
 
     assert.strictEqual(result.games, 3);
@@ -440,6 +481,8 @@ runTest('runSeries は難易度ごとの勝利数を集計する', () => {
     assert.strictEqual(result.buildStats.length, 2);
     assert.ok(typeof result.buildStats[0].total === 'number');
     assert.ok(result.businessStats);
+    assert.deepStrictEqual(progress.map(entry => entry.completed), [2, 3]);
+    assert.ok(progress.every(entry => entry.total === 3 && Number.isSafeInteger(entry.exhausted)));
 });
 
 runTest('runSeries は games/maxSteps の 0 指定を既定値で上書きしない', () => {
@@ -454,6 +497,29 @@ runTest('runSeries は games/maxSteps の 0 指定を既定値で上書きしな
     assert.strictEqual(result.games, 0);
     assert.strictEqual(result.wins.expert + result.wins.weak, 0);
     assert.deepStrictEqual(result.matchLog, []);
+});
+
+runTest('runSeries は採用評価で最初のstep枯渇を検出した時点で打ち切る', () => {
+    const progress = [];
+    const result = runSeries({
+        games: 4,
+        seed: 3,
+        maxSteps: 0,
+        players: ['normal', 'weak'],
+        includeRL: false,
+        abortOnExhaustion: true,
+        progressEvery: 10,
+        onProgress: entry => progress.push(entry),
+    });
+    assert.strictEqual(result.games, 1);
+    assert.strictEqual(result.exhausted, 1);
+    assert.strictEqual(progress.length, 1);
+    assert.deepStrictEqual(progress[0], {
+        completed: 1,
+        total: 4,
+        exhausted: 1,
+        wins: { normal: 0, weak: 0 },
+    });
 });
 
 runTest('paired-seats seed方針は同じ基準seedで全席を一巡する', () => {
@@ -570,6 +636,26 @@ runTest('recordBusinessStat はdifficulty別に交換内容を集計する', () 
     const empty = createBusinessStatsBucket();
     assert.strictEqual(empty.total, 0);
     assert.deepStrictEqual(empty.exchanges, {});
+});
+
+runTest('recordTargetStat はTV・Business・Moverの対象難易度と席を集計する', () => {
+    const options = {
+        targetStats: {},
+        cpuPlayers: [{ difficulty: 'rl' }, { difficulty: 'normal' }, { difficulty: 'strong' }],
+    };
+    const game = { players: [{}, {}, {}] };
+    recordTargetStat(game, { difficulty: 'rl' }, options, 'tv', 2);
+    recordTargetStat(game, { difficulty: 'rl' }, options, 'business', 1);
+    recordTargetStat(game, { difficulty: 'rl' }, options, 'mover', null);
+    const stats = options.targetStats.rl;
+    assert.strictEqual(stats.tv.total, 1);
+    assert.strictEqual(stats.tv.targetDifficulties.strong, 1);
+    assert.strictEqual(stats.tv.targetSeats.p3, 1);
+    assert.strictEqual(stats.business.targetDifficulties.normal, 1);
+    assert.strictEqual(stats.business.targetSeats.p2, 1);
+    assert.strictEqual(stats.mover.total, 1);
+    assert.strictEqual(stats.mover.skipped, 1);
+    assert.deepStrictEqual(createTargetStatsBucket().tv.targetSeats, {});
 });
 
 runTest('resolveBusinessMoveCards はRLのカード名参照を解決する', () => {

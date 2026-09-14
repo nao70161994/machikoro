@@ -17,7 +17,7 @@ runTest('refresh-rl-ops-reports parseArgs は主要CLI引数を解釈する', ()
     assert.strictEqual(args.outputDir, 'reports');
 });
 
-runTest('refresh-rl-ops-reports buildArtifacts は5種類の成果物を作る', () => {
+runTest('refresh-rl-ops-reports buildArtifacts はモデル再現・圧縮情報を含む8種類の成果物を作る', () => {
     const registry = {
         updatedAt: '2026-04-21',
         portfolioPolicy: {
@@ -49,12 +49,27 @@ runTest('refresh-rl-ops-reports buildArtifacts は5種類の成果物を作る',
             },
         ],
     };
-    const artifacts = buildArtifacts(registry);
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-ops-build-'));
+    const artifactPath = path.join(tmpDir, 'models', 'rl_model', 'portfolio', 'main.browser.json');
+    fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
+    fs.writeFileSync(artifactPath, JSON.stringify({ weights: Array(100).fill(0.1) }));
+    const artifacts = buildArtifacts(registry, {
+        repoRoot: tmpDir,
+        catalog: [{
+            id: 'main',
+            path: 'models/rl_model/portfolio/main.browser.json',
+            productionActive: true,
+        }],
+    });
     assert.ok(artifacts.report);
     assert.ok(artifacts.audit);
     assert.ok(artifacts.plan);
     assert.ok(artifacts.review);
     assert.ok(artifacts.diversity);
+    assert.ok(artifacts.modelCards);
+    assert.ok(artifacts.reproducibilityManifest);
+    assert.ok(artifacts.compression);
+    fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
 runTest('refresh-rl-ops-reports writeArtifacts は report 群を書き出す', () => {
@@ -66,12 +81,31 @@ runTest('refresh-rl-ops-reports writeArtifacts は report 群を書き出す', (
             plan: { updatedAt: '2026-04-21', counts: {}, actions: [] },
             review: { updatedAt: '2026-04-21', minimumGames: 50, currentMain: '', candidates: [], actions: [] },
             diversity: { updatedAt: '2026-04-21', styleGroups: [], overlapPairs: [] },
+            modelCards: [],
+            reproducibilityManifest: {
+                schemaVersion: 1,
+                registryUpdatedAt: '2026-04-21',
+                catalogModelCount: 0,
+                productionModelIds: [],
+                artifacts: [],
+            },
+            compression: {
+                generatedAt: '2026-08-25T00:00:00.000Z',
+                method: { gzipLevel: 9, brotliQuality: 9, brotliMode: 'text' },
+                models: [],
+                totals: { rawBytes: 0, gzipBytes: 0, brotliBytes: 0, gzipRatio: 0, brotliRatio: 0 },
+                productionTotals: { rawBytes: 0, gzipBytes: 0, brotliBytes: 0, gzipRatio: 0, brotliRatio: 0 },
+                recommendation: 'transport only',
+            },
         };
         const files = writeArtifacts(artifacts, tmpDir);
-        assert.strictEqual(files.length, 15);
+        assert.strictEqual(files.length, 21);
         assert.ok(fs.existsSync(path.join(tmpDir, 'registry-report.txt')));
         assert.ok(fs.existsSync(path.join(tmpDir, 'adoption-review.json')));
         assert.ok(fs.existsSync(path.join(tmpDir, 'diversity-report.md')));
+        assert.ok(fs.existsSync(path.join(tmpDir, 'model-cards.json')));
+        assert.ok(fs.existsSync(path.join(tmpDir, 'reproducibility-manifest.md')));
+        assert.ok(fs.existsSync(path.join(tmpDir, 'compression-report.json')));
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
     }

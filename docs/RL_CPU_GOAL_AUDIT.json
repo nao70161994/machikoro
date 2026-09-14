@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-13",
+  "goal": "deep-learning-cpu-next-stage",
+  "requirements": [
+    { "id": "baseline-models", "status": "achieved", "evidence": ["models/rl_model/registry.json", "models/rl_model/reports/portfolio-audit.md"] },
+    { "id": "model-diagnostics", "status": "achieved", "evidence": ["js/RLModelPortfolio.js", "js/RLCPU.js", "tests/rl-model-portfolio.test.js", "tests/rlcpu.test.js"] },
+    { "id": "model-cards-manifest", "status": "achieved", "evidence": ["models/rl_model/reports/model-cards.json", "models/rl_model/reports/reproducibility-manifest.json"] },
+    { "id": "paired-statistics", "status": "achieved", "evidence": ["scripts/eval-rl-head-to-head.js", "scripts/rl-statistics.js", "tests/rl-statistics.test.js"] },
+    { "id": "special-pending-fixtures", "status": "capability-achieved-no-captured-failures", "evidence": ["scripts/eval-rl-special-scenarios.js", "scripts/import-rl-match-fixture.js", "tests/fixtures/rl-failures/"], "capturedFixtureCount": 0 },
+    { "id": "strategy-plan", "status": "achieved-planned", "evidence": ["scripts/plan-rl-strategy-runs.js", "tests/plan-rl-strategy-runs.test.js"], "plannedRuns": 36 },
+    { "id": "candidate-gates", "status": "achieved-for-screened-candidates", "evidence": ["scripts/review-rl-candidate-promotion.js", "models/rl_model/eval-strategy-mp-mover-legal-curriculum-seed415-promotion-300/"] },
+    { "id": "target-head-parity", "status": "achieved", "evidence": ["scripts/rl/train.py", "scripts/rl/network.py", "js/RLCPU.js", "tests/rl-train.test.js", "tests/rlcpu.test.js"] },
+    { "id": "runtime-safety", "status": "achieved", "evidence": ["js/RLModelPortfolio.js", "tests/rl-model-portfolio.test.js", "models/rl_model/reports/compression-report.json"] },
+    { "id": "ui-diagnostics-export", "status": "achieved", "evidence": ["js/localPlayerSettings.js", "js/onlinePlayerSettings.js", "js/appDiagnostics.js", "js/main.js"] },
+    { "id": "full-regression", "status": "achieved", "evidence": ["npm test", "npm run test:all"] },
+    { "id": "critical-high-medium", "status": "zero", "evidence": ["npm run validate-rl-registry", "models/rl_model/reports/portfolio-audit.md"] },
+    { "id": "production-canary", "status": "environment-unavailable", "countsTowardAdoption": false },
+    { "id": "safari-device", "status": "environment-unavailable", "countsTowardAdoption": false }
+  ],
+  "adoption": {
+    "seed415": "candidate",
+    "seed71Rank1": "not-adopted",
+    "reason": "No statistically sufficient evidence of useful strategy difference over the fixed portfolio baselines."
+  }
+}

@@ -26,15 +26,14 @@ jobs:
 
             - uses: actions/setup-python@v6
               with:
-                  python-version: '3.x'
+                  python-version: '3.12'
                   cache: pip
-                  cache-dependency-path: scripts/rl/requirements.txt
+                  cache-dependency-path: scripts/rl/requirements-ci.txt
 
             - name: 依存関係インストール
               run: |
                   npm ci
-                  python -m pip install --upgrade pip
-                  pip install -r scripts/rl/requirements.txt
+                  pip install -r scripts/rl/requirements-ci.txt
 
             - name: APK build 前リリースゲート
               run: |

@@ -43,6 +43,17 @@ function minGamesAcrossSummaries(summaries) {
     return Math.min(...games);
 }
 
+function strategyDiversityKey(profile) {
+    if (!profile || typeof profile.primary !== 'string' || !profile.axes) return '';
+    const bucket = value => (Math.round((Number(value) || 0) * 10) / 10).toFixed(1);
+    return [
+        profile.primary,
+        `interaction=${bucket(profile.axes.interaction)}`,
+        `engine=${bucket(profile.axes.engine)}`,
+        `landmark=${bucket(profile.axes.landmarkTempo)}`,
+    ].join('|');
+}
+
 function buildEntry(result, options = {}) {
     const summaries = Array.isArray(result.summaries) ? result.summaries : [];
     const summaries3p = summaries.filter(summary => playerCountOfSummary(summary) === 3);
@@ -53,9 +64,17 @@ function buildEntry(result, options = {}) {
     const combinedScore = average([avg3p, avg4p]);
     const cardStyle = result.buildSignature && result.buildSignature.cardKey ? result.buildSignature.cardKey : '';
     const landmarkStyle = result.buildSignature && result.buildSignature.landmarkKey ? result.buildSignature.landmarkKey : '';
+    const strategyProfile = result.strategyProfile || null;
+    const strategyKey = strategyDiversityKey(strategyProfile);
     const minGamesPerLineup = integerOrDefault(options.minGamesPerLineup, 50);
     const minGames = minGamesAcrossSummaries(summaries);
     const smokeOnly = minGames === null || minGames < minGamesPerLineup;
+    const mainSampleReady = minGames !== null && minGames >= 100;
+    const pairedSeats = !!(result.evaluationConfig && result.evaluationConfig.pairedSeats === true);
+    const exhaustedGames = summaries.reduce((total, summary) => total + Math.max(0, Number(summary.exhausted) || 0), 0);
+    const runtimeStable = exhaustedGames === 0;
+    const mainAdoptionReady = mainSampleReady && pairedSeats && runtimeStable;
+    const highConfidence = minGames !== null && minGames >= 300 && pairedSeats && runtimeStable;
     const promotionBlocked = smokeOnly || !hasMultiplayerSummaries;
     return {
         id: result.id,
@@ -67,9 +86,17 @@ function buildEntry(result, options = {}) {
         combinedScore,
         cardStyle,
         landmarkStyle,
-        diversityKey: `${cardStyle} || ${landmarkStyle}`,
+        strategyProfile,
+        strategyKey,
+        diversityKey: strategyKey || `${cardStyle} || ${landmarkStyle}`,
         minGames,
         smokeOnly,
+        mainSampleReady,
+        pairedSeats,
+        exhaustedGames,
+        runtimeStable,
+        mainAdoptionReady,
+        highConfidence,
         promotionBlocked,
         promotionWarning: !hasMultiplayerSummaries
             ? 'promotionBlocked: no 3p/4p lineup summaries; do not use for multiplayer adoption'
@@ -160,12 +187,18 @@ function renderText(review) {
     for (const [index, entry] of review.entries.entries()) {
         const gate = entry.promotionBlocked
             ? (entry.smokeOnly ? 'smokeOnly' : 'promotionBlocked')
-            : 'adoptionCandidate';
+            : !entry.runtimeStable
+            ? 'runtimeUnstable'
+            : entry.highConfidence
+            ? 'highConfidence'
+            : entry.mainAdoptionReady
+            ? 'mainAdoptionReview'
+            : 'candidateGate';
         lines.push(
             `- #${index + 1} ${entry.id} combined=${formatPercent(entry.combinedScore)} ` +
             `3p=${formatPercent(entry.avg3p)} 4p=${formatPercent(entry.avg4p)} ` +
             `minGames=${entry.minGames === null ? 'n/a' : entry.minGames} ` +
-            `gate=${gate}${entry.promotionBlocked ? ' promotionBlocked=true ' : ' '}style=${entry.cardStyle || 'n/a'}`
+            `gate=${gate}${entry.promotionBlocked ? ' promotionBlocked=true ' : ' '}archetype=${entry.strategyProfile ? entry.strategyProfile.primary : 'n/a'} style=${entry.cardStyle || 'n/a'}`
         );
         if (entry.promotionWarning) lines.push(`  warning=${entry.promotionWarning}`);
     }
@@ -193,21 +226,27 @@ function renderMarkdown(review) {
         '',
         `- totalModels: ${review.totalModels}`,
         `- minGamesPerLineup: ${review.minGamesPerLineup}`,
-        '- note: rows with `smokeOnly` are not adoption candidates.',
+        '- note: `candidateGate` is the 50-game filter; main adoption review requires at least 100 games.',
         '',
         '## Ranking',
         '',
-        '| rank | id | combined | 3p | 4p | min games | gate | style | landmarks |',
-        '|---:|---|---:|---:|---:|---:|---|---|---|',
+        '| rank | id | combined | 3p | 4p | min games | gate | archetype | style | landmarks |',
+        '|---:|---|---:|---:|---:|---:|---|---|---|---|',
     ];
     for (const [index, entry] of review.entries.entries()) {
         const gate = entry.promotionBlocked
             ? (entry.smokeOnly ? 'smokeOnly' : 'promotionBlocked')
-            : 'adoptionCandidate';
+            : !entry.runtimeStable
+            ? 'runtimeUnstable'
+            : entry.highConfidence
+            ? 'highConfidence'
+            : entry.mainAdoptionReady
+            ? 'mainAdoptionReview'
+            : 'candidateGate';
         lines.push(
             `| ${index + 1} | \`${entry.id}\` | ${formatPercent(entry.combinedScore)} | ${formatPercent(entry.avg3p)} | ${formatPercent(entry.avg4p)} | ` +
             `${entry.minGames === null ? 'n/a' : entry.minGames} | ${gate} | ` +
-            `${entry.cardStyle || 'n/a'} | ${entry.landmarkStyle || 'n/a'} |`
+            `${entry.strategyProfile ? entry.strategyProfile.primary : 'n/a'} | ${entry.cardStyle || 'n/a'} | ${entry.landmarkStyle || 'n/a'} |`
         );
     }
     if (review.diversifiedPicks.length > 0) {
@@ -245,6 +284,7 @@ module.exports = {
     parseArgs,
     playerCountOfSummary,
     minGamesAcrossSummaries,
+    strategyDiversityKey,
     buildEntry,
     compareEntries,
     buildDiversifiedPicks,

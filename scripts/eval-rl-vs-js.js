@@ -32,6 +32,8 @@ function parseArgs(argv) {
     let lineups = [];
     let sharedSeeds = false;
     let pairedSeats = false;
+    let progressEvery = 0;
+    let abortOnExhaustion = false;
 
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
@@ -42,6 +44,8 @@ function parseArgs(argv) {
         else if (arg === '--format') format = argv[++i] || 'text';
         else if (arg === '--shared-seeds' || arg === '--same-seed') sharedSeeds = true;
         else if (arg === '--paired-seats') pairedSeats = true;
+        else if (arg === '--progress-every') progressEvery = parseIntegerOrDefault(argv[++i], 0);
+        else if (arg === '--abort-on-exhaustion') abortOnExhaustion = true;
         else if (arg === '--opponents') opponents = (argv[++i] || 'weak,normal,strong,expert').split(',').filter(Boolean);
         else if (arg === '--lineups') {
             lineups = (argv[++i] || '')
@@ -51,7 +55,7 @@ function parseArgs(argv) {
         }
     }
 
-    return { modelPath, games, seed, maxSteps, format, opponents, lineups, sharedSeeds, pairedSeats };
+    return { modelPath, games, seed, maxSteps, format, opponents, lineups, sharedSeeds, pairedSeats, progressEvery, abortOnExhaustion };
 }
 
 function loadModel(modelPath) {
@@ -81,6 +85,8 @@ function buildRlEvalRunSeriesOptions(options, lineup, seed, rlModelData) {
         lite: RL_EVAL_SIMULATION_MODE.lite,
         lightweightCpuOnly: RL_EVAL_SIMULATION_MODE.lightweightCpuOnly,
         seedPolicy: options.pairedSeats ? SERIES_SEED_POLICIES.PAIRED_SEATS : SERIES_SEED_POLICIES.INDEPENDENT,
+        progressEvery: Number.isSafeInteger(options.progressEvery) ? options.progressEvery : 0,
+        abortOnExhaustion: options.abortOnExhaustion === true,
     };
 }
 
@@ -93,26 +99,37 @@ function evaluateRlVsJs(options = {}) {
     assertRlModelLineupCompatible(rlModelData, lineups, modelPath);
     const games = integerOrDefault(options.games, 20);
     const baseSeed = integerOrDefault(options.seed, 1);
-    return lineups.map((lineup, index) => ({
-        opponent: lineup.length === 2 ? lineup.find(player => player !== 'rl') : lineup.join('+'),
-        lineup,
-        modelInfo: {
-            stateDim: rlModelData.stateDim,
-            hiddenSize: rlModelData.hiddenSize,
-            numActions: rlModelData.numActions,
-            schemaVersion: rlModelData.schemaVersion,
-            stateSchema: effectiveStateSchema(rlModelData),
-            actionSchema: effectiveActionSchema(rlModelData),
-            numCards: rlModelData.numCards ?? null,
-            numTargetSlots: rlModelData.numTargetSlots ?? null,
-        },
-        result: runSeries(buildRlEvalRunSeriesOptions(
+    const results = [];
+    for (const [index, lineup] of lineups.entries()) {
+        const opponent = lineup.length === 2 ? lineup.find(player => player !== 'rl') : lineup.join('+');
+        const runOptions = buildRlEvalRunSeriesOptions(
             options,
             lineup,
             options.sharedSeeds ? baseSeed : baseSeed + index * games,
             rlModelData
-        )),
-    }));
+        );
+        if (typeof options.onProgress === 'function') {
+            runOptions.onProgress = progress => options.onProgress({ ...progress, index, opponent, lineup: lineup.slice() });
+        }
+        const entry = {
+            opponent,
+            lineup,
+            modelInfo: {
+                stateDim: rlModelData.stateDim,
+                hiddenSize: rlModelData.hiddenSize,
+                numActions: rlModelData.numActions,
+                schemaVersion: rlModelData.schemaVersion,
+                stateSchema: effectiveStateSchema(rlModelData),
+                actionSchema: effectiveActionSchema(rlModelData),
+                numCards: rlModelData.numCards ?? null,
+                numTargetSlots: rlModelData.numTargetSlots ?? null,
+            },
+            result: runSeries(runOptions),
+        };
+        results.push(entry);
+        if (options.abortOnExhaustion === true && entry.result.exhausted > 0) break;
+    }
+    return results;
 }
 
 function nonRlWins(entry) {
@@ -159,6 +176,8 @@ function summarizeEvaluationEntry(entry) {
     const rlBuildStats = buildStatsByDifficulty.rl || collectDifficultyBuildStats(buildStats, matchLog, 'rl');
     const businessStats = entry.result.businessStats || {};
     const rlBusinessStats = businessStats.rl || null;
+    const targetStats = entry.result.targetStats || {};
+    const rlTargetStats = targetStats.rl || null;
     const topCards = rlBuildStats
         ? Object.entries(rlBuildStats.cards || {})
             .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja'))
@@ -200,6 +219,8 @@ function summarizeEvaluationEntry(entry) {
             total: rlBuildStats.total || 0,
             pass: rlBuildStats.pass || 0,
             passRate: (rlBuildStats.total || 0) > 0 ? (rlBuildStats.pass || 0) / rlBuildStats.total : 0,
+            cards: Object.assign({}, rlBuildStats.cards),
+            landmarks: Object.assign({}, rlBuildStats.landmarks),
             topCards,
             topLandmarks,
         } : null,
@@ -221,6 +242,7 @@ function summarizeEvaluationEntry(entry) {
                 .slice(0, 5)
                 .map(([name, count]) => ({ name, count })),
         } : null,
+        rlTargetStats: rlTargetStats ? JSON.parse(JSON.stringify(rlTargetStats)) : null,
         modelInfo: entry.modelInfo || null,
         lineup: entry.lineup || entry.result.players || null,
     };
@@ -345,11 +367,29 @@ function printEvaluation(entries, options = {}) {
                 `give=[${give}] take=[${take}] exchanges=[${exchanges}]`
             );
         }
+        if (summary.rlTargetStats) {
+            for (const kind of ['tv', 'business', 'mover']) {
+                const stats = summary.rlTargetStats[kind];
+                if (!stats || stats.total <= 0) continue;
+                const targets = Object.entries(stats.targetDifficulties || {})
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                    .map(([name, count]) => `${name}x${count}`)
+                    .join(', ') || 'none';
+                console.log(
+                    `  rl-target-${kind}: total=${stats.total} skipped=${stats.skipped} targets=[${targets}]`
+                );
+            }
+        }
     }
 }
 
 if (require.main === module) {
     const options = parseArgs(process.argv.slice(2));
+    if (options.progressEvery > 0) {
+        options.onProgress = progress => process.stderr.write(
+            `[rl-eval ${progress.opponent}] ${progress.completed}/${progress.total} exhausted=${progress.exhausted}\n`
+        );
+    }
     printEvaluation(evaluateRlVsJs(options), options);
 }
 

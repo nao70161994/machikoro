@@ -3,10 +3,15 @@
 const OnlinePlayerSettings = (() => {
     function normalizeSetting(setting) {
         const current = setting || {};
-        return {
+        const normalized = {
             type: current.type === 'cpu' ? 'cpu' : 'human',
             difficulty: current.difficulty || 'normal',
         };
+        if (normalized.type === 'cpu' && normalized.difficulty === 'rl') {
+            normalized.rlModelId = current.rlModelId || current.modelId || null;
+            normalized.rlModelSelection = current.rlModelSelection === 'manual' ? 'manual' : 'auto';
+        }
+        return normalized;
     }
 
     function normalizeSettings(settings, playerCount) {
@@ -23,7 +28,24 @@ const OnlinePlayerSettings = (() => {
         return 'AI（深層学習・ランダム）は2人用の複数モデルからランダムに選びます。CPU（最強）は安定したルールベースの基準CPUです。';
     }
 
-    function buildSettingsHtml(settings, playerCount) {
+    function escapeAttribute(value) {
+        return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function buildModelSelectHtml(setting, index, models) {
+        if (!setting || setting.type !== 'cpu' || setting.difficulty !== 'rl') return '';
+        const manual = setting.rlModelSelection === 'manual';
+        const options = (models || []).map(model => `
+                <option value="${escapeAttribute(model.id)}" ${manual && setting.rlModelId === model.id ? 'selected' : ''}>${escapeAttribute(model.label || model.id)}</option>`).join('');
+        return `<label class="rl-model-setting">モデル
+            <select data-ui-change="onlineRlModel" data-player-index="${index}" class="player-setting-select" aria-label="プレイヤー${index + 1}の深層学習モデル">
+                <option value="auto" ${manual ? '' : 'selected'}>自動（おすすめ）</option>${options}
+            </select>
+        </label>`;
+    }
+
+    function buildSettingsHtml(settings, playerCount, models = []) {
         const rows = settings.map((setting, index) => `
         <div class="player-setting">
             <span class="player-setting-name">プレイヤー${index + 1}</span>
@@ -35,6 +57,7 @@ const OnlinePlayerSettings = (() => {
                 <option value="expert" ${setting.type === 'cpu' && setting.difficulty === 'expert' ? 'selected' : ''}>CPU（最強）</option>
                 <option value="rl" ${setting.type === 'cpu' && setting.difficulty === 'rl' ? 'selected' : ''}>AI（深層学習・ランダム）</option>
             </select>
+            ${buildModelSelectHtml(setting, index, models)}
         </div>
     `).join('');
         return rows + `<div class="player-setting-note">${rlSettingNote(playerCount)}</div>`;
@@ -115,6 +138,7 @@ const OnlinePlayerSettings = (() => {
         normalizeSettings,
         rlSettingNote,
         buildSettingsHtml,
+        buildModelSelectHtml,
         opponentDifficulties,
         freezeForCreate,
         snapshot,

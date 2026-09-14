@@ -9,6 +9,8 @@ const {
     buildAudit,
     renderText,
     renderMarkdown,
+    validateRuntimeCatalog,
+    latestProductionEval,
 } = require('../scripts/audit-rl-portfolio.js');
 
 runTest('audit-rl-portfolio parseArgs は主要CLI引数を解釈する', () => {
@@ -126,4 +128,75 @@ runTest('audit-rl-portfolio renderText/renderMarkdown は推奨モデル表を�
     assert.ok(markdown.includes('# RL Portfolio Audit'));
     assert.ok(markdown.includes('| id | role | status | style | portfolio | 2p | 3p | 4p | 5p | 10p | target |'));
     assert.ok(markdown.includes('p=8.0%'));
+});
+
+runTest('audit-rl-portfolio は本番catalogのstatus・path・評価鮮度を検証する', () => {
+    const registry = {
+        evaluationPolicy: {
+            minimumAdoptionGamesPerOpponent: 50,
+            maxProductionEvaluationAgeDays: 180,
+        },
+        models: [{
+            id: 'active-model',
+            status: 'adopted',
+            path: 'models/active.json',
+            evals: [{ date: '2026-08-01', type: 'js', gamesPerOpponent: 100 }],
+        }],
+    };
+    const catalog = [{
+        id: 'active-model',
+        registryStatus: 'adopted',
+        productionActive: true,
+        path: 'models/active.json',
+    }];
+    assert.deepStrictEqual(
+        validateRuntimeCatalog(registry, { catalog, now: new Date('2026-08-22T00:00:00Z') }).errors,
+        []
+    );
+
+    const stale = validateRuntimeCatalog(registry, {
+        catalog: [Object.assign({}, catalog[0], { registryStatus: 'candidate' })],
+        now: new Date('2027-03-01T00:00:00Z'),
+    });
+    assert.ok(stale.errors.some(error => error.includes('registryStatus')));
+    assert.ok(stale.errors.some(error => error.includes('評価が古すぎます')));
+
+    const candidate = validateRuntimeCatalog({
+        evaluationPolicy: registry.evaluationPolicy,
+        models: [Object.assign({}, registry.models[0], { status: 'candidate' })],
+    }, {
+        catalog: [Object.assign({}, catalog[0], { registryStatus: 'candidate' })],
+        now: new Date('2026-08-22T00:00:00Z'),
+    });
+    assert.ok(candidate.errors.some(error => error.includes('adopted status')));
+});
+
+runTest('audit-rl-portfolio は新しいsmoke評価で本番評価の古さを隠さない', () => {
+    const model = {
+        evals: [
+            { date: '2026-01-01', type: 'js', gamesPerOpponent: 100 },
+            { date: '2026-08-20', type: 'js', gamesPerOpponent: 20 },
+        ],
+    };
+    assert.strictEqual(latestProductionEval(model, 50).date, '2026-01-01');
+    const result = validateRuntimeCatalog({
+        evaluationPolicy: {
+            minimumAdoptionGamesPerOpponent: 50,
+            maxProductionEvaluationAgeDays: 180,
+        },
+        models: [Object.assign({
+            id: 'active-model',
+            status: 'adopted',
+            path: 'models/active.json',
+        }, model)],
+    }, {
+        catalog: [{
+            id: 'active-model',
+            registryStatus: 'adopted',
+            productionActive: true,
+            path: 'models/active.json',
+        }],
+        now: new Date('2026-08-22T00:00:00Z'),
+    });
+    assert.ok(result.errors.some(error => error.includes('評価が古すぎます')));
 });

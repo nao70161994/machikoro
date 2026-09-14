@@ -1,1653 +1,2822 @@
 {
-    "schemaVersion": 1,
-    "updatedAt": "2026-08-18",
-    "primaryMetric": "jsWinRateVsWeakNormalStrong",
-    "notes": [
-        "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
-        "Promotion decisions should use post-training JS evaluations, not training-time top-k scores. 20-game checks are smoke tests only.",
-        "Current policy: keep multiple models when their build tendencies differ and their JS evaluations are useful.",
-        "Business center diagnostic on 2026-04-20 after fixing card-name stats: seed102 4p used BC once across 150 evaluated games and completed the exchange (パン屋->サンマ漁船 vs strong). Representative 2p candidates seed71-top3, seed69, and h128-lr1e4 used BC zero times across 150 games each. Current models are not BC-dependent; BC head improvements are therefore a future strength-ceiling issue, not a current adoption blocker."
-    ],
-    "evaluationPolicy": {
-        "smokeGamesPerOpponent": 20,
-        "minimumAdoptionGamesPerOpponent": 50,
-        "primaryAdoptionGamesPerOpponent": 100,
-        "preferredPrimaryGamesPerOpponent": 300,
-        "topKPostEval": {
-            "requiredRanks": [
-                1,
-                2,
-                3
-            ],
-            "command": "sh scripts/rl/eval-run-topk.sh <run-label> 100",
-            "reason": "Training-time checkpoint score is noisy; best/top2/top3 must be re-evaluated under the same JS conditions before promotion."
-        }
-    },
-    "diversityPolicy": {
-        "goal": "Keep active RL models with different build signatures instead of several near-duplicates.",
-        "representativeStyleKey": "style.label",
-        "manualReviewWhenSameStyle": true,
-        "topCardOverlapWarning": 4,
-        "preferArchiveWhen": [
-            "A candidate has the same style label as a stronger active model.",
-            "The candidate is weaker on normal and strong and has no distinct top-card signature.",
-            "The candidate has high pass rate without compensating win-rate or style value."
-        ]
-    },
-    "promotionCriteria": {
-        "candidate": {
-            "weakMin": 0.7,
-            "normalMin": 0.5,
-            "strongMin": 0.1
-        },
-        "strongReady": {
-            "weakMin": 0.75,
-            "normalMin": 0.6,
-            "strongMin": 0.3
-        }
-    },
-    "portfolioPolicy": {
-        "goal": "Keep several RL CPU models with distinct build tendencies, not only the single highest win-rate model.",
-        "selectionAxes": [
-            "50-game JS win rates against weak/normal/strong",
-            "seat balance",
-            "pass rate",
-            "average turns",
-            "top card and landmark build tendencies"
-        ],
-        "recommendedActiveModels": [
-            {
-                "id": "self-only-4p-h256-lr1e5-5000-seed103",
-                "role": "adopted-3p-10p",
-                "style": "wheat-vineyard-pizza",
-                "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. The 2026-08-18 stability audit kept competitive win rates across 3p-10p. A 2026-08-19 100-block common-random-number audit compared the RL subject with a tagged normal subject against the same nine normal opponents. Neither the normal absolute-seat distribution nor the RL-vs-normal distribution differed at the 5% chi-square threshold, so the earlier 20-games-per-seat gaps are classified as sampling-dominant rather than evidence of an RL-specific seat defect."
-            },
-            {
-                "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
-                "role": "adopted-2p-main",
-                "style": "vineyard-farm-winery",
-                "reason": "Adopted as the main 2-player RL CPU. 300-game comparison reached weak 99.3%, normal 93.3%, strong 63.3%."
-            },
-            {
-                "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
-                "role": "sushi-warehouse-variant",
-                "style": "sushi-warehouse-farm",
-                "reason": "Very high weak/normal result with a different card mix from seed71."
-            },
-            {
-                "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
-                "role": "burger-warehouse-variant",
-                "style": "burger-warehouse-wheat",
-                "reason": "Stable low-pass build that differs from vineyard/farm and sushi/warehouse lines."
-            }
-        ],
-        "archiveGuidance": "Archive candidates only when both strength and strategy overlap with a better model. Keep weaker models if they provide clearly different build behavior."
-    },
-    "models": [
-        {
-            "id": "terminal-shaped-h128-lr1e4",
-            "status": "archive",
-            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 1000,
-                "hidden": 128,
-                "lr": 0.0001,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "bread-farm-fishing",
-                "topCardsVsStrong": [
-                    "sushi_bar",
-                    "bakery",
-                    "tuna_boat",
-                    "forest",
-                    "convenience_store"
-                ],
-                "topLandmarksVsStrong": [
-                    "station",
-                    "harbor",
-                    "shopping_mall",
-                    "amusement_park",
-                    "radio_tower"
-                ],
-                "summary": "Older h128 fishing build. Archived from active 2-player portfolio after the 2026-04-20 100-game audit because normal dropped to 53% and stronger h256 variants provide better strength with enough style variety."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-20",
-                    "type": "js",
-                    "gamesPerOpponent": 100,
-                    "opponents": {
-                        "weak": {"wins": 99, "losses": 1, "draws": 0, "winRate": 0.99, "firstSeatWinRate": 1.0, "secondSeatWinRate": 0.98, "avgTurns": 61.26, "passRate": 0.0},
-                        "normal": {"wins": 53, "losses": 47, "draws": 0, "winRate": 0.53, "firstSeatWinRate": 0.58, "secondSeatWinRate": 0.48, "avgTurns": 64.19, "passRate": 0.012},
-                        "strong": {"wins": 39, "losses": 61, "draws": 0, "winRate": 0.39, "firstSeatWinRate": 0.36, "secondSeatWinRate": 0.42, "avgTurns": 61.16, "passRate": 0.001}
-                    }
-                },
-                {
-                    "date": "2026-04-12",
-                    "type": "js",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {
-                            "wins": 18,
-                            "losses": 2,
-                            "draws": 0,
-                            "winRate": 0.9,
-                            "firstSeatWinRate": 0.9,
-                            "secondSeatWinRate": 0.9,
-                            "avgTurns": 57.4
-                        },
-                        "normal": {
-                            "wins": 12,
-                            "losses": 8,
-                            "draws": 0,
-                            "winRate": 0.6,
-                            "firstSeatWinRate": 0.5,
-                            "secondSeatWinRate": 0.7,
-                            "avgTurns": 68.0
-                        },
-                        "strong": {
-                            "wins": 7,
-                            "losses": 13,
-                            "draws": 0,
-                            "winRate": 0.35,
-                            "firstSeatWinRate": 0.2,
-                            "secondSeatWinRate": 0.5,
-                            "avgTurns": 62.0
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "id": "terminal-shaped-h128-long",
-            "status": "archive",
-            "path": "models/rl_model/runs/terminal-shaped-h128-long/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-long",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 3000,
-                "hidden": 128,
-                "lr": 0.0003,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "shop-loan-fishing",
-                "topCardsVsStrong": [
-                    "loan_office",
-                    "general_store",
-                    "pizza_shop",
-                    "tuna_boat",
-                    "winery"
-                ],
-                "topLandmarksVsStrong": [
-                    "harbor",
-                    "station",
-                    "shopping_mall",
-                    "radio_tower",
-                    "amusement_park"
-                ],
-                "summary": "Different build tendency from lr1e4. Archived because the 20-game evaluation had low strong performance and current candidate value is limited."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-12",
-                    "type": "js",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {
-                            "wins": 18,
-                            "losses": 2,
-                            "draws": 0,
-                            "winRate": 0.9,
-                            "firstSeatWinRate": 0.8,
-                            "secondSeatWinRate": 1.0,
-                            "avgTurns": 67.5
-                        },
-                        "normal": {
-                            "wins": 14,
-                            "losses": 6,
-                            "draws": 0,
-                            "winRate": 0.7,
-                            "firstSeatWinRate": 0.7,
-                            "secondSeatWinRate": 0.7,
-                            "avgTurns": 59.6
-                        },
-                        "strong": {
-                            "wins": 3,
-                            "losses": 17,
-                            "draws": 0,
-                            "winRate": 0.15,
-                            "firstSeatWinRate": 0.2,
-                            "secondSeatWinRate": 0.1,
-                            "avgTurns": 54.3
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "id": "terminal-shaped-curriculum-h128",
-            "status": "archive",
-            "path": "models/rl_model/runs/terminal-shaped-curriculum-h128/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h128",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 1000,
-                "hidden": 128,
-                "lr": 0.0003,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "sushi-farm-cheese",
-                "summary": "Useful historical baseline, but weaker than later h128 candidates against strong."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-12",
-                    "type": "js",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {
-                            "wins": 15,
-                            "losses": 5,
-                            "draws": 0,
-                            "winRate": 0.75,
-                            "firstSeatWinRate": 0.9,
-                            "secondSeatWinRate": 0.6,
-                            "avgTurns": 69.3
-                        },
-                        "normal": {
-                            "wins": 7,
-                            "losses": 13,
-                            "draws": 0,
-                            "winRate": 0.35,
-                            "firstSeatWinRate": 0.5,
-                            "secondSeatWinRate": 0.2,
-                            "avgTurns": 70.0
-                        },
-                        "strong": {
-                            "wins": 1,
-                            "losses": 19,
-                            "draws": 0,
-                            "winRate": 0.05,
-                            "firstSeatWinRate": 0.1,
-                            "secondSeatWinRate": 0.0,
-                            "avgTurns": 57.8
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "id": "strong-select-seed21",
-            "status": "archive",
-            "path": "models/rl_model/runs/strong-select-seed21/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/strong-select-seed21",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
-                "games": 1000,
-                "hidden": 128,
-                "lr": 0.0001,
-                "seed": 21,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "trainOpponents": "random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1",
-                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "field-vineyard-normal-stable",
-                "topCardsVsStrong": [
-                    "vineyard",
-                    "wheat_field",
-                    "mine",
-                    "loan_office",
-                    "winery"
-                ],
-                "topLandmarksVsStrong": [
-                    "harbor",
-                    "station",
-                    "shopping_mall",
-                    "amusement_park",
-                    "radio_tower"
-                ],
-                "summary": "Normal-stable candidate selected with stronger JS checkpoint weighting. Archived because the 20-game evaluation had low strong performance and current candidate value is limited."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-13",
-                    "type": "js",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {
-                            "wins": 17,
-                            "losses": 3,
-                            "draws": 0,
-                            "winRate": 0.85,
-                            "firstSeatWinRate": 1.0,
-                            "secondSeatWinRate": 0.7,
-                            "avgTurns": 67.3
-                        },
-                        "normal": {
-                            "wins": 15,
-                            "losses": 5,
-                            "draws": 0,
-                            "winRate": 0.75,
-                            "firstSeatWinRate": 0.8,
-                            "secondSeatWinRate": 0.7,
-                            "avgTurns": 69.0
-                        },
-                        "strong": {
-                            "wins": 2,
-                            "losses": 18,
-                            "draws": 0,
-                            "winRate": 0.1,
-                            "firstSeatWinRate": 0.0,
-                            "secondSeatWinRate": 0.2,
-                            "avgTurns": 59.2
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-both-h256-lr3e5-5000-seed62",
-            "status": "archive",
-            "path": "models/rl_model/runs/self-only-both-h256-lr3e5-5000-seed62/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr3e5-5000-seed62",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
-                "games": 5000,
-                "hidden": 256,
-                "lr": 0.00003,
-                "seed": 62,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "bread-warehouse-sushi-strong",
-                "topCardsVsStrong": [
-                    "bakery",
-                    "food_warehouse",
-                    "sushi_bar",
-                    "loan_office",
-                    "winery"
-                ],
-                "topLandmarksVsStrong": [
-                    "harbor",
-                    "station",
-                    "shopping_mall",
-                    "radio_tower",
-                    "amusement_park"
-                ],
-                "summary": "First successful h256 self-play-both candidate. Archived after a 2026-05-06 100-game reevaluation because seed71-top3 was stronger across weak/normal/strong (seed62 99%/56%/65%, seed71-top3 100%/96%/76%)."
-            },
-            "evals": [
-                {
-                    "date": "2026-05-06",
-                    "type": "js",
-                    "gamesPerOpponent": 100,
-                    "opponents": {
-                        "weak": {"wins": 99, "losses": 1, "draws": 0, "winRate": 0.99, "firstSeatWinRate": 1.0, "secondSeatWinRate": 0.98, "avgTurns": 50.6, "passRate": 0.048},
-                        "normal": {"wins": 56, "losses": 44, "draws": 0, "winRate": 0.56, "firstSeatWinRate": 0.6, "secondSeatWinRate": 0.52, "avgTurns": 45.9, "passRate": 0.103},
-                        "strong": {"wins": 65, "losses": 35, "draws": 0, "winRate": 0.65, "firstSeatWinRate": 0.6, "secondSeatWinRate": 0.7, "avgTurns": 52.4, "passRate": 0.07}
-                    }
-                },
-                {
-                    "date": "2026-04-14",
-                    "type": "js",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {
-                            "wins": 18,
-                            "losses": 2,
-                            "draws": 0,
-                            "winRate": 0.9,
-                            "firstSeatWinRate": 1.0,
-                            "secondSeatWinRate": 0.8,
-                            "avgTurns": 55.5,
-                            "passRate": 0.06
-                        },
-                        "normal": {
-                            "wins": 13,
-                            "losses": 7,
-                            "draws": 0,
-                            "winRate": 0.65,
-                            "firstSeatWinRate": 0.8,
-                            "secondSeatWinRate": 0.5,
-                            "avgTurns": 51.6,
-                            "passRate": 0.092
-                        },
-                        "strong": {
-                            "wins": 9,
-                            "losses": 11,
-                            "draws": 0,
-                            "winRate": 0.45,
-                            "firstSeatWinRate": 0.5,
-                            "secondSeatWinRate": 0.4,
-                            "avgTurns": 47.0,
-                            "passRate": 0.044
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-            "status": "archive",
-            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed66-rewardcap/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed66-rewardcap",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
-                "games": 5000,
-                "hidden": 256,
-                "lr": 0.00002,
-                "seed": 66,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped-rewardcap",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "terminalLandmarkValueDiff": 0.004,
-                "terminalAssetDiff": 0.002,
-                "terminalCoinDiff": 0.001,
-                "terminalDiffClip": 20,
-                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "bread-warehouse-pizza-stable",
-                "topCardsVsStrong": [
-                    "bakery",
-                    "food_warehouse",
-                    "winery",
-                    "loan_office",
-                    "pizza_shop"
-                ],
-                "topLandmarksVsStrong": [
-                    "harbor",
-                    "station",
-                    "shopping_mall",
-                    "amusement_park",
-                    "radio_tower"
-                ],
-                "summary": "Reward-capped h256 self-play-both candidate. Archived after the 2026-05-06 shared-seeds diagnostic because seed71-top3 was stronger across weak/normal/strong at 100 games (seed66 98%/50%/66%, seed71-top3 99%/54%/75%) without enough distinct portfolio value."
-            },
-            "evals": [
-                {
-                    "date": "2026-05-06",
-                    "type": "js",
-                    "gamesPerOpponent": 100,
-                    "sharedSeeds": true,
-                    "opponents": {
-                        "weak": {"wins": 98, "losses": 2, "draws": 0, "winRate": 0.98, "firstSeatWinRate": 0.96, "secondSeatWinRate": 1.0, "avgTurns": 46.5, "passRate": 0.0},
-                        "normal": {"wins": 50, "losses": 50, "draws": 0, "winRate": 0.5, "firstSeatWinRate": 0.54, "secondSeatWinRate": 0.46, "avgTurns": 49.0, "passRate": 0.026},
-                        "strong": {"wins": 66, "losses": 34, "draws": 0, "winRate": 0.66, "firstSeatWinRate": 0.74, "secondSeatWinRate": 0.58, "avgTurns": 49.9, "passRate": 0.002}
-                    }
-                },
-                {
-                    "date": "2026-04-15",
-                    "type": "js",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {
-                            "wins": 19,
-                            "losses": 1,
-                            "draws": 0,
-                            "winRate": 0.95,
-                            "firstSeatWinRate": 1.0,
-                            "secondSeatWinRate": 0.9,
-                            "avgTurns": 47.6,
-                            "passRate": 0.0
-                        },
-                        "normal": {
-                            "wins": 14,
-                            "losses": 6,
-                            "draws": 0,
-                            "winRate": 0.7,
-                            "firstSeatWinRate": 0.6,
-                            "secondSeatWinRate": 0.8,
-                            "avgTurns": 49.8,
-                            "passRate": 0.031
-                        },
-                        "strong": {
-                            "wins": 7,
-                            "losses": 13,
-                            "draws": 0,
-                            "winRate": 0.35,
-                            "firstSeatWinRate": 0.5,
-                            "secondSeatWinRate": 0.2,
-                            "avgTurns": 49.6,
-                            "passRate": 0.006
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
-            "status": "adopted",
-            "path": "models/rl_model/portfolio/seed71-top3.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap",
-            "training": {
-                "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
-                "games": 5000,
-                "hidden": 256,
-                "lr": 0.00002,
-                "seed": 71,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped-rewardcap",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "terminalLandmarkValueDiff": 0.004,
-                "terminalAssetDiff": 0.002,
-                "terminalCoinDiff": 0.001,
-                "terminalDiffClip": 20,
-                "checkpointSelection": "top3 checkpoint by js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "vineyard-farm-winery-strong",
-                "topCardsVsStrong": [
-                    "ranch",
-                    "vineyard",
-                    "winery",
-                    "bakery",
-                    "loan_office"
-                ],
-                "topLandmarksVsStrong": [
-                    "harbor",
-                    "station",
-                    "shopping_mall",
-                    "amusement_park",
-                    "radio_tower"
-                ],
-                "summary": "Adopted 2-player main model. 300-game JS evaluation keeps very high weak/normal rates and strong remains clearly above other active 2-player candidates."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-20",
-                    "type": "js",
-                    "checkpointRank": 3,
-                    "gamesPerOpponent": 300,
-                    "opponents": {
-                        "weak": {"wins": 298, "losses": 2, "draws": 0, "winRate": 0.993333, "firstSeatWinRate": 0.993333, "secondSeatWinRate": 0.993333, "avgTurns": 53.303, "passRate": 0.014201},
-                        "normal": {"wins": 280, "losses": 20, "draws": 0, "winRate": 0.933333, "firstSeatWinRate": 0.946667, "secondSeatWinRate": 0.92, "avgTurns": 53.437, "passRate": 0.036359},
-                        "strong": {"wins": 190, "losses": 110, "draws": 0, "winRate": 0.633333, "firstSeatWinRate": 0.68, "secondSeatWinRate": 0.586667, "avgTurns": 53.187, "passRate": 0.021352}
-                    }
-                },
-                {
-                    "date": "2026-04-20",
-                    "type": "js",
-                    "checkpointRank": 3,
-                    "gamesPerOpponent": 100,
-                    "opponents": {
-                        "weak": {"wins": 100, "losses": 0, "draws": 0, "winRate": 1.0, "firstSeatWinRate": 1.0, "secondSeatWinRate": 1.0, "avgTurns": 52.94, "passRate": 0.011},
-                        "normal": {"wins": 96, "losses": 4, "draws": 0, "winRate": 0.96, "firstSeatWinRate": 0.94, "secondSeatWinRate": 0.98, "avgTurns": 53.12, "passRate": 0.032},
-                        "strong": {"wins": 76, "losses": 24, "draws": 0, "winRate": 0.76, "firstSeatWinRate": 0.72, "secondSeatWinRate": 0.8, "avgTurns": 51.51, "passRate": 0.015}
-                    }
-                },
-                {
-                    "date": "2026-04-17",
-                    "type": "js",
-                    "checkpointRank": 3,
-                    "gamesPerOpponent": 50,
-                    "opponents": {
-                        "weak": {"wins": 50, "losses": 0, "draws": 0, "winRate": 1.0, "firstSeatWinRate": 1.0, "secondSeatWinRate": 1.0, "avgTurns": 52.9, "passRate": 0.004},
-                        "normal": {"wins": 46, "losses": 4, "draws": 0, "winRate": 0.92, "firstSeatWinRate": 0.92, "secondSeatWinRate": 0.92, "avgTurns": 57.3, "passRate": 0.041},
-                        "strong": {"wins": 39, "losses": 11, "draws": 0, "winRate": 0.78, "firstSeatWinRate": 0.72, "secondSeatWinRate": 0.84, "avgTurns": 51.3, "passRate": 0.018}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap",
-            "status": "candidate",
-            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap",
-            "training": {
-                "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
-                "games": 5000,
-                "hidden": 256,
-                "lr": 0.00002,
-                "seed": 71,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped-rewardcap",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "terminalLandmarkValueDiff": 0.004,
-                "terminalAssetDiff": 0.002,
-                "terminalCoinDiff": 0.001,
-                "terminalDiffClip": 20,
-                "checkpointSelection": "rank1 checkpoint by js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "vineyard-farm-burger",
-                "summary": "Rank1 checkpoint for seed71. Strong result is excellent, but top3 was better in the 50-game audit."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-17",
-                    "type": "js",
-                    "checkpointRank": 1,
-                    "gamesPerOpponent": 50,
-                    "opponents": {
-                        "weak": {"wins": 48, "losses": 2, "draws": 0, "winRate": 0.96, "firstSeatWinRate": 0.96, "secondSeatWinRate": 0.96, "avgTurns": 58.4, "passRate": 0.001},
-                        "normal": {"wins": 47, "losses": 3, "draws": 0, "winRate": 0.94, "firstSeatWinRate": 0.92, "secondSeatWinRate": 0.96, "avgTurns": 59.0, "passRate": 0.013},
-                        "strong": {"wins": 34, "losses": 16, "draws": 0, "winRate": 0.68, "firstSeatWinRate": 0.76, "secondSeatWinRate": 0.6, "avgTurns": 55.4, "passRate": 0.0}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
-            "status": "candidate",
-            "path": "models/rl_model/portfolio/seed69.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed69-rewardcap",
-            "training": {
-                "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
-                "games": 5000,
-                "hidden": 256,
-                "lr": 0.00002,
-                "seed": 69,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped-rewardcap",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "terminalLandmarkValueDiff": 0.004,
-                "terminalAssetDiff": 0.002,
-                "terminalCoinDiff": 0.001,
-                "terminalDiffClip": 20,
-                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "burger-warehouse-wheat",
-                "summary": "2-player diversity candidate. 100-game audit is clearly weaker than seed71 top3 but keeps a distinct burger/warehouse/wheat build with low pass rate."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-20",
-                    "type": "js",
-                    "gamesPerOpponent": 100,
-                    "opponents": {
-                        "weak": {"wins": 93, "losses": 7, "draws": 0, "winRate": 0.93, "firstSeatWinRate": 0.96, "secondSeatWinRate": 0.9, "avgTurns": 62.34, "passRate": 0.0},
-                        "normal": {"wins": 75, "losses": 25, "draws": 0, "winRate": 0.75, "firstSeatWinRate": 0.8, "secondSeatWinRate": 0.7, "avgTurns": 60.55, "passRate": 0.018},
-                        "strong": {"wins": 40, "losses": 60, "draws": 0, "winRate": 0.4, "firstSeatWinRate": 0.42, "secondSeatWinRate": 0.38, "avgTurns": 58.22, "passRate": 0.0}
-                    }
-                },
-                {
-                    "date": "2026-04-16",
-                    "type": "js",
-                    "gamesPerOpponent": 50,
-                    "opponents": {
-                        "weak": {"wins": 47, "losses": 3, "draws": 0, "winRate": 0.94, "firstSeatWinRate": 0.96, "secondSeatWinRate": 0.92, "avgTurns": 65.4, "passRate": 0.0},
-                        "normal": {"wins": 30, "losses": 20, "draws": 0, "winRate": 0.6, "firstSeatWinRate": 0.44, "secondSeatWinRate": 0.76, "avgTurns": 62.0, "passRate": 0.011},
-                        "strong": {"wins": 17, "losses": 33, "draws": 0, "winRate": 0.34, "firstSeatWinRate": 0.32, "secondSeatWinRate": 0.36, "avgTurns": 59.2, "passRate": 0.0}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
-            "status": "candidate",
-            "path": "models/rl_model/portfolio/seed70.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed70-rewardcap",
-            "training": {
-                "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
-                "games": 5000,
-                "hidden": 256,
-                "lr": 0.00002,
-                "seed": 70,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped-rewardcap",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "terminalLandmarkValueDiff": 0.004,
-                "terminalAssetDiff": 0.002,
-                "terminalCoinDiff": 0.001,
-                "terminalDiffClip": 20,
-                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "sushi-warehouse-farm",
-                "summary": "2-player diversity candidate. 100-game audit keeps high weak/normal rates with a sushi/warehouse/farm build, but strong is well below seed71 top3."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-20",
-                    "type": "js",
-                    "gamesPerOpponent": 100,
-                    "opponents": {
-                        "weak": {"wins": 100, "losses": 0, "draws": 0, "winRate": 1.0, "firstSeatWinRate": 1.0, "secondSeatWinRate": 1.0, "avgTurns": 54.71, "passRate": 0.008},
-                        "normal": {"wins": 77, "losses": 23, "draws": 0, "winRate": 0.77, "firstSeatWinRate": 0.82, "secondSeatWinRate": 0.72, "avgTurns": 53.78, "passRate": 0.023},
-                        "strong": {"wins": 33, "losses": 67, "draws": 0, "winRate": 0.33, "firstSeatWinRate": 0.38, "secondSeatWinRate": 0.28, "avgTurns": 56.25, "passRate": 0.017}
-                    }
-                },
-                {
-                    "date": "2026-04-17",
-                    "type": "js",
-                    "gamesPerOpponent": 50,
-                    "opponents": {
-                        "weak": {"wins": 49, "losses": 1, "draws": 0, "winRate": 0.98, "firstSeatWinRate": 1.0, "secondSeatWinRate": 0.96, "avgTurns": 54.7, "passRate": 0.003},
-                        "normal": {"wins": 48, "losses": 2, "draws": 0, "winRate": 0.96, "firstSeatWinRate": 0.96, "secondSeatWinRate": 0.96, "avgTurns": 55.7, "passRate": 0.035},
-                        "strong": {"wins": 16, "losses": 34, "draws": 0, "winRate": 0.32, "firstSeatWinRate": 0.52, "secondSeatWinRate": 0.12, "avgTurns": 54.5, "passRate": 0.009}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-both-h256-lr2e5-5000-seed65",
-            "status": "archive",
-            "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed65/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed65",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
-                "games": 5000,
-                "hidden": 256,
-                "lr": 0.00002,
-                "seed": 65,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "sushi-warehouse-bread",
-                "summary": "Archive comparison for lr=2e-5 without rewardcap. Candidate metrics are acceptable but rewardcap has better normal and pass stability."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-15",
-                    "type": "js",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {"wins": 19, "losses": 1, "draws": 0, "winRate": 0.95, "firstSeatWinRate": 1.0, "secondSeatWinRate": 0.9, "avgTurns": 46.8, "passRate": 0.01},
-                        "normal": {"wins": 12, "losses": 8, "draws": 0, "winRate": 0.6, "firstSeatWinRate": 0.7, "secondSeatWinRate": 0.5, "avgTurns": 54.0, "passRate": 0.066},
-                        "strong": {"wins": 7, "losses": 13, "draws": 0, "winRate": 0.35, "firstSeatWinRate": 0.4, "secondSeatWinRate": 0.3, "avgTurns": 51.8, "passRate": 0.169}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-both-5000-seed51",
-            "status": "rejected",
-            "path": "models/rl_model/runs/self-only-both-5000-seed51/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-both-5000-seed51",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
-                "games": 5000,
-                "hidden": 128,
-                "lr": 0.0001,
-                "seed": 51,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "self-play-internal-overfit",
-                "summary": "Rejected because pool/self metrics were high but external JS evaluation collapsed."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-14",
-                    "type": "js-checkpoint",
-                    "gamesPerOpponent": 8,
-                    "opponents": {
-                        "weak": {"winRate": 0.12},
-                        "normal": {"winRate": 0.0},
-                        "strong": {"winRate": 0.0}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "terminal-shaped-h128-lr1e4-long",
-            "status": "archive",
-            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-long/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-long",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 3000,
-                "hidden": 128,
-                "lr": 0.0001,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "farm-cheese-weak-specialist",
-                "summary": "Distinct farm/cheese build. Archived because 20-game normal result fell below candidate threshold."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-12",
-                    "type": "js",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {
-                            "wins": 19,
-                            "losses": 1,
-                            "draws": 0,
-                            "winRate": 0.95,
-                            "firstSeatWinRate": 1.0,
-                            "secondSeatWinRate": 0.9,
-                            "avgTurns": 62.6
-                        },
-                        "normal": {
-                            "wins": 7,
-                            "losses": 13,
-                            "draws": 0,
-                            "winRate": 0.35,
-                            "firstSeatWinRate": 0.3,
-                            "secondSeatWinRate": 0.4,
-                            "avgTurns": 58.3
-                        },
-                        "strong": {
-                            "wins": 4,
-                            "losses": 16,
-                            "draws": 0,
-                            "winRate": 0.2,
-                            "firstSeatWinRate": 0.4,
-                            "secondSeatWinRate": 0.0,
-                            "avgTurns": 54.9
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "id": "terminal-shaped-h128-lr1e4-seed2",
-            "status": "archive",
-            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed2/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed2",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 1000,
-                "hidden": 128,
-                "lr": 0.0001,
-                "seed": 2,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "wheat-bread-sushi",
-                "summary": "Seed reproducibility check. Archived because strong did not reproduce."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-12",
-                    "type": "js-checkpoint",
-                    "gamesPerOpponent": 4,
-                    "opponents": {
-                        "weak": {"winRate": 0.75},
-                        "normal": {"winRate": 0.5},
-                        "strong": {"winRate": 0.0}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "terminal-shaped-h128-lr1e4-seed3",
-            "status": "archive",
-            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed3/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed3",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 1000,
-                "hidden": 128,
-                "lr": 0.0001,
-                "seed": 3,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "wheat-bread-farm",
-                "summary": "Seed reproducibility check. Archived because strong did not reproduce."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-12",
-                    "type": "js-checkpoint",
-                    "gamesPerOpponent": 4,
-                    "opponents": {
-                        "weak": {"winRate": 0.75},
-                        "normal": {"winRate": 0.5},
-                        "strong": {"winRate": 0.0}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "terminal-shaped-h128-lr1e4-strong005",
-            "status": "rejected",
-            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong005/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong005",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 1000,
-                "hidden": 128,
-                "lr": 0.0001,
-                "seed": 11,
-                "cpuOpponentImpl": "js-oracle",
-                "trainOpponents": "random=0.3,weak=0.4,normal=0.05,strong=0.05,self=0.1,pool=0.1",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "strong-mix-005",
-                "summary": "Rejected because adding strong=0.05 to training did not improve strong win rate."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-12",
-                    "type": "js-checkpoint",
-                    "gamesPerOpponent": 4,
-                    "opponents": {
-                        "weak": {"winRate": 1.0},
-                        "normal": {"winRate": 0.25},
-                        "strong": {"winRate": 0.0}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "terminal-shaped-h128-lr1e4-strong010",
-            "status": "rejected",
-            "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong010/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong010",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 1000,
-                "hidden": 128,
-                "lr": 0.0001,
-                "seed": 11,
-                "cpuOpponentImpl": "js-oracle",
-                "trainOpponents": "random=0.3,weak=0.3,normal=0.1,strong=0.1,self=0.1,pool=0.1",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "strong-mix-010",
-                "summary": "Rejected because adding strong=0.10 to training did not improve strong win rate."
-            },
-            "evals": [
-                {
-                    "date": "2026-04-12",
-                    "type": "js-checkpoint",
-                    "gamesPerOpponent": 4,
-                    "opponents": {
-                        "weak": {"winRate": 1.0},
-                        "normal": {"winRate": 0.5},
-                        "strong": {"winRate": 0.0}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "terminal-shaped-curriculum-h256",
-            "status": "rejected",
-            "path": "models/rl_model/runs/terminal-shaped-curriculum-h256/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h256",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 1000,
-                "hidden": 256,
-                "lr": 0.0003,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "pass-collapse",
-                "summary": "Rejected because build pass rate collapsed and JS evaluation stayed at 0%."
-            },
-            "evals": []
-        },
-        {
-            "id": "terminal-shaped-curriculum-h256-lr1e4",
-            "status": "rejected",
-            "path": "models/rl_model/runs/terminal-shaped-curriculum-h256-lr1e4/best_model.browser.json",
-            "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h256-lr1e4",
-            "training": {
-                "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
-                "games": 1000,
-                "hidden": 256,
-                "lr": 0.0001,
-                "cpuOpponentImpl": "js-oracle",
-                "imitation": false,
-                "rewardProfile": "terminal-shaped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "high-pass-weak",
-                "summary": "Lower lr reduced the complete collapse but still produced high pass rates and 0% JS final evaluation."
-            },
-            "evals": []
-        },
-        {
-            "id": "self-only-4p-h256-lr1e5-5000-seed102",
-            "status": "candidate-4p",
-            "path": "models/rl_model/portfolio/seed102-4p.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed102",
-            "training": {
-                "wrapper": "scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh",
-                "games": 5000,
-                "players": 4,
-                "hidden": 256,
-                "lr": 0.00001,
-                "seed": 102,
-                "cpuOpponentImpl": "js-oracle",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "imitation": false,
-                "rewardProfile": "terminal-shaped-capped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "4p-vineyard-farm-pizza",
-                "summary": "4人自己対戦のみ。4人100戦lineupで rl+weak+normal+strong 73%、rl+normal+normal+strong 72%。3人100戦lineupでも normal+strong / weak+strong に73%。主用途は3〜4人用。"
-            },
-            "evals": [
-                {
-                    "date": "2026-04-20",
-                    "type": "js-lineup-stability",
-                    "gamesPerLineup": 200,
-                    "lineups": {
-                        "rl+weak+normal+strong": {
-                            "wins": 140,
-                            "losses": 60,
-                            "draws": 0,
-                            "winRate": 0.7,
-                            "seatWinRates": [0.72, 0.64, 0.66, 0.78],
-                            "avgTurns": 83.63,
-                            "passRate": 0.009,
-                            "businessTotal": 0,
-                            "businessSkipRate": 0
-                        },
-                        "rl+normal+normal+strong": {
-                            "wins": 135,
-                            "losses": 65,
-                            "draws": 0,
-                            "winRate": 0.675,
-                            "seatWinRates": [0.8, 0.74, 0.64, 0.52],
-                            "avgTurns": 87.405,
-                            "passRate": 0.016,
-                            "businessTotal": 0,
-                            "businessSkipRate": 0
-                        },
-                        "rl+weak+weak+normal": {
-                            "wins": 183,
-                            "losses": 17,
-                            "draws": 0,
-                            "winRate": 0.915,
-                            "seatWinRates": [1.0, 0.94, 0.9, 0.82],
-                            "avgTurns": 88.325,
-                            "passRate": 0.007,
-                            "businessTotal": 0,
-                            "businessSkipRate": 0
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-20",
-                    "type": "js-lineup-3p-stability",
-                    "gamesPerLineup": 200,
-                    "lineups": {
-                        "rl+normal+strong": {
-                            "wins": 145,
-                            "losses": 55,
-                            "draws": 0,
-                            "winRate": 0.725,
-                            "seatWinRates": [0.716, 0.727, 0.731],
-                            "avgTurns": 74.195,
-                            "passRate": 0.011,
-                            "businessTotal": 9,
-                            "businessSkipRate": 0
-                        },
-                        "rl+weak+normal": {
-                            "wins": 176,
-                            "losses": 24,
-                            "draws": 0,
-                            "winRate": 0.88,
-                            "seatWinRates": [0.866, 0.879, 0.896],
-                            "avgTurns": 78.475,
-                            "passRate": 0.012,
-                            "businessTotal": 10,
-                            "businessSkipRate": 0
-                        },
-                        "rl+weak+strong": {
-                            "wins": 153,
-                            "losses": 47,
-                            "draws": 0,
-                            "winRate": 0.765,
-                            "seatWinRates": [0.821, 0.727, 0.746],
-                            "avgTurns": 69.805,
-                            "passRate": 0.002,
-                            "businessTotal": 4,
-                            "businessSkipRate": 0
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-20",
-                    "type": "js-lineup",
-                    "gamesPerLineup": 100,
-                    "lineups": {
-                        "rl+weak+normal+strong": {
-                            "wins": 73,
-                            "losses": 27,
-                            "draws": 0,
-                            "winRate": 0.73,
-                            "seatWinRates": [0.8, 0.6, 0.68, 0.84],
-                            "avgTurns": 84.69,
-                            "passRate": 0.008,
-                            "topCards": ["ブドウ園", "牧場", "改装屋", "青果市場", "ピザ屋"],
-                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
-                        },
-                        "rl+normal+normal+strong": {
-                            "wins": 72,
-                            "losses": 28,
-                            "draws": 0,
-                            "winRate": 0.72,
-                            "seatWinRates": [0.68, 0.76, 0.6, 0.84],
-                            "avgTurns": 85.75,
-                            "passRate": 0.018,
-                            "topCards": ["ブドウ園", "サンマ漁船", "牧場", "改装屋", "ピザ屋"],
-                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
-                        },
-                        "rl+weak+weak+normal": {
-                            "wins": 83,
-                            "losses": 17,
-                            "draws": 0,
-                            "winRate": 0.83,
-                            "seatWinRates": [0.92, 0.72, 0.92, 0.76],
-                            "avgTurns": 87.25,
-                            "passRate": 0.009,
-                            "topCards": ["ブドウ園", "牧場", "改装屋", "ピザ屋", "麦畑"],
-                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-20",
-                    "type": "js-lineup-3p",
-                    "gamesPerLineup": 100,
-                    "lineups": {
-                        "rl+normal+strong": {
-                            "wins": 73,
-                            "losses": 27,
-                            "draws": 0,
-                            "winRate": 0.73,
-                            "seatWinRates": [0.735, 0.697, 0.758],
-                            "avgTurns": 74.55,
-                            "passRate": 0.014,
-                            "topCards": ["牧場", "ブドウ園", "改装屋", "ピザ屋", "麦畑"],
-                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
-                        },
-                        "rl+weak+normal": {
-                            "wins": 93,
-                            "losses": 7,
-                            "draws": 0,
-                            "winRate": 0.93,
-                            "seatWinRates": [0.912, 0.939, 0.939],
-                            "avgTurns": 76.85,
-                            "passRate": 0.015,
-                            "topCards": ["牧場", "ブドウ園", "改装屋", "麦畑", "ピザ屋"],
-                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
-                        },
-                        "rl+weak+strong": {
-                            "wins": 73,
-                            "losses": 27,
-                            "draws": 0,
-                            "winRate": 0.73,
-                            "seatWinRates": [0.794, 0.697, 0.697],
-                            "avgTurns": 69.39,
-                            "passRate": 0,
-                            "topCards": ["ブドウ園", "牧場", "貸金業", "麦畑", "サンマ漁船"],
-                            "topLandmarks": ["駅", "港", "ショッピングモール", "遊園地", "電波塔"]
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-20",
-                    "type": "js-lineup",
-                    "gamesPerLineup": 50,
-                    "lineups": {
-                        "rl+weak+normal+strong": {
-                            "wins": 37,
-                            "losses": 13,
-                            "draws": 0,
-                            "winRate": 0.74,
-                            "seatWinRates": [0.692, 0.583, 0.833, 0.846],
-                            "avgTurns": 84.2
-                        },
-                        "rl+normal+normal+strong": {
-                            "wins": 37,
-                            "losses": 13,
-                            "draws": 0,
-                            "winRate": 0.74,
-                            "seatWinRates": [0.692, 0.75, 0.667, 0.846],
-                            "avgTurns": 88.0
-                        },
-                        "rl+weak+weak+normal": {
-                            "wins": 46,
-                            "losses": 4,
-                            "draws": 0,
-                            "winRate": 0.92,
-                            "seatWinRates": [0.846, 0.917, 1.0, 0.923],
-                            "avgTurns": 90.0
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-20",
-                    "type": "js-lineup-3p",
-                    "gamesPerLineup": 50,
-                    "lineups": {
-                        "rl+normal+strong": {
-                            "wins": 37,
-                            "losses": 13,
-                            "draws": 0,
-                            "winRate": 0.74,
-                            "seatWinRates": [0.706, 0.75, 0.765],
-                            "avgTurns": 74.7
-                        },
-                        "rl+weak+normal": {
-                            "wins": 46,
-                            "losses": 4,
-                            "draws": 0,
-                            "winRate": 0.92,
-                            "seatWinRates": [0.882, 0.938, 0.941],
-                            "avgTurns": 79.3
-                        },
-                        "rl+weak+strong": {
-                            "wins": 38,
-                            "losses": 12,
-                            "draws": 0,
-                            "winRate": 0.76,
-                            "seatWinRates": [0.706, 0.813, 0.765],
-                            "avgTurns": 71.1
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-19",
-                    "type": "js-lineup",
-                    "gamesPerLineup": 20,
-                    "lineups": {
-                        "rl+weak+normal+strong": {
-                            "wins": 15,
-                            "losses": 5,
-                            "draws": 0,
-                            "winRate": 0.75,
-                            "seatWinRates": [0.8, 0.6, 1.0, 0.6],
-                            "avgTurns": 87.4
-                        },
-                        "rl+normal+normal+strong": {
-                            "wins": 14,
-                            "losses": 6,
-                            "draws": 0,
-                            "winRate": 0.7,
-                            "seatWinRates": [0.8, 0.8, 0.6, 0.6],
-                            "avgTurns": 84.9
-                        },
-                        "rl+weak+weak+normal": {
-                            "wins": 18,
-                            "losses": 2,
-                            "draws": 0,
-                            "winRate": 0.9,
-                            "seatWinRates": [1.0, 0.8, 0.8, 1.0],
-                            "avgTurns": 92.0
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-19",
-                    "type": "js-2p-reference",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {"winRate": 1.0},
-                        "normal": {"winRate": 0.8},
-                        "strong": {"winRate": 0.95}
-                    }
-                }
-            ]
-        },
-        {
-            "id": "self-only-4p-h256-lr1e5-5000-seed103",
-            "status": "adopted",
-            "path": "models/rl_model/portfolio/seed103-4p.browser.json",
-            "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed103",
-            "training": {
-                "wrapper": "scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh",
-                "games": 5000,
-                "players": 4,
-                "hidden": 256,
-                "lr": 0.00001,
-                "seed": 103,
-                "cpuOpponentImpl": "js-oracle",
-                "trainOpponents": "self=1",
-                "selfLearnBothSides": true,
-                "imitation": false,
-                "rewardProfile": "terminal-shaped-capped",
-                "restoreBestAtEnd": true
-            },
-            "style": {
-                "label": "4p-wheat-vineyard-pizza",
-                "summary": "4人自己対戦候補から採用。2026-08-18に3/4/5人を各3lineup・各200戦、10人を5seed・各lineup合計1000戦で再監査し、全人数帯で競争力と低pass率を維持した。2026-08-19に10人・各席100戦の同一乱数診断を追加し、RL席差13.0ptは一様分布から有意でなく、normal基準との席profile差も有意でなかった。旧20戦/席の25.0〜40.0ptは標本誤差主導と結論し、採用席評価の既定を100戦/席へ強化した。"
-            },
-            "evals": [
-                {
-                    "date": "2026-08-19",
-                    "type": "js-cpu-seat-effect-10p",
-                    "gamesPerTarget": 1000,
-                    "gamesPerSeat": 100,
-                    "seedRange": [1, 100],
-                    "pairedSeats": true,
-                    "maxSteps": 5000,
-                    "opponents": "normal,normal,normal,normal,normal,normal,normal,normal,normal",
-                    "chiSquareDegreesOfFreedom": 9,
-                    "chiSquareCritical05": 16.919,
-                    "targets": {
-                        "rl": { "wins": 596, "winRate": 0.596, "winRate95": [0.565275, 0.62599], "seatGap": 0.13, "seatWinRates": [0.66, 0.63, 0.55, 0.61, 0.63, 0.53, 0.6, 0.57, 0.54, 0.64], "uniformChiSquare": 3.161074, "vsNormalChiSquare": 4.478332, "distributionAdequate": true, "significant05": false },
-                        "normal": { "wins": 100, "winRate": 0.1, "winRate95": [0.082909, 0.120152], "seatGap": 0.07, "seatWinRates": [0.09, 0.09, 0.1, 0.12, 0.09, 0.11, 0.09, 0.14, 0.1, 0.07], "uniformChiSquare": 3.4, "distributionAdequate": true, "significant05": false },
-                        "weak": { "wins": 1, "winRate": 0.001, "seatGap": 0.01, "distributionAdequate": false },
-                        "strong": { "wins": 44, "winRate": 0.044, "seatGap": 0.09, "distributionAdequate": false },
-                        "expert": { "wins": 31, "winRate": 0.031, "seatGap": 0.05, "distributionAdequate": false }
-                    },
-                    "classification": "sampling-dominant",
-                    "exhausted": 0,
-                    "note": "The prior 20-games-per-seat gaps were not reproduced at 100 games per seat. This excludes a detectable large absolute-seat or RL-specific effect under this lineup; it does not prove a zero-sized rule effect. Sparse weak/strong/expert win distributions are reported but excluded from inferential classification."
-                },
-                {
-                    "date": "2026-08-18",
-                    "type": "js-lineup-3p-stability",
-                    "gamesPerLineup": 200,
-                    "seed": 1,
-                    "maxSteps": 5000,
-                    "lineups": {
-                        "rl+normal+strong": { "winRate": 0.53, "seatGap": 0.149254 },
-                        "rl+weak+normal": { "winRate": 0.705, "seatGap": 0.109905 },
-                        "rl+weak+strong": { "winRate": 0.615, "seatGap": 0.164179 }
-                    },
-                    "exhausted": 0,
-                    "maxPassRate": 0.023134
-                },
-                {
-                    "date": "2026-08-18",
-                    "type": "js-lineup-stability",
-                    "gamesPerLineup": 200,
-                    "seed": 1,
-                    "maxSteps": 5000,
-                    "lineups": {
-                        "rl+weak+normal+strong": { "winRate": 0.51, "seatGap": 0.22 },
-                        "rl+normal+normal+strong": { "winRate": 0.465, "seatGap": 0.14 },
-                        "rl+weak+weak+normal": { "winRate": 0.68, "seatGap": 0.12 }
-                    },
-                    "exhausted": 0,
-                    "maxPassRate": 0.008844
-                },
-                {
-                    "date": "2026-08-18",
-                    "type": "js-lineup-5p-stability",
-                    "gamesPerLineup": 200,
-                    "seed": 1,
-                    "maxSteps": 5000,
-                    "projection": "top3-opponents",
-                    "lineups": {
-                        "rl+weak+normal+strong+expert": { "winRate": 0.505, "seatGap": 0.25 },
-                        "rl+normal+normal+strong+expert": { "winRate": 0.525, "seatGap": 0.25 },
-                        "rl+weak+weak+normal+strong": { "winRate": 0.645, "seatGap": 0.225 }
-                    },
-                    "exhausted": 0,
-                    "maxPassRate": 0.003776
-                },
-                {
-                    "date": "2026-08-18",
-                    "type": "js-lineup-10p-stability",
-                    "gamesPerLineup": 1000,
-                    "seeds": [1, 101, 201, 301, 401],
-                    "gamesPerSeat": 100,
-                    "maxSteps": 5000,
-                    "projection": "top3-opponents",
-                    "lineups": {
-                        "rl+weak+normal+strong+expert+weak+normal+strong+expert+normal": { "winRate": 0.52, "seatGap": 0.19, "seatWinRates": [0.53, 0.62, 0.54, 0.57, 0.47, 0.48, 0.52, 0.5, 0.43, 0.54] },
-                        "rl+normal+normal+strong+expert+weak+normal+strong+expert+strong": { "winRate": 0.653, "seatGap": 0.24, "seatWinRates": [0.76, 0.59, 0.69, 0.63, 0.67, 0.68, 0.66, 0.52, 0.7, 0.63] },
-                        "rl+weak+weak+normal+strong+expert+weak+normal+strong+expert": { "winRate": 0.449, "seatGap": 0.23, "seatWinRates": [0.46, 0.61, 0.47, 0.46, 0.4, 0.43, 0.5, 0.38, 0.38, 0.4] }
-                    },
-                    "exhausted": 0,
-                    "maxPassRate": 0.000216
-                },
-                {
-                    "date": "2026-08-18",
-                    "type": "js-lineup-10p-paired-seat",
-                    "gamesPerLineup": 200,
-                    "seedRange": [1, 20],
-                    "pairedSeats": true,
-                    "gamesPerSeat": 20,
-                    "maxSteps": 5000,
-                    "projection": "top3-opponents",
-                    "lineups": {
-                        "rl+weak+normal+strong+expert+weak+normal+strong+expert+normal": { "winRate": 0.51, "seatGap": 0.35, "seatWinRates": [0.7, 0.6, 0.4, 0.5, 0.5, 0.6, 0.5, 0.45, 0.35, 0.5] },
-                        "rl+normal+normal+strong+expert+weak+normal+strong+expert+strong": { "winRate": 0.695, "seatGap": 0.4, "seatWinRates": [0.65, 0.7, 0.6, 0.95, 0.55, 0.6, 0.75, 0.85, 0.6, 0.7] },
-                        "rl+weak+weak+normal+strong+expert+weak+normal+strong+expert": { "winRate": 0.51, "seatGap": 0.25, "seatWinRates": [0.5, 0.6, 0.6, 0.45, 0.35, 0.5, 0.5, 0.5, 0.6, 0.5] }
-                    },
-                    "exhausted": 0,
-                    "maxPassRate": 0.001098,
-                    "note": "Diagnostic common-random-number audit; 20 games per seat is a signal, not a final balance estimate."
-                },
-                {
-                    "date": "2026-05-11",
-                    "type": "js-lineup-5p",
-                    "gamesPerLineup": 50,
-                    "maxSteps": 1200,
-                    "projection": "top3-opponents",
-                    "lineups": {
-                        "rl+weak+normal+strong+expert": {
-                            "wins": 28,
-                            "losses": 22,
-                            "draws": 0,
-                            "winRate": 0.56,
-                            "seatWinRates": [0.6, 0.7, 0.3, 0.6, 0.6],
-                            "avgTurns": 90.6,
-                            "exhausted": 0,
-                            "passRate": 0.007284
-                        }
-                    }
-                },
-                {
-                    "date": "2026-05-11",
-                    "type": "js-lineup-10p",
-                    "gamesPerLineup": 50,
-                    "maxSteps": 1200,
-                    "projection": "top3-opponents",
-                    "lineups": {
-                        "rl+weak+weak+normal+normal+strong+strong+expert+expert+expert": {
-                            "wins": 25,
-                            "losses": 25,
-                            "draws": 0,
-                            "winRate": 0.5,
-                            "seatWinRates": [0.4, 0.6, 0, 0.8, 0.6, 0.6, 0.4, 1, 0.6, 0],
-                            "avgTurns": 125.48,
-                            "exhausted": 0,
-                            "passRate": 0
-                        }
-                    }
-                },
-                {
-                    "date": "2026-05-07",
-                    "type": "js-lineup",
-                    "gamesPerLineup": 100,
-                    "runtimeFallback": "mover-cleaning",
-                    "lineups": {
-                        "rl+weak+normal+strong": {
-                            "wins": 57,
-                            "losses": 43,
-                            "draws": 0,
-                            "winRate": 0.57,
-                            "avgTurns": 82.8,
-                            "passRate": 0.008
-                        },
-                        "rl+normal+normal+strong": {
-                            "wins": 51,
-                            "losses": 49,
-                            "draws": 0,
-                            "winRate": 0.51,
-                            "avgTurns": 85.6,
-                            "passRate": 0.034
-                        },
-                        "rl+weak+weak+normal": {
-                            "wins": 78,
-                            "losses": 22,
-                            "draws": 0,
-                            "winRate": 0.78,
-                            "avgTurns": 87.0,
-                            "passRate": 0.019
-                        }
-                    }
-                },
-                {
-                    "date": "2026-05-07",
-                    "type": "js-lineup",
-                    "gamesPerLineup": 100,
-                    "baselineModel": "self-only-4p-h256-lr1e5-5000-seed102",
-                    "lineups": {
-                        "rl+weak+normal+strong": {
-                            "wins": 57,
-                            "losses": 43,
-                            "draws": 0,
-                            "winRate": 0.57,
-                            "seatWinRates": [0.52, 0.64, 0.44, 0.68],
-                            "avgTurns": 83.8,
-                            "passRate": 0.016
-                        },
-                        "rl+normal+normal+strong": {
-                            "wins": 47,
-                            "losses": 53,
-                            "draws": 0,
-                            "winRate": 0.47,
-                            "seatWinRates": [0.56, 0.44, 0.52, 0.36],
-                            "avgTurns": 84.51,
-                            "passRate": 0.023
-                        },
-                        "rl+weak+weak+normal": {
-                            "wins": 81,
-                            "losses": 19,
-                            "draws": 0,
-                            "winRate": 0.81,
-                            "seatWinRates": [0.76, 0.76, 0.84, 0.88],
-                            "avgTurns": 87.8,
-                            "passRate": 0.019
-                        }
-                    }
-                },
-                {
-                    "date": "2026-05-07",
-                    "type": "js-lineup-3p",
-                    "gamesPerLineup": 50,
-                    "lineups": {
-                        "rl+normal+strong": {
-                            "wins": 36,
-                            "losses": 14,
-                            "draws": 0,
-                            "winRate": 0.72,
-                            "seatWinRates": [0.706, 0.75, 0.706],
-                            "avgTurns": 79.3,
-                            "passRate": 0.023
-                        },
-                        "rl+weak+strong": {
-                            "wins": 36,
-                            "losses": 14,
-                            "draws": 0,
-                            "winRate": 0.72,
-                            "seatWinRates": [0.706, 0.625, 0.824],
-                            "avgTurns": 78.98,
-                            "passRate": 0.001
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-19",
-                    "type": "js-lineup",
-                    "gamesPerLineup": 20,
-                    "lineups": {
-                        "rl+weak+normal+strong": {
-                            "wins": 15,
-                            "losses": 5,
-                            "draws": 0,
-                            "winRate": 0.75,
-                            "seatWinRates": [0.8, 0.8, 0.6, 0.8],
-                            "avgTurns": 89.7
-                        },
-                        "rl+normal+normal+strong": {
-                            "wins": 14,
-                            "losses": 6,
-                            "draws": 0,
-                            "winRate": 0.7,
-                            "seatWinRates": [0.8, 0.4, 1.0, 0.6],
-                            "avgTurns": 87.8
-                        },
-                        "rl+weak+weak+normal": {
-                            "wins": 17,
-                            "losses": 3,
-                            "draws": 0,
-                            "winRate": 0.85,
-                            "seatWinRates": [0.8, 0.8, 0.8, 1.0],
-                            "avgTurns": 93.3
-                        }
-                    }
-                },
-                {
-                    "date": "2026-04-19",
-                    "type": "js-2p-reference",
-                    "gamesPerOpponent": 20,
-                    "opponents": {
-                        "weak": {"winRate": 0.95},
-                        "normal": {"winRate": 0.55},
-                        "strong": {"winRate": 0.1}
-                    }
-                }
-            ]
-        }
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-13",
+  "primaryMetric": "jsWinRateVsWeakNormalStrong",
+  "notes": [
+    "This registry tracks candidate RL CPU models only. Model artifacts are intentionally not committed.",
+    "Promotion decisions should use post-training JS evaluations, not training-time top-k scores. 20-game checks are smoke tests only.",
+    "Current policy: keep multiple models when their build tendencies differ and their JS evaluations are useful.",
+    "Business center diagnostic on 2026-04-20 after fixing card-name stats: seed102 4p used BC once across 150 evaluated games and completed the exchange (パン屋->サンマ漁船 vs strong). Representative 2p candidates seed71-top3, seed69, and h128-lr1e4 used BC zero times across 150 games each. Current models are not BC-dependent; BC head improvements are therefore a future strength-ceiling issue, not a current adoption blocker."
+  ],
+  "evaluationPolicy": {
+    "smokeGamesPerOpponent": 20,
+    "minimumAdoptionGamesPerOpponent": 50,
+    "primaryAdoptionGamesPerOpponent": 100,
+    "preferredPrimaryGamesPerOpponent": 300,
+    "maxProductionEvaluationAgeDays": 180,
+    "topKPostEval": {
+      "requiredRanks": [
+        1,
+        2,
+        3
+      ],
+      "command": "sh scripts/rl/eval-run-topk.sh <run-label> 100",
+      "reason": "Training-time checkpoint score is noisy; best/top2/top3 must be re-evaluated under the same JS conditions before promotion."
+    }
+  },
+  "diversityPolicy": {
+    "goal": "Keep active RL models with different build signatures instead of several near-duplicates.",
+    "representativeStyleKey": "style.label",
+    "manualReviewWhenSameStyle": true,
+    "topCardOverlapWarning": 4,
+    "preferArchiveWhen": [
+      "A candidate has the same style label as a stronger active model.",
+      "The candidate is weaker on normal and strong and has no distinct top-card signature.",
+      "The candidate has high pass rate without compensating win-rate or style value."
     ]
+  },
+  "promotionCriteria": {
+    "candidate": {
+      "weakMin": 0.7,
+      "normalMin": 0.5,
+      "strongMin": 0.1
+    },
+    "strongReady": {
+      "weakMin": 0.75,
+      "normalMin": 0.6,
+      "strongMin": 0.3
+    }
+  },
+  "portfolioPolicy": {
+    "goal": "Keep several RL CPU models with distinct build tendencies, not only the single highest win-rate model.",
+    "selectionAxes": [
+      "50-game JS win rates against weak/normal/strong",
+      "seat balance",
+      "pass rate",
+      "average turns",
+      "top card and landmark build tendencies"
+    ],
+    "recommendedActiveModels": [
+      {
+        "id": "self-only-4p-h256-lr1e5-5000-seed103",
+        "role": "adopted-3p-10p",
+        "style": "wheat-vineyard-pizza",
+        "reason": "Adopted for 3-player and above RL CPU via top-3 opponent projection. The 2026-08-18 stability audit kept competitive win rates across 3p-10p. A 2026-08-19 100-block common-random-number audit compared the RL subject with a tagged normal subject against the same nine normal opponents. Neither the normal absolute-seat distribution nor the RL-vs-normal distribution differed at the 5% chi-square threshold, so the earlier 20-games-per-seat gaps are classified as sampling-dominant rather than evidence of an RL-specific seat defect."
+      },
+      {
+        "id": "mp-mixed-34510-target-only-seed145-4p",
+        "role": "adopted-4p-specialist",
+        "style": "target-wheat-vineyard-forest",
+        "reason": "Added only for 4-player games after a 2026-08-25 paired-seat 300-game comparison against the adopted seed103 model. The candidate won 105 direct games to 76, with a 58.0% share and a 95% confidence lower bound of 50.7%. It passed all 17 special pending checks with zero exhausted games. The existing seed103 model remains the higher-weight general 3-10 player model because mixed-lineup score was 1.0 point lower."
+      },
+      {
+        "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+        "role": "adopted-2p-main",
+        "style": "vineyard-farm-winery",
+        "reason": "Adopted as the main 2-player RL CPU. 300-game comparison reached weak 99.3%, normal 93.3%, strong 63.3%."
+      },
+      {
+        "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+        "role": "sushi-warehouse-variant",
+        "style": "sushi-warehouse-farm",
+        "reason": "Very high weak/normal result with a different card mix from seed71."
+      },
+      {
+        "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+        "role": "burger-warehouse-variant",
+        "style": "burger-warehouse-wheat",
+        "reason": "Stable low-pass build that differs from vineyard/farm and sushi/warehouse lines."
+      }
+    ],
+    "archiveGuidance": "Archive candidates only when both strength and strategy overlap with a better model. Keep weaker models if they provide clearly different build behavior."
+  },
+  "models": [
+    {
+      "id": "terminal-shaped-h128-lr1e4",
+      "status": "archive",
+      "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 1000,
+        "hidden": 128,
+        "lr": 0.0001,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "bread-farm-fishing",
+        "topCardsVsStrong": [
+          "sushi_bar",
+          "bakery",
+          "tuna_boat",
+          "forest",
+          "convenience_store"
+        ],
+        "topLandmarksVsStrong": [
+          "station",
+          "harbor",
+          "shopping_mall",
+          "amusement_park",
+          "radio_tower"
+        ],
+        "summary": "Older h128 fishing build. Archived from active 2-player portfolio after the 2026-04-20 100-game audit because normal dropped to 53% and stronger h256 variants provide better strength with enough style variety."
+      },
+      "evals": [
+        {
+          "date": "2026-04-20",
+          "type": "js",
+          "gamesPerOpponent": 100,
+          "opponents": {
+            "weak": {
+              "wins": 99,
+              "losses": 1,
+              "draws": 0,
+              "winRate": 0.99,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.98,
+              "avgTurns": 61.26,
+              "passRate": 0
+            },
+            "normal": {
+              "wins": 53,
+              "losses": 47,
+              "draws": 0,
+              "winRate": 0.53,
+              "firstSeatWinRate": 0.58,
+              "secondSeatWinRate": 0.48,
+              "avgTurns": 64.19,
+              "passRate": 0.012
+            },
+            "strong": {
+              "wins": 39,
+              "losses": 61,
+              "draws": 0,
+              "winRate": 0.39,
+              "firstSeatWinRate": 0.36,
+              "secondSeatWinRate": 0.42,
+              "avgTurns": 61.16,
+              "passRate": 0.001
+            }
+          }
+        },
+        {
+          "date": "2026-04-12",
+          "type": "js",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "wins": 18,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.9,
+              "firstSeatWinRate": 0.9,
+              "secondSeatWinRate": 0.9,
+              "avgTurns": 57.4
+            },
+            "normal": {
+              "wins": 12,
+              "losses": 8,
+              "draws": 0,
+              "winRate": 0.6,
+              "firstSeatWinRate": 0.5,
+              "secondSeatWinRate": 0.7,
+              "avgTurns": 68
+            },
+            "strong": {
+              "wins": 7,
+              "losses": 13,
+              "draws": 0,
+              "winRate": 0.35,
+              "firstSeatWinRate": 0.2,
+              "secondSeatWinRate": 0.5,
+              "avgTurns": 62
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-shaped-h128-long",
+      "status": "archive",
+      "path": "models/rl_model/runs/terminal-shaped-h128-long/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-h128-long",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 3000,
+        "hidden": 128,
+        "lr": 0.0003,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "shop-loan-fishing",
+        "topCardsVsStrong": [
+          "loan_office",
+          "general_store",
+          "pizza_shop",
+          "tuna_boat",
+          "winery"
+        ],
+        "topLandmarksVsStrong": [
+          "harbor",
+          "station",
+          "shopping_mall",
+          "radio_tower",
+          "amusement_park"
+        ],
+        "summary": "Different build tendency from lr1e4. Archived because the 20-game evaluation had low strong performance and current candidate value is limited."
+      },
+      "evals": [
+        {
+          "date": "2026-04-12",
+          "type": "js",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "wins": 18,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.9,
+              "firstSeatWinRate": 0.8,
+              "secondSeatWinRate": 1,
+              "avgTurns": 67.5
+            },
+            "normal": {
+              "wins": 14,
+              "losses": 6,
+              "draws": 0,
+              "winRate": 0.7,
+              "firstSeatWinRate": 0.7,
+              "secondSeatWinRate": 0.7,
+              "avgTurns": 59.6
+            },
+            "strong": {
+              "wins": 3,
+              "losses": 17,
+              "draws": 0,
+              "winRate": 0.15,
+              "firstSeatWinRate": 0.2,
+              "secondSeatWinRate": 0.1,
+              "avgTurns": 54.3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-shaped-curriculum-h128",
+      "status": "archive",
+      "path": "models/rl_model/runs/terminal-shaped-curriculum-h128/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h128",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 1000,
+        "hidden": 128,
+        "lr": 0.0003,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "sushi-farm-cheese",
+        "summary": "Useful historical baseline, but weaker than later h128 candidates against strong."
+      },
+      "evals": [
+        {
+          "date": "2026-04-12",
+          "type": "js",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "wins": 15,
+              "losses": 5,
+              "draws": 0,
+              "winRate": 0.75,
+              "firstSeatWinRate": 0.9,
+              "secondSeatWinRate": 0.6,
+              "avgTurns": 69.3
+            },
+            "normal": {
+              "wins": 7,
+              "losses": 13,
+              "draws": 0,
+              "winRate": 0.35,
+              "firstSeatWinRate": 0.5,
+              "secondSeatWinRate": 0.2,
+              "avgTurns": 70
+            },
+            "strong": {
+              "wins": 1,
+              "losses": 19,
+              "draws": 0,
+              "winRate": 0.05,
+              "firstSeatWinRate": 0.1,
+              "secondSeatWinRate": 0,
+              "avgTurns": 57.8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "strong-select-seed21",
+      "status": "archive",
+      "path": "models/rl_model/runs/strong-select-seed21/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/strong-select-seed21",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+        "games": 1000,
+        "hidden": 128,
+        "lr": 0.0001,
+        "seed": 21,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "trainOpponents": "random=0.3,weak=0.4,normal=0.1,strong=0,self=0.1,pool=0.1",
+        "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "field-vineyard-normal-stable",
+        "topCardsVsStrong": [
+          "vineyard",
+          "wheat_field",
+          "mine",
+          "loan_office",
+          "winery"
+        ],
+        "topLandmarksVsStrong": [
+          "harbor",
+          "station",
+          "shopping_mall",
+          "amusement_park",
+          "radio_tower"
+        ],
+        "summary": "Normal-stable candidate selected with stronger JS checkpoint weighting. Archived because the 20-game evaluation had low strong performance and current candidate value is limited."
+      },
+      "evals": [
+        {
+          "date": "2026-04-13",
+          "type": "js",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "wins": 17,
+              "losses": 3,
+              "draws": 0,
+              "winRate": 0.85,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.7,
+              "avgTurns": 67.3
+            },
+            "normal": {
+              "wins": 15,
+              "losses": 5,
+              "draws": 0,
+              "winRate": 0.75,
+              "firstSeatWinRate": 0.8,
+              "secondSeatWinRate": 0.7,
+              "avgTurns": 69
+            },
+            "strong": {
+              "wins": 2,
+              "losses": 18,
+              "draws": 0,
+              "winRate": 0.1,
+              "firstSeatWinRate": 0,
+              "secondSeatWinRate": 0.2,
+              "avgTurns": 59.2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "self-only-both-h256-lr3e5-5000-seed62",
+      "status": "archive",
+      "path": "models/rl_model/runs/self-only-both-h256-lr3e5-5000-seed62/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-both-h256-lr3e5-5000-seed62",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+        "games": 5000,
+        "hidden": 256,
+        "lr": 0.00003,
+        "seed": 62,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "bread-warehouse-sushi-strong",
+        "topCardsVsStrong": [
+          "bakery",
+          "food_warehouse",
+          "sushi_bar",
+          "loan_office",
+          "winery"
+        ],
+        "topLandmarksVsStrong": [
+          "harbor",
+          "station",
+          "shopping_mall",
+          "radio_tower",
+          "amusement_park"
+        ],
+        "summary": "First successful h256 self-play-both candidate. Archived after a 2026-05-06 100-game reevaluation because seed71-top3 was stronger across weak/normal/strong (seed62 99%/56%/65%, seed71-top3 100%/96%/76%)."
+      },
+      "evals": [
+        {
+          "date": "2026-05-06",
+          "type": "js",
+          "gamesPerOpponent": 100,
+          "opponents": {
+            "weak": {
+              "wins": 99,
+              "losses": 1,
+              "draws": 0,
+              "winRate": 0.99,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.98,
+              "avgTurns": 50.6,
+              "passRate": 0.048
+            },
+            "normal": {
+              "wins": 56,
+              "losses": 44,
+              "draws": 0,
+              "winRate": 0.56,
+              "firstSeatWinRate": 0.6,
+              "secondSeatWinRate": 0.52,
+              "avgTurns": 45.9,
+              "passRate": 0.103
+            },
+            "strong": {
+              "wins": 65,
+              "losses": 35,
+              "draws": 0,
+              "winRate": 0.65,
+              "firstSeatWinRate": 0.6,
+              "secondSeatWinRate": 0.7,
+              "avgTurns": 52.4,
+              "passRate": 0.07
+            }
+          }
+        },
+        {
+          "date": "2026-04-14",
+          "type": "js",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "wins": 18,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.9,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.8,
+              "avgTurns": 55.5,
+              "passRate": 0.06
+            },
+            "normal": {
+              "wins": 13,
+              "losses": 7,
+              "draws": 0,
+              "winRate": 0.65,
+              "firstSeatWinRate": 0.8,
+              "secondSeatWinRate": 0.5,
+              "avgTurns": 51.6,
+              "passRate": 0.092
+            },
+            "strong": {
+              "wins": 9,
+              "losses": 11,
+              "draws": 0,
+              "winRate": 0.45,
+              "firstSeatWinRate": 0.5,
+              "secondSeatWinRate": 0.4,
+              "avgTurns": 47,
+              "passRate": 0.044
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed66-rewardcap",
+      "status": "archive",
+      "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed66-rewardcap/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed66-rewardcap",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+        "games": 5000,
+        "hidden": 256,
+        "lr": 0.00002,
+        "seed": 66,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "bread-warehouse-pizza-stable",
+        "topCardsVsStrong": [
+          "bakery",
+          "food_warehouse",
+          "winery",
+          "loan_office",
+          "pizza_shop"
+        ],
+        "topLandmarksVsStrong": [
+          "harbor",
+          "station",
+          "shopping_mall",
+          "amusement_park",
+          "radio_tower"
+        ],
+        "summary": "Reward-capped h256 self-play-both candidate. Archived after the 2026-05-06 shared-seeds diagnostic because seed71-top3 was stronger across weak/normal/strong at 100 games (seed66 98%/50%/66%, seed71-top3 99%/54%/75%) without enough distinct portfolio value."
+      },
+      "evals": [
+        {
+          "date": "2026-05-06",
+          "type": "js",
+          "gamesPerOpponent": 100,
+          "sharedSeeds": true,
+          "opponents": {
+            "weak": {
+              "wins": 98,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.98,
+              "firstSeatWinRate": 0.96,
+              "secondSeatWinRate": 1,
+              "avgTurns": 46.5,
+              "passRate": 0
+            },
+            "normal": {
+              "wins": 50,
+              "losses": 50,
+              "draws": 0,
+              "winRate": 0.5,
+              "firstSeatWinRate": 0.54,
+              "secondSeatWinRate": 0.46,
+              "avgTurns": 49,
+              "passRate": 0.026
+            },
+            "strong": {
+              "wins": 66,
+              "losses": 34,
+              "draws": 0,
+              "winRate": 0.66,
+              "firstSeatWinRate": 0.74,
+              "secondSeatWinRate": 0.58,
+              "avgTurns": 49.9,
+              "passRate": 0.002
+            }
+          }
+        },
+        {
+          "date": "2026-04-15",
+          "type": "js",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "wins": 19,
+              "losses": 1,
+              "draws": 0,
+              "winRate": 0.95,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.9,
+              "avgTurns": 47.6,
+              "passRate": 0
+            },
+            "normal": {
+              "wins": 14,
+              "losses": 6,
+              "draws": 0,
+              "winRate": 0.7,
+              "firstSeatWinRate": 0.6,
+              "secondSeatWinRate": 0.8,
+              "avgTurns": 49.8,
+              "passRate": 0.031
+            },
+            "strong": {
+              "wins": 7,
+              "losses": 13,
+              "draws": 0,
+              "winRate": 0.35,
+              "firstSeatWinRate": 0.5,
+              "secondSeatWinRate": 0.2,
+              "avgTurns": 49.6,
+              "passRate": 0.006
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+      "status": "adopted",
+      "path": "models/rl_model/portfolio/seed71-top3.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap",
+      "training": {
+        "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+        "games": 5000,
+        "hidden": 256,
+        "lr": 0.00002,
+        "seed": 71,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointSelection": "top3 checkpoint by js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "vineyard-farm-winery-strong",
+        "topCardsVsStrong": [
+          "ranch",
+          "vineyard",
+          "winery",
+          "bakery",
+          "loan_office"
+        ],
+        "topLandmarksVsStrong": [
+          "harbor",
+          "station",
+          "shopping_mall",
+          "amusement_park",
+          "radio_tower"
+        ],
+        "summary": "Adopted 2-player main model. 300-game JS evaluation keeps very high weak/normal rates and strong remains clearly above other active 2-player candidates."
+      },
+      "evals": [
+        {
+          "date": "2026-04-20",
+          "type": "js",
+          "checkpointRank": 3,
+          "gamesPerOpponent": 300,
+          "opponents": {
+            "weak": {
+              "wins": 298,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.993333,
+              "firstSeatWinRate": 0.993333,
+              "secondSeatWinRate": 0.993333,
+              "avgTurns": 53.303,
+              "passRate": 0.014201
+            },
+            "normal": {
+              "wins": 280,
+              "losses": 20,
+              "draws": 0,
+              "winRate": 0.933333,
+              "firstSeatWinRate": 0.946667,
+              "secondSeatWinRate": 0.92,
+              "avgTurns": 53.437,
+              "passRate": 0.036359
+            },
+            "strong": {
+              "wins": 190,
+              "losses": 110,
+              "draws": 0,
+              "winRate": 0.633333,
+              "firstSeatWinRate": 0.68,
+              "secondSeatWinRate": 0.586667,
+              "avgTurns": 53.187,
+              "passRate": 0.021352
+            }
+          }
+        },
+        {
+          "date": "2026-04-20",
+          "type": "js",
+          "checkpointRank": 3,
+          "gamesPerOpponent": 100,
+          "opponents": {
+            "weak": {
+              "wins": 100,
+              "losses": 0,
+              "draws": 0,
+              "winRate": 1,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 1,
+              "avgTurns": 52.94,
+              "passRate": 0.011
+            },
+            "normal": {
+              "wins": 96,
+              "losses": 4,
+              "draws": 0,
+              "winRate": 0.96,
+              "firstSeatWinRate": 0.94,
+              "secondSeatWinRate": 0.98,
+              "avgTurns": 53.12,
+              "passRate": 0.032
+            },
+            "strong": {
+              "wins": 76,
+              "losses": 24,
+              "draws": 0,
+              "winRate": 0.76,
+              "firstSeatWinRate": 0.72,
+              "secondSeatWinRate": 0.8,
+              "avgTurns": 51.51,
+              "passRate": 0.015
+            }
+          }
+        },
+        {
+          "date": "2026-04-17",
+          "type": "js",
+          "checkpointRank": 3,
+          "gamesPerOpponent": 50,
+          "opponents": {
+            "weak": {
+              "wins": 50,
+              "losses": 0,
+              "draws": 0,
+              "winRate": 1,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 1,
+              "avgTurns": 52.9,
+              "passRate": 0.004
+            },
+            "normal": {
+              "wins": 46,
+              "losses": 4,
+              "draws": 0,
+              "winRate": 0.92,
+              "firstSeatWinRate": 0.92,
+              "secondSeatWinRate": 0.92,
+              "avgTurns": 57.3,
+              "passRate": 0.041
+            },
+            "strong": {
+              "wins": 39,
+              "losses": 11,
+              "draws": 0,
+              "winRate": 0.78,
+              "firstSeatWinRate": 0.72,
+              "secondSeatWinRate": 0.84,
+              "avgTurns": 51.3,
+              "passRate": 0.018
+            }
+          }
+        },
+        {
+          "date": "2026-09-13",
+          "type": "js-head-to-head-screen",
+          "gamesPerOpponent": 100,
+          "artifact": "models/rl_model/seed71-top3-vs-base-100.md",
+          "result": {
+            "rankedScore": {
+              "base": 0.735,
+              "top3": 0.712
+            },
+            "weak": {
+              "baseWinRate": 0.99,
+              "top3WinRate": 0.96
+            },
+            "normal": {
+              "baseWinRate": 0.54,
+              "top3WinRate": 0.56
+            },
+            "strong": {
+              "baseWinRate": 0.78,
+              "top3WinRate": 0.73
+            },
+            "stepExhausted": 0
+          },
+          "decision": "inconclusive-unpaired",
+          "note": "100戦の候補screenではbaseがweighted scoreで上回ったが、paired seat評価ではないため採用モデル変更なし。",
+          "modelId": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3"
+        }
+      ]
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap",
+      "status": "candidate",
+      "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap",
+      "training": {
+        "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+        "games": 5000,
+        "hidden": 256,
+        "lr": 0.00002,
+        "seed": 71,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointSelection": "rank1 checkpoint by js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "vineyard-farm-burger",
+        "summary": "Rank1 checkpoint for seed71. Strong result is excellent, but top3 was better in the 50-game audit."
+      },
+      "evals": [
+        {
+          "date": "2026-04-17",
+          "type": "js",
+          "checkpointRank": 1,
+          "gamesPerOpponent": 50,
+          "opponents": {
+            "weak": {
+              "wins": 48,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.96,
+              "firstSeatWinRate": 0.96,
+              "secondSeatWinRate": 0.96,
+              "avgTurns": 58.4,
+              "passRate": 0.001
+            },
+            "normal": {
+              "wins": 47,
+              "losses": 3,
+              "draws": 0,
+              "winRate": 0.94,
+              "firstSeatWinRate": 0.92,
+              "secondSeatWinRate": 0.96,
+              "avgTurns": 59,
+              "passRate": 0.013
+            },
+            "strong": {
+              "wins": 34,
+              "losses": 16,
+              "draws": 0,
+              "winRate": 0.68,
+              "firstSeatWinRate": 0.76,
+              "secondSeatWinRate": 0.6,
+              "avgTurns": 55.4,
+              "passRate": 0
+            }
+          }
+        },
+        {
+          "date": "2026-09-13",
+          "type": "js-head-to-head-screen",
+          "gamesPerOpponent": 100,
+          "artifact": "models/rl_model/seed71-top3-vs-base-100.md",
+          "result": {
+            "rankedScore": {
+              "base": 0.735,
+              "top3": 0.712
+            },
+            "weak": {
+              "baseWinRate": 0.99,
+              "top3WinRate": 0.96
+            },
+            "normal": {
+              "baseWinRate": 0.54,
+              "top3WinRate": 0.56
+            },
+            "strong": {
+              "baseWinRate": 0.78,
+              "top3WinRate": 0.73
+            },
+            "stepExhausted": 0
+          },
+          "decision": "inconclusive-unpaired",
+          "note": "100戦の候補screenではbaseがweighted scoreで上回ったが、paired seat評価ではないため採用モデル変更なし。",
+          "modelId": "self-only-both-h256-lr2e5-5000-seed71-rewardcap"
+        }
+      ]
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+      "status": "candidate",
+      "path": "models/rl_model/portfolio/seed69.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+      "training": {
+        "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+        "games": 5000,
+        "hidden": 256,
+        "lr": 0.00002,
+        "seed": 69,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "burger-warehouse-wheat",
+        "summary": "2-player diversity candidate. 100-game audit is clearly weaker than seed71 top3 but keeps a distinct burger/warehouse/wheat build with low pass rate."
+      },
+      "evals": [
+        {
+          "date": "2026-04-20",
+          "type": "js",
+          "gamesPerOpponent": 100,
+          "opponents": {
+            "weak": {
+              "wins": 93,
+              "losses": 7,
+              "draws": 0,
+              "winRate": 0.93,
+              "firstSeatWinRate": 0.96,
+              "secondSeatWinRate": 0.9,
+              "avgTurns": 62.34,
+              "passRate": 0
+            },
+            "normal": {
+              "wins": 75,
+              "losses": 25,
+              "draws": 0,
+              "winRate": 0.75,
+              "firstSeatWinRate": 0.8,
+              "secondSeatWinRate": 0.7,
+              "avgTurns": 60.55,
+              "passRate": 0.018
+            },
+            "strong": {
+              "wins": 40,
+              "losses": 60,
+              "draws": 0,
+              "winRate": 0.4,
+              "firstSeatWinRate": 0.42,
+              "secondSeatWinRate": 0.38,
+              "avgTurns": 58.22,
+              "passRate": 0
+            }
+          }
+        },
+        {
+          "date": "2026-04-16",
+          "type": "js",
+          "gamesPerOpponent": 50,
+          "opponents": {
+            "weak": {
+              "wins": 47,
+              "losses": 3,
+              "draws": 0,
+              "winRate": 0.94,
+              "firstSeatWinRate": 0.96,
+              "secondSeatWinRate": 0.92,
+              "avgTurns": 65.4,
+              "passRate": 0
+            },
+            "normal": {
+              "wins": 30,
+              "losses": 20,
+              "draws": 0,
+              "winRate": 0.6,
+              "firstSeatWinRate": 0.44,
+              "secondSeatWinRate": 0.76,
+              "avgTurns": 62,
+              "passRate": 0.011
+            },
+            "strong": {
+              "wins": 17,
+              "losses": 33,
+              "draws": 0,
+              "winRate": 0.34,
+              "firstSeatWinRate": 0.32,
+              "secondSeatWinRate": 0.36,
+              "avgTurns": 59.2,
+              "passRate": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+      "status": "candidate",
+      "path": "models/rl_model/portfolio/seed70.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+      "training": {
+        "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+        "games": 5000,
+        "hidden": 256,
+        "lr": 0.00002,
+        "seed": 70,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped-rewardcap",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "terminalLandmarkValueDiff": 0.004,
+        "terminalAssetDiff": 0.002,
+        "terminalCoinDiff": 0.001,
+        "terminalDiffClip": 20,
+        "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "sushi-warehouse-farm",
+        "summary": "2-player diversity candidate. 100-game audit keeps high weak/normal rates with a sushi/warehouse/farm build, but strong is well below seed71 top3."
+      },
+      "evals": [
+        {
+          "date": "2026-04-20",
+          "type": "js",
+          "gamesPerOpponent": 100,
+          "opponents": {
+            "weak": {
+              "wins": 100,
+              "losses": 0,
+              "draws": 0,
+              "winRate": 1,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 1,
+              "avgTurns": 54.71,
+              "passRate": 0.008
+            },
+            "normal": {
+              "wins": 77,
+              "losses": 23,
+              "draws": 0,
+              "winRate": 0.77,
+              "firstSeatWinRate": 0.82,
+              "secondSeatWinRate": 0.72,
+              "avgTurns": 53.78,
+              "passRate": 0.023
+            },
+            "strong": {
+              "wins": 33,
+              "losses": 67,
+              "draws": 0,
+              "winRate": 0.33,
+              "firstSeatWinRate": 0.38,
+              "secondSeatWinRate": 0.28,
+              "avgTurns": 56.25,
+              "passRate": 0.017
+            }
+          }
+        },
+        {
+          "date": "2026-04-17",
+          "type": "js",
+          "gamesPerOpponent": 50,
+          "opponents": {
+            "weak": {
+              "wins": 49,
+              "losses": 1,
+              "draws": 0,
+              "winRate": 0.98,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.96,
+              "avgTurns": 54.7,
+              "passRate": 0.003
+            },
+            "normal": {
+              "wins": 48,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.96,
+              "firstSeatWinRate": 0.96,
+              "secondSeatWinRate": 0.96,
+              "avgTurns": 55.7,
+              "passRate": 0.035
+            },
+            "strong": {
+              "wins": 16,
+              "losses": 34,
+              "draws": 0,
+              "winRate": 0.32,
+              "firstSeatWinRate": 0.52,
+              "secondSeatWinRate": 0.12,
+              "avgTurns": 54.5,
+              "passRate": 0.009
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed65",
+      "status": "archive",
+      "path": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed65/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed65",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+        "games": 5000,
+        "hidden": 256,
+        "lr": 0.00002,
+        "seed": 65,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "sushi-warehouse-bread",
+        "summary": "Archive comparison for lr=2e-5 without rewardcap. Candidate metrics are acceptable but rewardcap has better normal and pass stability."
+      },
+      "evals": [
+        {
+          "date": "2026-04-15",
+          "type": "js",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "wins": 19,
+              "losses": 1,
+              "draws": 0,
+              "winRate": 0.95,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.9,
+              "avgTurns": 46.8,
+              "passRate": 0.01
+            },
+            "normal": {
+              "wins": 12,
+              "losses": 8,
+              "draws": 0,
+              "winRate": 0.6,
+              "firstSeatWinRate": 0.7,
+              "secondSeatWinRate": 0.5,
+              "avgTurns": 54,
+              "passRate": 0.066
+            },
+            "strong": {
+              "wins": 7,
+              "losses": 13,
+              "draws": 0,
+              "winRate": 0.35,
+              "firstSeatWinRate": 0.4,
+              "secondSeatWinRate": 0.3,
+              "avgTurns": 51.8,
+              "passRate": 0.169
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "self-only-both-5000-seed51",
+      "status": "rejected",
+      "path": "models/rl_model/runs/self-only-both-5000-seed51/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-both-5000-seed51",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-strong-select.sh",
+        "games": 5000,
+        "hidden": 128,
+        "lr": 0.0001,
+        "seed": 51,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "self-play-internal-overfit",
+        "summary": "Rejected because pool/self metrics were high but external JS evaluation collapsed."
+      },
+      "evals": [
+        {
+          "date": "2026-04-14",
+          "type": "js-checkpoint",
+          "gamesPerOpponent": 8,
+          "opponents": {
+            "weak": {
+              "winRate": 0.12
+            },
+            "normal": {
+              "winRate": 0
+            },
+            "strong": {
+              "winRate": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-shaped-h128-lr1e4-long",
+      "status": "archive",
+      "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-long/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-long",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 3000,
+        "hidden": 128,
+        "lr": 0.0001,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "farm-cheese-weak-specialist",
+        "summary": "Distinct farm/cheese build. Archived because 20-game normal result fell below candidate threshold."
+      },
+      "evals": [
+        {
+          "date": "2026-04-12",
+          "type": "js",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "wins": 19,
+              "losses": 1,
+              "draws": 0,
+              "winRate": 0.95,
+              "firstSeatWinRate": 1,
+              "secondSeatWinRate": 0.9,
+              "avgTurns": 62.6
+            },
+            "normal": {
+              "wins": 7,
+              "losses": 13,
+              "draws": 0,
+              "winRate": 0.35,
+              "firstSeatWinRate": 0.3,
+              "secondSeatWinRate": 0.4,
+              "avgTurns": 58.3
+            },
+            "strong": {
+              "wins": 4,
+              "losses": 16,
+              "draws": 0,
+              "winRate": 0.2,
+              "firstSeatWinRate": 0.4,
+              "secondSeatWinRate": 0,
+              "avgTurns": 54.9
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-shaped-h128-lr1e4-seed2",
+      "status": "archive",
+      "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed2/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed2",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 1000,
+        "hidden": 128,
+        "lr": 0.0001,
+        "seed": 2,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "wheat-bread-sushi",
+        "summary": "Seed reproducibility check. Archived because strong did not reproduce."
+      },
+      "evals": [
+        {
+          "date": "2026-04-12",
+          "type": "js-checkpoint",
+          "gamesPerOpponent": 4,
+          "opponents": {
+            "weak": {
+              "winRate": 0.75
+            },
+            "normal": {
+              "winRate": 0.5
+            },
+            "strong": {
+              "winRate": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-shaped-h128-lr1e4-seed3",
+      "status": "archive",
+      "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed3/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-seed3",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 1000,
+        "hidden": 128,
+        "lr": 0.0001,
+        "seed": 3,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "wheat-bread-farm",
+        "summary": "Seed reproducibility check. Archived because strong did not reproduce."
+      },
+      "evals": [
+        {
+          "date": "2026-04-12",
+          "type": "js-checkpoint",
+          "gamesPerOpponent": 4,
+          "opponents": {
+            "weak": {
+              "winRate": 0.75
+            },
+            "normal": {
+              "winRate": 0.5
+            },
+            "strong": {
+              "winRate": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-shaped-h128-lr1e4-strong005",
+      "status": "rejected",
+      "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong005/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong005",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 1000,
+        "hidden": 128,
+        "lr": 0.0001,
+        "seed": 11,
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "random=0.3,weak=0.4,normal=0.05,strong=0.05,self=0.1,pool=0.1",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "strong-mix-005",
+        "summary": "Rejected because adding strong=0.05 to training did not improve strong win rate."
+      },
+      "evals": [
+        {
+          "date": "2026-04-12",
+          "type": "js-checkpoint",
+          "gamesPerOpponent": 4,
+          "opponents": {
+            "weak": {
+              "winRate": 1
+            },
+            "normal": {
+              "winRate": 0.25
+            },
+            "strong": {
+              "winRate": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-shaped-h128-lr1e4-strong010",
+      "status": "rejected",
+      "path": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong010/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-h128-lr1e4-strong010",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 1000,
+        "hidden": 128,
+        "lr": 0.0001,
+        "seed": 11,
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "random=0.3,weak=0.3,normal=0.1,strong=0.1,self=0.1,pool=0.1",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "strong-mix-010",
+        "summary": "Rejected because adding strong=0.10 to training did not improve strong win rate."
+      },
+      "evals": [
+        {
+          "date": "2026-04-12",
+          "type": "js-checkpoint",
+          "gamesPerOpponent": 4,
+          "opponents": {
+            "weak": {
+              "winRate": 1
+            },
+            "normal": {
+              "winRate": 0.5
+            },
+            "strong": {
+              "winRate": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-shaped-curriculum-h256",
+      "status": "rejected",
+      "path": "models/rl_model/runs/terminal-shaped-curriculum-h256/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h256",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 1000,
+        "hidden": 256,
+        "lr": 0.0003,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "pass-collapse",
+        "summary": "Rejected because build pass rate collapsed and JS evaluation stayed at 0%."
+      },
+      "evals": []
+    },
+    {
+      "id": "terminal-shaped-curriculum-h256-lr1e4",
+      "status": "rejected",
+      "path": "models/rl_model/runs/terminal-shaped-curriculum-h256-lr1e4/best_model.browser.json",
+      "sourceRun": "models/rl_model/runs/terminal-shaped-curriculum-h256-lr1e4",
+      "training": {
+        "wrapper": "scripts/rl/run-js-oracle-terminal-shaped.sh",
+        "games": 1000,
+        "hidden": 256,
+        "lr": 0.0001,
+        "cpuOpponentImpl": "js-oracle",
+        "imitation": false,
+        "rewardProfile": "terminal-shaped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "high-pass-weak",
+        "summary": "Lower lr reduced the complete collapse but still produced high pass rates and 0% JS final evaluation."
+      },
+      "evals": []
+    },
+    {
+      "id": "self-only-4p-h256-lr1e5-5000-seed102",
+      "status": "candidate-4p",
+      "path": "models/rl_model/portfolio/seed102-4p.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed102",
+      "training": {
+        "wrapper": "scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh",
+        "games": 5000,
+        "players": 4,
+        "hidden": 256,
+        "lr": 0.00001,
+        "seed": 102,
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "imitation": false,
+        "rewardProfile": "terminal-shaped-capped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "4p-vineyard-farm-pizza",
+        "summary": "4人自己対戦のみ。4人100戦lineupで rl+weak+normal+strong 73%、rl+normal+normal+strong 72%。3人100戦lineupでも normal+strong / weak+strong に73%。主用途は3〜4人用。"
+      },
+      "evals": [
+        {
+          "date": "2026-04-20",
+          "type": "js-lineup-stability",
+          "gamesPerLineup": 200,
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "wins": 140,
+              "losses": 60,
+              "draws": 0,
+              "winRate": 0.7,
+              "seatWinRates": [
+                0.72,
+                0.64,
+                0.66,
+                0.78
+              ],
+              "avgTurns": 83.63,
+              "passRate": 0.009,
+              "businessTotal": 0,
+              "businessSkipRate": 0
+            },
+            "rl+normal+normal+strong": {
+              "wins": 135,
+              "losses": 65,
+              "draws": 0,
+              "winRate": 0.675,
+              "seatWinRates": [
+                0.8,
+                0.74,
+                0.64,
+                0.52
+              ],
+              "avgTurns": 87.405,
+              "passRate": 0.016,
+              "businessTotal": 0,
+              "businessSkipRate": 0
+            },
+            "rl+weak+weak+normal": {
+              "wins": 183,
+              "losses": 17,
+              "draws": 0,
+              "winRate": 0.915,
+              "seatWinRates": [
+                1,
+                0.94,
+                0.9,
+                0.82
+              ],
+              "avgTurns": 88.325,
+              "passRate": 0.007,
+              "businessTotal": 0,
+              "businessSkipRate": 0
+            }
+          }
+        },
+        {
+          "date": "2026-04-20",
+          "type": "js-lineup-3p-stability",
+          "gamesPerLineup": 200,
+          "lineups": {
+            "rl+normal+strong": {
+              "wins": 145,
+              "losses": 55,
+              "draws": 0,
+              "winRate": 0.725,
+              "seatWinRates": [
+                0.716,
+                0.727,
+                0.731
+              ],
+              "avgTurns": 74.195,
+              "passRate": 0.011,
+              "businessTotal": 9,
+              "businessSkipRate": 0
+            },
+            "rl+weak+normal": {
+              "wins": 176,
+              "losses": 24,
+              "draws": 0,
+              "winRate": 0.88,
+              "seatWinRates": [
+                0.866,
+                0.879,
+                0.896
+              ],
+              "avgTurns": 78.475,
+              "passRate": 0.012,
+              "businessTotal": 10,
+              "businessSkipRate": 0
+            },
+            "rl+weak+strong": {
+              "wins": 153,
+              "losses": 47,
+              "draws": 0,
+              "winRate": 0.765,
+              "seatWinRates": [
+                0.821,
+                0.727,
+                0.746
+              ],
+              "avgTurns": 69.805,
+              "passRate": 0.002,
+              "businessTotal": 4,
+              "businessSkipRate": 0
+            }
+          }
+        },
+        {
+          "date": "2026-04-20",
+          "type": "js-lineup",
+          "gamesPerLineup": 100,
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "wins": 73,
+              "losses": 27,
+              "draws": 0,
+              "winRate": 0.73,
+              "seatWinRates": [
+                0.8,
+                0.6,
+                0.68,
+                0.84
+              ],
+              "avgTurns": 84.69,
+              "passRate": 0.008,
+              "topCards": [
+                "ブドウ園",
+                "牧場",
+                "改装屋",
+                "青果市場",
+                "ピザ屋"
+              ],
+              "topLandmarks": [
+                "駅",
+                "港",
+                "ショッピングモール",
+                "遊園地",
+                "電波塔"
+              ]
+            },
+            "rl+normal+normal+strong": {
+              "wins": 72,
+              "losses": 28,
+              "draws": 0,
+              "winRate": 0.72,
+              "seatWinRates": [
+                0.68,
+                0.76,
+                0.6,
+                0.84
+              ],
+              "avgTurns": 85.75,
+              "passRate": 0.018,
+              "topCards": [
+                "ブドウ園",
+                "サンマ漁船",
+                "牧場",
+                "改装屋",
+                "ピザ屋"
+              ],
+              "topLandmarks": [
+                "駅",
+                "港",
+                "ショッピングモール",
+                "遊園地",
+                "電波塔"
+              ]
+            },
+            "rl+weak+weak+normal": {
+              "wins": 83,
+              "losses": 17,
+              "draws": 0,
+              "winRate": 0.83,
+              "seatWinRates": [
+                0.92,
+                0.72,
+                0.92,
+                0.76
+              ],
+              "avgTurns": 87.25,
+              "passRate": 0.009,
+              "topCards": [
+                "ブドウ園",
+                "牧場",
+                "改装屋",
+                "ピザ屋",
+                "麦畑"
+              ],
+              "topLandmarks": [
+                "駅",
+                "港",
+                "ショッピングモール",
+                "遊園地",
+                "電波塔"
+              ]
+            }
+          }
+        },
+        {
+          "date": "2026-04-20",
+          "type": "js-lineup-3p",
+          "gamesPerLineup": 100,
+          "lineups": {
+            "rl+normal+strong": {
+              "wins": 73,
+              "losses": 27,
+              "draws": 0,
+              "winRate": 0.73,
+              "seatWinRates": [
+                0.735,
+                0.697,
+                0.758
+              ],
+              "avgTurns": 74.55,
+              "passRate": 0.014,
+              "topCards": [
+                "牧場",
+                "ブドウ園",
+                "改装屋",
+                "ピザ屋",
+                "麦畑"
+              ],
+              "topLandmarks": [
+                "駅",
+                "港",
+                "ショッピングモール",
+                "遊園地",
+                "電波塔"
+              ]
+            },
+            "rl+weak+normal": {
+              "wins": 93,
+              "losses": 7,
+              "draws": 0,
+              "winRate": 0.93,
+              "seatWinRates": [
+                0.912,
+                0.939,
+                0.939
+              ],
+              "avgTurns": 76.85,
+              "passRate": 0.015,
+              "topCards": [
+                "牧場",
+                "ブドウ園",
+                "改装屋",
+                "麦畑",
+                "ピザ屋"
+              ],
+              "topLandmarks": [
+                "駅",
+                "港",
+                "ショッピングモール",
+                "遊園地",
+                "電波塔"
+              ]
+            },
+            "rl+weak+strong": {
+              "wins": 73,
+              "losses": 27,
+              "draws": 0,
+              "winRate": 0.73,
+              "seatWinRates": [
+                0.794,
+                0.697,
+                0.697
+              ],
+              "avgTurns": 69.39,
+              "passRate": 0,
+              "topCards": [
+                "ブドウ園",
+                "牧場",
+                "貸金業",
+                "麦畑",
+                "サンマ漁船"
+              ],
+              "topLandmarks": [
+                "駅",
+                "港",
+                "ショッピングモール",
+                "遊園地",
+                "電波塔"
+              ]
+            }
+          }
+        },
+        {
+          "date": "2026-04-20",
+          "type": "js-lineup",
+          "gamesPerLineup": 50,
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "wins": 37,
+              "losses": 13,
+              "draws": 0,
+              "winRate": 0.74,
+              "seatWinRates": [
+                0.692,
+                0.583,
+                0.833,
+                0.846
+              ],
+              "avgTurns": 84.2
+            },
+            "rl+normal+normal+strong": {
+              "wins": 37,
+              "losses": 13,
+              "draws": 0,
+              "winRate": 0.74,
+              "seatWinRates": [
+                0.692,
+                0.75,
+                0.667,
+                0.846
+              ],
+              "avgTurns": 88
+            },
+            "rl+weak+weak+normal": {
+              "wins": 46,
+              "losses": 4,
+              "draws": 0,
+              "winRate": 0.92,
+              "seatWinRates": [
+                0.846,
+                0.917,
+                1,
+                0.923
+              ],
+              "avgTurns": 90
+            }
+          }
+        },
+        {
+          "date": "2026-04-20",
+          "type": "js-lineup-3p",
+          "gamesPerLineup": 50,
+          "lineups": {
+            "rl+normal+strong": {
+              "wins": 37,
+              "losses": 13,
+              "draws": 0,
+              "winRate": 0.74,
+              "seatWinRates": [
+                0.706,
+                0.75,
+                0.765
+              ],
+              "avgTurns": 74.7
+            },
+            "rl+weak+normal": {
+              "wins": 46,
+              "losses": 4,
+              "draws": 0,
+              "winRate": 0.92,
+              "seatWinRates": [
+                0.882,
+                0.938,
+                0.941
+              ],
+              "avgTurns": 79.3
+            },
+            "rl+weak+strong": {
+              "wins": 38,
+              "losses": 12,
+              "draws": 0,
+              "winRate": 0.76,
+              "seatWinRates": [
+                0.706,
+                0.813,
+                0.765
+              ],
+              "avgTurns": 71.1
+            }
+          }
+        },
+        {
+          "date": "2026-04-19",
+          "type": "js-lineup",
+          "gamesPerLineup": 20,
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "wins": 15,
+              "losses": 5,
+              "draws": 0,
+              "winRate": 0.75,
+              "seatWinRates": [
+                0.8,
+                0.6,
+                1,
+                0.6
+              ],
+              "avgTurns": 87.4
+            },
+            "rl+normal+normal+strong": {
+              "wins": 14,
+              "losses": 6,
+              "draws": 0,
+              "winRate": 0.7,
+              "seatWinRates": [
+                0.8,
+                0.8,
+                0.6,
+                0.6
+              ],
+              "avgTurns": 84.9
+            },
+            "rl+weak+weak+normal": {
+              "wins": 18,
+              "losses": 2,
+              "draws": 0,
+              "winRate": 0.9,
+              "seatWinRates": [
+                1,
+                0.8,
+                0.8,
+                1
+              ],
+              "avgTurns": 92
+            }
+          }
+        },
+        {
+          "date": "2026-04-19",
+          "type": "js-2p-reference",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "winRate": 1
+            },
+            "normal": {
+              "winRate": 0.8
+            },
+            "strong": {
+              "winRate": 0.95
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mp-mixed-34510-target-only-seed145-4p",
+      "status": "adopted",
+      "path": "models/rl_model/portfolio/seed145-4p-target-specialist.browser.json",
+      "sourceRun": "models/rl_model/runs/mp-mixed-34510-target-only-seed145",
+      "training": {
+        "games": 500,
+        "players": [
+          3,
+          4,
+          5,
+          10
+        ],
+        "hidden": 256,
+        "lr": 0.000001,
+        "targetHeadLr": 0.001,
+        "seed": 145,
+        "warmStart": "models/rl_model/portfolio/seed103-4p.browser.json",
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "random=1,weak=1,normal=0.75,strong=0.5,expert=0.25,pool=0.75,self=0.096",
+        "rarePendingCurriculum": true,
+        "imitation": false
+      },
+      "style": {
+        "label": "4p-target-wheat-vineyard-forest",
+        "diversityKey": "target-wheat-vineyard-forest",
+        "topCards": [
+          "wheat_field",
+          "vineyard",
+          "forest",
+          "ranch",
+          "it_venture"
+        ],
+        "topLandmarks": [
+          "station",
+          "shopping_mall",
+          "harbor",
+          "amusement_park",
+          "radio_tower"
+        ],
+        "summary": "4人戦限定の目標選択head強化候補。戦略大分類は現行と同じ資産エンジン型だが、paired-seat直接比較で有意に上回り、席差も縮小した。混成相手への総合scoreは現行より僅かに低いため、汎用モデルを置換せず低weightの4人専用候補として併用する。"
+      },
+      "evals": [
+        {
+          "date": "2026-08-25",
+          "type": "js-lineup-stability",
+          "gamesPerLineup": 300,
+          "pairedSeats": true,
+          "maxSteps": 1200,
+          "baselineModel": "self-only-4p-h256-lr1e5-5000-seed103",
+          "lineups": {
+            "rl+normal+normal+strong": {
+              "winRate": 0.453333,
+              "baselineWinRate": 0.476667,
+              "seatGap": 0.08,
+              "baselineSeatGap": 0.146667,
+              "avgTurns": 83.853333
+            },
+            "rl+strong+strong+strong": {
+              "winRate": 0.34,
+              "baselineWinRate": 0.336667,
+              "seatGap": 0.093333,
+              "baselineSeatGap": 0.106667,
+              "avgTurns": 74.313333
+            }
+          },
+          "directComparison": {
+            "games": 300,
+            "candidateWins": 105,
+            "baselineWins": 76,
+            "otherWins": 119,
+            "candidateShareOfRlWins": 0.58011,
+            "confidence95": [
+              0.507277,
+              0.649614
+            ],
+            "significant": true
+          },
+          "specialPending": {
+            "passed": 17,
+            "total": 17
+          },
+          "exhausted": 0
+        }
+      ]
+    },
+    {
+      "id": "business-curriculum-probe-seed149-2p",
+      "status": "rejected",
+      "path": "models/rl_model/runs/2p-business-curriculum-probe-seed149/model.browser.json",
+      "sourceRun": "models/rl_model/runs/2p-business-curriculum-probe-seed149",
+      "training": {
+        "players": 2,
+        "hidden": 256,
+        "seed": 149,
+        "warmStart": "models/rl_model/portfolio/seed71-top3.browser.json",
+        "rarePendingCurriculum": "business-exchange-and-skip",
+        "cpuOpponentImpl": "js-oracle"
+      },
+      "style": {
+        "label": "2p-vineyard-ranch-winery-business-curriculum",
+        "summary": "Business特殊局面は現行5/9から9/9へ改善したが、100戦paired評価では現行との直接比較53勝47敗で有意差がなく、normal戦が56%から50%へ退行した。構築プロファイルも現行と同じ資産エンジン型であり、本番採用根拠が不足するため棄却した。"
+      },
+      "evals": [
+        {
+          "date": "2026-08-25",
+          "type": "js",
+          "gamesPerOpponent": 100,
+          "pairedSeats": true,
+          "maxSteps": 1200,
+          "opponents": {
+            "weak": {
+              "winRate": 0.98,
+              "baselineWinRate": 0.96
+            },
+            "normal": {
+              "winRate": 0.5,
+              "baselineWinRate": 0.56
+            },
+            "strong": {
+              "winRate": 0.79,
+              "baselineWinRate": 0.74
+            },
+            "expert": {
+              "winRate": 0.8,
+              "baselineWinRate": 0.73
+            }
+          },
+          "directComparison": {
+            "games": 100,
+            "candidateWins": 53,
+            "baselineWins": 47,
+            "candidateShareOfRlWins": 0.53,
+            "confidence95": [
+              0.432889,
+              0.624892
+            ],
+            "significant": false
+          },
+          "specialPending": {
+            "candidatePassed": 9,
+            "baselinePassed": 5,
+            "total": 9
+          },
+          "exhausted": 0
+        }
+      ]
+    },
+    {
+      "id": "self-only-4p-h256-lr1e5-5000-seed103",
+      "status": "adopted",
+      "path": "models/rl_model/portfolio/seed103-4p.browser.json",
+      "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed103",
+      "training": {
+        "wrapper": "scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh",
+        "games": 5000,
+        "players": 4,
+        "hidden": 256,
+        "lr": 0.00001,
+        "seed": 103,
+        "cpuOpponentImpl": "js-oracle",
+        "trainOpponents": "self=1",
+        "selfLearnBothSides": true,
+        "imitation": false,
+        "rewardProfile": "terminal-shaped-capped",
+        "restoreBestAtEnd": true
+      },
+      "style": {
+        "label": "4p-wheat-vineyard-pizza",
+        "summary": "4人自己対戦候補から採用。2026-08-18に3/4/5人を各3lineup・各200戦、10人を5seed・各lineup合計1000戦で再監査し、全人数帯で競争力と低pass率を維持した。2026-08-19に10人・各席100戦の同一乱数診断を追加し、RL席差13.0ptは一様分布から有意でなく、normal基準との席profile差も有意でなかった。旧20戦/席の25.0〜40.0ptは標本誤差主導と結論し、採用席評価の既定を100戦/席へ強化した。"
+      },
+      "evals": [
+        {
+          "date": "2026-08-19",
+          "type": "js-cpu-seat-effect-10p",
+          "gamesPerTarget": 1000,
+          "gamesPerSeat": 100,
+          "seedRange": [
+            1,
+            100
+          ],
+          "pairedSeats": true,
+          "maxSteps": 5000,
+          "opponents": "normal,normal,normal,normal,normal,normal,normal,normal,normal",
+          "chiSquareDegreesOfFreedom": 9,
+          "chiSquareCritical05": 16.919,
+          "targets": {
+            "rl": {
+              "wins": 596,
+              "winRate": 0.596,
+              "winRate95": [
+                0.565275,
+                0.62599
+              ],
+              "seatGap": 0.13,
+              "seatWinRates": [
+                0.66,
+                0.63,
+                0.55,
+                0.61,
+                0.63,
+                0.53,
+                0.6,
+                0.57,
+                0.54,
+                0.64
+              ],
+              "uniformChiSquare": 3.161074,
+              "vsNormalChiSquare": 4.478332,
+              "distributionAdequate": true,
+              "significant05": false
+            },
+            "normal": {
+              "wins": 100,
+              "winRate": 0.1,
+              "winRate95": [
+                0.082909,
+                0.120152
+              ],
+              "seatGap": 0.07,
+              "seatWinRates": [
+                0.09,
+                0.09,
+                0.1,
+                0.12,
+                0.09,
+                0.11,
+                0.09,
+                0.14,
+                0.1,
+                0.07
+              ],
+              "uniformChiSquare": 3.4,
+              "distributionAdequate": true,
+              "significant05": false
+            },
+            "weak": {
+              "wins": 1,
+              "winRate": 0.001,
+              "seatGap": 0.01,
+              "distributionAdequate": false
+            },
+            "strong": {
+              "wins": 44,
+              "winRate": 0.044,
+              "seatGap": 0.09,
+              "distributionAdequate": false
+            },
+            "expert": {
+              "wins": 31,
+              "winRate": 0.031,
+              "seatGap": 0.05,
+              "distributionAdequate": false
+            }
+          },
+          "classification": "sampling-dominant",
+          "exhausted": 0,
+          "note": "The prior 20-games-per-seat gaps were not reproduced at 100 games per seat. This excludes a detectable large absolute-seat or RL-specific effect under this lineup; it does not prove a zero-sized rule effect. Sparse weak/strong/expert win distributions are reported but excluded from inferential classification."
+        },
+        {
+          "date": "2026-08-18",
+          "type": "js-lineup-3p-stability",
+          "gamesPerLineup": 200,
+          "seed": 1,
+          "maxSteps": 5000,
+          "lineups": {
+            "rl+normal+strong": {
+              "winRate": 0.53,
+              "seatGap": 0.149254
+            },
+            "rl+weak+normal": {
+              "winRate": 0.705,
+              "seatGap": 0.109905
+            },
+            "rl+weak+strong": {
+              "winRate": 0.615,
+              "seatGap": 0.164179
+            }
+          },
+          "exhausted": 0,
+          "maxPassRate": 0.023134
+        },
+        {
+          "date": "2026-08-18",
+          "type": "js-lineup-stability",
+          "gamesPerLineup": 200,
+          "seed": 1,
+          "maxSteps": 5000,
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "winRate": 0.51,
+              "seatGap": 0.22
+            },
+            "rl+normal+normal+strong": {
+              "winRate": 0.465,
+              "seatGap": 0.14
+            },
+            "rl+weak+weak+normal": {
+              "winRate": 0.68,
+              "seatGap": 0.12
+            }
+          },
+          "exhausted": 0,
+          "maxPassRate": 0.008844
+        },
+        {
+          "date": "2026-08-18",
+          "type": "js-lineup-5p-stability",
+          "gamesPerLineup": 200,
+          "seed": 1,
+          "maxSteps": 5000,
+          "projection": "top3-opponents",
+          "lineups": {
+            "rl+weak+normal+strong+expert": {
+              "winRate": 0.505,
+              "seatGap": 0.25
+            },
+            "rl+normal+normal+strong+expert": {
+              "winRate": 0.525,
+              "seatGap": 0.25
+            },
+            "rl+weak+weak+normal+strong": {
+              "winRate": 0.645,
+              "seatGap": 0.225
+            }
+          },
+          "exhausted": 0,
+          "maxPassRate": 0.003776
+        },
+        {
+          "date": "2026-08-18",
+          "type": "js-lineup-10p-stability",
+          "gamesPerLineup": 1000,
+          "seeds": [
+            1,
+            101,
+            201,
+            301,
+            401
+          ],
+          "gamesPerSeat": 100,
+          "maxSteps": 5000,
+          "projection": "top3-opponents",
+          "lineups": {
+            "rl+weak+normal+strong+expert+weak+normal+strong+expert+normal": {
+              "winRate": 0.52,
+              "seatGap": 0.19,
+              "seatWinRates": [
+                0.53,
+                0.62,
+                0.54,
+                0.57,
+                0.47,
+                0.48,
+                0.52,
+                0.5,
+                0.43,
+                0.54
+              ]
+            },
+            "rl+normal+normal+strong+expert+weak+normal+strong+expert+strong": {
+              "winRate": 0.653,
+              "seatGap": 0.24,
+              "seatWinRates": [
+                0.76,
+                0.59,
+                0.69,
+                0.63,
+                0.67,
+                0.68,
+                0.66,
+                0.52,
+                0.7,
+                0.63
+              ]
+            },
+            "rl+weak+weak+normal+strong+expert+weak+normal+strong+expert": {
+              "winRate": 0.449,
+              "seatGap": 0.23,
+              "seatWinRates": [
+                0.46,
+                0.61,
+                0.47,
+                0.46,
+                0.4,
+                0.43,
+                0.5,
+                0.38,
+                0.38,
+                0.4
+              ]
+            }
+          },
+          "exhausted": 0,
+          "maxPassRate": 0.000216
+        },
+        {
+          "date": "2026-08-18",
+          "type": "js-lineup-10p-paired-seat",
+          "gamesPerLineup": 200,
+          "seedRange": [
+            1,
+            20
+          ],
+          "pairedSeats": true,
+          "gamesPerSeat": 20,
+          "maxSteps": 5000,
+          "projection": "top3-opponents",
+          "lineups": {
+            "rl+weak+normal+strong+expert+weak+normal+strong+expert+normal": {
+              "winRate": 0.51,
+              "seatGap": 0.35,
+              "seatWinRates": [
+                0.7,
+                0.6,
+                0.4,
+                0.5,
+                0.5,
+                0.6,
+                0.5,
+                0.45,
+                0.35,
+                0.5
+              ]
+            },
+            "rl+normal+normal+strong+expert+weak+normal+strong+expert+strong": {
+              "winRate": 0.695,
+              "seatGap": 0.4,
+              "seatWinRates": [
+                0.65,
+                0.7,
+                0.6,
+                0.95,
+                0.55,
+                0.6,
+                0.75,
+                0.85,
+                0.6,
+                0.7
+              ]
+            },
+            "rl+weak+weak+normal+strong+expert+weak+normal+strong+expert": {
+              "winRate": 0.51,
+              "seatGap": 0.25,
+              "seatWinRates": [
+                0.5,
+                0.6,
+                0.6,
+                0.45,
+                0.35,
+                0.5,
+                0.5,
+                0.5,
+                0.6,
+                0.5
+              ]
+            }
+          },
+          "exhausted": 0,
+          "maxPassRate": 0.001098,
+          "note": "Diagnostic common-random-number audit; 20 games per seat is a signal, not a final balance estimate."
+        },
+        {
+          "date": "2026-05-11",
+          "type": "js-lineup-5p",
+          "gamesPerLineup": 50,
+          "maxSteps": 1200,
+          "projection": "top3-opponents",
+          "lineups": {
+            "rl+weak+normal+strong+expert": {
+              "wins": 28,
+              "losses": 22,
+              "draws": 0,
+              "winRate": 0.56,
+              "seatWinRates": [
+                0.6,
+                0.7,
+                0.3,
+                0.6,
+                0.6
+              ],
+              "avgTurns": 90.6,
+              "exhausted": 0,
+              "passRate": 0.007284
+            }
+          }
+        },
+        {
+          "date": "2026-05-11",
+          "type": "js-lineup-10p",
+          "gamesPerLineup": 50,
+          "maxSteps": 1200,
+          "projection": "top3-opponents",
+          "lineups": {
+            "rl+weak+weak+normal+normal+strong+strong+expert+expert+expert": {
+              "wins": 25,
+              "losses": 25,
+              "draws": 0,
+              "winRate": 0.5,
+              "seatWinRates": [
+                0.4,
+                0.6,
+                0,
+                0.8,
+                0.6,
+                0.6,
+                0.4,
+                1,
+                0.6,
+                0
+              ],
+              "avgTurns": 125.48,
+              "exhausted": 0,
+              "passRate": 0
+            }
+          }
+        },
+        {
+          "date": "2026-05-07",
+          "type": "js-lineup",
+          "gamesPerLineup": 100,
+          "runtimeFallback": "mover-cleaning",
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "wins": 57,
+              "losses": 43,
+              "draws": 0,
+              "winRate": 0.57,
+              "avgTurns": 82.8,
+              "passRate": 0.008
+            },
+            "rl+normal+normal+strong": {
+              "wins": 51,
+              "losses": 49,
+              "draws": 0,
+              "winRate": 0.51,
+              "avgTurns": 85.6,
+              "passRate": 0.034
+            },
+            "rl+weak+weak+normal": {
+              "wins": 78,
+              "losses": 22,
+              "draws": 0,
+              "winRate": 0.78,
+              "avgTurns": 87,
+              "passRate": 0.019
+            }
+          }
+        },
+        {
+          "date": "2026-05-07",
+          "type": "js-lineup",
+          "gamesPerLineup": 100,
+          "baselineModel": "self-only-4p-h256-lr1e5-5000-seed102",
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "wins": 57,
+              "losses": 43,
+              "draws": 0,
+              "winRate": 0.57,
+              "seatWinRates": [
+                0.52,
+                0.64,
+                0.44,
+                0.68
+              ],
+              "avgTurns": 83.8,
+              "passRate": 0.016
+            },
+            "rl+normal+normal+strong": {
+              "wins": 47,
+              "losses": 53,
+              "draws": 0,
+              "winRate": 0.47,
+              "seatWinRates": [
+                0.56,
+                0.44,
+                0.52,
+                0.36
+              ],
+              "avgTurns": 84.51,
+              "passRate": 0.023
+            },
+            "rl+weak+weak+normal": {
+              "wins": 81,
+              "losses": 19,
+              "draws": 0,
+              "winRate": 0.81,
+              "seatWinRates": [
+                0.76,
+                0.76,
+                0.84,
+                0.88
+              ],
+              "avgTurns": 87.8,
+              "passRate": 0.019
+            }
+          }
+        },
+        {
+          "date": "2026-05-07",
+          "type": "js-lineup-3p",
+          "gamesPerLineup": 50,
+          "lineups": {
+            "rl+normal+strong": {
+              "wins": 36,
+              "losses": 14,
+              "draws": 0,
+              "winRate": 0.72,
+              "seatWinRates": [
+                0.706,
+                0.75,
+                0.706
+              ],
+              "avgTurns": 79.3,
+              "passRate": 0.023
+            },
+            "rl+weak+strong": {
+              "wins": 36,
+              "losses": 14,
+              "draws": 0,
+              "winRate": 0.72,
+              "seatWinRates": [
+                0.706,
+                0.625,
+                0.824
+              ],
+              "avgTurns": 78.98,
+              "passRate": 0.001
+            }
+          }
+        },
+        {
+          "date": "2026-04-19",
+          "type": "js-lineup",
+          "gamesPerLineup": 20,
+          "lineups": {
+            "rl+weak+normal+strong": {
+              "wins": 15,
+              "losses": 5,
+              "draws": 0,
+              "winRate": 0.75,
+              "seatWinRates": [
+                0.8,
+                0.8,
+                0.6,
+                0.8
+              ],
+              "avgTurns": 89.7
+            },
+            "rl+normal+normal+strong": {
+              "wins": 14,
+              "losses": 6,
+              "draws": 0,
+              "winRate": 0.7,
+              "seatWinRates": [
+                0.8,
+                0.4,
+                1,
+                0.6
+              ],
+              "avgTurns": 87.8
+            },
+            "rl+weak+weak+normal": {
+              "wins": 17,
+              "losses": 3,
+              "draws": 0,
+              "winRate": 0.85,
+              "seatWinRates": [
+                0.8,
+                0.8,
+                0.8,
+                1
+              ],
+              "avgTurns": 93.3
+            }
+          }
+        },
+        {
+          "date": "2026-04-19",
+          "type": "js-2p-reference",
+          "gamesPerOpponent": 20,
+          "opponents": {
+            "weak": {
+              "winRate": 0.95
+            },
+            "normal": {
+              "winRate": 0.55
+            },
+            "strong": {
+              "winRate": 0.1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "mp-mover-legal-curriculum-seed415-4p-strength",
+      "status": "candidate",
+      "path": "models/rl_model/portfolio/seed415-4p-strength.browser.json",
+      "sourceRun": "models/rl_model/runs/strategy-mp-mover-legal-curriculum-seed415-smoke",
+      "training": {
+        "games": 50,
+        "players": [
+          3,
+          4,
+          5,
+          10
+        ],
+        "hidden": 256,
+        "seed": 415,
+        "warmStart": "models/rl_model/portfolio/seed103-4p.browser.json",
+        "cpuOpponentImpl": "js-oracle",
+        "rarePendingCurriculum": true,
+        "targetOversampleRatio": 2,
+        "pendingCurriculumSamples": 1000,
+        "targetHeadLr": 0.0005,
+        "pendingCurriculumHeadLr": 0.0005,
+        "imitation": false
+      },
+      "style": {
+        "label": "asset-engine-mover-curriculum",
+        "diversityKey": "asset-engine-mover-curriculum",
+        "topCards": [
+          "wheat_field",
+          "vineyard",
+          "ranch",
+          "forest",
+          "publisher"
+        ],
+        "topLandmarks": [
+          "station",
+          "shopping_mall",
+          "harbor",
+          "amusement_park",
+          "radio_tower"
+        ],
+        "summary": "3/4/5/10人の300戦promotionで観測した上位構成（麦畑・ブドウ園・牧場・森林・出版社）。戦略クラスタは資産エンジン型でseed103/145と同系統だが、出版社寄りの構成と直接勝率優位を根拠に明示指定候補として保持。"
+      },
+      "evals": [
+        {
+          "date": "2026-09-13",
+          "type": "js-lineup-stability",
+          "gamesPerLineup": 300,
+          "pairedSeats": true,
+          "maxSteps": 1200,
+          "baselineModel": "self-only-4p-h256-lr1e5-5000-seed103",
+          "lineups": {
+            "rl+normal+normal+strong": {
+              "winRate": 0.496667,
+              "baselineWinRate": 0.476667,
+              "seatGap": 0.066667,
+              "baselineSeatGap": 0.146667,
+              "avgTurns": 83.02
+            },
+            "rl+strong+strong+strong": {
+              "winRate": 0.323333,
+              "baselineWinRate": 0.336667,
+              "seatGap": 0.08,
+              "baselineSeatGap": 0.106667,
+              "avgTurns": 74.087
+            }
+          },
+          "directComparison": {
+            "games": 300,
+            "candidateWins": 119,
+            "baselineWins": 64,
+            "otherWins": 117,
+            "candidateShareOfRlWins": 0.650273,
+            "confidence95": [
+              0.588542,
+              0.713484
+            ],
+            "significant": true
+          },
+          "specialPending": {
+            "passed": 17,
+            "total": 17
+          },
+          "exhausted": 0
+        },
+        {
+          "date": "2026-09-13",
+          "type": "js-multiplayer-promotion",
+          "gamesPerLineup": 300,
+          "pairedSeats": true,
+          "maxSteps": 1200,
+          "playerCounts": [
+            3,
+            4,
+            5,
+            10
+          ],
+          "baselineModel": "self-only-4p-h256-lr1e5-5000-seed103",
+          "lineups": {
+            "3p": {
+              "winRate": 0.516667,
+              "baselineWinRate": 0.506667,
+              "directShare": 0.488
+            },
+            "4p": {
+              "winRate": 0.436667,
+              "baselineWinRate": 0.443333,
+              "directShare": 0.606965
+            },
+            "5p": {
+              "winRate": 0.503333,
+              "baselineWinRate": 0.473333,
+              "directShare": 0.617225
+            },
+            "10p": {
+              "winRate": 0.66,
+              "baselineWinRate": 0.643333,
+              "directShare": 0.596639
+            }
+          },
+          "aggregateDirectComparison": {
+            "decisiveGames": 773,
+            "candidateShare": 0.587322,
+            "confidence95": [
+              0.552268,
+              0.621513
+            ],
+            "significant": true
+          },
+          "specialPending": {
+            "passed": 17,
+            "total": 17
+          },
+          "exhausted": 0,
+          "note": "3/4/5/10人の同一300戦paired promotion。戦略クラスタは資産エンジン型で一致し、対象効果はmoverのみ少数観測のため多様性採用根拠には使わない。"
+        },
+        {
+          "date": "2026-09-13",
+          "type": "js-head-to-head-seed145",
+          "gamesPerLineup": 100,
+          "pairedSeats": true,
+          "maxSteps": 1200,
+          "lineups": {
+            "4p-normal": {
+              "candidateWins": 33,
+              "baselineWins": 22,
+              "candidateShare": 0.6,
+              "confidence95": [
+                0.462963,
+                0.714286
+              ]
+            },
+            "4p-strong": {
+              "candidateWins": 29,
+              "baselineWins": 34,
+              "candidateShare": 0.460317,
+              "confidence95": [
+                0.351852,
+                0.578125
+              ]
+            }
+          },
+          "aggregate": {
+            "games": 200,
+            "candidateWins": 62,
+            "baselineWins": 56,
+            "candidateShare": 0.525424,
+            "confidence95": [
+              0.435952,
+              0.613292
+            ],
+            "significant": false
+          },
+          "exhausted": 0,
+          "note": "既存seed145との100戦/lineup比較は有意差なし。カード重複警告は維持し、自動選択ではなく明示候補とする。"
+        }
+      ]
+    }
+  ]
 }

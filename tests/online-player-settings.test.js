@@ -18,13 +18,23 @@ runTest('online player settings HTMLは既存option・label・RL説明を維持�
     const html = OnlinePlayerSettings.buildSettingsHtml([
         { type: 'human', difficulty: 'normal' },
         { type: 'cpu', difficulty: 'rl' },
-    ], 5);
+    ], 5, [{ id: 'model<&"', label: '専門<&"' }]);
     assert.ok(html.includes('aria-label="プレイヤー1の種類"'));
     assert.ok(html.includes('data-ui-change="onlinePlayerType"'));
     assert.ok(html.includes('value="human" selected'));
     assert.ok(html.includes('value="rl" selected'));
+    assert.ok(html.includes('data-ui-change="onlineRlModel"'));
+    assert.ok(html.includes('value="model&lt;&amp;&quot;"'));
     assert.ok(html.includes('脅威度上位3人'));
     assert.ok(!html.includes('onChangeOnlinePlayerType('));
+});
+
+runTest('online player settingsはRL model選択方式を正規化する', () => {
+    assert.deepStrictEqual(OnlinePlayerSettings.normalizeSetting({
+        type: 'cpu', difficulty: 'rl', modelId: 'legacy', rlModelSelection: 'manual',
+    }), {
+        type: 'cpu', difficulty: 'rl', rlModelId: 'legacy', rlModelSelection: 'manual',
+    });
 });
 
 runTest('online player settings create freezeはRL modelを一度だけ固定し入力を変えない', () => {

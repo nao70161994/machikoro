@@ -29,7 +29,7 @@ CMD_PATH="${ROOT_DIR}/${CMD_PATH}"
 printf '%s\n' "$*" > "${CMD_PATH}"
 rm -f "${STATUS_PATH}"
 
-STATUS_PATH="${STATUS_PATH}" setsid -f sh -lc '
+PYTHONUNBUFFERED=1 STATUS_PATH="${STATUS_PATH}" setsid -f sh -lc '
 "$@"
 STATUS=$?
 printf "%s\n" "${STATUS}" > "$STATUS_PATH"
@@ -38,7 +38,12 @@ exit "${STATUS}"
 
 PID=""
 for _ in 1 2 3 4 5; do
-    PID="$(ps -ef | grep "python3 -m scripts.rl.train" | grep "${JOB_NAME}" | grep -v grep | awk 'BEGIN {pid=""} {pid=$2} END {print pid}')"
+    PID="$(ps -eo pid=,comm=,args= | awk -v job="${JOB_NAME}" '
+        $2 == "python3" && index($0, "-m scripts.rl.train") && index($0, job) {
+            print $1
+            exit
+        }
+    ')"
     if [ -n "${PID}" ]; then
         break
     fi

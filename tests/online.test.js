@@ -1587,6 +1587,37 @@ runTest('showCreateRoom はRL CPUモデルを作成payload内で固定する', a
     assert.strictEqual(emitted.payload.playerSettings[2].difficulty, 'strong');
 });
 
+runTest('showCreateRoom は複数RL CPUへportfolioの多様性割当を固定する', async () => {
+    const runtime = loadOnlineRuntime();
+    runtime.RLModelPortfolio = {
+        assignModelIds(settings, playerCount) {
+            assert.strictEqual(playerCount, 4);
+            let next = 1;
+            return settings.map(setting => setting && setting.type === 'cpu' && setting.difficulty === 'rl'
+                ? Object.assign({}, setting, { rlModelId: setting.rlModelId || `diverse-${next++}` })
+                : Object.assign({}, setting));
+        },
+        preloadEligibleModels() { return Promise.resolve([]); },
+    };
+    runtime.document.getElementById('playerNameInput').value = 'Alice';
+    runtime.document.getElementById('onlineCpuSpeed').value = '1500';
+    runtime.setOnlineSelectedCount(4);
+    runtime.setOnlinePlayerSettings([
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'cpu', difficulty: 'rl' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+
+    runtime.showCreateRoom();
+    await Promise.resolve();
+
+    const emitted = runtime.getSocketEmits().filter(event => event.name === 'createRoom').pop();
+    assert.ok(emitted);
+    assert.strictEqual(emitted.payload.playerSettings[1].rlModelId, 'diverse-1');
+    assert.strictEqual(emitted.payload.playerSettings[2].rlModelId, 'diverse-2');
+});
+
 runTest('showCreateRoom はRL preload失敗時に部屋作成せず差し替えもしない', async () => {
     const runtime = loadOnlineRuntime();
     runtime.console = Object.assign({}, console, { error() {} });

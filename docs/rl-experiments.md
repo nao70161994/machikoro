@@ -50,6 +50,30 @@
 
 policy gate 系は、内部JS評価や10〜20戦を最初の足切りに限定し、採用判断は採用済み `seed103` との外部50戦以上の多人数lineup比較で行う。短期gateだけで registry / portfolio へは進めません。
 
+## 2026-09-12: 2人攻撃型・敗戦episode再学習
+
+`strategy-2p-attack-seed223-rewardv2-build-lossreplay-v1` は seed71 のcheckpointを初期値に、JS oracle混合相手で50ゲーム学習した。自分の判断間に発生する報酬帰属v2、赤・紫施設の成立した建設への報酬0.04、敗戦episode再学習確率0.25を使用した。再学習の実績は3episode / 329step。候補browser JSONのSHA-256は `13a8de4fbbfd40ef62c7098fbf1ada00258ce260eede68504f0c69e60db62734`。
+
+外部評価はseed2101、maxSteps=1200、席を入れ替えるpaired方式で各50戦。weak / normal / strong / expert相手の候補勝率は100% / 62% / 80% / 66%、固定基準seed71は96% / 58% / 76% / 70%だった。単純平均勝率は候補77%、基準75%。引き分け等の減点を含む評価スコアは候補0.745、基準0.725だが、直接対決では候補16勝・基準34勝。候補勝率32%のWilson 95%区間は20.8〜45.8%、25席ペアを単位とするbootstrap区間は20〜46%で、基準が優位だった。
+
+特殊pendingは候補9/9、基準5/9。step枯渇は0件。戦略分類は両方とも資産エンジン型で、実用的な戦略差を確認できなかった。直接対決で劣後したため `reject-strength` とし、registry / portfolioへ追加しない。JS CPU相手の平均点や特殊局面の改善だけでは採用を決めない。
+
+根拠artifactは `models/rl_model/eval-strategy-2p-attack-seed223-rewardv2-build-lossreplay-v1-50/review.json` と同ディレクトリの `head-to-head-2p.json`。50戦は足切りの証拠であり、採用には100戦以上、有望候補は300戦の追加評価が必要。次は同条件seed227とseed211で再現性を確認する。
+
+学習summaryは敗戦再学習確率・episode数・step数をJSONと索引CSVへ保持する。複数runの同じgame数を集約する際はrun labelとgameの組で分離し、別seedの評価行が混ざらないようにする。
+
+同条件の `strategy-2p-attack-seed227-rewardv2-build-lossreplay-v1` も50ゲーム学習後に同じ外部screenを完了した。SHA-256は `6776f03e108185f39f4029048d9506932dc6fc6e96053188b2f16e5b5ef9a879`、敗戦再学習実績は3episode / 296step。weak / normal / strong / expert勝率は100% / 52% / 78% / 78%、評価スコア0.7425。直接対決は16勝34敗、Wilson区間20.8〜45.8%、paired bootstrap区間22〜42%。特殊pending 9/9、枯渇0件、資産エンジン型で戦略差なし。`reject-strength` として不採用とし、根拠は `models/rl_model/eval-strategy-2p-attack-seed227-rewardv2-build-lossreplay-v1-50/review.json` に保存した。seed211の同条件試験を継続する。
+
+### 攻撃型3seedの再現性判定
+
+同じ `rewardv2-build-lossreplay-v1` 条件で seed211 / 223 / 227 を各50ゲーム学習し、seed71とpaired席入れ替えの外部screenを完了した。評価スコアはそれぞれ0.7125 / 0.7450 / 0.7425、直接対決の候補勝率は30% / 32% / 32%。各95%区間の上限は43.8% / 45.8% / 45.8%で、3seedとも基準seed71の優位が確認された。特殊pendingは全候補9/9、step枯渇は全て0件だったが、戦略分類は全て資産エンジン型で実用的差分もなかった。
+
+したがって、赤・紫建設報酬と敗戦episode再学習を加えた攻撃型profileは、seed依存ではなく現行RLより弱いという結論にする。3候補はregistry / portfolioへ追加せず、100戦以上の昇格評価にも進めない。各seedのmodel SHAと詳細判定は対応する `models/rl_model/eval-strategy-2p-attack-seed*-rewardv2-build-lossreplay-v1-50/review.json` に保存した。次の戦略profileは同じscreen条件で独立に検証する。
+
+### ランドマーク速攻型seed211のscreen結果
+
+strategy-2p-landmark-rush-seed211-rewardv2-build-lossreplay-v1 は、標準ランドマーク報酬0.30、空港進捗終局報酬、敗戦episode再学習確率0.25で50ゲーム学習した。敗戦再学習は6episode / 755step。seed2101のJS CPU相手50戦で評価スコアは0.745、固定seed71は0.725だったが、paired直接対決（seed2201、50戦）は候補11勝・seed71 39勝、候補勝率22.0%、Wilson 95%区間12.8〜35.2%でseed71が優位だった。特殊pendingは候補9/9、step枯渇0件。両方とも資産エンジン型で、landmarkRush軸の差は小さく実用的戦略差に至らない。reject-strength としてregistry / portfolioへ追加せず、100戦以上の昇格評価にも進めない。詳細は models/rl_model/eval-strategy-2p-landmark-rush-seed211-rewardv2-build-lossreplay-v1-50/review.json。
+
 ## RL schema v2 design notes
 
 PR-033 では実験履歴と実装の橋渡しとして、次の schema identifier を固定しました。

@@ -169,6 +169,14 @@ const CPUPendingResolution = Object.freeze({
 
     choosePendingBusinessResolution(game, cpu, options = {}) {
         let move = cpu.chooseBusinessMove(game);
+        if (move && move.skip === true) {
+            return {
+                action: 'resolveBusiness',
+                payload: { skip: true },
+                move: null,
+                apply: () => game.skipBusiness(),
+            };
+        }
         const fallback = options.fallbackBusinessMove || CPUPendingResolution.fallbackCpuBusinessMove;
         if (!CPUPendingResolution.isCpuBusinessMove(game, move)) move = fallback(game, cpu);
         if (!CPUPendingResolution.isCpuBusinessMove(game, move)) {

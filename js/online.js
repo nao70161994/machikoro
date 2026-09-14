@@ -228,10 +228,15 @@ function onlineCpuOpponentDifficultiesFromSettings(settings) {
 }
 
 function freezeOnlinePlayerSettings(settings, playerCount) {
-    const selectRlModel = typeof RLModelPortfolio !== "undefined"
-        ? count => RLModelPortfolio.selectRandomModel(count)
+    const portfolio = typeof RLModelPortfolio !== "undefined" ? RLModelPortfolio : null;
+    const frozen = OnlinePlayerSettings.freezeForCreate(settings, playerCount, null);
+    if (portfolio && typeof portfolio.assignModelIds === 'function') {
+        return portfolio.assignModelIds(frozen, playerCount);
+    }
+    const selectRlModel = portfolio && typeof portfolio.selectRandomModel === 'function'
+        ? count => portfolio.selectRandomModel(count)
         : null;
-    return OnlinePlayerSettings.freezeForCreate(settings, playerCount, selectRlModel);
+    return OnlinePlayerSettings.freezeForCreate(frozen, playerCount, selectRlModel);
 }
 
 function getClientVersion() {
@@ -323,17 +328,71 @@ function renderOnlinePlayerSettings() {
     ));
     onlineDomEffects.setHtml(
         OnlineDomEffects.ids.playerSettings,
-        OnlinePlayerSettings.buildSettingsHtml(state.playerSettings, state.selectedCount)
+        OnlinePlayerSettings.buildSettingsHtml(
+            state.playerSettings,
+            state.selectedCount,
+            onlineEligibleRlModels(state.selectedCount)
+        )
     );
     updateOnlineRlModelReadinessUi();
+}
+
+function onlineEligibleRlModels(playerCount) {
+    return typeof RLModelPortfolio !== 'undefined' && typeof RLModelPortfolio.eligibleModels === 'function'
+        ? RLModelPortfolio.eligibleModels(playerCount)
+        : [];
 }
 
 function onChangeOnlinePlayerType(index, value) {
     onlineSetupStateController.updateSetting(index, value === "human"
         ? { type: "human", difficulty: "normal" }
-        : { type: "cpu", difficulty: value });
+        : {
+            type: "cpu",
+            difficulty: value,
+            rlModelId: value === 'rl' ? null : undefined,
+            rlModelSelection: value === 'rl' ? 'auto' : undefined,
+        });
+    renderOnlinePlayerSettings();
+    restoreOnlinePlayerSettingFocus('onlinePlayerType', index);
     updateOnlineRlModelReadinessUi();
     if (value === "rl") preloadOnlineRlModelsInBackground('online-rl-selected-preload');
+}
+
+function restoreOnlinePlayerSettingFocus(changeName, index) {
+    const root = onlineDomEffects.element(OnlineDomEffects.ids.playerSettings);
+    const target = root && typeof root.querySelector === 'function'
+        ? root.querySelector(`[data-ui-change="${changeName}"][data-player-index="${index}"]`)
+        : null;
+    if (!target || typeof target.focus !== 'function') return false;
+    try {
+        target.focus({ preventScroll: true });
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+function onChangeOnlineRlModel(index, value) {
+    const state = onlineSetupStateController.snapshot();
+    const current = state.playerSettings[index];
+    if (!current || current.type !== 'cpu' || current.difficulty !== 'rl') return false;
+    const selected = value === 'auto' ? null : typeof RLModelPortfolio !== 'undefined' &&
+        typeof RLModelPortfolio.modelById === 'function'
+        ? RLModelPortfolio.modelById(value, state.selectedCount)
+        : null;
+    if (value !== 'auto' && !selected) return false;
+    const settings = state.playerSettings.slice();
+    settings[index] = Object.assign({}, current, {
+        rlModelId: selected ? selected.id : null,
+        rlModelSelection: value === 'auto' ? 'auto' : 'manual',
+    });
+    onlineSetupStateController.replaceSettings(
+        freezeOnlinePlayerSettings(settings, state.selectedCount)
+    );
+    renderOnlinePlayerSettings();
+    restoreOnlinePlayerSettingFocus('onlineRlModel', index);
+    preloadOnlineRlModelsInBackground('online-rl-model-selected-preload');
+    return true;
 }
 
 // オンライン対戦（セッション状態）は OnlineRuntimeState が所有する。

@@ -7,6 +7,7 @@ const {
     scenarioNamesForPlayerCount,
     createScenarioGame,
     buildChecks,
+    summarizeScenarioChecks,
     evaluateSpecialScenarios,
     renderText,
 } = require(path.join(__dirname, '..', 'scripts', 'eval-rl-special-scenarios.js'));
@@ -85,6 +86,11 @@ runTest('eval-rl-special-scenarios parseArgs は主要CLI引数を解釈する',
     assert.strictEqual(args.output, 'out.json');
 });
 
+runTest('eval-rl-special-scenarios parseArgs は任意model pathを受け取る', () => {
+    const args = parseArgs(['--model-paths', 'a.json,b.json']);
+    assert.deepStrictEqual(args.modelPaths, ['a.json', 'b.json']);
+});
+
 runTest('eval-rl-special-scenarios parseArgs は数値 CLI の 0 指定を保持する', () => {
     const args = parseArgs(['--rank', '0', '--player-count', '0']);
     assert.strictEqual(args.rank, 0);
@@ -94,7 +100,12 @@ runTest('eval-rl-special-scenarios parseArgs は数値 CLI の 0 指定を保持
 runTest('scenarioNamesForPlayerCount は人数に合う既定scenarioだけを返す', () => {
     const twoPlayerNames = scenarioNamesForPlayerCount(2, []);
     const fourPlayerNames = scenarioNamesForPlayerCount(4, []);
-    assert.deepStrictEqual(twoPlayerNames, ['twoPlayerBusinessBasic']);
+    assert.deepStrictEqual(twoPlayerNames, [
+        'twoPlayerBusinessBasic',
+        'twoPlayerBusinessProtectEngine',
+        'twoPlayerBusinessTakePremium',
+        'twoPlayerBusinessSkipHarmful',
+    ]);
     assert.ok(fourPlayerNames.includes('tvLeaderThreat'));
     assert.ok(fourPlayerNames.includes('moverGiveJunk'));
     assert.ok(fourPlayerNames.includes('moverTargetSafeRecipient'));
@@ -140,12 +151,14 @@ runTest('buildChecks は期待行動との一致を返す', () => {
         avoidGive: ['食品倉庫'],
         landmarkOneOf: ['駅'],
         avoidLandmark: '空港',
+        skip: false,
     }, {
         targetIndex: 3,
         cardName: 'カフェ',
         give: '麦畑',
         take: '鉱山',
         landmarkName: '駅',
+        skipped: false,
     });
     assert.strictEqual(checks.targetMatches, true);
     assert.strictEqual(checks.targetAvoided, true);
@@ -156,6 +169,20 @@ runTest('buildChecks は期待行動との一致を返す', () => {
     assert.strictEqual(checks.avoidGivePassed, true);
     assert.strictEqual(checks.landmarkMatches, true);
     assert.strictEqual(checks.avoidLandmarkPassed, true);
+    assert.strictEqual(checks.skipMatches, true);
+});
+
+runTest('summarizeScenarioChecks はcheck合格数と失敗局面を集計する', () => {
+    const summary = summarizeScenarioChecks([
+        { scenario: 'passed', checks: { target: true, card: true } },
+        { scenario: 'failed', checks: { target: false } },
+        { scenario: 'skipped', skipped: true, checks: {} },
+    ]);
+    assert.strictEqual(summary.passedChecks, 2);
+    assert.strictEqual(summary.totalChecks, 3);
+    assert.strictEqual(summary.passRate, 2 / 3);
+    assert.deepStrictEqual(summary.failedScenarios, ['failed', 'skipped']);
+    assert.strictEqual(summary.allPassed, false);
 });
 
 runTest('evaluateSpecialScenarios はTV/BC/cleaning/mover/renovationの結果を返す', () => {
@@ -172,6 +199,8 @@ runTest('evaluateSpecialScenarios はTV/BC/cleaning/mover/renovationの結果を
     });
     assert.strictEqual(results.length, 1);
     assert.strictEqual(results[0].modelInfo.stateDim, 145);
+    assert.ok(results[0].summary.totalChecks > 0);
+    assert.strictEqual(Array.isArray(results[0].summary.failedScenarios), true);
     const byKind = new Map(results[0].scenarios.map(scenario => [scenario.kind, scenario]));
     assert.strictEqual(byKind.get('tv').scenario, 'tvLeaderThreat');
     assert.strictEqual(Number.isInteger(byKind.get('tv').targetIndex), true);
@@ -217,6 +246,8 @@ runTest('renderText は各kindのscenarioを出力する', () => {
     });
     const text = renderText(results);
     assert.ok(text.includes('dummy players=4'));
+    assert.ok(text.includes('checks='));
+    assert.ok(text.includes('failed='));
     assert.ok(text.includes('tvLeaderThreat[tv]'));
     assert.ok(text.includes('bcHighValueThreat[business]'));
     assert.ok(text.includes('cleaningOpponentEngine[cleaning]'));

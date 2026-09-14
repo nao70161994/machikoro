@@ -1,0 +1,433 @@
+[
+  {
+    "id": "self-only-4p-h256-lr1e5-5000-seed103",
+    "label": "RL（多人数・上位3）",
+    "role": "adopted-3p-10p",
+    "status": "adopted",
+    "productionActive": true,
+    "weight": 3,
+    "players": {
+      "min": 3,
+      "max": 10
+    },
+    "artifact": {
+      "path": "models/rl_model/portfolio/seed103-4p.browser.json",
+      "exists": true,
+      "bytes": 12030008,
+      "sha256": "9e18b1d974b5d5968fcc330a98c44312b29cde905b2953cf12530ef350539712",
+      "expectedBytes": 12030008,
+      "expectedSha256": "9e18b1d974b5d5968fcc330a98c44312b29cde905b2953cf12530ef350539712"
+    },
+    "schema": {
+      "formatVersion": 1,
+      "schemaVersion": 3,
+      "stateDim": 353,
+      "stateSchema": "state-mp-v1",
+      "actionSchema": "action-flat-v1",
+      "hiddenSize": 256,
+      "numActions": 1580,
+      "numCards": 38,
+      "numTargetSlots": null,
+      "businessSkipGateVersion": null,
+      "vocabularyFingerprint": ""
+    },
+    "sourceRun": "models/rl_model/runs/self-only-4p-h256-lr1e5-5000-seed103",
+    "training": {
+      "wrapper": "scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh",
+      "games": 5000,
+      "players": 4,
+      "hidden": 256,
+      "lr": 0.00001,
+      "seed": 103,
+      "cpuOpponentImpl": "js-oracle",
+      "trainOpponents": "self=1",
+      "selfLearnBothSides": true,
+      "imitation": false,
+      "rewardProfile": "terminal-shaped-capped",
+      "restoreBestAtEnd": true
+    },
+    "strategy": {
+      "label": "4p-wheat-vineyard-pizza",
+      "summary": "4人自己対戦候補から採用。2026-08-18に3/4/5人を各3lineup・各200戦、10人を5seed・各lineup合計1000戦で再監査し、全人数帯で競争力と低pass率を維持した。2026-08-19に10人・各席100戦の同一乱数診断を追加し、RL席差13.0ptは一様分布から有意でなく、normal基準との席profile差も有意でなかった。旧20戦/席の25.0〜40.0ptは標本誤差主導と結論し、採用席評価の既定を100戦/席へ強化した。"
+    },
+    "latestEvaluation": {
+      "date": "2026-08-19",
+      "type": "js-cpu-seat-effect-10p",
+      "gamesPerOpponent": null,
+      "gamesPerLineup": null,
+      "pairedSeats": true,
+      "exhausted": 0
+    },
+    "errors": []
+  },
+  {
+    "id": "mp-mixed-34510-target-only-seed145-4p",
+    "label": "RL（4人・目標判断強化）",
+    "role": "adopted-4p-specialist",
+    "status": "adopted",
+    "productionActive": true,
+    "weight": 1,
+    "players": {
+      "min": 4,
+      "max": 4
+    },
+    "artifact": {
+      "path": "models/rl_model/portfolio/seed145-4p-target-specialist.browser.json",
+      "exists": true,
+      "bytes": 12668421,
+      "sha256": "192e269d2d37b7cbacefd67d496a09aade48ab8715f25a6b24fb467eda117e38",
+      "expectedBytes": 12668421,
+      "expectedSha256": "192e269d2d37b7cbacefd67d496a09aade48ab8715f25a6b24fb467eda117e38"
+    },
+    "schema": {
+      "formatVersion": 2,
+      "schemaVersion": 3,
+      "stateDim": 353,
+      "stateSchema": "state-mp-v1",
+      "actionSchema": "action-flat-v1",
+      "hiddenSize": 256,
+      "numActions": 1580,
+      "numCards": 38,
+      "numTargetSlots": 3,
+      "businessSkipGateVersion": 0,
+      "vocabularyFingerprint": "v1:麦畑\u001f牧場\u001f森林\u001f鉱山\u001fリンゴ園\u001fパン屋\u001fコンビニ\u001fチーズ工場\u001f家具工場\u001f青果市場\u001fカフェ\u001fファミレス\u001fスタジアム\u001fテレビ局\u001fビジネスセンター\u001f花畑\u001fサンマ漁船\u001fマグロ漁船\u001fフラワーショップ\u001f食品倉庫\u001f寿司屋\u001fピザ屋\u001fバーガーショップ\u001f出版社\u001f税務署\u001fコーン畑\u001fブドウ園\u001f雑貨屋\u001f改装屋\u001f貸金業\u001fワイナリー\u001f引越し屋\u001fドリンク工場\u001f高級フレンチ\u001f会員制BAR\u001f清掃業\u001fITベンチャー\u001f公園\u001e駅\u001fショッピングモール\u001f遊園地\u001f電波塔\u001f港\u001f空港"
+    },
+    "sourceRun": "models/rl_model/runs/mp-mixed-34510-target-only-seed145",
+    "training": {
+      "games": 500,
+      "players": [
+        3,
+        4,
+        5,
+        10
+      ],
+      "hidden": 256,
+      "lr": 0.000001,
+      "targetHeadLr": 0.001,
+      "seed": 145,
+      "warmStart": "models/rl_model/portfolio/seed103-4p.browser.json",
+      "cpuOpponentImpl": "js-oracle",
+      "trainOpponents": "random=1,weak=1,normal=0.75,strong=0.5,expert=0.25,pool=0.75,self=0.096",
+      "rarePendingCurriculum": true,
+      "imitation": false
+    },
+    "strategy": {
+      "label": "4p-target-wheat-vineyard-forest",
+      "diversityKey": "target-wheat-vineyard-forest",
+      "topCards": [
+        "wheat_field",
+        "vineyard",
+        "forest",
+        "ranch",
+        "it_venture"
+      ],
+      "topLandmarks": [
+        "station",
+        "shopping_mall",
+        "harbor",
+        "amusement_park",
+        "radio_tower"
+      ],
+      "summary": "4人戦限定の目標選択head強化候補。戦略大分類は現行と同じ資産エンジン型だが、paired-seat直接比較で有意に上回り、席差も縮小した。混成相手への総合scoreは現行より僅かに低いため、汎用モデルを置換せず低weightの4人専用候補として併用する。"
+    },
+    "latestEvaluation": {
+      "date": "2026-08-25",
+      "type": "js-lineup-stability",
+      "gamesPerOpponent": null,
+      "gamesPerLineup": 300,
+      "pairedSeats": true,
+      "exhausted": 0
+    },
+    "errors": []
+  },
+  {
+    "id": "mp-mover-legal-curriculum-seed415-4p-strength",
+    "label": "RL（4人・strength）",
+    "role": "",
+    "status": "candidate",
+    "productionActive": false,
+    "weight": 1,
+    "players": {
+      "min": 4,
+      "max": 4
+    },
+    "artifact": {
+      "path": "models/rl_model/portfolio/seed415-4p-strength.browser.json",
+      "exists": true,
+      "bytes": 12667729,
+      "sha256": "2cb47d535cb42c65396596b0002c1c559f65156ca2463ab1706274388a2506e7",
+      "expectedBytes": 12667729,
+      "expectedSha256": "2cb47d535cb42c65396596b0002c1c559f65156ca2463ab1706274388a2506e7"
+    },
+    "schema": {
+      "formatVersion": 2,
+      "schemaVersion": 3,
+      "stateDim": 353,
+      "stateSchema": "state-mp-v1",
+      "actionSchema": "action-flat-v1",
+      "hiddenSize": 256,
+      "numActions": 1580,
+      "numCards": 38,
+      "numTargetSlots": 3,
+      "businessSkipGateVersion": 1,
+      "vocabularyFingerprint": "v1:麦畑\u001f牧場\u001f森林\u001f鉱山\u001fリンゴ園\u001fパン屋\u001fコンビニ\u001fチーズ工場\u001f家具工場\u001f青果市場\u001fカフェ\u001fファミレス\u001fスタジアム\u001fテレビ局\u001fビジネスセンター\u001f花畑\u001fサンマ漁船\u001fマグロ漁船\u001fフラワーショップ\u001f食品倉庫\u001f寿司屋\u001fピザ屋\u001fバーガーショップ\u001f出版社\u001f税務署\u001fコーン畑\u001fブドウ園\u001f雑貨屋\u001f改装屋\u001f貸金業\u001fワイナリー\u001f引越し屋\u001fドリンク工場\u001f高級フレンチ\u001f会員制BAR\u001f清掃業\u001fITベンチャー\u001f公園\u001e駅\u001fショッピングモール\u001f遊園地\u001f電波塔\u001f港\u001f空港"
+    },
+    "sourceRun": "models/rl_model/runs/strategy-mp-mover-legal-curriculum-seed415-smoke",
+    "training": {
+      "games": 50,
+      "players": [
+        3,
+        4,
+        5,
+        10
+      ],
+      "hidden": 256,
+      "seed": 415,
+      "warmStart": "models/rl_model/portfolio/seed103-4p.browser.json",
+      "cpuOpponentImpl": "js-oracle",
+      "rarePendingCurriculum": true,
+      "targetOversampleRatio": 2,
+      "pendingCurriculumSamples": 1000,
+      "targetHeadLr": 0.0005,
+      "pendingCurriculumHeadLr": 0.0005,
+      "imitation": false
+    },
+    "strategy": {
+      "label": "asset-engine-mover-curriculum",
+      "diversityKey": "asset-engine-mover-curriculum",
+      "topCards": [
+        "wheat_field",
+        "vineyard",
+        "ranch",
+        "forest",
+        "publisher"
+      ],
+      "topLandmarks": [
+        "station",
+        "shopping_mall",
+        "harbor",
+        "amusement_park",
+        "radio_tower"
+      ],
+      "summary": "3/4/5/10人の300戦promotionで観測した上位構成（麦畑・ブドウ園・牧場・森林・出版社）。戦略クラスタは資産エンジン型でseed103/145と同系統だが、出版社寄りの構成と直接勝率優位を根拠に明示指定候補として保持。"
+    },
+    "latestEvaluation": {
+      "date": "2026-09-13",
+      "type": "js-lineup-stability",
+      "gamesPerOpponent": null,
+      "gamesPerLineup": 300,
+      "pairedSeats": true,
+      "exhausted": 0
+    },
+    "errors": []
+  },
+  {
+    "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+    "label": "RL（農業・ワイナリー）",
+    "role": "adopted-2p-main",
+    "status": "adopted",
+    "productionActive": true,
+    "weight": 5,
+    "players": {
+      "min": 2,
+      "max": 2
+    },
+    "artifact": {
+      "path": "models/rl_model/portfolio/seed71-top3.browser.json",
+      "exists": true,
+      "bytes": 10909992,
+      "sha256": "c0e4572d80d70758574bd8e67e462be8f9e031d3956c431e085fac172c9917b3",
+      "expectedBytes": 10909992,
+      "expectedSha256": "c0e4572d80d70758574bd8e67e462be8f9e031d3956c431e085fac172c9917b3"
+    },
+    "schema": {
+      "formatVersion": 1,
+      "schemaVersion": 3,
+      "stateDim": 145,
+      "stateSchema": "state-2p-v1",
+      "actionSchema": "action-flat-v1",
+      "hiddenSize": 256,
+      "numActions": 1580,
+      "numCards": 38,
+      "numTargetSlots": null,
+      "businessSkipGateVersion": null,
+      "vocabularyFingerprint": ""
+    },
+    "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed71-rewardcap",
+    "training": {
+      "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+      "games": 5000,
+      "hidden": 256,
+      "lr": 0.00002,
+      "seed": 71,
+      "cpuOpponentImpl": "js-oracle",
+      "imitation": false,
+      "rewardProfile": "terminal-shaped-rewardcap",
+      "trainOpponents": "self=1",
+      "selfLearnBothSides": true,
+      "terminalLandmarkValueDiff": 0.004,
+      "terminalAssetDiff": 0.002,
+      "terminalCoinDiff": 0.001,
+      "terminalDiffClip": 20,
+      "checkpointSelection": "top3 checkpoint by js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+      "restoreBestAtEnd": true
+    },
+    "strategy": {
+      "label": "vineyard-farm-winery-strong",
+      "topCardsVsStrong": [
+        "ranch",
+        "vineyard",
+        "winery",
+        "bakery",
+        "loan_office"
+      ],
+      "topLandmarksVsStrong": [
+        "harbor",
+        "station",
+        "shopping_mall",
+        "amusement_park",
+        "radio_tower"
+      ],
+      "summary": "Adopted 2-player main model. 300-game JS evaluation keeps very high weak/normal rates and strong remains clearly above other active 2-player candidates."
+    },
+    "latestEvaluation": {
+      "date": "2026-09-13",
+      "type": "js-head-to-head-screen",
+      "gamesPerOpponent": 100,
+      "gamesPerLineup": null,
+      "pairedSeats": false,
+      "exhausted": null
+    },
+    "errors": []
+  },
+  {
+    "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+    "label": "RL（寿司・倉庫）",
+    "role": "sushi-warehouse-variant",
+    "status": "candidate",
+    "productionActive": false,
+    "weight": 1,
+    "players": {
+      "min": 2,
+      "max": 2
+    },
+    "artifact": {
+      "path": "models/rl_model/portfolio/seed70.browser.json",
+      "exists": true,
+      "bytes": 10914676,
+      "sha256": "9b8265f0f656223b37db0d277cad1d7aba4602c1a3db9f32de4b527012ec1065",
+      "expectedBytes": 10914676,
+      "expectedSha256": "9b8265f0f656223b37db0d277cad1d7aba4602c1a3db9f32de4b527012ec1065"
+    },
+    "schema": {
+      "formatVersion": 1,
+      "schemaVersion": 3,
+      "stateDim": 145,
+      "stateSchema": "state-2p-v1",
+      "actionSchema": "action-flat-v1",
+      "hiddenSize": 256,
+      "numActions": 1580,
+      "numCards": 38,
+      "numTargetSlots": null,
+      "businessSkipGateVersion": null,
+      "vocabularyFingerprint": ""
+    },
+    "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+    "training": {
+      "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+      "games": 5000,
+      "hidden": 256,
+      "lr": 0.00002,
+      "seed": 70,
+      "cpuOpponentImpl": "js-oracle",
+      "imitation": false,
+      "rewardProfile": "terminal-shaped-rewardcap",
+      "trainOpponents": "self=1",
+      "selfLearnBothSides": true,
+      "terminalLandmarkValueDiff": 0.004,
+      "terminalAssetDiff": 0.002,
+      "terminalCoinDiff": 0.001,
+      "terminalDiffClip": 20,
+      "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+      "restoreBestAtEnd": true
+    },
+    "strategy": {
+      "label": "sushi-warehouse-farm",
+      "summary": "2-player diversity candidate. 100-game audit keeps high weak/normal rates with a sushi/warehouse/farm build, but strong is well below seed71 top3."
+    },
+    "latestEvaluation": {
+      "date": "2026-04-20",
+      "type": "js",
+      "gamesPerOpponent": 100,
+      "gamesPerLineup": null,
+      "pairedSeats": false,
+      "exhausted": null
+    },
+    "errors": []
+  },
+  {
+    "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+    "label": "RL（バーガー・倉庫）",
+    "role": "burger-warehouse-variant",
+    "status": "candidate",
+    "productionActive": false,
+    "weight": 1,
+    "players": {
+      "min": 2,
+      "max": 2
+    },
+    "artifact": {
+      "path": "models/rl_model/portfolio/seed69.browser.json",
+      "exists": true,
+      "bytes": 10887237,
+      "sha256": "ccb2626325a6ff6856af62e594fd41f2dbddb44c926903b0e5834345d775b5df",
+      "expectedBytes": 10887237,
+      "expectedSha256": "ccb2626325a6ff6856af62e594fd41f2dbddb44c926903b0e5834345d775b5df"
+    },
+    "schema": {
+      "formatVersion": 1,
+      "schemaVersion": 3,
+      "stateDim": 145,
+      "stateSchema": "state-2p-v1",
+      "actionSchema": "action-flat-v1",
+      "hiddenSize": 256,
+      "numActions": 1580,
+      "numCards": 38,
+      "numTargetSlots": null,
+      "businessSkipGateVersion": null,
+      "vocabularyFingerprint": ""
+    },
+    "sourceRun": "models/rl_model/runs/self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+    "training": {
+      "wrapper": "scripts/rl/run-self-only-h256-lr2e5-5000.sh",
+      "games": 5000,
+      "hidden": 256,
+      "lr": 0.00002,
+      "seed": 69,
+      "cpuOpponentImpl": "js-oracle",
+      "imitation": false,
+      "rewardProfile": "terminal-shaped-rewardcap",
+      "trainOpponents": "self=1",
+      "selfLearnBothSides": true,
+      "terminalLandmarkValueDiff": 0.004,
+      "terminalAssetDiff": 0.002,
+      "terminalCoinDiff": 0.001,
+      "terminalDiffClip": 20,
+      "checkpointSelection": "js-eval weak,normal,strong with weights weak=1,normal=2,strong=5",
+      "restoreBestAtEnd": true
+    },
+    "strategy": {
+      "label": "burger-warehouse-wheat",
+      "summary": "2-player diversity candidate. 100-game audit is clearly weaker than seed71 top3 but keeps a distinct burger/warehouse/wheat build with low pass rate."
+    },
+    "latestEvaluation": {
+      "date": "2026-04-20",
+      "type": "js",
+      "gamesPerOpponent": 100,
+      "gamesPerLineup": null,
+      "pairedSeats": false,
+      "exhausted": null
+    },
+    "errors": []
+  }
+]

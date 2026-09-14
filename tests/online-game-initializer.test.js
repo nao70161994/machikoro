@@ -60,7 +60,7 @@ runTest('online game initializerは順序・CPU設定・自分位置を同じ入
         playerOrder: [2, 0, 1],
         playerSettings: [
             { type: 'human' },
-            { type: 'cpu', difficulty: 'rl', modelId: 'model-a' },
+            { type: 'cpu', difficulty: 'rl', modelId: 'model-a', rlModelSha256: 'digest-a' },
             { type: 'human' },
         ],
     });
@@ -71,6 +71,7 @@ runTest('online game initializerは順序・CPU設定・自分位置を同じ入
         playerCount: 3,
         expertOpponentDifficulties: [undefined, undefined, 'rl'],
         rlModelId: 'model-a',
+        rlModelSha256: 'digest-a',
     });
     assert.deepStrictEqual(calls.find(call => call[0] === 'playerIndex'), ['playerIndex', 1]);
     assert.deepStrictEqual([...game.enabledLandmarks], ['station']);

@@ -15,6 +15,7 @@ function buildRlModel(stateDim = 145) {
     const numActions = 1580;
     return {
         formatVersion: 1,
+        legacyVocabulary: true,
         schemaVersion: 3,
         stateDim,
         hiddenSize,

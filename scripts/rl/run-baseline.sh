@@ -70,6 +70,7 @@ exec env PYTHONUNBUFFERED=1 python3 -m scripts.rl.train \
     --final-eval-heuristic-games 8 \
     --final-eval-pool-games 8 \
     --progress-every 50 \
+    --checkpoint-every 50 \
     --max-steps 1200 \
     --eval-max-steps 1200 \
     --metrics-csv "$OUT_DIR/train_metrics.csv" \

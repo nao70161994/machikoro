@@ -103,6 +103,35 @@ async function readDiagnosticServerVersion() {
     }
 }
 
+function diagnosticRlModelState(gameState) {
+    if (typeof RLModelPortfolio === 'undefined') return { rlModels: [], rlMemory: null };
+    const activeCpuPlayers = Array.isArray(gameState.cpuPlayers) ? gameState.cpuPlayers : [];
+    let playerCount = gameState.game && Array.isArray(gameState.game.players)
+        ? gameState.game.players.length : 0;
+    let settings = activeCpuPlayers.map(cpu => cpu && cpu.modelId ? {
+        type: 'cpu', difficulty: 'rl', rlModelId: cpu.modelId,
+    } : null);
+    if (!settings.some(Boolean) && typeof GameSetupState !== 'undefined' && GameSetupState.runtime) {
+        const setup = GameSetupState.runtime.snapshot();
+        playerCount = setup.selectedCount;
+        settings = setup.playerSettings;
+    }
+    const models = [];
+    const seen = new Set();
+    for (const setting of settings.slice(0, Math.max(0, playerCount))) {
+        if (!setting || setting.type !== 'cpu' || setting.difficulty !== 'rl' || !setting.rlModelId) continue;
+        const model = RLModelPortfolio.modelById(setting.rlModelId, playerCount);
+        if (!model || seen.has(model.id)) continue;
+        seen.add(model.id);
+        models.push(RLModelPortfolio.modelDiagnostics(model));
+    }
+    let memory = null;
+    try {
+        if (models.length > 0) memory = RLModelPortfolio.selectedMemoryBudget(playerCount, settings);
+    } catch (_) {}
+    return { rlModels: models, rlMemory: memory };
+}
+
 async function collectAppDiagnostics() {
     const gameState = mainGameRuntimeSnapshot();
     const onlineState = mainOnlineRuntimeSnapshot();
@@ -122,6 +151,7 @@ async function collectAppDiagnostics() {
         ? window.__machikoroClientCheckpoints : [];
     const acceptedOnlineActions = diagnosticAcceptedOnlineActions(onlineState);
     const onlineContext = onlineState.isOnlineGame === true || onlineState.isReconnectingOnline === true;
+    const rlDiagnostics = diagnosticRlModelState(gameState);
     return AppDiagnostics.buildSnapshot({
         appVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
         serverVersion,
@@ -149,6 +179,8 @@ async function collectAppDiagnostics() {
         pendingOutbound: actionFlight.hasPendingOutboundAction === true,
         reconnecting: onlineState.isReconnectingOnline === true,
         gameGeneration: onlineState.gameGeneration,
+        rlModels: rlDiagnostics.rlModels,
+        rlMemory: rlDiagnostics.rlMemory,
         generatedAt: new Date().toISOString(),
     });
 }
@@ -178,6 +210,43 @@ async function copyAppDiagnostics() {
         showNotice('この端末では診断情報をコピーできませんでした');
         return false;
     }
+}
+
+function exportMatchData() {
+    const gameState = mainGameRuntimeSnapshot();
+    const onlineState = mainOnlineRuntimeSnapshot();
+    if (!gameState.game) {
+        showNotice('書き出せる対局がありません');
+        return false;
+    }
+    let actions = [];
+    if (onlineState.isOnlineGame && typeof _readOnlineActionLog === 'function') {
+        try { actions = _readOnlineActionLog(); } catch (_) {}
+    }
+    const rlDiagnostics = diagnosticRlModelState(gameState);
+    const envelope = AppDiagnostics.buildMatchExport({
+        snapshot: GameSnapshot.serializeGameState(gameState.game, SHOP_STOCK, {
+            logLimit: 0,
+            pendingActionsFor: GameManager.serializedPendingActionsFor,
+        }),
+        actions,
+        rlModels: rlDiagnostics.rlModels,
+        mode: onlineState.isOnlineGame ? 'online' : 'local',
+        generatedAt: new Date().toISOString(),
+        clientVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
+    });
+    if (!envelope) {
+        showNotice('対局データを書き出せませんでした');
+        return false;
+    }
+    const date = new Date().toISOString().slice(0, 10);
+    const downloaded = downloadCpuTournamentFile(
+        `machikoro-match-${date}.json`,
+        JSON.stringify(envelope, null, 2),
+        'application/json'
+    );
+    showNotice(downloaded ? '匿名化した対局データを書き出しました' : '対局データを書き出せませんでした');
+    return downloaded;
 }
 
 function loadSetupPresetRecords() {
@@ -578,6 +647,10 @@ function renderPlayerSettings() {
 
 function onChangePlayerType(index, value) {
     return localGameStartRuntime.changePlayerType(index, value);
+}
+
+function onChangeLocalRlModel(index, value) {
+    return localGameStartRuntime.changeRlModel(index, value);
 }
 
 function onChangePlayerName(index, value) {
@@ -1150,6 +1223,8 @@ function resolveMainUiEffect(name) {
         tutorialLevel: 'onChangeTutorialLevel',
         localPlayerType: 'onChangePlayerType',
         onlinePlayerType: 'onChangeOnlinePlayerType',
+        localRlModel: 'onChangeLocalRlModel',
+        onlineRlModel: 'onChangeOnlineRlModel',
         localSaveGeneration: 'onChangeLocalSaveGeneration',
         selectDiceCount: 'onSelectDiceCount',
         rerollDice: 'onReroll',

@@ -1,4 +1,5 @@
 const path = require('path');
+const RLModelCatalog = require('../js/rlModelCatalog.js');
 
 const {
     loadRegistry,
@@ -6,7 +7,59 @@ const {
     summarizeEvalCoverage,
     modelStyleKey,
     summarizeTargetDiagnostics,
+    evalGameCount,
+    latestEval,
 } = require('./validate-rl-registry.js');
+
+function latestProductionEval(model, minimumGames) {
+    const qualifying = (Array.isArray(model && model.evals) ? model.evals : [])
+        .filter(evaluation => evalGameCount(evaluation) >= minimumGames);
+    return latestEval(Object.assign({}, model, { evals: qualifying }));
+}
+
+function validateRuntimeCatalog(registry, options = {}) {
+    const errors = [];
+    const warnings = [];
+    const models = Array.isArray(registry.models) ? registry.models : [];
+    const catalog = options.catalog || RLModelCatalog.models;
+    const maxAgeDays = Number(registry.evaluationPolicy &&
+        registry.evaluationPolicy.maxProductionEvaluationAgeDays) || 0;
+    const minimumGames = Math.max(1, Number(registry.evaluationPolicy &&
+        registry.evaluationPolicy.minimumAdoptionGamesPerOpponent) || 50);
+    const now = options.now instanceof Date ? options.now : new Date();
+    for (const entry of catalog) {
+        if (typeof entry.productionActive !== 'boolean') {
+            errors.push(`${entry.id}: productionActive が明示されていません`);
+            continue;
+        }
+        if (!entry.productionActive) continue;
+        const registered = models.find(model => model.id === entry.id);
+        if (!registered) {
+            errors.push(`${entry.id}: production catalog が未登録modelを参照しています`);
+            continue;
+        }
+        if (entry.registryStatus !== registered.status) {
+            errors.push(`${entry.id}: catalog registryStatus=${entry.registryStatus || 'missing'} と registry status=${registered.status || 'missing'} が不一致です`);
+        }
+        if (registered.status !== 'adopted') {
+            errors.push(`${entry.id}: production model は300戦昇格済みの adopted status が必要です`);
+        }
+        if (entry.path !== registered.path) {
+            errors.push(`${entry.id}: catalog path と registry path が不一致です`);
+        }
+        const evaluation = latestProductionEval(registered, minimumGames);
+        const evaluatedAt = evaluation && new Date(`${evaluation.date}T00:00:00Z`);
+        if (!evaluation || !Number.isFinite(evaluatedAt.getTime())) {
+            errors.push(`${entry.id}: production model の${minimumGames}戦以上の評価日がありません`);
+        } else if (maxAgeDays > 0) {
+            const ageDays = Math.floor((now.getTime() - evaluatedAt.getTime()) / 86400000);
+            if (ageDays > maxAgeDays) {
+                errors.push(`${entry.id}: production評価が古すぎます (${ageDays}日 > ${maxAgeDays}日)`);
+            }
+        }
+    }
+    return { errors, warnings };
+}
 
 function parseArgs(argv) {
     const args = {
@@ -30,6 +83,7 @@ function formatTargetDiagnostics(diagnostics) {
 
 function buildAudit(registry, options = {}) {
     const validation = validateRegistry(registry);
+    const runtimeCatalog = validateRuntimeCatalog(registry, options);
     const models = Array.isArray(registry.models) ? registry.models : [];
     const recommended = (((registry.portfolioPolicy || {}).recommendedActiveModels) || []).map(entry => {
         const model = models.find(item => item.id === entry.id);
@@ -57,8 +111,8 @@ function buildAudit(registry, options = {}) {
     });
     return {
         updatedAt: registry.updatedAt || '',
-        warnings: validation.warnings,
-        errors: validation.errors,
+        warnings: validation.warnings.concat(runtimeCatalog.warnings),
+        errors: validation.errors.concat(runtimeCatalog.errors),
         recommended,
     };
 }
@@ -142,4 +196,6 @@ module.exports = {
     formatTargetDiagnostics,
     renderText,
     renderMarkdown,
+    validateRuntimeCatalog,
+    latestProductionEval,
 };

@@ -1,6 +1,8 @@
 'use strict';
 
 const AppDiagnostics = (() => {
+    const MATCH_EXPORT_SCHEMA_VERSION = 1;
+    const MAX_MATCH_EXPORT_CHARS = 2 * 1024 * 1024;
     const CONTEXT_LABELS = Object.freeze({
         title: 'タイトル画面',
         local: 'ローカル対戦中',
@@ -15,6 +17,13 @@ const AppDiagnostics = (() => {
         harborChoice: '港の追加ダイス確認中',
         pending: '効果解決中',
         build: '建設中',
+    });
+    const RL_MODEL_STATUS_LABELS = Object.freeze({
+        idle: '未読込',
+        loading: '読込中',
+        ready: '読込済み',
+        failed: '読込失敗',
+        missing: '不明',
     });
 
     function safeText(value, fallback = '不明', maxLength = 80) {
@@ -77,6 +86,89 @@ const AppDiagnostics = (() => {
         return `${phase}・${turnCount}ターン経過${playerCount ? `・${playerCount}人` : ''}`;
     }
 
+    function rlModelSummary(values) {
+        if (!Array.isArray(values) || values.length === 0) return '未使用';
+        return values.slice(0, 4).map(value => {
+            const model = value && typeof value === 'object' ? value : {};
+            const label = safeText(model.label, '名称不明', 40);
+            const modelId = safeText(model.modelId, 'ID不明', 80);
+            const status = Object.prototype.hasOwnProperty.call(RL_MODEL_STATUS_LABELS, model.status)
+                ? RL_MODEL_STATUS_LABELS[model.status] : '状態不明';
+            const digest = typeof model.expectedSha256 === 'string' && /^[a-f0-9]{64}$/.test(model.expectedSha256)
+                ? model.expectedSha256.slice(0, 12) : '不明';
+            const verification = model.verified === true ? 'SHA検証済み' : 'SHA未検証';
+            return `${label}（${modelId}）・${status}・${verification}:${digest}`;
+        }).join(' / ');
+    }
+
+    function rlMemorySummary(value) {
+        if (!value || typeof value !== 'object' ||
+                !Number.isSafeInteger(value.artifactBytes) || value.artifactBytes < 0 ||
+                !Number.isSafeInteger(value.limitBytes) || value.limitBytes <= 0) return '未使用';
+        const formatMib = bytes => `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+        return `${formatMib(value.artifactBytes)} / ${formatMib(value.limitBytes)}・${
+            value.withinBudget === true ? '予算内' : '予算超過'}`;
+    }
+
+    function sanitizeMatchValue(value, depth = 0) {
+        if (depth > 8) return null;
+        if (typeof value === 'string') return value.slice(0, 200);
+        if (typeof value === 'boolean' || value === null) return value;
+        if (Number.isSafeInteger(value)) return value;
+        if (Array.isArray(value)) return value.slice(0, 1000)
+            .map(item => sanitizeMatchValue(item, depth + 1));
+        if (!value || typeof value !== 'object') return null;
+        const result = {};
+        for (const [key, item] of Object.entries(value).slice(0, 200)) {
+            if (/room|token|secret|signature|password/i.test(key)) continue;
+            result[key] = sanitizeMatchValue(item, depth + 1);
+        }
+        return result;
+    }
+
+    function buildMatchExport(input = {}) {
+        const snapshot = sanitizeMatchValue(input.snapshot);
+        if (!snapshot || !Array.isArray(snapshot.players)) return null;
+        snapshot.players = snapshot.players.slice(0, 10).map((player, index) => Object.assign({}, player, {
+            name: `プレイヤー${index + 1}`,
+        }));
+        snapshot.log = [];
+        snapshot.undoState = null;
+        const actions = Array.isArray(input.actions) ? input.actions.slice(-200).map(entry => ({
+            action: safeOperationName(entry && entry.action),
+            data: sanitizeMatchValue(entry && entry.data),
+            playerIndex: Number.isSafeInteger(entry && entry.playerIndex) ? entry.playerIndex : null,
+            seq: Number.isSafeInteger(entry && entry.seq) ? entry.seq : null,
+        })).filter(entry => entry.action) : [];
+        const envelope = {
+            schemaVersion: MATCH_EXPORT_SCHEMA_VERSION,
+            app: 'machikoro-match',
+            generatedAt: safeText(input.generatedAt, '', 40),
+            clientVersion: safeText(input.clientVersion, '開発版', 80),
+            mode: input.mode === 'online' ? 'online' : 'local',
+            snapshot,
+            actions,
+            rlModels: Array.isArray(input.rlModels) ? input.rlModels.slice(0, 4).map(model => ({
+                modelId: safeText(model && model.modelId, '不明', 80),
+                expectedSha256: typeof (model && model.expectedSha256) === 'string' &&
+                    /^[a-f0-9]{64}$/.test(model.expectedSha256) ? model.expectedSha256 : '',
+                verified: model && model.verified === true,
+            })) : [],
+        };
+        return JSON.stringify(envelope).length <= MAX_MATCH_EXPORT_CHARS
+            ? Object.freeze(envelope) : null;
+    }
+
+    function parseMatchExport(text) {
+        if (typeof text !== 'string' || text.length === 0 || text.length > MAX_MATCH_EXPORT_CHARS) return null;
+        let value;
+        try { value = JSON.parse(text); } catch (_) { return null; }
+        if (!value || value.schemaVersion !== MATCH_EXPORT_SCHEMA_VERSION ||
+                value.app !== 'machikoro-match' || !value.snapshot ||
+                !Array.isArray(value.snapshot.players) || !Array.isArray(value.actions)) return null;
+        return buildMatchExport(value);
+    }
+
     function buildSnapshot(input = {}) {
         const context = Object.prototype.hasOwnProperty.call(CONTEXT_LABELS, input.context)
             ? input.context : 'title';
@@ -116,6 +208,8 @@ const AppDiagnostics = (() => {
                 ? String(Number.isSafeInteger(input.gameGeneration) && input.gameGeneration >= 0
                     ? input.gameGeneration : 0)
                 : '未使用',
+            rlModels: rlModelSummary(input.rlModels),
+            rlMemory: rlMemorySummary(input.rlMemory),
             generatedAt: safeText(input.generatedAt, '不明', 40),
         });
     }
@@ -137,6 +231,8 @@ const AppDiagnostics = (() => {
             ['直近イベント', snapshot.recentEvents],
             ['オンライン操作送信', snapshot.actionDelivery],
             ['ゲーム世代', snapshot.gameGeneration],
+            ['深層学習モデル', snapshot.rlModels],
+            ['モデル容量予算', snapshot.rlMemory],
             ['診断生成時刻', snapshot.generatedAt],
         ]);
     }
@@ -163,11 +259,15 @@ const AppDiagnostics = (() => {
 
     return Object.freeze({
         buildHtml,
+        buildMatchExport,
         buildSnapshot,
         escapeHtml,
         formatText,
         gameStateLabel,
+        parseMatchExport,
         rows,
+        rlMemorySummary,
+        rlModelSummary,
         safeEventNames,
         successfulOperationLabel,
     });

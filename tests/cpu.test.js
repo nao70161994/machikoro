@@ -636,6 +636,25 @@ runTest('CPUは交換可能な自分の施設がないビジネスセンター�
     assert.strictEqual(game.phase, runtime.GAME_PHASES.BUILD);
 });
 
+runTest('CPU pending helper は明示されたBusiness見送りをfallback交換に変えない', () => {
+    const game = new GameManager(2);
+    game.phase = runtime.GAME_PHASES.PENDING;
+    game.pendingBusiness = 1;
+    game.currentPlayer().cards = [createCardByName('ビジネスセンター'), createCardByName('麦畑')];
+    game.players[1].cards = [createCardByName('森林')];
+    const cpu = new CPU('strong');
+    cpu.chooseBusinessMove = () => ({ skip: true });
+
+    const proposal = CPU.choosePendingAction(game, cpu, { clearFallback: false });
+
+    assert.strictEqual(JSON.stringify(proposal.data), JSON.stringify({ skip: true }));
+    assert.strictEqual(proposal.usedFallback, undefined);
+    assert.strictEqual(CPUPendingResolution.applyPendingAction(game, proposal), true);
+    assert.strictEqual(game.pendingBusiness, 0);
+    assert.ok(game.currentPlayer().cards.some(card => card.name === '麦畑'));
+    assert.ok(game.players[1].cards.some(card => card.name === '森林'));
+});
+
 runTest('CPU pending action互換executorはcanonical proposalだけを適用する', () => {
     const calls = [];
     const game = {

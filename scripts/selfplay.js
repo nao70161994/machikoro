@@ -103,6 +103,7 @@ function resolveSelfplayDifficulties(difficulties) {
 function createPlayers(runtime, difficulties, options = {}) {
     const resolvedDifficulties = resolveSelfplayDifficulties(difficulties);
     return resolvedDifficulties.map(difficulty => {
+        const mappedRlModel = options.rlModelDataByDifficulty && options.rlModelDataByDifficulty[difficulty];
         const playerCountProfileTunings = options.playerCountProfileTuningsByDifficulty &&
             options.playerCountProfileTuningsByDifficulty[difficulty]
             ? options.playerCountProfileTuningsByDifficulty[difficulty]
@@ -111,14 +112,17 @@ function createPlayers(runtime, difficulties, options = {}) {
             options.largeCrowdStrategiesByDifficulty[difficulty]
             ? options.largeCrowdStrategiesByDifficulty[difficulty]
             : {};
-        if (difficulty === 'rl') {
-            if (!options.rlModelData || !runtime.RLCPU) {
-                throw new Error('rlModelData is required when using rl difficulty');
+        if (difficulty === 'rl' || mappedRlModel) {
+            const rlModelData = mappedRlModel || options.rlModelData;
+            if (!rlModelData || !runtime.RLCPU) {
+                throw new Error(`rlModelData is required when using ${difficulty} difficulty`);
             }
-            if (resolvedDifficulties.length >= 3 && Number(options.rlModelData.stateDim) === 145) {
+            if (resolvedDifficulties.length >= 3 && Number(rlModelData.stateDim) === 145) {
                 throw new Error('2-player RL model cannot be used for 3+ player selfplay');
             }
-            return new runtime.RLCPU(options.rlModelData);
+            const cpu = new runtime.RLCPU(rlModelData);
+            cpu.difficulty = difficulty;
+            return cpu;
         }
         if (difficulty !== 'expert') {
             const cpuOptions = {
@@ -686,6 +690,7 @@ function pushPendingResolutionTrace(runtime, game, shopStock, cpu, resolution, t
     switch (resolution.action) {
         case 'resolveTV': {
             const targetIndex = resolution.targetIndex;
+            recordTargetStat(game, cpu, runtime.__selfplayOptions, 'tv', targetIndex);
             pushTraceEntry(runtime, game, shopStock, cpu, {
                 action: actions.TV_TARGET ?? null,
                 label: `TV_TARGET:p${targetIndex + 1}`,
@@ -710,6 +715,7 @@ function pushPendingResolutionTrace(runtime, game, shopStock, cpu, resolution, t
                 label: 'PASS',
             }, traceEntries);
             recordBusinessStat(game, cpu, runtime.__selfplayOptions, move, giveCard, takeCard);
+            recordTargetStat(game, cpu, runtime.__selfplayOptions, 'business', move && move.targetIndex);
             break;
         }
         case 'resolveMover': {
@@ -724,6 +730,7 @@ function pushPendingResolutionTrace(runtime, game, shopStock, cpu, resolution, t
                 action: actions.PASS ?? null,
                 label: 'PASS',
             }, traceEntries);
+            recordTargetStat(game, cpu, runtime.__selfplayOptions, 'mover', move && move.targetIndex);
             break;
         }
         case 'resolveRenovation': {
@@ -736,6 +743,14 @@ function pushPendingResolutionTrace(runtime, game, shopStock, cpu, resolution, t
             } : {
                 action: actions.PASS ?? null,
                 label: 'PASS',
+            }, traceEntries);
+            break;
+        }
+        case 'resolveIT': {
+            const doSave = resolution.doSave === true;
+            pushTraceEntry(runtime, game, shopStock, cpu, {
+                action: doSave ? (actions.IT_SAVE ?? null) : (actions.IT_SKIP ?? null),
+                label: doSave ? 'IT_SAVE' : 'IT_SKIP',
             }, traceEntries);
             break;
         }
@@ -910,9 +925,58 @@ function cloneBusinessStats(stats) {
     return result;
 }
 
+function createTargetStatsBucket() {
+    const emptyKind = () => ({
+        total: 0,
+        skipped: 0,
+        targetDifficulties: {},
+        targetSeats: {},
+    });
+    return {
+        tv: emptyKind(),
+        business: emptyKind(),
+        mover: emptyKind(),
+    };
+}
+
+function cloneTargetStats(stats) {
+    const result = {};
+    for (const [difficulty, byKind] of Object.entries(stats || {})) {
+        result[difficulty] = {};
+        for (const kind of ['tv', 'business', 'mover']) {
+            const source = byKind && byKind[kind] || {};
+            result[difficulty][kind] = {
+                total: source.total || 0,
+                skipped: source.skipped || 0,
+                targetDifficulties: Object.assign({}, source.targetDifficulties),
+                targetSeats: Object.assign({}, source.targetSeats),
+            };
+        }
+    }
+    return result;
+}
+
 function incrementCount(map, key) {
     if (!key) return;
     map[key] = (map[key] || 0) + 1;
+}
+
+function recordTargetStat(game, cpu, options, kind, targetIndex) {
+    if (!options || !options.targetStats || !['tv', 'business', 'mover'].includes(kind)) return;
+    const actorDifficulty = cpu && cpu.difficulty ? cpu.difficulty : 'rl';
+    const stats = options.targetStats[actorDifficulty] || createTargetStatsBucket();
+    options.targetStats[actorDifficulty] = stats;
+    const bucket = stats[kind];
+    bucket.total++;
+    if (!Number.isSafeInteger(targetIndex) || targetIndex < 0 ||
+            !game || !Array.isArray(game.players) || targetIndex >= game.players.length) {
+        bucket.skipped++;
+        return;
+    }
+    const targetCpu = Array.isArray(options.cpuPlayers) ? options.cpuPlayers[targetIndex] : null;
+    const targetDifficulty = targetCpu && targetCpu.difficulty ? targetCpu.difficulty : 'unknown';
+    incrementCount(bucket.targetDifficulties, targetDifficulty);
+    incrementCount(bucket.targetSeats, `p${targetIndex + 1}`);
 }
 
 function recordBusinessStat(game, cpu, options, move, giveCard, takeCard) {
@@ -1212,6 +1276,7 @@ function simulateGame(options = {}) {
             landmarks: Object.assign({}, stats.landmarks),
         })) : null;
         result.businessStats = options.businessStats ? cloneBusinessStats(options.businessStats) : null;
+        result.targetStats = options.targetStats ? cloneTargetStats(options.targetStats) : null;
         return result;
     } finally {
         runtime.Math.random = previousRandom;
@@ -1259,6 +1324,7 @@ function simulateGameLightweight(options = {}) {
             traceEntries: null,
             buildStats: null,
             businessStats: null,
+            targetStats: null,
         };
     } finally {
         runtime.Math.random = previousRandom;
@@ -1292,7 +1358,11 @@ function runSeries(options = {}) {
     const collectMatchLog = options.collectMatchLog !== false;
     const collectBuildStats = options.collectBuildStats !== false;
     const collectBusinessStats = options.collectBusinessStats !== false;
+    const collectTargetStats = options.collectTargetStats !== false;
     const includeFinalState = options.includeFinalState !== false;
+    const progressEvery = Number.isSafeInteger(options.progressEvery) && options.progressEvery > 0
+        ? options.progressEvery
+        : 0;
     const wins = Object.fromEntries(players.map(player => [player, 0]));
     const seatWins = players.map(() => 0);
     let exhausted = 0;
@@ -1311,6 +1381,8 @@ function runSeries(options = {}) {
         landmarks: {},
     }])) : null;
     const businessStats = collectBusinessStats ? {} : null;
+    const targetStats = collectTargetStats ? {} : null;
+    let completedGames = 0;
 
     for (let i = 0; i < games; i++) {
         const lineup = rotatePlayers(players, i % players.length);
@@ -1334,6 +1406,7 @@ function runSeries(options = {}) {
             playerCountProfileTuningsByDifficulty: options.playerCountProfileTuningsByDifficulty,
             largeCrowdStrategiesByDifficulty: options.largeCrowdStrategiesByDifficulty,
             rlModelData: options.rlModelData,
+            rlModelDataByDifficulty: options.rlModelDataByDifficulty,
             fast: options.fast,
             lite: options.lite,
             expertDiceMode: options.expertDiceMode,
@@ -1368,8 +1441,10 @@ function runSeries(options = {}) {
             buildStatsByDifficulty,
             currentLineup: lineup,
             businessStats,
+            targetStats,
         });
         turns += result.turns;
+        completedGames = i + 1;
         if (result.exhausted) exhausted++;
         if (collectMatchLog) {
             matchLog.push({
@@ -1390,19 +1465,31 @@ function runSeries(options = {}) {
             wins[lineup[result.winner]]++;
             seatWins[result.winner]++;
         }
+        if (typeof options.onProgress === 'function' && progressEvery > 0 &&
+                (completedGames % progressEvery === 0 || completedGames === games ||
+                    (options.abortOnExhaustion === true && result.exhausted))) {
+            options.onProgress({
+                completed: completedGames,
+                total: games,
+                exhausted,
+                wins: Object.assign({}, wins),
+            });
+        }
+        if (options.abortOnExhaustion === true && result.exhausted) break;
     }
 
     return {
-        games,
+        games: completedGames,
         players: players.slice(),
         wins,
         seatWins,
         exhausted,
-        averageTurns: games > 0 ? turns / games : 0,
+        averageTurns: completedGames > 0 ? turns / completedGames : 0,
         matchLog: matchLog || [],
         buildStats: buildStats || [],
         buildStatsByDifficulty: buildStatsByDifficulty || {},
         businessStats: collectBusinessStats ? cloneBusinessStats(businessStats) : {},
+        targetStats: collectTargetStats ? cloneTargetStats(targetStats) : {},
     };
 }
 
@@ -1557,6 +1644,9 @@ module.exports = {
     parseIntegerOrDefault,
     createBusinessStatsBucket,
     cloneBusinessStats,
+    createTargetStatsBucket,
+    cloneTargetStats,
+    recordTargetStat,
     resolveBusinessMoveCards,
     recordBusinessStat,
     parseArgs,

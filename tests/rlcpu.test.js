@@ -86,6 +86,9 @@ function buildParityModelWithStateDim(context, stateDim) {
         hiddenSize: 2,
         numActions: RLCPU.NUM_ACTIONS,
         numCards: 38,
+        cardNames: Array.from(RLCPU.CARD_NAMES),
+        landmarkNames: Array.from(RLCPU.LANDMARK_ORDER),
+        vocabularyFingerprint: RLCPU.vocabularyFingerprint(),
         layers: {
             shared: [
                 {
@@ -416,6 +419,28 @@ runTest('RLCPU: runtime action/card count mismatch は既知schemaで早期拒�
     assert.throws(() => new RLCPU(wrongCards), /card count mismatch/);
 });
 
+runTest('RLCPU: vocabulary順序の不一致と新形式のmetadata欠落を拒否する', () => {
+    const context = loadRLRuntime();
+    const { RLCPU } = context;
+    const mismatched = buildParityModel(context);
+    [mismatched.cardNames[0], mismatched.cardNames[1]] = [mismatched.cardNames[1], mismatched.cardNames[0]];
+    assert.throws(() => new RLCPU(mismatched), /card vocabulary mismatch/);
+
+    const missing = buildParityModel(context);
+    missing.formatVersion = 2;
+    delete missing.cardNames;
+    delete missing.landmarkNames;
+    assert.throws(() => new RLCPU(missing), /vocabulary metadata is missing/);
+    assert.throws(() => new RLCPU(missing, { allowLegacyVocabulary: true }), /vocabulary metadata is missing/);
+    missing.formatVersion = 1;
+    assert.doesNotThrow(() => new RLCPU(missing, { allowLegacyVocabulary: true }));
+
+    const wrongFingerprint = buildParityModel(context);
+    wrongFingerprint.formatVersion = 2;
+    wrongFingerprint.vocabularyFingerprint = 'v1:wrong';
+    assert.throws(() => new RLCPU(wrongFingerprint), /vocabulary fingerprint mismatch/);
+});
+
 runTest('RLCPU: custom state schema でも flat action count mismatch は拒否する', () => {
     const context = loadRLRuntime();
     const { RLCPU } = context;
@@ -453,6 +478,59 @@ runTest('RLCPU: chooseAction は mask 後の最大確率行動を返す', () => 
     const choice = cpu.chooseAction([1, 0, 1], [0, 1, 1, 0]);
     assert.strictEqual(choice.action, 1);
     assert.ok(choice.confidence > 0);
+});
+
+runTest('RLCPU: chooseAction は合法なpolicy列だけを推論する', () => {
+    const { RLCPU } = loadRLRuntime();
+    const cpu = new RLCPU(buildTestModel());
+    const originalMatVecColumn = cpu._matVecColumn.bind(cpu);
+    let policyColumns = 0;
+    cpu._matVecColumn = (layer, input, column) => {
+        if (layer === cpu.model.layers.policyHead) policyColumns++;
+        return originalMatVecColumn(layer, input, column);
+    };
+    const choice = cpu.chooseAction([1, 0, 1], [0, 1, 1, 0]);
+    assert.strictEqual(choice.action, 1);
+    assert.strictEqual(policyColumns, 2);
+});
+
+runTest('RLCPU: 非有限weightとbiasを読み込み時に拒否する', () => {
+    const { RLCPU } = loadRLRuntime();
+    const weightModel = buildTestModel();
+    weightModel.layers.shared[0].weights[0][0] = Infinity;
+    assert.throws(() => new RLCPU(weightModel), /non-finite weights/);
+
+    const biasModel = buildTestModel();
+    biasModel.layers.policyHead.bias[0] = 'corrupt';
+    assert.throws(() => RLCPU.validateModelData(biasModel), /non-finite bias/);
+});
+
+runTest('RLCPU: layer shape metadataとexport version不一致を拒否する', () => {
+    const { RLCPU } = loadRLRuntime();
+    const shapeModel = buildTestModel();
+    shapeModel.layers.shared[0].shape = { input: 99, output: 2 };
+    assert.throws(() => new RLCPU(shapeModel), /layer metadata mismatch/);
+
+    const versionModel = buildTestModel();
+    versionModel.formatVersion = 99;
+    versionModel.schemaVersion = 3;
+    assert.throws(
+        () => RLCPU.validateModelData(versionModel, { requireFormatVersion: true }),
+        /formatVersion/
+    );
+
+    const targetSlotsModel = buildTestModel();
+    targetSlotsModel.numTargetSlots = -1;
+    assert.throws(() => new RLCPU(targetSlotsModel), /numTargetSlots/);
+});
+
+runTest('RLCPU: 合法actionがない推論結果をfail closedにする', () => {
+    const { RLCPU } = loadRLRuntime();
+    const cpu = new RLCPU(buildTestModel());
+    assert.throws(
+        () => cpu.chooseAction([1, 0, 1], [0, 0, 0, 0]),
+        /illegal action/
+    );
 });
 
 runTest('RLCPU: forwardBusiness は give/take 分布を返す', () => {
@@ -1021,6 +1099,66 @@ runTest('RLCPU: pending business はtarget headなしでも全相手から合法
     assert.strictEqual(move.myCard, 0);
     assert.strictEqual(move.targetIndex, 2);
     assert.strictEqual(move.theirCard, 0);
+});
+
+runTest('RLCPU: Business見送りgateは新モデルだけPASSを選べる', () => {
+    const context = loadRLRuntime();
+    const { RLCPU } = context;
+    const giveIndex = context.CARDS.findIndex(card => card.name === 'パン屋');
+    const takeIndex = context.CARDS.findIndex(card => card.name === '寿司屋');
+    const exchange = RLCPU.ACTIONS.BC_BASE + giveIndex * context.CARDS.length + takeIndex;
+    const mask = new Array(RLCPU.NUM_ACTIONS).fill(0);
+    mask[exchange] = 1;
+    mask[RLCPU.ACTIONS.PASS] = 1;
+
+    const legacyModel = buildParityModelWithStateDim(context, 353);
+    legacyModel.layers.businessGiveHead.bias[giveIndex] = 10;
+    legacyModel.layers.businessTakeHead.bias[takeIndex] = 10;
+    legacyModel.layers.policyHead.bias[RLCPU.ACTIONS.PASS] = 20;
+    const state = new Array(353).fill(0);
+    assert.strictEqual(new RLCPU(legacyModel).chooseBusinessAction(state, mask).action, exchange);
+
+    const skipModel = buildParityModelWithStateDim(context, 353);
+    skipModel.businessSkipGateVersion = 1;
+    skipModel.layers.businessGiveHead.bias[giveIndex] = 10;
+    skipModel.layers.businessTakeHead.bias[takeIndex] = 10;
+    skipModel.layers.policyHead.bias[RLCPU.ACTIONS.PASS] = 20;
+    assert.strictEqual(new RLCPU(skipModel).chooseBusinessAction(state, mask).action, RLCPU.ACTIONS.PASS);
+
+    skipModel.layers.policyHead.bias[RLCPU.ACTIONS.PASS] = 0;
+    skipModel.layers.policyHead.bias[exchange] = 20;
+    assert.strictEqual(new RLCPU(skipModel).chooseBusinessAction(state, mask).action, exchange);
+});
+
+runTest('RLCPU: Business見送りは実ゲーム用の明示skip moveへ変換する', () => {
+    const context = loadRLRuntime();
+    const { RLCPU, GAME_PHASES } = context;
+    const model = buildParityModelWithStateDim(context, 353);
+    model.businessSkipGateVersion = 1;
+    model.layers.policyHead.bias[RLCPU.ACTIONS.PASS] = 30;
+    const cpu = new RLCPU(model);
+    const game = buildGameFromFixtureSetup(context, {
+        current: 0,
+        phase: GAME_PHASES.PENDING,
+        pendingTV: 0,
+        pendingBusiness: 1,
+        pendingCleaning: 0,
+        pendingMover: 0,
+        pendingRenovation: 0,
+        pendingIT: false,
+        lastDice: 0,
+        lastDice1: 0,
+        lastDice2: 0,
+        turnCount: 12,
+        players: [
+            { coins: 3, cards: { 'パン屋': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: { '寿司屋': 1 }, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: {}, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+            { coins: 3, cards: {}, dormant: {}, landmarks: {}, itVentureCoins: 0 },
+        ],
+    });
+
+    assert.strictEqual(JSON.stringify(cpu.chooseBusinessMove(game)), JSON.stringify({ skip: true }));
 });
 
 runTest('RLCPU: target head の上位枠外にだけ合法business対象がいてもfallbackする', () => {

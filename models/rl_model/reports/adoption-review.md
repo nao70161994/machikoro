@@ -1,6 +1,6 @@
 # RL Adoption Review
 
-- updatedAt: 2026-05-11
+- updatedAt: 2026-09-13
 - minimumGames: 50
 - currentMain: self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3
 

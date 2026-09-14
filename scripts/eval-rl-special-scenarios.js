@@ -14,6 +14,7 @@ function parseArgs(argv) {
     const args = {
         registryPath: path.join(__dirname, '..', 'models', 'rl_model', 'registry.json'),
         models: [],
+        modelPaths: [],
         runLabels: [],
         rank: 1,
         playerCount: 4,
@@ -25,6 +26,7 @@ function parseArgs(argv) {
         const arg = argv[i];
         if (arg === '--registry') args.registryPath = argv[++i] || args.registryPath;
         else if (arg === '--models') args.models = parseList(argv[++i]);
+        else if (arg === '--model-paths') args.modelPaths = parseList(argv[++i]);
         else if (arg === '--run-labels') args.runLabels = parseList(argv[++i]);
         else if (arg === '--rank') args.rank = parseIntegerOrDefault(argv[++i], args.rank);
         else if (arg === '--player-count') args.playerCount = parseIntegerOrDefault(argv[++i], args.playerCount);
@@ -188,6 +190,33 @@ const SCENARIOS = {
             { coins: 10, cards: ['鉱山', 'サンマ漁船', '改装屋'], landmarks: ['駅', '港'] },
         ],
     },
+    twoPlayerBusinessProtectEngine: {
+        kind: 'business',
+        description: '2人戦で自分の主要エンジンを守りながら高価値施設を取れるかを見る局面',
+        expected: { targetIndex: 1, takeOneOf: ['鉱山', 'マグロ漁船'], avoidGive: ['食品倉庫'] },
+        players: [
+            { coins: 5, cards: ['ビジネスセンター', '麦畑', 'パン屋', '食品倉庫'], landmarks: ['駅'] },
+            { coins: 12, cards: ['鉱山', 'マグロ漁船', '改装屋'], landmarks: ['駅', '港'] },
+        ],
+    },
+    twoPlayerBusinessTakePremium: {
+        kind: 'business',
+        description: '2人戦で低価値施設を渡して相手の高価値施設を取れるかを見る局面',
+        expected: { targetIndex: 1, giveOneOf: ['麦畑', 'パン屋'], takeOneOf: ['鉱山', 'サンマ漁船'] },
+        players: [
+            { coins: 4, cards: ['ビジネスセンター', '麦畑', 'パン屋'], landmarks: ['駅'] },
+            { coins: 13, cards: ['鉱山', 'サンマ漁船', '貸金業'], landmarks: ['駅', '港'] },
+        ],
+    },
+    twoPlayerBusinessSkipHarmful: {
+        kind: 'business',
+        description: '2人戦で有利な交換がないときにビジネスセンターを見送れるかを見る局面',
+        expected: { skip: true },
+        players: [
+            { coins: 4, cards: ['ビジネスセンター', '食品倉庫', 'ピザ屋'], landmarks: ['駅'] },
+            { coins: 2, cards: ['麦畑', 'パン屋'], landmarks: [] },
+        ],
+    },
 };
 
 function scenarioNamesForPlayerCount(playerCount, requested) {
@@ -247,6 +276,9 @@ function resolvePlayerCard(player, ref) {
 
 function buildChecks(expected, actual) {
     const checks = {};
+    if (Object.prototype.hasOwnProperty.call(expected, 'skip')) {
+        checks.skipMatches = actual.skipped === expected.skip;
+    }
     if (Object.prototype.hasOwnProperty.call(expected, 'targetIndex')) {
         checks.targetMatches = actual.targetIndex === expected.targetIndex;
     }
@@ -371,11 +403,34 @@ function evaluateScenario(runtime, modelData, scenarioName, playerCount) {
     };
 }
 
+function summarizeScenarioChecks(scenarios) {
+    let passedChecks = 0;
+    let totalChecks = 0;
+    const failedScenarios = [];
+    for (const scenario of scenarios || []) {
+        const checks = Object.values(scenario.checks || {});
+        passedChecks += checks.filter(Boolean).length;
+        totalChecks += checks.length;
+        const unexpectedSkip = scenario.skipped && !(scenario.expected && scenario.expected.skip === true);
+        if (unexpectedSkip || checks.some(value => value !== true)) {
+            failedScenarios.push(scenario.scenario);
+        }
+    }
+    return {
+        passedChecks,
+        totalChecks,
+        passRate: totalChecks > 0 ? passedChecks / totalChecks : 0,
+        failedScenarios,
+        allPassed: totalChecks > 0 && failedScenarios.length === 0,
+    };
+}
+
 function evaluateSpecialScenarios(specs, args) {
     const runtime = loadRuntime();
     const scenarios = scenarioNamesForPlayerCount(args.playerCount, args.scenarios);
     return specs.map(spec => {
         const modelData = spec.modelData || loadModel(spec.path);
+        const evaluatedScenarios = scenarios.map(name => evaluateScenario(runtime, modelData, name, args.playerCount));
         return {
             id: spec.id,
             label: spec.label || spec.id,
@@ -387,7 +442,8 @@ function evaluateSpecialScenarios(specs, args) {
                 numActions: modelData.numActions,
                 schemaVersion: modelData.schemaVersion,
             },
-            scenarios: scenarios.map(name => evaluateScenario(runtime, modelData, name, args.playerCount)),
+            summary: summarizeScenarioChecks(evaluatedScenarios),
+            scenarios: evaluatedScenarios,
         };
     });
 }
@@ -407,7 +463,12 @@ function renderScenarioText(scenario) {
 function renderText(results) {
     const lines = [];
     for (const result of results) {
-        lines.push(`${result.id} players=${result.playerCount} stateDim=${result.modelInfo.stateDim}`);
+        const summary = result.summary || summarizeScenarioChecks(result.scenarios);
+        lines.push(
+            `${result.id} players=${result.playerCount} stateDim=${result.modelInfo.stateDim} ` +
+            `checks=${summary.passedChecks}/${summary.totalChecks} ` +
+            `failed=${summary.failedScenarios.length > 0 ? summary.failedScenarios.join(',') : 'none'}`
+        );
         for (const scenario of result.scenarios) lines.push(`  ${renderScenarioText(scenario)}`);
     }
     return lines.join('\n');
@@ -433,6 +494,7 @@ module.exports = {
     scenarioNamesForPlayerCount,
     createScenarioGame,
     buildChecks,
+    summarizeScenarioChecks,
     evaluateScenario,
     evaluateSpecialScenarios,
     renderText,

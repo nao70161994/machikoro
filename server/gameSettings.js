@@ -8,7 +8,10 @@ function cpuDifficultyLabel(difficulty) {
     return '最強';
 }
 
-function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds }) {
+function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds, allowedRlModelDigests = null }) {
+    const digestForModel = modelId => allowedRlModelDigests && typeof allowedRlModelDigests.get === 'function'
+        ? allowedRlModelDigests.get(modelId)
+        : null;
     function normalizePlayerSettings(playerSettings, playerCount) {
         if (!Array.isArray(playerSettings)) {
             return Array.from({ length: playerCount }, () => ({ type: 'human', difficulty: 'normal' }));
@@ -19,6 +22,10 @@ function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds
             const normalizedSetting = { type: 'cpu', difficulty };
             if (difficulty === 'rl' && allowedRlModelIds.has(setting.rlModelId)) {
                 normalizedSetting.rlModelId = setting.rlModelId;
+                const expectedDigest = digestForModel(setting.rlModelId);
+                if (expectedDigest && setting.rlModelSha256 === expectedDigest) {
+                    normalizedSetting.rlModelSha256 = expectedDigest;
+                }
             }
             return normalizedSetting;
         });
@@ -34,7 +41,8 @@ function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds
             setting?.type === 'cpu' &&
             setting.difficulty === 'rl' &&
             typeof setting.rlModelId === 'string' &&
-            !allowedRlModelIds.has(setting.rlModelId)
+            (!allowedRlModelIds.has(setting.rlModelId) ||
+                (digestForModel(setting.rlModelId) && setting.rlModelSha256 !== digestForModel(setting.rlModelId)))
         );
     }
 
@@ -43,7 +51,8 @@ function makeGameSettings({ cardNames, allowedCpuDifficulties, allowedRlModelIds
         return playerSettings.some(setting =>
             setting?.type === 'cpu' &&
             setting.difficulty === 'rl' &&
-            typeof setting.rlModelId !== 'string'
+            (typeof setting.rlModelId !== 'string' ||
+                (digestForModel(setting.rlModelId) && typeof setting.rlModelSha256 !== 'string'))
         );
     }
 

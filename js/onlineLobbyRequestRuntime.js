@@ -6,6 +6,7 @@ const OnlineLobbyRequestRuntime = (() => {
         ROOM_ID_INVALID: 'ルームIDは6文字です',
         MODEL_LOADING: '深層学習AIモデルを読み込んでいます。',
         MODEL_FAILED: '深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度部屋を作成してください。',
+        MODEL_FALLBACK: '深層学習AIモデルを読み込めなかったため、CPU（強）で部屋を作成します。',
         REQUEST_TIMEOUT_STATUS: '⚠️ サーバー応答がありません。もう一度お試しください。',
         REQUEST_TIMEOUT_NOTICE: 'サーバー応答がタイムアウトしました。通信状態を確認してもう一度お試しください。',
     });
@@ -51,7 +52,16 @@ const OnlineLobbyRequestRuntime = (() => {
 
         function canPreloadModels() {
             const portfolio = modelPortfolio();
-            return !!portfolio && typeof portfolio.preloadEligibleModels === 'function';
+            return !!portfolio && (typeof portfolio.preloadSelectedModels === 'function' ||
+                typeof portfolio.preloadEligibleModels === 'function');
+        }
+
+        function freezeRlSettings(playerCount, settings) {
+            const frozen = dependencies.freezeSettings(settings, playerCount);
+            if (typeof dependencies.setupRuntime.replaceSettings === 'function') {
+                dependencies.setupRuntime.replaceSettings(frozen);
+            }
+            return frozen;
         }
 
         function modelLoadState(playerCount = dependencies.setupRuntime.snapshot().selectedCount) {
@@ -64,6 +74,13 @@ const OnlineLobbyRequestRuntime = (() => {
             }
             const portfolio = modelPortfolio();
             const loaderAvailable = canPreloadModels();
+            const settings = freezeRlSettings(
+                playerCount,
+                snapshotPlayerSettings(playerCount)
+            );
+            if (loaderAvailable && typeof portfolio.selectedLoadState === 'function') {
+                return portfolio.selectedLoadState(playerCount, settings);
+            }
             return dependencies.playerSettings.rlModelLoadState({
                 usesRl,
                 loaderAvailable,
@@ -137,12 +154,15 @@ const OnlineLobbyRequestRuntime = (() => {
         }
 
         function preloadForSettings(playerCount, settings) {
-            if (!hasRlCpu(playerCount, settings)) return null;
+            const frozen = freezeRlSettings(playerCount, settings);
+            if (!hasRlCpu(playerCount, frozen)) return null;
             const portfolio = modelPortfolio();
             if (!canPreloadModels()) {
                 return Promise.reject(new Error('RL model loader is not available'));
             }
-            return portfolio.preloadEligibleModels(playerCount, { attempts: 3 });
+            return typeof portfolio.preloadSelectedModels === 'function'
+                ? portfolio.preloadSelectedModels(playerCount, frozen, { attempts: 3 })
+                : portfolio.preloadEligibleModels(playerCount, { attempts: 3 });
         }
 
         function preloadForCreate(playerCount,
@@ -158,10 +178,11 @@ const OnlineLobbyRequestRuntime = (() => {
                 return null;
             }
             updateReadinessUi();
-            const preload = modelPortfolio().preloadEligibleModels(
-                setup.selectedCount,
-                { attempts: 3, retryDelayMs: 0 }
-            );
+            const frozen = freezeRlSettings(setup.selectedCount, setup.playerSettings);
+            const portfolio = modelPortfolio();
+            const preload = typeof portfolio.preloadSelectedModels === 'function'
+                ? portfolio.preloadSelectedModels(setup.selectedCount, frozen, { attempts: 3, retryDelayMs: 0 })
+                : portfolio.preloadEligibleModels(setup.selectedCount, { attempts: 3, retryDelayMs: 0 });
             if (preload && typeof preload.then === 'function') {
                 preload.then(() => updateReadinessUi()).catch(error => {
                     dependencies.warn(reason, error);
@@ -201,6 +222,19 @@ const OnlineLobbyRequestRuntime = (() => {
             return true;
         }
 
+        function emitCreateWithSafeFallback(name, playerCount, settings, error) {
+            const portfolio = modelPortfolio();
+            if (!portfolio || typeof portfolio.safeFallbackSettings !== 'function') return false;
+            const fallback = portfolio.safeFallbackSettings(settings, playerCount, 'strong');
+            if (!fallback.replaced.length) return false;
+            if (typeof dependencies.setupRuntime.replaceSettings === 'function') {
+                dependencies.setupRuntime.replaceSettings(fallback.settings);
+            }
+            dependencies.warn('online-rl-safe-fallback', error, true);
+            dependencies.showNotice(TEXT.MODEL_FALLBACK);
+            return emitCreate(name, playerCount, fallback.settings);
+        }
+
         function showCreate() {
             if (dependencies.controller.snapshot().createPending) return false;
             const name = dependencies.inputValue(dependencies.ids.playerName).trim();
@@ -210,10 +244,10 @@ const OnlineLobbyRequestRuntime = (() => {
             }
             const setup = dependencies.setupRuntime.snapshot();
             const playerCount = setup.selectedCount;
-            const settings = dependencies.playerSettings.snapshot(
+            const settings = freezeRlSettings(playerCount, dependencies.playerSettings.snapshot(
                 setup.playerSettings,
                 playerCount
-            );
+            ));
             const state = updateReadinessUi();
             if (state.status === 'loading') {
                 dependencies.showNotice(TEXT.MODEL_LOADING);
@@ -233,9 +267,11 @@ const OnlineLobbyRequestRuntime = (() => {
                     emitCreate(name, playerCount, settings);
                 }).catch(error => {
                     setCreatePending(false);
-                    dependencies.warn('online-rl-create-preload', error, true);
-                    updateReadinessUi();
-                    dependencies.showNotice(TEXT.MODEL_FAILED);
+                    if (!emitCreateWithSafeFallback(name, playerCount, settings, error)) {
+                        dependencies.warn('online-rl-create-preload', error, true);
+                        updateReadinessUi();
+                        dependencies.showNotice(TEXT.MODEL_FAILED);
+                    }
                 });
                 return true;
             }
@@ -278,6 +314,7 @@ const OnlineLobbyRequestRuntime = (() => {
             begin,
             canPreloadModels,
             emitCreate,
+            emitCreateWithSafeFallback,
             finish,
             hasRlCpu,
             join,

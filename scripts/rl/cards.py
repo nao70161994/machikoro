@@ -3,6 +3,12 @@
 from dataclasses import dataclass
 from typing import Tuple
 
+# ---------- 色定数 ----------
+BLUE   = "blue"
+GREEN  = "green"
+RED    = "red"
+PURPLE = "purple"
+
 # ---------- エフェクト定数 ----------
 NORMAL       = "normal"
 CHEESE       = "cheese"

@@ -78,6 +78,7 @@ const {
     loadGameRuntime,
     sanitizeName,
     ALLOWED_RL_MODEL_IDS,
+    ALLOWED_RL_MODEL_DIGESTS,
     normalizePlayerSettings,
     hasInvalidOnlineRlModelSettings,
     normalizeCpuSpeed,
@@ -1862,7 +1863,12 @@ runTest('hasInvalidOnlineRlModelSettings はrl model id未指定を拒否対象�
         { type: 'human', difficulty: 'normal' },
     ]), true);
     assert.strictEqual(hasInvalidOnlineRlModelSettings([
-        { type: 'cpu', difficulty: 'rl', rlModelId: 'self-only-4p-h256-lr1e5-5000-seed103' },
+        {
+            type: 'cpu',
+            difficulty: 'rl',
+            rlModelId: 'self-only-4p-h256-lr1e5-5000-seed103',
+            rlModelSha256: ALLOWED_RL_MODEL_DIGESTS.get('self-only-4p-h256-lr1e5-5000-seed103'),
+        },
     ]), false);
 });
 
@@ -1872,6 +1878,10 @@ runTest('server のRLモデル許可リストは portfolio と一致する', () 
     vm.runInContext(`${fs.readFileSync(path.join(__dirname, '..', 'js', 'rlModelCatalog.js'), 'utf8')}\n${fs.readFileSync(path.join(__dirname, '..', 'js', 'RLModelPortfolio.js'), 'utf8')}\nthis.__portfolioIds = RLModelPortfolio.models.map(model => model.id);`, context);
     const portfolioIds = Array.from(context.__portfolioIds).sort();
     assert.deepStrictEqual([...ALLOWED_RL_MODEL_IDS].sort(), portfolioIds);
+    assert.deepStrictEqual(
+        [...ALLOWED_RL_MODEL_DIGESTS.entries()].sort(([left], [right]) => left.localeCompare(right)),
+        Object.entries(context.RLModelCatalog.modelDigests).sort(([left], [right]) => left.localeCompare(right)),
+    );
 });
 
 

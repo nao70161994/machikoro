@@ -11,7 +11,7 @@ function createHarness(options = {}) {
     const shopStock = {};
     let randomCallCount = 0;
     let setup = {
-        playerSettings: [
+        playerSettings: options.playerSettings || [
             { type: 'human', difficulty: 'normal', name: 'A' },
             { type: 'cpu', difficulty: 'expert', name: 'B' },
             { type: 'human', difficulty: 'normal', name: 'C' },
@@ -97,6 +97,31 @@ runTest('local game initializerはresetからrender・CPU予約までのeffect�
         'landmarks', 'stock', 'stock', 'cpuPlayers', 'addLog', 'render', 'scheduleCpu',
     ]);
     assert.strictEqual(calls[0][1], 'init-cancel-cpu');
+});
+
+runTest('local game initializerは選択済みRL model identityをCPU生成へ渡す', () => {
+    const { runtime } = createHarness({
+        playerSettings: [
+            { type: 'human', difficulty: 'normal', name: 'A' },
+            {
+                type: 'cpu',
+                difficulty: 'rl',
+                name: 'B',
+                rlModelId: 'model-a',
+                rlModelSha256: 'digest-a',
+            },
+            { type: 'human', difficulty: 'normal', name: 'C' },
+        ],
+    });
+    const result = runtime.initialize(3);
+    assert.strictEqual(result.cpuPlayers[1].difficulty, 'rl');
+    assert.deepStrictEqual(result.cpuPlayers[1].options, {
+        expertPurpose: 'live',
+        playerCount: 3,
+        expertOpponentDifficulties: ['normal', 'rl', 'normal'],
+        rlModelId: 'model-a',
+        rlModelSha256: 'digest-a',
+    });
 });
 
 runTest('local game initializerは公式オプション市場をseedつきで初期化する', () => {

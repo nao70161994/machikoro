@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-13",
+  "method": {
+    "gzipLevel": 9,
+    "brotliQuality": 9,
+    "brotliMode": "text"
+  },
+  "models": [
+    {
+      "id": "self-only-4p-h256-lr1e5-5000-seed103",
+      "label": "RL（多人数・上位3）",
+      "path": "models/rl_model/portfolio/seed103-4p.browser.json",
+      "productionActive": true,
+      "rawBytes": 12030008,
+      "gzipBytes": 5303851,
+      "brotliBytes": 4973129,
+      "gzipRatio": 0.44088507671815347,
+      "brotliRatio": 0.41339365692857394
+    },
+    {
+      "id": "mp-mixed-34510-target-only-seed145-4p",
+      "label": "RL（4人・目標判断強化）",
+      "path": "models/rl_model/portfolio/seed145-4p-target-specialist.browser.json",
+      "productionActive": true,
+      "rawBytes": 12668421,
+      "gzipBytes": 5385798,
+      "brotliBytes": 5051893,
+      "gzipRatio": 0.42513569765324344,
+      "brotliRatio": 0.39877842708258593
+    },
+    {
+      "id": "mp-mover-legal-curriculum-seed415-4p-strength",
+      "label": "RL（4人・strength）",
+      "path": "models/rl_model/portfolio/seed415-4p-strength.browser.json",
+      "productionActive": false,
+      "rawBytes": 12667729,
+      "gzipBytes": 5385572,
+      "brotliBytes": 5051675,
+      "gzipRatio": 0.42514108093092295,
+      "brotliRatio": 0.398783002067695
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed71-rewardcap-top3",
+      "label": "RL（農業・ワイナリー）",
+      "path": "models/rl_model/portfolio/seed71-top3.browser.json",
+      "productionActive": true,
+      "rawBytes": 10909992,
+      "gzipBytes": 4817068,
+      "brotliBytes": 4515435,
+      "gzipRatio": 0.44152809644590024,
+      "brotliRatio": 0.4138806884551336
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed70-rewardcap",
+      "label": "RL（寿司・倉庫）",
+      "path": "models/rl_model/portfolio/seed70.browser.json",
+      "productionActive": false,
+      "rawBytes": 10914676,
+      "gzipBytes": 4816682,
+      "brotliBytes": 4516281,
+      "gzipRatio": 0.4413032507790428,
+      "brotliRatio": 0.4137805831341214
+    },
+    {
+      "id": "self-only-both-h256-lr2e5-5000-seed69-rewardcap",
+      "label": "RL（バーガー・倉庫）",
+      "path": "models/rl_model/portfolio/seed69.browser.json",
+      "productionActive": false,
+      "rawBytes": 10887237,
+      "gzipBytes": 4812976,
+      "brotliBytes": 4505318,
+      "gzipRatio": 0.44207506459168655,
+      "brotliRatio": 0.41381647152532824
+    }
+  ],
+  "totals": {
+    "rawBytes": 70078063,
+    "gzipBytes": 30521947,
+    "brotliBytes": 28613731,
+    "gzipRatio": 0.43554210395341547,
+    "brotliRatio": 0.4083122417353345
+  },
+  "productionTotals": {
+    "rawBytes": 35608421,
+    "gzipBytes": 15506717,
+    "brotliBytes": 14540457,
+    "gzipRatio": 0.4354789278637208,
+    "brotliRatio": 0.4083432118486804
+  },
+  "recommendation": "JSON schema and runtime remain unchanged. Prefer HTTP Brotli with gzip fallback; keep raw artifact SHA-256 verification after decompression."
+}

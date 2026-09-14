@@ -8,9 +8,13 @@ from datetime import datetime, timezone
 
 import numpy as np
 
-from .cards import NUM_CARDS
+from .cards import CARD_NAMES, LANDMARK_ORDER, NUM_CARDS
 from .encode import ACTION_SCHEMA_FLAT_V1, state_schema_for_dim
 from .network import CHECKPOINT_SCHEMA_VERSION
+
+
+def vocabulary_fingerprint(card_names, landmark_names):
+    return "v1:" + "\x1f".join(card_names) + "\x1e" + "\x1f".join(landmark_names)
 
 
 MODEL_DIR = os.path.join(
@@ -75,13 +79,16 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
         tv_target = _load_optional_layer(data, "tv_target")
         bc_target = _load_optional_layer(data, "bc_target")
         mover_target = _load_optional_layer(data, "mover_target")
+        bc_skip_gate_version = int(data.get("bc_skip_gate_version", 0))
+        if bc_skip_gate_version not in (0, 1):
+            raise ValueError(f"unsupported bc_skip_gate_version: {bc_skip_gate_version}")
     target_slots = max(
         [int(layer["shape"]["output"]) for layer in (tv_target, bc_target, mover_target) if layer],
         default=0,
     )
 
     bundle = {
-        "formatVersion": 1,
+        "formatVersion": 2,
         "schemaVersion": schema_version,
         "exportedAt": datetime.now(timezone.utc).isoformat(),
         "stateDim": shared0["shape"]["input"],
@@ -90,7 +97,11 @@ def export_checkpoint(input_path, output_path, fmt="json", var_name="RL_MODEL_DA
         "hiddenSize": shared0["shape"]["output"],
         "numActions": policy["shape"]["output"],
         "numCards": NUM_CARDS,
+        "cardNames": list(CARD_NAMES),
+        "landmarkNames": list(LANDMARK_ORDER),
+        "vocabularyFingerprint": vocabulary_fingerprint(CARD_NAMES, LANDMARK_ORDER),
         "numTargetSlots": target_slots,
+        "businessSkipGateVersion": bc_skip_gate_version,
         "layers": {
             "shared": [shared0, shared1],
             "policyHead": policy,

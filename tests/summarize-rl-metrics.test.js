@@ -63,8 +63,8 @@ runTest('summarizeMetrics は opponent 別ベストと総合上位を返す', ()
     const rows = [
         { game: '1000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.5', train: '0.52', target_pending_rate: '0.08', target_update_rate: '0.08', tv_target_rate: '0.03', bc_target_rate: '0.04', mover_target_rate: '0.01', js_opponent: 'strong', js_win_rate: '0.6', js_first_rate: '0.7', js_second_rate: '0.5', js_draw_rate: '0.1', js_exhausted: '1', js_avg_turns: '17.4' },
         { game: '1000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.5', train: '0.52', target_pending_rate: '0.08', target_update_rate: '0.08', tv_target_rate: '0.03', bc_target_rate: '0.04', mover_target_rate: '0.01', js_opponent: 'expert', js_win_rate: '0.3', js_first_rate: '0.2', js_second_rate: '0.4', js_draw_rate: '0.1', js_exhausted: '0', js_avg_turns: '22.1' },
-        { game: '2000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.55', train: '0.6', target_pending_rate: '0.12', target_update_rate: '0.11', tv_target_rate: '0.05', bc_target_rate: '0.04', mover_target_rate: '0.02', js_opponent: 'strong', js_win_rate: '0.7', js_first_rate: '0.8', js_second_rate: '0.6', js_draw_rate: '0.0', js_exhausted: '0', js_avg_turns: '16.2' },
-        { game: '2000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.55', train: '0.6', target_pending_rate: '0.12', target_update_rate: '0.11', tv_target_rate: '0.05', bc_target_rate: '0.04', mover_target_rate: '0.02', js_opponent: 'expert', js_win_rate: '0.45', js_first_rate: '0.5', js_second_rate: '0.4', js_draw_rate: '0.05', js_exhausted: '0', js_avg_turns: '20.0' },
+        { game: '2000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.55', train: '0.6', target_pending_rate: '0.12', target_update_rate: '0.11', tv_target_rate: '0.05', bc_target_rate: '0.04', mover_target_rate: '0.02', bc_action_rate: '0.03', bc_skip_rate: '0.01', loss_replay_probability: '0.25', loss_replay_episodes: '3', loss_replay_steps: '329', js_opponent: 'strong', js_win_rate: '0.7', js_first_rate: '0.8', js_second_rate: '0.6', js_draw_rate: '0.0', js_exhausted: '0', js_avg_turns: '16.2' },
+        { game: '2000', run_label: 'baseline', hidden: '256', lr: '0.0003', rnd: '0.55', train: '0.6', target_pending_rate: '0.12', target_update_rate: '0.11', tv_target_rate: '0.05', bc_target_rate: '0.04', mover_target_rate: '0.02', loss_replay_probability: '0.25', loss_replay_episodes: '3', loss_replay_steps: '329', js_opponent: 'expert', js_win_rate: '0.45', js_first_rate: '0.5', js_second_rate: '0.4', js_draw_rate: '0.05', js_exhausted: '0', js_avg_turns: '20.0' },
     ];
     const summary = summarizeMetrics(rows, { opponents: ['strong', 'expert'] });
     assert.strictEqual(summary.bestByOpponent.strong.game, 2000);
@@ -75,6 +75,14 @@ runTest('summarizeMetrics は opponent 別ベストと総合上位を返す', ()
     assert.strictEqual(summary.combinedTop[0].runLabel, 'baseline');
     assert.strictEqual(summary.bestRuns[0].targetPendingRate, 0.12);
     assert.strictEqual(summary.bestRuns[0].bcTargetRate, 0.04);
+    assert.strictEqual(summary.bestRuns[0].bcActionRate, 0.03);
+    assert.strictEqual(summary.bestRuns[0].bcSkipRate, 0.01);
+    assert.strictEqual(summary.bestRuns[0].lossReplayProbability, 0.25);
+    assert.strictEqual(summary.bestRuns[0].lossReplayEpisodes, 3);
+    assert.strictEqual(summary.bestRuns[0].lossReplaySteps, 329);
+    assert.strictEqual(summary.runIndex[0].lossReplaySteps, 329);
+    assert.strictEqual(summary.bestConfigs[0].lossReplayEpisodes, 3);
+    assert.strictEqual(summary.configIndex[0].lossReplayProbability, 0.25);
 });
 
 runTest('summarizeMetrics は重み付けで総合順位を変えられる', () => {
@@ -112,6 +120,24 @@ runTest('summarizeMetrics は run ごとのベストを返す', () => {
     assert.strictEqual(summary.bestRuns[1].runLabel, 'baseline');
     assert.strictEqual(summary.runIndex[0].rank, 1);
     assert.strictEqual(summary.runIndex[0].runLabel, 'tuned');
+});
+
+runTest('summarizeMetrics は同じgame数の異なるrunを混ぜない', () => {
+    const rows = [
+        { game: '50', run_label: 'a', js_opponent: 'strong', js_win_rate: '0.8', loss_replay_probability: '0.25', loss_replay_episodes: '3', loss_replay_steps: '329' },
+        { game: '50', run_label: 'b', js_opponent: 'strong', js_win_rate: '0.2' },
+        { game: '50', run_label: 'a', js_opponent: 'expert', js_win_rate: '0.6', loss_replay_probability: '0.25', loss_replay_episodes: '3', loss_replay_steps: '329' },
+        { game: '50', run_label: 'b', js_opponent: 'expert', js_win_rate: '0.4' },
+    ];
+    const summary = summarizeMetrics(rows, { baselineRun: 'b' });
+    assert.strictEqual(summary.bestRuns.length, 2);
+    assert.strictEqual(summary.bestRuns[0].runLabel, 'a');
+    assert.ok(Math.abs(summary.bestRuns[0].score - 0.7) < 1e-9);
+    assert.ok(Math.abs(summary.bestRuns[0].scoreDelta - 0.4) < 1e-9);
+    assert.strictEqual(summary.bestRuns[0].lossReplaySteps, 329);
+    assert.strictEqual(summary.bestRuns[1].lossReplaySteps, null);
+    assert.strictEqual(summary.combinedTop[0].opponents.expert.runLabel, 'a');
+    assert.strictEqual(summary.combinedTop[1].opponents.strong.runLabel, 'b');
 });
 
 runTest('summarizeMetrics は hidden/lr ごとのベストを返す', () => {
@@ -172,7 +198,7 @@ runTest('printSummary は text 形式で要約を出力する', () => {
                     moverTargetRate: 0.02,
                 },
             },
-            bestRuns: [{ runLabel: 'baseline', game: 2000, score: 0.7, scoreDelta: 0, opponentDeltas: { strong: 0 }, rnd: 0.55, train: 0.6, targetPendingRate: 0.12, targetUpdateRate: 0.11, tvTargetRate: 0.05, bcTargetRate: 0.04, moverTargetRate: 0.02 }],
+            bestRuns: [{ runLabel: 'baseline', game: 2000, score: 0.7, scoreDelta: 0, opponentDeltas: { strong: 0 }, rnd: 0.55, train: 0.6, targetPendingRate: 0.12, targetUpdateRate: 0.11, tvTargetRate: 0.05, bcTargetRate: 0.04, moverTargetRate: 0.02, lossReplayProbability: 0.25, lossReplayEpisodes: 3, lossReplaySteps: 329 }],
             bestConfigs: [{ configKey: 'hidden=256 lr=0.0003', runLabel: 'baseline', game: 2000, score: 0.7, rnd: 0.55, train: 0.6, targetPendingRate: 0.12, targetUpdateRate: 0.11, tvTargetRate: 0.05, bcTargetRate: 0.04, moverTargetRate: 0.02 }],
             combinedTop: [{ game: 2000, score: 0.7, rnd: 0.55, train: 0.6, targetPendingRate: 0.12, targetUpdateRate: 0.11, tvTargetRate: 0.05, bcTargetRate: 0.04, moverTargetRate: 0.02 }],
         }, { format: 'text' });
@@ -184,6 +210,7 @@ runTest('printSummary は text 形式で要約を出力する', () => {
     assert.ok(output.includes('baselineRun=baseline'));
     assert.ok(output.includes('best strong'));
     assert.ok(output.includes('target('));
+    assert.ok(output.includes('lossReplay(p=0.25 episodes=3 steps=329)'));
     assert.ok(output.includes('delta=+0.000'));
     assert.ok(output.includes('config hidden=256 lr=0.0003'));
     assert.ok(output.includes('top game=2000'));
@@ -235,8 +262,8 @@ runTest('writeSummaryIndexes は runIndex と configIndex を個別CSVへ保存�
         }, { runIndexCsvPath, configIndexCsvPath });
         const runBody = fs.readFileSync(runIndexCsvPath, 'utf8');
         const configBody = fs.readFileSync(configIndexCsvPath, 'utf8');
-        assert.ok(runBody.includes('runLabel'));
-        assert.ok(configBody.includes('configKey'));
+        assert.ok(runBody.includes('rank,runLabel,game,score,hidden,lr,lossReplayProbability,lossReplayEpisodes,lossReplaySteps'));
+        assert.ok(configBody.includes('configKey,hidden,lr,runLabel,game,score,lossReplayProbability,lossReplayEpisodes,lossReplaySteps'));
     } finally {
         fs.rmSync(runIndexCsvPath, { force: true });
         fs.rmSync(configIndexCsvPath, { force: true });

@@ -72,6 +72,14 @@ function createHarness(options = {}) {
                 calls.push(['cpuSpeed', value]);
                 return setup;
             },
+            replaceSettings: settings => {
+                setup = {
+                    ...setup,
+                    playerSettings: Array.from(settings, value => ({ ...value })),
+                };
+                calls.push(['replaceSettings', setup.playerSettings]);
+                return setup;
+            },
         },
         showNotice: (...args) => calls.push(['notice', ...args]),
         warn: (...args) => calls.push(['warn', ...args]),
@@ -203,6 +211,40 @@ runTest('online lobby request runtimeはRL preload失敗でPWA状態の再評価
     assert.strictEqual(calls.filter(call => call[0] === 'schedulePwaRefresh').length, 1);
     assert.ok(calls.some(call => call[0] === 'notice' &&
         call[1] === OnlineLobbyRequestRuntime.TEXT.MODEL_FAILED));
+});
+
+runTest('online lobby request runtimeはRL preload失敗時に共有設定をCPU（強）へfallbackする', async () => {
+    let rejectPreload;
+    const preload = new Promise((_, reject) => { rejectPreload = reject; });
+    const portfolio = {
+        eligibleLoadState: () => ({ status: 'idle', ready: 0, total: 1, errors: [] }),
+        preloadEligibleModels: () => preload,
+        safeFallbackSettings(settings) {
+            return {
+                replaced: [{ playerIndex: 1, modelId: 'model-a' }],
+                settings: settings.map(setting => setting && setting.difficulty === 'rl'
+                    ? { type: 'cpu', difficulty: 'strong' }
+                    : setting),
+            };
+        },
+    };
+    const { calls, runtime } = createHarness({
+        playerSettings: [{ type: 'human' }, { type: 'cpu', difficulty: 'rl' }],
+        portfolio,
+    });
+    assert.strictEqual(runtime.showCreate(), true);
+    rejectPreload(new Error('model unavailable'));
+    await preload.catch(() => {});
+    await Promise.resolve();
+    const payload = calls.find(call => call[0] === 'createRoom')[1];
+    assert.deepStrictEqual(payload.playerSettings, [
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'strong' },
+    ]);
+    assert.ok(calls.some(call => call[0] === 'replaceSettings' &&
+        call[1][1].difficulty === 'strong'));
+    assert.ok(calls.some(call => call[0] === 'notice' &&
+        call[1] === OnlineLobbyRequestRuntime.TEXT.MODEL_FALLBACK));
 });
 
 runTest('online.jsはロビー要求とRL preloadを専用runtimeへ委譲する', () => {

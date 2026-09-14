@@ -179,7 +179,7 @@ class MachikoroEnv:
                         if take_name not in target_cards:
                             continue
                         acts.append(ACT_BC_BASE + give_ci * NUM_CARDS + take_ci)
-                return acts if acts else [ACT_PASS]
+                return [ACT_PASS, *acts]
             if pending_field == "pendingCleaning" and self.pending_clean > 0:
                 seen = set()
                 acts = []

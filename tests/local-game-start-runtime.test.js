@@ -76,10 +76,29 @@ runTest('local game start runtimeは人数・設定・RL表示のeffect境界を
     assert.strictEqual(calls.filter(call => call[0] === 'saveSettings').length, 1);
 
     runtime.changePlayerType(1, 'rl');
-    assert.deepStrictEqual(getState().playerSettings[1], { type: 'cpu', difficulty: 'rl', name: 'B' });
+    assert.deepStrictEqual(getState().playerSettings[1], {
+        type: 'cpu', difficulty: 'rl', name: 'B', rlModelId: null, rlModelSelection: 'auto',
+    });
     assert.ok(calls.some(call => call[0] === 'preload'));
     runtime.changePlayerName(0, 'Alice');
     assert.strictEqual(getState().playerSettings[0].name, 'Alice');
+});
+
+runTest('local game start runtimeは手動RLモデルを正規IDで固定する', () => {
+    const portfolio = {
+        eligibleModels: () => [{ id: 'canonical-model', label: '専門モデル' }],
+        modelById: id => id === 'alias-model' ? { id: 'canonical-model', label: '専門モデル' } : null,
+        assignModelIds: settings => settings.map(setting => setting && setting.difficulty === 'rl'
+            ? { ...setting, rlModelId: setting.rlModelId || 'auto-model', rlModelSelection: setting.rlModelSelection || 'auto' }
+            : setting),
+        selectedLoadState: () => ({ status: 'ready', ready: 1, total: 1, errors: [] }),
+        preloadSelectedModels: () => null,
+    };
+    const { getState, runtime } = createHarness({ difficulty: 'rl', portfolio });
+    assert.strictEqual(runtime.changeRlModel(1, 'alias-model'), 'canonical-model');
+    assert.strictEqual(getState().playerSettings[1].rlModelId, 'canonical-model');
+    assert.strictEqual(getState().playerSettings[1].rlModelSelection, 'manual');
+    assert.strictEqual(runtime.changeRlModel(1, 'unknown'), false);
 });
 
 runTest('local game start runtimeは10人の中間playerをCPUへ変更後も同じselectへfocusを戻す', () => {
@@ -139,6 +158,65 @@ runTest('local game start runtimeはRL preload中の二重開始を防ぎ完了�
     assert.strictEqual(calls.filter(call => call[0] === 'initializeGame').length, 1);
     assert.strictEqual(getState().playerSettings[1].name, 'B');
     assert.strictEqual(elements.btnStart.disabled, false);
+});
+
+runTest('local game start runtimeはRL preload失敗時にCPU（強）へ明示fallbackして開始する', async () => {
+    let rejectPreload;
+    const preload = new Promise((_, reject) => { rejectPreload = reject; });
+    const portfolio = {
+        assignModelIds(settings) {
+            return settings.map(setting => setting && setting.difficulty === 'rl'
+                ? { ...setting, rlModelId: 'model-a', rlModelSha256: 'digest-a' }
+                : setting);
+        },
+        selectedLoadState: () => ({ status: 'idle', ready: 0, total: 1, errors: [] }),
+        preloadSelectedModels: () => preload,
+        safeFallbackSettings(settings) {
+            return {
+                replaced: [{ playerIndex: 1, modelId: 'model-a' }],
+                settings: settings.map(setting => setting && setting.difficulty === 'rl'
+                    ? { type: 'cpu', difficulty: 'strong', name: setting.name }
+                    : setting),
+            };
+        },
+    };
+    const { calls, getState, runtime } = createHarness({ difficulty: 'rl', portfolio });
+    runtime.start();
+    rejectPreload(new Error('integrity mismatch'));
+    await preload.catch(() => {});
+    await Promise.resolve();
+    assert.strictEqual(getState().playerSettings[1].difficulty, 'strong');
+    assert.strictEqual(getState().playerSettings[1].rlModelId, undefined);
+    assert.strictEqual(calls.filter(call => call[0] === 'initializeGame').length, 1);
+    assert.ok(calls.some(call => call[0] === 'showNotice' && /CPU（強）/.test(call[1])));
+    assert.ok(calls.some(call => call[0] === 'warn' && call[1] === 'local-rl-safe-fallback'));
+});
+
+runTest('local game start runtimeは選択した一意RLモデルだけを固定してpreloadする', () => {
+    const selectedCalls = [];
+    const portfolio = {
+        assignModelIds(settings) {
+            return settings.map(setting => setting && setting.difficulty === 'rl'
+                ? { ...setting, rlModelId: 'selected-model' }
+                : setting);
+        },
+        selectedLoadState(_count, settings) {
+            selectedCalls.push(['state', settings]);
+            return { status: 'ready', ready: 1, total: 1, errors: [] };
+        },
+        preloadSelectedModels(count, settings, options) {
+            selectedCalls.push(['preload', count, settings, options]);
+            return null;
+        },
+    };
+    const { getState, runtime } = createHarness({ difficulty: 'rl', portfolio });
+    runtime.preloadInBackground();
+
+    assert.strictEqual(getState().playerSettings[1].rlModelId, 'selected-model');
+    const preload = selectedCalls.find(call => call[0] === 'preload');
+    assert.strictEqual(preload[1], 2);
+    assert.strictEqual(preload[2][1].rlModelId, 'selected-model');
+    assert.strictEqual(preload[3].retryDelayMs, 0);
 });
 
 runTest('local game start runtimeは必須依存をeffect前に検証する', () => {

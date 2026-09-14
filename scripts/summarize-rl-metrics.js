@@ -124,6 +124,11 @@ function summarizeMetrics(rows, options = {}) {
             tvTargetRate: toNumber(row.tv_target_rate),
             bcTargetRate: toNumber(row.bc_target_rate),
             moverTargetRate: toNumber(row.mover_target_rate),
+            bcActionRate: toNumber(row.bc_action_rate),
+            bcSkipRate: toNumber(row.bc_skip_rate),
+            lossReplayProbability: toNumber(row.loss_replay_probability),
+            lossReplayEpisodes: toNumber(row.loss_replay_episodes),
+            lossReplaySteps: toNumber(row.loss_replay_steps),
         }));
 
     const byOpponent = Object.fromEntries(opponents.map(opponent => [opponent, []]));
@@ -144,7 +149,8 @@ function summarizeMetrics(rows, options = {}) {
 
     const grouped = new Map();
     for (const row of jsRows) {
-        const entry = grouped.get(row.game) || {
+        const checkpointKey = JSON.stringify([row.runLabel, row.game]);
+        const entry = grouped.get(checkpointKey) || {
             game: row.game,
             runLabel: row.runLabel,
             hidden: row.hidden,
@@ -160,9 +166,14 @@ function summarizeMetrics(rows, options = {}) {
             tvTargetRate: row.tvTargetRate,
             bcTargetRate: row.bcTargetRate,
             moverTargetRate: row.moverTargetRate,
+            bcActionRate: row.bcActionRate,
+            bcSkipRate: row.bcSkipRate,
+            lossReplayProbability: row.lossReplayProbability,
+            lossReplayEpisodes: row.lossReplayEpisodes,
+            lossReplaySteps: row.lossReplaySteps,
         };
         entry.opponents[row.jsOpponent] = row;
-        grouped.set(row.game, entry);
+        grouped.set(checkpointKey, entry);
     }
 
     const combined = [...grouped.values()].map(entry => {
@@ -192,6 +203,11 @@ function summarizeMetrics(rows, options = {}) {
             tvTargetRate: entry.tvTargetRate,
             bcTargetRate: entry.bcTargetRate,
             moverTargetRate: entry.moverTargetRate,
+            bcActionRate: entry.bcActionRate,
+            bcSkipRate: entry.bcSkipRate,
+            lossReplayProbability: entry.lossReplayProbability,
+            lossReplayEpisodes: entry.lossReplayEpisodes,
+            lossReplaySteps: entry.lossReplaySteps,
         };
     }).sort((a, b) =>
         b.score - a.score ||
@@ -227,6 +243,11 @@ function summarizeMetrics(rows, options = {}) {
             tvTargetRate: entry.tvTargetRate,
             bcTargetRate: entry.bcTargetRate,
             moverTargetRate: entry.moverTargetRate,
+            bcActionRate: entry.bcActionRate,
+            bcSkipRate: entry.bcSkipRate,
+            lossReplayProbability: entry.lossReplayProbability,
+            lossReplayEpisodes: entry.lossReplayEpisodes,
+            lossReplaySteps: entry.lossReplaySteps,
         }))
         .sort((a, b) =>
             b.score - a.score ||
@@ -240,6 +261,9 @@ function summarizeMetrics(rows, options = {}) {
         score: run.score,
         hidden: run.hidden,
         lr: run.lr,
+        lossReplayProbability: run.lossReplayProbability,
+        lossReplayEpisodes: run.lossReplayEpisodes,
+        lossReplaySteps: run.lossReplaySteps,
     }));
 
     const groupedByConfig = new Map();
@@ -265,6 +289,11 @@ function summarizeMetrics(rows, options = {}) {
                 tvTargetRate: run.tvTargetRate,
                 bcTargetRate: run.bcTargetRate,
                 moverTargetRate: run.moverTargetRate,
+                bcActionRate: run.bcActionRate,
+                bcSkipRate: run.bcSkipRate,
+                lossReplayProbability: run.lossReplayProbability,
+                lossReplayEpisodes: run.lossReplayEpisodes,
+                lossReplaySteps: run.lossReplaySteps,
             });
         }
     }
@@ -278,6 +307,9 @@ function summarizeMetrics(rows, options = {}) {
         configKey: config.configKey,
         hidden: config.hidden,
         lr: config.lr,
+        lossReplayProbability: config.lossReplayProbability,
+        lossReplayEpisodes: config.lossReplayEpisodes,
+        lossReplaySteps: config.lossReplaySteps,
         runLabel: config.runLabel,
         game: config.game,
         score: config.score,
@@ -334,10 +366,18 @@ function renderSummary(summary, options = {}) {
         const tv = Number.isFinite(entry.tvTargetRate) ? `${(entry.tvTargetRate * 100).toFixed(1)}%` : null;
         const bc = Number.isFinite(entry.bcTargetRate) ? `${(entry.bcTargetRate * 100).toFixed(1)}%` : null;
         const mv = Number.isFinite(entry.moverTargetRate) ? `${(entry.moverTargetRate * 100).toFixed(1)}%` : null;
-        if (pending == null && update == null && tv == null && bc == null && mv == null) {
+        const bcAction = Number.isFinite(entry.bcActionRate) ? `${(entry.bcActionRate * 100).toFixed(1)}%` : null;
+        const bcSkip = Number.isFinite(entry.bcSkipRate) ? `${(entry.bcSkipRate * 100).toFixed(1)}%` : null;
+        if (pending == null && update == null && tv == null && bc == null && mv == null && bcAction == null && bcSkip == null) {
             return '';
         }
-        return ` target(p=${pending ?? 'n/a'} u=${update ?? 'n/a'} tv=${tv ?? 'n/a'} bc=${bc ?? 'n/a'} mv=${mv ?? 'n/a'})`;
+        return ` target(p=${pending ?? 'n/a'} u=${update ?? 'n/a'} tv=${tv ?? 'n/a'} bc=${bc ?? 'n/a'} mv=${mv ?? 'n/a'} bcAction=${bcAction ?? 'n/a'} bcSkip=${bcSkip ?? 'n/a'})`;
+    };
+    const formatLossReplay = (entry) => {
+        if (!entry || !Number.isFinite(entry.lossReplayProbability)) return '';
+        const episodes = Number.isFinite(entry.lossReplayEpisodes) ? entry.lossReplayEpisodes : 'n/a';
+        const steps = Number.isFinite(entry.lossReplaySteps) ? entry.lossReplaySteps : 'n/a';
+        return ` lossReplay(p=${entry.lossReplayProbability} episodes=${episodes} steps=${steps})`;
     };
     lines.push(
         `rows=${summary.totalRows} jsRows=${summary.jsRows} opponents=${summary.opponents.join(',')} ` +
@@ -374,7 +414,7 @@ function renderSummary(summary, options = {}) {
             `${run.hidden != null ? `hidden=${run.hidden} ` : ''}` +
             `${run.lr != null ? `lr=${run.lr} ` : ''}` +
             `rnd=${run.rnd == null ? 'n/a' : (run.rnd * 100).toFixed(1) + '%'} ` +
-            `train=${run.train == null ? 'n/a' : (run.train * 100).toFixed(1) + '%'}${formatTargetRates(run)}` +
+            `train=${run.train == null ? 'n/a' : (run.train * 100).toFixed(1) + '%'}${formatTargetRates(run)}${formatLossReplay(run)}` +
             `${deltas ? ` ${deltas}` : ''}`
         );
     }
@@ -382,7 +422,7 @@ function renderSummary(summary, options = {}) {
         lines.push(
             `config ${config.configKey}: run=${config.runLabel} game=${config.game} score=${config.score.toFixed(3)} ` +
             `rnd=${config.rnd == null ? 'n/a' : (config.rnd * 100).toFixed(1) + '%'} ` +
-            `train=${config.train == null ? 'n/a' : (config.train * 100).toFixed(1) + '%'}${formatTargetRates(config)}`
+            `train=${config.train == null ? 'n/a' : (config.train * 100).toFixed(1) + '%'}${formatTargetRates(config)}${formatLossReplay(config)}`
         );
     }
     for (const entry of summary.combinedTop) {
@@ -392,7 +432,7 @@ function renderSummary(summary, options = {}) {
             `${entry.hidden != null ? `hidden=${entry.hidden} ` : ''}` +
             `${entry.lr != null ? `lr=${entry.lr} ` : ''}` +
             `rnd=${entry.rnd == null ? 'n/a' : (entry.rnd * 100).toFixed(1) + '%'} ` +
-            `train=${entry.train == null ? 'n/a' : (entry.train * 100).toFixed(1) + '%'}${formatTargetRates(entry)}`
+            `train=${entry.train == null ? 'n/a' : (entry.train * 100).toFixed(1) + '%'}${formatTargetRates(entry)}${formatLossReplay(entry)}`
         );
     }
     return lines.join('\n');
@@ -434,8 +474,8 @@ function writeIndexCsv(rows, outputPath, columns) {
 }
 
 function writeSummaryIndexes(summary, options = {}) {
-    writeIndexCsv(summary.runIndex || [], options.runIndexCsvPath, ['rank', 'runLabel', 'game', 'score', 'hidden', 'lr']);
-    writeIndexCsv(summary.configIndex || [], options.configIndexCsvPath, ['rank', 'configKey', 'hidden', 'lr', 'runLabel', 'game', 'score']);
+    writeIndexCsv(summary.runIndex || [], options.runIndexCsvPath, ['rank', 'runLabel', 'game', 'score', 'hidden', 'lr', 'lossReplayProbability', 'lossReplayEpisodes', 'lossReplaySteps']);
+    writeIndexCsv(summary.configIndex || [], options.configIndexCsvPath, ['rank', 'configKey', 'hidden', 'lr', 'runLabel', 'game', 'score', 'lossReplayProbability', 'lossReplayEpisodes', 'lossReplaySteps']);
 }
 
 if (require.main === module) {

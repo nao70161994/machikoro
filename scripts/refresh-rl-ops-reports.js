@@ -7,6 +7,16 @@ const { buildAudit, renderText: renderAuditText, renderMarkdown: renderAuditMark
 const { buildNextActions, renderText: renderPlanText, renderMarkdown: renderPlanMarkdown } = require('./plan-rl-next-actions.js');
 const { buildAdoptionReview, renderText: renderReviewText, renderMarkdown: renderReviewMarkdown } = require('./review-rl-adoptions.js');
 const { buildDiversityReport, renderText: renderDiversityText, renderMarkdown: renderDiversityMarkdown } = require('./report-rl-diversity.js');
+const {
+    buildModelCards,
+    buildReproducibilityManifest,
+    renderMarkdown: renderModelCardsMarkdown,
+    renderManifestMarkdown,
+} = require('./report-rl-model-cards.js');
+const {
+    buildCompressionReport,
+    renderMarkdown: renderCompressionMarkdown,
+} = require('./report-rl-compression.js');
 
 function parseArgs(argv) {
     const args = {
@@ -29,17 +39,25 @@ function writeFile(filePath, content) {
     fs.writeFileSync(filePath, content, 'utf8');
 }
 
-function buildArtifacts(registry) {
+function buildArtifacts(registry, options = {}) {
     const report = buildRegistryReport(registry);
     const audit = buildAudit(registry);
     const plan = buildNextActions(registry);
     const review = buildAdoptionReview(registry);
+    const modelCards = buildModelCards(registry);
     return {
         report,
         audit,
         plan,
         review,
         diversity: buildDiversityReport(registry),
+        modelCards,
+        reproducibilityManifest: buildReproducibilityManifest(registry, modelCards),
+        compression: buildCompressionReport({
+            repoRoot: options.repoRoot,
+            catalog: options.catalog,
+            generatedAt: registry && registry.updatedAt || '',
+        }),
     };
 }
 
@@ -63,6 +81,12 @@ function writeArtifacts(artifacts, outputDir) {
         ['diversity-report.txt', renderDiversityText(artifacts.diversity)],
         ['diversity-report.md', renderDiversityMarkdown(artifacts.diversity)],
         ['diversity-report.json', JSON.stringify(artifacts.diversity, null, 2) + '\n'],
+        ['model-cards.md', renderModelCardsMarkdown(artifacts.modelCards)],
+        ['model-cards.json', JSON.stringify(artifacts.modelCards, null, 2) + '\n'],
+        ['reproducibility-manifest.md', renderManifestMarkdown(artifacts.reproducibilityManifest)],
+        ['reproducibility-manifest.json', JSON.stringify(artifacts.reproducibilityManifest, null, 2) + '\n'],
+        ['compression-report.md', renderCompressionMarkdown(artifacts.compression)],
+        ['compression-report.json', JSON.stringify(artifacts.compression, null, 2) + '\n'],
     ];
 
     for (const [name, content] of mapping) {

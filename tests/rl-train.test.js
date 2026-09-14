@@ -4,6 +4,13 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const { runTest } = require('./helpers/test-utils');
+
+runTest('rl train: 最終評価は長時間無出力にせず段階を表示する', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'train.py'), 'utf8');
+    assert.ok(source.includes('最終評価開始:'));
+    assert.ok(source.includes('最終評価進捗: random完了'));
+    assert.ok(source.includes('最終評価進捗: JS CPU評価開始'));
+});
 const { loadGameRuntime } = require('./helpers/runtime-loaders');
 
 function runPython(code) {
@@ -47,6 +54,54 @@ runTest('rl train: CLI help は train-batch-size を含む', () => {
     assert.strictEqual(result.status, 0, result.stderr || result.stdout);
     assert.ok(result.stdout.includes('--train-batch-size'));
     assert.ok(result.stdout.includes('--debug-train-batch'));
+    assert.ok(result.stdout.includes('--checkpoint-every'));
+    assert.ok(result.stdout.includes('--pending-curriculum-samples'));
+    assert.ok(result.stdout.includes('--pending-curriculum-refresh-samples'));
+    assert.ok(result.stdout.includes('--pending-curriculum-refresh-every'));
+    assert.ok(result.stdout.includes('--target-head-lr'));
+    assert.ok(result.stdout.includes('--pending-curriculum-head-lr'));
+    assert.ok(result.stdout.includes('--player-counts'));
+});
+
+runTest('rl train: eval-every 0 は短いsanity学習を停止させない', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-no-periodic-eval-'));
+    try {
+        const result = spawnSync('python3', [
+            '-m', 'scripts.rl.train', '--games', '1', '--eval-every', '0',
+            '--initial-eval-games', '0', '--final-eval-random-games', '0',
+            '--final-eval-heuristic-games', '0', '--final-eval-pool-games', '0',
+            '--js-eval-games', '0', '--hidden', '8', '--max-steps', '2',
+            '--progress-every', '1', '--run-label', 'test-no-periodic-eval',
+            '--metrics-csv', path.join(tmpDir, 'metrics.csv'),
+            '--best-checkpoint', path.join(tmpDir, 'best'),
+            '--summary-output', path.join(tmpDir, 'summary.json'),
+            '--summary-run-index-csv', path.join(tmpDir, 'run.csv'),
+            '--summary-config-index-csv', path.join(tmpDir, 'config.csv'),
+        ], { encoding: 'utf8' });
+        assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+        assert.ok(result.stdout.includes('[進捗'));
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+});
+
+runTest('rl train: games 0 のcurriculum-only runもcheckpointを保存する', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-curriculum-only-'));
+    const modelPath = path.join(tmpDir, 'model');
+    try {
+        const result = spawnSync('python3', [
+            '-m', 'scripts.rl.train', '--games', '0', '--eval-every', '0',
+            '--initial-eval-games', '0', '--final-eval-random-games', '0',
+            '--final-eval-heuristic-games', '0', '--final-eval-pool-games', '0',
+            '--js-eval-games', '0', '--hidden', '8',
+            '--pending-curriculum-samples', '4', '--model-path', modelPath,
+            '--run-label', 'test-curriculum-only',
+        ], { encoding: 'utf8' });
+        assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+        assert.ok(fs.existsSync(`${modelPath}.npz`));
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
 });
 
 runTest('rl train: CLI help は2〜10人ランダム化の人数範囲オプションを含む', () => {
@@ -180,6 +235,34 @@ print(state_dim_for_player_count(10))
     assert.strictEqual(lines[5], '3');
 });
 
+runTest('rl train: 明示人数集合は3/4/5/10だけを均等サンプルできる', () => {
+    const output = runPython(`
+import json
+import random
+from scripts.rl.train import _resolve_player_count_choices, _sample_player_count_choices
+
+choices = _resolve_player_count_choices("3,4,5,10,5", (2, 10))
+random.seed(14)
+samples = [_sample_player_count_choices(choices) for _ in range(200)]
+print(json.dumps(choices))
+print(json.dumps(sorted(set(samples))))
+print(all(value in choices for value in samples))
+for invalid in ("1", "11", "x", ",,"):
+    try:
+        _resolve_player_count_choices(invalid, (2, 10))
+    except ValueError as error:
+        print(str(error))
+`);
+    const lines = output.split('\n');
+    assert.deepStrictEqual(JSON.parse(lines[0]), [3, 4, 5, 10]);
+    assert.deepStrictEqual(JSON.parse(lines[1]), [3, 4, 5, 10]);
+    assert.strictEqual(lines[2], 'True');
+    assert.ok(lines[3].includes('2..10'));
+    assert.ok(lines[4].includes('2..10'));
+    assert.ok(lines[5].includes('invalid player count'));
+    assert.ok(lines[6].includes('must not be empty'));
+});
+
 runTest('rl train: self 両側学習は両席の行動をバッファに積む', () => {
     const output = runPython(`
 import random
@@ -207,6 +290,55 @@ print(len(agent.states) == len(agent.actions) == len(agent.masks) == len(agent.v
     assert.strictEqual(lines[1], lines[2]);
     assert.strictEqual(lines[3], 'True');
     assert.ok(Number(lines[2]) > 0);
+});
+
+runTest('rl train: 敗戦episode再学習は終端境界を保ち勝者・引き分けを複製しない', () => {
+    const output = runPython(`
+import json
+from types import SimpleNamespace
+from scripts.rl.train import _replay_losing_episode
+
+def agent():
+    return SimpleNamespace(
+        states=[], actions=[], masks=[], values=[], rewards=[], next_values=[], dones=[],
+        target_kinds=[], target_slots=[], target_masks=[], net=SimpleNamespace(target_slots=0),
+    )
+
+episode = {
+    "states": ["s0", "s1"], "actions": [1, 2], "masks": [[1], [1]],
+    "values": [0.2, 0.1], "rewards": [0.0, -1.0],
+    "target_kinds": [None, None], "target_slots": [None, None],
+    "target_masks": [[], []],
+}
+loser = agent()
+replayed = _replay_losing_episode(loser, [(0, episode)], winner=1, probability=0.25, random_value=0.1)
+winner = agent()
+winner_result = _replay_losing_episode(winner, [(1, episode)], winner=1, probability=1.0, random_value=0.0)
+draw = agent()
+draw_result = _replay_losing_episode(draw, [(0, episode)], winner=None, probability=1.0, random_value=0.0)
+skipped = agent()
+skip_result = _replay_losing_episode(skipped, [(0, episode)], winner=1, probability=0.25, random_value=0.3)
+multiplayer = agent()
+multi_result = _replay_losing_episode(
+    multiplayer, [(0, episode), (1, episode), (2, episode)],
+    winner=1, probability=1.0, random_value=0.0,
+)
+print(json.dumps({
+    "replayed": replayed, "dones": loser.dones, "nextValues": loser.next_values,
+    "winner": winner_result, "draw": draw_result, "skipped": skip_result,
+    "multi": multi_result, "multiSteps": len(multiplayer.states),
+}))
+`);
+    assert.deepStrictEqual(JSON.parse(output), {
+        replayed: { episodes: 1, steps: 2 },
+        dones: [false, true],
+        nextValues: [0.1, 0],
+        winner: { episodes: 0, steps: 0 },
+        draw: { episodes: 0, steps: 0 },
+        skipped: { episodes: 0, steps: 0 },
+        multi: { episodes: 1, steps: 2 },
+        multiSteps: 2,
+    });
 });
 
 runTest('rl train: 10人学習環境は多人数状態次元で脅威度上位3相手へ射影する', () => {
@@ -419,8 +551,14 @@ print(sorted(k for k in bundle["layers"].keys() if "TargetHead" in k))
         assert.deepStrictEqual(JSON.parse(lines[1].replace(/'/g, '"')), ['businessTargetHead', 'moverTargetHead', 'tvTargetHead']);
         const exported = JSON.parse(fs.readFileSync(exportPath, 'utf8'));
         assert.strictEqual(exported.numTargetSlots, 3);
+        assert.strictEqual(exported.formatVersion, 2);
         assert.strictEqual(exported.stateSchema, 'state-mp-v1');
         assert.strictEqual(exported.actionSchema, 'action-flat-v1');
+        assert.strictEqual(exported.cardNames.length, 38);
+        assert.ok(exported.vocabularyFingerprint.startsWith('v1:'));
+        assert.deepStrictEqual(exported.landmarkNames, [
+            '駅', 'ショッピングモール', '遊園地', '電波塔', '港', '空港',
+        ]);
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -487,6 +625,45 @@ print(loaded.mover_target_head is None)
         assert.strictEqual(lines[1], 'True');
         assert.strictEqual(lines[2], 'True');
         assert.strictEqual(lines[3], 'True');
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+});
+
+runTest('rl train: legacy checkpoint warm-start は要求されたtarget headを新設して共有方策を引き継ぐ', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-legacy-target-upgrade-'));
+    const legacyBase = path.join(tmpDir, 'legacy');
+    const upgradedBase = path.join(tmpDir, 'upgraded');
+    try {
+        const output = runPython(`
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import STATE_DIM_4P
+
+legacy = RLAgent(hidden=8, lr=0.0001, state_dim=STATE_DIM_4P, target_slots=0)
+legacy.net.policy_head.b[0] = 7.0
+legacy.save(r"${legacyBase}")
+
+upgraded = RLAgent(hidden=8, lr=0.0001, state_dim=STATE_DIM_4P, target_slots=3)
+upgraded.load(r"${legacyBase}")
+print(upgraded.net.target_slots)
+print(upgraded.net.tv_target_head is not None)
+print(upgraded.net.bc_target_head is not None)
+print(upgraded.net.mover_target_head is not None)
+print(float(upgraded.net.policy_head.b[0]))
+upgraded.save(r"${upgradedBase}")
+
+reloaded = RLAgent(hidden=8, lr=0.0001, state_dim=STATE_DIM_4P, target_slots=0)
+reloaded.load(r"${upgradedBase}")
+print(reloaded.net.target_slots)
+print(reloaded.net.tv_target_head is not None)
+print(reloaded.net.bc_target_head is not None)
+print(reloaded.net.mover_target_head is not None)
+`);
+        const lines = output.split('\n');
+        assert.deepStrictEqual(lines, [
+            '3', 'True', 'True', 'True', '7.0',
+            '3', 'True', 'True', 'True',
+        ]);
     } finally {
         fs.rmSync(tmpDir, { recursive: true, force: true });
     }
@@ -585,11 +762,56 @@ runTest('rl train: eval_vs_js_cpu は run-local browser export path を使う', 
     assert.ok(!source.includes('browser_path = os.path.join(MODEL_DIR, "model.browser.json")'));
 });
 
+runTest('rl train: checkpoint は run label ごとの path に分離する', () => {
+    const output = runPython(`
+from scripts.rl.train import _resolve_run_model_path
+
+print(_resolve_run_model_path("seed 101 / four-player"))
+print(_resolve_run_model_path("seed-102"))
+print(_resolve_run_model_path("ignored", "custom/output.npz"))
+`);
+    const lines = output.split('\n');
+    assert.ok(lines[0].endsWith('models/rl_model/runs/seed_101___four-player/model'));
+    assert.ok(lines[1].endsWith('models/rl_model/runs/seed-102/model'));
+    assert.strictEqual(lines[2], 'custom/output');
+    assert.notStrictEqual(lines[0], lines[1]);
+
+    const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'train.py'), 'utf8');
+    assert.ok(source.includes('model_path = _resolve_run_model_path(args.run_label, args.model_path)'));
+    assert.ok(source.includes('export_checkpoint(model_path + ".npz", model_path + ".browser.json", fmt="json")'));
+    assert.ok(!source.includes('model_path = os.path.join(MODEL_DIR, "model")'));
+});
+
 runTest('rl train: JS CPU oracle は応答timeoutを持つ', () => {
     const source = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'rl', 'js_cpu_oracle.py'), 'utf8');
-    assert.ok(source.includes('timeout_seconds: float = 5.0'));
+    assert.ok(source.includes('timeout_seconds: float = 30.0'));
     assert.ok(source.includes('select.select'));
     assert.ok(source.includes('JS CPU oracle timed out'));
+});
+
+runTest('rl train: JS CPU oracle一時失敗は記録して合法heuristicへ一手fallbackする', () => {
+    const output = runPython(`
+import os
+from scripts.rl import heuristic
+from scripts.rl.game_env import MachikoroEnv
+
+class FailedOracle:
+    def action(self, env, level):
+        raise RuntimeError("temporary timeout")
+    def close(self):
+        pass
+
+os.environ["MACHIKORO_RL_JS_CPU_ORACLE"] = "1"
+heuristic._JS_CPU_ORACLE = FailedOracle()
+heuristic._JS_CPU_ORACLE_FAILURES = 0
+env = MachikoroEnv(player_count=2)
+action = heuristic.heuristic_action(env, "normal")
+print(action in env.valid_actions())
+print(heuristic.js_cpu_oracle_failure_count())
+print(heuristic._JS_CPU_ORACLE is None)
+`);
+    const lines = output.split('\n');
+    assert.deepStrictEqual(lines, ['True', '1', 'True']);
 });
 
 runTest('rl train: checkpoint 保存と export は cwd 配下の絶対 path でも動く', () => {
@@ -617,6 +839,99 @@ print(os.path.exists(export_path))
         assert.strictEqual(lines[1], 'True');
     } finally {
         fs.rmSync(baseDir, { recursive: true, force: true });
+    }
+});
+
+runTest('rl train: progress checkpoint は評価なしで最新モデルとgame位置を原子的に保存する', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-progress-checkpoint-'));
+    try {
+        const output = runPython(`
+import json
+import os
+from scripts.rl.agent import RLAgent
+from scripts.rl.train import (
+    _reward_shaping_defaults,
+    _reward_training_metadata,
+    _save_progress_checkpoint,
+    _terminal_reward_defaults,
+)
+
+model_path = os.path.join(r"${tmpDir}", "model")
+agent = RLAgent(hidden=8, lr=0.0001, state_dim=353, target_slots=3)
+reward_config = _reward_shaping_defaults()
+reward_config["opp_coin"] = 0.008
+reward_config["interaction_build"] = 0.04
+reward_config["harbor_build"] = 0.03
+reward_config["engine_build"] = 0.02
+training_metadata = _reward_training_metadata(
+    reward_config,
+    _terminal_reward_defaults(),
+    {
+        "lossEpisodeReplayVersion": 1,
+        "lossEpisodeReplayProbability": 0.25,
+        "lossEpisodeReplayEpisodes": 3,
+        "lossEpisodeReplaySteps": 42,
+    },
+)
+saved = _save_progress_checkpoint(
+    agent,
+    model_path,
+    50,
+    "seed-progress",
+    trained_through_game=48,
+    training_metadata=training_metadata,
+)
+with open(saved + ".meta.json", "r", encoding="utf-8") as fh:
+    meta = json.load(fh)
+print(os.path.exists(saved + ".npz"))
+print(os.path.exists(saved + ".browser.json"))
+print(os.path.exists(saved + ".browser.json.tmp"))
+print(meta["game"])
+print(meta["trainedThroughGame"])
+print(meta["runLabel"])
+print(meta["kind"])
+print(meta["rewardAccrualVersion"])
+print(meta["rewardAccrualMethod"])
+print(meta["rewardConfigSchemaVersion"])
+print(meta["rewardConfig"]["opp_coin"])
+print(meta["rewardConfig"]["interaction_build"])
+print(meta["rewardConfig"]["harbor_build"])
+print(meta["rewardConfig"]["engine_build"])
+print(meta["curriculumConfig"]["lossEpisodeReplayVersion"])
+print(meta["curriculumConfig"]["lossEpisodeReplayProbability"])
+print(meta["curriculumConfig"]["lossEpisodeReplayEpisodes"])
+print(meta["curriculumConfig"]["lossEpisodeReplaySteps"])
+`);
+        assert.deepStrictEqual(output.split('\n'), [
+            'True', 'True', 'False', '50', '48', 'seed-progress', 'progress',
+            '2', 'between-own-decisions-v2', '2', '0.008', '0.04', '0.03', '0.02',
+            '1', '0.25',
+            '3', '42',
+        ]);
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+});
+
+runTest('rl train: best browser checkpoint も一時fileから原子的に公開する', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-best-browser-checkpoint-'));
+    try {
+        const output = runPython(`
+import os
+from scripts.rl.agent import RLAgent
+from scripts.rl.train import _export_browser_checkpoint
+
+source = os.path.join(r"${tmpDir}", "source")
+destination = os.path.join(r"${tmpDir}", "best.browser.json")
+agent = RLAgent(hidden=8, lr=0.0001, state_dim=353, target_slots=3)
+agent.save(source)
+_export_browser_checkpoint(source, destination)
+print(os.path.exists(destination))
+print(os.path.exists(destination + ".tmp"))
+`);
+        assert.deepStrictEqual(output.split('\n'), ['True', 'False']);
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
     }
 });
 
@@ -746,6 +1061,101 @@ print(env.players[1].dormant["パン屋"])
     assert.strictEqual(lines[2], '1');
     assert.strictEqual(lines[3], '2');
     assert.strictEqual(lines[4], '1');
+});
+
+runTest('rl train: Business見送りは合法で新旧checkpoint互換を保つ', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rl-bc-skip-gate-'));
+    const base = path.join(tmpDir, 'model');
+    const legacy = path.join(tmpDir, 'legacy');
+    const exported = path.join(tmpDir, 'model.browser.json');
+    try {
+        const output = runPython(`
+import json
+import numpy as np
+from scripts.rl.cards import CARD_INDEX, NUM_CARDS
+from scripts.rl.encode import action_mask
+from scripts.rl.export_model import export_checkpoint
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_BC_BASE, ACT_PASS, NUM_ACTIONS
+from scripts.rl.network import PolicyValueNet
+from scripts.rl.train import _greedy_action
+
+env = MachikoroEnv(player_count=2)
+env.current = 0
+env.phase = PHASE_PENDING
+env.pending_biz = 1
+env._append_pending("pendingBusiness")
+env.players[0].cards["パン屋"] = 1
+env.players[1].cards["寿司屋"] = 1
+mask = action_mask(env)
+exchange = ACT_BC_BASE + CARD_INDEX["パン屋"] * NUM_CARDS + CARD_INDEX["寿司屋"]
+assert mask[ACT_PASS] == 1 and mask[exchange] == 1
+before = (env.players[0].cards["パン屋"], env.players[1].cards["寿司屋"])
+env.step(ACT_PASS)
+assert before == (env.players[0].cards["パン屋"], env.players[1].cards["寿司屋"])
+assert env.pending_biz == 0
+
+net = PolicyValueNet(145, NUM_ACTIONS, hidden=8, lr=0.0001)
+net.policy_head.W[:] = 0
+net.policy_head.b[:] = 0
+net.bc_give_head.W[:] = 0
+net.bc_take_head.W[:] = 0
+net.bc_give_head.b[CARD_INDEX["パン屋"]] = 10
+net.bc_take_head.b[CARD_INDEX["寿司屋"]] = 10
+net.policy_head.b[ACT_PASS] = 20
+state = np.zeros(145, dtype=np.float32)
+assert _greedy_action(net, state, mask) == ACT_PASS
+net.bc_skip_gate_version = 0
+assert _greedy_action(net, state, mask) == exchange
+net.bc_skip_gate_version = 1
+net.save(r"${base}")
+bundle = export_checkpoint(r"${base}.npz", r"${exported}")
+
+data = dict(np.load(r"${base}.npz"))
+del data["bc_skip_gate_version"]
+np.savez(r"${legacy}.npz", **data)
+loaded = PolicyValueNet(145, NUM_ACTIONS, hidden=8, lr=0.0001)
+loaded.load(r"${legacy}")
+legacy_bundle = export_checkpoint(r"${legacy}.npz", r"${exported}.legacy")
+print(json.dumps([bundle["businessSkipGateVersion"], loaded.bc_skip_gate_version, legacy_bundle["businessSkipGateVersion"]]))
+`);
+        assert.deepStrictEqual(JSON.parse(output), [1, 0, 0]);
+    } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+});
+
+runTest('rl train: Business見送りgateは全action softmaxのunderflowに影響されない', () => {
+    const output = runPython(`
+import numpy as np
+from scripts.rl.cards import NUM_CARDS
+from scripts.rl.game_env import ACT_BC_BASE, ACT_PASS, NUM_ACTIONS
+from scripts.rl.train import _select_action
+
+exchange = ACT_BC_BASE
+mask = np.zeros(NUM_ACTIONS, dtype=np.float32)
+mask[ACT_PASS] = 1.0
+mask[exchange] = 1.0
+
+class ExtremeGateNet:
+    bc_skip_gate_version = 1
+
+    def forward_bc_gate_details(self, state):
+        policy = np.zeros(NUM_ACTIONS, dtype=np.float32)
+        give = np.zeros(NUM_CARDS, dtype=np.float32)
+        take = np.zeros(NUM_CARDS, dtype=np.float32)
+        give[0] = 1.0
+        take[0] = 1.0
+        logits = np.full(NUM_ACTIONS, -1000.0, dtype=np.float32)
+        logits[ACT_PASS] = -100.0
+        logits[exchange] = 100.0
+        logits[1] = 1000.0
+        return policy, give, take, 0.0, logits, np.zeros(NUM_CARDS), np.zeros(NUM_CARDS)
+
+np.random.seed(9)
+actions = [_select_action(ExtremeGateNet(), np.zeros(145), mask, 0.0)[0] for _ in range(20)]
+print(all(action == exchange for action in actions))
+`);
+    assert.strictEqual(output, 'True');
 });
 
 runTest('rl train: pending business は渡す側を休業優先・奪う側をactive優先にする', () => {
@@ -1293,12 +1703,20 @@ added = _oversample_target_transitions(agent, 0.25)
 target_count = sum(1 for kind in agent.target_kinds if kind == "tv")
 print(added)
 print(len(agent.rewards))
-print(target_count / len(agent.rewards) >= 0.25)
+effective_total = len(agent.rewards) - target_count + target_count * agent.target_loss_weight
+print((target_count * agent.target_loss_weight) / effective_total >= 0.25)
+print(agent.dones == [False] * 9 + [True])
+stats = agent.train()
+print(stats["target_loss_weight"] > 1)
+print(agent.target_loss_weight == 1)
 `);
     const lines = output.split('\n');
     assert.ok(Number(lines[0]) > 0);
-    assert.ok(Number(lines[1]) > 10);
+    assert.strictEqual(Number(lines[1]), 10);
     assert.strictEqual(lines[2], 'True');
+    assert.strictEqual(lines[3], 'True');
+    assert.strictEqual(lines[4], 'True');
+    assert.strictEqual(lines[5], 'True');
 });
 
 runTest('rl train: target oversampling は2人互換モデルではno-op', () => {
@@ -1327,6 +1745,76 @@ print(len(agent.rewards))
     const lines = output.split('\n');
     assert.strictEqual(lines[0], '0');
     assert.strictEqual(lines[1], '1');
+});
+
+runTest('rl train: rare pending oversampling は2人BC交換・見送り遷移を重み付けする', () => {
+    const output = runPython(`
+import numpy as np
+import random
+from scripts.rl.agent import RLAgent
+from scripts.rl.cards import NUM_CARDS
+from scripts.rl.game_env import ACT_BC_BASE, ACT_PASS
+from scripts.rl.train import _oversample_rare_pending_transitions
+
+random.seed(5)
+agent = RLAgent(hidden=8, lr=0.001, state_dim=145, target_slots=0)
+state = np.zeros(145, dtype=np.float32)
+for index in range(10):
+    mask = np.zeros(1580, dtype=np.float32)
+    action = ACT_PASS if index == 0 else 0
+    mask[action] = 1.0
+    if index == 0:
+        mask[ACT_BC_BASE + NUM_CARDS] = 1.0
+        mask[ACT_BC_BASE + NUM_CARDS + 1] = 1.0
+    agent.states.append(state.copy())
+    agent.actions.append(action)
+    agent.masks.append(mask)
+    agent.target_kinds.append(None)
+    agent.target_slots.append(None)
+    agent.target_masks.append(np.zeros(0, dtype=np.float32))
+    agent.values.append(0.0)
+    agent.rewards.append(0.0)
+    agent.next_values.append(0.0)
+    agent.dones.append(index == 9)
+added = _oversample_rare_pending_transitions(agent, 0.25)
+bc_count = sum(1 for mask in agent.masks if mask[ACT_BC_BASE:ACT_BC_BASE + NUM_CARDS * NUM_CARDS].any())
+print(added)
+print(len(agent.rewards))
+effective_total = len(agent.rewards) - bc_count + bc_count * agent.rare_pending_loss_weight
+print((bc_count * agent.rare_pending_loss_weight) / effective_total >= 0.25)
+print(agent.dones == [False] * 9 + [True])
+stats = agent.train()
+print(stats["rare_pending_loss_weight"] > 1)
+print(agent.rare_pending_loss_weight == 1)
+`);
+    const lines = output.split('\n');
+    assert.ok(Number(lines[0]) > 0);
+    assert.strictEqual(Number(lines[1]), 10);
+    assert.strictEqual(lines[2], 'True');
+    assert.strictEqual(lines[3], 'True');
+    assert.strictEqual(lines[4], 'True');
+    assert.strictEqual(lines[5], 'True');
+});
+
+runTest('rl train: rare pending oversampling はtargetだけの遷移をBusiness件数へ混ぜない', () => {
+    const output = runPython(`
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.game_env import ACT_TV_TARGET
+from scripts.rl.train import _has_rare_pending_transition
+
+agent = RLAgent(hidden=8, lr=0.001, state_dim=353, target_slots=3)
+agent.actions.append(ACT_TV_TARGET)
+mask = np.zeros(1580, dtype=np.float32)
+mask[ACT_TV_TARGET] = 1.0
+agent.masks.append(mask)
+agent.rewards.append(0.0)
+agent.target_kinds.append("tv")
+agent.target_slots.append(0)
+agent.target_masks.append(np.ones(3, dtype=np.float32))
+print(_has_rare_pending_transition(agent, 0))
+`);
+    assert.strictEqual(output, 'False');
 });
 
 runTest('rl train: train は BC target head を give/take と同時に更新できる', () => {
@@ -1362,7 +1850,7 @@ stats = agent.train()
 after = agent.net.bc_target_head.b
 print(np.any(np.abs(after - before) > 1e-12))
 print("policy_loss" in stats and "value_loss" in stats)
-print(stats["target_pending_rate"] > 0 and stats["target_update_rate"] > 0 and stats["bc_target_rate"] > 0)
+print(stats["target_pending_rate"] > 0 and stats["target_update_rate"] > 0 and stats["bc_target_rate"] > 0 and stats["bc_action_rate"] > 0)
 `);
     const lines = output.split('\n');
     assert.strictEqual(lines[0], 'True');
@@ -1449,6 +1937,27 @@ print(round(_compute_shaped_reward(before, after, 0, config), 6))
     assert.strictEqual(output, '0.076');
 });
 
+runTest('rl train: 相手ターンの変化を直前の自分の行動報酬へ加算する', () => {
+    const output = runPython(`
+import copy
+from scripts.rl.game_env import MachikoroEnv
+from scripts.rl.train import _accrue_interturn_rewards, _reward_shaping_defaults
+
+before = MachikoroEnv()
+after = copy.deepcopy(before)
+after.players[1].coins += 5
+rewards = [[0.1], [0.2]]
+config = _reward_shaping_defaults()
+config["opp_coin"] = 0.008
+_accrue_interturn_rewards(rewards, before, after, 1, config)
+print(round(rewards[0][-1], 6))
+print(round(rewards[1][-1], 6))
+`);
+    const lines = output.split('\n');
+    assert.strictEqual(lines[0], '0.06');
+    assert.strictEqual(lines[1], '0.2');
+});
+
 runTest('rl train: 中間報酬は指定値でクリップできる', () => {
     const output = runPython(`
 import copy
@@ -1513,6 +2022,37 @@ print(round(_compute_shaped_reward(before, after, 0, config, action=ACT_PASS), 6
     assert.strictEqual(lines[2], '0.0');
     assert.strictEqual(lines[3], '0.0');
     assert.strictEqual(lines[4], '0.0');
+});
+
+runTest('rl train: 成立した戦略別建設にだけ固有の中間報酬を付ける', () => {
+    const output = runPython(`
+import copy
+from scripts.rl.cards import CARD_INDEX, LANDMARK_ORDER
+from scripts.rl.game_env import MachikoroEnv, ACT_BUY_CARD_BASE, ACT_BUY_LM_BASE
+from scripts.rl.train import _compute_shaped_reward, _reward_shaping_defaults
+
+def reward_for_card(name, key, value):
+    before = MachikoroEnv()
+    after = copy.deepcopy(before)
+    after.players[0].cards[name] += 1
+    config = _reward_shaping_defaults()
+    config.update({"landmark": 0.0, "clip": 0.0, key: value})
+    action = ACT_BUY_CARD_BASE + CARD_INDEX[name]
+    return _compute_shaped_reward(before, after, 0, config, action=action)
+
+print(round(reward_for_card("カフェ", "interaction_build", 0.04), 6))
+print(round(reward_for_card("サンマ漁船", "harbor_build", 0.04), 6))
+print(round(reward_for_card("パン屋", "engine_build", 0.02), 6))
+before = MachikoroEnv()
+after = copy.deepcopy(before)
+after.players[0].landmarks["港"] = True
+config = _reward_shaping_defaults()
+config.update({"landmark": 0.0, "harbor_build": 0.04, "clip": 0.0})
+action = ACT_BUY_LM_BASE + LANDMARK_ORDER.index("港")
+print(round(_compute_shaped_reward(before, after, 0, config, action=action), 6))
+print(round(_compute_shaped_reward(before, before, 0, config, action=action), 6))
+`);
+    assert.deepStrictEqual(output.split('\n'), ['0.04', '0.04', '0.02', '0.04', '0.0']);
 });
 
 runTest('rl train: 改装屋のランドマーク破壊収入は正の中間報酬にしない', () => {
@@ -1634,6 +2174,33 @@ print(json.dumps(result))
     assert.ok(result.loss > 0);
 });
 
+runTest('rl train: 模倣学習はBusiness交換見送りgateを更新する', () => {
+    const output = runPython(`
+import json
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import encode_state, action_mask
+from scripts.rl.game_env import MachikoroEnv, PHASE_PENDING, ACT_PASS
+from scripts.rl.train import _train_imitation_step
+agent = RLAgent(hidden=16, lr=0.001)
+env = MachikoroEnv()
+env.phase = PHASE_PENDING
+env.pending_biz = 1
+env._append_pending("pendingBusiness")
+env.players[0].cards["食品倉庫"] = 1
+env.players[1].cards["麦畑"] = 1
+state = encode_state(env)
+mask = action_mask(env)
+before = float(agent.net.policy_head.b[ACT_PASS])
+result = _train_imitation_step(agent, state, mask, ACT_PASS)
+after = float(agent.net.policy_head.b[ACT_PASS])
+print(json.dumps({"result": result, "changed": after != before}))
+`);
+    const result = JSON.parse(output);
+    assert.strictEqual(result.result.trained, true);
+    assert.ok(result.result.loss > 0);
+    assert.strictEqual(result.changed, true);
+});
+
 runTest('rl train: 模倣事前学習は教師行動サンプルを収集できる', () => {
     const output = runPython(`
 import json
@@ -1651,6 +2218,172 @@ print(json.dumps(stats))
     assert.ok(stats.examples > 0);
     assert.ok(stats.trained >= 0);
     assert.strictEqual(stats.opponents, 'weak');
+});
+
+runTest('rl train: 模倣事前学習は指定間隔と完了時に進捗を通知する', () => {
+    const output = runPython(`
+import json
+import random
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.train import run_imitation_pretraining
+random.seed(1)
+np.random.seed(1)
+agent = RLAgent(hidden=16, lr=0.001)
+progress = []
+run_imitation_pretraining(
+    agent,
+    games=3,
+    opponents=["weak"],
+    max_steps=1,
+    progress_every=2,
+    progress_callback=lambda completed, total: progress.append([completed, total]),
+)
+print(json.dumps(progress))
+`);
+    assert.deepStrictEqual(JSON.parse(output), [[2, 3], [3, 3]]);
+});
+
+runTest('rl train: pending curriculum は多人数targetとBusiness各headを更新する', () => {
+    const output = runPython(`
+import json
+import random
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import STATE_DIM_4P
+from scripts.rl.train import run_pending_curriculum
+
+random.seed(4)
+np.random.seed(4)
+agent = RLAgent(hidden=16, lr=0.001, state_dim=STATE_DIM_4P, target_slots=3)
+before = {
+    "tv": agent.net.tv_target_head.W.copy(),
+    "bc": agent.net.bc_target_head.W.copy(),
+    "mover": agent.net.mover_target_head.W.copy(),
+    "policy": agent.net.policy_head.W.copy(),
+    "give": agent.net.bc_give_head.W.copy(),
+    "take": agent.net.bc_take_head.W.copy(),
+}
+stats = run_pending_curriculum(agent, 16, (3, 10))
+changed = {
+    "tv": bool(np.any(before["tv"] != agent.net.tv_target_head.W)),
+    "bc": bool(np.any(before["bc"] != agent.net.bc_target_head.W)),
+    "mover": bool(np.any(before["mover"] != agent.net.mover_target_head.W)),
+    "policy": bool(np.any(before["policy"] != agent.net.policy_head.W)),
+    "give": bool(np.any(before["give"] != agent.net.bc_give_head.W)),
+    "take": bool(np.any(before["take"] != agent.net.bc_take_head.W)),
+}
+print(json.dumps({"stats": stats, "changed": changed}))
+`);
+    const result = JSON.parse(output);
+    assert.strictEqual(result.stats.samples, 16);
+    assert.strictEqual(result.stats.targetTrained, 16);
+    assert.strictEqual(result.stats.actionTrained, 12);
+    assert.deepStrictEqual(result.stats.kinds, {
+        tv: 4,
+        businessExchange: 4,
+        businessSkip: 4,
+        mover: 4,
+    });
+    assert.ok(result.stats.targetAccuracy >= 0 && result.stats.targetAccuracy <= 1);
+    assert.ok(result.stats.targetLoss > 0);
+    assert.ok(result.stats.actionLoss > 0);
+    assert.deepStrictEqual(result.changed, {
+        tv: true,
+        bc: true,
+        mover: true,
+        policy: true,
+        give: true,
+        take: true,
+    });
+});
+
+runTest('rl train: Business curriculum は高価値取得と不利交換見送りの盤面を分離する', () => {
+    const output = runPython(`
+import json
+import random
+from scripts.rl.game_env import ACT_PASS
+from scripts.rl.train import _configure_pending_curriculum_env
+
+random.seed(8)
+exchange, exchange_kind, exchange_target, exchange_action = _configure_pending_curriculum_env(1, 4)
+skip, skip_kind, skip_target, skip_action = _configure_pending_curriculum_env(2, 4)
+def owned(player):
+    return sorted(name for name, count in player.cards.items() for _ in range(count))
+print(json.dumps({
+    "exchangeKind": exchange_kind,
+    "exchangeSelf": owned(exchange.players[exchange.current]),
+    "exchangeTarget": owned(exchange.players[exchange_target]),
+    "exchangeAction": exchange_action,
+    "skipKind": skip_kind,
+    "skipSelf": owned(skip.players[skip.current]),
+    "skipOpponents": [owned(player) for index, player in enumerate(skip.players) if index != skip.current],
+    "skipAction": skip_action,
+    "passAction": ACT_PASS,
+}))
+`);
+    const result = JSON.parse(output);
+    assert.strictEqual(result.exchangeKind, 'businessExchange');
+    assert.deepStrictEqual(result.exchangeSelf, ['パン屋', '食品倉庫', '麦畑']);
+    assert.ok(result.exchangeTarget.includes('鉱山'));
+    assert.ok(result.exchangeTarget.includes('改装屋'));
+    assert.notStrictEqual(result.exchangeAction, result.passAction);
+    assert.strictEqual(result.skipKind, 'businessSkip');
+    assert.deepStrictEqual(result.skipSelf, ['ピザ屋', '食品倉庫']);
+    assert.deepStrictEqual(result.skipOpponents, [['麦畑'], ['麦畑'], ['麦畑']]);
+    assert.strictEqual(result.skipAction, result.passAction);
+});
+
+runTest('rl train: target head専用学習率は共有方策と分離して3 headだけへ適用する', () => {
+    const output = runPython(`
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import STATE_DIM, STATE_DIM_4P
+from scripts.rl.train import _set_target_head_learning_rate
+
+multi = RLAgent(hidden=8, lr=0.000001, state_dim=STATE_DIM_4P, target_slots=3)
+print(_set_target_head_learning_rate(multi, 0.001))
+print(multi.net.policy_head.lr)
+print(multi.net.tv_target_head.lr)
+print(multi.net.bc_target_head.lr)
+print(multi.net.mover_target_head.lr)
+two = RLAgent(hidden=8, lr=0.000001, state_dim=STATE_DIM, target_slots=0)
+print(_set_target_head_learning_rate(two, 0.001))
+`);
+    assert.deepStrictEqual(output.split('\n'), [
+        '3', '1e-06', '0.001', '0.001', '0.001', '0',
+    ]);
+});
+
+runTest('rl train: 2人pending curriculum はtarget headなしでBusiness交換と見送りを学習する', () => {
+    const output = runPython(`
+import json
+import random
+import numpy as np
+from scripts.rl.agent import RLAgent
+from scripts.rl.encode import STATE_DIM
+from scripts.rl.train import run_pending_curriculum
+
+random.seed(5)
+np.random.seed(5)
+agent = RLAgent(hidden=16, lr=0.000001, state_dim=STATE_DIM, target_slots=0)
+agent.net.bc_skip_gate_version = 0
+stats = run_pending_curriculum(agent, 8, (2, 2), head_learning_rate=0.001)
+print(json.dumps({
+    "stats": stats,
+    "rates": [agent.net.policy_head.lr, agent.net.bc_give_head.lr, agent.net.bc_take_head.lr],
+    "gateVersion": agent.net.bc_skip_gate_version,
+}))
+`);
+    const result = JSON.parse(output);
+    const stats = result.stats;
+    assert.strictEqual(stats.targetTrained, 0);
+    assert.strictEqual(stats.actionTrained, 8);
+    assert.deepStrictEqual(stats.kinds, {
+        businessExchange: 4,
+        businessSkip: 4,
+    });
+    assert.strictEqual(result.gateVersion, 1);
+    assert.deepStrictEqual(result.rates, [0.000001, 0.000001, 0.000001]);
 });
 
 runTest('rl train: masked probs はゼロ和でも有効手に一様分布を返す', () => {
@@ -1723,9 +2456,9 @@ from datetime import datetime
 from types import SimpleNamespace
 from scripts.rl.train import _make_run_label
 args = SimpleNamespace(run_label="", hidden=256, lr=0.0003, eval_every=1000, js_eval_games=20)
-print(_make_run_label(args, now=datetime(2026, 4, 9, 12, 34, 56)))
+print(_make_run_label(args, now=datetime(2026, 4, 9, 12, 34, 56, 123456), process_id=4321))
 `);
-    assert.strictEqual(output, '20260409-123456-h256-lr0.0003-ev1000-js20');
+    assert.strictEqual(output, '20260409-123456-123456-p4321-h256-lr0.0003-ev1000-js20');
 });
 
 runTest('rl train: run label は明示指定を優先する', () => {
@@ -1999,7 +2732,12 @@ rows = _build_metrics_rows(
             {"lineup": ["strong", "rl"], "winnerDifficulty": "rl"}
         ]
     }}],
-    metadata={"run_label": "baseline", "seed": 11, "hidden": 256, "lr": 0.0003, "eval_every": 1000, "js_eval_games": 20, "js_eval_opponents": "strong,expert"}
+    metadata={
+        "run_label": "baseline", "seed": 11, "hidden": 256, "lr": 0.0003,
+        "eval_every": 1000, "js_eval_games": 20, "js_eval_opponents": "strong,expert",
+        "loss_replay_probability": 0.25, "loss_replay_episodes": 3,
+        "loss_replay_steps": 42,
+    }
 )
 print(len(rows))
 print(rows[0]["run_label"])
@@ -2012,6 +2750,9 @@ print(rows[1]["js_first_rate"])
 print(rows[1]["js_second_rate"])
 print(rows[1]["js_draw_rate"])
 print(rows[1]["js_avg_turns"])
+print(rows[0]["loss_replay_probability"])
+print(rows[0]["loss_replay_episodes"])
+print(rows[0]["loss_replay_steps"])
 `);
     const lines = output.split('\n');
     assert.strictEqual(lines[0], '2');
@@ -2025,6 +2766,9 @@ print(rows[1]["js_avg_turns"])
     assert.strictEqual(lines[8], '0.5');
     assert.strictEqual(lines[9], '0.1');
     assert.strictEqual(lines[10], '17.4');
+    assert.strictEqual(lines[11], '0.25');
+    assert.strictEqual(lines[12], '3');
+    assert.strictEqual(lines[13], '42');
 });
 
 runTest('rl encode: schema helper は既存 state dim と draft action schema を公開する', () => {

@@ -68,7 +68,18 @@ const LocalGameStartRuntime = (() => {
 
         function canPreloadRlModels() {
             const current = portfolio();
-            return !!current && typeof current.preloadEligibleModels === 'function';
+            return !!current && (typeof current.preloadSelectedModels === 'function' ||
+                typeof current.preloadEligibleModels === 'function');
+        }
+
+        function ensureRlModelAssignments(playerCount, settings) {
+            const snapshot = playerSettings.snapshot(settings, playerCount);
+            const current = portfolio();
+            if (!hasRlCpuSetting(snapshot, playerCount) || !current ||
+                    typeof current.assignModelIds !== 'function') return snapshot;
+            const assigned = current.assignModelIds(snapshot, playerCount);
+            setupRuntime.setPlayerSettings(assigned);
+            return assigned;
         }
 
         function modelLoadState(playerCount = setupSnapshot().selectedCount) {
@@ -76,8 +87,12 @@ const LocalGameStartRuntime = (() => {
                 return { status: 'unused', ready: 0, total: 0, errors: [] };
             }
             const current = portfolio();
-            if (!current || typeof current.preloadEligibleModels !== 'function') {
+            if (!canPreloadRlModels()) {
                 return { status: 'failed', ready: 0, total: 0, errors: ['RL model loader is not available'] };
+            }
+            const settings = ensureRlModelAssignments(playerCount, setupSnapshot().playerSettings);
+            if (typeof current.selectedLoadState === 'function') {
+                return current.selectedLoadState(playerCount, settings);
             }
             if (typeof current.eligibleLoadState === 'function') {
                 return current.eligibleLoadState(playerCount);
@@ -111,7 +126,10 @@ const LocalGameStartRuntime = (() => {
             if (target) {
                 target.innerHTML = playerSettings.buildSettingsHtml(
                     normalized.playerSettings,
-                    normalized.selectedCount
+                    normalized.selectedCount,
+                    portfolio() && typeof portfolio().eligibleModels === 'function'
+                        ? portfolio().eligibleModels(normalized.selectedCount)
+                        : []
                 );
             }
             updateReadinessUi();
@@ -135,15 +153,16 @@ const LocalGameStartRuntime = (() => {
 
         function preloadInBackground(reason = 'local-rl-background-preload') {
             const setup = setupSnapshot();
-            if (!hasLocalRlCpuSetting(setup.selectedCount, setup.playerSettings) || !canPreloadRlModels()) {
+            const settings = ensureRlModelAssignments(setup.selectedCount, setup.playerSettings);
+            if (!hasLocalRlCpuSetting(setup.selectedCount, settings) || !canPreloadRlModels()) {
                 updateReadinessUi();
                 return null;
             }
             updateReadinessUi();
-            const preload = portfolio().preloadEligibleModels(
-                setup.selectedCount,
-                { attempts: 3, retryDelayMs: 0 }
-            );
+            const current = portfolio();
+            const preload = typeof current.preloadSelectedModels === 'function'
+                ? current.preloadSelectedModels(setup.selectedCount, settings, { attempts: 3, retryDelayMs: 0 })
+                : current.preloadEligibleModels(setup.selectedCount, { attempts: 3, retryDelayMs: 0 });
             if (preload && typeof preload.then === 'function') {
                 preload.then(() => updateReadinessUi()).catch(error => {
                     const logger = dependencies.console;
@@ -175,11 +194,34 @@ const LocalGameStartRuntime = (() => {
                 type: value === 'human' ? 'human' : 'cpu',
                 difficulty: value === 'human' ? 'normal' : value,
                 name: playerSettings.normalizePlayerName(settings[index]?.name, index),
+                rlModelId: value === 'rl' ? null : undefined,
+                rlModelSelection: value === 'rl' ? 'auto' : undefined,
             });
             renderPlayerSettings();
             restorePlayerTypeFocus(focusPlan);
             if (value === 'rl') preloadInBackground('local-rl-selected-preload');
             saveSettings();
+        }
+
+        function changeRlModel(index, value) {
+            const setup = setupSnapshot();
+            const current = setup.playerSettings[index];
+            if (!current || current.type !== 'cpu' || current.difficulty !== 'rl') return false;
+            const currentPortfolio = portfolio();
+            const selectedModel = value === 'auto' ? null : currentPortfolio &&
+                typeof currentPortfolio.modelById === 'function'
+                ? currentPortfolio.modelById(value, setup.selectedCount)
+                : null;
+            if (value !== 'auto' && !selectedModel) return false;
+            setupRuntime.setPlayerSetting(index, Object.assign({}, current, {
+                rlModelId: selectedModel ? selectedModel.id : null,
+                rlModelSelection: value === 'auto' ? 'auto' : 'manual',
+            }));
+            const settings = ensureRlModelAssignments(setup.selectedCount, setupSnapshot().playerSettings);
+            renderPlayerSettings();
+            preloadInBackground('local-rl-model-selected-preload');
+            saveSettings();
+            return settings[index] && settings[index].rlModelId;
         }
 
         function changePlayerName(index, value) {
@@ -195,11 +237,31 @@ const LocalGameStartRuntime = (() => {
         }
 
         function preloadForStart(playerCount, settings = setupSnapshot().playerSettings) {
-            if (!hasLocalRlCpuSetting(playerCount, settings)) return null;
+            const assigned = ensureRlModelAssignments(playerCount, settings);
+            if (!hasLocalRlCpuSetting(playerCount, assigned)) return null;
             if (!canPreloadRlModels()) {
                 return Promise.reject(new Error('RL model loader is not available'));
             }
-            return portfolio().preloadEligibleModels(playerCount, { attempts: 3 });
+            const current = portfolio();
+            return typeof current.preloadSelectedModels === 'function'
+                ? current.preloadSelectedModels(playerCount, assigned, { attempts: 3 })
+                : current.preloadEligibleModels(playerCount, { attempts: 3 });
+        }
+
+        function startWithSafeFallback(playerCount, settings, error) {
+            const current = portfolio();
+            if (!current || typeof current.safeFallbackSettings !== 'function') return false;
+            const fallback = current.safeFallbackSettings(settings, playerCount, 'strong');
+            if (!fallback.replaced.length) return false;
+            setupRuntime.setPlayerSettings(fallback.settings);
+            renderPlayerSettings();
+            const logger = dependencies.console;
+            if (logger && typeof logger.warn === 'function') {
+                logger.warn('local-rl-safe-fallback', error);
+            }
+            showNotice('深層学習AIモデルを読み込めなかったため、CPU（強）で開始します。');
+            startNow(playerCount, fallback.settings);
+            return true;
         }
 
         function startNow(
@@ -235,7 +297,7 @@ const LocalGameStartRuntime = (() => {
                     startPolicy.REQUEST_DECISIONS.IGNORE_PENDING) return;
             const setup = setupSnapshot();
             const playerCount = setup.selectedCount;
-            const settings = playerSettings.snapshot(setup.playerSettings, playerCount);
+            const settings = ensureRlModelAssignments(playerCount, setup.playerSettings);
             const state = updateReadinessUi();
             if (startPolicy.initialDecision({ loadStatus: state.status }) ===
                     startPolicy.REQUEST_DECISIONS.WAIT_LOADING) {
@@ -253,10 +315,12 @@ const LocalGameStartRuntime = (() => {
                     startNow(playerCount, settings);
                 }).catch(error => {
                     pendingController.finish();
-                    const logger = dependencies.console;
-                    if (logger && typeof logger.error === 'function') logger.error(error);
-                    updateReadinessUi();
-                    showNotice('深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度開始してください。');
+                    if (!startWithSafeFallback(playerCount, settings, error)) {
+                        const logger = dependencies.console;
+                        if (logger && typeof logger.error === 'function') logger.error(error);
+                        updateReadinessUi();
+                        showNotice('深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度開始してください。');
+                    }
                 });
                 return;
             }
@@ -268,6 +332,7 @@ const LocalGameStartRuntime = (() => {
             changeCount,
             renderPlayerSettings,
             changePlayerType,
+            changeRlModel,
             changePlayerName,
             hasRlCpuSetting,
             snapshotPlayerSettings,
@@ -278,6 +343,7 @@ const LocalGameStartRuntime = (() => {
             updateReadinessUi,
             preloadForStart,
             preloadInBackground,
+            startWithSafeFallback,
             startNow,
             start,
         });

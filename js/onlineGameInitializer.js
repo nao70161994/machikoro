@@ -69,7 +69,10 @@ const OnlineGameInitializer = (() => {
                         expertPurpose: 'live',
                         playerCount,
                         expertOpponentDifficulties: opponentDifficulties,
-                        rlModelId: setting.rlModelId || setting.modelId || null,
+                        ...(setting.difficulty === 'rl' ? {
+                            rlModelId: setting.rlModelId || setting.modelId || null,
+                            rlModelSha256: setting.rlModelSha256 || null,
+                        } : {}),
                     })
                     : null);
             } else {

@@ -4,6 +4,7 @@
 
 import os
 import random
+import sys
 from .game_env import (
     PHASE_ROLL, PHASE_SELECT_DICE, PHASE_REROLL, PHASE_HARBOR,
     PHASE_PENDING, PHASE_BUILD,
@@ -21,10 +22,11 @@ from .cards import (
 )
 
 _JS_CPU_ORACLE = None
+_JS_CPU_ORACLE_FAILURES = 0
 
 
 def _oracle_action(env, level: str):
-    global _JS_CPU_ORACLE
+    global _JS_CPU_ORACLE, _JS_CPU_ORACLE_FAILURES
     if os.environ.get("MACHIKORO_RL_JS_CPU_ORACLE") != "1":
         return None
     if level not in ("normal", "strong", "expert"):
@@ -32,7 +34,27 @@ def _oracle_action(env, level: str):
     if _JS_CPU_ORACLE is None:
         from .js_cpu_oracle import JsCpuOracle
         _JS_CPU_ORACLE = JsCpuOracle()
-    return _JS_CPU_ORACLE.action(env, level)
+    try:
+        return _JS_CPU_ORACLE.action(env, level)
+    except (RuntimeError, OSError, ValueError) as exc:
+        _JS_CPU_ORACLE_FAILURES += 1
+        try:
+            _JS_CPU_ORACLE.close()
+        except Exception:
+            pass
+        _JS_CPU_ORACLE = None
+        if os.environ.get("MACHIKORO_RL_JS_CPU_ORACLE_STRICT") == "1":
+            raise
+        print(
+            f"warning: JS CPU oracle unavailable; using Python {level} fallback for one action: {exc}",
+            file=sys.stderr,
+            flush=True,
+        )
+        return None
+
+
+def js_cpu_oracle_failure_count() -> int:
+    return _JS_CPU_ORACLE_FAILURES
 
 
 # ダイス2個（2〜12）の出目確率（36通り均等）

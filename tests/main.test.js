@@ -2540,6 +2540,7 @@ runTest('index.html は秘密情報を含めない動作診断の表示・コピ
     assert.ok(html.includes('id="appDiagnosticsOutput"'));
     assert.ok(html.includes('data-ui-action="refreshAppDiagnostics"'));
     assert.ok(html.includes('data-ui-action="copyAppDiagnostics"'));
+    assert.ok(html.includes('data-ui-action="exportMatchData"'));
     assert.ok(html.includes('class="game-diagnostics-copy"'));
     assert.ok(html.includes('問題報告用の対局診断をコピー'));
     assert.ok(html.includes('ルームID、再接続情報、プレイヤー名は含みません'));

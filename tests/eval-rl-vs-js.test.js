@@ -74,7 +74,7 @@ function buildRlModel(overrides = {}) {
 }
 
 runTest('parseArgs は RL vs JS 評価 CLI 引数を解釈する', () => {
-    const args = parseArgs(['--model', 'tmp/model.json', '--games', '6', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--shared-seeds', '--paired-seats', '--opponents', 'strong,expert', '--lineups', 'rl,weak,normal,strong;rl,normal,normal,strong']);
+    const args = parseArgs(['--model', 'tmp/model.json', '--games', '6', '--seed', '9', '--max-steps', '7000', '--format', 'json', '--progress-every', '10', '--abort-on-exhaustion', '--shared-seeds', '--paired-seats', '--opponents', 'strong,expert', '--lineups', 'rl,weak,normal,strong;rl,normal,normal,strong']);
     assert.strictEqual(args.modelPath, 'tmp/model.json');
     assert.strictEqual(args.games, 6);
     assert.strictEqual(args.seed, 9);
@@ -82,6 +82,8 @@ runTest('parseArgs は RL vs JS 評価 CLI 引数を解釈する', () => {
     assert.strictEqual(args.format, 'json');
     assert.strictEqual(args.sharedSeeds, true);
     assert.strictEqual(args.pairedSeats, true);
+    assert.strictEqual(args.progressEvery, 10);
+    assert.strictEqual(args.abortOnExhaustion, true);
     assert.deepStrictEqual(args.opponents, ['strong', 'expert']);
     assert.deepStrictEqual(args.lineups, [
         ['rl', 'weak', 'normal', 'strong'],
@@ -257,6 +259,13 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
                     exchanges: { '麦畑->パン屋': 1 },
                 },
             },
+            targetStats: {
+                rl: {
+                    tv: { total: 2, skipped: 0, targetDifficulties: { expert: 2 }, targetSeats: { p2: 2 } },
+                    business: { total: 2, skipped: 1, targetDifficulties: { expert: 1 }, targetSeats: { p2: 1 } },
+                    mover: { total: 1, skipped: 0, targetDifficulties: { expert: 1 }, targetSeats: { p2: 1 } },
+                },
+            },
         },
     });
     assert.strictEqual(summary.opponent, 'expert');
@@ -280,6 +289,8 @@ runTest('summarizeEvaluationEntry は勝率と seat 別指標を返す', () => {
     assert.strictEqual(summary.rlBusinessStats.total, 2);
     assert.strictEqual(summary.rlBusinessStats.skipRate, 0.5);
     assert.strictEqual(summary.rlBusinessStats.topExchanges[0].name, '麦畑->パン屋');
+    assert.strictEqual(summary.rlTargetStats.tv.targetDifficulties.expert, 2);
+    assert.strictEqual(summary.rlTargetStats.business.skipped, 1);
 });
 
 runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
@@ -319,15 +330,24 @@ runTest('printEvaluation は text 形式で seat 指標を出力する', () => {
                         exchanges: { '麦畑->パン屋': 1 },
                     },
                 },
+                targetStats: {
+                    rl: {
+                        tv: { total: 1, skipped: 0, targetDifficulties: { strong: 1 }, targetSeats: { p2: 1 } },
+                        business: { total: 1, skipped: 0, targetDifficulties: { strong: 1 }, targetSeats: { p2: 1 } },
+                        mover: { total: 0, skipped: 0, targetDifficulties: {}, targetSeats: {} },
+                    },
+                },
             },
         }], { format: 'text' });
     } finally {
         console.log = realLog;
     }
-    assert.strictEqual(lines.length, 3);
+    assert.strictEqual(lines.length, 5);
     assert.ok(lines[0].includes('rl vs strong'));
     assert.ok(lines[0].includes('seat(first=100.0%,second=50.0%)'));
     assert.ok(lines[1].includes('rl-build: total=5 pass=1'));
+    assert.ok(lines[3].includes('rl-target-tv'));
+    assert.ok(lines[4].includes('rl-target-business'));
     assert.ok(lines[1].includes('麦畑x3'));
     assert.ok(lines[2].includes('rl-business: total=1'));
     assert.ok(lines[2].includes('麦畑->パン屋x1'));
