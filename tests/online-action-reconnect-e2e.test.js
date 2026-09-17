@@ -10,6 +10,7 @@ const serverModule = require('../server');
 const runtime = serverModule.loadGameRuntime();
 const connectClient = require('socket.io-client');
 const NAMES = ['Alice', 'Bob'];
+const { loadIntegrationRuntime } = require('./helpers/integration-runtime');
 
 function connect(origin) {
     return connectClient(origin, { transports: ['websocket'], forceNew: true, reconnection: false });
@@ -29,6 +30,141 @@ async function rejoin(origin, clients, credentials, index) {
         clientVersion: 'action-reconnect-e2e',
     });
     return { socket, data: await promise };
+}
+
+async function verifyClientUiActions(origin) {
+    const clients = [];
+    const runtimes = NAMES.map(() => loadIntegrationRuntime({ includeOnline: true }));
+    const errors = [];
+    try {
+        for (const [index, client] of runtimes.entries()) {
+            client.io = () => connect(origin);
+            client.initSocket();
+            const socket = client.__test.getOnlineState().socket;
+            clients.push(socket);
+            socket.on('appError', error => errors.push(error));
+            await onceEvent(socket, 'connect');
+            client.__test.setOnlineState({ myPlayerName: NAMES[index] });
+        }
+        const starts = clients.map(socket => onceEvent(socket, 'gameStart'));
+        const createdPromise = onceEvent(clients[0], 'roomCreated');
+        const host = runtimes[0];
+        const selectionEvents = {};
+        host.document.getElementById('cardSelectModal').addEventListener = (name, handler) => {
+            selectionEvents[name] = handler;
+        };
+        host.__test.hideAllModals();
+        host.handleStaticUiClick({
+            target: { dataset: { uiAction: 'showCardSelect' } },
+            preventDefault() {},
+        });
+        assert.strictEqual(host.__test.elements.cardSelectModal.style.display, 'flex');
+        assert.strictEqual(typeof selectionEvents.click, 'function');
+        for (const cardName of ['牧場', 'カフェ']) {
+            selectionEvents.click({ target: { dataset: { action: 'toggleCard', cardName } }, preventDefault() {} });
+        }
+        selectionEvents.click({ target: { dataset: { action: 'closeCardSelect' } }, preventDefault() {} });
+        host.showCreateRoom();
+        const created = await createdPromise;
+        clients[0].emit('setWaitingReady', { roomId: created.roomId, ready: true });
+        const joinedPromise = onceEvent(clients[1], 'roomJoined');
+        clients[1].emit('joinRoom', {
+            roomId: created.roomId, playerName: NAMES[1], clientVersion: 'integration-build',
+        });
+        await joinedPromise;
+        await new Promise(resolve => setImmediate(resolve));
+        const openingUpdates = clients.map(socket => onceEvent(socket, 'playerList'));
+        assert.strictEqual(host.showCardSelect(), true);
+        await Promise.all(openingUpdates);
+        assert.strictEqual(host.__test.elements.marketRuleSelect.disabled, true);
+        selectionEvents.click({
+            target: { dataset: { action: 'toggleCard', cardName: '森林' } }, preventDefault() {},
+        });
+        selectionEvents.click({
+            target: { dataset: { action: 'toggleLandmark', landmarkName: '港' } }, preventDefault() {},
+        });
+        const selectionUpdates = clients.map(socket => onceEvent(socket, 'playerList'));
+        host.closeCardSelect();
+        await Promise.all(selectionUpdates);
+        const room = serverModule.__rooms[created.roomId];
+        assert.ok(!room.enabledCards.includes('森林'));
+        assert.ok(!room.enabledLandmarks.includes('港'));
+        assert.ok(room.players.every(player => player.ready === false));
+        assert.strictEqual(runtimes[1].showCardSelect(), false, 'guest cannot change the room rules locally');
+        assert.ok(!runtimes[1].GameSelectionState.runtime.snapshot().enabledCards.includes('森林'));
+        clients[0].emit('setWaitingReady', { roomId: created.roomId, ready: true });
+        clients[1].emit('setWaitingReady', { roomId: created.roomId, ready: true });
+        const [start] = await Promise.all(starts);
+        // gameStart initializes each real client runtime asynchronously.
+        await new Promise(resolve => setImmediate(resolve));
+        for (const entry of runtimes) {
+            for (const name of ['牧場', 'カフェ', '森林']) {
+                assert.ok(!entry.GameSelectionState.runtime.snapshot().enabledCards.includes(name));
+                assert.ok(!entry.__test.elements.buildMenu.innerHTML.includes(`data-card-name="${name}"`));
+            }
+        }
+        const actor = start.playerOrder[0];
+        const client = runtimes[actor];
+        async function perform(invoke) {
+            const replies = [
+                onceEvent(clients[actor], 'actionAccepted'),
+                onceEvent(clients[1 - actor], 'gameAction'),
+            ];
+            invoke();
+            const [accepted] = await Promise.all(replies);
+            assert.deepStrictEqual(errors, []);
+            assert.strictEqual(client.getOnlineActionFlightState().inFlight, false);
+            return accepted;
+        }
+        await perform(() => client.sendAction('rollDice', {}));
+        const before = runtimes.map(entry => entry.__test.getGame().currentPlayer().coins);
+        const coinChanges = runtimes.map(() => []);
+        runtimes.forEach((entry, index) => {
+            entry.showCoinAnimation = (playerIndex, diff) => coinChanges[index].push(diff);
+        });
+        const click = (action, cardName) => client.handleBuildMenuClick({
+            target: { dataset: { action, cardName } },
+            preventDefault() {},
+        });
+        await perform(() => {
+            click('buildCard', '麦畑');
+            client.__test.elements.confirmOkBtn.onclick();
+        });
+        runtimes.forEach((entry, index) => {
+            assert.strictEqual(entry.__test.getGame().currentPlayer().coins, before[index] - 1);
+            assert.ok(coinChanges[index].includes(-1));
+        });
+        assert.ok(client.__test.elements.buildMenu.innerHTML.includes('data-action="undoBuild"'));
+        const undone = await perform(() => {
+            click('undoBuild');
+            client.__test.elements.confirmOkBtn.onclick();
+        });
+        assert.ok(undone.data.state, 'server supplies the authoritative undo snapshot');
+        runtimes.forEach((entry, index) => {
+            assert.strictEqual(entry.__test.getGame().currentPlayer().coins, before[index]);
+            assert.strictEqual(entry.__test.getGame().builtThisTurn, false);
+        });
+        // Exercise a pending-card button through the same client/server boundary.
+        const mirror = serverModule.getRoomCanonicalMirror(serverModule.__rooms[created.roomId]);
+        for (const game of [mirror.game, ...runtimes.map(entry => entry.__test.getGame())]) {
+            game.phase = runtime.GAME_PHASES.PENDING;
+            game.pendingTV = 1;
+            game.pendingActionQueue = [{ action: 'resolveTV', field: 'pendingTV' }];
+            game.players[1].coins = 10;
+        }
+        runtimes.forEach(entry => entry.render());
+        await perform(() => client.handlePendingActionClick({
+            target: { dataset: { action: 'resolveTV', targetIndex: '1' } },
+            preventDefault() {},
+        }));
+        runtimes.forEach(entry => {
+            assert.strictEqual(entry.__test.getGame().pendingTV, 0);
+            assert.strictEqual(entry.__test.getGame().players[1].coins, 5);
+            assert.strictEqual(entry.__test.elements.pendingModal.style.display, 'none');
+        });
+    } finally {
+        clients.forEach(socket => socket.close());
+    }
 }
 
 runTest('online action reconnect e2e: build/undo residualとTV pending snapshotをtransport復元する', async () => {
@@ -125,6 +261,7 @@ runTest('online action reconnect e2e: build/undo residualとTV pending snapshot�
         const resolved = await send('resolveTV', { targetIndex });
         assert.strictEqual(resolved.action, 'resolveTV');
         assert.strictEqual(resolved.seq, pendingSeq + 1);
+        await verifyClientUiActions(origin);
     } finally {
         clients.forEach(socket => socket.close());
         await new Promise(resolve => serverModule.__io.close(resolve));

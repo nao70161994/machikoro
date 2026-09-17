@@ -64,6 +64,14 @@ function createDisconnectSocketHandler(dependencies) {
             delete rooms[roomId];
             return { removedRoom: true };
         }
+        if (socket.playerIndex === room.hostPlayerIndex) {
+            const remaining = getRemainingConnectedPlayers(room, targetIo.sockets.sockets, socket.id)
+                .sort((left, right) => left.index - right.index);
+            if (remaining.length > 0) {
+                setRoomHostPlayerIndex(room, remaining[0].index);
+                emitRoomHostChanged(roomId, room, targetIo);
+            }
+        }
         const playerList = buildPlayerList(room);
         targetIo.to(roomId).emit('playerList', playerList, buildLobbyState(room));
         return { removedRoom: false, playerList };

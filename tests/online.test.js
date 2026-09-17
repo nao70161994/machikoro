@@ -4138,6 +4138,37 @@ runTest('online snapshot は build/restore/build でroundtripできる', () => {
     assert.deepStrictEqual(roundtrip, snapshot);
 });
 
+runTest('10種類市場はsnapshotなし再接続でも開始seedとaction replayの在庫を維持する', () => {
+    for (const authority of [false, true]) {
+        const client = loadOnlineRuntime();
+        client.window.MACHIKORO_ONLINE_RESTORE_REPLAY_PLAN_AUTHORITY_ENABLED = authority;
+        client.window.MACHIKORO_ONLINE_RESTORE_REPLAY_EFFECT_AUTHORITY_ENABLED = authority;
+        client.initSocket();
+        const handlers = client.getSocketHandlers();
+        const payload = {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            playerOrder: [0, 1],
+            enabledCards: client.CARDS.map(card => card.name),
+            enabledLandmarks: client.Player.landmarkNames(),
+            marketRule: 'ten-type', marketSeed: 12345,
+            hostPlayerIndex: 0, cpuSpeed: 1500,
+        };
+        handlers.gameStart(payload);
+        const actionLog = [{ action: 'rollDice', data: { forceDice: 1, tunaDice: [1, 1] } }];
+        assert.strictEqual(client.applyAction(actionLog[0].action, actionLog[0].data), true);
+        const expectedStock = JSON.stringify(client.getShopStock());
+        const expectedMarket = JSON.stringify(client.getGame().marketSupply);
+        handlers.rejoinData({
+            gameStartPayload: { ...payload }, stateSnapshot: null, actionLog, playerIndex: 0,
+        });
+        assert.strictEqual(client.getGame().marketSupply.seed, payload.marketSeed);
+        assert.strictEqual(JSON.stringify(client.getShopStock()), expectedStock);
+        assert.strictEqual(JSON.stringify(client.getGame().marketSupply), expectedMarket);
+        assert.strictEqual(client.getGame().phase, GAME_PHASES.BUILD);
+    }
+});
+
 runTest('公式オプション市場はonline建設・補充・snapshot復元で山札順を保つ', () => {
     const rt = loadOnlineRuntime();
     rt.setEnabledCards(new Set(rt.CARDS.map(card => card.name)));

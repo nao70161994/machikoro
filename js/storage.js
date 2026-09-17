@@ -635,7 +635,8 @@ function doUndo() {
     const preview = UndoPreview.build({ game: gameState.game, state });
     const executeUndo = () => {
         if (onlineState.isOnlineGame) {
-            sendAction('undoBuild', { state });
+            // The server owns the authoritative pre-build snapshot.
+            sendAction('undoBuild', {});
             return;
         }
         const restored = typeof runLocalOrSendOnline === 'function'

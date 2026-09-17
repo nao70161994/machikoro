@@ -37,6 +37,7 @@ const OnlineRejoinActivationRuntime = (() => {
             const legacyPlan = Object.freeze({
                 playerNames: input.playerNames,
                 playerSettings: input.playerSettings,
+                marketSeed: input.marketSeed,
                 playerOrder: input.playerOrder,
                 stateSnapshot: input.stateSnapshot,
                 actionLog: input.actionLog,
@@ -75,7 +76,7 @@ const OnlineRejoinActivationRuntime = (() => {
             try {
                 handlers.observeReplayStarted();
                 handlers.applyReplayStatus();
-                handlers.initGame(plan.playerNames, plan.playerSettings, plan.playerOrder);
+                handlers.initGame(plan.playerNames, plan.playerSettings, plan.playerOrder, { marketSeed: plan.marketSeed });
                 if (plan.stateSnapshot && handlers.restoreSnapshot(plan.stateSnapshot) === false) {
                     throw new Error('online snapshot restore rejected');
                 }

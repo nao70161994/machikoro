@@ -2528,6 +2528,53 @@ runTest('integration: render recovery中にplayerSettingsが短くてもrenderPl
     assert.strictEqual(trace.details.playerSettingsLength, 0);
 });
 
+
+runTest('integration: 人間の施設・ランドマーク建設はコイン表示を消す再描画をしない', () => {
+    for (const landmark of [false, true]) {
+        const rt = loadIntegrationRuntime();
+        rt.__test.startLocalGame();
+        hideAllTestModals(rt);
+        rt.__test.startBuildPhase({ coins: 10 });
+        rt.render();
+        const changes = [];
+        let renderCount = 0;
+        const panel = rt.__test.elements.players;
+        let markup = panel.innerHTML;
+        Object.defineProperty(panel, 'innerHTML', {
+            get: () => markup,
+            set: value => { renderCount++; markup = value; },
+        });
+        rt.showCoinAnimation = (index, diff) => changes.push({ index, diff });
+        if (landmark) rt.onBuildLandmark('駅');
+        else rt.onBuildCard('麦畑');
+        rt.__test.elements.confirmOkBtn.onclick();
+        assert.strictEqual(renderCount, 1, '購入後の再描画がコイン表示を消さない');
+        assert.strictEqual(changes.length, 1);
+        assert.ok(changes[0].diff < 0);
+        assert.ok(rt.__test.elements.buildMenu.innerHTML.includes('undoBuild'));
+        rt.doUndo();
+        rt.__test.elements.confirmOkBtn.onclick();
+        assert.strictEqual(rt.__test.getGame().currentPlayer().coins, 10);
+        assert.strictEqual(rt.__test.getGame().builtThisTurn, false);
+    }
+});
+
+runTest('integration: 待機室のカード編集は切断時に変更を戻して閉じる', () => {
+    const rt = loadIntegrationRuntime({ includeOnline: true });
+    rt.initSocket();
+    rt.__test.setOnlineState({ myRoomId: 'ROOM01', isRoomHost: true, myOriginalPlayerIndex: 0 });
+    rt.__test.hideAllModals();
+    const before = rt.GameSelectionState.runtime.snapshot().enabledCards;
+    assert.strictEqual(rt.showCardSelect(), true);
+    rt.toggleCard('牧場');
+    assert.ok(!rt.GameSelectionState.runtime.snapshot().enabledCards.includes('牧場'));
+    rt.__test.getOnlineState().socket.connected = false;
+    rt.closeCardSelect();
+    assert.deepStrictEqual(rt.GameSelectionState.runtime.snapshot().enabledCards, before);
+    assert.strictEqual(rt.__test.elements.cardSelectModal.style.display, 'none');
+    assert.ok(!rt.__test.socketEmits.some(entry => entry.name === 'manageWaitingRoom'));
+});
+
 if (process.exitCode) {
     throw new Error('integrationテストで失敗が発生しました');
 }

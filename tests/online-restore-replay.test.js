@@ -20,6 +20,7 @@ runTest('online restore replay planはreplay入力参照を変更せず固定す
     const plan = OnlineRestoreReplay.plan({
         playerNames,
         playerSettings,
+        marketSeed: 12345,
         playerOrder,
         stateSnapshot,
         actionLog,
@@ -28,6 +29,7 @@ runTest('online restore replay planはreplay入力参照を変更せず固定す
     assert.deepStrictEqual(plan, {
         playerNames,
         playerSettings,
+        marketSeed: 12345,
         playerOrder,
         stateSnapshot,
         actionLog,
@@ -41,6 +43,7 @@ runTest('online restore replay plan authorityは全参照一致時だけpure pla
     const input = {
         playerNames: ['A', 'B'],
         playerSettings: [],
+        marketSeed: 12345,
         playerOrder: [0, 1],
         stateSnapshot: null,
         actionLog: [],
@@ -51,6 +54,9 @@ runTest('online restore replay plan authorityは全参照一致時だけpure pla
     assert.strictEqual(OnlineRestoreReplay.selectPlan(
         input, legacy, { authorityEnabled: true }
     ).source, 'pure-plan');
+    assert.strictEqual(OnlineRestoreReplay.selectPlan(
+        input, { ...legacy, marketSeed: 0 }, { authorityEnabled: true }
+    ).source, 'legacy-fallback');
     const mismatch = Object.assign({}, legacy, { actionLog: [] });
     const selection = OnlineRestoreReplay.selectPlan(
         input, mismatch, { authorityEnabled: true }
@@ -70,6 +76,7 @@ runTest('online restore replay executorはinitからsnapshot/action/logまで既
     const result = OnlineRestoreReplay.execute({
         playerNames: ['A', 'B'],
         playerSettings: [],
+        marketSeed: 12345,
         playerOrder: [0, 1],
         stateSnapshot: snapshot,
         actionLog,
@@ -79,7 +86,7 @@ runTest('online restore replay executorはinitからsnapshot/action/logまで既
         ['setReplaying', true],
         ['observeReplayStarted'],
         ['applyReplayStatus'],
-        ['initGame', ['A', 'B'], [], [0, 1]],
+        ['initGame', ['A', 'B'], [], [0, 1], { marketSeed: 12345 }],
         ['restoreSnapshot', snapshot],
         ['applyAction', 'buildCard', { cardName: '麦畑' }],
         ['applyAction', 'nextTurn', {}],
@@ -105,6 +112,7 @@ runTest('online restore replay executorは失敗時もreplay modeを解除して
     assert.throws(() => OnlineRestoreReplay.execute({
         playerNames: [],
         playerSettings: [],
+        marketSeed: 12345,
         playerOrder: [],
         stateSnapshot: null,
         actionLog: [{ action: 'nextTurn', data: {} }],
@@ -128,6 +136,7 @@ runTest('online restore replay executorはsnapshot/actionのfalseを成功扱い
         assert.throws(() => OnlineRestoreReplay.execute({
             playerNames: [],
             playerSettings: [],
+            marketSeed: 12345,
             playerOrder: [],
             stateSnapshot: { phase: 'build' },
             actionLog: [{ action: 'nextTurn', data: {} }],

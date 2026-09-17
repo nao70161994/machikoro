@@ -80,11 +80,13 @@ runTest('disconnect socket handlerはhostless復元処理の後にroom切断処�
         players: [{ id: 'socket-1', index: 0, name: 'Alice' }, { id: 'socket-2', index: 1, name: 'Bob' }],
     };
     subject.socket.roomId = 'ROOM1';
+    subject.socket.playerIndex = 0;
     subject.subject.registerSocket(subject.socket);
 
     subject.handlers.disconnect('client namespace disconnect');
 
-    assert.deepStrictEqual(subject.calls, ['hostless', 'build-player-list', 'log']);
+    assert.deepStrictEqual(subject.calls, ['hostless', 'remaining', 'set-host', 'emit-host', 'build-player-list', 'log']);
+    assert.strictEqual(subject.rooms.ROOM1.hostPlayerIndex, 1);
     assert.deepStrictEqual(subject.rooms.ROOM1.players, [{ id: 'socket-2', index: 1, name: 'Bob' }]);
     assert.deepStrictEqual(subject.emitted, [{
         roomId: 'ROOM1',

@@ -1328,6 +1328,7 @@ runTest('storage doUndo はオンラインで undoBuild を送信する', () => 
 
     assert.strictEqual(rt.sentActions.length, 1);
     assert.strictEqual(rt.sentActions[0].name, 'undoBuild');
+    assert.deepStrictEqual(Object.keys(rt.sentActions[0].payload), []);
 });
 
 runTest('storage doUndo はオンラインで自分の手番でなければ送信しない', () => {

@@ -253,6 +253,7 @@ const OnlineRejoinPreparationRuntime = (() => {
                 playerNames: gameStartPayload.playerNames,
                 playerOrder: gameStartPayload.playerOrder,
                 playerSettings: gameStartPayload.playerSettings,
+                marketSeed: gameStartPayload.marketSeed,
                 provisionalRestore: input.provisionalRestore,
                 ready: true,
                 restoreAudit: input.restoreAudit,

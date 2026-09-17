@@ -19,6 +19,7 @@ function planOnlineRestoreReplay(input = {}) {
     return Object.freeze({
         playerNames: input.playerNames,
         playerSettings: input.playerSettings,
+        marketSeed: input.marketSeed,
         playerOrder: input.playerOrder,
         stateSnapshot: input.stateSnapshot,
         actionLog: input.actionLog,
@@ -30,6 +31,7 @@ function sameOnlineRestoreReplayPlan(left, right) {
     return !!left && !!right &&
         left.playerNames === right.playerNames &&
         left.playerSettings === right.playerSettings &&
+        left.marketSeed === right.marketSeed &&
         left.playerOrder === right.playerOrder &&
         left.stateSnapshot === right.stateSnapshot &&
         left.actionLog === right.actionLog &&
@@ -74,7 +76,7 @@ function executeOnlineRestoreReplay(plan, handlers) {
         steps.push('observeReplayStarted');
         handlers.applyReplayStatus();
         steps.push('applyReplayStatus');
-        handlers.initGame(plan.playerNames, plan.playerSettings, plan.playerOrder);
+        handlers.initGame(plan.playerNames, plan.playerSettings, plan.playerOrder, { marketSeed: plan.marketSeed });
         steps.push('initGame');
         if (plan.stateSnapshot) {
             if (handlers.restoreSnapshot(plan.stateSnapshot) === false) {

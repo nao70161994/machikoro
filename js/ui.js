@@ -868,6 +868,8 @@ function getPlayerSettingForRender(index, player) {
     return resolved;
 }
 
+const playerPanelRenderCache = new WeakMap();
+
 function renderPlayers() {
     const currentGame = uiGameRuntimeSnapshot().game;
     const onlineState = uiOnlineRuntimeSnapshot();
@@ -895,7 +897,14 @@ function renderPlayers() {
         navigation.innerHTML = navigationHtml;
         navigation.style.display = navigationHtml ? 'flex' : 'none';
     }
-    document.getElementById("players").innerHTML = html;
+    const container = document.getElementById("players");
+    const previous = playerPanelRenderCache.get(container);
+    // Human-turn recovery can render again immediately after a purchase.
+    // Keep unchanged panels, including their coin animation and focused cards.
+    if (!previous || previous.html !== html || previous.firstChild !== container.firstElementChild) {
+        container.innerHTML = html;
+        playerPanelRenderCache.set(container, { html, firstChild: container.firstElementChild });
+    }
 }
 
 function getEffectText(card) {
@@ -1694,12 +1703,14 @@ function bindCardSelectModalHandlers() {
 
 function showCardSelect() {
     if (!canOpenBlockingModal("cardSelectModal")) return false;
+    if (typeof beginOnlineCardSelection === 'function' && !beginOnlineCardSelection()) return false;
     bindCardSelectModalHandlers();
     renderCardSelectModal();
     return openAccessibleModal("cardSelectModal");
 }
 
 function closeCardSelect() {
+    if (typeof saveOnlineCardSelection === 'function' && !saveOnlineCardSelection()) return false;
     updateGameSelectionSummary();
     closeAccessibleModal("cardSelectModal");
 }
@@ -1734,7 +1745,13 @@ function renderCardSelectModal() {
     });
     uiCardSelectEffects.apply(view);
     const marketRuleSelect = document.getElementById('marketRuleSelect');
-    if (marketRuleSelect) marketRuleSelect.value = GameSelectionState.runtime.snapshot().marketRule;
+    const waitingRoom = !!uiOnlineRuntimeSnapshot().myRoomId;
+    if (marketRuleSelect) {
+        marketRuleSelect.value = GameSelectionState.runtime.snapshot().marketRule;
+        marketRuleSelect.disabled = waitingRoom;
+    }
+    const roomHelp = document.getElementById('cardSelectRoomHelp');
+    if (roomHelp) roomHelp.hidden = !waitingRoom;
     updateGameSelectionSummary();
 }
 

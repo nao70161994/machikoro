@@ -340,3 +340,40 @@ runTest('joinRoom handler はroom内peerと共通schemaがない候補を追加�
     ]);
     assert.strictEqual(runtime.rooms.ROOM01.players.length, 1);
 });
+
+runTest('待機室の使用カード変更は現hostだけを許可し全員の準備完了を解除する', () => {
+    const runtime = makeRuntime();
+    const room = runtime.rooms.ROOM01 = {
+        roomId: 'ROOM01', hostPlayerIndex: 0, started: false,
+        players: [{ id: 'host', index: 0, ready: true }, { id: 'guest', index: 1, ready: true }],
+        enabledCards: ['麦畑', '牧場'], enabledLandmarks: ['駅', '港'],
+    };
+    const host = makeSocket('host', runtime.trace);
+    Object.assign(host, { roomId: 'ROOM01', playerIndex: 0 });
+    registerLobbySocketHandlers(host, runtime.dependencies);
+    const selection = { roomId: 'ROOM01', action: 'selection', enabledCards: ['麦畑'], enabledLandmarks: ['駅'] };
+    host.handlers.manageWaitingRoom(selection);
+    assert.deepStrictEqual(room.enabledCards, ['麦畑']);
+    assert.deepStrictEqual(room.enabledLandmarks, ['駅']);
+    assert.ok(room.players.every(player => !player.ready));
+    assert.ok(!runtime.trace.some(entry => entry[0] === 'check-start'));
+    const before = JSON.stringify(room);
+    for (const invalid of [
+        { ...selection, enabledCards: [] },
+        { ...selection, enabledLandmarks: [] },
+        { ...selection, enabledLandmarks: ['invalid'] },
+    ]) {
+        host.handlers.manageWaitingRoom(invalid);
+        assert.strictEqual(JSON.stringify(room), before);
+    }
+    for (const [id, index] of [['guest', 1], ['stale-host', 0]]) {
+        const socket = makeSocket(id, runtime.trace);
+        Object.assign(socket, { roomId: 'ROOM01', playerIndex: index });
+        registerLobbySocketHandlers(socket, runtime.dependencies);
+        socket.handlers.manageWaitingRoom({ ...selection, enabledCards: ['牧場'] });
+        assert.strictEqual(JSON.stringify(room), before);
+    }
+    room.started = true;
+    host.handlers.manageWaitingRoom({ ...selection, enabledCards: ['牧場'] });
+    assert.deepStrictEqual(room.enabledCards, ['麦畑']);
+});

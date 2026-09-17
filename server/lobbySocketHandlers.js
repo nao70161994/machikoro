@@ -208,6 +208,33 @@ function registerLobbySocketHandlers(socket, dependencies) {
             emitAppError(socket, '待機室を管理できません');
             return;
         }
+        if (payload.action === 'selection') {
+            const activeHost = room.players.some(player =>
+                player.index === socket.playerIndex && player.id === socket.id);
+            const cards = payload.enabledCards;
+            const landmarks = payload.enabledLandmarks;
+            const allLandmarks = landmarkNames();
+            if (!activeHost || !Array.isArray(cards) || cards.length < 1 || cards.length > 100 ||
+                    cards.some(name => typeof name !== 'string') ||
+                    !Array.isArray(landmarks) || landmarks.length < 1 ||
+                    landmarks.length > allLandmarks.length ||
+                    landmarks.some(name => !allLandmarks.includes(name))) {
+                emitAppError(socket, '使用カードの設定が無効です');
+                return;
+            }
+            const selectedCards = normalizeEnabledCards(cards);
+            if (cards.some(name => !selectedCards.includes(name))) {
+                emitAppError(socket, '使用カードの設定が無効です');
+                return;
+            }
+            room.enabledCards = selectedCards;
+            room.enabledLandmarks = [...new Set(landmarks)];
+            // Everyone must review the changed rules before the room can start.
+            room.players.forEach(player => { player.ready = false; });
+            room.lastTouchedAt = now();
+            io.to(roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room));
+            return;
+        }
         if (payload.action === 'start') {
             if (room.players.some(player => !player.id) || room.players.length < 1) {
                 emitAppError(socket, '再接続待ちの参加者がいるため開始できません');

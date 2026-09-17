@@ -200,6 +200,62 @@ function startOnlineLobbyNow() {
     });
 }
 
+let onlineCardSelection = null;
+
+function beginOnlineCardSelection() {
+    onlineCardSelection = null;
+    const session = onlineSessionSnapshot();
+    if (!session.myRoomId) return true;
+    if (session.isOnlineGame || !session.isRoomHost) {
+        onlineClientEffects.showNotice('使用カードは対戦開始前にホストが設定します。待機室の設定を確認してください。');
+        return false;
+    }
+    if (!session.socket || session.socket.connected === false) {
+        onlineClientEffects.showNotice('再接続してから使用カードを変更してください。');
+        return false;
+    }
+    onlineCardSelection = { roomId: session.myRoomId, selection: GameSelectionState.runtime.snapshot() };
+    setOnlineLobbyReady(false);
+    return true;
+}
+
+function saveOnlineCardSelection() {
+    if (!onlineCardSelection) return true;
+    const session = onlineSessionSnapshot();
+    if (session.myRoomId !== onlineCardSelection.roomId || session.isOnlineGame ||
+            !session.isRoomHost || !session.socket || session.socket.connected === false) {
+        if (!session.isOnlineGame && session.myRoomId === onlineCardSelection.roomId) {
+            replaceEnabledCardSelection(onlineCardSelection.selection.enabledCards);
+            replaceEnabledLandmarkSelection(onlineCardSelection.selection.enabledLandmarks);
+        }
+        onlineCardSelection = null;
+        onlineClientEffects.showNotice('使用カードを反映できなかったため変更を戻しました。待機室への接続を確認してください。');
+        return true;
+    }
+    const selection = GameSelectionState.runtime.snapshot();
+    const sent = onlineSocketEffects.manageWaitingRoom({
+        roomId: session.myRoomId,
+        action: 'selection',
+        enabledCards: [...selection.enabledCards],
+        enabledLandmarks: [...selection.enabledLandmarks],
+    }, session.socket);
+    if (sent) {
+        onlineCardSelection = null;
+        onlineDomEffects.setStatusText('使用カードを反映しています。設定を確認して、全員がもう一度「準備完了」を押してください。');
+    }
+    return sent;
+}
+
+function syncOnlineLobbySelection(lobbyState) {
+    const session = onlineSessionSnapshot();
+    const selection = lobbyState && lobbyState.setupSummary;
+    if (session.isOnlineGame || !selection || onlineCardSelection) return;
+    if (Array.isArray(selection.enabledCards)) replaceEnabledCardSelection(selection.enabledCards);
+    if (Array.isArray(selection.enabledLandmarks)) replaceEnabledLandmarkSelection(selection.enabledLandmarks);
+    replaceMarketRuleSelection(selection.marketRule);
+    if (typeof updateGameSelectionSummary === 'function') updateGameSelectionSummary();
+}
+
 function setOnlineLobbyReady(ready) {
     const session = onlineSessionSnapshot();
     if (session.isOnlineGame || !session.myRoomId || !session.socket || typeof ready !== 'boolean') {
@@ -2116,6 +2172,7 @@ function markOnlineGameFinished() {
 }
 
 function resetOnlineState() {
+    onlineCardSelection = null;
     const session = onlineSessionSnapshot();
     const plan = OnlineSessionLifecycle.resetPlan(session.myRoomId);
     OnlineSessionLifecycle.execute(plan, {
@@ -3069,7 +3126,7 @@ function initSocket() {
         }),
         getRestoreGeneration: () => _onlineRestoreLifecycleController.getGeneration(),
         getSocket: () => onlineSessionSnapshot().socket,
-        initGame: (names, settings, order) => initOnlineGame(names, settings, order),
+        initGame: (names, settings, order, options) => initOnlineGame(names, settings, order, options),
         isActivationPlanAuthorityEnabled: () =>
             isOnlineRestoreActivationPlanAuthorityEnabled(),
         isPendingResendPlanAuthorityEnabled: () =>
@@ -3127,10 +3184,14 @@ function initSocket() {
     );
     socketEvents.on(
         OnlineSocketRegistry.keys.PLAYER_LIST,
-        (players, lobbyState) => onlineLobbyStartRuntime.handlePlayerList(players, lobbyState)
+        (players, lobbyState) => {
+            syncOnlineLobbySelection(lobbyState);
+            onlineLobbyStartRuntime.handlePlayerList(players, lobbyState);
+        }
     );
 
     socketEvents.on(OnlineSocketRegistry.keys.GAME_START, payload => {
+        onlineCardSelection = null;
         return onlineLobbyStartRuntime.handle(payload);
     });
 
