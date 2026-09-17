@@ -153,3 +153,31 @@ runTest('plan-rl-next-actions renderText/renderMarkdown は一覧を出力する
     assert.ok(markdown.includes('# RL Next Actions'));
     assert.ok(markdown.includes('| priority | type | target | message | command |'));
 });
+
+runTest('推奨評価は多人数の候補・採用モデルを3/4/5/10人で評価する', () => {
+    const registry = {
+        models: [
+            { id: 'mp', training: { players: [3, 4, 5, 10] } },
+            { id: 'mp4', training: { players: 4 } },
+            { id: 'duel', training: { players: 2 } },
+        ],
+    };
+    const actions = buildWarningActions({ actions: [
+        { type: 'reevaluate', warning: 'mp: 評価ゲーム数が少なすぎます' },
+        { type: 'review-diversity', warning: 'mp と mp4: topCards が 4/5 重複しています' },
+        { type: 'review-diversity', warning: 'mp と duel: topCards が 4/5 重複しています' },
+        { type: 'reevaluate', warning: 'duel: 評価ゲーム数が少なすぎます' },
+    ] }, registry);
+    assert.strictEqual(actions[0].suggestedCommand, 'sh scripts/rl/eval-run-multiplayer.sh mp 50');
+    const lineups = actions[1].suggestedCommand.match(/--lineups "([^"]+)"/)[1];
+    assert.deepStrictEqual(lineups.split(';').map(lineup => lineup.split(',').length), [3, 4, 5, 10]);
+    assert.strictEqual(actions[2].suggestedCommand, '');
+    assert.ok(actions[2].message.includes('人数帯が異なる'));
+    assert.strictEqual(actions[3].suggestedCommand, 'sh scripts/rl/eval-run.sh duel 50 weak,normal,strong');
+});
+
+runTest('coverage推奨はshell wrapperのtarget games順を守る', () => {
+    const actions = buildCoverageActions({ recommended: [{ id: 'mp', role: 'adopted-3p-10p' }] });
+    assert.strictEqual(actions[0].suggestedCommand, 'sh scripts/rl/eval-run-3p.sh mp 100');
+    assert.strictEqual(actions[1].suggestedCommand, 'sh scripts/rl/eval-run-4p.sh mp 100');
+});

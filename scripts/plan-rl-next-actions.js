@@ -58,7 +58,7 @@ function buildCoverageActions(audit) {
                 id: item.id,
                 role: item.role,
                 message: `${item.id}: 多人数採用モデルなのに 3人 lineup 評価が不足しています`,
-                suggestedCommand: `sh scripts/rl/eval-run-3p.sh 100 ${item.id}`,
+                suggestedCommand: `sh scripts/rl/eval-run-3p.sh ${item.id} 100`,
             });
         }
         if (isMultiplayer && !item.has4pLineups) {
@@ -68,7 +68,7 @@ function buildCoverageActions(audit) {
                 id: item.id,
                 role: item.role,
                 message: `${item.id}: 多人数採用モデルなのに 4人 lineup 評価が不足しています`,
-                suggestedCommand: `sh scripts/rl/eval-run-4p.sh 100 ${item.id}`,
+                suggestedCommand: `sh scripts/rl/eval-run-4p.sh ${item.id} 100`,
             });
         }
         const isExtendedMultiplayer = isExtendedMultiplayerRecommendedRole(item.role);
@@ -127,7 +127,17 @@ function enrichAuditCoverage(audit, registry) {
     });
 }
 
-function buildWarningActions(report) {
+function isMultiplayerModel(registry, id) {
+    const model = (registry.models || []).find(item => item.id === id);
+    const recommended = (registry.portfolioPolicy?.recommendedActiveModels || []).find(item => item.id === id);
+    const players = model?.training?.players;
+    return isMultiplayerRecommendedRole(recommended?.role) ||
+        (Array.isArray(players) ? players.some(count => count > 2) : players > 2) ||
+        (model?.evals || []).some(entry => Object.keys(entry.lineups || {}).some(key =>
+            key.split('+').length > 2 || /^(?:[3-9]|10)p(?:-|$)/.test(key)));
+}
+
+function buildWarningActions(report, registry = {}) {
     return (report.actions || []).map(action => {
         const base = {
             type: action.type,
@@ -141,17 +151,28 @@ function buildWarningActions(report) {
             return {
                 ...base,
                 id,
-                suggestedCommand: `sh scripts/rl/eval-run.sh ${id} 50 weak,normal,strong`,
+                suggestedCommand: isMultiplayerModel(registry, id)
+                    ? `sh scripts/rl/eval-run-multiplayer.sh ${id} 50`
+                    : `sh scripts/rl/eval-run.sh ${id} 50 weak,normal,strong`,
             };
         }
         const overlapMatch = action.warning.match(/^([^ ]+) と ([^:]+): topCards が/);
         if (action.type === 'review-diversity' && overlapMatch) {
             const left = overlapMatch[1];
             const right = overlapMatch[2];
+            const leftMultiplayer = isMultiplayerModel(registry, left);
+            const rightMultiplayer = isMultiplayerModel(registry, right);
+            const lineups = leftMultiplayer
+                ? ' --lineups "rl,normal,strong;rl,normal,normal,strong;rl,weak,normal,strong,expert;rl,weak,weak,normal,normal,strong,strong,expert,expert,expert"'
+                : '';
             return {
                 ...base,
                 pair: `${left}/${right}`,
-                suggestedCommand: `npm run eval-rl-models -- --models ${left},${right} --games 100 --markdown models/rl_model/${left}-${right}.md`,
+                suggestedCommand: leftMultiplayer === rightMultiplayer
+                    ? `npm run eval-rl-models -- --models ${left},${right} --games 100${lineups} --markdown models/rl_model/${left}-${right}.md`
+                    : '',
+                message: leftMultiplayer === rightMultiplayer ? base.message
+                    : `${base.message}（人数帯が異なるため、各モデルの対象人数で個別評価が必要です）`,
             };
         }
         return base;
@@ -163,7 +184,7 @@ function buildNextActions(registry) {
     const audit = enrichAuditCoverage(buildAudit(registry), registry);
     const actions = dedupeActions([
         ...buildCoverageActions(audit),
-        ...buildWarningActions(report),
+        ...buildWarningActions(report, registry),
     ]).sort((a, b) => a.priority - b.priority || String(a.id || a.pair || '').localeCompare(String(b.id || b.pair || '')));
     return {
         updatedAt: registry.updatedAt || '',

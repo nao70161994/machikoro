@@ -5,4 +5,4 @@
 
 | priority | type | target | message | command |
 |---:|---|---|---|---|
-| 4 | review-diversity | mp-mixed-34510-target-only-seed145-4p/mp-mover-legal-curriculum-seed415-4p-strength | mp-mixed-34510-target-only-seed145-4p と mp-mover-legal-curriculum-seed415-4p-strength: topCards が 4/5 重複しています | npm run eval-rl-models -- --models mp-mixed-34510-target-only-seed145-4p,mp-mover-legal-curriculum-seed415-4p-strength --games 100 --markdown models/rl_model/mp-mixed-34510-target-only-seed145-4p-mp-mover-legal-curriculum-seed415-4p-strength.md |
+| 4 | review-diversity | mp-mixed-34510-target-only-seed145-4p/mp-mover-legal-curriculum-seed415-4p-strength | mp-mixed-34510-target-only-seed145-4p と mp-mover-legal-curriculum-seed415-4p-strength: topCards が 4/5 重複しています | npm run eval-rl-models -- --models mp-mixed-34510-target-only-seed145-4p,mp-mover-legal-curriculum-seed415-4p-strength --games 100 --lineups "rl,normal,strong;rl,normal,normal,strong;rl,weak,normal,strong,expert;rl,weak,weak,normal,normal,strong,strong,expert,expert,expert" --markdown models/rl_model/mp-mixed-34510-target-only-seed145-4p-mp-mover-legal-curriculum-seed415-4p-strength.md |

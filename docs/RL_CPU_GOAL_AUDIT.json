@@ -1,22 +1,140 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-13",
+  "updatedAt": "2026-09-16",
   "goal": "deep-learning-cpu-next-stage",
   "requirements": [
-    { "id": "baseline-models", "status": "achieved", "evidence": ["models/rl_model/registry.json", "models/rl_model/reports/portfolio-audit.md"] },
-    { "id": "model-diagnostics", "status": "achieved", "evidence": ["js/RLModelPortfolio.js", "js/RLCPU.js", "tests/rl-model-portfolio.test.js", "tests/rlcpu.test.js"] },
-    { "id": "model-cards-manifest", "status": "achieved", "evidence": ["models/rl_model/reports/model-cards.json", "models/rl_model/reports/reproducibility-manifest.json"] },
-    { "id": "paired-statistics", "status": "achieved", "evidence": ["scripts/eval-rl-head-to-head.js", "scripts/rl-statistics.js", "tests/rl-statistics.test.js"] },
-    { "id": "special-pending-fixtures", "status": "capability-achieved-no-captured-failures", "evidence": ["scripts/eval-rl-special-scenarios.js", "scripts/import-rl-match-fixture.js", "tests/fixtures/rl-failures/"], "capturedFixtureCount": 0 },
-    { "id": "strategy-plan", "status": "achieved-planned", "evidence": ["scripts/plan-rl-strategy-runs.js", "tests/plan-rl-strategy-runs.test.js"], "plannedRuns": 36 },
-    { "id": "candidate-gates", "status": "achieved-for-screened-candidates", "evidence": ["scripts/review-rl-candidate-promotion.js", "models/rl_model/eval-strategy-mp-mover-legal-curriculum-seed415-promotion-300/"] },
-    { "id": "target-head-parity", "status": "achieved", "evidence": ["scripts/rl/train.py", "scripts/rl/network.py", "js/RLCPU.js", "tests/rl-train.test.js", "tests/rlcpu.test.js"] },
-    { "id": "runtime-safety", "status": "achieved", "evidence": ["js/RLModelPortfolio.js", "tests/rl-model-portfolio.test.js", "models/rl_model/reports/compression-report.json"] },
-    { "id": "ui-diagnostics-export", "status": "achieved", "evidence": ["js/localPlayerSettings.js", "js/onlinePlayerSettings.js", "js/appDiagnostics.js", "js/main.js"] },
-    { "id": "full-regression", "status": "achieved", "evidence": ["npm test", "npm run test:all"] },
-    { "id": "critical-high-medium", "status": "zero", "evidence": ["npm run validate-rl-registry", "models/rl_model/reports/portfolio-audit.md"] },
-    { "id": "production-canary", "status": "environment-unavailable", "countsTowardAdoption": false },
-    { "id": "safari-device", "status": "environment-unavailable", "countsTowardAdoption": false }
+    {
+      "id": "baseline-models",
+      "status": "achieved",
+      "evidence": [
+        "models/rl_model/registry.json",
+        "models/rl_model/reports/portfolio-audit.md"
+      ]
+    },
+    {
+      "id": "model-diagnostics",
+      "status": "achieved",
+      "evidence": [
+        "js/RLModelPortfolio.js",
+        "js/RLCPU.js",
+        "tests/rl-model-portfolio.test.js",
+        "tests/rlcpu.test.js"
+      ]
+    },
+    {
+      "id": "model-cards-manifest",
+      "status": "achieved",
+      "evidence": [
+        "models/rl_model/reports/model-cards.json",
+        "models/rl_model/reports/reproducibility-manifest.json"
+      ]
+    },
+    {
+      "id": "paired-statistics",
+      "status": "capability-implemented",
+      "evidence": [
+        "scripts/eval-rl-head-to-head.js",
+        "scripts/rl-statistics.js",
+        "tests/rl-statistics.test.js"
+      ],
+      "note": "評価機能の実装。全候補での統計評価完了を意味しない。"
+    },
+    {
+      "id": "special-pending-fixtures",
+      "status": "partial",
+      "evidence": [
+        "scripts/eval-rl-special-scenarios.js",
+        "scripts/import-rl-match-fixture.js",
+        "tests/fixtures/rl-failures/"
+      ],
+      "capturedFixtureCount": 0,
+      "note": "実失敗fixtureは0件。導線のみ実装済み。"
+    },
+    {
+      "id": "strategy-plan",
+      "status": "planned",
+      "evidence": [
+        "scripts/plan-rl-strategy-runs.js",
+        "tests/plan-rl-strategy-runs.test.js"
+      ],
+      "plannedRuns": 36,
+      "note": "36 runの計画を生成可能。全runの学習・評価完了は未確認。"
+    },
+    {
+      "id": "candidate-gates",
+      "status": "partial",
+      "evidence": [
+        "scripts/review-rl-candidate-promotion.js",
+        "models/rl_model/registry.json"
+      ],
+      "note": "registryにseed415の評価要約あり。元のpromotion生成物はGit管理外であり、新規cloneでは再検証できない。"
+    },
+    {
+      "id": "target-head-parity",
+      "status": "achieved",
+      "evidence": [
+        "scripts/rl/train.py",
+        "scripts/rl/network.py",
+        "js/RLCPU.js",
+        "tests/rl-train.test.js",
+        "tests/rlcpu.test.js"
+      ]
+    },
+    {
+      "id": "runtime-safety",
+      "status": "capability-implemented",
+      "evidence": [
+        "js/RLModelPortfolio.js",
+        "tests/rl-model-portfolio.test.js",
+        "models/rl_model/reports/compression-report.json"
+      ],
+      "note": "自動テストとレポートの範囲。実機でのメモリ・圧縮品質検証の完了は未確認。"
+    },
+    {
+      "id": "ui-diagnostics-export",
+      "status": "partial",
+      "evidence": [
+        "js/localPlayerSettings.js",
+        "js/onlinePlayerSettings.js",
+        "js/appDiagnostics.js",
+        "js/main.js"
+      ],
+      "note": "実装ファイルの存在は全UIフロー・行動説明の検証完了を証明しない。"
+    },
+    {
+      "id": "full-regression",
+      "status": "unverified",
+      "evidence": [
+        "tests/run-all.js",
+        "TESTPLAN.md"
+      ],
+      "note": "過去の終了コード0という記載に対応する保存済み実行記録なし。全体回帰と手動確認の完了は未検証。",
+      "verificationCommands": [
+        "npm test",
+        "npm run test:all"
+      ]
+    },
+    {
+      "id": "critical-high-medium",
+      "status": "unverified",
+      "evidence": [
+        "scripts/validate-rl-registry.js",
+        "models/rl_model/reports/portfolio-audit.md"
+      ],
+      "note": "registry検証と回帰テストだけでは未解決不具合0件を証明できない。"
+    },
+    {
+      "id": "production-canary",
+      "status": "environment-unavailable",
+      "countsTowardAdoption": false,
+      "note": "本番観測未実施。未完了として扱う。"
+    },
+    {
+      "id": "safari-device",
+      "status": "environment-unavailable",
+      "countsTowardAdoption": false,
+      "note": "実機検証未実施。未完了として扱う。"
+    }
   ],
   "adoption": {
     "seed415": "candidate",
