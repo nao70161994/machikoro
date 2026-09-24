@@ -243,6 +243,11 @@ function render() {
 }
 
 function _render() {
+    const online = uiOnlineRuntimeSnapshot().isOnlineGame;
+    const restartButton = document.getElementById("btnRestart");
+    if (restartButton) restartButton.textContent = online ? "対戦から退出する" : "🔄 最初からやり直す";
+    const leaveHelp = document.getElementById("onlineLeaveHelp");
+    if (leaveHelp) leaveHelp.hidden = !online;
     const currentGame = uiGameRuntimeSnapshot().game;
     const renderPlan = !currentGame
         ? UiRenderRuntime.plan()
@@ -815,8 +820,11 @@ function shouldRenderPendingMenuSpec(spec, game, allowedActions, nextPending) {
     return shouldRenderPendingField(nextPending, allowedActions, spec.field, spec.action) && spec.isActive(game);
 }
 
+const businessSelectionController = UiPendingMenu.createBusinessSelectionController();
+
 function buildPendingMenuHtml(game, allowedActions, nextPending) {
     return UiPendingMenu.buildMenuHtml(game, allowedActions, nextPending, {
+        businessSelections: businessSelectionController.selections(game),
         escapeHtml,
         landmarkNames: LANDMARK_NAMES,
     });
@@ -1187,6 +1195,7 @@ function setCardFilter(color, sourceElement = null) {
 
 function bcSelectCard(btn, inputId) {
     if (!btn) return false;
+    if (!businessSelectionController.select(uiGameRuntimeSnapshot().game, inputId, Number(btn.dataset?.idx))) return false;
     const group = typeof btn.closest === 'function' ? btn.closest('.bc-chip-group') : null;
     const groupButtons = group && typeof group.querySelectorAll === 'function'
         ? group.querySelectorAll('.bc-chip')

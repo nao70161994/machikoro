@@ -2575,6 +2575,28 @@ runTest('integration: 待機室のカード編集は切断時に変更を戻し�
     assert.ok(!rt.__test.socketEmits.some(entry => entry.name === 'manageWaitingRoom'));
 });
 
+runTest('施設交換の選択は再描画と詳細表示中も保持し次の効果ではリセットする', () => {
+    const ctx = loadIntegrationRuntime({ includeOnline: true });
+    ctx.__test.startLocalGame();
+    ctx.__test.hideAllModals();
+    const game = ctx.__test.getGame();
+    game.phase = 'pending';
+    game.pendingBusiness = 2;
+    game.pendingActionQueue = [{ action: 'resolveBusiness', field: 'pendingBusiness' }];
+    ctx.renderPending();
+    assert.strictEqual(ctx.bcSelectCard({ dataset: { idx: '1' } }, 'myCardSelect'), true);
+    ctx.renderPending();
+    assert.ok(ctx.document.getElementById('pendingMenu').innerHTML.includes('id="myCardSelect" value="1"'));
+    ctx.document.getElementById('cardDetailModal').style.display = 'flex';
+    ctx.renderPending();
+    ctx.document.getElementById('cardDetailModal').style.display = 'none';
+    ctx.renderPending();
+    assert.ok(ctx.document.getElementById('pendingMenu').innerHTML.includes('id="myCardSelect" value="1"'));
+    game.pendingBusiness = 1;
+    ctx.renderPending();
+    assert.ok(ctx.document.getElementById('pendingMenu').innerHTML.includes('id="myCardSelect" value="0"'));
+});
+
 if (process.exitCode) {
     throw new Error('integrationテストで失敗が発生しました');
 }

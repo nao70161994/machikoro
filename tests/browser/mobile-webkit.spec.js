@@ -665,6 +665,8 @@ test('320pxから480pxで頻用補助操作のtap領域が重ならずに収ま�
 
     await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
+    await expect(page.locator('.game-support-settings .game-diagnostics-copy').first()).toBeHidden();
+    await page.locator('.game-support-settings > summary').click();
     await page.locator('.game-guide-settings > summary').click();
     for (const width of [320, 360, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });

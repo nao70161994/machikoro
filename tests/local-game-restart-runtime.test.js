@@ -78,3 +78,15 @@ runTest('local game restart runtimeはonline storage facadeをfallbackより優�
 runTest('local game restart runtimeは必須依存欠落をeffect前に拒否する', () => {
     assert.throws(() => LocalGameRestartRuntime.createRuntime(), /dependency is required/);
 });
+
+runTest('オンライン退出は復帰情報削除と相手への影響を確認するまで副作用を起こさない', () => {
+    const { runtime, calls, confirm } = createHarness();
+    runtime.restart(true);
+    assert.strictEqual(calls.length, 1);
+    assert.ok(calls[0][1].includes('対戦から退出'));
+    assert.ok(calls[0][1].includes('戻れなくなります'));
+    assert.ok(calls[0][1].includes('相手'));
+    assert.ok(calls[0][1].includes('一時中断'));
+    confirm();
+    assert.ok(calls.some(call => call[0] === 'resetOnline'));
+});

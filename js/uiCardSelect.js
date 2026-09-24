@@ -143,6 +143,8 @@ const UiCardSelect = (() => {
                     .map(name => buildCardHtml(name, selectedCards.has(name)))
                     .join(''),
                 allOn: cardNames.every(name => selectedCards.has(name)),
+                selectedCount: cardNames.filter(name => selectedCards.has(name)).length,
+                totalCount: cardNames.length,
             });
         });
         return Object.freeze({
@@ -156,7 +158,8 @@ const UiCardSelect = (() => {
     function buildCardToggleButtonHtml(options) {
         const { name, enabled, escapeHtml } = options;
         const safeName = escapeHtml(name);
-        return `<button class="card-toggle-btn ${enabled ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}" aria-pressed="${enabled ? 'true' : 'false'}">${safeName}</button>`;
+        const required = REQUIRED_CARD_NAMES.includes(name);
+        return `<button ${required ? 'disabled title="初期施設のため必須です" ' : ''}class="card-toggle-btn ${enabled ? 'on' : 'off'}" data-action="toggleCard" data-card-name="${safeName}" id="cardToggle_${safeName}" aria-pressed="${enabled ? 'true' : 'false'}">${safeName}${required ? '（必須）' : ''}</button>`;
     }
 
     function buildLandmarkToggleButtonHtml(options) {

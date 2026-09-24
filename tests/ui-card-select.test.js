@@ -124,13 +124,13 @@ runTest('ui card select view modelは表示順・set状態・landmark状態を�
                 set: 'base',
                 suffix: 'Base',
                 cardListHtml: 'パン屋:true|麦畑:true|',
-                allOn: true,
+                allOn: true, selectedCount: 2, totalCount: 2,
             },
             {
                 set: 'harbor',
                 suffix: 'Harbor',
                 cardListHtml: '港:true|寿司屋:false|',
-                allOn: false,
+                allOn: false, selectedCount: 1, totalCount: 2,
             },
         ],
         landmarkListHtml: '駅:true|港:false|',
@@ -187,4 +187,11 @@ runTest('ui card select binding controllerはhandler claimを一度だけ許可�
     assert.strictEqual(controller.claim(), false);
     assert.ok(Object.isFrozen(controller));
     assert.strictEqual(UiCardSelect.createBindingController(true).claim(), false);
+});
+
+runTest('必須施設は変更不可の理由を表示する', () => {
+    const html = UiCardSelect.buildCardToggleButtonHtml({ name: '麦畑', enabled: true, escapeHtml });
+    assert.ok(html.includes('disabled'));
+    assert.ok(html.includes('麦畑（必須）'));
+    assert.ok(html.includes('初期施設のため必須です'));
 });

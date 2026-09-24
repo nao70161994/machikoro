@@ -786,7 +786,11 @@ const localGameRestartRuntime = LocalGameRestartRuntime.createRuntime({
 });
 
 function restartGame() {
-    return localGameRestartRuntime.restart();
+    const online = mainOnlineRuntimeSnapshot().isOnlineGame;
+    if (online && mainGameRuntimeSnapshot().game?.checkWinner()) {
+        return showConfirm('対戦結果を閉じてタイトルへ戻りますか？', () => localGameRestartRuntime.execute());
+    }
+    return localGameRestartRuntime.restart(online);
 }
 
 function rematchLocalGame() {

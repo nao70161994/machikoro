@@ -25,6 +25,8 @@ const UiCardSelectEffects = (() => {
      *     suffix: string,
      *     cardListHtml: string,
      *     allOn: boolean,
+     *     selectedCount?: number,
+     *     totalCount?: number,
      *   }>,
      *   landmarkListHtml: string,
      * }} CardSelectView
@@ -93,10 +95,14 @@ const UiCardSelectEffects = (() => {
                 if (list) list.innerHTML = setView.cardListHtml;
                 const button = dependencies.getElementById(`btnSet${setView.suffix}`);
                 if (button) {
-                    button.textContent = setView.allOn ? 'ON' : 'OFF';
+                    const partial = !setView.allOn && (setView.selectedCount || 0) > 0;
+                    button.textContent = setView.allOn ? '全選択' : (partial ? '一部選択' : '未選択');
+                    if (Number.isInteger(setView.totalCount)) {
+                        button.textContent += `（${setView.selectedCount}/${setView.totalCount}）`;
+                    }
                     button.className = `set-toggle ${setView.allOn ? 'on' : 'off'}`;
                     if (typeof button.setAttribute === 'function') {
-                        button.setAttribute('aria-pressed', setView.allOn ? 'true' : 'false');
+                        button.setAttribute('aria-pressed', setView.allOn ? 'true' : (partial ? 'mixed' : 'false'));
                     }
                 }
             }

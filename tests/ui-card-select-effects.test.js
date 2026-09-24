@@ -44,11 +44,11 @@ runTest('ui card select effectsはviewを既存selectorと属性へ反映する'
         'landmarkList',
     ]);
     assert.strictEqual(elements.cardListBasic.innerHTML, '<b>basic</b>');
-    assert.strictEqual(elements.btnSetBasic.textContent, 'ON');
+    assert.strictEqual(elements.btnSetBasic.textContent, '全選択');
     assert.strictEqual(elements.btnSetBasic.className, 'set-toggle on');
     assert.strictEqual(elements.btnSetBasic.attributes['aria-pressed'], 'true');
     assert.strictEqual(elements.cardListPlus.innerHTML, '<b>plus</b>');
-    assert.strictEqual(elements.btnSetPlus.textContent, 'OFF');
+    assert.strictEqual(elements.btnSetPlus.textContent, '未選択');
     assert.strictEqual(elements.btnSetPlus.className, 'set-toggle off');
     assert.strictEqual(elements.btnSetPlus.attributes['aria-pressed'], 'false');
     assert.strictEqual(elements.landmarkList.innerHTML, '<b>landmarks</b>');
@@ -132,4 +132,12 @@ runTest('ui card select effectsは切断・非表示の置換先へfocusしな�
     replacement.hidden = true;
     effects.restoreFocus({ action: 'toggleLandmark', name: '駅' });
     assert.strictEqual(focusCount, 1);
+});
+
+runTest('一部選択をOFFとせず件数とmixed状態で伝える', () => {
+    const button = createElement();
+    const effects = UiCardSelectEffects.create({ getElementById: id => id === 'btnSetBasic' ? button : null });
+    effects.apply({ sets: [{ suffix: 'Basic', cardListHtml: '', allOn: false, selectedCount: 2, totalCount: 15 }], landmarkListHtml: '' });
+    assert.strictEqual(button.textContent, '一部選択（2/15）');
+    assert.strictEqual(button.attributes['aria-pressed'], 'mixed');
 });

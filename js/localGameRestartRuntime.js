@@ -73,8 +73,11 @@ const LocalGameRestartRuntime = (() => {
             return Object.freeze({ ok: true });
         }
 
-        function restart() {
-            return dependencies.showConfirm(CONFIRM_MESSAGE, execute);
+        function restart(isOnline = false) {
+            const message = isOnline
+                ? '対戦から退出しますか？\n再接続情報が削除され、この対戦へ戻れなくなります。相手はあなたの手番から進めなくなるため、退出前に相手と相談してください。\n一時中断する場合はキャンセルして、この画面を閉じてください。'
+                : CONFIRM_MESSAGE;
+            return dependencies.showConfirm(message, execute);
         }
 
         return Object.freeze({ clearOnlineStorage, execute, restart });

@@ -1,6 +1,37 @@
 'use strict';
 
 const UiPendingMenu = (() => {
+    function createBusinessSelectionController() {
+        let currentGame = null;
+        let currentKey = '';
+        let values = {};
+        function selections(game) {
+            const key = game ? [game.currentPlayerIndex, game.turnCount, game.phase, game.pendingBusiness].join(':') : '';
+            if (game !== currentGame || key !== currentKey) {
+                currentGame = game;
+                currentKey = key;
+                values = {};
+            }
+            return values;
+        }
+        function select(game, inputId, index) {
+            const selected = selections(game);
+            if (!game || !(game.pendingBusiness > 0) || !Number.isInteger(index)) return false;
+            const target = inputId === 'myCardSelect' ? game.currentPlayerIndex
+                : (/^theirCardSelect_\d+$/.test(inputId) ? Number(inputId.slice('theirCardSelect_'.length)) : -1);
+            const player = game.players[target];
+            if (!player || !businessCardOptionsForPlayer(player).some(option => option.index === index)) return false;
+            selected[inputId] = index;
+            return true;
+        }
+        return Object.freeze({ selections, select });
+    }
+
+    function selectedBusinessIndex(cards, inputId, selections) {
+        const selected = selections[inputId];
+        return cards.some(option => option.index === selected) ? selected : (cards[0]?.index ?? 0);
+    }
+
     function isPendingDisplayCandidate(options) {
         return options.phase === options.pendingPhase || !!options.pendingIT || options.pendingRenovation > 0;
     }
@@ -65,28 +96,28 @@ const UiPendingMenu = (() => {
         return player.getMinorCards().map(card => ({ card, index: player.cards.indexOf(card) }));
     }
 
-    function buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml) {
-        return cards.map(({ card, index }, j) =>
-            buildBusinessCardChipHtml(player, card, index, inputId, j === 0, escapeHtml)
+    function buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml, selectedIndex = cards[0]?.index) {
+        return cards.map(({ card, index }) =>
+            buildBusinessCardChipHtml(player, card, index, inputId, index === selectedIndex, escapeHtml)
         ).join("");
     }
 
-    function buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml) {
+    function buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml, selections = {}) {
         const inputId = `theirCardSelect_${playerIndex}`;
         const labelId = `businessTargetLabel_${playerIndex}`;
         const theirCards = businessCardOptionsForPlayer(player);
-        const theirDefaultIdx = theirCards[0]?.index ?? 0;
-        const theirChips = buildBusinessCardChipGroupHtml(player, theirCards, inputId, escapeHtml);
+        const theirDefaultIdx = selectedBusinessIndex(theirCards, inputId, selections);
+        const theirChips = buildBusinessCardChipGroupHtml(player, theirCards, inputId, escapeHtml, theirDefaultIdx);
         return `<div class="bc-target-group"><p id="${labelId}" class="bc-label">${escapeHtml(player.name)}の施設：</p><div class="bc-chip-group" role="group" aria-labelledby="${labelId}">${theirChips}</div><input type="hidden" id="${inputId}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${playerIndex}">⇄ ${escapeHtml(player.name)}と交換</button></div>`;
     }
 
-    function buildPendingBusinessHtml(game, escapeHtml) {
+    function buildPendingBusinessHtml(game, escapeHtml, landmarkNames, selections = {}) {
         const current = game.currentPlayer();
         const myCards = businessCardOptionsForPlayer(current);
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
-        const myDefaultIdx = myCards[0]?.index ?? 0;
-        const myChips = buildBusinessCardChipGroupHtml(current, myCards, 'myCardSelect', escapeHtml);
-        const othersHtml = others.map(({ p, i }) => buildBusinessTargetExchangeHtml(p, i, escapeHtml)).join("");
+        const myDefaultIdx = selectedBusinessIndex(myCards, 'myCardSelect', selections);
+        const myChips = buildBusinessCardChipGroupHtml(current, myCards, 'myCardSelect', escapeHtml, myDefaultIdx);
+        const othersHtml = others.map(({ p, i }) => buildBusinessTargetExchangeHtml(p, i, escapeHtml, selections)).join("");
         return `<div class="pending-box"><p>🏢 ビジネスセンター：施設を交換できます</p><section class="bc-step" aria-labelledby="businessGiveHeading"><h3 id="businessGiveHeading" class="bc-step-title">1. 渡す自分の施設</h3><p class="bc-step-help">交換に出す施設を1つ選んでください。</p><div class="bc-chip-group" role="group" aria-labelledby="businessGiveHeading">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}"></section><section class="bc-step" aria-labelledby="businessReceiveHeading"><h3 id="businessReceiveHeading" class="bc-step-title">2. 受け取る相手の施設</h3><p class="bc-step-help">欲しい施設を選び、その相手の交換ボタンを押してください。</p>${othersHtml}</section><button data-action="skipBusiness">使用しない</button></div>`;
     }
 
@@ -142,11 +173,11 @@ const UiPendingMenu = (() => {
         const { escapeHtml, landmarkNames } = dependencies;
         return renderers
             .filter(spec => (!nextPending || nextPending.field === spec.field) && allowedActions.has(spec.action) && spec.isActive(game))
-            .map(spec => spec.buildHtml(game, escapeHtml, landmarkNames))
+            .map(spec => spec.buildHtml(game, escapeHtml, landmarkNames, dependencies.businessSelections || {}))
             .join("");
     }
 
-    return Object.freeze({ isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingModalInteractionView, businessCardSelectionView, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, cleaningActiveCardCounts, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
+    return Object.freeze({ createBusinessSelectionController, isPendingDisplayCandidate, shouldShowForCurrentPlayer, pendingModalInteractionView, businessCardSelectionView, pendingInspectHintHtml, buildBusinessCardChipHtml, businessCardOptionsForPlayer, buildBusinessCardChipGroupHtml, buildBusinessTargetExchangeHtml, buildPendingTvHtml, buildPendingBusinessHtml, cleaningActiveCardCounts, buildPendingCleaningHtml, buildPendingMoverHtml, buildPendingRenovationHtml, buildPendingItHtml, rendererSpecs, buildMenuHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiPendingMenu;
