@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ダイスシティ</title>
     <link rel="stylesheet" href="style.css">
+    <script src="js/designTheme.js"></script>
     <!-- PWA -->
     <link rel="manifest" href="/manifest.webmanifest">
     <meta name="description" content="ダイスシティは、登録不要でサイコロと街づくりを楽しめるブラウザボードゲームです。目的、カード、CPU、PWA対応も案内します。">
@@ -42,6 +43,16 @@
                 <div class="title-buttons-row">
                     <button class="rules-btn" data-ui-action="showRules">ルール</button>
                 </div>
+            </div>
+
+            <div class="design-switcher">
+                <label for="designThemeSelect">画面デザイン</label>
+                <select id="designThemeSelect" aria-describedby="designThemeHelp" class="text-input">
+                    <option value="classic">クラシック（従来版）</option>
+                    <option value="sunset">夕暮れの街（プレビュー）</option>
+                </select>
+                <p id="designThemeHelp">見た目だけを変更します。ルール・保存データ・オンライン対戦は共通です。いつでもここで戻せます。</p>
+                <p id="designThemeStatus" role="status" aria-live="polite"></p>
             </div>
 
             <div id="onlineResumeSection" style="display:none">

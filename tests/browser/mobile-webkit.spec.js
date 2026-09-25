@@ -841,3 +841,26 @@ test('mobile WebKitの2クライアントがonline開始後に再読込復帰で
         await guestContext.close();
     }
 });
+
+for (const design of ['classic', 'sunset']) {
+    test(`デザイン ${design} で設定を保持してゲームを開始できる`, async ({ page }) => {
+        await prepare(page);
+        await page.locator('#designThemeSelect').selectOption(design);
+        await expect(page.locator('html')).toHaveAttribute('data-design', design);
+        await page.reload();
+        await expect(page.locator('#designThemeSelect')).toHaveValue(design);
+        for (const width of [320, 390, 480]) {
+            await page.setViewportSize({ width, height: 844 });
+            const fits = await page.locator('.design-switcher').evaluate(element => {
+                const bounds = element.getBoundingClientRect();
+                return bounds.left >= 0 && bounds.right <= document.documentElement.clientWidth &&
+                    element.scrollWidth <= element.clientWidth;
+            });
+            expect(fits).toBe(true);
+        }
+        await startLocalGame(page);
+        await expect(page.locator('#gameScreen')).toBeVisible();
+        await expect(page.locator('html')).toHaveAttribute('data-design', design);
+        await expect(page.locator('#btnRoll')).toBeVisible();
+    });
+}

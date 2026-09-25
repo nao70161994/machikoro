@@ -3947,3 +3947,83 @@ body.pending-surface-visible .notice-toast {
     color: #a7a9be;
     font-size: 0.9rem;
 }
+
+/* Device-local design selection. Classic gameplay styles remain unchanged. */
+.design-switcher {
+    padding: 12px;
+    border: 1px solid #46445e;
+    border-radius: 12px;
+    background: #1a1a2e;
+}
+.design-switcher label {
+    display: block;
+    margin-bottom: 8px;
+    color: #fffffe;
+    font-size: 14px;
+    font-weight: 700;
+}
+.design-switcher select { width: 100%; min-height: 44px; }
+.design-switcher p {
+    margin-top: 8px;
+    color: #c9cbdf;
+    font-size: 12px;
+    line-height: 1.6;
+}
+.design-switcher p:empty { display: none; }
+
+/* Sunset preview: all overrides are scoped, with high-contrast mode taking priority. */
+html[data-design="sunset"] body:not(.accessibility-high-contrast) {
+    background: #142335;
+    color: #fff4df;
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #titleScreen {
+    background: radial-gradient(ellipse at 75% 10%, #675047 0, transparent 52%),
+        linear-gradient(180deg, #24394b, #192938 65%, #30273b);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .title-header h1 {
+    color: #ffe1a6;
+    text-shadow: 0 3px 0 #142335;
+    animation: none;
+    letter-spacing: 0.06em;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .title-logo-sub {
+    color: #e5c59b;
+    letter-spacing: 0.35em;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.setting-section, .design-switcher, .game-action-panel, .player-box, .modal-content) {
+    background: #213548;
+    border-color: #586779;
+    border-radius: 16px;
+    box-shadow: 0 5px 16px #08152224;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-box.active {
+    border-color: #f2c879;
+    box-shadow: inset 3px 0 #f2c879, 0 5px 16px #08152224;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.setup-primary-cta, #btnRoll) {
+    background: #efc487;
+    color: #243246;
+    border: 1px solid #ffe3b9;
+    box-shadow: 0 3px 0 #a47649;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn {
+    background: linear-gradient(135deg, #fff9ed, #efdfc5);
+    border: 1px solid #c8b898;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 #111e2d;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn:disabled { opacity: 0.6; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-body {
+    padding: 10px;
+    gap: 6px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.card-name, .card-category-tag, .card-dice-num) { color: #203347; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-effect { color: #414954; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-cost { color: #6f451d; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-blue .card-top-strip { background: #c5def0; border-color: #638aa3; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-green .card-top-strip { background: #cedfbd; border-color: #758d5f; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-red .card-top-strip { background: #efd1c5; border-color: #b97c69; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-purple .card-top-strip { background: #ded2e9; border-color: #9881ac; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-landmark .card-top-strip { background: #f1dca4; border-color: #af9454; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-title { color: #ffe1a6; text-shadow: none; }

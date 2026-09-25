@@ -13,6 +13,7 @@ const STATIC_ASSETS = [
   '/cards.html',
   '/ai-cpu.html',
   '/style.css',
+  '/js/designTheme.js',
   '/manifest.json',
   '/manifest.webmanifest',
   '/js/Card.js',
