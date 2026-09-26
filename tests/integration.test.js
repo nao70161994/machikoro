@@ -1692,7 +1692,11 @@ runTest('integration: buildLandmark allowed かつ建設候補ありなら専用
     assert.strictEqual(issue.kind, 'allowed-action-container-not-clickable');
     assert.strictEqual(issue.reason, 'action-child-not-clickable');
     assert.strictEqual(rt.recoverUiInteractability(snapshot), true);
-    assert.strictEqual(disabledLandmark.disabled, false);
+    // Recovery replaces stale choices rather than enabling detached buttons.
+    assert.strictEqual(disabledLandmark.disabled, true);
+    const html = rt.__test.elements.buildMenu.innerHTML;
+    assert.ok(/data-action="buildLandmark"[^>]+data-landmark-name="駅"(?![^>]+disabled)/.test(html));
+    assert.ok(/data-action="buildLandmark"[^>]+data-landmark-name="電波塔"[^>]+disabled/.test(html));
 });
 
 runTest('integration: allowed action container は子ボタン全disabledをクリック不能として診断する', () => {

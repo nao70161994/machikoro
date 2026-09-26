@@ -85,3 +85,32 @@ runTest('watchdog recovery runtimeは未知freezeと非回復結果をcheckpoint
 runTest('watchdog recovery runtimeは必須依存欠落を初期化時に拒否する', () => {
     assert.throws(() => UiWatchdogRecoveryRuntime.createRuntime(), /appShellGameRuntimeSnapshot is required/);
 });
+
+runTest('建設UI復旧は購入可能な候補だけを再描画で有効にし、資金不足の候補を解除しない', () => {
+    for (const action of ['buildCard', 'buildLandmark']) {
+        const cheap = { disabled: true };
+        const expensive = { disabled: true };
+        let renders = 0;
+        const { runtime } = createHarness({
+            expectedChildSpecForEntry: () => ({ selector: '[data-action]' }),
+            appShellRuntimeEffects: {
+                renderBuildMenu() {
+                    renders++;
+                    cheap.disabled = false;
+                    expensive.disabled = true;
+                },
+            },
+            appShellRecoveryEffects: {
+                queryAll: () => [cheap, expensive],
+                releaseInteractionLock(child, options) {
+                    if (options.enable) child.disabled = false;
+                    return true;
+                },
+            },
+        });
+        runtime.clearExpectedActionChildrenForRecovery({}, { action, spec: { targetId: 'buildMenu' } });
+        assert.strictEqual(expensive.disabled, true, action + ': 資金不足を維持');
+        assert.strictEqual(cheap.disabled, false, action + ': 購入可能を復旧');
+        assert.strictEqual(renders, 1);
+    }
+});

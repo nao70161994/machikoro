@@ -174,9 +174,19 @@ const UiWatchdogRecoveryRuntime = (() => {
             const spec = entry && entry.spec;
             const childSpec = expectedChildSpecForEntry(snapshot, entry);
             if (!spec || !childSpec || !spec.targetId) return false;
+            const isBuildChoice = entry.action === 'buildCard' || entry.action === 'buildLandmark';
             let changed = false;
+            if (isBuildChoice) {
+                // Recompute affordability, stock and ownership instead of unlocking every choice.
+                try {
+                    appShellRuntimeEffects.renderBuildMenu();
+                    changed = true;
+                } catch (_) {
+                    return false;
+                }
+            }
             appShellRecoveryEffects.queryAll(spec.targetId, childSpec.selector).forEach(child => {
-                changed = appShellRecoveryEffects.releaseInteractionLock(child, { enable: true }) || changed;
+                changed = appShellRecoveryEffects.releaseInteractionLock(child, { enable: !isBuildChoice }) || changed;
             });
             return changed;
         }
