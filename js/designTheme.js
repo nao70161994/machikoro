@@ -6,12 +6,28 @@ const DesignTheme = (() => {
     function normalize(value) {
         return value === 'sunset' ? 'sunset' : 'classic';
     }
+    function arrangeGameSections(documentRef, design) {
+        const screen = documentRef.getElementById('gameScreen');
+        if (!screen || typeof screen.querySelector !== 'function' || typeof screen.insertBefore !== 'function') return;
+        const guide = documentRef.getElementById('tutorialBox');
+        const log = documentRef.getElementById('gameLogContainer');
+        const actions = screen.querySelector('.game-action-panel');
+        const players = screen.querySelector('.player-area');
+        const footer = documentRef.getElementById('onlineLeaveHelp');
+        if (![guide, log, actions, players, footer].every(element => element && element.parentElement === screen)) return;
+        if (design === 'sunset' && guide.nextElementSibling === log && log.nextElementSibling === footer) return;
+        const moves = design === 'sunset' ? [[guide, footer], [log, footer]] : [[guide, actions], [log, players]];
+        for (const [element, anchor] of moves) {
+            if (element.nextElementSibling !== anchor) screen.insertBefore(element, anchor);
+        }
+    }
     function initialize(documentRef, getStorage) {
         let selected = 'classic';
         try { selected = normalize(getStorage().getItem(STORAGE_KEY)); } catch (_) {}
         function apply(value, persist = false) {
             selected = normalize(value);
             documentRef.documentElement.setAttribute('data-design', selected);
+            arrangeGameSections(documentRef, selected);
             const control = documentRef.getElementById('designThemeSelect');
             if (control) control.value = selected;
             if (persist) {

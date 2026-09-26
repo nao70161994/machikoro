@@ -3,10 +3,10 @@ const assert = require('assert');
 const DesignTheme = require('../js/designTheme');
 const { runTest } = require('./helpers/test-utils');
 
-function createPage(storage, loading = false) {
+function createPage(storage, loading = false, extraElements = {}) {
     const listeners = {};
     const attributes = {};
-    const elements = { designThemeSelect: { value: '' }, designThemeStatus: { textContent: '' } };
+    const elements = { designThemeSelect: { value: '' }, designThemeStatus: { textContent: '' }, ...extraElements };
     const document = {
         readyState: loading ? 'loading' : 'complete',
         documentElement: { setAttribute: (key, value) => { attributes[key] = value; } },
@@ -49,4 +49,37 @@ runTest('設定破損・ストレージ禁止時も起動と一時切替を可�
     page.listeners.change({ target: { id: 'designThemeSelect', value: 'sunset' } });
     assert.strictEqual(page.runtime.current(), 'sunset');
     assert.ok(page.elements.designThemeStatus.textContent.includes('今回のみ'));
+});
+
+runTest('新版は操作と盤面をガイド・ログより先に置き、従来版では元のDOM順序へ戻す', () => {
+    const names = ['status', 'guide', 'actions', 'log', 'players', 'build', 'footer', 'restart'];
+    const nodes = Object.fromEntries(names.map(name => [name, { name }]));
+    const children = names.map(name => nodes[name]);
+    let moves = 0;
+    const screen = {
+        querySelector: selector => selector === '.game-action-panel' ? nodes.actions : nodes.players,
+        insertBefore(element, anchor) {
+            moves++;
+            children.splice(children.indexOf(element), 1);
+            children.splice(children.indexOf(anchor), 0, element);
+        },
+    };
+    for (const node of children) {
+        node.parentElement = screen;
+        Object.defineProperty(node, 'nextElementSibling', { get: () => children[children.indexOf(node) + 1] });
+    }
+    const page = createPage(storageWith(), false, {
+        gameScreen: screen, tutorialBox: nodes.guide, gameLogContainer: nodes.log, onlineLeaveHelp: nodes.footer,
+    });
+    assert.deepStrictEqual(children.map(node => node.name), names);
+    page.runtime.apply('sunset');
+    const expected = ['status', 'actions', 'players', 'build', 'guide', 'log', 'footer', 'restart'];
+    assert.deepStrictEqual(children.map(node => node.name), expected);
+    const firstMoveCount = moves;
+    page.runtime.apply('sunset');
+    assert.strictEqual(moves, firstMoveCount);
+    assert.deepStrictEqual(children.map(node => node.name), expected);
+    page.runtime.apply('classic');
+    assert.deepStrictEqual(children.map(node => node.name), names);
+    assert.strictEqual(children[3], nodes.log);
 });

@@ -3479,7 +3479,8 @@ runTest('Mobile WebKit release gateは実Service Worker二世代の更新を検�
     assert.ok(spec.includes('registration.update()'));
     assert.ok(spec.includes("registration.waiting && registration.waiting.state"));
     assert.ok(spec.includes("caches.keys()"));
-    assert.ok(spec.includes("page.locator('#pwaUpdateBtn')).toBeDisabled()"));
+    assert.ok(spec.includes("page.locator('#pwaUpdateBtn')).toBeEnabled()"));
+    assert.ok(spec.includes("window.MACHIKORO_CLIENT_VERSION)).toBe('webkit-e2e-v1')"));
     assert.ok(spec.includes("page.locator('[data-ui-action=\"restartGame\"]')"));
     assert.ok(spec.includes("page.locator('#confirmOkBtn').click()"));
     assert.ok(!spec.includes('button.disabled = false'));

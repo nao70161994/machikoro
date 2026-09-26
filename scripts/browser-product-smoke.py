@@ -10,6 +10,9 @@ server_port=available_port()
 driver_port=available_port()
 base_url='http://127.0.0.1:'+str(server_port)
 driver_url='http://127.0.0.1:'+str(driver_port)
+viewport_width=int(os.environ.get('SMOKE_WIDTH','390'))
+if not 320 <= viewport_width <= 1024:
+    raise SystemExit('SMOKE_WIDTH must be between 320 and 1024')
 browser=os.environ.get('CHROMIUM_BINARY') or shutil.which('chromium-browser') or shutil.which('chromium')
 if not browser or not shutil.which('chromedriver'):
     raise SystemExit('Chromium and a matching chromedriver are required')
@@ -60,7 +63,7 @@ try:
             break
         except Exception: time.sleep(.2)
     for design in ['classic','sunset']:
-        v=request('POST','/session',{'capabilities':{'alwaysMatch':{'browserName':'chrome','goog:chromeOptions':{'binary':browser,'args':['--headless','--no-sandbox','--disable-dev-shm-usage','--disable-gpu'],'mobileEmulation':{'deviceMetrics':{'width':390,'height':844,'pixelRatio':1,'mobile':True,'touch':True}}}}}})
+        v=request('POST','/session',{'capabilities':{'alwaysMatch':{'browserName':'chrome','goog:chromeOptions':{'binary':browser,'args':['--headless','--no-sandbox','--disable-dev-shm-usage','--disable-gpu'],'mobileEmulation':{'deviceMetrics':{'width':viewport_width,'height':844,'pixelRatio':1,'mobile':True,'touch':True}}}}}})
         s=v['sessionId'];sessions.append(s)
         request('POST','/session/'+s+'/url',{'url':base_url+'/'})
         wait(s,"return typeof reviewGameSetup === 'function'")
@@ -81,6 +84,9 @@ try:
     for s in sessions:js(s,ready+'.click()')
     for s,design in zip(sessions,['classic','sunset']):
         wait(s,"return document.getElementById('gameScreen').style.display !== 'none'")
+        assert js(s,"return document.documentElement.scrollWidth <= window.innerWidth"), 'Horizontal overflow in game'
+        log_before_players=js(s,"return !!(document.getElementById('gameLogContainer').compareDocumentPosition(document.getElementById('players')) & Node.DOCUMENT_POSITION_FOLLOWING)")
+        assert log_before_players == (design == 'classic'), 'Unexpected game section order'
         shot(s,design+'-online')
         assert js(s,"return document.documentElement.dataset.design")==design
     actor=next(s for s in sessions if js(s,"return !document.getElementById('btnRoll').disabled"))
@@ -158,7 +164,7 @@ try:
         for s in sessions:
             wait(s,"return GameRuntimeState.runtime.snapshot().game.currentPlayerIndex !== "+str(previous))
     else: raise RuntimeError('Match did not finish within '+str(max_turns)+' turns')
-    report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':'390x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'passed':['classic/sunset title','mixed-design online start with ready','dice roll and build menu','sunset external SVG rendering','large text increases sunset card effect size','build and authoritative undo','host refresh and rejoin',target_landmark+'-only online match completed with matching winners'],'notCovered':['physical device touch','WebKit',*(['standard all-landmark full match'] if target_landmark != 'all' else []),'PWA update']}
+    report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'passed':['classic/sunset title','mixed-design online start with ready','dice roll and build menu','sunset external SVG rendering','large text increases sunset card effect size','build and authoritative undo','host refresh and rejoin',target_landmark+'-only online match completed with matching winners'],'notCovered':['physical device touch','WebKit',*(['standard all-landmark full match'] if target_landmark != 'all' else []),'PWA update']}
     (out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     print(json.dumps(report,ensure_ascii=False))
 except Exception:
