@@ -85,7 +85,7 @@ runTest('ui winnerはscore順・winner強調・escape契約を維持する', () 
     assert.deepStrictEqual(players, [winner, leader]);
 });
 
-runTest('ui winnerは順位付きの共有テキストとコピー導線を生成する', () => {
+runTest('ui winnerは勝敗と最終コインを分けた共有テキストとコピー導線を生成する', () => {
     const players = [
         { name: 'Alice', coins: 18 },
         { name: 'Bob', coins: 24 },
@@ -94,7 +94,7 @@ runTest('ui winnerは順位付きの共有テキストとコピー導線を生�
         winner: players[1],
         players,
         turnCount: 11,
-    }), '🏙️ ダイスシティ 対戦結果\n🏆 Bobの勝利\n11ターン\n1位 Bob 24コイン\n2位 Alice 18コイン');
+    }), '🏙️ ダイスシティ 対戦結果\n🏆 Bobの勝利\n11ターン\n最終コイン（多い順）\n🏆 Bob 24コイン\nAlice 18コイン');
     const html = UiWinner.buildWinnerScreenHtml({
         winner: players[1], players, turnCount: 11, escapeHtml,
         logEntries: [], logTypes: {},
@@ -130,8 +130,8 @@ runTest('ui winnerは結果画像用modelを順位順に固定してCanvasへ描
     const model = UiWinner.buildResultCardModel({ winner: players[1], players, turnCount: 9 });
     assert.strictEqual(model.winnerName, 'Bob');
     assert.deepStrictEqual(JSON.parse(JSON.stringify(model.standings)), [
-        { rank: 1, name: 'Bob', coins: 20 },
-        { rank: 2, name: 'Alice', coins: 12 },
+        { isWinner: true, name: 'Bob', coins: 20 },
+        { isWinner: false, name: 'Alice', coins: 12 },
     ]);
     const calls = [];
     const context = {
@@ -274,4 +274,33 @@ runTest('ui winner streak compatibility globalsは製品向けread-only投影を
         { winStreak: root.winStreak, lastWinnerName: root.lastWinnerName },
         { winStreak: 3, lastWinnerName: 'Alice' }
     );
+});
+
+runTest('所持コイン最下位でもランドマークを完成させた勝者を共有結果で強調する', () => {
+    const winner = { name: 'Winner', coins: 0 };
+    const players = [{ name: 'Rich', coins: 30 }, winner];
+    const text = UiWinner.buildShareText({ winner, players, turnCount: 1 });
+    assert.ok(text.includes('🏆 Winnerの勝利'));
+    assert.ok(text.includes('最終コイン（多い順）'));
+    assert.ok(!text.includes('1位') && !text.includes('2位'));
+    const model = UiWinner.buildResultCardModel({ winner, players, turnCount: 1 });
+    assert.strictEqual(model.standings[0].isWinner, false);
+    assert.strictEqual(model.standings[1].isWinner, true);
+    const labels = [];
+    const canvas = { getContext: () => ({ fillRect() {}, fillText(text) { labels.push(text); } }) };
+    UiWinner.drawResultCard(canvas, model);
+    assert.ok(labels.includes('🏆 Winner'));
+    assert.ok(!labels.some(text => text.includes('位')));
+});
+
+runTest('新版の結果画面は次の操作を詳細集計より先に置き、従来版の順序を保つ', () => {
+    const winner = { name: 'Alice', coins: 0, cards: [], landmarks: {} };
+    const options = { winner, players: [winner], turnCount: 1, escapeHtml, canRematch: true };
+    const classic = UiWinner.buildWinnerScreenHtml(options);
+    const sunset = UiWinner.buildWinnerScreenHtml({ ...options, compactReview: true });
+    assert.ok(classic.indexOf('winner-review') < classic.indexOf('winnerRematchButton'));
+    assert.ok(!classic.includes('<details'));
+    assert.ok(sunset.indexOf('winnerRestartButton') < sunset.indexOf('<details'));
+    assert.ok(sunset.includes('<summary>対戦の詳しい記録</summary>'));
+    assert.ok(!sunset.includes('<details open'));
 });

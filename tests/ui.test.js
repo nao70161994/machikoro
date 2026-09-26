@@ -867,7 +867,7 @@ runTest('renderWinnerState はローカル終了時に既存オンライン復�
     context.game = {
         players: [winner, opponent],
         currentPlayerIndex: 0,
-        turnCount: 12,
+        turnCount: 0,
     };
     context.cpuPlayers = [null, null];
     context.localStorage.setItem('savedGame', '{}');
@@ -883,8 +883,11 @@ runTest('renderWinnerState はローカル終了時に既存オンライン復�
     assert.strictEqual(elements.btnRoll.disabled, true);
     assert.strictEqual(
         elements.turnStatusAnnouncer.textContent,
-        'ゲーム終了。Aliceの勝利。人間プレイヤー、12ターン。'
+        'ゲーム終了。Aliceの勝利。人間プレイヤー、1ターン。'
     );
+
+    assert.ok(elements.status.innerHTML.includes('1ターン'));
+    assert.strictEqual(context.game.turnCount, 0);
 
     elements.turnStatusAnnouncer.textContent = 'already-announced';
     context.renderWinnerState(winner);

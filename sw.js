@@ -13,6 +13,8 @@ const STATIC_ASSETS = [
   '/cards.html',
   '/ai-cpu.html',
   '/style.css',
+  '/icons/sunset-city.svg',
+  '/icons/facility-art.svg',
   '/js/designTheme.js',
   '/manifest.json',
   '/manifest.webmanifest',

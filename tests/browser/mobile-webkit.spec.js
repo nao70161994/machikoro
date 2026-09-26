@@ -800,7 +800,7 @@ test('320pxから480pxで建設shortcutが既存menuへ移動しPWA表示時も�
     }
 });
 
-test('mobile WebKitの2クライアントがonline開始後に再読込復帰できる', async ({ browser, baseURL }) => {
+test('異なるデザインの2クライアントが準備完了後にonline開始・再読込復帰できる', async ({ browser, baseURL }) => {
     const hostContext = await browser.newContext({
         ...MOBILE_CONTEXT,
         baseURL,
@@ -817,6 +817,9 @@ test('mobile WebKitの2クライアントがonline開始後に再読込復帰で
     const guestErrors = collectRuntimeErrors(guest);
     try {
         await Promise.all([prepare(host), prepare(guest)]);
+        await guest.locator('#designThemeSelect').selectOption('sunset');
+        await expect(host.locator('html')).toHaveAttribute('data-design', 'classic');
+        await expect(guest.locator('html')).toHaveAttribute('data-design', 'sunset');
         await host.locator('#tabOnline').click();
         await host.locator('#playerNameInput').fill('WebKitHost');
         await host.locator('#onlineCreateSubmitButton').click();
@@ -827,6 +830,10 @@ test('mobile WebKitの2クライアントがonline開始後に再読込復帰で
         await guest.locator('#playerNameInput').fill('WebKitGuest');
         await guest.locator('#roomIdInput').fill(roomId);
         await guest.locator('#onlineJoinSubmitButton').click();
+        const readySelector = '[data-ui-action="setOnlineLobbyReady"][data-ready="true"]';
+        await expect(guest.locator(readySelector)).toBeVisible();
+        await host.locator(readySelector).click();
+        await guest.locator(readySelector).click();
         await expect(host.locator('#gameScreen')).toBeVisible();
         await expect(guest.locator('#gameScreen')).toBeVisible();
         await expect.poll(() => host.evaluate(() => Object.keys(localStorage).some(key => key.includes('online')))).toBe(true);
@@ -834,6 +841,8 @@ test('mobile WebKitの2クライアントがonline開始後に再読込復帰で
         await expect(host.locator('#onlineResumeSection')).toBeVisible();
         await host.locator('[data-ui-action="reconnectOnline"]').click();
         await expect(host.locator('#gameScreen')).toBeVisible();
+        await expect(host.locator('html')).toHaveAttribute('data-design', 'classic');
+        await expect(guest.locator('html')).toHaveAttribute('data-design', 'sunset');
         expect(hostErrors).toEqual([]);
         expect(guestErrors).toEqual([]);
     } finally {

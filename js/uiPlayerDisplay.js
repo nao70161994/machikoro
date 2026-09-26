@@ -114,7 +114,8 @@ const UiPlayerDisplay = (() => {
         const loanCount = player.cards.filter(card => card.effect === options.loanEffect).length;
         const loanBadge = loanCount > 0 ? `<span class="loan-badge">💳×${loanCount}</span>` : '';
         const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${cpuLabel}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span></div><div class="player-coin-row"><span class="player-coins">🪙 ${player.coins}</span>${itCoins}${loanBadge}</div></div>`;
-        const detail = `<div class="player-detail"><div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
+        const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player) : '';
+        const detail = `<div class="player-detail">${town}<div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
         if (compact) {
             return `<details id="${playerBoxId(index)}" class="player-box player-box-compact" role="listitem" aria-label="${playerSummary}"><summary>${header}<span class="player-detail-hint">詳細を表示</span></summary>${detail}</details>`;
         }

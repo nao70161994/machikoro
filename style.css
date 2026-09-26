@@ -4027,3 +4027,126 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-re
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-purple .card-top-strip { background: #ded2e9; border-color: #9881ac; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-landmark .card-top-strip { background: #f1dca4; border-color: #af9454; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-title { color: #ffe1a6; text-shadow: none; }
+
+/* Original vector art is shared by the new city's visual identity. */
+.sunset-hero { display: none; }
+html[data-design="sunset"] .sunset-hero {
+    display: block;
+    margin: 12px 0;
+}
+html[data-design="sunset"] .sunset-hero img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 20px;
+}
+html[data-design="sunset"] .sunset-hero p {
+    margin-top: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff1d5;
+    letter-spacing: 0.03em;
+}
+html[data-design="sunset"] .title-header { padding-top: 4px; }
+html[data-design="sunset"] .title-logo-deco { display: none; }
+html[data-design="sunset"] .title-logo-sub { margin-bottom: 8px; }
+html[data-design="sunset"] .design-switcher {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 8px;
+    padding: 8px 10px;
+}
+html[data-design="sunset"] .design-switcher label { margin: 0; font-size: 12px; }
+html[data-design="sunset"] .design-switcher select { min-width: 0; font-size: 12px; }
+html[data-design="sunset"] #designThemeHelp { grid-column: 1 / -1; margin-top: 2px; font-size: 11px; }
+html[data-design="sunset"] #designThemeStatus {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+@media (prefers-reduced-motion: reduce) {
+    .sunset-hero { animation: none; }
+}
+
+.sunset-facility-art { display: none; }
+html[data-design="sunset"] .sunset-facility-art {
+    display: block;
+    width: 100%;
+    height: 72px;
+    flex-shrink: 0;
+    margin: 4px 0 0;
+    pointer-events: none;
+}
+html[data-design="sunset"] .card-btn .card-name { font-size: 14px; line-height: 1.5; }
+html[data-design="sunset"] body:not(.accessibility-large-text) .card-btn .card-effect { font-size: 12px; }
+
+.sunset-town { display: none; }
+html[data-design="sunset"] .sunset-town {
+    display: block;
+    margin: 10px 0 12px;
+    padding: 10px;
+    border: 1px solid #7b8279;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #3a5260, #596c64);
+    color: #fff3da;
+}
+html[data-design="sunset"] .town-summary {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.5;
+}
+html[data-design="sunset"] .town-summary span { font-size: 11px; font-weight: 400; }
+html[data-design="sunset"] .town-street {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-bottom: 6px;
+    border-bottom: 4px solid #d3bd97;
+}
+html[data-design="sunset"] .town-building { position: relative; width: 64px; }
+html[data-design="sunset"] .town-building .sunset-facility-art { height: 44px; }
+html[data-design="sunset"] .town-building-count {
+    display: block;
+    color: #fff3da;
+    font-size: 11px;
+    text-align: center;
+}
+html[data-design="sunset"] .town-landmark { width: 50px; padding-bottom: 16px; }
+html[data-design="sunset"] .town-overflow { font-size: 11px; padding: 8px; }
+html[data-design="sunset"] .winner-screen { padding-top: 12px; }
+html[data-design="sunset"] .winner-screen .sunset-town { margin: 18px 0; text-align: left; }
+html[data-design="sunset"] .winner-screen .town-building { width: 76px; }
+html[data-design="sunset"] body.accessibility-high-contrast .sunset-town { background: #000; border-color: #fff; color: #fff; }
+
+html[data-design="sunset"] .winner-review-details {
+    margin-top: 18px;
+    padding: 0 12px;
+    border: 1px solid #637781;
+    border-radius: 12px;
+    text-align: left;
+}
+html[data-design="sunset"] .winner-review-details > summary {
+    padding: 14px 0;
+    cursor: pointer;
+    color: #e9dfc7;
+    font-size: 14px;
+}
+html[data-design="sunset"] .winner-review-details > summary:focus-visible {
+    outline: 3px solid #ffe1a6;
+    outline-offset: 3px;
+}
+html[data-design="sunset"] .winner-review-details .winner-review-note {
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.7;
+    margin: 10px 0;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .winner-review-details > summary { color: #fff; }

@@ -298,10 +298,12 @@ function renderWinnerState(winner) {
     const firstPresentation = !winSoundPlayed;
     if (firstPresentation) UiWinner.gameOriginRuntime.record(uiOnlineRuntimeSnapshot().isOnlineGame);
     const statusHtml = UiWinner.buildWinnerScreenHtml({
+        compactReview: document.documentElement?.dataset?.design === 'sunset',
+        townHtml: UiBuildMenu.renderTownHtml(winner, getEnabledLandmarkSelection()),
         winner,
         players: currentGame.players,
         isCpuWinner: isCPUWinner,
-        turnCount: currentGame.turnCount,
+        turnCount: currentGame.turnCount + 1,
         winStreak: streakState.winStreak,
         logEntries: logHistoryController.snapshot().entries,
         logTypes: LOG_TYPES,
@@ -316,7 +318,7 @@ function renderWinnerState(winner) {
     const winnerStatusText = UiWinner.buildWinnerStatusText({
         winner,
         isCpuWinner: isCPUWinner,
-        turnCount: currentGame.turnCount,
+        turnCount: currentGame.turnCount + 1,
     });
     UiWinnerEffects.execute({ statusHtml, winnerStatusText, firstPresentation }, {
         setStatusHtml(html) {
@@ -386,7 +388,7 @@ async function shareGameResult() {
     const text = currentGame && UiWinner.buildShareText({
         winner,
         players: currentGame.players,
-        turnCount: currentGame.turnCount,
+        turnCount: currentGame.turnCount + 1,
     });
     if (!text || typeof navigator === 'undefined' || !navigator.clipboard ||
             typeof navigator.clipboard.writeText !== 'function') {
@@ -409,7 +411,7 @@ async function shareGameResultImage() {
     const model = currentGame && UiWinner.buildResultCardModel({
         winner,
         players: currentGame.players,
-        turnCount: currentGame.turnCount,
+        turnCount: currentGame.turnCount + 1,
     });
     if (!model || typeof document === 'undefined') return false;
     const canvas = document.createElement('canvas');
@@ -883,6 +885,7 @@ function renderPlayers() {
     const onlineState = uiOnlineRuntimeSnapshot();
     const settings = currentGame.players.map((player, index) => getPlayerSettingForRender(index, player));
     const html = UiPlayerDisplay.buildPlayersHtml(currentGame.players, {
+        buildTownHtml: player => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection()),
         settings,
         currentPlayerIndex: currentGame.currentPlayerIndex,
         compactInactive: currentGame.players.length >= 5,

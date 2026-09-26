@@ -129,19 +129,59 @@ const UiBuildMenu = (() => {
             : '';
     }
 
+    const FACILITY_ART = Object.freeze({
+        '麦畑': 'field', '花畑': 'field', 'コーン畑': 'field', 'ブドウ園': 'forest',
+        '牧場': 'ranch', '森林': 'forest', 'リンゴ園': 'forest', '鉱山': 'mine',
+        'サンマ漁船': 'harbor', 'マグロ漁船': 'harbor',
+        'チーズ工場': 'factory', '家具工場': 'factory', '食品倉庫': 'factory',
+        'スタジアム': 'civic', 'テレビ局': 'civic', 'ビジネスセンター': 'civic',
+        '出版社': 'civic', '税務署': 'civic',
+    });
+
+    const CATEGORY_ART = Object.freeze({
+        '農園': 'field', '畜産': 'ranch', '工業': 'factory', '海産': 'harbor', '大施設': 'civic',
+    });
+
+    function renderFacilityArt(name, landmark = false, category = '') {
+        const named = Object.prototype.hasOwnProperty.call(FACILITY_ART, name) ? FACILITY_ART[name] : null;
+        const grouped = Object.prototype.hasOwnProperty.call(CATEGORY_ART, category) ? CATEGORY_ART[category] : null;
+        const motif = landmark ? 'landmark' : (named || grouped || 'shop');
+        return `<svg class="sunset-facility-art" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#${motif}"></use></svg>`;
+    }
+
+    function renderTownHtml(player, enabledLandmarks = new Set()) {
+        const cards = Array.isArray(player.cards) ? player.cards : [];
+        const grouped = new Map();
+        for (const card of cards) {
+            const entry = grouped.get(card.name) || { card, count: 0 };
+            entry.count++;
+            grouped.set(card.name, entry);
+        }
+        const built = Object.entries(player.landmarks || {})
+            .filter(([name, value]) => value === true && enabledLandmarks.has(name));
+        const facilities = [...grouped.values()].slice(0, 8).map(({ card, count }) =>
+            `<span class="town-building">${renderFacilityArt(card.name, false, card.category)}<span class="town-building-count">×${count}</span></span>`
+        ).join('');
+        const landmarks = built.map(([name]) =>
+            `<span class="town-building town-landmark">${renderFacilityArt(name, true)}</span>`
+        ).join('');
+        const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種類</span>` : '';
+        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個</span></p><div class="town-street" aria-hidden="true">${facilities}${landmarks}${remaining}</div></div>`;
+    }
+
     function renderBuildCardButton(options) {
         const { card, stock, canBuildThis, escapeHtml, getEffectText, highlighted = false } = options;
         const safeName = escapeHtml(card.name);
         const safeColor = safeCardColorName(card.color);
         const highlightClass = highlighted ? ' market-refill-highlight' : '';
         const highlightBadge = highlighted ? '<span class="market-refill-badge">補充</span>' : '';
-        return `<div class="card-wrapper${highlightClass}">${highlightBadge}<button class="card-btn card-color-${safeColor} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${escapeHtml(getEffectText(card))}</div></div></button><div class="card-meta-row"><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ 詳細</button><span class="card-stock">残り${stock}枚</span></div></div>`;
+        return `<div class="card-wrapper${highlightClass}">${highlightBadge}<button class="card-btn card-color-${safeColor} ${canBuildThis ? 'can-afford' : ''}" data-action="buildCard" data-card-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">🎲 ${card.diceNums.join("・")}</span><span class="card-category-tag">${escapeHtml(card.category)}</span></div>${renderFacilityArt(card.name, false, card.category)}<div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">💰${card.cost}</span></div><div class="card-effect">${escapeHtml(getEffectText(card))}</div></div></button><div class="card-meta-row"><button class="card-detail-btn" data-action="showCardDetail" data-card-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ 詳細</button><span class="card-stock">残り${stock}枚</span></div></div>`;
     }
 
     function renderLandmarkBuildButton(options) {
         const { name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji } = options;
         const safeName = escapeHtml(name);
-        return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div><div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${escapeHtml(getLandmarkEffectText(name))}</div></div></button><div class="card-meta-row card-meta-row-detail-only"><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ 詳細</button></div></div>`;
+        return `<div class="card-wrapper"><button class="card-btn card-color-landmark ${canBuildThis ? 'can-afford' : ''}" data-action="buildLandmark" data-landmark-name="${safeName}" ${canBuildThis ? "" : "disabled"}><div class="card-top-strip"><span class="card-dice-num">${getLandmarkEmoji(name)}</span><span class="card-category-tag">ランドマーク</span></div>${renderFacilityArt(name, true)}<div class="card-body"><div class="card-btn-top"><span class="card-name">${safeName}</span><span class="card-cost">${built ? "✅済" : "💰" + cost}</span></div><div class="card-effect">${escapeHtml(getLandmarkEffectText(name))}</div></div></button><div class="card-meta-row card-meta-row-detail-only"><button class="card-detail-btn" data-action="showLandmarkDetail" data-landmark-name="${safeName}" aria-label="${safeName}の詳細を開く">ℹ 詳細</button></div></div>`;
     }
 
     function cardFilterButtonView(cardFilter, color) {
@@ -317,7 +357,7 @@ const UiBuildMenu = (() => {
         return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div>🏪 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
     }
 
-    return Object.freeze({ cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
+    return Object.freeze({ renderTownHtml, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;
