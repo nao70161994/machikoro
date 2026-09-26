@@ -6,6 +6,8 @@
 
 ## 検証報告の訂正
 
+- 2026-09-27、対象コミット `8538b7cb` で `npm run test:release`、`npm run test:pwa`、`MACHIKORO_TEST_CONCURRENCY=4 npm run test:online` はそれぞれ終了コード0。オンラインゲートは単一並列だと長時間だったが、4並列で全ファイル完走。オンラインログは `/data/data/com.termux/files/usr/tmp/product-online-gate.log`。
+
 - 会話中の `npm run test:all`、`test:online`、`test:release`、`test:pwa` の一部の成功報告は、実行プロセスの終了コードを取得せず途中出力だけで判断していた。その実行については完走成功の証拠として扱わない。オーケストレーション用ツールの「Script completed」は、内部で開始したテストプロセスの終了を意味しない。
 - 320px・全ランドマーク指定の再実行報告で参照した `product-layout-browser2.log` は、2026-09-26 15:34の駅のみ対戦の記録だった。これを新しい全ランドマーク対戦の成功証拠として扱わない。過去の個別実行の記録はそれぞれの日時・条件に限定する。
 - CPUグループは途中中断であり全件成功ではない。RLグループは独立した実行で終了コード0を取得している。
