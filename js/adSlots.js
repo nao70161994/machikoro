@@ -23,7 +23,8 @@
             .replace(/'/g, '&#039;');
     }
 
-    function renderAdSlot(location) {
+    function renderAdSlot(location, options = {}) {
+        if (options.preview !== true || !Object.prototype.hasOwnProperty.call(AD_SLOT_CONFIGS, location)) return '';
         const config = AD_SLOT_CONFIGS[location];
         if (!config) return '';
         return [

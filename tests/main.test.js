@@ -3999,9 +3999,13 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(aiCpu.includes('<h2>AI深層学習CPU</h2>'));
     assert.ok(aiCpu.includes('<h2>オンライン対戦でのCPU</h2>'));
 
-    const titleSlot = renderAdSlot('title-bottom');
-    const rulesSlot = renderAdSlot('rules-bottom');
-    const resultSlot = renderAdSlot('result-bottom');
+    for (const location of Object.keys(AD_SLOT_CONFIGS)) {
+        assert.strictEqual(renderAdSlot(location), '');
+    }
+    assert.strictEqual(renderAdSlot('constructor', { preview: true }), '');
+    const titleSlot = renderAdSlot('title-bottom', { preview: true });
+    const rulesSlot = renderAdSlot('rules-bottom', { preview: true });
+    const resultSlot = renderAdSlot('result-bottom', { preview: true });
     assert.ok(titleSlot.includes('data-ad-location="title-bottom"'));
     assert.ok(rulesSlot.includes('data-ad-location="rules-bottom"'));
     assert.ok(resultSlot.includes('data-ad-location="result-bottom"'));

@@ -41,3 +41,8 @@
 - AdSense 審査中の placeholder-only 状態では、SDK 未導入でも console error なしで起動する。
 - AdSense 審査中の docs/static 変更では `git diff --check`, `node tests/main.test.js`, `npm run test:static` が通る。広告位置、PWA更新、公開URL、ゲームルールに影響する変更は docs/static 名目でも行わない。
 - 審査後に広告 SDK や広告実装を変更する場合は、追加で `npm run test:smoke`, `npm test` も通す。
+
+
+## 通常画面の未配信枠（2026-09-26）
+
+広告の実配信がない現在、通常画面には空の広告枠や開発用の配置名を表示しない。配置の確認は `renderAdSlot(location, { preview: true })` で明示的に生成する。既存のplaceholder-only方針は広告SDKを有効化しない意味で維持し、通常利用者へ枠を見せる意味では用いない。
