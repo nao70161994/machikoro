@@ -7,12 +7,23 @@ import shutil
 import socket
 import subprocess
 import time
+import urllib.error
 import urllib.request
+import uuid
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / 'artifacts' / 'product-pwa-browser'
+ONLINE_LOBBY = os.environ.get('PWA_SMOKE_CONTEXT', 'local') == 'online-lobby'
+REPORT_ROOT = ROOT / 'artifacts' / ('product-pwa-online-lobby' if ONLINE_LOBBY else 'product-pwa-browser')
+OUT = REPORT_ROOT / (time.strftime('%Y%m%d-%H%M%S') + '-' + uuid.uuid4().hex[:8])
 OUT.mkdir(parents=True, exist_ok=True)
-(OUT / 'result.json').unlink(missing_ok=True)
+
+
+def write_report(report):
+    report['artifactDirectory'] = str(OUT.relative_to(ROOT))
+    encoded = json.dumps(report, ensure_ascii=False, indent=2)
+    (OUT / 'result.json').write_text(encoded)
+    (REPORT_ROOT / 'result.json').write_text(encoded)
+    print(json.dumps(report, ensure_ascii=False))
 
 
 def free_port():
@@ -37,8 +48,11 @@ def request(method, route, data=None):
     body = None if data is None else json.dumps(data).encode()
     req = urllib.request.Request(driver_url + route, data=body, method=method,
                                  headers={'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=40) as response:
-        value = json.load(response)['value']
+    try:
+        with urllib.request.urlopen(req, timeout=40) as response:
+            value = json.load(response)['value']
+    except urllib.error.HTTPError as error:
+        raise RuntimeError(f'WebDriver {method} {route}: {error.read().decode("utf-8", errors="replace")}') from error
     if isinstance(value, dict) and value.get('error'):
         raise RuntimeError(value)
     return value
@@ -123,18 +137,38 @@ try:
     request('POST', f'/session/{session}/url', {'url': origin + '/'})
     wait('return !!navigator.serviceWorker.controller')
     wait("return caches.keys().then(keys=>keys.includes('machikoro-pwa-smoke-v1'))")
-    js("const e=document.getElementById('designThemeSelect');e.value='sunset';e.dispatchEvent(new Event('change',{bubbles:true}));document.getElementById('btnStart').click()")
-    wait("return document.getElementById('confirmModal').style.display !== 'none'")
-    js("document.getElementById('confirmOkBtn').click()")
-    wait("return document.getElementById('gameScreen').style.display !== 'none'")
+    js("const e=document.getElementById('designThemeSelect');e.value='sunset';e.dispatchEvent(new Event('change',{bubbles:true}))")
+    if ONLINE_LOBBY:
+        js("document.getElementById('tabOnline').click();document.getElementById('playerNameInput').value='PWAHost';document.getElementById('onlineCreateSubmitButton').click()")
+        wait("return !!document.querySelector('[data-ui-action=leaveOnlineLobby]')")
+    else:
+        js("document.getElementById('btnStart').click()")
+        wait("return document.getElementById('confirmModal').style.display !== 'none'")
+        js("document.getElementById('confirmOkBtn').click()")
+        wait("return document.getElementById('gameScreen').style.display !== 'none'")
     stop(server)
     server = start_server('pwa-smoke-v2')
     js('return navigator.serviceWorker.getRegistration().then(r=>r.update()).then(()=>true)')
     wait("return navigator.serviceWorker.getRegistration().then(r=>r.waiting?.state === 'installed')")
     wait("return document.getElementById('pwaUpdateBanner').offsetHeight > 0")
-    assert not js("return document.getElementById('pwaUpdateBtn').disabled")
+    assert js("return document.getElementById('pwaUpdateBtn').disabled") == ONLINE_LOBBY
     assert js('return window.MACHIKORO_CLIENT_VERSION') == 'pwa-smoke-v1'
     screenshot('update-deferred-during-game')
+    if ONLINE_LOBBY:
+        report = {
+            'checkedAt': time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+            'browser': subprocess.check_output([browser, '--version'], text=True).strip(),
+            'baseCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+            'dirty': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip()),
+            'context': 'online lobby followed by server restart',
+            'passed': ['room created through UI', 'v2 service worker remains waiting',
+                       'update banner visible and manual update disabled', 'client remains on v1'],
+            'notCovered': ['online match update deferral', 'reconnect completion',
+                           'update activation after leaving online context', 'physical devices', 'WebKit'],
+        }
+        report['status'] = 'passed'
+        write_report(report)
+        raise SystemExit(0)
     js("document.getElementById('btnRestart').click()")
     wait("return document.getElementById('confirmModal').style.display !== 'none'")
     js("document.getElementById('confirmOkBtn').click()")
@@ -155,15 +189,24 @@ try:
         'browser': subprocess.check_output([browser, '--version'], text=True).strip(),
         'baseCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'dirty': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip()),
+        'context': 'local',
         'passed': ['v1 service worker controls page', 'v2 waits during a local game',
-                   'manual update available locally without automatic reload', 'title return activates v2 and reloads',
+                   'manual update available locally without automatic reload',
+                   'leaving context activates v2 and reloads',
                    'v1 cache removed', 'design preference survives update',
                    'title and art load with origin server stopped'],
         'notCovered': ['airplane mode', 'physical devices', 'WebKit', 'online game update deferral'],
     }
-    (OUT / 'result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
-    print(json.dumps(report, ensure_ascii=False))
-except Exception:
+    report['status'] = 'passed'
+    write_report(report)
+except Exception as error:
+    write_report({
+        'status': 'failed',
+        'checkedAt': time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+        'context': 'online-lobby' if ONLINE_LOBBY else 'local',
+        'baseCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        'error': str(error),
+    })
     if session:
         try:
             screenshot('failure')
