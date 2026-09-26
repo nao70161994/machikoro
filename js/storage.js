@@ -236,6 +236,10 @@ function deleteOnlineSession() {
     showConfirm("オンライン再接続データを削除しますか？", () => {
         if (!storageOnlineRuntimeSnapshot().isOnlineGame && typeof resetOnlineState === 'function') {
             resetOnlineState();
+            if (typeof onlineDomEffects !== 'undefined' &&
+                    typeof onlineDomEffects.setStatusText === 'function') {
+                onlineDomEffects.setStatusText('オンライン待機室から退出しました');
+            }
         }
         clearOnlineSessionStorage();
         updateResumeButton();

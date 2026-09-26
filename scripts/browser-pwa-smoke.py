@@ -159,6 +159,7 @@ try:
         js("document.querySelector('[data-ui-action=deleteOnlineSession]').click()")
         wait("return document.getElementById('confirmModal').style.display !== 'none'")
         js("document.getElementById('confirmOkBtn').click()")
+        wait("return document.getElementById('onlineWaitingPanel').innerHTML === ''")
         wait("return window.MACHIKORO_CLIENT_VERSION === 'pwa-smoke-v2'")
         screenshot('updated-after-discarding-reconnect')
         report = {
@@ -169,6 +170,7 @@ try:
             'context': 'online lobby followed by server restart',
             'passed': ['room created through UI', 'v2 service worker remains waiting',
                        'update banner visible and manual update disabled', 'client remains on v1',
+                       'discarding reconnect clears stale waiting-room UI',
                        'discarding reconnect through UI activates v2'],
             'notCovered': ['online match update deferral', 'reconnect completion',
                            'physical devices', 'WebKit'],

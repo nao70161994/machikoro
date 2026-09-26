@@ -44,6 +44,7 @@
 - 対戦中でない場合は削除確認後に既存の `resetOnlineState()` を呼び、保存情報削除・表示更新後にPWA更新を再評価するよう修正した。対戦中はオンライン状態をリセットしない。
 - 修正後17:48:04の実ブラウザ試験は終了コード0。更新延期から、再接続情報の削除確認、新版への再読み込みまで成功（`artifacts/product-pwa-online-lobby/20260926-174742-76f502ce/`）。対戦開始後の更新延期、再接続成功そのもの、実機とWebKitはこの試験の対象外。
 - 同じ修正ツリーで `node --check js/storage.js`、`node tests/storage.test.js`、`npm run test:types`、`MACHIKORO_TEST_CONCURRENCY=2 npm test` の最終終了コード0を取得。全ユニットログは `/data/data/com.termux/files/usr/tmp/product-reconnect-fix-unit.log`。
+- 2026-09-27のレビュー追跡で、再接続データ削除時に古い待機室UIがDOMへ残る問題も修正した。対戦中でない状態のreset後にオンライン状態表示を退出メッセージへ置き換える。`node tests/storage.test.js` とPWA実ブラウザ試験（終了コード0、`artifacts/product-pwa-online-lobby/20260927-010645-81b515c3/`）で表示消去とv2適用を確認し、`MACHIKORO_TEST_CONCURRENCY=2 npm test` も終了コード0。
 
 ## 制作方針
 

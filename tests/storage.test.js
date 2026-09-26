@@ -474,12 +474,13 @@ runTest('storage deleteOnlineSession は再接続待ちを解除してPWA更新�
     const calls = [];
     rt.localStorage.setItem('onlineSession', '{"ok":true}');
     rt.resetOnlineState = () => calls.push('reset');
+    rt.onlineDomEffects = { setStatusText: message => calls.push(message) };
     rt.refreshPwaUpdateState = () => {
         assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
         calls.push('refresh');
     };
     rt.deleteOnlineSession();
-    assert.deepStrictEqual(calls, ['reset', 'refresh']);
+    assert.deepStrictEqual(calls, ['reset', 'オンライン待機室から退出しました', 'refresh']);
     rt.isOnlineGame = true;
     calls.length = 0;
     rt.deleteOnlineSession();
