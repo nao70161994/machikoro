@@ -2,6 +2,7 @@
 
 const browserMaintenanceFiles = Object.freeze([
     'js/Card.js',
+    'js/designTheme.js',
     'js/marketSupply.js',
     'js/GameManager.js',
     'js/pendingActionQueue.js',
