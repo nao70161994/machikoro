@@ -152,7 +152,9 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
         })).toBe('installed');
         await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
         await expect(page.locator('#pwaUpdateMsg')).toContainText('新バージョン');
-        await expect(page.locator('#pwaUpdateBtn')).toBeDisabled();
+        // Local games permit manual updates; automatic activation waits for the title.
+        await expect(page.locator('#pwaUpdateBtn')).toBeEnabled();
+        expect(await page.evaluate(() => window.MACHIKORO_CLIENT_VERSION)).toBe('webkit-e2e-v1');
 
         await page.locator('[data-ui-action="restartGame"]').click();
         await expect(page.locator('#confirmModal')).toBeVisible();
