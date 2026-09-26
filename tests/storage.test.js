@@ -469,6 +469,23 @@ runTest('storage deleteOnlineSession は確認後に onlineSession と復元bund
     assert.strictEqual(rt.elements.onlineResumeSection.style.display, 'none');
 });
 
+runTest('storage deleteOnlineSession は再接続待ちを解除してPWA更新を再評価する', () => {
+    const rt = loadStorageRuntime();
+    const calls = [];
+    rt.localStorage.setItem('onlineSession', '{"ok":true}');
+    rt.resetOnlineState = () => calls.push('reset');
+    rt.refreshPwaUpdateState = () => {
+        assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
+        calls.push('refresh');
+    };
+    rt.deleteOnlineSession();
+    assert.deepStrictEqual(calls, ['reset', 'refresh']);
+    rt.isOnlineGame = true;
+    calls.length = 0;
+    rt.deleteOnlineSession();
+    assert.deepStrictEqual(calls, ['refresh']);
+});
+
 runTest('storage reconnectOnline は壊れたセッションを破棄して alert する', () => {
     const rt = loadStorageRuntime();
     rt.localStorage.setItem('onlineSession', '{broken');

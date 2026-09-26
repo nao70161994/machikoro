@@ -234,8 +234,12 @@ function deleteSavedGame() {
 
 function deleteOnlineSession() {
     showConfirm("オンライン再接続データを削除しますか？", () => {
+        if (!storageOnlineRuntimeSnapshot().isOnlineGame && typeof resetOnlineState === 'function') {
+            resetOnlineState();
+        }
         clearOnlineSessionStorage();
         updateResumeButton();
+        if (typeof refreshPwaUpdateState === 'function') refreshPwaUpdateState();
     });
 }
 

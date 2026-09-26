@@ -155,6 +155,12 @@ try:
     assert js('return window.MACHIKORO_CLIENT_VERSION') == 'pwa-smoke-v1'
     screenshot('update-deferred-during-game')
     if ONLINE_LOBBY:
+        wait("return document.getElementById('onlineResumeSection').offsetHeight > 0")
+        js("document.querySelector('[data-ui-action=deleteOnlineSession]').click()")
+        wait("return document.getElementById('confirmModal').style.display !== 'none'")
+        js("document.getElementById('confirmOkBtn').click()")
+        wait("return window.MACHIKORO_CLIENT_VERSION === 'pwa-smoke-v2'")
+        screenshot('updated-after-discarding-reconnect')
         report = {
             'checkedAt': time.strftime('%Y-%m-%dT%H:%M:%S%z'),
             'browser': subprocess.check_output([browser, '--version'], text=True).strip(),
@@ -162,9 +168,10 @@ try:
             'dirty': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).strip()),
             'context': 'online lobby followed by server restart',
             'passed': ['room created through UI', 'v2 service worker remains waiting',
-                       'update banner visible and manual update disabled', 'client remains on v1'],
+                       'update banner visible and manual update disabled', 'client remains on v1',
+                       'discarding reconnect through UI activates v2'],
             'notCovered': ['online match update deferral', 'reconnect completion',
-                           'update activation after leaving online context', 'physical devices', 'WebKit'],
+                           'physical devices', 'WebKit'],
         }
         report['status'] = 'passed'
         write_report(report)
