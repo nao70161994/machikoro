@@ -525,7 +525,7 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(nightlyWorkflow.includes('npm run test:browser-e2e'));
     const browserSpec = readRepoFile('tests/browser/mobile-webkit.spec.js');
     assert.ok(browserSpec.includes('mobile WebKitでapp shellとService Workerが実動作する'));
-    assert.ok(browserSpec.includes('mobile WebKitの2クライアントがonline開始後に再読込復帰できる'));
+    assert.ok(browserSpec.includes('異なるデザインの2クライアントが準備完了後にonline開始・再読込復帰できる'));
     assert.ok(browserSpec.includes('await host.reload()'));
     assert.ok(nightlyWorkflow.includes('NTFY_CI_TOPIC'));
     assert.ok(nightlyWorkflow.includes('failure()'));
