@@ -47,3 +47,20 @@ runTest('街の省略表示でも施設総数を保持し、施設名をHTMLへ�
     assert.strictEqual((html.match(/facility-art.svg#field/g) || []).length, 8);
     assert.ok(!html.includes('onerror'));
 });
+
+runTest('6ランドマークは種類別の同梱図版を持ち、未知の名前は安全な図版へ戻る', () => {
+    const { Player } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const references = new Set();
+    for (const name of Player.landmarkNames()) {
+        const html = UiBuildMenu.renderLandmarkBuildButton({
+            name, built: false, cost: Player.landmarkCost(name), canBuildThis: false,
+            escapeHtml: value => String(value), getLandmarkEffectText: () => '', getLandmarkEmoji: () => '',
+        });
+        const motif = html.match(/facility-art\.svg#([a-z]+)/)[1];
+        assert.ok(sprite.includes(`id="${motif}"`), name);
+        references.add(motif);
+    }
+    assert.strictEqual(references.size, Player.landmarkNames().length);
+    const fallback = UiBuildMenu.renderTownHtml({ cards: [], landmarks: { constructor: true } }, new Set(['constructor']));
+    assert.ok(fallback.includes('facility-art.svg#landmark'));
+});

@@ -4104,9 +4104,9 @@ html[data-design="sunset"] .town-summary {
 }
 html[data-design="sunset"] .town-summary span { font-size: 11px; font-weight: 400; }
 html[data-design="sunset"] .town-street {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
     align-items: end;
-    flex-wrap: wrap;
     gap: 4px;
     padding-bottom: 6px;
     border-bottom: 4px solid #d3bd97;
@@ -4150,3 +4150,5 @@ html[data-design="sunset"] .winner-review-details .winner-review-note {
     margin: 10px 0;
 }
 html[data-design="sunset"] body.accessibility-high-contrast .winner-review-details > summary { color: #fff; }
+
+html[data-design="sunset"] .town-street > .town-building { width: auto; min-width: 0; }

@@ -138,6 +138,11 @@ const UiBuildMenu = (() => {
         '出版社': 'civic', '税務署': 'civic',
     });
 
+    const LANDMARK_ART = Object.freeze({
+        '駅': 'station', 'ショッピングモール': 'mall', '遊園地': 'park',
+        '電波塔': 'radio', '港': 'port', '空港': 'airport',
+    });
+
     const CATEGORY_ART = Object.freeze({
         '農園': 'field', '畜産': 'ranch', '工業': 'factory', '海産': 'harbor', '大施設': 'civic',
     });
@@ -145,7 +150,8 @@ const UiBuildMenu = (() => {
     function renderFacilityArt(name, landmark = false, category = '') {
         const named = Object.prototype.hasOwnProperty.call(FACILITY_ART, name) ? FACILITY_ART[name] : null;
         const grouped = Object.prototype.hasOwnProperty.call(CATEGORY_ART, category) ? CATEGORY_ART[category] : null;
-        const motif = landmark ? 'landmark' : (named || grouped || 'shop');
+        const landmarkMotif = Object.prototype.hasOwnProperty.call(LANDMARK_ART, name) ? LANDMARK_ART[name] : 'landmark';
+        const motif = landmark ? landmarkMotif : (named || grouped || 'shop');
         return `<svg class="sunset-facility-art" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#${motif}"></use></svg>`;
     }
 
