@@ -1548,7 +1548,8 @@ runTest('render は勝利時に recordGameStats を一度だけ呼ぶ', () => {
 
     assert.strictEqual(context.crashErr, '');
     assert.strictEqual(context.recordCalls, 1);
-    assert.ok(elements.status.innerHTML.includes('Aliceの勝利'));
+    assert.ok(elements.status.innerHTML.includes('<span class="winner-title-name">Alice</span>'));
+    assert.ok(elements.status.innerHTML.includes('<span class="winner-title-outcome">の勝利！</span>'));
 });
 
 runTest('render は同じ勝利画面の再描画で連勝数を二重加算しない', () => {

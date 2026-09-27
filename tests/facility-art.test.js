@@ -10,18 +10,25 @@ function render(card) {
     return UiBuildMenu.renderBuildCardButton({ card, stock: 6, canBuildThis: true, escapeHtml: value => String(value), getEffectText: () => '' });
 }
 runTest('全施設の図版参照は同梱されたSVG symbolへ解決する', () => {
+    const motifs = new Set();
     for (const card of CARDS) {
-        const match = render(card).match(/facility-art\.svg#([a-z]+)/);
+        const match = render(card).match(/facility-art\.svg#([a-z-]+)/);
         assert.ok(match, card.name);
         assert.ok(sprite.includes(`id="${match[1]}"`), card.name);
+        motifs.add(match[1]);
     }
+    assert.strictEqual(motifs.size, CARDS.length, 'each facility should have its own illustration');
 });
 runTest('農園と工場の図版は商店へ誤分類されず、未知の名前も安全に分類する', () => {
     const corn = CARDS.find(card => card.name === 'コーン畑');
-    assert.ok(render(corn).includes('facility-art.svg#field'));
+    assert.ok(render(corn).includes('facility-art.svg#corn'));
     assert.ok(render({ ...corn, name: 'constructor' }).includes('facility-art.svg#field'));
+    assert.ok(render(CARDS.find(card => card.name === '麦畑')).includes('facility-art.svg#field'));
+    assert.ok(render(CARDS.find(card => card.name === '花畑')).includes('facility-art.svg#flower'));
+    assert.ok(render(CARDS.find(card => card.name === 'ブドウ園')).includes('facility-art.svg#vineyard'));
+    assert.ok(render(CARDS.find(card => card.name === 'リンゴ園')).includes('facility-art.svg#orchard'));
     const cheese = CARDS.find(card => card.name === 'チーズ工場');
-    assert.ok(render(cheese).includes('facility-art.svg#factory'));
+    assert.ok(render(cheese).includes('facility-art.svg#cheese'));
 });
 
 runTest('街の施設数は建設と取消に追従し、無効なランドマークを数えない', () => {

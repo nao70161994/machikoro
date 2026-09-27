@@ -702,9 +702,41 @@ body.modal-open #gameScreen {
     flex: 1;
     min-width: 0;
     min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid #56566f;
+    border-radius: 8px;
+    background-color: #121225;
+    color: #f4f3f8;
+    color-scheme: dark;
 }
 
-@media (max-width: 389px) {
+.player-setting-select option,
+.design-switcher select option {
+    background-color: #121225;
+    color: #f4f3f8;
+}
+
+.player-setting-select:focus-visible,
+.design-switcher select:focus-visible {
+    outline: 3px solid #f0c040;
+    outline-offset: 2px;
+}
+
+html[data-design="sunset"] .player-setting-select,
+html[data-design="sunset"] .design-switcher select {
+    border-color: #58738b;
+    background-color: #1b2b3a;
+    color: #fff4df;
+    color-scheme: dark;
+}
+
+html[data-design="sunset"] .player-setting-select option,
+html[data-design="sunset"] .design-switcher select option {
+    background-color: #1b2b3a;
+    color: #fff4df;
+}
+
+@media (max-width: 420px) {
     .player-setting-row {
         align-items: stretch;
         flex-direction: column;
@@ -738,7 +770,7 @@ body.modal-open #gameScreen {
     width: 100%;
 }
 
-@media (max-width: 389px) {
+@media (max-width: 420px) {
     .rl-model-setting {
         grid-template-columns: 1fr;
         gap: 4px;
@@ -810,12 +842,11 @@ body.modal-open #gameScreen {
 
 @media (max-width: 480px) {
     .setup-action-footer {
-        position: fixed;
-        left: 50%;
-        width: min(calc(100% - 64px), 416px);
-        transform: translateX(-50%);
+        position: sticky;
+        width: 100%;
         bottom: var(--setup-cta-bottom);
         z-index: 100;
+        margin-top: 12px;
         padding: 6px;
         border: 1px solid rgba(240,192,64,0.3);
         border-radius: 14px;
@@ -823,11 +854,23 @@ body.modal-open #gameScreen {
         box-shadow: 0 -8px 18px rgba(26,26,46,0.94);
     }
 
+    body.pwa-banner-open .setup-action-footer { bottom: var(--setup-cta-pwa-bottom); }
+
     body.pwa-banner-open .setup-action-footer {
-        bottom: var(--setup-cta-pwa-bottom);
+        position: static;
+        bottom: auto;
+        z-index: auto;
     }
 
     .setup-action-footer .model-load-status:empty { display: none; }
+
+    .setup-action-footer .setup-primary-cta {
+        scroll-margin-bottom: var(--setup-cta-focus-clearance);
+    }
+
+    body.pwa-banner-open .setup-action-footer .setup-primary-cta {
+        scroll-margin-bottom: var(--setup-cta-pwa-focus-clearance);
+    }
 
     .game-content-settings {
         align-items: stretch;
@@ -1402,6 +1445,25 @@ body.modal-open #gameScreen {
 body.pwa-banner-open #titleScreen,
 body.pwa-banner-open #gameScreen {
     padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+}
+
+body.pwa-banner-open #titleScreen {
+    overflow-y: auto;
+    min-height: calc(100dvh - 112px - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 112px - env(safe-area-inset-bottom, 0px));
+}
+
+body.game-finished #gameScreen > #gameConnectivityPanel,
+body.game-finished #gameScreen > #turnTimeline,
+body.game-finished #gameScreen > #playerNavigation,
+body.game-finished #gameScreen > #tutorialBox,
+body.game-finished #gameScreen > .game-action-panel,
+body.game-finished #gameScreen > #gameLogContainer,
+body.game-finished #gameScreen > .player-area,
+body.game-finished #gameScreen > #buildMenu,
+body.game-finished #gameScreen > #onlineLeaveHelp,
+body.game-finished #gameScreen > #btnRestart {
+    display: none !important;
 }
 
 .status {
@@ -2080,15 +2142,38 @@ button:not(:disabled):active {
     position: sticky;
     top: max(8px, env(safe-area-inset-top));
     z-index: 35;
-    gap: 6px;
+    display: flex;
+    align-items: center;
     margin: 0 0 8px;
     padding: 6px;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
+    overflow: hidden;
     background: #121225;
     border: 1px solid #343452;
     border-radius: 10px;
+}
+
+.player-navigation-items {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
     scrollbar-width: thin;
+}
+
+.player-navigation-scroll-hint {
+    display: flex;
+    flex: 0 0 28px;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    margin-left: 4px;
+    border-left: 1px solid rgba(240,192,64,0.24);
+    color: #f0c040;
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .player-navigation-link {
@@ -2473,7 +2558,11 @@ button:not(:disabled):active {
 }
 
 .card-btn:disabled {
-    opacity: 0.35;
+    opacity: 0.55;
+}
+
+html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
+    color: #c9cbdf;
 }
 
 .card-btn:not(:disabled):active {
@@ -2863,10 +2952,25 @@ button:not(:disabled):active {
     margin: 8px 0 4px;
 }
 
+.winner-title-name,
+.winner-title-outcome {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.winner-title-name { max-width: 100%; overflow-wrap: anywhere; }
+.winner-title-outcome { white-space: nowrap; }
+
 .winner-sub {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 8px;
     font-size: 14px;
     color: #a7a9be;
 }
+
+.winner-sub-turn { white-space: nowrap; }
 
 @keyframes winnerBounce {
     0%   { transform: translateY(0); }
@@ -2924,6 +3028,25 @@ button:not(:disabled):active {
     font-size: 15px;
 }
 
+.winner-share-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: min(100%, 420px);
+    margin: 8px auto 0;
+}
+
+.winner-share-actions .winner-secondary-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    margin: 0;
+    padding: 8px;
+    font-size: 13px;
+    line-height: 1.3;
+}
+
 .winner-review {
     margin: 18px auto;
     max-width: 560px;
@@ -2931,6 +3054,28 @@ button:not(:disabled):active {
 }
 
 .winner-review h3 { margin: 0 0 10px; text-align: center; }
+
+.winner-review-details {
+    margin-top: 18px;
+    padding: 0 12px;
+    border: 1px solid #4f4f6f;
+    border-radius: 12px;
+    text-align: left;
+}
+
+.winner-review-details > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #d6d6e3;
+    font-weight: 700;
+}
+
+.winner-review-details > summary:focus-visible {
+    outline: 3px solid #f4c542;
+    outline-offset: 3px;
+}
 
 .winner-market-review {
     margin: 18px auto;
@@ -2976,21 +3121,28 @@ button:not(:disabled):active {
 
 /* ===== コイン獲得アニメーション ===== */
 @keyframes coinFloat {
-    0%   { transform: translateY(0) scale(0.6); opacity: 0; }
-    15%  { transform: translateY(-8px) scale(1.4); opacity: 1; }
-    50%  { transform: translateY(-30px) scale(1.1); opacity: 1; }
-    100% { transform: translateY(-70px) scale(0.9); opacity: 0; }
+    0%   { transform: translateY(5px) scale(0.8); opacity: 0; }
+    15%  { transform: translateY(0) scale(1.08); opacity: 1; }
+    50%  { transform: translateY(-1px) scale(1); opacity: 1; }
+    100% { transform: translateY(-5px) scale(0.96); opacity: 0; }
 }
 
 .coin-float {
-    position: absolute;
-    right: 10px;
-    top: 30%;
-    font-size: 20px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 2px 4px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: rgba(15,14,23,0.72);
+    font-size: 12px;
     font-weight: bold;
+    line-height: 1.2;
+    white-space: nowrap;
     pointer-events: none;
     animation: coinFloat 1.3s ease-out forwards;
-    z-index: 20;
+    z-index: 2;
     letter-spacing: 1px;
 }
 
@@ -4152,3 +4304,297 @@ html[data-design="sunset"] .winner-review-details .winner-review-note {
 html[data-design="sunset"] body.accessibility-high-contrast .winner-review-details > summary { color: #fff; }
 
 html[data-design="sunset"] .town-street > .town-building { width: auto; min-width: 0; }
+
+@media (max-width: 480px) {
+    html:not([data-design="sunset"]) #gameScreen[style*="display: block"] {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "status"
+            "connect"
+            "timeline"
+            "tutorial"
+            "actions"
+            "players"
+            "log"
+            "build"
+            "leave"
+            "restart";
+        gap: 8px;
+    }
+    html:not([data-design="sunset"]) #status { grid-area: status; }
+    html:not([data-design="sunset"]) #gameConnectivityPanel { grid-area: connect; }
+    html:not([data-design="sunset"]) #turnTimeline { grid-area: timeline; }
+    html:not([data-design="sunset"]) #tutorialBox { grid-area: tutorial; }
+    html:not([data-design="sunset"]) .game-action-panel { grid-area: actions; }
+    html:not([data-design="sunset"]) .player-area { grid-area: players; min-width: 0; }
+    html:not([data-design="sunset"]) #gameLogContainer { grid-area: log; }
+    html:not([data-design="sunset"]) #buildMenu { grid-area: build; }
+    html:not([data-design="sunset"]) #onlineLeaveHelp { grid-area: leave; }
+    html:not([data-design="sunset"]) #btnRestart { grid-area: restart; }
+
+    html:not([data-design="sunset"]) .sunset-town {
+        display: block;
+        margin: 8px 0 10px;
+        padding: 8px;
+        border: 1px solid #7885a5;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #303c4b, #3d4854);
+        color: #fff;
+    }
+    html:not([data-design="sunset"]) .town-summary {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+    html:not([data-design="sunset"]) .town-summary span { color: #e0dfec; font-size: 12px; font-weight: 400; }
+    html:not([data-design="sunset"]) .town-street {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+        align-items: end;
+        gap: 4px;
+        padding-bottom: 6px;
+        border-bottom: 3px solid #c4bda9;
+    }
+    html:not([data-design="sunset"]) .town-building { position: relative; width: 100%; }
+    html:not([data-design="sunset"]) .town-building .sunset-facility-art {
+        display: block;
+        width: 100%;
+        height: 44px;
+        margin: 4px 0 0;
+    }
+    html:not([data-design="sunset"]) .town-building-count { display: block; color: #fff; font-size: 12px; text-align: center; }
+    html:not([data-design="sunset"]) .town-landmark { padding-bottom: 16px; }
+    html:not([data-design="sunset"]) .winner-screen .sunset-town { margin: 12px 0; text-align: left; }
+
+    .winner-review .winner-final-grid { grid-template-columns: minmax(0, 1fr); }
+    .status { font-size: 14px; padding: 6px 8px; }
+    .turn-timeline { margin-bottom: 6px; padding: 6px 8px; }
+    .turn-timeline h2 { display: none; }
+    .turn-timeline-list { gap: 4px; }
+    .turn-timeline-step { padding: 5px 2px; }
+    .turn-timeline-marker,
+    .turn-timeline-detail { display: none; }
+    .turn-timeline-label { font-size: 11px; }
+    .game-connectivity-panel { gap: 4px; margin-bottom: 6px; padding: 6px; }
+    .online-game-status { padding: 7px 10px; font-size: 13px; }
+    .game-activity-status { min-height: 28px; padding: 4px 8px; font-size: 12px; justify-content: flex-start; text-align: left; }
+    .game-connection-quality { min-height: 24px; padding: 2px 8px; }
+    .game-action-panel { gap: 6px; padding: 8px; }
+    .game-action-toolbar { min-height: 28px; }
+    .dice-face { width: 52px; height: 52px; padding: 6px; border-radius: 10px; }
+    #btnSkip:disabled { display: none; }
+}
+
+@media (max-width: 389px) {
+    .game-activity-status { flex-wrap: wrap; align-items: flex-start; }
+    .tutorial-box { margin-bottom: 6px; padding: 8px 10px; }
+    .tutorial-title { margin-bottom: 2px; }
+    .tutorial-body { line-height: 1.45; }
+    #gameActivityStatusLabel {
+        display: -webkit-box;
+        flex: 1 1 0;
+        min-width: 0;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+}
+
+@media (min-width: 760px) {
+    body { max-width: 1120px; }
+
+    #titleScreen {
+        align-items: stretch;
+        max-height: 100dvh;
+    }
+
+    .title-content {
+        max-width: 1120px;
+        display: grid;
+        grid-template-columns: minmax(220px, 0.8fr) minmax(420px, 1.2fr);
+        grid-template-areas:
+            "hero tabs"
+            "switch content"
+            "resume content"
+            "about content"
+            "ad ad"
+            "legal legal";
+        align-content: start;
+        align-items: start;
+        gap: 14px 24px;
+        padding: 24px;
+    }
+
+    .title-header { grid-area: hero; align-self: center; }
+    .design-switcher { grid-area: switch; }
+    #onlineResumeSection { grid-area: resume; }
+    .tab-bar { grid-area: tabs; align-self: end; margin-bottom: 0; }
+    #tabContentLocal,
+    #tabContentOnline,
+    #tabContentStats,
+    #tabContentTournament {
+        grid-area: content;
+        min-width: 0;
+        margin-bottom: 0;
+    }
+    #playerSettings,
+    #onlinePlayerSettings {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        gap: 8px;
+    }
+    #playerSettings > .player-setting-note,
+    #onlinePlayerSettings > .player-setting-note { grid-column: 1 / -1; }
+    #playerSettings .player-setting + .player-setting,
+    #onlinePlayerSettings .player-setting + .player-setting { margin-top: 0; }
+    @media (max-width: 899px) {
+        .title-content {
+            grid-template-columns: minmax(250px, 0.8fr) minmax(400px, 1.2fr);
+            padding: 16px;
+        }
+        .player-setting-row { align-items: stretch; flex-direction: column; gap: 6px; }
+        .player-setting-name { flex: 0 0 auto; }
+    }
+    .setup-action-footer {
+        margin-top: 12px;
+        padding: 8px;
+        border: 1px solid rgba(240, 192, 64, 0.32);
+        border-radius: 14px;
+        background: rgba(15, 14, 23, 0.97);
+        box-shadow: 0 -8px 18px rgba(26, 26, 46, 0.88);
+    }
+    .title-about { grid-area: about; }
+    #adSlotTitleBottom { grid-area: ad; }
+    .legal-links { grid-area: legal; }
+
+    #gameScreen[style*="display: block"] {
+        display: grid !important;
+        grid-template-columns: minmax(300px, 0.9fr) minmax(340px, 1.1fr);
+        grid-template-areas:
+            "status status"
+            "connect connect"
+            "timeline timeline"
+            "tutorial tutorial"
+            "actions nav"
+            "log players"
+            "build players"
+            "leave leave"
+            "restart restart";
+        align-items: start;
+        gap: 12px 20px;
+    }
+
+    #status { grid-area: status; margin: 0; }
+    #gameConnectivityPanel { grid-area: connect; margin: 0; }
+    #turnTimeline { grid-area: timeline; margin: 0; }
+    #tutorialBox { grid-area: tutorial; }
+    .game-action-panel { grid-area: actions; align-self: start; margin: 0; }
+    #playerNavigation { grid-area: nav; align-self: start; }
+    #gameLogContainer { grid-area: log; align-self: start; }
+    .player-area {
+        grid-area: players;
+        min-width: 0;
+        position: sticky;
+        top: 12px;
+        align-self: start;
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+    .player-area:has(> #playerNavigation) {
+        grid-row: 5 / span 3;
+        grid-column: 2;
+    }
+    #players {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+        align-items: start;
+        gap: 10px;
+    }
+    .player-box { min-width: 0; margin: 0; }
+    html:not([data-design="sunset"]) .player-cards { font-size: 12px; gap: 6px; }
+    html:not([data-design="sunset"]) .sunset-town {
+        display: block;
+        margin: 10px 0 12px;
+        padding: 10px;
+        border: 1px solid #7885a5;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #303c4b, #3d4854);
+        color: #fff;
+    }
+    html:not([data-design="sunset"]) .town-summary {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.5;
+    }
+    html:not([data-design="sunset"]) .town-summary span { font-size: 11px; font-weight: 400; color: #e0dfec; }
+    html:not([data-design="sunset"]) .town-street {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+        align-items: end;
+        gap: 4px;
+        padding-bottom: 6px;
+        border-bottom: 3px solid #c4bda9;
+    }
+    html:not([data-design="sunset"]) .town-building { position: relative; width: 64px; }
+    html:not([data-design="sunset"]) .town-building .sunset-facility-art {
+        display: block;
+        width: 100%;
+        height: 44px;
+        margin: 4px 0 0;
+    }
+    html:not([data-design="sunset"]) .town-building-count { display: block; color: #fff; font-size: 11px; text-align: center; }
+    html:not([data-design="sunset"]) .town-landmark { width: 50px; padding-bottom: 16px; }
+    @media (max-width: 859px) {
+        #gameScreen[style*="display: block"] {
+            grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.9fr);
+        }
+        #players { grid-template-columns: minmax(0, 1fr); }
+        .player-box { padding: 8px; }
+        .player-name-row { flex-basis: 100%; }
+        .player-name { font-size: 14px; }
+        .player-coin-row { margin-left: 0; justify-content: flex-start; }
+        .player-box .town-building { width: 48px; }
+        .player-box .town-building .sunset-facility-art { height: 36px; }
+        .player-box .town-landmark { width: 44px; }
+        .player-box .town-building-count,
+        .player-box .town-summary span,
+        .player-box .landmark-badge { font-size: 12px; }
+    }
+    #buildMenu { grid-area: build; min-width: 0; }
+    #onlineLeaveHelp { grid-area: leave; }
+    #btnRestart { grid-area: restart; max-width: 520px; justify-self: center; }
+
+    #status .winner-screen {
+        width: 100%;
+        max-width: 760px;
+        margin-inline: auto;
+        padding: 16px;
+    }
+    #status .winner-stats { max-width: 680px; margin-inline: auto; }
+    #status .winner-review,
+    #status .winner-market-review {
+        max-width: 680px;
+        margin: 24px auto;
+        padding-top: 18px;
+        border-top: 1px solid rgba(127, 150, 170, 0.4);
+    }
+    #status .winner-review h3,
+    #status .winner-market-review h3 { text-align: left; }
+
+    .pwa-banner,
+    #pwaInstallBanner,
+    #pwaUpdateBanner { max-width: 720px; }
+}
+
+body.game-finished #status { position: relative; z-index: 1000; }

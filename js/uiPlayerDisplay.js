@@ -80,7 +80,7 @@ const UiPlayerDisplay = (() => {
             ['#gameLogContainer', '📋 ログ'],
             ['#buildMenu', '🏗️ 建設'],
         ].map(([href, label]) => `<a class="player-navigation-link destination" href="${href}">${label}</a>`).join('');
-        return playerLinks + destinationLinks;
+        return `<span class="player-navigation-items">${playerLinks}${destinationLinks}</span><span class="player-navigation-scroll-hint" aria-hidden="true">↔</span>`;
     }
 
     function buildPlayerHtml(player, index, options = {}) {

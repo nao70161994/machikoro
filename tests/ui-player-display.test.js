@@ -219,6 +219,8 @@ const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(tenPlayers, {
     escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
 });
 assert.strictEqual((navigationHtml.match(/class="player-navigation-link/g) || []).length, 12);
+assert(navigationHtml.startsWith('<span class="player-navigation-items">'));
+assert(navigationHtml.endsWith('<span class="player-navigation-scroll-hint" aria-hidden="true">↔</span>'));
 assert(navigationHtml.includes('href="#playerBox0"'));
 assert(navigationHtml.includes('href="#playerBox4" aria-current="true"'));
 assert(navigationHtml.includes('自分：&lt;悪意&quot;名前&gt;'));

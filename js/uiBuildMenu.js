@@ -130,12 +130,19 @@ const UiBuildMenu = (() => {
     }
 
     const FACILITY_ART = Object.freeze({
-        '麦畑': 'field', '花畑': 'field', 'コーン畑': 'field', 'ブドウ園': 'forest',
-        '牧場': 'ranch', '森林': 'forest', 'リンゴ園': 'forest', '鉱山': 'mine',
-        'サンマ漁船': 'harbor', 'マグロ漁船': 'harbor',
-        'チーズ工場': 'factory', '家具工場': 'factory', '食品倉庫': 'factory',
-        'スタジアム': 'civic', 'テレビ局': 'civic', 'ビジネスセンター': 'civic',
-        '出版社': 'civic', '税務署': 'civic',
+        '麦畑': 'field', '花畑': 'flower', 'コーン畑': 'corn', 'ブドウ園': 'vineyard',
+        '牧場': 'ranch', '森林': 'forest', 'リンゴ園': 'orchard', '鉱山': 'mine',
+        'パン屋': 'bakery', 'コンビニ': 'convenience', 'チーズ工場': 'cheese',
+        '家具工場': 'furniture', '青果市場': 'produce', 'カフェ': 'cafe',
+        'ファミレス': 'family', 'スタジアム': 'stadium', 'テレビ局': 'tv-station',
+        'ビジネスセンター': 'business-center', 'サンマ漁船': 'fishery',
+        'マグロ漁船': 'tuna-boat', 'フラワーショップ': 'florist',
+        '食品倉庫': 'warehouse', '寿司屋': 'sushi', 'ピザ屋': 'pizzeria',
+        'バーガーショップ': 'burger', '出版社': 'publisher', '税務署': 'tax-office',
+        '雑貨屋': 'general-store', '改装屋': 'remodel', '貸金業': 'lender',
+        'ワイナリー': 'winery', '引越し屋': 'mover', 'ドリンク工場': 'beverage',
+        '高級フレンチ': 'bistro', '会員制BAR': 'members-bar', '清掃業': 'cleaning',
+        'ITベンチャー': 'startup', '公園': 'park-ground',
     });
 
     const LANDMARK_ART = Object.freeze({

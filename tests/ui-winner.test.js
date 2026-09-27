@@ -16,9 +16,10 @@ runTest('winner reviewは正確な最終盤面と観測範囲を明示したlog�
     assert(html.includes('対戦の振り返り'));
     assert(html.includes('<span>最終所持施設</span><strong>3</strong>'));
     assert(html.includes('<span>建設済みランドマーク</span><strong>2</strong>'));
+    assert(html.includes('class="winner-review-grid winner-final-grid"'));
     assert(html.includes('<span>収入ログ</span><strong>2</strong>'));
     assert(html.includes('この端末で観測した直近ログ'));
-    assert(html.includes('最大300件。古い保存から再開した場合、以前の記録を含まないことがあります。'));
+    assert(html.includes('最大300件。古い対局から再開すると以前の記録は含まれません。'));
     assert(html.includes('<span>最終コイン差</span><strong>9</strong>'));
 });
 
@@ -32,7 +33,7 @@ runTest('winner reviewは保存済みの完全な構造化集計を直近logよ�
         { complete: true, counts: { gain: 21, lose: 8, build: 14, special: 5, dice: 33 } }
     );
     assert(html.includes('対戦全体のイベント'));
-    assert(html.includes('保存・再接続を含む対戦開始から'));
+    assert(html.includes('対戦開始からの収支・建設ログの集計です。'));
     assert(html.includes('<span>収入ログ</span><strong>21</strong>'));
     assert.strictEqual(html.includes('最大300件'), false);
 });
@@ -186,8 +187,9 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
         winner, players: [winner], isCpuWinner: false, turnCount: 9, winStreak: 1,
         canRematch: true, resultAdSlot: '<div class="ad">ad</div>', escapeHtml,
     });
-    assert.ok(human.includes('<div class="winner-title">Aliceの勝利！</div>'));
-    assert.ok(human.includes('👤 人間プレイヤーが勝ちました　9ターン'));
+    assert.ok(human.includes('<div class="winner-title"><span class="winner-title-name">Alice</span><span class="winner-title-outcome">の勝利！</span></div>'));
+    assert.ok(human.includes('<span class="winner-sub-turn">'));
+    assert.ok(human.includes('<span class="winner-sub-type">👤 人間プレイヤーが勝ちました</span><span class="winner-sub-turn">9ターン</span>'));
     assert.ok(human.includes('<div class="winner-stats" role="list" aria-label="最終コイン">'));
     assert.ok(human.includes('id="winnerRestartButton"'));
     assert.ok(human.includes('id="winnerRematchButton"'));
@@ -197,7 +199,7 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
     const cpu = UiWinner.buildWinnerScreenHtml({
         winner, players: [winner], isCpuWinner: true, turnCount: 10, winStreak: 2, escapeHtml,
     });
-    assert.ok(cpu.includes('🤖 CPUプレイヤーが勝ちました　10ターン'));
+    assert.ok(cpu.includes('<span class="winner-sub-type">🤖 CPUプレイヤーが勝ちました</span><span class="winner-sub-turn">10ターン</span>'));
     assert.ok(!cpu.includes('winnerRematchButton'));
     assert.ok(cpu.includes('2連勝中！'));
 });
@@ -300,7 +302,20 @@ runTest('新版の結果画面は次の操作を詳細集計より先に置き�
     const sunset = UiWinner.buildWinnerScreenHtml({ ...options, compactReview: true });
     assert.ok(classic.indexOf('winner-review') < classic.indexOf('winnerRematchButton'));
     assert.ok(!classic.includes('<details'));
+    assert.ok(classic.includes('<div class="winner-share-actions">'));
+    assert.ok(classic.indexOf('shareGameResult">結果を共有') < classic.indexOf('shareGameResultImage">画像を保存・共有'));
+    assert.ok(classic.indexOf('winnerRestartButton') > classic.indexOf('winner-share-actions'));
     assert.ok(sunset.indexOf('winnerRestartButton') < sunset.indexOf('<details'));
     assert.ok(sunset.includes('<summary>対戦の詳しい記録</summary>'));
     assert.ok(!sunset.includes('<details open'));
+});
+
+runTest('結果の詳細記録は夕景テーマ・狭幅・広幅で操作の後へ畳む', () => {
+    assert.strictEqual(UiWinner.shouldCompactReview('sunset', 900), true);
+    assert.strictEqual(UiWinner.shouldCompactReview('classic', 480), true);
+    assert.strictEqual(UiWinner.shouldCompactReview('classic', 320), true);
+    assert.strictEqual(UiWinner.shouldCompactReview('classic', 481), false);
+    assert.strictEqual(UiWinner.shouldCompactReview('classic', 759), false);
+    assert.strictEqual(UiWinner.shouldCompactReview('classic', 760), true);
+    assert.strictEqual(UiWinner.shouldCompactReview('classic', 1024), true);
 });

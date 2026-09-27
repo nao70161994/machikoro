@@ -1188,16 +1188,21 @@ runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を
 runTest('main coin animationはpure viewと既存DOM・1秒timerを同期する', () => {
     const rt = loadMainRuntime();
     const box = makeElement();
+    const coinRow = makeElement();
     let appended = null;
+    let appendedTo = null;
     let removed = 0;
     let soundCalls = 0;
-    box.appendChild = element => { appended = element; };
+    box.appendChild = element => { appended = element; appendedTo = box; };
+    box.querySelector = selector => selector === '.player-coin-row' ? coinRow : null;
+    coinRow.appendChild = element => { appended = element; appendedTo = coinRow; };
     rt.document.querySelectorAll = selector => selector === '.player-box' ? [box] : [];
     rt.document.createElement = () => makeElement({ remove() { removed++; } });
     rt.playSound = name => { if (name === 'coin') soundCalls++; };
 
     rt.showCoinAnimation(0, 4);
-    assert.strictEqual(box.style.position, 'relative');
+    assert.strictEqual(box.style.position, undefined);
+    assert.strictEqual(appendedTo, coinRow);
     assert.strictEqual(appended.className, 'coin-float coin-gain');
     assert.strictEqual(appended.textContent, '+4🪙');
     assert.strictEqual(soundCalls, 1);
@@ -2790,18 +2795,25 @@ runTest('頻用する補助操作は一覧密度に応じた共通tap領域を�
     assert.ok(rule('.card-badge').includes('min-height: var(--touch-target-dense);'));
 });
 
-runTest('狭幅の開始CTAは初期表示から固定しPWAとfocusを避ける', () => {
+runTest('狭幅の開始CTAは人数選択に重ならずPWAとfocusを避ける', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     assert.ok(html.includes('id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom"'));
-    assert.ok(css.includes('@media (max-width: 480px) {\n    .setup-action-footer {'));
-    assert.ok(css.includes('position: fixed;'));
-    assert.ok(css.includes('width: min(calc(100% - 64px), 416px);'));
+    assert.ok(css.includes('@media (max-width: 480px) {') && css.includes('.setup-action-footer {'));
+    assert.ok(css.includes('position: sticky;'));
+    assert.ok(css.includes('width: 100%;'));
+    assert.ok(html.indexOf('class="player-select"') < html.indexOf('class="setup-action-footer"'));
+    assert.ok(html.indexOf('class="setup-action-footer"') < html.indexOf('class="setting-section play-flow-settings"'));
     assert.ok(css.includes('bottom: var(--setup-cta-bottom);'));
-    assert.ok(css.includes('body.pwa-banner-open .setup-action-footer {\n        bottom: var(--setup-cta-pwa-bottom);'));
+    assert.ok(css.includes('body.pwa-banner-open .setup-action-footer { bottom: var(--setup-cta-pwa-bottom); }'));
+    assert.ok(css.includes('.setup-action-footer .setup-primary-cta {\n        scroll-margin-bottom: var(--setup-cta-focus-clearance);'));
+    assert.ok(css.includes('body.pwa-banner-open .setup-action-footer .setup-primary-cta {\n        scroll-margin-bottom: var(--setup-cta-pwa-focus-clearance);'));
     assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-focus-clearance);'));
     assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-pwa-focus-clearance);'));
+    assert.ok(css.includes('.turn-timeline h2 { display: none; }'));
+    assert.ok(css.includes('.winner-review .winner-final-grid { grid-template-columns: minmax(0, 1fr); }'));
+    assert.ok(css.includes('#btnSkip:disabled { display: none; }'));
 });
 
 runTest('pending中のnotice toastは上端safe-areaへ退避しoverlay階層を変えない', () => {
@@ -2845,7 +2857,8 @@ runTest('建設カードの色filterはカードsection内だけで安全に追�
 runTest('建設カードの判断情報は狭い画面でも読める文字サイズを保つ', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const rule = selector => {
-        const match = css.match(new RegExp(`\\${selector}\\s*{([\\s\\S]*?)}`));
+        const escapedSelector = selector.replace(/\./g, '\\.');
+        const match = css.match(new RegExp(`^${escapedSelector}\\s*{([^}]*)}`, 'm'));
         assert.ok(match, `${selector} rule exists`);
         return match[1];
     };
@@ -2863,6 +2876,17 @@ runTest('player setting select は local/online とも programmatic label を持
 
     assert.ok(local.includes('aria-label=\"プレイヤー${index + 1}の種類\"'));
     assert.ok(online.includes('aria-label=\"プレイヤー${index + 1}の種類\"'));
+});
+
+runTest('タイトルのselectはテーマに馴染む暗色と明確なfocus表示を持つ', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const playerSelect = css.match(/\.player-setting-select\s*{([^}]*)}/);
+    assert.ok(playerSelect);
+    assert.ok(playerSelect[1].includes('background-color: #121225;'));
+    assert.ok(playerSelect[1].includes('color-scheme: dark;'));
+    assert.ok(css.includes('.player-setting-select:focus-visible,\n.design-switcher select:focus-visible'));
+    assert.ok(css.includes('html[data-design="sunset"] .player-setting-select,\nhtml[data-design="sunset"] .design-switcher select'));
+    assert.ok(css.includes('background-color: #1b2b3a;'));
 });
 
 runTest('主要HTML/JSには inline handler 属性を再導入しない', () => {
@@ -3441,7 +3465,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(uiSource.includes("header.setAttribute('aria-expanded'"));
     assert.ok(css.includes('overscroll-behavior: contain'));
     assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
-    assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v4';"));
+    assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v5';"));
     const indexScripts = [...html.matchAll(/<script src=\"(js\/[^\"]+)\"/g)].map(match => `/${match[1]}`);
     const cachedAssets = [...sw.matchAll(/'([^']+)'/g)].map(match => match[1]);
     for (const script of indexScripts) {

@@ -125,9 +125,14 @@ function buildGameReview(logEntries, logTypes, players, escapeHtml, reviewSummar
     }
     const historyTitle = complete ? '対戦全体のイベント' : 'この端末で観測した直近ログ';
     const historyNote = complete
-        ? '保存・再接続を含む対戦開始からの構造化イベント集計です。'
-        : '最大300件。古い保存から再開した場合、以前の記録を含まないことがあります。';
-    return `<section class="winner-review" aria-labelledby="winnerReviewTitle"><h3 id="winnerReviewTitle">対戦の振り返り</h3><h4>最終盤面</h4><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div><h4>${historyTitle}</h4><p class="winner-review-note">${historyNote}</p><div class="winner-review-grid">${observedItems.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
+        ? '対戦開始からの収支・建設ログの集計です。'
+        : '最大300件。古い対局から再開すると以前の記録は含まれません。';
+    return `<section class="winner-review" aria-labelledby="winnerReviewTitle"><h3 id="winnerReviewTitle">対戦の振り返り</h3><h4>最終盤面</h4><div class="winner-review-grid winner-final-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div><h4>${historyTitle}</h4><p class="winner-review-note">${historyNote}</p><div class="winner-review-grid">${observedItems.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
+}
+
+function shouldCompactReview(design, viewportWidth) {
+    return design === 'sunset' || (Number.isFinite(viewportWidth) &&
+        (viewportWidth <= 480 || viewportWidth >= 760));
 }
 
 function buildMarketReview(marketSupply, escapeHtml) {
@@ -256,7 +261,7 @@ function buildWinnerScreenHtml(options = {}) {
         : (options.canRematch
             ? '<button id="winnerRematchButton" class="winner-primary-action" data-ui-action="rematchLocalGame">同じ設定でもう一度</button>'
             : '');
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title">${escapeHtml(winner.name)}の勝利！</div><div class="winner-sub">${winnerType}プレイヤーが勝ちました　${options.turnCount}ターン</div>${streakHtml}${options.townHtml || ''}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewBeforeActions}${rematchButton}<button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">結果画像を保存・共有</button><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${reviewAfterActions}${resultAdSlot}</div>`;
+    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title"><span class="winner-title-name">${escapeHtml(winner.name)}</span><span class="winner-title-outcome">の勝利！</span></div><div class="winner-sub"><span class="winner-sub-type">${winnerType}プレイヤーが勝ちました</span><span class="winner-sub-turn">${options.turnCount}ターン</span></div>${streakHtml}${options.townHtml || ''}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewBeforeActions}${rematchButton}<div class="winner-share-actions"><button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">画像を保存・共有</button></div><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${reviewAfterActions}${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;
@@ -278,6 +283,7 @@ const UiWinner = Object.freeze({
     buildWinStreakHtml,
     buildGameReview,
     buildMarketReview,
+    shouldCompactReview,
     buildWinnerStatusText,
     buildShareText,
     buildResultCardModel,

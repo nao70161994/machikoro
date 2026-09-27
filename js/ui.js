@@ -277,6 +277,7 @@ function clearOnlineSessionAfterWin() {
 }
 
 function renderWinnerState(winner) {
+    if (document.body && document.body.classList) document.body.classList.add('game-finished');
     const gameState = uiGameRuntimeSnapshot();
     const currentGame = gameState.game;
     const winnerIdx = currentGame.players.indexOf(winner);
@@ -298,7 +299,10 @@ function renderWinnerState(winner) {
     const firstPresentation = !winSoundPlayed;
     if (firstPresentation) UiWinner.gameOriginRuntime.record(uiOnlineRuntimeSnapshot().isOnlineGame);
     const statusHtml = UiWinner.buildWinnerScreenHtml({
-        compactReview: document.documentElement?.dataset?.design === 'sunset',
+        compactReview: UiWinner.shouldCompactReview(
+            document.documentElement?.dataset?.design,
+            typeof window !== 'undefined' ? window.innerWidth : Infinity
+        ),
         townHtml: UiBuildMenu.renderTownHtml(winner, getEnabledLandmarkSelection()),
         winner,
         players: currentGame.players,
@@ -450,6 +454,7 @@ async function shareGameResultImage() {
 }
 
 function renderActiveGameState(current) {
+    if (document.body && document.body.classList) document.body.classList.remove('game-finished');
     UiWinner.gameOriginRuntime.reset();
     const gameState = uiGameRuntimeSnapshot();
     const onlineState = uiOnlineRuntimeSnapshot();
@@ -907,6 +912,17 @@ function renderPlayers() {
     if (navigation) {
         navigation.innerHTML = navigationHtml;
         navigation.style.display = navigationHtml ? 'flex' : 'none';
+        const playerArea = document.querySelector('.player-area');
+        const gameScreen = document.getElementById('gameScreen');
+        const gameLog = document.getElementById('gameLogContainer');
+        const promoteNavigation = currentGame.players.length >= 5 &&
+            document.documentElement.dataset.design !== 'sunset';
+        const navigationParent = promoteNavigation ? gameScreen : playerArea;
+        const navigationAnchor = promoteNavigation ? gameLog : document.getElementById('players');
+        if (navigationParent && navigationAnchor &&
+                (navigation.parentElement !== navigationParent || navigation.nextElementSibling !== navigationAnchor)) {
+            navigationParent.insertBefore(navigation, navigationAnchor);
+        }
     }
     const container = document.getElementById("players");
     const previous = playerPanelRenderCache.get(container);

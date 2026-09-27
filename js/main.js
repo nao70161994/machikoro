@@ -1311,11 +1311,11 @@ function showCoinAnimation(playerIndex, diff) {
     const boxes = document.querySelectorAll('.player-box');
     if (!boxes[playerIndex]) return;
     const box = boxes[playerIndex];
-    box.style.position = 'relative';
+    const coinRow = box.querySelector('.player-coin-row') || box;
     const el = document.createElement('div');
     el.className = view.className;
     el.textContent = view.text;
-    box.appendChild(el);
+    coinRow.appendChild(el);
     setTimeout(() => el.remove(), 1000);
 }
 
