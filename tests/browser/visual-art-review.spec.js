@@ -24,7 +24,7 @@ test('必要なら詳細設定を開いて人数を変え、その設定で開�
     await prepareSunset(page);
     const customSetup = page.locator('#customGameSetup');
     await expect(customSetup).toHaveJSProperty('open', false);
-    await customSetup.locator('summary').click();
+    await page.locator('#customGameSetup > summary').click();
     await expect(customSetup.locator('#playerCount')).toBeVisible();
     await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
     await expect(page.locator('#playerCount')).toHaveText('3人');

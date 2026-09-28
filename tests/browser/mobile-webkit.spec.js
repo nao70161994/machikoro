@@ -28,7 +28,7 @@ async function prepare(page) {
 async function startLocalGame(page) {
     const customSetup = page.locator('#customGameSetup');
     if (!await customSetup.evaluate(element => element.open)) {
-        await customSetup.locator('summary').click();
+        await page.locator('#customGameSetup > summary').click();
     }
     await page.locator('#btnStart').click();
     await expect(page.locator('#confirmModal')).toBeVisible();
@@ -397,6 +397,7 @@ test('320pxから480pxでpending中の長文toastが選択肢を隠さない', a
 
 test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達可能', async ({ page }) => {
     await prepare(page);
+    await page.locator('#customGameSetup > summary').click();
     await page.evaluate(() => {
         document.body.classList.add('pwa-banner-open');
         document.getElementById('pwaUpdateBanner').style.display = 'block';
@@ -589,6 +590,7 @@ test('320pxから480pxで長い手番名と終盤player情報が枠内に収ま�
 
 test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示する', async ({ page }) => {
     await prepare(page);
+    await page.locator('#customGameSetup > summary').click();
     await page.locator('#cpuSpeed').evaluate(input => {
         input.value = input.max;
         input.dispatchEvent(new Event('input', { bubbles: true }));
