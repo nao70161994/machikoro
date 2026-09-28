@@ -12,6 +12,7 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
     await prepareSunset(page);
 
     for (const width of [390, 1440]) {
+        await page.evaluate(() => document.getElementById('visual-art-review')?.remove());
         await page.setViewportSize({ width, height: 844 });
         await page.evaluate(async () => {
             await document.fonts.ready;

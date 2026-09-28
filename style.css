@@ -1470,6 +1470,7 @@ body.pwa-banner-open #gameScreen {
 
 body.pwa-banner-open #titleScreen {
     overflow-y: auto;
+    padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px));
     min-height: calc(100dvh - 112px - env(safe-area-inset-bottom, 0px));
     max-height: calc(100dvh - 112px - env(safe-area-inset-bottom, 0px));
 }
