@@ -143,7 +143,8 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         if (width === 390) {
             const mobileOrder = await page.evaluate(() => ({
                 display: getComputedStyle(document.querySelector('#gameScreen')).display,
-                buildIconDisplay: getComputedStyle(document.querySelector('#buildMenu h3 .build-menu-heading-icon')).display,
+                buildIconVisible: document.querySelector('#buildMenu h3 .build-menu-heading-icon')
+                    .getBoundingClientRect().width > 0,
                 buildEmojiDisplay: getComputedStyle(document.querySelector('#buildMenu h3 .build-menu-heading-emoji')).display,
                 playerTop: document.querySelector('.player-area').getBoundingClientRect().top,
                 actionTop: document.querySelector('.game-action-panel').getBoundingClientRect().top,
@@ -154,7 +155,7 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
                 viewportHeight: window.innerHeight,
             }));
             expect(mobileOrder.display).toBe('grid');
-            expect(mobileOrder.buildIconDisplay).toBe('inline-block');
+            expect(mobileOrder.buildIconVisible).toBe(true);
             expect(mobileOrder.buildEmojiDisplay).toBe('none');
             expect(mobileOrder.playerTop).toBeLessThan(mobileOrder.actionTop);
             expect(mobileOrder.actionTop).toBeLessThan(mobileOrder.buildTop);
