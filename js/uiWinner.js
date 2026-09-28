@@ -391,12 +391,27 @@ function drawResultCard(canvas, model) {
     context.restore();
 
     fillRoundRect(64, 48, 310, 42, 21, '#253e50', 'rgba(239, 201, 133, 0.7)', 1.5);
+    fillRoundRect(70, 53, 38, 31, 8, '#172d3c', 'rgba(239, 201, 133, 0.42)', 1);
+    fillRoundRect(75, 68, 7, 11, 1.5, '#e3c59a');
+    fillRoundRect(84, 63, 8, 16, 1.5, '#73928e');
+    fillRoundRect(94, 67, 7, 12, 1.5, '#dfbf91');
+    context.fillStyle = '#fff0c4';
+    context.fillRect(77, 71, 2, 2);
+    context.fillRect(86, 66, 2, 2);
+    context.fillRect(96, 70, 2, 2);
+    fillRoundRect(94, 54, 13, 13, 3, '#fff2d5', '#314b5c', 1);
+    for (const [pipX, pipY] of [[97, 57], [104, 57], [100.5, 60.5], [97, 64], [104, 64]]) {
+        context.beginPath();
+        context.arc(pipX, pipY, 0.9, 0, Math.PI * 2);
+        context.fillStyle = '#314b5c';
+        context.fill();
+    }
     context.fillStyle = '#f4ce83';
     context.font = 'bold 21px sans-serif';
-    context.fillText('DICE CITY', 84, 76);
+    context.fillText('DICE CITY', 116, 76);
     context.fillStyle = '#c1cbd0';
     context.font = '17px sans-serif';
-    context.fillText('対 戦 結 果', 214, 76);
+    context.fillText('対 戦 結 果', 250, 76);
 
     context.beginPath();
     context.arc(111, 175, 44, 0, Math.PI * 2);

@@ -170,6 +170,10 @@ runTest('ui winnerは結果画像用modelを順位順に固定してCanvasへ描
     assert.deepStrictEqual([canvas.width, canvas.height], [1200, 630]);
     assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('Bob')));
     assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('DICE CITY')));
+    assert.ok(calls.some(call => call[0] === 'roundRect' && call[1] === 70 && call[2] === 53),
+        'the share card repeats the title brand mark container');
+    assert.ok(calls.some(call => call[0] === 'roundRect' && call[1] === 94 && call[2] === 54),
+        'a die sits above the illustrated city in the share card mark');
     assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('最終コイン')));
     assert.ok(!calls.some(call => call[0] === 'fillText' && call[1] === '順位'),
         'the city illustration does not carry a detached standings heading');
