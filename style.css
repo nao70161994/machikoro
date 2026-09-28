@@ -4713,6 +4713,25 @@ html[data-design="sunset"] .winner-screen .sunset-town { margin: 18px 0; text-al
 html[data-design="sunset"] .winner-screen .town-building { width: 72px; }
 html[data-design="sunset"] body.accessibility-high-contrast .sunset-town { background: #000; border-color: #fff; color: #fff; }
 
+@media (min-width: 768px) {
+    html[data-design="sunset"] .winner-screen .sunset-town {
+        max-width: 760px;
+        margin: 18px auto;
+    }
+    html[data-design="sunset"] .winner-screen .town-street {
+        grid-template-columns: repeat(auto-fit, 160px);
+        gap: 8px;
+    }
+    html[data-design="sunset"] .winner-screen .town-building,
+    html[data-design="sunset"] .winner-screen .town-street > .town-building,
+    html[data-design="sunset"] .winner-screen .town-landmark {
+        width: 160px;
+    }
+    html[data-design="sunset"] .winner-screen .town-building .sunset-facility-art {
+        height: 80px;
+    }
+}
+
 html[data-design="sunset"] .winner-review-details {
     margin-top: 18px;
     padding: 0 12px;

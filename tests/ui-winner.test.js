@@ -4,6 +4,16 @@ const assert = require('assert');
 const UiWinner = require('../js/uiWinner');
 const { runTest } = require('./helpers/test-utils');
 
+runTest('夕暮れのPC勝利画面は育てた街を専用の広いイラスト列で見せる', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const styles = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.ok(styles.includes('@media (min-width: 768px) {\n    html[data-design="sunset"] .winner-screen .sunset-town'));
+    assert.ok(styles.includes('grid-template-columns: repeat(auto-fit, 160px);'));
+    assert.ok(styles.includes('html[data-design="sunset"] .winner-screen .town-building .sunset-facility-art {\n        height: 80px;'));
+    assert.ok(styles.includes('max-width: 760px;'));
+});
+
 runTest('winner reviewは正確な最終盤面と観測範囲を明示したlogを分ける', () => {
     const logTypes = { GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', DICE: 'dice' };
     const html = UiWinner.buildGameReview([
