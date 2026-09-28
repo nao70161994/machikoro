@@ -121,4 +121,35 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             });
         }
     }
+
+    await page.evaluate(() => document.getElementById('visual-art-review')?.remove());
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('#btnStart').click();
+    await page.locator('#confirmOkBtn').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const gameplayPath = testInfo.outputPath(`sunset-gameplay-${width}.png`);
+        await page.screenshot({ path: gameplayPath, fullPage: true, animations: 'disabled' });
+        await testInfo.attach(`sunset-gameplay-${width}.png`, {
+            path: gameplayPath,
+            contentType: 'image/png',
+        });
+    }
+
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        for (const name of game.enabledLandmarks) game.players[0].landmarks[name] = true;
+        render();
+    });
+    await expect(page.locator('.winner-screen')).toBeVisible();
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const resultPath = testInfo.outputPath(`sunset-result-${width}.png`);
+        await page.screenshot({ path: resultPath, fullPage: true, animations: 'disabled' });
+        await testInfo.attach(`sunset-result-${width}.png`, {
+            path: resultPath,
+            contentType: 'image/png',
+        });
+    }
 });
