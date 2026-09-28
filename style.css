@@ -5204,6 +5204,58 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaInstallBan
     box-shadow: 0 14px 40px rgba(5, 16, 26, 0.42), inset 0 1px rgba(255, 255, 255, 0.06);
 }
 
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner {
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    width: calc(100% - 24px);
+    max-width: 640px;
+    padding: 10px 12px;
+    border: 1px solid rgba(240, 190, 89, 0.48);
+    border-radius: 16px;
+    box-shadow: 0 14px 40px rgba(5, 16, 26, 0.42), inset 0 1px rgba(255, 255, 255, 0.06);
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner[style*="display: block"] {
+    display: grid !important;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner .pwa-banner-text {
+    min-width: 0;
+    margin: 0;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner .pwa-banner-actions {
+    align-items: center;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner .pwa-banner-btn {
+    min-height: 44px;
+    flex: 0 1 auto;
+    white-space: nowrap;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner .pwa-banner-dismiss {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+}
+
+@media (max-width: 360px) {
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        width: calc(100% - 16px);
+        padding: 8px 10px;
+    }
+
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner .pwa-banner-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 44px;
+    }
+}
+
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .pwa-banner-btn {
     background: linear-gradient(135deg, #f4c35d, #e9a83e);
     color: #18283a;

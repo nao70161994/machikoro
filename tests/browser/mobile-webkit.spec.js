@@ -275,6 +275,49 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
     await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
 });
 
+test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可能なまま表示する', async ({ page }) => {
+    await prepare(page);
+    await page.locator('#designThemeSelect').selectOption('sunset');
+    const banner = page.locator('#pwaUpdateBanner');
+    await expect(banner).toBeHidden();
+    await page.evaluate(() => {
+        document.body.classList.add('pwa-banner-open');
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
+    });
+    await expect(banner).toBeVisible();
+
+    for (const width of [320, 360, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const layout = await banner.evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            const update = element.querySelector('#pwaUpdateBtn').getBoundingClientRect();
+            const dismiss = element.querySelector('.pwa-banner-dismiss').getBoundingClientRect();
+            return {
+                display: getComputedStyle(element).display,
+                height: bounds.height,
+                left: bounds.left,
+                right: bounds.right,
+                bottom: bounds.bottom,
+                updateWidth: update.width,
+                updateHeight: update.height,
+                dismissWidth: dismiss.width,
+                dismissHeight: dismiss.height,
+                viewportWidth: document.documentElement.clientWidth,
+                viewportHeight: window.innerHeight,
+            };
+        });
+        expect(layout.display).toBe('grid');
+        expect(layout.height).toBeLessThanOrEqual(100);
+        expect(layout.left).toBeGreaterThanOrEqual(0);
+        expect(layout.right).toBeLessThanOrEqual(layout.viewportWidth);
+        expect(layout.bottom).toBeLessThanOrEqual(layout.viewportHeight);
+        expect(layout.updateWidth).toBeGreaterThanOrEqual(120);
+        expect(layout.updateHeight).toBeGreaterThanOrEqual(44);
+        expect(layout.dismissWidth).toBeGreaterThanOrEqual(44);
+        expect(layout.dismissHeight).toBeGreaterThanOrEqual(44);
+    }
+});
+
 test('install案内はタイトルだけに表示しゲーム操作へ持ち込まない', async ({ page }) => {
     await prepare(page);
     await page.evaluate(() => {
