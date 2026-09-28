@@ -2106,6 +2106,14 @@ button:not(:disabled):active {
 .accessibility-high-contrast .setting-section,
 .accessibility-high-contrast .player-box,
 .accessibility-high-contrast .card-btn { border-color: #fff !important; }
+.accessibility-high-contrast .local-game-setup {
+    border-color: #fff !important;
+    background: #000;
+}
+.accessibility-high-contrast .local-game-setup > summary,
+.accessibility-high-contrast .local-game-setup-copy small { color: #fff; }
+.accessibility-high-contrast .local-game-setup > summary::after { border-color: #fff; color: #ffe66d; }
+.accessibility-high-contrast .local-game-setup[open] > summary { border-bottom-color: #fff; }
 .accessibility-high-contrast button:focus-visible,
 .accessibility-high-contrast input:focus-visible,
 .accessibility-high-contrast select:focus-visible { outline: 4px solid #ffe66d !important; }
@@ -3660,6 +3668,46 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
 .setup-quick-play:active { transform: translateY(1px); }
 .setup-quick-play:focus-visible { outline: 3px solid #f4c542; outline-offset: 3px; }
 
+.local-game-setup {
+    margin-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid #476878;
+    border-radius: 14px;
+    background: rgba(20, 38, 56, 0.82);
+}
+.local-game-setup > summary {
+    display: flex;
+    min-height: 60px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    color: #f4ead5;
+    cursor: pointer;
+    list-style: none;
+}
+.local-game-setup > summary::-webkit-details-marker { display: none; }
+.local-game-setup > summary::after {
+    content: "+";
+    display: grid;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid #71899a;
+    border-radius: 50%;
+    color: #efc56d;
+    font-size: 20px;
+    line-height: 1;
+}
+.local-game-setup[open] > summary { border-bottom: 1px solid #476878; }
+.local-game-setup[open] > summary::after { content: "−"; }
+.local-game-setup > summary:focus-visible { outline: 3px solid #f4c542; outline-offset: -3px; }
+.local-game-setup-copy { display: grid; gap: 3px; min-width: 0; }
+.local-game-setup-copy strong { font-size: 14px; }
+.local-game-setup-copy small { color: #b9c6c7; font-size: 11px; font-weight: 400; }
+.local-game-setup-content { display: grid; gap: 10px; padding: 12px; }
+
 .resume-btn {
     flex: 1;
     min-width: 0;
@@ -4292,6 +4340,17 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .setup-quick-p
     color: #fff1da;
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .setup-quick-play-copy small { color: #d0d9d8; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .local-game-setup {
+    border-color: #71899a;
+    background: linear-gradient(135deg, #213548, #1b3042);
+    box-shadow: 0 5px 16px #08152224;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .local-game-setup > summary { color: #fff1da; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .local-game-setup > summary::after {
+    border-color: #71899a;
+    background: rgba(239, 196, 135, 0.1);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .local-game-setup-copy small { color: #d0d9d8; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-select button {
     background: #29465a;
     color: #ffe1a6;

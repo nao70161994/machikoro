@@ -26,6 +26,10 @@ async function prepare(page) {
 }
 
 async function startLocalGame(page) {
+    const customSetup = page.locator('#customGameSetup');
+    if (!await customSetup.evaluate(element => element.open)) {
+        await customSetup.locator('summary').click();
+    }
     await page.locator('#btnStart').click();
     await expect(page.locator('#confirmModal')).toBeVisible();
     await page.locator('#confirmOkBtn').click();
@@ -179,6 +183,7 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
 
 test('320pxから480pxでlocal/onlineの2人・10人設定が枠内に収まる', async ({ page }) => {
     await prepare(page);
+    await page.locator('#customGameSetup > summary').click();
 
     await expectPlayerSelectContained(page, '#playerSettings', 2);
     const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
@@ -197,6 +202,7 @@ test('320pxから480pxでlocal/onlineの2人・10人設定が枠内に収まる'
 
 test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領域を持つ', async ({ page }) => {
     await prepare(page);
+    await page.locator('#customGameSetup > summary').click();
 
     await expectPlayerSelectTapTargets(page, '#playerSettings', 2);
     const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
@@ -212,6 +218,7 @@ test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領�
 
 test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWAとfocusを隠さない', async ({ page }) => {
     await prepare(page);
+    await page.locator('#customGameSetup > summary').click();
 
     async function expectFixedCta(selector, focusSelector, width, height = 844) {
         await page.setViewportSize({ width, height });
@@ -832,6 +839,7 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
 
 test('320pxから480pxで建設shortcutが既存menuへ移動しPWA表示時も収まる', async ({ page }) => {
     await prepare(page);
+    await page.locator('#customGameSetup > summary').click();
     const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increasePlayerCount.click();
     const playerTypes = page.locator('#playerSettings .player-setting-select');

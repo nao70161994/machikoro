@@ -10,12 +10,30 @@ async function prepareSunset(page) {
 test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     await prepareSunset(page);
     await expect(page.locator('.setup-quick-play')).toContainText('CPUとすぐ遊ぶ');
+    await expect(page.locator('#customGameSetup')).toHaveJSProperty('open', false);
+    await expect(page.locator('#playerCount')).toBeHidden();
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
     const settings = await page.evaluate(() => GameSetupState.runtime.snapshot());
     expect(settings.selectedCount).toBe(2);
     expect(settings.playerSettings[0].type).toBe('human');
     expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
+});
+
+test('必要なら詳細設定を開いて人数を変え、その設定で開始できる', async ({ page }) => {
+    await prepareSunset(page);
+    const customSetup = page.locator('#customGameSetup');
+    await expect(customSetup).toHaveJSProperty('open', false);
+    await customSetup.locator('summary').click();
+    await expect(customSetup.locator('#playerCount')).toBeVisible();
+    await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
+    await expect(page.locator('#playerCount')).toHaveText('3人');
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#confirmModal')).toBeVisible();
+    await page.locator('#confirmOkBtn').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const settings = await page.evaluate(() => GameSetupState.runtime.snapshot());
+    expect(settings.selectedCount).toBe(3);
 });
 
 test('夕暮れ市場は出目・名称を主役にし価格を明確なチップで示す', async ({ page }, testInfo) => {
@@ -193,6 +211,7 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
 
     await page.evaluate(() => document.getElementById('visual-art-review')?.remove());
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('#customGameSetup > summary').click();
     await page.locator('#btnStart').click();
     await page.locator('#confirmOkBtn').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
