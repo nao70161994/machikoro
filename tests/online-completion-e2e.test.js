@@ -58,6 +58,10 @@ function restoreSnapshot(game, snapshot) {
     });
     game.currentPlayerIndex = snapshot.currentPlayerIndex;
     game.phase = snapshot.phase;
+    game.log = Array.isArray(snapshot.log) ? snapshot.log.map(entry => Object.assign({}, entry)) : [];
+    game.reviewSummary = snapshot.reviewSummary
+        ? JSON.parse(JSON.stringify(snapshot.reviewSummary))
+        : game.reviewSummary;
     game.lastDiceResult = snapshot.lastDiceResult;
     game.lastDice1 = snapshot.lastDice1;
     game.lastDice2 = snapshot.lastDice2;
