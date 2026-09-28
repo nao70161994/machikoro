@@ -859,7 +859,9 @@ test('スマホは建設フェーズの初期市場を建設可に絞り全て�
     const affordable = page.locator('#buildMenu [data-action="setCardFilter"][data-card-filter="affordable"]');
     const all = page.locator('#buildMenu [data-action="setCardFilter"][data-card-filter=""]');
     await expect(affordable).toHaveAttribute('aria-pressed', 'true');
+    await expect(affordable).toHaveClass(/\bactive\b/);
     await expect(all).toHaveAttribute('aria-pressed', 'false');
+    await expect(all).not.toHaveClass(/\bactive\b/);
     const affordableCount = await page.locator('#buildMenu .build-card-section .card-wrapper').count();
     expect(affordableCount).toBeGreaterThan(0);
     await page.screenshot({
