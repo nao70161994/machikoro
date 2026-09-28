@@ -53,6 +53,29 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
     }
 });
 
+test('デスクトップでは街の建物アートを広く見せる', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+
+    const town = page.locator('.player-box.active .sunset-town');
+    const firstBuilding = town.locator('.town-street > .town-building').first();
+    await expect(firstBuilding).toBeVisible();
+    const bounds = await firstBuilding.evaluate(element => {
+        const card = element.getBoundingClientRect();
+        const art = element.querySelector('.sunset-facility-art').getBoundingClientRect();
+        return { width: card.width, artHeight: art.height, cardRight: card.right };
+    });
+    expect(bounds.width).toBeGreaterThanOrEqual(108);
+    expect(bounds.artHeight).toBeGreaterThanOrEqual(72);
+    expect(bounds.cardRight).toBeLessThanOrEqual(1440);
+
+    const screenshotPath = testInfo.outputPath('sunset-desktop-city-1440.png');
+    await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-desktop-city-1440.png', { path: screenshotPath, contentType: 'image/png' });
+});
+
 test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで描画して記録する', async ({ page }, testInfo) => {
     test.setTimeout(120000);
     await prepareSunset(page);

@@ -4886,6 +4886,17 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
     html[data-design="sunset"] .town-building .sunset-facility-art { height: 56px; }
 }
 
+@media (min-width: 768px) {
+    html[data-design="sunset"] .player-area .town-street {
+        grid-template-columns: repeat(auto-fit, 108px);
+        gap: 8px;
+    }
+    html[data-design="sunset"] .player-area .town-building,
+    html[data-design="sunset"] .player-area .town-street > .town-building { width: 108px; }
+    html[data-design="sunset"] .player-area .town-building .sunset-facility-art { height: 72px; }
+    html[data-design="sunset"] .player-area .town-landmark { width: 66px; }
+}
+
 @media (max-width: 480px) {
     html[data-design="sunset"] #gameScreen[style*="display: block"] {
         display: grid !important;
