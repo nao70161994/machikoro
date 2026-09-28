@@ -219,6 +219,8 @@ npm run selfplay -- --games 10 --lite expert normal normal normal
 - `--details` を付けると各試合の勝者、ターン数、最終盤面サマリを表示します。
 - `--fast` は `expert` の探索を軽くした比較用モードです。
 - `--lite` はさらに軽い self-play 専用モードで、4 人戦 `expert` の比較・学習を回しやすくするためのものです。
+- `--landmarks 駅,ショッピングモール,遊園地,電波塔` のように有効ランドマークを指定できます。省略時は全6個です。
+- 4個と6個のゲーム時間を比べる場合は、人数とseedを固定して両条件を実行します。集計には平均ターン数と完走状況を使います。
 - `selfplay` / tuning の `expert` は未指定なら `default` プリセットを使います。実ゲームの `CPU（最強）` は `expertPurpose: "live"` かつ `expertPreset: "v2simple"` の realtime 軽量ロジックを使います。`eval-expert-*` は同じ live v2simple option を既定にしつつ、速度優先で `lite` 実行します。
 - 現在の `expert` は `winDistance` ベースの局面評価、未決着 lookahead の勝利距離差評価、局面依存の lookahead 深さ調整を含みます。
 - `TV` / `Business` / `Cleaning` の pending 選択には、相手の進行圧を使った専用補正が入っています。

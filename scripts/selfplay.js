@@ -96,6 +96,21 @@ function createShopStock(cards, playerCount = 2, runtime = null) {
     return stock;
 }
 
+function resolveEnabledLandmarks(runtime, requestedLandmarks) {
+    const allLandmarks = runtime.Player.landmarkNames();
+    if (requestedLandmarks == null) return new Set(allLandmarks);
+    const requested = requestedLandmarks instanceof Set
+        ? Array.from(requestedLandmarks)
+        : Array.isArray(requestedLandmarks) ? requestedLandmarks : [];
+    if (requested.length === 0) return new Set(allLandmarks);
+    const selected = new Set(requested);
+    const unknown = requested.filter(name => !allLandmarks.includes(name));
+    if (unknown.length > 0) {
+        throw new RangeError(`unknown selfplay landmark: ${unknown.join(', ')}`);
+    }
+    return new Set(allLandmarks.filter(name => selected.has(name)));
+}
+
 function resolveSelfplayDifficulties(difficulties) {
     return difficulties.slice();
 }
@@ -1228,7 +1243,7 @@ function simulateGame(options = {}) {
     runtime.Math.random = rng;
     runtime.__selfplayOptions = options;
     try {
-        game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
+        game.enabledLandmarks = resolveEnabledLandmarks(runtime, options.enabledLandmarks);
         let safety = 0;
         const maxSteps = integerOrDefault(options.maxSteps, 5000);
 
@@ -1262,6 +1277,7 @@ function simulateGame(options = {}) {
             } : null,
             fast: !!options.fast,
             lite: !!options.lite,
+            enabledLandmarks: Array.from(game.enabledLandmarks),
         };
         if (options.includeFinalState !== false) {
             result.finalState = game.players.map(player => summarizePlayer(player, game.enabledLandmarks));
@@ -1299,7 +1315,7 @@ function simulateGameLightweight(options = {}) {
     const previousRandom = runtime.Math.random;
     runtime.Math.random = rng;
     try {
-        game.enabledLandmarks = new Set(runtime.Player.landmarkNames());
+        game.enabledLandmarks = resolveEnabledLandmarks(runtime, options.enabledLandmarks);
         let safety = 0;
         const maxSteps = integerOrDefault(options.maxSteps, 5000);
         const rollQueue = options.rollQueue;
@@ -1320,6 +1336,7 @@ function simulateGameLightweight(options = {}) {
             expertPurpose: options.expertPurpose || 'training',
             fast: !!options.fast,
             lite: !!options.lite,
+            enabledLandmarks: Array.from(game.enabledLandmarks),
             finalState: null,
             traceEntries: null,
             buildStats: null,
@@ -1355,6 +1372,7 @@ function runSeries(options = {}) {
         throw new Error(`paired-seats requires games to be a multiple of player count: games=${games}, players=${players.length}`);
     }
     const runtime = options.runtime || loadRuntime({ includeRL: options.includeRL });
+    const enabledLandmarks = resolveEnabledLandmarks(runtime, options.enabledLandmarks);
     const collectMatchLog = options.collectMatchLog !== false;
     const collectBuildStats = options.collectBuildStats !== false;
     const collectBusinessStats = options.collectBusinessStats !== false;
@@ -1393,6 +1411,7 @@ function runSeries(options = {}) {
             difficulties: lineup,
             seed,
             maxSteps: options.maxSteps,
+            enabledLandmarks,
             profileStats: options.profileStats,
             cpuPurpose: options.cpuPurpose,
             expertPurpose: options.expertPurpose,
@@ -1481,6 +1500,7 @@ function runSeries(options = {}) {
     return {
         games: completedGames,
         players: players.slice(),
+        enabledLandmarks: Array.from(enabledLandmarks),
         wins,
         seatWins,
         exhausted,
@@ -1517,6 +1537,7 @@ function parseArgs(argv) {
     let ladder = false;
     let fast = false;
     let lite = false;
+    let enabledLandmarks = null;
     const players = [];
 
     for (let i = 0; i < argv.length; i++) {
@@ -1529,6 +1550,7 @@ function parseArgs(argv) {
         else if (arg === '--ladder') ladder = true;
         else if (arg === '--fast') fast = true;
         else if (arg === '--lite') lite = true;
+        else if (arg === '--landmarks') enabledLandmarks = (argv[++i] || '').split(',').map(name => name.trim()).filter(Boolean);
         else if (arg === '--expert-preset') expertPreset = argv[++i] || 'default';
         else if (arg === '--expert-flags') expertFlags = JSON.parse(argv[++i] || '{}');
         else if (arg === '--compare-presets') comparePresets = (argv[++i] || 'default').split(',').filter(Boolean);
@@ -1543,6 +1565,7 @@ function parseArgs(argv) {
         details,
         fast,
         lite,
+        enabledLandmarks,
         ladder,
         expertPreset,
         expertBehaviorFlags: expertFlags,
@@ -1564,7 +1587,7 @@ function printSeries(result, options = {}) {
         console.log(JSON.stringify(result, null, 2));
         return;
     }
-    console.log(`games=${result.games} players=${result.players.join(',')} expertPreset=${options.expertPreset || 'default'}`);
+    console.log(`games=${result.games} players=${result.players.join(',')} expertPreset=${options.expertPreset || 'default'} landmarks=${(result.enabledLandmarks || []).join('|')}`);
     for (const [difficulty, winCount] of Object.entries(result.wins)) {
         const rate = result.games > 0 ? ((winCount / result.games) * 100).toFixed(1) : '0.0';
         console.log(`${difficulty}: ${winCount} wins (${rate}%)`);
@@ -1626,6 +1649,7 @@ module.exports = {
     loadRuntime,
     createRng,
     createShopStock,
+    resolveEnabledLandmarks,
     resolveSelfplayDifficulties,
     createPlayers,
     actionToLabel,

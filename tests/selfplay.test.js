@@ -7,6 +7,7 @@ const {
     loadRuntime,
     createPlayers,
     createShopStock,
+    resolveEnabledLandmarks,
     playCpuStep,
     simulateGame,
     simulateGameLightweight,
@@ -222,6 +223,30 @@ runTest('simulateGameLightweight は10人rule-based lineupで例外なく進む'
     assert.strictEqual(result.difficulties.length, 10);
     assert.ok(result.turns > 0);
     assert.strictEqual(result.finalState, null);
+});
+
+runTest('selfplay は選択したランドマーク構成を勝利判定と結果に適用する', () => {
+    const runtime = loadRuntime({ includeRL: false });
+    const baseLandmarks = [...runtime.Player.landmarkNames()].slice(0, 4);
+    const enabled = resolveEnabledLandmarks(runtime, baseLandmarks);
+    assert.deepStrictEqual(Array.from(enabled), baseLandmarks);
+    assert.throws(() => resolveEnabledLandmarks(runtime, ['未知の施設']), /unknown selfplay landmark/);
+
+    const result = simulateGameLightweight({
+        difficulties: ['normal', 'normal'],
+        enabledLandmarks: baseLandmarks,
+        seed: 93,
+        maxSteps: 3000,
+        includeRL: false,
+    });
+    assert.deepStrictEqual(result.enabledLandmarks, baseLandmarks);
+    assert.strictEqual(result.exhausted, false);
+    assert.ok(result.winner >= 0);
+});
+
+runTest('selfplay CLI は比較用ランドマークを指定できる', () => {
+    const options = parseArgs(['--landmarks', '駅, 遊園地', 'normal', 'normal']);
+    assert.deepStrictEqual(options.enabledLandmarks, ['駅', '遊園地']);
 });
 
 runTest('simulateGameLightweight は5人以上の大施設初期在庫を人数分にする', () => {
