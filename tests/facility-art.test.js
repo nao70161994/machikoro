@@ -109,6 +109,8 @@ runTest('建物カードは業種を示す売場・構造の細部を維持す�
     assert.ok(art('general-store').includes('M22 32L80 8L138 32V38H22Z'));
     assert.ok(art('general-store').includes('M67 31H93V38H67Z'));
     assert.ok(art('general-store').includes('M33 61H48V67H33Z'));
+    assert.ok(art('general-store').includes('circle cx="12" cy="65" r="4.5"'), 'a delivery bicycle marks the neighborhood shop');
+    assert.ok(art('general-store').includes('M138 57H153V68H138Z'), 'a produce crate gives the storefront a distinct sidewalk scene');
     assert.ok(art('florist').includes('M28 61H48L46 69H30Z'));
     assert.ok((art('florist').match(/cx="122" cy="47"/g) || []).length === 1);
     assert.ok(art('pizzeria').includes('M59 61L72 53M61 61H79'));
