@@ -9,6 +9,8 @@ async function prepareSunset(page) {
 
 test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     await prepareSunset(page);
+    await expect(page.locator('#tabLocal')).toHaveText('この端末');
+    await expect(page.locator('#tabOnline')).toHaveText('オンライン');
     await expect(page.locator('.setup-quick-play')).toContainText('CPUとすぐ遊ぶ');
     await expect(page.locator('#customGameSetup')).toHaveJSProperty('open', false);
     await expect(page.locator('#playerCount')).toBeHidden();
@@ -23,6 +25,8 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
 test('必要なら詳細設定を開いて人数を変え、その設定で開始できる', async ({ page }) => {
     await prepareSunset(page);
     const customSetup = page.locator('#customGameSetup');
+    await expect(customSetup.locator('summary')).toContainText('家族・友人と遊ぶ');
+    await expect(customSetup.locator('summary')).toContainText('同じ端末で対戦');
     await expect(customSetup).toHaveJSProperty('open', false);
     await page.locator('#customGameSetup > summary').click();
     await expect(customSetup.locator('#playerCount')).toBeVisible();
