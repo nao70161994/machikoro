@@ -100,7 +100,7 @@ async function expectPlayerSelectContained(page, containerSelector, expectedCoun
             }));
         expect(layouts).toHaveLength(expectedCount);
         expect(layouts.every(layout => layout.contained && layout.withinViewport)).toBe(true);
-        const expectedDirection = (options.alwaysColumn || width <= 389) ? 'column' : 'row';
+        const expectedDirection = (options.alwaysColumn || width <= 420) ? 'column' : 'row';
         expect(layouts.every(layout => layout.flexDirection === expectedDirection)).toBe(true);
     }
 }
@@ -151,7 +151,7 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
             return registration.waiting && registration.waiting.state;
         })).toBe('installed');
         await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
-        await expect(page.locator('#pwaUpdateMsg')).toContainText('新バージョン');
+        await expect(page.locator('#pwaUpdateMsg')).toContainText('新しいバージョン');
         // Local games permit manual updates; automatic activation waits for the title.
         await expect(page.locator('#pwaUpdateBtn')).toBeEnabled();
         expect(await page.evaluate(() => window.MACHIKORO_CLIENT_VERSION)).toBe('webkit-e2e-v1');
@@ -246,15 +246,15 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
     });
     await page.waitForTimeout(400);
     for (const width of [320, 360, 390, 480]) {
-        await expectFixedCta('#btnStart', '#playerSettings select', width);
+        await expectFixedCta('#btnStart', '#playerSettings select[data-player-index="0"]', width);
     }
 
     const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increasePlayerCount.click();
     for (const width of [320, 360, 390, 480]) {
-        await expectFixedCta('#btnStart', '#playerSettings select', width);
+        await expectFixedCta('#btnStart', '#playerSettings select[data-player-index="0"]', width);
     }
-    await expectFixedCta('#btnStart', '#playerSettings select', 390, 500);
+    await expectFixedCta('#btnStart', '#playerSettings select[data-player-index="0"]', 390, 500);
 
     await page.locator('#tabOnline').click();
     for (const width of [320, 360, 390, 480]) {
@@ -346,7 +346,7 @@ test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達
 
     const modalCases = [
         { open: '[data-ui-action="showRules"]', modal: '#rulesModal', close: '[data-ui-action="closeRules"]' },
-        { open: '[data-ui-action="showCardSelect"]', modal: '#cardSelectModal', close: '[data-action="closeCardSelect"]' },
+        { open: '#tabContentLocal [data-ui-action="showCardSelect"]', modal: '#cardSelectModal', close: '[data-action="closeCardSelect"]' },
     ];
     for (const width of [320, 360, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });
@@ -552,7 +552,7 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
         }));
         expect(summaries.every(summary => summary.height >= 44 && summary.contained)).toBe(true);
         await compact.first().locator('summary').click();
-        await expect(compact.first()).toHaveAttribute('open', '');
+        await expect(compact.first()).toHaveJSProperty('open', true);
         const timeline = await page.locator('#turnTimeline').evaluate(element => {
             const bounds = element.getBoundingClientRect();
             const steps = [...element.querySelectorAll('.turn-timeline-step')];
