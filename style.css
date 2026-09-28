@@ -2230,6 +2230,20 @@ button:not(:disabled):active {
     text-decoration: none;
 }
 
+.player-navigation-icon {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+}
+
+html[data-design="sunset"] .player-navigation-link.destination {
+    gap: 6px;
+}
+
+html[data-design="sunset"] .player-navigation-icon {
+    color: #f2c878;
+}
+
 .player-navigation-link.active {
     color: #171321;
     background: #f0c040;

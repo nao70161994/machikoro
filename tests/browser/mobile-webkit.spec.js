@@ -605,6 +605,8 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
     }
     await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
+    await expect(page.locator('#playerNavigation .player-navigation-link.destination svg'))
+        .toHaveCount(2);
     let expandedPanelId = null;
 
     for (const width of [320, 360, 390, 480]) {

@@ -86,10 +86,16 @@ const UiPlayerDisplay = (() => {
             const current = isActive ? ' aria-current="true"' : '';
             return `<a class="player-navigation-link${isActive ? ' active' : ''}${isSelf ? ' self' : ''}" href="#${playerBoxId(index)}"${current}>${options.escapeHtml(label)}</a>`;
         }).join('');
-        const destinationLinks = [
-            ['#gameLogContainer', '📋 ログ'],
-            ['#buildMenu', '🏗️ 建設'],
-        ].map(([href, label]) => `<a class="player-navigation-link destination" href="${href}">${label}</a>`).join('');
+        const destinations = [
+            ['#gameLogContainer', 'ログ', '📋', 'log'],
+            ['#buildMenu', '建設', '🏗️', 'build'],
+        ];
+        const destinationLinks = destinations.map(([href, label, emoji, icon]) => {
+            const mark = options.useSunsetIcons
+                ? `<svg class="player-navigation-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#${icon}"></use></svg>`
+                : `${emoji} `;
+            return `<a class="player-navigation-link destination" href="${href}">${mark}${label}</a>`;
+        }).join('');
         return `<span class="player-navigation-items">${playerLinks}${destinationLinks}</span><span class="player-navigation-scroll-hint" aria-hidden="true">↔</span>`;
     }
 

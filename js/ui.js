@@ -931,6 +931,7 @@ function renderPlayers() {
     const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(currentGame.players, {
         currentPlayerIndex: currentGame.currentPlayerIndex,
         myPlayerIndex: onlineState.isOnlineGame ? onlineState.myPlayerIndex : -1,
+        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
         escapeHtml,
     });
     if (navigation) {

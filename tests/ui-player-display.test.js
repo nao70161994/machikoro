@@ -253,6 +253,18 @@ assert(navigationHtml.includes('自分：&lt;悪意&quot;名前&gt;'));
 assert(navigationHtml.includes('▶ プレイヤー5'));
 assert(navigationHtml.includes('href="#gameLogContainer">📋 ログ'));
 assert(navigationHtml.includes('href="#buildMenu">🏗️ 建設'));
+const sunsetNavigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(tenPlayers, {
+    currentPlayerIndex: 4,
+    myPlayerIndex: 0,
+    useSunsetIcons: true,
+    escapeHtml: String,
+});
+assert(sunsetNavigationHtml.includes('href="#gameLogContainer"><svg class="player-navigation-icon"'));
+assert(sunsetNavigationHtml.includes('href="#buildMenu"><svg class="player-navigation-icon"'));
+assert(sunsetNavigationHtml.includes('interface-ui.svg#log'));
+assert(sunsetNavigationHtml.includes('interface-ui.svg#build'));
+assert(!sunsetNavigationHtml.includes('📋'));
+assert(!sunsetNavigationHtml.includes('🏗️'));
 assert.strictEqual(UiPlayerDisplay.buildPlayerNavigationHtml(players, {
     currentPlayerIndex: 0,
     escapeHtml: String,
