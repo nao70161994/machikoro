@@ -16,6 +16,7 @@ function render(card) {
 }
 runTest('全施設の図版参照は同梱されたSVG symbolへ解決する', () => {
     const motifs = new Set();
+    assert.strictEqual(CARDS.length, 38, 'the complete facility set should be reviewed');
     for (const card of CARDS) {
         const match = render(card).match(/facility-art\.svg#([a-z-]+)/);
         assert.ok(match, card.name);
