@@ -3340,10 +3340,11 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.strictEqual(manifest.background_color, '#0f0e17');
     assert.strictEqual(manifest.theme_color, '#0f0e17');
     assert.strictEqual(manifest.orientation, 'portrait');
-    assert.deepStrictEqual(manifest.icons.map((icon) => icon.src).sort(), ['/icons/icon-192.png', '/icons/icon-512.png']);
-    assert.deepStrictEqual(manifest.icons.map((icon) => icon.sizes).sort(), ['192x192', '512x512']);
-    assert.ok(manifest.icons.every((icon) => icon.type === 'image/png'));
-    assert.ok(manifest.icons.every((icon) => icon.purpose === 'any maskable'));
+    assert.deepStrictEqual(manifest.icons.map((icon) => icon.src).sort(), ['/icons/dice-city-mark.svg', '/icons/icon-192.png', '/icons/icon-512.png']);
+    assert.deepStrictEqual(manifest.icons.find((icon) => icon.type === 'image/svg+xml'), {
+        src: '/icons/dice-city-mark.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any',
+    });
+    assert.ok(manifest.icons.filter((icon) => icon.type === 'image/png').every((icon) => icon.purpose === 'any maskable'));
     assert.strictEqual(webmanifest.name, 'ダイスシティ');
     assert.strictEqual(webmanifest.short_name, 'ダイスシティ');
     assert.strictEqual(webmanifest.description, 'ダイスシティ - オンライン・オフライン対応のブラウザボードゲーム');
@@ -3354,10 +3355,11 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.strictEqual(webmanifest.background_color, '#0f0e17');
     assert.strictEqual(webmanifest.theme_color, '#0f0e17');
     assert.strictEqual(webmanifest.orientation, 'portrait');
-    assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.src).sort(), ['/icons/icon-192.png', '/icons/icon-512.png']);
-    assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.sizes).sort(), ['192x192', '512x512']);
-    assert.ok(webmanifest.icons.every((icon) => icon.type === 'image/png'));
-    assert.ok(webmanifest.icons.every((icon) => icon.purpose === 'any maskable'));
+    assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.src).sort(), ['/icons/dice-city-mark.svg', '/icons/icon-192.png', '/icons/icon-512.png']);
+    assert.deepStrictEqual(webmanifest.icons.find((icon) => icon.type === 'image/svg+xml'), {
+        src: '/icons/dice-city-mark.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any',
+    });
+    assert.ok(webmanifest.icons.filter((icon) => icon.type === 'image/png').every((icon) => icon.purpose === 'any maskable'));
     const head = html.slice(html.indexOf('<head>'), html.indexOf('</head>'));
     assert.strictEqual((head.match(/<link rel="manifest"/g) || []).length, 1);
     assert.ok(head.includes('<link rel="manifest" href="/manifest.webmanifest">'));

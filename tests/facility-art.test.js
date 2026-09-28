@@ -9,8 +9,18 @@ const UiBuildMenu = require('../js/uiBuildMenu');
 const { runTest } = require('./helpers/test-utils');
 const sprite = fs.readFileSync(path.join(__dirname, '../icons/facility-art.svg'), 'utf8');
 const titleArt = fs.readFileSync(path.join(__dirname, '../icons/sunset-city.svg'), 'utf8');
+const brandMark = fs.readFileSync(path.join(__dirname, '../icons/dice-city-mark.svg'), 'utf8');
 const styles = fs.readFileSync(path.join(__dirname, '../style.css'), 'utf8');
 const generator = path.join(__dirname, '../scripts/create-facility-art.py');
+runTest('街とサイコロのブランドマークをタイトルとPWAメタデータで共有する', () => {
+    const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
+    const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '../manifest.json'), 'utf8'));
+    assert.match(brandMark, /viewBox="0 0 128 128"/);
+    assert.match(brandMark, /rotate\(11\)/, 'a readable die anchors the mark');
+    assert.match(html, /class="title-brand-mark" src="icons\/dice-city-mark\.svg"/);
+    assert.match(html, /property="og:image" content="\/icons\/icon-512\.png"/);
+    assert.ok(manifest.icons.some(icon => icon.src === '/icons/dice-city-mark.svg' && icon.type === 'image/svg+xml'));
+});
 function render(card) {
     return UiBuildMenu.renderBuildCardButton({ card, stock: 6, canBuildThis: true, escapeHtml: value => String(value), getEffectText: () => '' });
 }

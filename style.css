@@ -87,6 +87,24 @@ body.modal-open #gameScreen {
     padding-top: 24px;
 }
 
+.title-brand-lockup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 0 auto;
+}
+
+.title-brand-mark {
+    display: none;
+    width: clamp(48px, 13vw, 64px);
+    height: auto;
+    flex: 0 0 auto;
+    filter: drop-shadow(0 8px 16px rgba(3, 12, 20, 0.3));
+}
+
+.title-brand-type { min-width: 0; }
+
 .title-header h1 {
     max-width: 100%;
     font-size: clamp(24px, 9vw, 52px);
@@ -4425,9 +4443,11 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-review
         pointer-events: none;
         background: linear-gradient(90deg, #172a38 0%, rgba(23, 42, 56, 0.34) 22%, transparent 60%), linear-gradient(0deg, rgba(12, 25, 39, 0.64), transparent 56%);
     }
-    html[data-design="sunset"] .title-header h1,
-    html[data-design="sunset"] .title-header .title-logo-sub,
+    html[data-design="sunset"] .title-header .title-brand-lockup,
     html[data-design="sunset"] .title-header .title-buttons-row { position: relative; z-index: 1; }
+    html[data-design="sunset"] .title-header .title-brand-lockup { justify-content: flex-start; margin: 0; gap: 16px; }
+    html[data-design="sunset"] .title-header .title-brand-mark { display: block; width: 72px; border-radius: 18px; }
+    html[data-design="sunset"] .title-brand-type .title-logo-sub { margin-bottom: 0; }
     html[data-design="sunset"] .title-header h1 {
         margin: 0;
         font-size: clamp(38px, 4vw, 56px);
@@ -4598,6 +4618,9 @@ html[data-design="sunset"] .sunset-hero p {
     html[data-design="sunset"] .sunset-hero img { border-radius: 16px; }
 }
 html[data-design="sunset"] .title-header { padding-top: 4px; }
+html[data-design="sunset"] .title-brand-lockup { gap: 10px; }
+html[data-design="sunset"] .title-brand-mark { display: block; }
+html[data-design="sunset"] .title-brand-type .title-logo-sub { margin-bottom: 0; }
 html[data-design="sunset"] .title-logo-deco { display: none; }
 html[data-design="sunset"] .title-logo-sub { margin-bottom: 8px; }
 html[data-design="sunset"] .design-switcher {
