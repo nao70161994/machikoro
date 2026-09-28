@@ -899,7 +899,9 @@ function renderPlayers() {
         buildTownHtml: player => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection()),
         settings,
         currentPlayerIndex: currentGame.currentPlayerIndex,
-        compactInactive: currentGame.players.length >= 5,
+        compactInactive: currentGame.players.length >= 5 ||
+            (typeof window.matchMedia === 'function' &&
+                window.matchMedia('(max-width: 480px)').matches),
         myPlayerIndex: onlineState.isOnlineGame
             ? onlineState.myPlayerIndex
             : -1,
