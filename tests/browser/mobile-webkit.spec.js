@@ -285,6 +285,7 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
         document.getElementById('pwaUpdateBanner').style.display = 'block';
     });
     await expect(banner).toBeVisible();
+    await page.waitForTimeout(350);
 
     for (const width of [320, 360, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });
