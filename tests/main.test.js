@@ -3600,6 +3600,7 @@ runTest('Mobile WebKit release gateは実Service Worker二世代の更新を検�
     assert.ok(visualSpec.includes('expect(gallery.cards).toHaveLength(38)'));
     assert.ok(visualSpec.includes('expect(gallery.landmarks).toHaveLength(6)'));
     assert.ok(visualSpec.includes('testInfo.outputPath(`sunset-${width}-${galleryPage.label}.png`)'));
+    assert.ok(visualSpec.includes('await testInfo.attach(`sunset-${width}-${galleryPage.label}.png`'));
     assert.ok(workflow.includes('name: Upload WebKit visual review and diagnostics'));
     assert.ok(workflow.includes('if: ${{ always() }}'));
     assert.ok(workflow.includes('name: release-mobile-webkit-review'));

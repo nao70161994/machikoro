@@ -35,11 +35,16 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         // while the desktop hero has a larger editorial maximum width.
         expect(titleLayout.titleWidth).toBeGreaterThanOrEqual(Math.min(width * 0.8, 900));
         if (width >= 760) expect(titleLayout.brandRight).toBeLessThan(titleLayout.heroLeft);
+        const titleScreenshotPath = testInfo.outputPath(`sunset-title-${width}.png`);
         await page.screenshot({
-            path: testInfo.outputPath(`sunset-title-${width}.png`),
+            path: titleScreenshotPath,
             fullPage: true,
             scale: 'css',
             animations: 'disabled',
+        });
+        await testInfo.attach(`sunset-title-${width}.png`, {
+            path: titleScreenshotPath,
+            contentType: 'image/png',
         });
 
         const gallery = await page.evaluate(() => {
@@ -103,10 +108,15 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             expect(cardBounds.length).toBeGreaterThan(0);
             expect(cardBounds.every(card => card.left >= 0 && card.right <= width && card.top >= 0 && card.bottom <= 844)).toBe(true);
             expect(cardBounds.every(card => card.artWidth > 0 && card.artHeight > 0)).toBe(true);
+            const galleryScreenshotPath = testInfo.outputPath(`sunset-${width}-${galleryPage.label}.png`);
             await page.screenshot({
-                path: testInfo.outputPath(`sunset-${width}-${galleryPage.label}.png`),
+                path: galleryScreenshotPath,
                 scale: 'css',
                 animations: 'disabled',
+            });
+            await testInfo.attach(`sunset-${width}-${galleryPage.label}.png`, {
+                path: galleryScreenshotPath,
+                contentType: 'image/png',
             });
         }
     }
