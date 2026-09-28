@@ -231,7 +231,11 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
                     element.getBoundingClientRect().top >= bounds.top,
             };
         }, focusSelector);
-        expect(layout.position).toBe('fixed');
+        // The banner-open state deliberately returns the CTA to document flow
+        // so the fixed PWA banner cannot cover it.
+        // The banner-open state deliberately returns the CTA to document flow
+        // so the fixed PWA banner cannot cover it.
+        expect(layout.position).toBe('static');
         expect(layout.buttonContained).toBe(true);
         expect(layout.ctaLeft).toBeGreaterThanOrEqual(0);
         expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewportWidth);
@@ -530,6 +534,11 @@ test('320pxから480pxで長い手番名と終盤player情報が枠内に収ま�
 
 test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示する', async ({ page }) => {
     await prepare(page);
+    await page.locator('#cpuSpeed').evaluate(input => {
+        input.value = input.max;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     const increase = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increase.click();
     for (let index = 1; index < 10; index++) {
