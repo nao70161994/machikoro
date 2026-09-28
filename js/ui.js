@@ -896,6 +896,7 @@ function getPlayerSettingForRender(index, player) {
 const playerPanelRenderCache = new WeakMap();
 const playerPanelDisclosureCache = new WeakMap();
 const playerPanelDisclosureListeners = new WeakSet();
+const playerPanelDisclosureClickListeners = new WeakSet();
 
 function renderPlayers() {
     const currentGame = uiGameRuntimeSnapshot().game;
@@ -948,6 +949,21 @@ function renderPlayers() {
         }
     }
     const container = document.getElementById("players");
+    if (container && typeof container.addEventListener === 'function' &&
+            !playerPanelDisclosureClickListeners.has(container)) {
+        container.addEventListener('click', event => {
+            const summary = event.target?.closest?.('summary');
+            const panel = summary?.parentElement;
+            if (!panel?.matches?.('details.player-box-compact')) return;
+            event.preventDefault();
+            panel.open = !panel.open;
+            const disclosure = playerPanelDisclosureCache.get(container);
+            if (!disclosure) return;
+            if (panel.open) disclosure.openPanelIds.add(panel.id);
+            else disclosure.openPanelIds.delete(panel.id);
+        }, true);
+        playerPanelDisclosureClickListeners.add(container);
+    }
     if (container && typeof container.addEventListener === 'function' &&
             !playerPanelDisclosureListeners.has(container)) {
         container.addEventListener('toggle', event => {
