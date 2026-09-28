@@ -842,7 +842,7 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
     }
 });
 
-test('スマホは建設フェーズの初期市場を建設可に絞り全て選択を尊重する', async ({ page }) => {
+test('スマホは建設フェーズの初期市場を建設可に絞り全て選択を尊重する', async ({ page }, testInfo) => {
     await prepare(page);
     await page.locator('#designThemeSelect').selectOption('sunset');
     await startLocalGame(page);
@@ -860,6 +860,10 @@ test('スマホは建設フェーズの初期市場を建設可に絞り全て�
     await expect(all).toHaveAttribute('aria-pressed', 'false');
     const affordableCount = await page.locator('#buildMenu .build-card-section .card-wrapper').count();
     expect(affordableCount).toBeGreaterThan(0);
+    await page.screenshot({
+        path: testInfo.outputPath('mobile-buildable-market-default-390.png'),
+        fullPage: true,
+    });
 
     await all.click();
     await expect(all).toHaveAttribute('aria-pressed', 'true');
