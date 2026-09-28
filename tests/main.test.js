@@ -3583,6 +3583,8 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
 
 runTest('Mobile WebKit release gateは実Service Worker二世代の更新を検証する', () => {
     const spec = fs.readFileSync(path.join(__dirname, 'browser/mobile-webkit.spec.js'), 'utf8');
+    const visualSpec = fs.readFileSync(path.join(__dirname, 'browser/visual-art-review.spec.js'), 'utf8');
+    const workflow = fs.readFileSync(path.join(__dirname, '..', '.github/workflows/release-test.yml'), 'utf8');
     assert.ok(spec.includes("BUILD_HASH: buildHash"));
     assert.ok(spec.includes("'webkit-e2e-v1'"));
     assert.ok(spec.includes("'webkit-e2e-v2'"));
@@ -3594,6 +3596,13 @@ runTest('Mobile WebKit release gateは実Service Worker二世代の更新を検�
     assert.ok(spec.includes("page.locator('[data-ui-action=\"restartGame\"]')"));
     assert.ok(spec.includes("page.locator('#confirmOkBtn').click()"));
     assert.ok(!spec.includes('button.disabled = false'));
+    assert.ok(visualSpec.includes('for (const width of [390, 1440])'));
+    assert.ok(visualSpec.includes('expect(gallery.cards).toHaveLength(38)'));
+    assert.ok(visualSpec.includes('expect(gallery.landmarks).toHaveLength(6)'));
+    assert.ok(visualSpec.includes('testInfo.outputPath(`sunset-${width}-${galleryPage.label}.png`)'));
+    assert.ok(workflow.includes('name: Upload WebKit visual review and diagnostics'));
+    assert.ok(workflow.includes('if: ${{ always() }}'));
+    assert.ok(workflow.includes('name: release-mobile-webkit-review'));
 });
 
 runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ', () => {
