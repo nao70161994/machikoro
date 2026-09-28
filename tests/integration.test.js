@@ -255,7 +255,6 @@ runTest('integration: 購入後もrender step例外で操作不能にならな�
     rt.renderPending = function renderPendingCrash() { throw new Error('pending render boom'); };
 
     rt.onBuildCard('麦畑');
-    rt.__test.elements.confirmOkBtn.onclick();
 
     assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
     assert.strictEqual(rt.__test.getGame().phase, rt.GAME_PHASES.BUILD);
@@ -302,7 +301,6 @@ runTest('integration: 購入後watchdogは操作可能な通常待機をfreeze�
     game.currentPlayer().coins = 5;
 
     rt.onBuildCard('麦畑');
-    rt.__test.elements.confirmOkBtn.onclick();
     rt.__test.runIntervals(1);
     rt.__test.advanceTime(6000);
     assert.strictEqual(rt.__test.getCpuSchedulerHealth().stepScheduled, false);
@@ -331,7 +329,6 @@ runTest('integration: 建設後にskip disabledが遅れて残ってもstabilize
     game.currentPlayer().coins = 5;
 
     rt.onBuildCard('麦畑');
-    rt.__test.elements.confirmOkBtn.onclick();
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
 
     rt.__test.elements.btnSkip.disabled = true;
@@ -368,7 +365,6 @@ runTest('integration: 建設後unlockはrenderで再disabled化されたskipを�
     };
 
     rt.onBuildCard('麦畑');
-    rt.__test.elements.confirmOkBtn.onclick();
 
     assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
     assert.strictEqual(rt.__test.elements.btnSkip.disabled, false);
@@ -392,7 +388,6 @@ runTest('integration: 購入後操作不能をwatchdogが復旧できても通�
     game.currentPlayer().coins = 5;
 
     rt.onBuildCard('麦畑');
-    rt.__test.elements.confirmOkBtn.onclick();
     rt.__test.elements.btnSkip.disabled = true;
 
     rt.__test.runIntervals(1);
@@ -482,7 +477,6 @@ runTest('integration: 建設後にUI lockが残っても自分ターン操作を
     rt.__test.elements.btnSkip.disabled = true;
 
     rt.onBuildCard('麦畑');
-    rt.__test.elements.confirmOkBtn.onclick();
 
     assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
     assert.strictEqual(rt.__test.elements.gameScreen.inert, false);
@@ -1160,7 +1154,6 @@ runTest('integration: stale confirmModal が post-build の親lockを残して�
     game.currentPlayer().coins = 5;
 
     rt.onBuildCard('麦畑');
-    rt.__test.elements.confirmOkBtn.onclick();
     assert.strictEqual(rt.__test.getGame().builtThisTurn, true);
     rt.__test.setOnlineState({ isOnlineGame: false, myPlayerIndex: -1 });
 
@@ -2001,6 +1994,7 @@ runTest('integration: 正当なconfirmModal表示中はwatchdogが閉じない',
     game.currentPlayer().coins = 5;
 
     rt.onBuildCard('麦畑');
+    rt.doUndo();
     assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'flex');
     assert.strictEqual(rt.__test.elements.gameScreen.inert, true);
     assert.strictEqual(rt.window.__machikoroConfirmModalOpen, true);
@@ -2496,7 +2490,6 @@ runTest('integration: ランドマーク購入後もskip操作へ進める', () 
     game.currentPlayer().coins = 10;
 
     rt.onBuildLandmark('駅');
-    rt.__test.elements.confirmOkBtn.onclick();
 
     const activeGame = rt.__test.getGame();
     assert.strictEqual(activeGame.currentPlayer().landmarks['駅'], true);
@@ -2551,7 +2544,6 @@ runTest('integration: 人間の施設・ランドマーク建設はコイン表�
         rt.showCoinAnimation = (index, diff) => changes.push({ index, diff });
         if (landmark) rt.onBuildLandmark('駅');
         else rt.onBuildCard('麦畑');
-        rt.__test.elements.confirmOkBtn.onclick();
         assert.strictEqual(renderCount, 1, '購入後の再描画がコイン表示を消さない');
         assert.strictEqual(changes.length, 1);
         assert.ok(changes[0].diff < 0);

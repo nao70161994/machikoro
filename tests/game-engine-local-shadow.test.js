@@ -123,7 +123,6 @@ runTest('local human build/UndoはEngine shadow authorityでrollback前後を維
     const beforeCount = game.currentPlayer().countCard('麦畑');
 
     rt.onBuildCard('麦畑');
-    rt.__test.elements.confirmOkBtn.onclick();
 
     let outcome = rt.__test.getLocalGameEngineShadowOutcome();
     assert.strictEqual(outcome.report.status, 'authority-direct');
@@ -149,7 +148,6 @@ runTest('local human landmark buildはEngine shadow authorityでlegacy結果と�
     rt.__test.startBuildPhase({ coins: 20 });
 
     rt.onBuildLandmark('駅');
-    rt.__test.elements.confirmOkBtn.onclick();
 
     const outcome = rt.__test.getLocalGameEngineShadowOutcome();
     assert.strictEqual(outcome.report.status, 'authority-direct');

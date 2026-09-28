@@ -143,12 +143,12 @@ runTest('main human action runtimeはlocal card建設を共有action runtime経�
     const harness = createHarness();
     harness.runtime.onBuildCard('麦畑');
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
-        'traceBuild', 'showConfirm', 'traceBuild', 'saveUndoState', 'cancelAutoSkip',
+        'traceBuild', 'traceBuild', 'saveUndoState', 'cancelAutoSkip',
         'runAction', 'buildCard', 'decrementStock', 'traceBuild', 'playSound', 'render',
         'traceBuild', 'unlockHumanTurn', 'scheduleCpu',
     ]);
     assert.strictEqual(harness.stock.麦畑, 0);
-    assert.deepStrictEqual(harness.calls[5], [
+    assert.deepStrictEqual(harness.calls[4], [
         'runAction', 'buildCard', { cardName: '麦畑' }, { effects: false },
     ]);
 });
@@ -157,10 +157,10 @@ runTest('main human action runtimeはonline建設をlocal mutationなしで送�
     const harness = createHarness({ online: true });
     harness.runtime.onBuildLandmark('駅');
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
-        'traceBuild', 'showConfirm', 'traceBuild', 'saveUndoState', 'cancelAutoSkip',
+        'traceBuild', 'traceBuild', 'saveUndoState', 'cancelAutoSkip',
         'sendAction', 'traceBuild',
     ]);
-    assert.deepStrictEqual(harness.calls[5], ['sendAction', 'buildLandmark', { name: '駅' }]);
+    assert.deepStrictEqual(harness.calls[4], ['sendAction', 'buildLandmark', { name: '駅' }]);
 });
 
 runTest('main human action runtimeは空港skip確認後にUndoを消してnextTurnする', () => {
@@ -171,6 +171,17 @@ runTest('main human action runtimeは空港skip確認後にUndoを消してnextT
         'checkpoint', 'showConfirm', 'checkpoint', 'cancelAutoSkip', 'clearUndoState',
         'runAction', 'nextTurn', 'checkpoint',
     ]);
+});
+
+runTest('main human action runtimeは建設後のターン終了確認を省き、未建設時は確認する', () => {
+    const afterBuild = createHarness({ builtThisTurn: true });
+    afterBuild.runtime.onSkip();
+    assert.strictEqual(afterBuild.calls.some(call => call[0] === 'showConfirm'), false);
+    assert.ok(afterBuild.calls.some(call => call[0] === 'nextTurn'));
+
+    const withoutBuild = createHarness();
+    withoutBuild.runtime.onSkip();
+    assert.strictEqual(withoutBuild.calls.some(call => call[0] === 'showConfirm'), true);
 });
 
 runTest('main human action runtimeはBusiness Center不使用を同じactionのcanonical payloadで送る', () => {

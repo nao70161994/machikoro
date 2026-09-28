@@ -4796,6 +4796,33 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
 }
 
 @media (max-width: 480px) {
+    html[data-design="sunset"] #gameScreen[style*="display: block"] {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "status"
+            "connect"
+            "timeline"
+            "tutorial"
+            "players"
+            "actions"
+            "build"
+            "log"
+            "leave"
+            "restart";
+        gap: 8px;
+    }
+    html[data-design="sunset"] #status { grid-area: status; }
+    html[data-design="sunset"] #gameConnectivityPanel { grid-area: connect; }
+    html[data-design="sunset"] #turnTimeline { grid-area: timeline; }
+    html[data-design="sunset"] #tutorialBox { grid-area: tutorial; }
+    html[data-design="sunset"] .player-area { grid-area: players; min-width: 0; }
+    html[data-design="sunset"] .game-action-panel { grid-area: actions; }
+    html[data-design="sunset"] #buildMenu { grid-area: build; }
+    html[data-design="sunset"] #gameLogContainer { grid-area: log; }
+    html[data-design="sunset"] #onlineLeaveHelp { grid-area: leave; }
+    html[data-design="sunset"] #btnRestart { grid-area: restart; }
+
     html:not([data-design="sunset"]) #gameScreen[style*="display: block"] {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr);

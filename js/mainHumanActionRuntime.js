@@ -4,7 +4,7 @@ const MainHumanActionRuntime = (() => {
     function createRuntime(dependencies = {}) {
         const requiredObjects = [
             'actions', 'cards', 'document', 'landmarkNames', 'localActionPolicy',
-            'pageActivationRuntime', 'player', 'shopStock',
+            'pageActivationRuntime', 'shopStock',
         ];
         for (const name of requiredObjects) {
             if (!dependencies[name]) {
@@ -13,7 +13,7 @@ const MainHumanActionRuntime = (() => {
         }
         const requiredEffects = [
             'allowedActionsFor', 'cancelAutoSkip', 'checkpoint', 'clearUndoState',
-            'decrementStock', 'getActionFlightState', 'getGameState', 'getLandmarkEmoji', 'getOnlineState',
+            'decrementStock', 'getActionFlightState', 'getGameState', 'getOnlineState',
             'getStockCount', 'isReconnectBlocked', 'playSound', 'render', 'rollDie', 'runAction',
             'saveUndoState', 'scheduleCpu', 'sendAction', 'showConfirm', 'traceBuild',
             'unlockHumanTurn', 'updateDiceDisplay',
@@ -265,84 +265,76 @@ const MainHumanActionRuntime = (() => {
             const card = dependencies.cards.find(candidate => candidate.name === name);
             if (!card) return;
             const scheduledPlayerIndex = gameState().game.currentPlayerIndex;
-            dependencies.showConfirm(`${card.name}を建設しますか？\n💰 ${card.cost}コイン`, () => {
-                traceBuildFlow('card-confirmed', { cardName: name, scheduledPlayerIndex });
-                if (!canRunHumanAction(dependencies.actions.BUILD_CARD, scheduledPlayerIndex)) {
-                    traceBuildFlow('card-stale-action', { cardName: name, scheduledPlayerIndex });
-                    return;
-                }
-                if (dependencies.getStockCount(dependencies.shopStock, card) <= 0) {
-                    traceBuildFlow('card-out-of-stock', { cardName: name });
-                    return;
-                }
-                dependencies.saveUndoState();
-                dependencies.cancelAutoSkip();
-                if (onlineState().isOnlineGame) {
-                    const sent = dependencies.sendAction(
-                        dependencies.actions.BUILD_CARD,
-                        { cardName: name }
-                    );
-                    traceBuildFlow('card-online-send', { cardName: name, sent });
-                    return;
-                }
-                const built = dependencies.runAction(
+            traceBuildFlow('card-accepted', { cardName: name, scheduledPlayerIndex });
+            if (!canRunHumanAction(dependencies.actions.BUILD_CARD, scheduledPlayerIndex)) {
+                traceBuildFlow('card-stale-action', { cardName: name, scheduledPlayerIndex });
+                return;
+            }
+            if (dependencies.getStockCount(dependencies.shopStock, card) <= 0) {
+                traceBuildFlow('card-out-of-stock', { cardName: name });
+                return;
+            }
+            dependencies.saveUndoState();
+            dependencies.cancelAutoSkip();
+            if (onlineState().isOnlineGame) {
+                const sent = dependencies.sendAction(
                     dependencies.actions.BUILD_CARD,
-                    { cardName: name },
-                    () => {
-                        const applied = gameState().game.buildCard(card);
-                        if (applied) dependencies.decrementStock(dependencies.shopStock, card);
-                        return applied;
-                    },
-                    { effects: false }
+                    { cardName: name }
                 );
-                if (!built) return;
-                traceBuildFlow('card-applied', { cardName: name });
-                dependencies.playSound('build');
-                dependencies.render();
-                traceBuildFlow('card-rendered', { cardName: name });
-                dependencies.unlockHumanTurn('build-card-human-turn-unlock');
-                dependencies.scheduleCpu();
-            });
+                traceBuildFlow('card-online-send', { cardName: name, sent });
+                return;
+            }
+            const built = dependencies.runAction(
+                dependencies.actions.BUILD_CARD,
+                { cardName: name },
+                () => {
+                    const applied = gameState().game.buildCard(card);
+                    if (applied) dependencies.decrementStock(dependencies.shopStock, card);
+                    return applied;
+                },
+                { effects: false }
+            );
+            if (!built) return;
+            traceBuildFlow('card-applied', { cardName: name });
+            dependencies.playSound('build');
+            dependencies.render();
+            traceBuildFlow('card-rendered', { cardName: name });
+            dependencies.unlockHumanTurn('build-card-human-turn-unlock');
+            dependencies.scheduleCpu();
         }
 
         function onBuildLandmark(name) {
             if (!canRunHumanAction(dependencies.actions.BUILD_LANDMARK)) return;
             traceBuildFlow('landmark-request', { landmarkName: name });
-            const cost = dependencies.player.landmarkCost(name);
             const scheduledPlayerIndex = gameState().game.currentPlayerIndex;
-            dependencies.showConfirm(
-                `${dependencies.getLandmarkEmoji(name)} ${name}を建設しますか？\n💰 ${cost}コイン`,
-                () => {
-                    traceBuildFlow('landmark-confirmed', { landmarkName: name, scheduledPlayerIndex });
-                    if (!canRunHumanAction(dependencies.actions.BUILD_LANDMARK, scheduledPlayerIndex)) {
-                        traceBuildFlow('landmark-stale-action', { landmarkName: name, scheduledPlayerIndex });
-                        return;
-                    }
-                    dependencies.saveUndoState();
-                    dependencies.cancelAutoSkip();
-                    if (onlineState().isOnlineGame) {
-                        const sent = dependencies.sendAction(
-                            dependencies.actions.BUILD_LANDMARK,
-                            { name }
-                        );
-                        traceBuildFlow('landmark-online-send', { landmarkName: name, sent });
-                        return;
-                    }
-                    const built = dependencies.runAction(
-                        dependencies.actions.BUILD_LANDMARK,
-                        { name },
-                        () => gameState().game.buildLandmark(name),
-                        { effects: false }
-                    );
-                    if (!built) return;
-                    traceBuildFlow('landmark-applied', { landmarkName: name });
-                    dependencies.playSound('build');
-                    dependencies.render();
-                    traceBuildFlow('landmark-rendered', { landmarkName: name });
-                    dependencies.unlockHumanTurn('build-landmark-human-turn-unlock');
-                    dependencies.scheduleCpu();
-                }
+            traceBuildFlow('landmark-accepted', { landmarkName: name, scheduledPlayerIndex });
+            if (!canRunHumanAction(dependencies.actions.BUILD_LANDMARK, scheduledPlayerIndex)) {
+                traceBuildFlow('landmark-stale-action', { landmarkName: name, scheduledPlayerIndex });
+                return;
+            }
+            dependencies.saveUndoState();
+            dependencies.cancelAutoSkip();
+            if (onlineState().isOnlineGame) {
+                const sent = dependencies.sendAction(
+                    dependencies.actions.BUILD_LANDMARK,
+                    { name }
+                );
+                traceBuildFlow('landmark-online-send', { landmarkName: name, sent });
+                return;
+            }
+            const built = dependencies.runAction(
+                dependencies.actions.BUILD_LANDMARK,
+                { name },
+                () => gameState().game.buildLandmark(name),
+                { effects: false }
             );
+            if (!built) return;
+            traceBuildFlow('landmark-applied', { landmarkName: name });
+            dependencies.playSound('build');
+            dependencies.render();
+            traceBuildFlow('landmark-rendered', { landmarkName: name });
+            dependencies.unlockHumanTurn('build-landmark-human-turn-unlock');
+            dependencies.scheduleCpu();
         }
 
         function onSkip() {
@@ -361,7 +353,7 @@ const MainHumanActionRuntime = (() => {
                 message = '建設せずにターン終了しますか？';
             }
             const scheduledPlayerIndex = currentGame.currentPlayerIndex;
-            dependencies.showConfirm(message, () => {
+            const finishTurn = () => {
                 dependencies.checkpoint('skip-confirmed', { scheduledPlayerIndex });
                 if (!canRunHumanAction(dependencies.actions.NEXT_TURN, scheduledPlayerIndex)) {
                     dependencies.checkpoint('skip-stale-action', { scheduledPlayerIndex });
@@ -375,7 +367,12 @@ const MainHumanActionRuntime = (() => {
                     () => gameState().game.nextTurn()
                 );
                 dependencies.checkpoint('skip-nextTurn-returned', { result });
-            });
+            };
+            if (currentGame.builtThisTurn) {
+                finishTurn();
+                return;
+            }
+            dependencies.showConfirm(message, finishTurn);
         }
 
         return Object.freeze({
