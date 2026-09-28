@@ -4985,14 +4985,12 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
     html[data-design="sunset"] #onlineLeaveHelp { grid-area: leave; }
     html[data-design="sunset"] #btnRestart { grid-area: restart; }
     html[data-design="sunset"] .player-box-compact > summary {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        position: relative;
         min-height: 52px;
-        padding: 6px 10px;
+        padding: 6px 36px 6px 10px;
     }
     html[data-design="sunset"] .player-box-compact .player-header {
-        flex: 1 1 auto;
+        width: 100%;
         flex-wrap: nowrap;
         min-width: 0;
         gap: 4px 8px;
@@ -5008,16 +5006,21 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
         margin-left: auto;
     }
     html[data-design="sunset"] .player-box-compact .player-detail-hint {
-        flex: 0 0 auto;
+        position: absolute;
+        top: 50%;
+        right: 10px;
         margin: 0;
+        transform: translateY(-50%);
         font-size: 0;
+        line-height: 1;
     }
     html[data-design="sunset"] .player-box-compact .player-detail-hint::before {
         content: "＋";
         font-size: 16px;
     }
+    html[data-design="sunset"] .player-box-compact[open] .player-detail-hint::before { content: "−"; }
     html[data-design="sunset"] .player-box-compact[open] .player-detail-hint::after {
-        font-size: 12px;
+        content: none;
     }
 
     html:not([data-design="sunset"]) #gameScreen[style*="display: block"] {
