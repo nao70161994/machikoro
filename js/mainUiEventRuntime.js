@@ -3,7 +3,7 @@
 const MainUiEventRuntime = (() => {
     const STATIC_COMMANDS = Object.freeze([
         'showRules', 'showCardSelect', 'reconnectOnline', 'deleteOnlineSession', 'switchTab',
-        'changeCount', 'startGame', 'reviewGameSetup', 'resumeGame', 'deleteSavedGame', 'switchOnlineTab',
+        'changeCount', 'startGame', 'startQuickCpuGame', 'reviewGameSetup', 'resumeGame', 'deleteSavedGame', 'switchOnlineTab',
         'changeOnlineCount', 'showCreateRoom', 'joinRoom', 'toggleTutorial',
         'cycleTutorialLevel', 'onRoll', 'onReroll', 'onSkip', 'toggleLog', 'restartGame', 'rematchLocalGame', 'requestOnlineRematch', 'declineOnlineRematch',
         'closeRules', 'closeCardDetail', 'hideNotice', 'crashResume', 'pwaInstallPrompt',
