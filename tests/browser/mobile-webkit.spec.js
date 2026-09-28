@@ -590,6 +590,7 @@ test('320pxから480pxで長い手番名と終盤player情報が枠内に収ま�
 
 test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示する', async ({ page }) => {
     await prepare(page);
+    await page.locator('#designThemeSelect').selectOption('sunset');
     await page.locator('#customGameSetup > summary').click();
     await page.locator('#cpuSpeed').evaluate(input => {
         input.value = input.max;
@@ -615,9 +616,11 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
             return {
                 height: bounds.height,
                 contained: bounds.left >= 0 && bounds.right <= document.documentElement.clientWidth,
+                coinVisible: !!element.querySelector('.player-coins'),
             };
         }));
-        expect(summaries.every(summary => summary.height >= 44 && summary.contained)).toBe(true);
+        expect(summaries.every(summary => summary.height >= 44 && summary.height <= 60 &&
+            summary.contained && summary.coinVisible)).toBe(true);
         if (!expandedPanelId) {
             const panel = compact.first();
             expandedPanelId = await panel.getAttribute('id');
