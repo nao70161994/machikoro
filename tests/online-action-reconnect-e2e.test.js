@@ -128,7 +128,6 @@ async function verifyClientUiActions(origin) {
         });
         await perform(() => {
             click('buildCard', '麦畑');
-            client.__test.elements.confirmOkBtn.onclick();
         });
         runtimes.forEach((entry, index) => {
             assert.strictEqual(entry.__test.getGame().currentPlayer().coins, before[index] - 1);

@@ -132,13 +132,13 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         if (width === 390) {
             const mobileOrder = await page.evaluate(() => ({
                 display: getComputedStyle(document.querySelector('#gameScreen')).display,
-                playerRow: getComputedStyle(document.querySelector('.player-area')).gridRowStart,
-                actionRow: getComputedStyle(document.querySelector('.game-action-panel')).gridRowStart,
-                buildRow: getComputedStyle(document.querySelector('#buildMenu')).gridRowStart,
+                playerTop: document.querySelector('.player-area').getBoundingClientRect().top,
+                actionTop: document.querySelector('.game-action-panel').getBoundingClientRect().top,
+                buildTop: document.querySelector('#buildMenu').getBoundingClientRect().top,
             }));
             expect(mobileOrder.display).toBe('grid');
-            expect(Number(mobileOrder.playerRow)).toBeLessThan(Number(mobileOrder.actionRow));
-            expect(Number(mobileOrder.actionRow)).toBeLessThan(Number(mobileOrder.buildRow));
+            expect(mobileOrder.playerTop).toBeLessThan(mobileOrder.actionTop);
+            expect(mobileOrder.actionTop).toBeLessThan(mobileOrder.buildTop);
         }
         const gameplayPath = testInfo.outputPath(`sunset-gameplay-${width}.png`);
         await page.screenshot({ path: gameplayPath, fullPage: false, animations: 'disabled' });
