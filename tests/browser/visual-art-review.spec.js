@@ -130,7 +130,7 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
         const gameplayPath = testInfo.outputPath(`sunset-gameplay-${width}.png`);
-        await page.screenshot({ path: gameplayPath, fullPage: true, animations: 'disabled' });
+        await page.screenshot({ path: gameplayPath, fullPage: false, animations: 'disabled' });
         await testInfo.attach(`sunset-gameplay-${width}.png`, {
             path: gameplayPath,
             contentType: 'image/png',
