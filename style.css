@@ -5232,6 +5232,7 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBann
 
 html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner .pwa-banner-btn {
     min-height: 44px;
+    min-width: 128px;
     flex: 0 1 auto;
     white-space: nowrap;
 }
@@ -5253,6 +5254,11 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBann
     html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner .pwa-banner-actions {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 44px;
+    }
+
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner .pwa-banner-btn {
+        width: 100%;
+        min-width: 0;
     }
 }
 
