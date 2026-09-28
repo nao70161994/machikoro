@@ -143,6 +143,7 @@ runTest('ui winnerは結果画像用modelを順位順に固定してCanvasへ描
         arc: (...args) => calls.push(['arc', ...args]),
         moveTo: (...args) => calls.push(['moveTo', ...args]),
         lineTo: (...args) => calls.push(['lineTo', ...args]),
+        ellipse: (...args) => calls.push(['ellipse', ...args]),
         quadraticCurveTo: (...args) => calls.push(['quadraticCurveTo', ...args]),
         closePath: () => calls.push(['closePath']),
         fill: () => calls.push(['fill']),
@@ -164,6 +165,8 @@ runTest('ui winnerは結果画像用modelを順位順に固定してCanvasへ描
         'the city illustration does not carry a detached standings heading');
     assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('20 コイン')));
     assert.ok(calls.some(call => call[0] === 'arc'), 'the result card draws its own medal and city sun');
+    assert.ok(calls.filter(call => call[0] === 'ellipse').length >= 4, 'the city skyline has shaped building shadows');
+    assert.ok(calls.filter(call => call[0] === 'lineTo').length >= 80, 'the city artwork draws framed facades and distinct rooflines');
     assert.ok(calls.some(call => call[0] === 'roundRect'), 'the result card uses finished score panels');
     assert.ok(!calls.some(call => call[0] === 'fillText' && /🏆/.test(String(call[1]))), 'the share image does not depend on emoji fonts');
 });
@@ -331,7 +334,7 @@ runTest('所持コイン最下位でもランドマークを完成させた勝�
     const context = {
         fillRect() {}, fillText(text) { labels.push(text); },
         createLinearGradient() { return { addColorStop() {} }; },
-        beginPath() {}, arc() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, closePath() {},
+        beginPath() {}, arc() {}, ellipse() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, closePath() {},
         fill() {}, stroke() {}, roundRect() {}, rect() {}, save() {}, restore() {},
         measureText(value) { return { width: String(value).length * 20 }; },
         textAlign: 'left', fillStyle: '', font: '',

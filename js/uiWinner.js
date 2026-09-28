@@ -261,37 +261,117 @@ function drawResultCard(canvas, model) {
     context.closePath();
     context.fillStyle = '#354d5a';
     context.fill();
+    const drawCityPolygon = (points, fill, stroke = '#293f4a', lineWidth = 2) => {
+        context.beginPath();
+        context.moveTo(points[0][0], points[0][1]);
+        for (let index = 1; index < points.length; index++) {
+            context.lineTo(points[index][0], points[index][1]);
+        }
+        context.closePath();
+        context.fillStyle = fill;
+        context.fill();
+        if (stroke) {
+            context.strokeStyle = stroke;
+            context.lineWidth = lineWidth;
+            context.stroke();
+        }
+    };
+    const drawCityLine = (points, color, lineWidth = 2) => {
+        context.beginPath();
+        context.moveTo(points[0][0], points[0][1]);
+        for (let index = 1; index < points.length; index++) {
+            context.lineTo(points[index][0], points[index][1]);
+        }
+        context.strokeStyle = color;
+        context.lineWidth = lineWidth;
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.stroke();
+    };
+    const drawCityWindow = (x, y, width, height, warm = true) => {
+        context.fillStyle = '#344d57';
+        context.fillRect(x - 3, y - 3, width + 6, height + 6);
+        context.fillStyle = warm ? '#f7dfa9' : '#9bbab6';
+        context.fillRect(x, y, width, height);
+        context.fillStyle = warm ? 'rgba(255, 245, 213, 0.42)' : 'rgba(220, 239, 226, 0.44)';
+        context.fillRect(x + 2, y + 2, Math.max(2, width * 0.24), height - 4);
+        drawCityLine([[x + width / 2, y], [x + width / 2, y + height]], '#526a69', 1.5);
+        drawCityLine([[x, y + height / 2], [x + width, y + height / 2]], '#526a69', 1.5);
+        drawCityLine([[x + 1, y + 1], [x + width - 1, y + 1]], 'rgba(255, 247, 222, 0.74)', 1);
+    };
     const buildings = [
-        { x: 784, y: 203, w: 68, h: 112, color: '#dbc69f', roof: '#986d68', rows: 3, cols: 2 },
-        { x: 862, y: 165, w: 82, h: 150, color: '#e7d1a9', roof: '#557d83', rows: 4, cols: 3 },
-        { x: 958, y: 221, w: 63, h: 94, color: '#b9a88c', roof: '#8a708a', rows: 2, cols: 2 },
-        { x: 1035, y: 183, w: 91, h: 132, color: '#e4caa1', roof: '#a86f5b', rows: 3, cols: 3 },
+        { type: 'home', x: 784, y: 203, w: 68, h: 112, color: '#dbc69f', roof: '#986d68' },
+        { type: 'shop', x: 862, y: 165, w: 82, h: 150, color: '#e7d1a9', roof: '#557d83' },
+        { type: 'tower', x: 958, y: 221, w: 63, h: 94, color: '#b9a88c', roof: '#8a708a' },
+        { type: 'home', x: 1035, y: 183, w: 91, h: 132, color: '#e4caa1', roof: '#a86f5b' },
     ];
     for (const building of buildings) {
-        context.fillStyle = 'rgba(13, 29, 41, 0.32)';
-        context.fillRect(building.x + 7, building.y + 8, building.w, building.h);
-        context.fillStyle = building.color;
-        context.fillRect(building.x, building.y, building.w, building.h);
-        context.fillStyle = building.roof;
+        const { type, x, y, w, h, color, roof } = building;
+        const ground = y + h;
+        context.fillStyle = 'rgba(13, 29, 41, 0.34)';
         context.beginPath();
-        context.moveTo(building.x - 8, building.y + 2);
-        context.lineTo(building.x + building.w / 2, building.y - 27);
-        context.lineTo(building.x + building.w + 8, building.y + 2);
-        context.closePath();
+        context.ellipse(x + w / 2 + 7, ground + 7, w * 0.64, 9, 0, 0, Math.PI * 2);
         context.fill();
-        context.fillStyle = '#f8dfad';
-        for (let row = 0; row < building.rows; row++) {
-            for (let col = 0; col < building.cols; col++) {
-                const windowWidth = 10;
-                const windowHeight = 12;
-                const spacing = (building.w - building.cols * windowWidth) / (building.cols + 1);
-                context.fillRect(
-                    building.x + spacing + col * (windowWidth + spacing),
-                    building.y + 15 + row * 25,
-                    windowWidth,
-                    windowHeight
-                );
+        drawCityPolygon([[x + w - 14, y + 8], [x + w + 7, y + 1], [x + w + 7, ground - 2], [x + w - 14, ground + 5]], '#b49d7f', '#293f4a', 1.5);
+        drawCityPolygon([[x, y + 3], [x + w, y + 3], [x + w, ground], [x, ground]], color, '#293f4a', 2);
+        context.fillStyle = 'rgba(65, 75, 75, 0.22)';
+        context.fillRect(x + w - 13, y + 5, 7, h - 9);
+
+        if (type === 'tower') {
+            drawCityPolygon([[x - 7, y + 3], [x + w / 2, y - 24], [x + w + 7, y + 3], [x + w - 2, y + 12], [x + 2, y + 12]], roof, '#293f4a', 2);
+            drawCityLine([[x + 7, y + 5], [x + w / 2, y - 15], [x + w - 7, y + 5]], '#cbb8c1', 2);
+            context.beginPath();
+            context.arc(x + w / 2, y + 23, 10, 0, Math.PI * 2);
+            context.fillStyle = '#f5dfad';
+            context.fill();
+            context.strokeStyle = '#344d57';
+            context.lineWidth = 2;
+            context.stroke();
+            drawCityLine([[x + w / 2, y + 23], [x + w / 2, y + 17]], '#344d57', 1.7);
+            drawCityLine([[x + w / 2, y + 23], [x + w / 2 + 5, y + 25]], '#344d57', 1.7);
+            drawCityWindow(x + 10, y + 45, 13, 18, false);
+            drawCityWindow(x + w - 23, y + 45, 13, 18, true);
+            drawCityPolygon([[x + w / 2 - 8, ground - 31], [x + w / 2 + 8, ground - 31], [x + w / 2 + 8, ground], [x + w / 2 - 8, ground]], '#596d70', '#293f4a', 1.5);
+            context.fillStyle = '#f1d298';
+            context.fillRect(x + w / 2 + 4, ground - 17, 2, 3);
+        } else if (type === 'shop') {
+            drawCityPolygon([[x - 7, y + 8], [x + 8, y - 12], [x + w - 8, y - 12], [x + w + 7, y + 8]], roof, '#293f4a', 2.5);
+            drawCityLine([[x + 5, y + 5], [x + 16, y - 8], [x + w - 14, y - 8]], '#a9c3b7', 2);
+            drawCityWindow(x + 15, y + 18, 14, 19, false);
+            drawCityWindow(x + 51, y + 18, 14, 19, true);
+            context.fillStyle = '#9f675d';
+            context.fillRect(x + 7, y + 43, w - 14, 12);
+            for (let stripe = 0; stripe < 5; stripe++) {
+                context.fillStyle = stripe % 2 ? '#f2dec0' : '#d98b6d';
+                context.fillRect(x + 8 + stripe * ((w - 16) / 5), y + 43, (w - 16) / 5, 11);
             }
+            context.fillStyle = '#d2ad72';
+            context.fillRect(x + 7, y + 53, w - 14, 3);
+            drawCityWindow(x + 12, y + 64, 25, 30, true);
+            drawCityWindow(x + 45, y + 64, 25, 30, false);
+            drawCityPolygon([[x + w / 2 - 8, ground - 37], [x + w / 2 + 8, ground - 37], [x + w / 2 + 8, ground], [x + w / 2 - 8, ground]], '#536c70', '#293f4a', 1.5);
+            context.fillStyle = '#efd197';
+            context.fillRect(x + w / 2 + 3, ground - 20, 2, 3);
+            drawCityLine([[x + 5, ground - 4], [x + w - 5, ground - 4]], '#f0d7a3', 2);
+        } else {
+            const roofPeak = y - (w > 75 ? 24 : 27);
+            drawCityPolygon([[x - 8, y + 4], [x + w / 2, roofPeak], [x + w + 8, y + 4], [x + w, y + 12], [x, y + 12]], roof, '#293f4a', 2.5);
+            drawCityLine([[x + 10, y + 4], [x + w / 2, roofPeak + 8], [x + w - 10, y + 4]], '#efc49b', 2);
+            if (w > 75) {
+                drawCityPolygon([[x + w / 2 - 8, roofPeak + 12], [x + w / 2 + 8, roofPeak + 12], [x + w / 2 + 8, roofPeak + 26], [x + w / 2 - 8, roofPeak + 26]], '#7d737f', '#293f4a', 1.3);
+            }
+            const windowY = y + 24;
+            drawCityWindow(x + 10, windowY, 14, 17, true);
+            drawCityWindow(x + w - 24, windowY, 14, 17, false);
+            if (h > 120) {
+                drawCityWindow(x + 12, windowY + 30, 13, 16, false);
+                drawCityWindow(x + w - 25, windowY + 30, 13, 16, true);
+            }
+            const doorWidth = w > 75 ? 18 : 15;
+            drawCityPolygon([[x + w / 2 - doorWidth / 2 - 3, ground - 35], [x + w / 2 + doorWidth / 2 + 3, ground - 35], [x + w / 2 + doorWidth / 2 + 3, ground], [x + w / 2 - doorWidth / 2 - 3, ground]], '#6a7c7a', '#293f4a', 1.5);
+            context.fillStyle = '#e9c98e';
+            context.fillRect(x + w / 2 + doorWidth / 2 - 1, ground - 17, 2, 3);
+            drawCityLine([[x + 2, ground - 3], [x + w - 2, ground - 3]], '#f3dcac', 2);
         }
     }
     context.beginPath();
