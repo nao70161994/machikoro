@@ -966,10 +966,6 @@ function renderPlayers() {
         if (samePlayers) {
             container.querySelectorAll('details.player-box-compact').forEach(panel => {
                 if (panel.open) openPanelIds.add(panel.id);
-                else if (!previousDisclosure || previousDisclosure.activePlayerIndex !==
-                        Number(panel.id.replace('playerBox', ''))) {
-                    openPanelIds.delete(panel.id);
-                }
             });
         }
         container.innerHTML = html;
@@ -979,7 +975,6 @@ function renderPlayers() {
         playerPanelDisclosureCache.set(container, {
             players: currentGame.players,
             openPanelIds,
-            activePlayerIndex: currentGame.currentPlayerIndex,
         });
         playerPanelRenderCache.set(container, {
             players: currentGame.players,
