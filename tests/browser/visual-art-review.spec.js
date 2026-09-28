@@ -25,8 +25,9 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
 test('必要なら詳細設定を開いて人数を変え、その設定で開始できる', async ({ page }) => {
     await prepareSunset(page);
     const customSetup = page.locator('#customGameSetup');
-    await expect(customSetup.locator('summary')).toContainText('家族・友人と遊ぶ');
-    await expect(customSetup.locator('summary')).toContainText('同じ端末で対戦');
+    const setupSummary = page.locator('#customGameSetup > summary');
+    await expect(setupSummary).toContainText('家族・友人と遊ぶ');
+    await expect(setupSummary).toContainText('同じ端末で対戦');
     await expect(customSetup).toHaveJSProperty('open', false);
     await page.locator('#customGameSetup > summary').click();
     await expect(customSetup.locator('#playerCount')).toBeVisible();
