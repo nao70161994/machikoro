@@ -67,6 +67,8 @@ runTest('森林の段枝シルエットは鉱山の稜線と形で区別でき�
     assert.ok(forest.includes('M0 60Q25 52 54 59T109 58Q138 53 160 61V80H0Z'), 'several tree heights stand on a natural hillside');
     assert.ok(forest.includes('M-4 79Q28 66 61 73T126 72Q146 68 164 77'), 'undulating forest-floor rows add foreground depth');
     assert.ok(mine.includes('M13 67L55 12L78 41L106 6L147 67'));
+    assert.ok(mine.includes('M18 64L55 17L74 40L62 37L50 48L40 45L31 57Z'), 'faceted rock planes give the mine cliff a worked stone texture');
+    assert.ok(mine.includes('M116 54V36L130 27L144 36V54'), 'a timber hoist marks an active mine entrance');
 });
 runTest('麦畑とコーン畑は穂先の光と雄花・畝で農園内の作物差を見せる', () => {
     const field = sprite.match(/<symbol id="field"[\s\S]*?<\/symbol>/)?.[0] || '';
