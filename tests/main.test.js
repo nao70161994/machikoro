@@ -2822,6 +2822,9 @@ runTest('狭幅の開始CTAは人数選択に重ならずPWAとfocusを避ける
     assert.ok(html.indexOf('class="setup-action-footer"') < html.indexOf('class="setting-section play-flow-settings"'));
     assert.ok(css.includes('bottom: var(--setup-cta-bottom);'));
     assert.ok(css.includes('body.pwa-banner-open .setup-action-footer { bottom: var(--setup-cta-pwa-bottom); }'));
+    assert.ok(css.includes('body.pwa-banner-open .setup-action-footer {\n        position: fixed;'));
+    assert.ok(css.includes('width: min(calc(100% - 24px), 480px);'));
+    assert.ok(css.includes('transform: translateX(-50%);'));
     assert.ok(css.includes('.setup-action-footer .setup-primary-cta {\n        scroll-margin-bottom: var(--setup-cta-focus-clearance);'));
     assert.ok(css.includes('body.pwa-banner-open .setup-action-footer .setup-primary-cta {\n        scroll-margin-bottom: var(--setup-cta-pwa-focus-clearance);'));
     assert.ok(css.includes('scroll-margin-bottom: var(--setup-cta-focus-clearance);'));

@@ -875,9 +875,12 @@ html[data-design="sunset"] .design-switcher select option {
     body.pwa-banner-open .setup-action-footer { bottom: var(--setup-cta-pwa-bottom); }
 
     body.pwa-banner-open .setup-action-footer {
-        position: static;
-        bottom: auto;
-        z-index: auto;
+        position: fixed;
+        left: 50%;
+        width: min(calc(100% - 24px), 480px);
+        bottom: var(--setup-cta-pwa-bottom);
+        z-index: 100;
+        transform: translateX(-50%);
     }
 
     .setup-action-footer .model-load-status:empty { display: none; }

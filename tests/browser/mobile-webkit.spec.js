@@ -233,9 +233,7 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
         }, focusSelector);
         // The banner-open state deliberately returns the CTA to document flow
         // so the fixed PWA banner cannot cover it.
-        // The banner-open state deliberately returns the CTA to document flow
-        // so the fixed PWA banner cannot cover it.
-        expect(layout.position).toBe('static');
+        expect(layout.position).toBe('fixed');
         expect(layout.buttonContained).toBe(true);
         expect(layout.ctaLeft).toBeGreaterThanOrEqual(0);
         expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewportWidth);
@@ -547,6 +545,7 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
     }
     await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
+    let expandedPanelId = null;
 
     for (const width of [320, 360, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });
@@ -560,8 +559,21 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
             };
         }));
         expect(summaries.every(summary => summary.height >= 44 && summary.contained)).toBe(true);
-        await compact.first().locator('summary').click();
-        await expect(compact.first()).toHaveJSProperty('open', true);
+        if (!expandedPanelId) {
+            const panel = compact.first();
+            expandedPanelId = await panel.getAttribute('id');
+            await panel.locator('summary').click();
+            await expect(page.locator(`#${expandedPanelId}`)).toHaveJSProperty('open', true);
+            await page.evaluate(panelId => {
+                const game = GameRuntimeState.runtime.snapshot().game;
+                const originalPlayerIndex = game.currentPlayerIndex;
+                game.currentPlayerIndex = Number(panelId.replace('playerBox', ''));
+                renderPlayers();
+                game.currentPlayerIndex = originalPlayerIndex;
+                renderPlayers();
+            }, expandedPanelId);
+        }
+        await expect(page.locator(`#${expandedPanelId}`)).toHaveJSProperty('open', true);
         const timeline = await page.locator('#turnTimeline').evaluate(element => {
             const bounds = element.getBoundingClientRect();
             const steps = [...element.querySelectorAll('.turn-timeline-step')];

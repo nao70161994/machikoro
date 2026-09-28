@@ -888,6 +888,7 @@ function getPlayerSettingForRender(index, player) {
 }
 
 const playerPanelRenderCache = new WeakMap();
+const playerPanelDisclosureCache = new WeakMap();
 
 function renderPlayers() {
     const currentGame = uiGameRuntimeSnapshot().game;
@@ -941,9 +942,29 @@ function renderPlayers() {
     const previous = playerPanelRenderCache.get(container);
     // Human-turn recovery can render again immediately after a purchase.
     // Keep unchanged panels, including their coin animation and focused cards.
-    if (!previous || previous.html !== html || previous.firstChild !== container.firstElementChild) {
+    if (!previous || previous.players !== currentGame.players ||
+            previous.html !== html || previous.firstChild !== container.firstElementChild) {
+        const previousDisclosure = playerPanelDisclosureCache.get(container);
+        const samePlayers = previousDisclosure && previousDisclosure.players === currentGame.players;
+        const openPanelIds = samePlayers
+            ? new Set(previousDisclosure.openPanelIds)
+            : new Set();
+        if (samePlayers) {
+            container.querySelectorAll('details.player-box-compact').forEach(panel => {
+                if (panel.open) openPanelIds.add(panel.id);
+                else openPanelIds.delete(panel.id);
+            });
+        }
         container.innerHTML = html;
-        playerPanelRenderCache.set(container, { html, firstChild: container.firstElementChild });
+        container.querySelectorAll('details.player-box-compact').forEach(panel => {
+            if (openPanelIds.has(panel.id)) panel.open = true;
+        });
+        playerPanelDisclosureCache.set(container, { players: currentGame.players, openPanelIds });
+        playerPanelRenderCache.set(container, {
+            players: currentGame.players,
+            html,
+            firstChild: container.firstElementChild,
+        });
     }
 }
 
