@@ -16,8 +16,10 @@ runTest('街とサイコロのブランドマークをタイトルとPWAメタ�
     const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
     const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '../manifest.json'), 'utf8'));
     assert.match(brandMark, /viewBox="0 0 128 128"/);
+    assert.match(brandMark, /width="128" height="128"/);
     assert.match(brandMark, /rotate\(11\)/, 'a readable die anchors the mark');
     assert.match(html, /class="title-brand-mark" src="icons\/dice-city-mark\.svg"/);
+    assert.match(html, /rel="icon" type="image\/svg\+xml" href="\/icons\/dice-city-mark\.svg"/);
     assert.match(html, /property="og:image" content="\/icons\/icon-512\.png"/);
     assert.ok(manifest.icons.some(icon => icon.src === '/icons/dice-city-mark.svg' && icon.type === 'image/svg+xml'));
 });
