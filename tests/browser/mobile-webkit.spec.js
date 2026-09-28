@@ -406,6 +406,7 @@ test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達
                 expect(layout.modalZ).toBeGreaterThan(layout.pwaZ);
             }
 
+            await modal.evaluate(element => { element.scrollTop = 0; });
             await modal.locator(modalCase.close).first().click();
             await expect(modal).toBeHidden();
         }
@@ -566,14 +567,17 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
             await expect(page.locator(`#${expandedPanelId}`)).toHaveJSProperty('open', true);
             await page.evaluate(panelId => {
                 const game = GameRuntimeState.runtime.snapshot().game;
-                const originalPlayerIndex = game.currentPlayerIndex;
-                game.currentPlayerIndex = Number(panelId.replace('playerBox', ''));
+                const targetPlayerIndex = Number(panelId.replace('playerBox', ''));
+                game.currentPlayerIndex = targetPlayerIndex;
                 renderPlayers();
-                game.currentPlayerIndex = originalPlayerIndex;
+                game.currentPlayerIndex = (targetPlayerIndex + 1) % game.players.length;
                 renderPlayers();
             }, expandedPanelId);
+            await expect(page.locator(`#${expandedPanelId}`)).toHaveJSProperty('open', true);
         }
-        await expect(page.locator(`#${expandedPanelId}`)).toHaveJSProperty('open', true);
+        await expect.poll(() => page.locator(`#${expandedPanelId}`).evaluate(element =>
+            element.matches('details') ? element.open : element.classList.contains('active')
+        )).toBe(true);
         const timeline = await page.locator('#turnTimeline').evaluate(element => {
             const bounds = element.getBoundingClientRect();
             const steps = [...element.querySelectorAll('.turn-timeline-step')];

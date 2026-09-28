@@ -952,14 +952,21 @@ function renderPlayers() {
         if (samePlayers) {
             container.querySelectorAll('details.player-box-compact').forEach(panel => {
                 if (panel.open) openPanelIds.add(panel.id);
-                else openPanelIds.delete(panel.id);
+                else if (!previousDisclosure || previousDisclosure.activePlayerIndex !==
+                        Number(panel.id.replace('playerBox', ''))) {
+                    openPanelIds.delete(panel.id);
+                }
             });
         }
         container.innerHTML = html;
         container.querySelectorAll('details.player-box-compact').forEach(panel => {
             if (openPanelIds.has(panel.id)) panel.open = true;
         });
-        playerPanelDisclosureCache.set(container, { players: currentGame.players, openPanelIds });
+        playerPanelDisclosureCache.set(container, {
+            players: currentGame.players,
+            openPanelIds,
+            activePlayerIndex: currentGame.currentPlayerIndex,
+        });
         playerPanelRenderCache.set(container, {
             players: currentGame.players,
             html,

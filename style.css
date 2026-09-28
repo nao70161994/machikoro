@@ -19,7 +19,7 @@
     --setup-cta-bottom: max(8px, env(safe-area-inset-bottom, 0px));
     --setup-cta-pwa-bottom: calc(128px + env(safe-area-inset-bottom, 0px));
     --setup-cta-focus-clearance: calc(var(--touch-target-standard) + 28px);
-    --setup-cta-pwa-focus-clearance: calc(var(--setup-cta-pwa-bottom) + var(--touch-target-standard) + 16px);
+    --setup-cta-pwa-focus-clearance: calc(var(--setup-cta-pwa-bottom) - 112px + var(--touch-target-standard) + 26px);
     --build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));
     --build-filter-focus-clearance: calc(var(--build-filter-sticky-top) + var(--touch-target-compact) + 22px);
     --modal-header-scroll-clearance: calc(max(16px, env(safe-area-inset-top, 0px)) + 104px);
