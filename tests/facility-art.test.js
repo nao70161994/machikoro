@@ -258,6 +258,9 @@ runTest('ドリンク工場は色違いの瓶詰めラインと搬送ベルト�
 runTest('駅のランドマーク図案は建物にホームと線路を加えて駅と分かる', () => {
     const station = sprite.match(/<symbol id="station"[\s\S]*?<\/symbol>/)?.[0] || '';
     assert.ok(station.includes('M22 67H138'));
+    assert.ok(station.includes('M4 64V59Q4 53 11 53H40Q48 53 50 61V66H4Z'), 'a local train sits at the platform in front of the station');
+    assert.ok(station.includes('M8 58Q9 55 13 55H26V60H8Z') && station.includes('M30 55H40Q44 56 45 60H30Z'), 'the train has separate lit windows');
+    assert.ok(station.includes('M7 62H47'), 'a warm belt marks the train side');
     assert.ok(station.includes('M19 71H141M19 77H141'));
     assert.ok(station.includes('M27 69V79M39 69V79'));
 });
