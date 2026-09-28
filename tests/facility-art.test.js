@@ -112,6 +112,10 @@ runTest('建物カードは業種を示す売場・構造の細部を維持す�
     assert.ok(art('startup').includes('width="56" height="34" rx="3"'), 'rounded desktop screen frames the software dashboard');
     assert.ok(art('startup').includes('M70 42L76 39L82 41L91 34L99 36'), 'dashboard shows a rising product-usage graph');
     assert.ok(art('startup').includes('M26 55H134L140 59H20Z'), 'shared desk, keyboard, plant, cup, and chair complete the office scene');
+    assert.ok(art('business-center').includes('M85 6L109 17V66H85Z'), 'business center tower has a distinct shaded glass side');
+    assert.ok(art('business-center').includes('M76 65V54Q85 48 94 54V65Z'), 'the tower has an illuminated lobby entrance');
+    assert.ok(art('business-center').includes('M77 66H93L105 73H65Z'), 'a paved approach connects the office campus to the street');
+    assert.ok(art('business-center').includes('M17 54Q17 49 22 49Q25 45 29 49'), 'small planted trees complete the office forecourt');
     assert.ok(art('factory').includes('M110 15H120'));
     assert.ok(art('furniture').includes('M22 66V31L50 15H89L105 26L137 12V66Z'));
     assert.ok(art('furniture').includes('M95 54V45Q95 42 98 42H103'));
