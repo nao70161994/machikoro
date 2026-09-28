@@ -1777,6 +1777,10 @@ button:not(:disabled):active {
     padding: 14px;
 }
 
+.dice-roll-icon {
+    display: none;
+}
+
 #btnReroll {
     background: #1a3a4a;
     text-align: center;
@@ -4261,6 +4265,21 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.setup-pri
     color: #243246;
     border: 1px solid #ffe3b9;
     box-shadow: 0 3px 0 #a47649;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #btnRoll {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #btnRoll .dice-roll-emoji {
+    display: none;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #btnRoll .dice-roll-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn {
     background: linear-gradient(135deg, #fff9ed, #efdfc5);

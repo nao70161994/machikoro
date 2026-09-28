@@ -513,6 +513,20 @@ runTest('modal effect authority flagsはproduction HTMLへ注入しない', () =
     assert.strictEqual(index.includes('MACHIKORO_UI_MODAL_CLOSE_EFFECT_AUTHORITY_ENABLED'), false);
 });
 
+runTest('ダイス操作はクラシックの絵文字を保ち夕暮れでは専用SVGを表示する', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const index = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    const styles = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const button = index.match(/<button id="btnRoll"[\s\S]*?<\/button>/)?.[0] || '';
+    assert.ok(button.includes('<span class="dice-roll-emoji" aria-hidden="true">🎲</span>'));
+    assert.ok(button.includes('<svg class="dice-roll-icon" viewBox="0 0 24 24" aria-hidden="true"'));
+    assert.ok(button.includes('<span>サイコロを振る</span>'));
+    assert.ok(styles.includes('body:not(.accessibility-high-contrast) #btnRoll .dice-roll-emoji'));
+    assert.ok(styles.includes('body:not(.accessibility-high-contrast) #btnRoll .dice-roll-icon'));
+    assert.ok(styles.includes('.dice-roll-icon {\n    display: none;'));
+});
+
 runTest('rules/cardSelect close はvisible modalなしのorphan lockを解除する', () => {
     const { context, elements } = loadUiRuntime();
 
