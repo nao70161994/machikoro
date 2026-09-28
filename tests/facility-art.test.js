@@ -107,9 +107,11 @@ runTest('建物カードは業種を示す売場・構造の細部を維持す�
     assert.ok(art('tv-station').includes('M77 57Q78 52 83 52Q88 52 89 57Z'), 'the studio window shows an on-air presenter');
     assert.ok(art('members-bar').includes('M65 40H95V66H65Z'), 'members bar has a private double-door entrance');
     assert.ok(art('members-bar').includes('M40 60Q80 66 120 60'), 'velvet rope marks the reserved entrance');
-    assert.ok(art('startup').includes('<rect x="43" y="17" width="74" height="37" rx="4"'), 'IT venture has a rounded screen frame');
-    assert.ok(art('startup').includes('M56 28H104M56 35H104M56 42H104'), 'IT venture graph has subtle chart guides');
-    assert.ok(art('startup').includes('L94 44H57Z'), 'IT venture chart has a filled growth area');
+    assert.ok(art('startup').includes('M18 58V18Q18 14 23 14H137Q142 14 142 18V58Z'), 'IT venture is a workspace scene, not a floating monitor icon');
+    assert.ok(art('startup').includes('M28 44V34H36V44M39 44V27H47V44'), 'office windows show a dusk city skyline');
+    assert.ok(art('startup').includes('width="56" height="34" rx="3"'), 'rounded desktop screen frames the software dashboard');
+    assert.ok(art('startup').includes('M70 42L76 39L82 41L91 34L99 36'), 'dashboard shows a rising product-usage graph');
+    assert.ok(art('startup').includes('M26 55H134L140 59H20Z'), 'shared desk, keyboard, plant, cup, and chair complete the office scene');
     assert.ok(art('factory').includes('M110 15H120'));
     assert.ok(art('furniture').includes('M22 66V31L50 15H89L105 26L137 12V66Z'));
     assert.ok(art('furniture').includes('M95 54V45Q95 42 98 42H103'));
