@@ -945,9 +945,7 @@ function renderPlayers() {
         container.addEventListener('toggle', event => {
             const panel = event.target;
             const disclosure = playerPanelDisclosureCache.get(container);
-            const liveGame = uiGameRuntimeSnapshot().game;
-            if (!panel?.matches?.('details.player-box-compact') || !disclosure ||
-                    disclosure.game !== liveGame) return;
+            if (!panel?.matches?.('details.player-box-compact') || !disclosure) return;
             if (panel.open) disclosure.openPanelIds.add(panel.id);
             else disclosure.openPanelIds.delete(panel.id);
         }, true);
@@ -959,7 +957,7 @@ function renderPlayers() {
     if (!previous || previous.players !== currentGame.players ||
             previous.html !== html || previous.firstChild !== container.firstElementChild) {
         const previousDisclosure = playerPanelDisclosureCache.get(container);
-        const sameGame = previousDisclosure && previousDisclosure.game === currentGame;
+        const sameGame = previousDisclosure && currentGame.turnCount >= previousDisclosure.turnCount;
         const openPanelIds = sameGame
             ? new Set(previousDisclosure.openPanelIds)
             : new Set();
@@ -973,7 +971,7 @@ function renderPlayers() {
             if (openPanelIds.has(panel.id)) panel.open = true;
         });
         playerPanelDisclosureCache.set(container, {
-            game: currentGame,
+            turnCount: currentGame.turnCount,
             openPanelIds,
         });
         playerPanelRenderCache.set(container, {
