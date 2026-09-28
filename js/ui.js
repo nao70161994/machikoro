@@ -85,7 +85,9 @@ function renderLog() {
     const cur = currentGame.log || [];
 
     const history = logHistoryController.append(cur);
-    titleEl.textContent = `📋 ログ (${history.entryCount})`;
+    const countLabel = document.getElementById('logCountLabel');
+    if (countLabel) countLabel.textContent = `ログ (${history.entryCount})`;
+    else titleEl.textContent = `📋 ログ (${history.entryCount})`;
 
     logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(
         history.entries,
@@ -245,7 +247,11 @@ function render() {
 function _render() {
     const online = uiOnlineRuntimeSnapshot().isOnlineGame;
     const restartButton = document.getElementById("btnRestart");
-    if (restartButton) restartButton.textContent = online ? "対戦から退出する" : "🔄 最初からやり直す";
+    if (restartButton) {
+        const restartLabel = document.getElementById('restartButtonLabel');
+        if (restartLabel) restartLabel.textContent = online ? '対戦から退出する' : '最初からやり直す';
+        else restartButton.textContent = online ? '対戦から退出する' : '🔄 最初からやり直す';
+    }
     const leaveHelp = document.getElementById("onlineLeaveHelp");
     if (leaveHelp) leaveHelp.hidden = !online;
     const currentGame = uiGameRuntimeSnapshot().game;

@@ -7,6 +7,17 @@ async function prepareSunset(page) {
     await expect(page.locator('.title-brand-mark')).toBeVisible();
 }
 
+test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
+    await prepareSunset(page);
+    await expect(page.locator('.setup-quick-play')).toContainText('CPUとすぐ遊ぶ');
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const settings = await page.evaluate(() => GameSetupState.runtime.snapshot());
+    expect(settings.selectedCount).toBe(2);
+    expect(settings.playerSettings[0].type).toBe('human');
+    expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
+});
+
 test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで描画して記録する', async ({ page }, testInfo) => {
     test.setTimeout(120000);
     await prepareSunset(page);

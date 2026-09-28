@@ -2,7 +2,7 @@
  * Service Worker - オフラインキャッシュ
  * バージョンを上げるとキャッシュが更新される
  */
-const CACHE_NAME = 'machikoro-v92';
+const CACHE_NAME = 'machikoro-v93';
 
 const STATIC_ASSETS = [
   '/',
@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
   '/icons/sunset-city.svg',
   '/icons/dice-city-mark.svg',
   '/icons/facility-art.svg',
+  '/icons/interface-ui.svg',
   '/js/designTheme.js',
   '/manifest.json',
   '/manifest.webmanifest',

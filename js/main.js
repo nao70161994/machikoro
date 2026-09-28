@@ -707,6 +707,14 @@ function startGame() {
     return localGameStartRuntime.start();
 }
 
+function startQuickCpuGame() {
+    const quickSettings = LocalPlayerSettings.normalizeSettings([
+        { type: 'human', difficulty: 'normal', name: defaultLocalPlayerName(0) },
+        { type: 'cpu', difficulty: 'normal', name: 'CPU（普通）' },
+    ], 2);
+    return startGameNow(2, quickSettings);
+}
+
 function reviewGameSetup() {
     const setup = gameSetupSnapshot();
     const cards = getEnabledCardSelection();

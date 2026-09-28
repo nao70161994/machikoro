@@ -100,6 +100,23 @@ runTest('integration: ローカル開始→勝利→統計タブ表示まで連�
     assert.ok(rt.__test.elements.tabContentStats.innerHTML.includes('総ゲーム数'));
 });
 
+runTest('integration: クイック開始は2人・普通CPU戦を確認モーダルなしで始める', () => {
+    const rt = loadIntegrationRuntime();
+    rt.enabledCards = new Set(rt.CARDS.map(card => card.name));
+    rt.enabledLandmarks = new Set(rt.Player.landmarkNames());
+
+    rt.startQuickCpuGame();
+
+    const game = rt.__test.getGame();
+    const setup = rt.GameSetupState.runtime.snapshot();
+    assert.strictEqual(game.players.length, 2);
+    assert.strictEqual(setup.playerSettings[0].type, 'human');
+    assert.strictEqual(setup.playerSettings[1].type, 'cpu');
+    assert.strictEqual(setup.playerSettings[1].difficulty, 'normal');
+    assert.strictEqual(rt.__test.elements.titleScreen.style.display, 'none');
+    assert.strictEqual(rt.__test.elements.confirmModal.style.display, 'none');
+});
+
 runTest('integration: セーブ→再開でゲーム状態を復元する', () => {
     const rt = loadIntegrationRuntime();
     rt.enabledCards = new Set(rt.CARDS.map(card => card.name));

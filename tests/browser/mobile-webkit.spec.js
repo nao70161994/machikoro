@@ -115,6 +115,11 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ pa
         const registration = await navigator.serviceWorker.getRegistration();
         return !!registration;
     })).toBe(true);
+    await expect.poll(() => page.evaluate(async () => {
+        await navigator.serviceWorker.ready;
+        const response = await caches.match(new URL('/icons/interface-ui.svg', location.origin).href);
+        return !!response && response.ok;
+    })).toBe(true);
     expect(errors).toEqual([]);
 });
 
