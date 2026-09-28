@@ -4771,6 +4771,7 @@ html[data-design="sunset"] .sunset-hero p {
         margin: 12px -16px;
     }
     html[data-design="sunset"] .sunset-hero img { border-radius: 16px; }
+    #tabContentLocal:has(#customGameSetup:not([open])) { margin-bottom: 16px; }
 }
 html[data-design="sunset"] .title-header { padding-top: 4px; }
 html[data-design="sunset"] .title-brand-lockup { gap: 10px; }

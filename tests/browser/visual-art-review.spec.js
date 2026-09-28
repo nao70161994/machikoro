@@ -109,12 +109,15 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             const title = document.querySelector('.title-header').getBoundingClientRect();
             const brand = document.querySelector('.title-brand-lockup').getBoundingClientRect();
             const hero = document.querySelector('.sunset-hero img').getBoundingClientRect();
+            const localPanel = document.querySelector('#tabContentLocal').getBoundingClientRect();
+            const about = document.querySelector('.title-about').getBoundingClientRect();
             return {
                 viewportWidth: document.documentElement.clientWidth,
                 documentWidth: document.documentElement.scrollWidth,
                 titleWidth: title.width,
                 brandRight: brand.right,
                 heroLeft: hero.left,
+                localToAboutGap: about.top - localPanel.bottom,
             };
         });
         expect(titleLayout.viewportWidth).toBe(width);
@@ -123,6 +126,7 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         // while the desktop hero has a larger editorial maximum width.
         expect(titleLayout.titleWidth).toBeGreaterThanOrEqual(Math.min(width * 0.8, 900));
         if (width >= 760) expect(titleLayout.brandRight).toBeLessThan(titleLayout.heroLeft);
+        else expect(titleLayout.localToAboutGap).toBeLessThanOrEqual(32);
         const titleScreenshotPath = testInfo.outputPath(`sunset-title-${width}.png`);
         await page.screenshot({
             path: titleScreenshotPath,
