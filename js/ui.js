@@ -889,6 +889,7 @@ function getPlayerSettingForRender(index, player) {
 
 const playerPanelRenderCache = new WeakMap();
 const playerPanelDisclosureCache = new WeakMap();
+const playerPanelDisclosureListeners = new WeakSet();
 
 function renderPlayers() {
     const currentGame = uiGameRuntimeSnapshot().game;
@@ -939,6 +940,19 @@ function renderPlayers() {
         }
     }
     const container = document.getElementById("players");
+    if (container && typeof container.addEventListener === 'function' &&
+            !playerPanelDisclosureListeners.has(container)) {
+        container.addEventListener('toggle', event => {
+            const panel = event.target;
+            const disclosure = playerPanelDisclosureCache.get(container);
+            const livePlayers = uiGameRuntimeSnapshot().game?.players;
+            if (!panel?.matches?.('details.player-box-compact') || !disclosure ||
+                    disclosure.players !== livePlayers) return;
+            if (panel.open) disclosure.openPanelIds.add(panel.id);
+            else disclosure.openPanelIds.delete(panel.id);
+        }, true);
+        playerPanelDisclosureListeners.add(container);
+    }
     const previous = playerPanelRenderCache.get(container);
     // Human-turn recovery can render again immediately after a purchase.
     // Keep unchanged panels, including their coin animation and focused cards.
