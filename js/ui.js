@@ -945,11 +945,9 @@ function renderPlayers() {
         container.addEventListener('toggle', event => {
             const panel = event.target;
             const disclosure = playerPanelDisclosureCache.get(container);
-            const livePlayers = uiGameRuntimeSnapshot().game?.players;
-            const playerIndex = Number(panel?.id?.replace('playerBox', ''));
+            const liveGame = uiGameRuntimeSnapshot().game;
             if (!panel?.matches?.('details.player-box-compact') || !disclosure ||
-                    !Number.isInteger(playerIndex) ||
-                    disclosure.playerIdentities[playerIndex] !== livePlayers?.[playerIndex]) return;
+                    disclosure.game !== liveGame) return;
             if (panel.open) disclosure.openPanelIds.add(panel.id);
             else disclosure.openPanelIds.delete(panel.id);
         }, true);
@@ -961,13 +959,11 @@ function renderPlayers() {
     if (!previous || previous.players !== currentGame.players ||
             previous.html !== html || previous.firstChild !== container.firstElementChild) {
         const previousDisclosure = playerPanelDisclosureCache.get(container);
-        const samePlayers = previousDisclosure &&
-            previousDisclosure.playerIdentities.length === currentGame.players.length &&
-            previousDisclosure.playerIdentities.every((player, index) => player === currentGame.players[index]);
-        const openPanelIds = samePlayers
+        const sameGame = previousDisclosure && previousDisclosure.game === currentGame;
+        const openPanelIds = sameGame
             ? new Set(previousDisclosure.openPanelIds)
             : new Set();
-        if (samePlayers) {
+        if (sameGame) {
             container.querySelectorAll('details.player-box-compact').forEach(panel => {
                 if (panel.open) openPanelIds.add(panel.id);
             });
@@ -977,7 +973,7 @@ function renderPlayers() {
             if (openPanelIds.has(panel.id)) panel.open = true;
         });
         playerPanelDisclosureCache.set(container, {
-            playerIdentities: [...currentGame.players],
+            game: currentGame,
             openPanelIds,
         });
         playerPanelRenderCache.set(container, {
