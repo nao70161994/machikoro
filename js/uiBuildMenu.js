@@ -20,12 +20,23 @@ const UiBuildMenu = (() => {
 
     function createFilterController(initialFilter = '') {
         let cardFilter = initialFilter;
+        let manuallySelected = false;
 
         function get() {
             return cardFilter;
         }
 
         function set(requestedFilter) {
+            manuallySelected = true;
+            const transition = cardFilterTransition(cardFilter, requestedFilter);
+            cardFilter = transition.cardFilter;
+            return transition;
+        }
+
+        function setAutomatic(requestedFilter) {
+            if (manuallySelected) {
+                return Object.freeze({ cardFilter, changed: false, shouldRender: false });
+            }
             const transition = cardFilterTransition(cardFilter, requestedFilter);
             cardFilter = transition.cardFilter;
             return transition;
@@ -33,13 +44,18 @@ const UiBuildMenu = (() => {
 
         function clear() {
             cardFilter = '';
+            manuallySelected = false;
+        }
+
+        function wasManuallySelected() {
+            return manuallySelected;
         }
 
         function snapshot() {
             return Object.freeze({ cardFilter });
         }
 
-        return Object.freeze({ get, set, clear, snapshot });
+        return Object.freeze({ get, set, setAutomatic, clear, wasManuallySelected, snapshot });
     }
 
     function safeCardColorName(color) {

@@ -1186,6 +1186,13 @@ function renderBuildMenu() {
         isHumanTurn: buildGateOpen && isCurrentHumanUiTurn(),
         allowedActions: buildGateOpen ? currentUiAllowedActions() : new Set(),
     });
+    const compactMarketViewport = typeof window !== 'undefined' &&
+        typeof window.matchMedia === 'function' &&
+        window.matchMedia('(max-width: 480px)').matches;
+    if (compactMarketViewport && actionState.canBuildCardAction &&
+            !buildMenuFilterController.wasManuallySelected()) {
+        buildMenuFilterController.setAutomatic('affordable');
+    }
     buildMenu.innerHTML = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction);
     UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
         findIdentity(identity) {

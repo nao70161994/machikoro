@@ -1964,6 +1964,25 @@ runTest('UiBuildMenu filter controllerは選択・再選択・resetを単独所�
     assert.ok(Object.isFrozen(controller.snapshot()));
 });
 
+runTest('UiBuildMenu filter controllerは自動filterより利用者の選択を優先する', () => {
+    const helper = require('../js/uiBuildMenu');
+    const controller = helper.createFilterController();
+    assert.deepStrictEqual(controller.setAutomatic('affordable'), {
+        cardFilter: 'affordable', changed: true, shouldRender: true,
+    });
+    assert.strictEqual(controller.wasManuallySelected(), false);
+    assert.deepStrictEqual(controller.set(''), {
+        cardFilter: '', changed: true, shouldRender: true,
+    });
+    assert.strictEqual(controller.wasManuallySelected(), true);
+    assert.deepStrictEqual(controller.setAutomatic('affordable'), {
+        cardFilter: '', changed: false, shouldRender: false,
+    });
+    controller.clear();
+    assert.strictEqual(controller.wasManuallySelected(), false);
+    assert.strictEqual(controller.get(), '');
+});
+
 runTest('UiBuildMenu filter viewはactiveとaria-pressedを同じstateから生成する', () => {
     const helper = require('../js/uiBuildMenu');
     assert.deepStrictEqual({ ...helper.cardFilterButtonView('red', 'red') }, {

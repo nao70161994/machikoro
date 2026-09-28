@@ -842,6 +842,34 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
     }
 });
 
+test('スマホは建設フェーズの初期市場を建設可に絞り全て選択を尊重する', async ({ page }) => {
+    await prepare(page);
+    await page.locator('#designThemeSelect').selectOption('sunset');
+    await startLocalGame(page);
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.phase = GAME_PHASES.BUILD;
+        game.builtThisTurn = false;
+        renderBuildMenu();
+    });
+
+    const affordable = page.locator('#buildMenu [data-action="setCardFilter"][data-card-filter="affordable"]');
+    const all = page.locator('#buildMenu [data-action="setCardFilter"][data-card-filter=""]');
+    await expect(affordable).toHaveAttribute('aria-pressed', 'true');
+    await expect(all).toHaveAttribute('aria-pressed', 'false');
+    const affordableCount = await page.locator('#buildMenu .build-card-section .card-wrapper').count();
+    expect(affordableCount).toBeGreaterThan(0);
+
+    await all.click();
+    await expect(all).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.locator('#buildMenu .build-card-section .card-wrapper').count())
+        .toBeGreaterThan(affordableCount);
+    await page.evaluate(() => renderBuildMenu());
+    await expect(page.locator('#buildMenu [data-action="setCardFilter"][data-card-filter=""]'))
+        .toHaveAttribute('aria-pressed', 'true');
+});
+
 test('320pxから480pxで建設shortcutが既存menuへ移動しPWA表示時も収まる', async ({ page }) => {
     await prepare(page);
     await page.locator('#customGameSetup > summary').click();
