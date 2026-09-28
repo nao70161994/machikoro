@@ -18,6 +18,41 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
 });
 
+test('夕暮れ市場は出目・名称を主役にし価格を明確なチップで示す', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+
+    for (const width of [320, 390, 480]) {
+        await page.setViewportSize({ width, height: 844 });
+        const cards = await page.locator('#buildMenu .card-btn').evaluateAll(elements => elements.map(card => {
+            const styles = selector => getComputedStyle(card.querySelector(selector));
+            const cost = card.querySelector('.card-cost');
+            const costStyle = getComputedStyle(cost);
+            const cardBounds = card.getBoundingClientRect();
+            const costBounds = cost.getBoundingClientRect();
+            return {
+                cardFits: card.scrollWidth <= card.clientWidth && cardBounds.left >= 0 && cardBounds.right <= document.documentElement.clientWidth,
+                diceSize: parseFloat(styles('.card-dice-num').fontSize),
+                nameSize: parseFloat(styles('.card-name').fontSize),
+                effectSize: parseFloat(styles('.card-effect').fontSize),
+                categorySize: parseFloat(styles('.card-category-tag').fontSize),
+                costHasBadge: costStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' && costStyle.borderRadius !== '0px',
+                costFits: costBounds.left >= cardBounds.left && costBounds.right <= cardBounds.right,
+            };
+        }));
+
+        expect(cards.length).toBeGreaterThan(0);
+        expect(cards.every(card => card.cardFits && card.costFits && card.costHasBadge)).toBe(true);
+        expect(cards.every(card => card.diceSize > card.categorySize && card.nameSize > card.effectSize && card.effectSize > card.categorySize)).toBe(true);
+        if (width === 390) {
+            const screenshotPath = testInfo.outputPath('sunset-card-hierarchy-390.png');
+            await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+            await testInfo.attach('sunset-card-hierarchy-390.png', { path: screenshotPath, contentType: 'image/png' });
+        }
+    }
+});
+
 test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで描画して記録する', async ({ page }, testInfo) => {
     test.setTimeout(120000);
     await prepareSunset(page);

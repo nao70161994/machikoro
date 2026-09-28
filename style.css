@@ -4386,6 +4386,33 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-body {
 html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.card-name, .card-category-tag, .card-dice-num) { color: #203347; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-effect { color: #414954; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-cost { color: #6f451d; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-dice-num {
+    font-size: 15px;
+    letter-spacing: 0.4px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-category-tag {
+    color: #68717a;
+    font-size: 9px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-cost {
+    min-height: 26px;
+    padding: 2px 7px;
+    border: 1px solid #d8b77e;
+    border-radius: 999px;
+    background: #f8e8c4;
+    line-height: 1.2;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-meta-row {
+    color: #777d7e;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-stock {
+    color: #777d7e;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-detail-btn {
+    color: #68717a;
+    background: rgba(236, 225, 204, 0.72);
+    border-color: #c9baa0;
+}
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-blue .card-top-strip { background: #c5def0; border-color: #638aa3; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-green .card-top-strip { background: #cedfbd; border-color: #758d5f; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-red .card-top-strip { background: #efd1c5; border-color: #b97c69; }
