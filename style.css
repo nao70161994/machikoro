@@ -2384,6 +2384,23 @@ button:not(:disabled):active {
     margin-bottom: 4px;
 }
 
+#buildMenu h3 .build-menu-heading-icon { display: none; }
+
+html[data-design="sunset"] #buildMenu h3 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+html[data-design="sunset"] #buildMenu h3 .build-menu-heading-emoji { display: none; }
+
+html[data-design="sunset"] #buildMenu h3 .build-menu-heading-icon {
+    display: inline-block;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+}
+
 #buildMenu h4 {
     margin: 10px 0 6px;
     color: #a7a9be;
