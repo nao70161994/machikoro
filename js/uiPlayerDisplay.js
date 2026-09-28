@@ -25,6 +25,13 @@ const UiPlayerDisplay = (() => {
         return 'CPU（普通）';
     }
 
+    function renderPlayerKindIcon(setting = {}) {
+        if (setting.type === 'cpu') {
+            return `<svg class="player-kind-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3V6M9 3H15" fill="none" stroke="#f0c77b" stroke-width="1.6" stroke-linecap="round"/><rect x="4" y="6" width="16" height="14" rx="4" fill="#7897a2" stroke="#304b59" stroke-width="1.5"/><circle cx="9" cy="12" r="1.4" fill="#fff0d1"/><circle cx="15" cy="12" r="1.4" fill="#fff0d1"/><path d="M9 16H15" stroke="#304b59" stroke-width="1.5" stroke-linecap="round"/></svg><span class="player-kind-level">${difficultyLabel(setting.difficulty)}</span>`;
+        }
+        return '<svg class="player-kind-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4" fill="#e8c58f" stroke="#654e3d" stroke-width="1.4"/><path d="M4 21C4.5 16.5 7.2 14 12 14S19.5 16.5 20 21Z" fill="#7896a0" stroke="#304b59" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+    }
+
     function resolvePlayerSetting(options = {}) {
         const settings = Array.isArray(options.playerSettings) ? options.playerSettings : [];
         const cpus = Array.isArray(options.cpuPlayers) ? options.cpuPlayers : [];
@@ -57,7 +64,10 @@ const UiPlayerDisplay = (() => {
         const safeLabel = options.escapeHtml(`${name}、${stateLabel}`);
         const safeEmoji = options.escapeHtml(options.getLandmarkEmoji(name));
         const safeName = options.escapeHtml(name);
-        return `<span class="landmark-badge ${built ? 'built' : ''}" aria-label="${safeLabel}">${safeEmoji} ${safeName}</span>`;
+        const icon = typeof options.getLandmarkBadgeIcon === 'function'
+            ? options.getLandmarkBadgeIcon(name)
+            : safeEmoji;
+        return `<span class="landmark-badge ${built ? 'built' : ''}" aria-label="${safeLabel}">${icon} ${safeName}</span>`;
     }
 
     function playerBoxId(index) {
@@ -88,6 +98,9 @@ const UiPlayerDisplay = (() => {
         const compact = options.compactInactive === true && !isActive && index !== options.myPlayerIndex;
         const setting = options.settings[index];
         const cpuLabel = setting.type === 'cpu' ? `🤖${difficultyLabel(setting.difficulty)}` : '👤';
+        const playerIcon = typeof options.renderPlayerKindIcon === 'function'
+            ? options.renderPlayerKindIcon(setting)
+            : cpuLabel;
         const playerSummary = options.escapeHtml(
             `${player.name}、${isActive ? '現在の手番' : '待機中'}、${playerKindAccessibleLabel(setting)}`
         );
@@ -113,7 +126,10 @@ const UiPlayerDisplay = (() => {
         const itCoins = player.itVentureCoins > 0 ? `<span class="it-badge">💻${player.itVentureCoins}</span>` : '';
         const loanCount = player.cards.filter(card => card.effect === options.loanEffect).length;
         const loanBadge = loanCount > 0 ? `<span class="loan-badge">💳×${loanCount}</span>` : '';
-        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${cpuLabel}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span></div><div class="player-coin-row"><span class="player-coins">🪙 ${player.coins}</span>${itCoins}${loanBadge}</div></div>`;
+        const hasCustomCoinMark = typeof options.getCoinMark === 'function';
+        const coinMark = hasCustomCoinMark ? options.getCoinMark() : '🪙';
+        const coinAccessibleLabel = hasCustomCoinMark ? '<span class="screen-reader-only">コイン</span>' : '';
+        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span></div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>`;
         const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player) : '';
         const detail = `<div class="player-detail">${town}<div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
         if (compact) {
@@ -137,6 +153,7 @@ const UiPlayerDisplay = (() => {
 
     return Object.freeze({
         difficultyLabel,
+        renderPlayerKindIcon,
         normalizeCpuDifficulty,
         playerKindAccessibleLabel,
         resolvePlayerSetting,

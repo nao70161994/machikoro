@@ -2459,6 +2459,10 @@ runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成
     assert.ok(!html.includes('onBuildCard('));
     assert.ok(html.includes('残り6枚'));
     assert.ok(html.includes('can-afford'));
+    assert.ok(html.includes('class="card-dice-mark"'));
+    assert.ok(html.includes('class="card-coin-mark"'));
+    assert.ok(!html.includes('🎲'));
+    assert.ok(!html.includes('💰'));
 });
 
 runTest('カード詳細と建設ボタンは説明文と分類をescapeする', () => {
@@ -2559,6 +2563,15 @@ runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生
     assert.ok(!html.includes('onBuildLandmark('));
     assert.ok(html.includes('✅済'));
     assert.ok(html.includes('disabled'));
+});
+
+runTest('未建設ランドマークの価格もカード共通のコイン記号を使う', () => {
+    const { context } = loadUiRuntime();
+    const html = context.renderLandmarkBuildButton('駅', false, 4, true);
+
+    assert.ok(html.includes('class="card-coin-mark"'));
+    assert.ok(html.includes('>4</span>'));
+    assert.ok(!html.includes('💰'));
 });
 
 runTest('card select toggle HTML helpers は data-action と aria-pressed を生成する', () => {

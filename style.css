@@ -2588,9 +2588,20 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
 .card-color-landmark .card-top-strip { background: rgba(240,192,64,0.2); border-bottom: 1px solid rgba(240,192,64,0.4); }
 
 .card-dice-num {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-size: 13px;
     font-weight: bold;
     letter-spacing: 1px;
+}
+
+.card-dice-mark,
+.card-coin-mark {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    vertical-align: -3px;
 }
 
 .card-color-blue   .card-dice-num { color: #93c5fd; }
@@ -2627,6 +2638,9 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
 }
 
 .card-cost {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     font-size: 13px;
     color: #f0c040;
     font-weight: bold;
@@ -2940,9 +2954,14 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
     padding: 8px;
 }
 
-.winner-emoji {
-    font-size: 48px;
-    animation: winnerBounce 0.6s ease-in-out infinite alternate;
+.winner-trophy-art {
+    display: block;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 8px;
+    overflow: visible;
+    filter: drop-shadow(0 7px 10px rgba(181, 123, 41, 0.28));
+    animation: winnerFloat 2.8s ease-in-out infinite;
 }
 
 .winner-title {
@@ -2972,9 +2991,9 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
 
 .winner-sub-turn { white-space: nowrap; }
 
-@keyframes winnerBounce {
-    0%   { transform: translateY(0); }
-    100% { transform: translateY(-8px); }
+@keyframes winnerFloat {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
 }
 
 /* ===== 勝利画面統計 ===== */
@@ -3045,6 +3064,16 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
     padding: 8px;
     font-size: 13px;
     line-height: 1.3;
+}
+
+@media (max-width: 360px) {
+    .winner-title {
+        font-size: 20px;
+    }
+    .winner-share-actions {
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+    }
 }
 
 .winner-review {
@@ -3944,6 +3973,21 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
 
 #pwaInstallBanner .pwa-banner-actions { flex: 0 0 auto; }
 
+@media (max-width: 360px) {
+    #pwaInstallBanner[style*="display: block"] {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+    #pwaInstallBanner .pwa-banner-actions {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: minmax(0, 1fr) 44px;
+        width: 100%;
+    }
+    #pwaInstallBanner .pwa-banner-btn { min-height: 44px; }
+    #pwaInstallBanner .pwa-banner-dismiss { min-width: 44px; padding: 8px; }
+}
+
 .online-readiness-summary {
     display: inline-block;
     margin-left: 6px;
@@ -4131,7 +4175,66 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) {
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) #titleScreen {
     background: radial-gradient(ellipse at 75% 10%, #675047 0, transparent 52%),
-        linear-gradient(180deg, #24394b, #192938 65%, #30273b);
+        linear-gradient(180deg, #24394b 0%, #192938 65%, #172a38 100%);
+}
+html[data-design="sunset"] #cityCanvas { display: none; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-bar,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-tabs {
+    background: #15283a;
+    border: 1px solid #526a7d;
+    box-shadow: inset 0 1px rgba(255, 244, 223, 0.04);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-btn,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-tab-btn {
+    color: #c2cdd4;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-btn.active,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-tab-btn.active {
+    border: 1px solid #6b8291;
+    background: #29465a;
+    color: #ffe1a6;
+    box-shadow: inset 0 1px rgba(255, 244, 223, 0.1);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-content {
+    border-color: #536a7c;
+    background: linear-gradient(145deg, #1c3346, #192e40);
+    color: #e0e5e5;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .text-input {
+    border-color: #526a7d;
+    background: #142638;
+    color: #fff4df;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .text-input::placeholder {
+    color: #a9bbc5;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .text-input:focus {
+    border-color: #efc487;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .setup-secondary-action {
+    border: 1px solid #61798a;
+    border-radius: 9px;
+    background: #29465a;
+    color: #f0e6d1;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-select button {
+    background: #29465a;
+    color: #ffe1a6;
+    box-shadow: inset 0 1px rgba(255, 244, 223, 0.1);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-select button:active {
+    background: #efc487;
+    color: #243246;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .stats-filter-btn {
+    border-color: #526a7d;
+    background: #172c3e;
+    color: #cbd5da;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .stats-filter-btn.active {
+    border-color: #b79c62;
+    background: #33495a;
+    color: #ffe1a6;
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .title-header h1 {
     color: #ffe1a6;
@@ -4165,7 +4268,10 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn {
     border-radius: 12px;
     box-shadow: 0 3px 0 #111e2d;
 }
-html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn:disabled { opacity: 0.6; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn:disabled {
+    opacity: 0.9;
+    box-shadow: 0 4px 0 #172635, 0 5px 12px rgba(5, 13, 24, 0.12), inset 0 1px rgba(255, 255, 255, 0.72);
+}
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-body {
     padding: 10px;
     gap: 6px;
@@ -4179,6 +4285,272 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-re
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-purple .card-top-strip { background: #ded2e9; border-color: #9881ac; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-landmark .card-top-strip { background: #f1dca4; border-color: #af9454; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-title { color: #ffe1a6; text-shadow: none; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast).game-finished .status {
+    padding: clamp(12px, 2vw, 22px);
+    border: 1px solid #536878;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #1d3548, #172a3a);
+    box-shadow: 0 12px 28px rgba(5, 13, 24, 0.22), inset 0 1px rgba(255, 244, 223, 0.06);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-stats {
+    background: #142638;
+    border: 1px solid #4e6474;
+    border-radius: 10px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-stats-row {
+    border-color: rgba(160, 180, 190, 0.2);
+    color: #d0d8dd;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-stats-row.highlight {
+    color: #ffe1a6;
+    background: rgba(240, 192, 64, 0.08);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-sub-type,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-stats-row > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-kind-icon {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+    fill: #d7bd91;
+    stroke: #324b58;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-kind-icon.is-cpu {
+    fill: #8aa6ae;
+    stroke: #294553;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-award-icon {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    color: #f0c46c;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-stats-row .card-coin-mark {
+    width: 17px;
+    height: 17px;
+    vertical-align: 0;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-coin-fallback {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    fill: #e8b94f;
+    stroke: #6f5629;
+    stroke-width: 1.2;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-coin-fallback path {
+    fill: none;
+    stroke: #6f5629;
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-primary-action {
+    border: 1px solid #ffe1a6;
+    border-radius: 10px;
+    box-shadow: 0 3px 0 #a47649;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-screen .winner-secondary-action {
+    border-color: #647c8a;
+    border-radius: 10px;
+    background: #21394b;
+    color: #f0e6d1;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-review-details,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-review-item {
+    border-color: #526b7a;
+    background-color: #1c3244;
+}
+
+/* Give the sunset edition a composed, editorial title rather than a small logo
+   stranded above the setup controls on desktop. */
+@media (min-width: 760px) {
+    html[data-design="sunset"] .title-content {
+        grid-template-areas:
+            "hero hero"
+            "switch tabs"
+            "content content"
+            "resume resume"
+            "about about"
+            "ad ad"
+            "legal legal";
+    }
+    html[data-design="sunset"] .title-header {
+        position: relative;
+        display: flex;
+        min-height: 244px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 22px 54% 22px 38px;
+        overflow: hidden;
+        border: 1px solid rgba(240, 207, 153, 0.34);
+        border-radius: 24px;
+        background: linear-gradient(105deg, rgba(17, 34, 49, 0.98) 0%, rgba(23, 42, 56, 0.94) 43%, rgba(34, 47, 59, 0.22) 74%, rgba(36, 39, 53, 0.1) 100%);
+        box-shadow: 0 18px 42px rgba(5, 13, 24, 0.3), inset 0 1px rgba(255, 244, 223, 0.08);
+    }
+    html[data-design="sunset"] .title-header::after {
+        position: absolute;
+        z-index: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 58%;
+        content: "";
+        pointer-events: none;
+        background: linear-gradient(90deg, #172a38 0%, rgba(23, 42, 56, 0.34) 22%, transparent 60%), linear-gradient(0deg, rgba(12, 25, 39, 0.64), transparent 56%);
+    }
+    html[data-design="sunset"] .title-header h1,
+    html[data-design="sunset"] .title-header .title-logo-sub,
+    html[data-design="sunset"] .title-header .title-buttons-row { position: relative; z-index: 1; }
+    html[data-design="sunset"] .title-header h1 {
+        margin: 0;
+        font-size: clamp(38px, 4vw, 56px);
+        line-height: 1.16;
+        letter-spacing: 0.08em;
+        text-shadow: 0 3px 0 #142335, 0 10px 28px rgba(4, 10, 18, 0.45);
+    }
+    html[data-design="sunset"] .title-header .title-logo-sub {
+        margin: 8px 0 16px 5px;
+        color: #f2d4a5;
+        font-size: 11px;
+        letter-spacing: 0.48em;
+    }
+    html[data-design="sunset"] .title-header .sunset-hero {
+        position: absolute;
+        inset: 0 0 0 auto;
+        z-index: 0;
+        display: flex;
+        width: 61%;
+        align-items: flex-end;
+        justify-content: center;
+        margin: 0;
+        overflow: hidden;
+    }
+    html[data-design="sunset"] .title-header .sunset-hero img {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        object-fit: cover;
+        object-position: center 54%;
+        transform: scale(1.04);
+        filter: saturate(0.92) contrast(1.04);
+    }
+    html[data-design="sunset"] .title-header .sunset-hero p { display: none; }
+    html[data-design="sunset"] .title-header .title-buttons-row { width: min(230px, 100%); }
+    html[data-design="sunset"] .title-header .rules-btn {
+        min-height: 42px;
+        border: 1px solid rgba(255, 232, 192, 0.5);
+        border-radius: 999px;
+        background: rgba(24, 39, 52, 0.8);
+        color: #ffedce;
+        box-shadow: inset 0 1px rgba(255, 255, 255, 0.12);
+    }
+}
+
+/* Treat facility art as a small illustrated scene, not a bare utility icon. */
+html[data-design="sunset"] .card-btn .sunset-facility-art {
+    box-sizing: border-box;
+    height: auto;
+    min-height: 88px;
+    aspect-ratio: 2 / 1;
+    margin: 3px 0 5px;
+    padding: 4px 7px 2px;
+    border: 1px solid rgba(48, 67, 75, 0.28);
+    border-radius: 11px;
+    background-color: #d9d6c3;
+    background-image:
+        radial-gradient(circle at 79% 25%, rgba(255, 222, 158, 0.94) 0 8px, rgba(255, 222, 158, 0.24) 9px 17px, transparent 18px),
+        radial-gradient(ellipse at 14% 112%, #788d78 0 30%, transparent 31%),
+        radial-gradient(ellipse at 74% 123%, #526f69 0 43%, transparent 44%),
+        linear-gradient(180deg, #7895a0 0%, #bdab9d 62%, #c5ad89 63%, #9c896d 100%);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.56), inset 0 -8px 16px rgba(44, 58, 58, 0.12);
+    filter: drop-shadow(0 2px 2px rgba(43, 48, 50, 0.18));
+}
+html[data-design="sunset"] .card-btn .sunset-facility-art > use {
+    transform-box: view-box;
+    transform-origin: center;
+    transform: translate(-6px, -3px) scale(1.08);
+}
+html[data-design="sunset"] .card-color-blue .sunset-facility-art {
+    background-image:
+        radial-gradient(circle at 79% 25%, rgba(255, 231, 178, 0.96) 0 8px, rgba(255, 231, 178, 0.25) 9px 17px, transparent 18px),
+        radial-gradient(ellipse at 14% 112%, #829f8d 0 30%, transparent 31%),
+        radial-gradient(ellipse at 74% 123%, #5b7b78 0 43%, transparent 44%),
+        linear-gradient(180deg, #9dc0c5 0%, #d1c3ad 62%, #cdbb98 63%, #a19075 100%);
+}
+html[data-design="sunset"] .card-color-green .sunset-facility-art {
+    background-image:
+        radial-gradient(circle at 79% 25%, rgba(255, 220, 144, 0.96) 0 9px, rgba(255, 220, 144, 0.25) 10px 18px, transparent 19px),
+        radial-gradient(ellipse at 14% 112%, #8da077 0 30%, transparent 31%),
+        radial-gradient(ellipse at 74% 123%, #647c63 0 43%, transparent 44%),
+        linear-gradient(180deg, #a9c1ae 0%, #dec8a5 62%, #cdb58e 63%, #9b896c 100%);
+}
+html[data-design="sunset"] .card-color-red .sunset-facility-art {
+    background-image:
+        radial-gradient(circle at 79% 25%, rgba(255, 207, 154, 0.96) 0 8px, rgba(255, 207, 154, 0.26) 9px 17px, transparent 18px),
+        radial-gradient(ellipse at 14% 112%, #9b8678 0 30%, transparent 31%),
+        radial-gradient(ellipse at 74% 123%, #77676b 0 43%, transparent 44%),
+        linear-gradient(180deg, #b5a1a2 0%, #e0c0a6 62%, #d0ac8d 63%, #9b806d 100%);
+}
+html[data-design="sunset"] .card-color-purple .sunset-facility-art,
+html[data-design="sunset"] .card-color-landmark .sunset-facility-art {
+    background-image:
+        radial-gradient(circle at 79% 25%, rgba(255, 220, 156, 0.96) 0 8px, rgba(255, 220, 156, 0.25) 9px 17px, transparent 18px),
+        radial-gradient(ellipse at 14% 112%, #897f91 0 30%, transparent 31%),
+        radial-gradient(ellipse at 74% 123%, #5b6779 0 43%, transparent 44%),
+        linear-gradient(180deg, #8992a7 0%, #c6b4b4 62%, #c8ad92 63%, #8b7a72 100%);
+}
+html[data-design="sunset"] .card-btn .facility-scene-pasture {
+    background-image:
+        radial-gradient(circle at 79% 25%, rgba(255, 231, 178, 0.96) 0 8px, rgba(255, 231, 178, 0.25) 9px 17px, transparent 18px),
+        radial-gradient(ellipse at 14% 112%, #829f8d 0 30%, transparent 31%),
+        radial-gradient(ellipse at 74% 123%, #5b7b78 0 43%, transparent 44%),
+        linear-gradient(180deg, #9dc0c5 0%, #d1c3ad 62%, #cdbb98 63%, #a19075 100%);
+}
+html[data-design="sunset"] .card-btn .facility-scene-water {
+    background-image:
+        radial-gradient(circle at 22% 24%, rgba(255, 230, 174, 0.94) 0 7px, rgba(255, 230, 174, 0.2) 8px 16px, transparent 17px),
+        linear-gradient(180deg, transparent 0 57%, rgba(241, 231, 200, 0.38) 57% 59%, transparent 60%),
+        linear-gradient(180deg, #98b8c1 0%, #d4c3aa 57%, #82a9a8 58%, #557c82 100%);
+}
+html[data-design="sunset"] .card-btn .facility-scene-street {
+    background-image:
+        radial-gradient(ellipse at 76% 18%, rgba(255, 204, 154, 0.42) 0 2%, rgba(255, 204, 154, 0.14) 17%, transparent 34%),
+        linear-gradient(180deg, transparent 0 66%, rgba(245, 224, 195, 0.34) 66% 68%, transparent 69%),
+        linear-gradient(180deg, #a9adb1 0%, #d8bca6 60%, #c1a994 61%, #817973 100%);
+}
+html[data-design="sunset"] .card-btn .facility-scene-industrial {
+    background-image:
+        radial-gradient(ellipse at 24% 16%, rgba(238, 209, 165, 0.34) 0 2%, rgba(238, 209, 165, 0.12) 18%, transparent 36%),
+        linear-gradient(180deg, transparent 0 59%, rgba(245, 231, 198, 0.26) 59% 61%, transparent 62%),
+        linear-gradient(180deg, #a4b4b6 0%, #d2c3af 59%, #9b9e8e 60%, #687777 100%);
+}
+html[data-design="sunset"] .card-btn .facility-scene-civic {
+    background-image:
+        radial-gradient(circle at 21% 24%, rgba(255, 224, 171, 0.88) 0 6px, rgba(255, 224, 171, 0.18) 7px 15px, transparent 16px),
+        linear-gradient(180deg, transparent 0 64%, rgba(235, 221, 204, 0.28) 64% 66%, transparent 67%),
+        linear-gradient(180deg, #8997ac 0%, #c5b8b2 59%, #a99d99 60%, #747d87 100%);
+}
+html[data-design="sunset"] .card-btn .facility-scene-landmark {
+    background-image:
+        radial-gradient(circle at 79% 24%, rgba(255, 231, 181, 0.98) 0 8px, rgba(255, 231, 181, 0.24) 9px 17px, transparent 18px),
+        radial-gradient(ellipse at 50% 116%, rgba(231, 216, 188, 0.54) 0 34%, transparent 35%),
+        linear-gradient(180deg, #91a2ad 0%, #c8bbae 59%, #b2a69a 60%, #747d87 100%);
+}
+html[data-design="sunset"] .card-btn .card-top-strip {
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.68), 0 2px 5px rgba(38, 45, 52, 0.08);
+}
+html[data-design="sunset"] .card-btn {
+    border-color: #c4b28e;
+    box-shadow: 0 4px 0 #172635, 0 9px 18px rgba(5, 13, 24, 0.2), inset 0 1px rgba(255, 255, 255, 0.85);
+}
 
 /* Original vector art is shared by the new city's visual identity. */
 .sunset-hero { display: none; }
@@ -4198,6 +4570,13 @@ html[data-design="sunset"] .sunset-hero p {
     font-weight: 600;
     color: #fff1d5;
     letter-spacing: 0.03em;
+}
+@media (max-width: 759px) {
+    html[data-design="sunset"] .sunset-hero {
+        width: calc(100% + 32px);
+        margin: 12px -16px;
+    }
+    html[data-design="sunset"] .sunset-hero img { border-radius: 16px; }
 }
 html[data-design="sunset"] .title-header { padding-top: 4px; }
 html[data-design="sunset"] .title-logo-deco { display: none; }
@@ -4236,6 +4615,12 @@ html[data-design="sunset"] .card-btn .card-name { font-size: 14px; line-height: 
 html[data-design="sunset"] body:not(.accessibility-large-text) .card-btn .card-effect { font-size: 12px; }
 
 .sunset-town { display: none; }
+.town-overflow {
+    display: block;
+    font-size: 11px;
+    text-align: center;
+    white-space: nowrap;
+}
 html[data-design="sunset"] .sunset-town {
     display: block;
     margin: 10px 0 12px;
@@ -4256,15 +4641,32 @@ html[data-design="sunset"] .town-summary {
 }
 html[data-design="sunset"] .town-summary span { font-size: 11px; font-weight: 400; }
 html[data-design="sunset"] .town-street {
+    position: relative;
+    isolation: isolate;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+    grid-template-columns: repeat(auto-fit, 72px);
     align-items: end;
+    justify-content: center;
     gap: 4px;
     padding-bottom: 6px;
     border-bottom: 4px solid #d3bd97;
 }
-html[data-design="sunset"] .town-building { position: relative; width: 64px; }
-html[data-design="sunset"] .town-building .sunset-facility-art { height: 44px; }
+html[data-design="sunset"] .town-street::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 2px 0 6px;
+    border-radius: 8px 8px 2px 2px;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse 52% 82% at 8% 108%, rgba(150, 169, 133, 0.22) 0 62%, transparent 63%),
+        radial-gradient(ellipse 48% 76% at 91% 111%, rgba(193, 164, 117, 0.15) 0 63%, transparent 64%),
+        linear-gradient(180deg, rgba(25, 42, 54, 0.08), rgba(31, 47, 45, 0.12));
+}
+html[data-design="sunset"] .town-building,
+html[data-design="sunset"] .town-overflow { position: relative; z-index: 1; }
+html[data-design="sunset"] .town-building { width: 72px; }
+html[data-design="sunset"] .town-building .sunset-facility-art { height: 50px; }
 html[data-design="sunset"] .town-building-count {
     display: block;
     color: #fff3da;
@@ -4272,10 +4674,24 @@ html[data-design="sunset"] .town-building-count {
     text-align: center;
 }
 html[data-design="sunset"] .town-landmark { width: 50px; padding-bottom: 16px; }
-html[data-design="sunset"] .town-overflow { font-size: 11px; padding: 8px; }
+html[data-design="sunset"] .town-overflow {
+    font-size: 11px;
+    padding: 8px 4px;
+    white-space: nowrap;
+}
 html[data-design="sunset"] .winner-screen { padding-top: 12px; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-trophy-art {
+    width: 72px;
+    height: 72px;
+    box-sizing: border-box;
+    padding: 6px;
+    border: 1px solid rgba(245, 205, 121, 0.72);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 36%, #314a57 0 42%, #203746 72%);
+    box-shadow: 0 0 0 4px rgba(224, 179, 91, 0.09), 0 8px 18px rgba(7, 16, 24, 0.3), inset 0 1px rgba(255, 243, 211, 0.24);
+}
 html[data-design="sunset"] .winner-screen .sunset-town { margin: 18px 0; text-align: left; }
-html[data-design="sunset"] .winner-screen .town-building { width: 76px; }
+html[data-design="sunset"] .winner-screen .town-building { width: 72px; }
 html[data-design="sunset"] body.accessibility-high-contrast .sunset-town { background: #000; border-color: #fff; color: #fff; }
 
 html[data-design="sunset"] .winner-review-details {
@@ -4303,7 +4719,15 @@ html[data-design="sunset"] .winner-review-details .winner-review-note {
 }
 html[data-design="sunset"] body.accessibility-high-contrast .winner-review-details > summary { color: #fff; }
 
-html[data-design="sunset"] .town-street > .town-building { width: auto; min-width: 0; }
+html[data-design="sunset"] .town-street > .town-building { width: 72px; min-width: 0; }
+
+@media (min-width: 361px) and (max-width: 480px) {
+    html[data-design="sunset"] .town-street { grid-template-columns: repeat(auto-fit, 80px); }
+    html[data-design="sunset"] .town-building,
+    html[data-design="sunset"] .town-street > .town-building,
+    html[data-design="sunset"] .winner-screen .town-building { width: 80px; }
+    html[data-design="sunset"] .town-building .sunset-facility-art { height: 56px; }
+}
 
 @media (max-width: 480px) {
     html:not([data-design="sunset"]) #gameScreen[style*="display: block"] {
@@ -4405,6 +4829,25 @@ html[data-design="sunset"] .town-street > .town-building { width: auto; min-widt
     }
 }
 
+@media (min-width: 481px) and (max-width: 759px) {
+    .status { font-size: 14px; padding: 6px 8px; }
+    .turn-timeline { margin-bottom: 6px; padding: 6px 8px; }
+    .turn-timeline h2 { display: none; }
+    .turn-timeline-list { gap: 4px; }
+    .turn-timeline-step { padding: 5px 2px; }
+    .turn-timeline-marker,
+    .turn-timeline-detail { display: none; }
+    .turn-timeline-label { font-size: 11px; }
+    .game-connectivity-panel { gap: 4px; margin-bottom: 6px; padding: 6px; }
+    .online-game-status { padding: 7px 10px; font-size: 13px; }
+    .game-activity-status { min-height: 28px; padding: 4px 8px; font-size: 12px; justify-content: flex-start; text-align: left; }
+    .game-connection-quality { min-height: 24px; padding: 2px 8px; }
+    .game-action-panel { gap: 6px; padding: 8px; }
+    .game-action-toolbar { min-height: 28px; }
+    .dice-face { width: 52px; height: 52px; padding: 6px; border-radius: 10px; }
+    #btnSkip:disabled { display: none; }
+}
+
 @media (min-width: 760px) {
     body { max-width: 1120px; }
 
@@ -4458,6 +4901,11 @@ html[data-design="sunset"] .town-street > .town-building { width: auto; min-widt
             grid-template-columns: minmax(250px, 0.8fr) minmax(400px, 1.2fr);
             padding: 16px;
         }
+        html[data-design="sunset"] .title-header h1 { font-size: 34px; }
+        .player-setting-row { align-items: stretch; flex-direction: column; gap: 6px; }
+        .player-setting-name { flex: 0 0 auto; }
+    }
+    @media (min-width: 900px) and (max-width: 1023px) {
         .player-setting-row { align-items: stretch; flex-direction: column; gap: 6px; }
         .player-setting-name { flex: 0 0 auto; }
     }
@@ -4598,3 +5046,137 @@ html[data-design="sunset"] .town-street > .town-building { width: auto; min-widt
 }
 
 body.game-finished #status { position: relative; z-index: 1000; }
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pwa-banner,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaInstallBanner,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner {
+    background: linear-gradient(145deg, #1c3346, #192e40);
+    border-top-color: rgba(240, 190, 89, 0.62);
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaInstallBanner {
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 24px);
+    max-width: 560px;
+    border: 1px solid rgba(240, 190, 89, 0.48);
+    border-radius: 16px;
+    box-shadow: 0 14px 40px rgba(5, 16, 26, 0.42), inset 0 1px rgba(255, 255, 255, 0.06);
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pwa-banner-btn {
+    background: linear-gradient(135deg, #f4c35d, #e9a83e);
+    color: #18283a;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pwa-banner-dismiss {
+    background: rgba(233, 242, 246, 0.12);
+    color: #e8eef1;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-cards .card-badge {
+    background: #29465a;
+    border: 1px solid rgba(190, 211, 213, 0.3);
+    color: #e9e5d9;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast):not(.game-finished) .status {
+    border-color: #536878;
+    background: linear-gradient(145deg, #1d3548, #172a3a);
+    color: #e9e5d9;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .log-header {
+    border-color: #435d6c;
+    background: #1d3548;
+    color: #d8e1e2;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .log-container .log {
+    border-color: #435d6c;
+    background: #172b3d;
+    color: #d8e1e2;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .log-container .log-summary {
+    border-color: #435d6c;
+    background: #1a3042;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-landmarks .landmark-badge:not(.built) {
+    border-color: #526b7a;
+    background: #29465a;
+    color: #e2e7df;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .landmark-badge-icon {
+    display: block;
+    width: 28px;
+    height: 14px;
+    flex: 0 0 28px;
+    overflow: visible;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-landmark-mark {
+    display: inline-flex;
+    align-items: center;
+    width: 30px;
+    height: 20px;
+    overflow: visible;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-landmark-mark .landmark-badge-icon {
+    width: 34px;
+    height: 17px;
+    flex: 0 0 34px;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 1px solid #536c78;
+    background: #29465a;
+    color: #f0e2c4;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-kind-icon {
+    display: block;
+    width: 17px;
+    height: 17px;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-kind-level {
+    font-size: 10px;
+    line-height: 1;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-coins {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-bar {
+    border-color: #435d6c;
+    background: #172b3d;
+    box-shadow: 0 6px 12px rgba(8, 21, 34, 0.68);
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-btn {
+    border-color: #526b7a;
+    background: #29465a;
+    color: #d8e1e2;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-btn.active {
+    border-color: #c4a962;
+    background: #33495a;
+    color: #ffe1a6;
+    box-shadow: inset 0 1px rgba(255, 244, 223, 0.12);
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-btn:not(:disabled):hover {
+    border-color: #d6b96f;
+    background: #3a5365;
+    color: #ffe1a6;
+}

@@ -1,5 +1,8 @@
-"""Generate the project's original geometric facility illustrations (no external assets)."""
+"""Generate a geometric starter draft without overwriting curated production art."""
+import argparse
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
 
 motifs = {
     'field': '<path d="M18 58Q78 35 144 60L138 73H22Z" fill="#c6ab60"/><path d="M36 66L62 51M57 69L83 52M82 71L104 55M109 71L124 61" stroke="#f9e1a0"/><path d="M40 49V20M58 46V17M76 44V23" stroke="#9b7439"/><path d="M40 36L31 28M40 30L49 22M58 34L49 24M58 28L67 19M76 35L85 27" stroke="#d7a755"/>',
@@ -24,4 +27,18 @@ parts = ['<svg xmlns="http://www.w3.org/2000/svg"><defs>']
 for name, body in motifs.items():
     parts.append(f'<symbol id="{name}" viewBox="0 0 160 80"><ellipse cx="80" cy="69" rx="64" ry="6" fill="#233747" opacity=".10"/><g stroke="#334b53" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{body}</g></symbol>')
 parts.append('</defs></svg>')
-(Path(__file__).resolve().parent.parent/'icons/facility-art.svg').write_text('\n'.join(parts)+'\n')
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument(
+    '--output', type=Path,
+    default=ROOT / 'artifacts' / 'facility-art-draft.svg',
+    help='draft output path (the curated icons/facility-art.svg is never overwritten)',
+)
+args = parser.parse_args()
+output_path = args.output.resolve()
+production_path = (ROOT / 'icons' / 'facility-art.svg').resolve()
+if output_path == production_path:
+    parser.error('refusing to overwrite curated production artwork; choose a draft output path')
+output_path.parent.mkdir(parents=True, exist_ok=True)
+output_path.write_text('\n'.join(parts)+'\n')
+print(f'Wrote draft illustration sheet: {output_path}')

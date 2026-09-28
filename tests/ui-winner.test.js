@@ -139,12 +139,33 @@ runTest('ui winnerは結果画像用modelを順位順に固定してCanvasへ描
         fillRect: (...args) => calls.push(['fillRect', ...args]),
         fillText: (...args) => calls.push(['fillText', ...args]),
         createLinearGradient() { return { addColorStop() {} }; },
+        beginPath: () => calls.push(['beginPath']),
+        arc: (...args) => calls.push(['arc', ...args]),
+        moveTo: (...args) => calls.push(['moveTo', ...args]),
+        lineTo: (...args) => calls.push(['lineTo', ...args]),
+        quadraticCurveTo: (...args) => calls.push(['quadraticCurveTo', ...args]),
+        closePath: () => calls.push(['closePath']),
+        fill: () => calls.push(['fill']),
+        stroke: () => calls.push(['stroke']),
+        roundRect: (...args) => calls.push(['roundRect', ...args]),
+        rect: (...args) => calls.push(['rect', ...args]),
+        save: () => calls.push(['save']),
+        restore: () => calls.push(['restore']),
+        measureText: value => ({ width: String(value).length * 22 }),
         textAlign: 'left', fillStyle: '', font: '',
     };
     const canvas = { getContext: () => context };
     assert.strictEqual(UiWinner.drawResultCard(canvas, model), true);
     assert.deepStrictEqual([canvas.width, canvas.height], [1200, 630]);
     assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('Bob')));
+    assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('DICE CITY')));
+    assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('最終コイン')));
+    assert.ok(!calls.some(call => call[0] === 'fillText' && call[1] === '順位'),
+        'the city illustration does not carry a detached standings heading');
+    assert.ok(calls.some(call => call[0] === 'fillText' && String(call[1]).includes('20 コイン')));
+    assert.ok(calls.some(call => call[0] === 'arc'), 'the result card draws its own medal and city sun');
+    assert.ok(calls.some(call => call[0] === 'roundRect'), 'the result card uses finished score panels');
+    assert.ok(!calls.some(call => call[0] === 'fillText' && /🏆/.test(String(call[1]))), 'the share image does not depend on emoji fonts');
 });
 
 runTest('ui winnerは10人同点のstable順と危険な名前のlist labelを維持する', () => {
@@ -188,6 +209,8 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
         canRematch: true, resultAdSlot: '<div class="ad">ad</div>', escapeHtml,
     });
     assert.ok(human.includes('<div class="winner-title"><span class="winner-title-name">Alice</span><span class="winner-title-outcome">の勝利！</span></div>'));
+    assert.ok(human.includes('<svg class="winner-trophy-art" viewBox="0 0 64 64" aria-hidden="true" focusable="false">'));
+    assert.ok(!human.includes('<div class="winner-emoji">'));
     assert.ok(human.includes('<span class="winner-sub-turn">'));
     assert.ok(human.includes('<span class="winner-sub-type">👤 人間プレイヤーが勝ちました</span><span class="winner-sub-turn">9ターン</span>'));
     assert.ok(human.includes('<div class="winner-stats" role="list" aria-label="最終コイン">'));
@@ -202,6 +225,22 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
     assert.ok(cpu.includes('<span class="winner-sub-type">🤖 CPUプレイヤーが勝ちました</span><span class="winner-sub-turn">10ターン</span>'));
     assert.ok(!cpu.includes('winnerRematchButton'));
     assert.ok(cpu.includes('2連勝中！'));
+});
+
+runTest('sunset結果画面はプレイヤー種別とコインを専用アイコンで表示する', () => {
+    const winner = { name: 'Alice', coins: 30 };
+    const cpu = { name: 'Bot', coins: 18 };
+    const html = UiWinner.buildWinnerScreenHtml({
+        designTheme: 'sunset', winner, players: [winner, cpu], isCpuWinner: false,
+        isCpuPlayer: index => index === 1,
+        renderCoinMark: () => '<svg class="card-coin-mark" aria-hidden="true"></svg>',
+        turnCount: 8, escapeHtml,
+    });
+    assert.ok(html.includes('<span class="winner-sub-type"><svg class="winner-kind-icon is-human"'));
+    assert.ok(html.includes('class="winner-kind-icon is-cpu"'));
+    assert.ok(html.includes('class="winner-award-icon"'));
+    assert.strictEqual((html.match(/class="card-coin-mark"/g) || []).length, 2);
+    assert.ok(!html.includes('👤') && !html.includes('🤖') && !html.includes('🪙'));
 });
 
 runTest('ui winnerは勝者・種別・turnを読み上げ用statusへ整形する', () => {
@@ -289,10 +328,20 @@ runTest('所持コイン最下位でもランドマークを完成させた勝�
     assert.strictEqual(model.standings[0].isWinner, false);
     assert.strictEqual(model.standings[1].isWinner, true);
     const labels = [];
-    const canvas = { getContext: () => ({ fillRect() {}, fillText(text) { labels.push(text); } }) };
+    const context = {
+        fillRect() {}, fillText(text) { labels.push(text); },
+        createLinearGradient() { return { addColorStop() {} }; },
+        beginPath() {}, arc() {}, moveTo() {}, lineTo() {}, quadraticCurveTo() {}, closePath() {},
+        fill() {}, stroke() {}, roundRect() {}, rect() {}, save() {}, restore() {},
+        measureText(value) { return { width: String(value).length * 20 }; },
+        textAlign: 'left', fillStyle: '', font: '',
+    };
+    const canvas = { getContext: () => context };
     UiWinner.drawResultCard(canvas, model);
-    assert.ok(labels.includes('🏆 Winner'));
-    assert.ok(!labels.some(text => text.includes('位')));
+    assert.ok(labels.includes('Winner の勝利'));
+    assert.ok(labels.includes('0 コイン'));
+    assert.ok(!labels.some(text => text.includes('🏆')));
+    assert.ok(!labels.some(text => text === '1位' || text === '2位'));
 });
 
 runTest('新版の結果画面は次の操作を詳細集計より先に置き、従来版の順序を保つ', () => {

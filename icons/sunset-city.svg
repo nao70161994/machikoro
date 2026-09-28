@@ -6,30 +6,65 @@
     <rect width="480" height="190" rx="24" fill="url(#sky)"/>
     <circle cx="355" cy="58" r="31" fill="#f4d59e"/>
     <path d="M0 123Q70 68 140 116T290 106T480 118V190H0Z" fill="#405768"/>
+    <g fill="#354c5a" opacity=".82">
+        <path d="M0 121V104L11 98L22 104V121ZM18 121V109L30 102L42 109V121ZM430 120V105L441 98L452 105V120ZM450 120V109L463 101L480 109V120Z"/>
+    </g>
+    <g fill="#e7c88f" opacity=".62">
+        <path d="M7 108H11V112H7ZM25 112H29V116H25ZM437 109H441V113H437ZM461 112H465V116H461ZM472 112H476V116H472Z"/>
+    </g>
     <path d="M0 154Q130 130 240 151T480 142V190H0Z" fill="url(#ground)"/>
     <path d="M120 190Q204 144 363 151" stroke="#c5ad8c" stroke-width="17"/>
     <g stroke="#283a47" stroke-width="3" stroke-linejoin="round">
         <path d="M51 144V96L88 68L125 96V144Z" fill="#eed8b3"/>
+        <path d="M113 92L124 99V142H113Z" fill="#b99c79" opacity=".48" stroke="none"/>
         <path d="M45 98L88 64L132 98" stroke="#b9715e" stroke-width="10"/>
+        <path d="M59 95L88 72L117 95" stroke="#f1c49b" stroke-width="2" opacity=".72"/>
         <path d="M77 145V117H98V145" fill="#6c8985"/>
         <path d="M62 102H75V116H62ZM101 102H114V116H101Z" fill="#ffe1a0"/>
+        <path d="M62 102H75V116H62M101 102H114V116H101" fill="none" stroke="#526a69" stroke-width="2"/>
+        <path d="M68 103V115M107 103V115" stroke="#fff0c7" stroke-width="1.4" opacity=".8"/>
+        <path d="M84 128H91V137H84Z" fill="#f5d69b"/>
         <path d="M156 147V87H229V147Z" fill="#f0ddbc"/>
+        <path d="M217 88H228V146H217Z" fill="#b6a080" opacity=".5" stroke="none"/>
         <path d="M151 87L169 67H220L235 87Z" fill="#527e89"/>
+        <path d="M168 84L178 72H216" fill="none" stroke="#9dc0b8" stroke-width="2" opacity=".75"/>
         <path d="M155 102H231L226 116H160Z" fill="#bc7460"/>
+        <path d="M155 102H231L226 116H160Z" fill="none" stroke="#e8b18d" stroke-width="1.5"/>
         <path d="M171 102V115M187 102V115M203 102V115M219 102V115" stroke="#fff1d2" stroke-width="8"/>
+        <path d="M169 104H173M185 104H189M201 104H205M217 104H221" stroke="#d6e7da" stroke-width="2"/>
         <path d="M168 124H192V139H168ZM204 122H218V148" fill="#819c98"/>
+        <path d="M171 127H189V136H171Z" fill="#f6d59c"/>
+        <path d="M171 127H189V136H171Z" fill="none" stroke="#536b70" stroke-width="1.4"/>
+        <path d="M177 128V135M183 128V135" stroke="#fff0c3" stroke-width="1.2"/>
+        <path d="M204 122H218V148" fill="none" stroke="#536b70" stroke-width="1.4"/>
         <path d="M277 149V91H309V149" fill="#e0cda9"/>
+        <path d="M300 91H309V148H300Z" fill="#b39b81" opacity=".52" stroke="none"/>
         <path d="M272 91L293 66L314 91Z" fill="#876d87"/>
+        <path d="M292 69L310 90H292Z" fill="#9b8298" opacity=".7" stroke="none"/>
         <circle cx="293" cy="106" r="9" fill="#fff1cf"/>
         <path d="M293 100V106L298 109" stroke-width="2"/>
+        <path d="M283 119H303V123H283Z" fill="#d7bd8f"/>
         <path d="M282 150V133H302V150" fill="#68857f"/>
+        <path d="M287 136H297V148H287Z" fill="#f3d59d"/>
         <path d="M349 146V119L376 100L405 119V146Z" fill="#dfc49e"/>
+        <path d="M393 112L404 120V145H393Z" fill="#b49575" opacity=".48" stroke="none"/>
         <path d="M343 121L376 96L410 121" stroke="#ad705b" stroke-width="8"/>
+        <path d="M351 117L376 99L402 118" stroke="#efc394" stroke-width="1.7" opacity=".7"/>
         <path d="M367 147V126H385V147" fill="#78998b"/>
+        <path d="M354 124H365V135H354Z" fill="#f5d59b"/>
+        <path d="M354 124H365V135H354Z" fill="none" stroke="#526a69" stroke-width="1.5"/>
     </g>
     <g fill="#668b77" stroke="#304e4b" stroke-width="3">
         <path d="M32 152V131M251 153V124M432 151V126"/>
         <circle cx="32" cy="126" r="12"/><circle cx="251" cy="118" r="14"/><circle cx="432" cy="119" r="15"/>
+    </g>
+    <g fill="#e6bd79" stroke="#684f4a" stroke-width="1.6" stroke-linejoin="round">
+        <path d="M132 148V124H138V148Z"/><path d="M126 125L135 117L144 125Z"/>
+        <path d="M323 150V128H328V150Z"/><path d="M317 129L326 121L335 129Z"/>
+    </g>
+    <g fill="#fff0c1" opacity=".9">
+        <rect x="133" y="127" width="2" height="3" rx=".5"/><rect x="137" y="127" width="2" height="3" rx=".5"/>
+        <rect x="324" y="131" width="2" height="3" rx=".5"/><rect x="328" y="131" width="2" height="3" rx=".5"/>
     </g>
     <g transform="translate(387 20) rotate(12)">
         <rect width="42" height="42" rx="10" fill="#f8e9c8" stroke="#dabd88" stroke-width="2"/>

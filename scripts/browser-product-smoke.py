@@ -24,10 +24,16 @@ logs=[]
 processes=[]
 sessions=[]
 target_landmark=os.environ.get("SMOKE_LANDMARK", "駅")
+focus_card=os.environ.get("SMOKE_FOCUS_CARD", "")
 if target_landmark not in ["駅", "ショッピングモール", "電波塔", "all"]:
     raise SystemExit("SMOKE_LANDMARK must be 駅, ショッピングモール, 電波塔 or all")
 trace=[]
 player_area_top=None
+market_art_gallery_count=0
+landmark_art_gallery_count=0
+town_density_captured=False
+result_share_card_captured=False
+market_gallery_session=None
 (out/'failure.json').unlink(missing_ok=True)
 (out/'trace.json').unlink(missing_ok=True)
 def record(s,label):
@@ -54,7 +60,44 @@ def wait(s,code):
     raise RuntimeError('Timed out: '+code)
 def shot(s,name):
     (out/(name+'.png')).write_bytes(base64.b64decode(request('GET','/session/'+s+'/screenshot')))
+def capture_result_share_card(s):
+    data_url=js(s,"const g=GameRuntimeState.runtime.snapshot().game,winner=g&&g.checkWinner(),model=UiWinner.buildResultCardModel({winner,players:g?.players,turnCount:(g?.turnCount||0)+1}),canvas=document.createElement('canvas');if(!UiWinner.drawResultCard(canvas,model))return null;return canvas.toDataURL('image/png')")
+    if not isinstance(data_url,str) or not data_url.startswith('data:image/png;base64,'):
+        raise RuntimeError('Could not render the result share card')
+    (out/'sunset-result-share-card.png').write_bytes(base64.b64decode(data_url.split(',',1)[1]))
+def prepare_market_art_gallery(s):
+    cards=js(s,"const wrappers=Array.from(document.querySelectorAll('#buildMenu .card-wrapper'));window.__artReviewCards=wrappers.map(wrapper=>wrapper.outerHTML);window.__artReviewCardMeta=wrappers.map(wrapper=>({name:wrapper.querySelector('.card-btn')?.dataset.cardName||wrapper.querySelector('.card-btn')?.dataset.landmarkName||'',title:wrapper.querySelector('.card-name')?.textContent||''}));return window.__artReviewCardMeta")
+    if not cards:
+        raise RuntimeError('No rendered market cards are available for the art gallery')
+    (out/'market-art-gallery.json').write_text(json.dumps(cards,ensure_ascii=False,indent=2))
+    return len(cards)
+def capture_market_art_gallery(s):
+    global landmark_art_gallery_count
+    cards=js(s,"return window.__artReviewCardMeta||[]")
+    if not cards:
+        raise RuntimeError('No rendered market cards are available for the art gallery')
+    columns=2 if viewport_width<=480 else 5
+    page_size=6 if viewport_width<=480 else 15
+    style="""<style id=\"art-review-style\">#art-review-overlay{position:fixed;inset:0;z-index:2147483646;box-sizing:border-box;width:100vw;height:100vh;overflow:hidden;padding:8px 10px;background:#132538;color:#f8ebd1;display:flex;flex-direction:column;font-family:system-ui,sans-serif}.art-review-heading{display:flex;justify-content:space-between;gap:8px;margin:0 0 6px;font-size:13px;line-height:18px;flex:0 0 auto}.art-review-grid{display:grid;grid-template-columns:repeat(COLUMNS,minmax(0,1fr));gap:4px 7px;align-content:start;min-height:0}.art-review-grid .card-wrapper{width:100%;min-width:0;margin:0}.art-review-grid .card-btn{width:100%;min-width:0}.art-review-grid .card-body{padding:4px 7px 7px}.art-review-grid .card-name{font-size:13px}.art-review-grid .card-effect{font-size:11px;line-height:1.25}.art-review-grid .card-meta-row{min-height:24px}.art-review-grid .card-detail-btn{min-height:24px;padding:2px 7px;font-size:10px}</style>""".replace('COLUMNS',str(columns))
+    page_count=(len(cards)+page_size-1)//page_size
+    for page_index in range(page_count):
+        start=page_index*page_size
+        end=min(len(cards),start+page_size)
+        js(s,"let overlay=document.getElementById('art-review-overlay');if(!overlay){overlay=document.createElement('div');overlay.id='art-review-overlay';document.body.append(overlay);}overlay.innerHTML="+json.dumps(style)+"+'<header class=\"art-review-heading\"><strong>市場アートレビュー</strong><span>'+"+json.dumps(str(start+1)+'–'+str(end)+' / '+str(len(cards)))+"+'</span></header><section class=\"art-review-grid\">'+window.__artReviewCards.slice("+str(start)+','+str(end)+").join('')+'</section>';return true")
+        shot(s,'sunset-market-gallery-'+str(page_index+1))
+    js(s,"document.getElementById('art-review-overlay')?.remove();delete window.__artReviewCards;delete window.__artReviewCardMeta")
+    landmark_names=js(s,"return Player.landmarkNames()")
+    landmark_cards=js(s,"return Player.landmarkNames().map(name=>renderLandmarkBuildButton(name,false,Player.landmarkCost(name),false))")
+    if not landmark_cards or len(landmark_cards)!=len(landmark_names):
+        raise RuntimeError('Could not render every landmark card for the art gallery')
+    (out/'landmark-art-gallery.json').write_text(json.dumps([{'name':name} for name in landmark_names],ensure_ascii=False,indent=2))
+    js(s,"let overlay=document.getElementById('art-review-overlay');if(!overlay){overlay=document.createElement('div');overlay.id='art-review-overlay';document.body.append(overlay);}const style="+json.dumps(style)+";overlay.innerHTML=style+'<header class=\"art-review-heading\"><strong>ランドマークアートレビュー</strong><span>'+"+json.dumps('1–'+str(len(landmark_cards))+' / '+str(len(landmark_cards)))+"+'</span></header><section class=\"art-review-grid\">'+"+json.dumps(''.join(landmark_cards))+"+'</section>';return true")
+    shot(s,'sunset-landmark-art-gallery')
+    js(s,"document.getElementById('art-review-overlay')?.remove()")
+    landmark_art_gallery_count=len(landmark_cards)
+    return len(cards)
 def reveal_start(s):
+    wait(s,"const banner=document.getElementById('pwaInstallBanner');return !banner.getAnimations().some(animation=>animation.playState==='running')")
     return js(s,"const screen=document.getElementById('titleScreen'),button=document.getElementById('btnStart'),banner=document.getElementById('pwaInstallBanner'),screenRect=screen.getBoundingClientRect(),buttonRect=button.getBoundingClientRect(),bannerRect=banner.getBoundingClientRect();const lower=Math.min(innerHeight,screenRect.bottom,bannerRect.height?bannerRect.top:innerHeight)-16;if(screen.scrollHeight>screen.clientHeight+1){screen.scrollTop=Math.max(0,Math.min(screen.scrollHeight-screen.clientHeight,screen.scrollTop+buttonRect.bottom-lower));}else{window.scrollTo(0,Math.max(0,scrollY+buttonRect.bottom-lower));}return {scrollTop:screen.scrollTop,scrollY,button:document.getElementById('btnStart').getBoundingClientRect().toJSON(),screen:screen.getBoundingClientRect().toJSON(),banner:banner.getBoundingClientRect().toJSON()};")
 try:
     for cmd,name,env in [(['node','server.js'],'server',dict(os.environ,PORT=str(server_port),NODE_ENV='test',NTFY_TOPIC='',CANONICAL_STATE_STORE='noop')),(['chromedriver','--port='+str(driver_port)],'driver',None)]:
@@ -78,8 +121,15 @@ try:
         setup_controls_clear = js(s,"const a=document.getElementById('btnStart').getBoundingClientRect(),b=document.querySelector('#tabContentLocal .player-select').getBoundingClientRect();return a.bottom<=b.top||a.top>=b.bottom||a.right<=b.left||a.left>=b.right")
         assert setup_controls_clear, 'Start action overlaps player-count controls'
         if viewport_width >= 760:
-            title_columns_clear = js(s,"const a=document.querySelector('.title-header').getBoundingClientRect(),b=document.getElementById('tabContentLocal').getBoundingClientRect();return a.right < b.left && b.width > a.width")
-            assert title_columns_clear, 'Wide title does not separate brand and setup columns'
+            if design=='sunset' and viewport_width >= 1000:
+                title_columns_clear = js(s,"const h=document.querySelector('.title-header').getBoundingClientRect(),t=document.querySelector('.title-header h1').getBoundingClientRect(),i=document.querySelector('.title-header .sunset-hero img').getBoundingClientRect(),b=document.querySelector('.tab-bar').getBoundingClientRect(),sw=document.querySelector('.design-switcher').getBoundingClientRect(),c=document.querySelector('#tabContentLocal').getBoundingClientRect();return h.width>900&&h.bottom<=b.top&&t.right<i.left&&c.width>900&&c.top>Math.max(sw.bottom,b.bottom)")
+                assert title_columns_clear, 'Wide sunset title setup does not use the full width below the hero and tabs'
+            elif design=='sunset':
+                tablet_title_state = js(s,"const h=document.querySelector('.title-header').getBoundingClientRect(),t=document.querySelector('.title-header h1').getBoundingClientRect(),i=document.querySelector('.title-header .sunset-hero img').getBoundingClientRect(),b=document.querySelector('.tab-bar').getBoundingClientRect(),sw=document.querySelector('.design-switcher').getBoundingClientRect(),c=document.querySelector('#tabContentLocal').getBoundingClientRect();return {ok:h.width>=680&&h.bottom<=sw.top&&t.right<i.left&&sw.width>=250&&b.width>=390&&c.width>=390&&c.top>Math.max(sw.bottom,b.bottom),hero:{left:h.left,right:h.right,width:h.width,bottom:h.bottom},titleRight:t.right,imageLeft:i.left,switch:{width:sw.width,bottom:sw.bottom},tabs:{width:b.width,top:b.top},content:{width:c.width,top:c.top}}")
+                assert tablet_title_state['ok'], f"Tablet sunset title setup does not stack hero, setup tabs, and content cleanly: {tablet_title_state}"
+            else:
+                title_columns_clear = js(s,"const a=document.querySelector('.title-header').getBoundingClientRect(),b=document.getElementById('tabContentLocal').getBoundingClientRect();return a.right < b.left && b.width > a.width")
+                assert title_columns_clear, 'Wide title does not separate brand and setup columns'
         js(s,"window.scrollTo(0,0);")
         shot(s,design+'-title')
         if viewport_width >= 760:
@@ -117,13 +167,25 @@ try:
             start_action_state = js(s,"const screen=document.getElementById('titleScreen'),a=document.getElementById('btnStart').getBoundingClientRect(),b=document.getElementById('pwaInstallBanner').getBoundingClientRect();return {clear:a.top>=0&&a.bottom<=innerHeight&&(!b.height||a.bottom<=b.top||a.top>=b.bottom),button:{top:a.top,bottom:a.bottom,left:a.left,right:a.right},banner:{top:b.top,bottom:b.bottom,height:b.height,display:getComputedStyle(document.getElementById('pwaInstallBanner')).display},viewport:{width:innerWidth,height:innerHeight,scrollY:scrollY,screenTop:screen.getBoundingClientRect().top,screenBottom:screen.getBoundingClientRect().bottom,screenScrollTop:screen.scrollTop,screenScrollHeight:screen.scrollHeight,screenClientHeight:screen.clientHeight},classes:document.body.className}")
             assert start_action_state['clear'], f"Start action is hidden or overlaps the PWA install banner: {start_action_state}"
             if design == 'sunset':
+                if viewport_width <= 360:
+                    banner_layout = js(s,"const banner=document.getElementById('pwaInstallBanner'),text=banner.querySelector('.pwa-banner-text').getBoundingClientRect(),actions=banner.querySelector('.pwa-banner-actions').getBoundingClientRect();return {textWidth:text.width,actionsWidth:actions.width,textBottom:text.bottom,actionsTop:actions.top}")
+                    assert banner_layout['textWidth'] >= 250 and banner_layout['actionsWidth'] >= 250 and banner_layout['actionsTop'] >= banner_layout['textBottom'] - 1, f"320px install banner does not separate its message from the actions: {banner_layout}"
                 shot(s,'sunset-title-start')
             elif viewport_width >= 760:
                 shot(s,'classic-title-start')
         js(s,"window.landmarkEnableTrace=[]; const descriptor=Object.getOwnPropertyDescriptor(HTMLButtonElement.prototype,'disabled'); Object.defineProperty(HTMLButtonElement.prototype,'disabled',{...descriptor,set(value){if(!value && this.dataset.action==='buildLandmark') window.landmarkEnableTrace.push({name:this.dataset.landmarkName,stack:new Error().stack}); descriptor.set.call(this,value);}});")
     host,guest=sessions
-    for s,name in [(host,'BrowserHost'),(guest,'BrowserGuest')]:
+    online_lobby_check=[]
+    for s,name,design in [(host,'BrowserHost','classic'),(guest,'BrowserGuest','sunset')]:
         js(s,"document.getElementById('tabOnline').click();document.getElementById('playerNameInput').value="+json.dumps(name))
+        if design=='sunset':
+            assert js(s,"return getComputedStyle(document.querySelector('#tabContentOnline .online-tabs')).backgroundColor") == 'rgb(21, 40, 58)', 'Sunset online lobby tabs do not use the shared blue-green palette'
+            assert js(s,"return getComputedStyle(document.getElementById('playerNameInput')).backgroundColor") == 'rgb(20, 38, 56)', 'Sunset online name field does not use the shared blue-green palette'
+            assert js(s,"return getComputedStyle(document.querySelector('#tabContentOnline .setup-secondary-action')).backgroundColor") == 'rgb(41, 70, 90)', 'Sunset online secondary action does not use the shared blue-green palette'
+            banner_background = js(s,"return getComputedStyle(document.getElementById('pwaInstallBanner')).backgroundImage")
+            assert 'rgb(28, 51, 70)' in banner_background and 'rgb(25, 46, 64)' in banner_background, 'Sunset PWA install banner does not use the shared blue-green palette'
+            online_lobby_check.append('sunset online lobby palette and form controls')
+        shot(s,design+'-online-lobby')
     if target_landmark != "all":
         js(host,"showCardSelect(); const names=Array.from(document.querySelectorAll('[data-action=\"toggleLandmark\"][aria-pressed=\"true\"]')).map(e=>e.dataset.landmarkName).filter(n=>n!=='駅'); for(const name of names){Array.from(document.querySelectorAll('[data-action=\"toggleLandmark\"]')).find(e=>e.dataset.landmarkName===name).click();} document.querySelector('[data-action=\"closeCardSelect\"]').click();".replace("駅",target_landmark))
     js(host,"document.getElementById('onlineCreateSubmitButton').click()")
@@ -141,6 +203,15 @@ try:
         if design == 'sunset':
             player_area_top = js(s,"return document.getElementById('players').getBoundingClientRect().top")
             assert player_area_top <= 0.60 * 844, 'Player city is pushed below the initial viewport'
+            assert js(s,"const badge=document.querySelector('.player-cards .card-badge');return !!badge&&getComputedStyle(badge).backgroundColor==='rgb(41, 70, 90)'"), 'Sunset town card badges do not use the blue-green palette'
+            assert js(s,"return getComputedStyle(document.getElementById('status')).backgroundImage.includes('rgb(29, 53, 72)')"), 'Sunset active-turn panel does not use the blue-green palette'
+            assert js(s,"return getComputedStyle(document.querySelector('.log-header')).backgroundColor==='rgb(29, 53, 72)'"), 'Sunset log header does not use the blue-green palette'
+            assert js(s,"return getComputedStyle(document.querySelector('.log-summary')).backgroundColor==='rgb(26, 48, 66)'"), 'Sunset log summary does not use the blue-green palette'
+            assert js(s,"const badge=document.querySelector('.player-landmarks .landmark-badge:not(.built)');return !!badge&&getComputedStyle(badge).backgroundColor==='rgb(41, 70, 90)'"), 'Sunset landmark badges do not use the blue-green palette'
+            assert js(s,"const use=document.querySelector('.player-landmarks .landmark-badge-icon use'),icon=use?.closest('svg');return !!use&&use.getAttribute('href')==='icons/facility-art.svg#station'&&getComputedStyle(icon).width==='28px'"), 'Sunset landmark badges do not use their custom station art at a legible size'
+            assert js(s,"const mark=document.querySelector('#buildMenu .card-landmark-mark'),use=mark?.querySelector('use');return !!use&&use.getAttribute('href')==='icons/facility-art.svg#station'&&!mark.textContent.trim()"), 'Sunset landmark market header does not use custom vector art'
+            assert js(s,"return !!document.querySelector('.player-icon .player-kind-icon')&&!!document.querySelector('.player-coins .card-coin-mark')"), 'Sunset player headers do not use the custom player and coin icons'
+            assert js(s,"const text=document.getElementById('status').textContent;return !text.includes('👤')&&!text.includes('🪙')"), 'Sunset active-turn line still relies on platform emoji'
         if viewport_width >= 760:
             wide_game_columns_clear = js(s,"const game=getComputedStyle(document.getElementById('gameScreen'));const a=document.querySelector('.game-action-panel').getBoundingClientRect(),b=document.querySelector('.player-area').getBoundingClientRect();return game.display==='grid' && a.right < b.left && b.top <= 0.60 * innerHeight")
             assert wide_game_columns_clear, 'Wide game does not align player cities beside the action panel'
@@ -173,12 +244,23 @@ try:
                 assert market_cards_readable, 'Tablet market cards are too narrow to read comfortably'
         if design == 'sunset':
             wait(s,"return Array.from(document.querySelectorAll('.sunset-facility-art use')).some(e=>e.getBBox().width > 0)")
+            market_art_scale_check = js(s,"const arts=Array.from(document.querySelectorAll('#buildMenu .card-btn .sunset-facility-art'));return arts.length>0&&arts.every(e=>{const r=e.getBoundingClientRect();return r.height>=88&&r.height+1>=r.width*.49})")
+            assert market_art_scale_check, 'Sunset market scene art is too short for its card width'
+            assert js(s,"return getComputedStyle(document.querySelector('.card-filter-bar')).backgroundColor==='rgb(23, 43, 61)'&&getComputedStyle(document.querySelector('.card-filter-btn.active')).backgroundColor==='rgb(51, 73, 90)'"), 'Sunset market filters do not use the shared blue-green and gold palette'
         disabled_card_contrast = js(s,"const cards=Array.from(document.querySelectorAll('#buildMenu .card-btn:disabled'));return cards.length>0&&cards.every(e=>Number(getComputedStyle(e).opacity)>=0.54)")
         assert disabled_card_contrast, 'Disabled facility cards are too faint to compare'
         if design == 'classic':
             disabled_effect_readable = js(s,"const e=document.querySelector('#buildMenu .card-btn:disabled .card-effect'),c=e&&getComputedStyle(e).color.match(/\\d+/g);return !!c&&Number(c[0])>=190&&Number(c[1])>=190&&Number(c[2])>=205")
             assert disabled_effect_readable, 'Disabled classic card effects are too low-contrast'
         shot(s,design+'-market')
+        if design == 'sunset' and os.environ.get('SMOKE_CAPTURE_CARD_GALLERY') == '1':
+            market_art_gallery_count=prepare_market_art_gallery(s)
+            market_gallery_session=s
+        if design == 'sunset' and focus_card:
+            focused = js(s,"const e=Array.from(document.querySelectorAll('#buildMenu .card-btn[data-card-name],#buildMenu .card-btn[data-landmark-name]')).find(button=>button.dataset.cardName==="+json.dumps(focus_card)+"||button.dataset.landmarkName==="+json.dumps(focus_card)+");if(!e)return false;e.scrollIntoView({block:'center'});return true")
+            assert focused, 'Requested facility or landmark art is not present in the current market: '+focus_card
+            shot(s,'sunset-focus-card')
+            js(s,"document.getElementById('buildMenu').scrollIntoView({block:'start'})")
         if design == 'sunset':
             normal_size=js(s,"return parseFloat(getComputedStyle(document.querySelector('#buildMenu .card-effect')).fontSize)")
             js(s,"const e=document.getElementById('accessibilityFontScale');e.value='large';e.dispatchEvent(new Event('change',{bubbles:true}));")
@@ -237,14 +319,29 @@ try:
                     wait(s,"return !!document.querySelector('.winner-title')")
                     assert js(s,"return document.querySelector('.winner-sub').textContent.includes((GameRuntimeState.runtime.snapshot().game.turnCount + 1) + 'ターン')")
                     assert js(s,"return document.body.classList.contains('game-finished') && ['#gameConnectivityPanel','#turnTimeline','#tutorialBox','.game-action-panel','#gameLogContainer','.player-area','#buildMenu','#onlineLeaveHelp','#btnRestart'].every(selector => { const element=document.querySelector(selector); return element && getComputedStyle(element).display === 'none'; })"), 'Finished match still exposes active gameplay UI'
+                    if design == 'sunset':
+                        assert js(s,"const kind=document.querySelector('.winner-sub-type .winner-kind-icon'),coins=Array.from(document.querySelectorAll('.winner-stats-row .card-coin-mark'));return !!kind&&coins.length===document.querySelectorAll('.winner-stats-row').length&&!document.querySelector('.winner-sub-type').textContent.match(/[👤🤖]/)&&!Array.from(document.querySelectorAll('.winner-stats-row')).some(row=>row.textContent.includes('🪙'))"), 'Sunset winner view still contains emoji player or coin marks'
                     if viewport_width >= 760:
                         assert js(s,"const d=document.querySelector('.winner-screen .winner-review-details'),r=document.querySelector('#winnerRematchButton');return !!d&&!d.open&&!!r&&!!(r.compareDocumentPosition(d)&Node.DOCUMENT_POSITION_FOLLOWING)"), 'Wide winner details are not collapsed after the next action'
                     if viewport_width <= 480 and design == 'classic':
                         assert js(s,"const town=document.querySelector('.winner-screen .sunset-town');return !!town&&getComputedStyle(town).display!=='none'"), 'Classic compact winner view omits the town summary'
                     js(s,"window.scrollTo(0,0)")
                     assert js(s,"const group=document.querySelector('.winner-share-actions'),buttons=Array.from(group?.querySelectorAll('button')||[]),rect=group?.getBoundingClientRect();return buttons.length===2&&buttons[1].textContent.trim()==='画像を保存・共有'&&document.documentElement.scrollWidth<=innerWidth&&rect&&rect.width<=innerWidth&&buttons.every(button=>{const b=button.getBoundingClientRect();return b.width>=100&&b.height>=44&&b.height<=60})"), 'Winner share actions are missing, cramped, or overflowing'
+                    if viewport_width <= 360:
+                        assert js(s,"return getComputedStyle(document.querySelector('.winner-share-actions')).gridTemplateColumns.trim().split(/\\s+/).length===1"), 'Compact winner share actions do not stack into a single column'
+                        if design == 'sunset':
+                            assert js(s,"const name=document.querySelector('.winner-title-name'),outcome=document.querySelector('.winner-title-outcome');return !!name&&!!outcome&&Math.abs(name.getBoundingClientRect().top-outcome.getBoundingClientRect().top)<1"), 'Compact winner name and outcome wrap onto separate lines'
                     assert js(s,"return !document.querySelector('.winner-screen .ad-slot')")
                     shot(s,design+'-winner')
+                    if design == 'sunset':
+                        capture_result_share_card(s)
+                        result_share_card_captured=True
+                    if design == 'sunset' and os.environ.get('SMOKE_CAPTURE_TOWN_DENSITY') == '1':
+                        density=js(s,"const target=document.querySelector('.winner-screen .sunset-town');if(!target)return null;window.__townDensityOriginal=target.outerHTML;const names=Player.landmarkNames(),landmarks=Object.fromEntries(names.map(name=>[name,true]));target.outerHTML=UiBuildMenu.renderTownHtml({cards:CARDS.slice(0,10),landmarks},new Set(names));const town=document.querySelector('.winner-screen .sunset-town'),street=town.querySelector('.town-street'),overflow=town.querySelector('.town-overflow'),range=document.createRange();range.selectNodeContents(overflow);return {facilityCount:town.querySelectorAll('.town-building:not(.town-landmark)').length,landmarkCount:town.querySelectorAll('.town-landmark').length,hasOverflow:!!overflow,overflowSingleLine:range.getClientRects().length===1,fits:town.scrollWidth<=town.clientWidth&&street.scrollWidth<=street.clientWidth&&document.documentElement.scrollWidth<=innerWidth}")
+                        assert density and density['facilityCount']==8 and density['landmarkCount']==6 and density['hasOverflow'] and density['overflowSingleLine'] and density['fits'], f"Dense winner town is clipped, wrapped, or incomplete: {density}"
+                        shot(s,'sunset-winner-town-density')
+                        js(s,"const town=document.querySelector('.winner-screen .sunset-town');if(town&&window.__townDensityOriginal)town.outerHTML=window.__townDensityOriginal;delete window.__townDensityOriginal")
+                        town_density_captured=True
                 assert js(host,"return document.querySelector('.winner-title').textContent")==js(guest,"return document.querySelector('.winner-title').textContent")
                 break
         previous=js(actor,"return GameRuntimeState.runtime.snapshot().game.currentPlayerIndex")
@@ -252,9 +349,11 @@ try:
         for s in sessions:
             wait(s,"return GameRuntimeState.runtime.snapshot().game.currentPlayerIndex !== "+str(previous))
     else: raise RuntimeError('Match did not finish within '+str(max_turns)+' turns')
+    if market_gallery_session:
+        market_art_gallery_count=capture_market_art_gallery(market_gallery_session)
     city_visibility_check = 'sunset city enters the initial viewport'
     wide_layout_check = ['wide title separates brand and setup', 'wide start action stays visible above PWA banner', 'wide game aligns player cities beside actions', 'wide market preserves player board context'] if viewport_width >= 760 else []
-    report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'passed':['classic/sunset title at page start',*wide_layout_check,'start action does not overlap player-count controls','sunset start action stays visible without covering PWA install banner',city_visibility_check,'mixed-design online start with ready','dice roll and build menu','sunset external SVG rendering','large text increases sunset card effect size','build and authoritative undo','host refresh and rejoin','finished match hides active gameplay UI',target_landmark+'-only online match completed with matching winners'],'notCovered':['physical device touch','WebKit',*(['standard all-landmark full match'] if target_landmark != 'all' else []),'PWA update']}
+    report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'marketArtGalleryCardCount':market_art_gallery_count,'landmarkArtGalleryCardCount':landmark_art_gallery_count,'townDensityCapture':town_density_captured,'passed':['classic/sunset title at page start',*wide_layout_check,'start action does not overlap the PWA install banner','sunset start action stays visible without covering PWA install banner',city_visibility_check,*online_lobby_check,'mixed-design online start with ready','dice roll and build menu','sunset external SVG rendering','market art scales with its card width','large text increases sunset card effect size','build and authoritative undo','host refresh and rejoin','finished match hides active gameplay UI',*(['full rendered market art gallery: '+str(market_art_gallery_count)+' cards','all '+str(landmark_art_gallery_count)+' rendered landmark cards'] if landmark_art_gallery_count else []),*(['dense winner town art fits (8 facilities + 6 landmarks)'] if town_density_captured else []),*(['result share card rendered from completed match'] if result_share_card_captured else []),target_landmark+'-only online match completed with matching winners'],'notCovered':['physical device touch','WebKit',*(['standard all-landmark full match'] if target_landmark != 'all' else []),'PWA update']}
     (out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     print(json.dumps(report,ensure_ascii=False))
 except Exception:

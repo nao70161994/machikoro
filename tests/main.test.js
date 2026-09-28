@@ -2713,6 +2713,13 @@ runTest('主要画面とPWA install案内は重複告知しないlandmarkを持�
     assert.ok(css.includes('#gameScreen[style*="display: block"] ~ #pwaInstallBanner'));
 });
 
+runTest('狭幅のPWA install案内は説明とボタンを横幅いっぱいに分ける', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.match(css, /@media \(max-width: 360px\)\s*{[^}]*#pwaInstallBanner\[style\*="display: block"\]\s*{[^}]*grid-template-columns: minmax\(0, 1fr\);/);
+    assert.ok(css.includes('#pwaInstallBanner .pwa-banner-actions {\n        display: grid;\n        grid-column: 1 / -1;'));
+    assert.ok(css.includes('grid-template-columns: minmax(0, 1fr) 44px;'));
+});
+
 runTest('onlineStatus はライブリージョンとして宣言されている', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     assert.ok(html.includes('id="onlineStatus" class="online-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1"'));
@@ -2735,6 +2742,14 @@ runTest('プレイヤー状況は多人数でも項目単位で辿れるlistと�
     const playerDisplay = fs.readFileSync(path.join(__dirname, '..', 'js', 'uiPlayerDisplay.js'), 'utf8');
     assert.ok(html.includes('id="players" role="list" aria-label="プレイヤー状況"'));
     assert.ok(playerDisplay.includes('role="listitem" aria-label="${playerSummary}"'));
+});
+
+runTest('密集した街の施設省略表示は折り返さない', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const overflowRule = css.match(/\.town-overflow\s*{([^}]+)}/);
+    assert.ok(overflowRule);
+    assert.ok(overflowRule[1].includes('font-size: 11px;'));
+    assert.ok(overflowRule[1].includes('white-space: nowrap;'));
 });
 
 runTest('統計結果は名前・勝率・対戦数を対応付けるlistとして生成される', () => {
@@ -2878,6 +2893,12 @@ runTest('player setting select は local/online とも programmatic label を持
     assert.ok(online.includes('aria-label=\"プレイヤー${index + 1}の種類\"'));
 });
 
+runTest('タイトルのテーマ名は狭い画面でも読める短い表示にする', () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+    assert.ok(html.includes('<option value="sunset">夕暮れの街</option>'));
+    assert.ok(!html.includes('夕暮れの街（プレビュー）'));
+});
+
 runTest('タイトルのselectはテーマに馴染む暗色と明確なfocus表示を持つ', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const playerSelect = css.match(/\.player-setting-select\s*{([^}]*)}/);
@@ -2887,6 +2908,69 @@ runTest('タイトルのselectはテーマに馴染む暗色と明確なfocus表
     assert.ok(css.includes('.player-setting-select:focus-visible,\n.design-switcher select:focus-visible'));
     assert.ok(css.includes('html[data-design="sunset"] .player-setting-select,\nhtml[data-design="sunset"] .design-switcher select'));
     assert.ok(css.includes('background-color: #1b2b3a;'));
+});
+
+runTest('夕暮れタイトルはクラシック夜景canvasを重ねず背景色を統一する', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.ok(css.includes('html[data-design="sunset"] #cityCanvas { display: none; }'));
+    const sunsetTitle = css.match(/html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) #titleScreen\s*{([^}]*)}/);
+    assert.ok(sunsetTitle);
+    assert.ok(sunsetTitle[1].includes('#172a38 100%'));
+    assert.ok(!sunsetTitle[1].includes('#30273b'));
+});
+
+runTest('スマートフォンの夕暮れタイトルは主役の街景を設定カードの横幅まで広げる', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.match(css, /@media \(max-width: 759px\)\s*{\s*html\[data-design="sunset"\] \.sunset-hero\s*{[^}]*width: calc\(100% \+ 32px\);[^}]*margin: 12px -16px;/);
+    assert.ok(css.includes('html[data-design="sunset"] .sunset-hero img { border-radius: 16px; }'));
+});
+
+runTest('夕暮れの結果画面は対戦画面と同じ青緑のパネル・操作色を使う', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const winnerPanel = css.match(/html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\)\.game-finished \.status\s*{([^}]*)}/);
+    assert.ok(winnerPanel);
+    assert.ok(winnerPanel[1].includes('#1d3548'));
+    assert.ok(winnerPanel[1].includes('#172a3a'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-screen .winner-secondary-action'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-stats-row.highlight'));
+});
+
+runTest('320px以下の勝者見出しは標準的な名前を一行で表示する', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.match(css, /@media \(max-width: 360px\)\s*{[^}]*\.winner-title\s*{\s*font-size: 20px;/);
+});
+
+runTest('夕暮れの勝利トロフィーは独自のメダル枠で結果画面の主役になる', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const trophy = css.match(/html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) \.winner-trophy-art\s*{([^}]*)}/);
+    assert.ok(trophy);
+    assert.ok(trophy[1].includes('border-radius: 50%;'));
+    assert.ok(trophy[1].includes('radial-gradient(circle at 50% 36%'));
+    assert.ok(trophy[1].includes('box-shadow: 0 0 0 4px'));
+});
+
+runTest('夕暮れテーマはセットアップ・オンライン・統計タブの選択色を統一する', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-bar'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-tabs'));
+    assert.ok(css.includes('background: #29465a;'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .stats-filter-btn.active'));
+    assert.ok(css.includes('background: linear-gradient(145deg, #1c3346, #192e40);'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .text-input'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .setup-secondary-action'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaInstallBanner'));
+    assert.match(css, /html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) #pwaInstallBanner\s*\{[^}]*width:\s*calc\(100% - 24px\);[^}]*border-radius:\s*16px;/);
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .pwa-banner-btn'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-cards .card-badge'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast):not(.game-finished) .status'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .log-container .log'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .log-container .log-summary'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-landmarks .landmark-badge:not(.built)'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .landmark-badge-icon'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-kind-icon'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .player-coins'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-bar'));
+    assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-btn.active'));
 });
 
 runTest('主要HTML/JSには inline handler 属性を再導入しない', () => {
@@ -3465,7 +3549,7 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(uiSource.includes("header.setAttribute('aria-expanded'"));
     assert.ok(css.includes('overscroll-behavior: contain'));
     assert.ok(sw.includes("event.data?.type === 'SKIP_WAITING'"));
-    assert.ok(sw.includes("const CACHE_NAME = 'machikoro-v5';"));
+    assert.match(sw, /const CACHE_NAME = 'machikoro-v\d+';/);
     const indexScripts = [...html.matchAll(/<script src=\"(js\/[^\"]+)\"/g)].map(match => `/${match[1]}`);
     const cachedAssets = [...sw.matchAll(/'([^']+)'/g)].map(match => match[1]);
     for (const script of indexScripts) {

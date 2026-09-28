@@ -299,6 +299,9 @@ function renderWinnerState(winner) {
     const firstPresentation = !winSoundPlayed;
     if (firstPresentation) UiWinner.gameOriginRuntime.record(uiOnlineRuntimeSnapshot().isOnlineGame);
     const statusHtml = UiWinner.buildWinnerScreenHtml({
+        designTheme: document.documentElement?.dataset?.design,
+        renderCoinMark: UiBuildMenu.renderCoinMark,
+        isCpuPlayer: index => !!currentCpuPlayerAt(index),
         compactReview: UiWinner.shouldCompactReview(
             document.documentElement?.dataset?.design,
             typeof window !== 'undefined' ? window.innerWidth : Infinity
@@ -465,6 +468,7 @@ function renderActiveGameState(current) {
     const previousTurnState = activeGameTurnStateController.snapshot();
     const view = UiGameStatusView.buildActiveGameView({
         current,
+        designTheme: document.documentElement?.dataset?.design,
         players: currentGame.players,
         phase: currentGame.phase,
         phases: GAME_PHASES,
@@ -899,6 +903,15 @@ function renderPlayers() {
             : -1,
         enabledLandmarks: getEnabledLandmarkSelection(),
         getLandmarkEmoji,
+        getCoinMark: document.documentElement?.dataset?.design === 'sunset'
+            ? UiBuildMenu.renderCoinMark
+            : null,
+        renderPlayerKindIcon: document.documentElement?.dataset?.design === 'sunset'
+            ? UiPlayerDisplay.renderPlayerKindIcon
+            : null,
+        getLandmarkBadgeIcon: document.documentElement?.dataset?.design === 'sunset'
+            ? UiBuildMenu.renderLandmarkBadgeIcon
+            : null,
         compareCardNames: compareCardNamesForDisplay,
         escapeHtml,
         loanEffect: CARD_EFFECTS.LOAN,
@@ -916,7 +929,7 @@ function renderPlayers() {
         const gameScreen = document.getElementById('gameScreen');
         const gameLog = document.getElementById('gameLogContainer');
         const promoteNavigation = currentGame.players.length >= 5 &&
-            document.documentElement.dataset.design !== 'sunset';
+            document.documentElement?.dataset?.design !== 'sunset';
         const navigationParent = promoteNavigation ? gameScreen : playerArea;
         const navigationAnchor = promoteNavigation ? gameLog : document.getElementById('players');
         if (navigationParent && navigationAnchor &&
@@ -959,7 +972,12 @@ function renderBuildCardButton(card, stock, canBuildThis, highlighted = false) {
 }
 
 function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
-    return UiBuildMenu.renderLandmarkBuildButton({ name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji });
+    return UiBuildMenu.renderLandmarkBuildButton({
+        name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji,
+        renderLandmarkMark: document.documentElement?.dataset?.design === 'sunset'
+            ? UiBuildMenu.renderLandmarkBadgeIcon
+            : null,
+    });
 }
 
 function buildCardFilterBarHtml() {

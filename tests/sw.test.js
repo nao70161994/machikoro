@@ -106,7 +106,7 @@ function loadServiceWorker(options = {}) {
                 return Promise.resolve(cacheFor(name));
             },
             keys() {
-                return Promise.resolve(options.cacheKeys || ['machikoro-v3', 'machikoro-v4', 'machikoro-v5']);
+                return Promise.resolve(options.cacheKeys || ['machikoro-v3', 'machikoro-v4', 'machikoro-v5', 'machikoro-v6', 'machikoro-v7']);
             },
             delete(name) {
                 deletedCaches.push(name);
@@ -236,7 +236,7 @@ function dispatchMessage(runtime, data) {
         const runtime = loadServiceWorker();
         await dispatchActivate(runtime);
 
-        assert.deepStrictEqual(runtime.deletedCaches, ['machikoro-v3', 'machikoro-v4']);
+        assert.deepStrictEqual(runtime.deletedCaches, ['machikoro-v3', 'machikoro-v4', 'machikoro-v5', 'machikoro-v6', 'machikoro-v7']);
         assert.strictEqual(runtime.context.self.clients.claimed, true);
     });
 

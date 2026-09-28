@@ -1,6 +1,7 @@
 'use strict';
 
-function buildTurnStatusText(current) {
+function buildTurnStatusText(current, designTheme = 'classic') {
+    if (designTheme === 'sunset') return `${current.name}のターン　${current.coins}コイン`;
     return `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
 }
 
@@ -343,7 +344,7 @@ function buildActiveGameView(facts) {
         })).filter(change => change.diff !== 0)
         : [];
     return Object.freeze({
-        statusText: buildTurnStatusText(facts.current),
+        statusText: buildTurnStatusText(facts.current, facts.designTheme),
         rollButton: buildRollButtonView(facts.canRoll),
         skipButton: buildSkipButtonView({
             canNextTurn: facts.canNextTurn,

@@ -6,6 +6,8 @@ assert.strictEqual(UiPlayerDisplay.difficultyLabel('normal'), '普');
 assert.strictEqual(UiPlayerDisplay.difficultyLabel('strong'), '強');
 assert.strictEqual(UiPlayerDisplay.difficultyLabel('rl'), '深');
 assert.strictEqual(UiPlayerDisplay.difficultyLabel('expert'), '最強');
+assert.ok(UiPlayerDisplay.renderPlayerKindIcon({ type: 'human' }).includes('class="player-kind-icon"'));
+assert.ok(UiPlayerDisplay.renderPlayerKindIcon({ type: 'cpu', difficulty: 'strong' }).includes('<span class="player-kind-level">強</span>'));
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('expert'), 'expert');
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('unknown'), 'normal');
 assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'human' }), '人間');
@@ -159,6 +161,22 @@ assert(html.includes('<div id="playerBox1" class="player-box active" role="listi
 assert(html.includes('<span class="player-icon">🤖強</span>'));
 assert(html.includes('<span class="player-name">▶ CPU</span>'));
 
+const sunsetPlayer = UiPlayerDisplay.buildPlayerHtml(players[0], 0, {
+    settings: [{ type: 'human' }],
+    currentPlayerIndex: 0,
+    enabledLandmarks: new Set(['駅']),
+    getLandmarkEmoji: () => '🚉',
+    getLandmarkBadgeIcon: () => '<svg class="landmark-badge-icon" aria-hidden="true"></svg>',
+    getCoinMark: () => '<svg class="card-coin-mark" aria-hidden="true"></svg>',
+    renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
+    compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
+    escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+    loanEffect: 'loan',
+});
+assert(sunsetPlayer.includes('<svg class="player-kind-icon"'));
+assert(sunsetPlayer.includes('<svg class="card-coin-mark" aria-hidden="true"></svg> 7<span class="screen-reader-only">コイン</span>'));
+assert(!sunsetPlayer.includes('👤') && !sunsetPlayer.includes('🪙'));
+
 const escapedLandmark = UiPlayerDisplay.buildLandmarkBadgeHtml('<駅">', false, {
     getLandmarkEmoji: () => '<🚉>',
     escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
@@ -166,6 +184,14 @@ const escapedLandmark = UiPlayerDisplay.buildLandmarkBadgeHtml('<駅">', false, 
 assert(escapedLandmark.includes('aria-label="&lt;駅&quot;&gt;、未建設"'));
 assert(escapedLandmark.includes('&lt;🚉&gt; &lt;駅&quot;&gt;'));
 assert(!escapedLandmark.includes('<駅'));
+
+const vectorLandmark = UiPlayerDisplay.buildLandmarkBadgeHtml('駅', true, {
+    getLandmarkEmoji: () => '🚉',
+    getLandmarkBadgeIcon: () => '<svg class="landmark-badge-icon" aria-hidden="true"></svg>',
+    escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+});
+assert(vectorLandmark.includes('<span class="landmark-badge built" aria-label="駅、建設済み"><svg class="landmark-badge-icon" aria-hidden="true"></svg> 駅</span>'));
+assert(!vectorLandmark.includes('🚉'));
 
 function makeAccessiblePlayer(name) {
     return {

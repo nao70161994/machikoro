@@ -67,13 +67,29 @@ function currentStreakGlobals(root) {
     return values;
 }
 
-function buildWinnerStatsRows(players, winner, escapeHtml) {
+function buildWinnerStatsRows(players, winner, escapeHtml, options = {}) {
     if (!Array.isArray(players) || typeof escapeHtml !== 'function') return '';
-    return players.slice().sort((left, right) => right.coins - left.coins).map(player => {
+    const sunset = options.designTheme === 'sunset';
+    return players.map((player, index) => ({ player, index }))
+        .sort((left, right) => right.player.coins - left.player.coins).map(({ player, index }) => {
         const isWinner = player === winner;
         const safeName = escapeHtml(player.name);
         const playerKind = isWinner ? '勝者' : 'プレイヤー';
-        return `<div class="winner-stats-row ${isWinner ? 'highlight' : ''}" role="listitem" aria-label="${playerKind}、${safeName}、${player.coins}コイン"><span>${isWinner ? '🏆 ' : ''}${safeName}</span><span>🪙 ${player.coins}</span></div>`;
+        const award = sunset && isWinner
+            ? '<svg class="winner-award-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 2h10v5a5 5 0 0 1-10 0V2ZM5 4H2v2a4 4 0 0 0 4 4m9-6h3v2a4 4 0 0 1-4 4M8 12v3H5v3h10v-3h-3v-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            : (isWinner ? '🏆 ' : '');
+        const coin = sunset && typeof options.renderCoinMark === 'function'
+            ? `${options.renderCoinMark()} `
+            : (sunset
+                ? '<svg class="winner-coin-fallback" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8"/><path d="M12.5 6.5c-.6-.6-1.4-.9-2.4-.9-1.2 0-2 .6-2 1.5 0 2.5 4.8 1 4.8 3.7 0 1-.9 1.7-2.3 1.7-1.1 0-2-.4-2.7-1.1M10.5 4.8v10.4"/></svg> '
+                : '🪙 ');
+        const cpu = sunset && typeof options.isCpuPlayer === 'function' && options.isCpuPlayer(index);
+        const kindIcon = sunset
+            ? `<svg class="winner-kind-icon ${cpu ? 'is-cpu' : 'is-human'}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${cpu
+                ? '<rect x="4" y="6" width="16" height="14" rx="4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><path d="M9 16h6M12 3v3"/>'
+                : '<circle cx="12" cy="8" r="4"/><path d="M4 21c.5-4.5 3.2-7 8-7s7.5 2.5 8 7Z"/>'}</svg>`
+            : '';
+        return `<div class="winner-stats-row ${isWinner ? 'highlight' : ''}" role="listitem" aria-label="${playerKind}、${safeName}、${player.coins}コイン"><span>${award}${kindIcon}${safeName}</span><span>${coin}${player.coins}</span></div>`;
     }).join('');
 }
 
@@ -193,41 +209,218 @@ function drawResultCard(canvas, model) {
     if (!context) return false;
     canvas.width = 1200;
     canvas.height = 630;
+    const roundedRect = (x, y, width, height, radius) => {
+        context.beginPath();
+        if (typeof context.roundRect === 'function') context.roundRect(x, y, width, height, radius);
+        else context.rect(x, y, width, height);
+    };
+    const fillRoundRect = (x, y, width, height, radius, fill, stroke, lineWidth = 1) => {
+        roundedRect(x, y, width, height, radius);
+        context.fillStyle = fill;
+        context.fill();
+        if (stroke) {
+            context.strokeStyle = stroke;
+            context.lineWidth = lineWidth;
+            context.stroke();
+        }
+    };
+    const fittedText = (value, maxWidth, baseSize, minSize = 20) => {
+        let size = baseSize;
+        context.font = `bold ${size}px sans-serif`;
+        while (size > minSize && typeof context.measureText === 'function' &&
+            context.measureText(value).width > maxWidth) {
+            size -= 2;
+            context.font = `bold ${size}px sans-serif`;
+        }
+        return size;
+    };
     const gradient = typeof context.createLinearGradient === 'function'
         ? context.createLinearGradient(0, 0, 1200, 630) : null;
     if (gradient) {
-        gradient.addColorStop(0, '#11182d');
-        gradient.addColorStop(1, '#24506b');
+        gradient.addColorStop(0, '#122237');
+        gradient.addColorStop(0.55, '#1d3548');
+        gradient.addColorStop(1, '#263e4c');
         context.fillStyle = gradient;
-    } else context.fillStyle = '#18243d';
+    } else context.fillStyle = '#172b3d';
     context.fillRect(0, 0, 1200, 630);
-    context.fillStyle = '#f6c85f';
-    context.font = 'bold 42px sans-serif';
-    context.fillText('DICE CITY / 対戦結果', 64, 76);
-    context.fillStyle = '#ffffff';
-    context.font = 'bold 64px sans-serif';
-    context.fillText(`🏆 ${model.winnerName} の勝利`, 64, 162);
-    context.fillStyle = '#c8d7ee';
-    context.font = '28px sans-serif';
-    context.fillText(`${model.turnCount}ターン`, 68, 208);
-    context.font = '22px sans-serif';
-    context.fillText('最終コイン（多い順）', 70, 246);
+
+    // A quiet sunset skyline gives the result image the same illustrated-city identity as the game.
+    context.save();
+    context.beginPath();
+    context.arc(1000, 176, 88, 0, Math.PI * 2);
+    context.fillStyle = '#efc985';
+    context.globalAlpha = 0.92;
+    context.fill();
+    context.globalAlpha = 1;
+    context.beginPath();
+    context.moveTo(748, 270);
+    context.quadraticCurveTo(845, 216, 930, 260);
+    context.quadraticCurveTo(1034, 210, 1200, 254);
+    context.lineTo(1200, 360);
+    context.lineTo(748, 360);
+    context.closePath();
+    context.fillStyle = '#354d5a';
+    context.fill();
+    const buildings = [
+        { x: 784, y: 203, w: 68, h: 112, color: '#dbc69f', roof: '#986d68', rows: 3, cols: 2 },
+        { x: 862, y: 165, w: 82, h: 150, color: '#e7d1a9', roof: '#557d83', rows: 4, cols: 3 },
+        { x: 958, y: 221, w: 63, h: 94, color: '#b9a88c', roof: '#8a708a', rows: 2, cols: 2 },
+        { x: 1035, y: 183, w: 91, h: 132, color: '#e4caa1', roof: '#a86f5b', rows: 3, cols: 3 },
+    ];
+    for (const building of buildings) {
+        context.fillStyle = 'rgba(13, 29, 41, 0.32)';
+        context.fillRect(building.x + 7, building.y + 8, building.w, building.h);
+        context.fillStyle = building.color;
+        context.fillRect(building.x, building.y, building.w, building.h);
+        context.fillStyle = building.roof;
+        context.beginPath();
+        context.moveTo(building.x - 8, building.y + 2);
+        context.lineTo(building.x + building.w / 2, building.y - 27);
+        context.lineTo(building.x + building.w + 8, building.y + 2);
+        context.closePath();
+        context.fill();
+        context.fillStyle = '#f8dfad';
+        for (let row = 0; row < building.rows; row++) {
+            for (let col = 0; col < building.cols; col++) {
+                const windowWidth = 10;
+                const windowHeight = 12;
+                const spacing = (building.w - building.cols * windowWidth) / (building.cols + 1);
+                context.fillRect(
+                    building.x + spacing + col * (windowWidth + spacing),
+                    building.y + 15 + row * 25,
+                    windowWidth,
+                    windowHeight
+                );
+            }
+        }
+    }
+    context.beginPath();
+    context.moveTo(748, 328);
+    context.quadraticCurveTo(928, 295, 1200, 328);
+    context.lineTo(1200, 367);
+    context.lineTo(748, 367);
+    context.closePath();
+    context.fillStyle = '#60786e';
+    context.fill();
+    context.beginPath();
+    context.moveTo(790, 360);
+    context.quadraticCurveTo(922, 324, 1125, 350);
+    context.strokeStyle = '#d9c69e';
+    context.lineWidth = 8;
+    context.stroke();
+    context.restore();
+
+    fillRoundRect(64, 48, 310, 42, 21, '#253e50', 'rgba(239, 201, 133, 0.7)', 1.5);
+    context.fillStyle = '#f4ce83';
+    context.font = 'bold 21px sans-serif';
+    context.fillText('DICE CITY', 84, 76);
+    context.fillStyle = '#c1cbd0';
+    context.font = '17px sans-serif';
+    context.fillText('対 戦 結 果', 214, 76);
+
+    context.beginPath();
+    context.arc(111, 175, 44, 0, Math.PI * 2);
+    context.fillStyle = '#233b4b';
+    context.fill();
+    context.strokeStyle = '#d8ae61';
+    context.lineWidth = 2;
+    context.stroke();
+    context.beginPath();
+    context.arc(111, 175, 37, 0, Math.PI * 2);
+    context.strokeStyle = 'rgba(246, 216, 159, 0.42)';
+    context.lineWidth = 1;
+    context.stroke();
+    context.beginPath();
+    context.moveTo(96, 156);
+    context.lineTo(126, 156);
+    context.lineTo(124, 175);
+    context.quadraticCurveTo(122, 188, 111, 188);
+    context.quadraticCurveTo(100, 188, 98, 175);
+    context.closePath();
+    context.fillStyle = '#f1bd54';
+    context.fill();
+    context.strokeStyle = '#8b5a2d';
+    context.lineWidth = 2;
+    context.stroke();
+    context.beginPath();
+    context.moveTo(98, 162);
+    context.lineTo(88, 160);
+    context.lineTo(90, 170);
+    context.quadraticCurveTo(92, 178, 102, 180);
+    context.moveTo(124, 162);
+    context.lineTo(134, 160);
+    context.lineTo(132, 170);
+    context.quadraticCurveTo(130, 178, 120, 180);
+    context.strokeStyle = '#d89b42';
+    context.lineWidth = 4;
+    context.stroke();
+    context.fillStyle = '#ffe8aa';
+    context.fillRect(107, 188, 8, 13);
+    fillRoundRect(94, 201, 34, 7, 3, '#e9b653');
+    fillRoundRect(90, 210, 42, 7, 3, '#c98a39');
+
+    context.fillStyle = '#fff0d2';
+    const winnerLabel = `${model.winnerName} の勝利`;
+    context.font = `bold ${fittedText(winnerLabel, 560, 50, 30)}px sans-serif`;
+    context.fillText(winnerLabel, 176, 164, 560);
+    fillRoundRect(178, 188, 214, 40, 20, 'rgba(239, 201, 133, 0.12)', 'rgba(239, 201, 133, 0.42)');
+    context.fillStyle = '#f4d493';
+    context.font = 'bold 20px sans-serif';
+    context.fillText(`${model.turnCount} ターンで完成`, 198, 215);
+    context.fillStyle = '#c5d0d5';
+    context.font = '17px sans-serif';
+    context.fillText('あなたの街が、この街の主役。', 178, 258);
+
+    context.fillStyle = '#e7d2a4';
+    context.font = 'bold 19px sans-serif';
+    context.fillText('最終コイン', 64, 306);
     const columnWidth = 520;
+    const rowHeight = 45;
+    const rowGap = 7;
     model.standings.slice(0, 10).forEach((player, index) => {
-        const column = index >= 5 ? 1 : 0;
+        const column = Math.floor(index / 5);
         const row = index % 5;
-        const x = 70 + column * columnWidth;
-        const y = 280 + row * 62;
-        context.fillStyle = player.isWinner ? '#f6c85f' : '#ffffff';
-        context.font = player.isWinner ? 'bold 28px sans-serif' : '26px sans-serif';
-        context.fillText(`${player.isWinner ? "🏆 " : ""}${player.name}`, x, y);
+        const x = 64 + column * (columnWidth + 24);
+        const y = 322 + row * (rowHeight + rowGap);
+        const isWinner = player.isWinner;
+        fillRoundRect(
+            x, y, columnWidth, rowHeight, 12,
+            isWinner ? '#e9be63' : 'rgba(17, 35, 50, 0.62)',
+            isWinner ? '#ffe7aa' : 'rgba(155, 180, 191, 0.34)', 1.2
+        );
+        if (isWinner) {
+            context.beginPath();
+            context.arc(x + 25, y + rowHeight / 2, 9, 0, Math.PI * 2);
+            context.fillStyle = '#815929';
+            context.fill();
+            context.fillStyle = '#fff1cd';
+            context.font = 'bold 13px sans-serif';
+            context.fillText('1', x + 21, y + rowHeight / 2 + 5);
+        } else {
+            context.fillStyle = '#a9bbc4';
+            context.font = 'bold 15px sans-serif';
+            context.fillText(String(index + 1).padStart(2, '0'), x + 16, y + 28);
+        }
+        context.fillStyle = isWinner ? '#263b45' : '#edf1e9';
+        const nameX = x + 48;
+        const nameWidth = 310;
+        const nameSize = fittedText(player.name, nameWidth, 21, 14);
+        context.font = `${isWinner ? 'bold ' : ''}${nameSize}px sans-serif`;
+        context.fillText(player.name, nameX, y + 29, nameWidth);
+        context.fillStyle = isWinner ? '#765020' : '#f1cb75';
         context.textAlign = 'right';
-        context.fillText(`${player.coins}コイン`, x + 450, y);
+        context.font = 'bold 18px sans-serif';
+        context.fillText(`${player.coins} コイン`, x + columnWidth - 20, y + 28);
         context.textAlign = 'left';
     });
-    context.fillStyle = '#91a8c6';
-    context.font = '22px sans-serif';
-    context.fillText('ダイスシティで遊びました', 70, 600);
+    context.fillStyle = '#a6b7bf';
+    context.font = '15px sans-serif';
+    context.fillText('DICE CITY   •   街をつくり、サイコロで競う。', 64, 606);
+    context.textAlign = 'right';
+    context.fillStyle = '#d9c294';
+    context.font = '14px sans-serif';
+    context.fillText('対戦の記録', 1136, 606);
+    context.textAlign = 'left';
     return true;
 }
 
@@ -244,9 +437,14 @@ function buildWinnerScreenHtml(options = {}) {
     const winner = options.winner;
     const escapeHtml = options.escapeHtml;
     if (!winner || typeof escapeHtml !== 'function') return '';
-    const scoreRows = buildWinnerStatsRows(options.players, winner, escapeHtml);
+    const sunset = options.designTheme === 'sunset';
+    const scoreRows = buildWinnerStatsRows(options.players, winner, escapeHtml, options);
     const streakHtml = buildWinStreakHtml(winner, options.winStreak, escapeHtml);
-    const winnerType = options.isCpuWinner ? '🤖 CPU' : '👤 人間';
+    const winnerType = sunset
+        ? `<svg class="winner-kind-icon ${options.isCpuWinner ? 'is-cpu' : 'is-human'}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${options.isCpuWinner
+            ? '<rect x="4" y="6" width="16" height="14" rx="4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><path d="M9 16h6M12 3v3"/>'
+            : '<circle cx="12" cy="8" r="4"/><path d="M4 21c.5-4.5 3.2-7 8-7s7.5 2.5 8 7Z"/>'}</svg>${options.isCpuWinner ? 'CPU' : '人間'}`
+        : (options.isCpuWinner ? '🤖 CPU' : '👤 人間');
     const resultAdSlot = typeof options.resultAdSlot === 'string' ? options.resultAdSlot : '';
     const reviewHtml = buildGameReview(
         options.logEntries, options.logTypes, options.players, escapeHtml, options.reviewSummary
@@ -261,7 +459,7 @@ function buildWinnerScreenHtml(options = {}) {
         : (options.canRematch
             ? '<button id="winnerRematchButton" class="winner-primary-action" data-ui-action="rematchLocalGame">同じ設定でもう一度</button>'
             : '');
-    return `<div class="winner-screen"><div class="winner-emoji">🏆</div><div class="winner-title"><span class="winner-title-name">${escapeHtml(winner.name)}</span><span class="winner-title-outcome">の勝利！</span></div><div class="winner-sub"><span class="winner-sub-type">${winnerType}プレイヤーが勝ちました</span><span class="winner-sub-turn">${options.turnCount}ターン</span></div>${streakHtml}${options.townHtml || ''}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewBeforeActions}${rematchButton}<div class="winner-share-actions"><button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">画像を保存・共有</button></div><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${reviewAfterActions}${resultAdSlot}</div>`;
+    return `<div class="winner-screen"><svg class="winner-trophy-art" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><defs><linearGradient id="winnerGold" x1="18" y1="8" x2="46" y2="58" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe6a3"/><stop offset=".52" stop-color="#f1bd54"/><stop offset="1" stop-color="#c88732"/></linearGradient></defs><path d="M17 13H47V26C47 36 40.5 42 32 42S17 36 17 26V13Z" fill="url(#winnerGold)" stroke="#8b5a2d" stroke-width="2"/><path d="M17 18H10V24C10 31 14.5 35 21 35M47 18H54V24C54 31 49.5 35 43 35" fill="none" stroke="#d89b42" stroke-width="4" stroke-linecap="round"/><path d="M25 42V49H39V42M21 55H43L40 49H24L21 55Z" fill="url(#winnerGold)" stroke="#8b5a2d" stroke-width="2" stroke-linejoin="round"/><path d="M32 18L34.3 23.1L40 23.8L35.8 27.7L36.9 33.3L32 30.4L27.1 33.3L28.2 27.7L24 23.8L29.7 23.1L32 18Z" fill="#fff4d3"/><path d="M10 10L11.5 13.5L15 15L11.5 16.5L10 20L8.5 16.5L5 15L8.5 13.5L10 10ZM53 40L54.3 43.2L57.5 44.5L54.3 45.8L53 49L51.7 45.8L48.5 44.5L51.7 43.2L53 40Z" fill="#f2c86e"/></svg><div class="winner-title"><span class="winner-title-name">${escapeHtml(winner.name)}</span><span class="winner-title-outcome">の勝利！</span></div><div class="winner-sub"><span class="winner-sub-type">${winnerType}プレイヤーが勝ちました</span><span class="winner-sub-turn">${options.turnCount}ターン</span></div>${streakHtml}${options.townHtml || ''}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewBeforeActions}${rematchButton}<div class="winner-share-actions"><button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">画像を保存・共有</button></div><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${reviewAfterActions}${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;
