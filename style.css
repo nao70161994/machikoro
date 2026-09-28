@@ -4395,7 +4395,6 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-category
     font-size: 9px;
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-cost {
-    min-height: 26px;
     padding: 2px 7px;
     border: 1px solid #d8b77e;
     border-radius: 999px;
