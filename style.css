@@ -2800,10 +2800,19 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .dice-choose p
     gap: 7px;
 }
 html[data-design="sunset"] .dice-choice-facility-mark {
-    width: 30px;
+    width: 34px;
     height: 18px;
-    flex: 0 0 30px;
-    filter: brightness(1.45) saturate(.9);
+    flex: 0 0 34px;
+    padding: 2px;
+    background: #f4e8c9;
+    border: 1px solid #bd8b42;
+    border-radius: 6px;
+    filter: brightness(1.08) contrast(1.08);
+}
+html[data-design="sunset"] body.accessibility-high-contrast .dice-choice-facility-mark {
+    background: #fff;
+    border-color: #000;
+    filter: none;
 }
 html[data-design="sunset"] .dice-choose button {
     display: inline-flex;
