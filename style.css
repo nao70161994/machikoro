@@ -2826,6 +2826,12 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-headi
     gap: 10px;
     color: #f4ce7b;
 }
+@media (min-width: 768px) {
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-heading {
+        gap: 8px;
+        font-size: 14px;
+    }
+}
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box > .pending-inspect-hint {
     margin: 0 0 14px;
     padding: 8px 10px;

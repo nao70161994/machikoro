@@ -216,6 +216,7 @@ test('夕暮れの施設効果パネルは施設アートと統一色で表示�
                 borderColor: getComputedStyle(element).borderTopColor,
                 hintColor: getComputedStyle(hint).color,
                 hintHeight: hint.getBoundingClientRect().height,
+                headingHeight: element.querySelector('.pending-heading').getBoundingClientRect().height,
             };
         });
         expect(bounds.left).toBeGreaterThanOrEqual(-1);
@@ -224,6 +225,7 @@ test('夕暮れの施設効果パネルは施設アートと統一色で表示�
         expect(bounds.borderColor).toBe('rgb(209, 166, 78)');
         expect(bounds.hintColor).toBe('rgb(201, 213, 216)');
         if (width === 390) expect(bounds.hintHeight).toBeLessThanOrEqual(64);
+        if (width === 1440) expect(bounds.headingHeight).toBeLessThanOrEqual(30);
         const screenshotPath = testInfo.outputPath(`sunset-tv-pending-${width}.png`);
         await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
         await testInfo.attach(`sunset-tv-pending-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
