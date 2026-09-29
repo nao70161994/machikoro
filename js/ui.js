@@ -1919,11 +1919,18 @@ function buildLandmarkDetailContent(name) {
         cost: Player.landmarkCost(name),
         effectText: getLandmarkEffectText(name),
         escapeHtml,
+        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
     });
 }
 
 function buildCardDetailContent(card) {
-    return UiCardDetail.buildCardDetailContent({ card, escapeHtml, getEffectText, safeCardColorName });
+    return UiCardDetail.buildCardDetailContent({
+        card,
+        escapeHtml,
+        getEffectText,
+        safeCardColorName,
+        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
+    });
 }
 
 function showCardDetail(name, isLandmark = false) {

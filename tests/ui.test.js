@@ -1928,6 +1928,30 @@ runTest('buildLandmarkDetailContent はランドマーク詳細HTMLを生成す�
     assert.ok(content.html.includes('サイコロ'));
 });
 
+runTest('夕暮れテーマのカード詳細は共通SVG記号を使い絵文字を表示しない', () => {
+    const helper = require('../js/uiCardDetail');
+    const escape = value => String(value);
+    const card = { name: '麦畑', color: 'blue', category: '農業', cost: 1, diceNums: [1] };
+    const options = {
+        card,
+        escapeHtml: escape,
+        getEffectText: () => '+1コイン',
+        safeCardColorName: color => color,
+        useSunsetIcons: true,
+    };
+    const content = helper.buildCardDetailContent(options);
+    assert.ok(content.html.includes('card-detail-coin'));
+    assert.ok(content.html.includes('card-detail-dice'));
+    assert.ok(!/[💰🎲]/u.test(content.html));
+
+    const landmark = helper.buildLandmarkDetailContent({
+        name: '駅', emoji: '🚉', cost: 4, effectText: 'ダイスを選べる', escapeHtml: escape, useSunsetIcons: true,
+    });
+    assert.strictEqual(landmark.title, '駅');
+    assert.ok(landmark.html.includes('card-detail-coin'));
+    assert.ok(!/[💰🚉]/u.test(landmark.html + landmark.title));
+});
+
 runTest('UiBuildMenu card filter transitionはstate更新と再描画要求をpureに分離する', () => {
     const helper = require('../js/uiBuildMenu');
     assert.deepStrictEqual({ ...helper.cardFilterTransition('', 'green') }, {

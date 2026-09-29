@@ -3552,6 +3552,36 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
     font-weight: bold;
 }
 
+html[data-design="sunset"] .card-detail-mark {
+    width: 16px;
+    height: 16px;
+    margin-right: 3px;
+    vertical-align: -3px;
+    overflow: visible;
+}
+html[data-design="sunset"] .card-detail-dice rect {
+    fill: #fff4d6;
+    stroke: #9b713f;
+    stroke-width: 1.5;
+}
+html[data-design="sunset"] .card-detail-dice circle { fill: #31475a; }
+html[data-design="sunset"] .card-detail-coin circle:first-child {
+    fill: #e9b84f;
+    stroke: #865b24;
+    stroke-width: 1.5;
+}
+html[data-design="sunset"] .card-detail-coin circle:nth-child(2) {
+    fill: none;
+    stroke: #f9e3a0;
+    stroke-width: 1;
+}
+html[data-design="sunset"] .card-detail-coin path {
+    fill: none;
+    stroke: #68471d;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+}
+
 .card-detail-effect {
     font-size: 13px;
     color: #fffffe;
