@@ -141,6 +141,37 @@ test('夕暮れのカード詳細は専用記号を使いスマホとデスク�
     }
 });
 
+test('夕暮れの駅選択は専用施設アートとダイス記号で表示する', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const diceChoice = page.locator('#diceChoose');
+    await page.evaluate(() => {
+        const container = document.getElementById('diceChoose');
+        container.innerHTML = UiDiceChoice.buildHtml({
+            phase: GAME_PHASES.SELECT_DICE,
+            lastDiceResult: 0,
+            allowedActions: new Set(['selectDice']),
+            disabledAttr: () => '',
+            phases: GAME_PHASES,
+            useSunsetIcons: true,
+        });
+        container.style.display = 'block';
+    });
+    await expect(diceChoice).toContainText('駅：何個振りますか？');
+    await expect(diceChoice.locator('.dice-choice-facility-mark use')).toHaveAttribute('href', 'icons/facility-art.svg#station');
+    await expect(diceChoice.locator('.dice-choice-die-mark')).toHaveCount(3);
+    await expect(diceChoice).not.toContainText(/[🚉🎲]/u);
+
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        await diceChoice.scrollIntoViewIfNeeded();
+        const screenshotPath = testInfo.outputPath(`sunset-station-choice-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-station-choice-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+});
+
 test('デスクトップでは街の建物アートを広く見せる', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await prepareSunset(page);

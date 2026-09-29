@@ -2793,6 +2793,46 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
     border-radius: 8px;
 }
 
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .dice-choose p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+html[data-design="sunset"] .dice-choice-facility-mark {
+    width: 30px;
+    height: 18px;
+    flex: 0 0 30px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .dice-choose button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+html[data-design="sunset"] .dice-choice-die-mark {
+    width: 19px;
+    height: 19px;
+    flex: 0 0 19px;
+    vertical-align: -4px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .dice-choice-die-mark rect {
+    fill: #fff4d6;
+    stroke: #9b713f;
+    stroke-width: 1.5;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .dice-choice-die-mark circle {
+    fill: #31475a;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .dice-choice-die-mark rect {
+    fill: #fff;
+    stroke: #000;
+    stroke-width: 1.5;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .dice-choice-die-mark circle {
+    fill: #000;
+}
+
 /* ===== pendingモーダル ===== */
 .pending-modal {
     position: fixed;

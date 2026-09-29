@@ -722,6 +722,7 @@ function renderDiceChoose() {
         allowedActions: currentUiAllowedActions(),
         disabledAttr: uiActionDisabledAttr,
         phases: GAME_PHASES,
+        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
     };
     const html = UiDiceChoice.buildHtml(options);
     setDiceChooseContent(el, html, UiDiceChoice.choiceIdentity(options));

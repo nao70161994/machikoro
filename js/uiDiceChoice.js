@@ -52,6 +52,14 @@ const UiDiceChoice = (() => {
         return '';
     }
 
+    function facilityMark(name) {
+        return `<svg class="dice-choice-facility-mark" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#${name}"></use></svg>`;
+    }
+
+    function diceMark() {
+        return '<svg class="dice-choice-die-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="17" height="17" rx="4"/><circle cx="6" cy="6" r="1.2"/><circle cx="14" cy="6" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="6" cy="14" r="1.2"/><circle cx="14" cy="14" r="1.2"/></svg>';
+    }
+
     function applyFocusPlan(plan, content, options = {}) {
         if (!plan) return false;
         if (plan.focusInitial === true && content &&
@@ -77,16 +85,21 @@ const UiDiceChoice = (() => {
         const disabledAttr = options.disabledAttr;
         const phases = options.phases;
         const result = options.lastDiceResult;
+        const sunset = options.useSunsetIcons === true;
+        const stationMark = sunset ? facilityMark('station') : '🚉';
+        const radioMark = sunset ? facilityMark('radio') : '📡';
+        const harborMark = sunset ? facilityMark('harbor') : '⚓';
+        const dieMark = sunset ? diceMark() : '🎲';
         if (options.phase === phases.SELECT_DICE && allowedActions.has('selectDice')) {
             const disabled = disabledAttr('selectDice');
-            return `<div class="dice-choose"><p>🚉 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false"${disabled}>🎲 1個</button><button data-action="selectDiceCount" data-use-two="true"${disabled}>🎲🎲 2個（合計を使う）</button></div>`;
+            return `<div class="dice-choose"><p>${stationMark} 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false"${disabled}>${dieMark} 1個</button><button data-action="selectDiceCount" data-use-two="true"${disabled}>${sunset ? dieMark + dieMark : '🎲🎲'} 2個（合計を使う）</button></div>`;
         }
         if (options.phase === phases.REROLL_CONFIRM && (allowedActions.has('rerollDice') || allowedActions.has('skipReroll'))) {
-            return `<div class="dice-choose"><p>📡 電波塔：🎲${result} を振り直しますか？</p><button data-action="rerollDice"${disabledAttr('rerollDice')}>振り直す</button><button data-action="skipReroll"${disabledAttr('skipReroll')}>このまま使う</button></div>`;
+            return `<div class="dice-choose"><p>${radioMark} 電波塔：${dieMark}${result} を振り直しますか？</p><button data-action="rerollDice"${disabledAttr('rerollDice')}>振り直す</button><button data-action="skipReroll"${disabledAttr('skipReroll')}>このまま使う</button></div>`;
         }
         if (options.phase === phases.HARBOR_CHOICE && allowedActions.has('resolveHarbor')) {
             const disabled = disabledAttr('resolveHarbor');
-            return `<div class="dice-choose"><p>⚓ 港効果：合計${result}に+2しますか？</p><button data-action="resolveHarbor" data-use-bonus="true"${disabled}>+2する（→${result + 2}）</button><button data-action="resolveHarbor" data-use-bonus="false"${disabled}>そのまま使う（${result}）</button></div>`;
+            return `<div class="dice-choose"><p>${harborMark} 港効果：合計${result}に+2しますか？</p><button data-action="resolveHarbor" data-use-bonus="true"${disabled}>+2する（→${result + 2}）</button><button data-action="resolveHarbor" data-use-bonus="false"${disabled}>そのまま使う（${result}）</button></div>`;
         }
         return '';
     }

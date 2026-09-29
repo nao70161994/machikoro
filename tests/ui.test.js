@@ -984,6 +984,8 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     context.game.allowed = ['selectDice'];
     context.renderDiceChoose();
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="selectDiceCount"'));
+    assert.ok(elements.diceChoose.innerHTML.includes('🚉 駅'));
+    assert.ok(elements.diceChoose.innerHTML.includes('🎲🎲 2個'));
     assert.strictEqual(elements.diceChoose.style.display, 'block');
     assert.strictEqual(focusCount, 1);
 
@@ -995,6 +997,7 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     elements.diceChoose.style.display = 'none';
     context.renderDiceChoose();
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="rerollDice"'));
+    assert.ok(elements.diceChoose.innerHTML.includes('📡 電波塔：🎲10'));
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="skipReroll"'));
     assert.strictEqual(elements.diceChoose.style.display, 'block');
 
@@ -1015,6 +1018,35 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     assert.ok(!elements.diceChoose.innerHTML.includes(' disabled'));
     assert.strictEqual(elements.diceChoose.style.display, 'block');
     assert.strictEqual(focusCount, 3);
+});
+
+runTest('夕暮れのサイコロ選択は駅・電波塔・港とダイスを専用SVGで表示する', () => {
+    const { context, elements } = loadUiRuntime();
+    context.document.documentElement = { dataset: { design: 'sunset' } };
+    context.GAME_PHASES.SELECT_DICE = 'selectDice';
+    context.GAME_PHASES.REROLL_CONFIRM = 'rerollConfirm';
+    context.GAME_PHASES.HARBOR_CHOICE = 'harborChoice';
+    context.GameManager = { allowedActionsFor(game) { return new Set(game.allowed || []); } };
+    context.game = { phase: 'selectDice', currentPlayerIndex: 0, allowed: ['selectDice'], lastDiceResult: 5 };
+    context.cpuPlayers = [null, null];
+
+    context.renderDiceChoose();
+    assert.ok(elements.diceChoose.innerHTML.includes('facility-art.svg#station'));
+    assert.strictEqual((elements.diceChoose.innerHTML.match(/class="dice-choice-die-mark"/g) || []).length, 3);
+    assert.ok(!/[🚉🎲]/u.test(elements.diceChoose.innerHTML));
+
+    context.game.phase = 'rerollConfirm';
+    context.game.allowed = ['rerollDice', 'skipReroll'];
+    context.renderDiceChoose();
+    assert.ok(elements.diceChoose.innerHTML.includes('facility-art.svg#radio'));
+    assert.ok(elements.diceChoose.innerHTML.includes('class="dice-choice-die-mark"'));
+    assert.ok(!/[📡🎲]/u.test(elements.diceChoose.innerHTML));
+
+    context.game.phase = 'harborChoice';
+    context.game.allowed = ['resolveHarbor'];
+    context.renderDiceChoose();
+    assert.ok(elements.diceChoose.innerHTML.includes('facility-art.svg#harbor'));
+    assert.ok(!/[⚓]/u.test(elements.diceChoose.innerHTML));
 });
 
 runTest('renderDiceChoose はCPU・online replay・相手手番でfocusを奪わない', () => {
