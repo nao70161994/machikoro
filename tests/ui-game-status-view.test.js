@@ -331,7 +331,7 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
         lastDiceResult: 6,
     });
     assert.strictEqual(view.statusText, '👤 Aliceのターン　🪙 7コイン');
-    assert.strictEqual(UiGameStatusView.buildTurnStatusText(players[0], 'sunset'), 'Aliceのターン　7コイン');
+    assert.strictEqual(UiGameStatusView.buildTurnStatusText(players[0], 'sunset'), 'Aliceのターン');
     assert.deepStrictEqual(view.rollButton, { disabled: false });
     assert.deepStrictEqual(view.skipButton, {
         disabled: true,
