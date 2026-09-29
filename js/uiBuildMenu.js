@@ -141,7 +141,7 @@ const UiBuildMenu = (() => {
 
     function buildUndoBuildButtonHtml(state) {
         return state && state.visible
-            ? `<button class="undo-btn" data-action="undoBuild"${state.enabled ? '' : ' disabled'}>↩ 建設を取り消す</button>`
+            ? `<button class="undo-btn" data-action="undoBuild"${state.enabled ? '' : ' disabled'}><span class="undo-btn-fallback-icon" aria-hidden="true">↩</span><svg class="undo-btn-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#undo"></use></svg><span>建設を取り消す</span></button>`
             : '';
     }
 

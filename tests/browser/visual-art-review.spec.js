@@ -296,6 +296,26 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
     }
 });
 
+test('夕暮れの建設Undoは専用の戻る図案を使い取り消し操作を保つ', async ({ page }) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.locator('#btnRoll').click();
+    await expect(page.locator('#buildMenu .card-btn:not(:disabled)').first()).toBeVisible();
+    await page.locator('#buildMenu .card-btn:not(:disabled)').first().click();
+
+    const undoButton = page.locator('#buildMenu .undo-btn');
+    await expect(undoButton).toBeVisible();
+    const undoIcon = undoButton.locator('.undo-btn-icon');
+    await expect(undoIcon).toBeVisible();
+    await expect(undoIcon.locator('use')).toHaveAttribute('href', 'icons/interface-ui.svg#undo');
+    expect(await undoButton.locator('.undo-btn-fallback-icon')
+        .evaluate(element => getComputedStyle(element).display)).toBe('none');
+
+    await undoButton.click();
+    await expect(page.locator('#buildMenu .undo-btn')).toHaveCount(0);
+});
+
 test('夕暮れのカード詳細は専用記号を使いスマホとデスクトップで記録する', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();

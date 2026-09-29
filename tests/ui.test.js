@@ -2417,7 +2417,9 @@ runTest('UiBuildMenu undo stateは表示条件とhuman入力gateをpureに分離
         isHumanTurn: false,
     });
     assert.deepStrictEqual({ ...visible }, { visible: true, enabled: false });
-    assert.ok(helper.buildUndoBuildButtonHtml(visible).includes(' disabled'));
+    const disabledButton = helper.buildUndoBuildButtonHtml(visible);
+    assert.ok(disabledButton.includes(' disabled'));
+    assert.ok(disabledButton.includes('icons/interface-ui.svg#undo'));
     const enabled = helper.undoBuildActionState({
         hasUndoState: true,
         hasGame: true,
@@ -2426,7 +2428,9 @@ runTest('UiBuildMenu undo stateは表示条件とhuman入力gateをpureに分離
         isHumanTurn: true,
     });
     assert.deepStrictEqual({ ...enabled }, { visible: true, enabled: true });
-    assert.ok(!helper.buildUndoBuildButtonHtml(enabled).includes(' disabled'));
+    const enabledButton = helper.buildUndoBuildButtonHtml(enabled);
+    assert.ok(!enabledButton.includes(' disabled'));
+    assert.ok(enabledButton.includes('class="undo-btn-fallback-icon"'));
     for (const blocked of [
         { hasUndoState: false },
         { hasGame: false },
