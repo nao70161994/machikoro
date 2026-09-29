@@ -112,6 +112,33 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
     }
 });
 
+test('夕暮れのカード詳細は専用記号を使いスマホとデスクトップで記録する', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const detailButton = page.locator('#buildMenu .card-detail-btn').first();
+    await detailButton.click();
+    const modal = page.locator('#cardDetailModal');
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('.card-detail-coin')).toHaveCount(1);
+    await expect(modal.locator('.card-detail-dice')).toHaveCount(1);
+    await expect(modal).not.toContainText(/[💰🎲]/u);
+
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const dimensions = await modal.locator('.modal-content').evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            return { left: bounds.left, right: bounds.right, width: bounds.width };
+        });
+        expect(dimensions.left).toBeGreaterThanOrEqual(0);
+        expect(dimensions.right).toBeLessThanOrEqual(width);
+        expect(dimensions.width).toBeGreaterThan(0);
+        const screenshotPath = testInfo.outputPath(`sunset-card-detail-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-card-detail-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+});
+
 test('デスクトップでは街の建物アートを広く見せる', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await prepareSunset(page);
