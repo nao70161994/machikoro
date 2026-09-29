@@ -1312,7 +1312,8 @@ function drawCitySkyline() {
 
 // ===== コイン獲得アニメーション =====
 function showCoinAnimation(playerIndex, diff) {
-    const view = UiPlayerDisplay.buildCoinAnimationView(diff);
+    const useSunsetIcons = document.documentElement?.dataset?.design === 'sunset';
+    const view = UiPlayerDisplay.buildCoinAnimationView(diff, useSunsetIcons);
     if (view.playSound) playSound('coin');
     const boxes = document.querySelectorAll('.player-box');
     if (!boxes[playerIndex]) return;
@@ -1320,7 +1321,12 @@ function showCoinAnimation(playerIndex, diff) {
     const coinRow = box.querySelector('.player-coin-row') || box;
     const el = document.createElement('div');
     el.className = view.className;
-    el.textContent = view.text;
+    if (useSunsetIcons) {
+        el.innerHTML = view.html;
+        el.setAttribute('aria-label', `${view.amountText}コイン`);
+    } else {
+        el.textContent = view.text;
+    }
     coinRow.appendChild(el);
     setTimeout(() => el.remove(), 1000);
 }

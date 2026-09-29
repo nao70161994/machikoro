@@ -26,6 +26,11 @@ assert.deepStrictEqual(UiPlayerDisplay.buildCoinAnimationView(-2), {
     className: 'coin-float coin-lose',
     text: '-2🪙',
 });
+const sunsetCoinView = UiPlayerDisplay.buildCoinAnimationView(4, true);
+assert.strictEqual(sunsetCoinView.amountText, '+4');
+assert.ok(sunsetCoinView.html.includes('icons/interface-ui.svg#coin'));
+assert.ok(!sunsetCoinView.html.includes('🪙'));
+assert.strictEqual(UiPlayerDisplay.buildCoinAnimationView('<img>', true).amountText, '0');
 const zeroCoinView = UiPlayerDisplay.buildCoinAnimationView(0);
 assert.deepStrictEqual(zeroCoinView, {
     playSound: false,

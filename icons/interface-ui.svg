@@ -26,6 +26,11 @@
         <circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="16" cy="8" r="1.2" fill="currentColor"/>
         <circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8" cy="16" r="1.2" fill="currentColor"/><circle cx="16" cy="16" r="1.2" fill="currentColor"/>
     </symbol>
+    <symbol id="coin" viewBox="0 0 20 20">
+        <circle cx="10" cy="10" r="8.5" fill="#e9b84f" stroke="#865b24" stroke-width="1.5"/>
+        <circle cx="10" cy="10" r="6.1" fill="none" stroke="#f9e3a0" stroke-width="1"/>
+        <path d="M11.8 6.5c-.5-.5-1.1-.7-1.9-.7-1.1 0-1.9.6-1.9 1.5 0 2.3 4.1 1.1 4.1 3.5 0 1-.9 1.8-2.2 1.8-.9 0-1.7-.3-2.3-.9M10 4.8v10.4" fill="none" stroke="#68471d" stroke-linecap="round" stroke-width="1.2"/>
+    </symbol>
     <symbol id="market" viewBox="0 0 24 24">
         <path d="M5 11v9h14v-9M3 9l2-5h14l2 5M3 9c0 1.4 1 2.3 2.3 2.3S7.5 10.4 7.5 9c0 1.4 1 2.3 2.3 2.3s2.3-.9 2.3-2.3c0 1.4 1 2.3 2.3 2.3s2.3-.9 2.3-2.3c0 1.4 1 2.3 2.3 2.3S21.3 10.4 21.3 9M9 20v-5h6v5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/>
     </symbol>

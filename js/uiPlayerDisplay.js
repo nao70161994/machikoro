@@ -148,12 +148,18 @@ const UiPlayerDisplay = (() => {
         return players.map((player, index) => buildPlayerHtml(player, index, options)).join('');
     }
 
-    function buildCoinAnimationView(diff) {
-        const isGain = diff > 0;
+    function buildCoinAnimationView(diff, useSunsetIcons = false) {
+        const safeDiff = Number.isFinite(diff) ? diff : 0;
+        const isGain = safeDiff > 0;
+        const amountText = `${isGain ? '+' : ''}${safeDiff}`;
         return Object.freeze({
             playSound: isGain,
             className: `coin-float ${isGain ? 'coin-gain' : 'coin-lose'}`,
-            text: `${isGain ? '+' : ''}${diff}🪙`,
+            text: `${amountText}🪙`,
+            ...(useSunsetIcons ? {
+                amountText,
+                html: `${amountText}<svg class="card-coin-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#coin"></use></svg>`,
+            } : {}),
         });
     }
 

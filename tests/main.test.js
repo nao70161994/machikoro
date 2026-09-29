@@ -1210,6 +1210,12 @@ runTest('main coin animationはpure viewと既存DOM・1秒timerを同期する'
 
     rt.__test.flushTimeouts();
     assert.strictEqual(removed, 1);
+
+    rt.document.documentElement = { dataset: { design: 'sunset' } };
+    rt.showCoinAnimation(0, -2);
+    assert.strictEqual(appended.innerHTML, '-2<svg class="card-coin-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#coin"></use></svg>');
+    assert.strictEqual(appended.textContent, '');
+    assert.strictEqual(appended.getAttribute('aria-label'), '-2コイン');
 });
 
 runTest('main checkAutoSkip は建設不能時に nextTurn を送信する', () => {

@@ -194,7 +194,7 @@ const UiBuildMenu = (() => {
     }
 
     function renderCoinMark() {
-        return '<svg class="card-coin-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="8.5" fill="#e9b84f" stroke="#865b24" stroke-width="1.5"/><circle cx="10" cy="10" r="6.1" fill="none" stroke="#f9e3a0" stroke-width="1"/><path d="M11.8 6.5c-.5-.5-1.1-.7-1.9-.7-1.1 0-1.9.6-1.9 1.5 0 2.3 4.1 1.1 4.1 3.5 0 1-.9 1.8-2.2 1.8-.9 0-1.7-.3-2.3-.9M10 4.8v10.4" fill="none" stroke="#68471d" stroke-linecap="round" stroke-width="1.2"/></svg>';
+        return '<svg class="card-coin-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#coin"></use></svg>';
     }
 
     function renderTownHtml(player, enabledLandmarks = new Set()) {

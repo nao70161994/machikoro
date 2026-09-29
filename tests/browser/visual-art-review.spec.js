@@ -356,6 +356,19 @@ test('夕暮れの駅選択は専用施設アートとダイス記号で表示�
     }
 });
 
+test('夕暮れのコイン獲得表示はカードと共通のSVGコインを使う', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+
+    await page.evaluate(() => showCoinAnimation(0, 3));
+    const coinGain = page.locator('#playerBox0 .coin-float').last();
+    await expect(coinGain).toHaveAttribute('aria-label', '+3コイン');
+    await expect(coinGain.locator('svg use')).toHaveAttribute('href', 'icons/interface-ui.svg#coin');
+    await expect(coinGain).not.toContainText('🪙');
+});
+
 test('夕暮れの施設効果パネルは施設アートと統一色で表示する', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);

@@ -452,4 +452,5 @@ runTest('街の夕暮れ用ランドマークバッジは街並みと同じ固�
     assert.strictEqual(motifs.size, Player.landmarkNames().length);
     assert.ok(UiBuildMenu.renderLandmarkBadgeIcon('constructor').includes('facility-art.svg#landmark'));
     assert.ok(UiBuildMenu.renderCoinMark().includes('class="card-coin-mark"'));
+    assert.ok(UiBuildMenu.renderCoinMark().includes('icons/interface-ui.svg#coin'));
 });
