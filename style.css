@@ -1396,6 +1396,12 @@ html[data-design="sunset"] .design-switcher select option {
     color: #f0c040;
     font-size: 14px;
 }
+.card-set-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.card-set-title .modal-heading-icon { margin-right: 0; }
 
 .set-toggle {
     width: auto;

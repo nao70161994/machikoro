@@ -205,6 +205,29 @@ test('夕暮れのルール説明は専用UI記号とランドマークアート
     expect(await selectionModal.locator('#cardSelectModalTitle .modal-heading-emoji').evaluate(element =>
         getComputedStyle(element).display
     )).toBe('none');
+    await expect(selectionModal.locator('.card-set-title')).toHaveCount(4);
+    await expect(selectionModal.locator('.card-set-title .modal-heading-icon use')).toHaveCount(4);
+    const cardSetIcons = await selectionModal.evaluate(element => ({
+        hiddenEmojiCount: [...element.querySelectorAll('.card-set-title .modal-heading-emoji')]
+            .filter(icon => getComputedStyle(icon).display === 'none').length,
+        visibleIconCount: [...element.querySelectorAll('.card-set-title .modal-heading-icon')]
+            .filter(icon => getComputedStyle(icon).display !== 'none').length,
+    }));
+    expect(cardSetIcons.hiddenEmojiCount).toBe(4);
+    expect(cardSetIcons.visibleIconCount).toBe(4);
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const iconBounds = await selectionModal.locator('.card-set-title .modal-heading-icon').evaluateAll(icons =>
+            icons.map(icon => {
+                const bounds = icon.getBoundingClientRect();
+                return { left: bounds.left, right: bounds.right };
+            })
+        );
+        expect(iconBounds.every(icon => icon.left >= 0 && icon.right <= width)).toBe(true);
+        const screenshotPath = testInfo.outputPath(`sunset-card-sets-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-card-sets-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
 
     await page.evaluate(() => closeCardSelect());
     await page.locator('#designThemeSelect').selectOption('classic');
