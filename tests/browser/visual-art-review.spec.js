@@ -161,11 +161,15 @@ test('夕暮れの駅選択は専用施設アートとダイス記号で表示�
     await expect(diceChoice).toContainText('駅：何個振りますか？');
     await expect(diceChoice.locator('.dice-choice-facility-mark use')).toHaveAttribute('href', 'icons/facility-art.svg#station');
     await expect(diceChoice.locator('.dice-choice-die-mark')).toHaveCount(3);
+    await expect(diceChoice.locator('.dice-choice-double .dice-choice-label small')).toHaveText('合計を使う');
     await expect(diceChoice).not.toContainText(/[🚉🎲]/u);
 
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
         await diceChoice.scrollIntoViewIfNeeded();
+        const doubleButton = diceChoice.locator('.dice-choice-double');
+        const buttonFits = await doubleButton.evaluate((button) => button.scrollWidth <= button.clientWidth);
+        expect(buttonFits, `double-dice label should fit at ${width}px`).toBe(true);
         const screenshotPath = testInfo.outputPath(`sunset-station-choice-${width}.png`);
         await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
         await testInfo.attach(`sunset-station-choice-${width}.png`, { path: screenshotPath, contentType: 'image/png' });

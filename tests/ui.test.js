@@ -1033,6 +1033,8 @@ runTest('夕暮れのサイコロ選択は駅・電波塔・港とダイスを�
     context.renderDiceChoose();
     assert.ok(elements.diceChoose.innerHTML.includes('facility-art.svg#station'));
     assert.strictEqual((elements.diceChoose.innerHTML.match(/class="dice-choice-die-mark"/g) || []).length, 3);
+    assert.ok(elements.diceChoose.innerHTML.includes('class="dice-choice-double"'));
+    assert.ok(elements.diceChoose.innerHTML.includes('<small>合計を使う</small>'));
     assert.ok(!/[🚉🎲]/u.test(elements.diceChoose.innerHTML));
 
     context.game.phase = 'rerollConfirm';

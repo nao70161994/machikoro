@@ -92,6 +92,9 @@ const UiDiceChoice = (() => {
         const dieMark = sunset ? diceMark() : '🎲';
         if (options.phase === phases.SELECT_DICE && allowedActions.has('selectDice')) {
             const disabled = disabledAttr('selectDice');
+            if (sunset) {
+                return `<div class="dice-choose"><p>${stationMark} 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false"${disabled}><span class="dice-choice-die-pair">${dieMark}</span><span class="dice-choice-label"><strong>1個</strong></span></button><button class="dice-choice-double" data-action="selectDiceCount" data-use-two="true"${disabled}><span class="dice-choice-die-pair">${dieMark}${dieMark}</span><span class="dice-choice-label"><strong>2個</strong><small>合計を使う</small></span></button></div>`;
+            }
             return `<div class="dice-choose"><p>${stationMark} 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false"${disabled}>${dieMark} 1個</button><button data-action="selectDiceCount" data-use-two="true"${disabled}>${sunset ? dieMark + dieMark : '🎲🎲'} 2個（合計を使う）</button></div>`;
         }
         if (options.phase === phases.REROLL_CONFIRM && (allowedActions.has('rerollDice') || allowedActions.has('skipReroll'))) {
