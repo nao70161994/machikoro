@@ -325,6 +325,38 @@ test('夕暮れのカード詳細は専用記号を使いスマホとデスク�
     }
 });
 
+test('夕暮れのランドマーク詳細も専用施設アートをスマホとデスクトップで記録する', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.locator('#buildMenu [data-action="showLandmarkDetail"]').first().click();
+
+    const modal = page.locator('#cardDetailModal');
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('.card-detail-coin')).toHaveCount(1);
+    await expect(modal.locator('.card-detail-dice')).toHaveCount(0);
+    const facilityArt = modal.locator('.card-detail-art .sunset-facility-art');
+    await expect(facilityArt).toHaveCount(1);
+    await expect(modal).not.toContainText(/[💰🏛️]/u);
+
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const artBounds = await facilityArt.boundingBox();
+        expect(artBounds).not.toBeNull();
+        expect(artBounds.width).toBeGreaterThan(0);
+        expect(artBounds.height).toBeGreaterThanOrEqual(112);
+        const screenshotPath = testInfo.outputPath('sunset-landmark-detail-' + width + '.png');
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach('sunset-landmark-detail-' + width + '.png', {
+            path: screenshotPath,
+            contentType: 'image/png',
+        });
+    }
+
+    await modal.locator('[data-ui-action="closeCardDetail"]').click();
+    await expect(modal).toBeHidden();
+});
+
 test('夕暮れの駅選択は専用施設アートとダイス記号で表示する', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
