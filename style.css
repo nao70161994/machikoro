@@ -856,9 +856,12 @@ html[data-design="sunset"] .design-switcher select option {
 }
 
 .setup-action-footer { width: 100%; }
+.setup-primary-cta {
+    min-height: var(--touch-target-standard);
+    text-align: center;
+}
 .setup-action-footer .setup-primary-cta {
     width: 100%;
-    min-height: var(--touch-target-standard);
 }
 
 @media (max-width: 480px) {

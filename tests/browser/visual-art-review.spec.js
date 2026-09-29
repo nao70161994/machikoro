@@ -64,7 +64,10 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
         await testInfo.attach(`sunset-online-create-${width}.png`, { path: createPath, contentType: 'image/png' });
 
         await page.locator('#onlineTabJoin').click();
-        await expect(page.locator('#onlineJoinSubmitButton')).toBeVisible();
+        const joinButton = page.locator('#onlineJoinSubmitButton');
+        await expect(joinButton).toBeVisible();
+        expect(await joinButton.evaluate(element => element.getBoundingClientRect().height))
+            .toBeGreaterThanOrEqual(44);
         const joinPath = testInfo.outputPath(`sunset-online-join-${width}.png`);
         await page.screenshot({ path: joinPath, fullPage: true, scale: 'css', animations: 'disabled' });
         await testInfo.attach(`sunset-online-join-${width}.png`, { path: joinPath, contentType: 'image/png' });
