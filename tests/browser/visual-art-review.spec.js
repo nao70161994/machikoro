@@ -450,7 +450,9 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
         expect(cards.every(card => card.diceSize > card.categorySize && card.nameSize > card.effectSize && card.effectSize > card.categorySize)).toBe(true);
         if (width === 390) {
             const screenshotPath = testInfo.outputPath('sunset-card-hierarchy-390.png');
-            await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+            const firstCard = page.locator('#buildMenu .card-wrapper').first();
+            await firstCard.scrollIntoViewIfNeeded();
+            await firstCard.screenshot({ path: screenshotPath, animations: 'disabled' });
             await testInfo.attach('sunset-card-hierarchy-390.png', { path: screenshotPath, contentType: 'image/png' });
         }
     }
