@@ -2933,6 +2933,8 @@ runTest('スマートフォンの夕暮れタイトルは主役の街景を設�
     assert.match(css, /@media \(max-width: 759px\)\s*{\s*html\[data-design="sunset"\] \.sunset-hero\s*{[^}]*width: calc\(100% \+ 32px\);[^}]*margin: 12px -16px;/);
     assert.ok(css.includes('html[data-design="sunset"] .sunset-hero img { border-radius: 16px; }'));
     assert.match(css, /@media \(max-width: 759px\)\s*{\s*\/\* Put the way to play ahead of the visual preference on phones\. \*\/\s*html\[data-design="sunset"\] \.tab-bar { order: 1; }\s*html\[data-design="sunset"\] \.design-switcher { order: 2; }/);
+    assert.ok(css.includes('html[data-design="sunset"] .title-about { order: 5; }'));
+    assert.ok(css.includes('html[data-design="sunset"] .legal-links { order: 7; }'));
 });
 
 runTest('夕暮れの結果画面は対戦画面と同じ青緑のパネル・操作色を使う', () => {

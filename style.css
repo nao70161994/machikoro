@@ -5328,6 +5328,9 @@ html[data-design="sunset"] .sunset-hero p {
     html[data-design="sunset"] #tabContentOnline,
     html[data-design="sunset"] #tabContentStats,
     html[data-design="sunset"] #tabContentTournament { order: 4; }
+    html[data-design="sunset"] .title-about { order: 5; }
+    html[data-design="sunset"] #adSlotTitleBottom { order: 6; }
+    html[data-design="sunset"] .legal-links { order: 7; }
 }
 html[data-design="sunset"] .title-header { padding-top: 4px; }
 html[data-design="sunset"] .title-brand-lockup { gap: 10px; }

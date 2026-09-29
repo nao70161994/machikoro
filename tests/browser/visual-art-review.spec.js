@@ -428,6 +428,25 @@ test('必要なら詳細設定を開いて人数を変え、その設定で開�
     expect(settings.selectedCount).toBe(3);
 });
 
+test('スマホの夕暮れタイトルは遊び方と開始導線を紹介文より先に見せる', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    const positions = await page.evaluate(() => {
+        const top = selector => document.querySelector(selector).getBoundingClientRect().top;
+        return {
+            modes: top('.tab-bar'),
+            design: top('.design-switcher'),
+            start: top('#tabContentLocal'),
+            about: top('.title-about'),
+            links: top('.legal-links'),
+        };
+    });
+    expect(positions.modes).toBeLessThan(positions.design);
+    expect(positions.design).toBeLessThan(positions.start);
+    expect(positions.start).toBeLessThan(positions.about);
+    expect(positions.about).toBeLessThan(positions.links);
+});
+
 test('オンラインの作成・参加導線をスマホとデスクトップで記録する', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.locator('#tabOnline').click();
