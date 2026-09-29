@@ -257,7 +257,7 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
 });
 
-test('夕暮れの建設と建設後のターン終了は重複確認なしで続けて操作できる', async ({ page }) => {
+test('夕暮れの建設と建設後のターン終了は重複確認なしで続けて操作できる', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
@@ -285,6 +285,12 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(page.locator('#btnSkip')).toHaveText('建設完了・ターン終了');
     expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins))
         .toBe(starting.coins - 1);
+    const afterBuild = testInfo.outputPath('sunset-after-build-390.png');
+    await page.screenshot({ path: afterBuild, animations: 'disabled' });
+    await testInfo.attach('sunset-after-build-390.png', {
+        path: afterBuild,
+        contentType: 'image/png',
+    });
 
     await page.locator('#btnSkip').click();
     await expect(page.locator('#confirmModal')).toBeHidden();
