@@ -365,6 +365,9 @@ test('CPUの手番でも自分の街を先頭に見せ、極小画面でも街�
     await expect(page.locator('#gameScreen')).toBeVisible();
     const seats = await page.evaluate(() => {
         cancelCpuSchedule('self-town-priority-review');
+        // Keep the CPU-turn presentation fixed while the three viewport
+        // screenshots are captured; a live CPU turn can replace #players mid-scroll.
+        window.scheduleCPU = () => false;
         const state = GameRuntimeState.runtime.snapshot();
         const selfIndex = state.cpuPlayers.findIndex(cpu => !cpu);
         const cpuIndex = state.cpuPlayers.findIndex(Boolean);
