@@ -412,7 +412,17 @@ test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達
     for (const width of [320, 360, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });
         for (const modalCase of modalCases) {
-            await page.locator(modalCase.open).click();
+            const openButton = page.locator(modalCase.open);
+            await expect(openButton).toBeVisible();
+            await openButton.evaluate(element => element.scrollIntoView({ block: 'center' }));
+            const openBounds = await openButton.boundingBox();
+            expect(openBounds).not.toBeNull();
+            expect(openBounds.y).toBeGreaterThanOrEqual(0);
+            expect(openBounds.y + openBounds.height).toBeLessThanOrEqual(844);
+            await page.touchscreen.tap(
+                openBounds.x + openBounds.width / 2,
+                openBounds.y + openBounds.height / 2
+            );
             const modal = page.locator(modalCase.modal);
             await expect(modal).toBeVisible();
 
