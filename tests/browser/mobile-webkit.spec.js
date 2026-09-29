@@ -867,6 +867,9 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
             const top = element.getBoundingClientRect().top + window.scrollY;
             window.scrollTo(0, Math.max(0, top - 180));
         });
+        await expect.poll(() => page.locator('.build-card-section .card-filter-bar')
+            .evaluate(element => element.getBoundingClientRect().top), { timeout: 5000 })
+            .toBeLessThanOrEqual(17);
         const stickyLayout = await page.evaluate(() => {
             const filter = document.querySelector('.build-card-section .card-filter-bar');
             const card = document.querySelectorAll('.build-card-section .card-wrapper')[12];
