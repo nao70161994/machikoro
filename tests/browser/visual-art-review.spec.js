@@ -563,6 +563,19 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     expect(bounds.width).toBeGreaterThanOrEqual(108);
     expect(bounds.artHeight).toBeGreaterThanOrEqual(72);
     expect(bounds.cardRight).toBeLessThanOrEqual(1440);
+    const gameRegions = await page.evaluate(() => {
+        const rect = selector => {
+            const bounds = document.querySelector(selector).getBoundingClientRect();
+            return { top: bounds.top, left: bounds.left, right: bounds.right };
+        };
+        return {
+            market: rect('#buildMenu'),
+            log: rect('#gameLogContainer'),
+            town: rect('.player-area'),
+        };
+    });
+    expect(gameRegions.market.top).toBeLessThan(gameRegions.log.top);
+    expect(gameRegions.market.right).toBeLessThan(gameRegions.town.left);
 
     const screenshotPath = testInfo.outputPath('sunset-desktop-city-1440.png');
     await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });

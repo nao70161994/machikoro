@@ -5676,6 +5676,19 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
         gap: 12px 20px;
     }
 
+    html[data-design="sunset"] #gameScreen[style*="display: block"] {
+        grid-template-areas:
+            "status status"
+            "connect connect"
+            "timeline timeline"
+            "tutorial tutorial"
+            "actions nav"
+            "build players"
+            "log players"
+            "leave leave"
+            "restart restart";
+    }
+
     #status { grid-area: status; margin: 0; }
     #gameConnectivityPanel { grid-area: connect; margin: 0; }
     #turnTimeline { grid-area: timeline; margin: 0; }
@@ -5683,6 +5696,7 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
     .game-action-panel { grid-area: actions; align-self: start; margin: 0; }
     #playerNavigation { grid-area: nav; align-self: start; }
     #gameLogContainer { grid-area: log; align-self: start; }
+    html[data-design="sunset"] #buildMenu { grid-area: build; min-width: 0; }
     .player-area {
         grid-area: players;
         min-width: 0;
