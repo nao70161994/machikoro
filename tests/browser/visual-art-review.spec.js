@@ -258,6 +258,12 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
     await page.locator('#btnStart').click();
     await page.locator('#confirmOkBtn').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.waitForTimeout(500);
+    const updateBanner = page.locator('#pwaUpdateBanner');
+    if (await updateBanner.isVisible()) {
+        await updateBanner.locator('[data-ui-action="hidePwaUpdateBanner"]').click();
+    }
+    await expect(updateBanner).toBeHidden();
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
         if (width === 390) {
