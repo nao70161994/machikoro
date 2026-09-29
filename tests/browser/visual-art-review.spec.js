@@ -81,6 +81,7 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
     await expect(page.locator('#gameScreen')).toBeVisible();
     await expect(page.locator('#logSummary')).not.toContainText('👤');
     await expect(page.locator('#log')).not.toContainText('👤');
+    await expect(page.locator('.player-box.active .player-landmarks .landmark-badge:not(.built)')).toHaveCount(0);
 
     for (const width of [320, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });

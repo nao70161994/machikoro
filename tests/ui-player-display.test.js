@@ -151,7 +151,7 @@ const html = UiPlayerDisplay.buildPlayersHtml(players, {
 assert(html.includes('<span class="player-icon">👤</span>'));
 assert(html.includes('<span class="player-name">&lt;Alice&gt;</span>'));
 assert(html.includes('<span class="landmark-badge built" aria-label="駅、建設済み">🚉 駅</span>'));
-assert(html.includes('<span class="landmark-badge " aria-label="駅、未建設">🚉 駅</span>'));
+assert(!html.includes('未建設'));
 assert(!html.includes('空港'));
 assert(html.includes('パン屋×2（休2）'));
 assert(html.includes('<span class="it-badge">💻2</span>'));

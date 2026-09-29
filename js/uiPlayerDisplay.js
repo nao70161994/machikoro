@@ -111,7 +111,7 @@ const UiPlayerDisplay = (() => {
             `${player.name}、${isActive ? '現在の手番' : '待機中'}、${playerKindAccessibleLabel(setting)}`
         );
         const landmarks = Object.entries(player.landmarks)
-            .filter(([name]) => options.enabledLandmarks.has(name))
+            .filter(([name, built]) => options.enabledLandmarks.has(name) && built)
             .map(([name, built]) => buildLandmarkBadgeHtml(name, built, options))
             .join('');
         const cards = {};
