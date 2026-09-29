@@ -226,15 +226,23 @@ function syncTutorialControls() {
     if (checkbox) checkbox.checked = view.enabled;
     const select = document.getElementById("tutorialLevel");
     if (select) select.value = view.selectedLevel;
+    const setButtonLabel = (button, label) => {
+        if (!button) return;
+        const labelElement = typeof button.querySelector === 'function'
+            ? button.querySelector('.tutorial-toggle-label')
+            : null;
+        if (labelElement) labelElement.textContent = label;
+        else button.textContent = label;
+    };
     const btn = document.getElementById("btnTutorialToggle");
     if (btn) {
-        btn.textContent = view.toggleText;
+        setButtonLabel(btn, view.toggleText);
         btn.classList.toggle("active", view.active);
         btn.setAttribute("aria-pressed", view.toggleAriaPressed);
     }
     const levelBtn = document.getElementById("btnTutorialLevel");
     if (levelBtn) {
-        levelBtn.textContent = view.levelText;
+        setButtonLabel(levelBtn, view.levelText);
         levelBtn.classList.toggle("active", view.active);
         levelBtn.setAttribute("aria-label", view.levelAriaLabel);
     }

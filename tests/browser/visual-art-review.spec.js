@@ -271,6 +271,37 @@ test('夕暮れのターン案内は人間とCPUを専用SVGで表示する', as
     expect(await page.locator('#turnAnnouncerText').innerHTML()).toContain('&lt;One&gt;');
 });
 
+test('夕暮れのガイド設定は共通SVGアイコンでスマホとデスクトップに揃える', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.locator('.game-guide-settings').evaluate(element => { element.open = true; });
+
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const settings = page.locator('.game-guide-settings');
+        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-icon use'))
+            .toHaveAttribute('href', 'icons/interface-ui.svg#book');
+        await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-icon use'))
+            .toHaveAttribute('href', 'icons/interface-ui.svg#target');
+        await expect(settings.locator('.tutorial-toggle-emoji')).toHaveCount(2);
+        await expect(settings.locator('.tutorial-toggle-emoji').first()).toBeHidden();
+        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
+        await expect(settings.locator('#btnTutorialLevel .tutorial-toggle-label')).toHaveText('初心者');
+        await settings.locator('#btnTutorialToggle').click();
+        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド OFF');
+        await settings.locator('#btnTutorialToggle').click();
+        await expect(settings.locator('#btnTutorialToggle .tutorial-toggle-label')).toHaveText('ガイド ON');
+        const screenshot = testInfo.outputPath(`sunset-guide-controls-${width}.png`);
+        await settings.screenshot({ path: screenshot, animations: 'disabled' });
+        await testInfo.attach(`sunset-guide-controls-${width}.png`, {
+            path: screenshot,
+            contentType: 'image/png',
+        });
+    }
+});
+
 test('CPUの手番でもスマートフォンでは自分の街を先頭に開いて見せる', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);

@@ -3578,6 +3578,10 @@ html[data-design="sunset"] .turn-announcer-kind-icon {
 }
 
 .tutorial-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     width: auto;
     flex: 0 0 auto;
     padding: 8px 10px;
@@ -3587,6 +3591,8 @@ html[data-design="sunset"] .turn-announcer-kind-icon {
     color: #c9cbdf;
     min-height: var(--touch-target-compact);
 }
+
+.tutorial-toggle-icon { display: none; width: 16px; height: 16px; flex: 0 0 16px; }
 
 .tutorial-toggle-btn.active {
     color: #0f0e17;
@@ -4785,6 +4791,11 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .game-control-
     color: #d6b979;
     vertical-align: middle;
 }
+html[data-design="sunset"] .tutorial-toggle-emoji { display: none; }
+html[data-design="sunset"] .tutorial-toggle-icon {
+    display: inline-block;
+    color: currentColor;
+}
 html[data-design="sunset"] body:not(.accessibility-high-contrast) #btnRestart {
     display: flex;
     align-items: center;
@@ -4891,6 +4902,7 @@ html[data-design="sunset"] body.accessibility-high-contrast .game-control-icon {
     color: #fff;
     vertical-align: middle;
 }
+html[data-design="sunset"] body.accessibility-high-contrast .tutorial-toggle-icon { color: #fff; }
 html[data-design="sunset"] body.accessibility-high-contrast #btnRestart {
     display: flex;
     align-items: center;
