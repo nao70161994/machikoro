@@ -2826,6 +2826,19 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-headi
     gap: 10px;
     color: #f4ce7b;
 }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box > .pending-inspect-hint {
+    margin: 0 0 14px;
+    padding: 8px 10px;
+    border-left: 2px solid #bd8b42;
+    border-radius: 4px;
+    background: rgba(255, 244, 223, 0.055);
+    color: #c9d5d8;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.55;
+    text-align: left;
+    letter-spacing: 0;
+}
 html[data-design="sunset"] .pending-facility-mark {
     width: 40px;
     height: 20px;

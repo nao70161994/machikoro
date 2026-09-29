@@ -80,7 +80,7 @@ const UiPendingMenu = (() => {
     }
 
     function pendingInspectHintHtml() {
-        return `<p class="pending-inspect-hint">盤面確認中もこのパネルは開いたままです。カード名を押すと詳細を見られます。</p>`;
+        return `<p class="pending-inspect-hint">盤面を見ながら選べます。カード名から詳細を確認できます。</p>`;
     }
 
     function pendingHeadingHtml(motif, emoji, label, useSunsetIcons) {

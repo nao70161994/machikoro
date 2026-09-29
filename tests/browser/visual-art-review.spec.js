@@ -207,18 +207,23 @@ test('夕暮れの施設効果パネルは施設アートと統一色で表示�
         await page.setViewportSize({ width, height: 844 });
         const bounds = await modal.locator('.pending-modal-inner').evaluate(element => {
             const rect = element.getBoundingClientRect();
+            const hint = element.querySelector('.pending-inspect-hint');
             return {
                 left: rect.left,
                 right: rect.right,
                 scrollWidth: element.scrollWidth,
                 clientWidth: element.clientWidth,
                 borderColor: getComputedStyle(element).borderTopColor,
+                hintColor: getComputedStyle(hint).color,
+                hintHeight: hint.getBoundingClientRect().height,
             };
         });
         expect(bounds.left).toBeGreaterThanOrEqual(-1);
         expect(bounds.right).toBeLessThanOrEqual(width + 1);
         expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.clientWidth + 1);
         expect(bounds.borderColor).toBe('rgb(209, 166, 78)');
+        expect(bounds.hintColor).toBe('rgb(201, 213, 216)');
+        if (width === 390) expect(bounds.hintHeight).toBeLessThanOrEqual(64);
         const screenshotPath = testInfo.outputPath(`sunset-tv-pending-${width}.png`);
         await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
         await testInfo.attach(`sunset-tv-pending-${width}.png`, { path: screenshotPath, contentType: 'image/png' });

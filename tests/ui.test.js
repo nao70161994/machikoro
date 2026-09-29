@@ -1828,7 +1828,7 @@ runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示
     context.renderPending();
 
     assert.strictEqual(elements.pendingModal.style.display, 'flex');
-    assert.ok(elements.pendingMenu.innerHTML.includes('盤面確認中もこのパネルは開いたままです'));
+    assert.ok(elements.pendingMenu.innerHTML.includes('盤面を見ながら選べます'));
     assert.ok(elements.pendingMenu.innerHTML.includes('Bob'));
     assert.ok(elements.pendingMenu.innerHTML.includes('data-action="resolveTV"'));
     assert.ok(elements.pendingMenu.innerHTML.includes('data-target-index="1"'));
