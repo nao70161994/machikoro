@@ -6,6 +6,7 @@ const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
 let logRelatedHighlightTimer = null;
+let gameLogPresentationInitialized = false;
 
 function uiGameRuntimeSnapshot() {
     return GameRuntimeState.runtime.snapshot();
@@ -251,9 +252,39 @@ function syncTutorialControls() {
 function render() {
     try {
         _render();
+        syncInitialGameLogPresentation();
     } catch (err) {
         if (typeof showCrashScreen === 'function') showCrashScreen(err);
     }
+}
+
+function setLogCollapsed(collapsed) {
+    const log = document.getElementById('log');
+    const icon = document.getElementById('logToggleIcon');
+    const header = document.querySelector('.log-header');
+    if (!log || !icon || !header || !log.classList || !header.classList) return false;
+    if (log.classList.contains('collapsed') !== (collapsed === true)) {
+        log.classList.toggle('collapsed');
+    }
+    const view = UiLogDisplay.buildLogToggleView(collapsed);
+    icon.textContent = view.iconText;
+    header.classList.toggle('collapsed', view.collapsed);
+    if (typeof header.setAttribute === 'function') header.setAttribute('aria-expanded', view.ariaExpanded);
+    return true;
+}
+
+function syncInitialGameLogPresentation() {
+    const gameScreen = document.getElementById('gameScreen');
+    if (!gameScreen || gameScreen.style?.display !== 'block') {
+        gameLogPresentationInitialized = false;
+        return;
+    }
+    if (gameLogPresentationInitialized) return;
+    gameLogPresentationInitialized = true;
+    const isSunsetMobile = document.documentElement?.dataset?.design === 'sunset' &&
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+        window.matchMedia('(max-width: 480px)').matches;
+    if (isSunsetMobile) setLogCollapsed(true);
 }
 
 function _render() {
@@ -1926,15 +1957,9 @@ function toggleLandmark(name) {
 
 function toggleLog() {
     const log = document.getElementById("log");
-    const icon = document.getElementById("logToggleIcon");
-    const header = document.querySelector(".log-header");
-    if (!log || !icon || !header || !log.classList || !header.classList) return false;
+    if (!log || !log.classList) return false;
     const collapsed = log.classList.toggle("collapsed");
-    const view = UiLogDisplay.buildLogToggleView(collapsed);
-    icon.textContent = view.iconText;
-    header.classList.toggle("collapsed", view.collapsed);
-    if (typeof header.setAttribute === 'function') header.setAttribute('aria-expanded', view.ariaExpanded);
-    return true;
+    return setLogCollapsed(collapsed);
 }
 
 function buildLandmarkDetailContent(name) {

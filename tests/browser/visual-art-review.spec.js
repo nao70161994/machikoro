@@ -302,6 +302,36 @@ test('夕暮れのガイド設定は共通SVGアイコンでスマホとデス�
     }
 });
 
+test('スマホの夕暮れ対局はログ要約を残して詳細を折りたたみ必要時に開ける', async ({ page }, testInfo) => {
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        await prepareSunset(page);
+        await page.locator('.setup-quick-play').click();
+        await expect(page.locator('#gameScreen')).toBeVisible();
+
+        const container = page.locator('#gameLogContainer');
+        const header = container.locator('.log-header');
+        const detailLog = container.locator('#log');
+        await expect(container.locator('#logSummary')).toBeVisible();
+        if (width <= 480) {
+            await expect(header).toHaveAttribute('aria-expanded', 'false');
+            await expect(detailLog).toBeHidden();
+            const screenshot = testInfo.outputPath('sunset-mobile-compact-log.png');
+            await container.screenshot({ path: screenshot, animations: 'disabled' });
+            await testInfo.attach('sunset-mobile-compact-log.png', {
+                path: screenshot,
+                contentType: 'image/png',
+            });
+            await header.click();
+            await expect(header).toHaveAttribute('aria-expanded', 'true');
+            await expect(detailLog).toBeVisible();
+        } else {
+            await expect(header).toHaveAttribute('aria-expanded', 'true');
+            await expect(detailLog).toBeVisible();
+        }
+    }
+});
+
 test('CPUの手番でもスマートフォンでは自分の街を先頭に開いて見せる', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);
