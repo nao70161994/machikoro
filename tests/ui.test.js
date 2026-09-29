@@ -317,8 +317,8 @@ runTest('tutorial control wrapperはpure viewをcheckbox・button・levelへ反�
     context.onChangeTutorialLevel('advanced');
     assert.strictEqual(elements.tutorialEnabled.checked, true);
     assert.strictEqual(elements.tutorialLevel.value, 'advanced');
-    assert.strictEqual(elements.btnTutorialToggle.textContent, '💡 ガイド ON');
-    assert.strictEqual(elements.btnTutorialLevel.textContent, '🧠 上級者');
+    assert.strictEqual(elements.btnTutorialToggle.textContent, 'ガイド ON');
+    assert.strictEqual(elements.btnTutorialLevel.textContent, '上級者');
     assert.strictEqual(elements.btnTutorialToggle.classList.contains('active'), true);
     assert.strictEqual(elements.btnTutorialLevel.classList.contains('active'), true);
     assert.strictEqual(elements.btnTutorialToggle.getAttribute('aria-pressed'), 'true');
@@ -327,8 +327,8 @@ runTest('tutorial control wrapperはpure viewをcheckbox・button・levelへ反�
     context.onToggleTutorial(false);
     assert.strictEqual(elements.tutorialEnabled.checked, false);
     assert.strictEqual(elements.tutorialLevel.value, 'advanced');
-    assert.strictEqual(elements.btnTutorialToggle.textContent, '💡 ガイド OFF');
-    assert.strictEqual(elements.btnTutorialLevel.textContent, '🧠 上級者');
+    assert.strictEqual(elements.btnTutorialToggle.textContent, 'ガイド OFF');
+    assert.strictEqual(elements.btnTutorialLevel.textContent, '上級者');
     assert.strictEqual(elements.btnTutorialToggle.classList.contains('active'), false);
     assert.strictEqual(elements.btnTutorialLevel.classList.contains('active'), false);
     assert.strictEqual(elements.btnTutorialToggle.getAttribute('aria-pressed'), 'false');

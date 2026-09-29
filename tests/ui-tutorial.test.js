@@ -155,9 +155,9 @@ runTest('tutorial control viewはON/OFFと難易度表示をpureに同期する'
     assert.deepStrictEqual(UiTutorial.buildControlView(true, 'advanced'), {
         enabled: true,
         selectedLevel: 'advanced',
-        toggleText: '💡 ガイド ON',
+        toggleText: 'ガイド ON',
         toggleAriaPressed: 'true',
-        levelText: '🧠 上級者',
+        levelText: '上級者',
         levelAriaLabel: 'チュートリアルの詳しさ、現在 上級者向け',
         active: true,
     });
@@ -165,9 +165,9 @@ runTest('tutorial control viewはON/OFFと難易度表示をpureに同期する'
     assert.deepStrictEqual(disabled, {
         enabled: false,
         selectedLevel: 'beginner',
-        toggleText: '💡 ガイド OFF',
+        toggleText: 'ガイド OFF',
         toggleAriaPressed: 'false',
-        levelText: '🌱 初心者',
+        levelText: '初心者',
         levelAriaLabel: 'チュートリアルの詳しさ、現在 初心者向け',
         active: false,
     });

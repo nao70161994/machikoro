@@ -73,9 +73,9 @@ const UiTutorial = (() => {
         return Object.freeze({
             enabled: active,
             selectedLevel: level,
-            toggleText: active ? '💡 ガイド ON' : '💡 ガイド OFF',
+            toggleText: active ? 'ガイド ON' : 'ガイド OFF',
             toggleAriaPressed: active ? 'true' : 'false',
-            levelText: advanced ? '🧠 上級者' : '🌱 初心者',
+            levelText: advanced ? '上級者' : '初心者',
             levelAriaLabel: `チュートリアルの詳しさ、現在 ${advanced ? '上級者向け' : '初心者向け'}`,
             active,
         });
