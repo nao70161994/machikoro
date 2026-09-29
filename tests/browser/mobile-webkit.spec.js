@@ -595,7 +595,7 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
     await page.locator('#designThemeSelect').selectOption('sunset');
     await page.locator('#customGameSetup > summary').click();
     await page.locator('#cpuSpeed').evaluate(input => {
-        input.value = input.min;
+        input.value = input.max;
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
     });
@@ -605,11 +605,31 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
         await page.locator(`select[data-ui-change="localPlayerType"][data-player-index="${index}"]`)
             .selectOption('normal');
     }
-    await startLocalGame(page);
+    await page.locator('#btnStart').click();
+    await expect(page.locator('#confirmModal')).toBeVisible();
+    await page.evaluate(() => {
+        window.__mobileReviewOriginalRandom = Math.random;
+        let swapsRemaining = 9;
+        Math.random = () => swapsRemaining-- > 1 ? 0.999999 : 0.25;
+    });
+    await page.locator('#confirmOkBtn').click();
+    await page.evaluate(() => {
+        Math.random = window.__mobileReviewOriginalRandom;
+        delete window.__mobileReviewOriginalRandom;
+    });
     await expect(page.locator('#gameScreen')).toBeVisible();
-    // Local games randomize seating. Wait for the human seat before testing
-    // panel disclosure so the nine CPU turns do not replace the clicked DOM.
-    await expect(page.locator('#btnRoll')).toBeEnabled({ timeout: 40000 });
+    // Start with a CPU to verify its explanation, then freeze at the human
+    // seat so live CPU turns cannot replace the panel during the tap test.
+    await expect(page.locator('#gameActivityStatusLabel')).toContainText('CPU');
+    const cpuActivity = await page.locator('#gameActivityStatus').textContent();
+    expect(cpuActivity).toMatch(/CPU/);
+    await page.evaluate(() => {
+        cancelCpuSchedule('mobile-review-freeze');
+        const state = GameRuntimeState.runtime.snapshot();
+        state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+        render();
+    });
+    await expect(page.locator('#btnRoll')).toBeEnabled();
     await expect(page.locator('#playerNavigation .player-navigation-link.destination svg'))
         .toHaveCount(2);
     let expandedPanelId = null;
@@ -665,10 +685,8 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
         expect(timeline.stepCount).toBe(4);
         expect(timeline.currentCount).toBe(1);
         expect(timeline.contentFits).toBe(true);
-        await expect(page.locator('#gameActivityStatusLabel')).not.toHaveText('');
-        const activity = await page.locator('#gameActivityStatus').textContent();
-        expect(activity).toMatch(/CPU|あなたの操作|操作待ち/);
     }
+    expect(cpuActivity).toContain('処理中');
 });
 
 test('ブラウザ内pure viewも背景復帰floorでオンライン待機を0秒から分類する', async ({ page }) => {
