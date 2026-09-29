@@ -41,6 +41,37 @@ test('必要なら詳細設定を開いて人数を変え、その設定で開�
     expect(settings.selectedCount).toBe(3);
 });
 
+test('オンラインの作成・参加導線をスマホとデスクトップで記録する', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.locator('#tabOnline').click();
+    await expect(page.locator('#tabContentOnline')).toBeVisible();
+
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const layout = await page.evaluate(() => ({
+            viewportWidth: document.documentElement.clientWidth,
+            documentWidth: document.documentElement.scrollWidth,
+            nameWidth: document.querySelector('#playerNameInput').getBoundingClientRect().width,
+            createHeight: document.querySelector('#onlineCreateSubmitButton').getBoundingClientRect().height,
+            readinessOpen: document.querySelector('.online-readiness').open,
+        }));
+        expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
+        expect(layout.nameWidth).toBeGreaterThan(0);
+        expect(layout.createHeight).toBeGreaterThanOrEqual(44);
+        expect(layout.readinessOpen).toBe(false);
+        const createPath = testInfo.outputPath(`sunset-online-create-${width}.png`);
+        await page.screenshot({ path: createPath, fullPage: true, scale: 'css', animations: 'disabled' });
+        await testInfo.attach(`sunset-online-create-${width}.png`, { path: createPath, contentType: 'image/png' });
+
+        await page.locator('#onlineTabJoin').click();
+        await expect(page.locator('#onlineJoinSubmitButton')).toBeVisible();
+        const joinPath = testInfo.outputPath(`sunset-online-join-${width}.png`);
+        await page.screenshot({ path: joinPath, fullPage: true, scale: 'css', animations: 'disabled' });
+        await testInfo.attach(`sunset-online-join-${width}.png`, { path: joinPath, contentType: 'image/png' });
+        await page.locator('#onlineTabCreate').click();
+    }
+});
+
 test('夕暮れ市場は出目・名称を主役にし価格を明確なチップで示す', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
