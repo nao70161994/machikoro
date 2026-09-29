@@ -75,6 +75,40 @@ test('夕暮れの市場・統計・勝利画面は共通SVG記号を使いク�
     expect(await classicReview.locator('.market-status-emoji').evaluate(element => getComputedStyle(element).display)).not.toBe('none');
 });
 
+test('高コントラストの夕暮れ対局でも操作アイコンを専用SVGに統一する', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => document.body.classList.add('accessibility-high-contrast'));
+
+    const iconState = await page.evaluate(() => ({
+        rollIcon: getComputedStyle(document.querySelector('#btnRoll .dice-roll-icon')).display,
+        rollFallback: getComputedStyle(document.querySelector('#btnRoll .dice-roll-emoji')).display,
+        controlIcons: [...document.querySelectorAll('.game-control-icon')]
+            .every(icon => getComputedStyle(icon).display !== 'none'),
+        controlFallbacks: [...document.querySelectorAll('.game-control-emoji')]
+            .filter(icon => getComputedStyle(icon).display !== 'none').length,
+        iconColor: getComputedStyle(document.querySelector('#btnRestart .game-control-icon')).color,
+    }));
+    expect(iconState).toEqual({
+        rollIcon: 'block',
+        rollFallback: 'none',
+        controlIcons: true,
+        controlFallbacks: 0,
+        iconColor: 'rgb(255, 255, 255)',
+    });
+
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const screenshotPath = testInfo.outputPath(`sunset-high-contrast-controls-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-high-contrast-controls-${width}.png`, {
+            path: screenshotPath,
+            contentType: 'image/png',
+        });
+    }
+});
+
 test('夕暮れの復旧・端末受け渡しUIは共通SVG警告と端末記号を使う', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.evaluate(() => {

@@ -4866,6 +4866,36 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .landmark-item
     border-radius: 5px;
     background: linear-gradient(180deg, #aebfba, #596f70);
 }
+html[data-design="sunset"] body.accessibility-high-contrast #btnRoll {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+}
+html[data-design="sunset"] body.accessibility-high-contrast #btnRoll .dice-roll-emoji,
+html[data-design="sunset"] body.accessibility-high-contrast .game-control-emoji { display: none; }
+html[data-design="sunset"] body.accessibility-high-contrast #btnRoll .dice-roll-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .game-control-icon {
+    display: inline-block;
+    color: #fff;
+    vertical-align: middle;
+}
+html[data-design="sunset"] body.accessibility-high-contrast #btnRestart {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+html[data-design="sunset"] body.accessibility-high-contrast #logTitle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
 html[data-design="sunset"] body.accessibility-high-contrast .modal-heading-icon {
     display: inline-block;
     color: #fff;
