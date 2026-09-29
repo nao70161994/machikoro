@@ -976,9 +976,11 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         });
     }
 
-    await page.evaluate(() => toggleLog());
     const compactLog = page.locator('#gameLogContainer');
     await expect(compactLog.locator('#logSummary')).toBeVisible();
+    if (await compactLog.locator('#log').isVisible()) {
+        await page.evaluate(() => toggleLog());
+    }
     await expect(compactLog.locator('#log')).toBeHidden();
     await expect(compactLog.locator('#logSummary')).not.toBeEmpty();
     for (const width of [390, 1440]) {
