@@ -397,6 +397,7 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
                 playerTop: document.querySelector('.player-area').getBoundingClientRect().top,
                 actionTop: document.querySelector('.game-action-panel').getBoundingClientRect().top,
                 buildTop: document.querySelector('#buildMenu').getBoundingClientRect().top,
+                timelineTop: document.querySelector('#turnTimeline').getBoundingClientRect().top,
                 tutorialTop: document.querySelector('#tutorialBox').getBoundingClientRect().top,
                 actionBottom: document.querySelector('.game-action-panel').getBoundingClientRect().bottom,
                 compactPlayers: document.querySelectorAll('.player-box-compact').length,
@@ -407,7 +408,8 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             expect(mobileOrder.buildEmojiDisplay).toBe('none');
             expect(mobileOrder.playerTop).toBeLessThan(mobileOrder.actionTop);
             expect(mobileOrder.actionTop).toBeLessThan(mobileOrder.buildTop);
-            expect(mobileOrder.buildTop).toBeLessThan(mobileOrder.tutorialTop);
+            expect(mobileOrder.buildTop).toBeLessThan(mobileOrder.timelineTop);
+            expect(mobileOrder.timelineTop).toBeLessThan(mobileOrder.tutorialTop);
             expect(mobileOrder.compactPlayers).toBeGreaterThan(0);
             expect(mobileOrder.actionBottom).toBeLessThanOrEqual(mobileOrder.viewportHeight);
         }

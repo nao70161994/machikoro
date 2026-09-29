@@ -5158,11 +5158,11 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas:
             "status"
-            "connect"
-            "timeline"
             "players"
             "actions"
             "build"
+            "timeline"
+            "connect"
             "tutorial"
             "log"
             "leave"
