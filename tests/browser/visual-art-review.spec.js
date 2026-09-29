@@ -75,6 +75,54 @@ test('夕暮れの市場・統計・勝利画面は共通SVG記号を使いク�
     expect(await classicReview.locator('.market-status-emoji').evaluate(element => getComputedStyle(element).display)).not.toBe('none');
 });
 
+test('夕暮れの復旧・端末受け渡しUIは共通SVG警告と端末記号を使う', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.evaluate(() => {
+        document.getElementById('crashMessage').textContent = '一時的なエラーです。保存データは保持されています。';
+        document.getElementById('crashScreen').style.display = 'flex';
+    });
+    const crash = page.locator('#crashScreen');
+    await expect(crash).toBeVisible();
+    const crashIconState = await crash.evaluate(element => ({
+        icon: getComputedStyle(element.querySelector('.crash-icon-svg')).display,
+        fallback: getComputedStyle(element.querySelector('.crash-icon-emoji')).display,
+        actionIcon: getComputedStyle(element.querySelector('.crash-action-svg')).display,
+        actionFallback: getComputedStyle(element.querySelector('.crash-action-emoji')).display,
+    }));
+    expect(crashIconState).toEqual({ icon: 'inline-block', fallback: 'none', actionIcon: 'inline-block', actionFallback: 'none' });
+    await expect(crash.locator('.crash-icon-svg use')).toHaveAttribute('href', 'icons/interface-ui.svg#warning');
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const screenshotPath = testInfo.outputPath(`sunset-recovery-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-recovery-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+
+    await crash.evaluate(element => { element.style.display = 'none'; });
+    const handoff = page.locator('#hotseatHandoffOverlay');
+    await handoff.evaluate(element => { element.style.display = 'flex'; });
+    const handoffIconState = await handoff.evaluate(element => ({
+        icon: getComputedStyle(element.querySelector('.hotseat-handoff-svg')).display,
+        fallback: getComputedStyle(element.querySelector('.hotseat-handoff-emoji')).display,
+    }));
+    expect(handoffIconState).toEqual({ icon: 'inline-block', fallback: 'none' });
+    await expect(handoff.locator('.hotseat-handoff-svg use')).toHaveAttribute('href', 'icons/interface-ui.svg#phone');
+    const handoffShot = testInfo.outputPath('sunset-hotseat-handoff-390.png');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: handoffShot, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-hotseat-handoff-390.png', { path: handoffShot, contentType: 'image/png' });
+
+    await page.evaluate(() => {
+        document.body.classList.add('accessibility-high-contrast');
+    });
+    expect(await handoff.locator('.hotseat-handoff-svg').evaluate(element => getComputedStyle(element).color)).toBe('rgb(255, 255, 255)');
+    await handoff.evaluate(element => { element.style.display = 'none'; });
+    await page.locator('#designThemeSelect').selectOption('classic');
+    await page.evaluate(() => { document.getElementById('crashScreen').style.display = 'flex'; });
+    expect(await crash.locator('.crash-icon-svg').evaluate(element => getComputedStyle(element).display)).toBe('none');
+    expect(await crash.locator('.crash-icon-emoji').evaluate(element => getComputedStyle(element).display)).not.toBe('none');
+});
+
 test('夕暮れのルール説明は専用UI記号とランドマークアートを使う', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.evaluate(() => showRules());

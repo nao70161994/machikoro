@@ -575,7 +575,7 @@
 
     <div id="hotseatHandoffOverlay" class="hotseat-handoff" role="dialog" aria-modal="true" aria-labelledby="hotseatHandoffTitle" aria-hidden="true" style="display:none">
         <div class="hotseat-handoff-card">
-            <div class="hotseat-handoff-icon" aria-hidden="true">📱</div>
+            <div class="hotseat-handoff-icon" aria-hidden="true"><span class="hotseat-handoff-emoji">📱</span><svg class="hotseat-handoff-svg" viewBox="0 0 24 24" focusable="false"><use href="icons/interface-ui.svg#phone"></use></svg></div>
             <h2 id="hotseatHandoffTitle"><span id="hotseatHandoffName"></span>さんの手番です</h2>
             <p>端末を次のプレイヤーへ渡してください。</p>
             <button id="hotseatHandoffButton" type="button" data-ui-action="acceptHotseatHandoff">画面を表示して開始</button>
@@ -590,11 +590,11 @@
     <!-- クラッシュ回復画面 -->
     <div id="crashScreen" role="alertdialog" aria-modal="true" aria-labelledby="crashTitle" tabindex="-1" style="display:none">
         <div class="crash-box">
-            <div class="crash-icon">⚠️</div>
+            <div class="crash-icon" aria-hidden="true"><span class="crash-icon-emoji">⚠️</span><svg class="crash-icon-svg" viewBox="0 0 24 24" focusable="false"><use href="icons/interface-ui.svg#warning"></use></svg></div>
             <div id="crashTitle" class="crash-title">エラーが発生しました</div>
             <div id="crashMessage" class="crash-message"></div>
             <div class="crash-actions">
-                <button data-ui-action="reloadPage" class="crash-btn-primary">🔄 タイトルに戻る</button>
+                <button data-ui-action="reloadPage" class="crash-btn-primary"><span class="crash-action-emoji" aria-hidden="true">🔄</span><svg class="crash-action-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#restart"></use></svg> タイトルに戻る</button>
                 <button id="crashResumeBtn" data-ui-action="crashResume" class="crash-btn-secondary" style="display:none">▶ セーブから再開</button>
             </div>
         </div>

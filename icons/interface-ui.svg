@@ -50,4 +50,12 @@
     <symbol id="trash" viewBox="0 0 24 24">
         <path d="M4.5 7h15M9 7V4.5h6V7m3.5 0-.8 13H6.3L5.5 7M10 10.5v6M14 10.5v6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
     </symbol>
+    <symbol id="phone" viewBox="0 0 24 24">
+        <rect x="6" y="2.5" width="12" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/>
+        <path d="M9.5 5.5h5M11.2 18.5h1.6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"/>
+    </symbol>
+    <symbol id="warning" viewBox="0 0 24 24">
+        <path d="M12 3.2 22 20.5H2z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/>
+        <path d="M12 9v5.2M12 17.5v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
+    </symbol>
 </svg>
