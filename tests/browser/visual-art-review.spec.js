@@ -48,7 +48,7 @@ test('夕暮れのルール説明は専用UI記号とランドマークアート
     await page.evaluate(() => showCardSelect());
     const selectionModal = page.locator('#cardSelectModal');
     await expect(selectionModal).toBeVisible();
-    await expect(selectionModal.locator('.modal-heading-icon use')).toHaveAttribute(
+    await expect(selectionModal.locator('#cardSelectModalTitle use')).toHaveAttribute(
         'href', 'icons/interface-ui.svg#cards'
     );
     expect(await selectionModal.locator('.modal-heading-emoji').evaluate(element =>
