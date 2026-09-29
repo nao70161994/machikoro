@@ -4377,6 +4377,7 @@ html[data-design="sunset"] .card-detail-coin path {
 }
 
 #pwaUpdateBanner .pwa-banner-btn {
+    min-width: 120px;
     padding: 8px 10px;
     font-size: 13px;
 }
