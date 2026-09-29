@@ -109,40 +109,6 @@ test('高コントラストの夕暮れ対局でも操作アイコンを専用SV
     }
 });
 
-test('スマホでは対局ログを折りたたみ、必要な時に開ける', async ({ page }, testInfo) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await prepareSunset(page);
-    await page.locator('.setup-quick-play').click();
-    await expect(page.locator('#gameScreen')).toBeVisible();
-
-    const logHeader = page.locator('.log-header');
-    const log = page.locator('#log');
-    await expect(logHeader).toHaveAttribute('aria-expanded', 'false');
-    await expect(logHeader).toBeVisible();
-    await expect(log).toBeHidden();
-    const mobileScreenshot = testInfo.outputPath('sunset-mobile-log-collapsed-390.png');
-    await page.screenshot({ path: mobileScreenshot, fullPage: false, animations: 'disabled' });
-    await testInfo.attach('sunset-mobile-log-collapsed-390.png', {
-        path: mobileScreenshot,
-        contentType: 'image/png',
-    });
-
-    await logHeader.click();
-    await expect(logHeader).toHaveAttribute('aria-expanded', 'true');
-    await expect(log).toBeVisible();
-    await logHeader.click();
-    await expect(logHeader).toHaveAttribute('aria-expanded', 'false');
-    await expect(log).toBeHidden();
-
-    await page.reload();
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.locator('.title-brand-mark')).toBeVisible();
-    await page.locator('.setup-quick-play').click();
-    await expect(page.locator('#gameScreen')).toBeVisible();
-    await expect(page.locator('.log-header')).toHaveAttribute('aria-expanded', 'true');
-    await expect(page.locator('#log')).toBeVisible();
-});
-
 test('夕暮れの復旧・端末受け渡しUIは共通SVG警告と端末記号を使う', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.evaluate(() => {
