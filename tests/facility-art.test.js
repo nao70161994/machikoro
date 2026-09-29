@@ -101,6 +101,8 @@ runTest('麦畑とコーン畑は穂先の光と雄花・畝で農園内の作�
 runTest('建物カードは業種を示す売場・構造の細部を維持する', () => {
     const art = name => sprite.match(new RegExp(`<symbol id="${name}"[\\s\\S]*?<\\/symbol>`))?.[0] || '';
     assert.ok(art('shop').includes('M49 54H62M49 57H73M97 52H111'));
+    assert.ok(art('warehouse').includes('M62 37H98V66H62Z'), 'food warehouse has a distinct refrigerated loading bay');
+    assert.ok(art('warehouse').includes('M80 42V61'), 'the loading-bay door carries a visible cold-storage mark');
     assert.ok(art('bakery').includes('M26 31L80 7L134 31Z'), 'bakery has a high, warm gable that separates it from flat shopfronts');
     assert.ok(art('bakery').includes('M67 25Q67 15 80 15Q93 15 93 25V28H67Z'), 'a scored loaf forms the gable sign');
     assert.ok(art('bakery').includes('M49 60Q49 54 56 53Q63 54 63 60V62H49'), 'display windows show baked goods on their shelves');
