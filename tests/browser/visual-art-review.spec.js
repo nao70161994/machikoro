@@ -57,8 +57,9 @@ test('夕暮れの市場・統計・勝利画面は共通SVG記号を使いク�
         visibleIcons: [...element.querySelectorAll('svg')].filter(icon => getComputedStyle(icon).display !== 'none').length,
         visibleEmoji: [...element.querySelectorAll('.market-status-emoji, .stats-heading-emoji, .stats-reset-emoji, .winner-market-heading-emoji')]
             .filter(emoji => getComputedStyle(emoji).display !== 'none').length,
+        warningWhiteSpace: getComputedStyle(element.querySelector('.market-rule-status strong')).whiteSpace,
     }));
-    expect(sunsetState).toEqual({ visibleIcons: 6, visibleEmoji: 0 });
+    expect(sunsetState).toEqual({ visibleIcons: 6, visibleEmoji: 0, warningWhiteSpace: 'nowrap' });
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
         const screenshotPath = testInfo.outputPath(`sunset-interface-icons-${width}.png`);

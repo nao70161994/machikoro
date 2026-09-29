@@ -2494,6 +2494,7 @@ html[data-design="sunset"] #buildMenu h3 .build-menu-heading-icon {
 .market-rule-status strong {
     margin-left: 6px;
     color: #fbbf24;
+    white-space: nowrap;
 }
 
 .market-deck-gauge {
