@@ -284,11 +284,13 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
     await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
 });
 
-test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可能なまま表示する', async ({ page }) => {
+test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可能なまま表示する', async ({ page }, testInfo) => {
     await prepare(page);
     await page.locator('#designThemeSelect').selectOption('sunset');
     const banner = page.locator('#pwaUpdateBanner');
     await expect(banner).toBeHidden();
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
     await page.evaluate(() => {
         document.body.classList.add('pwa-banner-open');
         document.getElementById('pwaUpdateBanner').style.display = 'block';
@@ -329,6 +331,14 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
         expect(layout.dismissWidth).toBeGreaterThanOrEqual(44);
         expect(layout.dismissHeight).toBeGreaterThanOrEqual(44);
         if (width > 360) expect(Math.abs(layout.messageCenter - layout.bannerCenter)).toBeLessThan(3);
+        if (width === 390) {
+            const screenshotPath = testInfo.outputPath('sunset-update-banner-gameplay-390.png');
+            await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+            await testInfo.attach('sunset-update-banner-gameplay-390.png', {
+                path: screenshotPath,
+                contentType: 'image/png',
+            });
+        }
     }
 });
 
