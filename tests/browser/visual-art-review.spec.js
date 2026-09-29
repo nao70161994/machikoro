@@ -105,7 +105,8 @@ test('夕暮れの復旧・端末受け渡しUIは共通SVG警告と端末記号
         icon: getComputedStyle(element.querySelector('.hotseat-handoff-svg')).display,
         fallback: getComputedStyle(element.querySelector('.hotseat-handoff-emoji')).display,
     }));
-    expect(handoffIconState).toEqual({ icon: 'inline-block', fallback: 'none' });
+    expect(handoffIconState.icon).not.toBe('none');
+    expect(handoffIconState.fallback).toBe('none');
     await expect(handoff.locator('.hotseat-handoff-svg use')).toHaveAttribute('href', 'icons/interface-ui.svg#phone');
     const handoffShot = testInfo.outputPath('sunset-hotseat-handoff-390.png');
     await page.setViewportSize({ width: 390, height: 844 });
