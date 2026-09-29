@@ -83,6 +83,9 @@ function renderLog() {
 
     const currentGame = uiGameRuntimeSnapshot().game;
     const cur = currentGame.log || [];
+    const logDisplayOptions = {
+        stripLeadingEmoji: document.documentElement?.dataset?.design === 'sunset',
+    };
 
     const history = logHistoryController.append(cur);
     const countLabel = document.getElementById('logCountLabel');
@@ -92,9 +95,10 @@ function renderLog() {
     logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(
         history.entries,
         LOG_TYPE_DISPLAY,
-        escapeHtml
+        escapeHtml,
+        logDisplayOptions
     );
-    summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml);
+    summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
     logEl.scrollTop = logEl.scrollHeight;
 }
 

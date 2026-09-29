@@ -79,6 +79,8 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
+    await expect(page.locator('#logSummary')).not.toContainText('👤');
+    await expect(page.locator('#log')).not.toContainText('👤');
 
     for (const width of [320, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });

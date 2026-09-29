@@ -2,6 +2,13 @@
 
 const UiLogDisplay = (() => {
     const MAX_FULL_LOG = 300;
+    const LEADING_DECORATIVE_EMOJI = /^(?:🌾|🌽|🏪|🐟|💸|🍸|🍽️|📰|🏛️|📺|🚚|🔄|👤|🏗️|🔨|🧹|🍷|🏢|🎲|📡|🚉|⚓|💤|💰|💳|🏟️|❌|💻|🏆|✈️|🎡|⚠️)\s*/u;
+
+    function visibleLogMessage(message, options = {}) {
+        const value = String(message ?? '');
+        return options.stripLeadingEmoji ? value.replace(LEADING_DECORATIVE_EMOJI, '') : value;
+    }
+
     function makeLogTypeDisplay(logTypes) {
         return Object.freeze({
             [logTypes.DICE]:    Object.freeze({ cls: 'log-dice',    label: 'ダイス' }),
@@ -57,7 +64,7 @@ const UiLogDisplay = (() => {
         return detail;
     }
 
-    function buildLogEntriesHtml(entries, display, escapeHtml) {
+    function buildLogEntriesHtml(entries, display, escapeHtml, options = {}) {
         if (!Array.isArray(entries) || typeof escapeHtml !== 'function') return '';
         let lastEntryIndex = -1;
         for (let index = entries.length - 1; index >= 0; index--) {
@@ -69,14 +76,15 @@ const UiLogDisplay = (() => {
             const latestClass = index === lastEntryIndex ? ' log-latest' : '';
             const details = extractLogDetails(entry);
             const hasRelatedBoardItem = !!(details.actor || details.target || details.subject);
+            const visibleMessage = escapeHtml(visibleLogMessage(entry.message, options));
             if (!hasRelatedBoardItem) {
-                return `<div class="log-item ${cls}${latestClass}">${escapeHtml(entry.message)}</div>`;
+                return `<div class="log-item ${cls}${latestClass}">${visibleMessage}</div>`;
             }
-            return `<button type="button" class="log-item log-related-action ${cls}${latestClass}" data-ui-action="highlightLogEntry" data-player-name="${escapeHtml(details.actor)}" data-target-name="${escapeHtml(details.target)}" data-card-name="${escapeHtml(details.subject)}" data-log-message="${escapeHtml(entry.message)}" aria-label="関連する盤面を表示: ${escapeHtml(entry.message)}">${escapeHtml(entry.message)}</button>`;
+            return `<button type="button" class="log-item log-related-action ${cls}${latestClass}" data-ui-action="highlightLogEntry" data-player-name="${escapeHtml(details.actor)}" data-target-name="${escapeHtml(details.target)}" data-card-name="${escapeHtml(details.subject)}" data-log-message="${escapeHtml(entry.message)}" aria-label="関連する盤面を表示: ${escapeHtml(entry.message)}">${visibleMessage}</button>`;
         }).join('');
     }
 
-    function buildLogSummaryHtml(currentLog, display, escapeHtml) {
+    function buildLogSummaryHtml(currentLog, display, escapeHtml, options = {}) {
         if (!Array.isArray(currentLog) || typeof escapeHtml !== 'function') return '';
         const counts = { "収入": 0, "支払い": 0, "建設": 0, "特殊": 0, "ダイス": 0 };
         currentLog.slice(-8).forEach(entry => {
@@ -86,7 +94,7 @@ const UiLogDisplay = (() => {
         const parts = [];
         const latest = currentLog[currentLog.length - 1];
         if (latest) {
-            parts.push(`<span class="log-chip highlight">最新: ${escapeHtml(latest.message)}</span>`);
+            parts.push(`<span class="log-chip highlight">最新: ${escapeHtml(visibleLogMessage(latest.message, options))}</span>`);
             const details = extractLogDetails(latest);
             const detailCards = [];
             if (details.actor) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">主体</span><span class="log-detail-value">${escapeHtml(details.actor)}</span></span>`);

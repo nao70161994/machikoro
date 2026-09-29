@@ -178,4 +178,17 @@ assert.match(relatedHtml, /data-ui-action="highlightLogEntry"/);
 assert.match(relatedHtml, /data-player-name=""/);
 assert.match(relatedHtml, /data-card-name="パン屋"/);
 assert.match(relatedHtml, /data-log-message="🏗️ パン屋を建設！"/);
+const sunsetRelatedHtml = UiLogDisplay.buildLogEntriesHtml([
+    { type: 'system', message: '👤 Aliceのターン' },
+    { type: 'build', message: '🏗️ パン屋を建設！' },
+], display, escapeHtml, { stripLeadingEmoji: true });
+assert.match(sunsetRelatedHtml, />Aliceのターン<\/button>/);
+assert.match(sunsetRelatedHtml, /data-log-message="🏗️ パン屋を建設！"/);
+assert.match(sunsetRelatedHtml, /aria-label="関連する盤面を表示: 🏗️ パン屋を建設！"/);
+assert.match(sunsetRelatedHtml, />パン屋を建設！<\/button>/);
+const sunsetSummary = UiLogDisplay.buildLogSummaryHtml([
+    { type: 'system', message: '👤 Aliceのターン' },
+], display, escapeHtml, { stripLeadingEmoji: true });
+assert.match(sunsetSummary, /最新: Aliceのターン/);
+assert.doesNotMatch(sunsetSummary, /👤/);
 assert.match(relatedHtml, /aria-label="関連する盤面を表示:/);
