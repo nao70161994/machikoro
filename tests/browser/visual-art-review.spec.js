@@ -123,6 +123,7 @@ test('夕暮れのカード詳細は専用記号を使いスマホとデスク�
     await expect(modal.locator('.card-detail-coin')).toHaveCount(1);
     await expect(modal.locator('.card-detail-dice')).toHaveCount(1);
     await expect(modal).not.toContainText(/[💰🎲]/u);
+    await expect(modal.locator('.modal-header h2')).toHaveCSS('color', 'rgb(255, 225, 166)');
 
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });

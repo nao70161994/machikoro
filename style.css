@@ -3559,6 +3559,22 @@ html[data-design="sunset"] .card-detail-mark {
     vertical-align: -3px;
     overflow: visible;
 }
+html[data-design="sunset"] #cardDetailModal .modal-header {
+    background: linear-gradient(110deg, #76553f 0%, #33485a 68%, #213548 100%);
+    border-bottom-color: rgba(239, 196, 135, 0.38);
+}
+html[data-design="sunset"] #cardDetailModal .modal-header h2 {
+    color: #ffe1a6;
+    text-shadow: none;
+}
+html[data-design="sunset"] #cardDetailModal .modal-header button {
+    color: #ffe1a6;
+    background: rgba(239, 196, 135, 0.14);
+    border-color: rgba(239, 196, 135, 0.42);
+}
+html[data-design="sunset"] #cardDetailModal .modal-header button:hover {
+    background: rgba(239, 196, 135, 0.28);
+}
 html[data-design="sunset"] .card-detail-dice rect {
     fill: #fff4d6;
     stroke: #9b713f;
