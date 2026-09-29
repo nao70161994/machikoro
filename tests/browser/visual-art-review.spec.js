@@ -3,7 +3,9 @@ const { test, expect } = require('@playwright/test');
 async function prepareSunset(page) {
     await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
     await page.goto('/');
+    await page.locator('#designSwitcher > summary').click();
     await page.locator('#designThemeSelect').selectOption('sunset');
+    await expect(page.locator('#designThemeCurrentLabel')).toHaveText('夕暮れの街');
     await expect(page.locator('.title-brand-mark')).toBeVisible();
 }
 
@@ -73,6 +75,41 @@ test('夕暮れの市場・統計・勝利画面は共通SVG記号を使いク�
     const classicReview = page.locator('#interface-icon-review');
     expect(await classicReview.locator('.market-status-icon').evaluate(element => getComputedStyle(element).display)).toBe('none');
     expect(await classicReview.locator('.market-status-emoji').evaluate(element => getComputedStyle(element).display)).not.toBe('none');
+});
+
+test('タイトルのデザイン切替は初期設定より控えめに畳み、タイトルから変更できる', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
+    await page.goto('/');
+    const switcher = page.locator('#designSwitcher');
+    await expect(switcher).not.toHaveAttribute('open', '');
+    await expect(switcher.locator('summary')).toContainText('クラシック');
+    await expect(page.locator('.setup-quick-play')).toBeVisible();
+    const collapsedHeight = await switcher.evaluate(element => element.getBoundingClientRect().height);
+    await switcher.locator('summary').click();
+    await expect(page.locator('#designThemeSelect')).toBeVisible();
+    await page.locator('#designThemeSelect').selectOption('sunset');
+    await expect(page.locator('#designThemeCurrentLabel')).toHaveText('夕暮れの街');
+    await expect(page.locator('html')).toHaveAttribute('data-design', 'sunset');
+    const expandedHeight = await switcher.evaluate(element => element.getBoundingClientRect().height);
+    await switcher.locator('summary').click();
+    await expect(page.locator('#designThemeSelect')).toBeHidden();
+    const finalCollapsedHeight = await switcher.evaluate(element => element.getBoundingClientRect().height);
+    expect(expandedHeight).toBeGreaterThan(finalCollapsedHeight);
+    expect(finalCollapsedHeight).toBeLessThanOrEqual(collapsedHeight);
+    const screenshot = testInfo.outputPath('sunset-title-design-switch-collapsed-390.png');
+    await page.screenshot({ path: screenshot, animations: 'disabled' });
+    await testInfo.attach('sunset-title-design-switch-collapsed-390.png', {
+        path: screenshot,
+        contentType: 'image/png',
+    });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const desktopScreenshot = testInfo.outputPath('sunset-title-design-switch-collapsed-1440.png');
+    await page.screenshot({ path: desktopScreenshot, animations: 'disabled' });
+    await testInfo.attach('sunset-title-design-switch-collapsed-1440.png', {
+        path: desktopScreenshot,
+        contentType: 'image/png',
+    });
 });
 
 test('高コントラストの夕暮れ対局でも操作アイコンを専用SVGに統一する', async ({ page }, testInfo) => {
@@ -152,6 +189,7 @@ test('夕暮れの復旧・端末受け渡しUIは共通SVG警告と端末記号
     });
     expect(await handoff.locator('.hotseat-handoff-svg').evaluate(element => getComputedStyle(element).color)).toBe('rgb(255, 255, 255)');
     await handoff.evaluate(element => { element.style.display = 'none'; });
+    await page.locator('#designSwitcher > summary').click();
     await page.locator('#designThemeSelect').selectOption('classic');
     await page.evaluate(() => { document.getElementById('crashScreen').style.display = 'flex'; });
     expect(await crash.locator('.crash-icon-svg').evaluate(element => getComputedStyle(element).display)).toBe('none');

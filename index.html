@@ -55,15 +55,21 @@
                 </div>
             </div>
 
-            <div class="design-switcher">
-                <label for="designThemeSelect">画面デザイン</label>
-                <select id="designThemeSelect" aria-describedby="designThemeHelp" class="text-input">
-                    <option value="classic">クラシック（従来版）</option>
-                    <option value="sunset">夕暮れの街</option>
-                </select>
-                <p id="designThemeHelp">見た目だけを変更します。ルール・保存データ・オンライン対戦は共通です。いつでもここで戻せます。</p>
-                <p id="designThemeStatus" role="status" aria-live="polite"></p>
-            </div>
+            <details class="design-switcher" id="designSwitcher">
+                <summary class="design-switcher-summary">
+                    <span>画面デザイン</span>
+                    <span class="design-switcher-current"><span id="designThemeCurrentLabel">クラシック</span><span class="design-switcher-chevron" aria-hidden="true"></span></span>
+                </summary>
+                <div class="design-switcher-controls">
+                    <label for="designThemeSelect">画面デザイン</label>
+                    <select id="designThemeSelect" aria-describedby="designThemeHelp" class="text-input">
+                        <option value="classic">クラシック（従来版）</option>
+                        <option value="sunset">夕暮れの街</option>
+                    </select>
+                    <p id="designThemeHelp">見た目だけを変更します。ルール・保存データ・オンライン対戦は共通です。いつでもここで戻せます。</p>
+                    <p id="designThemeStatus" role="status" aria-live="polite"></p>
+                </div>
+            </details>
 
             <div id="onlineResumeSection" style="display:none">
                 <div class="online-resume-notice">

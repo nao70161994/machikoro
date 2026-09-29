@@ -4650,26 +4650,58 @@ body.pending-surface-visible .notice-toast {
 
 /* Device-local design selection. Classic gameplay styles remain unchanged. */
 .design-switcher {
-    padding: 12px;
     border: 1px solid #46445e;
     border-radius: 12px;
     background: #1a1a2e;
 }
-.design-switcher label {
+.design-switcher-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 12px;
+    color: #fffffe;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+}
+.design-switcher-summary::-webkit-details-marker { display: none; }
+.design-switcher-current {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #f0c040;
+    font-weight: 600;
+}
+.design-switcher-chevron {
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform 160ms ease;
+}
+.design-switcher[open] .design-switcher-chevron {
+    transform: rotate(225deg) translate(-1px, -1px);
+}
+.design-switcher-controls { padding: 0 12px 12px; }
+.design-switcher-controls label {
     display: block;
     margin-bottom: 8px;
     color: #fffffe;
     font-size: 14px;
     font-weight: 700;
 }
-.design-switcher select { width: 100%; min-height: 44px; }
-.design-switcher p {
+.design-switcher-controls select { width: 100%; min-height: 44px; }
+.design-switcher-controls p {
     margin-top: 8px;
     color: #c9cbdf;
     font-size: 12px;
     line-height: 1.6;
 }
-.design-switcher p:empty { display: none; }
+.design-switcher-controls p:empty { display: none; }
 
 /* Sunset preview: all overrides are scoped, with high-contrast mode taking priority. */
 html[data-design="sunset"] body:not(.accessibility-high-contrast) {
@@ -5339,14 +5371,21 @@ html[data-design="sunset"] .title-brand-type .title-logo-sub { margin-bottom: 0;
 html[data-design="sunset"] .title-logo-deco { display: none; }
 html[data-design="sunset"] .title-logo-sub { margin-bottom: 8px; }
 html[data-design="sunset"] .design-switcher {
+    padding: 0;
+    border-color: #536a7c;
+    background: #1d3346;
+}
+html[data-design="sunset"] .design-switcher-summary { min-height: 42px; font-size: 12px; }
+html[data-design="sunset"] .design-switcher-current { color: #ffe0a0; }
+html[data-design="sunset"] .design-switcher-controls {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 4px 8px;
-    padding: 8px 10px;
+    padding: 0 10px 8px;
 }
-html[data-design="sunset"] .design-switcher label { margin: 0; font-size: 12px; }
-html[data-design="sunset"] .design-switcher select { min-width: 0; font-size: 12px; }
+html[data-design="sunset"] .design-switcher-controls label { margin: 0; font-size: 12px; }
+html[data-design="sunset"] .design-switcher-controls select { min-width: 0; font-size: 12px; }
 html[data-design="sunset"] #designThemeHelp { grid-column: 1 / -1; margin-top: 2px; font-size: 11px; }
 html[data-design="sunset"] #designThemeStatus {
     position: absolute;

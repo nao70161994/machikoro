@@ -6,7 +6,12 @@ const { runTest } = require('./helpers/test-utils');
 function createPage(storage, loading = false, extraElements = {}) {
     const listeners = {};
     const attributes = {};
-    const elements = { designThemeSelect: { value: '' }, designThemeStatus: { textContent: '' }, ...extraElements };
+    const elements = {
+        designThemeSelect: { value: '' },
+        designThemeCurrentLabel: { textContent: '' },
+        designThemeStatus: { textContent: '' },
+        ...extraElements,
+    };
     const document = {
         readyState: loading ? 'loading' : 'complete',
         documentElement: { setAttribute: (key, value) => { attributes[key] = value; } },
@@ -26,12 +31,16 @@ runTest('デザインは従来版が既定で、切替・再起動後も保存�
     const storage = storageWith();
     const first = createPage(storage);
     assert.strictEqual(first.attributes['data-design'], 'classic');
+    assert.strictEqual(first.elements.designThemeCurrentLabel.textContent, 'クラシック');
     first.listeners.change({ target: { id: 'designThemeSelect', value: 'sunset' } });
+    assert.strictEqual(first.elements.designThemeCurrentLabel.textContent, '夕暮れの街');
     const second = createPage(storage, true);
     assert.strictEqual(second.attributes['data-design'], 'sunset');
     second.listeners.DOMContentLoaded();
     assert.strictEqual(second.elements.designThemeSelect.value, 'sunset');
+    assert.strictEqual(second.elements.designThemeCurrentLabel.textContent, '夕暮れの街');
     second.listeners.change({ target: { id: 'designThemeSelect', value: 'classic' } });
+    assert.strictEqual(second.elements.designThemeCurrentLabel.textContent, 'クラシック');
     assert.strictEqual(createPage(storage).runtime.current(), 'classic');
     assert.strictEqual(storage.values.savedGame, 'saved-game');
     assert.strictEqual(storage.values.onlineSession, 'online-session');

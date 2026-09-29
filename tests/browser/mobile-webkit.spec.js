@@ -25,6 +25,14 @@ async function prepare(page) {
     await page.goto('/');
 }
 
+async function selectDesignTheme(page, design) {
+    const switcher = page.locator('#designSwitcher');
+    if (!await switcher.evaluate(element => element.open)) {
+        await switcher.locator('summary').click();
+    }
+    await page.locator('#designThemeSelect').selectOption(design);
+}
+
 async function startLocalGame(page) {
     const customSetup = page.locator('#customGameSetup');
     if (!await customSetup.evaluate(element => element.open)) {
@@ -286,7 +294,7 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
 
 test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可能なまま表示する', async ({ page }, testInfo) => {
     await prepare(page);
-    await page.locator('#designThemeSelect').selectOption('sunset');
+    await selectDesignTheme(page, 'sunset');
     const banner = page.locator('#pwaUpdateBanner');
     await expect(banner).toBeHidden();
     await page.locator('.setup-quick-play').click();
@@ -637,7 +645,7 @@ test('320pxから480pxで長い手番名と終盤player情報が枠内に収ま�
 
 test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示する', async ({ page }) => {
     await prepare(page);
-    await page.locator('#designThemeSelect').selectOption('sunset');
+    await selectDesignTheme(page, 'sunset');
     await page.locator('#customGameSetup > summary').click();
     await page.locator('#cpuSpeed').evaluate(input => {
         input.value = input.max;
@@ -917,7 +925,7 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
 
 test('スマホは建設フェーズの初期市場を建設可に絞り全て選択を尊重する', async ({ page }, testInfo) => {
     await prepare(page);
-    await page.locator('#designThemeSelect').selectOption('sunset');
+    await selectDesignTheme(page, 'sunset');
     await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
     await page.evaluate(() => {
@@ -1013,7 +1021,7 @@ test('異なるデザインの2クライアントが準備完了後にonline開�
     const guestErrors = collectRuntimeErrors(guest);
     try {
         await Promise.all([prepare(host), prepare(guest)]);
-        await guest.locator('#designThemeSelect').selectOption('sunset');
+        await selectDesignTheme(guest, 'sunset');
         await expect(host.locator('html')).toHaveAttribute('data-design', 'classic');
         await expect(guest.locator('html')).toHaveAttribute('data-design', 'sunset');
         await host.locator('#tabOnline').click();
@@ -1050,10 +1058,17 @@ test('異なるデザインの2クライアントが準備完了後にonline開�
 for (const design of ['classic', 'sunset']) {
     test(`デザイン ${design} で設定を保持してゲームを開始できる`, async ({ page }) => {
         await prepare(page);
-        await page.locator('#designThemeSelect').selectOption(design);
+        await selectDesignTheme(page, design);
         await expect(page.locator('html')).toHaveAttribute('data-design', design);
+        await expect(page.locator('#designThemeCurrentLabel')).toHaveText(
+            design === 'sunset' ? '夕暮れの街' : 'クラシック'
+        );
         await page.reload();
+        await expect(page.locator('#designSwitcher')).not.toHaveAttribute('open', '');
         await expect(page.locator('#designThemeSelect')).toHaveValue(design);
+        await expect(page.locator('#designThemeCurrentLabel')).toHaveText(
+            design === 'sunset' ? '夕暮れの街' : 'クラシック'
+        );
         for (const width of [320, 390, 480]) {
             await page.setViewportSize({ width, height: 844 });
             const fits = await page.locator('.design-switcher').evaluate(element => {

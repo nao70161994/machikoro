@@ -30,6 +30,8 @@ const DesignTheme = (() => {
             arrangeGameSections(documentRef, selected);
             const control = documentRef.getElementById('designThemeSelect');
             if (control) control.value = selected;
+            const currentLabel = documentRef.getElementById('designThemeCurrentLabel');
+            if (currentLabel) currentLabel.textContent = selected === 'sunset' ? '夕暮れの街' : 'クラシック';
             if (persist) {
                 let saved = true;
                 try { getStorage().setItem(STORAGE_KEY, selected); } catch (_) { saved = false; }
