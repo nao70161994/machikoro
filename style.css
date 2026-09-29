@@ -4351,6 +4351,54 @@ html[data-design="sunset"] .card-detail-coin path {
     border-top-color: rgba(126,211,33,0.45);
 }
 
+#pwaUpdateBanner[style*="display: block"] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+}
+
+#pwaUpdateBanner .pwa-banner-text {
+    min-width: 0;
+    margin-bottom: 0;
+    font-size: 12px;
+}
+
+#pwaUpdateBanner .pwa-banner-actions {
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+}
+
+#pwaUpdateBanner .pwa-banner-btn,
+#pwaUpdateBanner .pwa-banner-dismiss {
+    min-height: 44px;
+}
+
+#pwaUpdateBanner .pwa-banner-btn {
+    padding: 8px 10px;
+    font-size: 13px;
+}
+
+#pwaUpdateBanner .pwa-banner-dismiss {
+    min-width: 44px;
+    padding: 8px 12px;
+}
+
+@media (max-width: 360px) {
+    #pwaUpdateBanner[style*="display: block"] {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 6px;
+    }
+
+    #pwaUpdateBanner .pwa-banner-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 44px;
+        width: 100%;
+    }
+}
+
 @keyframes pwaSlideUp {
     from { transform: translateX(-50%) translateY(100%); }
     to   { transform: translateX(-50%) translateY(0); }

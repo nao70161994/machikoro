@@ -300,6 +300,7 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
         await page.setViewportSize({ width, height: 844 });
         const layout = await banner.evaluate(element => {
             const bounds = element.getBoundingClientRect();
+            const message = element.querySelector('.pwa-banner-text').getBoundingClientRect();
             const update = element.querySelector('#pwaUpdateBtn').getBoundingClientRect();
             const dismiss = element.querySelector('.pwa-banner-dismiss').getBoundingClientRect();
             return {
@@ -308,6 +309,8 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
                 left: bounds.left,
                 right: bounds.right,
                 bottom: bounds.bottom,
+                bannerCenter: bounds.top + bounds.height / 2,
+                messageCenter: message.top + message.height / 2,
                 updateWidth: update.width,
                 updateHeight: update.height,
                 dismissWidth: dismiss.width,
@@ -317,7 +320,7 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
             };
         });
         expect(layout.display).toBe('grid');
-        expect(layout.height).toBeLessThanOrEqual(100);
+        expect(layout.height).toBeLessThanOrEqual(width <= 360 ? 100 : 72);
         expect(layout.left).toBeGreaterThanOrEqual(0);
         expect(layout.right).toBeLessThanOrEqual(layout.viewportWidth);
         expect(layout.bottom).toBeLessThanOrEqual(layout.viewportHeight);
@@ -325,6 +328,7 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
         expect(layout.updateHeight).toBeGreaterThanOrEqual(44);
         expect(layout.dismissWidth).toBeGreaterThanOrEqual(44);
         expect(layout.dismissHeight).toBeGreaterThanOrEqual(44);
+        if (width > 360) expect(Math.abs(layout.messageCenter - layout.bannerCenter)).toBeLessThan(3);
     }
 });
 
