@@ -133,6 +133,9 @@ runTest('ui winnerは公式10種類市場の正確な終了サマリーを表示
     assert.ok(html.includes('<strong>16</strong>'));
     assert.ok(html.includes('最終山札'));
     assert.ok(html.includes('<strong>2</strong>'));
+    assert.ok(html.includes('class="winner-market-heading-icon"'));
+    assert.ok(html.includes('icons/interface-ui.svg#market'));
+    assert.ok(html.includes('class="winner-market-heading-emoji"'));
     assert.strictEqual(UiWinner.buildMarketReview({ mode: 'standard' }, escapeHtml), '');
 });
 

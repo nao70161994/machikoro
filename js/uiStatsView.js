@@ -188,20 +188,20 @@ function buildStatsHtml(stats, viewMode, playerFilter, escapeHtml) {
             </div>
         </div>
 
-        <div class="stats-section-title">📊 最終盤面の平均</div>
+        <div class="stats-section-title"><span class="stats-heading-emoji" aria-hidden="true">📊</span><svg class="stats-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#chart"></use></svg> 最終盤面の平均</div>
         <div class="stats-overview stats-final-overview">
             <div class="stats-overview-item"><div class="stats-big">${avgCoins}</div><div class="stats-ov-label">コイン</div></div>
             <div class="stats-overview-item"><div class="stats-big">${avgFacilities}</div><div class="stats-ov-label">施設枚数</div></div>
             <div class="stats-overview-item"><div class="stats-big">${avgLandmarks}</div><div class="stats-ov-label">ランドマーク</div></div>
         </div>
 
-        <div class="stats-section-title">🃏 カード勝率ランキング <span class="stats-hint">3戦以上・所持時の勝率</span></div>
+        <div class="stats-section-title"><span class="stats-heading-emoji" aria-hidden="true">🃏</span><svg class="stats-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#cards"></use></svg> カード勝率ランキング <span class="stats-hint">3戦以上・所持時の勝率</span></div>
         ${cardRows}
 
-        ${landmarkRows ? `<div class="stats-section-title">🏛️ ランドマーク建設時勝率</div>
+        ${landmarkRows ? `<div class="stats-section-title"><span class="stats-heading-emoji" aria-hidden="true">🏛️</span><svg class="stats-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#build"></use></svg> ランドマーク建設時勝率</div>
         ${landmarkRows}` : ''}
 
-        <button data-action="clearStats" class="delete-save-btn" style="margin-top:16px;width:100%">🗑 統計をリセット</button>
+        <button data-action="clearStats" class="delete-save-btn" style="margin-top:16px;width:100%"><span class="stats-reset-emoji" aria-hidden="true">🗑</span><svg class="stats-reset-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#trash"></use></svg> 統計をリセット</button>
     `;
 }
 

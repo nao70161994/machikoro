@@ -7,6 +7,73 @@ async function prepareSunset(page) {
     await expect(page.locator('.title-brand-mark')).toBeVisible();
 }
 
+async function showInterfaceIconReview(page) {
+    await page.evaluate(() => {
+        const bucket = (totalGames, cardStats = {}, landmarkStats = {}) => ({
+            totalGames, wins: 1, totalTurns: 24, totalFinalCoins: 18,
+            totalFinalFacilities: 5, totalFinalLandmarks: 2, cardStats, landmarkStats,
+        });
+        const sample = { winWith: 2, loseWith: 1 };
+        const stats = {
+            all: bucket(3, { 麦畑: sample }, { 駅: sample }),
+            local: bucket(0), online: bucket(0), players: {}, cpuTypes: {}, playerCounts: {},
+            marketRules: { standard: bucket(0), 'ten-type': bucket(0) },
+            combinations: {
+                local: { standard: bucket(0), 'ten-type': bucket(0) },
+                online: { standard: bucket(0), 'ten-type': bucket(0) },
+            },
+        };
+        const escape = value => String(value).replace(/[&<>"']/g, character => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        })[character]);
+        const statsContent = document.createElement('div');
+        statsContent.innerHTML = UiStatsView.buildStatsHtml(stats, 'all', '', escape);
+        const review = document.createElement('main');
+        review.id = 'interface-icon-review';
+        review.innerHTML = `${UiBuildMenu.buildMarketStatusHtml(
+            { mode: 'ten-type', deck: ['A', 'B'], revealedCardCount: 8, totalsComplete: true },
+            { A: 1, B: 1 }
+        )}${UiWinner.buildMarketReview({
+            mode: 'ten-type', deck: ['A', 'B'], refillSequence: 2,
+            revealedCardCount: 8, totalsComplete: true,
+        }, escape)}`;
+        for (const element of statsContent.querySelectorAll('.stats-section-title, [data-action="clearStats"]')) {
+            review.append(element.cloneNode(true));
+        }
+        review.style.cssText = 'position:fixed;inset:16px;z-index:2147483647;box-sizing:border-box;max-width:760px;margin:auto;padding:20px 24px;overflow:auto;border:1px solid #71828a;border-radius:16px;background:#203746;color:#f8ebd1;box-shadow:0 18px 44px #0009';
+        document.body.append(review);
+    });
+}
+
+test('夕暮れの市場・統計・勝利画面は共通SVG記号を使いクラシックは絵文字を保つ', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await showInterfaceIconReview(page);
+    const review = page.locator('#interface-icon-review');
+    await expect(review).toBeVisible();
+    await expect(review.locator('.stats-heading-icon use')).toHaveCount(3);
+    await expect(review.locator('.market-status-icon use')).toHaveAttribute('href', 'icons/interface-ui.svg#market');
+    await expect(review.locator('.winner-market-heading-icon use')).toHaveAttribute('href', 'icons/interface-ui.svg#market');
+    const sunsetState = await review.evaluate(element => ({
+        visibleIcons: [...element.querySelectorAll('svg')].filter(icon => getComputedStyle(icon).display !== 'none').length,
+        visibleEmoji: [...element.querySelectorAll('.market-status-emoji, .stats-heading-emoji, .stats-reset-emoji, .winner-market-heading-emoji')]
+            .filter(emoji => getComputedStyle(emoji).display !== 'none').length,
+    }));
+    expect(sunsetState).toEqual({ visibleIcons: 6, visibleEmoji: 0 });
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const screenshotPath = testInfo.outputPath(`sunset-interface-icons-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-interface-icons-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+
+    await review.evaluate(element => element.remove());
+    await page.locator('#designThemeSelect').selectOption('classic');
+    await showInterfaceIconReview(page);
+    const classicReview = page.locator('#interface-icon-review');
+    expect(await classicReview.locator('.market-status-icon').evaluate(element => getComputedStyle(element).display)).toBe('none');
+    expect(await classicReview.locator('.market-status-emoji').evaluate(element => getComputedStyle(element).display)).not.toBe('none');
+});
+
 test('夕暮れのルール説明は専用UI記号とランドマークアートを使う', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.evaluate(() => showRules());

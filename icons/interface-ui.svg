@@ -44,4 +44,10 @@
         <path d="M7 4.5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="1.6"/>
         <path d="M5 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12M9 9h8M9 12h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6"/>
     </symbol>
+    <symbol id="chart" viewBox="0 0 24 24">
+        <path d="M4 20V11h4v9M10 20V5h4v15M16 20v-8h4v8M2.5 20.5h19" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+    </symbol>
+    <symbol id="trash" viewBox="0 0 24 24">
+        <path d="M4.5 7h15M9 7V4.5h6V7m3.5 0-.8 13H6.3L5.5 7M10 10.5v6M14 10.5v6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/>
+    </symbol>
 </svg>

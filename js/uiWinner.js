@@ -167,7 +167,7 @@ function buildMarketReview(marketSupply, escapeHtml) {
     const note = complete
         ? '対戦開始時の公開分を含む公式10種類市場の集計です。'
         : '古い保存から再開したため、保持された履歴の範囲だけを表示しています。';
-    return `<section class="winner-market-review" aria-labelledby="winnerMarketReviewTitle"><h3 id="winnerMarketReviewTitle">🏪 市場の振り返り</h3><p class="winner-review-note">${escapeHtml(note)}</p><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
+    return `<section class="winner-market-review" aria-labelledby="winnerMarketReviewTitle"><h3 id="winnerMarketReviewTitle"><span class="winner-market-heading-emoji" aria-hidden="true">🏪</span><svg class="winner-market-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 市場の振り返り</h3><p class="winner-review-note">${escapeHtml(note)}</p><div class="winner-review-grid">${items.map(([label, value]) => `<div class="winner-review-item"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('')}</div></section>`;
 }
 
 function buildWinnerStatusText(options = {}) {

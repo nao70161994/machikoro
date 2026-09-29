@@ -2627,6 +2627,9 @@ runTest('公式オプション市場は公開種類数・山札警告・補充�
     assert.ok(html.includes('13ターン目・&lt;Alice&gt;の建設後'));
     assert.ok(html.includes('class="market-deck-gauge"'));
     assert.ok(html.includes('style="width:75%"'));
+    assert.ok(html.includes('class="market-status-icon"'));
+    assert.ok(html.includes('icons/interface-ui.svg#market'));
+    assert.ok(html.includes('class="market-status-emoji"'));
     assert.ok(!html.includes('<B>'));
     assert.ok(!html.includes('role="status"'), '頻繁な再描画をlive通知しない');
 });

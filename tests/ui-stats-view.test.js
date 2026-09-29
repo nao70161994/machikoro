@@ -55,6 +55,11 @@ runTest('stats viewは市場ルール別filterと名称を表示する', () => {
     assert.ok(html.includes('data-market-rule="ten-type"'));
     assert.ok(html.includes('aria-label="公式10種類市場" aria-pressed="true"'));
     assert.ok(html.includes('公式10種類市場の成績'));
+    assert.ok(html.includes('class="stats-heading-icon"'));
+    assert.ok(html.includes('icons/interface-ui.svg#chart'));
+    assert.ok(html.includes('icons/interface-ui.svg#cards'));
+    assert.ok(html.includes('class="stats-reset-icon"'));
+    assert.ok(html.includes('icons/interface-ui.svg#trash'));
 });
 
 runTest('stats viewは対戦形式と市場ルールを複合して選ぶ', () => {
