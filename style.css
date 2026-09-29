@@ -5729,7 +5729,7 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
             "tutorial tutorial"
             "actions nav"
             "build players"
-            "log players"
+            "log log"
             "leave leave"
             "restart restart";
     }
@@ -5755,6 +5755,9 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
     .player-area:has(> #playerNavigation) {
         grid-row: 5 / span 3;
         grid-column: 2;
+    }
+    html[data-design="sunset"] .player-area:has(> #playerNavigation) {
+        grid-row: 5 / span 2;
     }
     #players {
         display: grid;

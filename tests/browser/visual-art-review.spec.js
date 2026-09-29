@@ -671,6 +671,7 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
             return { top: bounds.top, left: bounds.left, right: bounds.right };
         };
         return {
+            game: rect('#gameScreen'),
             market: rect('#buildMenu'),
             log: rect('#gameLogContainer'),
             town: rect('.player-area'),
@@ -678,6 +679,9 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     });
     expect(gameRegions.market.top).toBeLessThan(gameRegions.log.top);
     expect(gameRegions.market.right).toBeLessThan(gameRegions.town.left);
+    expect(gameRegions.log.left).toBeLessThanOrEqual(gameRegions.game.left + 1);
+    expect(gameRegions.log.right).toBeGreaterThanOrEqual(gameRegions.game.right - 1);
+    expect(gameRegions.town.bottom).toBeLessThanOrEqual(gameRegions.log.top + 1);
 
     const screenshotPath = testInfo.outputPath('sunset-desktop-city-1440.png');
     await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
