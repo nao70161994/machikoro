@@ -1282,6 +1282,16 @@ html[data-design="sunset"] .design-switcher select option {
     margin-bottom: 10px;
 }
 
+.modal-heading-icon,
+.landmark-item-art { display: none; }
+
+.modal-heading-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 5px;
+    vertical-align: -4px;
+}
+
 .rules-section p {
     font-size: 13px;
     color: #a7a9be;
@@ -1361,6 +1371,8 @@ html[data-design="sunset"] .design-switcher select option {
     color: #f0c040;
     font-weight: bold;
 }
+
+.landmark-name { min-width: 0; }
 
 .landmark-item span:last-child {
     color: #a7a9be;
@@ -4660,6 +4672,49 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-meta-row
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-stock {
     color: #777d7e;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .modal-heading-icon {
+    display: inline-block;
+    color: #e8bd67;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .modal-heading-emoji,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .landmark-item-emoji {
+    display: none;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .landmark-item span.landmark-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f1cf83;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .landmark-item-art {
+    display: block;
+    width: 44px;
+    height: 22px;
+    flex: 0 0 44px;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #aebfba, #596f70);
+}
+html[data-design="sunset"] body.accessibility-high-contrast .modal-heading-icon {
+    display: inline-block;
+    color: #fff;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .modal-heading-emoji,
+html[data-design="sunset"] body.accessibility-high-contrast .landmark-item-emoji { display: none; }
+html[data-design="sunset"] body.accessibility-high-contrast .landmark-item span.landmark-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .landmark-item-art {
+    display: block;
+    width: 44px;
+    height: 22px;
+    flex: 0 0 44px;
+    background: #000;
+    border: 1px solid #fff;
+    border-radius: 5px;
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-detail-btn {
     color: #68717a;

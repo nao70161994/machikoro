@@ -7,6 +7,67 @@ async function prepareSunset(page) {
     await expect(page.locator('.title-brand-mark')).toBeVisible();
 }
 
+test('夕暮れのルール説明は専用UI記号とランドマークアートを使う', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.evaluate(() => showRules());
+    const modal = page.locator('#rulesModal');
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('.modal-heading-icon')).toHaveCount(8);
+    await expect(modal.locator('.landmark-item-art')).toHaveCount(6);
+    await expect(modal.locator('.landmark-item-emoji')).toHaveCount(6);
+
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const layout = await modal.evaluate(element => {
+            const icons = [...element.querySelectorAll('.modal-heading-icon, .landmark-item-art')];
+            return {
+                width: element.clientWidth,
+                scrollWidth: element.scrollWidth,
+                hiddenEmojiCount: [...element.querySelectorAll('.modal-heading-emoji, .landmark-item-emoji')]
+                    .filter(item => getComputedStyle(item).display === 'none').length,
+                visibleIconCount: icons.filter(icon => {
+                    const rect = icon.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                }).length,
+                iconBounds: icons.map(icon => {
+                    const rect = icon.getBoundingClientRect();
+                    return { left: rect.left, right: rect.right };
+                }),
+            };
+        });
+        expect(layout.scrollWidth).toBeLessThanOrEqual(layout.width + 1);
+        expect(layout.hiddenEmojiCount).toBeGreaterThanOrEqual(14);
+        expect(layout.visibleIconCount).toBe(14);
+        expect(layout.iconBounds.every(icon => icon.left >= 0 && icon.right <= width)).toBe(true);
+        const screenshotPath = testInfo.outputPath(`sunset-rules-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-rules-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+
+    await page.evaluate(() => closeRules());
+    await page.evaluate(() => showCardSelect());
+    const selectionModal = page.locator('#cardSelectModal');
+    await expect(selectionModal).toBeVisible();
+    await expect(selectionModal.locator('.modal-heading-icon use')).toHaveAttribute(
+        'href', 'icons/interface-ui.svg#cards'
+    );
+    expect(await selectionModal.locator('.modal-heading-emoji').evaluate(element =>
+        getComputedStyle(element).display
+    )).toBe('none');
+
+    await page.evaluate(() => closeCardSelect());
+    await page.locator('#designThemeSelect').selectOption('classic');
+    await page.evaluate(() => showRules());
+    const classicRules = page.locator('#rulesModal');
+    await expect(classicRules).toBeVisible();
+    expect(await classicRules.locator('.modal-heading-icon').first().evaluate(element =>
+        getComputedStyle(element).display
+    )).toBe('none');
+    expect(await classicRules.locator('.modal-heading-emoji').first().evaluate(element =>
+        getComputedStyle(element).display
+    )).not.toBe('none');
+});
+
 test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     await prepareSunset(page);
     await expect(page.locator('#tabLocal')).toHaveText('この端末');

@@ -424,16 +424,16 @@
     <div id="rulesModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="rulesModalTitle" tabindex="-1" style="display:none">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="rulesModalTitle">📖 ダイスシティ ルール説明</h2>
+                <h2 id="rulesModalTitle"><span class="modal-heading-emoji" aria-hidden="true">📖</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#book"></use></svg> ダイスシティ ルール説明</h2>
                 <button data-ui-action="closeRules" aria-label="ルール説明を閉じる">✕</button>
             </div>
             <div class="modal-body">
                 <div class="rules-section">
-                    <h3>🎯 勝利条件</h3>
+                    <h3><span class="modal-heading-emoji" aria-hidden="true">🎯</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#target"></use></svg> 勝利条件</h3>
                     <p>今回の対戦で有効になっているランドマークをすべて建設したプレイヤーの勝利です。</p>
                 </div>
                 <div class="rules-section">
-                    <h3>🎲 基本ルール</h3>
+                    <h3><span class="modal-heading-emoji" aria-hidden="true">🎲</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#dice"></use></svg> 基本ルール</h3>
                     <ul>
                         <li>自分のターンにサイコロを1個振る</li>
                         <li>出た目に応じて施設カードが発動しコインを獲得</li>
@@ -443,12 +443,12 @@
                     </ul>
                 </div>
                 <div class="rules-section">
-                    <h3>🏪 公式オプション：10種類市場</h3>
+                    <h3><span class="modal-heading-emoji" aria-hidden="true">🏪</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式オプション：10種類市場</h3>
                     <p>ゲーム開始前のカード選択で有効にできます。使用する施設カードをすべて混ぜ、異なる施設が10種類になるまで公開します。同名カードは同じ山に重ねます。</p>
                     <p>購入によって公開中の施設が9種類以下になったら、山札から再び10種類になるまで補充します。山札がなくなった場合は、残っている種類だけで続けます。</p>
                 </div>
                 <div class="rules-section">
-                    <h3>🔄 発動順序</h3>
+                    <h3><span class="modal-heading-emoji" aria-hidden="true">🔄</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#sequence"></use></svg> 発動順序</h3>
                     <div class="order-list">
                         <div class="order-item red">① 赤カード：ダイスを振ったプレイヤーからコインを奪う</div>
                         <div class="order-item blue">② 青カード：誰のターンでも発動・銀行からもらう</div>
@@ -457,7 +457,7 @@
                     </div>
                 </div>
                 <div class="rules-section">
-                    <h3>🎨 カードの色</h3>
+                    <h3><span class="modal-heading-emoji" aria-hidden="true">🎨</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#palette"></use></svg> カードの色</h3>
                     <div class="color-list">
                         <div class="color-item"><span class="color-badge blue-badge">青</span><span>誰のターンでも発動。銀行からコインをもらう</span></div>
                         <div class="color-item"><span class="color-badge green-badge">緑</span><span>自分のターンのみ発動。銀行からコインをもらう</span></div>
@@ -466,7 +466,7 @@
                     </div>
                 </div>
                 <div class="rules-section rules-glossary">
-                    <h3>🔎 ゲーム用語集</h3>
+                    <h3><span class="modal-heading-emoji" aria-hidden="true">🔎</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#search"></use></svg> ゲーム用語集</h3>
                     <dl>
                         <dt>施設</dt><dd>出目に応じて効果が発動するカードです。</dd>
                         <dt>ランドマーク</dt><dd>建設すると追加能力を得ます。有効なものをすべて建設すると勝利です。</dd>
@@ -479,15 +479,15 @@
                     </dl>
                 </div>
                 <div class="rules-section">
-                    <h3>🏛️ ランドマーク効果</h3>
+                    <h3><span class="modal-heading-emoji" aria-hidden="true">🏛️</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#build"></use></svg> ランドマーク効果</h3>
                     <p>港と空港はプラス拡張のランドマークです。港は2個振りで合計10以上のとき、空港は建設を見送ったときに効果を使えます。</p>
                     <div class="landmark-list">
-                        <div class="landmark-item"><span>🚉 駅（4コイン）</span><span>サイコロを1個か2個か選べる</span></div>
-                        <div class="landmark-item"><span>🛍️ ショッピングモール（10コイン）</span><span>飲食店・商店の収入+1コイン</span></div>
-                        <div class="landmark-item"><span>🎡 遊園地（16コイン）</span><span>ゾロ目でもう1ターン</span></div>
-                        <div class="landmark-item"><span>📡 電波塔（22コイン）</span><span>1ターン1回だけ振り直せる</span></div>
-                        <div class="landmark-item"><span>⚓ 港（2コイン）</span><span>ダイス合計10以上で+2するか選べる</span></div>
-                        <div class="landmark-item"><span>✈️ 空港（30コイン）</span><span>建設しないターンに+10コイン</span></div>
+                        <div class="landmark-item"><span class="landmark-name"><span class="landmark-item-emoji" aria-hidden="true">🚉</span><svg class="landmark-item-art" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#station"></use></svg>駅（4コイン）</span><span>サイコロを1個か2個か選べる</span></div>
+                        <div class="landmark-item"><span class="landmark-name"><span class="landmark-item-emoji" aria-hidden="true">🛍️</span><svg class="landmark-item-art" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#mall"></use></svg>ショッピングモール（10コイン）</span><span>飲食店・商店の収入+1コイン</span></div>
+                        <div class="landmark-item"><span class="landmark-name"><span class="landmark-item-emoji" aria-hidden="true">🎡</span><svg class="landmark-item-art" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#park"></use></svg>遊園地（16コイン）</span><span>ゾロ目でもう1ターン</span></div>
+                        <div class="landmark-item"><span class="landmark-name"><span class="landmark-item-emoji" aria-hidden="true">📡</span><svg class="landmark-item-art" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#radio"></use></svg>電波塔（22コイン）</span><span>1ターン1回だけ振り直せる</span></div>
+                        <div class="landmark-item"><span class="landmark-name"><span class="landmark-item-emoji" aria-hidden="true">⚓</span><svg class="landmark-item-art" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#port"></use></svg>港（2コイン）</span><span>ダイス合計10以上で+2するか選べる</span></div>
+                        <div class="landmark-item"><span class="landmark-name"><span class="landmark-item-emoji" aria-hidden="true">✈️</span><svg class="landmark-item-art" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#airport"></use></svg>空港（30コイン）</span><span>建設しないターンに+10コイン</span></div>
                     </div>
                 </div>
                 <div id="adSlotRulesBottom" class="ad-slot-host" data-ad-slot-host="rules-bottom"></div>
@@ -498,7 +498,7 @@
     <div id="cardSelectModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardSelectModalTitle" tabindex="-1" style="display:none">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="cardSelectModalTitle">🃏 カード・ランドマーク選択</h2>
+                <h2 id="cardSelectModalTitle"><span class="modal-heading-emoji" aria-hidden="true">🃏</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#cards"></use></svg> カード・ランドマーク選択</h2>
                 <button data-action="closeCardSelect" aria-label="カード選択を閉じる">✕</button>
             </div>
             <div class="modal-body">
@@ -506,7 +506,7 @@
                 <p id="cardSelectRoomHelp" class="setting-help" hidden>カード・ランドマークの変更後は全員が再度「準備完了」を押してください。市場ルールは部屋作成後には変更できません。</p>
                 <div class="card-set-section market-rule-section">
                     <label class="card-set-header" for="marketRuleSelect">
-                        <span>🏪 市場ルール</span>
+                        <span><span class="modal-heading-emoji" aria-hidden="true">🏪</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 市場ルール</span>
                     </label>
                     <select id="marketRuleSelect" class="text-input">
                         <option value="standard">通常市場（全種類）</option>
