@@ -1486,6 +1486,13 @@ body.pwa-banner-open #gameScreen {
     padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
 }
 
+body.pwa-banner-open #gameScreen[style*="display: block"] {
+    max-height: calc(100dvh - 128px - env(safe-area-inset-bottom, 0px));
+    padding-bottom: 16px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+}
+
 body.pwa-banner-open #titleScreen {
     overflow-y: auto;
     padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px));

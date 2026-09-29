@@ -298,10 +298,12 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
     await expect(banner).toBeVisible();
     await page.waitForTimeout(350);
 
-    for (const width of [320, 360, 390, 480]) {
-        await page.setViewportSize({ width, height: 844 });
+    for (const width of [320, 360, 390, 480, 1440]) {
+        await page.setViewportSize({ width, height: width === 1440 ? 1000 : 844 });
         const layout = await banner.evaluate(element => {
             const bounds = element.getBoundingClientRect();
+            const game = document.getElementById('gameScreen');
+            const gameBounds = game.getBoundingClientRect();
             const message = element.querySelector('.pwa-banner-text').getBoundingClientRect();
             const update = element.querySelector('#pwaUpdateBtn').getBoundingClientRect();
             const dismiss = element.querySelector('.pwa-banner-dismiss').getBoundingClientRect();
@@ -311,6 +313,9 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
                 left: bounds.left,
                 right: bounds.right,
                 bottom: bounds.bottom,
+                top: bounds.top,
+                gameBottom: gameBounds.bottom,
+                gameOverflowY: getComputedStyle(game).overflowY,
                 bannerCenter: bounds.top + bounds.height / 2,
                 messageCenter: message.top + message.height / 2,
                 updateWidth: update.width,
@@ -326,6 +331,8 @@ test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可�
         expect(layout.left).toBeGreaterThanOrEqual(0);
         expect(layout.right).toBeLessThanOrEqual(layout.viewportWidth);
         expect(layout.bottom).toBeLessThanOrEqual(layout.viewportHeight);
+        expect(layout.gameBottom).toBeLessThanOrEqual(layout.top);
+        expect(layout.gameOverflowY).toBe('auto');
         expect(layout.updateWidth).toBeGreaterThanOrEqual(120);
         expect(layout.updateHeight).toBeGreaterThanOrEqual(44);
         expect(layout.dismissWidth).toBeGreaterThanOrEqual(44);
