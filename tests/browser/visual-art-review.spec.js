@@ -349,6 +349,12 @@ test('スマホの夕暮れ対局はログ要約を残して詳細を折りた�
             /[🏗️]/u.test(element.textContent)
         );
         expect(visibleEmojiCount).toBe(false);
+        const logScreenshot = testInfo.outputPath(`sunset-log-svg-${width}.png`);
+        await container.screenshot({ path: logScreenshot, animations: 'disabled' });
+        await testInfo.attach(`sunset-log-svg-${width}.png`, {
+            path: logScreenshot,
+            contentType: 'image/png',
+        });
     }
 });
 
