@@ -261,14 +261,22 @@ test('夕暮れのターン案内は人間とCPUを専用SVGで表示する', as
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
-    await page.evaluate(() => showTurnAnnouncer('CPU <One>', true, 1));
-    const icon = page.locator('#turnAnnouncerText use');
-    await expect(icon).toHaveAttribute('href', 'icons/interface-ui.svg#cpu');
-    await expect(page.locator('#turnAnnouncerText'))
-        .toHaveText('CPU <One> のターン');
-    await expect(page.locator('#turnStatusAnnouncer'))
-        .toHaveText('プレイヤー2、CPU、CPU <One> のターン');
-    expect(await page.locator('#turnAnnouncerText').innerHTML()).toContain('&lt;One&gt;');
+    const announcement = await page.evaluate(() => {
+        showTurnAnnouncer('CPU <One>', true, 1);
+        const text = document.getElementById('turnAnnouncerText');
+        return {
+            icon: text.querySelector('use')?.getAttribute('href'),
+            text: text.textContent,
+            html: text.innerHTML,
+            status: document.getElementById('turnStatusAnnouncer').textContent,
+        };
+    });
+    expect(announcement).toEqual({
+        icon: 'icons/interface-ui.svg#cpu',
+        text: 'CPU <One> のターン',
+        html: expect.stringContaining('&lt;One&gt;'),
+        status: 'プレイヤー2、CPU、CPU <One> のターン',
+    });
 });
 
 test('夕暮れのガイド設定は共通SVGアイコンでスマホとデスクトップに揃える', async ({ page }, testInfo) => {
@@ -599,7 +607,8 @@ test('夕暮れのコイン獲得表示はカードと共通のSVGコインを�
 
     const coinState = await page.evaluate(() => {
         showCoinAnimation(0, 3);
-        const coin = document.querySelector('#playerBox0 .coin-float');
+        const coins = document.querySelectorAll('#playerBox0 .coin-float');
+        const coin = coins[coins.length - 1];
         return {
             label: coin?.getAttribute('aria-label'),
             icon: coin?.querySelector('svg use')?.getAttribute('href'),
