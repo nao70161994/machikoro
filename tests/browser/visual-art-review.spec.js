@@ -257,6 +257,41 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
 });
 
+test('夕暮れの建設と建設後のターン終了は重複確認なしで続けて操作できる', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const starting = await page.evaluate(() => {
+        cancelCpuSchedule('build-tempo-browser-review');
+        window.scheduleCPU = () => false;
+        const state = GameRuntimeState.runtime.snapshot();
+        const humanIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+        const game = state.game;
+        game.currentPlayerIndex = humanIndex;
+        game.phase = GAME_PHASES.BUILD;
+        game.builtThisTurn = false;
+        game.currentPlayer().coins = 10;
+        render();
+        return { humanIndex, coins: game.currentPlayer().coins, turnCount: game.turnCount };
+    });
+    expect(starting.humanIndex).toBeGreaterThanOrEqual(0);
+
+    const wheat = page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]');
+    await expect(wheat).toBeEnabled();
+    await wheat.click();
+    await expect(page.locator('#confirmModal')).toBeHidden();
+    await expect(page.locator('#buildMenu .undo-btn')).toBeVisible();
+    await expect(page.locator('#btnSkip')).toHaveText('建設完了・ターン終了');
+    expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins))
+        .toBe(starting.coins - 1);
+
+    await page.locator('#btnSkip').click();
+    await expect(page.locator('#confirmModal')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.turnCount))
+        .toBeGreaterThan(starting.turnCount);
+});
+
 test('夕暮れのターン案内は人間とCPUを専用SVGで表示する', async ({ page }) => {
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
