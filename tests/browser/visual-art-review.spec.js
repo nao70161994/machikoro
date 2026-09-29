@@ -524,22 +524,35 @@ test('必要なら詳細設定を開いて人数を変え、その設定で開�
 });
 
 test('スマホの夕暮れタイトルは遊び方と開始導線を紹介文より先に見せる', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);
-    const positions = await page.evaluate(() => {
-        const top = selector => document.querySelector(selector).getBoundingClientRect().top;
-        return {
-            modes: top('.tab-bar'),
-            design: top('.design-switcher'),
-            start: top('#tabContentLocal'),
-            about: top('.title-about'),
-            links: top('.legal-links'),
-        };
-    });
-    expect(positions.modes).toBeLessThan(positions.design);
-    expect(positions.design).toBeLessThan(positions.start);
-    expect(positions.start).toBeLessThan(positions.about);
-    expect(positions.about).toBeLessThan(positions.links);
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        const positions = await page.evaluate(() => {
+            const bounds = selector => document.querySelector(selector).getBoundingClientRect();
+            const modes = bounds('.tab-bar');
+            const design = bounds('.design-switcher');
+            const content = bounds('#tabContentLocal');
+            const quickPlay = bounds('.setup-quick-play');
+            const about = bounds('.title-about');
+            const links = bounds('.legal-links');
+            return {
+                modesTop: modes.top,
+                designTop: design.top,
+                contentTop: content.top,
+                quickPlayTop: quickPlay.top,
+                quickPlayBottom: quickPlay.bottom,
+                aboutTop: about.top,
+                linksTop: links.top,
+                viewportHeight: window.innerHeight,
+            };
+        });
+        expect(positions.modesTop).toBeLessThan(positions.designTop);
+        expect(positions.designTop).toBeLessThan(positions.contentTop);
+        expect(positions.quickPlayTop).toBeGreaterThanOrEqual(positions.contentTop);
+        expect(positions.quickPlayBottom).toBeLessThan(positions.viewportHeight);
+        expect(positions.quickPlayBottom).toBeLessThan(positions.aboutTop);
+        expect(positions.aboutTop).toBeLessThan(positions.linksTop);
+    }
 });
 
 test('オンラインの作成・参加導線をスマホとデスクトップで記録する', async ({ page }, testInfo) => {
