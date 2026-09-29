@@ -302,6 +302,9 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     const town = page.locator('.player-box.active .sunset-town');
     const firstBuilding = town.locator('.town-street > .town-building').first();
     await expect(firstBuilding).toBeVisible();
+    await expect.poll(() => firstBuilding.evaluate(element =>
+        element.getBoundingClientRect().width
+    )).toBeGreaterThanOrEqual(108);
     const bounds = await firstBuilding.evaluate(element => {
         const card = element.getBoundingClientRect();
         const art = element.querySelector('.sunset-facility-art').getBoundingClientRect();
