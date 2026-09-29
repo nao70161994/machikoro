@@ -23,6 +23,20 @@ runTest('turn announcer viewは人間・CPU文言と既存timingをpureに固定
     assert.strictEqual(UiTurnAnnouncer.transitionDurationMs, 400);
 });
 
+runTest('夕暮れターンアナウンスは人間・CPUの共通SVGとescape済みの名前を返す', () => {
+    const escapeHtml = value => String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    const human = UiTurnAnnouncer.buildSunsetHtml('<Guest>', false, escapeHtml);
+    const cpu = UiTurnAnnouncer.buildSunsetHtml('CPU', true, escapeHtml);
+    assert(human.includes('icons/interface-ui.svg#person'));
+    assert(human.includes('&lt;Guest&gt; のターン'));
+    assert(cpu.includes('icons/interface-ui.svg#cpu'));
+    assert(cpu.includes('CPU のターン'));
+    assert.strictEqual(UiTurnAnnouncer.buildSunsetHtml('Guest', false), '');
+});
+
 runTest('turn announcer statusは同名playerも席順で区別して読み上げる', () => {
     assert.strictEqual(
         UiTurnAnnouncer.buildStatusText('Alice', false, 0),

@@ -1338,7 +1338,11 @@ function showTurnAnnouncer(name, isCPU, playerIndex) {
     el.classList.remove("hiding");
     const view = UiTurnAnnouncer.buildView(name, isCPU);
     el.style.display = view.display;
-    text.textContent = view.text;
+    const sunsetHtml = document.documentElement?.dataset?.design === 'sunset'
+        ? UiTurnAnnouncer.buildSunsetHtml(name, isCPU, escapeHtml)
+        : '';
+    if (sunsetHtml) text.innerHTML = sunsetHtml;
+    else text.textContent = view.text;
     const status = document.getElementById("turnStatusAnnouncer");
     if (status) status.textContent = UiTurnAnnouncer.buildStatusText(name, isCPU, playerIndex);
     turnAnnouncerTimerController.start(view, {

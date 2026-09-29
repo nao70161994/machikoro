@@ -200,6 +200,20 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
 });
 
+test('夕暮れのターン案内は人間とCPUを専用SVGで表示する', async ({ page }) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => showTurnAnnouncer('CPU <One>', true, 1));
+    const icon = page.locator('#turnAnnouncerText use');
+    await expect(icon).toHaveAttribute('href', 'icons/interface-ui.svg#cpu');
+    await expect(page.locator('#turnAnnouncerText'))
+        .toHaveText('CPU <One> のターン');
+    await expect(page.locator('#turnStatusAnnouncer'))
+        .toHaveText('プレイヤー2、CPU、CPU <One> のターン');
+    expect(await page.locator('#turnAnnouncerText').innerHTML()).toContain('&lt;One&gt;');
+});
+
 test('CPUの手番でもスマートフォンでは自分の街を先頭に開いて見せる', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);

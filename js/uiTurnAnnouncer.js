@@ -12,6 +12,12 @@ function buildTurnAnnouncerView(name, isCPU) {
     });
 }
 
+function buildSunsetTurnAnnouncerHtml(name, isCPU, escapeHtml) {
+    if (typeof escapeHtml !== 'function') return '';
+    const icon = isCPU ? 'cpu' : 'person';
+    return `<svg class="turn-announcer-kind-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#${icon}"></use></svg><span>${escapeHtml(name)} のターン</span>`;
+}
+
 function buildTurnStatusText(name, isCPU, playerIndex) {
     const position = Number.isInteger(playerIndex) && playerIndex >= 0
         ? `プレイヤー${playerIndex + 1}、`
@@ -50,6 +56,7 @@ function createTimerController({
 
 const UiTurnAnnouncer = Object.freeze({
     buildView: buildTurnAnnouncerView,
+    buildSunsetHtml: buildSunsetTurnAnnouncerHtml,
     buildStatusText: buildTurnStatusText,
     createTimerController,
     showDurationMs: TURN_ANNOUNCER_SHOW_DURATION_MS,

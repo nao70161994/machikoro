@@ -3192,6 +3192,15 @@ html[data-design="sunset"] body.accessibility-high-contrast .dice-choice-die-mar
     animation: announcerIn 0.28s cubic-bezier(0.22,1,0.36,1) both;
 }
 
+html[data-design="sunset"] .turn-announcer-kind-icon {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    margin-right: 8px;
+    color: #f0c77b;
+    vertical-align: -6px;
+}
+
 .turn-announcer.hiding .turn-announcer-content {
     animation: announcerOut 0.38s ease forwards;
 }
