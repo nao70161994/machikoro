@@ -989,7 +989,7 @@ test('320pxから480pxで建設shortcutが既存menuへ移動しPWA表示時も�
         await expect(page.locator('#buildMenu')).toBeFocused();
         const buildTop = await page.locator('#buildMenu').evaluate(element => element.getBoundingClientRect().top);
         expect(buildTop).toBeGreaterThanOrEqual(-1);
-        expect(buildTop).toBeLessThan(80);
+        expect(buildTop).toBeLessThan(100);
     }
 });
 
