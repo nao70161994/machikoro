@@ -2471,7 +2471,9 @@ runTest('UiBuildMenu helper は建設メニューのescapeとgateをpureに固�
     assert.ok(!cardHtml.includes('<effect>'));
     assert.ok(cardHtml.includes('<div class="card-meta-row">'));
     assert.ok(cardHtml.indexOf('</button><div class="card-meta-row">') >= 0);
-    assert.ok(cardHtml.includes('ℹ 詳細'));
+    assert.ok(cardHtml.includes('class="card-detail-emoji"'));
+    assert.ok(cardHtml.includes('class="card-detail-icon"'));
+    assert.ok(cardHtml.includes('icons/interface-ui.svg#info'));
     assert.ok(cardHtml.includes('<span class="card-stock">残り2枚</span>'));
 
     const visible = helper.buildVisibleCardButtonsHtml({
@@ -2575,6 +2577,8 @@ runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成
     assert.ok(html.includes('can-afford'));
     assert.ok(html.includes('class="card-dice-mark"'));
     assert.ok(html.includes('class="card-coin-mark"'));
+    assert.ok(html.includes('class="card-detail-icon"'));
+    assert.ok(html.includes('icons/interface-ui.svg#info'));
     assert.ok(!html.includes('🎲'));
     assert.ok(!html.includes('💰'));
 });
@@ -2678,7 +2682,11 @@ runTest('renderLandmarkBuildButton は建設済みランドマーク表示を生
     assert.ok(html.includes('aria-label="駅の詳細を開く"'));
     assert.ok(html.includes('data-landmark-name="駅"'));
     assert.ok(!html.includes('onBuildLandmark('));
-    assert.ok(html.includes('✅済'));
+    assert.ok(html.includes('class="card-built-emoji"'));
+    assert.ok(html.includes('>済</span>'));
+    assert.ok(html.includes('class="card-built-icon"'));
+    assert.ok(html.includes('icons/interface-ui.svg#check'));
+    assert.ok(html.includes('class="card-detail-icon"'));
     assert.ok(html.includes('disabled'));
 });
 

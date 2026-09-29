@@ -3692,6 +3692,14 @@ html[data-design="sunset"] body.accessibility-high-contrast .dice-choice-die-mar
     padding: 0 7px;
 }
 
+.card-detail-icon,
+.card-built-icon { display: none; }
+.card-built-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
 .card-detail-btn:active {
     background: rgba(167,169,190,0.4);
 }
@@ -4853,6 +4861,33 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-detail-b
     color: #68717a;
     background: rgba(236, 225, 204, 0.72);
     border-color: #c9baa0;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-detail-emoji,
+html[data-design="sunset"] body.accessibility-high-contrast .card-detail-emoji,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-built-emoji,
+html[data-design="sunset"] body.accessibility-high-contrast .card-built-emoji { display: none; }
+html[data-design="sunset"] .card-detail-icon {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    flex: 0 0 14px;
+    vertical-align: -2px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-built-status {
+    color: #315d43;
+    font-size: 12px;
+    font-weight: 700;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .card-built-status {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+}
+html[data-design="sunset"] .card-built-icon {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-blue .card-top-strip { background: #c5def0; border-color: #638aa3; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-color-green .card-top-strip { background: #cedfbd; border-color: #758d5f; }

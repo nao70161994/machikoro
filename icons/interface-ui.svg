@@ -73,4 +73,12 @@
         <path d="M12 3.2 22 20.5H2z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/>
         <path d="M12 9v5.2M12 17.5v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/>
     </symbol>
+    <symbol id="info" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/>
+        <path d="M12 10.8v5.7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/>
+        <circle cx="12" cy="7.4" r="1" fill="currentColor"/>
+    </symbol>
+    <symbol id="check" viewBox="0 0 24 24">
+        <path d="m4.5 12.5 5 5 10-11" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"/>
+    </symbol>
 </svg>

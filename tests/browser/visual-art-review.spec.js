@@ -260,6 +260,11 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
     await expect(page.locator('#logSummary')).not.toContainText('👤');
     await expect(page.locator('#log')).not.toContainText('👤');
     await expect(page.locator('.player-box.active .player-landmarks .landmark-badge:not(.built)')).toHaveCount(0);
+    const detailIcon = page.locator('#buildMenu .card-detail-btn .card-detail-icon').first();
+    await expect(detailIcon).toBeVisible();
+    await expect(detailIcon.locator('use')).toHaveAttribute('href', 'icons/interface-ui.svg#info');
+    expect(await page.locator('#buildMenu .card-detail-btn .card-detail-emoji').first()
+        .evaluate(element => getComputedStyle(element).display)).toBe('none');
 
     for (const width of [320, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });
