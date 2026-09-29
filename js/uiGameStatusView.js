@@ -1,7 +1,7 @@
 'use strict';
 
-function buildTurnStatusText(current, designTheme = 'classic') {
-    if (designTheme === 'sunset') return `${current.name}のターン`;
+function buildTurnStatusText(current, designTheme = 'classic', isHumanTurn = false) {
+    if (designTheme === 'sunset') return isHumanTurn ? 'あなたのターン' : `${current.name}のターン`;
     return `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
 }
 
@@ -344,7 +344,7 @@ function buildActiveGameView(facts) {
         })).filter(change => change.diff !== 0)
         : [];
     return Object.freeze({
-        statusText: buildTurnStatusText(facts.current, facts.designTheme),
+        statusText: buildTurnStatusText(facts.current, facts.designTheme, facts.isHumanTurn),
         rollButton: buildRollButtonView(facts.canRoll),
         skipButton: buildSkipButtonView({
             canNextTurn: facts.canNextTurn,

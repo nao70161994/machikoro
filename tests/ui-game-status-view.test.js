@@ -9,6 +9,14 @@ runTest('UI game status viewは手番表示とroll/skip状態を純粋計算す�
         UiGameStatusView.buildTurnStatusText({ name: 'Alice', coins: 7 }),
         '👤 Aliceのターン　🪙 7コイン'
     );
+    assert.strictEqual(
+        UiGameStatusView.buildTurnStatusText({ name: 'Alice' }, 'sunset', true),
+        'あなたのターン'
+    );
+    assert.strictEqual(
+        UiGameStatusView.buildTurnStatusText({ name: 'CPU' }, 'sunset', false),
+        'CPUのターン'
+    );
     assert.deepStrictEqual(UiGameStatusView.buildRollButtonView(true), { disabled: false });
     assert.deepStrictEqual(UiGameStatusView.buildRollButtonView(false), { disabled: true });
     const built = UiGameStatusView.buildSkipButtonView({
@@ -332,6 +340,31 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
     });
     assert.strictEqual(view.statusText, '👤 Aliceのターン　🪙 7コイン');
     assert.strictEqual(UiGameStatusView.buildTurnStatusText(players[0], 'sunset'), 'Aliceのターン');
+    const sunsetSelfView = UiGameStatusView.buildActiveGameView({
+        current: players[0],
+        players,
+        designTheme: 'sunset',
+        isHumanTurn: true,
+        phase: 'roll',
+        rollPhase: 'roll',
+        currentPlayerIndex: 0,
+        previousPlayerIndex: 1,
+        currentTurnCount: 4,
+        previousTurnCount: 3,
+        previousPhase: 'build',
+        isReplaying: false,
+        currentName: 'Alice',
+        isCpuTurn: false,
+        canRoll: true,
+        canNextTurn: false,
+        pendingRenovation: 0,
+        builtThisTurn: false,
+        previousCoins,
+        lastDice1: 2,
+        lastDice2: 4,
+        lastDiceResult: 6,
+    });
+    assert.strictEqual(sunsetSelfView.statusText, 'あなたのターン');
     assert.deepStrictEqual(view.rollButton, { disabled: false });
     assert.deepStrictEqual(view.skipButton, {
         disabled: true,

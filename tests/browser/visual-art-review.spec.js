@@ -276,6 +276,7 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
         return { humanIndex, coins: game.currentPlayer().coins, turnCount: game.turnCount };
     });
     expect(starting.humanIndex).toBeGreaterThanOrEqual(0);
+    await expect(page.locator('#status')).toHaveText('あなたのターン');
 
     const wheat = page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]');
     await expect(wheat).toBeEnabled();

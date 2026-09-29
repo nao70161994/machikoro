@@ -519,6 +519,7 @@ function renderActiveGameState(current) {
     const view = UiGameStatusView.buildActiveGameView({
         current,
         designTheme: document.documentElement?.dataset?.design,
+        isHumanTurn: isCurrentHumanUiTurn(),
         players: currentGame.players,
         phase: currentGame.phase,
         phases: GAME_PHASES,
