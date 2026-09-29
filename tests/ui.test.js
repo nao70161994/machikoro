@@ -1531,7 +1531,7 @@ runTest('toggleLog wrapperはpure viewでicon・ARIA・classを同期する', ()
 
     assert.strictEqual(context.toggleLog(), true);
     assert.strictEqual(elements.log.classList.contains('collapsed'), true);
-    assert.strictEqual(elements.logSummary.classList.contains('collapsed'), true);
+    assert.strictEqual(elements.logSummary.classList.contains('collapsed'), false);
     assert.strictEqual(elements.logToggleIcon.textContent, '▶');
     assert.strictEqual(elements.logHeader.classList.contains('collapsed'), true);
     assert.strictEqual(elements.logHeader.getAttribute('aria-expanded'), 'false');

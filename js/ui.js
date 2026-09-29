@@ -1918,13 +1918,11 @@ function toggleLandmark(name) {
 
 function toggleLog() {
     const log = document.getElementById("log");
-    const summary = document.getElementById("logSummary");
     const icon = document.getElementById("logToggleIcon");
     const header = document.querySelector(".log-header");
     if (!log || !icon || !header || !log.classList || !header.classList) return false;
     const collapsed = log.classList.toggle("collapsed");
     const view = UiLogDisplay.buildLogToggleView(collapsed);
-    if (summary && summary.classList) summary.classList.toggle("collapsed", view.collapsed);
     icon.textContent = view.iconText;
     header.classList.toggle("collapsed", view.collapsed);
     if (typeof header.setAttribute === 'function') header.setAttribute('aria-expanded', view.ariaExpanded);

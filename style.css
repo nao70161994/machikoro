@@ -3499,10 +3499,6 @@ html[data-design="sunset"] .turn-announcer-kind-icon {
     display: none;
 }
 
-.log-summary.collapsed {
-    display: none;
-}
-
 .log-header.collapsed {
     border-radius: 8px;
 }

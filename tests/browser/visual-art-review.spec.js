@@ -854,6 +854,21 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         });
     }
 
+    await page.evaluate(() => toggleLog());
+    const compactLog = page.locator('#gameLogContainer');
+    await expect(compactLog.locator('#logSummary')).toBeVisible();
+    await expect(compactLog.locator('#log')).toBeHidden();
+    await expect(compactLog.locator('#logSummary')).not.toBeEmpty();
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const compactLogPath = testInfo.outputPath(`sunset-log-summary-${width}.png`);
+        await compactLog.screenshot({ path: compactLogPath, animations: 'disabled' });
+        await testInfo.attach(`sunset-log-summary-${width}.png`, {
+            path: compactLogPath,
+            contentType: 'image/png',
+        });
+    }
+
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         for (const name of game.enabledLandmarks) game.players[0].landmarks[name] = true;
