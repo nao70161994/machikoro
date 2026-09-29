@@ -313,6 +313,16 @@ test('夕暮れの建設Undoは専用の戻る図案を使い取り消し操作�
         .evaluate(element => getComputedStyle(element).display)).toBe('none');
 
     await undoButton.click();
+    const confirmation = page.locator('#confirmModal');
+    await expect(confirmation).toBeVisible();
+    await page.locator('#confirmCancelBtn').click();
+    await expect(confirmation).toBeHidden();
+    await expect(undoButton).toBeVisible();
+
+    await undoButton.click();
+    await expect(confirmation).toBeVisible();
+    await page.locator('#confirmOkBtn').click();
+    await expect(confirmation).toBeHidden();
     await expect(page.locator('#buildMenu .undo-btn')).toHaveCount(0);
 });
 
