@@ -668,7 +668,7 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     const gameRegions = await page.evaluate(() => {
         const rect = selector => {
             const bounds = document.querySelector(selector).getBoundingClientRect();
-            return { top: bounds.top, left: bounds.left, right: bounds.right };
+            return { top: bounds.top, left: bounds.left, right: bounds.right, bottom: bounds.bottom };
         };
         return {
             game: rect('#gameScreen'),
