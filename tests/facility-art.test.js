@@ -177,6 +177,13 @@ runTest('喫茶店とレストランは看板・屋根・窓構成で別の建�
     assert.ok(art('bistro').includes('M45 50H61M101 50H113M53 50V54M107 50V54'), 'bistro windows show a warmly lit dining room with tables');
     assert.ok(art('bistro').includes('M47 43Q44 43 46 46H48Q50 43 47 43Z'), 'bistro dining tables have visible wine glasses');
 });
+runTest('バーガーショップはロードサイド看板で近隣の飲食店とシルエットを分ける', () => {
+    const burger = sprite.match(/<symbol id="burger"[\s\S]*?<\/symbol>/)?.[0] || '';
+    assert.ok(burger.includes('M145 36V63M140 64H150'), 'freestanding sign rises beside the shop');
+    assert.ok(burger.includes('M138 14H152Q154 14 154 16V35H136V16Q136 14 138 14Z'), 'sign has a framed vertical silhouette');
+    assert.ok(burger.includes('M139 23Q140 18.5 145 18.5Q150 18.5 151 23Z'), 'sign carries a bun-shaped mark');
+    assert.ok(burger.includes('M139 24L141 25L143 24L145 25L147 24L149 25L151 24.5'), 'burger mark includes a lettuce edge');
+});
 runTest('青果市場は一般店舗と異なる開放型の果物スタンドとして読める', () => {
     const produce = sprite.match(/<symbol id="produce"[\s\S]*?<\/symbol>/)?.[0] || '';
     assert.ok(produce.includes('M34 34V64M126 34V64'), 'open stall is held up by exposed posts');
