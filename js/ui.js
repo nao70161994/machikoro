@@ -795,7 +795,8 @@ function pendingInspectHintHtml() {
 }
 
 function buildPendingTvHtml(game) {
-    return UiPendingMenu.buildPendingTvHtml(game, escapeHtml);
+    return UiPendingMenu.buildPendingTvHtml(game, escapeHtml, undefined, undefined,
+        document.documentElement?.dataset?.design === 'sunset');
 }
 
 function buildBusinessCardChipHtml(player, card, index, inputId, isSelected) {
@@ -815,23 +816,28 @@ function buildBusinessTargetExchangeHtml(player, playerIndex) {
 }
 
 function buildPendingBusinessHtml(game) {
-    return UiPendingMenu.buildPendingBusinessHtml(game, escapeHtml);
+    return UiPendingMenu.buildPendingBusinessHtml(game, escapeHtml, undefined, undefined,
+        document.documentElement?.dataset?.design === 'sunset');
 }
 
 function buildPendingCleaningHtml(game) {
-    return UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml);
+    return UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml, undefined, undefined,
+        document.documentElement?.dataset?.design === 'sunset');
 }
 
 function buildPendingMoverHtml(game) {
-    return UiPendingMenu.buildPendingMoverHtml(game, escapeHtml);
+    return UiPendingMenu.buildPendingMoverHtml(game, escapeHtml, undefined, undefined,
+        document.documentElement?.dataset?.design === 'sunset');
 }
 
 function buildPendingRenovationHtml(game) {
-    return UiPendingMenu.buildPendingRenovationHtml(game, escapeHtml, LANDMARK_NAMES);
+    return UiPendingMenu.buildPendingRenovationHtml(game, escapeHtml, LANDMARK_NAMES, undefined,
+        document.documentElement?.dataset?.design === 'sunset');
 }
 
 function buildPendingItHtml(game) {
-    return UiPendingMenu.buildPendingItHtml(game);
+    return UiPendingMenu.buildPendingItHtml(game, undefined, undefined, undefined,
+        document.documentElement?.dataset?.design === 'sunset');
 }
 
 function pendingMenuRendererSpecs() {
@@ -849,6 +855,7 @@ function buildPendingMenuHtml(game, allowedActions, nextPending) {
         businessSelections: businessSelectionController.selections(game),
         escapeHtml,
         landmarkNames: LANDMARK_NAMES,
+        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
     });
 }
 

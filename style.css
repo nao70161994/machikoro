@@ -2814,6 +2814,45 @@ html[data-design="sunset"] body.accessibility-high-contrast .dice-choice-facilit
     border-color: #000;
     filter: none;
 }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-modal-inner {
+    background: linear-gradient(155deg, #21394a 0%, #182a3c 100%);
+    border-color: #d1a64e;
+    box-shadow: 0 0 36px rgba(205, 160, 74, 0.16), 0 12px 40px rgba(0, 0, 0, 0.65);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-heading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #f4ce7b;
+}
+html[data-design="sunset"] .pending-facility-mark {
+    width: 40px;
+    height: 20px;
+    flex: 0 0 40px;
+    padding: 2px;
+    box-sizing: content-box;
+    border: 1px solid #bd8b42;
+    border-radius: 6px;
+    background: #f4e8c9;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box > p:not(.pending-heading):not(.pending-inspect-hint) {
+    color: #e0e6e4;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box button,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box select {
+    color: #fff2d7;
+    background: #29465a;
+    border-color: #6e8490;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box button:not(:disabled):hover {
+    background: #35566a;
+    border-color: #e1bd72;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .pending-facility-mark {
+    background: #fff;
+    border-color: #000;
+}
 html[data-design="sunset"] .dice-choose button {
     display: inline-flex;
     align-items: center;

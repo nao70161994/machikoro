@@ -1784,6 +1784,27 @@ runTest('buildPendingMenuHtml は pending 種別ごとのHTML生成と先頭pend
     assert.ok(!moverOnlyHtml.includes('data-action="resolveCleaning"'));
     assert.ok(!moverOnlyHtml.includes('data-action="resolveRenovation"'));
     assert.ok(!moverOnlyHtml.includes('data-action="resolveIT"'));
+
+    context.document.documentElement = { dataset: { design: 'sunset' } };
+    context.game.pendingTV = 1;
+    context.game.pendingBusiness = 1;
+    const sunsetPendingHtml = context.buildPendingMenuHtml(context.game, new Set([
+        'resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT',
+    ]), null);
+    assert.strictEqual((sunsetPendingHtml.match(/class="pending-facility-mark"/g) || []).length, 6);
+    assert.ok(sunsetPendingHtml.includes('facility-art.svg#tv-station'));
+    assert.ok(sunsetPendingHtml.includes('facility-art.svg#business-center'));
+    assert.ok(sunsetPendingHtml.includes('facility-art.svg#cleaning'));
+    assert.ok(sunsetPendingHtml.includes('facility-art.svg#mover'));
+    assert.ok(sunsetPendingHtml.includes('facility-art.svg#remodel'));
+    assert.ok(sunsetPendingHtml.includes('facility-art.svg#startup'));
+    assert.ok(!/[📺🏢🧹🚚🔨💻]/u.test(sunsetPendingHtml));
+
+    context.document.documentElement = { dataset: { design: 'classic' } };
+    const classicPendingHtml = context.buildPendingMenuHtml(context.game, new Set([
+        'resolveTV', 'resolveBusiness', 'resolveCleaning', 'resolveMover', 'resolveRenovation', 'resolveIT',
+    ]), null);
+    assert.ok(/[📺🏢🧹🚚🔨💻]/u.test(classicPendingHtml));
 });
 
 runTest('renderPending はテレビ局選択中に盤面確認ヒントを表示する', () => {

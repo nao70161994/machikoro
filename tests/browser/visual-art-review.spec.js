@@ -178,6 +178,53 @@ test('夕暮れの駅選択は専用施設アートとダイス記号で表示�
     }
 });
 
+test('夕暮れの施設効果パネルは施設アートと統一色で表示する', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        const fixture = document.createElement('div');
+        fixture.id = 'visualPendingModal';
+        fixture.className = 'pending-modal';
+        fixture.style.display = 'flex';
+        const inner = document.createElement('div');
+        inner.className = 'pending-modal-inner';
+        const menu = document.createElement('div');
+        menu.innerHTML = UiPendingMenu.buildPendingTvHtml({
+            currentPlayerIndex: 0,
+            players: [{ name: 'プレイヤー1', coins: 3 }, { name: 'プレイヤー2', coins: 8 }],
+        }, value => String(value), undefined, undefined, true);
+        inner.appendChild(menu);
+        fixture.appendChild(inner);
+        document.body.appendChild(fixture);
+    });
+
+    const modal = page.locator('#visualPendingModal');
+    await expect(modal.locator('.pending-facility-mark use')).toHaveAttribute('href', 'icons/facility-art.svg#tv-station');
+    await expect(modal).not.toContainText('📺');
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const bounds = await modal.locator('.pending-modal-inner').evaluate(element => {
+            const rect = element.getBoundingClientRect();
+            return {
+                left: rect.left,
+                right: rect.right,
+                scrollWidth: element.scrollWidth,
+                clientWidth: element.clientWidth,
+                borderColor: getComputedStyle(element).borderTopColor,
+            };
+        });
+        expect(bounds.left).toBeGreaterThanOrEqual(-1);
+        expect(bounds.right).toBeLessThanOrEqual(width + 1);
+        expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.clientWidth + 1);
+        expect(bounds.borderColor).toBe('rgb(209, 166, 78)');
+        const screenshotPath = testInfo.outputPath(`sunset-tv-pending-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-tv-pending-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+});
+
 test('デスクトップでは街の建物アートを広く見せる', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await prepareSunset(page);
