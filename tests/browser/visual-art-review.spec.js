@@ -51,7 +51,7 @@ test('夕暮れのルール説明は専用UI記号とランドマークアート
     await expect(selectionModal.locator('#cardSelectModalTitle use')).toHaveAttribute(
         'href', 'icons/interface-ui.svg#cards'
     );
-    expect(await selectionModal.locator('.modal-heading-emoji').evaluate(element =>
+    expect(await selectionModal.locator('#cardSelectModalTitle .modal-heading-emoji').evaluate(element =>
         getComputedStyle(element).display
     )).toBe('none');
 
