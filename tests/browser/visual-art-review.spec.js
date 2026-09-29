@@ -369,6 +369,44 @@ test('夕暮れのコイン獲得表示はカードと共通のSVGコインを�
     await expect(coinGain).not.toContainText('🪙');
 });
 
+test('夕暮れのプレイヤー状態は積立とローンも共通SVGで表示する', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        const player = {
+            name: '街の開発者', coins: 12, itVentureCoins: 3,
+            landmarks: {}, cards: [{ name: '貸金業', effect: 'loan', color: 'green' }],
+            isDormant() { return false; },
+        };
+        const html = UiPlayerDisplay.buildPlayerHtml(player, 0, {
+            settings: [{ type: 'human' }], currentPlayerIndex: 0,
+            enabledLandmarks: new Set(), loanEffect: 'loan', useSunsetIcons: true,
+            getCoinMark: UiBuildMenu.renderCoinMark,
+            renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
+            compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
+            escapeHtml: value => String(value).replace(/[&<>"']/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+            })[character]),
+        });
+        document.querySelector('#players').insertAdjacentHTML('beforeend', html);
+    });
+    const panel = page.locator('#players .player-box').last();
+    await expect(panel.locator('.it-badge')).toHaveAttribute('aria-label', 'ITベンチャー積立 3コイン');
+    await expect(panel.locator('.it-badge use')).toHaveAttribute('href', 'icons/interface-ui.svg#startup');
+    await expect(panel.locator('.loan-badge')).toHaveAttribute('aria-label', '貸金業ローン 1枚');
+    await expect(panel.locator('.loan-badge use')).toHaveAttribute('href', 'icons/interface-ui.svg#loan');
+    await expect(panel).not.toContainText('💻');
+    await expect(panel).not.toContainText('💳');
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const screenshotPath = testInfo.outputPath(`sunset-player-status-icons-${width}.png`);
+        await panel.screenshot({ path: screenshotPath, animations: 'disabled' });
+        await testInfo.attach(`sunset-player-status-icons-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+});
+
 test('夕暮れの施設効果パネルは施設アートと統一色で表示する', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);

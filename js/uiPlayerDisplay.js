@@ -129,9 +129,16 @@ const UiPlayerDisplay = (() => {
                 return `<button type="button" class="card-badge" style="border-left:2px solid ${colorDot[info.color]}" data-action="showCardDetail" data-card-name="${safeName}">${safeName}×${info.count}${dormantText}</button>`;
             })
             .join('');
-        const itCoins = player.itVentureCoins > 0 ? `<span class="it-badge">💻${player.itVentureCoins}</span>` : '';
+        const renderStatusIcon = (name, fallback) => options.useSunsetIcons
+            ? `<svg class="player-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#${name}"></use></svg>`
+            : fallback;
+        const itCoins = player.itVentureCoins > 0
+            ? `<span class="it-badge" aria-label="ITベンチャー積立 ${player.itVentureCoins}コイン">${renderStatusIcon('startup', '💻')}${player.itVentureCoins}</span>`
+            : '';
         const loanCount = player.cards.filter(card => card.effect === options.loanEffect).length;
-        const loanBadge = loanCount > 0 ? `<span class="loan-badge">💳×${loanCount}</span>` : '';
+        const loanBadge = loanCount > 0
+            ? `<span class="loan-badge" aria-label="貸金業ローン ${loanCount}枚">${renderStatusIcon('loan', '💳')}×${loanCount}</span>`
+            : '';
         const hasCustomCoinMark = typeof options.getCoinMark === 'function';
         const coinMark = hasCustomCoinMark ? options.getCoinMark() : '🪙';
         const coinAccessibleLabel = hasCustomCoinMark ? '<span class="screen-reader-only">コイン</span>' : '';

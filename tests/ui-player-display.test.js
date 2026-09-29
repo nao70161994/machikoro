@@ -159,8 +159,8 @@ assert(html.includes('<span class="landmark-badge built" aria-label="駅、建�
 assert(!html.includes('未建設'));
 assert(!html.includes('空港'));
 assert(html.includes('パン屋×2（休2）'));
-assert(html.includes('<span class="it-badge">💻2</span>'));
-assert(html.includes('<span class="loan-badge">💳×1</span>'));
+assert(html.includes('<span class="it-badge" aria-label="ITベンチャー積立 2コイン">💻2</span>'));
+assert(html.includes('<span class="loan-badge" aria-label="貸金業ローン 1枚">💳×1</span>'));
 assert(html.includes('<div id="playerBox0" class="player-box " role="listitem" aria-label="&lt;Alice&gt;、待機中、人間">'));
 assert(html.includes('<div id="playerBox1" class="player-box active" role="listitem" aria-label="CPU、現在の手番、CPU（強）">'));
 assert(html.includes('<span class="player-icon">🤖強</span>'));
@@ -173,6 +173,7 @@ const sunsetPlayer = UiPlayerDisplay.buildPlayerHtml(players[0], 0, {
     getLandmarkEmoji: () => '🚉',
     getLandmarkBadgeIcon: () => '<svg class="landmark-badge-icon" aria-hidden="true"></svg>',
     getCoinMark: () => '<svg class="card-coin-mark" aria-hidden="true"></svg>',
+    useSunsetIcons: true,
     renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
     compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
     escapeHtml: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
@@ -180,6 +181,9 @@ const sunsetPlayer = UiPlayerDisplay.buildPlayerHtml(players[0], 0, {
 });
 assert(sunsetPlayer.includes('<svg class="player-kind-icon"'));
 assert(sunsetPlayer.includes('<svg class="card-coin-mark" aria-hidden="true"></svg> 7<span class="screen-reader-only">コイン</span>'));
+assert(sunsetPlayer.includes('<span class="it-badge" aria-label="ITベンチャー積立 2コイン"><svg class="player-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#startup"></use></svg>2</span>'));
+assert(sunsetPlayer.includes('<span class="loan-badge" aria-label="貸金業ローン 1枚"><svg class="player-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#loan"></use></svg>×1</span>'));
+assert(!sunsetPlayer.includes('💻') && !sunsetPlayer.includes('💳'));
 assert(!sunsetPlayer.includes('👤') && !sunsetPlayer.includes('🪙'));
 
 const escapedLandmark = UiPlayerDisplay.buildLandmarkBadgeHtml('<駅">', false, {

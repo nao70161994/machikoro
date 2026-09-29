@@ -2798,6 +2798,13 @@ html:not([data-design="sunset"]) .card-btn:disabled .card-effect {
     margin-left: 4px;
 }
 
+.player-status-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 2px;
+    vertical-align: -3px;
+}
+
 /* ===== ダイス選択 ===== */
 .dice-choose {
     background: #1a1a2e;

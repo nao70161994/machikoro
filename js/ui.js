@@ -929,6 +929,7 @@ function renderPlayers() {
         getCoinMark: document.documentElement?.dataset?.design === 'sunset'
             ? UiBuildMenu.renderCoinMark
             : null,
+        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
         renderPlayerKindIcon: document.documentElement?.dataset?.design === 'sunset'
             ? UiPlayerDisplay.renderPlayerKindIcon
             : null,
