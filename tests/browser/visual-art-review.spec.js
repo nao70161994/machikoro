@@ -395,9 +395,13 @@ test('夕暮れのプレイヤー状態は積立とローンも共通SVGで表�
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
             })[character]),
         });
-        document.querySelector('#players').insertAdjacentHTML('beforeend', html);
+        const preview = document.createElement('div');
+        preview.id = 'player-status-icon-review';
+        preview.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:2147483646;width:min(420px,calc(100vw - 24px));pointer-events:none';
+        preview.innerHTML = html;
+        document.body.appendChild(preview);
     });
-    const panel = page.locator('#players .player-box').last();
+    const panel = page.locator('#player-status-icon-review .player-box');
     await expect(panel.locator('.it-badge')).toHaveAttribute('aria-label', 'ITベンチャー積立 3コイン');
     await expect(panel.locator('.it-badge use')).toHaveAttribute('href', 'icons/interface-ui.svg#startup');
     await expect(panel.locator('.loan-badge')).toHaveAttribute('aria-label', '貸金業ローン 1枚');
