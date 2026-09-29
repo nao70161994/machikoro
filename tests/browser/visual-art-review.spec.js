@@ -583,6 +583,66 @@ test('夕暮れの施設効果パネルは施設アートと統一色で表示�
         await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
         await testInfo.attach(`sunset-tv-pending-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
     }
+
+    await modal.locator('.pending-modal-inner > div').evaluate(element => {
+        element.innerHTML = UiPendingMenu.buildPendingBusinessHtml({
+            currentPlayerIndex: 0,
+            players: [
+                {
+                    name: 'プレイヤー1',
+                    cards: [{ name: '麦畑' }, { name: 'パン屋' }],
+                    getMinorCards() { return this.cards; },
+                    isDormant(card) { return card.name === 'パン屋'; },
+                },
+                {
+                    name: 'プレイヤー2',
+                    cards: [{ name: '牧場' }],
+                    getMinorCards() { return this.cards; },
+                    isDormant() { return false; },
+                },
+            ],
+            currentPlayer() { return this.players[this.currentPlayerIndex]; },
+        }, value => String(value), undefined, undefined, true);
+    });
+    await expect(modal.locator('.bc-chip-dormant-icon use')).toHaveAttribute(
+        'href', 'icons/interface-ui.svg#sleep'
+    );
+    await expect(modal).not.toContainText('💤');
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const chip = modal.locator('.bc-chip-dormant-icon');
+        await expect(chip).toBeVisible();
+        const box = await chip.boundingBox();
+        expect(box.width).toBeGreaterThanOrEqual(14);
+        expect(box.width).toBeLessThanOrEqual(16);
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+        const screenshotPath = testInfo.outputPath(`sunset-business-pending-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-business-pending-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
+
+    await modal.locator('.pending-modal-inner > div').evaluate(element => {
+        element.innerHTML = UiPendingMenu.buildPendingItHtml({
+            currentPlayer() { return { coins: 3, itVentureCoins: 2 }; },
+        }, undefined, undefined, undefined, true);
+    });
+    await expect(modal.locator('.pending-coin-mark use')).toHaveAttribute(
+        'href', 'icons/interface-ui.svg#coin'
+    );
+    await expect(modal).not.toContainText('🪙');
+    for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const coin = modal.locator('.pending-coin-mark');
+        const box = await coin.boundingBox();
+        expect(box.width).toBeGreaterThanOrEqual(15);
+        expect(box.width).toBeLessThanOrEqual(17);
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+        const screenshotPath = testInfo.outputPath(`sunset-it-pending-${width}.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`sunset-it-pending-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
+    }
 });
 
 test('デスクトップでは街の建物アートを広く見せる', async ({ page }, testInfo) => {
