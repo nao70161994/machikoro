@@ -6,7 +6,17 @@ async function prepareSunset(page) {
     await page.locator('#designSwitcher > summary').click();
     await page.locator('#designThemeSelect').selectOption('sunset');
     await expect(page.locator('#designThemeCurrentLabel')).toHaveText('夕暮れの街');
+    await page.locator('#designSwitcher > summary').click();
     await expect(page.locator('.title-brand-mark')).toBeVisible();
+}
+
+async function selectDesignTheme(page, design) {
+    const switcher = page.locator('#designSwitcher');
+    if (!await switcher.evaluate(element => element.open)) {
+        await switcher.locator('summary').click();
+    }
+    await page.locator('#designThemeSelect').selectOption(design);
+    await switcher.locator('summary').click();
 }
 
 async function showInterfaceIconReview(page) {
@@ -70,7 +80,7 @@ test('夕暮れの市場・統計・勝利画面は共通SVG記号を使いク�
     }
 
     await review.evaluate(element => element.remove());
-    await page.locator('#designThemeSelect').selectOption('classic');
+    await selectDesignTheme(page, 'classic');
     await showInterfaceIconReview(page);
     const classicReview = page.locator('#interface-icon-review');
     expect(await classicReview.locator('.market-status-icon').evaluate(element => getComputedStyle(element).display)).toBe('none');
@@ -190,7 +200,7 @@ test('夕暮れの復旧・端末受け渡しUIは共通SVG警告と端末記号
     expect(await handoff.locator('.hotseat-handoff-svg').evaluate(element => getComputedStyle(element).color)).toBe('rgb(255, 255, 255)');
     await handoff.evaluate(element => { element.style.display = 'none'; });
     await page.locator('#designSwitcher > summary').click();
-    await page.locator('#designThemeSelect').selectOption('classic');
+    await selectDesignTheme(page, 'classic');
     await page.evaluate(() => { document.getElementById('crashScreen').style.display = 'flex'; });
     expect(await crash.locator('.crash-icon-svg').evaluate(element => getComputedStyle(element).display)).toBe('none');
     expect(await crash.locator('.crash-icon-emoji').evaluate(element => getComputedStyle(element).display)).not.toBe('none');
@@ -268,7 +278,7 @@ test('夕暮れのルール説明は専用UI記号とランドマークアート
     }
 
     await page.evaluate(() => closeCardSelect());
-    await page.locator('#designThemeSelect').selectOption('classic');
+    await selectDesignTheme(page, 'classic');
     await page.evaluate(() => showRules());
     const classicRules = page.locator('#rulesModal');
     await expect(classicRules).toBeVisible();
@@ -605,7 +615,7 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
             const screenshotPath = testInfo.outputPath('sunset-card-hierarchy-390.png');
             const firstCard = page.locator('#buildMenu .card-wrapper').first();
             await firstCard.scrollIntoViewIfNeeded();
-            await firstCard.screenshot({ path: screenshotPath, animations: 'disabled' });
+            await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
             await testInfo.attach('sunset-card-hierarchy-390.png', { path: screenshotPath, contentType: 'image/png' });
         }
     }
