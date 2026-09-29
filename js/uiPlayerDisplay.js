@@ -101,7 +101,10 @@ const UiPlayerDisplay = (() => {
 
     function buildPlayerHtml(player, index, options = {}) {
         const isActive = index === options.currentPlayerIndex;
-        const compact = options.compactInactive === true && !isActive && index !== options.myPlayerIndex;
+        const isSelf = Number.isInteger(options.myPlayerIndex) && options.myPlayerIndex >= 0 &&
+            index === options.myPlayerIndex;
+        const compact = options.compactInactive === true && !isSelf &&
+            (!isActive || options.compactCurrentPlayer === true);
         const setting = options.settings[index];
         const cpuLabel = setting.type === 'cpu' ? `🤖${difficultyLabel(setting.difficulty)}` : '👤';
         const playerIcon = typeof options.renderPlayerKindIcon === 'function'
@@ -142,13 +145,15 @@ const UiPlayerDisplay = (() => {
         const hasCustomCoinMark = typeof options.getCoinMark === 'function';
         const coinMark = hasCustomCoinMark ? options.getCoinMark() : '🪙';
         const coinAccessibleLabel = hasCustomCoinMark ? '<span class="screen-reader-only">コイン</span>' : '';
-        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span></div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>`;
+        const selfBadge = isSelf ? '<span class="player-self-badge">あなた</span>' : '';
+        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>`;
         const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player) : '';
         const detail = `<div class="player-detail">${town}<div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
+        const playerClasses = `player-box${isActive ? ' active' : ''}${isSelf ? ' player-box-self' : ''}`;
         if (compact) {
-            return `<details id="${playerBoxId(index)}" class="player-box player-box-compact" role="listitem" aria-label="${playerSummary}"><summary>${header}<span class="player-detail-hint">詳細を表示</span></summary>${detail}</details>`;
+            return `<details id="${playerBoxId(index)}" class="${playerClasses} player-box-compact" role="listitem" aria-label="${playerSummary}"><summary>${header}<span class="player-detail-hint">詳細を表示</span></summary>${detail}</details>`;
         }
-        return `<div id="${playerBoxId(index)}" class="player-box ${isActive ? 'active' : ''}" role="listitem" aria-label="${playerSummary}">${header}${detail}</div>`;
+        return `<div id="${playerBoxId(index)}" class="${playerClasses}" role="listitem" aria-label="${playerSummary}">${header}${detail}</div>`;
     }
 
     function buildPlayersHtml(players, options = {}) {

@@ -200,6 +200,34 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
 });
 
+test('CPUの手番でもスマートフォンでは自分の街を先頭に開いて見せる', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const seats = await page.evaluate(() => {
+        cancelCpuSchedule('self-town-priority-review');
+        const state = GameRuntimeState.runtime.snapshot();
+        const selfIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+        const cpuIndex = state.cpuPlayers.findIndex(Boolean);
+        state.game.currentPlayerIndex = cpuIndex;
+        render();
+        return { selfIndex, cpuIndex };
+    });
+    expect(seats.selfIndex).toBeGreaterThanOrEqual(0);
+    expect(seats.cpuIndex).toBeGreaterThanOrEqual(0);
+    await expect(page.locator('#players > .player-box-self'))
+        .toHaveAttribute('id', `playerBox${seats.selfIndex}`);
+    await expect(page.locator(`#playerBox${seats.selfIndex}`)).toHaveJSProperty('tagName', 'DIV');
+    await expect.poll(() => page.locator(`#playerBox${seats.selfIndex}`).evaluate(element =>
+        getComputedStyle(element).order
+    )).toBe('-1');
+    await expect(page.locator(`#playerBox${seats.selfIndex} .player-self-badge`)).toHaveText('あなた');
+    await expect(page.locator(`#playerBox${seats.selfIndex} .sunset-town`)).toBeVisible();
+    await expect(page.locator(`#playerBox${seats.cpuIndex}`)).toHaveClass(/player-box-compact/);
+    await expect(page.locator(`#playerBox${seats.cpuIndex}`)).toHaveClass(/active/);
+});
+
 test('必要なら詳細設定を開いて人数を変え、その設定で開始できる', async ({ page }) => {
     await prepareSunset(page);
     const customSetup = page.locator('#customGameSetup');

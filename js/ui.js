@@ -914,6 +914,11 @@ function renderPlayers() {
     const currentGame = uiGameRuntimeSnapshot().game;
     const onlineState = uiOnlineRuntimeSnapshot();
     const settings = currentGame.players.map((player, index) => getPlayerSettingForRender(index, player));
+    const onlineMyPlayerIndex = onlineState.isOnlineGame ? onlineState.myPlayerIndex : -1;
+    const localCpuGame = !onlineState.isOnlineGame && settings.some(setting => setting.type === 'cpu');
+    const primaryPlayerIndex = onlineState.isOnlineGame
+        ? onlineMyPlayerIndex
+        : (localCpuGame ? settings.findIndex(setting => setting.type === 'human') : currentGame.currentPlayerIndex);
     const html = UiPlayerDisplay.buildPlayersHtml(currentGame.players, {
         buildTownHtml: player => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection()),
         settings,
@@ -921,9 +926,10 @@ function renderPlayers() {
         compactInactive: currentGame.players.length >= 5 ||
             (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
                 window.matchMedia('(max-width: 480px)').matches),
-        myPlayerIndex: onlineState.isOnlineGame
-            ? onlineState.myPlayerIndex
-            : -1,
+        myPlayerIndex: primaryPlayerIndex,
+        compactCurrentPlayer: primaryPlayerIndex >= 0 &&
+            currentGame.currentPlayerIndex !== primaryPlayerIndex &&
+            settings[currentGame.currentPlayerIndex]?.type === 'cpu',
         enabledLandmarks: getEnabledLandmarkSelection(),
         getLandmarkEmoji,
         getCoinMark: document.documentElement?.dataset?.design === 'sunset'
@@ -943,7 +949,7 @@ function renderPlayers() {
     const navigation = document.getElementById('playerNavigation');
     const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(currentGame.players, {
         currentPlayerIndex: currentGame.currentPlayerIndex,
-        myPlayerIndex: onlineState.isOnlineGame ? onlineState.myPlayerIndex : -1,
+        myPlayerIndex: onlineMyPlayerIndex,
         useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
         escapeHtml,
     });

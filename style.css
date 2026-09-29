@@ -2284,6 +2284,18 @@ html[data-design="sunset"] .player-navigation-icon {
     border-color: #8f7fd9;
 }
 
+html[data-design="sunset"] .player-self-badge {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    border: 1px solid rgba(248, 207, 128, 0.58);
+    border-radius: 999px;
+    background: rgba(248, 207, 128, 0.12);
+    color: #ffdfa0;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
 .player-navigation-link:focus-visible {
     outline: 3px solid #f4c542;
     outline-offset: 2px;
@@ -5431,6 +5443,11 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
     html[data-design="sunset"] #turnTimeline { grid-area: timeline; }
     html[data-design="sunset"] #tutorialBox { grid-area: tutorial; }
     html[data-design="sunset"] .player-area { grid-area: players; min-width: 0; }
+    html[data-design="sunset"] #players .player-box-self {
+        order: -1;
+        border-color: rgba(248, 207, 128, 0.82);
+        box-shadow: inset 3px 0 0 rgba(248, 207, 128, 0.84);
+    }
     html[data-design="sunset"] .game-action-panel { grid-area: actions; }
     html[data-design="sunset"] #buildMenu { grid-area: build; }
     html[data-design="sunset"] #gameLogContainer { grid-area: log; }

@@ -161,7 +161,7 @@ assert(!html.includes('空港'));
 assert(html.includes('パン屋×2（休2）'));
 assert(html.includes('<span class="it-badge" aria-label="ITベンチャー積立 2コイン">💻2</span>'));
 assert(html.includes('<span class="loan-badge" aria-label="貸金業ローン 1枚">💳×1</span>'));
-assert(html.includes('<div id="playerBox0" class="player-box " role="listitem" aria-label="&lt;Alice&gt;、待機中、人間">'));
+assert(html.includes('<div id="playerBox0" class="player-box" role="listitem" aria-label="&lt;Alice&gt;、待機中、人間">'));
 assert(html.includes('<div id="playerBox1" class="player-box active" role="listitem" aria-label="CPU、現在の手番、CPU（強）">'));
 assert(html.includes('<span class="player-icon">🤖強</span>'));
 assert(html.includes('<span class="player-name">▶ CPU</span>'));
@@ -247,6 +247,26 @@ assert(tenPlayerHtml.includes('aria-label="プレイヤー4、待機中、CPU（
 assert(tenPlayerHtml.includes('aria-label="プレイヤー5、現在の手番、CPU（最強）"'));
 assert(tenPlayerHtml.includes('aria-label="プレイヤー6、待機中、AI（深層学習・ランダム）"'));
 assert(!tenPlayerHtml.includes('<悪意'));
+assert(tenPlayerHtml.includes('class="player-box player-box-self"'));
+assert(tenPlayerHtml.includes('<span class="player-self-badge">あなた</span>'));
+
+const compactCpuTurnHtml = UiPlayerDisplay.buildPlayersHtml(tenPlayers.slice(0, 2), {
+    settings: [
+        { type: 'human', difficulty: 'human' },
+        { type: 'cpu', difficulty: 'normal' },
+    ],
+    currentPlayerIndex: 1,
+    compactInactive: true,
+    compactCurrentPlayer: true,
+    myPlayerIndex: 0,
+    enabledLandmarks: new Set(),
+    getLandmarkEmoji: () => '',
+    compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
+    escapeHtml: value => String(value),
+    loanEffect: 'loan',
+});
+assert(compactCpuTurnHtml.includes('id="playerBox0" class="player-box player-box-self"'));
+assert(compactCpuTurnHtml.includes('id="playerBox1" class="player-box active player-box-compact"'));
 
 const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(tenPlayers, {
     currentPlayerIndex: 4,
