@@ -856,7 +856,10 @@ html[data-design="sunset"] .design-switcher select option {
 }
 
 .setup-action-footer { width: 100%; }
-.setup-action-footer .setup-primary-cta { width: 100%; }
+.setup-action-footer .setup-primary-cta {
+    width: 100%;
+    min-height: var(--touch-target-standard);
+}
 
 @media (max-width: 480px) {
     .setup-action-footer {

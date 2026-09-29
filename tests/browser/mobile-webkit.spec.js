@@ -239,6 +239,7 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
                 viewportWidth: document.documentElement.clientWidth,
                 viewportHeight: window.innerHeight,
                 position: getComputedStyle(footer).position,
+                buttonHeight: element.getBoundingClientRect().height,
                 buttonContained: element.getBoundingClientRect().bottom <= bounds.bottom &&
                     element.getBoundingClientRect().top >= bounds.top,
             };
@@ -247,6 +248,7 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
         // so the fixed PWA banner cannot cover it.
         expect(layout.position).toBe('fixed');
         expect(layout.buttonContained).toBe(true);
+        expect(layout.buttonHeight).toBeGreaterThanOrEqual(44);
         expect(layout.ctaLeft).toBeGreaterThanOrEqual(0);
         expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewportWidth);
         expect(layout.ctaBottom).toBeLessThanOrEqual(layout.viewportHeight);
@@ -593,7 +595,7 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
     await page.locator('#designThemeSelect').selectOption('sunset');
     await page.locator('#customGameSetup > summary').click();
     await page.locator('#cpuSpeed').evaluate(input => {
-        input.value = input.max;
+        input.value = input.min;
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
     });
@@ -605,6 +607,9 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
     }
     await startLocalGame(page);
     await expect(page.locator('#gameScreen')).toBeVisible();
+    // Local games randomize seating. Wait for the human seat before testing
+    // panel disclosure so the nine CPU turns do not replace the clicked DOM.
+    await expect(page.locator('#btnRoll')).toBeEnabled({ timeout: 40000 });
     await expect(page.locator('#playerNavigation .player-navigation-link.destination svg'))
         .toHaveCount(2);
     let expandedPanelId = null;
