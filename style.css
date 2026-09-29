@@ -5511,6 +5511,30 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
     html[data-design="sunset"] #gameConnectivityPanel { grid-area: connect; }
     html[data-design="sunset"] #turnTimeline { grid-area: timeline; }
     html[data-design="sunset"] #tutorialBox { grid-area: tutorial; }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .turn-timeline {
+        margin: 0 2px;
+        padding: 0 2px;
+        border: 0;
+        background: transparent;
+    }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .turn-timeline-list { gap: 4px; }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .turn-timeline-step {
+        padding: 4px 2px 3px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        background: transparent;
+    }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .turn-timeline-step.is-complete {
+        border-bottom-color: #658e73;
+        background: transparent;
+        color: #c4d6c6;
+    }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .turn-timeline-step.is-current {
+        border-bottom-color: #efc56d;
+        background: transparent;
+        color: #ffe1a6;
+    }
     html[data-design="sunset"] .player-area { grid-area: players; min-width: 0; }
     html[data-design="sunset"] #players .player-box-self {
         order: -1;
