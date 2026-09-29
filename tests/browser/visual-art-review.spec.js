@@ -145,9 +145,11 @@ test('夕暮れの駅選択は専用施設アートとダイス記号で表示�
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
-    const diceChoice = page.locator('#diceChoose');
+    const diceChoice = page.locator('#visualDiceChoice');
     await page.evaluate(() => {
-        const container = document.getElementById('diceChoose');
+        const container = document.createElement('div');
+        container.id = 'visualDiceChoice';
+        container.style.cssText = 'position:fixed;top:35%;left:50%;transform:translateX(-50%);width:min(480px,calc(100vw - 20px));z-index:99999;';
         container.innerHTML = UiDiceChoice.buildHtml({
             phase: GAME_PHASES.SELECT_DICE,
             lastDiceResult: 0,
@@ -156,7 +158,7 @@ test('夕暮れの駅選択は専用施設アートとダイス記号で表示�
             phases: GAME_PHASES,
             useSunsetIcons: true,
         });
-        container.style.display = 'block';
+        document.body.appendChild(container);
     });
     await expect(diceChoice).toContainText('駅：何個振りますか？');
     await expect(diceChoice.locator('.dice-choice-facility-mark use')).toHaveAttribute('href', 'icons/facility-art.svg#station');
