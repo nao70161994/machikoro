@@ -133,6 +133,22 @@ runTest('ui pending menu はbusiness/renovation/ITの既存selectorを維持す�
     assert.ok(html.includes('パン屋 💤'));
 });
 
+runTest('ui pending menu は夕暮れテーマのコイン・休業表示を専用SVGに揃える', () => {
+    const game = makeGame();
+    const tvHtml = UiPendingMenu.buildPendingTvHtml(game, escapeHtml, {}, {}, true);
+    const businessHtml = UiPendingMenu.buildPendingBusinessHtml(game, escapeHtml, {}, {}, true);
+    const itHtml = UiPendingMenu.buildPendingItHtml(game, escapeHtml, {}, {}, true);
+
+    assert.ok(tvHtml.includes('icons/interface-ui.svg#coin'));
+    assert.ok(itHtml.includes('icons/interface-ui.svg#coin'));
+    assert.ok(businessHtml.includes('icons/interface-ui.svg#sleep'));
+    assert.ok(businessHtml.includes('class="screen-reader-only">休業中</span>'));
+    assert.ok(!tvHtml.includes('🪙'));
+    assert.ok(!itHtml.includes('🪙'));
+    assert.ok(!businessHtml.includes('💤'));
+    assert.ok(tvHtml.includes('&lt;Bob&gt;'));
+});
+
 runTest('ui pending menu はBusiness Centerを渡す施設・受け取る施設の2段階で示す', () => {
     const html = UiPendingMenu.buildPendingBusinessHtml(makeGame(), escapeHtml);
     const giveHeading = html.indexOf('1. 渡す自分の施設');

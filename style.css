@@ -2912,6 +2912,22 @@ html[data-design="sunset"] .pending-facility-mark {
     border-radius: 6px;
     background: #f4e8c9;
 }
+html[data-design="sunset"] .pending-coin-mark {
+    width: 16px;
+    height: 16px;
+    margin: 0 2px;
+    vertical-align: -3px;
+}
+html[data-design="sunset"] .bc-chip-dormant {
+    display: inline-flex;
+    margin-left: 5px;
+    vertical-align: -3px;
+}
+html[data-design="sunset"] .bc-chip-dormant-icon {
+    width: 15px;
+    height: 15px;
+    color: #e5bd72;
+}
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box > p:not(.pending-heading):not(.pending-inspect-hint) {
     color: #e0e6e4;
 }
