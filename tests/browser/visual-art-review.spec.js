@@ -358,7 +358,7 @@ test('スマホの夕暮れ対局はログ要約を残して詳細を折りた�
     }
 });
 
-test('CPUの手番でもスマートフォンでは自分の街を先頭に開いて見せる', async ({ page }) => {
+test('CPUの手番でも自分の街を先頭に見せ、極小画面でも街の図版を読める大きさにする', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
@@ -384,6 +384,25 @@ test('CPUの手番でもスマートフォンでは自分の街を先頭に開�
     await expect(page.locator(`#playerBox${seats.selfIndex} .sunset-town`)).toBeVisible();
     await expect(page.locator(`#playerBox${seats.cpuIndex}`)).toHaveClass(/player-box-compact/);
     await expect(page.locator(`#playerBox${seats.cpuIndex}`)).toHaveClass(/active/);
+
+    for (const width of [320, 390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const selfBox = page.locator(`#playerBox${seats.selfIndex}`);
+        const townArt = selfBox.locator('.town-building .sunset-facility-art').first();
+        await expect(townArt).toBeVisible();
+        const dimensions = await townArt.evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            return { width: bounds.width, height: bounds.height };
+        });
+        if (width <= 360) expect(dimensions).toEqual({ width: 64, height: 46 });
+        else if (width <= 480) expect(dimensions).toEqual({ width: 80, height: 56 });
+        else expect(dimensions).toEqual({ width: 108, height: 72 });
+        const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+        expect(pageWidth).toBeLessThanOrEqual(width);
+        const screenshot = testInfo.outputPath(`sunset-self-town-${width}.png`);
+        await selfBox.screenshot({ path: screenshot, animations: 'disabled' });
+        await testInfo.attach(`sunset-self-town-${width}.png`, { path: screenshot, contentType: 'image/png' });
+    }
 });
 
 test('必要なら詳細設定を開いて人数を変え、その設定で開始できる', async ({ page }) => {

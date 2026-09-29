@@ -5988,6 +5988,15 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBann
 }
 
 @media (max-width: 360px) {
+    html[data-design="sunset"] #players .player-box-self .town-building,
+    html[data-design="sunset"] #players .player-box-self .town-street > .town-building {
+        width: 64px;
+    }
+    html[data-design="sunset"] #players .player-box-self .town-building .sunset-facility-art {
+        height: 46px;
+    }
+    html[data-design="sunset"] #players .player-box-self .town-landmark { width: 54px; }
+
     html[data-design="sunset"] body:not(.accessibility-high-contrast) #pwaUpdateBanner {
         grid-template-columns: minmax(0, 1fr);
         gap: 8px;
