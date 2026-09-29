@@ -337,6 +337,18 @@ test('スマホの夕暮れ対局はログ要約を残して詳細を折りた�
             await expect(header).toHaveAttribute('aria-expanded', 'true');
             await expect(detailLog).toBeVisible();
         }
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            game.addLog(LOG_TYPES.BUILD, '🏗️ パン屋を建設！');
+            renderLog();
+        });
+        await expect(detailLog.locator('.log-item-with-icon').last()).toContainText('パン屋を建設！');
+        await expect(detailLog.locator('.log-item-with-icon').last().locator('svg use'))
+            .toHaveAttribute('href', 'icons/interface-ui.svg#build');
+        const visibleEmojiCount = await detailLog.locator('.log-item-with-icon').last().evaluate(element =>
+            /[🏗️]/u.test(element.textContent)
+        );
+        expect(visibleEmojiCount).toBe(false);
     }
 });
 

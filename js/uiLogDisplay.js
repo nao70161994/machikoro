@@ -3,6 +3,15 @@
 const UiLogDisplay = (() => {
     const MAX_FULL_LOG = 300;
     const LEADING_DECORATIVE_EMOJI = /^(?:🌾|🌽|🏪|🐟|💸|🍸|🍽️|📰|🏛️|📺|🚚|🔄|👤|🏗️|🔨|🧹|🍷|🏢|🎲|📡|🚉|⚓|💤|💰|💳|🏟️|❌|💻|🏆|✈️|🎡|⚠️)\s*/u;
+    const LOG_ICON_BY_CLASS = Object.freeze({
+        'log-dice': 'dice',
+        'log-gain': 'coin',
+        'log-lose': 'coin',
+        'log-build': 'build',
+        'log-special': 'sequence',
+        'log-system': 'log',
+        'log-error': 'warning',
+    });
 
     function visibleLogMessage(message, options = {}) {
         const value = String(message ?? '');
@@ -23,6 +32,12 @@ const UiLogDisplay = (() => {
 
     function classifyLogEntry(entry, display) {
         return display[entry.type] || { cls: 'log-system', label: '進行' };
+    }
+
+    function logTypeIconHtml(logClass, options = {}) {
+        if (options.useSunsetIcons !== true) return '';
+        const icon = LOG_ICON_BY_CLASS[logClass] || 'log';
+        return `<svg class="log-type-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#${icon}"></use></svg>`;
     }
 
     function extractLogDetails(entry) {
@@ -77,10 +92,13 @@ const UiLogDisplay = (() => {
             const details = extractLogDetails(entry);
             const hasRelatedBoardItem = !!(details.actor || details.target || details.subject);
             const visibleMessage = escapeHtml(visibleLogMessage(entry.message, options));
+            const iconHtml = logTypeIconHtml(cls, options);
+            const messageHtml = iconHtml ? `${iconHtml}<span>${visibleMessage}</span>` : visibleMessage;
             if (!hasRelatedBoardItem) {
-                return `<div class="log-item ${cls}${latestClass}">${visibleMessage}</div>`;
+                return `<div class="log-item ${cls}${latestClass}${iconHtml ? ' log-item-with-icon' : ''}">${messageHtml}</div>`;
             }
-            return `<button type="button" class="log-item log-related-action ${cls}${latestClass}" data-ui-action="highlightLogEntry" data-player-name="${escapeHtml(details.actor)}" data-target-name="${escapeHtml(details.target)}" data-card-name="${escapeHtml(details.subject)}" data-log-message="${escapeHtml(entry.message)}" aria-label="関連する盤面を表示: ${escapeHtml(entry.message)}">${visibleMessage}</button>`;
+            const accessibleMessage = iconHtml ? visibleMessage : escapeHtml(entry.message);
+            return `<button type="button" class="log-item log-related-action ${cls}${latestClass}${iconHtml ? ' log-item-with-icon' : ''}" data-ui-action="highlightLogEntry" data-player-name="${escapeHtml(details.actor)}" data-target-name="${escapeHtml(details.target)}" data-card-name="${escapeHtml(details.subject)}" data-log-message="${escapeHtml(entry.message)}" aria-label="関連する盤面を表示: ${accessibleMessage}">${messageHtml}</button>`;
         }).join('');
     }
 

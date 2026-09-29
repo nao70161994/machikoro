@@ -86,6 +86,7 @@ function renderLog() {
     const cur = currentGame.log || [];
     const logDisplayOptions = {
         stripLeadingEmoji: document.documentElement?.dataset?.design === 'sunset',
+        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
     };
 
     const history = logHistoryController.append(cur);

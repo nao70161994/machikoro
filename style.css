@@ -1895,6 +1895,19 @@ button:not(:disabled):active {
     cursor: pointer;
     appearance: none;
 }
+.log-item-with-icon {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr);
+    align-items: start;
+    gap: 5px;
+}
+.log-type-icon {
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+    color: currentColor;
+    flex: 0 0 auto;
+}
 .log-related-highlight {
     outline: 3px solid #ffd54a;
     outline-offset: 3px;

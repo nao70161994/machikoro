@@ -181,11 +181,13 @@ assert.match(relatedHtml, /data-log-message="🏗️ パン屋を建設！"/);
 const sunsetRelatedHtml = UiLogDisplay.buildLogEntriesHtml([
     { type: 'system', message: '👤 Aliceのターン' },
     { type: 'build', message: '🏗️ パン屋を建設！' },
-], display, escapeHtml, { stripLeadingEmoji: true });
-assert.match(sunsetRelatedHtml, />Aliceのターン<\/button>/);
+], display, escapeHtml, { stripLeadingEmoji: true, useSunsetIcons: true });
+assert.match(sunsetRelatedHtml, /<span>Aliceのターン<\/span><\/button>/);
 assert.match(sunsetRelatedHtml, /data-log-message="🏗️ パン屋を建設！"/);
-assert.match(sunsetRelatedHtml, /aria-label="関連する盤面を表示: 🏗️ パン屋を建設！"/);
-assert.match(sunsetRelatedHtml, />パン屋を建設！<\/button>/);
+assert.match(sunsetRelatedHtml, /aria-label="関連する盤面を表示: パン屋を建設！"/);
+assert.match(sunsetRelatedHtml, /icons\/interface-ui\.svg#log/);
+assert.match(sunsetRelatedHtml, /icons\/interface-ui\.svg#build/);
+assert.match(sunsetRelatedHtml, /<span>パン屋を建設！<\/span><\/button>/);
 const sunsetSummary = UiLogDisplay.buildLogSummaryHtml([
     { type: 'system', message: '👤 Aliceのターン' },
 ], display, escapeHtml, { stripLeadingEmoji: true });
