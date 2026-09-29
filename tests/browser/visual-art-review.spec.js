@@ -396,6 +396,8 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
                 buildEmojiDisplay: getComputedStyle(document.querySelector('#buildMenu h3 .build-menu-heading-emoji')).display,
                 playerTop: document.querySelector('.player-area').getBoundingClientRect().top,
                 actionTop: document.querySelector('.game-action-panel').getBoundingClientRect().top,
+                rollBottom: document.querySelector('#btnRoll').getBoundingClientRect().bottom,
+                toolbarTop: document.querySelector('.game-action-toolbar').getBoundingClientRect().top,
                 buildTop: document.querySelector('#buildMenu').getBoundingClientRect().top,
                 timelineTop: document.querySelector('#turnTimeline').getBoundingClientRect().top,
                 tutorialTop: document.querySelector('#tutorialBox').getBoundingClientRect().top,
@@ -407,6 +409,8 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             expect(mobileOrder.buildIconVisible).toBe(true);
             expect(mobileOrder.buildEmojiDisplay).toBe('none');
             expect(mobileOrder.playerTop).toBeLessThan(mobileOrder.actionTop);
+            expect(mobileOrder.rollBottom).toBeLessThan(mobileOrder.toolbarTop);
+            expect(mobileOrder.toolbarTop).toBeLessThan(mobileOrder.buildTop);
             expect(mobileOrder.actionTop).toBeLessThan(mobileOrder.buildTop);
             expect(mobileOrder.buildTop).toBeLessThan(mobileOrder.timelineTop);
             expect(mobileOrder.timelineTop).toBeLessThan(mobileOrder.tutorialTop);

@@ -364,6 +364,16 @@
         </section>
         <div id="tutorialBox" class="tutorial-box" role="region" aria-label="操作ガイド" style="display:none"></div>
         <div class="game-action-panel">
+            <div id="diceResult"></div>
+            <div id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
+            <div id="diceChoose"></div>
+            <div class="buttons">
+                <button id="btnRoll" data-ui-action="onRoll"><span class="dice-roll-emoji" aria-hidden="true">🎲</span><svg class="dice-roll-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="4" fill="#fff1d4" stroke="#806143" stroke-width="1.5"/><circle cx="8" cy="8" r="1.7" fill="#344858"/><circle cx="16" cy="8" r="1.7" fill="#344858"/><circle cx="12" cy="12" r="1.7" fill="#344858"/><circle cx="8" cy="16" r="1.7" fill="#344858"/><circle cx="16" cy="16" r="1.7" fill="#344858"/></svg><span>サイコロを振る</span></button>
+                <button id="btnReroll" data-ui-action="onReroll" style="display:none"><span class="game-control-emoji" aria-hidden="true">📡</span><svg class="game-control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#radio"></use></svg><span>電波塔で振り直す</span></button>
+                <button id="btnBuildShortcut" class="build-shortcut-btn" data-ui-action="focusBuildMenu"
+                    aria-controls="buildMenu" style="display:none"><span class="game-control-emoji" aria-hidden="true">🏗️</span><svg class="game-control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#build"></use></svg><span>建設候補を見る</span></button>
+                <button id="btnSkip" data-ui-action="onSkip" disabled>建設しないでターン終了</button>
+            </div>
             <div class="game-action-toolbar">
                 <details class="game-guide-settings">
                     <summary>ガイド設定</summary>
@@ -381,16 +391,6 @@
                             aria-label="匿名化した現在の対局データを書き出す">対局を書き出す</button>
                     </div>
                 </details>
-            </div>
-            <div id="diceResult"></div>
-            <div id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
-            <div id="diceChoose"></div>
-            <div class="buttons">
-                <button id="btnRoll" data-ui-action="onRoll"><span class="dice-roll-emoji" aria-hidden="true">🎲</span><svg class="dice-roll-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="4" fill="#fff1d4" stroke="#806143" stroke-width="1.5"/><circle cx="8" cy="8" r="1.7" fill="#344858"/><circle cx="16" cy="8" r="1.7" fill="#344858"/><circle cx="12" cy="12" r="1.7" fill="#344858"/><circle cx="8" cy="16" r="1.7" fill="#344858"/><circle cx="16" cy="16" r="1.7" fill="#344858"/></svg><span>サイコロを振る</span></button>
-                <button id="btnReroll" data-ui-action="onReroll" style="display:none"><span class="game-control-emoji" aria-hidden="true">📡</span><svg class="game-control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#radio"></use></svg><span>電波塔で振り直す</span></button>
-                <button id="btnBuildShortcut" class="build-shortcut-btn" data-ui-action="focusBuildMenu"
-                    aria-controls="buildMenu" style="display:none"><span class="game-control-emoji" aria-hidden="true">🏗️</span><svg class="game-control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#build"></use></svg><span>建設候補を見る</span></button>
-                <button id="btnSkip" data-ui-action="onSkip" disabled>建設しないでターン終了</button>
             </div>
         </div>
         <div id="gameLogContainer" class="log-container">
