@@ -362,11 +362,16 @@ test('夕暮れのコイン獲得表示はカードと共通のSVGコインを�
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
 
-    await page.evaluate(() => showCoinAnimation(0, 3));
-    const coinGain = page.locator('#playerBox0 .coin-float').last();
-    await expect(coinGain).toHaveAttribute('aria-label', '+3コイン');
-    await expect(coinGain.locator('svg use')).toHaveAttribute('href', 'icons/interface-ui.svg#coin');
-    await expect(coinGain).not.toContainText('🪙');
+    const coinState = await page.evaluate(() => {
+        showCoinAnimation(0, 3);
+        const coin = document.querySelector('#playerBox0 .coin-float');
+        return {
+            label: coin?.getAttribute('aria-label'),
+            icon: coin?.querySelector('svg use')?.getAttribute('href'),
+            text: coin?.textContent,
+        };
+    });
+    expect(coinState).toEqual({ label: '+3コイン', icon: 'icons/interface-ui.svg#coin', text: '+3' });
 });
 
 test('夕暮れのプレイヤー状態は積立とローンも共通SVGで表示する', async ({ page }, testInfo) => {

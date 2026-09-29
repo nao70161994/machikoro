@@ -466,7 +466,21 @@ test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達
             }
 
             await modal.evaluate(element => { element.scrollTop = 0; });
-            await modal.locator(modalCase.close).first().click();
+            const closeButton = modal.locator(modalCase.close).first();
+            await expect.poll(() => closeButton.evaluate(button => {
+                const before = button.getBoundingClientRect();
+                return new Promise(resolve => requestAnimationFrame(() => {
+                    const after = button.getBoundingClientRect();
+                    resolve(Math.abs(before.left - after.left) < 0.5 &&
+                        Math.abs(before.top - after.top) < 0.5 &&
+                        after.top >= 0 && after.bottom <= window.innerHeight);
+                }));
+            })).toBe(true);
+            const closeBounds = await closeButton.boundingBox();
+            await page.touchscreen.tap(
+                closeBounds.x + closeBounds.width / 2,
+                closeBounds.y + closeBounds.height / 2
+            );
             await expect(modal).toBeHidden();
         }
     }
