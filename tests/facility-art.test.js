@@ -50,7 +50,10 @@ runTest('市場カードは施設の業種に合った景色を持ち、カー�
     assert.ok(styles.includes('.card-btn .facility-scene-industrial'));
     assert.ok(styles.includes('.card-btn .facility-scene-civic'));
     assert.ok(styles.includes('.card-btn .facility-scene-landmark'));
-    const sceneRule = name => styles.match(new RegExp(`\\.card-btn \\.facility-scene-${name} \\{([\\s\\S]*?)\\n\\}`, 'm'))?.[1] || '';
+    const sceneRule = name => {
+        const rules = [...styles.matchAll(new RegExp(`([^{}]*facility-scene-${name}[^{}]*)\\{([^{}]*)\\}`, 'g'))];
+        return rules.find(([, selector]) => selector.includes('.card-btn'))?.[2] || '';
+    };
     const waterScene = sceneRule('water');
     const streetScene = sceneRule('street');
     const industrialScene = sceneRule('industrial');

@@ -301,11 +301,17 @@ test('夕暮れのカード詳細は専用記号を使いスマホとデスク�
     await expect(modal).toBeVisible();
     await expect(modal.locator('.card-detail-coin')).toHaveCount(1);
     await expect(modal.locator('.card-detail-dice')).toHaveCount(1);
+    const facilityArt = modal.locator('.card-detail-art .sunset-facility-art');
+    await expect(facilityArt).toHaveCount(1);
     await expect(modal).not.toContainText(/[💰🎲]/u);
     await expect(modal.locator('.modal-header h2')).toHaveCSS('color', 'rgb(255, 225, 166)');
 
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
+        const artBounds = await facilityArt.boundingBox();
+        expect(artBounds).not.toBeNull();
+        expect(artBounds.width).toBeGreaterThan(0);
+        expect(artBounds.height).toBeGreaterThanOrEqual(112);
         const dimensions = await modal.locator('.modal-content').evaluate(element => {
             const bounds = element.getBoundingClientRect();
             return { left: bounds.left, right: bounds.right, width: bounds.width };

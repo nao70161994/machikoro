@@ -3726,6 +3726,31 @@ html[data-design="sunset"] .card-detail-mark {
     vertical-align: -3px;
     overflow: visible;
 }
+html[data-design="sunset"] .card-detail-art .sunset-facility-art {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: auto;
+    min-height: 112px;
+    aspect-ratio: 2 / 1;
+    margin: 0;
+    padding: 4px 7px 2px;
+    border: 1px solid rgba(48, 67, 75, 0.28);
+    border-radius: 11px;
+    background-color: #d9d6c3;
+    background-image:
+        radial-gradient(circle at 79% 25%, rgba(255, 222, 158, 0.94) 0 8px, rgba(255, 222, 158, 0.24) 9px 17px, transparent 18px),
+        radial-gradient(ellipse at 14% 112%, #788d78 0 30%, transparent 31%),
+        radial-gradient(ellipse at 74% 123%, #526f69 0 43%, transparent 44%),
+        linear-gradient(180deg, #7895a0 0%, #bdab9d 62%, #c5ad89 63%, #9c896d 100%);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.56), inset 0 -8px 16px rgba(44, 58, 58, 0.12);
+    filter: drop-shadow(0 2px 2px rgba(43, 48, 50, 0.18));
+}
+html[data-design="sunset"] .card-detail-art .sunset-facility-art > use {
+    transform-box: view-box;
+    transform-origin: center;
+    transform: translate(-6px, -3px) scale(1.08);
+}
 html[data-design="sunset"] #cardDetailModal .modal-header {
     background: linear-gradient(110deg, #76553f 0%, #33485a 68%, #213548 100%);
     border-bottom-color: rgba(239, 196, 135, 0.38);
@@ -5059,38 +5084,44 @@ html[data-design="sunset"] .card-color-landmark .sunset-facility-art {
         radial-gradient(ellipse at 74% 123%, #5b6779 0 43%, transparent 44%),
         linear-gradient(180deg, #8992a7 0%, #c6b4b4 62%, #c8ad92 63%, #8b7a72 100%);
 }
-html[data-design="sunset"] .card-btn .facility-scene-pasture {
+html[data-design="sunset"] .card-btn .facility-scene-pasture,
+html[data-design="sunset"] .card-detail-art .facility-scene-pasture {
     background-image:
         radial-gradient(circle at 79% 25%, rgba(255, 231, 178, 0.96) 0 8px, rgba(255, 231, 178, 0.25) 9px 17px, transparent 18px),
         radial-gradient(ellipse at 14% 112%, #829f8d 0 30%, transparent 31%),
         radial-gradient(ellipse at 74% 123%, #5b7b78 0 43%, transparent 44%),
         linear-gradient(180deg, #9dc0c5 0%, #d1c3ad 62%, #cdbb98 63%, #a19075 100%);
 }
-html[data-design="sunset"] .card-btn .facility-scene-water {
+html[data-design="sunset"] .card-btn .facility-scene-water,
+html[data-design="sunset"] .card-detail-art .facility-scene-water {
     background-image:
         radial-gradient(circle at 22% 24%, rgba(255, 230, 174, 0.94) 0 7px, rgba(255, 230, 174, 0.2) 8px 16px, transparent 17px),
         linear-gradient(180deg, transparent 0 57%, rgba(241, 231, 200, 0.38) 57% 59%, transparent 60%),
         linear-gradient(180deg, #98b8c1 0%, #d4c3aa 57%, #82a9a8 58%, #557c82 100%);
 }
-html[data-design="sunset"] .card-btn .facility-scene-street {
+html[data-design="sunset"] .card-btn .facility-scene-street,
+html[data-design="sunset"] .card-detail-art .facility-scene-street {
     background-image:
         radial-gradient(ellipse at 76% 18%, rgba(255, 204, 154, 0.42) 0 2%, rgba(255, 204, 154, 0.14) 17%, transparent 34%),
         linear-gradient(180deg, transparent 0 66%, rgba(245, 224, 195, 0.34) 66% 68%, transparent 69%),
         linear-gradient(180deg, #a9adb1 0%, #d8bca6 60%, #c1a994 61%, #817973 100%);
 }
-html[data-design="sunset"] .card-btn .facility-scene-industrial {
+html[data-design="sunset"] .card-btn .facility-scene-industrial,
+html[data-design="sunset"] .card-detail-art .facility-scene-industrial {
     background-image:
         radial-gradient(ellipse at 24% 16%, rgba(238, 209, 165, 0.34) 0 2%, rgba(238, 209, 165, 0.12) 18%, transparent 36%),
         linear-gradient(180deg, transparent 0 59%, rgba(245, 231, 198, 0.26) 59% 61%, transparent 62%),
         linear-gradient(180deg, #a4b4b6 0%, #d2c3af 59%, #9b9e8e 60%, #687777 100%);
 }
-html[data-design="sunset"] .card-btn .facility-scene-civic {
+html[data-design="sunset"] .card-btn .facility-scene-civic,
+html[data-design="sunset"] .card-detail-art .facility-scene-civic {
     background-image:
         radial-gradient(circle at 21% 24%, rgba(255, 224, 171, 0.88) 0 6px, rgba(255, 224, 171, 0.18) 7px 15px, transparent 16px),
         linear-gradient(180deg, transparent 0 64%, rgba(235, 221, 204, 0.28) 64% 66%, transparent 67%),
         linear-gradient(180deg, #8997ac 0%, #c5b8b2 59%, #a99d99 60%, #747d87 100%);
 }
-html[data-design="sunset"] .card-btn .facility-scene-landmark {
+html[data-design="sunset"] .card-btn .facility-scene-landmark,
+html[data-design="sunset"] .card-detail-art .facility-scene-landmark {
     background-image:
         radial-gradient(circle at 79% 24%, rgba(255, 231, 181, 0.98) 0 8px, rgba(255, 231, 181, 0.24) 9px 17px, transparent 18px),
         radial-gradient(ellipse at 50% 116%, rgba(231, 216, 188, 0.54) 0 34%, transparent 35%),

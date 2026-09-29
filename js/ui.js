@@ -1928,6 +1928,7 @@ function buildLandmarkDetailContent(name) {
         cost: Player.landmarkCost(name),
         effectText: getLandmarkEffectText(name),
         escapeHtml,
+        renderFacilityArt: UiBuildMenu.renderFacilityArt,
         useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
     });
 }
@@ -1938,6 +1939,7 @@ function buildCardDetailContent(card) {
         escapeHtml,
         getEffectText,
         safeCardColorName,
+        renderFacilityArt: UiBuildMenu.renderFacilityArt,
         useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
     });
 }

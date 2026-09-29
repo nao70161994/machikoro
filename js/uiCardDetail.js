@@ -27,25 +27,41 @@ const UiCardDetail = (() => {
         return '<svg class="card-detail-mark card-detail-dice" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="17" height="17" rx="4"/><circle cx="6" cy="6" r="1.2"/><circle cx="14" cy="6" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="6" cy="14" r="1.2"/><circle cx="14" cy="14" r="1.2"/></svg>';
     }
 
+    function detailArt(options) {
+        const { name, landmark, category = '', color = 'landmark', renderFacilityArt, useSunsetIcons } = options;
+        if (!useSunsetIcons || typeof renderFacilityArt !== 'function') return '';
+        return '<div class="card-detail-art card-color-' + color + '" aria-hidden="true">' +
+            renderFacilityArt(name, landmark, category) + '</div>';
+    }
+
     function buildLandmarkDetailContent(options) {
-        const { name, emoji, cost, effectText, escapeHtml, useSunsetIcons = false } = options;
+        const { name, emoji, cost, effectText, escapeHtml, useSunsetIcons = false, renderFacilityArt } = options;
         const effect = escapeHtml(effectText);
         const title = useSunsetIcons ? name : `${emoji} ${name}`;
         const coin = useSunsetIcons ? renderDetailMark('coin') : '💰';
+        const art = detailArt({ name, landmark: true, renderFacilityArt, useSunsetIcons });
         return {
             title,
-            html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>${coin} ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`,
+            html: art + `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>${coin} ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`,
         };
     }
 
     function buildCardDetailContent(options) {
-        const { card, escapeHtml, getEffectText, safeCardColorName, useSunsetIcons = false } = options;
+        const { card, escapeHtml, getEffectText, safeCardColorName, useSunsetIcons = false, renderFacilityArt } = options;
         const safeColor = safeCardColorName(card.color);
         const coin = useSunsetIcons ? renderDetailMark('coin') : '💰';
         const dice = useSunsetIcons ? renderDetailMark('dice') : '🎲';
+        const art = detailArt({
+            name: card.name,
+            landmark: false,
+            category: card.category,
+            color: safeColor,
+            renderFacilityArt,
+            useSunsetIcons,
+        });
         return {
             title: card.name,
-            html: `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>${coin} ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>${dice} [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${COLOR_BADGES[safeColor]}">${COLOR_NAMES[safeColor]}</span> ${escapeHtml(card.category)}</span></div></div><div class="card-detail-effect">${escapeHtml(getEffectText(card))}</div>`,
+            html: art + `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>${coin} ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>${dice} [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${COLOR_BADGES[safeColor]}">${COLOR_NAMES[safeColor]}</span> ${escapeHtml(card.category)}</span></div></div><div class="card-detail-effect">${escapeHtml(getEffectText(card))}</div>`,
         };
     }
 
