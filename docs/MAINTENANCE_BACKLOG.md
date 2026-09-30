@@ -1093,6 +1093,6 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 
 ## 2026-09-30 Composition-root maintenance lint rules
 
-- The shared maintenance ESLint gate now also rejects constant binary expressions, duplicate object keys, sparse arrays, unsafe optional chaining, and invalid `typeof` comparisons. These rules apply to the five side-effect-heavy composition roots as well as the adapter files.
+- The shared maintenance ESLint gate now also rejects constant binary expressions, duplicate object keys, sparse arrays, unsafe optional chaining, invalid `typeof` comparisons, `eval`/dynamic Function construction, and `javascript:` URLs. These rules apply to the five side-effect-heavy composition roots as well as the adapter files, and keep CSP-compatible code from acquiring dynamic-code escapes.
 - `no-unused-vars` was evaluated but not enabled for classic-script roots because HTML handlers and cross-file global calls are invisible to per-file ESLint analysis and produce false positives. `no-undef` plus the new syntax-level rules remain the reliable root-local checks until those roots have typed script-boundary projects.
 - Configuration coverage is asserted in `tests/checkjs-config.test.js`; `npm run test:static` and that contract pass. The production allowlists remain 297 checkJs JavaScript files and 302 ESLint JavaScript files.

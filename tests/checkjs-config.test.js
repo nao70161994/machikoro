@@ -295,6 +295,10 @@ runTest('maintenance ESLintは副作用集中rootにも構文上の危険パタ�
     for (const rule of [
         'no-constant-binary-expression',
         'no-dupe-keys',
+        'no-eval',
+        'no-implied-eval',
+        'no-new-func',
+        'no-script-url',
         'no-sparse-arrays',
         'no-unsafe-optional-chaining',
         'valid-typeof',
