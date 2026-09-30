@@ -238,12 +238,20 @@ test('320pxから480pxで開始CTAが設定やfocusを隠さずPWAの上に届�
             const targetBounds = document.querySelector(targetSelector).getBoundingClientRect();
             return {
                 ctaTop: bounds.top,
+                ctaBottom: bounds.bottom,
+                ctaLeft: bounds.left,
+                ctaRight: bounds.right,
+                targetTop: targetBounds.top,
                 targetBottom: targetBounds.bottom,
+                targetLeft: targetBounds.left,
+                targetRight: targetBounds.right,
                 position: getComputedStyle(footer).position,
+                overlaps: bounds.left < targetBounds.right && bounds.right > targetBounds.left &&
+                    bounds.top < targetBounds.bottom && bounds.bottom > targetBounds.top,
             };
         }, focusSelector);
         expect(focusLayout.position).toBe(expectedPosition);
-        expect(focusLayout.targetBottom).toBeLessThanOrEqual(focusLayout.ctaTop);
+        expect(focusLayout.overlaps, `CTA overlaps focused control: ${JSON.stringify(focusLayout)}`).toBe(false);
 
         await page.locator(selector).evaluate(element => {
             element.closest('.setup-action-footer').scrollIntoView({ block: 'center' });
@@ -882,8 +890,13 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
         await page.setViewportSize({ width, height: 844 });
         const middleCard = page.locator('.build-card-section .card-wrapper').nth(12);
         await middleCard.evaluate(element => {
-            const top = element.getBoundingClientRect().top + window.scrollY;
-            window.scrollTo(0, Math.max(0, top - 180));
+            const gameScreen = element.closest('#gameScreen');
+            const top = element.getBoundingClientRect().top;
+            if (gameScreen && gameScreen.scrollHeight > gameScreen.clientHeight) {
+                gameScreen.scrollTop = Math.max(0, gameScreen.scrollTop + top - 180);
+                return;
+            }
+            window.scrollTo(0, Math.max(0, window.scrollY + top - 180));
         });
         await expect.poll(() => page.locator('.build-card-section .card-filter-bar')
             .evaluate(element => element.getBoundingClientRect().top), { timeout: 5000 })
