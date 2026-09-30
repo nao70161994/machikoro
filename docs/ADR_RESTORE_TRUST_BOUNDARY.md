@@ -259,3 +259,47 @@ The following reversible contracts now exist without enabling production durable
 - `server/restoreAuthorityPolicy.js` fixes the intended order as live room, authoritative durable canonical state, valid server-signed state, host replay, then explicitly confirmed hostless quorum. Invalid, conflicting, or completed higher-priority state fails closed instead of falling through.
 
 The priority policy is a pure contract and is not yet the live `recreateRoom` dispatcher. Production activation still requires a durable backend choice, retention/deletion policy, process/multi-instance locking evidence, secret/key rotation operations, migration dry-run, and rollback rehearsal. Until those are supplied, the existing host/provisional behavior and `HOSTLESS_RESTORE_ENABLED=0` rollback remain in force.
+
+## Update: 2026-10-01 Free-Operation Constraint
+
+The current operating preference is to avoid a recurring-cost persistence service
+and keep the casual-play restore model. This means the project must not describe
+the current server-restart path as server-authoritative canonical recovery:
+
+- `CANONICAL_STATE_STORE=noop` is the default and stores no server state.
+- `CANONICAL_STATE_STORE=memory` is useful for tests/development but loses records
+  when the process exits.
+- A valid HMAC audit proves that signed restore fields came from a server that
+  held the signing key. It does not prove that a client presented the newest
+  state after the server forgot its room history.
+- Complete action-log replay can recover only actions still present in the
+  submitted bundle. It cannot prove that the client did not omit newer actions.
+
+For the current Render deployment, a file adapter alone would not solve this:
+Render documents that service filesystems are ephemeral by default and are
+preserved across restarts only on a paid service with an attached persistent
+disk. A Render disk is attached to one service instance and cannot be shared by
+multiple instances. See [Render Persistent Disks](https://render.com/docs/disks).
+
+The available operational choices are therefore:
+
+1. **Keep free operation (current choice):** retain signed client-carried
+   snapshots, bounded action-log replay, and the provisional quorum fallback.
+   Describe recovery as best-effort casual recovery, not durable server
+   canonical state. No production store authority is enabled.
+2. **Use a paid single-instance disk:** add and verify an atomic file adapter,
+   configure its mount path, and keep the service at one instance. This can
+   survive process restarts and deploys, but it is not a shared multi-instance
+   store and adds paid hosting cost.
+3. **Use a shared managed database/KV:** implement an adapter with atomic
+   revision checks, cross-process locking/consistency, retention, deletion, and
+   restore migration tests. This is the path for multi-instance or stronger
+   competitive recovery and requires an explicit service and cost decision.
+
+Until option 2 or 3 is selected, the existing adapter contract and restore
+source priority remain design footing only. Do not mark the server-canonical
+restart-recovery requirement complete, enable a memory store as a production
+fix, or let client bundles override a future server-loaded record. Before
+turning on durable authority, prove restart recovery, stale-client rejection,
+atomic snapshot/action-log compaction, room expiry/deletion, and rollback on the
+selected deployment target.

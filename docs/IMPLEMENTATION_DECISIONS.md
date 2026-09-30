@@ -2,14 +2,14 @@
 
 Date: 2026-05-26
 
-Status: Accepted decision index, updated 2026-09-30. Each row states whether its design is implemented, deferred, or awaiting manual verification; use the linked implementation and tests as evidence.
+Status: Accepted decision index, updated 2026-10-01. Each row states whether its design is implemented, deferred, or awaiting manual verification; use the linked implementation and tests as evidence.
 
 ## Summary
 
 | Area | Decision | When to implement | Depends on |
 | --- | --- | --- | --- |
 | Modal stack / deny-nesting | Implemented deny-by-default with no nested blocking modal exceptions. Future exceptions require registry/tests/manual mobile verification. | Extend only when a concrete UX cannot use inline detail or non-blocking notice. | UI interactability contract, modal tests, mobile manual checks. |
-| Server-persisted canonical state | Minimal no-op/memory adapter footing exists; durable restart restore is not implemented. Free operation is preferred and no recurring-cost store is approved, so restart restore remains best-effort from signed client-carried snapshots, complete action-log replay, or provisional hostless quorum. | Revisit only if server-authoritative restart recovery becomes a product requirement and a durable store is selected. | Durable store choice, retention policy, atomic snapshot/log persistence. |
+| Server-persisted canonical state | Minimal no-op/memory adapter footing exists; durable restart restore is not implemented. The current preference is free operation, so recovery remains best-effort from signed client-carried snapshots, available action-log replay, or provisional hostless quorum. The Render free filesystem is ephemeral; see [ADR_RESTORE_TRUST_BOUNDARY.md](./ADR_RESTORE_TRUST_BOUNDARY.md#update-2026-10-01-free-operation-constraint) for deployment limits and storage choices. | Revisit after selecting a paid single-instance disk or a shared managed database/KV. | Provider, retention/deletion policy, atomic snapshot/log persistence, and process/multi-instance consistency. |
 | Signed restore snapshot / action log | HMAC-signed restore audit verification exists behind `RESTORE_AUDIT_SECRET` / `MACHIKORO_RESTORE_AUDIT_SECRET`; unsigned metadata remains diagnostics only. | Extend only for key rotation, freshness limits, or durable/adversarial deployments. | Stable secret, key rotation policy, legacy-bundle policy. |
 | Hostless restore | Provisional quorum fallback accepted on 2026-07-19: host-first grace, two or more distinct humans, all-candidate exact agreement, explicit confirmation, no late replacement, and an emergency host-only switch. | Implemented in independently revertible slices; do not describe it as server-authoritative. | Automated contracts are complete; the full mixed-device timing matrix remains manual. |
 | Multiple room resume UI | Design footing documented; visible picker remains deferred until stale/live/completed candidate policy is implemented. | After candidate classification, retention policy, and mobile UX tests. | Restore bundle index, stale-key pruning policy, UX for room selection. |
