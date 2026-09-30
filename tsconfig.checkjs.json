@@ -72,6 +72,7 @@
     "js/localResumePreloadState.js",
     "js/localResumeView.js",
     "js/localResumeEffects.js",
+    "js/localResumePreloadRuntime.js",
     "js/storedOnlineReconnect.js",
     "js/gameSchemaNegotiation.js",
     "js/gameSchemaCodec.js",

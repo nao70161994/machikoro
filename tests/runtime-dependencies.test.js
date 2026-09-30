@@ -145,7 +145,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/localResumePolicy.js', 'js/storage.js'],
             ['js/localResumePreloadState.js', 'js/storage.js'],
             ['js/localResumeView.js', 'js/storage.js'],
-            ['js/localResumeEffects.js', 'js/storage.js'],
+            ['js/localResumeEffects.js', 'js/localResumePreloadRuntime.js', 'js/storage.js'],
             ['js/storedOnlineReconnect.js', 'js/storage.js'],
             ['js/snapshotInventoryValidation.js', 'js/savedGameValidation.js'],
             ['js/savedGameValidation.js', 'js/storage.js'],

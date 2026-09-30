@@ -91,6 +91,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/localResumePreloadState.js',
     'js/localResumeView.js',
     'js/localResumeEffects.js',
+    'js/localResumePreloadRuntime.js',
     'js/storedOnlineReconnect.js',
     'js/gameSchemaNegotiation.js',
     'js/gameSchemaCodec.js',
@@ -486,7 +487,7 @@ const storageEnvironmentGlobals = Object.freeze(Object.assign(
     onlineEnvironmentGlobals,
     Object.fromEntries([
         'LocalSaveRepository', 'LocalResumePolicy', 'LocalResumePreloadState',
-        'LocalResumeEffects', 'LocalResumeView', 'SavedGameValidation',
+        'LocalResumeEffects', 'LocalResumeView', 'LocalResumePreloadRuntime', 'SavedGameValidation',
         'SnapshotInventoryValidation', 'StorageSettings', 'StoredOnlineReconnect',
         'UndoPreview', 'isPlainObject', 'ONLINE_SESSION_STORAGE_KEY',
         'ONLINE_ROOM_STORAGE_KEY_SEPARATOR', 'ONLINE_STORAGE_KEYS',

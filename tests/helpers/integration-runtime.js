@@ -299,6 +299,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/localResumePreloadState.js',
         'js/localResumeView.js',
         'js/localResumeEffects.js',
+        'js/localResumePreloadRuntime.js',
         'js/storedOnlineReconnect.js',
         'js/uiScreenFocus.js',
         'js/storage.js',

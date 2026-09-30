@@ -60,26 +60,11 @@ const localResumeEffects = LocalResumeEffects.create({
         ? document.getElementById(id)
         : null,
 });
-
-function applyLocalResumePreloadState(state) {
-    localResumeEffects.applyPendingButton(LocalResumeView.pendingButton(state.pending));
-}
-
-function setLocalResumePending(pending) {
-    applyLocalResumePreloadState(localResumePreloadController.setPending(pending));
-}
-
-function startLocalResumePreload() {
-    const state = localResumePreloadController.start();
-    applyLocalResumePreloadState(state);
-    return state.generation;
-}
-
-function finishLocalResumePreload(generation) {
-    const result = localResumePreloadController.finish(generation);
-    if (result.accepted) applyLocalResumePreloadState(result.state);
-    return result.accepted;
-}
+const localResumePreloadRuntime = LocalResumePreloadRuntime.create({
+    controller: localResumePreloadController,
+    view: LocalResumeView,
+    effects: localResumeEffects,
+});
 
 const STORAGE_ONLINE_SESSION_KEY = typeof ONLINE_SESSION_STORAGE_KEY !== 'undefined'
     ? ONLINE_SESSION_STORAGE_KEY
@@ -312,7 +297,7 @@ function reconnectOnline() {
 function resumeGame(options = {}) {
     const onlineState = storageOnlineRuntimeSnapshot();
     if (storageHasActiveOnlineContext(onlineState)) return false;
-    const resumePending = localResumePreloadController.snapshot().pending;
+    const resumePending = localResumePreloadRuntime.snapshot().pending;
     if (!LocalResumePolicy.shouldInspectRepository({
         resumePending,
         fromPreload: options.fromPreload,
@@ -377,10 +362,10 @@ function resumeGame(options = {}) {
                 ? RLModelPortfolio.preloadSelectedModels(state.players.length, savedCpuSettings, { attempts: 3 })
                 : RLModelPortfolio.preloadEligibleModels(state.players.length, { attempts: 3 });
             if (preload && typeof preload.then === 'function') {
-                const resumeGeneration = startLocalResumePreload();
+                const resumeGeneration = localResumePreloadRuntime.start();
                 showNotice("深層学習AIモデルを読み込んでいます。");
                 preload.then(() => {
-                    if (!finishLocalResumePreload(resumeGeneration)) return;
+                    if (!localResumePreloadRuntime.finish(resumeGeneration)) return;
                     resumeGame({
                         fromPreload: true,
                         skipRlPreload: true,
@@ -388,7 +373,7 @@ function resumeGame(options = {}) {
                         rlCpuSettings: savedCpuSettings,
                     });
                 }).catch(error => {
-                    if (!finishLocalResumePreload(resumeGeneration)) return;
+                    if (!localResumePreloadRuntime.finish(resumeGeneration)) return;
                     console.error(error);
                     showNotice("深層学習AIモデルを読み込めませんでした。通信状態を確認してもう一度再開してください。");
                 });
@@ -527,7 +512,7 @@ function resumeGame(options = {}) {
         });
         return true;
     } catch(e) {
-        setLocalResumePending(false);
+        localResumePreloadRuntime.setPending(false);
         if (!validatedSave) repository.remove();
         updateResumeButton();
         const resumeButton = document.getElementById("btnResume");

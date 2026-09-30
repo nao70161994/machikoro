@@ -200,7 +200,7 @@ function loadStorageRuntime(options = {}) {
     };
     context.global = context;
     vm.createContext(context);
-    loadScripts(context, ['js/marketSupply.js', 'js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlineRestoreMetadata.js', 'js/onlinePayload.js', 'js/snapshotInventoryValidation.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiPlayerCount.js', 'js/uiRangeControl.js', 'js/undoPreview.js', 'js/storage.js']);
+    loadScripts(context, ['js/marketSupply.js', 'js/gameSnapshot.js', 'js/localSaveRepository.js', 'js/localSaveRuntime.js', 'js/clientStorage.js', 'js/onlineStorage.js', 'js/onlineRestoreMetadata.js', 'js/onlinePayload.js', 'js/snapshotInventoryValidation.js', 'js/savedGameValidation.js', 'js/storageSettings.js', 'js/localResumePolicy.js', 'js/localResumePreloadState.js', 'js/localResumeView.js', 'js/localResumeEffects.js', 'js/localResumePreloadRuntime.js', 'js/storedOnlineReconnect.js', 'js/gameSetupState.js', 'js/gameRuntimeState.js', 'js/onlineRuntimeState.js', 'js/uiTutorialSettings.js', 'js/uiScreenFocus.js', 'js/uiPlayerCount.js', 'js/uiRangeControl.js', 'js/undoPreview.js', 'js/storage.js']);
     context.OnlineRuntimeState.runtime.restoreIdentity({
         isRoomHost: false,
         playerName: '',
@@ -264,11 +264,12 @@ function makeSavedGameState(overrides = {}) {
     }, overrides);
 }
 
-runTest('local resume pendingはpreload controllerだけが所有する', () => {
+runTest('local resume pendingはtyped preload runtimeだけが所有する', () => {
     const source = require('fs').readFileSync(require('path').join(__dirname, '..', 'js/storage.js'), 'utf8');
     assert.strictEqual(source.includes('let localResumePending'), false);
     assert.ok(source.includes('LocalResumePreloadState.create()'));
-    assert.ok(source.includes('localResumePreloadController.snapshot().pending'));
+    assert.ok(source.includes('LocalResumePreloadRuntime.create('));
+    assert.ok(source.includes('localResumePreloadRuntime.snapshot().pending'));
 });
 
 runTest('storage reconnect flag adapterはonlineの単一write境界へ委譲する', () => {

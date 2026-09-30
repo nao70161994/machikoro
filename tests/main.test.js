@@ -3211,6 +3211,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/localResumePreloadState.js', 'js/storage.js');
     assertBefore('js/localResumeView.js', 'js/storage.js');
     assertBefore('js/localResumeEffects.js', 'js/storage.js');
+    assertBefore('js/localResumePreloadRuntime.js', 'js/storage.js');
     assertBefore('js/storedOnlineReconnect.js', 'js/storage.js');
     assertBefore('js/onlineSchemaTransport.js', 'js/onlineClientEffects.js');
     assertBefore('js/onlineClientEffects.js', 'js/onlineDomEffects.js');
