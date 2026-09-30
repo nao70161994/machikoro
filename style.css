@@ -897,6 +897,14 @@ html[data-design="sunset"] .design-switcher select option {
         transform: none;
     }
 
+    #onlineCreate .setup-action-footer {
+        position: static;
+        width: 100%;
+        bottom: auto;
+        left: auto;
+        transform: none;
+    }
+
     .setup-action-footer .model-load-status:empty { display: none; }
 
     .setup-action-footer .setup-primary-cta {

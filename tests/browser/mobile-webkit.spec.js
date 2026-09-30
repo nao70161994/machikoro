@@ -304,14 +304,14 @@ test('320pxから480pxで開始CTAが設定やfocusを隠さずPWAの上に届�
 
     await page.locator('#tabOnline').click();
     for (const width of [320, 360, 390, 480]) {
-        await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
+        await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', width, 844, 'static');
     }
     const increaseOnlinePlayerCount = page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increaseOnlinePlayerCount.click();
     for (const width of [320, 360, 390, 480]) {
-        await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
+        await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', width, 844, 'static');
     }
-    await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
+    await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500, 'static');
 });
 
 test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可能なまま表示する', async ({ page }, testInfo) => {
@@ -902,10 +902,17 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
             }
             window.scrollTo(0, Math.max(0, window.scrollY + top - 180));
         });
+        const expectedFilterTop = await page.locator('.build-card-section .card-filter-bar').evaluate(element => {
+            const gameScreen = element.closest('#gameScreen');
+            const scrollportTop = gameScreen && gameScreen.scrollHeight > gameScreen.clientHeight
+                ? gameScreen.getBoundingClientRect().top
+                : 0;
+            return scrollportTop + parseFloat(getComputedStyle(element).top);
+        });
         await expect.poll(() => page.locator('.build-card-section .card-filter-bar')
             .evaluate(element => element.getBoundingClientRect().top), { timeout: 5000 })
-            .toBeLessThanOrEqual(17);
-        const stickyLayout = await page.evaluate(() => {
+            .toBeLessThanOrEqual(expectedFilterTop + 1);
+        const stickyLayout = await page.evaluate(expectedFilterTop => {
             const filter = document.querySelector('.build-card-section .card-filter-bar');
             const card = document.querySelectorAll('.build-card-section .card-wrapper')[12];
             const filterBounds = filter.getBoundingClientRect();
@@ -914,13 +921,14 @@ test('320pxから480pxで建設filterがカード範囲だけを安全に追従�
                 filterTop: filterBounds.top,
                 filterBottom: filterBounds.bottom,
                 cardTop: cardBounds.top,
+                expectedFilterTop,
                 withinViewport: filterBounds.left >= 0 &&
                     filterBounds.right <= document.documentElement.clientWidth,
                 contentFits: filter.scrollWidth <= filter.clientWidth,
             };
-        });
-        expect(stickyLayout.filterTop).toBeGreaterThanOrEqual(7);
-        expect(stickyLayout.filterTop).toBeLessThanOrEqual(17);
+        }, expectedFilterTop);
+        expect(stickyLayout.filterTop).toBeGreaterThanOrEqual(stickyLayout.expectedFilterTop - 1);
+        expect(stickyLayout.filterTop).toBeLessThanOrEqual(stickyLayout.expectedFilterTop + 1);
         expect(stickyLayout.filterBottom - stickyLayout.filterTop).toBeLessThanOrEqual(50);
         expect(stickyLayout.filterBottom).toBeLessThanOrEqual(stickyLayout.cardTop);
         expect(stickyLayout.withinViewport && stickyLayout.contentFits).toBe(true);
