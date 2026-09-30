@@ -1096,3 +1096,8 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 - The shared maintenance ESLint gate now also rejects constant binary expressions, duplicate object keys, sparse arrays, unsafe optional chaining, invalid `typeof` comparisons, `eval`/dynamic Function construction, and `javascript:` URLs. These rules apply to the five side-effect-heavy composition roots as well as the adapter files, and keep CSP-compatible code from acquiring dynamic-code escapes.
 - `no-unused-vars` was evaluated but not enabled for classic-script roots because HTML handlers and cross-file global calls are invisible to per-file ESLint analysis and produce false positives. `no-undef` plus the new syntax-level rules remain the reliable root-local checks until those roots have typed script-boundary projects.
 - Configuration coverage is asserted in `tests/checkjs-config.test.js`; `npm run test:static` and that contract pass. The production allowlists remain 297 checkJs JavaScript files and 302 ESLint JavaScript files.
+
+## 2026-09-30 Online readiness probe extraction
+
+- `OnlineReadiness.createController()` now owns the online version request, abort timeout, Service Worker waiting check, version comparison, and readiness DOM presentation. `online.js` retains the existing `checkOnlineReadiness()` entry point and injects its DOM adapter, preserving all callers.
+- An injected-dependency test fixes request cache mode, timeout cleanup, offline/update/version presentation, and effect order. `node tests/online.test.js`, `npm run test:types`, and `npm run test:static` pass.

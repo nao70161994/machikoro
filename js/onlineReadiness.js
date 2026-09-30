@@ -25,7 +25,86 @@ function buildOnlineReadinessView(input = {}) {
     });
 }
 
-const OnlineReadiness = Object.freeze({ buildView: buildOnlineReadinessView });
+/**
+ * Creates the browser probe and presentation boundary for the readiness view.
+ * @param {Object} dependencies
+ * @returns {{check: function(): Promise<Object>}}
+ */
+function createOnlineReadinessController(dependencies = {}) {
+    const getNavigator = typeof dependencies.getNavigator === 'function'
+        ? dependencies.getNavigator
+        : () => typeof navigator === 'undefined' ? null : navigator;
+    const getWindow = typeof dependencies.getWindow === 'function'
+        ? dependencies.getWindow
+        : () => typeof window === 'undefined' ? null : window;
+    const fetchRequest = typeof dependencies.fetch === 'function'
+        ? dependencies.fetch
+        : (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
+    const AbortControllerConstructor = dependencies.AbortController ||
+        (typeof AbortController === 'function' ? AbortController : null);
+    const setTimer = typeof dependencies.setTimeout === 'function'
+        ? dependencies.setTimeout : setTimeout;
+    const clearTimer = typeof dependencies.clearTimeout === 'function'
+        ? dependencies.clearTimeout : clearTimeout;
+    const setText = typeof dependencies.setText === 'function' ? dependencies.setText : () => {};
+    const setHtml = typeof dependencies.setHtml === 'function' ? dependencies.setHtml : () => {};
+    const ids = dependencies.ids || { readiness: 'onlineReadiness', readinessSummary: 'onlineReadinessSummary' };
+
+    async function check() {
+        setText(ids.readiness, '確認中…');
+        setText(ids.readinessSummary, '確認中…');
+        const browserNavigator = getNavigator();
+        const online = !browserNavigator || browserNavigator.onLine !== false;
+        let serverReachable = false;
+        let serverVersion = '';
+        let controller = null;
+        let timer = null;
+        try {
+            if (fetchRequest) {
+                if (typeof AbortControllerConstructor === 'function') {
+                    controller = new AbortControllerConstructor();
+                    timer = setTimer(() => controller.abort(), 3000);
+                }
+                const response = await fetchRequest('/api/version', Object.assign({ cache: 'no-store' },
+                    controller ? { signal: controller.signal } : {}));
+                if (response && response.ok) {
+                    const body = await response.json();
+                    serverReachable = true;
+                    serverVersion = typeof body.hash === 'string' ? body.hash : '';
+                }
+            }
+        } catch (_) {
+        } finally {
+            if (timer !== null) clearTimer(timer);
+        }
+        let updateWaiting = false;
+        try {
+            const serviceWorker = browserNavigator && browserNavigator.serviceWorker;
+            const registration = serviceWorker && typeof serviceWorker.getRegistration === 'function'
+                ? await serviceWorker.getRegistration() : null;
+            updateWaiting = !!(registration && registration.waiting);
+        } catch (_) {}
+        const browserWindow = getWindow();
+        const clientVersion = browserWindow && typeof browserWindow.MACHIKORO_CLIENT_VERSION === 'string'
+            ? browserWindow.MACHIKORO_CLIENT_VERSION : '';
+        const view = buildOnlineReadinessView({
+            online,
+            serverReachable,
+            updateWaiting,
+            versionMatches: !clientVersion || !serverVersion || clientVersion === serverVersion,
+        });
+        setHtml(ids.readiness, view.html);
+        setText(ids.readinessSummary, view.ready ? 'OK' : '要確認');
+        return view;
+    }
+
+    return Object.freeze({ check });
+}
+
+const OnlineReadiness = Object.freeze({
+    buildView: buildOnlineReadinessView,
+    createController: createOnlineReadinessController,
+});
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { OnlineReadiness };

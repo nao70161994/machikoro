@@ -43,6 +43,11 @@ const onlineClientEffects = onlineComposition.clientEffects;
 const onlineDomEffects = onlineComposition.domEffects;
 const onlineSocketEffects = onlineComposition.socketEffects;
 const onlineClientStorageFacade = onlineComposition.storage;
+const onlineReadinessController = OnlineReadiness.createController({
+    ids: OnlineDomEffects.ids,
+    setText: (id, value) => onlineDomEffects.setText(id, value),
+    setHtml: (id, value) => onlineDomEffects.setHtml(id, value),
+});
 
 function selectOnlineRoomIdText() {
     const target = typeof document !== 'undefined'
@@ -89,49 +94,8 @@ function toggleOnlineRoomQr(roomId) {
     return true;
 }
 
-async function checkOnlineReadiness() {
-    onlineDomEffects.setText(OnlineDomEffects.ids.readiness, '確認中…');
-    onlineDomEffects.setText(OnlineDomEffects.ids.readinessSummary, '確認中…');
-    const online = typeof navigator === 'undefined' || navigator.onLine !== false;
-    let serverReachable = false;
-    let serverVersion = '';
-    let controller = null;
-    let timer = null;
-    try {
-        if (typeof AbortController === 'function') {
-            controller = new AbortController();
-            timer = setTimeout(() => controller.abort(), 3000);
-        }
-        const response = await fetch('/api/version', Object.assign({ cache: 'no-store' },
-            controller ? { signal: controller.signal } : {}));
-        if (response && response.ok) {
-            const body = await response.json();
-            serverReachable = true;
-            serverVersion = typeof body.hash === 'string' ? body.hash : '';
-        }
-    } catch (_) {
-    } finally {
-        if (timer !== null) clearTimeout(timer);
-    }
-    let updateWaiting = false;
-    try {
-        const registration = navigator.serviceWorker &&
-            typeof navigator.serviceWorker.getRegistration === 'function'
-            ? await navigator.serviceWorker.getRegistration() : null;
-        updateWaiting = !!(registration && registration.waiting);
-    } catch (_) {}
-    const clientVersion = typeof window !== 'undefined' &&
-        typeof window.MACHIKORO_CLIENT_VERSION === 'string'
-        ? window.MACHIKORO_CLIENT_VERSION : '';
-    const view = OnlineReadiness.buildView({
-        online,
-        serverReachable,
-        updateWaiting,
-        versionMatches: !clientVersion || !serverVersion || clientVersion === serverVersion,
-    });
-    onlineDomEffects.setHtml(OnlineDomEffects.ids.readiness, view.html);
-    onlineDomEffects.setText(OnlineDomEffects.ids.readinessSummary, view.ready ? 'OK' : '要確認');
-    return view;
+function checkOnlineReadiness() {
+    return onlineReadinessController.check();
 }
 
 function leaveOnlineLobby() {

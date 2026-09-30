@@ -5371,3 +5371,45 @@ runTest('online接続前チェックは通信・版・更新待ちを一つの�
     assert.ok(blocked.text.includes('オフライン'));
     assert.ok(blocked.text.includes('更新が必要'));
 });
+
+runTest('online readiness controller はprobe・timeout cleanup・表示更新を注入境界で実行する', async () => {
+    const rt = loadOnlineRuntime();
+    const calls = [];
+    const controller = rt.OnlineReadiness.createController({
+        ids: { readiness: 'readiness', readinessSummary: 'summary' },
+        getNavigator: () => ({
+            onLine: true,
+            serviceWorker: { getRegistration: async () => ({ waiting: {} }) },
+        }),
+        getWindow: () => ({ MACHIKORO_CLIENT_VERSION: 'client-old' }),
+        fetch: async (url, options) => {
+            calls.push(['fetch', url, options.cache, !!options.signal]);
+            return { ok: true, json: async () => ({ hash: 'server-new' }) };
+        },
+        AbortController: class {
+            constructor() { this.signal = {}; }
+            abort() { calls.push(['abort']); }
+        },
+        setTimeout(callback, delay) {
+            calls.push(['setTimeout', delay, typeof callback]);
+            return 17;
+        },
+        clearTimeout(id) { calls.push(['clearTimeout', id]); },
+        setText(id, text) { calls.push(['text', id, text]); },
+        setHtml(id, html) { calls.push(['html', id, html]); },
+    });
+
+    const view = await controller.check();
+    assert.strictEqual(view.ready, false);
+    assert.ok(view.text.includes('更新が必要'));
+    assert.ok(view.text.includes('適用待ち'));
+    assert.deepStrictEqual(calls.slice(0, 4), [
+        ['text', 'readiness', '確認中…'],
+        ['text', 'summary', '確認中…'],
+        ['setTimeout', 3000, 'function'],
+        ['fetch', '/api/version', 'no-store', true],
+    ]);
+    assert.deepStrictEqual(calls[4], ['clearTimeout', 17]);
+    assert.strictEqual(calls[5][0], 'html');
+    assert.deepStrictEqual(calls[6], ['text', 'summary', '要確認']);
+});
