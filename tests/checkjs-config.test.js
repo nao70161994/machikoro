@@ -179,11 +179,8 @@ runTest('production JavaScriptはcheckJs未対象の3 root以外を型検査す�
         ['ls-files', 'js/*.js', 'server/*.js', 'server.js'],
         { cwd: path.join(__dirname, '..'), encoding: 'utf8' }
     ).trim().split(/\r?\n/).filter(Boolean);
-    const excludedRoots = new Set([
-        'js/storage.js',
-        'js/ui.js',
-    ]);
-    const lintOnlyRoot = 'js/online.js';
+    const excludedRoots = new Set(['js/ui.js']);
+    const lintOnlyRoots = new Set(['js/online.js', 'js/storage.js']);
     const lintFiles = new Set(eslintConfig.flatMap(entry => entry.files || []));
     const checkJsFiles = new Set([...config.files, ...mainConfig.files]);
 
@@ -194,13 +191,14 @@ runTest('production JavaScriptはcheckJs未対象の3 root以外を型検査す�
             continue;
         }
         assert.ok(lintFiles.has(file), 'ESLint missing: ' + file);
-        if (file === lintOnlyRoot) {
+        if (lintOnlyRoots.has(file)) {
             assert.ok(!checkJsFiles.has(file), file);
         } else {
             assert.ok(checkJsFiles.has(file), 'checkJs missing: ' + file);
         }
     }
     assert.ok(lintFiles.has('js/online.js'));
+    assert.ok(lintFiles.has('js/storage.js'));
 });
 
 runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだけを除く', () => {
@@ -210,6 +208,7 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
     const lintFiles = configuredLintFiles
         .filter(file => ![
             'js/online.js',
+            'js/storage.js',
             'scripts/report-action-contract.js',
             'scripts/checkjs-root-runner.js',
         ].includes(file))

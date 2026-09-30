@@ -218,6 +218,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/appShell.js',
     'js/main.js',
     'js/online.js',
+    'js/storage.js',
 ]);
 
 const serverMaintenanceFiles = Object.freeze([
@@ -465,6 +466,28 @@ const onlineEnvironmentGlobals = Object.freeze(Object.fromEntries([
     'GameSnapshot',
     'SHOP_STOCK',
 ].map(name => [name, 'readonly'])));
+const storageEnvironmentGlobals = Object.freeze(Object.assign(
+    {},
+    appShellCompositionGlobals,
+    mainCompositionGlobals,
+    mainEnvironmentGlobals,
+    onlineEnvironmentGlobals,
+    Object.fromEntries([
+        'LocalSaveRepository', 'LocalResumePolicy', 'LocalResumePreloadState',
+        'LocalResumeEffects', 'LocalResumeView', 'SavedGameValidation',
+        'SnapshotInventoryValidation', 'StorageSettings', 'StoredOnlineReconnect',
+        'UndoPreview', 'isPlainObject', 'ONLINE_SESSION_STORAGE_KEY',
+        'ONLINE_ROOM_STORAGE_KEY_SEPARATOR', 'ONLINE_STORAGE_KEYS',
+        'ONLINE_RESTORE_ROOM_INDEX_KEY', '_clearOnlineRestoreBundle',
+        '_clearRejoinRetry', '_emitOnlineRejoinRequest', 'initSocket',
+        'myPlayerName', 'myRoomId', 'myOriginalPlayerIndex', 'myPlayerIndex',
+        'reconnectToken', 'setSoundVolume', 'setSoundEffectEnabled',
+        'syncTutorialControls', 'normalizeLocalPlayerName', 'formatCpuSpeedLabel',
+        'runLocalOrSendOnline', 'getEnabledCardSelection', 'getEnabledLandmarkSelection',
+        'setOnlineReconnectLegacyFlag', 'LocalSaveRuntime', 'onlineDomEffects',
+        'renderPlayerSettings',
+    ].map(name => [name, 'readonly']))
+));
 
 module.exports = [
     {
@@ -576,6 +599,11 @@ module.exports = [
     {
         files: ['js/online.js'],
         languageOptions: { globals: onlineEnvironmentGlobals },
+        rules: maintenanceRules,
+    },
+    {
+        files: ['js/storage.js'],
+        languageOptions: { globals: storageEnvironmentGlobals },
         rules: maintenanceRules,
     },
 ];
