@@ -106,8 +106,11 @@ function createDisconnectSocketHandler(dependencies) {
             const remaining = getRemainingConnectedPlayers(room, targetIo.sockets.sockets, socket.id);
             if (remaining.length > 0) {
                 setRoomHostPlayerIndex(room, remaining[0].index);
+                const persistence = persistRoomCanonicalState(roomId, room, 'host-changed');
+                if (persistence && persistence.errorCode === 'CANONICAL_STATE_UNAVAILABLE') {
+                    return { ignored: false, hostChanged: true, persistenceFailed: true, playerIndex: socket.playerIndex };
+                }
                 emitRoomHostChanged(roomId, room, targetIo);
-                persistRoomCanonicalState(roomId, room, 'host-changed');
                 log(`ホスト移譲: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
                 return { ignored: false, hostChanged: true, playerIndex: socket.playerIndex };
             }

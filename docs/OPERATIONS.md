@@ -54,6 +54,7 @@ Set these in the service that runs `server.js` unless noted otherwise:
 | `CLIENT_ERROR_ALLOWED_ORIGINS` | Render | Recommended for public production | Comma-separated public origins allowed to report browser errors. | Same-origin reports are allowed automatically; use this for explicit public origin hygiene. |
 | `SOCKET_ALLOWED_ORIGINS` | Render | Optional | Comma-separated additional browser origins allowed to open Socket.IO connections. | Same-origin and Origin-less native/Node clients remain allowed. Keep this separate from client-error reporting origins. |
 | `HOSTLESS_RESTORE_ENABLED` | Render | Optional; enabled by default | Enables the provisional quorum fallback after normal host restore retries are exhausted. | Set to `0` for immediate host-only rollback. Values `false`, `no`, `off`, and `disabled` also disable it. |
+| `CANONICAL_STATE_STORE=file` plus `CANONICAL_STATE_STORE_DIR`, `CANONICAL_STATE_STORE_DURABLE=true`, `CANONICAL_STATE_STORE_SINGLE_INSTANCE=true`, and `CANONICAL_STATE_RETENTION_MS` | Render paid single-instance disk only | Off by default | Enables server-side canonical room records across process restarts. | Keep unset under the current free-operation setup. Use a private durable mount and exactly one instance; this adapter rejects missing/corrupt canonical state, and write failures stop the triggering action before ACK/broadcast. Full constraints are in `docs/ADR_RESTORE_TRUST_BOUNDARY.md`. |
 | `CLIENT_ERROR_SHARED_TOKEN` | Render | Optional | Token for scripted/no-origin diagnostics and `/api/client-error-test`. | Do not require normal browser reports to expose it. Use only for controlled tests or non-browser senders. |
 | `CLIENT_ERROR_TEST_ENABLED=1` | Render | Temporary only | Enables `/api/client-error-test` in production-like environments. | Remove immediately after test notification. |
 | `CLIENT_ERROR_ALLOW_NO_ORIGIN` | Render | Debug only | Allows no-origin/no-token diagnostics only for `1`, `true`, `yes`, or `on` (case-insensitive). | Values such as `0`, `false`, `no`, and `off` remain disabled. Avoid enabling it in production except a short controlled window. |
@@ -83,6 +84,18 @@ Set these in the service that runs `server.js` unless noted otherwise:
 2. Identify the failed command and whether it is release, PWA, online, RL, CPU, or static.
 3. Rerun once only if the failure looks infrastructure/flaky.
 4. If it reproduces, fix on the smallest relevant surface and run the failed command locally.
+
+### Canonical restore store failure
+
+The file store is opt-in and is not configured by the current free Render
+deployment. If a future single-instance disk deployment reports a canonical
+store failure, first confirm the configured path is the mounted disk, has
+private directory permissions, and has free space. A lock timeout or malformed
+lock fails closed; stop the service before inspecting or removing a lock, then
+verify its recorded PID is gone. Do not clear canonical records to get past a
+restore error: an absent or unreadable record intentionally rejects client
+restore data when the store is authoritative. See
+`docs/ADR_RESTORE_TRUST_BOUNDARY.md` before changing retention or storage mode.
 5. Do not publish, enable ads after review, or enable PWA production traffic until the target commit is green.
 
 ### Stale client notification

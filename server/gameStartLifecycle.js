@@ -17,7 +17,11 @@ function makeGameStartLifecycle(dependencies) {
         room.lastUndoState = null;
         resetRoomCanonicalMirror(room);
         room.lastTouchedAt = now;
-        persistRoomCanonicalState(room.roomId, room, 'game-start', now);
+        const persistence = persistRoomCanonicalState(room.roomId, room, 'game-start', now);
+        if (persistence && persistence.errorCode === 'CANONICAL_STATE_UNAVAILABLE') {
+            room.canonicalStateUnavailable = true;
+            return false;
+        }
     }
 
     return Object.freeze({ markRoomGameStarted });

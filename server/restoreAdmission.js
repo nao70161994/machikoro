@@ -6,6 +6,7 @@ function makeRestoreAdmission({
     isValidRoomId,
     hasOwnRoom,
     loadRoomCanonicalStateRecord,
+    isCanonicalStateStoreAuthoritative = () => false,
     selectRestoreSource,
     validateRestoreAuditRecord,
     isVerifiedClientRestoreSnapshot,
@@ -28,6 +29,7 @@ function makeRestoreAdmission({
         isValidRoomId,
         hasOwnRoom,
         loadRoomCanonicalStateRecord,
+        isCanonicalStateStoreAuthoritative,
         selectRestoreSource,
         validateRestoreAuditRecord,
         isVerifiedClientRestoreSnapshot,
@@ -58,7 +60,25 @@ function makeRestoreAdmission({
             return reject('同じルームIDが既に使用されています', { ok: false, reason: 'room-exists' });
         }
 
-        const loadedCanonicalRecord = approvedHostless ? null : loadRoomCanonicalStateRecord(roomId);
+        const canonicalStoreAuthoritative = isCanonicalStateStoreAuthoritative();
+        let loadedCanonicalRecord = null;
+        if (!approvedHostless || canonicalStoreAuthoritative) {
+            try {
+                loadedCanonicalRecord = loadRoomCanonicalStateRecord(roomId);
+            } catch (_) {
+                return reject('サーバー側の復元状態を確認できません');
+            }
+            if (approvedHostless && loadedCanonicalRecord) {
+                return reject('サーバー側に復元可能な正本があります');
+            }
+            if (canonicalStoreAuthoritative && !loadedCanonicalRecord) {
+                if (!approvedHostless) return reject('サーバー側の復元状態が見つかりません');
+            }
+            if (canonicalStoreAuthoritative && loadedCanonicalRecord &&
+                    !isPlainObject(loadedCanonicalRecord.gameStartPayload)) {
+                return reject('サーバー側の復元状態が不完全です');
+            }
+        }
         const restoreSource = selectRestoreSource(payload, loadedCanonicalRecord, { approvedHostless });
         const { canonicalRecord, gameStartPayload, stateSnapshot, actionLog } = restoreSource;
         const restoreAuditValidation = approvedHostless
@@ -147,6 +167,9 @@ function makeRestoreAdmission({
             gameStartPayload,
             clientSnapshotTrusted,
         } = input;
+        if (room.canonicalStateUnavailable === true) {
+            return reject('サーバー側の復元状態を利用できません');
+        }
         if (!room.started) return reject('同じルームIDが既に使用されています');
         const existingReconnectTokenHash = getExpectedReconnectTokenHash(
             room,

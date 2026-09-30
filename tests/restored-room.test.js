@@ -325,6 +325,23 @@ runTest('restored room delivery executorはeffect欠落時に部分実行しな�
     assert.deepStrictEqual(calls, []);
 });
 
+runTest('restored room delivery executorはauthoritative保存失敗後のsocket effectを実行しない', () => {
+    const builder = makeRestoredRoom({
+        sanitizeStateSnapshot: snapshot => snapshot,
+        serializeMirrorState: () => null,
+    });
+    const calls = [];
+    const result = builder.executeRestoredRoomDelivery({
+        persist: () => ({ errorCode: 'CANONICAL_STATE_UNAVAILABLE' }),
+        joinSocket: () => calls.push('join'),
+        assignSocketRoom: () => calls.push('room'),
+        assignSocketPlayer: () => calls.push('player'),
+        emitRejoinData: () => calls.push('emit'),
+    });
+    assert.strictEqual(result, false);
+    assert.deepStrictEqual(calls, []);
+});
+
 runTest('restored room completion planは通常復元のlogと戻り値をpureに組み立てる', () => {
     const builder = makeRestoredRoom({
         sanitizeStateSnapshot: snapshot => snapshot,

@@ -310,6 +310,7 @@ const {
     createCanonicalStateStoreFromEnv,
     buildCanonicalStateRecord,
     validateCanonicalStateRecord,
+    isAuthoritativeCanonicalStateStore,
 } = require('./server/canonicalStateStore');
 const makeCanonicalStateRepository = require('./server/canonicalStateRepository');
 const { makeCanonicalMirrorRuntime } = require('./server/canonicalMirrorRuntime');
@@ -985,6 +986,7 @@ const {
     isValidRoomId,
     hasOwnRoom,
     loadRoomCanonicalStateRecord,
+    isCanonicalStateStoreAuthoritative: () => isAuthoritativeCanonicalStateStore(canonicalStateStore),
     selectRestoreSource,
     validateRestoreAuditRecord,
     isVerifiedClientRestoreSnapshot,

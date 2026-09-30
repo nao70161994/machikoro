@@ -49,3 +49,15 @@ runTest('game start lifecycleは不正な注入依存をroom変更前に拒否�
         /persistRoomCanonicalState must be a function/
     );
 });
+
+runTest('game start lifecycleはauthoritative保存失敗でroomを利用不可にする', () => {
+    const room = { roomId: 'ROOM01', started: false };
+    const { markRoomGameStarted } = makeGameStartLifecycle({
+        resetRoomCanonicalMirror() {},
+        persistRoomCanonicalState() {
+            return { ok: false, errorCode: 'CANONICAL_STATE_UNAVAILABLE' };
+        },
+    });
+    assert.strictEqual(markRoomGameStarted(room, { playerNames: ['A'] }, 1234), false);
+    assert.strictEqual(room.canonicalStateUnavailable, true);
+});

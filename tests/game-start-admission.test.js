@@ -72,3 +72,14 @@ runTest('game start runtimeは依存不足を最初のeffectより前に拒否�
     }), /emitGameStart must be a function/);
     assert.deepStrictEqual(calls, []);
 });
+
+runTest('game start runtimeはauthoritative保存失敗時に開始通知とlogを止める', () => {
+    const calls = [];
+    const result = executeGameStartEffects({ roomId: 'ROOM01', room: {}, payload: {} }, {
+        markRoomGameStarted: () => false,
+        emitGameStart: () => calls.push('emit'),
+        logGameStarted: () => calls.push('log'),
+    });
+    assert.strictEqual(result, false);
+    assert.deepStrictEqual(calls, []);
+});

@@ -149,6 +149,63 @@ runTest('canonical repository isolates load exceptions and missing adapters', ()
     );
 });
 
+runTest('canonical repositoryはauthoritative storeの読取失敗を呼出元へ伝えてfail closedにする', () => {
+    const { repository } = makeRepository();
+    assert.throws(() => repository.loadRoomCanonicalStateRecord('ROOM01', {
+        capabilities: {
+            durable: true,
+            atomicCompareAndSwap: true,
+            processSafeLocking: true,
+            retention: true,
+        },
+        load() { throw new Error('disk corrupt'); },
+    }), error => error.code === 'CANONICAL_STATE_READ_FAILED');
+});
+
+runTest('canonical repositoryはauthoritative storeの書込失敗をroom単位でfail closedにする', () => {
+    const { repository } = makeRepository();
+    const capabilities = {
+        durable: true,
+        atomicCompareAndSwap: true,
+        processSafeLocking: true,
+        retention: true,
+    };
+    for (const save of [
+        () => { throw new Error('disk full'); },
+        () => ({ ok: false, reason: 'lock-timeout' }),
+    ]) {
+        const room = {};
+        const result = repository.persistRoomCanonicalState(
+            'ROOM01', room, 'test', 10, { capabilities, save }
+        );
+        assert.strictEqual(result.ok, false);
+        assert.strictEqual(result.errorCode, 'CANONICAL_STATE_UNAVAILABLE');
+        assert.strictEqual(room.canonicalStateUnavailable, true);
+    }
+});
+
+runTest('canonical repositoryはhostless provisional roomをserver canonical recordへ昇格させない', () => {
+    const { repository } = makeRepository();
+    const calls = [];
+    const result = repository.persistRoomCanonicalState('ROOM01', {
+        provisionalRestore: true,
+    }, 'server-restart-restore', 10, {
+        capabilities: {
+            durable: true,
+            atomicCompareAndSwap: true,
+            processSafeLocking: true,
+            retention: true,
+        },
+        save() { calls.push('save'); return { ok: true }; },
+    });
+    assert.deepStrictEqual(result, {
+        ok: true,
+        skipped: true,
+        reason: 'provisional-hostless-restore',
+    });
+    assert.deepStrictEqual(calls, []);
+});
+
 runTest('canonical repository requires schema functions', () => {
     assert.throws(
         () => makeCanonicalStateRepository(),

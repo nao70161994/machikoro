@@ -492,8 +492,8 @@ runTest('rejoin handlerはhost不在時に先着playerをrejoinData前にhostへ
         ['join', 'ROOM01'],
         ['host-connected'],
         ['set-host', 1],
-        ['host-changed', 'ROOM01', 1],
         ['persist', 'ROOM01', 1, 'host-reselected'],
+        ['host-changed', 'ROOM01', 1],
         ['log', 'ホスト再選出: ROOM01 → プレイヤー1'],
         ['now'],
         ['payload', 1],
@@ -502,6 +502,23 @@ runTest('rejoin handlerはhost不在時に先着playerをrejoinData前にhostへ
         ['io.emit', 'playerRejoined', { playerIndex: 1, playerName: 'Bob' }],
         ['log', '再接続: Bob (ルーム: ROOM01)'],
     ]);
+});
+
+runTest('rejoin handlerはcanonical state保存失敗時にhost変更を通知しない', () => {
+    const fixture = makeFixture({
+        isRoomHostConnected() { return false; },
+        persistRoomCanonicalState() {
+            return { ok: false, errorCode: 'CANONICAL_STATE_UNAVAILABLE' };
+        },
+        emitRoomHostChanged() { fixture.events.push(['host-changed']); },
+    });
+    fixture.room.hostPlayerIndex = 0;
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(validPayload);
+    assert.strictEqual(fixture.room.canonicalStateUnavailable, true);
+    assert(fixture.events.some(event => event[0] === 'error' && event[1] === 'CANONICAL_STATE_UNAVAILABLE'));
+    assert(!fixture.events.some(event => event[0] === 'host-changed'));
+    assert(!fixture.events.some(event => event[0] === 'socket.emit' && event[1] === 'rejoinData'));
 });
 
 runTest('rejoin handler rejects malformed payload without session mutation', () => {

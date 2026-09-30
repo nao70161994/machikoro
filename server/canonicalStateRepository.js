@@ -23,6 +23,24 @@ function makeCanonicalStateRepository(dependencies = {}) {
         ? dependencies.warn
         : (...args) => console.warn(...args);
 
+    function isAuthoritativeStore(store) {
+        return !!(store && store.capabilities &&
+            store.capabilities.durable === true &&
+            store.capabilities.atomicCompareAndSwap === true &&
+            store.capabilities.processSafeLocking === true &&
+            store.capabilities.retention === true);
+    }
+
+    function authoritativeWriteFailure(reason, room) {
+        if (room && typeof room === 'object') room.canonicalStateUnavailable = true;
+        return Object.freeze({
+            ok: false,
+            reason: 'authoritative-write-failed',
+            detail: String(reason || 'store-error'),
+            errorCode: 'CANONICAL_STATE_UNAVAILABLE',
+        });
+    }
+
     function persistRoomCanonicalState(
         roomId,
         room,
@@ -30,18 +48,31 @@ function makeCanonicalStateRepository(dependencies = {}) {
         persistedAt = now(),
         store = defaultStore
     ) {
+        if (room && room.provisionalRestore === true) {
+            return { ok: true, skipped: true, reason: 'provisional-hostless-restore' };
+        }
         if (!store || typeof store.save !== 'function') {
             return { ok: true, skipped: true };
         }
         const record = buildRecord(roomId, room, { reason, now: persistedAt });
-        if (!record) return { ok: false, reason: 'invalid-record' };
+        if (!record) {
+            if (isAuthoritativeStore(store)) return authoritativeWriteFailure('invalid-record', room);
+            return { ok: false, reason: 'invalid-record' };
+        }
         try {
-            return store.save(record);
+            const result = store.save(record);
+            if (isAuthoritativeStore(store) && (!result || result.ok !== true)) {
+                return authoritativeWriteFailure(result && result.reason || 'store-rejected-write', room);
+            }
+            return result;
         } catch (error) {
             warn(
                 '[canonical-state-store] save failed:',
                 error && error.message || error
             );
+            if (isAuthoritativeStore(store)) {
+                return authoritativeWriteFailure(error && error.message || 'store-error', room);
+            }
             return { ok: false, reason: 'save-failed' };
         }
     }
@@ -58,6 +89,12 @@ function makeCanonicalStateRepository(dependencies = {}) {
                 '[canonical-state-store] load failed:',
                 error && error.message || error
             );
+            if (isAuthoritativeStore(store)) {
+                /** @type {Error & {code?: string}} */
+                const failure = new Error('authoritative canonical state could not be loaded');
+                failure.code = 'CANONICAL_STATE_READ_FAILED';
+                throw failure;
+            }
             return null;
         }
     }

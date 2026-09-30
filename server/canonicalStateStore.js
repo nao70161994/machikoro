@@ -1,7 +1,12 @@
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
 const CANONICAL_STATE_STORE_SCHEMA_VERSION = 1;
 const CANONICAL_STATE_STORE_MODES = Object.freeze({
     NOOP: 'noop',
     MEMORY: 'memory',
+    FILE: 'file',
 });
 const CANONICAL_STATE_STORE_REQUIRED_METHODS = Object.freeze([
     'save',
@@ -99,7 +104,8 @@ function cloneJson(value) {
 
 function canonicalStateStoreMode(env = process.env) {
     const mode = String(env.CANONICAL_STATE_STORE || env.CANONICAL_STATE_STORE_MODE || '').trim().toLowerCase();
-    return mode === CANONICAL_STATE_STORE_MODES.MEMORY ? CANONICAL_STATE_STORE_MODES.MEMORY : CANONICAL_STATE_STORE_MODES.NOOP;
+    if (mode === CANONICAL_STATE_STORE_MODES.MEMORY || mode === CANONICAL_STATE_STORE_MODES.FILE) return mode;
+    return CANONICAL_STATE_STORE_MODES.NOOP;
 }
 
 function canonicalStateStoreRetentionMs(env = process.env) {
@@ -299,11 +305,285 @@ function createMemoryCanonicalStateStore(initialRecords = [], options = {}) {
     });
 }
 
+/**
+ * Creates a synchronous JSON-file store for a single service instance on durable local storage.
+ * A dead process lock is reclaimed; an unreadable lock fails closed and requires operator cleanup.
+ * @param {string} directory
+ * @param {{retentionMs?: number, now?: function(): number, lockTimeoutMs?: number, durableAttested?: boolean, singleInstanceAttested?: boolean}} [options]
+ */
+function createFileCanonicalStateStore(directory, options = {}) {
+    if (typeof directory !== 'string' || !path.isAbsolute(directory)) {
+        throw new TypeError('canonical state directory must be an absolute path');
+    }
+    if (options.durableAttested !== true || options.singleInstanceAttested !== true) {
+        throw new TypeError('file canonical store requires durable-storage and single-instance attestations');
+    }
+    const retentionMs = options.retentionMs;
+    if (!Number.isSafeInteger(retentionMs) || retentionMs <= 0) {
+        throw new TypeError('file canonical store requires a positive retention period');
+    }
+    const lockTimeoutMs = Number.isSafeInteger(options.lockTimeoutMs) && options.lockTimeoutMs > 0
+        ? options.lockTimeoutMs
+        : 5_000;
+    const now = typeof options.now === 'function' ? options.now : Date.now;
+    const localLocks = new Map();
+    fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+    const directoryInfo = fs.lstatSync(directory);
+    if (!directoryInfo.isDirectory() || directoryInfo.isSymbolicLink()) {
+        throw new TypeError('canonical state directory must be a real directory');
+    }
+    if ((directoryInfo.mode & 0o077) !== 0) {
+        throw new TypeError('canonical state directory must not be accessible by group or other users');
+    }
+
+    function roomKey(roomId) {
+        return crypto.createHash('sha256').update(String(roomId || '')).digest('hex');
+    }
+
+    function recordPath(roomId) {
+        return path.join(directory, roomKey(roomId) + '.json');
+    }
+
+    function lockDirectory(roomId) {
+        return path.join(directory, roomKey(roomId) + '.lock');
+    }
+
+    function readRecord(roomId) {
+        let source;
+        try {
+            source = fs.readFileSync(recordPath(roomId), 'utf8');
+        } catch (error) {
+            if (error && error.code === 'ENOENT') return null;
+            throw error;
+        }
+        const record = JSON.parse(source);
+        const validation = validateCanonicalStateRecord(record);
+        if (!validation.ok || record.roomId !== roomId) {
+            throw new Error('invalid canonical state record: ' + (validation.reason || 'room-id'));
+        }
+        return record;
+    }
+
+    function isDeadLock(lockPath) {
+        try {
+            const owner = JSON.parse(fs.readFileSync(path.join(lockPath, 'owner.json'), 'utf8'));
+            if (!Number.isSafeInteger(owner.pid) || owner.pid < 1) return false;
+            try {
+                process.kill(owner.pid, 0);
+                return false;
+            } catch (error) {
+                return !!error && error.code === 'ESRCH';
+            }
+        } catch (_) {
+            // Incomplete lock metadata is ambiguous; never steal it.
+            return false;
+        }
+    }
+
+    function acquireRoomLock(roomId) {
+        const target = lockDirectory(roomId);
+        const nonce = crypto.randomBytes(16).toString('hex');
+        const staging = target + '-' + nonce;
+        fs.mkdirSync(staging, { mode: 0o700 });
+        try {
+            const ownerPath = path.join(staging, 'owner.json');
+            fs.writeFileSync(ownerPath, JSON.stringify({ pid: process.pid, nonce }), {
+                encoding: 'utf8', mode: 0o600, flag: 'wx',
+            });
+            const ownerFd = fs.openSync(ownerPath, 'r');
+            try { fs.fsyncSync(ownerFd); } finally { fs.closeSync(ownerFd); }
+        } catch (error) {
+            fs.rmSync(staging, { recursive: true, force: true });
+            throw error;
+        }
+
+        const deadline = Date.now() + lockTimeoutMs;
+        while (true) {
+            try {
+                // Publish only complete lock metadata. Directory rename is atomic on the local filesystem.
+                fs.renameSync(staging, target);
+                return { target, nonce };
+            } catch (error) {
+                if (!error || !['EEXIST', 'ENOTEMPTY'].includes(error.code)) {
+                    fs.rmSync(staging, { recursive: true, force: true });
+                    throw error;
+                }
+                if (isDeadLock(target)) {
+                    fs.rmSync(target, { recursive: true, force: true });
+                    continue;
+                }
+                if (Date.now() >= deadline) {
+                    fs.rmSync(staging, { recursive: true, force: true });
+                    /** @type {Error & {code?: string}} */
+                    const timeout = new Error('canonical state room lock timed out');
+                    timeout.code = 'CANONICAL_STATE_LOCK_TIMEOUT';
+                    throw timeout;
+                }
+                Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 5);
+            }
+        }
+    }
+
+    function runExclusive(roomId, operation) {
+        const key = String(roomId || '');
+        if (!key || typeof operation !== 'function') return { ok: false, reason: 'invalid-operation' };
+        const active = localLocks.get(key);
+        if (active) {
+            active.depth++;
+            try { return operation(); } finally { active.depth--; }
+        }
+        const lock = acquireRoomLock(key);
+        localLocks.set(key, { nonce: lock.nonce, depth: 1 });
+        try {
+            return operation();
+        } finally {
+            localLocks.delete(key);
+            try {
+                const owner = JSON.parse(fs.readFileSync(path.join(lock.target, 'owner.json'), 'utf8'));
+                if (owner.nonce === lock.nonce) fs.rmSync(lock.target, { recursive: true, force: true });
+            } catch (_) {
+                // Preserve a lock if ownership cannot be proven.
+            }
+        }
+    }
+
+    function writeRecord(record) {
+        const target = recordPath(record.roomId);
+        const temporary = target + '.' + crypto.randomBytes(16).toString('hex') + '.tmp';
+        try {
+            const fd = fs.openSync(temporary, 'wx', 0o600);
+            try {
+                fs.writeFileSync(fd, JSON.stringify(record), 'utf8');
+                fs.fsyncSync(fd);
+            } finally {
+                fs.closeSync(fd);
+            }
+            fs.renameSync(temporary, target);
+            const directoryFd = fs.openSync(directory, 'r');
+            try { fs.fsyncSync(directoryFd); } finally { fs.closeSync(directoryFd); }
+        } catch (error) {
+            fs.rmSync(temporary, { force: true });
+            throw error;
+        }
+    }
+
+    function removeRecord(target) {
+        fs.rmSync(target, { force: true });
+        const directoryFd = fs.openSync(directory, 'r');
+        try { fs.fsyncSync(directoryFd); } finally { fs.closeSync(directoryFd); }
+    }
+
+    function isExpired(record, at = now()) {
+        return Number.isSafeInteger(record.persistedAt) && record.persistedAt + retentionMs <= at;
+    }
+
+    function pruneExpiredFiles(at = now()) {
+        let deleted = 0;
+        for (const name of fs.readdirSync(directory)) {
+            if (!/^[a-f0-9]{64}\.json$/.test(name)) continue;
+            let record;
+            try {
+                record = JSON.parse(fs.readFileSync(path.join(directory, name), 'utf8'));
+            } catch (_) {
+                continue;
+            }
+            if (!validateCanonicalStateRecord(record).ok || name !== roomKey(record.roomId) + '.json' ||
+                    !isExpired(record, at)) continue;
+            const result = runExclusive(record.roomId, () => {
+                const latest = readRecord(record.roomId);
+                if (!latest || !isExpired(latest, at)) return false;
+                removeRecord(recordPath(record.roomId));
+                return true;
+            });
+            if (result === true) deleted++;
+        }
+        return deleted;
+    }
+
+    return Object.freeze({
+        mode: CANONICAL_STATE_STORE_MODES.FILE,
+        capabilities: canonicalStateStoreCapabilities({
+            durable: true,
+            atomicCompareAndSwap: true,
+            processSafeLocking: true,
+            retention: true,
+        }),
+        save(record, saveOptions = {}) {
+            const validation = validateCanonicalStateRecord(record);
+            if (!validation.ok) return validation;
+            return runExclusive(record.roomId, () => {
+                const current = readRecord(record.roomId);
+                const currentRevision = current?.storeRevision || 0;
+                if (saveOptions.expectedRevision != null && saveOptions.expectedRevision !== currentRevision) {
+                    return { ok: false, reason: 'revision-conflict', currentRevision };
+                }
+                const stored = cloneJson(record);
+                stored.storeRevision = currentRevision + 1;
+                writeRecord(stored);
+                return { ok: true };
+            });
+        },
+        load(roomId) {
+            const key = String(roomId || '');
+            const record = readRecord(key);
+            if (!record || !isExpired(record)) return record ? cloneJson(record) : null;
+            return runExclusive(key, () => {
+                const latest = readRecord(key);
+                if (!latest) return null;
+                if (!isExpired(latest)) return cloneJson(latest);
+                removeRecord(recordPath(key));
+                return null;
+            });
+        },
+        delete(roomId) {
+            const key = String(roomId || '');
+            return runExclusive(key, () => {
+                removeRecord(recordPath(key));
+                return { ok: true };
+            });
+        },
+        list() {
+            const records = [];
+            pruneExpiredFiles();
+            for (const name of fs.readdirSync(directory)) {
+                if (!/^[a-f0-9]{64}\.json$/.test(name)) continue;
+                try {
+                    const record = JSON.parse(fs.readFileSync(path.join(directory, name), 'utf8'));
+                    if (validateCanonicalStateRecord(record).ok &&
+                            name === roomKey(record.roomId) + '.json' && !isExpired(record)) {
+                        records.push(cloneJson(record));
+                    }
+                } catch (_) {
+                    // Keep corrupt files for diagnosis, but never return them as canonical records.
+                }
+            }
+            return records;
+        },
+        prune(at = now()) {
+            return { ok: true, deleted: pruneExpiredFiles(at) };
+        },
+        runExclusive,
+    });
+}
+
 /** @returns {CanonicalStateStoreAdapter} */
 function createCanonicalStateStoreFromEnv(env = process.env) {
-    return canonicalStateStoreMode(env) === CANONICAL_STATE_STORE_MODES.MEMORY
-        ? createMemoryCanonicalStateStore([], { retentionMs: canonicalStateStoreRetentionMs(env) })
-        : createNoopCanonicalStateStore();
+    const mode = canonicalStateStoreMode(env);
+    if (mode === CANONICAL_STATE_STORE_MODES.MEMORY) {
+        return createMemoryCanonicalStateStore([], { retentionMs: canonicalStateStoreRetentionMs(env) });
+    }
+    if (mode === CANONICAL_STATE_STORE_MODES.FILE) {
+        const retentionMs = canonicalStateStoreRetentionMs(env);
+        if (retentionMs == null) {
+            throw new TypeError('file canonical store requires CANONICAL_STATE_RETENTION_MS');
+        }
+        return createFileCanonicalStateStore(env.CANONICAL_STATE_STORE_DIR, {
+            retentionMs,
+            durableAttested: String(env.CANONICAL_STATE_STORE_DURABLE || '').toLowerCase() === 'true',
+            singleInstanceAttested: String(env.CANONICAL_STATE_STORE_SINGLE_INSTANCE || '').toLowerCase() === 'true',
+        });
+    }
+    return createNoopCanonicalStateStore();
 }
 
 module.exports = {
@@ -320,5 +600,6 @@ module.exports = {
     validateCanonicalStateRecord,
     createNoopCanonicalStateStore,
     createMemoryCanonicalStateStore,
+    createFileCanonicalStateStore,
     createCanonicalStateStoreFromEnv,
 };

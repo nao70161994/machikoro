@@ -22,11 +22,12 @@ function makeHarness(overrides = {}) {
         isValidRoomId: () => { calls.push('room-id'); return true; },
         hasOwnRoom: () => { calls.push('has-room'); return false; },
         loadRoomCanonicalStateRecord: () => { calls.push('load'); return null; },
+        isCanonicalStateStoreAuthoritative: () => false,
         selectRestoreSource: (receivedPayload, receivedCanonical, options) => {
             calls.push('source');
             assert.strictEqual(receivedPayload, payload);
             assert.strictEqual(receivedCanonical, null);
-            assert.deepStrictEqual(options, { approvedHostless: false });
+            assert.deepStrictEqual(options, { approvedHostless: options.approvedHostless === true });
             return {
                 canonicalRecord: receivedCanonical,
                 gameStartPayload: receivedPayload.gameStartPayload,
@@ -90,6 +91,53 @@ runTest('restore admissionは入口拒否の順序と既存messageを固定す�
         assert.strictEqual(result.result, undefined);
         assert.deepStrictEqual(harness.calls, expectedCalls);
     }
+});
+
+runTest('authoritative canonical storeは欠落recordと読取失敗でclient restoreへ降格しない', () => {
+    const missing = makeHarness({ isCanonicalStateStoreAuthoritative: () => true });
+    const missingResult = missing.plan(missing.payload);
+    assert.strictEqual(missingResult.ok, false);
+    assert.strictEqual(missingResult.errorMessage, 'サーバー側の復元状態が見つかりません');
+    assert.deepStrictEqual(missing.calls, ['plain', 'limits', 'room-id', 'load']);
+
+    const failed = makeHarness({
+        isCanonicalStateStoreAuthoritative: () => true,
+        loadRoomCanonicalStateRecord() { throw new Error('disk corrupt'); },
+    });
+    const failedResult = failed.plan(failed.payload);
+    assert.strictEqual(failedResult.ok, false);
+    assert.strictEqual(failedResult.errorMessage, 'サーバー側の復元状態を確認できません');
+    assert.deepStrictEqual(failed.calls, ['plain', 'limits', 'room-id']);
+
+    const hostless = makeHarness({
+        isCanonicalStateStoreAuthoritative: () => true,
+    });
+    const hostlessResult = hostless.plan(hostless.payload, { approvedHostless: true });
+    assert.strictEqual(hostlessResult.ok, true);
+    assert.ok(hostless.calls.includes('load'));
+
+    const canonical = makeHarness({
+        isCanonicalStateStoreAuthoritative: () => true,
+        loadRoomCanonicalStateRecord() {
+            canonical.calls.push('load');
+            return { roomId: 'ROOM01', schemaVersion: 1 };
+        },
+    });
+    const canonicalResult = canonical.plan(canonical.payload, { approvedHostless: true });
+    assert.strictEqual(canonicalResult.ok, false);
+    assert.strictEqual(canonicalResult.errorMessage, 'サーバー側に復元可能な正本があります');
+    assert.deepStrictEqual(canonical.calls, ['plain', 'limits', 'room-id', 'has-room', 'load']);
+
+    const incomplete = makeHarness({
+        isCanonicalStateStoreAuthoritative: () => true,
+        loadRoomCanonicalStateRecord() {
+            return { roomId: 'ROOM01', schemaVersion: 1, gameStartPayload: null };
+        },
+    });
+    const incompleteResult = incomplete.plan(incomplete.payload);
+    assert.strictEqual(incompleteResult.ok, false);
+    assert.strictEqual(incompleteResult.errorMessage, 'サーバー側の復元状態が不完全です');
+    assert.ok(!incomplete.calls.includes('source'));
 });
 
 runTest('restore admissionは通常復元のauthorityとtrust判定順を固定する', () => {

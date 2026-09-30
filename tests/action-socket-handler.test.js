@@ -111,6 +111,25 @@ runTest('action socket handlerは受理処理とACK/broadcast順を維持する'
     ]);
 });
 
+runTest('action socket handlerはauthoritative persistence失敗でroomを止めACK/broadcastしない', () => {
+    const subject = createSubject({
+        persistRoomCanonicalState() {
+            subject.calls.push('persist');
+            subject.room.canonicalStateUnavailable = true;
+            return { ok: false, errorCode: 'CANONICAL_STATE_UNAVAILABLE' };
+        },
+    });
+    subject.handlers.gameAction({ action: 'nextTurn', data: {}, clientActionId: 'disk-failure' });
+    assert.deepStrictEqual(subject.broadcast, []);
+    assert.deepStrictEqual(subject.emitted, [{ event: 'appError', payload: 'CANONICAL_STATE_UNAVAILABLE' }]);
+    assert.strictEqual(subject.room.canonicalStateUnavailable, true);
+    assert.strictEqual(subject.calls.at(-1), 'persist');
+
+    subject.handlers.gameAction({ action: 'nextTurn', data: {}, clientActionId: 'later-action' });
+    assert.strictEqual(subject.emitted.at(-1).payload, 'CANONICAL_STATE_UNAVAILABLE');
+    assert.strictEqual(subject.broadcast.length, 0);
+});
+
 runTest('action socket handlerはmirror適用拒否・例外でsequenceとUndoを変更しない', () => {
     for (const mode of ['false', 'throw']) {
         const previousUndo = { stale: true };

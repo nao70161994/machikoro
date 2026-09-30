@@ -23,7 +23,11 @@ function consumePreviousGenerationToken(roomId, room, player, persistRoomCanonic
     if (!hadPreviousGenerationToken) return false;
     delete player.previousReconnectTokenHash;
     delete player.previousReconnectTokenGeneration;
-    persistRoomCanonicalState(roomId, room, 'rematch-reconnect-token-consumed');
+    const persistence = persistRoomCanonicalState(roomId, room, 'rematch-reconnect-token-consumed');
+    if (persistence && persistence.errorCode === 'CANONICAL_STATE_UNAVAILABLE') {
+        room.canonicalStateUnavailable = true;
+        return false;
+    }
     return true;
 }
 
@@ -71,6 +75,10 @@ function registerRejoinSocketHandler(socket, dependencies) {
         if (!isValidRoomId(roomId)) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
         const room = rooms[roomId];
         if (!room) { emitAppError(socket, 'ROOM_NOT_FOUND'); return; }
+        if (room.canonicalStateUnavailable === true) {
+            emitAppError(socket, 'CANONICAL_STATE_UNAVAILABLE');
+            return;
+        }
         if ((room.marketRule === 'ten-type' || room.gameStartPayload?.marketRule === 'ten-type') &&
                 marketRuleVersion !== 1) {
             emitAppError(socket, 'この市場ルールで遊ぶにはアプリを更新してください');
@@ -157,9 +165,16 @@ function registerRejoinSocketHandler(socket, dependencies) {
                             room.gameGeneration !== identityGeneration ||
                             player.previousReconnectTokenGeneration !== identityPreviousGeneration ||
                             player.previousReconnectTokenHash !== identityPreviousHash) return;
-                    consumePreviousGenerationToken(
+                    const consumed = consumePreviousGenerationToken(
                         roomId, room, player, persistRoomCanonicalState
                     );
+                    if (consumed === false && room.canonicalStateUnavailable === true) {
+                        player.id = null;
+                        if (typeof socket.leave === 'function') socket.leave(roomId);
+                        if (socket.roomId === roomId) delete socket.roomId;
+                        if (socket.playerIndex === playerIndex) delete socket.playerIndex;
+                        emitAppError(socket, 'CANONICAL_STATE_UNAVAILABLE');
+                    }
                 });
             } catch (_) {
                 player.id = null;
@@ -172,14 +187,23 @@ function registerRejoinSocketHandler(socket, dependencies) {
         }
         if (!isRoomHostConnected(room)) {
             setRoomHostPlayerIndex(room, playerIndex);
+            const persistence = persistRoomCanonicalState(roomId, room, 'host-reselected');
+            if (persistence && persistence.errorCode === 'CANONICAL_STATE_UNAVAILABLE') {
+                room.canonicalStateUnavailable = true;
+                emitAppError(socket, 'CANONICAL_STATE_UNAVAILABLE');
+                return;
+            }
             emitRoomHostChanged(roomId, room, io);
-            persistRoomCanonicalState(roomId, room, 'host-reselected');
             log(`ホスト再選出: ${roomId} → プレイヤー${room.hostPlayerIndex}`);
         }
         room.lastTouchedAt = now();
 
         if (!usesPreviousGenerationToken) {
-            consumePreviousGenerationToken(roomId, room, player, persistRoomCanonicalState);
+            const consumed = consumePreviousGenerationToken(roomId, room, player, persistRoomCanonicalState);
+            if (consumed === false && room.canonicalStateUnavailable === true) {
+                emitAppError(socket, 'CANONICAL_STATE_UNAVAILABLE');
+                return;
+            }
         }
         socket.emit('rejoinData', buildRejoinDataPayload(room, playerIndex));
         io.to(roomId).emit('playerRejoined', { playerIndex, playerName });

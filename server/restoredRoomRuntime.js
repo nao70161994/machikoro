@@ -71,9 +71,24 @@ function makeRestoredRoomRuntime(dependencies = {}) {
             emitRejoinData: effects.emitRejoinData,
         };
         if (dependencies.deliveryEffectAuthorityEnabled === true) {
-            dependencies.executeDelivery(delivery);
+            if (dependencies.executeDelivery(delivery) === false) {
+                return Object.freeze({
+                    ok: false,
+                    reason: 'canonical-state-unavailable',
+                    errorMessage: 'サーバー側の復元状態を保存できませんでした',
+                });
+            }
         } else {
-            for (const name of deliveryEffects) delivery[name]();
+            for (const name of deliveryEffects) {
+                const result = delivery[name]();
+                if (name === 'persist' && result && result.errorCode === 'CANONICAL_STATE_UNAVAILABLE') {
+                    return Object.freeze({
+                        ok: false,
+                        reason: 'canonical-state-unavailable',
+                        errorMessage: 'サーバー側の復元状態を保存できませんでした',
+                    });
+                }
+            }
         }
 
         const completionPlan = dependencies.planCompletion({

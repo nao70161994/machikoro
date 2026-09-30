@@ -59,6 +59,10 @@ function registerActionSocketHandler(socket, dependencies) {
             return;
         }
         if (!room.started) return;
+        if (room.canonicalStateUnavailable === true) {
+            emitAppError(socket, 'CANONICAL_STATE_UNAVAILABLE');
+            return;
+        }
         if (!isActiveRoomSocket(room, socket)) {
             emitAppError(socket, 'INVALID_SESSION');
             return;
@@ -170,7 +174,12 @@ function registerActionSocketHandler(socket, dependencies) {
             attachCompactedRestoreSnapshotToAction(roomId, room, actionEntry, actionLogLengthBeforeCompact);
             markRoomCanonicalMirrorCurrent(room);
             room.lastTouchedAt = now();
-            persistRoomCanonicalState(roomId, room, 'accepted-action');
+            const persistence = persistRoomCanonicalState(roomId, room, 'accepted-action');
+            if (persistence && persistence.errorCode === 'CANONICAL_STATE_UNAVAILABLE') {
+                room.canonicalStateUnavailable = true;
+                emitAppError(socket, 'CANONICAL_STATE_UNAVAILABLE');
+                return;
+            }
         }
         const emittedWire = encodeGameSchemaAction(room, actionEntry);
         if (!emittedWire.ok) {

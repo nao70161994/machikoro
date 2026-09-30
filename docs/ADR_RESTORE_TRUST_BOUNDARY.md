@@ -275,11 +275,42 @@ the current server-restart path as server-authoritative canonical recovery:
 - Complete action-log replay can recover only actions still present in the
   submitted bundle. It cannot prove that the client did not omit newer actions.
 
-For the current Render deployment, a file adapter alone would not solve this:
-Render documents that service filesystems are ephemeral by default and are
-preserved across restarts only on a paid service with an attached persistent
-disk. A Render disk is attached to one service instance and cannot be shared by
-multiple instances. See [Render Persistent Disks](https://render.com/docs/disks).
+An opt-in synchronous file adapter now exists for one service instance on a
+durable local filesystem. It writes JSON records through fsync + atomic rename,
+uses per-room lock directories for compare-and-swap, enforces retention, and
+fails closed on corrupt lock metadata or authoritative store read/write errors.
+The default remains `noop`; this change does not enable production persistence.
+The adapter requires all of these settings:
+
+```sh
+CANONICAL_STATE_STORE=file
+CANONICAL_STATE_STORE_DIR=/var/data/machikoro-canonical
+CANONICAL_STATE_STORE_DURABLE=true
+CANONICAL_STATE_STORE_SINGLE_INSTANCE=true
+CANONICAL_STATE_RETENTION_MS=2592000000
+```
+
+`*_DURABLE` and `*_SINGLE_INSTANCE` are operator attestations, not automatic
+proofs. The directory must be on a durable mounted volume, and exactly one
+service instance may use it. The file backend does not support shared
+multi-instance deployments. A lock timeout or authoritative write failure
+aborts the synchronous server action before broadcast/acknowledgement. A later
+process reclaims a lock only after proving its PID is gone; unreadable lock
+metadata requires operator cleanup while the service is stopped.
+An authoritative store rejects host restore when the room has no server record,
+rejects hostless replacement when a server record exists, and never promotes a
+hostless provisional room into a canonical record. Provisional recovery remains
+the lower-trust casual-play path. An authoritative write failure marks the
+affected room unavailable and rejects later actions and rejoin attempts. The
+triggering game start, host change, or action is not emitted as accepted; the
+server process and unrelated rooms continue running. Operators should inspect
+the canonical store before removing the unavailable room or restoring service.
+
+For the current Render deployment, a file adapter alone does not create
+durability: Render documents that service filesystems are ephemeral by default
+and are preserved across restarts only on a paid service with an attached
+persistent disk. A Render disk is attached to one service instance and cannot
+be shared by multiple instances. See [Render Persistent Disks](https://render.com/docs/disks).
 
 The available operational choices are therefore:
 
@@ -287,19 +318,18 @@ The available operational choices are therefore:
    snapshots, bounded action-log replay, and the provisional quorum fallback.
    Describe recovery as best-effort casual recovery, not durable server
    canonical state. No production store authority is enabled.
-2. **Use a paid single-instance disk:** add and verify an atomic file adapter,
-   configure its mount path, and keep the service at one instance. This can
-   survive process restarts and deploys, but it is not a shared multi-instance
-   store and adds paid hosting cost.
+2. **Use a paid single-instance disk:** configure and verify the existing file
+   adapter with the variables above, set the disk mount path, and keep the
+   service at one instance. This can survive process restarts and deploys, but
+   it is not a shared multi-instance store and adds paid hosting cost.
 3. **Use a shared managed database/KV:** implement an adapter with atomic
    revision checks, cross-process locking/consistency, retention, deletion, and
    restore migration tests. This is the path for multi-instance or stronger
    competitive recovery and requires an explicit service and cost decision.
 
-Until option 2 or 3 is selected, the existing adapter contract and restore
-source priority remain design footing only. Do not mark the server-canonical
-restart-recovery requirement complete, enable a memory store as a production
-fix, or let client bundles override a future server-loaded record. Before
-turning on durable authority, prove restart recovery, stale-client rejection,
-atomic snapshot/action-log compaction, room expiry/deletion, and rollback on the
-selected deployment target.
+Until option 2 or 3 is selected, the adapter remains disabled in production.
+Do not mark server-canonical restart recovery complete, enable a memory store as
+a production fix, or let client bundles override a future server-loaded record.
+Before turning on durable authority, prove restart recovery, stale-client
+rejection, atomic snapshot/action-log compaction, room expiry/deletion, lock
+recovery, and failure behavior on the selected deployment target.
