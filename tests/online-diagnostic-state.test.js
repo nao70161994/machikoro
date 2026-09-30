@@ -27,6 +27,18 @@ function run() {
 
     const isolated = OnlineDiagnosticState.createController({ first: null, second: null });
     assert.strictEqual(isolated.read('first'), null);
+
+    const diagnostics = OnlineDiagnosticState.createOnlineDiagnosticController();
+    assert.ok(diagnostics.keys.includes('onlineGameEngineShadowOutcome'));
+    assert.deepStrictEqual(diagnostics.read('onlineGameEngineShadowOutcome'), {
+        report: null,
+        authority: { authority: 'mutable', reason: 'disabled' },
+    });
+    assert.deepStrictEqual(diagnostics.read('onlineRestoreReplayPlanSelection'), {
+        plan: null,
+        source: 'none',
+        fallbackReason: '',
+    });
 }
 
 run();
