@@ -36,6 +36,12 @@ runTest('maintenance lint keeps bug-detection rules enabled as errors', () => {
         'no-fallthrough',
         'no-eval',
         'no-implied-eval',
+        'no-async-promise-executor',
+        'no-promise-executor-return',
+        'no-throw-literal',
+        'no-obj-calls',
+        'no-loss-of-precision',
+        'no-prototype-builtins',
         'no-new-func',
         'no-script-url',
         'no-sparse-arrays',
@@ -45,6 +51,7 @@ runTest('maintenance lint keeps bug-detection rules enabled as errors', () => {
         'no-unsafe-finally',
         'no-unexpected-multiline',
         'no-unreachable-loop',
+        'require-atomic-updates',
         'valid-typeof',
     ].sort();
     for (const entry of eslintConfig) {

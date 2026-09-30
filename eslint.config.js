@@ -320,6 +320,12 @@ const maintenanceRules = Object.freeze({
     'no-duplicate-imports': 'error',
     'no-eval': 'error',
     'no-implied-eval': 'error',
+    'no-async-promise-executor': 'error',
+    'no-promise-executor-return': 'error',
+    'no-throw-literal': 'error',
+    'no-obj-calls': 'error',
+    'no-loss-of-precision': 'error',
+    'no-prototype-builtins': 'error',
     'no-new-func': 'error',
     'no-undef': 'error',
     'no-sparse-arrays': 'error',
@@ -330,6 +336,7 @@ const maintenanceRules = Object.freeze({
     'no-unexpected-multiline': 'error',
     'no-unreachable-loop': 'error',
     'no-fallthrough': 'error',
+    'require-atomic-updates': 'error',
     'valid-typeof': 'error',
 });
 
