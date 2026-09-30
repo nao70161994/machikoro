@@ -1077,7 +1077,7 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 
 - `js/main.js` is part of scoped maintenance ESLint and a dedicated checkJs composition-root project. The root project composes the existing checked adapters and uses a separate typed late-binding contract to avoid lexical collisions with `appShell.js`.
 - The check uncovered real boundary drift: ignored player-count arguments, preset selections typed readonly, collection counts represented as arrays, and DOM IDs used as input/canvas elements. Those edges now have accurate signatures or annotations; runtime behavior is preserved.
-- `npm run test:static`, including both checkJs projects and maintenance ESLint, passes. `online.js` enters scoped maintenance ESLint with explicit cross-script globals. `storage.js` now also enters scoped `no-undef`, composing the actual appShell/main/online global sets with its storage-specific dependencies. Both remain outside checkJs for now. The production allowlists cover 296 checkJs files and 300 ESLint JavaScript files; `ui.js` remains outside whole-file checks.
+- `npm run test:static`, including both checkJs projects and maintenance ESLint, passes. `online.js`, `storage.js`, and `ui.js` now enter scoped `no-undef` with explicit globals composed from the real classic-script environment plus each root's external dependencies. All three remain outside checkJs for now. The production allowlists cover 296 checkJs files and 301 ESLint JavaScript files.
 
 ## 2026-09-30 Reconnect request effect authority consolidation
 

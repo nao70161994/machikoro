@@ -219,6 +219,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/main.js',
     'js/online.js',
     'js/storage.js',
+    'js/ui.js',
 ]);
 
 const serverMaintenanceFiles = Object.freeze([
@@ -488,6 +489,25 @@ const storageEnvironmentGlobals = Object.freeze(Object.assign(
         'renderPlayerSettings',
     ].map(name => [name, 'readonly']))
 ));
+const uiEnvironmentGlobals = Object.freeze(Object.assign(
+    {},
+    storageEnvironmentGlobals,
+    Object.fromEntries([
+        'UiLogDisplay', 'UiPendingEffects', 'UiDiceChoice', 'UiDiceDisplay', 'UiBuildMenu',
+        'safeStorageSet', 'safeStorageRemove', 'UiTutorial', 'ensureCurrentScreenFocus',
+        'showCrashScreen', 'UiRenderRuntime', 'updateGameActivityStatus', 'renderAdSlot',
+        'UiWinnerEffects', 'recordGameStats', 'notifyGameLifecycleFinish',
+        'markOnlineGameFinished', 'startConfetti', 'File', 'URL', 'updateDiceDisplay',
+        'showCoinAnimation', 'syncUiInteractabilityAfterRender', 'schedulePostBuildUiStabilizer',
+        'checkAutoSkip', 'saveGameState', 'getOnlineActionFlightState', 'onlineActionInFlight',
+        'onlineActionInFlightAt', 'UiInputPolicy', 'UiPendingMenu', 'UiCardDetail',
+        'CARD_EFFECT_DESCRIPTIONS', 'checkOnlineReadiness', 'renderStats', 'UiCardSelect',
+        'UiCardSelectEffects', 'UiModalPolicy', 'UiRuntimeSnapshot', 'UiCardOrder',
+        'UiModalDomEffects', 'UiModalRuntime', 'UiModalClose', 'UiModalOpen',
+        'UiTurnPrivacy', 'UiTurnAnnouncer',
+        'beginOnlineCardSelection', 'saveOnlineCardSelection',
+    ].map(name => [name, 'readonly']))
+));
 
 module.exports = [
     {
@@ -604,6 +624,11 @@ module.exports = [
     {
         files: ['js/storage.js'],
         languageOptions: { globals: storageEnvironmentGlobals },
+        rules: maintenanceRules,
+    },
+    {
+        files: ['js/ui.js'],
+        languageOptions: { globals: uiEnvironmentGlobals },
         rules: maintenanceRules,
     },
 ];
