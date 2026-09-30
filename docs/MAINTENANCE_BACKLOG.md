@@ -1078,3 +1078,9 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 - `js/main.js` is part of scoped maintenance ESLint and a dedicated checkJs composition-root project. The root project composes the existing checked adapters and uses a separate typed late-binding contract to avoid lexical collisions with `appShell.js`.
 - The check uncovered real boundary drift: ignored player-count arguments, preset selections typed readonly, collection counts represented as arrays, and DOM IDs used as input/canvas elements. Those edges now have accurate signatures or annotations; runtime behavior is preserved.
 - `npm run test:static`, including both checkJs projects and maintenance ESLint, passes. `online.js` also enters scoped maintenance ESLint, with its 101 cross-script references explicitly listed so misspellings fail `no-undef`; its checkJs project remains future work. The production allowlists cover 296 checkJs files and 299 ESLint JavaScript files. `storage.js` and `ui.js` remain outside whole-file checks.
+
+## 2026-09-30 Reconnect request effect authority consolidation
+
+- `_onlineReconnectRequestEffectAuthoritySelection()` now delegates to `OnlineEffectAuthority.selectExecutor()`, joining the common fail-closed executor gate used by the other staged online effect families.
+- The selector keeps this call site's legacy empty fallback reason for diagnostics. If the extracted executor is unavailable, it now selects the legacy effect sequence with `executor-unavailable` instead of attempting an unavailable executor.
+- Unit and integration tests cover empty diagnostic parity, executor-unavailable fallback, rejoin emit order, and parity-mismatch fallback. `npm run test:online` and `npm run test:static` pass.

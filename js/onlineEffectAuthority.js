@@ -4,7 +4,7 @@
  * Selects the extracted effect executor only when its plan is authoritative
  * and the executor is available. Legacy diagnostics remain stable for callers.
  * @param {{enabled?: boolean, authoritativePlan?: boolean, executorAvailable?: boolean,
- *     planFallbackReason?: string}} input
+ *     planFallbackReason?: string, preserveEmptyPlanFallbackReason?: boolean}} input
  * @returns {{source: string, fallbackReason: string}}
  */
 function selectOnlineEffectExecutor(input = {}) {
@@ -17,7 +17,8 @@ function selectOnlineEffectExecutor(input = {}) {
         fallbackReason: useExecutor || !enabled
             ? ''
             : (!authoritativePlan
-                ? String(input.planFallbackReason || 'effect-plan-not-authoritative')
+                ? String(input.planFallbackReason || (input.preserveEmptyPlanFallbackReason === true
+                    ? '' : 'effect-plan-not-authoritative'))
                 : 'executor-unavailable'),
     });
 }

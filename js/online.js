@@ -1471,10 +1471,13 @@ function _onlineReconnectRequestPlanSelection(session) {
 
 function _onlineReconnectRequestEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineReconnectRequestEffectAuthorityEnabled();
-    const active = enabled && planSelection && planSelection.source === 'pure';
-    return Object.freeze({
-        source: active ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: planSelection && planSelection.fallbackReason || '',
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: !!planSelection && planSelection.source === 'pure',
+        executorAvailable: typeof OnlineReconnectRequest !== 'undefined' &&
+            typeof OnlineReconnectRequest.execute === 'function',
+        planFallbackReason: planSelection && planSelection.fallbackReason || '',
+        preserveEmptyPlanFallbackReason: true,
     });
 }
 

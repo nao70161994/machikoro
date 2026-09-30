@@ -4253,6 +4253,7 @@ runTest('rejoin request plan authorityはclean state parity時だけpure planを
     assert.strictEqual(selection.matched, true);
     assert.strictEqual(selection.plan.decision, 'emit');
     assert.strictEqual(runtime.getOnlineReconnectRequestEffectSelection().source, 'executor');
+    assert.strictEqual(runtime.getOnlineReconnectRequestEffectSelection().fallbackReason, '');
     assert.strictEqual(runtime.getSocketEmits().at(-1).name, 'rejoinRoom');
 });
 

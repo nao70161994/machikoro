@@ -18,6 +18,19 @@ assert.deepStrictEqual(OnlineEffectAuthority.selectExecutor({
 
 assert.deepStrictEqual(OnlineEffectAuthority.selectExecutor({
     enabled: true,
+    authoritativePlan: false,
+    executorAvailable: true,
+    preserveEmptyPlanFallbackReason: true,
+}), { source: 'legacy-fallback', fallbackReason: '' });
+
+assert.deepStrictEqual(OnlineEffectAuthority.selectExecutor({
+    enabled: true,
+    authoritativePlan: true,
+    executorAvailable: false,
+}), { source: 'legacy-fallback', fallbackReason: 'executor-unavailable' });
+
+assert.deepStrictEqual(OnlineEffectAuthority.selectExecutor({
+    enabled: true,
     authoritativePlan: true,
     executorAvailable: false,
 }), { source: 'legacy-fallback', fallbackReason: 'executor-unavailable' });
