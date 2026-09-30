@@ -173,17 +173,17 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/socketOriginPolicy.js'));
 });
 
-runTest('production JavaScriptは未検査の3つのcomposition root以外を静的検査する', () => {
+runTest('production JavaScriptはcheckJs未対象の3 root以外を型検査する', () => {
     const productionFiles = execFileSync(
         'git',
         ['ls-files', 'js/*.js', 'server/*.js', 'server.js'],
         { cwd: path.join(__dirname, '..'), encoding: 'utf8' }
     ).trim().split(/\r?\n/).filter(Boolean);
     const excludedRoots = new Set([
-        'js/online.js',
         'js/storage.js',
         'js/ui.js',
     ]);
+    const lintOnlyRoot = 'js/online.js';
     const lintFiles = new Set(eslintConfig.flatMap(entry => entry.files || []));
     const checkJsFiles = new Set([...config.files, ...mainConfig.files]);
 
@@ -194,8 +194,13 @@ runTest('production JavaScriptは未検査の3つのcomposition root以外を静
             continue;
         }
         assert.ok(lintFiles.has(file), 'ESLint missing: ' + file);
-        assert.ok(checkJsFiles.has(file), 'checkJs missing: ' + file);
+        if (file === lintOnlyRoot) {
+            assert.ok(!checkJsFiles.has(file), file);
+        } else {
+            assert.ok(checkJsFiles.has(file), 'checkJs missing: ' + file);
+        }
     }
+    assert.ok(lintFiles.has('js/online.js'));
 });
 
 runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだけを除く', () => {
@@ -203,7 +208,11 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
         .flatMap(entry => Array.isArray(entry.files) ? entry.files : []);
     assert.ok(configuredLintFiles.includes('scripts/report-action-contract.js'));
     const lintFiles = configuredLintFiles
-        .filter(file => !['scripts/report-action-contract.js', 'scripts/checkjs-root-runner.js'].includes(file))
+        .filter(file => ![
+            'js/online.js',
+            'scripts/report-action-contract.js',
+            'scripts/checkjs-root-runner.js',
+        ].includes(file))
         .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
         .sort();
