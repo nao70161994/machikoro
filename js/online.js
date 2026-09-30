@@ -48,6 +48,20 @@ const onlineReadinessController = OnlineReadiness.createController({
     setText: (id, value) => onlineDomEffects.setText(id, value),
     setHtml: (id, value) => onlineDomEffects.setHtml(id, value),
 });
+const onlineLobbySelectionRuntime = OnlineLobbySelectionRuntime.createRuntime({
+    getSession: () => onlineSessionSnapshot(),
+    getSelection: () => GameSelectionState.runtime.snapshot(),
+    setReady: ready => setOnlineLobbyReady(ready),
+    showNotice: message => onlineClientEffects.showNotice(message),
+    replaceCards: cards => replaceEnabledCardSelection(cards),
+    replaceLandmarks: landmarks => replaceEnabledLandmarkSelection(landmarks),
+    replaceMarketRule: rule => replaceMarketRuleSelection(rule),
+    updateSummary: () => {
+        if (typeof updateGameSelectionSummary === 'function') updateGameSelectionSummary();
+    },
+    manageWaitingRoom: (payload, socket) => onlineSocketEffects.manageWaitingRoom(payload, socket),
+    setStatus: message => onlineDomEffects.setStatusText(message),
+});
 
 function selectOnlineRoomIdText() {
     return OnlineRoomShare.selectRoomIdText({
@@ -127,60 +141,16 @@ function startOnlineLobbyNow() {
     });
 }
 
-let onlineCardSelection = null;
-
 function beginOnlineCardSelection() {
-    onlineCardSelection = null;
-    const session = onlineSessionSnapshot();
-    if (!session.myRoomId) return true;
-    if (session.isOnlineGame || !session.isRoomHost) {
-        onlineClientEffects.showNotice('使用カードは対戦開始前にホストが設定します。待機室の設定を確認してください。');
-        return false;
-    }
-    if (!session.socket || session.socket.connected === false) {
-        onlineClientEffects.showNotice('再接続してから使用カードを変更してください。');
-        return false;
-    }
-    onlineCardSelection = { roomId: session.myRoomId, selection: GameSelectionState.runtime.snapshot() };
-    setOnlineLobbyReady(false);
-    return true;
+    return onlineLobbySelectionRuntime.begin();
 }
 
 function saveOnlineCardSelection() {
-    if (!onlineCardSelection) return true;
-    const session = onlineSessionSnapshot();
-    if (session.myRoomId !== onlineCardSelection.roomId || session.isOnlineGame ||
-            !session.isRoomHost || !session.socket || session.socket.connected === false) {
-        if (!session.isOnlineGame && session.myRoomId === onlineCardSelection.roomId) {
-            replaceEnabledCardSelection(onlineCardSelection.selection.enabledCards);
-            replaceEnabledLandmarkSelection(onlineCardSelection.selection.enabledLandmarks);
-        }
-        onlineCardSelection = null;
-        onlineClientEffects.showNotice('使用カードを反映できなかったため変更を戻しました。待機室への接続を確認してください。');
-        return true;
-    }
-    const selection = GameSelectionState.runtime.snapshot();
-    const sent = onlineSocketEffects.manageWaitingRoom({
-        roomId: session.myRoomId,
-        action: 'selection',
-        enabledCards: [...selection.enabledCards],
-        enabledLandmarks: [...selection.enabledLandmarks],
-    }, session.socket);
-    if (sent) {
-        onlineCardSelection = null;
-        onlineDomEffects.setStatusText('使用カードを反映しています。設定を確認して、全員がもう一度「準備完了」を押してください。');
-    }
-    return sent;
+    return onlineLobbySelectionRuntime.save();
 }
 
 function syncOnlineLobbySelection(lobbyState) {
-    const session = onlineSessionSnapshot();
-    const selection = lobbyState && lobbyState.setupSummary;
-    if (session.isOnlineGame || !selection || onlineCardSelection) return;
-    if (Array.isArray(selection.enabledCards)) replaceEnabledCardSelection(selection.enabledCards);
-    if (Array.isArray(selection.enabledLandmarks)) replaceEnabledLandmarkSelection(selection.enabledLandmarks);
-    replaceMarketRuleSelection(selection.marketRule);
-    if (typeof updateGameSelectionSummary === 'function') updateGameSelectionSummary();
+    return onlineLobbySelectionRuntime.sync(lobbyState);
 }
 
 function setOnlineLobbyReady(ready) {
@@ -2048,7 +2018,7 @@ function markOnlineGameFinished() {
 }
 
 function resetOnlineState() {
-    onlineCardSelection = null;
+    onlineLobbySelectionRuntime.reset();
     const session = onlineSessionSnapshot();
     const plan = OnlineSessionLifecycle.resetPlan(session.myRoomId);
     OnlineSessionLifecycle.execute(plan, {
@@ -3064,7 +3034,7 @@ function initSocket() {
     );
 
     socketEvents.on(OnlineSocketRegistry.keys.GAME_START, payload => {
-        onlineCardSelection = null;
+        onlineLobbySelectionRuntime.reset();
         return onlineLobbyStartRuntime.handle(payload);
     });
 

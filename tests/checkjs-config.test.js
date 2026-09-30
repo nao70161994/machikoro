@@ -50,6 +50,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/localResumeEffects.js'));
     assert.ok(config.files.includes('js/localResumePreloadRuntime.js'));
     assert.ok(config.files.includes('js/uiLogHighlightEffects.js'));
+    assert.ok(config.files.includes('js/onlineLobbySelectionRuntime.js'));
     assert.ok(config.files.includes('js/uiCardSelectEffects.js'));
     assert.ok(config.files.includes('js/onlineSetupState.js'));
     assert.ok(config.files.includes('js/GameManager.js'));

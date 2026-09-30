@@ -112,6 +112,7 @@
     "js/onlineLobbyRequestRuntime.js",
     "js/onlineGameInitializer.js",
     "js/onlineLobbyStartRuntime.js",
+    "js/onlineLobbySelectionRuntime.js",
     "js/onlineSocketDisconnect.js",
     "js/onlineHostChanged.js",
     "js/onlineEffectAuthority.js",

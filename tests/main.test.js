@@ -3168,6 +3168,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/onlineLobbyRequestRuntime.js', 'js/onlineGameInitializer.js');
     assertBefore('js/onlineGameInitializer.js', 'js/onlineLobbyStartRuntime.js');
     assertBefore('js/onlineLobbyStartRuntime.js', 'js/online.js');
+    assertBefore('js/onlineLobbySelectionRuntime.js', 'js/online.js');
     assertBefore('js/onlineRestoreActivation.js', 'js/onlineRejoinActivationRuntime.js');
     assertBefore('js/onlineRejoinActivationRuntime.js', 'js/onlineRejoinRuntime.js');
     assertBefore('js/onlineRejoinPreparationRuntime.js', 'js/onlineRejoinRuntime.js');

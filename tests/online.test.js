@@ -184,6 +184,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineReadiness.js');
     loadScript(context, 'js/roomQrCode.js');
     loadScript(context, 'js/onlineLobbyStartRuntime.js');
+    loadScript(context, 'js/onlineLobbySelectionRuntime.js');
     loadScript(context, 'js/onlineSocketDisconnect.js');
     loadScript(context, 'js/onlineHostChanged.js');
     loadScript(context, 'js/onlineEffectAuthority.js');
