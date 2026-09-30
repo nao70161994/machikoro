@@ -41,26 +41,39 @@ function injectServiceWorkerBuildHash(content, buildHash) {
     return String(content).replace(/'machikoro-v[^']*'/, `'machikoro-${buildHash}'`);
 }
 
-function injectIndexBuildHash(content, buildHash, options = {}) {
-    const script = `<script>window.MACHIKORO_CLIENT_VERSION=${JSON.stringify(buildHash)};</script>`;
-    let scripts = options.gameSchemaNegotiationEnabled === true
-        ? script + '\n    <script>window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;</script>'
-        : script;
+function buildIndexBootstrapScripts(buildHash, options = {}) {
+    const jsonBuildHash = JSON.stringify(String(buildHash))
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')
+        .replace(/\u2028/g, '\\u2028')
+        .replace(/\u2029/g, '\\u2029');
+    const scripts = [`window.MACHIKORO_CLIENT_VERSION=${jsonBuildHash};`];
+    if (options.gameSchemaNegotiationEnabled === true) {
+        scripts.push('window.MACHIKORO_GAME_SCHEMA_NEGOTIATION_ENABLED=true;');
+    }
     if (options.gameSchemaWireEnabled === true) {
-        scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;</script>';
+        scripts.push('window.MACHIKORO_GAME_SCHEMA_WIRE_ENABLED=true;');
     }
     if (options.gameSchemaSnapshotWireEnabled === true) {
-        scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;</script>';
+        scripts.push('window.MACHIKORO_GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED=true;');
     }
     if (options.gameSchemaRecreateWireEnabled === true) {
-        scripts += '\n    <script>window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED=true;</script>';
+        scripts.push('window.MACHIKORO_GAME_SCHEMA_RECREATE_WIRE_ENABLED=true;');
     }
     if (options.localSaveSchemaWriteEnabled === true) {
-        scripts += '\n    <script>window.MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED=true;</script>';
+        scripts.push('window.MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED=true;');
     }
     if (options.onlineReconnectEventAuthorityEnabled === true) {
-        scripts += '\n    <script>window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED=true;</script>';
+        scripts.push('window.MACHIKORO_ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED=true;');
     }
+    return Object.freeze(scripts);
+}
+
+function injectIndexBuildHash(content, buildHash, options = {}) {
+    const scripts = buildIndexBootstrapScripts(buildHash, options)
+        .map(script => `<script>${script}</script>`)
+        .join('\n    ');
     return String(content).replace('</head>', `    ${scripts}\n</head>`);
 }
 
@@ -139,6 +152,7 @@ module.exports = {
     resolveBuildHash,
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
+    buildIndexBootstrapScripts,
     isPublicRootFile,
     makeStaticAssetHandlers,
     registerStaticMetadataRoutes,

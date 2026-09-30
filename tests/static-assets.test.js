@@ -243,7 +243,8 @@ runTest('static assets はSW cache versionだけをbuild hashへ置換する', (
 runTest('static assets はclient version scriptをhead末尾へ安全に注入する', () => {
     const injected = injectIndexBuildHash('<html><head></head><body></body></html>', 'a"</script>');
 
-    assert.ok(injected.includes('window.MACHIKORO_CLIENT_VERSION="a\\\"</script>";'));
+    assert.ok(injected.includes('window.MACHIKORO_CLIENT_VERSION="a\\\"\\u003c/script\\u003e";'));
+    assert.ok(!injected.includes('a\\\"</script>'));
     assert.ok(injected.indexOf('window.MACHIKORO_CLIENT_VERSION') < injected.indexOf('</head>'));
 });
 

@@ -5,7 +5,12 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { makeGameRuntimeLoader } = require('./server/gameRuntimeLoader');
-const { securityHeadersMiddleware } = require('./server/securityHeaders');
+const {
+    CONTENT_SECURITY_POLICY_REPORT_ONLY,
+    buildContentSecurityPolicyReportOnly,
+    hashInlineScript,
+    securityHeadersMiddleware,
+} = require('./server/securityHeaders');
 const { startRoomGc } = require('./server/roomGcRuntime');
 const { registerServerProcessHandlers, startHttpServer } = require('./server/processRuntime');
 const { registerSocketConnectionRuntime } = require('./server/socketConnectionRuntime');
@@ -101,6 +106,7 @@ const {
     PUBLIC_STATIC_DIRS,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
+    buildIndexBootstrapScripts,
     injectIndexBuildHash,
     isPublicRootFile,
     makeStaticAssetHandlers,
@@ -181,9 +187,12 @@ const GAME_ENGINE_TRANSITION_AUTHORITY_ENABLED = GAME_SCHEMA_SHADOW_ENABLED &&
 const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED =
     OnlineReconnectState.eventAuthorityEnabled(process.env);
 const rejoinAdmission = makeRejoinAdmission({ limits: REJOIN_ADMISSION_LIMITS });
+let activeContentSecurityPolicyReportOnly = CONTENT_SECURITY_POLICY_REPORT_ONLY;
 
 const app = express();
-app.use(securityHeadersMiddleware);
+app.use((req, res, next) => securityHeadersMiddleware(req, res, next, {
+    contentSecurityPolicyReportOnly: activeContentSecurityPolicyReportOnly,
+}));
 app.set('trust proxy', resolveTrustProxySetting(process.env));
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -578,14 +587,19 @@ const {
 const swTemplate = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
 const swContent = injectServiceWorkerBuildHash(swTemplate, BUILD_HASH);
 const indexTemplate = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
-const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, {
+const indexBuildOptions = {
     gameSchemaNegotiationEnabled: GAME_SCHEMA_NEGOTIATION_ENABLED,
     gameSchemaWireEnabled: GAME_SCHEMA_WIRE_ENABLED,
     gameSchemaSnapshotWireEnabled: GAME_SCHEMA_SNAPSHOT_WIRE_ENABLED,
     gameSchemaRecreateWireEnabled: GAME_SCHEMA_RECREATE_WIRE_ENABLED,
     localSaveSchemaWriteEnabled: LOCAL_SAVE_SCHEMA_WRITE_ENABLED,
     onlineReconnectEventAuthorityEnabled: ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED,
-});
+};
+const indexBootstrapScripts = buildIndexBootstrapScripts(BUILD_HASH, indexBuildOptions);
+activeContentSecurityPolicyReportOnly = buildContentSecurityPolicyReportOnly(
+    indexBootstrapScripts.map(hashInlineScript)
+);
+const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, indexBuildOptions);
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
 const ASSET_LINKS = [{
     relation: ['delegate_permission/common.handle_all_urls'],

@@ -1111,3 +1111,9 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 
 - `OnlineRoomShare` now owns room-ID text selection and QR panel open/close/render effects behind injected document/window/QR dependencies. `online.js` keeps the existing global action handlers and delegates to that boundary.
 - Focused tests cover focus-safe selection, aria-expanded/text synchronization, QR creation only on the first open, and close/reopen state. `node tests/online-room-share.test.js`, `node tests/online-integration.test.js`, and `npm run test:static` pass.
+
+## 2026-09-30 CSP hashes for generated bootstrap scripts
+
+- `buildIndexBootstrapScripts()` is now the single source for injected inline build/config scripts and their CSP SHA-256 hashes. The per-process Report-Only policy includes only those exact generated bodies, while retaining same-origin plus the explicit ads loader host and no `unsafe-inline`.
+- Build hash JSON now escapes `<`, `>`, `&`, U+2028, and U+2029 before embedding in a script element, preventing a `</script>` sequence from terminating the bootstrap. Tests compare the exact injected script bodies to policy hashes and cover hostile build-hash text.
+- This removes known bootstrap violations from the report policy; ad-created script origins and device/browser validation still precede CSP enforcement.
