@@ -21,6 +21,19 @@ const OnlinePlayerSettings = (() => {
         ));
     }
 
+    function renderSettings(options = {}) {
+        const state = options.getState();
+        const settings = normalizeSettings(state.playerSettings, state.selectedCount);
+        options.replaceSettings(settings);
+        options.setHtml(buildSettingsHtml(
+            settings,
+            state.selectedCount,
+            options.getEligibleModels(state.selectedCount)
+        ));
+        options.updateReadiness();
+        return settings;
+    }
+
     function rlSettingNote(playerCount) {
         if (playerCount >= 3) {
             return 'AI（深層学習・ランダム）は多人数用の深層学習モデルから選び、5人以上では脅威度上位3人の相手を見て判断します。CPU（最強）は安定したルールベースの基準CPUです。';
@@ -136,6 +149,7 @@ const OnlinePlayerSettings = (() => {
     return Object.freeze({
         normalizeSetting,
         normalizeSettings,
+        renderSettings,
         rlSettingNote,
         buildSettingsHtml,
         buildModelSelectHtml,

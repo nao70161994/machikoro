@@ -27,11 +27,20 @@ runTest('maintenance lint script and scoped config contain the same file set', (
 
 runTest('maintenance lint keeps bug-detection rules enabled as errors', () => {
     const expectedRules = [
+        'no-constant-binary-expression',
         'no-constant-condition',
+        'no-dupe-keys',
         'no-duplicate-case',
         'no-duplicate-imports',
+        'no-eval',
+        'no-implied-eval',
+        'no-new-func',
+        'no-script-url',
+        'no-sparse-arrays',
         'no-undef',
         'no-unreachable',
+        'no-unsafe-optional-chaining',
+        'valid-typeof',
     ];
     for (const entry of eslintConfig) {
         assert.deepStrictEqual(Object.keys(entry.rules).sort(), expectedRules);

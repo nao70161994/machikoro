@@ -304,20 +304,13 @@ function getOnlineRlCpuSettingNote(playerCount) {
 }
 
 function renderOnlinePlayerSettings() {
-    let state = onlineSetupStateController.snapshot();
-    state = onlineSetupStateController.replaceSettings(OnlinePlayerSettings.normalizeSettings(
-        state.playerSettings,
-        state.selectedCount
-    ));
-    onlineDomEffects.setHtml(
-        OnlineDomEffects.ids.playerSettings,
-        OnlinePlayerSettings.buildSettingsHtml(
-            state.playerSettings,
-            state.selectedCount,
-            onlineEligibleRlModels(state.selectedCount)
-        )
-    );
-    updateOnlineRlModelReadinessUi();
+    return OnlinePlayerSettings.renderSettings({
+        getState: () => onlineSetupStateController.snapshot(),
+        replaceSettings: settings => onlineSetupStateController.replaceSettings(settings),
+        setHtml: html => onlineDomEffects.setHtml(OnlineDomEffects.ids.playerSettings, html),
+        getEligibleModels: count => onlineEligibleRlModels(count),
+        updateReadiness: () => updateOnlineRlModelReadinessUi(),
+    });
 }
 
 function onlineEligibleRlModels(playerCount) {

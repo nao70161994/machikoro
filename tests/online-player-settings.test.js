@@ -14,6 +14,27 @@ runTest('online player settingsは人数分を入力非破壊で正規化する'
     assert.ok(Object.isFrozen(settings));
 });
 
+runTest('online player settings描画は正規化・HTML反映・readiness更新の順を保つ', () => {
+    const calls = [];
+    let replaced;
+    const rendered = OnlinePlayerSettings.renderSettings({
+        getState: () => ({
+            selectedCount: 2,
+            playerSettings: [{ type: 'cpu', difficulty: 'strong' }],
+        }),
+        replaceSettings: settings => { calls.push('replace'); replaced = settings; },
+        getEligibleModels: count => { calls.push(`models:${count}`); return []; },
+        setHtml: html => { calls.push('html'); assert.ok(html.includes('プレイヤー2')); },
+        updateReadiness: () => calls.push('readiness'),
+    });
+    assert.deepStrictEqual(rendered, replaced);
+    assert.deepStrictEqual(rendered, [
+        { type: 'cpu', difficulty: 'strong' },
+        { type: 'human', difficulty: 'normal' },
+    ]);
+    assert.deepStrictEqual(calls, ['replace', 'models:2', 'html', 'readiness']);
+});
+
 runTest('online player settings HTMLは既存option・label・RL説明を維持する', () => {
     const html = OnlinePlayerSettings.buildSettingsHtml([
         { type: 'human', difficulty: 'normal' },
