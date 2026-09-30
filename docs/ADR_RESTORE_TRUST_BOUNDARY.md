@@ -258,7 +258,7 @@ The following reversible contracts now exist without enabling production durable
 - `server/restoreAuditKeyring.js` supports an active signing key, verification by old key IDs, bounded key count, optional maximum age, and clock skew. Legacy single-secret configuration remains compatible.
 - `server/restoreAuthorityPolicy.js` fixes the intended order as live room, authoritative durable canonical state, valid server-signed state, host replay, then explicitly confirmed hostless quorum. Invalid, conflicting, or completed higher-priority state fails closed instead of falling through.
 
-The priority policy is a pure contract and is not yet the live `recreateRoom` dispatcher. Production activation still requires a durable backend choice, retention/deletion policy, process/multi-instance locking evidence, secret/key rotation operations, migration dry-run, and rollback rehearsal. Until those are supplied, the existing host/provisional behavior and `HOSTLESS_RESTORE_ENABLED=0` rollback remain in force.
+The priority policy is wired into restore admission. The opt-in file adapter is an implemented durable backend for exactly one service instance; the default remains `noop`, so production deployments without the explicit durable-file settings continue using the existing signed/host/provisional paths. Do not enable file mode without a durable private mount, one-instance enforcement, retention/deletion policy, lock and recovery runbook, and rollback rehearsal. `HOSTLESS_RESTORE_ENABLED=0` remains the rollback for provisional quorum restore.
 
 ## Update: 2026-10-01 Free-Operation Constraint
 

@@ -98,7 +98,7 @@ This gate predates the explicit acceptance of provisional quorum restore on
 2026-07-19. The accepted contract above supersedes its earlier implementation
 hold, while its warning against claiming durable server authority still applies:
 
-- `server/canonicalStateStore.js` exists, but the default is noop and `CANONICAL_STATE_STORE=memory` is non-durable. Hostless restore must wait for a durable authoritative store or an explicitly accepted provisional quorum mode.
+- `server/canonicalStateStore.js` now has an opt-in durable file adapter in addition to noop and memory. The default remains noop, and the file adapter is limited to a single instance on durable storage. Hostless restore still uses its explicitly accepted lower-trust provisional quorum contract; do not describe that path as server-authoritative canonical recovery.
 - `onlineRestoreRoomIndex` exists, but it is only a locator for scoped client bundles. It must not promote non-host bundles to canonical state.
 - `restoreAudit` metadata exists, but unsigned audit records do not add trust, freshness, or authority.
 

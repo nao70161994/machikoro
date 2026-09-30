@@ -195,7 +195,7 @@ The 2026-08-03 parity harness extraction keeps room construction and live/shadow
 
 ### 2. Requires Design Judgment
 
-- Production durable provider, retention/privacy, process-safe locking, and secret rotation/activation policy (the provider-neutral contracts are implemented). Database/provider selection is explicitly deferred because recurring cost is not currently approved.
+- Production activation of durable canonical persistence remains an operational decision: the single-instance file adapter and provider-neutral contracts are implemented, while retention/privacy configuration, durable mount, one-instance enforcement, recovery rehearsal, and production activation remain required. A database/multi-instance provider is explicitly deferred because recurring cost is not currently approved.
 - Server socket handler decomposition beyond the migrated lobby/rejoin/gameAction families.
 - Reconnect callback/write authority or room gate redesign beyond the gated event-state reads, rejoin request plan/effect executor, terminal cleanup decision/effect executor, and `js/onlineStorage.js` facade.
 - CPU scoring/selection architecture changes beyond the extracted build execution boundary.
@@ -243,7 +243,7 @@ Continue batch-by-batch re-auditing for small contract-first boundaries. The kno
 
 ## 2026-07-29 Current cycle decisions
 
-- Database-backed durable canonical state is deferred at the user's request because it introduces recurring cost. The default canonical store remains `noop`; no experimental durable branch code was imported.
+- Database-backed multi-instance canonical state is deferred at the user's request because it introduces recurring cost. The default canonical store remains `noop`; the single-instance durable file adapter was subsequently implemented and documented as opt-in.
 - Additional real-device verification was waived for this cycle because an iPhone is not available. The existing 2026-07-18 mixed Android/iPhone completion remains the only direct mobile evidence.
 - Safe non-device work completed: gameAction/disconnect handler extraction, event-labelled reconnect observation plus pure event-reducer/projection parity and gated UI/send/CPU/human input reads with legacy fallback, reporting HTTP pure policy extraction, expert lookahead-gate and simulation-stock extraction, Business Center candidate/scoring/random-simple selection extraction, modal visibility/focus policy extraction, default-OFF modal-open and post-hide modal-close plan/effect extraction, full player-panel HTML extraction, card-select state/view extraction, local/online-player-setting normalization/view extraction, online lobby-button/status view extraction, injected PWA install controller extraction, one shared client storage owner across app shell/main/online/storage/UI/stats, lifecycle start/dedupe pure contracts, expanded pure watchdog snapshot/phase/modal policy, separately gated versioned live Action and rejoin/compacted-Snapshot wires, shared local-save serialize/hydrate delegation plus default-OFF rollback-safe v1 shadow dual-write with the exact legacy authority retained, and typed Engine/Snapshot/repository/reconnect adapter boundaries.
 

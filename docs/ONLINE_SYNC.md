@@ -154,9 +154,9 @@ Keep these definitions aligned. A future cleanup should move this comparison int
 
 ### Canonical state store footing
 
-The server now has a small `server/canonicalStateStore.js` adapter contract. The default mode is `noop`, so current deployments still rely on live in-memory room state and host-provided restart restore exactly as before. `CANONICAL_STATE_STORE=memory` is a test/development adapter only; it is not durable across process restarts and must not be described as server-persisted restore.
+The server has a `server/canonicalStateStore.js` adapter contract with `noop`, `memory`, and opt-in `file` modes. The current free deployment remains on `noop`, so it still relies on signed or host-provided client restore bundles after a process restart. `memory` is test/development-only and does not survive process restarts. The synchronous `file` adapter is implemented for a single service instance on a durable private filesystem; it is not enabled by default and is not suitable for ephemeral disks or multiple instances.
 
-The stored record shape is intentionally limited to canonical server fields: `gameStartPayload`, compacted `stateSnapshot`, residual `actionLog`, accepted client-action refs, host metadata, action sequence, and timestamps. A future durable adapter must write atomically after accepted actions and compaction, load server state before accepting client `recreateRoom`, and make server state outrank every client restore bundle.
+The stored record shape is intentionally limited to canonical server fields: `gameStartPayload`, compacted `stateSnapshot`, residual `actionLog`, accepted client-action refs, host metadata, action sequence, and timestamps. The file adapter writes atomically after accepted actions and compaction; when configured as authoritative, restore admission loads server state before considering client `recreateRoom` data and gives it priority. Enable it only with the durable single-instance settings and operational constraints in `docs/OPERATIONS.md` and `docs/ADR_RESTORE_TRUST_BOUNDARY.md`.
 
 
 Live rooms keep an in-memory `canonicalMirror` after game start or server-side restore. The mirror is not serialized to clients and is safe to discard: if it is missing or stale, server validation rebuilds it from `stateSnapshot + actionLog`.
@@ -270,7 +270,7 @@ Use `TESTPLAN.md` for high-risk manual coverage.
 - ACK待機は同じ`clientActionId`だけを完了扱いにし、timeout時はpendingを保持してcanonical rejoinで照合する。既存event名、payload、UUID形式action IDは維持する。
 - restore中のlive eventは最大256件のqueueへ隔離し、overflowやsequence gapでは適用を続けず再同期する。別restore generationのcallbackは状態を確定しない。
 - 自動確認は2クライアントaction再接続、4人完走/host移譲/圧縮、3回nightly soak、Ubuntu WebKitで成功。server再起動file persistenceはこの採用単位に含まない。
-- action stream ID/watermark、非hostによるcanonical置換、durable file storeはprotocol/authority変更なのでdeferred。実機iPhone Safariは未確認。
+- action stream ID/watermark and non-host canonical replacement remain deferred protocol/authority changes. The durable file store is implemented as an opt-in single-instance adapter, but remains disabled for the current free deployment. Real-device iPhone Safari remains unverified.
 
 ## 2026-07-15 Protocol compatibility decision
 
