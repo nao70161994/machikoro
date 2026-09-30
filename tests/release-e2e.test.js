@@ -541,6 +541,23 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(apkWorkflow.indexOf('npm run test:static') < apkWorkflow.indexOf('npm test'));
 });
 
+runTest('GitHub Actionsは検証済みcommit SHAへ固定しrelease workflowの権限をread-onlyにする', () => {
+    const workflows = [
+        '.github/workflows/release-test.yml',
+        '.github/workflows/nightly-release-test.yml',
+        '.github/workflows/build-apk.yml',
+        '.github/workflows/online-delivery.yml',
+        '.github/workflows/weekly-cpu-difficulty.yml',
+    ].map(readRepoFile);
+    for (const workflow of workflows) {
+        for (const line of workflow.split('\n').filter(value => value.includes('uses: actions/'))) {
+            assert.match(line, /uses: actions\/[\w-]+@[a-f0-9]{40} # v\d+\.\d+\.\d+$/);
+        }
+    }
+    const releaseWorkflow = readRepoFile('.github/workflows/release-test.yml');
+    assert.match(releaseWorkflow, /\npermissions:\n  contents: read\n/);
+});
+
 runTest('CPU難易度gateはPR smokeと週次paired統計artifactを分離する', () => {
     const releaseWorkflow = readRepoFile('.github/workflows/release-test.yml');
     const weeklyWorkflow = readRepoFile('.github/workflows/weekly-cpu-difficulty.yml');
