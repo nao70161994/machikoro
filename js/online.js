@@ -50,18 +50,10 @@ const onlineReadinessController = OnlineReadiness.createController({
 });
 
 function selectOnlineRoomIdText() {
-    const target = typeof document !== 'undefined'
-        ? document.querySelector('.room-id-display[data-room-id-value]')
-        : null;
-    const selection = typeof window !== 'undefined' && typeof window.getSelection === 'function'
-        ? window.getSelection() : null;
-    if (!target || !selection || typeof document.createRange !== 'function') return false;
-    const range = document.createRange();
-    range.selectNodeContents(target);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    if (typeof target.focus === 'function') target.focus({ preventScroll: true });
-    return true;
+    return OnlineRoomShare.selectRoomIdText({
+        document: typeof document !== 'undefined' ? document : null,
+        window: typeof window !== 'undefined' ? window : null,
+    });
 }
 
 function copyOnlineRoomId(roomId) {
@@ -76,22 +68,12 @@ function copyOnlineRoomId(roomId) {
 }
 
 function toggleOnlineRoomQr(roomId) {
-    const normalized = OnlineRoomShare.normalizeRoomId(roomId);
-    const button = typeof document !== 'undefined'
-        ? document.querySelector(`.room-qr-toggle[data-room-id="${normalized}"]`) : null;
-    const container = button && button.parentElement
-        ? button.parentElement.querySelector('[data-room-qr-container]') : null;
-    if (!normalized || !button || !container) return false;
-    const visible = !container.classList.contains('is-visible');
-    container.classList.toggle('is-visible', visible);
-    button.setAttribute('aria-expanded', visible ? 'true' : 'false');
-    button.textContent = visible ? 'QRを隠す' : 'QRを表示';
-    if (visible && !container.innerHTML) {
-        const joinUrl = RoomQrCode.buildJoinUrl(normalized,
-            typeof window !== 'undefined' ? window.location : {});
-        container.innerHTML = RoomQrCode.buildSvg(joinUrl || normalized);
-    }
-    return true;
+    return OnlineRoomShare.toggleRoomQr(roomId, {
+        document: typeof document !== 'undefined' ? document : null,
+        window: typeof window !== 'undefined' ? window : null,
+        buildJoinUrl: RoomQrCode.buildJoinUrl,
+        buildSvg: RoomQrCode.buildSvg,
+    });
 }
 
 function checkOnlineReadiness() {

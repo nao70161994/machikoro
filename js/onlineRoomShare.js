@@ -164,6 +164,52 @@ const OnlineRoomShare = (() => {
         }
     }
 
+    function selectRoomIdText(effects = {}) {
+        const documentObject = effects.document;
+        const windowObject = effects.window;
+        const target = documentObject && typeof documentObject.querySelector === 'function'
+            ? documentObject.querySelector('.room-id-display[data-room-id-value]') : null;
+        const selection = windowObject && typeof windowObject.getSelection === 'function'
+            ? windowObject.getSelection() : null;
+        if (!target || !selection || !documentObject ||
+                typeof documentObject.createRange !== 'function') return false;
+        const range = documentObject.createRange();
+        range.selectNodeContents(target);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        if (typeof target.focus === 'function') target.focus({ preventScroll: true });
+        return true;
+    }
+
+    function toggleRoomQr(roomId, effects = {}) {
+        const normalizedRoomId = normalizeRoomId(roomId);
+        const documentObject = effects.document;
+        const windowObject = effects.window;
+        const button = normalizedRoomId && documentObject &&
+            typeof documentObject.querySelector === 'function'
+            ? documentObject.querySelector(`.room-qr-toggle[data-room-id="${normalizedRoomId}"]`)
+            : null;
+        const container = button && button.parentElement &&
+            typeof button.parentElement.querySelector === 'function'
+            ? button.parentElement.querySelector('[data-room-qr-container]') : null;
+        if (!button || !container || !container.classList ||
+                typeof container.classList.contains !== 'function' ||
+                typeof container.classList.toggle !== 'function') return false;
+        const visible = !container.classList.contains('is-visible');
+        container.classList.toggle('is-visible', visible);
+        if (typeof button.setAttribute === 'function') {
+            button.setAttribute('aria-expanded', visible ? 'true' : 'false');
+        }
+        button.textContent = visible ? 'QRを隠す' : 'QRを表示';
+        if (visible && !container.innerHTML &&
+                typeof effects.buildJoinUrl === 'function' && typeof effects.buildSvg === 'function') {
+            const joinUrl = effects.buildJoinUrl(normalizedRoomId,
+                windowObject && windowObject.location || {});
+            container.innerHTML = effects.buildSvg(joinUrl || normalizedRoomId);
+        }
+        return true;
+    }
+
     return Object.freeze({
         COPY_FALLBACK_MESSAGE,
         COPY_SUCCESS_MESSAGE,
@@ -175,6 +221,8 @@ const OnlineRoomShare = (() => {
         escapeText,
         normalizeRoomId,
         remainingReservationSeconds,
+        selectRoomIdText,
+        toggleRoomQr,
     });
 })();
 

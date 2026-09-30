@@ -1106,3 +1106,8 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 
 - The Report-Only `script-src` now allows same-origin scripts and only the Google Ads loader host explicitly referenced in `index.html`; the broad `https:` script allowance is removed. Other CSP directives and all runtime script execution remain unchanged because the header is report-only.
 - The policy test asserts the host allowlist and rejects a protocol-wide HTTPS source. Operations guidance now identifies the actual injected inline build/config bootstrap and the remaining ad-origin inventory required before enforcement.
+
+## 2026-09-30 Online room-share DOM effects extraction
+
+- `OnlineRoomShare` now owns room-ID text selection and QR panel open/close/render effects behind injected document/window/QR dependencies. `online.js` keeps the existing global action handlers and delegates to that boundary.
+- Focused tests cover focus-safe selection, aria-expanded/text synchronization, QR creation only on the first open, and close/reopen state. `node tests/online-room-share.test.js`, `node tests/online-integration.test.js`, and `npm run test:static` pass.

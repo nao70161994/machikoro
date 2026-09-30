@@ -39,6 +39,62 @@ runTest('online room shareはroom IDと参加者をescapeして共有手順を�
     assert.ok(createdHtml.includes('通常市場'));
 });
 
+runTest('online room shareはID選択とQR表示のDOM操作を依存注入でまとめる', () => {
+    const selectionCalls = [];
+    const target = { focus(options) { selectionCalls.push(['focus', options]); } };
+    const selection = {
+        removeAllRanges() { selectionCalls.push(['clear']); },
+        addRange(range) { selectionCalls.push(['add', range]); },
+    };
+    const range = { selectNodeContents(node) { selectionCalls.push(['select', node]); } };
+    assert.strictEqual(OnlineRoomShare.selectRoomIdText({
+        document: {
+            querySelector: selector => selector === '.room-id-display[data-room-id-value]' ? target : null,
+            createRange: () => range,
+        },
+        window: { getSelection: () => selection },
+    }), true);
+    assert.deepStrictEqual(selectionCalls, [
+        ['select', target], ['clear'], ['add', range], ['focus', { preventScroll: true }],
+    ]);
+
+    let visible = false;
+    let qrBuilds = 0;
+    const attributes = {};
+    const container = {
+        innerHTML: '',
+        classList: {
+            contains: name => name === 'is-visible' && visible,
+            toggle(name, value) { if (name === 'is-visible') visible = value; },
+        },
+    };
+    const button = {
+        parentElement: { querySelector: selector => selector === '[data-room-qr-container]' ? container : null },
+        setAttribute(name, value) { attributes[name] = value; },
+    };
+    const effects = {
+        document: { querySelector: selector => selector === '.room-qr-toggle[data-room-id="ABC123"]' ? button : null },
+        window: { location: { origin: 'https://example.test' } },
+        buildJoinUrl(roomId, location) {
+            assert.strictEqual(roomId, 'ABC123');
+            assert.strictEqual(location.origin, 'https://example.test');
+            return 'https://example.test/?room=ABC123';
+        },
+        buildSvg(value) { qrBuilds++; return `<svg>${value}</svg>`; },
+    };
+    assert.strictEqual(OnlineRoomShare.toggleRoomQr(' abc123 ', effects), true);
+    assert.strictEqual(visible, true);
+    assert.strictEqual(attributes['aria-expanded'], 'true');
+    assert.strictEqual(button.textContent, 'QRを隠す');
+    assert.strictEqual(qrBuilds, 1);
+    assert.ok(container.innerHTML.includes('room=ABC123'));
+    assert.strictEqual(OnlineRoomShare.toggleRoomQr('ABC123', effects), true);
+    assert.strictEqual(visible, false);
+    assert.strictEqual(attributes['aria-expanded'], 'false');
+    assert.strictEqual(button.textContent, 'QRを表示');
+    assert.strictEqual(qrBuilds, 1);
+});
+
 runTest('online room shareはhostだけに自分以外の参加者管理を表示する', () => {
     const html = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
         isHost: true,
