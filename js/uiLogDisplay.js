@@ -139,9 +139,9 @@ const UiLogDisplay = (() => {
             ? previousLength
             : 0;
         if (currentLog.length < priorLength) {
-            const isReroll = currentLog.length > 0 && currentLog[0] &&
-                typeof currentLog[0].message === 'string' &&
-                currentLog[0].message.startsWith('📡');
+            const isReroll = currentLog.some(entry => entry &&
+                typeof entry.message === 'string' &&
+                entry.message.startsWith('📡'));
             if (!isReroll && fullLog.length > 0 && currentLog.length > 0) fullLog.push('__SEP__');
             fullLog.push(...currentLog);
         } else {

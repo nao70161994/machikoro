@@ -35,8 +35,20 @@ runTest('遊園地の保持出目は再通知せず同じ新規rollとrerollは�
     game.selectDiceCount(true, 4, 4);
     assert.strictEqual(game.diceResolutionSequence, 1);
     game.rerollDice();
+    assert.strictEqual(game.log.some(entry => entry.message.startsWith('📡')), false);
+    assert.strictEqual(game.pendingRadioTowerReroll.dice1, 4);
+    assert.strictEqual(game.pendingRadioTowerReroll.dice2, 4);
+    assert.strictEqual(game.pendingRadioTowerReroll.result, 8);
+    const GameSnapshot = require('../js/gameSnapshot');
+    const pendingRerollSnapshot = GameSnapshot.serializeGameState(game, {});
+    assert.deepStrictEqual(pendingRerollSnapshot.pendingRadioTowerReroll, {
+        dice1: 4, dice2: 4, result: 8,
+    });
+    assert.doesNotMatch(game.log.map(entry => entry.message).join('\n'), /→ 0(?:\D|$)/);
     game.selectDiceCount(true, 4, 4);
     assert.strictEqual(game.diceResolutionSequence, 2);
+    assert.strictEqual(game.pendingRadioTowerReroll, null);
+    assert.ok(game.log.some(entry => entry.message === '📡 電波塔で振り直し: 4+4=8 → 4+4=8'));
     rt.render();
     assert.deepStrictEqual(announcements, [
         '振り直し後、サイコロの出目は4と4、合計8です',

@@ -212,6 +212,9 @@ function serializeGameState(game, shopStock, options = {}) {
         actionSeq: Object.prototype.hasOwnProperty.call(options, 'actionSeq')
             ? options.actionSeq : 0,
     };
+    if (game.pendingRadioTowerReroll) {
+        state.pendingRadioTowerReroll = Object.assign({}, game.pendingRadioTowerReroll);
+    }
     if (game.marketSupply && game.marketSupply.mode === 'ten-type') {
         state.marketSupply = GameSnapshotMarketSupplyApi.copyState(game.marketSupply);
     }
@@ -399,6 +402,16 @@ function hydrateMutableGameState(options) {
     }
     game.pendingIT = state.pendingIT || false;
     game.usedReroll = state.usedReroll || false;
+    game.pendingRadioTowerReroll = state.pendingRadioTowerReroll &&
+        Number.isSafeInteger(state.pendingRadioTowerReroll.dice1) &&
+        Number.isSafeInteger(state.pendingRadioTowerReroll.dice2) &&
+        Number.isSafeInteger(state.pendingRadioTowerReroll.result)
+        ? {
+            dice1: state.pendingRadioTowerReroll.dice1,
+            dice2: state.pendingRadioTowerReroll.dice2,
+            result: state.pendingRadioTowerReroll.result,
+        }
+        : null;
     game.pendingTunaDice = state.pendingTunaDice || null;
     game.turnCount = state.turnCount || 0;
     game.hadAmusementParkAtRoll = state.hadAmusementParkAtRoll || false;

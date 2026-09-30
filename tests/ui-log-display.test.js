@@ -119,13 +119,17 @@ assert.deepStrictEqual(resetHistory.entries, [
 
 const rerollHistory = UiLogDisplay.updateLogHistory(
     firstHistory.entries,
-    firstHistory.currentLength,
-    [{ type: 'dice', message: '📡 reroll' }]
+    firstHistory.currentLength + 3,
+    [
+        { type: 'dice', message: '🎲 4+4=8' },
+        { type: 'dice', message: '📡 reroll: 4+4=8 → 4+4=8' },
+    ]
 );
 assert.deepStrictEqual(rerollHistory.entries, [
     { type: 'dice', message: 'first' },
     { type: 'gain', message: 'second' },
-    { type: 'dice', message: '📡 reroll' },
+    { type: 'dice', message: '🎲 4+4=8' },
+    { type: 'dice', message: '📡 reroll: 4+4=8 → 4+4=8' },
 ]);
 
 const boundedHistory = UiLogDisplay.updateLogHistory(

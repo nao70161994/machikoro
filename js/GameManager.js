@@ -112,6 +112,7 @@ class GameManager {
         this.builtThisTurn = false;
         this.resetPendingState();
         this.usedReroll = false;
+        this.pendingRadioTowerReroll = null;
         this.pendingTunaDice = null;
         this.turnCount = 0;
         // UI notification identity only. This is intentionally not serialized or sent on the wire.
@@ -155,6 +156,7 @@ class GameManager {
         }
         this.builtThisTurn = plan.builtThisTurn;
         this.usedReroll = plan.usedReroll;
+        this.pendingRadioTowerReroll = null;
         this.pendingTV = plan.pending.pendingTV;
         this.pendingBusiness = plan.pending.pendingBusiness;
         this.pendingCleaning = plan.pending.pendingCleaning;
@@ -343,6 +345,7 @@ class GameManager {
         this.addLog(LOG_TYPES.DICE, selection.useTwo
             ? `🎲 ${d1}+${d2}=${this.lastDiceResult}`
             : `🎲 ${d1} が出ました`);
+        this._logPendingRadioTowerReroll();
         this.afterRoll(tunaDice || this.pendingTunaDice);
     }
 
@@ -376,10 +379,18 @@ class GameManager {
         this.log = reset.log.slice();
         /** @type {(typeof GAME_PHASES)[keyof typeof GAME_PHASES]} */
         this.phase = reset.phase;
+        this.pendingRadioTowerReroll = { dice1: prevDice1, dice2: prevDice2, result: prevResult };
         this.rollDice(forceDice, tunaDice);
+        if (this.phase !== GAME_PHASES.SELECT_DICE) this._logPendingRadioTowerReroll();
+    }
+
+    _logPendingRadioTowerReroll() {
+        const previous = this.pendingRadioTowerReroll;
+        if (!previous) return;
+        this.pendingRadioTowerReroll = null;
         this.addLog(
             LOG_TYPES.DICE,
-            `📡 電波塔で振り直し: ${GameDicePolicy.formatDiceOutcome(prevDice1, prevDice2, prevResult)} → ${GameDicePolicy.formatDiceOutcome(this.lastDice1, this.lastDice2, this.lastDiceResult)}`
+            `📡 電波塔で振り直し: ${GameDicePolicy.formatDiceOutcome(previous.dice1, previous.dice2, previous.result)} → ${GameDicePolicy.formatDiceOutcome(this.lastDice1, this.lastDice2, this.lastDiceResult)}`
         );
     }
 
