@@ -21,6 +21,34 @@ const OnlinePlayerSettings = (() => {
         ));
     }
 
+    function settingForType(value) {
+        return value === 'human'
+            ? { type: 'human', difficulty: 'normal' }
+            : {
+                type: 'cpu',
+                difficulty: value,
+                rlModelId: value === 'rl' ? null : undefined,
+                rlModelSelection: value === 'rl' ? 'auto' : undefined,
+            };
+    }
+
+    function replaceRlModel(settings, index, value, selectedModel) {
+        const current = settings[index];
+        if (!current || current.type !== 'cpu' || current.difficulty !== 'rl') return null;
+        if (value !== 'auto' && !selectedModel) return null;
+        const updated = settings.slice();
+        updated[index] = Object.assign({}, current, {
+            rlModelId: selectedModel ? selectedModel.id : null,
+            rlModelSelection: value === 'auto' ? 'auto' : 'manual',
+        });
+        return updated;
+    }
+
+    function canReplaceRlModel(settings, index) {
+        const current = settings[index];
+        return !!current && current.type === 'cpu' && current.difficulty === 'rl';
+    }
+
     function renderSettings(options = {}) {
         const state = options.getState();
         const settings = normalizeSettings(state.playerSettings, state.selectedCount);
@@ -149,6 +177,9 @@ const OnlinePlayerSettings = (() => {
     return Object.freeze({
         normalizeSetting,
         normalizeSettings,
+        settingForType,
+        replaceRlModel,
+        canReplaceRlModel,
         renderSettings,
         rlSettingNote,
         buildSettingsHtml,

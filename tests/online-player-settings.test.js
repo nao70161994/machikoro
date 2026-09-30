@@ -50,6 +50,30 @@ runTest('online player settings HTMLは既存option・label・RL説明を維持�
     assert.ok(!html.includes('onChangeOnlinePlayerType('));
 });
 
+runTest('online player settingsは種類とRLモデルの状態変更を入力非破壊で計算する', () => {
+    assert.deepStrictEqual(OnlinePlayerSettings.settingForType('human'), {
+        type: 'human', difficulty: 'normal',
+    });
+    assert.deepStrictEqual(OnlinePlayerSettings.settingForType('rl'), {
+        type: 'cpu', difficulty: 'rl', rlModelId: null, rlModelSelection: 'auto',
+    });
+    const source = [
+        { type: 'human', difficulty: 'normal' },
+        { type: 'cpu', difficulty: 'rl', rlModelId: 'old', rlModelSelection: 'manual' },
+    ];
+    assert.deepStrictEqual(OnlinePlayerSettings.replaceRlModel(source, 1, 'auto', null), [
+        source[0], { type: 'cpu', difficulty: 'rl', rlModelId: null, rlModelSelection: 'auto' },
+    ]);
+    assert.deepStrictEqual(OnlinePlayerSettings.replaceRlModel(
+        source, 1, 'new-model', { id: 'new-model' }
+    ), [source[0], {
+        type: 'cpu', difficulty: 'rl', rlModelId: 'new-model', rlModelSelection: 'manual',
+    }]);
+    assert.strictEqual(OnlinePlayerSettings.replaceRlModel(source, 0, 'auto', null), null);
+    assert.strictEqual(OnlinePlayerSettings.replaceRlModel(source, 1, 'missing', null), null);
+    assert.strictEqual(source[1].rlModelId, 'old');
+});
+
 runTest('online player settingsはRL model選択方式を正規化する', () => {
     assert.deepStrictEqual(OnlinePlayerSettings.normalizeSetting({
         type: 'cpu', difficulty: 'rl', modelId: 'legacy', rlModelSelection: 'manual',

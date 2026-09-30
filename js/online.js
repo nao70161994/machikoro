@@ -320,14 +320,7 @@ function onlineEligibleRlModels(playerCount) {
 }
 
 function onChangeOnlinePlayerType(index, value) {
-    onlineSetupStateController.updateSetting(index, value === "human"
-        ? { type: "human", difficulty: "normal" }
-        : {
-            type: "cpu",
-            difficulty: value,
-            rlModelId: value === 'rl' ? null : undefined,
-            rlModelSelection: value === 'rl' ? 'auto' : undefined,
-        });
+    onlineSetupStateController.updateSetting(index, OnlinePlayerSettings.settingForType(value));
     renderOnlinePlayerSettings();
     restoreOnlinePlayerSettingFocus('onlinePlayerType', index);
     updateOnlineRlModelReadinessUi();
@@ -350,18 +343,18 @@ function restoreOnlinePlayerSettingFocus(changeName, index) {
 
 function onChangeOnlineRlModel(index, value) {
     const state = onlineSetupStateController.snapshot();
-    const current = state.playerSettings[index];
-    if (!current || current.type !== 'cpu' || current.difficulty !== 'rl') return false;
+    if (!OnlinePlayerSettings.canReplaceRlModel(state.playerSettings, index)) return false;
     const selected = value === 'auto' ? null : typeof RLModelPortfolio !== 'undefined' &&
         typeof RLModelPortfolio.modelById === 'function'
         ? RLModelPortfolio.modelById(value, state.selectedCount)
         : null;
-    if (value !== 'auto' && !selected) return false;
-    const settings = state.playerSettings.slice();
-    settings[index] = Object.assign({}, current, {
-        rlModelId: selected ? selected.id : null,
-        rlModelSelection: value === 'auto' ? 'auto' : 'manual',
-    });
+    const settings = OnlinePlayerSettings.replaceRlModel(
+        state.playerSettings,
+        index,
+        value,
+        selected
+    );
+    if (!settings) return false;
     onlineSetupStateController.replaceSettings(
         freezeOnlinePlayerSettings(settings, state.selectedCount)
     );
