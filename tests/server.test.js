@@ -3113,6 +3113,64 @@ runTest('handleRecreateRoom は未署名 client snapshot を拒否する', () =>
     assert.deepStrictEqual(emitted, [{ name: APP_ERROR_EVENT, payload: '復元データが壊れています' }]);
 });
 
+runTest('server restart restore は署名済みcompact snapshotを完全actionLogなしで検証する', () => {
+    const crypto = require('crypto');
+    const emitted = [];
+    const joined = [];
+    const roomId = 'REST03';
+    const reconnectToken = 'token-host';
+    const socket = {
+        id: 'socket-host',
+        emit(name, payload) { emitted.push({ name, payload }); },
+        join(value) { joined.push(value); },
+    };
+    const stateSnapshot = makeSnapshot({
+        players: [
+            { name: 'Alice', coins: 5, cards: [], dormantIndices: [], landmarks: { 駅: false, ショッピングモール: false }, itVentureCoins: 0, hasYakusho: true },
+            { name: 'Bob', coins: 3, cards: [], dormantIndices: [], landmarks: { 駅: false, ショッピングモール: false }, itVentureCoins: 0, hasYakusho: true },
+        ],
+        currentPlayerIndex: 0,
+        phase: 'build',
+        actionSeq: 42,
+        shopStock: { '麦畑': 5 },
+    });
+    const payload = {
+        roomId,
+        gameStartPayload: {
+            playerNames: ['Alice', 'Bob'],
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            reconnectTokenHashes: [
+                crypto.createHash('sha256').update(reconnectToken).digest('hex'),
+                crypto.createHash('sha256').update('token-b').digest('hex'),
+            ],
+            enabledCards: ['麦畑'],
+            enabledLandmarks: ['駅'],
+            cpuSpeed: 1500,
+            playerOrder: [0, 1],
+            hostPlayerIndex: 0,
+        },
+        stateSnapshot,
+        actionLog: [],
+        playerIndex: 0,
+        playerName: 'Alice',
+        reconnectToken,
+    };
+    delete __rooms[roomId];
+    try {
+        handleRecreateRoom(socket, signedRestorePayload(payload));
+        assert.deepStrictEqual(joined, [roomId]);
+        assert.strictEqual(__rooms[roomId].stateSnapshot.actionSeq, 42);
+        assert.strictEqual(__rooms[roomId].stateSnapshot.players[0].coins, 5);
+        assert.deepStrictEqual(__rooms[roomId].actionLog, []);
+        assert.strictEqual(emitted[0].name, 'rejoinData');
+        assert.strictEqual(emitted[0].payload.restoreAudit.roomId, roomId);
+        assert.strictEqual(emitted[0].payload.restoreAudit.signed, true);
+        assert.strictEqual(typeof emitted[0].payload.restoreAudit.signature, 'string');
+    } finally {
+        delete __rooms[roomId];
+    }
+});
+
 runTest('restore action log はsnapshot境界後の未知actionをbatch全体で拒否する', () => {
     const snapshot = { actionSeq: 2 };
     assert.deepStrictEqual(sanitizeRestoreActionLog([
