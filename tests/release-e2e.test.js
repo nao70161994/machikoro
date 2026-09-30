@@ -543,15 +543,14 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
 });
 
 runTest('GitHub Actionsは検証済みcommit SHAへ固定しrelease workflowの権限をread-onlyにする', () => {
-    const workflows = [
-        '.github/workflows/release-test.yml',
-        '.github/workflows/nightly-release-test.yml',
-        '.github/workflows/build-apk.yml',
-        '.github/workflows/online-delivery.yml',
-        '.github/workflows/weekly-cpu-difficulty.yml',
-    ].map(readRepoFile);
-    for (const workflow of workflows) {
-        for (const line of workflow.split('\n').filter(value => value.includes('uses: actions/'))) {
+    const workflowDirectory = path.join(__dirname, '..', '.github', 'workflows');
+    const workflowFiles = fs.readdirSync(workflowDirectory)
+        .filter(file => /\.ya?ml$/i.test(file))
+        .sort();
+    assert.ok(workflowFiles.length > 0, 'workflow files should be discovered');
+    for (const file of workflowFiles) {
+        const workflow = readRepoFile(path.posix.join('.github', 'workflows', file));
+        for (const line of workflow.split('\n').filter(value => /^\s*uses:\s*/.test(value))) {
             assert.match(line, /uses: actions\/[\w-]+@[a-f0-9]{40} # v\d+\.\d+\.\d+$/);
         }
     }
