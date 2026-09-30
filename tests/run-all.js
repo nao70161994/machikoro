@@ -549,6 +549,7 @@ const TEST_GROUPS = {
         'online-rejoin-runtime.test.js',
         'online-socket-disconnect.test.js',
         'online-host-changed.test.js',
+        'online-effect-authority.test.js',
         'online-rejoin-persistence.test.js',
         'online-rejoin-preparation-runtime.test.js',
         'online-pending-outbound-state.test.js',

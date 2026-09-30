@@ -185,6 +185,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineLobbyStartRuntime.js');
     loadScript(context, 'js/onlineSocketDisconnect.js');
     loadScript(context, 'js/onlineHostChanged.js');
+    loadScript(context, 'js/onlineEffectAuthority.js');
     loadScript(context, 'js/onlineRejoinPersistence.js');
     loadScript(context, 'js/onlineRejoinPreparationRuntime.js');
     loadScript(context, 'js/onlinePendingOutboundState.js');

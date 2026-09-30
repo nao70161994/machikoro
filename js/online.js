@@ -1577,15 +1577,12 @@ function _onlineActionTimeoutPlanSelection() {
 
 function _onlineActionTimeoutEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineActionTimeoutEffectAuthorityEnabled();
-    const purePlanReady = planSelection.source === 'pure-plan';
-    const helperAvailable = typeof OnlineActionTimeout !== 'undefined' &&
-        typeof OnlineActionTimeout.execute === 'function';
-    const useExecutor = enabled && purePlanReady && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!purePlanReady ? 'action-timeout-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlineActionTimeout !== 'undefined' &&
+            typeof OnlineActionTimeout.execute === 'function',
+        planFallbackReason: 'action-timeout-plan-not-authoritative',
     });
 }
 
@@ -1663,16 +1660,14 @@ function _runOnlineDecodeFailureEffects(plan, enabled, recordSelection) {
 
 function _onlineActionApplyFailureEffectAuthoritySelection(planSelection, enabled) {
     const decisions = OnlinePayload.incomingGameActionDecisions;
-    const pureApplyPlan = planSelection && planSelection.source === 'pure-plan' &&
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan' &&
         planSelection.plan && planSelection.plan.decision === decisions.APPLY;
-    const helperAvailable = typeof OnlineActionApplyFailure !== 'undefined' &&
-        typeof OnlineActionApplyFailure.execute === 'function';
-    const useExecutor = enabled && pureApplyPlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!pureApplyPlan ? 'game-action-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan,
+        executorAvailable: typeof OnlineActionApplyFailure !== 'undefined' &&
+            typeof OnlineActionApplyFailure.execute === 'function',
+        planFallbackReason: 'game-action-plan-not-authoritative',
     });
 }
 
@@ -1704,16 +1699,14 @@ function _runOnlineActionApplyFailureEffects(error, planSelection, enabled, reco
 
 function _onlineActionGapEffectAuthoritySelection(planSelection, enabled) {
     const decisions = OnlinePayload.incomingGameActionDecisions;
-    const pureGapPlan = planSelection && planSelection.source === 'pure-plan' &&
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan' &&
         planSelection.plan && planSelection.plan.decision === decisions.GAP;
-    const helperAvailable = typeof OnlineActionGap !== 'undefined' &&
-        typeof OnlineActionGap.execute === 'function';
-    const useExecutor = enabled && pureGapPlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!pureGapPlan ? 'game-action-gap-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan,
+        executorAvailable: typeof OnlineActionGap !== 'undefined' &&
+            typeof OnlineActionGap.execute === 'function',
+        planFallbackReason: 'game-action-gap-plan-not-authoritative',
     });
 }
 
@@ -1748,16 +1741,14 @@ function _runOnlineActionGapEffects(statusMessage, planSelection, enabled, recor
 
 function _onlineActionNoGameEffectAuthoritySelection(planSelection, enabled) {
     const decisions = OnlinePayload.incomingGameActionDecisions;
-    const pureNoGamePlan = planSelection && planSelection.source === 'pure-plan' &&
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan' &&
         planSelection.plan && planSelection.plan.decision === decisions.NO_GAME;
-    const helperAvailable = typeof OnlineActionNoGame !== 'undefined' &&
-        typeof OnlineActionNoGame.execute === 'function';
-    const useExecutor = enabled && pureNoGamePlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!pureNoGamePlan ? 'game-action-no-game-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan,
+        executorAvailable: typeof OnlineActionNoGame !== 'undefined' &&
+            typeof OnlineActionNoGame.execute === 'function',
+        planFallbackReason: 'game-action-no-game-plan-not-authoritative',
     });
 }
 
@@ -1790,16 +1781,14 @@ function _runOnlineActionNoGameEffects(statusMessage, requestRejoin, planSelecti
 
 function _onlineActionCommitEffectAuthoritySelection(planSelection, enabled) {
     const decisions = OnlinePayload.incomingGameActionDecisions;
-    const pureApplyPlan = planSelection && planSelection.source === 'pure-plan' &&
+    const authoritativePlan = planSelection && planSelection.source === 'pure-plan' &&
         planSelection.plan && planSelection.plan.decision === decisions.APPLY;
-    const helperAvailable = typeof OnlineActionCommit !== 'undefined' &&
-        typeof OnlineActionCommit.execute === 'function';
-    const useExecutor = enabled && pureApplyPlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!pureApplyPlan ? 'game-action-commit-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan,
+        executorAvailable: typeof OnlineActionCommit !== 'undefined' &&
+            typeof OnlineActionCommit.execute === 'function',
+        planFallbackReason: 'game-action-commit-plan-not-authoritative',
     });
 }
 
@@ -1881,15 +1870,12 @@ function _onlineSocketConnectPlanSelection() {
 
 function _onlineSocketConnectEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineSocketConnectEffectAuthorityEnabled();
-    const helperAvailable = typeof OnlineSocketConnect !== 'undefined' &&
-        typeof OnlineSocketConnect.execute === 'function';
-    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
-    const useExecutor = enabled && authoritativePlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!authoritativePlan ? 'socket-connect-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlineSocketConnect !== 'undefined' &&
+            typeof OnlineSocketConnect.execute === 'function',
+        planFallbackReason: 'socket-connect-plan-not-authoritative',
     });
 }
 
@@ -1953,15 +1939,12 @@ function _onlineSocketDisconnectPlanSelection() {
 
 function _onlineSocketDisconnectEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineSocketDisconnectEffectAuthorityEnabled();
-    const helperAvailable = typeof OnlineSocketDisconnect !== 'undefined' &&
-        typeof OnlineSocketDisconnect.execute === 'function';
-    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
-    const useExecutor = enabled && authoritativePlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!authoritativePlan ? 'socket-disconnect-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlineSocketDisconnect !== 'undefined' &&
+            typeof OnlineSocketDisconnect.execute === 'function',
+        planFallbackReason: 'socket-disconnect-plan-not-authoritative',
     });
 }
 
@@ -2042,15 +2025,12 @@ function _onlineHostChangedPlanSelection(newHostPlayerIndex) {
 
 function _onlineHostChangedEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineHostChangedEffectAuthorityEnabled();
-    const helperAvailable = typeof OnlineHostChanged !== 'undefined' &&
-        typeof OnlineHostChanged.execute === 'function';
-    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
-    const useExecutor = enabled && authoritativePlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!authoritativePlan ? 'host-changed-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlineHostChanged !== 'undefined' &&
+            typeof OnlineHostChanged.execute === 'function',
+        planFallbackReason: 'host-changed-plan-not-authoritative',
     });
 }
 
@@ -2090,65 +2070,45 @@ function _runOnlineHostChangedEffects(newHostPlayerIndex, hostEpoch) {
 
 function _onlineRejoinPersistenceEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineRejoinPersistenceEffectAuthorityEnabled();
-    const helperAvailable = typeof OnlineRejoinPersistence !== 'undefined' &&
-        typeof OnlineRejoinPersistence.execute === 'function';
-    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
-    const useExecutor = enabled && authoritativePlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!authoritativePlan
-                ? 'rejoin-persistence-plan-not-authoritative'
-                : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlineRejoinPersistence !== 'undefined' &&
+            typeof OnlineRejoinPersistence.execute === 'function',
+        planFallbackReason: 'rejoin-persistence-plan-not-authoritative',
     });
 }
 
 function _onlinePendingResendEffectAuthoritySelection(planSelection) {
     const enabled = isOnlinePendingResendEffectAuthorityEnabled();
-    const helperAvailable = typeof OnlinePendingResend !== 'undefined' &&
-        typeof OnlinePendingResend.execute === 'function';
-    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
-    const useExecutor = enabled && authoritativePlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!authoritativePlan
-                ? 'pending-resend-plan-not-authoritative'
-                : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlinePendingResend !== 'undefined' &&
+            typeof OnlinePendingResend.execute === 'function',
+        planFallbackReason: 'pending-resend-plan-not-authoritative',
     });
 }
 
 function _onlineRestoreReplayEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineRestoreReplayEffectAuthorityEnabled();
-    const helperAvailable = typeof OnlineRestoreReplay !== 'undefined' &&
-        typeof OnlineRestoreReplay.execute === 'function';
-    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
-    const useExecutor = enabled && authoritativePlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!authoritativePlan
-                ? 'restore-replay-plan-not-authoritative'
-                : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlineRestoreReplay !== 'undefined' &&
+            typeof OnlineRestoreReplay.execute === 'function',
+        planFallbackReason: 'restore-replay-plan-not-authoritative',
     });
 }
 
 function _onlineRestoreActivationEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineRestoreActivationEffectAuthorityEnabled();
-    const helperAvailable = typeof OnlineRestoreActivation !== 'undefined' &&
-        typeof OnlineRestoreActivation.execute === 'function';
-    const authoritativePlan = planSelection && planSelection.source === 'pure-plan';
-    const useExecutor = enabled && authoritativePlan && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!authoritativePlan
-                ? 'restore-activation-plan-not-authoritative'
-                : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlineRestoreActivation !== 'undefined' &&
+            typeof OnlineRestoreActivation.execute === 'function',
+        planFallbackReason: 'restore-activation-plan-not-authoritative',
     });
 }
 
@@ -2572,15 +2532,12 @@ function _onlineRestoreAbortPlanSelection(generation, statusMessage, queuedEvent
 
 function _onlineRestoreAbortEffectAuthoritySelection(planSelection) {
     const enabled = isOnlineRestoreAbortEffectAuthorityEnabled();
-    const purePlanReady = planSelection.source === 'pure-plan';
-    const helperAvailable = typeof OnlineRestoreAbort !== 'undefined' &&
-        typeof OnlineRestoreAbort.execute === 'function';
-    const useExecutor = enabled && purePlanReady && helperAvailable;
-    return Object.freeze({
-        source: useExecutor ? 'executor' : (enabled ? 'legacy-fallback' : 'legacy'),
-        fallbackReason: useExecutor || !enabled
-            ? ''
-            : (!purePlanReady ? 'abort-plan-not-authoritative' : 'executor-unavailable'),
+    return OnlineEffectAuthority.selectExecutor({
+        enabled,
+        authoritativePlan: planSelection && planSelection.source === 'pure-plan',
+        executorAvailable: typeof OnlineRestoreAbort !== 'undefined' &&
+            typeof OnlineRestoreAbort.execute === 'function',
+        planFallbackReason: 'abort-plan-not-authoritative',
     });
 }
 

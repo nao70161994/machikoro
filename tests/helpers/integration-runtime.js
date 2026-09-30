@@ -359,6 +359,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineLobbyStartRuntime.js');
         files.push('js/onlineSocketDisconnect.js');
         files.push('js/onlineHostChanged.js');
+        files.push('js/onlineEffectAuthority.js');
         files.push('js/onlineRejoinPersistence.js');
         files.push('js/onlineRejoinPreparationRuntime.js');
         files.push('js/onlinePendingOutboundState.js');
