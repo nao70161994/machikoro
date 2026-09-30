@@ -226,7 +226,11 @@ test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領�
 
 test('320pxから480pxで開始CTAが設定やfocusを隠さずPWAの上に届く', async ({ page }) => {
     await prepare(page);
-    await page.locator('#customGameSetup > summary').click();
+    const customSetup = page.locator('#customGameSetup');
+    if (!await customSetup.evaluate(element => element.open)) {
+        await page.locator('#customGameSetup > summary').click();
+    }
+    await expect(customSetup).toHaveAttribute('open', '');
 
     async function expectCtaDoesNotObscure(selector, focusSelector, width, height = 844, expectedPosition = 'fixed') {
         await page.setViewportSize({ width, height });

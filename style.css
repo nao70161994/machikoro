@@ -889,7 +889,7 @@ html[data-design="sunset"] .design-switcher select option {
         transform: translateX(-50%);
     }
 
-    #customGameSetup[open] .setup-action-footer {
+    body.pwa-banner-open #customGameSetup[open] .setup-action-footer {
         position: static;
         width: 100%;
         bottom: auto;
