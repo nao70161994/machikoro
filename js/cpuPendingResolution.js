@@ -297,26 +297,24 @@ const CPUPendingResolution = Object.freeze({
 
     choosePendingResolution(game, cpu, options = {}) {
         if (!game || !cpu || game.phase !== GAME_PHASES.PENDING) return null;
-        const descriptors = CPUPendingResolution.pendingActionDescriptors(game);
-        for (const descriptor of descriptors) {
-            switch (descriptor.action) {
-                case 'resolveTV':
-                    return CPUPendingResolution.choosePendingTvResolution(game, cpu, options);
-                case 'resolveBusiness':
-                    return CPUPendingResolution.choosePendingBusinessResolution(game, cpu, options);
-                case 'resolveCleaning':
-                    return null;
-                case 'resolveIT':
-                    return CPUPendingResolution.choosePendingItResolution(game, cpu);
-                case 'resolveMover':
-                    return CPUPendingResolution.choosePendingMoverResolution(game, cpu, options);
-                case 'resolveRenovation':
-                    return CPUPendingResolution.choosePendingRenovationResolution(game, cpu, options);
-                default:
-                    return null;
-            }
+        const descriptor = CPUPendingResolution.pendingActionDescriptors(game)[0];
+        if (!descriptor) return null;
+        switch (descriptor.action) {
+            case 'resolveTV':
+                return CPUPendingResolution.choosePendingTvResolution(game, cpu, options);
+            case 'resolveBusiness':
+                return CPUPendingResolution.choosePendingBusinessResolution(game, cpu, options);
+            case 'resolveCleaning':
+                return null;
+            case 'resolveIT':
+                return CPUPendingResolution.choosePendingItResolution(game, cpu);
+            case 'resolveMover':
+                return CPUPendingResolution.choosePendingMoverResolution(game, cpu, options);
+            case 'resolveRenovation':
+                return CPUPendingResolution.choosePendingRenovationResolution(game, cpu, options);
+            default:
+                return null;
         }
-        return null;
     },
 });
 

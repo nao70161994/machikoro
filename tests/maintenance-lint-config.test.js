@@ -32,6 +32,8 @@ runTest('maintenance lint keeps bug-detection rules enabled as errors', () => {
         'no-dupe-keys',
         'no-duplicate-case',
         'no-duplicate-imports',
+        'no-dupe-args',
+        'no-fallthrough',
         'no-eval',
         'no-implied-eval',
         'no-new-func',
@@ -40,8 +42,11 @@ runTest('maintenance lint keeps bug-detection rules enabled as errors', () => {
         'no-undef',
         'no-unreachable',
         'no-unsafe-optional-chaining',
+        'no-unsafe-finally',
+        'no-unexpected-multiline',
+        'no-unreachable-loop',
         'valid-typeof',
-    ];
+    ].sort();
     for (const entry of eslintConfig) {
         assert.deepStrictEqual(Object.keys(entry.rules).sort(), expectedRules);
         for (const rule of expectedRules) {

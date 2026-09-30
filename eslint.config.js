@@ -315,6 +315,7 @@ const maintenanceRules = Object.freeze({
     'no-constant-condition': ['error', { checkLoops: false }],
     'no-constant-binary-expression': 'error',
     'no-duplicate-case': 'error',
+    'no-dupe-args': 'error',
     'no-dupe-keys': 'error',
     'no-duplicate-imports': 'error',
     'no-eval': 'error',
@@ -325,6 +326,10 @@ const maintenanceRules = Object.freeze({
     'no-script-url': 'error',
     'no-unreachable': 'error',
     'no-unsafe-optional-chaining': 'error',
+    'no-unsafe-finally': 'error',
+    'no-unexpected-multiline': 'error',
+    'no-unreachable-loop': 'error',
+    'no-fallthrough': 'error',
     'valid-typeof': 'error',
 });
 
