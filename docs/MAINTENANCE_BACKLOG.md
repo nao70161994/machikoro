@@ -1075,6 +1075,6 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 
 ## 2026-09-30 Composition-root static coverage: main.js ESLint
 
-- `js/main.js` is now part of scoped maintenance ESLint with `no-undef` and the existing bug-detection rules enabled. Its script globals are listed explicitly in `eslint.config.js` so misspelled cross-script names remain detectable.
-- `lint:maintenance` and its inventory contract include the root. `npm run test:static`, the maintenance-lint inventory test, and direct `npx eslint js/main.js` pass.
-- Whole-file `checkJs` coverage for `main.js` remains deferred: the isolated root currently exposes 28 diagnostics in existing DOM typing and late-bound contracts. This attempt was removed rather than masking those findings with permissive declarations. Resolve them through narrow real boundaries before enabling the root.
+- `js/main.js` is part of scoped maintenance ESLint and a dedicated checkJs composition-root project. The root project composes the existing checked adapters and uses a separate typed late-binding contract to avoid lexical collisions with `appShell.js`.
+- The check uncovered real boundary drift: ignored player-count arguments, preset selections typed readonly, collection counts represented as arrays, and DOM IDs used as input/canvas elements. Those edges now have accurate signatures or annotations; runtime behavior is preserved.
+- `npm run test:static`, including both checkJs projects and maintenance ESLint, passes. The production allowlists now cover 296 checkJs JavaScript files and 298 ESLint JavaScript files. `online.js`, `storage.js`, and `ui.js` remain the whole-file roots to bring in.

@@ -1,3 +1,4 @@
+/** @type {Record<string, number>} */
 const SHOP_STOCK = {};
 
 // live game / CPU / Undo / coin animation state は GameRuntimeState が所有する。
@@ -91,7 +92,7 @@ async function readDiagnosticServerVersion() {
             controller = new AbortController();
             timer = setTimeout(() => controller.abort(), 2500);
         }
-        const response = await fetch('/api/version', Object.assign({ cache: 'no-store' },
+        const response = await fetch('/api/version', Object.assign(/** @type {RequestInit} */ ({ cache: 'no-store' }),
             controller ? { signal: controller.signal } : {}));
         if (!response || !response.ok) return '';
         const payload = await response.json();
@@ -295,8 +296,8 @@ function applySetupPreset(presetId) {
         playerSettings: preset.playerSettings,
         cpuSpeed: preset.cpuSpeed,
     });
-    replaceEnabledCardSelection(preset.enabledCards);
-    replaceEnabledLandmarkSelection(preset.enabledLandmarks);
+    replaceEnabledCardSelection(Array.from(preset.enabledCards));
+    replaceEnabledLandmarkSelection(Array.from(preset.enabledLandmarks));
     replaceMarketRuleSelection(preset.marketRule);
     if (typeof syncCardSelectStateFromRuntime === 'function') syncCardSelectStateFromRuntime();
     UiPlayerCount.applyView(
@@ -584,7 +585,7 @@ function normalizeLocalPlayerName(name, index) {
 }
 
 function normalizeLocalPlayerSetting(setting, index, playerCount) {
-    return LocalPlayerSettings.normalizePlayerSetting(setting, index, playerCount);
+    return LocalPlayerSettings.normalizePlayerSetting(setting, index);
 }
 
 function getLocalCpuLabel(difficulty) {
@@ -734,7 +735,7 @@ function reviewGameSetup() {
         playerSettings: setup.playerSettings,
         cpuSpeed: Number(speed || 1500),
         cpuSpeedLabel: formatCpuSpeedLabel(speed || 1500),
-        enabledCards: Array.from(cards, card => card && card.name || card),
+        enabledCards: Array.from(cards),
         allCards: CARDS.map(card => card.name),
         enabledLandmarks: Array.from(landmarks),
         allLandmarks,
@@ -746,7 +747,7 @@ function reviewGameSetup() {
         `人数: ${setup.selectedCount}人`,
         ...players,
         `CPU速度: ${formatCpuSpeedLabel(speed || 1500)}`,
-        `施設: ${cards.size}種 / ランドマーク: ${landmarks.size}種`,
+        `施設: ${cards.length}種 / ランドマーク: ${landmarks.length}種`,
         `市場: ${marketRule}`,
         '',
         '標準設定との差分:',

@@ -7,6 +7,8 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const packageJson = require('../package.json');
 const config = require('../tsconfig.checkjs.json');
+const mainConfig = require('../tsconfig.checkjs-main.json');
+const checkJsRootRunner = require('../scripts/checkjs-root-runner');
 const { runTest } = require('./helpers/test-utils');
 
 runTest('checkJs configは変換なしの限定JavaScript検査だけを有効にする', () => {
@@ -19,7 +21,10 @@ runTest('checkJs configは変換なしの限定JavaScript検査だけを有効�
         module: 'CommonJS',
         lib: ['ES2022', 'DOM'],
     });
-    assert.strictEqual(packageJson.scripts['test:types'], 'tsc -p tsconfig.checkjs.json');
+    assert.strictEqual(
+        packageJson.scripts['test:types'],
+        'tsc -p tsconfig.checkjs.json && node scripts/checkjs-root-runner.js'
+    );
     assert.ok(packageJson.scripts['test:static'].includes('npm run test:types'));
 });
 
@@ -168,20 +173,19 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/socketOriginPolicy.js'));
 });
 
-runTest('production JavaScriptは未検査の4つのcomposition root以外を静的検査する', () => {
+runTest('production JavaScriptは未検査の3つのcomposition root以外を静的検査する', () => {
     const productionFiles = execFileSync(
         'git',
         ['ls-files', 'js/*.js', 'server/*.js', 'server.js'],
         { cwd: path.join(__dirname, '..'), encoding: 'utf8' }
     ).trim().split(/\r?\n/).filter(Boolean);
     const excludedRoots = new Set([
-        'js/main.js',
         'js/online.js',
         'js/storage.js',
         'js/ui.js',
     ]);
     const lintFiles = new Set(eslintConfig.flatMap(entry => entry.files || []));
-    const checkJsFiles = new Set(config.files);
+    const checkJsFiles = new Set([...config.files, ...mainConfig.files]);
 
     for (const file of productionFiles) {
         if (excludedRoots.has(file)) {
@@ -199,12 +203,13 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
         .flatMap(entry => Array.isArray(entry.files) ? entry.files : []);
     assert.ok(configuredLintFiles.includes('scripts/report-action-contract.js'));
     const lintFiles = configuredLintFiles
-        .filter(file => file !== 'scripts/report-action-contract.js')
+        .filter(file => !['scripts/report-action-contract.js', 'scripts/checkjs-root-runner.js'].includes(file))
         .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
         .sort();
-    const checkJsFiles = config.files
+    const checkJsFiles = [...config.files, ...mainConfig.files]
         .filter(file => file.endsWith('.js'))
+        .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
         .sort();
 
@@ -212,6 +217,23 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
     assert.ok(config.files.includes('js/crashScreen.js'));
     assert.ok(config.files.includes('js/crashScreenEffects.js'));
     assert.ok(config.files.includes('scripts/check-static-files.js'));
+});
+
+runTest('main composition root専用checkJsはappShell globalsとの宣言衝突を避けて有効にする', () => {
+    assert.ok(mainConfig.files.includes('js/main.js'));
+    assert.ok(mainConfig.files.includes('types/checkjs-main-globals.d.ts'));
+    assert.ok(!mainConfig.files.includes('js/appShell.js'));
+    assert.ok(checkJsRootRunner);
+    assert.ok(checkJsRootRunner.readConfig);
+    assert.ok(checkJsRootRunner.checkCompositionRoot);
+    const declarations = fs.readFileSync(
+        path.join(__dirname, '..', 'types/checkjs-main-globals.d.ts'),
+        'utf8'
+    );
+    for (const boundary of ['GameRuntimeState: typeof import(', 'UiGameStatusView: typeof import(',
+        'getOnlineActionFlightState: (() => { inFlight?: boolean']) {
+        assert.ok(declarations.includes(boundary), boundary);
+    }
 });
 
 

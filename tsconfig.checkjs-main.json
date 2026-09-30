@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.checkjs.json",
+  "files": [
+    "types/checkjs-browser-globals.d.ts",
+    "types/checkjs-main-globals.d.ts",
+    "js/main.js"
+  ]
+}
