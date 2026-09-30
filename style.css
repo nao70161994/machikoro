@@ -921,6 +921,12 @@ html[data-design="sunset"] .design-switcher select option {
     }
 }
 
+@media (max-width: 360px) {
+    .title-content { padding-inline: 12px; }
+    .tab-content { padding: 10px; }
+    .player-setting { padding: 6px; }
+}
+
 /* ===== オンライン対戦UI ===== */
 .online-divider {
     text-align: center;
