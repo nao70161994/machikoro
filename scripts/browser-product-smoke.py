@@ -121,8 +121,6 @@ try:
         assert js(s,"return document.documentElement.dataset.design")==design
         expected_select_background='rgb(27, 43, 58)' if design=='sunset' else 'rgb(18, 18, 37)'
         assert js(s,"return getComputedStyle(document.querySelector('#playerSettings .player-setting-select')).backgroundColor")==expected_select_background, 'Player type selector does not match the selected dark theme'
-        setup_controls_clear = js(s,"const a=document.getElementById('btnStart').getBoundingClientRect(),b=document.querySelector('#tabContentLocal .player-select').getBoundingClientRect();return a.bottom<=b.top||a.top>=b.bottom||a.right<=b.left||a.left>=b.right")
-        assert setup_controls_clear, 'Start action overlaps player-count controls'
         if viewport_width >= 760:
             if design=='sunset' and viewport_width >= 1000:
                 title_columns_clear = js(s,"const h=document.querySelector('.title-header').getBoundingClientRect(),t=document.querySelector('.title-header h1').getBoundingClientRect(),i=document.querySelector('.title-header .sunset-hero img').getBoundingClientRect(),b=document.querySelector('.tab-bar').getBoundingClientRect(),sw=document.querySelector('.design-switcher').getBoundingClientRect(),c=document.querySelector('#tabContentLocal').getBoundingClientRect();return h.width>900&&h.bottom<=b.top&&t.right<i.left&&c.width>900&&c.top>Math.max(sw.bottom,b.bottom)")
@@ -136,6 +134,8 @@ try:
         js(s,"window.scrollTo(0,0);")
         shot(s,design+'-title')
         js(s,"const setup=document.getElementById('customGameSetup');if(!setup.open)setup.querySelector('summary').click();")
+        setup_controls_state = js(s,"const a=document.getElementById('btnStart').getBoundingClientRect(),b=document.querySelector('#tabContentLocal .player-select').getBoundingClientRect();return {clear:a.bottom<=b.top||a.top>=b.bottom||a.right<=b.left||a.left>=b.right,start:{left:a.left,right:a.right,top:a.top,bottom:a.bottom},count:{left:b.left,right:b.right,top:b.top,bottom:b.bottom}}")
+        assert setup_controls_state['clear'], f"Start action overlaps player-count controls: {setup_controls_state}"
         if viewport_width >= 760:
             count_up = "document.querySelector('#tabContentLocal [data-ui-action=\\\"changeCount\\\"][data-delta=\\\"1\\\"]')"
             js(s, f"{count_up}.click();{count_up}.click();")

@@ -889,6 +889,14 @@ html[data-design="sunset"] .design-switcher select option {
         transform: translateX(-50%);
     }
 
+    #customGameSetup[open] .setup-action-footer {
+        position: static;
+        width: 100%;
+        bottom: auto;
+        left: auto;
+        transform: none;
+    }
+
     .setup-action-footer .model-load-status:empty { display: none; }
 
     .setup-action-footer .setup-primary-cta {
@@ -925,6 +933,13 @@ html[data-design="sunset"] .design-switcher select option {
     .title-content { padding-inline: 12px; }
     .tab-content { padding: 10px; }
     .player-setting { padding: 6px; }
+    html[data-design="sunset"] .player-box .player-header { flex-wrap: wrap; }
+    html[data-design="sunset"] .player-box .player-name-row { flex: 1 1 100%; }
+    html[data-design="sunset"] .player-box .player-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 }
 
 /* ===== オンライン対戦UI ===== */
@@ -5633,7 +5648,12 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
         flex: 1 1 0;
         min-width: 0;
     }
-    html[data-design="sunset"] .player-box-compact .player-name { font-size: 13px; }
+    html[data-design="sunset"] .player-box-compact .player-name {
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     html[data-design="sunset"] .player-box-compact .player-coin-row {
         flex: 0 0 auto;
         margin-left: auto;

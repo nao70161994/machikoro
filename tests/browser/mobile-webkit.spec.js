@@ -224,44 +224,54 @@ test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領�
     await expectPlayerSelectTapTargets(page, '#onlinePlayerSettings', 10);
 });
 
-test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWAとfocusを隠さない', async ({ page }) => {
+test('320pxから480pxで開始CTAが設定やfocusを隠さずPWAの上に届く', async ({ page }) => {
     await prepare(page);
     await page.locator('#customGameSetup > summary').click();
 
-    async function expectFixedCta(selector, focusSelector, width, height = 844) {
+    async function expectCtaDoesNotObscure(selector, focusSelector, width, height = 844, expectedPosition = 'fixed') {
         await page.setViewportSize({ width, height });
         const focusTarget = page.locator(focusSelector);
         await focusTarget.focus();
-        const layout = await page.locator(selector).evaluate((element, targetSelector) => {
+        const focusLayout = await page.locator(selector).evaluate((element, targetSelector) => {
             const footer = element.closest('.setup-action-footer');
             const bounds = footer.getBoundingClientRect();
             const targetBounds = document.querySelector(targetSelector).getBoundingClientRect();
+            return {
+                ctaTop: bounds.top,
+                targetBottom: targetBounds.bottom,
+                position: getComputedStyle(footer).position,
+            };
+        }, focusSelector);
+        expect(focusLayout.position).toBe(expectedPosition);
+        expect(focusLayout.targetBottom).toBeLessThanOrEqual(focusLayout.ctaTop);
+
+        await page.locator(selector).evaluate(element => {
+            element.closest('.setup-action-footer').scrollIntoView({ block: 'center' });
+        });
+        const layout = await page.locator(selector).evaluate(element => {
+            const footer = element.closest('.setup-action-footer');
+            const bounds = footer.getBoundingClientRect();
             const bannerBounds = document.getElementById('pwaUpdateBanner').getBoundingClientRect();
+            const buttonBounds = element.getBoundingClientRect();
             return {
                 ctaTop: bounds.top,
                 ctaBottom: bounds.bottom,
                 ctaLeft: bounds.left,
                 ctaRight: bounds.right,
-                targetBottom: targetBounds.bottom,
                 bannerTop: bannerBounds.top,
                 viewportWidth: document.documentElement.clientWidth,
                 viewportHeight: window.innerHeight,
-                position: getComputedStyle(footer).position,
-                buttonHeight: element.getBoundingClientRect().height,
-                buttonContained: element.getBoundingClientRect().bottom <= bounds.bottom &&
-                    element.getBoundingClientRect().top >= bounds.top,
+                buttonHeight: buttonBounds.height,
+                buttonContained: buttonBounds.bottom <= bounds.bottom && buttonBounds.top >= bounds.top,
             };
-        }, focusSelector);
-        // The banner-open state deliberately returns the CTA to document flow
-        // so the fixed PWA banner cannot cover it.
-        expect(layout.position).toBe('fixed');
+        });
         expect(layout.buttonContained).toBe(true);
         expect(layout.buttonHeight).toBeGreaterThanOrEqual(44);
         expect(layout.ctaLeft).toBeGreaterThanOrEqual(0);
         expect(layout.ctaRight).toBeLessThanOrEqual(layout.viewportWidth);
+        expect(layout.ctaTop).toBeGreaterThanOrEqual(0);
         expect(layout.ctaBottom).toBeLessThanOrEqual(layout.viewportHeight);
         expect(layout.ctaBottom).toBeLessThanOrEqual(layout.bannerTop);
-        expect(layout.targetBottom).toBeLessThanOrEqual(layout.ctaTop);
     }
 
     await page.evaluate(() => {
@@ -270,26 +280,26 @@ test('320pxから480pxで2人・10人設定の開始CTAが常時表示されPWA�
     });
     await page.waitForTimeout(400);
     for (const width of [320, 360, 390, 480]) {
-        await expectFixedCta('#btnStart', '#playerSettings select[data-player-index="0"]', width);
+        await expectCtaDoesNotObscure('#btnStart', '#playerSettings select[data-player-index="0"]', width, 844, 'static');
     }
 
     const increasePlayerCount = page.locator('[data-ui-action="changeCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increasePlayerCount.click();
     for (const width of [320, 360, 390, 480]) {
-        await expectFixedCta('#btnStart', '#playerSettings select[data-player-index="0"]', width);
+        await expectCtaDoesNotObscure('#btnStart', '#playerSettings select[data-player-index="0"]', width, 844, 'static');
     }
-    await expectFixedCta('#btnStart', '#playerSettings select[data-player-index="0"]', 390, 500);
+    await expectCtaDoesNotObscure('#btnStart', '#playerSettings select[data-player-index="0"]', 390, 500, 'static');
 
     await page.locator('#tabOnline').click();
     for (const width of [320, 360, 390, 480]) {
-        await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
+        await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
     }
     const increaseOnlinePlayerCount = page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increaseOnlinePlayerCount.click();
     for (const width of [320, 360, 390, 480]) {
-        await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
+        await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', width);
     }
-    await expectFixedCta('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
+    await expectCtaDoesNotObscure('#onlineCreateSubmitButton', '#onlineCpuSpeed', 390, 500);
 });
 
 test('sunsetのPWA更新通知は対局中の画面を覆いすぎず操作可能なまま表示する', async ({ page }, testInfo) => {
