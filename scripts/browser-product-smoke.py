@@ -135,6 +135,7 @@ try:
                 assert title_columns_clear, 'Wide title does not separate brand and setup columns'
         js(s,"window.scrollTo(0,0);")
         shot(s,design+'-title')
+        js(s,"const setup=document.getElementById('customGameSetup');if(!setup.open)setup.querySelector('summary').click();")
         if viewport_width >= 760:
             count_up = "document.querySelector('#tabContentLocal [data-ui-action=\\\"changeCount\\\"][data-delta=\\\"1\\\"]')"
             js(s, f"{count_up}.click();{count_up}.click();")
@@ -210,8 +211,9 @@ try:
             assert js(s,"return getComputedStyle(document.getElementById('status')).backgroundImage.includes('rgb(29, 53, 72)')"), 'Sunset active-turn panel does not use the blue-green palette'
             assert js(s,"return getComputedStyle(document.querySelector('.log-header')).backgroundColor==='rgb(29, 53, 72)'"), 'Sunset log header does not use the blue-green palette'
             assert js(s,"return getComputedStyle(document.querySelector('.log-summary')).backgroundColor==='rgb(26, 48, 66)'"), 'Sunset log summary does not use the blue-green palette'
-            assert js(s,"const badge=document.querySelector('.player-landmarks .landmark-badge:not(.built)');return !!badge&&getComputedStyle(badge).backgroundColor==='rgb(41, 70, 90)'"), 'Sunset landmark badges do not use the blue-green palette'
-            assert js(s,"const use=document.querySelector('.player-landmarks .landmark-badge-icon use'),icon=use?.closest('svg');return !!use&&use.getAttribute('href')==='icons/facility-art.svg#station'&&getComputedStyle(icon).width==='28px'"), 'Sunset landmark badges do not use their custom station art at a legible size'
+            assert js(s,"return document.querySelectorAll('.player-landmarks .landmark-badge:not(.built)').length===0"), 'Player boards should keep unbuilt landmark badges out of the town view'
+            landmark_badge_art=js(s,"const area=document.querySelector('.player-landmarks');if(!area)return null;const badge=document.createElement('span');badge.className='landmark-badge built';badge.innerHTML='<svg class=\"landmark-badge-icon\" viewBox=\"0 0 160 80\"><use href=\"icons/facility-art.svg#station\"></use></svg> 駅';area.append(badge);const use=badge.querySelector('use'),icon=use.closest('svg'),state={href:use.getAttribute('href'),width:getComputedStyle(icon).width,display:getComputedStyle(icon).display};badge.remove();return state")
+            assert landmark_badge_art and landmark_badge_art['href']=='icons/facility-art.svg#station' and landmark_badge_art['width']=='28px' and landmark_badge_art['display']!='none', f"Sunset landmark badges do not use legible custom station art: {landmark_badge_art}"
             assert js(s,"const mark=document.querySelector('#buildMenu .card-landmark-mark'),use=mark?.querySelector('use');return !!use&&use.getAttribute('href')==='icons/facility-art.svg#station'&&!mark.textContent.trim()"), 'Sunset landmark market header does not use custom vector art'
             assert js(s,"return !!document.querySelector('.player-icon .player-kind-icon')&&!!document.querySelector('.player-coins .card-coin-mark')"), 'Sunset player headers do not use the custom player and coin icons'
             assert js(s,"const text=document.getElementById('status').textContent;return !text.includes('👤')&&!text.includes('🪙')"), 'Sunset active-turn line still relies on platform emoji'
@@ -250,11 +252,11 @@ try:
             market_art_scale_check = js(s,"const arts=Array.from(document.querySelectorAll('#buildMenu .card-btn .sunset-facility-art'));return arts.length>0&&arts.every(e=>{const r=e.getBoundingClientRect();return r.height>=88&&r.height+1>=r.width*.49})")
             assert market_art_scale_check, 'Sunset market scene art is too short for its card width'
             assert js(s,"return getComputedStyle(document.querySelector('.card-filter-bar')).backgroundColor==='rgb(23, 43, 61)'&&getComputedStyle(document.querySelector('.card-filter-btn.active')).backgroundColor==='rgb(51, 73, 90)'"), 'Sunset market filters do not use the shared blue-green and gold palette'
-        disabled_card_contrast = js(s,"const cards=Array.from(document.querySelectorAll('#buildMenu .card-btn:disabled'));return cards.length>0&&cards.every(e=>Number(getComputedStyle(e).opacity)>=0.54)")
-        assert disabled_card_contrast, 'Disabled facility cards are too faint to compare'
+        disabled_card_style=js(s,"const card=document.querySelector('#buildMenu .card-btn');if(!card)return null;const wasDisabled=card.disabled;card.disabled=true;const effect=card.querySelector('.card-effect'),color=effect&&getComputedStyle(effect).color.match(/\\d+/g),state={opacity:Number(getComputedStyle(card).opacity),effectColor:color&&color.map(Number)};card.disabled=wasDisabled;return state")
+        assert disabled_card_style and disabled_card_style['opacity']>=0.54, f"Disabled facility cards are too faint to compare: {disabled_card_style}"
         if design == 'classic':
-            disabled_effect_readable = js(s,"const e=document.querySelector('#buildMenu .card-btn:disabled .card-effect'),c=e&&getComputedStyle(e).color.match(/\\d+/g);return !!c&&Number(c[0])>=190&&Number(c[1])>=190&&Number(c[2])>=205")
-            assert disabled_effect_readable, 'Disabled classic card effects are too low-contrast'
+            effect_color=disabled_card_style['effectColor']
+            assert effect_color and effect_color[0]>=190 and effect_color[1]>=190 and effect_color[2]>=205, f"Disabled classic card effects are too low-contrast: {effect_color}"
         shot(s,design+'-market')
         if design == 'sunset' and (os.environ.get('SMOKE_CAPTURE_CARD_GALLERY') == '1' or os.environ.get('SMOKE_CAPTURE_ALL_FACILITIES') == '1'):
             market_art_gallery_count=prepare_market_art_gallery(s)
@@ -270,6 +272,11 @@ try:
             assert js(s,"return parseFloat(getComputedStyle(document.querySelector('#buildMenu .card-effect')).fontSize)") > normal_size
             shot(s,'sunset-market-large-text')
             js(s,"const e=document.getElementById('accessibilityFontScale');e.value='standard';e.dispatchEvent(new Event('change',{bubbles:true}));")
+    if os.environ.get('SMOKE_STOP_AFTER_MARKET') == '1':
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'passed':['classic/sunset title and setup at page start','quick start and setup controls do not overlap','4-player start action stays reachable above the PWA install banner','mixed-design online start with ready','sunset city enters the initial viewport','market cards and large text scale correctly'],'notCovered':['match gameplay','physical device touch','WebKit','PWA update']}
+        (out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+        print(json.dumps(report,ensure_ascii=False))
+        raise SystemExit(0)
     before=js(actor,"return GameRuntimeState.runtime.snapshot().game.currentPlayer().coins")
     js(actor,"document.querySelector('[data-action=\"buildCard\"][data-card-name=\"麦畑\"]').click();document.getElementById('confirmOkBtn').click()")
     wait(actor,"return GameRuntimeState.runtime.snapshot().game.builtThisTurn")
@@ -360,14 +367,14 @@ try:
     report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'marketArtGalleryCardCount':market_art_gallery_count,'landmarkArtGalleryCardCount':landmark_art_gallery_count,'townDensityCapture':town_density_captured,'passed':['classic/sunset title at page start',*wide_layout_check,'start action does not overlap the PWA install banner','sunset start action stays visible without covering PWA install banner',city_visibility_check,*online_lobby_check,'mixed-design online start with ready','dice roll and build menu','sunset external SVG rendering','market art scales with its card width','large text increases sunset card effect size','build and authoritative undo','host refresh and rejoin','finished match hides active gameplay UI',*([gallery_label+': '+str(market_art_gallery_count)+' cards','all '+str(landmark_art_gallery_count)+' rendered landmark cards'] if landmark_art_gallery_count else []),*(['dense winner town art fits (8 facilities + 6 landmarks)'] if town_density_captured else []),*(['result share card rendered from completed match'] if result_share_card_captured else []),target_landmark+'-only online match completed with matching winners'],'notCovered':['physical device touch','WebKit',*(['standard all-landmark full match'] if target_landmark != 'all' else []),'PWA update']}
     (out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     print(json.dumps(report,ensure_ascii=False))
-except Exception:
+except Exception as error:
     diagnostics=[]
     for s in sessions:
         try:
             diagnostics.append(js(s, "const g=GameRuntimeState.runtime.snapshot().game; return {enableTrace:window.landmarkEnableTrace,phase:g?.phase,turn:g?.turnCount,current:g?.currentPlayerIndex,players:g?.players.map(p=>({name:p.name,coins:p.coins,landmarks:p.landmarks})),enabled:g ? Array.from(g.enabledLandmarks):[],buttons:Array.from(document.querySelectorAll('[data-action=buildLandmark]')).map(e=>({text:e.textContent,disabled:e.disabled})),body:document.body.innerText.slice(-6000)}"))
             shot(s,'failure-'+str(sessions.index(s)))
         except Exception as error: diagnostics.append(str(error))
-    (out/'failure.json').write_text(json.dumps(diagnostics,ensure_ascii=False,indent=2))
+    (out/'failure.json').write_text(json.dumps({'error':f'{type(error).__name__}: {error}','sessions':diagnostics},ensure_ascii=False,indent=2))
     raise
 finally:
     for s in sessions:
