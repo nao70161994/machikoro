@@ -1101,3 +1101,8 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 
 - `OnlineReadiness.createController()` now owns the online version request, abort timeout, Service Worker waiting check, version comparison, and readiness DOM presentation. `online.js` retains the existing `checkOnlineReadiness()` entry point and injects its DOM adapter, preserving all callers.
 - An injected-dependency test fixes request cache mode, timeout cleanup, offline/update/version presentation, and effect order. `node tests/online.test.js`, `npm run test:types`, and `npm run test:static` pass.
+
+## 2026-09-30 CSP script source narrowing
+
+- The Report-Only `script-src` now allows same-origin scripts and only the Google Ads loader host explicitly referenced in `index.html`; the broad `https:` script allowance is removed. Other CSP directives and all runtime script execution remain unchanged because the header is report-only.
+- The policy test asserts the host allowlist and rejects a protocol-wide HTTPS source. Operations guidance now identifies the actual injected inline build/config bootstrap and the remaining ad-origin inventory required before enforcement.

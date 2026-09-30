@@ -16,7 +16,7 @@ const CONTENT_SECURITY_POLICY_REPORT_ONLY = [
     "object-src 'none'",
     "frame-ancestors 'self'",
     "form-action 'self'",
-    "script-src 'self' https:",
+    "script-src 'self' https://pagead2.googlesyndication.com",
     "style-src 'self' 'unsafe-inline' https:",
     "img-src 'self' data: https:",
     "font-src 'self' data: https:",
