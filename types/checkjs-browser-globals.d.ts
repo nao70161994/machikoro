@@ -89,6 +89,7 @@ interface Window {
     OnlineSocketRegistry: unknown;
     OnlinePlayerSettings: unknown;
     OnlineRoomShare: typeof import("../js/onlineRoomShare");
+    OnlineReadiness: typeof import("../js/onlineReadiness").OnlineReadiness;
     OnlineEffectAuthority: typeof import("../js/onlineEffectAuthority").OnlineEffectAuthority;
     OnlineActionLog: unknown;
     OnlineSessionLifecycle: unknown;

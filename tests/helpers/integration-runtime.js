@@ -356,6 +356,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlineLobbyRequestRuntime.js');
         files.push('js/onlineGameInitializer.js');
         files.push('js/onlineRoomShare.js');
+        files.push('js/onlineReadiness.js');
         files.push('js/onlineLobbyStartRuntime.js');
         files.push('js/onlineSocketDisconnect.js');
         files.push('js/onlineHostChanged.js');

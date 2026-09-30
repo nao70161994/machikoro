@@ -89,25 +89,6 @@ function toggleOnlineRoomQr(roomId) {
     return true;
 }
 
-function buildOnlineReadinessView(input = {}) {
-    const online = input.online !== false;
-    const serverReachable = input.serverReachable === true;
-    const updateWaiting = input.updateWaiting === true;
-    const versionMatches = input.versionMatches !== false;
-    const items = [
-        `${online ? '✅' : '❌'} 端末のネット接続: ${online ? 'オンライン' : 'オフライン'}`,
-        `${serverReachable ? '✅' : '❌'} ゲームサーバー: ${serverReachable ? '応答あり' : '応答なし'}`,
-        `${versionMatches ? '✅' : '⚠️'} アプリ版: ${versionMatches ? '最新サーバーと一致' : '更新が必要'}`,
-        `${updateWaiting ? '⚠️' : '✅'} アプリ更新: ${updateWaiting ? '適用待ち' : '待機なし'}`,
-    ];
-    const ready = online && serverReachable && versionMatches && !updateWaiting;
-    return Object.freeze({
-        ready,
-        text: `${ready ? 'オンライン対戦を開始できます。' : '確認が必要な項目があります。'}\n${items.join('\n')}`,
-        html: `<strong>${ready ? 'オンライン対戦を開始できます。' : '確認が必要な項目があります。'}</strong><ul class="online-readiness-list">${items.map(item => `<li>${item}</li>`).join('')}</ul>`,
-    });
-}
-
 async function checkOnlineReadiness() {
     onlineDomEffects.setText(OnlineDomEffects.ids.readiness, '確認中…');
     onlineDomEffects.setText(OnlineDomEffects.ids.readinessSummary, '確認中…');
@@ -142,7 +123,7 @@ async function checkOnlineReadiness() {
     const clientVersion = typeof window !== 'undefined' &&
         typeof window.MACHIKORO_CLIENT_VERSION === 'string'
         ? window.MACHIKORO_CLIENT_VERSION : '';
-    const view = buildOnlineReadinessView({
+    const view = OnlineReadiness.buildView({
         online,
         serverReachable,
         updateWaiting,

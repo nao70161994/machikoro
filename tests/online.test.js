@@ -181,6 +181,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineLobbyRequestRuntime.js');
     loadScript(context, 'js/onlineGameInitializer.js');
     loadScript(context, 'js/onlineRoomShare.js');
+    loadScript(context, 'js/onlineReadiness.js');
     loadScript(context, 'js/roomQrCode.js');
     loadScript(context, 'js/onlineLobbyStartRuntime.js');
     loadScript(context, 'js/onlineSocketDisconnect.js');
@@ -5358,12 +5359,12 @@ runTest('versioned action wireは明示flagとnegotiated selectionでだけv1 en
 
 runTest('online接続前チェックは通信・版・更新待ちを一つの判定へまとめる', () => {
     const rt = loadOnlineRuntime();
-    const ready = rt.buildOnlineReadinessView({
+    const ready = rt.OnlineReadiness.buildView({
         online: true, serverReachable: true, versionMatches: true, updateWaiting: false,
     });
     assert.strictEqual(ready.ready, true);
     assert.ok(ready.html.includes('オンライン対戦を開始できます'));
-    const blocked = rt.buildOnlineReadinessView({
+    const blocked = rt.OnlineReadiness.buildView({
         online: false, serverReachable: false, versionMatches: false, updateWaiting: true,
     });
     assert.strictEqual(blocked.ready, false);

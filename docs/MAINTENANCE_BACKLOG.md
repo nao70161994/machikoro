@@ -1084,3 +1084,9 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 - `_onlineReconnectRequestEffectAuthoritySelection()` now delegates to `OnlineEffectAuthority.selectExecutor()`, joining the common fail-closed executor gate used by the other staged online effect families.
 - The selector keeps this call site's legacy empty fallback reason for diagnostics. If the extracted executor is unavailable, it now selects the legacy effect sequence with `executor-unavailable` instead of attempting an unavailable executor.
 - Unit and integration tests cover empty diagnostic parity, executor-unavailable fallback, rejoin emit order, and parity-mismatch fallback. `npm run test:online` and `npm run test:static` pass.
+
+## 2026-09-30 Online readiness view extraction
+
+- The pure online connection-readiness summary now lives in `js/onlineReadiness.js`. `online.js` keeps network probing, Service Worker inspection, DOM updates, and calls the extracted view builder.
+- Existing online readiness assertions now exercise the published adapter. The script is included before `online.js`, checkJs, and maintenance ESLint; this raises the production allowlists to 297 checkJs JavaScript files and 302 ESLint JavaScript files.
+- `node tests/online.test.js`, `node tests/checkjs-config.test.js`, and `npm run test:static` pass. Connection criteria, rendered text/HTML, request behavior, and readiness screen updates are unchanged.

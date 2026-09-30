@@ -135,6 +135,7 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('js/onlineActionLog.js'));
     assert.ok(config.files.includes('js/onlineStorage.js'));
     assert.ok(config.files.includes('js/onlineRoomShare.js'));
+    assert.ok(config.files.includes('js/onlineReadiness.js'));
     assert.ok(config.files.includes('js/retryTimer.js'));
     assert.ok(config.files.includes('js/socketIoDelivery.js'));
     assert.ok(config.files.includes('js/onlinePlayerSettings.js'));

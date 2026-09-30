@@ -131,6 +131,7 @@
     "js/onlineSessionLifecycle.js",
     "js/onlineStorage.js",
     "js/onlineRoomShare.js",
+    "js/onlineReadiness.js",
     "js/retryTimer.js",
     "js/socketIoDelivery.js",
     "js/cpuActionProposal.js",
