@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const { makeGameRuntimeLoader } = require('./server/gameRuntimeLoader');
+const { securityHeadersMiddleware } = require('./server/securityHeaders');
 const { startRoomGc } = require('./server/roomGcRuntime');
 const { registerServerProcessHandlers, startHttpServer } = require('./server/processRuntime');
 const { registerSocketConnectionRuntime } = require('./server/socketConnectionRuntime');
@@ -182,6 +183,7 @@ const ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED =
 const rejoinAdmission = makeRejoinAdmission({ limits: REJOIN_ADMISSION_LIMITS });
 
 const app = express();
+app.use(securityHeadersMiddleware);
 app.set('trust proxy', resolveTrustProxySetting(process.env));
 const server = http.createServer(app);
 const io = new Server(server, {

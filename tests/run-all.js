@@ -80,6 +80,7 @@ const TEST_GROUPS = {
         'static-assets.test.js',
         'socket-payload.test.js',
         'socket-origin-policy.test.js',
+        'security-headers.test.js',
         'socket-e2e-helper.test.js',
         'game-engine.test.js',
         'game-snapshot.test.js',
@@ -718,6 +719,7 @@ const REQUIRED_TEST_GROUPS = Object.freeze({
     'game-schema-online-e2e.test.js': ['online'],
     'online-soak.test.js': ['soak'],
     'socket-origin-policy.test.js': ['unit', 'online'],
+    'security-headers.test.js': ['unit'],
     'pwa-shell.test.js': ['unit', 'pwa'],
     'app-shell-startup-runtime.test.js': ['unit', 'pwa'],
 });

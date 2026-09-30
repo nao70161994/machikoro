@@ -436,3 +436,7 @@ Deferred design decisions are tracked in `docs/IMPLEMENTATION_DECISIONS.md`. Ope
 ## Online shared Engine rollout
 
 Online replay remains default-OFF. Setting both `window.MACHIKORO_ONLINE_GAME_ENGINE_SHADOW_ENABLED=true` and `window.MACHIKORO_ONLINE_GAME_ENGINE_AUTHORITY_ENABLED=true` lets a successful detached transition and reconstruction replace the live replay before mutable application. Either flag unset/false, transition failure, adapter mismatch, or adoption failure uses the existing mutable replay. Keep both flags unset in production until rollout approval; disabling either flag is the rollback. Socket.IO events/payloads, ACK/watermark, and restore queue ordering are unaffected.
+
+## Security headers and CSP rollout
+
+`server/securityHeaders.js` applies `nosniff`, a strict referrer policy, a restrictive Permissions Policy, same-origin framing, and a `Content-Security-Policy-Report-Only` policy to HTTP responses. Report-only is deliberate: `index.html` still contains an inline PWA bootstrap and the ad integration loads third-party scripts. Do not switch the policy to enforced CSP until the inline bootstrap is moved behind a nonce or hash, required ad origins are narrowed from the current broad HTTPS allowlist, and desktop/mobile WebKit plus TWA startup have been checked for CSP violations. Report-only currently reports in browser developer tools; there is no server-side CSP report collector.

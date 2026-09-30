@@ -297,6 +297,7 @@ const serverMaintenanceFiles = Object.freeze([
     'server/roomValidation.js',
     'server/socketPayload.js',
     'server/socketOriginPolicy.js',
+    'server/securityHeaders.js',
 ]);
 
 const maintenanceRules = Object.freeze({

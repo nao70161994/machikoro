@@ -293,6 +293,7 @@
     "server/roomValidation.js",
     "server/socketPayload.js",
     "server/socketOriginPolicy.js",
+    "server/securityHeaders.js",
     "server/reportingPolicy.js",
     "server/reportThrottle.js",
     "server/restoreAuthorityPolicy.js",
