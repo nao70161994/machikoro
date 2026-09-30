@@ -122,6 +122,7 @@
     "js/onlinePendingResend.js",
     "js/onlineRestoreReplay.js",
     "js/onlineRestoreActivation.js",
+    "js/onlineRestoreRequestRuntime.js",
     "js/onlineRejoinActivationRuntime.js",
     "js/onlineRejoinRuntime.js",
     "js/onlinePlayerSettings.js",

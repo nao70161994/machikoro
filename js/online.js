@@ -3347,114 +3347,59 @@ function declineOnlineRematch() {
     return true;
 }
 
+let onlineRestoreRequestRuntime = null;
+
+function getOnlineRestoreRequestRuntime() {
+    if (onlineRestoreRequestRuntime) return onlineRestoreRequestRuntime;
+    onlineRestoreRequestRuntime = OnlineRestoreRequestRuntime.create({
+        beginHostlessRestore: () => _hostlessRestoreState.tryBegin(true),
+        buildHostlessRestoreCandidate: (bundle, identity) =>
+            OnlinePayload.buildHostlessRestoreCandidate(bundle, identity),
+        buildHostlessRestoreRequest: (bundle, identity) =>
+            OnlinePayload.buildHostlessRestoreRequest(bundle, identity),
+        clearRestoreBundle: () => _clearOnlineRestoreBundle(),
+        encodeRecreateRoomPayload: payload => encodeOnlineRecreateRoomPayload(payload),
+        getSession: () => onlineSessionSnapshot(),
+        isHostlessRestorePending: () => _hostlessRestoreState.isPending(),
+        isRestoreBundleIncomplete: () => _isOnlineRestoreBundleIncomplete(),
+        readActionLog: () => _readOnlineActionLog(),
+        readGameStartPayload: () => _readOnlineGameStartPayload(),
+        readRestoreAudit: () => _readOnlineRestoreAudit(),
+        readStateSnapshot: () => _readOnlineStateSnapshot(),
+        recreateRoom: payload => onlineSocketEffects.recreateRoom(payload),
+        requestHostlessRestore: (payload, socket) =>
+            onlineSocketEffects.requestHostlessRestore(payload, socket),
+        schemaVersion: ONLINE_RESTORE_SCHEMA_VERSION,
+        setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
+        setStatusText: message => onlineDomEffects.setStatusText(message),
+        submitHostlessRestoreCandidate: (payload, socket) =>
+            onlineSocketEffects.submitHostlessRestoreCandidate(payload, socket),
+    });
+    return onlineRestoreRequestRuntime;
+}
+
 function _tryRestoreRoom() {
-    try {
-        if (_isOnlineRestoreBundleIncomplete()) {
-            onlineDomEffects.setStatusText('❌ 完全な復元履歴を取得できないため、自動復元を停止しました');
-            return false;
-        }
-        const gameStartPayload = _readOnlineGameStartPayload();
-        if (!gameStartPayload) {
-            onlineDomEffects.setStatusText('❌ 復元データが見つかりません');
-            return;
-        }
-        if (gameStartPayload.schemaVersion !== ONLINE_RESTORE_SCHEMA_VERSION ||
-                !Array.isArray(gameStartPayload.reconnectTokenHashes)) {
-            _clearOnlineRestoreBundle();
-            onlineDomEffects.setStatusText('❌ 古い復元データのため再接続できません');
-            return;
-        }
-        const isStoredHost = gameStartPayload.hostPlayerIndex === onlineSessionSnapshot().myOriginalPlayerIndex;
-        if (!isStoredHost) return false;
-        const restoreAudit = _readOnlineRestoreAudit();
-        const stateSnapshot = restoreAudit ? _readOnlineStateSnapshot() : null;
-        const actionLog = _readOnlineActionLog();
-        onlineDomEffects.setStatusText('♻️ サーバー再起動を検知。ゲームを復元中...');
-        return _sendRecreateRoomFromBundle({
-            gameStartPayload,
-            stateSnapshot,
-            actionLog,
-            restoreAudit,
-        });
-    } catch(e) {
-        onlineDomEffects.setStatusText('❌ 復元に失敗しました');
-        return false;
-    }
+    return getOnlineRestoreRequestRuntime().tryRestoreRoom();
 }
 
 function _readLocalRestoreBundle() {
-    try {
-        if (_isOnlineRestoreBundleIncomplete()) return null;
-        const gameStartPayload = _readOnlineGameStartPayload();
-        if (!gameStartPayload || gameStartPayload.schemaVersion !== ONLINE_RESTORE_SCHEMA_VERSION ||
-                !Array.isArray(gameStartPayload.reconnectTokenHashes)) return null;
-        const restoreAudit = _readOnlineRestoreAudit();
-        const stateSnapshot = restoreAudit ? _readOnlineStateSnapshot() : null;
-        const actionLog = _readOnlineActionLog();
-        return { gameStartPayload, stateSnapshot, actionLog, restoreAudit };
-    } catch (_) {
-        return null;
-    }
+    return getOnlineRestoreRequestRuntime().readLocalRestoreBundle();
 }
 
 function _onlineHostlessRestoreIdentity() {
-    const session = onlineSessionSnapshot();
-    return {
-        roomId: session.myRoomId,
-        playerIndex: session.myOriginalPlayerIndex,
-        playerName: session.myPlayerName,
-        reconnectToken: session.reconnectToken,
-    };
+    return getOnlineRestoreRequestRuntime().onlineHostlessRestoreIdentity();
 }
 
 function _requestHostlessRestore() {
-    const currentSocket = onlineSessionSnapshot().socket;
-    if (!currentSocket || currentSocket.connected === false || _hostlessRestoreState.isPending()) return false;
-    const bundle = _readLocalRestoreBundle();
-    const payload = OnlinePayload.buildHostlessRestoreRequest(
-        bundle,
-        _onlineHostlessRestoreIdentity()
-    );
-    if (!payload || !_hostlessRestoreState.tryBegin(true)) return false;
-    setOnlineReconnectLegacyFlag(true);
-    onlineSocketEffects.requestHostlessRestore(payload, currentSocket);
-    return true;
+    return getOnlineRestoreRequestRuntime().requestHostlessRestore();
 }
 
 function _submitHostlessRestoreCandidate(generation) {
-    const currentSocket = onlineSessionSnapshot().socket;
-    const bundle = _readLocalRestoreBundle();
-    if (!bundle || bundle.gameStartPayload.hostlessRestoreGeneration !== generation) {
-        return false;
-    }
-    const payload = OnlinePayload.buildHostlessRestoreCandidate(
-        bundle,
-        _onlineHostlessRestoreIdentity()
-    );
-    if (!payload || !currentSocket || currentSocket.connected === false) return false;
-    onlineSocketEffects.submitHostlessRestoreCandidate(payload, currentSocket);
-    return true;
+    return getOnlineRestoreRequestRuntime().submitHostlessRestoreCandidate(generation);
 }
 
 function _sendRecreateRoomFromBundle(bundle) {
-    const session = onlineSessionSnapshot();
-    const payload = {
-        roomId: session.myRoomId,
-        gameStartPayload: bundle.gameStartPayload,
-        stateSnapshot: bundle.stateSnapshot,
-        actionLog: bundle.actionLog,
-        restoreAudit: bundle.restoreAudit,
-        playerIndex: session.myOriginalPlayerIndex,
-        playerName: session.myPlayerName,
-        reconnectToken: session.reconnectToken,
-    };
-    const encoded = encodeOnlineRecreateRoomPayload(payload);
-    if (!encoded.ok || !session.socket || session.socket.connected === false) {
-        onlineDomEffects.setStatusText('❌ 復元payloadのschema変換に失敗しました');
-        return false;
-    }
-    onlineSocketEffects.recreateRoom(encoded.value);
-    return true;
+    return getOnlineRestoreRequestRuntime().sendRecreateRoomFromBundle(bundle);
 }
 
 function _scheduleRejoinRetry() {

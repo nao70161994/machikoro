@@ -4,10 +4,71 @@ const path = require('path');
 const vm = require('vm');
 const { createStorage, loadScripts, loadScript, runTest } = require('./helpers/test-utils');
 const { applyActionToMirror, serializeMirrorState } = require('../server');
+const OnlineRestoreRequestRuntime = require('../js/onlineRestoreRequestRuntime');
 const {
     makePendingAckRequiresLogOrSnapshotFixture,
     makeSeqRankUsesMaxFieldsFixture,
 } = require('./helpers/online-restore-fixtures');
+
+runTest('online restore request runtimeは復元bundle組立の読み取り順とaudit gateを維持する', () => {
+    const calls = [];
+    const runtime = OnlineRestoreRequestRuntime.create({
+        isRestoreBundleIncomplete() { calls.push('incomplete'); return false; },
+        readGameStartPayload() { calls.push('game-start'); return { schemaVersion: 2, reconnectTokenHashes: [] }; },
+        readRestoreAudit() { calls.push('audit'); return null; },
+        readStateSnapshot() { calls.push('snapshot'); return { turn: 4 }; },
+        readActionLog() { calls.push('action-log'); return [{ seq: 3 }]; },
+        schemaVersion: 2,
+    });
+    assert.deepStrictEqual(runtime.readLocalRestoreBundle(), {
+        gameStartPayload: { schemaVersion: 2, reconnectTokenHashes: [] },
+        stateSnapshot: null,
+        actionLog: [{ seq: 3 }],
+        restoreAudit: null,
+    });
+    assert.deepStrictEqual(calls, ['incomplete', 'game-start', 'audit', 'action-log']);
+});
+
+runTest('online restore request runtimeはstored hostだけを従来payloadで再起動復元する', () => {
+    const calls = [];
+    const bundle = {
+        gameStartPayload: { schemaVersion: 2, hostPlayerIndex: 1, reconnectTokenHashes: [] },
+        stateSnapshot: { turn: 4 },
+        actionLog: [{ seq: 3 }],
+        restoreAudit: { signature: 'signed' },
+    };
+    const socket = { connected: true };
+    const runtime = OnlineRestoreRequestRuntime.create({
+        isRestoreBundleIncomplete() { calls.push('incomplete'); return false; },
+        readGameStartPayload() { calls.push('game-start'); return bundle.gameStartPayload; },
+        readRestoreAudit() { calls.push('audit'); return bundle.restoreAudit; },
+        readStateSnapshot() { calls.push('snapshot'); return bundle.stateSnapshot; },
+        readActionLog() { calls.push('action-log'); return bundle.actionLog; },
+        schemaVersion: 2,
+        getSession() {
+            calls.push('session');
+            return { myRoomId: 'ROOM01', myOriginalPlayerIndex: 1, myPlayerName: 'Alice', reconnectToken: 'token', socket };
+        },
+        setStatusText(message) { calls.push(['status', message]); },
+        encodeRecreateRoomPayload(payload) { calls.push(['encode', payload]); return { ok: true, value: { wire: true } }; },
+        recreateRoom(payload) { calls.push(['recreate', payload]); },
+    });
+    assert.strictEqual(runtime.tryRestoreRoom(), true);
+    assert.deepStrictEqual(calls.filter(Array.isArray).map(entry => entry[0]), [
+        'status', 'encode', 'recreate',
+    ]);
+    const encodedInput = calls.find(entry => Array.isArray(entry) && entry[0] === 'encode')[1];
+    assert.deepStrictEqual(encodedInput, {
+        roomId: 'ROOM01',
+        gameStartPayload: bundle.gameStartPayload,
+        stateSnapshot: bundle.stateSnapshot,
+        actionLog: bundle.actionLog,
+        restoreAudit: bundle.restoreAudit,
+        playerIndex: 1,
+        playerName: 'Alice',
+        reconnectToken: 'token',
+    });
+});
 
 function loadOnlineRuntime(options = {}) {
     const { storage, localStorage } = createStorage();
@@ -218,6 +279,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineRuntimeState.js');
     loadScript(context, 'js/onlineSetupState.js');
     loadScript(context, 'js/gameSetupState.js');
+    loadScript(context, 'js/onlineRestoreRequestRuntime.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート

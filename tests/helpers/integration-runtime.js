@@ -370,6 +370,7 @@ function loadIntegrationRuntime(options = {}) {
         files.push('js/onlinePendingResend.js');
         files.push('js/onlineRestoreReplay.js');
         files.push('js/onlineRestoreActivation.js');
+        files.push('js/onlineRestoreRequestRuntime.js');
         files.push('js/onlineRejoinActivationRuntime.js');
         files.push('js/onlineRejoinRuntime.js');
         files.push('js/onlinePlayerSettings.js');
