@@ -176,6 +176,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiCardSelect.js',
     'js/uiCardSelectEffects.js',
     'js/uiLogDisplay.js',
+    'js/uiLogHighlightEffects.js',
     'js/uiModalPolicy.js',
     'js/uiModalOpen.js',
     'js/uiModalClose.js',
@@ -505,7 +506,7 @@ const uiEnvironmentGlobals = Object.freeze(Object.assign(
     {},
     storageEnvironmentGlobals,
     Object.fromEntries([
-        'UiLogDisplay', 'UiPendingEffects', 'UiDiceChoice', 'UiDiceDisplay', 'UiBuildMenu',
+        'UiLogDisplay', 'UiLogHighlightEffects', 'UiPendingEffects', 'UiDiceChoice', 'UiDiceDisplay', 'UiBuildMenu',
         'safeStorageSet', 'safeStorageRemove', 'UiTutorial', 'ensureCurrentScreenFocus',
         'showCrashScreen', 'UiRenderRuntime', 'updateGameActivityStatus', 'renderAdSlot',
         'UiWinnerEffects', 'recordGameStats', 'notifyGameLifecycleFinish',

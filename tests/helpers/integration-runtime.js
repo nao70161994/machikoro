@@ -307,6 +307,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/stats.js',
         'js/uiNotice.js',
         'js/uiLogDisplay.js',
+        'js/uiLogHighlightEffects.js',
         'js/uiCardOrder.js',
         'js/uiPlayerDisplay.js',
         'js/uiInputPolicy.js',

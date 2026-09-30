@@ -2,7 +2,7 @@
  * Service Worker - オフラインキャッシュ
  * バージョンを上げるとキャッシュが更新される
  */
-const CACHE_NAME = 'machikoro-v135';
+const CACHE_NAME = 'machikoro-v136';
 
 const STATIC_ASSETS = [
   '/',
@@ -142,6 +142,7 @@ const STATIC_ASSETS = [
   '/js/online.js',
   '/js/uiNotice.js',
   '/js/uiLogDisplay.js',
+  '/js/uiLogHighlightEffects.js',
   '/js/uiCardOrder.js',
   '/js/uiPlayerDisplay.js',
   '/js/uiInputPolicy.js',

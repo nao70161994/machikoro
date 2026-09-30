@@ -2998,6 +2998,7 @@ runTest('主要HTML/JSには inline handler 属性を再導入しない', () => 
         'js/storedOnlineReconnect.js',
         'js/onlinePlayerSettings.js',
         'js/uiLogDisplay.js',
+        'js/uiLogHighlightEffects.js',
         'js/uiCardOrder.js',
         'js/uiPlayerDisplay.js',
         'js/uiBuildMenu.js',
@@ -3176,6 +3177,7 @@ runTest('index.html のbrowser-global script orderは主要依存順を維持す
     assertBefore('js/clientStorage.js', 'js/ui.js');
     assertBefore('js/uiNotice.js', 'js/ui.js');
     assertBefore('js/uiLogDisplay.js', 'js/ui.js');
+    assertBefore('js/uiLogHighlightEffects.js', 'js/ui.js');
     assertBefore('js/uiCardOrder.js', 'js/ui.js');
     assertBefore('js/uiPlayerDisplay.js', 'js/ui.js');
     assertBefore('js/uiInputPolicy.js', 'js/ui.js');

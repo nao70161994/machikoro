@@ -168,6 +168,7 @@
     "js/uiCardSelect.js",
     "js/uiCardSelectEffects.js",
     "js/uiLogDisplay.js",
+    "js/uiLogHighlightEffects.js",
     "js/uiModalPolicy.js",
     "js/uiModalOpen.js",
     "js/uiModalClose.js",
