@@ -1090,3 +1090,9 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 - The pure online connection-readiness summary now lives in `js/onlineReadiness.js`. `online.js` keeps network probing, Service Worker inspection, DOM updates, and calls the extracted view builder.
 - Existing online readiness assertions now exercise the published adapter. The script is included before `online.js`, checkJs, and maintenance ESLint; this raises the production allowlists to 297 checkJs JavaScript files and 302 ESLint JavaScript files.
 - `node tests/online.test.js`, `node tests/checkjs-config.test.js`, and `npm run test:static` pass. Connection criteria, rendered text/HTML, request behavior, and readiness screen updates are unchanged.
+
+## 2026-09-30 Composition-root maintenance lint rules
+
+- The shared maintenance ESLint gate now also rejects constant binary expressions, duplicate object keys, sparse arrays, unsafe optional chaining, and invalid `typeof` comparisons. These rules apply to the five side-effect-heavy composition roots as well as the adapter files.
+- `no-unused-vars` was evaluated but not enabled for classic-script roots because HTML handlers and cross-file global calls are invisible to per-file ESLint analysis and produce false positives. `no-undef` plus the new syntax-level rules remain the reliable root-local checks until those roots have typed script-boundary projects.
+- Configuration coverage is asserted in `tests/checkjs-config.test.js`; `npm run test:static` and that contract pass. The production allowlists remain 297 checkJs JavaScript files and 302 ESLint JavaScript files.

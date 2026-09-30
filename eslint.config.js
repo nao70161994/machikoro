@@ -310,10 +310,15 @@ const serverMaintenanceFiles = Object.freeze([
 
 const maintenanceRules = Object.freeze({
     'no-constant-condition': ['error', { checkLoops: false }],
+    'no-constant-binary-expression': 'error',
     'no-duplicate-case': 'error',
+    'no-dupe-keys': 'error',
     'no-duplicate-imports': 'error',
     'no-undef': 'error',
+    'no-sparse-arrays': 'error',
     'no-unreachable': 'error',
+    'no-unsafe-optional-chaining': 'error',
+    'valid-typeof': 'error',
 });
 
 const appShellCompositionGlobals = Object.freeze(Object.fromEntries([

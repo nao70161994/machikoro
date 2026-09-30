@@ -286,3 +286,19 @@ runTest('主要browser globalとadapter境界は実モジュール型で検査�
         for (const marker of markers) assert.ok(source.includes(marker), file + ': ' + marker);
     }
 });
+
+runTest('maintenance ESLintは副作用集中rootにも構文上の危険パターン検査を適用する', () => {
+    const maintenance = eslintConfig.find(entry =>
+        entry.rules && entry.rules['no-undef'] === 'error'
+    );
+    assert.ok(maintenance);
+    for (const rule of [
+        'no-constant-binary-expression',
+        'no-dupe-keys',
+        'no-sparse-arrays',
+        'no-unsafe-optional-chaining',
+        'valid-typeof',
+    ]) {
+        assert.strictEqual(maintenance.rules[rule], 'error', rule);
+    }
+});
