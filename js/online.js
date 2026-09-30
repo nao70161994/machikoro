@@ -2998,45 +2998,38 @@ function _runOnlineReconnectRetryableCleanup(plan) {
     onlineClientEffects.updateResumeButton();
 }
 
-function handleAppError(msg) {
-    const session = onlineSessionSnapshot();
-    finishOnlineLobbyRequest();
-    _setOnlineActionInFlight(false);
-    setOnlineCreateRoomPending(false);
-    if (msg === 'ROOM_NOT_FOUND' && session.isReconnectingOnline) {
-        if (session.isRoomHost) {
-            if (!_tryRestoreRoom()) _scheduleRejoinRetry();
-        } else {
-            _scheduleRejoinRetry();
-        }
-        return;
-    }
-    if (msg === '無効な操作です' && session.isOnlineGame && session.socket && session.myRoomId &&
-            session.myOriginalPlayerIndex >= 0 && session.myPlayerName && session.reconnectToken) {
-        _clearPendingOutboundActionForCurrentSession({ requireExplicitRoomId: true });
-        setOnlineReconnectLegacyFlag(true);
-        onlineClientEffects.invalidateCpuSchedule();
-        onlineDomEffects.setStatusText('⚠️ 操作がサーバーで拒否されました。状態を再同期しています...');
-        _emitOnlineRejoinRequest();
-        return;
-    }
-    const recreateErrorPlan = OnlineRetryPolicy.recreateAppErrorPlan(msg, {
-        isReconnectingOnline: session.isReconnectingOnline,
-        isRoomHost: session.isRoomHost,
-        hostlessRestorePending: _hostlessRestoreState.isPending(),
+let onlineAppErrorRuntime = null;
+
+function getOnlineAppErrorRuntime() {
+    if (onlineAppErrorRuntime) return onlineAppErrorRuntime;
+    onlineAppErrorRuntime = OnlineAppErrorRuntime.create({
+        clearPendingOutboundAction: options =>
+            _clearPendingOutboundActionForCurrentSession(options),
+        createRecreateErrorPlan: (message, state) =>
+            OnlineRetryPolicy.recreateAppErrorPlan(message, state),
+        emitRejoinRequest: () => _emitOnlineRejoinRequest(),
+        finishLobbyRequest: () => finishOnlineLobbyRequest(),
+        getSession: () => onlineSessionSnapshot(),
+        invalidateCpuSchedule: () => onlineClientEffects.invalidateCpuSchedule(),
+        isHostlessRestorePending: () => _hostlessRestoreState.isPending(),
+        isRetryableRecreateError: plan =>
+            plan.decision === OnlineRetryPolicy.recreateAppErrorDecisions.RETRYABLE,
+        runRetryableCleanup: plan => _runOnlineReconnectRetryableCleanup(plan),
+        runTerminalCleanup: selection => _runOnlineReconnectTerminalCleanup(selection),
+        scheduleRejoinRetry: () => _scheduleRejoinRetry(),
+        selectTerminalCleanup: isReconnecting =>
+            _onlineReconnectCleanupAuthoritySelection(isReconnecting),
+        setActionInFlight: value => _setOnlineActionInFlight(value),
+        setCreateRoomPending: value => setOnlineCreateRoomPending(value),
+        setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
+        setStatusText: message => onlineDomEffects.setStatusText(message),
+        tryRestoreRoom: () => _tryRestoreRoom(),
     });
-    if (recreateErrorPlan.decision === OnlineRetryPolicy.recreateAppErrorDecisions.RETRYABLE) {
-        _runOnlineReconnectRetryableCleanup(recreateErrorPlan);
-        onlineDomEffects.setStatusText(
-            `⚠️ ${msg} 復元データは保持されています。時間をおいて「続きから」を押してください。`
-        );
-        return;
-    }
-    const cleanupSelection = _onlineReconnectCleanupAuthoritySelection(session.isReconnectingOnline);
-    if (cleanupSelection.cleanup) {
-        _runOnlineReconnectTerminalCleanup(cleanupSelection);
-    }
-    onlineDomEffects.setStatusText(`❌ ${msg}`);
+    return onlineAppErrorRuntime;
+}
+
+function handleAppError(msg) {
+    return getOnlineAppErrorRuntime().handleAppError(msg);
 }
 
 let onlineLobbyRequestRuntime = null;

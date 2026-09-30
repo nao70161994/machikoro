@@ -5,6 +5,7 @@ const vm = require('vm');
 const { createStorage, loadScripts, loadScript, runTest } = require('./helpers/test-utils');
 const { applyActionToMirror, serializeMirrorState } = require('../server');
 const OnlineRestoreRequestRuntime = require('../js/onlineRestoreRequestRuntime');
+const OnlineAppErrorRuntime = require('../js/onlineAppErrorRuntime');
 const {
     makePendingAckRequiresLogOrSnapshotFixture,
     makeSeqRankUsesMaxFieldsFixture,
@@ -68,6 +69,54 @@ runTest('online restore request runtimeはstored hostだけを従来payloadで�
         playerName: 'Alice',
         reconnectToken: 'token',
     });
+});
+
+runTest('online app error runtimeはhostの復元拒否後だけrejoin retryへ進む', () => {
+    const calls = [];
+    const runtime = OnlineAppErrorRuntime.create({
+        getSession() { return { isReconnectingOnline: true, isRoomHost: true }; },
+        finishLobbyRequest() { calls.push('finish-lobby'); },
+        setActionInFlight(value) { calls.push(['flight', value]); },
+        setCreateRoomPending(value) { calls.push(['create-pending', value]); },
+        tryRestoreRoom() { calls.push('restore'); return false; },
+        scheduleRejoinRetry() { calls.push('retry'); },
+    });
+    runtime.handleAppError('ROOM_NOT_FOUND');
+    assert.deepStrictEqual(calls, [
+        'finish-lobby', ['flight', false], ['create-pending', false], 'restore', 'retry',
+    ]);
+});
+
+runTest('online app error runtimeは認証済みaction拒否の再同期effect順を維持する', () => {
+    const calls = [];
+    const runtime = OnlineAppErrorRuntime.create({
+        getSession() {
+            return {
+                isOnlineGame: true,
+                socket: { connected: true },
+                myRoomId: 'ROOM01',
+                myOriginalPlayerIndex: 0,
+                myPlayerName: 'Alice',
+                reconnectToken: 'token',
+            };
+        },
+        finishLobbyRequest() { calls.push('finish-lobby'); },
+        setActionInFlight(value) { calls.push(['flight', value]); },
+        setCreateRoomPending(value) { calls.push(['create-pending', value]); },
+        clearPendingOutboundAction(options) { calls.push(['clear-pending', options]); },
+        setReconnectFlag(value) { calls.push(['reconnect', value]); },
+        invalidateCpuSchedule() { calls.push('invalidate-cpu'); },
+        setStatusText(message) { calls.push(['status', message]); },
+        emitRejoinRequest() { calls.push('emit-rejoin'); },
+    });
+    runtime.handleAppError('無効な操作です');
+    assert.deepStrictEqual(calls, [
+        'finish-lobby', ['flight', false], ['create-pending', false],
+        ['clear-pending', { requireExplicitRoomId: true }], ['reconnect', true],
+        'invalidate-cpu',
+        ['status', '⚠️ 操作がサーバーで拒否されました。状態を再同期しています...'],
+        'emit-rejoin',
+    ]);
 });
 
 function loadOnlineRuntime(options = {}) {
@@ -280,6 +329,7 @@ function loadOnlineRuntime(options = {}) {
     loadScript(context, 'js/onlineSetupState.js');
     loadScript(context, 'js/gameSetupState.js');
     loadScript(context, 'js/onlineRestoreRequestRuntime.js');
+    loadScript(context, 'js/onlineAppErrorRuntime.js');
     loadScript(context, 'js/online.js');
 
     // テスト用エクスポート

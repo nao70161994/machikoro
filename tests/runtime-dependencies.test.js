@@ -86,6 +86,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/onlineRestoreLifecycleState.js', 'js/online.js'],
             ['js/onlineRestoreQueue.js', 'js/online.js'],
             ['js/onlineRestoreRequestRuntime.js', 'js/online.js'],
+            ['js/onlineAppErrorRuntime.js', 'js/online.js'],
             ['js/onlineReconnectCleanup.js', 'js/online.js'],
             ['js/onlineReconnectRequest.js', 'js/online.js'],
             ['js/onlineRestoreAbort.js', 'js/online.js'],
