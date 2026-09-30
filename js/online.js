@@ -2889,81 +2889,28 @@ function initSocket() {
         payload => onlineRejoinRuntime.handle(payload)
     );
 
-    socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_COLLECT, ({ roomId, generation }) => {
-        if (roomId !== onlineSessionSnapshot().myRoomId) return;
-        onlineDomEffects.setStatusText('♻️ 参加者間の復元データ一致を確認しています...');
-        if (!_submitHostlessRestoreCandidate(generation)) {
-            onlineDomEffects.setStatusText('❌ 復元候補の世代が一致しません。保存データは削除されていません。');
-        }
-    });
-
-    socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_CONFIRMATION, ({ roomId, candidateCount }) => {
-        if (roomId !== onlineSessionSnapshot().myRoomId) return;
-        const message =
-            `${candidateCount || 0}人の参加者データが完全一致しました。あなたを新しいホストとして暫定復元しますか？`;
-        const respond = approved => {
-            const responseSocket = onlineSessionSnapshot().socket;
-            if (!responseSocket || responseSocket.connected === false) return;
-            onlineSocketEffects.confirmHostlessRestore({
-                roomId,
-                approved: approved === true,
-            }, responseSocket);
-        };
-        if (typeof showConfirm !== 'function' ||
-                showConfirm(message, () => respond(true), () => respond(false)) !== true) {
-            respond(false);
-        }
-    });
-
-    socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_STATUS, ({ roomId, reason, stage, candidateCount }) => {
-        if (roomId && roomId !== onlineSessionSnapshot().myRoomId) return;
-        const disposition = OnlineHostlessRestoreState.statusDisposition(reason, stage);
-        if (disposition === OnlineHostlessRestoreState.statusDispositions.RESTORED) {
-            _hostlessRestoreState.clear();
-            _clearRejoinRetry();
-            setOnlineReconnectLegacyFlag(true);
-            onlineDomEffects.setStatusText('♻️ 元のホストが復元しました。再接続しています...');
-            _emitOnlineRejoinRequest();
-            return;
-        }
-        if (reason === OnlineHostlessRestoreState.statusReasons.WAITING_FOR_HOST) {
-            onlineDomEffects.setStatusText('⏳ 元のホストの復元を60秒待っています...');
-            return;
-        }
-        if (disposition === OnlineHostlessRestoreState.statusDispositions.PROGRESS) {
-            onlineDomEffects.setStatusText(
-                `⏳ ${candidateCount || 0}人の候補が一致しました。ホスト承認を待っています...`
-            );
-            return;
-        }
-        if (disposition === OnlineHostlessRestoreState.statusDispositions.IGNORE) return;
-        _hostlessRestoreState.clear();
-        if (disposition === OnlineHostlessRestoreState.statusDispositions.RETRYABLE) {
-            setOnlineReconnectLegacyFlag(true);
-            onlineDomEffects.setStatusText(
-                '⚠️ 復元要求が一時的に混み合っています。保存データは保持されています。' +
-                '時間をおいて再接続をやり直してください。'
-            );
-            return;
-        }
-        _markOnlineRejoinAttemptExhausted();
-        setOnlineReconnectLegacyFlag(true);
-        _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED);
-        onlineDomEffects.setStatusText(
-            '❌ ' + OnlinePayload.hostlessRestoreStatusMessage(reason) +
-            ' 再接続をやり直すか、タイトル画面から保存データを明示的に破棄できます。'
-        );
-    });
-
-    socketEvents.on(OnlineSocketRegistry.keys.HOSTLESS_APPROVED, ({ roomId, hostPlayerIndex }) => {
-        const session = onlineSessionSnapshot();
-        if (roomId !== session.myRoomId) return;
-        _hostlessRestoreState.clear();
-        if (hostPlayerIndex === session.myOriginalPlayerIndex) return;
-        _clearRejoinRetry();
-        setOnlineReconnectLegacyFlag(true);
-        onlineDomEffects.setStatusText('♻️ 暫定復元したルームへ再接続しています...');
-        _emitOnlineRejoinRequest();
+    OnlineHostlessRestoreState.registerSocketEvents(socketEvents, {
+        keys: {
+            collect: OnlineSocketRegistry.keys.HOSTLESS_COLLECT,
+            confirmation: OnlineSocketRegistry.keys.HOSTLESS_CONFIRMATION,
+            status: OnlineSocketRegistry.keys.HOSTLESS_STATUS,
+            approved: OnlineSocketRegistry.keys.HOSTLESS_APPROVED,
+        },
+        getSession: onlineSessionSnapshot,
+        setStatusText: message => onlineDomEffects.setStatusText(message),
+        submitCandidate: generation => _submitHostlessRestoreCandidate(generation),
+        getSocket: () => onlineSessionSnapshot().socket,
+        confirmRestore: (payload, targetSocket) =>
+            onlineSocketEffects.confirmHostlessRestore(payload, targetSocket),
+        showConfirmation: typeof showConfirm === 'function' ? showConfirm : null,
+        clearState: () => _hostlessRestoreState.clear(),
+        clearRetry: () => _clearRejoinRetry(),
+        setReconnectFlag: value => setOnlineReconnectLegacyFlag(value),
+        emitRejoinRequest: () => _emitOnlineRejoinRequest(),
+        markAttemptExhausted: () => _markOnlineRejoinAttemptExhausted(),
+        observeRetryExhausted: () =>
+            _observeOnlineReconnectEvent(OnlineReconnectState.events.RETRY_EXHAUSTED),
+        statusMessage: reason => OnlinePayload.hostlessRestoreStatusMessage(reason),
     });
 
     socketEvents.on(OnlineSocketRegistry.keys.PLAYER_REJOINED, ({ playerIndex, playerName }) => {
