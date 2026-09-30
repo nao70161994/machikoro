@@ -3,7 +3,19 @@
 const AppShellComposition = (() => {
     /** @template T @typedef {() => T} Accessor */
 
-    /** @param {Record<string, Accessor<unknown>>} accessors */
+    /**
+     * @template {Record<string, Accessor<unknown>>} T
+     * @typedef {Object} Registry
+     * @property {(name: string) => boolean} has
+     * @property {<K extends keyof T>(name: K, fallback?: ReturnType<T[K]> | null) => ReturnType<T[K]> | null} resolve
+     * @property {(name: string) => Function | null} resolveFunction
+     */
+
+    /**
+     * @template {Record<string, Accessor<unknown>>} T
+     * @param {T} accessors
+     * @returns {Registry<T>}
+     */
     function create(accessors) {
         if (!accessors || typeof accessors !== 'object') {
             throw new TypeError('app shell composition accessors are required');
@@ -24,10 +36,10 @@ const AppShellComposition = (() => {
         /**
          * appShell.js loads before main.js and online.js, so dependencies must remain
          * late-bound while their ownership stays explicit and mechanically testable.
-         * @template T
-         * @param {string} name
-         * @param {T} [fallback]
-         * @returns {T | unknown}
+         * @template {keyof T} K
+         * @param {K} name
+         * @param {ReturnType<T[K]> | null} [fallback]
+         * @returns {ReturnType<T[K]> | null}
          */
         function resolve(name, fallback = null) {
             if (!has(name)) return fallback;

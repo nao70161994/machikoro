@@ -215,6 +215,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiPlayerCount.js',
     'js/uiRangeControl.js',
     'js/uiScreenFocus.js',
+    'js/appShell.js',
 ]);
 
 const serverMaintenanceFiles = Object.freeze([
@@ -308,6 +309,26 @@ const maintenanceRules = Object.freeze({
     'no-undef': 'error',
     'no-unreachable': 'error',
 });
+
+const appShellCompositionGlobals = Object.freeze(Object.fromEntries([
+    'AppShellClientReportingRuntime', 'AppShellComposition', 'AppShellCrashRuntime',
+    'AppShellObservationRuntime', 'AppShellRuntimeEffects', 'AppShellStartupRuntime',
+    'AppShellStorage', 'AppShellUiLockRuntime', 'ActionUiRegistry', 'ClientCheckpoint',
+    'ClientEventRuntime', 'ClientReporting', 'ClientReportingTransport', 'ClientRuntimeSnapshot',
+    'CrashScreen', 'CrashScreenEffects', 'GameRuntimeState', 'GameSetupState',
+    'LifecycleNotify', 'LifecycleRuntime', 'LifecycleTransport', 'OnlineRetryPolicy',
+    'OnlineRuntimeState', 'PwaShell', 'RetryTimer', 'UiDomSnapshot', 'UiRecoveryEffects',
+    'UiScreenFocus', 'UiTabEffects', 'UiTabView', 'UiWatchdog', 'UiWatchdogAsyncRecovery',
+    'UiWatchdogMonitor', 'UiWatchdogRecoveryRuntime', 'UiWatchdogReporting', 'UiWatchdogRuntime',
+    'cancelCpuSchedule', 'cardFilter', 'closeAccessibleModal', 'closeConfirmModal',
+    'cpuSchedulerStateController', 'cpuTurnScheduler', 'drawCitySkyline', 'enabledLandmarks',
+    'getOnlineActionFlightState', 'loadSettings', 'onlineActionInFlight', 'onlineActionInFlightAt',
+    'preloadLocalRlModelsInBackground', 'preloadOnlineRlModelsInBackground', 'render',
+    'renderBuildMenu', 'renderOnlinePlayerSettings', 'resumeGame', 'scheduleCPU',
+    'SHOP_STOCK', 'resetAccessibleModalRuntimeState', 'updateGameActivityStatus',
+    'updateGameActivityWatchdogStatus', 'updateResumeButton', '_handleOnlineActionTimeout',
+    '_isOnlineFlowActive', 'activeModalId', 'lastModalFocus', 'modalInertRestore',
+].map(name => [name, 'readonly'])));
 
 module.exports = [
     {
@@ -404,6 +425,11 @@ module.exports = [
         linterOptions: {
             reportUnusedDisableDirectives: 'error',
         },
+        rules: maintenanceRules,
+    },
+    {
+        files: ['js/appShell.js'],
+        languageOptions: { globals: appShellCompositionGlobals },
         rules: maintenanceRules,
     },
 ];

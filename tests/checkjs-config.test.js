@@ -29,9 +29,10 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     for (const file of config.files) {
         assert.ok(fs.existsSync(path.join(__dirname, '..', file)), file);
     }
-    for (const excluded of ['js/online.js', 'js/ui.js', 'js/appShell.js']) {
+    for (const excluded of ['js/online.js', 'js/main.js', 'js/storage.js', 'js/ui.js']) {
         assert.ok(!config.files.includes(excluded), excluded);
     }
+    assert.ok(config.files.includes('js/appShell.js'));
     assert.ok(config.files.includes('js/Card.js'));
     assert.ok(config.files.includes('js/marketSupply.js'));
     assert.ok(config.files.includes('server.js'));
@@ -167,14 +168,13 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/socketOriginPolicy.js'));
 });
 
-runTest('production JavaScriptは5つのcomposition root以外すべて静的検査対象になる', () => {
+runTest('production JavaScriptは未検査の4つのcomposition root以外を静的検査する', () => {
     const productionFiles = execFileSync(
         'git',
         ['ls-files', 'js/*.js', 'server/*.js', 'server.js'],
         { cwd: path.join(__dirname, '..'), encoding: 'utf8' }
     ).trim().split(/\r?\n/).filter(Boolean);
     const excludedRoots = new Set([
-        'js/appShell.js',
         'js/main.js',
         'js/online.js',
         'js/storage.js',
@@ -200,6 +200,7 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
     assert.ok(configuredLintFiles.includes('scripts/report-action-contract.js'));
     const lintFiles = configuredLintFiles
         .filter(file => file !== 'scripts/report-action-contract.js')
+        .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
         .sort();
     const checkJsFiles = config.files

@@ -8,6 +8,7 @@ const { runTest } = require('./helpers/test-utils');
 runTest('maintenance lint script and scoped config contain the same file set', () => {
     const configuredFiles = eslintConfig
         .flatMap(entry => Array.isArray(entry.files) ? entry.files : [])
+        .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
         .sort();
     const command = packageJson.scripts['lint:maintenance'];

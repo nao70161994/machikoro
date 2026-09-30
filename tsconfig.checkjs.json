@@ -14,6 +14,7 @@
   "files": [
     "types/checkjs-globals.d.ts",
     "types/checkjs-browser-globals.d.ts",
+    "types/checkjs-app-shell-globals.d.ts",
     "server.js",
     "scripts/check-static-files.js",
     "js/Card.js",
@@ -216,6 +217,7 @@
     "js/clientReporting.js",
     "js/clientReportingTransport.js",
     "js/appShellClientReportingRuntime.js",
+    "js/appShell.js",
     "js/clientEventRuntime.js",
     "js/lifecycleNotify.js",
     "js/lifecycleRuntime.js",
