@@ -1071,3 +1071,10 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 - Enabling the real global types exposed and fixed two pre-existing type gaps: build-action literal widening and an untyped Engine runtime stock record. Both fixes are annotations only.
 - `tests/checkjs-config.test.js` prevents these target globals or boundary declarations from silently returning to `unknown`. The scoped gates now cover 267 ESLint files and 266 checkJs JavaScript files; the five composition roots remain intentionally excluded as whole files.
 - No runtime logic, schemas, rules, CPU choices/RNG, online protocol/reconnect, storage, UI, or PWA behavior changed. Fixed outcome 5 is complete; only the six-outcome completion audit remains.
+
+
+## 2026-09-30 Composition-root static coverage: main.js ESLint
+
+- `js/main.js` is now part of scoped maintenance ESLint with `no-undef` and the existing bug-detection rules enabled. Its script globals are listed explicitly in `eslint.config.js` so misspelled cross-script names remain detectable.
+- `lint:maintenance` and its inventory contract include the root. `npm run test:static`, the maintenance-lint inventory test, and direct `npx eslint js/main.js` pass.
+- Whole-file `checkJs` coverage for `main.js` remains deferred: the isolated root currently exposes 28 diagnostics in existing DOM typing and late-bound contracts. This attempt was removed rather than masking those findings with permissive declarations. Resolve them through narrow real boundaries before enabling the root.

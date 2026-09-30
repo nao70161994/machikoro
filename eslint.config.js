@@ -216,6 +216,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiRangeControl.js',
     'js/uiScreenFocus.js',
     'js/appShell.js',
+    'js/main.js',
 ]);
 
 const serverMaintenanceFiles = Object.freeze([
@@ -329,6 +330,36 @@ const appShellCompositionGlobals = Object.freeze(Object.fromEntries([
     'updateGameActivityWatchdogStatus', 'updateResumeButton', '_handleOnlineActionTimeout',
     '_isOnlineFlowActive', 'activeModalId', 'lastModalFocus', 'modalInertRestore',
 ].map(name => [name, 'readonly'])));
+const mainCompositionGlobals = Object.freeze(Object.fromEntries([
+    'AppBackup', 'AppDiagnostics', 'AutoSkipPolicy', 'CitySkyline', 'ClientStorage',
+    'CpuPhaseHandlers', 'CpuSchedulerState', 'CpuTournament', 'CpuTurnSchedulerRuntime',
+    'CpuTurnStrategy', 'DelayedHumanActionPolicy', 'GameEngine', 'GameEngineClientShadow',
+    'GameEngineDeterminism', 'GameEngineRuntimeAdapter', 'GameSelectionState', 'GameSetupPresets',
+    'LocalActionPolicy', 'LocalGameEngineRuntime', 'LocalGameInitializer', 'LocalGameRestartRuntime',
+    'LocalGameStart', 'LocalGameStartRuntime', 'LocalPlayerSettings', 'MainAutoSkipRuntime',
+    'MainHumanActionRuntime', 'MainUiEventRuntime', 'PageActivationPolicy', 'PageActivationRuntime',
+    'RoomQrCode', 'UiCpuTournament', 'UiDiceDisplay', 'UiEventDelegation', 'UiGameStatusView',
+    'UiPlayerCount', 'UiPlayerDisplay', 'UiRangeControl', 'UiScreenFocus', 'UiTabView', 'UiWinner',
+    '_readOnlineActionLog', 'getEnabledCardSelection', 'getEnabledLandmarkSelection',
+    'getLocalSaveRepository', 'isOnlineReconnectInputBlocked', 'isValidSavedGameState',
+    'readOnlineSession', 'recordFlowTrace', 'replaceEnabledCardSelection',
+    'replaceEnabledLandmarkSelection', 'replaceMarketRuleSelection', 'resetFullLog',
+    'resetOnlineState', 'resetStatsRecorded', 'resumeOnlineReconnectAfterPageActivation',
+    'saveSettings', 'saveUndoState', 'syncCardSelectStateFromRuntime', 'switchOnlineTab',
+    'switchTab', 'updateGameSelectionSummary', 'refreshPwaUpdateState', 'clearOnlineSessionStorage',
+].map(name => [name, 'readonly'])));
+const mainEnvironmentGlobals = Object.freeze(Object.fromEntries([
+    'Blob', 'GAME_ACTIONS', 'GameRuntimeState', 'GameSetupState', 'GameSnapshot',
+    'LOG_TYPES', 'OnlineRuntimeState', 'RLModelPortfolio', 'UiGameStatusEffects',
+    'UiScreenFocus', 'UiTabView', 'UiTutorialSettings', 'URL', 'assignShopStockSnapshot',
+    'getOnlineActionFlightState', 'getShopStockCount', 'initMainView',
+    'markClientFlowCheckpoint', 'notifyGameLifecycleStart', 'onlineActionInFlight',
+    'onlineActionInFlightAt', 'playSound', 'render', 'reportClientError',
+    'resetFreezeWatchdogAfterPageActivation', 'resetGameLifecycleForRestart',
+    'resetUiLocksForGameReset', 'rollRandomDie', 'setShopStockCount', 'showNotice',
+    'stopConfetti', 'unlockUiForHumanTurn', 'updateResumeButton', 'winSoundPlayed',
+    'resolveLiveCpuOptions',
+].map(name => [name, 'readonly'])));
 
 module.exports = [
     {
@@ -430,6 +461,11 @@ module.exports = [
     {
         files: ['js/appShell.js'],
         languageOptions: { globals: appShellCompositionGlobals },
+        rules: maintenanceRules,
+    },
+    {
+        files: ['js/main.js'],
+        languageOptions: { globals: Object.assign({}, mainCompositionGlobals, mainEnvironmentGlobals) },
         rules: maintenanceRules,
     },
 ];
