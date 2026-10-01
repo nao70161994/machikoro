@@ -37,6 +37,14 @@ runTest('全施設の図版参照は同梱されたSVG symbolへ解決する', (
     }
     assert.strictEqual(motifs.size, CARDS.length, 'each facility should have its own illustration');
 });
+runTest('代表的なランドマークは遊具と港の場面を保ってカード内の構図を寄せる', () => {
+    const park = UiBuildMenu.renderFacilityArt('遊園地', true);
+    const port = UiBuildMenu.renderFacilityArt('港', true);
+    assert.match(park, /viewBox="12 2 136 76"/);
+    assert.match(park, /facility-art\.svg#park/);
+    assert.match(port, /viewBox="18 4 130 72"/);
+    assert.match(port, /facility-art\.svg#port/);
+});
 runTest('市場カードは施設の業種に合った景色を持ち、カード色の意味は上帯に保つ', () => {
     const cardMarkup = name => render(CARDS.find(card => card.name === name));
     assert.ok(cardMarkup('麦畑').includes('facility-scene-pasture'));
