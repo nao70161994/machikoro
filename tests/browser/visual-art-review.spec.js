@@ -459,6 +459,9 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
         .toBe('none');
     await page.locator('body').evaluate(element => element.classList.remove('accessibility-high-contrast'));
     await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor))
+        .toBe('rgb(20, 35, 53)');
+    await page.waitForTimeout(350);
     expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins))
         .toBe(starting.coins - 1);
     const afterBuild = testInfo.outputPath('sunset-after-build-390.png');
