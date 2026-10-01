@@ -5788,6 +5788,37 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
 }
 
 @media (max-width: 480px) {
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .game-action-panel {
+        gap: 4px;
+        margin-bottom: 2px;
+        padding: 2px 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    html[data-design="sunset"] .game-action-panel .dice-display { margin: 4px 0; }
+    html[data-design="sunset"] #diceResult[style*="opacity: 0.2"] .dice-face {
+        width: 38px;
+        height: 38px;
+        padding: 5px;
+        gap: 3px;
+        border-radius: 9px;
+    }
+    html[data-design="sunset"] .game-action-panel:has(#diceChoose:not(:empty)) #btnRoll {
+        display: none;
+    }
+    html[data-design="sunset"] .game-action-panel .buttons { gap: 6px; }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .dice-choose {
+        margin-bottom: 4px;
+        padding: 9px 10px;
+    }
+    html[data-design="sunset"] .dice-choose p { margin-bottom: 6px; }
+    html[data-design="sunset"] .dice-choose button {
+        min-height: 44px;
+        padding: 8px 6px;
+    }
+
     html[data-design="sunset"] #gameScreen[style*="display: block"] {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr);

@@ -910,6 +910,10 @@ test('駅と電波塔の振り直しは保存・再読み込み後も選択と�
 
     await page.locator('#btnRoll').click();
     await expect(page.locator('.dice-choose [data-action="selectDiceCount"]')).toHaveCount(2);
+    await expect(page.locator('#btnRoll')).toBeHidden();
+    expect(await page.locator('.dice-choose button').evaluateAll(buttons =>
+        buttons.every(button => button.getBoundingClientRect().height >= 44)
+    )).toBe(true);
     await page.locator('.dice-choose [data-action="selectDiceCount"][data-use-two="true"]').click();
     await expect(page.locator('.dice-choose [data-action="rerollDice"]')).toBeVisible();
     await page.locator('.dice-choose [data-action="rerollDice"]').click();
@@ -932,6 +936,7 @@ test('駅と電波塔の振り直しは保存・再読み込み後も選択と�
     await page.locator('#btnResume').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
     await expect(page.locator('.dice-choose [data-action="selectDiceCount"]')).toHaveCount(2);
+    await expect(page.locator('#btnRoll')).toBeHidden();
     const restoredPending = await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         return {
@@ -1430,6 +1435,8 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
                 timelineStepBorderBottomWidth: getComputedStyle(document.querySelector('.turn-timeline-step')).borderBottomWidth,
                 tutorialTop: document.querySelector('#tutorialBox').getBoundingClientRect().top,
                 actionBottom: document.querySelector('.game-action-panel').getBoundingClientRect().bottom,
+                actionPanelBorderWidth: getComputedStyle(document.querySelector('.game-action-panel')).borderTopWidth,
+                actionPanelBackground: getComputedStyle(document.querySelector('.game-action-panel')).backgroundColor,
                 compactPlayers: document.querySelectorAll('.player-box-compact').length,
                 viewportHeight: window.innerHeight,
             }));
@@ -1446,6 +1453,8 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             expect(mobileOrder.timelineBackground).toBe('rgba(0, 0, 0, 0)');
             expect(mobileOrder.timelineStepBorderLeftWidth).toBe('0px');
             expect(mobileOrder.timelineStepBorderBottomWidth).toBe('2px');
+            expect(mobileOrder.actionPanelBorderWidth).toBe('0px');
+            expect(mobileOrder.actionPanelBackground).toBe('rgba(0, 0, 0, 0)');
             expect(mobileOrder.compactPlayers).toBeGreaterThan(0);
             expect(mobileOrder.actionBottom).toBeLessThanOrEqual(mobileOrder.viewportHeight);
         }

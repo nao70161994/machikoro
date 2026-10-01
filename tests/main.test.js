@@ -2836,6 +2836,13 @@ runTest('PC勝利画面は完成した街を広い展示面で主役にする', 
     assert.match(css, /#status \.winner-screen \.town-building \.sunset-facility-art\s*\{[^}]*height:\s*96px;/);
 });
 
+runTest('スマホの夕暮れダイス選択は重複操作と外枠を減らし44px操作面を保つ', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.match(css, /@media \(max-width: 480px\)\s*\{[\s\S]*?html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) \.game-action-panel\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/);
+    assert.match(css, /\.game-action-panel:has\(#diceChoose:not\(:empty\)\) #btnRoll\s*\{\s*display:\s*none;/);
+    assert.match(css, /html\[data-design="sunset"\] \.dice-choose button\s*\{[^}]*min-height:\s*44px;/);
+});
+
 runTest('頻用する補助操作は一覧密度に応じた共通tap領域を保つ', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const rule = selector => {
