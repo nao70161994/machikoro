@@ -312,6 +312,8 @@ runTest('駅のランドマーク図案は建物にホームと線路を加え�
 });
 runTest('空港のランドマークはターミナル窓・入口・滑走路標識で着陸場面まで描く', () => {
     const airport = sprite.match(/<symbol id="airport"[\s\S]*?<\/symbol>/)?.[0] || '';
+    assert.ok(airport.includes('<g transform="rotate(-12 72 29)"><path d="M28 22L66 25L95 10L104 13L84 28L115 32L117 38L76 35L61 46L54 44L61 33L31 29Z"'),
+        'the aircraft climbs diagonally across the terminal scene');
     assert.ok(airport.includes('M42 51V59M55 51V59M68 51V59M81 51V59M94 51V59M107 51V59'));
     assert.ok(airport.includes('M68 59H82V68H68Z'), 'the terminal has a distinct passenger entrance');
     assert.ok(airport.includes('M49 79H111L92 68H68Z'), 'a foreshortened runway leads from the terminal');
