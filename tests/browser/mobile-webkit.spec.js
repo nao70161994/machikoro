@@ -179,15 +179,20 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ br
         })).toBe(true);
         await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
 
-        // Stop the origin so the next fetch can only succeed through the active
-        // service worker's precache, without relying on WebKit's offline emulation.
-        await stopGenerationServer(server);
-        const offlineAsset = await page.evaluate(async () => {
+        // Block only the uncached network route. A response here means WebKit did
+        // not serve the previously verified precache entry through its worker.
+        let networkFallbackRequested = false;
+        await page.route('**/icons/facility-art.svg', route => {
+            networkFallbackRequested = true;
+            return route.fulfill({ status: 503, body: 'network fallback blocked' });
+        });
+        const cachedAsset = await page.evaluate(async () => {
             const response = await fetch('/icons/facility-art.svg');
             return { ok: response.ok, body: await response.text() };
         });
-        expect(offlineAsset.ok).toBe(true);
-        expect(offlineAsset.body).toContain('<svg');
+        expect(cachedAsset.ok).toBe(true);
+        expect(cachedAsset.body).toContain('<svg');
+        expect(networkFallbackRequested).toBe(false);
         expect(errors).toEqual([]);
     } finally {
         if (context) await context.close();
