@@ -7159,16 +7159,49 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.online-st
     opacity: 0.82;
 }
 
-.card-color-blue .card-family-mark { border-radius: 1px; transform: rotate(45deg) scale(0.82); }
-.card-color-green .card-family-mark { border-radius: 50%; }
-.card-color-red .card-family-mark { border-radius: 1px; }
-.card-color-purple .card-family-mark { clip-path: polygon(50% 0, 62% 36%, 100% 36%, 70% 58%, 82% 100%, 50% 74%, 18% 100%, 30% 58%, 0 36%, 38% 36%); border: 0; }
-.card-color-landmark .card-family-mark { width: 9px; height: 9px; border-radius: 2px 2px 5px 5px; }
-
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-status[data-status-kind] {
     display: inline-block;
     min-width: min(100%, 240px);
     padding: 5px 12px;
     border: 1px solid transparent;
     border-radius: 999px;
+}
+
+/* 施設カテゴリはカード色とは別の小さな形でも識別できる */
+.card-family-mark[data-category="農園"] { transform: rotate(45deg) scale(0.82); }
+.card-family-mark[data-category="畜産"] { border-radius: 50%; box-shadow: inset 0 0 0 2px #fff9ed; }
+.card-family-mark[data-category="工業"] {
+    border-radius: 1px;
+    background: repeating-linear-gradient(0deg, currentColor 0 2px, transparent 2px 4px);
+}
+.card-family-mark[data-category="飲食店"] {
+    width: 9px;
+    flex-basis: 9px;
+    border: 0;
+    background: linear-gradient(90deg, currentColor 0 2px, transparent 2px 4px, currentColor 4px 6px, transparent 6px 7px, currentColor 7px 9px);
+}
+.card-family-mark[data-category="商店"] { clip-path: polygon(0 0, 100% 0, 100% 72%, 50% 100%, 0 72%); }
+.card-family-mark[data-category="特殊"] {
+    border: 0;
+    background: linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat,
+        linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
+}
+.card-family-mark[data-category="海産"] {
+    border: 0;
+    background: linear-gradient(170deg, transparent 0 24%, currentColor 26% 40%, transparent 42% 57%, currentColor 59% 73%, transparent 75%);
+}
+.card-family-mark[data-category="大施設"],
+.card-family-mark[data-category="ランドマーク"] {
+    border-radius: 3px 3px 1px 1px;
+    clip-path: polygon(0 32%, 24% 32%, 24% 0, 45% 0, 45% 48%, 68% 48%, 68% 18%, 100% 18%, 100% 100%, 0 100%);
+}
+
+/* 購入候補は常時点滅させず、押せる状態を静かな縁取りで示す */
+.card-btn.can-afford { animation: none; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn.can-afford {
+    border-color: #b28a4d;
+    box-shadow: inset 0 0 0 1px rgba(255, 249, 237, 0.72), 0 3px 0 #111e2d;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn:disabled .sunset-facility-art {
+    filter: saturate(0.62) brightness(0.92);
 }

@@ -2593,6 +2593,7 @@ runTest('renderBuildCardButton は施設カードの建設ボタンHTMLを生成
     assert.ok(html.includes('残り6枚'));
     assert.ok(html.includes('can-afford'));
     assert.ok(html.includes('class="card-dice-mark"'));
+    assert.ok(html.includes('class="card-family-mark" data-category="農園" aria-hidden="true"'));
     assert.ok(html.includes('class="card-coin-mark"'));
     assert.ok(html.includes('class="card-detail-icon"'));
     assert.ok(html.includes('icons/interface-ui.svg#info'));
@@ -2620,6 +2621,7 @@ runTest('カード詳細と建設ボタンは説明文と分類をescapeする',
     assert.ok(buttonHtml.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
     assert.ok(buttonHtml.includes('+&lt;b&gt;9&lt;/b&gt;コイン'));
     assert.ok(!buttonHtml.includes('<script>alert(1)</script>'));
+    assert.ok(buttonHtml.includes('data-category="&lt;script&gt;alert(1)&lt;/script&gt;"'));
     assert.ok(!buttonHtml.includes('+<b>9</b>コイン'));
     assert.ok(detail.html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
     assert.ok(detail.html.includes('+&lt;b&gt;9&lt;/b&gt;コイン'));
