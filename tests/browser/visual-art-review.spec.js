@@ -726,6 +726,8 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
     await expect(page.locator('#logSummary')).not.toContainText('👤');
     await expect(page.locator('#log')).not.toContainText('👤');
     await expect(page.locator('.player-box.active .player-landmarks .landmark-badge:not(.built)')).toHaveCount(0);
+    await expect(page.locator('#buildMenu h3 .build-menu-heading-icon use'))
+        .toHaveAttribute('href', 'icons/interface-ui.svg#market');
     const detailIcon = page.locator('#buildMenu .card-detail-btn .card-detail-icon').first();
     await expect(detailIcon).toBeVisible();
     await expect(detailIcon.locator('use')).toHaveAttribute('href', 'icons/interface-ui.svg#info');
@@ -752,6 +754,8 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
                 nameSize: parseFloat(styles('.card-name').fontSize),
                 effectSize: parseFloat(styles('.card-effect').fontSize),
                 categorySize: parseFloat(styles('.card-category-tag').fontSize),
+                category: card.querySelector('.card-family-mark').dataset.category,
+                affordMotion: getComputedStyle(card).animationName,
                 costHasBadge: costStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' && costStyle.borderRadius !== '0px',
                 costFits: costBounds.left >= cardBounds.left && costBounds.right <= cardBounds.right,
                 stockFitsOnCardArt: stockBounds.top >= wrapperBounds.top && stockBounds.bottom < cardBounds.bottom,
@@ -764,6 +768,8 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
         expect(cards.every(card => card.cardFits && card.costFits && card.costHasBadge &&
             card.stockFitsOnCardArt && card.detailTargetSize && card.detailHasAccessibleName)).toBe(true);
         expect(cards.every(card => card.diceSize > card.categorySize && card.nameSize > card.effectSize && card.effectSize > card.categorySize)).toBe(true);
+        expect(cards.every(card => card.affordMotion === 'none')).toBe(true);
+        expect(new Set(cards.map(card => card.category)).size).toBeGreaterThan(1);
         if (width === 390) {
             const screenshotPath = testInfo.outputPath('sunset-card-hierarchy-390.png');
             const firstCard = page.locator('#buildMenu .card-wrapper').first();
@@ -772,6 +778,22 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
             await testInfo.attach('sunset-card-hierarchy-390.png', { path: screenshotPath, contentType: 'image/png' });
         }
     }
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const desktopMarket = page.locator('#buildMenu .build-card-section .card-grid');
+    const desktopMarketStyle = await desktopMarket.evaluate(element => ({
+        backgroundImage: getComputedStyle(element).backgroundImage,
+        borderRadius: getComputedStyle(element).borderRadius,
+        padding: getComputedStyle(element).padding,
+    }));
+    expect(desktopMarketStyle.backgroundImage).toContain('radial-gradient');
+    expect(desktopMarketStyle.borderRadius).toBe('16px');
+    const desktopMarketPath = testInfo.outputPath('sunset-central-market-1440.png');
+    await desktopMarket.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: desktopMarketPath, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-central-market-1440.png', {
+        path: desktopMarketPath, contentType: 'image/png',
+    });
 });
 
 test('夕暮れの建設Undoは専用の戻る図案を使い取り消し操作を保つ', async ({ page }) => {
