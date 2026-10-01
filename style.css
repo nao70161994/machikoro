@@ -5599,7 +5599,15 @@ html[data-design="sunset"] .sunset-facility-art {
     margin: 4px 0 0;
     pointer-events: none;
 }
-html[data-design="sunset"] .card-btn .card-name { font-size: 14px; line-height: 1.5; }
+html[data-design="sunset"] .card-btn .card-name {
+    font-size: 15px;
+    line-height: 1.35;
+    letter-spacing: 0.015em;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn .card-cost {
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
 html[data-design="sunset"] body:not(.accessibility-large-text) .card-btn .card-effect { font-size: 12px; }
 
 .sunset-town { display: none; }
