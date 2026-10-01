@@ -376,7 +376,7 @@ const UiBuildMenu = (() => {
     function buildBuildMenuHtml(options) {
         const { canBuildCardAction, canBuildLandmarkAction, filterBtnsHtml, cardHtml, landmarkHtml, undoBtn, marketStatusHtml = '' } = options;
         const canBuild = canBuildCardAction || canBuildLandmarkAction;
-        return `<h3><span class="build-menu-heading-emoji" aria-hidden="true">🏗️</span><svg class="build-menu-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#build"></use></svg><span>${canBuild ? "建設する施設を選んでください" : "施設一覧"}</span></h3>${undoBtn}${marketStatusHtml}<div class="build-section build-card-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
+        return `<h3><span class="build-menu-heading-emoji" aria-hidden="true">🏗️</span><svg class="build-menu-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg><span>${canBuild ? "市場から施設を選んでください" : "施設一覧"}</span></h3>${undoBtn}${marketStatusHtml}<div class="build-section build-card-section"><h4>施設カード</h4><div class="card-filter-bar">${filterBtnsHtml}</div><div class="card-grid">${cardHtml}</div></div><div class="build-section"><h4>ランドマーク</h4><div class="card-grid">${landmarkHtml}</div></div>`;
     }
 
     function buildMarketStatusHtml(marketSupply, shopStock, players = []) {

@@ -7215,3 +7215,14 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn:disa
 html[data-design="sunset"] #gameScreen[style*="display: block"] {
     animation: sunset-board-arrive 260ms ease-out both;
 }
+
+@media (min-width: 900px) {
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #buildMenu .build-card-section .card-grid {
+        padding: 12px;
+        border-radius: 16px;
+        background:
+            radial-gradient(ellipse at 50% 0%, rgba(232, 190, 123, 0.12), transparent 72%),
+            linear-gradient(135deg, rgba(238, 225, 191, 0.035), rgba(14, 36, 51, 0.1));
+        box-shadow: inset 0 1px rgba(255, 239, 204, 0.12);
+    }
+}

@@ -2553,9 +2553,10 @@ runTest('buildBuildMenuHtml はカード/ランドマーク領域をhelperで組
     const html = context.buildBuildMenuHtml(current, true, true);
     assert.ok(html.includes('class="build-section build-card-section"'));
     assert.ok(html.includes('class="build-menu-heading-icon"'));
+    assert.ok(html.includes('icons/interface-ui.svg#market'));
     assert.ok(html.includes('class="build-menu-heading-emoji"'));
 
-    assert.ok(html.includes('建設する施設を選んでください'));
+    assert.ok(html.includes('市場から施設を選んでください'));
     assert.ok(html.includes('施設カード'));
     assert.ok(html.includes('ランドマーク'));
     assert.ok(html.includes('data-action="setCardFilter"'));
