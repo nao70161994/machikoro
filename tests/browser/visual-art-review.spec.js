@@ -335,6 +335,19 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     await expect(page.locator('#playerCount')).toBeHidden();
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
+    const boardAnimation = await page.locator('#gameScreen').evaluate(element => ({
+        name: getComputedStyle(element).animationName,
+        duration: getComputedStyle(element).animationDuration,
+    }));
+    expect(boardAnimation.name).toBe('sunset-board-arrive');
+    const boardDuration = parseFloat(boardAnimation.duration);
+    expect(boardDuration).toBeGreaterThan(0.2);
+    expect(boardDuration).toBeLessThan(0.4);
+    await page.evaluate(() => document.body.classList.add('accessibility-reduced-motion'));
+    const reducedDuration = await page.locator('#gameScreen').evaluate(element =>
+        parseFloat(getComputedStyle(element).animationDuration)
+    );
+    expect(reducedDuration).toBeLessThan(0.0001);
     const settings = await page.evaluate(() => GameSetupState.runtime.snapshot());
     expect(settings.selectedCount).toBe(2);
     expect(settings.playerSettings[0].type).toBe('human');
