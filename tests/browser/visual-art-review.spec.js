@@ -533,10 +533,12 @@ test('スマホの夕暮れ対局はログ要約を残して詳細を折りた�
             game.addLog(LOG_TYPES.BUILD, '🏗️ パン屋を建設！');
             renderLog();
         });
-        await expect(detailLog.locator('.log-item-with-icon').last()).toContainText('パン屋を建設！');
-        await expect(detailLog.locator('.log-item-with-icon').last().locator('svg use'))
+        const bakeryBuildLog = detailLog.locator('.log-item-with-icon').filter({ hasText: 'パン屋を建設！' }).last();
+        await expect(bakeryBuildLog).toBeVisible();
+        await expect(bakeryBuildLog).toContainText('パン屋を建設！');
+        await expect(bakeryBuildLog.locator('svg use'))
             .toHaveAttribute('href', 'icons/interface-ui.svg#build');
-        const visibleEmojiCount = await detailLog.locator('.log-item-with-icon').last().evaluate(element =>
+        const visibleEmojiCount = await bakeryBuildLog.evaluate(element =>
             /[🏗️]/u.test(element.textContent)
         );
         expect(visibleEmojiCount).toBe(false);
