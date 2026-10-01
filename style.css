@@ -1823,6 +1823,22 @@ body.game-finished #gameScreen > #btnRestart {
 
 .dot.hidden { background: transparent; }
 
+@keyframes dice-land {
+    0% { opacity: 0.45; transform: translateY(-12px) rotate(-10deg) scale(0.82); }
+    68% { opacity: 1; transform: translateY(2px) rotate(2deg) scale(1.06); }
+    100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+
+#diceResult.dice-result-arrival .dice-face:not(.rolling) {
+    animation: dice-land 360ms cubic-bezier(0.18, 0.78, 0.25, 1) both;
+}
+
+#diceResult.dice-result-arrival .dice-face:nth-child(2) { animation-delay: 55ms; }
+
+@media (prefers-reduced-motion: reduce) {
+    #diceResult.dice-result-arrival .dice-face:not(.rolling) { animation: none; }
+}
+
 /* ===== ボタン共通 ===== */
 button {
     width: 100%;
@@ -7100,4 +7116,59 @@ html[data-design="sunset"] .town-building-arrival {
         margin-top: 6px;
         filter: drop-shadow(0 5px 4px rgba(8, 20, 28, 0.24));
     }
+}
+
+/* 状態メッセージも夕暮れテーマの配色で意味を伝える */
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.online-status, .online-game-status)[data-status-kind="waiting"] {
+    color: #765221;
+    border-color: rgba(184, 128, 51, 0.48);
+    background: linear-gradient(110deg, rgba(255, 239, 199, 0.94), rgba(250, 224, 176, 0.84));
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.online-status, .online-game-status)[data-status-kind="restore"] {
+    color: #285b61;
+    border-color: rgba(70, 137, 133, 0.45);
+    background: linear-gradient(110deg, rgba(216, 239, 226, 0.96), rgba(193, 226, 216, 0.86));
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.online-status, .online-game-status)[data-status-kind="success"] {
+    color: #315c47;
+    border-color: rgba(88, 144, 106, 0.45);
+    background: linear-gradient(110deg, rgba(225, 242, 214, 0.96), rgba(205, 231, 197, 0.88));
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(.online-status, .online-game-status)[data-status-kind="error"] {
+    color: #843d42;
+    border-color: rgba(175, 83, 81, 0.48);
+    background: linear-gradient(110deg, rgba(250, 224, 209, 0.98), rgba(242, 205, 195, 0.9));
+}
+
+.card-category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.card-family-mark {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border: 1.5px solid currentColor;
+    background: currentColor;
+    opacity: 0.82;
+}
+
+.card-color-blue .card-family-mark { border-radius: 1px; transform: rotate(45deg) scale(0.82); }
+.card-color-green .card-family-mark { border-radius: 50%; }
+.card-color-red .card-family-mark { border-radius: 1px; }
+.card-color-purple .card-family-mark { clip-path: polygon(50% 0, 62% 36%, 100% 36%, 70% 58%, 82% 100%, 50% 74%, 18% 100%, 30% 58%, 0 36%, 38% 36%); border: 0; }
+.card-color-landmark .card-family-mark { width: 9px; height: 9px; border-radius: 2px 2px 5px 5px; }
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-status[data-status-kind] {
+    display: inline-block;
+    min-width: min(100%, 240px);
+    padding: 5px 12px;
+    border: 1px solid transparent;
+    border-radius: 999px;
 }

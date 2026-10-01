@@ -6,8 +6,8 @@ const { runTest } = require('./helpers/test-utils');
 
 function createRuntime() {
     const elements = {
-        onlineGameStatus: { textContent: '', style: { display: 'none' } },
-        onlineStatus: { textContent: '', innerHTML: '', style: {} },
+        onlineGameStatus: { textContent: '', style: { display: 'none' }, setAttribute(name, value) { this[name] = value; } },
+        onlineStatus: { textContent: '', innerHTML: '', style: {}, setAttribute(name, value) { this[name] = value; } },
         onlineWaitingPanel: { textContent: '', innerHTML: '', style: {} },
         titleScreen: { style: { display: 'block' } },
         gameScreen: { style: { display: 'none' } },
@@ -26,12 +26,24 @@ runTest('online DOM effectsはstatus text/htmlとwaiting判定を所有する', 
     assert.strictEqual(runtime.statusText(), '⏳ 接続中');
     assert.strictEqual(elements.onlineGameStatus.textContent, '⏳ 接続中');
     assert.strictEqual(elements.onlineGameStatus.style.display, 'block');
+    assert.strictEqual(elements.onlineGameStatus['data-status-kind'], 'waiting');
     assert.strictEqual(runtime.isStatusWaiting(), true);
     assert.strictEqual(runtime.setStatusText(''), true);
     assert.strictEqual(elements.onlineGameStatus.textContent, '');
     assert.strictEqual(elements.onlineGameStatus.style.display, 'none');
     assert.strictEqual(runtime.setStatusHtml('<b>ready</b>'), true);
     assert.strictEqual(elements.onlineStatus.innerHTML, '<b>ready</b>');
+});
+
+runTest('online DOM effectsは接続・復元・成功・失敗状態に一貫した意味属性を付ける', () => {
+    const { elements, runtime } = createRuntime();
+    runtime.setStatusText('♻️ ゲームを復元中...');
+    assert.strictEqual(elements.onlineStatus['data-status-kind'], 'restore');
+    assert.strictEqual(elements.onlineGameStatus['data-status-kind'], 'restore');
+    runtime.setStatusText('✅ ルームに参加しました');
+    assert.strictEqual(elements.onlineGameStatus['data-status-kind'], 'success');
+    runtime.setStatusText('❌ 復元に失敗しました');
+    assert.strictEqual(elements.onlineGameStatus['data-status-kind'], 'error');
 });
 
 runTest('online DOM effectsは待機操作をlive region外へ描画して同じ操作へfocusを戻す', () => {

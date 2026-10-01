@@ -113,3 +113,13 @@ runTest('dice result announcement identityは保持出目と同じ新規出目�
     });
     assert.strictEqual(UiDiceDisplay.resultIdentity(undefined, 'legacy'), 'legacy');
 });
+
+runTest('dice arrival controllerは一つの出目につき一度演出し、振り始めと空状態で再準備する', () => {
+    const controller = UiDiceDisplay.createArrivalController();
+    assert.strictEqual(controller.transition([3, 5]), true);
+    assert.strictEqual(controller.transition([3, 5]), false);
+    assert.strictEqual(controller.transition(null, true), false);
+    assert.strictEqual(controller.transition([3, 5]), true);
+    assert.strictEqual(controller.transition([]), false);
+    assert.strictEqual(controller.transition([3, 5]), true);
+});

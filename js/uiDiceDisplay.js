@@ -90,6 +90,24 @@ function createAnnouncementController() {
     });
 }
 
+function createArrivalController() {
+    let previousKey = '';
+    return Object.freeze({
+        transition(values, rolling = false) {
+            const dice = normalizeDiceValues(values);
+            if (rolling || dice.length === 0) {
+                previousKey = '';
+                return false;
+            }
+            const key = dice.join(',');
+            const changed = key !== previousKey;
+            previousKey = key;
+            return changed;
+        },
+        reset() { previousKey = ''; },
+    });
+}
+
 function applyAnnouncementPlan(plan, target) {
     if (!plan || !target) return false;
     if (plan.clear === true) target.textContent = '';
@@ -105,6 +123,7 @@ const UiDiceDisplay = Object.freeze({
     buildResultAnnouncement,
     buildView: buildDiceDisplayView,
     createAnnouncementController,
+    createArrivalController,
     normalizeDiceValues,
     resultIdentity,
 });

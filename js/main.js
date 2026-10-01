@@ -1298,10 +1298,14 @@ function renderDiceFace(num) {
     return UiDiceDisplay.buildFaceHtml(num);
 }
 
+const diceArrivalController = UiDiceDisplay.createArrivalController();
+
 function updateDiceDisplay(nums, rolling = false) {
     const el = document.getElementById("diceResult");
     const view = UiDiceDisplay.buildView(nums, rolling);
+    const shouldAnimateArrival = diceArrivalController.transition(nums, rolling);
     el.innerHTML = view.html;
+    if (el.classList) el.classList.toggle('dice-result-arrival', shouldAnimateArrival);
     if (view.opacity !== null) el.style.opacity = view.opacity;
 }
 

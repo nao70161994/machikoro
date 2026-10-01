@@ -49,11 +49,28 @@ const OnlineDomEffects = (() => {
             return true;
         }
 
+        function statusKind(value) {
+            const message = String(value || '').trim();
+            if (!message) return 'neutral';
+            if (/^(?:❌|⚠️|🚫)/u.test(message)) return 'error';
+            if (/^(?:♻️|🔄)/u.test(message)) return 'restore';
+            if (/^(?:⏳|⌛)/u.test(message) || /接続中|待機|待っています|確認しています/u.test(message)) return 'waiting';
+            if (/^(?:✅|🎉)/u.test(message) || /参加しました|開始します|成功しました/u.test(message)) return 'success';
+            return 'neutral';
+        }
+
+        function setStatusKind(target, value) {
+            if (target && typeof target.setAttribute === 'function') {
+                target.setAttribute('data-status-kind', statusKind(value));
+            }
+        }
+
         function setGameStatusText(value) {
             const target = element(ids.gameStatus);
             if (!target) return false;
             const message = String(value || '');
             target.textContent = message;
+            setStatusKind(target, message);
             if (target.style) target.style.display = message ? 'block' : 'none';
             const panel = element(ids.connectivityPanel);
             if (message && panel && panel.style) panel.style.display = 'grid';
@@ -67,6 +84,7 @@ const OnlineDomEffects = (() => {
             }
             setHtml(ids.waitingPanel, '');
             const lobbyChanged = setText(ids.status, value);
+            setStatusKind(element(ids.status), value);
             const gameChanged = setGameStatusText(value);
             return lobbyChanged || gameChanged;
         }
@@ -147,6 +165,7 @@ const OnlineDomEffects = (() => {
             if (!panel || !status) return false;
             const identity = focusedControlIdentity(panel, documentRef);
             status.textContent = String(statusText || '');
+            setStatusKind(status, statusText);
             setGameStatusText('');
             panel.innerHTML = String(html || '');
             scheduleWaitingReservationCountdown();
