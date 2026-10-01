@@ -431,6 +431,8 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'quiet');
     expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).opacity))
         .toBe('0');
+    expect(await town.locator('.town-street').evaluate(element => getComputedStyle(element, '::after').opacity))
+        .toBe('0.42');
     const wheat = page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]');
     await expect(wheat).toBeEnabled();
     await wheat.click();
@@ -443,8 +445,18 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'neighborhood');
     expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).opacity))
         .toBe('0.42');
+    expect(await town.locator('.town-street').evaluate(element => getComputedStyle(element, '::after').opacity))
+        .toBe('0.72');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await newTownBuilding.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+    expect(await town.locator('.town-street').evaluate(element => getComputedStyle(element, '::after').transitionDuration))
+        .toBe('0s');
+    await page.locator('body').evaluate(element => element.classList.add('accessibility-high-contrast'));
+    expect(await town.locator('.town-street').evaluate(element => getComputedStyle(element, '::after').display))
+        .toBe('none');
+    expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).display))
+        .toBe('none');
+    await page.locator('body').evaluate(element => element.classList.remove('accessibility-high-contrast'));
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins))
         .toBe(starting.coins - 1);

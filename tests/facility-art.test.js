@@ -427,6 +427,13 @@ runTest('街の発展段階は施設と有効なランドマークの両方に�
     assert.strictEqual(UiBuildMenu.townDevelopmentStage(0, 3), 'neighborhood');
 });
 
+runTest('街路と遠景の灯りは発展段階に応じて育ちアクセシビリティ設定を保つ', () => {
+    assert.match(styles, /town-street\[data-town-stage="neighborhood"\]::after\s*\{\s*opacity:\s*0\.72;/);
+    assert.match(styles, /town-street\[data-town-stage="city"\]::after\s*\{\s*opacity:\s*1;/);
+    assert.match(styles, /body\.accessibility-high-contrast \.town-street::before,[\s\S]*?\.town-street::after \{ display: none; \}/);
+    assert.match(styles, /prefers-reduced-motion: reduce\)[\s\S]*?\.town-street::before,[\s\S]*?\.town-skyline-lights \{ transition: none; \}/);
+});
+
 runTest('街の省略表示でも施設総数を保ち、施設名属性の引用符をescapeする', () => {
     const cards = Array.from({ length: 10 }, (_, i) => ({ name: `x" onmouseover="alert(${i})`, category: '農園' }));
     const html = UiBuildMenu.renderTownHtml({ cards, landmarks: {} });

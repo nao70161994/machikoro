@@ -5760,6 +5760,8 @@ html[data-design="sunset"] .town-street::before {
     position: absolute;
     z-index: 0;
     inset: 2px 0 6px;
+    opacity: 0.38;
+    transition: opacity 420ms ease-out;
     border-radius: 8px 8px 2px 2px;
     pointer-events: none;
     background:
@@ -5775,6 +5777,8 @@ html[data-design="sunset"] .town-street::after {
     bottom: -1px;
     left: 0;
     height: 9px;
+    opacity: 0.42;
+    transition: opacity 420ms ease-out;
     pointer-events: none;
     background:
         linear-gradient(180deg, #8a806d, #59636a),
@@ -5784,6 +5788,10 @@ html[data-design="sunset"] .town-street::after {
     background-position: 0 0, center 4px;
     border-top: 1px solid rgba(255, 232, 185, 0.46);
 }
+html[data-design="sunset"] .town-street[data-town-stage="neighborhood"]::before { opacity: 0.68; }
+html[data-design="sunset"] .town-street[data-town-stage="city"]::before { opacity: 1; }
+html[data-design="sunset"] .town-street[data-town-stage="neighborhood"]::after { opacity: 0.72; }
+html[data-design="sunset"] .town-street[data-town-stage="city"]::after { opacity: 1; }
 html[data-design="sunset"] .town-skyline-lights {
     position: absolute;
     z-index: 0;
@@ -5858,7 +5866,11 @@ html[data-design="sunset"] .winner-screen .sunset-town { margin: 18px 0; text-al
 html[data-design="sunset"] .winner-screen .town-building { width: 72px; }
 html[data-design="sunset"] body.accessibility-high-contrast .sunset-town { background: #000; border-color: #fff; color: #fff; }
 html[data-design="sunset"] body.accessibility-high-contrast .town-skyline-lights { display: none; }
+html[data-design="sunset"] body.accessibility-high-contrast .town-street::before,
+html[data-design="sunset"] body.accessibility-high-contrast .town-street::after { display: none; }
 @media (prefers-reduced-motion: reduce) {
+    html[data-design="sunset"] .town-street::before,
+    html[data-design="sunset"] .town-street::after,
     html[data-design="sunset"] .town-skyline-lights { transition: none; }
 }
 
