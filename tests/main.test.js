@@ -3532,6 +3532,8 @@ runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     assert.ok(html.includes('aria-describedby="speedLabel"'));
     assert.ok(html.includes('for="onlineCpuSpeed"'));
     assert.ok(html.includes('aria-describedby="onlineSpeedLabel"'));
+    assert.ok(html.includes('class="setting-section play-flow-settings online-cpu-speed-settings"'));
+    assert.ok(html.includes('<summary>CPUの速さを調整</summary>'));
     assert.ok(html.includes('for="playerNameInput"'));
     assert.ok(html.includes('for="roomIdInput"'));
     assert.ok(html.includes('aria-label="保存データを削除"'));

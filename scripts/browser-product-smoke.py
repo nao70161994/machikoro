@@ -179,6 +179,33 @@ try:
             elif viewport_width >= 760:
                 shot(s,'classic-title-start')
         js(s,"window.landmarkEnableTrace=[]; const descriptor=Object.getOwnPropertyDescriptor(HTMLButtonElement.prototype,'disabled'); Object.defineProperty(HTMLButtonElement.prototype,'disabled',{...descriptor,set(value){if(!value && this.dataset.action==='buildLandmark') window.landmarkEnableTrace.push({name:this.dataset.landmarkName,stack:new Error().stack}); descriptor.set.call(this,value);}});")
+    if os.environ.get('SMOKE_REROLL_RESTORE') == '1':
+        restore_session=sessions[1]
+        js(restore_session,"document.querySelector('.setup-quick-play').click();return true")
+        wait(restore_session,"const g=GameRuntimeState.runtime.snapshot().game;return !!g&&getComputedStyle(document.getElementById('gameScreen')).display!=='none'&&!document.getElementById('btnRoll').disabled")
+        js(restore_session,"const g=GameRuntimeState.runtime.snapshot().game,p=g.currentPlayer();p.landmarks[LANDMARK_NAMES.STATION]=true;p.landmarks[LANDMARK_NAMES.RADIO_TOWER]=true;return true")
+        js(restore_session,"document.getElementById('btnRoll').click();return true")
+        wait(restore_session,"return GameRuntimeState.runtime.snapshot().game.phase===GAME_PHASES.SELECT_DICE")
+        js(restore_session,"document.querySelector('.dice-choose [data-action=\"selectDiceCount\"][data-use-two=\"true\"]').click();return true")
+        wait(restore_session,"return GameRuntimeState.runtime.snapshot().game.phase===GAME_PHASES.REROLL_CONFIRM")
+        js(restore_session,"document.querySelector('.dice-choose [data-action=\"rerollDice\"]').click();return true")
+        wait(restore_session,"const g=GameRuntimeState.runtime.snapshot().game;return g.phase===GAME_PHASES.SELECT_DICE&&!!g.pendingRadioTowerReroll")
+        pending=js(restore_session,"saveGameState();return JSON.parse(localStorage.getItem('savedGame')).pendingRadioTowerReroll")
+        assert pending and pending['result']==pending['dice1']+pending['dice2'], f'Invalid saved reroll state: {pending}'
+        request('POST','/session/'+restore_session+'/refresh',{})
+        wait(restore_session,"return getComputedStyle(document.getElementById('resumeSection')).display!=='none'")
+        js(restore_session,"document.getElementById('btnResume').click();return true")
+        restored=wait(restore_session,"const g=GameRuntimeState.runtime.snapshot().game;return g&&g.phase===GAME_PHASES.SELECT_DICE&&g.pendingRadioTowerReroll&&document.querySelector('.dice-choose [data-action=\"selectDiceCount\"]')")
+        assert restored, 'Reroll choice did not return after reload'
+        shot(restore_session,'sunset-radio-tower-reroll-restored')
+        js(restore_session,"document.querySelector('.dice-choose [data-action=\"selectDiceCount\"][data-use-two=\"true\"]').click();return true")
+        reroll_message=wait(restore_session,"const g=GameRuntimeState.runtime.snapshot().game;return g.pendingRadioTowerReroll===null&&g.log.some(entry=>entry.message.startsWith('📡 電波塔で振り直し:'))&&g.log.find(entry=>entry.message.startsWith('📡 電波塔で振り直し:')).message")
+        assert ' → 0' not in reroll_message, f'Impossible reroll result appeared in the log: {reroll_message}'
+        assert '→ ' in reroll_message, f'Reroll log is incomplete: {reroll_message}'
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'pendingBeforeReload':pending,'rerollLogAfterRestore':reroll_message,'screenshot':'sunset-radio-tower-reroll-restored.png','passed':['station and Radio Tower actions enter reroll and dice-choice phases','valid local save is written with the pre-reroll dice','reload and local resume restore the pending choice','reroll finishes and writes the complete nonzero Radio Tower log'],'notCovered':['physical device touch','WebKit','CPU turn after reroll completion']}
+        (out/'reroll-restore-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+        print(json.dumps(report,ensure_ascii=False))
+        raise SystemExit(0)
     host,guest=sessions
     online_lobby_check=[]
     for s,name,design in [(host,'BrowserHost','classic'),(guest,'BrowserGuest','sunset')]:
@@ -187,6 +214,10 @@ try:
             assert js(s,"return getComputedStyle(document.querySelector('#tabContentOnline .online-tabs')).backgroundColor") == 'rgb(21, 40, 58)', 'Sunset online lobby tabs do not use the shared blue-green palette'
             assert js(s,"return getComputedStyle(document.getElementById('playerNameInput')).backgroundColor") == 'rgb(20, 38, 56)', 'Sunset online name field does not use the shared blue-green palette'
             assert js(s,"return getComputedStyle(document.getElementById('onlineCpuSpeed')).accentColor") == 'rgb(239, 196, 135)', 'Sunset online CPU speed control does not use the sunset gold accent'
+            assert js(s,"return !document.querySelector('.online-cpu-speed-settings').open"), 'Sunset online CPU speed advanced setting should start collapsed'
+            js(s,"document.querySelector('.online-cpu-speed-settings > summary').click();return true")
+            assert js(s,"const e=document.getElementById('onlineCpuSpeed');return e.getBoundingClientRect().height>=44&&getComputedStyle(e).accentColor==='rgb(239, 196, 135)'"), 'Sunset online CPU speed control is not styled after disclosure'
+            js(s,"document.querySelector('.online-cpu-speed-settings > summary').click();return true")
             assert js(s,"return getComputedStyle(document.querySelector('#tabContentOnline .setup-secondary-action')).backgroundColor") == 'rgb(41, 70, 90)', 'Sunset online secondary action does not use the shared blue-green palette'
             banner_background = js(s,"return getComputedStyle(document.getElementById('pwaInstallBanner')).backgroundImage")
             assert 'rgb(28, 51, 70)' in banner_background and 'rgb(25, 46, 64)' in banner_background, 'Sunset PWA install banner does not use the shared blue-green palette'

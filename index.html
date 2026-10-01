@@ -226,14 +226,17 @@
                         </div>
                         <button type="button" class="setup-secondary-action" data-ui-action="showCardSelect">使用カード・市場ルール</button>
                     </div>
-                    <div class="setting-section">
-                        <label class="setting-label" for="onlineCpuSpeed">CPUの速さ</label>
-                        <div class="speed-setting">
-                            <input type="range" id="onlineCpuSpeed" min="100" max="3000" step="100" value="1500"
-                                data-ui-input="onlineCpuSpeed" aria-describedby="onlineSpeedLabel" aria-valuetext="1.5秒">
-                            <span id="onlineSpeedLabel">1.5秒</span>
+                    <details class="setting-section play-flow-settings online-cpu-speed-settings">
+                        <summary>CPUの速さを調整</summary>
+                        <div class="setting-section">
+                            <label class="setting-label" for="onlineCpuSpeed">CPUの速さ</label>
+                            <div class="speed-setting">
+                                <input type="range" id="onlineCpuSpeed" min="100" max="3000" step="100" value="1500"
+                                    data-ui-input="onlineCpuSpeed" aria-describedby="onlineSpeedLabel" aria-valuetext="1.5秒">
+                                <span id="onlineSpeedLabel">1.5秒</span>
+                            </div>
                         </div>
-                    </div>
+                    </details>
                     <div class="setup-action-footer">
                         <button id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom">ルームを作る</button>
                         <div id="onlineRlModelStatus" class="model-load-status" role="status" aria-live="polite"></div>

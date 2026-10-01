@@ -4861,6 +4861,40 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .setup-seconda
     background: #29465a;
     color: #f0e6d1;
 }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-cpu-speed-settings > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: #f0e6d1;
+    cursor: pointer;
+    list-style: none;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-cpu-speed-settings > summary::-webkit-details-marker {
+    display: none;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-cpu-speed-settings > summary::after {
+    content: "+";
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    border: 1px solid #71899a;
+    border-radius: 50%;
+    color: #ffe1a6;
+    background: rgba(239, 196, 135, 0.1);
+    font-size: 16px;
+    line-height: 1;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-cpu-speed-settings[open] > summary::after {
+    content: "−";
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-cpu-speed-settings > summary:focus-visible {
+    outline: 3px solid #efc487;
+    outline-offset: 2px;
+}
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .setup-quick-play {
     border-color: #71899a;
     background: linear-gradient(115deg, #29495e, #315366);

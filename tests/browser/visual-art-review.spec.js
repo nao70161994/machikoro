@@ -681,9 +681,19 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
         expect(layout.readinessOpen).toBe(false);
         expect(layout.nameBackground).toBe('rgb(20, 38, 56)');
         expect(layout.cpuRangeAccent).toBe('rgb(239, 196, 135)');
+        const cpuSpeedDisclosure = page.locator('.online-cpu-speed-settings');
+        await expect(cpuSpeedDisclosure.locator('summary')).toContainText('CPUの速さを調整');
+        await expect(cpuSpeedDisclosure).not.toHaveAttribute('open', '');
         const createPath = testInfo.outputPath(`sunset-online-create-${width}.png`);
         await page.screenshot({ path: createPath, fullPage: true, scale: 'css', animations: 'disabled' });
         await testInfo.attach(`sunset-online-create-${width}.png`, { path: createPath, contentType: 'image/png' });
+        await cpuSpeedDisclosure.locator('summary').click();
+        await expect(page.locator('#onlineCpuSpeed')).toBeVisible();
+        expect(await page.locator('#onlineCpuSpeed').evaluate(element => getComputedStyle(element).accentColor))
+            .toBe('rgb(239, 196, 135)');
+        expect(await page.locator('#onlineCpuSpeed').evaluate(element => element.getBoundingClientRect().height))
+            .toBeGreaterThanOrEqual(44);
+        await cpuSpeedDisclosure.locator('summary').click();
 
         await page.locator('#onlineTabJoin').click();
         const joinButton = page.locator('#onlineJoinSubmitButton');
@@ -883,6 +893,79 @@ test('夕暮れの駅選択は専用施設アートとダイス記号で表示�
         await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
         await testInfo.attach(`sunset-station-choice-${width}.png`, { path: screenshotPath, contentType: 'image/png' });
     }
+});
+
+test('駅と電波塔の振り直しは保存・再読み込み後も選択とログが完了する', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await expect(page.locator('#btnRoll')).toBeEnabled();
+
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+        game.currentPlayer().landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+    });
+
+    await page.locator('#btnRoll').click();
+    await expect(page.locator('.dice-choose [data-action="selectDiceCount"]')).toHaveCount(2);
+    await page.locator('.dice-choose [data-action="selectDiceCount"][data-use-two="true"]').click();
+    await expect(page.locator('.dice-choose [data-action="rerollDice"]')).toBeVisible();
+    await page.locator('.dice-choose [data-action="rerollDice"]').click();
+    await expect(page.locator('.dice-choose [data-action="selectDiceCount"]')).toHaveCount(2);
+
+    const pendingBeforeReload = await page.evaluate(() => {
+        saveGameState();
+        const saved = JSON.parse(localStorage.getItem('savedGame'));
+        return saved.pendingRadioTowerReroll;
+    });
+    expect(pendingBeforeReload).toMatchObject({
+        dice1: expect.any(Number),
+        dice2: expect.any(Number),
+        result: expect.any(Number),
+    });
+    expect(pendingBeforeReload.result).toBe(pendingBeforeReload.dice1 + pendingBeforeReload.dice2);
+
+    await page.reload();
+    await expect(page.locator('#resumeSection')).toBeVisible();
+    await page.locator('#btnResume').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await expect(page.locator('.dice-choose [data-action="selectDiceCount"]')).toHaveCount(2);
+    const restoredPending = await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        return {
+            pending: game.pendingRadioTowerReroll,
+            phase: game.phase,
+            usedReroll: game.usedReroll,
+            lastDice1: game.lastDice1,
+            lastDice2: game.lastDice2,
+            lastDiceResult: game.lastDiceResult,
+        };
+    });
+    expect(restoredPending).toEqual({
+        pending: pendingBeforeReload,
+        phase: GAME_PHASES.SELECT_DICE,
+        usedReroll: true,
+        lastDice1: 0,
+        lastDice2: 0,
+        lastDiceResult: 0,
+    });
+
+    const screenshotPath = testInfo.outputPath('sunset-radio-tower-reroll-restored-390.png');
+    await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-radio-tower-reroll-restored-390.png', {
+        path: screenshotPath,
+        contentType: 'image/png',
+    });
+
+    await page.locator('.dice-choose [data-action="selectDiceCount"][data-use-two="true"]').click();
+    await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.pendingRadioTowerReroll))
+        .toBeNull();
+    const rerollLog = await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.log
+        .find(entry => entry.message.startsWith('📡 電波塔で振り直し:'))?.message || '');
+    expect(rerollLog).toMatch(/^📡 電波塔で振り直し: (?:[1-6](?:\+[1-6])?=)?\d+ → (?:[1-6](?:\+[1-6])?=)?\d+$/);
+    expect(rerollLog).not.toMatch(/→ 0(?:\D|$)/);
 });
 
 test('夕暮れのコイン獲得表示はカードと共通のSVGコインを使う', async ({ page }) => {

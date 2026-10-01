@@ -267,6 +267,10 @@ test('320pxから480pxで開始CTAが設定やfocusを隠さずPWAの上に届�
     async function expectCtaDoesNotObscure(selector, focusSelector, width, height = 844, expectedPosition = 'fixed') {
         await page.setViewportSize({ width, height });
         const focusTarget = page.locator(focusSelector);
+        const disclosure = focusTarget.locator('xpath=ancestor::details[1]');
+        if (await disclosure.count() && await disclosure.getAttribute('open') === null) {
+            await disclosure.locator('summary').first().click();
+        }
         await focusTarget.focus();
         const focusLayout = await page.locator(selector).evaluate((element, targetSelector) => {
             const footer = element.closest('.setup-action-footer');
