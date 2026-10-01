@@ -14,6 +14,7 @@ const OnlineDomEffects = (() => {
         readiness: 'onlineReadinessStatus',
         readinessSummary: 'onlineReadinessSummary',
         rlStatus: 'onlineRlModelStatus',
+        setupCountSummary: 'onlineSetupCountSummary',
         roomId: 'roomIdInput',
         status: 'onlineStatus',
         titleScreen: 'titleScreen',

@@ -265,11 +265,16 @@ test('320pxから480pxでlocal/onlineの2人・10人設定が枠内に収まる'
     await expectPlayerSelectContained(page, '#playerSettings', 10);
 
     await page.locator('#tabOnline').click();
+    await expect(page.locator('#onlineAdvancedSettings')).not.toHaveAttribute('open', '');
+    await expect(page.locator('#onlineSetupCountSummary')).toHaveText('2人');
+    await expect(page.locator('#onlineCreateSubmitButton')).toBeVisible();
+    await page.locator('#onlineAdvancedSettings > summary').click();
     const onlineLayout = { rowSelector: '.player-setting', alwaysColumn: true };
     await expectPlayerSelectContained(page, '#onlinePlayerSettings', 2, onlineLayout);
     const increaseOnlinePlayerCount = page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increaseOnlinePlayerCount.click();
     await expect(page.locator('#onlinePlayerCount')).toHaveText('10人');
+    await expect(page.locator('#onlineSetupCountSummary')).toHaveText('10人');
     await expectPlayerSelectContained(page, '#onlinePlayerSettings', 10, onlineLayout);
 });
 
@@ -283,6 +288,8 @@ test('320pxから480pxでlocal/onlineのプレイヤー種別が十分なtap領�
     await expectPlayerSelectTapTargets(page, '#playerSettings', 10);
 
     await page.locator('#tabOnline').click();
+    await expect(page.locator('#onlineAdvancedSettings')).not.toHaveAttribute('open', '');
+    await page.locator('#onlineAdvancedSettings > summary').click();
     await expectPlayerSelectTapTargets(page, '#onlinePlayerSettings', 2);
     const increaseOnlinePlayerCount = page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]');
     for (let count = 2; count < 10; count++) await increaseOnlinePlayerCount.click();
@@ -300,10 +307,11 @@ test('320pxから480pxで開始CTAが設定やfocusを隠さずPWAの上に届�
     async function expectCtaDoesNotObscure(selector, focusSelector, width, height = 844, expectedPosition = 'fixed') {
         await page.setViewportSize({ width, height });
         const focusTarget = page.locator(focusSelector);
-        const disclosure = focusTarget.locator('xpath=ancestor::details[1]');
-        if (await disclosure.count() && await disclosure.getAttribute('open') === null) {
-            await disclosure.locator('summary').first().click();
-        }
+        await focusTarget.evaluate(element => {
+            for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+                if (parent instanceof HTMLDetailsElement) parent.open = true;
+            }
+        });
         await focusTarget.focus();
         const focusLayout = await page.locator(selector).evaluate((element, targetSelector) => {
             const footer = element.closest('.setup-action-footer');

@@ -212,31 +212,38 @@
                 </details>
 
                 <div id="onlineCreate" role="tabpanel" aria-labelledby="onlineTabCreate">
-                    <div class="setting-section">
-                        <div class="setting-label">プレイ人数</div>
-                        <div class="player-select">
-                            <button data-ui-action="changeOnlineCount" data-delta="-1" aria-label="オンライン人数を減らす" aria-controls="onlinePlayerCount">－</button>
-                            <output id="onlinePlayerCount" role="status" aria-live="polite" aria-atomic="true">2人</output>
-                            <button data-ui-action="changeOnlineCount" data-delta="1" aria-label="オンライン人数を増やす" aria-controls="onlinePlayerCount">＋</button>
-                        </div>
-                    </div>
-                    <div id="onlinePlayerSettings" class="setting-section"></div>
-                    <div class="setting-section game-content-settings">
-                        <div>
-                            <div class="setting-label">使用するゲーム内容</div>
-                            <p id="onlineGameSelectionSummary" class="setting-help">全カード・全ランドマーク・通常市場</p>
-                        </div>
-                        <button type="button" class="setup-secondary-action" data-ui-action="showCardSelect">使用カード・市場ルール</button>
-                    </div>
-                    <details class="setting-section play-flow-settings online-cpu-speed-settings">
-                        <summary>CPUの速さを調整</summary>
-                        <div class="setting-section">
-                            <label class="setting-label" for="onlineCpuSpeed">CPUの速さ</label>
-                            <div class="speed-setting">
-                                <input type="range" id="onlineCpuSpeed" min="100" max="3000" step="100" value="1500"
-                                    data-ui-input="onlineCpuSpeed" aria-describedby="onlineSpeedLabel" aria-valuetext="1.5秒">
-                                <span id="onlineSpeedLabel">1.5秒</span>
+                    <details id="onlineAdvancedSettings" class="online-advanced-settings">
+                        <summary>
+                            <span class="online-advanced-copy"><strong>対戦設定</strong><small>人数・CPU・使用カードを変更</small></span>
+                            <span class="online-advanced-current"><span id="onlineSetupCountSummary">2人</span><span class="online-advanced-separator" aria-hidden="true"> · </span><span id="onlineGameSelectionSummary">全カード・全ランドマーク・通常市場</span></span>
+                        </summary>
+                        <div class="online-advanced-content">
+                            <div class="setting-section">
+                                <div class="setting-label">プレイ人数</div>
+                                <div class="player-select">
+                                    <button data-ui-action="changeOnlineCount" data-delta="-1" aria-label="オンライン人数を減らす" aria-controls="onlinePlayerCount">－</button>
+                                    <output id="onlinePlayerCount" role="status" aria-live="polite" aria-atomic="true">2人</output>
+                                    <button data-ui-action="changeOnlineCount" data-delta="1" aria-label="オンライン人数を増やす" aria-controls="onlinePlayerCount">＋</button>
+                                </div>
                             </div>
+                            <div id="onlinePlayerSettings" class="setting-section"></div>
+                            <div class="setting-section game-content-settings">
+                                <div>
+                                    <div class="setting-label">使用するゲーム内容</div>
+                                </div>
+                                <button type="button" class="setup-secondary-action" data-ui-action="showCardSelect">使用カード・市場ルール</button>
+                            </div>
+                            <details class="setting-section play-flow-settings online-cpu-speed-settings">
+                                <summary>CPUの速さを調整</summary>
+                                <div class="setting-section">
+                                    <label class="setting-label" for="onlineCpuSpeed">CPUの速さ</label>
+                                    <div class="speed-setting">
+                                        <input type="range" id="onlineCpuSpeed" min="100" max="3000" step="100" value="1500"
+                                            data-ui-input="onlineCpuSpeed" aria-describedby="onlineSpeedLabel" aria-valuetext="1.5秒">
+                                        <span id="onlineSpeedLabel">1.5秒</span>
+                                    </div>
+                                </div>
+                            </details>
                         </div>
                     </details>
                     <div class="setup-action-footer">

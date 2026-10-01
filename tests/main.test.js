@@ -2718,11 +2718,15 @@ runTest('ローカル保存の再開導線は新しいゲーム設定より先�
 runTest('ゲーム内容設定は作成画面に限定し現在の選択概要を示す', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const header = html.slice(html.indexOf('<div class="title-header">'), html.indexOf('<div id="onlineResumeSection"'));
+    const onlineCreate = html.slice(html.indexOf('<div id="onlineCreate"'), html.indexOf('<div id="onlineJoin"'));
     assert.ok(!header.includes('showCardSelect'));
     assert.strictEqual((html.match(/data-ui-action="showCardSelect"/g) || []).length, 2);
     assert.ok(html.includes('id="localGameSelectionSummary"'));
     assert.ok(html.includes('id="onlineGameSelectionSummary"'));
     assert.ok(html.includes('使用カード・市場ルール'));
+    assert.ok(onlineCreate.includes('<details id="onlineAdvancedSettings" class="online-advanced-settings">'));
+    assert.ok(onlineCreate.includes('id="onlineSetupCountSummary">2人</span>'));
+    assert.ok(onlineCreate.indexOf('</details>\n                    <div class="setup-action-footer">') > onlineCreate.indexOf('<details id="onlineAdvancedSettings"'), 'room creation remains visible outside collapsed optional settings');
 });
 
 runTest('主要画面とPWA install案内は重複告知しないlandmarkを持つ', () => {

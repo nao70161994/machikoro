@@ -354,6 +354,26 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
 });
 
+test('夕暮れオンライン作成は標準設定を先に見せ必要な設定だけ開ける', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('#tabOnline').click();
+    const advanced = page.locator('#onlineAdvancedSettings');
+    await expect(advanced).not.toHaveAttribute('open', '');
+    await expect(page.locator('#onlineSetupCountSummary')).toHaveText('2人');
+    await expect(page.locator('#onlineGameSelectionSummary')).toHaveText('全カード・全ランドマーク・通常市場');
+    await expect(page.locator('#onlineCreateSubmitButton')).toBeVisible();
+    const path = testInfo.outputPath('sunset-online-quick-390.png');
+    await page.screenshot({ path, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-online-quick-390.png', { path, contentType: 'image/png' });
+
+    await advanced.locator('summary').click();
+    await page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]').click();
+    await expect(page.locator('#onlineSetupCountSummary')).toHaveText('3人');
+    await page.locator('#onlineCreate [data-ui-action="showCardSelect"]').click();
+    await expect(page.locator('#cardSelectModal')).toBeVisible();
+});
+
 test('夕暮れのダイスは街の配色をまとい出目の形と動き軽減を保つ', async ({ page }) => {
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();

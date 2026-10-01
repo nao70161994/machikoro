@@ -265,6 +265,10 @@ function changeOnlineCount(delta) {
         onlineDomEffects.element(OnlineDomEffects.ids.playerCount),
         UiPlayerCount.buildView(state.selectedCount)
     );
+    UiPlayerCount.applyView(
+        onlineDomEffects.element(OnlineDomEffects.ids.setupCountSummary),
+        UiPlayerCount.buildView(state.selectedCount)
+    );
     renderOnlinePlayerSettings();
     preloadOnlineRlModelsInBackground('online-player-count-preload');
 }

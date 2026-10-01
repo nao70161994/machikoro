@@ -334,6 +334,11 @@ runTest('街ミニチュアは建物の後ろに控えめな地形を敷いて�
     assert.match(styles, /html\[data-design="sunset"\] \.town-building,\s*html\[data-design="sunset"\] \.town-overflow\s*\{[^}]*z-index:\s*1/);
     assert.match(styles, /@media \(min-width: 361px\) and \(max-width: 480px\)\s*\{\s*html\[data-design="sunset"\] \.town-street\s*\{ grid-template-columns: repeat\(auto-fit, 80px\); \}/, 'common phone width gives town illustrations room to read');
 });
+runTest('夕暮れ市場はカードの背後に控えめな街灯と路面を敷き高コントラストでは消す', () => {
+    assert.match(styles, /html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) #buildMenu \.build-card-section::before\s*\{[^}]*radial-gradient\(circle at 8%/);
+    assert.match(styles, /html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) #buildMenu \.build-card-section::after\s*\{[^}]*repeating-linear-gradient\(90deg/);
+    assert.match(styles, /html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) #buildMenu \.build-card-section > \*/);
+});
 runTest('清掃業の図案は建物だけでなく清掃用具が主題として認識できる', () => {
     const cleaning = sprite.match(/<symbol id="cleaning"[\s\S]*?<\/symbol>/)?.[0] || '';
     assert.ok(cleaning.includes('M76 55H91L89 67H78Z'));
