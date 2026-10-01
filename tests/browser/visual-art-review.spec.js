@@ -361,7 +361,7 @@ test('夕暮れオンライン作成は標準設定を先に見せ必要な設�
     const advanced = page.locator('#onlineAdvancedSettings');
     await expect(advanced).not.toHaveAttribute('open', '');
     await expect(page.locator('#onlineSetupCountSummary')).toHaveText('2人');
-    await expect(page.locator('#onlineGameSelectionSummary')).toHaveText('全カード・全ランドマーク・通常市場');
+    await expect(page.locator('#onlineGameSelectionSummary')).toHaveText('カード38種・ランドマーク6種・通常市場');
     await expect(page.locator('#onlineCreateSubmitButton')).toBeVisible();
     const path = testInfo.outputPath('sunset-online-quick-390.png');
     await page.screenshot({ path, fullPage: false, animations: 'disabled' });
@@ -388,7 +388,7 @@ test('夕暮れのダイスは街の配色をまとい出目の形と動き軽�
     }));
     expect(brandStyle.background).toContain('linear-gradient');
     expect(brandStyle.borderColor).toBe('rgb(173, 129, 71)');
-    expect(brandStyle.borderRadius).toBe('14px');
+    expect(brandStyle.borderRadius).toBe('9px');
     expect(brandStyle.pipColor).toBe('rgb(38, 61, 80)');
     expect(brandStyle.visiblePips).toBe(1);
 
@@ -763,6 +763,8 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
         const createPath = testInfo.outputPath(`sunset-online-create-${width}.png`);
         await page.screenshot({ path: createPath, fullPage: true, scale: 'css', animations: 'disabled' });
         await testInfo.attach(`sunset-online-create-${width}.png`, { path: createPath, contentType: 'image/png' });
+        const advancedSettings = page.locator('#onlineAdvancedSettings');
+        await advancedSettings.locator('summary').click();
         await cpuSpeedDisclosure.locator('summary').click();
         await expect(page.locator('#onlineCpuSpeed')).toBeVisible();
         expect(await page.locator('#onlineCpuSpeed').evaluate(element => getComputedStyle(element).accentColor))
@@ -780,6 +782,8 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
         await page.screenshot({ path: joinPath, fullPage: true, scale: 'css', animations: 'disabled' });
         await testInfo.attach(`sunset-online-join-${width}.png`, { path: joinPath, contentType: 'image/png' });
         await page.locator('#onlineTabCreate').click();
+        await expect(advancedSettings).toHaveAttribute('open', '');
+        await advancedSettings.locator('summary').click();
     }
 });
 
