@@ -395,13 +395,15 @@ runTest('街の施設数は建設と取消に追従し、無効なランドマ�
     assert.strictEqual(UiBuildMenu.renderTownHtml(player, enabled), original);
 });
 
-runTest('街の省略表示でも施設総数を保持し、施設名をHTMLへ埋め込まない', () => {
-    const cards = Array.from({ length: 10 }, (_, i) => ({ name: `<img src=x onerror=alert(${i})>`, category: '農園' }));
+runTest('街の省略表示でも施設総数を保ち、施設名属性の引用符をescapeする', () => {
+    const cards = Array.from({ length: 10 }, (_, i) => ({ name: `x" onmouseover="alert(${i})`, category: '農園' }));
     const html = UiBuildMenu.renderTownHtml({ cards, landmarks: {} });
     assert.ok(html.includes('施設 10枚'));
     assert.ok(html.includes('ほか2種'));
     assert.strictEqual((html.match(/facility-art.svg#field/g) || []).length, 8);
-    assert.ok(!html.includes('onerror'));
+    assert.ok(html.includes('data-town-building="card:x&quot; onmouseover=&quot;alert(0)'));
+    assert.ok(!html.includes('data-town-building="card:x" onmouseover='));
+    assert.ok(!html.includes(' onmouseover="alert('));
 });
 
 runTest('6ランドマークは種類別の同梱図版を持ち、未知の名前は安全な図版へ戻る', () => {

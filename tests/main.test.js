@@ -1196,13 +1196,13 @@ runTest('main coin animationはpure viewとDOMを同期しCSS演出が終わっ�
     let appended = null;
     let appendedTo = null;
     let removed = 0;
-    let soundCalls = 0;
+    const soundCalls = [];
     box.appendChild = element => { appended = element; appendedTo = box; };
     box.querySelector = selector => selector === '.player-coin-row' ? coinRow : null;
     coinRow.appendChild = element => { appended = element; appendedTo = coinRow; };
     rt.document.querySelectorAll = selector => selector === '.player-box' ? [box] : [];
     rt.document.createElement = () => makeElement({ remove() { removed++; } });
-    rt.playSound = name => { if (name === 'coin') soundCalls++; };
+    rt.playSound = (name, options) => { if (name === 'coin') soundCalls.push({ name, options }); };
 
     rt.showCoinAnimation(0, 4);
     assert.strictEqual(box.style.position, undefined);
@@ -1210,7 +1210,9 @@ runTest('main coin animationはpure viewとDOMを同期しCSS演出が終わっ�
     assert.strictEqual(appended.className, 'coin-float coin-gain');
     assert.strictEqual(appended.textContent, '+4🪙');
     assert.strictEqual(rt.__test.getLastTimeoutDelay(), 1400);
-    assert.strictEqual(soundCalls, 1);
+    assert.strictEqual(soundCalls.length, 1);
+    assert.strictEqual(soundCalls[0].name, 'coin');
+    assert.strictEqual(soundCalls[0].options.large, false);
     assert.strictEqual(rt.__test.getTimeoutCount(), 1);
 
     rt.__test.flushTimeouts();
@@ -1225,6 +1227,9 @@ runTest('main coin animationはpure viewとDOMを同期しCSS演出が終わっ�
     rt.showCoinAnimation(0, 5);
     assert.strictEqual(appended.className, 'coin-float coin-gain coin-gain-large');
     assert.strictEqual(appended.getAttribute('aria-label'), '+5コイン');
+    assert.strictEqual(soundCalls.length, 2);
+    assert.strictEqual(soundCalls[1].name, 'coin');
+    assert.strictEqual(soundCalls[1].options.large, true);
 });
 
 runTest('main checkAutoSkip は建設不能時に nextTurn を送信する', () => {

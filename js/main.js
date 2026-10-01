@@ -1315,7 +1315,7 @@ function drawCitySkyline() {
 function showCoinAnimation(playerIndex, diff) {
     const useSunsetIcons = document.documentElement?.dataset?.design === 'sunset';
     const view = UiPlayerDisplay.buildCoinAnimationView(diff, useSunsetIcons);
-    if (view.playSound) playSound('coin');
+    if (view.playSound) playSound('coin', { large: view.className.includes('coin-gain-large') });
     const boxes = document.querySelectorAll('.player-box');
     if (!boxes[playerIndex]) return;
     const box = boxes[playerIndex];

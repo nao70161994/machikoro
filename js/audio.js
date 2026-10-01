@@ -21,7 +21,7 @@ function getAudioCtx() {
     return audioCtx;
 }
 
-function playSound(type) {
+function playSound(type, options = {}) {
     try {
         if (soundVolume <= 0 || soundEffectEnabled[type] === false) return;
         const ctx = getAudioCtx();
@@ -42,7 +42,8 @@ function playSound(type) {
                 break;
             }
             case 'coin': {
-                [523, 659].forEach((freq, i) => {
+                const notes = options.large === true ? [523, 659, 784] : [523, 659];
+                notes.forEach((freq, i) => {
                     const osc = ctx.createOscillator();
                     const g = ctx.createGain();
                     osc.type = 'sine';
@@ -50,7 +51,7 @@ function playSound(type) {
                     const t = ctx.currentTime + i * 0.08;
                     osc.frequency.value = freq;
                     g.gain.setValueAtTime(0, t);
-                    g.gain.linearRampToValueAtTime(0.15 * soundVolume, t + 0.02);
+                    g.gain.linearRampToValueAtTime((options.large === true ? 0.13 : 0.15) * soundVolume, t + 0.02);
                     g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
                     osc.start(t); osc.stop(t + 0.2);
                 });

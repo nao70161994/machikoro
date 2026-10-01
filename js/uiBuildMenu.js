@@ -208,10 +208,10 @@ const UiBuildMenu = (() => {
         const built = Object.entries(player.landmarks || {})
             .filter(([name, value]) => value === true && enabledLandmarks.has(name));
         const facilities = [...grouped.values()].slice(0, 8).map(({ card, count }) =>
-            `<span class="town-building" data-town-building="card:${escapeHtml(card.name)}">${renderFacilityArt(card.name, false, card.category)}<span class="town-building-count">×${count}</span></span>`
+            `<span class="town-building" data-town-building="card:${escapeText(card.name)}">${renderFacilityArt(card.name, false, card.category)}<span class="town-building-count">×${count}</span></span>`
         ).join('');
         const landmarks = built.map(([name]) =>
-            `<span class="town-building town-landmark" data-town-building="landmark:${escapeHtml(name)}">${renderFacilityArt(name, true)}</span>`
+            `<span class="town-building town-landmark" data-town-building="landmark:${escapeText(name)}">${renderFacilityArt(name, true)}</span>`
         ).join('');
         const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種</span>` : '';
         return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個</span></p><div class="town-street" aria-hidden="true">${facilities}${landmarks}${remaining}</div></div>`;

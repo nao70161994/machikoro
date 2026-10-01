@@ -248,6 +248,7 @@ const TEST_GROUPS = {
         'ui-card-order.test.js',
         'ui-card-detail.test.js',
         'ui-player-display.test.js',
+        'audio.test.js',
         'ui-input-policy.test.js',
         'game-selection-state.test.js',
         'ui-card-select.test.js',
