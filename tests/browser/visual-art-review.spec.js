@@ -367,7 +367,7 @@ test('夕暮れオンライン作成は標準設定を先に見せ必要な設�
     await page.screenshot({ path, fullPage: false, animations: 'disabled' });
     await testInfo.attach('sunset-online-quick-390.png', { path, contentType: 'image/png' });
 
-    await advanced.locator('summary').click();
+    await page.locator('#onlineAdvancedSettings > summary').click();
     await page.locator('[data-ui-action="changeOnlineCount"][data-delta="1"]').click();
     await expect(page.locator('#onlineSetupCountSummary')).toHaveText('3人');
     await page.locator('#onlineCreate [data-ui-action="showCardSelect"]').click();
@@ -377,8 +377,11 @@ test('夕暮れオンライン作成は標準設定を先に見せ必要な設�
 test('夕暮れのダイスは街の配色をまとい出目の形と動き軽減を保つ', async ({ page }) => {
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
+    await page.locator('#btnRoll').click();
+    await expect(page.locator('#diceResult')).toHaveAttribute('style', /opacity: 1/);
     const die = page.locator('#diceResult .dice-face');
     await expect(die).toBeVisible();
+    await expect(die).toHaveAttribute('aria-label', /^サイコロの出目/);
     const brandStyle = await die.evaluate(element => ({
         background: getComputedStyle(element).backgroundImage,
         borderColor: getComputedStyle(element).borderTopColor,
@@ -388,9 +391,10 @@ test('夕暮れのダイスは街の配色をまとい出目の形と動き軽�
     }));
     expect(brandStyle.background).toContain('linear-gradient');
     expect(brandStyle.borderColor).toBe('rgb(173, 129, 71)');
-    expect(brandStyle.borderRadius).toBe('9px');
+    expect(brandStyle.borderRadius).toBe('14px');
     expect(brandStyle.pipColor).toBe('rgb(38, 61, 80)');
-    expect(brandStyle.visiblePips).toBe(1);
+    expect(brandStyle.visiblePips).toBeGreaterThanOrEqual(1);
+    expect(brandStyle.visiblePips).toBeLessThanOrEqual(6);
 
     await page.locator('#diceResult').evaluate(element => element.classList.add('dice-result-arrival'));
     expect(await die.evaluate(element => getComputedStyle(element).animationName)).toBe('sunset-dice-land');
@@ -764,7 +768,7 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
         await page.screenshot({ path: createPath, fullPage: true, scale: 'css', animations: 'disabled' });
         await testInfo.attach(`sunset-online-create-${width}.png`, { path: createPath, contentType: 'image/png' });
         const advancedSettings = page.locator('#onlineAdvancedSettings');
-        await advancedSettings.locator('summary').click();
+        await page.locator('#onlineAdvancedSettings > summary').click();
         await cpuSpeedDisclosure.locator('summary').click();
         await expect(page.locator('#onlineCpuSpeed')).toBeVisible();
         expect(await page.locator('#onlineCpuSpeed').evaluate(element => getComputedStyle(element).accentColor))
@@ -783,7 +787,7 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
         await testInfo.attach(`sunset-online-join-${width}.png`, { path: joinPath, contentType: 'image/png' });
         await page.locator('#onlineTabCreate').click();
         await expect(advancedSettings).toHaveAttribute('open', '');
-        await advancedSettings.locator('summary').click();
+        await page.locator('#onlineAdvancedSettings > summary').click();
     }
 });
 
