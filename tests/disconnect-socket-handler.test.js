@@ -159,7 +159,7 @@ runTest('disconnect socket handlerは開始済みhost切断時の通知と永続
     assert.strictEqual(subject.rooms.ROOM1.lastTouchedAt, 4321);
     assert.strictEqual(subject.rooms.ROOM1.hostPlayerIndex, 1);
     assert.deepStrictEqual(subject.calls, [
-        'hostless', 'remaining', 'set-host', 'emit-host', 'persist', 'log', 'log',
+        'hostless', 'remaining', 'set-host', 'persist', 'emit-host', 'log', 'log',
     ]);
     assert.deepStrictEqual(subject.emitted, [{
         roomId: 'ROOM1',
