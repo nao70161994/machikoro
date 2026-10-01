@@ -197,6 +197,15 @@ const UiBuildMenu = (() => {
         return `<svg class="landmark-badge-icon" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#${motif}"></use></svg>`;
     }
 
+    function townDevelopmentStage(facilityCount, landmarkCount) {
+        const facilities = Number.isFinite(facilityCount) ? Math.max(0, Math.floor(facilityCount)) : 0;
+        const landmarks = Number.isFinite(landmarkCount) ? Math.max(0, Math.floor(landmarkCount)) : 0;
+        const development = facilities + landmarks * 2;
+        if (development >= 8) return 'city';
+        if (development >= 3) return 'neighborhood';
+        return 'quiet';
+    }
+
     function renderDiceMark() {
         return '<svg class="card-dice-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="1.5" y="1.5" width="17" height="17" rx="4" fill="#fff4d6" stroke="#9b713f" stroke-width="1.5"/><circle cx="6" cy="6" r="1.35" fill="#31475a"/><circle cx="14" cy="6" r="1.35" fill="#31475a"/><circle cx="10" cy="10" r="1.35" fill="#31475a"/><circle cx="6" cy="14" r="1.35" fill="#31475a"/><circle cx="14" cy="14" r="1.35" fill="#31475a"/></svg>';
     }
@@ -215,6 +224,7 @@ const UiBuildMenu = (() => {
         }
         const built = Object.entries(player.landmarks || {})
             .filter(([name, value]) => value === true && enabledLandmarks.has(name));
+        const stage = townDevelopmentStage(cards.length, built.length);
         const facilities = [...grouped.values()].slice(0, 8).map(({ card, count }) =>
             `<span class="town-building" data-town-building="card:${escapeText(card.name)}">${renderFacilityArt(card.name, false, card.category)}<span class="town-building-count">×${count}</span></span>`
         ).join('');
@@ -222,7 +232,7 @@ const UiBuildMenu = (() => {
             `<span class="town-building town-landmark" data-town-building="landmark:${escapeText(name)}">${renderFacilityArt(name, true)}</span>`
         ).join('');
         const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種</span>` : '';
-        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個</span></p><div class="town-street" aria-hidden="true">${facilities}${landmarks}${remaining}</div></div>`;
+        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個</span></p><div class="town-street" data-town-stage="${stage}" aria-hidden="true"><span class="town-skyline-lights"></span>${facilities}${landmarks}${remaining}</div></div>`;
     }
 
     function renderBuildCardButton(options) {
@@ -417,7 +427,7 @@ const UiBuildMenu = (() => {
         return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div><span class="market-status-emoji" aria-hidden="true">🏪</span><svg class="market-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
     }
 
-    return Object.freeze({ renderTownHtml, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
+    return Object.freeze({ renderTownHtml, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

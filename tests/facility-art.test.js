@@ -395,6 +395,25 @@ runTest('街の施設数は建設と取消に追従し、無効なランドマ�
     assert.strictEqual(UiBuildMenu.renderTownHtml(player, enabled), original);
 });
 
+runTest('街の発展段階は施設と有効なランドマークの両方に応じて進む', () => {
+    const wheat = CARDS.find(card => card.name === '麦畑');
+    const quiet = UiBuildMenu.renderTownHtml({ cards: [wheat, wheat], landmarks: {} });
+    assert.ok(quiet.includes('data-town-stage="quiet"'));
+    assert.ok(quiet.includes('class="town-skyline-lights"'));
+
+    const neighborhood = UiBuildMenu.renderTownHtml({ cards: [wheat, wheat, wheat], landmarks: {} });
+    assert.ok(neighborhood.includes('data-town-stage="neighborhood"'));
+
+    const city = UiBuildMenu.renderTownHtml({
+        cards: [wheat, wheat, wheat, wheat],
+        landmarks: { '駅': true, '港': true, '空港': false },
+    }, new Set(['駅', '港', '空港']));
+    assert.ok(city.includes('data-town-stage="city"'));
+    assert.ok(city.includes('ランドマーク 2個'));
+    assert.strictEqual(UiBuildMenu.townDevelopmentStage(-1, 0), 'quiet');
+    assert.strictEqual(UiBuildMenu.townDevelopmentStage(0, 3), 'neighborhood');
+});
+
 runTest('街の省略表示でも施設総数を保ち、施設名属性の引用符をescapeする', () => {
     const cards = Array.from({ length: 10 }, (_, i) => ({ name: `x" onmouseover="alert(${i})`, category: '農園' }));
     const html = UiBuildMenu.renderTownHtml({ cards, landmarks: {} });

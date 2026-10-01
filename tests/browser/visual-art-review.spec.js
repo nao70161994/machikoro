@@ -354,6 +354,30 @@ test('クイック開始から2人のCPU戦へ進める', async ({ page }) => {
     expect(settings.playerSettings[1]).toMatchObject({ type: 'cpu', difficulty: 'normal' });
 });
 
+test('夕暮れのダイスは街の配色をまとい出目の形と動き軽減を保つ', async ({ page }) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    const die = page.locator('#diceResult .dice-face');
+    await expect(die).toBeVisible();
+    const brandStyle = await die.evaluate(element => ({
+        background: getComputedStyle(element).backgroundImage,
+        borderColor: getComputedStyle(element).borderTopColor,
+        borderRadius: getComputedStyle(element).borderTopLeftRadius,
+        pipColor: getComputedStyle(element.querySelector('.dot:not(.hidden)')).backgroundColor,
+        visiblePips: element.querySelectorAll('.dot:not(.hidden)').length,
+    }));
+    expect(brandStyle.background).toContain('linear-gradient');
+    expect(brandStyle.borderColor).toBe('rgb(173, 129, 71)');
+    expect(brandStyle.borderRadius).toBe('14px');
+    expect(brandStyle.pipColor).toBe('rgb(38, 61, 80)');
+    expect(brandStyle.visiblePips).toBe(1);
+
+    await page.locator('#diceResult').evaluate(element => element.classList.add('dice-result-arrival'));
+    expect(await die.evaluate(element => getComputedStyle(element).animationName)).toBe('sunset-dice-land');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await die.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+});
+
 test('夕暮れの建設と建設後のターン終了は重複確認なしで続けて操作できる', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await prepareSunset(page);
@@ -375,6 +399,10 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     expect(starting.humanIndex).toBeGreaterThanOrEqual(0);
     await expect(page.locator('#status')).toHaveText('あなたのターン');
 
+    const town = page.locator(`#playerBox${starting.humanIndex} .sunset-town`);
+    await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'quiet');
+    expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).opacity))
+        .toBe('0');
     const wheat = page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]');
     await expect(wheat).toBeEnabled();
     await wheat.click();
@@ -384,6 +412,9 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     const newTownBuilding = page.locator(`#playerBox${starting.humanIndex} [data-town-building="card:麦畑"]`);
     await expect(newTownBuilding)
         .toHaveClass(/town-building-arrival/);
+    await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'neighborhood');
+    expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).opacity))
+        .toBe('0.42');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await newTownBuilding.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
     await page.emulateMedia({ reducedMotion: 'no-preference' });

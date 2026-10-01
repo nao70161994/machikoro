@@ -5692,6 +5692,26 @@ html[data-design="sunset"] .town-street::after {
     background-position: 0 0, center 4px;
     border-top: 1px solid rgba(255, 232, 185, 0.46);
 }
+html[data-design="sunset"] .town-skyline-lights {
+    position: absolute;
+    z-index: 0;
+    inset: 5px 4px 10px;
+    pointer-events: none;
+    opacity: 0;
+    background-image:
+        radial-gradient(circle at 12% 45%, rgba(255, 222, 154, 0.94) 0 1.5px, transparent 2.5px),
+        radial-gradient(circle at 27% 31%, rgba(255, 225, 164, 0.86) 0 1.4px, transparent 2.5px),
+        radial-gradient(circle at 43% 50%, rgba(255, 214, 135, 0.9) 0 1.6px, transparent 2.7px),
+        radial-gradient(circle at 61% 36%, rgba(255, 231, 178, 0.84) 0 1.4px, transparent 2.5px),
+        radial-gradient(circle at 78% 48%, rgba(255, 218, 145, 0.94) 0 1.6px, transparent 2.7px),
+        radial-gradient(circle at 91% 30%, rgba(255, 232, 182, 0.88) 0 1.4px, transparent 2.5px);
+    transition: opacity 420ms ease-out;
+}
+html[data-design="sunset"] .town-street[data-town-stage="neighborhood"] .town-skyline-lights { opacity: 0.42; }
+html[data-design="sunset"] .town-street[data-town-stage="city"] .town-skyline-lights {
+    opacity: 0.88;
+    filter: drop-shadow(0 0 3px rgba(255, 209, 126, 0.58));
+}
 html[data-design="sunset"] .town-building,
 html[data-design="sunset"] .town-overflow { position: relative; z-index: 1; }
 html[data-design="sunset"] .town-building { width: 72px; }
@@ -5745,6 +5765,10 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-trophy
 html[data-design="sunset"] .winner-screen .sunset-town { margin: 18px 0; text-align: left; }
 html[data-design="sunset"] .winner-screen .town-building { width: 72px; }
 html[data-design="sunset"] body.accessibility-high-contrast .sunset-town { background: #000; border-color: #fff; color: #fff; }
+html[data-design="sunset"] body.accessibility-high-contrast .town-skyline-lights { display: none; }
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="sunset"] .town-skyline-lights { transition: none; }
+}
 
 @media (min-width: 768px) {
     html[data-design="sunset"] .winner-screen .sunset-town {
@@ -7214,6 +7238,47 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn:disa
 /* タイトルから盤面へ視線をなめらかに移す。opacityのみで盤面の配置とsticky操作を保つ。 */
 html[data-design="sunset"] #gameScreen[style*="display: block"] {
     animation: sunset-board-arrive 260ms ease-out both;
+}
+
+/* クリームの面と深い藍の目で、施設カードと同じ夕暮れの配色に揃える。 */
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .dice-face {
+    box-sizing: content-box;
+    border: 2px solid #ad8147;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #fff9e9 0%, #f5e7c8 58%, #e8d2a9 100%);
+    box-shadow:
+        0 4px 0 #263b4c,
+        0 7px 12px rgba(6, 16, 25, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.94),
+        inset 0 0 0 2px rgba(255, 250, 231, 0.7);
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .dice-face .dot {
+    background: #263d50;
+    box-shadow: inset 0 1px 1px rgba(6, 18, 29, 0.28), 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+@keyframes sunset-dice-land {
+    0% {
+        opacity: 0.45;
+        transform: translateY(-12px) rotate(-10deg) scale(0.82);
+        box-shadow: 0 4px 0 #263b4c, 0 7px 12px rgba(6, 16, 25, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.94), inset 0 0 0 2px rgba(255, 250, 231, 0.7);
+    }
+    68% {
+        opacity: 1;
+        transform: translateY(2px) rotate(2deg) scale(1.06);
+        box-shadow: 0 4px 0 #263b4c, 0 0 18px rgba(255, 208, 121, 0.68), 0 7px 12px rgba(6, 16, 25, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.94), inset 0 0 0 2px rgba(255, 250, 231, 0.7);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotate(0) scale(1);
+        box-shadow: 0 4px 0 #263b4c, 0 7px 12px rgba(6, 16, 25, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.94), inset 0 0 0 2px rgba(255, 250, 231, 0.7);
+    }
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #diceResult.dice-result-arrival .dice-face:not(.rolling) {
+    animation-name: sunset-dice-land;
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="sunset"] #diceResult.dice-result-arrival .dice-face:not(.rolling) { animation: none; }
 }
 
 @media (min-width: 900px) {
