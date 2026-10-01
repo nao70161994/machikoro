@@ -1511,6 +1511,20 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
+        if (width === 1440) {
+            const victoryLayout = await page.locator('.winner-screen').evaluate(element => {
+                const town = element.querySelector('.sunset-town');
+                const art = town.querySelector('.sunset-facility-art');
+                return {
+                    winnerWidth: element.getBoundingClientRect().width,
+                    townWidth: town.getBoundingClientRect().width,
+                    artHeight: art.getBoundingClientRect().height,
+                };
+            });
+            expect(victoryLayout.winnerWidth).toBeGreaterThanOrEqual(1100);
+            expect(victoryLayout.townWidth).toBeGreaterThanOrEqual(1000);
+            expect(victoryLayout.artHeight).toBeGreaterThanOrEqual(95);
+        }
         const resultPath = testInfo.outputPath(`sunset-result-${width}.png`);
         await page.screenshot({ path: resultPath, fullPage: true, animations: 'disabled' });
         await testInfo.attach(`sunset-result-${width}.png`, {

@@ -6749,3 +6749,44 @@ html[data-design="sunset"] .town-building-arrival {
         animation: none;
     }
 }
+
+@media (min-width: 1200px) {
+    #status .winner-screen {
+        max-width: 1200px;
+        padding: 24px clamp(28px, 4vw, 56px) 28px;
+    }
+
+    #status .winner-screen .sunset-town {
+        max-width: 1080px;
+        margin: 24px auto;
+        padding: 18px 22px 20px;
+        border-radius: 20px;
+        box-shadow: inset 0 1px rgba(255, 242, 214, 0.24), 0 12px 30px rgba(8, 20, 28, 0.2);
+    }
+
+    #status .winner-screen .town-summary {
+        padding: 0 8px 8px;
+        font-size: 14px;
+    }
+
+    #status .winner-screen .town-street {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px 14px;
+        padding: 12px 8px 20px;
+    }
+
+    #status .winner-screen .town-building,
+    #status .winner-screen .town-street > .town-building {
+        width: 100%;
+        max-width: 180px;
+        justify-self: center;
+    }
+
+    #status .winner-screen .town-landmark { width: 150px; }
+
+    #status .winner-screen .town-building .sunset-facility-art {
+        height: 96px;
+        margin-top: 6px;
+        filter: drop-shadow(0 5px 4px rgba(8, 20, 28, 0.24));
+    }
+}

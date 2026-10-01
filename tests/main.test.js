@@ -2829,6 +2829,13 @@ runTest('広い夕暮れ対局画面は共通の盤面サーフェスと4列市�
     assert.match(desktopCss, /#buildMenu \.card-filter-bar\s*\{[^}]*linear-gradient/);
 });
 
+runTest('PC勝利画面は完成した街を広い展示面で主役にする', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.match(css, /@media \(min-width: 1200px\)\s*\{[\s\S]*?#status \.winner-screen\s*\{[^}]*max-width:\s*1200px;/);
+    assert.match(css, /#status \.winner-screen \.sunset-town\s*\{[^}]*max-width:\s*1080px;/);
+    assert.match(css, /#status \.winner-screen \.town-building \.sunset-facility-art\s*\{[^}]*height:\s*96px;/);
+});
+
 runTest('頻用する補助操作は一覧密度に応じた共通tap領域を保つ', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const rule = selector => {

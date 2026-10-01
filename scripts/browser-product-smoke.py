@@ -225,6 +225,26 @@ try:
         (out/'pending-layout-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         print(json.dumps(report,ensure_ascii=False))
         raise SystemExit(0)
+    if os.environ.get('SMOKE_CAPTURE_WINNER') == '1':
+        winner_session=sessions[1]
+        js(winner_session,"document.querySelector('.setup-quick-play').click();return true")
+        wait(winner_session,"return GameRuntimeState.runtime.snapshot().game&&getComputedStyle(document.getElementById('gameScreen')).display!=='none'")
+        js(winner_session,"const game=GameRuntimeState.runtime.snapshot().game;for(const name of game.enabledLandmarks)game.players[0].landmarks[name]=true;render();return true")
+        wait(winner_session,"return document.querySelector('.winner-screen')&&document.body.classList.contains('game-finished')")
+        js(winner_session,"window.scrollTo(0,0);document.getElementById('gameScreen').scrollTop=0;return true")
+        wait(winner_session,"return document.querySelector('.winner-screen').getBoundingClientRect().top>=0")
+        geometry=js(winner_session,"const winner=document.querySelector('.winner-screen'),town=winner.querySelector('.sunset-town'),street=town.querySelector('.town-street'),art=street.querySelector('.sunset-facility-art'),rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}},style=getComputedStyle(winner);return {viewport:innerWidth,winner:rect(winner),town:rect(town),street:rect(street),art:rect(art),winnerMaxWidth:style.maxWidth,bodyWidth:document.documentElement.scrollWidth,artCount:street.querySelectorAll('.sunset-facility-art').length}")
+        assert geometry['bodyWidth']<=viewport_width,f'Winner screen overflows at {viewport_width}px: {geometry}'
+        if viewport_width>=1200:
+            assert geometry['winner']['width']>=1100 and geometry['town']['width']>=1000 and geometry['art']['height']>=95,f'Desktop victory does not give the completed city enough space: {geometry}'
+        shot(winner_session,'sunset-result-'+str(viewport_width))
+        passed=['real winner rendering runs through the game UI','winner screen and town fit the viewport']
+        if viewport_width>=1200:
+            passed.append('desktop winner expands the completed city into a wide showcase')
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'geometry':geometry,'screenshot':'sunset-result-'+str(viewport_width)+'.png','passed':passed,'notCovered':['physical device display','WebKit']}
+        (out/'winner-layout-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+        print(json.dumps(report,ensure_ascii=False))
+        raise SystemExit(0)
     host,guest=sessions
     online_lobby_check=[]
     for s,name,design in [(host,'BrowserHost','classic'),(guest,'BrowserGuest','sunset')]:
