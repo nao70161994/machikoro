@@ -284,6 +284,21 @@ function createValidator(options = {}) {
         for (const playerState of state.players) {
             if (!isValidSavedPlayerState(playerState)) return false;
         }
+        if (state.pendingRadioTowerReroll != null) {
+            const reroll = state.pendingRadioTowerReroll;
+            const stationName = typeof options.stationName === 'string' ? options.stationName : '駅';
+            const radioTowerName = typeof options.radioTowerName === 'string' ? options.radioTowerName : '電波塔';
+            const currentPlayer = state.players[state.currentPlayerIndex];
+            if (!isPlainObject(reroll) ||
+                !Number.isInteger(reroll.dice1) || reroll.dice1 < 1 || reroll.dice1 > 6 ||
+                !Number.isInteger(reroll.dice2) || reroll.dice2 < 0 || reroll.dice2 > 6 ||
+                !Number.isInteger(reroll.result) || reroll.result !== reroll.dice1 + reroll.dice2 ||
+                state.phase !== 'selectDice' || state.usedReroll !== true ||
+                state.lastDice1 !== 0 || state.lastDice2 !== 0 || state.lastDiceResult !== 0 ||
+                !isPlainObject(currentPlayer.landmarks) ||
+                currentPlayer.landmarks[stationName] !== true ||
+                currentPlayer.landmarks[radioTowerName] !== true) return false;
+        }
         if (Array.isArray(state.enabledLandmarksList)) {
             const enabledLandmarks = new Set(state.enabledLandmarksList);
             for (const playerState of state.players) {

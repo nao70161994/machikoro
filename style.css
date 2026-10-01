@@ -4829,6 +4829,32 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .text-input::p
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .text-input:focus {
     border-color: #efc487;
 }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(
+    select.text-input,
+    .player-setting-select,
+    .design-switcher select
+) {
+    border-color: #657f90;
+    background-color: #182d3f;
+    color: #fff4df;
+    color-scheme: dark;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(
+    select.text-input,
+    .player-setting-select,
+    .design-switcher select
+):focus-visible,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .text-input:focus-visible,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .speed-setting input[type="range"]:focus-visible,
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .toggle-setting input:focus-visible {
+    outline: 3px solid #efc487;
+    outline-offset: 2px;
+    border-color: #ffe3b9;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .speed-setting input[type="range"],
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .toggle-setting input {
+    accent-color: #efc487;
+}
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .setup-secondary-action {
     border: 1px solid #61798a;
     border-radius: 9px;
@@ -6500,6 +6526,7 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-b
 }
 
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper {
+    position: relative;
     overflow: hidden;
     border: 1px solid rgba(104, 83, 54, 0.38);
     border-radius: 13px;
@@ -6514,32 +6541,58 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper 
 }
 
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-meta-row {
-    min-height: 34px;
+    min-height: 44px;
     margin-top: -1px;
-    padding: 2px 9px 4px;
-    border-top: 1px solid rgba(104, 83, 54, 0.16);
-    background: rgba(239, 223, 197, 0.78);
+    padding: 0 9px 2px;
+    background: transparent;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-stock {
+    position: absolute;
+    z-index: 2;
+    top: 41px;
+    right: 8px;
+    color: #4e5960;
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+    padding: 3px 6px;
+    border: 1px solid rgba(104, 83, 54, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 249, 237, 0.88);
+    pointer-events: none;
 }
 
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-detail-btn {
-    min-height: 28px;
-    height: 28px;
-    padding: 0 7px;
-    border: 0;
-    border-radius: 7px;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(104, 83, 54, 0.24);
+    border-radius: 50%;
     background: transparent;
-    font-weight: 600;
+    color: #6b6458;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-detail-icon {
+    display: block;
+    width: 18px;
+    height: 18px;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-detail-emoji {
+    display: none;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-detail-label {
+    display: none;
 }
 
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-detail-btn:hover,
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-detail-btn:focus-visible {
     background: rgba(104, 83, 54, 0.1);
-}
-
-html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-stock {
-    color: #68717a;
-    font-size: 10px;
-    font-variant-numeric: tabular-nums;
 }
 
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .coin-float.coin-gain {

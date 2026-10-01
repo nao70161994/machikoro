@@ -670,13 +670,17 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
             viewportWidth: document.documentElement.clientWidth,
             documentWidth: document.documentElement.scrollWidth,
             nameWidth: document.querySelector('#playerNameInput').getBoundingClientRect().width,
+            nameBackground: getComputedStyle(document.querySelector('#playerNameInput')).backgroundColor,
             createHeight: document.querySelector('#onlineCreateSubmitButton').getBoundingClientRect().height,
             readinessOpen: document.querySelector('.online-readiness').open,
+            cpuRangeAccent: getComputedStyle(document.querySelector('#onlineCpuSpeed')).accentColor,
         }));
         expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
         expect(layout.nameWidth).toBeGreaterThan(0);
         expect(layout.createHeight).toBeGreaterThanOrEqual(44);
         expect(layout.readinessOpen).toBe(false);
+        expect(layout.nameBackground).toBe('rgb(20, 38, 56)');
+        expect(layout.cpuRangeAccent).toBe('rgb(239, 196, 135)');
         const createPath = testInfo.outputPath(`sunset-online-create-${width}.png`);
         await page.screenshot({ path: createPath, fullPage: true, scale: 'css', animations: 'disabled' });
         await testInfo.attach(`sunset-online-create-${width}.png`, { path: createPath, contentType: 'image/png' });
@@ -714,6 +718,12 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
             const costStyle = getComputedStyle(cost);
             const cardBounds = card.getBoundingClientRect();
             const costBounds = cost.getBoundingClientRect();
+            const wrapper = card.closest('.card-wrapper');
+            const wrapperBounds = wrapper.getBoundingClientRect();
+            const stock = wrapper.querySelector('.card-stock');
+            const stockBounds = stock.getBoundingClientRect();
+            const detail = wrapper.querySelector('.card-detail-btn');
+            const detailBounds = detail.getBoundingClientRect();
             return {
                 cardFits: card.scrollWidth <= card.clientWidth && cardBounds.left >= 0 && cardBounds.right <= document.documentElement.clientWidth,
                 diceSize: parseFloat(styles('.card-dice-num').fontSize),
@@ -722,11 +732,15 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
                 categorySize: parseFloat(styles('.card-category-tag').fontSize),
                 costHasBadge: costStyle.backgroundColor !== 'rgba(0, 0, 0, 0)' && costStyle.borderRadius !== '0px',
                 costFits: costBounds.left >= cardBounds.left && costBounds.right <= cardBounds.right,
+                stockFitsOnCardArt: stockBounds.top >= wrapperBounds.top && stockBounds.bottom < cardBounds.bottom,
+                detailTargetSize: detailBounds.width >= 44 && detailBounds.height >= 44,
+                detailHasAccessibleName: detail.getAttribute('aria-label') !== null,
             };
         }));
 
         expect(cards.length).toBeGreaterThan(0);
-        expect(cards.every(card => card.cardFits && card.costFits && card.costHasBadge)).toBe(true);
+        expect(cards.every(card => card.cardFits && card.costFits && card.costHasBadge &&
+            card.stockFitsOnCardArt && card.detailTargetSize && card.detailHasAccessibleName)).toBe(true);
         expect(cards.every(card => card.diceSize > card.categorySize && card.nameSize > card.effectSize && card.effectSize > card.categorySize)).toBe(true);
         if (width === 390) {
             const screenshotPath = testInfo.outputPath('sunset-card-hierarchy-390.png');

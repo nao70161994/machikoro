@@ -119,7 +119,7 @@ try:
         wait(s,"return typeof reviewGameSetup === 'function'")
         js(s,"const e=document.getElementById('designThemeSelect');e.value="+json.dumps(design)+";e.dispatchEvent(new Event('change',{bubbles:true}));")
         assert js(s,"return document.documentElement.dataset.design")==design
-        expected_select_background='rgb(27, 43, 58)' if design=='sunset' else 'rgb(18, 18, 37)'
+        expected_select_background='rgb(24, 45, 63)' if design=='sunset' else 'rgb(18, 18, 37)'
         assert js(s,"return getComputedStyle(document.querySelector('#playerSettings .player-setting-select')).backgroundColor")==expected_select_background, 'Player type selector does not match the selected dark theme'
         if viewport_width >= 760:
             if design=='sunset' and viewport_width >= 1000:
@@ -129,8 +129,8 @@ try:
                 tablet_title_state = js(s,"const h=document.querySelector('.title-header').getBoundingClientRect(),t=document.querySelector('.title-header h1').getBoundingClientRect(),i=document.querySelector('.title-header .sunset-hero img').getBoundingClientRect(),b=document.querySelector('.tab-bar').getBoundingClientRect(),sw=document.querySelector('.design-switcher').getBoundingClientRect(),c=document.querySelector('#tabContentLocal').getBoundingClientRect();return {ok:h.width>=680&&h.bottom<=sw.top&&t.right<i.left&&sw.width>=250&&b.width>=390&&c.width>=390&&c.top>Math.max(sw.bottom,b.bottom),hero:{left:h.left,right:h.right,width:h.width,bottom:h.bottom},titleRight:t.right,imageLeft:i.left,switch:{width:sw.width,bottom:sw.bottom},tabs:{width:b.width,top:b.top},content:{width:c.width,top:c.top}}")
                 assert tablet_title_state['ok'], f"Tablet sunset title setup does not stack hero, setup tabs, and content cleanly: {tablet_title_state}"
             else:
-                title_columns_clear = js(s,"const a=document.querySelector('.title-header').getBoundingClientRect(),b=document.getElementById('tabContentLocal').getBoundingClientRect();return a.right < b.left && b.width > a.width")
-                assert title_columns_clear, 'Wide title does not separate brand and setup columns'
+                title_columns_clear = js(s,"const a=document.querySelector('.title-header').getBoundingClientRect(),t=document.querySelector('.tab-bar').getBoundingClientRect(),b=document.getElementById('tabContentLocal').getBoundingClientRect();return {ok:a.right<t.left&&b.top>=Math.max(a.bottom,t.bottom)&&b.width>a.width,brand:{left:a.left,right:a.right,top:a.top,bottom:a.bottom},tabs:{left:t.left,right:t.right,top:t.top,bottom:t.bottom},content:{left:b.left,right:b.right,top:b.top,bottom:b.bottom}}")
+                assert title_columns_clear['ok'], f"Wide title does not separate brand/tabs above the setup content: {title_columns_clear}"
         js(s,"window.scrollTo(0,0);")
         shot(s,design+'-title')
         js(s,"const setup=document.getElementById('customGameSetup');if(!setup.open)setup.querySelector('summary').click();")
@@ -186,6 +186,7 @@ try:
         if design=='sunset':
             assert js(s,"return getComputedStyle(document.querySelector('#tabContentOnline .online-tabs')).backgroundColor") == 'rgb(21, 40, 58)', 'Sunset online lobby tabs do not use the shared blue-green palette'
             assert js(s,"return getComputedStyle(document.getElementById('playerNameInput')).backgroundColor") == 'rgb(20, 38, 56)', 'Sunset online name field does not use the shared blue-green palette'
+            assert js(s,"return getComputedStyle(document.getElementById('onlineCpuSpeed')).accentColor") == 'rgb(239, 196, 135)', 'Sunset online CPU speed control does not use the sunset gold accent'
             assert js(s,"return getComputedStyle(document.querySelector('#tabContentOnline .setup-secondary-action')).backgroundColor") == 'rgb(41, 70, 90)', 'Sunset online secondary action does not use the shared blue-green palette'
             banner_background = js(s,"return getComputedStyle(document.getElementById('pwaInstallBanner')).backgroundImage")
             assert 'rgb(28, 51, 70)' in banner_background and 'rgb(25, 46, 64)' in banner_background, 'Sunset PWA install banner does not use the shared blue-green palette'
@@ -253,6 +254,8 @@ try:
             market_art_scale_check = js(s,"const arts=Array.from(document.querySelectorAll('#buildMenu .card-btn .sunset-facility-art'));return arts.length>0&&arts.every(e=>{const r=e.getBoundingClientRect();return r.height>=88&&r.height+1>=r.width*.49})")
             assert market_art_scale_check, 'Sunset market scene art is too short for its card width'
             assert js(s,"return getComputedStyle(document.querySelector('.card-filter-bar')).backgroundColor==='rgb(23, 43, 61)'&&getComputedStyle(document.querySelector('.card-filter-btn.active')).backgroundColor==='rgb(51, 73, 90)'"), 'Sunset market filters do not use the shared blue-green and gold palette'
+            market_meta_check = js(s,"const wrappers=Array.from(document.querySelectorAll('#buildMenu .card-wrapper')).filter(wrapper=>wrapper.querySelector('.card-stock'));return wrappers.length>0&&wrappers.every(wrapper=>{const card=wrapper.querySelector('.card-btn'),art=wrapper.querySelector('.card-btn .sunset-facility-art'),stock=wrapper.querySelector('.card-stock'),detail=wrapper.querySelector('.card-detail-btn'),icon=detail?.querySelector('.card-detail-icon'),stockRect=stock?.getBoundingClientRect(),cardRect=card?.getBoundingClientRect(),artRect=art?.getBoundingClientRect(),detailRect=detail?.getBoundingClientRect();return !!card&&!!art&&!!stock&&!!detail&&stockRect.top>=cardRect.top&&stockRect.top<artRect.bottom&&stockRect.right<=wrapper.getBoundingClientRect().right&&detailRect.width>=44&&detailRect.height>=44&&getComputedStyle(icon).display!=='none'&&getComputedStyle(detail.querySelector('.card-detail-label')).display==='none'})")
+            assert market_meta_check, 'Sunset market card stock/detail controls do not read as one accessible card object'
         disabled_card_style=js(s,"const card=document.querySelector('#buildMenu .card-btn');if(!card)return null;const wasDisabled=card.disabled;card.disabled=true;const effect=card.querySelector('.card-effect'),color=effect&&getComputedStyle(effect).color.match(/\\d+/g),state={opacity:Number(getComputedStyle(card).opacity),effectColor:color&&color.map(Number)};card.disabled=wasDisabled;return state")
         assert disabled_card_style and disabled_card_style['opacity']>=0.54, f"Disabled facility cards are too faint to compare: {disabled_card_style}"
         if design == 'classic':
@@ -274,7 +277,7 @@ try:
             shot(s,'sunset-market-large-text')
             js(s,"const e=document.getElementById('accessibilityFontScale');e.value='standard';e.dispatchEvent(new Event('change',{bubbles:true}));")
     if os.environ.get('SMOKE_STOP_AFTER_MARKET') == '1':
-        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'passed':['classic/sunset title and setup at page start','quick start and setup controls do not overlap','4-player start action stays reachable above the PWA install banner','mixed-design online start with ready','sunset city enters the initial viewport','market cards and large text scale correctly'],'notCovered':['match gameplay','physical device touch','WebKit','PWA update']}
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'passed':['classic/sunset title and setup at page start','quick start and setup controls do not overlap','4-player start action stays reachable above the PWA install banner','mixed-design online start with ready','sunset city enters the initial viewport','market cards and large text scale correctly','market stock badge and detail action fit the card face with accessible targets'],'notCovered':['match gameplay','physical device touch','WebKit','PWA update']}
         (out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         print(json.dumps(report,ensure_ascii=False))
         raise SystemExit(0)

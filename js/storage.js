@@ -543,6 +543,8 @@ function getSavedGameValidator() {
         isMajorCardName,
         cardNameById: typeof CARD_NAME_BY_ID !== 'undefined' ? CARD_NAME_BY_ID : {},
         yakushoName: typeof LANDMARK_NAMES !== 'undefined' ? LANDMARK_NAMES.YAKUSHO : '役所',
+        stationName: typeof LANDMARK_NAMES !== 'undefined' ? LANDMARK_NAMES.STATION : '駅',
+        radioTowerName: typeof LANDMARK_NAMES !== 'undefined' ? LANDMARK_NAMES.RADIO_TOWER : '電波塔',
         inventoryValidator,
     });
     return savedGameValidator;

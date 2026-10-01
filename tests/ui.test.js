@@ -2479,6 +2479,7 @@ runTest('UiBuildMenu helper は建設メニューのescapeとgateをpureに固�
     assert.ok(cardHtml.includes('class="card-detail-emoji"'));
     assert.ok(cardHtml.includes('class="card-detail-icon"'));
     assert.ok(cardHtml.includes('icons/interface-ui.svg#info'));
+    assert.ok(cardHtml.includes('class="card-detail-label"> 詳細</span>'));
     assert.ok(cardHtml.includes('<span class="card-stock">残り2枚</span>'));
 
     const visible = helper.buildVisibleCardButtonsHtml({

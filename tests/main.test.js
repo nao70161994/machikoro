@@ -2808,6 +2808,16 @@ runTest('card detail button はカードに重ならない専用行へ配置す�
     assert.ok(css.includes('.card-meta-row {'));
 });
 
+runTest('夕暮れの市場カードと設定入力は一体感・視認性・キーボードfocusを保つ', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    assert.match(css, /\.card-wrapper \.card-stock\s*\{[^}]*position:\s*absolute;[\s\S]*?top:\s*41px;/);
+    assert.match(css, /\.card-wrapper \.card-detail-btn\s*\{[^}]*width:\s*44px;[\s\S]*?min-height:\s*44px;/);
+    assert.match(css, /\.card-wrapper \.card-detail-label\s*\{\s*display:\s*none;/);
+    assert.match(css, /\.player-setting-select,[\s\S]*?\.design-switcher select\s*\)\s*\{[^}]*color-scheme:\s*dark;/);
+    assert.match(css, /\.speed-setting input\[type="range"\]:focus-visible/);
+    assert.match(css, /\.toggle-setting input:focus-visible/);
+});
+
 runTest('頻用する補助操作は一覧密度に応じた共通tap領域を保つ', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const rule = selector => {

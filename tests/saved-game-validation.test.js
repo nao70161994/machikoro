@@ -12,7 +12,7 @@ function makeValidator() {
     ];
     return SavedGameValidation.createValidator({
         isKnownCardName: name => ['麦畑', 'パン屋', 'スタジアム'].includes(name),
-        isKnownLandmarkName: name => ['駅', 'ショッピングモール', '遊園地', '役所'].includes(name),
+        isKnownLandmarkName: name => ['駅', 'ショッピングモール', '遊園地', '電波塔', '役所'].includes(name),
         isMajorCardName: name => name === 'スタジアム',
         cardNameById: { wheat_field: '麦畑', bakery: 'パン屋' },
         yakushoName: '役所',
@@ -134,6 +134,54 @@ runTest('saved game validatorは既存の不正保存境界をfail closedにす�
         ] }),
     ];
     for (const value of cases) assert.strictEqual(validator.isValidSavedGameState(value), false);
+});
+
+runTest('saved game validatorは駅と電波塔の振り直し保留状態を検証する', () => {
+    const validator = makeValidator();
+    const validReroll = makeState({
+        phase: 'selectDice',
+        usedReroll: true,
+        lastDice1: 0,
+        lastDice2: 0,
+        lastDiceResult: 0,
+        pendingRadioTowerReroll: { dice1: 4, dice2: 4, result: 8 },
+        enabledLandmarksList: ['駅', '電波塔'],
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: { 駅: true, 電波塔: true } },
+            { name: 'P2', coins: 3, cards: [], dormantIndices: [], landmarks: {} },
+        ],
+    });
+    assert.strictEqual(validator.isValidSavedGameState(validReroll), true);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        ...validReroll,
+        pendingRadioTowerReroll: { dice1: 6, dice2: 0, result: 6 },
+    })), true);
+
+    for (const invalidReroll of [
+        { dice1: 99, dice2: 4, result: 103 },
+        { dice1: 4, dice2: 4, result: 7 },
+        { dice1: 4, dice2: -1, result: 3 },
+    ]) {
+        assert.strictEqual(validator.isValidSavedGameState(makeState({
+            ...validReroll,
+            pendingRadioTowerReroll: invalidReroll,
+        })), false);
+    }
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        ...validReroll,
+        phase: 'build',
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        ...validReroll,
+        usedReroll: false,
+    })), false);
+    assert.strictEqual(validator.isValidSavedGameState(makeState({
+        ...validReroll,
+        players: [
+            { name: 'P1', coins: 3, cards: ['麦畑'], dormantIndices: [], landmarks: { 駅: true, 電波塔: false } },
+            validReroll.players[1],
+        ],
+    })), false);
 });
 
 runTest('saved game validatorはpending件数をserver snapshotと同じ50件へ制限する', () => {
