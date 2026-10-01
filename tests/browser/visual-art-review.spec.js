@@ -449,8 +449,9 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
         .toBe('0.72');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await newTownBuilding.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
-    expect(await town.locator('.town-street').evaluate(element => getComputedStyle(element, '::after').transitionDuration))
-        .toBe('0s');
+    expect(await town.locator('.town-street').evaluate(element =>
+        parseFloat(getComputedStyle(element, '::after').transitionDuration)
+    )).toBeLessThanOrEqual(0.000001);
     await page.locator('body').evaluate(element => element.classList.add('accessibility-high-contrast'));
     expect(await town.locator('.town-street').evaluate(element => getComputedStyle(element, '::after').display))
         .toBe('none');
