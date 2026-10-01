@@ -11,8 +11,11 @@ driver_port=available_port()
 base_url='http://127.0.0.1:'+str(server_port)
 driver_url='http://127.0.0.1:'+str(driver_port)
 viewport_width=int(os.environ.get('SMOKE_WIDTH','390'))
+viewport_height=int(os.environ.get('SMOKE_HEIGHT','844'))
 if not 320 <= viewport_width <= 1920:
     raise SystemExit('SMOKE_WIDTH must be between 320 and 1920')
+if not 320 <= viewport_height <= 1920:
+    raise SystemExit('SMOKE_HEIGHT must be between 320 and 1920')
 browser=os.environ.get('CHROMIUM_BINARY') or shutil.which('chromium-browser') or shutil.which('chromium')
 if not browser or not shutil.which('chromedriver'):
     raise SystemExit('Chromium and a matching chromedriver are required')
@@ -113,7 +116,7 @@ try:
             break
         except Exception: time.sleep(.2)
     for design in ['classic','sunset']:
-        v=request('POST','/session',{'capabilities':{'alwaysMatch':{'browserName':'chrome','pageLoadStrategy':'eager','goog:chromeOptions':{'binary':browser,'args':['--headless','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--renderer-process-limit=2'],'mobileEmulation':{'deviceMetrics':{'width':viewport_width,'height':844,'pixelRatio':1,'mobile':True,'touch':True}}}}}})
+        v=request('POST','/session',{'capabilities':{'alwaysMatch':{'browserName':'chrome','pageLoadStrategy':'eager','goog:chromeOptions':{'binary':browser,'args':['--headless','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--renderer-process-limit=2'],'mobileEmulation':{'deviceMetrics':{'width':viewport_width,'height':viewport_height,'pixelRatio':1,'mobile':True,'touch':True}}}}}})
         s=v['sessionId'];sessions.append(s)
         request('POST','/session/'+s+'/url',{'url':base_url+'/'})
         wait(s,"return typeof reviewGameSetup === 'function'")
@@ -122,7 +125,10 @@ try:
         expected_select_background='rgb(24, 45, 63)' if design=='sunset' else 'rgb(18, 18, 37)'
         assert js(s,"return getComputedStyle(document.querySelector('#playerSettings .player-setting-select')).backgroundColor")==expected_select_background, 'Player type selector does not match the selected dark theme'
         if viewport_width >= 760:
-            if design=='sunset' and viewport_width >= 1000:
+            if design=='sunset' and viewport_height <= 500:
+                landscape_title_state = js(s,"const h=document.querySelector('.title-header').getBoundingClientRect(),t=document.querySelector('.tab-bar').getBoundingClientRect(),c=document.querySelector('#tabContentLocal').getBoundingClientRect();return {ok:h.height<=180&&h.bottom<=Math.max(t.bottom,c.top)&&t.top>=h.top&&c.top>Math.max(h.bottom,t.bottom)&&c.width>=390,hero:{top:h.top,bottom:h.bottom,height:h.height},tabs:{top:t.top,bottom:t.bottom,width:t.width},content:{top:c.top,width:c.width},viewport:{width:innerWidth,height:innerHeight}}")
+                assert landscape_title_state['ok'], f"Landscape sunset title does not compact the hero and keep setup content reachable: {landscape_title_state}"
+            elif design=='sunset' and viewport_width >= 1000:
                 title_columns_clear = js(s,"const h=document.querySelector('.title-header').getBoundingClientRect(),t=document.querySelector('.title-header h1').getBoundingClientRect(),i=document.querySelector('.title-header .sunset-hero img').getBoundingClientRect(),b=document.querySelector('.tab-bar').getBoundingClientRect(),sw=document.querySelector('.design-switcher').getBoundingClientRect(),c=document.querySelector('#tabContentLocal').getBoundingClientRect();return h.width>900&&h.bottom<=b.top&&t.right<i.left&&c.width>900&&c.top>Math.max(sw.bottom,b.bottom)")
                 assert title_columns_clear, 'Wide sunset title setup does not use the full width below the hero and tabs'
             elif design=='sunset':
@@ -206,7 +212,7 @@ try:
         reroll_message=wait(restore_session,"const g=GameRuntimeState.runtime.snapshot().game;return g.pendingRadioTowerReroll===null&&g.log.some(entry=>entry.message.startsWith('📡 電波塔で振り直し:'))&&g.log.find(entry=>entry.message.startsWith('📡 電波塔で振り直し:')).message")
         assert ' → 0' not in reroll_message, f'Impossible reroll result appeared in the log: {reroll_message}'
         assert '→ ' in reroll_message, f'Reroll log is incomplete: {reroll_message}'
-        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'pendingBeforeReload':pending,'diceChoiceLayout':dice_layout,'rerollLogAfterRestore':reroll_message,'screenshot':'sunset-radio-tower-reroll-restored.png','passed':['station and Radio Tower actions enter reroll and dice-choice phases','valid local save is written with the pre-reroll dice','reload and local resume restore the pending choice','mobile dice selection hides the duplicate roll button and keeps 44px targets','reroll finishes and writes the complete nonzero Radio Tower log'],'notCovered':['physical device touch','WebKit','CPU turn after reroll completion']}
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x'+str(viewport_height)+' emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'pendingBeforeReload':pending,'diceChoiceLayout':dice_layout,'rerollLogAfterRestore':reroll_message,'screenshot':'sunset-radio-tower-reroll-restored.png','passed':['station and Radio Tower actions enter reroll and dice-choice phases','valid local save is written with the pre-reroll dice','reload and local resume restore the pending choice','mobile dice selection hides the duplicate roll button and keeps 44px targets','reroll finishes and writes the complete nonzero Radio Tower log'],'notCovered':['physical device touch','WebKit','CPU turn after reroll completion']}
         (out/'reroll-restore-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         print(json.dumps(report,ensure_ascii=False))
         raise SystemExit(0)
@@ -225,7 +231,7 @@ try:
             assert layout['pendingTitle']['textWrap']=='balance' and len(layout['pendingTitle']['lines'])<=2,f'Business Center heading wraps awkwardly on mobile: {layout}'
             assert len(layout['pendingTitle']['lines'])==1 or layout['pendingTitle']['lines'][-1]>=layout['pendingTitle']['width']*.48,f'Business Center heading leaves an orphaned final line: {layout}'
         shot(pending_session,'sunset-business-pending-'+str(viewport_width))
-        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'layout':layout,'screenshot':'sunset-business-pending-'+str(viewport_width)+'.png','passed':['business-center pending panel renders with facility art and selected-card affordances','pending content and page fit the viewport without horizontal overflow'],'notCovered':['physical device touch','WebKit','all pending-effect types']}
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x'+str(viewport_height)+' emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'layout':layout,'screenshot':'sunset-business-pending-'+str(viewport_width)+'.png','passed':['business-center pending panel renders with facility art and selected-card affordances','pending content and page fit the viewport without horizontal overflow'],'notCovered':['physical device touch','WebKit','all pending-effect types']}
         (out/'pending-layout-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         print(json.dumps(report,ensure_ascii=False))
         raise SystemExit(0)
@@ -245,7 +251,7 @@ try:
         passed=['real winner rendering runs through the game UI','winner screen and town fit the viewport']
         if viewport_width>=1200:
             passed.append('desktop winner expands the completed city into a wide showcase')
-        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'geometry':geometry,'screenshot':'sunset-result-'+str(viewport_width)+'.png','passed':passed,'notCovered':['physical device display','WebKit']}
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x'+str(viewport_height)+' emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'geometry':geometry,'screenshot':'sunset-result-'+str(viewport_width)+'.png','passed':passed,'notCovered':['physical device display','WebKit']}
         (out/'winner-layout-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         print(json.dumps(report,ensure_ascii=False))
         raise SystemExit(0)
@@ -282,7 +288,7 @@ try:
         assert log_before_players == (design == 'classic'), 'Unexpected game section order'
         if design == 'sunset':
             player_area_top = js(s,"return document.getElementById('players').getBoundingClientRect().top")
-            assert player_area_top <= 0.60 * 844, 'Player city is pushed below the initial viewport'
+            assert player_area_top <= 0.60 * viewport_height, 'Player city is pushed below the initial viewport'
             assert js(s,"const badge=document.querySelector('.player-cards .card-badge');return !!badge&&getComputedStyle(badge).backgroundColor==='rgb(41, 70, 90)'"), 'Sunset town card badges do not use the blue-green palette'
             assert js(s,"return getComputedStyle(document.getElementById('status')).backgroundImage.includes('rgb(29, 53, 72)')"), 'Sunset active-turn panel does not use the blue-green palette'
             assert js(s,"return getComputedStyle(document.querySelector('.log-header')).backgroundColor==='rgb(29, 53, 72)'"), 'Sunset log header does not use the blue-green palette'
@@ -294,8 +300,12 @@ try:
             assert js(s,"return !!document.querySelector('.player-icon .player-kind-icon')&&!!document.querySelector('.player-coins .card-coin-mark')"), 'Sunset player headers do not use the custom player and coin icons'
             assert js(s,"const text=document.getElementById('status').textContent;return !text.includes('👤')&&!text.includes('🪙')"), 'Sunset active-turn line still relies on platform emoji'
         if viewport_width >= 760:
-            wide_game_columns_clear = js(s,"const game=getComputedStyle(document.getElementById('gameScreen'));const a=document.querySelector('.game-action-panel').getBoundingClientRect(),b=document.querySelector('.player-area').getBoundingClientRect();return game.display==='grid' && a.right < b.left && b.top <= 0.60 * innerHeight")
-            assert wide_game_columns_clear, 'Wide game does not align player cities beside the action panel'
+            if viewport_height <= 500:
+                landscape_game_layout = js(s,"const game=getComputedStyle(document.getElementById('gameScreen')),a=document.querySelector('.game-action-panel').getBoundingClientRect(),p=document.querySelector('.player-area').getBoundingClientRect(),c=document.querySelector('.game-connectivity-panel').getBoundingClientRect(),t=document.querySelector('.turn-timeline').getBoundingClientRect();return {ok:game.display==='grid'&&a.right<=p.left&&a.top<0.68*innerHeight&&p.top<0.68*innerHeight&&c.height<=52&&t.height<=52,action:{top:a.top,right:a.right,bottom:a.bottom},players:{top:p.top,left:p.left},connectivity:{top:c.top,height:c.height},timeline:{top:t.top,height:t.height},viewport:{width:innerWidth,height:innerHeight}}")
+                assert landscape_game_layout['ok'], f"Landscape sunset board and controls do not fit the short viewport: {landscape_game_layout}"
+            else:
+                wide_game_columns_clear = js(s,"const game=getComputedStyle(document.getElementById('gameScreen'));const a=document.querySelector('.game-action-panel').getBoundingClientRect(),b=document.querySelector('.player-area').getBoundingClientRect();return game.display==='grid' && a.right < b.left && b.top <= 0.60 * innerHeight")
+                assert wide_game_columns_clear, 'Wide game does not align player cities beside the action panel'
             if design == 'classic':
                 classic_town_visible = js(s,"return Array.from(document.querySelectorAll('.player-box .sunset-facility-art')).some(e=>getComputedStyle(e).display!=='none'&&e.getBBox().width>0)")
                 assert classic_town_visible, 'Classic wide board does not render facility artwork'
@@ -362,7 +372,7 @@ try:
         passed=['classic/sunset title and setup at page start','quick start and setup controls do not overlap','4-player start action stays reachable above the PWA install banner','mixed-design online start with ready','sunset city enters the initial viewport','market cards and large text scale correctly','market stock badge and detail action fit the card face with accessible targets']
         if viewport_width >= 1200:
             passed.extend(['desktop game screen uses a shared tabletop surface','desktop market and filters form a four-column play area'])
-        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'passed':passed,'notCovered':['match gameplay','physical device touch','WebKit','PWA update']}
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x'+str(viewport_height)+' emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'passed':passed,'notCovered':['match gameplay','physical device touch','WebKit','PWA update']}
         (out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         print(json.dumps(report,ensure_ascii=False))
         raise SystemExit(0)
@@ -453,7 +463,7 @@ try:
     city_visibility_check = 'sunset city enters the initial viewport'
     wide_layout_check = ['wide title separates brand and setup', 'wide start action stays visible above PWA banner', 'wide game aligns player cities beside actions', 'wide market preserves player board context'] if viewport_width >= 760 else []
     gallery_label='full rendered 38-facility art gallery' if os.environ.get('SMOKE_CAPTURE_ALL_FACILITIES') == '1' else 'full rendered market art gallery'
-    report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'marketArtGalleryCardCount':market_art_gallery_count,'landmarkArtGalleryCardCount':landmark_art_gallery_count,'townDensityCapture':town_density_captured,'passed':['classic/sunset title at page start',*wide_layout_check,'start action does not overlap the PWA install banner','sunset start action stays visible without covering PWA install banner',city_visibility_check,*online_lobby_check,'mixed-design online start with ready','dice roll and build menu','sunset external SVG rendering','market art scales with its card width','large text increases sunset card effect size','build and authoritative undo','host refresh and rejoin','finished match hides active gameplay UI',*([gallery_label+': '+str(market_art_gallery_count)+' cards','all '+str(landmark_art_gallery_count)+' rendered landmark cards'] if landmark_art_gallery_count else []),*(['dense winner town art fits (8 facilities + 6 landmarks)'] if town_density_captured else []),*(['result share card rendered from completed match'] if result_share_card_captured else []),target_landmark+'-only online match completed with matching winners'],'notCovered':['physical device touch','WebKit',*(['standard all-landmark full match'] if target_landmark != 'all' else []),'PWA update']}
+    report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x'+str(viewport_height)+' emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'marketArtGalleryCardCount':market_art_gallery_count,'landmarkArtGalleryCardCount':landmark_art_gallery_count,'townDensityCapture':town_density_captured,'passed':['classic/sunset title at page start',*wide_layout_check,'start action does not overlap the PWA install banner','sunset start action stays visible without covering PWA install banner',city_visibility_check,*online_lobby_check,'mixed-design online start with ready','dice roll and build menu','sunset external SVG rendering','market art scales with its card width','large text increases sunset card effect size','build and authoritative undo','host refresh and rejoin','finished match hides active gameplay UI',*([gallery_label+': '+str(market_art_gallery_count)+' cards','all '+str(landmark_art_gallery_count)+' rendered landmark cards'] if landmark_art_gallery_count else []),*(['dense winner town art fits (8 facilities + 6 landmarks)'] if town_density_captured else []),*(['result share card rendered from completed match'] if result_share_card_captured else []),target_landmark+'-only online match completed with matching winners'],'notCovered':['physical device touch','WebKit',*(['standard all-landmark full match'] if target_landmark != 'all' else []),'PWA update']}
     (out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
     print(json.dumps(report,ensure_ascii=False))
 except Exception as error:
