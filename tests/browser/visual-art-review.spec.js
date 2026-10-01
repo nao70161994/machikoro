@@ -1112,8 +1112,16 @@ test('夕暮れの施設効果パネルは施設アートと統一色で表示�
         'href', 'icons/interface-ui.svg#sleep'
     );
     await expect(modal).not.toContainText('💤');
+    const exchangeButton = modal.locator('.bc-exchange-btn').first();
+    await expect(exchangeButton).toHaveCSS('color', 'rgb(28, 45, 58)');
+    expect(await exchangeButton.evaluate(element => getComputedStyle(element).backgroundImage))
+        .toContain('linear-gradient');
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
+        if (width === 390) {
+            await expect(modal.locator('.pending-heading > span'))
+                .toHaveCSS('text-wrap', 'balance');
+        }
         const chip = modal.locator('.bc-chip-dormant-icon');
         await expect(chip).toBeVisible();
         const box = await chip.boundingBox();

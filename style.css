@@ -3014,6 +3014,31 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-modal
     box-shadow: inset 0 0 0 1px rgba(241, 204, 120, 0.38), 0 0 0 2px rgba(241, 204, 120, 0.14);
     color: #fff0c8 !important;
 }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box .bc-exchange-btn {
+    border-color: #f1cc78 !important;
+    background: linear-gradient(135deg, #e2bf72, #c79c50) !important;
+    box-shadow: inset 0 1px rgba(255, 247, 220, 0.4), 0 3px 0 rgba(89, 62, 32, 0.62);
+    color: #1c2d3a !important;
+    font-weight: 800;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-box .bc-exchange-btn:not(:disabled):hover {
+    border-color: #ffe6a5 !important;
+    background: linear-gradient(135deg, #f0d18d, #d5ad60) !important;
+    color: #142838 !important;
+}
+@media (max-width: 480px) {
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-heading {
+        flex-direction: column;
+        gap: 5px;
+        font-size: 14px;
+        line-height: 1.4;
+        text-wrap: balance;
+    }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-heading > span {
+        max-width: 100%;
+        overflow-wrap: normal;
+    }
+}
 html[data-design="sunset"] .bc-chip-art {
     display: grid;
     width: 80px;

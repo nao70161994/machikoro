@@ -206,6 +206,25 @@ try:
         (out/'reroll-restore-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         print(json.dumps(report,ensure_ascii=False))
         raise SystemExit(0)
+    if os.environ.get('SMOKE_CAPTURE_PENDING') == '1':
+        pending_session=sessions[1]
+        js(pending_session,"document.querySelector('.setup-quick-play').click();return true")
+        wait(pending_session,"return GameRuntimeState.runtime.snapshot().game&&getComputedStyle(document.getElementById('gameScreen')).display!=='none'")
+        js(pending_session,"cancelCpuSchedule('pending-product-review');window.scheduleCPU=()=>false;const state=GameRuntimeState.runtime.snapshot(),game=state.game;game.currentPlayerIndex=state.cpuPlayers.findIndex(cpu=>!cpu);game.phase=GAME_PHASES.PENDING;game.pendingBusiness=1;render();return true")
+        wait(pending_session,"return getComputedStyle(document.getElementById('pendingModal')).display==='flex'&&document.querySelectorAll('#pendingModal .bc-chip').length>0")
+        layout=js(pending_session,"const modal=document.querySelector('#pendingModal'),inner=modal.querySelector('.pending-modal-inner'),chips=[...modal.querySelectorAll('.bc-chip')],title=modal.querySelector('.pending-heading > span'),range=document.createRange(),overflow=el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,scrollWidth:el.scrollWidth,clientWidth:el.clientWidth}};range.selectNodeContents(title);const exchange=modal.querySelector('.bc-exchange-btn'),exchangeStyle=getComputedStyle(exchange);return {modal:overflow(modal),inner:overflow(inner),chips:chips.map(e=>({name:e.querySelector('.bc-chip-name')?.textContent,rect:overflow(e),artHeight:e.querySelector('.bc-chip-art').getBoundingClientRect().height,fontSize:getComputedStyle(e.querySelector('.bc-chip-name')).fontSize})),headings:[...modal.querySelectorAll('.bc-step-title')].map(e=>({text:e.textContent,rect:overflow(e)})),pendingTitle:{text:title.textContent,width:title.getBoundingClientRect().width,lines:[...range.getClientRects()].map(r=>r.width),textWrap:getComputedStyle(title).textWrap},exchange:{background:exchangeStyle.backgroundColor,image:exchangeStyle.backgroundImage,border:exchangeStyle.borderColor,color:exchangeStyle.color},bodyWidth:document.documentElement.scrollWidth,viewport:innerWidth}")
+        assert layout['inner']['scrollWidth']<=layout['inner']['clientWidth'],f'Pending UI overflows at {viewport_width}px: {layout}'
+        assert layout['bodyWidth']<=viewport_width,f'Pending UI makes the page overflow at {viewport_width}px: {layout}'
+        assert all(chip['rect']['width']>=72 and chip['artHeight']>=30 for chip in layout['chips']),f'Pending facility choices are not readable card objects: {layout}'
+        assert 'linear-gradient' in layout['exchange']['image'] and layout['exchange']['color']=='rgb(28, 45, 58)',f'Business Center primary action does not use the sunset gold palette: {layout}'
+        if viewport_width<=480:
+            assert layout['pendingTitle']['textWrap']=='balance' and len(layout['pendingTitle']['lines'])<=2,f'Business Center heading wraps awkwardly on mobile: {layout}'
+            assert len(layout['pendingTitle']['lines'])==1 or layout['pendingTitle']['lines'][-1]>=layout['pendingTitle']['width']*.48,f'Business Center heading leaves an orphaned final line: {layout}'
+        shot(pending_session,'sunset-business-pending-'+str(viewport_width))
+        report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x844 emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'layout':layout,'screenshot':'sunset-business-pending-'+str(viewport_width)+'.png','passed':['business-center pending panel renders with facility art and selected-card affordances','pending content and page fit the viewport without horizontal overflow'],'notCovered':['physical device touch','WebKit','all pending-effect types']}
+        (out/'pending-layout-result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+        print(json.dumps(report,ensure_ascii=False))
+        raise SystemExit(0)
     host,guest=sessions
     online_lobby_check=[]
     for s,name,design in [(host,'BrowserHost','classic'),(guest,'BrowserGuest','sunset')]:
