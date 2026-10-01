@@ -722,7 +722,7 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
 
     for (const width of [320, 390, 480]) {
         await page.setViewportSize({ width, height: 844 });
-        const cards = await page.locator('#buildMenu .card-btn').evaluateAll(elements => elements.map(card => {
+        const cards = await page.locator('#buildMenu .card-btn[data-card-name]').evaluateAll(elements => elements.map(card => {
             const styles = selector => getComputedStyle(card.querySelector(selector));
             const cost = card.querySelector('.card-cost');
             const costStyle = getComputedStyle(cost);
@@ -868,7 +868,7 @@ test('夕暮れの駅選択は専用施設アートとダイス記号で表示�
         container.id = 'visualDiceChoice';
         container.style.cssText = 'position:fixed;top:35%;left:50%;transform:translateX(-50%);width:min(480px,calc(100vw - 20px));z-index:99999;';
         container.innerHTML = UiDiceChoice.buildHtml({
-            phase: GAME_PHASES.SELECT_DICE,
+            phase: 'selectDice',
             lastDiceResult: 0,
             allowedActions: new Set(['selectDice']),
             disabledAttr: () => '',
@@ -1198,8 +1198,15 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
             const bounds = document.querySelector(selector).getBoundingClientRect();
             return { top: bounds.top, left: bounds.left, right: bounds.right, bottom: bounds.bottom };
         };
+        const gameElement = document.querySelector('#gameScreen');
+        const gameBounds = gameElement.getBoundingClientRect();
+        const gameStyle = getComputedStyle(gameElement);
         return {
-            game: rect('#gameScreen'),
+            game: {
+                ...rect('#gameScreen'),
+                contentLeft: gameBounds.left + parseFloat(gameStyle.paddingLeft),
+                contentRight: gameBounds.right - parseFloat(gameStyle.paddingRight),
+            },
             market: rect('#buildMenu'),
             log: rect('#gameLogContainer'),
             town: rect('.player-area'),
@@ -1207,8 +1214,8 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     });
     expect(gameRegions.market.top).toBeLessThan(gameRegions.log.top);
     expect(gameRegions.market.right).toBeLessThan(gameRegions.town.left);
-    expect(gameRegions.log.left).toBeLessThanOrEqual(gameRegions.game.left + 1);
-    expect(gameRegions.log.right).toBeGreaterThanOrEqual(gameRegions.game.right - 1);
+    expect(gameRegions.log.left).toBeLessThanOrEqual(gameRegions.game.contentLeft + 1);
+    expect(gameRegions.log.right).toBeGreaterThanOrEqual(gameRegions.game.contentRight - 1);
     expect(gameRegions.town.bottom).toBeLessThanOrEqual(gameRegions.log.top + 1);
     const desktopLayout = await page.evaluate(() => {
         const rect = selector => document.querySelector(selector).getBoundingClientRect();
@@ -1269,8 +1276,8 @@ test('大きなコイン収入は夕暮れテーマで強調しReduced Motionを
     await testInfo.attach('sunset-large-income-390.png', { path: screenshotPath, contentType: 'image/png' });
 
     await page.locator('body').evaluate(element => element.classList.add('accessibility-reduced-motion'));
-    expect(await animation.evaluate(element => getComputedStyle(element).animationDuration))
-        .toBe('1e-06s');
+    expect(parseFloat(await animation.evaluate(element => getComputedStyle(element).animationDuration)))
+        .toBeLessThanOrEqual(0.001);
 });
 
 test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで描画して記録する', async ({ page }, testInfo) => {

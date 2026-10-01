@@ -18,7 +18,11 @@ function collectRuntimeErrors(page) {
         }
     });
     page.on('console', message => {
-        if (message.type() === 'error' && !message.text().includes('pagead2.googlesyndication.com')) {
+        const text = message.text();
+        const isReportOnlyDiagnostic = text.startsWith('[Report Only]') ||
+            text.includes("is ignored when delivered in a report-only policy");
+        if (message.type() === 'error' && !text.includes('pagead2.googlesyndication.com') &&
+            !isReportOnlyDiagnostic) {
             errors.push(message.text());
         }
     });
@@ -156,14 +160,18 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ pa
         const response = await caches.match(new URL('/icons/dice-city-wordmark.svg', location.origin).href);
         return !!response && response.ok;
     })).toBe(true);
+    await expect.poll(() => page.evaluate(async () => {
+        const response = await caches.match(new URL('/icons/facility-art.svg', location.origin).href);
+        return !!response && response.ok;
+    })).toBe(true);
     await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
     await page.context().setOffline(true);
-    const offlineWordmark = await page.evaluate(async () => {
-        const response = await fetch('/icons/dice-city-wordmark.svg', { cache: 'reload' });
+    const offlineAsset = await page.evaluate(async () => {
+        const response = await fetch('/icons/facility-art.svg');
         return { ok: response.ok, body: await response.text() };
     });
-    expect(offlineWordmark.ok).toBe(true);
-    expect(offlineWordmark.body).toContain('<svg');
+    expect(offlineAsset.ok).toBe(true);
+    expect(offlineAsset.body).toContain('<svg');
     expect(errors).toEqual([]);
 });
 

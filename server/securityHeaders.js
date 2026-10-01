@@ -23,7 +23,6 @@ function buildContentSecurityPolicyReportOnly(inlineScriptHashes = []) {
         "default-src 'self'",
         "base-uri 'self'",
         "object-src 'none'",
-        "frame-ancestors 'self'",
         "form-action 'self'",
         `script-src 'self' https://pagead2.googlesyndication.com${hashSources.length ? ' ' + hashSources.join(' ') : ''}`,
         "style-src 'self' 'unsafe-inline' https:",

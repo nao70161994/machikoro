@@ -26,6 +26,7 @@ assert.deepStrictEqual(headers, {
 });
 assert.strictEqual(nextCalled, true);
 assert.match(CONTENT_SECURITY_POLICY_REPORT_ONLY, /object-src 'none'/);
+assert.doesNotMatch(CONTENT_SECURITY_POLICY_REPORT_ONLY, /frame-ancestors/);
 assert.match(CONTENT_SECURITY_POLICY_REPORT_ONLY,
     /script-src 'self' https:\/\/pagead2\.googlesyndication\.com/);
 assert.doesNotMatch(CONTENT_SECURITY_POLICY_REPORT_ONLY, /script-src[^;]*https:\s*(?:;|$)/);
