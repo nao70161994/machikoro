@@ -320,6 +320,12 @@ runTest('空港のランドマークはターミナル窓・入口・滑走路�
     assert.ok(airport.includes('M77 77L78 74H82L83 77M78.5 72H81.5'), 'runway center markings stay legible');
     assert.strictEqual((airport.match(/<circle cx="(?:56|63|104|97)" cy="(?:76|74)" r="1\.[35]"/g) || []).length, 4);
 });
+runTest('港の船体は波に沿う斜め構図で灯台との奥行きを作る', () => {
+    const port = sprite.match(/<symbol id="port"[\s\S]*?<\/symbol>/)?.[0] || '';
+    assert.ok(port.includes('<g transform="rotate(-7 110 48)"><path d="M79 48H143L132 61H91Z"'));
+    assert.ok(port.includes('M94 48V35H122V48Z'), 'the cabin stays attached to the angled hull');
+    assert.ok(port.includes('M17 63Q30 56 43 63'), 'horizontal water remains level behind the ship');
+});
 runTest('電波塔の足元に送信盤・信号灯を描き、塔だけの記号から放送施設へ仕上げる', () => {
     const radio = sprite.match(/<symbol id="radio"[\s\S]*?<\/symbol>/)?.[0] || '';
     assert.ok(radio.includes('M32 70V59H56V70Z'), 'left power cabinet is present');
