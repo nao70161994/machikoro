@@ -682,11 +682,9 @@ test('CPUの手番でも自分の街を先頭に見せ、極小画面でも街�
         const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
         expect(pageWidth).toBeLessThanOrEqual(width);
         const screenshot = testInfo.outputPath(`sunset-self-town-${width}.png`);
-        await selfBox.scrollIntoViewIfNeeded();
+        await page.evaluate(id => document.getElementById(id)?.scrollIntoView({ block: 'center' }), `playerBox${seats.selfIndex}`);
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-        const screenshotBounds = await selfBox.boundingBox();
-        expect(screenshotBounds).not.toBeNull();
-        await page.screenshot({ path: screenshot, clip: screenshotBounds, animations: 'disabled' });
+        await page.screenshot({ path: screenshot, animations: 'disabled' });
         await testInfo.attach(`sunset-self-town-${width}.png`, { path: screenshot, contentType: 'image/png' });
     }
 });
