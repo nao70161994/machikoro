@@ -667,6 +667,8 @@ function saveSettings() {
             accessibilityHighContrast: document.getElementById('accessibilityHighContrast')?.checked,
             accessibilityHaptics: document.getElementById('accessibilityHaptics')?.checked,
             hapticTurnEnabled: document.getElementById('hapticTurnEnabled')?.checked,
+            hapticDiceEnabled: document.getElementById('hapticDiceEnabled')?.checked,
+            hapticBuildEnabled: document.getElementById('hapticBuildEnabled')?.checked,
             hapticWinEnabled: document.getElementById('hapticWinEnabled')?.checked,
             soundVolume: document.getElementById('soundVolume')?.value,
             soundDiceEnabled: document.getElementById('soundDiceEnabled')?.checked,
@@ -683,6 +685,8 @@ function saveSettings() {
         storage.setItem('accessibilityHighContrast', values.accessibilityHighContrast);
         storage.setItem('accessibilityHaptics', values.accessibilityHaptics);
         storage.setItem('hapticTurnEnabled', values.hapticTurnEnabled);
+        storage.setItem('hapticDiceEnabled', values.hapticDiceEnabled);
+        storage.setItem('hapticBuildEnabled', values.hapticBuildEnabled);
         storage.setItem('hapticWinEnabled', values.hapticWinEnabled);
         storage.setItem('soundVolume', values.soundVolume);
         storage.setItem('soundDiceEnabled', values.soundDiceEnabled);
@@ -703,6 +707,8 @@ function applyAccessibilitySettings(values = {}) {
     const volume = StorageSettings.normalizeSoundVolume(values.soundVolume);
     const effectValues = {
         hapticTurnEnabled: values.hapticTurnEnabled !== false,
+        hapticDiceEnabled: values.hapticDiceEnabled !== false,
+        hapticBuildEnabled: values.hapticBuildEnabled !== false,
         hapticWinEnabled: values.hapticWinEnabled !== false,
         soundDiceEnabled: values.soundDiceEnabled !== false,
         soundCoinEnabled: values.soundCoinEnabled !== false,
@@ -748,6 +754,8 @@ function onAccessibilitySettingsChange() {
         accessibilityHighContrast: document.getElementById('accessibilityHighContrast')?.checked,
         accessibilityHaptics: document.getElementById('accessibilityHaptics')?.checked,
         hapticTurnEnabled: document.getElementById('hapticTurnEnabled')?.checked,
+        hapticDiceEnabled: document.getElementById('hapticDiceEnabled')?.checked,
+        hapticBuildEnabled: document.getElementById('hapticBuildEnabled')?.checked,
         hapticWinEnabled: document.getElementById('hapticWinEnabled')?.checked,
         soundVolume: document.getElementById('soundVolume')?.value,
         soundDiceEnabled: document.getElementById('soundDiceEnabled')?.checked,
@@ -774,6 +782,8 @@ function loadSettings() {
             accessibilityHighContrast: storage.getItem('accessibilityHighContrast'),
             accessibilityHaptics: storage.getItem('accessibilityHaptics'),
             hapticTurnEnabled: storage.getItem('hapticTurnEnabled'),
+            hapticDiceEnabled: storage.getItem('hapticDiceEnabled'),
+            hapticBuildEnabled: storage.getItem('hapticBuildEnabled'),
             hapticWinEnabled: storage.getItem('hapticWinEnabled'),
             soundVolume: storage.getItem('soundVolume'),
             soundDiceEnabled: storage.getItem('soundDiceEnabled'),

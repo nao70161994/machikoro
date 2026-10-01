@@ -58,15 +58,9 @@ function tutorialSettingsSnapshot() {
 }
 
 function triggerUiHaptic(kind) {
-    const kindToggle = document.getElementById(kind === 'win' ? 'hapticWinEnabled' : 'hapticTurnEnabled');
-    const enabled = !!document.getElementById('accessibilityHaptics')?.checked &&
-        (!kindToggle || kindToggle.checked === true);
-    const reducedMotion = !!document.body?.classList.contains('accessibility-reduced-motion');
-    return UiTurnPrivacy.vibrate(kind, {
-        enabled,
-        reducedMotion,
-        vibrate: typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function'
-            ? pattern => navigator.vibrate(pattern) : null,
+    return UiTurnPrivacy.vibrateFromEnvironment(kind, {
+        document,
+        navigator: typeof navigator !== 'undefined' ? navigator : null,
     });
 }
 

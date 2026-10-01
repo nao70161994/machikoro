@@ -71,11 +71,16 @@ const MainHumanActionRuntime = (() => {
             return canRunLocalHumanAction(expectedPlayerIndex) && canRunAction(action);
         }
 
+        function triggerHaptic(kind) {
+            if (typeof dependencies.triggerHaptic === 'function') dependencies.triggerHaptic(kind);
+        }
+
         function onRoll() {
             if (!canRunHumanAction(dependencies.actions.ROLL_DICE)) return;
             const currentGame = gameState().game;
-            dependencies.playSound('dice');
             if (currentGame.currentPlayer().landmarks[dependencies.landmarkNames.STATION]) {
+                dependencies.playSound('dice');
+                triggerHaptic('dice');
                 dependencies.runAction(
                     dependencies.actions.ROLL_DICE,
                     { forceDice: null, tunaDice: null },
@@ -84,6 +89,8 @@ const MainHumanActionRuntime = (() => {
                 return;
             }
             if (pageRuntime.isDelayedPending()) return;
+            dependencies.playSound('dice');
+            triggerHaptic('dice');
             const scheduledPlayerIndex = currentGame.currentPlayerIndex;
             dependencies.updateDiceDisplay(null, true);
             pageRuntime.scheduleDelayed(
@@ -116,6 +123,7 @@ const MainHumanActionRuntime = (() => {
             if (pageRuntime.isDelayedPending()) return;
             const currentGame = gameState().game;
             dependencies.playSound('dice');
+            triggerHaptic('dice');
             const scheduledPlayerIndex = currentGame.currentPlayerIndex;
             dependencies.updateDiceDisplay(null, true);
             pageRuntime.scheduleDelayed(
@@ -147,6 +155,7 @@ const MainHumanActionRuntime = (() => {
         function onReroll() {
             if (!canRunHumanAction(dependencies.actions.REROLL_DICE)) return;
             const currentGame = gameState().game;
+            triggerHaptic('dice');
             if (onlineState().isOnlineGame) {
                 dependencies.runAction(
                     dependencies.actions.REROLL_DICE,
@@ -281,6 +290,7 @@ const MainHumanActionRuntime = (() => {
                     dependencies.actions.BUILD_CARD,
                     { cardName: name }
                 );
+                if (sent) triggerHaptic('build');
                 traceBuildFlow('card-online-send', { cardName: name, sent });
                 return;
             }
@@ -297,6 +307,7 @@ const MainHumanActionRuntime = (() => {
             if (!built) return;
             traceBuildFlow('card-applied', { cardName: name });
             dependencies.playSound('build');
+            triggerHaptic('build');
             dependencies.render();
             traceBuildFlow('card-rendered', { cardName: name });
             dependencies.unlockHumanTurn('build-card-human-turn-unlock');
@@ -319,6 +330,7 @@ const MainHumanActionRuntime = (() => {
                     dependencies.actions.BUILD_LANDMARK,
                     { name }
                 );
+                if (sent) triggerHaptic('build');
                 traceBuildFlow('landmark-online-send', { landmarkName: name, sent });
                 return;
             }
@@ -331,6 +343,7 @@ const MainHumanActionRuntime = (() => {
             if (!built) return;
             traceBuildFlow('landmark-applied', { landmarkName: name });
             dependencies.playSound('build');
+            triggerHaptic('build');
             dependencies.render();
             traceBuildFlow('landmark-rendered', { landmarkName: name });
             dependencies.unlockHumanTurn('build-landmark-human-turn-unlock');

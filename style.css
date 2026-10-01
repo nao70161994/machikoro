@@ -7197,11 +7197,21 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-status
 }
 
 /* 購入候補は常時点滅させず、押せる状態を静かな縁取りで示す */
-.card-btn.can-afford { animation: none; }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn.can-afford {
+    animation: none;
     border-color: #b28a4d;
     box-shadow: inset 0 0 0 1px rgba(255, 249, 237, 0.72), 0 3px 0 #111e2d;
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn:disabled .sunset-facility-art {
     filter: saturate(0.62) brightness(0.92);
+}
+
+@keyframes sunset-board-arrive {
+    from { opacity: 0.72; }
+    to { opacity: 1; }
+}
+
+/* タイトルから盤面へ視線をなめらかに移す。opacityのみで盤面の配置とsticky操作を保つ。 */
+html[data-design="sunset"] #gameScreen[style*="display: block"] {
+    animation: sunset-board-arrive 260ms ease-out both;
 }

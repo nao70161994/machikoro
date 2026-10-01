@@ -3,7 +3,15 @@
 const UiTurnPrivacy = (() => {
     const HAPTIC_PATTERNS = Object.freeze({
         turn: Object.freeze([35]),
+        dice: Object.freeze([22]),
+        build: Object.freeze([32, 24, 42]),
         win: Object.freeze([70, 50, 120]),
+    });
+    const HAPTIC_TOGGLE_IDS = Object.freeze({
+        turn: 'hapticTurnEnabled',
+        dice: 'hapticDiceEnabled',
+        build: 'hapticBuildEnabled',
+        win: 'hapticWinEnabled',
     });
 
     function createHandoffController() {
@@ -68,7 +76,26 @@ const UiTurnPrivacy = (() => {
         }
     }
 
-    return Object.freeze({ HAPTIC_PATTERNS, applyHandoffView, createHandoffController, vibrate });
+    function vibrateFromEnvironment(kind, environment = {}) {
+        const toggleId = HAPTIC_TOGGLE_IDS[kind];
+        if (!toggleId) return false;
+        const documentRef = environment.document ||
+            (typeof document !== 'undefined' ? document : null);
+        const navigatorRef = environment.navigator ||
+            (typeof navigator !== 'undefined' ? navigator : null);
+        const hapticsEnabled = !!documentRef &&
+            documentRef.getElementById('accessibilityHaptics')?.checked === true &&
+            documentRef.getElementById(toggleId)?.checked !== false;
+        const reducedMotion = !!documentRef?.body?.classList?.contains('accessibility-reduced-motion');
+        return vibrate(kind, {
+            enabled: !!toggleId && hapticsEnabled,
+            reducedMotion,
+            vibrate: navigatorRef && typeof navigatorRef.vibrate === 'function'
+                ? pattern => navigatorRef.vibrate(pattern) : null,
+        });
+    }
+
+    return Object.freeze({ HAPTIC_PATTERNS, applyHandoffView, createHandoffController, vibrate, vibrateFromEnvironment });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiTurnPrivacy;

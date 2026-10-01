@@ -98,10 +98,14 @@ function createHarness(options = {}) {
         },
         saveUndoState: () => calls.push(['saveUndoState']),
         scheduleCpu: () => calls.push(['scheduleCpu']),
-        sendAction: (action, data) => { calls.push(['sendAction', action, data]); return 'sent'; },
+        sendAction: (action, data) => {
+            calls.push(['sendAction', action, data]);
+            return options.sendResult === undefined ? 'sent' : options.sendResult;
+        },
         shopStock: stock,
         showConfirm: (message, callback) => { calls.push(['showConfirm', message]); callback(); },
         traceBuild: (stage, details) => calls.push(['traceBuild', stage, details]),
+        triggerHaptic: kind => { if (typeof options.onHaptic === 'function') options.onHaptic(kind); },
         unlockHumanTurn: reason => calls.push(['unlockHumanTurn', reason]),
         updateDiceDisplay: (nums, rolling) => calls.push(['updateDiceDisplay', nums, rolling]),
     });
@@ -118,8 +122,10 @@ function createHarness(options = {}) {
 }
 
 runTest('main human action runtimeはroll遅延と乱数payloadの既存順を維持する', () => {
-    const harness = createHarness({ random: [2, 3, 4] });
+    const haptics = [];
+    const harness = createHarness({ random: [2, 3, 4], onHaptic: kind => haptics.push(kind) });
     harness.runtime.onRoll();
+    assert.deepStrictEqual(haptics, ['dice']);
     assert.deepStrictEqual(harness.calls, [
         ['playSound', 'dice'],
         ['updateDiceDisplay', null, true],
@@ -140,8 +146,10 @@ runTest('main human action runtimeはonline ACK中の人間actionを入場前に
 });
 
 runTest('main human action runtimeはlocal card建設を共有action runtime経由で適用する', () => {
-    const harness = createHarness();
+    const haptics = [];
+    const harness = createHarness({ onHaptic: kind => haptics.push(kind) });
     harness.runtime.onBuildCard('麦畑');
+    assert.deepStrictEqual(haptics, ['build']);
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
         'traceBuild', 'traceBuild', 'saveUndoState', 'cancelAutoSkip',
         'runAction', 'buildCard', 'decrementStock', 'traceBuild', 'playSound', 'render',
@@ -154,13 +162,22 @@ runTest('main human action runtimeはlocal card建設を共有action runtime経�
 });
 
 runTest('main human action runtimeはonline建設をlocal mutationなしで送信する', () => {
-    const harness = createHarness({ online: true });
+    const haptics = [];
+    const harness = createHarness({ online: true, onHaptic: kind => haptics.push(kind) });
     harness.runtime.onBuildLandmark('駅');
+    assert.deepStrictEqual(haptics, ['build']);
     assert.deepStrictEqual(harness.calls.map(call => call[0]), [
         'traceBuild', 'traceBuild', 'saveUndoState', 'cancelAutoSkip',
         'sendAction', 'traceBuild',
     ]);
     assert.deepStrictEqual(harness.calls[4], ['sendAction', 'buildLandmark', { name: '駅' }]);
+});
+
+runTest('main human action runtimeはオンライン送信拒否時に建設hapticを鳴らさない', () => {
+    const haptics = [];
+    const harness = createHarness({ online: true, sendResult: false, onHaptic: kind => haptics.push(kind) });
+    harness.runtime.onBuildCard('麦畑');
+    assert.deepStrictEqual(haptics, []);
 });
 
 runTest('main human action runtimeは空港skip確認後にUndoを消してnextTurnする', () => {

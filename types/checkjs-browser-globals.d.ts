@@ -118,7 +118,7 @@ interface Window {
     GameSetupPresets: unknown;
     RoomQrCode: unknown;
     UndoPreview: unknown;
-    UiTurnPrivacy: unknown;
+    UiTurnPrivacy: typeof import("../js/uiTurnPrivacy");
     SavedGameValidation: unknown;
     StorageSettings: unknown;
     UiBuildMenu: unknown;

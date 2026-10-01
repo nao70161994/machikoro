@@ -2627,6 +2627,8 @@ runTest('index.html は引き渡し・backup・preset・hapticsの安全な導�
     assert.ok(html.includes('data-ui-action="acceptHotseatHandoff"'));
     assert.ok(html.includes('id="accessibilityHaptics"'));
     assert.ok(html.includes('id="hapticTurnEnabled"'));
+    assert.ok(html.includes('id="hapticDiceEnabled"'));
+    assert.ok(html.includes('id="hapticBuildEnabled"'));
     assert.ok(html.includes('id="hapticWinEnabled"'));
     assert.ok(html.includes('id="soundDiceEnabled"'));
     assert.ok(html.includes('id="soundCoinEnabled"'));

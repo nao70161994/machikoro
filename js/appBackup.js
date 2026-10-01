@@ -10,7 +10,7 @@ const AppBackup = (() => {
         'tutorialEnabled', 'tutorialLevel',
         'accessibilityFontScale', 'accessibilityReducedMotion',
         'accessibilityHighContrast', 'accessibilityHaptics', 'soundVolume',
-        'hapticTurnEnabled', 'hapticWinEnabled',
+        'hapticTurnEnabled', 'hapticDiceEnabled', 'hapticBuildEnabled', 'hapticWinEnabled',
         'soundDiceEnabled', 'soundCoinEnabled', 'soundBuildEnabled', 'soundWinEnabled',
         'machikoroSetupPresetsV1',
     ]);

@@ -1,3 +1,4 @@
+/* global UiTurnPrivacy */
 /** @type {Record<string, number>} */
 const SHOP_STOCK = {};
 
@@ -1101,6 +1102,13 @@ const mainHumanActionRuntime = MainHumanActionRuntime.createRuntime({
         } else if (typeof console !== 'undefined' && typeof console.warn === 'function') {
             console.warn('[machikoro-build-flow]', stage, details);
         }
+    },
+    triggerHaptic: kind => {
+        const haptics = typeof window !== 'undefined' ? window.UiTurnPrivacy : null;
+        return haptics ? haptics.vibrateFromEnvironment(kind, {
+            document,
+            navigator: typeof navigator !== 'undefined' ? navigator : null,
+        }) : false;
     },
     unlockHumanTurn(reason) {
         if (typeof unlockUiForHumanTurn === 'function') unlockUiForHumanTurn(reason);

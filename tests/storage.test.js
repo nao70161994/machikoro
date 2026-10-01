@@ -19,6 +19,8 @@ function loadStorageRuntime(options = {}) {
         accessibilityHighContrast: makeElement({ checked: false }),
         accessibilityHaptics: makeElement({ checked: false }),
         hapticTurnEnabled: makeElement({ checked: true }),
+        hapticDiceEnabled: makeElement({ checked: true }),
+        hapticBuildEnabled: makeElement({ checked: true }),
         hapticWinEnabled: makeElement({ checked: true }),
         soundVolume: makeElement({ value: '100' }),
         soundVolumeLabel: makeElement(),
@@ -1391,12 +1393,27 @@ runTest('storage saveSettings は既存keyと値形式を共通facade経由で�
     assert.strictEqual(rt.localStorage.getItem('accessibilityHighContrast'), 'false');
     assert.strictEqual(rt.localStorage.getItem('accessibilityHaptics'), 'false');
     assert.strictEqual(rt.localStorage.getItem('hapticTurnEnabled'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('hapticDiceEnabled'), 'true');
+    assert.strictEqual(rt.localStorage.getItem('hapticBuildEnabled'), 'true');
     assert.strictEqual(rt.localStorage.getItem('hapticWinEnabled'), 'true');
     assert.strictEqual(rt.localStorage.getItem('soundVolume'), '100');
     assert.strictEqual(rt.localStorage.getItem('soundDiceEnabled'), 'true');
     assert.strictEqual(rt.localStorage.getItem('soundCoinEnabled'), 'true');
     assert.strictEqual(rt.localStorage.getItem('soundBuildEnabled'), 'true');
     assert.strictEqual(rt.localStorage.getItem('soundWinEnabled'), 'true');
+});
+runTest('storageはダイス・建設hapticの個別設定を保存して復元する', () => {
+    const rt = loadStorageRuntime();
+    rt.elements.hapticDiceEnabled.checked = false;
+    rt.elements.hapticBuildEnabled.checked = false;
+    rt.saveSettings();
+    assert.strictEqual(rt.localStorage.getItem('hapticDiceEnabled'), 'false');
+    assert.strictEqual(rt.localStorage.getItem('hapticBuildEnabled'), 'false');
+    rt.elements.hapticDiceEnabled.checked = true;
+    rt.elements.hapticBuildEnabled.checked = true;
+    rt.loadSettings();
+    assert.strictEqual(rt.elements.hapticDiceEnabled.checked, false);
+    assert.strictEqual(rt.elements.hapticBuildEnabled.checked, false);
 });
 runTest('storage accessibility設定はclass・音量表示・紙吹雪停止を同期する', () => {
     const rt = loadStorageRuntime();
@@ -1416,7 +1433,7 @@ runTest('storage accessibility設定はclass・音量表示・紙吹雪停止を
 
     assert.deepStrictEqual(JSON.parse(JSON.stringify(view)), {
         fontScale: 'large', reducedMotion: true, highContrast: true, haptics: true, volume: 40,
-        hapticTurnEnabled: true, hapticWinEnabled: true,
+        hapticTurnEnabled: true, hapticDiceEnabled: true, hapticBuildEnabled: true, hapticWinEnabled: true,
         soundDiceEnabled: true, soundCoinEnabled: true,
         soundBuildEnabled: true, soundWinEnabled: true,
     });
