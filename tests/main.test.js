@@ -2818,6 +2818,17 @@ runTest('夕暮れの市場カードと設定入力は一体感・視認性・�
     assert.match(css, /\.toggle-setting input:focus-visible/);
 });
 
+runTest('広い夕暮れ対局画面は共通の盤面サーフェスと4列市場を使う', () => {
+    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const desktopStart = css.indexOf('@media (min-width: 1200px) {');
+    assert.notEqual(desktopStart, -1);
+    const desktopCss = css.slice(desktopStart, desktopStart + 4400);
+    assert.match(desktopCss, /#gameScreen\[style\*="display: block"\][\s\S]*?background:[\s\S]*?radial-gradient/);
+    assert.match(desktopCss, /grid-template-columns:\s*minmax\(220px, 0\.7fr\) minmax\(640px, 2\.1fr\) minmax\(290px, 0\.9fr\)/);
+    assert.match(desktopCss, /#buildMenu \.build-section \.card-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
+    assert.match(desktopCss, /#buildMenu \.card-filter-bar\s*\{[^}]*linear-gradient/);
+});
+
 runTest('頻用する補助操作は一覧密度に応じた共通tap領域を保つ', () => {
     const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
     const rule = selector => {

@@ -6402,13 +6402,27 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-b
         max-width: 1440px;
     }
 
+    html[data-design="sunset"] #gameScreen[style*="display: block"] {
+        position: relative;
+        isolation: isolate;
+        padding: 14px 16px 20px;
+        border: 1px solid rgba(215, 184, 123, 0.2);
+        border-radius: 26px;
+        background:
+            radial-gradient(ellipse at 53% 43%, rgba(93, 119, 111, 0.24), transparent 66%),
+            radial-gradient(ellipse at 51% 52%, rgba(239, 196, 135, 0.055), transparent 76%),
+            linear-gradient(145deg, rgba(34, 57, 70, 0.86), rgba(19, 39, 54, 0.9));
+        box-shadow: inset 0 1px rgba(255, 242, 218, 0.07), 0 18px 44px rgba(5, 14, 22, 0.18);
+        grid-template-columns: minmax(220px, 0.7fr) minmax(0, 2.1fr) minmax(290px, 0.9fr);
+    }
+
     html[data-design="sunset"] .title-content {
         max-width: 1320px;
         margin-inline: auto;
     }
 
     html[data-design="sunset"] #gameScreen[style*="display: block"] {
-        grid-template-columns: minmax(240px, 0.76fr) minmax(520px, 1.7fr) minmax(300px, 0.94fr);
+        grid-template-columns: minmax(220px, 0.7fr) minmax(640px, 2.1fr) minmax(290px, 0.9fr);
         grid-template-areas:
             "status status status"
             "connect connect connect"
@@ -6497,8 +6511,16 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-b
     }
 
     html[data-design="sunset"] #buildMenu .build-section .card-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 10px;
+    }
+
+    html[data-design="sunset"] #buildMenu .card-filter-bar {
+        padding-inline: 2px;
+        border-bottom-color: rgba(215, 184, 123, 0.2);
+        background: linear-gradient(180deg, rgba(29, 51, 65, 0.82), rgba(29, 51, 65, 0.54));
+        box-shadow: 0 7px 16px rgba(5, 14, 22, 0.16);
+        backdrop-filter: blur(10px);
     }
 
     html[data-design="sunset"] #players {
