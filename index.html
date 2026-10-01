@@ -42,7 +42,7 @@
                     <img class="title-brand-mark" src="icons/dice-city-mark.svg" width="64" height="64" alt="" fetchpriority="high">
                     <div class="title-brand-type">
                         <h1 id="titleHeading">ダイスシティ</h1>
-                        <p class="title-logo-sub">DICE CITY</p>
+                        <p class="title-logo-sub"><span class="title-logo-copy">DICE CITY</span><img class="title-wordmark" src="icons/dice-city-wordmark.svg" width="238" height="56" alt="" aria-hidden="true"></p>
                     </div>
                 </div>
                 <div class="sunset-hero">
@@ -54,22 +54,6 @@
                     <button class="rules-btn" data-ui-action="showRules">ルール</button>
                 </div>
             </div>
-
-            <details class="design-switcher" id="designSwitcher">
-                <summary class="design-switcher-summary">
-                    <span>画面デザイン</span>
-                    <span class="design-switcher-current"><span id="designThemeCurrentLabel">クラシック</span><span class="design-switcher-chevron" aria-hidden="true"></span></span>
-                </summary>
-                <div class="design-switcher-controls">
-                    <label for="designThemeSelect">画面デザイン</label>
-                    <select id="designThemeSelect" aria-describedby="designThemeHelp" class="text-input">
-                        <option value="classic">クラシック（従来版）</option>
-                        <option value="sunset">夕暮れの街</option>
-                    </select>
-                    <p id="designThemeHelp">見た目だけを変更します。ルール・保存データ・オンライン対戦は共通です。いつでもここで戻せます。</p>
-                    <p id="designThemeStatus" role="status" aria-live="polite"></p>
-                </div>
-            </details>
 
             <div id="onlineResumeSection" style="display:none">
                 <div class="online-resume-notice">
@@ -279,6 +263,21 @@
             <div id="tabContentTournament" class="tab-content" role="tabpanel" aria-labelledby="tabTournament" style="display:none">
                 <h2 class="utility-heading">その他</h2>
                 <p class="utility-intro">大会・データ管理・問題報告用の機能です。</p>
+                <details class="design-switcher" id="designSwitcher">
+                    <summary class="design-switcher-summary">
+                        <span>画面デザイン</span>
+                        <span class="design-switcher-current"><span id="designThemeCurrentLabel">クラシック</span><span class="design-switcher-chevron" aria-hidden="true"></span></span>
+                    </summary>
+                    <div class="design-switcher-controls">
+                        <label for="designThemeSelect">画面デザイン</label>
+                        <select id="designThemeSelect" aria-describedby="designThemeHelp" class="text-input">
+                            <option value="classic">クラシック（従来版）</option>
+                            <option value="sunset">夕暮れの街</option>
+                        </select>
+                        <p id="designThemeHelp">見た目だけを変更します。ルール・保存データ・オンライン対戦は共通です。いつでもここで戻せます。</p>
+                        <p id="designThemeStatus" role="status" aria-live="polite"></p>
+                    </div>
+                </details>
                 <details class="utility-section cpu-tournament-section">
                     <summary>CPU大会</summary>
                     <div class="cpu-tournament-intro">
@@ -555,7 +554,7 @@
         </div>
     </div>
 
-    <canvas id="confettiCanvas" aria-hidden="true" style="position:fixed;top:0;left:0;pointer-events:none;z-index:20;display:none"></canvas>
+    <canvas id="confettiCanvas" aria-hidden="true" style="position:fixed;top:0;left:0;pointer-events:none;z-index:var(--z-confetti);display:none"></canvas>
 
     <div id="cardDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cardDetailTitle" tabindex="-1" style="display:none">
         <div class="modal-content">

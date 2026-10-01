@@ -54,6 +54,7 @@ function loadMainRuntime(options = {}) {
 
     const sentActions = [];
     const timeouts = [];
+    const timeoutDelays = [];
     const alerts = [];
     const fetchCalls = [];
     const rlPreloadCalls = [];
@@ -87,6 +88,7 @@ function loadMainRuntime(options = {}) {
         eventAddCounts,
         localStorageData,
         timeouts,
+        timeoutDelays,
         alerts,
         sentActions,
         fetchCalls,
@@ -130,8 +132,9 @@ function loadMainRuntime(options = {}) {
         },
         navigator: { onLine: true, userAgent: options.userAgent || 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Mobile/15E148 Safari/604.1' },
         localStorage,
-        setTimeout(fn) {
+        setTimeout(fn, delay) {
             timeouts.push(fn);
+            timeoutDelays.push(delay);
             return timeouts.length;
         },
         clearTimeout() {},
@@ -532,6 +535,7 @@ function loadMainRuntime(options = {}) {
             flushTimeouts: () => { while (timeouts.length) timeouts.shift()(); },
             flushOneTimeout: () => { if (timeouts.length) timeouts.shift()(); },
             getTimeoutCount: () => timeouts.length,
+            getLastTimeoutDelay: () => timeoutDelays[timeoutDelays.length - 1],
             setSelectedCount: (value) => { selectedCount = value; },
             getSelectedCount: () => selectedCount,
             setPlayerSettings: (value) => { playerSettings = value; },
@@ -1185,7 +1189,7 @@ runTest('main renderPlayerSettings は人間プレイヤーに名前入力欄を
     assert.ok(rt.__test.elements.playerSettings.innerHTML.includes('CPU（強）として統計を記録'));
 });
 
-runTest('main coin animationはpure viewと既存DOM・1秒timerを同期する', () => {
+runTest('main coin animationはpure viewとDOMを同期しCSS演出が終わってから削除する', () => {
     const rt = loadMainRuntime();
     const box = makeElement();
     const coinRow = makeElement();
@@ -1205,6 +1209,7 @@ runTest('main coin animationはpure viewと既存DOM・1秒timerを同期する'
     assert.strictEqual(appendedTo, coinRow);
     assert.strictEqual(appended.className, 'coin-float coin-gain');
     assert.strictEqual(appended.textContent, '+4🪙');
+    assert.strictEqual(rt.__test.getLastTimeoutDelay(), 1400);
     assert.strictEqual(soundCalls, 1);
     assert.strictEqual(rt.__test.getTimeoutCount(), 1);
 
@@ -1216,6 +1221,10 @@ runTest('main coin animationはpure viewと既存DOM・1秒timerを同期する'
     assert.strictEqual(appended.innerHTML, '-2<svg class="card-coin-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#coin"></use></svg>');
     assert.strictEqual(appended.textContent, '');
     assert.strictEqual(appended.getAttribute('aria-label'), '-2コイン');
+
+    rt.showCoinAnimation(0, 5);
+    assert.strictEqual(appended.className, 'coin-float coin-gain coin-gain-large');
+    assert.strictEqual(appended.getAttribute('aria-label'), '+5コイン');
 });
 
 runTest('main checkAutoSkip は建設不能時に nextTurn を送信する', () => {
@@ -3297,6 +3306,8 @@ runTest('Service Worker STATIC_ASSETS は index.html のJS読み込みと同期�
     for (const asset of scriptAssets) {
         assert.ok(sw.includes(`'${asset}'`), `missing STATIC_ASSETS entry: ${asset}`);
     }
+    assert.ok(sw.includes("'/icons/dice-city-wordmark.svg'"), 'missing offline wordmark asset');
+    assert.ok(fs.existsSync(path.join(__dirname, '../icons/dice-city-wordmark.svg')));
 });
 
 runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシティで一貫し折り返し対策を持つ', () => {

@@ -100,41 +100,44 @@ const UiPendingMenu = (() => {
         return `<div class="pending-box">${pendingHeadingHtml('tv-station', '📺', 'テレビ局：コインを奪う相手を選んでください', useSunsetIcons)}${pendingInspectHintHtml()}${others.map(({ p, i }) => `<button data-action="resolveTV" data-target-index="${i}">${escapeHtml(p.name)}（${coinMark}${p.coins}）</button>`).join("")}</div>`;
     }
 
-    function buildBusinessCardChipHtml(player, card, index, inputId, isSelected, escapeHtml, useSunsetIcons = false) {
+    function buildBusinessCardChipHtml(player, card, index, inputId, isSelected, escapeHtml, useSunsetIcons = false, renderFacilityArt) {
         const dormantMark = player.isDormant(card)
             ? (useSunsetIcons
                 ? '<span class="bc-chip-dormant"><svg class="bc-chip-dormant-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#sleep"></use></svg><span class="screen-reader-only">休業中</span></span>'
                 : ' 💤')
             : '';
-        return `<button class="bc-chip${isSelected ? ' selected' : ''}" aria-pressed="${isSelected ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="${inputId}">${escapeHtml(card.name)}${dormantMark}</button>`;
+        const cardLabel = useSunsetIcons && typeof renderFacilityArt === 'function'
+            ? `<span class="bc-chip-art" aria-hidden="true">${renderFacilityArt(card.name, false, card.category)}</span><span class="bc-chip-name">${escapeHtml(card.name)}</span>`
+            : escapeHtml(card.name);
+        return `<button class="bc-chip${isSelected ? ' selected' : ''}" aria-pressed="${isSelected ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="${inputId}">${cardLabel}${dormantMark}</button>`;
     }
 
     function businessCardOptionsForPlayer(player) {
         return player.getMinorCards().map(card => ({ card, index: player.cards.indexOf(card) }));
     }
 
-    function buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml, selectedIndex = cards[0]?.index, useSunsetIcons = false) {
+    function buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml, selectedIndex = cards[0]?.index, useSunsetIcons = false, renderFacilityArt) {
         return cards.map(({ card, index }) =>
-            buildBusinessCardChipHtml(player, card, index, inputId, index === selectedIndex, escapeHtml, useSunsetIcons)
+            buildBusinessCardChipHtml(player, card, index, inputId, index === selectedIndex, escapeHtml, useSunsetIcons, renderFacilityArt)
         ).join("");
     }
 
-    function buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml, selections = {}, useSunsetIcons = false) {
+    function buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml, selections = {}, useSunsetIcons = false, renderFacilityArt) {
         const inputId = `theirCardSelect_${playerIndex}`;
         const labelId = `businessTargetLabel_${playerIndex}`;
         const theirCards = businessCardOptionsForPlayer(player);
         const theirDefaultIdx = selectedBusinessIndex(theirCards, inputId, selections);
-        const theirChips = buildBusinessCardChipGroupHtml(player, theirCards, inputId, escapeHtml, theirDefaultIdx, useSunsetIcons);
+        const theirChips = buildBusinessCardChipGroupHtml(player, theirCards, inputId, escapeHtml, theirDefaultIdx, useSunsetIcons, renderFacilityArt);
         return `<div class="bc-target-group"><p id="${labelId}" class="bc-label">${escapeHtml(player.name)}の施設：</p><div class="bc-chip-group" role="group" aria-labelledby="${labelId}">${theirChips}</div><input type="hidden" id="${inputId}" value="${theirDefaultIdx}"><button class="bc-exchange-btn" data-action="resolveBusiness" data-target-index="${playerIndex}">⇄ ${escapeHtml(player.name)}と交換</button></div>`;
     }
 
-    function buildPendingBusinessHtml(game, escapeHtml, landmarkNames, selections = {}, useSunsetIcons = false) {
+    function buildPendingBusinessHtml(game, escapeHtml, landmarkNames, selections = {}, useSunsetIcons = false, renderFacilityArt) {
         const current = game.currentPlayer();
         const myCards = businessCardOptionsForPlayer(current);
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         const myDefaultIdx = selectedBusinessIndex(myCards, 'myCardSelect', selections);
-        const myChips = buildBusinessCardChipGroupHtml(current, myCards, 'myCardSelect', escapeHtml, myDefaultIdx, useSunsetIcons);
-        const othersHtml = others.map(({ p, i }) => buildBusinessTargetExchangeHtml(p, i, escapeHtml, selections, useSunsetIcons)).join("");
+        const myChips = buildBusinessCardChipGroupHtml(current, myCards, 'myCardSelect', escapeHtml, myDefaultIdx, useSunsetIcons, renderFacilityArt);
+        const othersHtml = others.map(({ p, i }) => buildBusinessTargetExchangeHtml(p, i, escapeHtml, selections, useSunsetIcons, renderFacilityArt)).join("");
         return `<div class="pending-box">${pendingHeadingHtml('business-center', '🏢', 'ビジネスセンター：施設を交換できます', useSunsetIcons)}<section class="bc-step" aria-labelledby="businessGiveHeading"><h3 id="businessGiveHeading" class="bc-step-title">1. 渡す自分の施設</h3><p class="bc-step-help">交換に出す施設を1つ選んでください。</p><div class="bc-chip-group" role="group" aria-labelledby="businessGiveHeading">${myChips}</div><input type="hidden" id="myCardSelect" value="${myDefaultIdx}"></section><section class="bc-step" aria-labelledby="businessReceiveHeading"><h3 id="businessReceiveHeading" class="bc-step-title">2. 受け取る相手の施設</h3><p class="bc-step-help">欲しい施設を選び、その相手の交換ボタンを押してください。</p>${othersHtml}</section><button data-action="skipBusiness">使用しない</button></div>`;
     }
 
@@ -191,7 +194,7 @@ const UiPendingMenu = (() => {
         const { escapeHtml, landmarkNames } = dependencies;
         return renderers
             .filter(spec => (!nextPending || nextPending.field === spec.field) && allowedActions.has(spec.action) && spec.isActive(game))
-            .map(spec => spec.buildHtml(game, escapeHtml, landmarkNames, dependencies.businessSelections || {}, dependencies.useSunsetIcons === true))
+            .map(spec => spec.buildHtml(game, escapeHtml, landmarkNames, dependencies.businessSelections || {}, dependencies.useSunsetIcons === true, dependencies.renderFacilityArt))
             .join("");
     }
 

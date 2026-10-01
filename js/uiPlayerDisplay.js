@@ -164,9 +164,10 @@ const UiPlayerDisplay = (() => {
         const safeDiff = Number.isFinite(diff) ? diff : 0;
         const isGain = safeDiff > 0;
         const amountText = `${isGain ? '+' : ''}${safeDiff}`;
+        const gainSizeClass = safeDiff >= 5 ? ' coin-gain-large' : '';
         return Object.freeze({
             playSound: isGain,
-            className: `coin-float ${isGain ? 'coin-gain' : 'coin-lose'}`,
+            className: `coin-float ${isGain ? 'coin-gain' : 'coin-lose'}${isGain ? gainSizeClass : ''}`,
             text: `${amountText}🪙`,
             ...(useSunsetIcons ? {
                 amountText,

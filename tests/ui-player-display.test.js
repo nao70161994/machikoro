@@ -30,6 +30,9 @@ const sunsetCoinView = UiPlayerDisplay.buildCoinAnimationView(4, true);
 assert.strictEqual(sunsetCoinView.amountText, '+4');
 assert.ok(sunsetCoinView.html.includes('icons/interface-ui.svg#coin'));
 assert.ok(!sunsetCoinView.html.includes('🪙'));
+assert.strictEqual(UiPlayerDisplay.buildCoinAnimationView(5).className, 'coin-float coin-gain coin-gain-large');
+assert.strictEqual(UiPlayerDisplay.buildCoinAnimationView(10, true).className, 'coin-float coin-gain coin-gain-large');
+assert.strictEqual(UiPlayerDisplay.buildCoinAnimationView(4).className, 'coin-float coin-gain');
 assert.strictEqual(UiPlayerDisplay.buildCoinAnimationView('<img>', true).amountText, '0');
 const zeroCoinView = UiPlayerDisplay.buildCoinAnimationView(0);
 assert.deepStrictEqual(zeroCoinView, {

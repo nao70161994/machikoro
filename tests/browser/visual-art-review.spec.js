@@ -1,22 +1,34 @@
 const { test, expect } = require('@playwright/test');
 
+async function stubAds(page) {
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({
+        status: 200,
+        contentType: 'application/javascript',
+        body: '',
+    }));
+}
+
 async function prepareSunset(page) {
-    await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
+    await stubAds(page);
     await page.goto('/');
-    await page.locator('#designSwitcher > summary').click();
-    await page.locator('#designThemeSelect').selectOption('sunset');
+    await selectDesignTheme(page, 'sunset');
     await expect(page.locator('#designThemeCurrentLabel')).toHaveText('夕暮れの街');
-    await page.locator('#designSwitcher > summary').click();
     await expect(page.locator('.title-brand-mark')).toBeVisible();
 }
 
 async function selectDesignTheme(page, design) {
     const switcher = page.locator('#designSwitcher');
+    const activeTab = await page.locator('.tab-btn[aria-selected="true"]').getAttribute('data-tab');
+    const wasVisible = await switcher.isVisible();
+    if (!wasVisible) await page.locator('#tabTournament').click();
     if (!await switcher.evaluate(element => element.open)) {
         await switcher.locator('summary').click();
     }
     await page.locator('#designThemeSelect').selectOption(design);
     await switcher.locator('summary').click();
+    if (!wasVisible && activeTab && activeTab !== 'tournament') {
+        await page.locator(`#tab${activeTab.charAt(0).toUpperCase()}${activeTab.slice(1)}`).click();
+    }
 }
 
 async function showInterfaceIconReview(page) {
@@ -87,26 +99,42 @@ test('夕暮れの市場・統計・勝利画面は共通SVG記号を使いク�
     expect(await classicReview.locator('.market-status-emoji').evaluate(element => getComputedStyle(element).display)).not.toBe('none');
 });
 
-test('タイトルのデザイン切替は初期設定より控えめに畳み、タイトルから変更できる', async ({ page }, testInfo) => {
+test('初期画面は遊ぶ導線を優先し、その他からデザインを切り替えられる', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
+    await stubAds(page);
     await page.goto('/');
     const switcher = page.locator('#designSwitcher');
+    const wordmark = page.locator('.title-wordmark');
+    const wordmarkCopy = page.locator('.title-logo-copy');
+    await expect(page.locator('.setup-quick-play')).toBeVisible();
+    await expect(switcher).toBeHidden();
+    await page.locator('#tabTournament').click();
+    await expect(switcher).toBeVisible();
     await expect(switcher).not.toHaveAttribute('open', '');
     await expect(switcher.locator('summary')).toContainText('クラシック');
-    await expect(page.locator('.setup-quick-play')).toBeVisible();
     const collapsedHeight = await switcher.evaluate(element => element.getBoundingClientRect().height);
     await switcher.locator('summary').click();
     await expect(page.locator('#designThemeSelect')).toBeVisible();
     await page.locator('#designThemeSelect').selectOption('sunset');
     await expect(page.locator('#designThemeCurrentLabel')).toHaveText('夕暮れの街');
     await expect(page.locator('html')).toHaveAttribute('data-design', 'sunset');
+    await expect(wordmark).toBeVisible();
+    await expect(wordmark).toHaveAttribute('src', 'icons/dice-city-wordmark.svg');
+    await expect(wordmarkCopy).toHaveText('DICE CITY');
     const expandedHeight = await switcher.evaluate(element => element.getBoundingClientRect().height);
     await switcher.locator('summary').click();
     await expect(page.locator('#designThemeSelect')).toBeHidden();
     const finalCollapsedHeight = await switcher.evaluate(element => element.getBoundingClientRect().height);
     expect(expandedHeight).toBeGreaterThan(finalCollapsedHeight);
     expect(finalCollapsedHeight).toBeLessThanOrEqual(collapsedHeight);
+    const settingsScreenshot = testInfo.outputPath('sunset-title-other-settings-390.png');
+    await page.screenshot({ path: settingsScreenshot, animations: 'disabled' });
+    await testInfo.attach('sunset-title-other-settings-390.png', {
+        path: settingsScreenshot,
+        contentType: 'image/png',
+    });
+    await page.locator('#tabLocal').click();
+    await expect(page.locator('.setup-quick-play')).toBeVisible();
     const screenshot = testInfo.outputPath('sunset-title-design-switch-collapsed-390.png');
     await page.screenshot({ path: screenshot, animations: 'disabled' });
     await testInfo.attach('sunset-title-design-switch-collapsed-390.png', {
@@ -120,6 +148,15 @@ test('タイトルのデザイン切替は初期設定より控えめに畳み�
         path: desktopScreenshot,
         contentType: 'image/png',
     });
+    await page.locator('#tabTournament').click();
+    await switcher.locator('summary').click();
+    await page.locator('#designThemeSelect').selectOption('classic');
+    await expect(wordmark).toBeHidden();
+    await expect(wordmarkCopy).toBeVisible();
+    await page.locator('#designThemeSelect').selectOption('sunset');
+    await page.locator('body').evaluate(element => element.classList.add('accessibility-high-contrast'));
+    await expect(wordmark).toBeHidden();
+    await expect(wordmarkCopy).toBeVisible();
 });
 
 test('高コントラストの夕暮れ対局でも操作アイコンを専用SVGに統一する', async ({ page }, testInfo) => {
@@ -199,7 +236,6 @@ test('夕暮れの復旧・端末受け渡しUIは共通SVG警告と端末記号
     });
     expect(await handoff.locator('.hotseat-handoff-svg').evaluate(element => getComputedStyle(element).color)).toBe('rgb(255, 255, 255)');
     await handoff.evaluate(element => { element.style.display = 'none'; });
-    await page.locator('#designSwitcher > summary').click();
     await selectDesignTheme(page, 'classic');
     await page.evaluate(() => { document.getElementById('crashScreen').style.display = 'flex'; });
     expect(await crash.locator('.crash-icon-svg').evaluate(element => getComputedStyle(element).display)).toBe('none');
@@ -332,6 +368,12 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(page.locator('#confirmModal')).toBeHidden();
     await expect(page.locator('#buildMenu .undo-btn')).toBeVisible();
     await expect(page.locator('#btnSkip')).toHaveText('建設完了・ターン終了');
+    const newTownBuilding = page.locator(`#playerBox${starting.humanIndex} [data-town-building="card:麦畑"]`);
+    await expect(newTownBuilding)
+        .toHaveClass(/town-building-arrival/);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await newTownBuilding.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins))
         .toBe(starting.coins - 1);
     const afterBuild = testInfo.outputPath('sunset-after-build-390.png');
@@ -345,6 +387,55 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(page.locator('#confirmModal')).toBeHidden();
     await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.turnCount))
         .toBeGreaterThan(starting.turnCount);
+});
+
+test('ビジネスセンターの施設交換は絵柄付きカードを狭い画面でも選べる', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const humanIndex = await page.evaluate(() => {
+        cancelCpuSchedule('business-center-art-review');
+        window.scheduleCPU = () => false;
+        const state = GameRuntimeState.runtime.snapshot();
+        const index = state.cpuPlayers.findIndex(cpu => !cpu);
+        state.game.currentPlayerIndex = index;
+        state.game.phase = GAME_PHASES.PENDING;
+        state.game.pendingBusiness = 1;
+        render();
+        return index;
+    });
+    expect(humanIndex).toBeGreaterThanOrEqual(0);
+    const modal = page.locator('#pendingModal');
+    await expect(modal).toBeVisible();
+    const candidateCards = modal.locator('[aria-labelledby="businessGiveHeading"] .bc-chip');
+    await expect(candidateCards).toHaveCount(2);
+    await expect(candidateCards.first().locator('.bc-chip-art svg')).toBeVisible();
+    await expect(candidateCards.first().locator('.bc-chip-name')).not.toBeEmpty();
+    await candidateCards.nth(1).click();
+    await expect(candidateCards.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    await expect(candidateCards.first()).toHaveAttribute('aria-pressed', 'false');
+    expect(await modal.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+    await page.setViewportSize({ width: 320, height: 740 });
+    const narrowModal = await modal.evaluate(element => ({
+        width: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+        documentWidth: document.documentElement.scrollWidth,
+    }));
+    expect(narrowModal.scrollWidth).toBeLessThanOrEqual(narrowModal.width);
+    expect(narrowModal.documentWidth).toBe(320);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const mobilePath = testInfo.outputPath('sunset-business-center-cards-390.png');
+    await page.screenshot({ path: mobilePath, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-business-center-cards-390.png', { path: mobilePath, contentType: 'image/png' });
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const desktopPath = testInfo.outputPath('sunset-business-center-cards-1440.png');
+    await page.screenshot({ path: desktopPath, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-business-center-cards-1440.png', { path: desktopPath, contentType: 'image/png' });
 });
 
 test('夕暮れのターン案内は人間とCPUを専用SVGで表示する', async ({ page }) => {
@@ -523,35 +614,48 @@ test('必要なら詳細設定を開いて人数を変え、その設定で開�
     expect(settings.selectedCount).toBe(3);
 });
 
-test('スマホの夕暮れタイトルは遊び方と開始導線を紹介文より先に見せる', async ({ page }) => {
+test('スマホの夕暮れタイトルは遊び方と開始導線を紹介文より先に見せる', async ({ page }, testInfo) => {
     await prepareSunset(page);
+    await expect(page.locator('#designSwitcher')).toBeHidden();
     for (const width of [320, 390]) {
         await page.setViewportSize({ width, height: 844 });
         const positions = await page.evaluate(() => {
             const bounds = selector => document.querySelector(selector).getBoundingClientRect();
             const modes = bounds('.tab-bar');
-            const design = bounds('.design-switcher');
             const content = bounds('#tabContentLocal');
             const quickPlay = bounds('.setup-quick-play');
+            const brand = bounds('.title-brand-lockup');
+            const wordmark = bounds('.title-wordmark');
             const about = bounds('.title-about');
             const links = bounds('.legal-links');
             return {
                 modesTop: modes.top,
-                designTop: design.top,
                 contentTop: content.top,
                 quickPlayTop: quickPlay.top,
                 quickPlayBottom: quickPlay.bottom,
+                brandLeft: brand.left,
+                brandRight: brand.right,
+                wordmarkLeft: wordmark.left,
+                wordmarkRight: wordmark.right,
                 aboutTop: about.top,
                 linksTop: links.top,
                 viewportHeight: window.innerHeight,
             };
         });
-        expect(positions.modesTop).toBeLessThan(positions.designTop);
-        expect(positions.designTop).toBeLessThan(positions.contentTop);
+        expect(positions.modesTop).toBeLessThan(positions.contentTop);
         expect(positions.quickPlayTop).toBeGreaterThanOrEqual(positions.contentTop);
         expect(positions.quickPlayBottom).toBeLessThan(positions.viewportHeight);
         expect(positions.quickPlayBottom).toBeLessThan(positions.aboutTop);
         expect(positions.aboutTop).toBeLessThan(positions.linksTop);
+        expect(positions.brandLeft).toBeGreaterThanOrEqual(0);
+        expect(positions.brandRight).toBeLessThanOrEqual(width);
+        expect(positions.wordmarkLeft).toBeGreaterThanOrEqual(0);
+        expect(positions.wordmarkRight).toBeLessThanOrEqual(width);
+        if (width === 320) {
+            const screenshotPath = testInfo.outputPath('sunset-title-320.png');
+            await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
+            await testInfo.attach('sunset-title-320.png', { path: screenshotPath, contentType: 'image/png' });
+        }
     }
 });
 
@@ -781,9 +885,15 @@ test('夕暮れのコイン獲得表示はカードと共通のSVGコインを�
             label: coin?.getAttribute('aria-label'),
             icon: coin?.querySelector('svg use')?.getAttribute('href'),
             text: coin?.textContent,
+            color: getComputedStyle(coin).color,
         };
     });
-    expect(coinState).toEqual({ label: '+3コイン', icon: 'icons/interface-ui.svg#coin', text: '+3' });
+    expect(coinState).toEqual({
+        label: '+3コイン',
+        icon: 'icons/interface-ui.svg#coin',
+        text: '+3',
+        color: 'rgb(255, 227, 160)',
+    });
 });
 
 test('夕暮れのプレイヤー状態は積立とローンも共通SVGで表示する', async ({ page }, testInfo) => {
@@ -951,6 +1061,17 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     const town = page.locator('.player-box.active .sunset-town');
     const firstBuilding = town.locator('.town-street > .town-building').first();
     await expect(firstBuilding).toBeVisible();
+    const selfTownScene = await page.locator('#players .player-box-self .sunset-town').evaluate(element => {
+        const street = element.querySelector('.town-street');
+        return {
+            outerBorder: getComputedStyle(element).borderTopWidth,
+            road: getComputedStyle(street, '::after').content,
+            scenicBackdrop: getComputedStyle(street).backgroundImage,
+        };
+    });
+    expect(selfTownScene.outerBorder).toBe('0px');
+    expect(selfTownScene.road).toBe('""');
+    expect(selfTownScene.scenicBackdrop).not.toBe('none');
     await expect.poll(() => firstBuilding.evaluate(element =>
         element.getBoundingClientRect().width
     )).toBeGreaterThanOrEqual(108);
@@ -979,15 +1100,76 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     expect(gameRegions.log.left).toBeLessThanOrEqual(gameRegions.game.left + 1);
     expect(gameRegions.log.right).toBeGreaterThanOrEqual(gameRegions.game.right - 1);
     expect(gameRegions.town.bottom).toBeLessThanOrEqual(gameRegions.log.top + 1);
+    const desktopLayout = await page.evaluate(() => {
+        const rect = selector => document.querySelector(selector).getBoundingClientRect();
+        const action = rect('.game-action-panel');
+        const market = rect('#buildMenu');
+        const players = rect('.player-area');
+        const columns = getComputedStyle(document.querySelector('#buildMenu .card-grid'))
+            .gridTemplateColumns.split(' ').length;
+        return {
+            noOverlap: action.right <= market.left && market.right <= players.left,
+            columns,
+            hasOpenBoard: document.documentElement.scrollWidth === innerWidth,
+        };
+    });
+    expect(desktopLayout).toEqual({ noOverlap: true, columns: 3, hasOpenBoard: true });
 
     const screenshotPath = testInfo.outputPath('sunset-desktop-city-1440.png');
     await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
     await testInfo.attach('sunset-desktop-city-1440.png', { path: screenshotPath, contentType: 'image/png' });
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileLayout = await page.evaluate(() => ({
+        pageWidth: document.documentElement.scrollWidth,
+        viewport: innerWidth,
+        marketColumns: getComputedStyle(document.querySelector('#buildMenu .card-grid'))
+            .gridTemplateColumns.split(' ').length,
+    }));
+    expect(mobileLayout).toEqual({ pageWidth: 390, viewport: 390, marketColumns: 2 });
+    const mobileScreenshotPath = testInfo.outputPath('sunset-mobile-board-390.png');
+    await page.screenshot({ path: mobileScreenshotPath, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-mobile-board-390.png', { path: mobileScreenshotPath, contentType: 'image/png' });
+});
+
+test('大きなコイン収入は夕暮れテーマで強調しReduced Motionを守る', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        const view = UiPlayerDisplay.buildCoinAnimationView(12, true);
+        const animation = document.createElement('div');
+        animation.className = view.className;
+        animation.innerHTML = view.html;
+        animation.setAttribute('aria-label', `${view.amountText}コイン`);
+        document.querySelector('#players .player-box-self .player-coin-row').append(animation);
+    });
+    const animation = page.locator('#players .player-box-self .coin-float.coin-gain-large');
+    await expect(animation).toHaveAttribute('aria-label', '+12コイン');
+    const normalMotion = await animation.evaluate(element => ({
+        haloAnimation: getComputedStyle(element, '::before').animationName,
+        borderColor: getComputedStyle(element).borderTopColor,
+    }));
+    expect(normalMotion.haloAnimation).toBe('coinGainAura');
+    expect(normalMotion.borderColor).toBe('rgb(255, 231, 169)');
+    await page.waitForTimeout(120);
+    const screenshotPath = testInfo.outputPath('sunset-large-income-390.png');
+    await page.screenshot({ path: screenshotPath, fullPage: false });
+    await testInfo.attach('sunset-large-income-390.png', { path: screenshotPath, contentType: 'image/png' });
+
+    await page.locator('body').evaluate(element => element.classList.add('accessibility-reduced-motion'));
+    expect(await animation.evaluate(element => getComputedStyle(element).animationDuration))
+        .toBe('1e-06s');
 });
 
 test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで描画して記録する', async ({ page }, testInfo) => {
     test.setTimeout(120000);
     await prepareSunset(page);
+    await expect(page.locator('.title-brand-mark')).toHaveAttribute('src', 'icons/dice-city-mark.svg');
+    await expect(page.locator('.title-wordmark')).toHaveAttribute('src', 'icons/dice-city-wordmark.svg');
+    await expect(page.locator('#titleHeading')).toHaveText('ダイスシティ');
+    await expect(page.locator('.title-logo-sub')).toHaveText('DICE CITY');
 
     for (const width of [390, 1440]) {
         await page.evaluate(() => document.getElementById('visual-art-review')?.remove());
@@ -1002,6 +1184,7 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             const hero = document.querySelector('.sunset-hero img').getBoundingClientRect();
             const localPanel = document.querySelector('#tabContentLocal').getBoundingClientRect();
             const about = document.querySelector('.title-about').getBoundingClientRect();
+            const content = document.querySelector('.title-content').getBoundingClientRect();
             return {
                 viewportWidth: document.documentElement.clientWidth,
                 documentWidth: document.documentElement.scrollWidth,
@@ -1009,6 +1192,8 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
                 brandRight: brand.right,
                 heroLeft: hero.left,
                 localToAboutGap: about.top - localPanel.bottom,
+                contentLeft: content.left,
+                contentRight: content.right,
             };
         });
         expect(titleLayout.viewportWidth).toBe(width);
@@ -1018,6 +1203,10 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         expect(titleLayout.titleWidth).toBeGreaterThanOrEqual(Math.min(width * 0.8, 900));
         if (width >= 760) expect(titleLayout.brandRight).toBeLessThan(titleLayout.heroLeft);
         else expect(titleLayout.localToAboutGap).toBeLessThanOrEqual(32);
+        if (width >= 1200) {
+            expect(Math.abs((titleLayout.contentLeft + titleLayout.contentRight) / 2 - width / 2)).toBeLessThan(2);
+            expect(titleLayout.contentRight - titleLayout.contentLeft).toBeGreaterThanOrEqual(1318);
+        }
         const titleScreenshotPath = testInfo.outputPath(`sunset-title-${width}.png`);
         await page.screenshot({
             path: titleScreenshotPath,
@@ -1186,6 +1375,35 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         render();
     });
     await expect(page.locator('.winner-screen')).toBeVisible();
+    await expect(page.locator('#confettiCanvas')).toHaveCSS('display', 'block');
+    const celebrationLayers = await page.evaluate(() => ({
+        confetti: Number(getComputedStyle(document.getElementById('confettiCanvas')).zIndex),
+        winner: Number(getComputedStyle(document.getElementById('status')).zIndex),
+        crash: Number(getComputedStyle(document.getElementById('crashScreen')).zIndex),
+    }));
+    expect(celebrationLayers.confetti).toBeGreaterThan(celebrationLayers.winner);
+    expect(celebrationLayers.confetti).toBeLessThan(celebrationLayers.crash);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(900);
+    expect(await page.locator('#confettiCanvas').evaluate(canvas => {
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        for (let index = 3; index < pixels.length; index += 4) {
+            if (pixels[index] > 0) return true;
+        }
+        return false;
+    })).toBe(true);
+    const winMomentPath = testInfo.outputPath('sunset-win-moment-390.png');
+    await page.screenshot({ path: winMomentPath, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-win-moment-390.png', {
+        path: winMomentPath,
+        contentType: 'image/png',
+    });
+    const winningTown = page.locator('.winner-screen .sunset-town .town-building').first();
+    expect(await winningTown.evaluate(element => getComputedStyle(element).animationName))
+        .toBe('winner-town-lights');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await winningTown.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
         const resultPath = testInfo.outputPath(`sunset-result-${width}.png`);

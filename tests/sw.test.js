@@ -198,6 +198,7 @@ function dispatchMessage(runtime, data) {
         const assets = runtime.addCalls;
         assert.ok(assets.includes('/index.html'));
         assert.ok(assets.includes('/js/RLModelPortfolio.js'));
+        assert.ok(assets.includes('/icons/dice-city-wordmark.svg'));
         assert.ok(!assets.some(asset => asset.includes('/models/rl_model/portfolio/')), 'RL models must not be install precached');
     });
 

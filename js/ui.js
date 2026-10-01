@@ -866,6 +866,7 @@ function buildPendingMenuHtml(game, allowedActions, nextPending) {
         businessSelections: businessSelectionController.selections(game),
         escapeHtml,
         landmarkNames: LANDMARK_NAMES,
+        renderFacilityArt: UiBuildMenu.renderFacilityArt,
         useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
     });
 }
@@ -920,6 +921,35 @@ const playerPanelRenderCache = new WeakMap();
 const playerPanelDisclosureCache = new WeakMap();
 const playerPanelDisclosureListeners = new WeakSet();
 const playerPanelDisclosureClickListeners = new WeakSet();
+
+function snapshotTownBuildingCounts(players) {
+    return players.map(player => {
+        const counts = new Map();
+        for (const card of player.cards || []) {
+            const key = `card:${card.name}`;
+            counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        for (const [name, built] of Object.entries(player.landmarks || {})) {
+            if (built) counts.set(`landmark:${name}`, 1);
+        }
+        return counts;
+    });
+}
+
+function animateNewTownBuildings(container, previousCounts, currentCounts) {
+    if (!Array.isArray(previousCounts)) return;
+    currentCounts.forEach((counts, playerIndex) => {
+        const previous = previousCounts[playerIndex] || new Map();
+        const panel = container.querySelector(`#playerBox${playerIndex}`);
+        if (!panel) return;
+        panel.querySelectorAll('[data-town-building]').forEach(building => {
+            const key = building.dataset.townBuilding;
+            if ((counts.get(key) || 0) > (previous.get(key) || 0)) {
+                building.classList.add('town-building-arrival');
+            }
+        });
+    });
+}
 
 function renderPlayers() {
     const currentGame = uiGameRuntimeSnapshot().game;
@@ -1011,6 +1041,7 @@ function renderPlayers() {
     // Keep unchanged panels, including their coin animation and focused cards.
     if (!previous || previous.players !== currentGame.players ||
             previous.html !== html || previous.firstChild !== container.firstElementChild) {
+        const townBuildingCounts = snapshotTownBuildingCounts(currentGame.players);
         const previousDisclosure = playerPanelDisclosureCache.get(container);
         const sameGame = previousDisclosure && currentGame.turnCount >= previousDisclosure.turnCount;
         const openPanelIds = sameGame
@@ -1022,6 +1053,9 @@ function renderPlayers() {
             });
         }
         container.innerHTML = html;
+        if (document.documentElement?.dataset?.design === 'sunset') {
+            animateNewTownBuildings(container, previous?.townBuildingCounts, townBuildingCounts);
+        }
         container.querySelectorAll('details.player-box-compact').forEach(panel => {
             if (openPanelIds.has(panel.id)) panel.open = true;
         });
@@ -1033,6 +1067,7 @@ function renderPlayers() {
             players: currentGame.players,
             html,
             firstChild: container.firstElementChild,
+            townBuildingCounts,
         });
     }
 }

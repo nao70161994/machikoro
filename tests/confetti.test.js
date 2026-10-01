@@ -34,6 +34,7 @@ function loadConfettiRuntime(options = {}) {
             },
         },
         document: {
+            documentElement: { dataset: { design: options.designTheme || 'classic' } },
             body: {
                 classList: {
                     contains(name) {
@@ -88,4 +89,14 @@ runTest('startConfetti は通常設定時だけintervalを開始する', () => {
     assert.strictEqual(runtime.canvas.style.display, 'block');
     assert.strictEqual(runtime.calls.setInterval, 1);
     assert.strictEqual(runtime.calls.setTimeout, 1);
+});
+
+runTest('startConfetti は夕暮れテーマで金・クリーム・テラコッタ系の色を使う', () => {
+    const runtime = loadConfettiRuntime({ designTheme: 'sunset' });
+
+    runtime.context.startConfetti();
+
+    const colors = vm.runInContext('Array.from(new Set(confettiPieces.map(piece => piece.color)))', runtime.context);
+    assert.ok(colors.length > 0);
+    assert.ok(colors.every(color => ['#ffe1a6', '#f5c86e', '#fff1d4', '#d98a6e', '#83a49b'].includes(color)));
 });

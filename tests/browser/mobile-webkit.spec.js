@@ -12,6 +12,11 @@ const MOBILE_CONTEXT = Object.freeze({
 function collectRuntimeErrors(page) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
+    page.on('requestfailed', request => {
+        if (!request.url().includes('pagead2.googlesyndication.com')) {
+            errors.push(`request failed: ${request.url()} (${request.failure()?.errorText || 'unknown'})`);
+        }
+    });
     page.on('console', message => {
         if (message.type() === 'error' && !message.text().includes('pagead2.googlesyndication.com')) {
             errors.push(message.text());
@@ -20,17 +25,32 @@ function collectRuntimeErrors(page) {
     return errors;
 }
 
+async function stubAds(page) {
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({
+        status: 200,
+        contentType: 'application/javascript',
+        body: '',
+    }));
+}
+
 async function prepare(page) {
-    await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
+    await stubAds(page);
     await page.goto('/');
 }
 
 async function selectDesignTheme(page, design) {
     const switcher = page.locator('#designSwitcher');
+    const activeTab = await page.locator('.tab-btn[aria-selected="true"]').getAttribute('data-tab');
+    const wasVisible = await switcher.isVisible();
+    if (!wasVisible) await page.locator('#tabTournament').click();
     if (!await switcher.evaluate(element => element.open)) {
         await switcher.locator('summary').click();
     }
     await page.locator('#designThemeSelect').selectOption(design);
+    await switcher.locator('summary').click();
+    if (!wasVisible && activeTab && activeTab !== 'tournament') {
+        await page.locator(`#tab${activeTab.charAt(0).toUpperCase()}${activeTab.slice(1)}`).click();
+    }
 }
 
 async function startLocalGame(page) {
@@ -132,6 +152,18 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ pa
         const response = await caches.match(new URL('/icons/interface-ui.svg', location.origin).href);
         return !!response && response.ok;
     })).toBe(true);
+    await expect.poll(() => page.evaluate(async () => {
+        const response = await caches.match(new URL('/icons/dice-city-wordmark.svg', location.origin).href);
+        return !!response && response.ok;
+    })).toBe(true);
+    await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+    await page.context().setOffline(true);
+    const offlineWordmark = await page.evaluate(async () => {
+        const response = await fetch('/icons/dice-city-wordmark.svg', { cache: 'reload' });
+        return { ok: response.ok, body: await response.text() };
+    });
+    expect(offlineWordmark.ok).toBe(true);
+    expect(offlineWordmark.body).toContain('<svg');
     expect(errors).toEqual([]);
 });
 
@@ -150,7 +182,7 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
         });
         const page = await context.newPage();
         const errors = collectRuntimeErrors(page);
-        await page.route('https://pagead2.googlesyndication.com/**', route => route.abort());
+        await stubAds(page);
         await page.goto(origin + '/');
         await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
         await expect.poll(() => page.evaluate(() => caches.keys())).toContain('machikoro-webkit-e2e-v1');
@@ -1104,6 +1136,7 @@ for (const design of ['classic', 'sunset']) {
         await expect(page.locator('#designThemeCurrentLabel')).toHaveText(
             design === 'sunset' ? '夕暮れの街' : 'クラシック'
         );
+        await page.locator('#tabTournament').click();
         for (const width of [320, 390, 480]) {
             await page.setViewportSize({ width, height: 844 });
             const fits = await page.locator('.design-switcher').evaluate(element => {
@@ -1113,6 +1146,7 @@ for (const design of ['classic', 'sunset']) {
             });
             expect(fits).toBe(true);
         }
+        await page.locator('#tabLocal').click();
         await startLocalGame(page);
         await expect(page.locator('#gameScreen')).toBeVisible();
         await expect(page.locator('html')).toHaveAttribute('data-design', design);

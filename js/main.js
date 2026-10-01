@@ -1329,7 +1329,7 @@ function showCoinAnimation(playerIndex, diff) {
         el.textContent = view.text;
     }
     coinRow.appendChild(el);
-    setTimeout(() => el.remove(), 1000);
+    setTimeout(() => el.remove(), 1400);
 }
 
 // ===== オートスキップ =====

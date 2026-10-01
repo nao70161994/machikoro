@@ -166,6 +166,21 @@ runTest('ui pending menu はBusiness Centerを渡す施設・受け取る施設�
     assert.ok(!html.includes('<Bob>'));
 });
 
+runTest('ui pending menu は夕暮れテーマの交換候補にカードアートを付ける', () => {
+    const art = (name, _landmark, category) => `<svg data-card-art="${escapeHtml(name)}" data-category="${escapeHtml(category || '')}"></svg>`;
+    const html = UiPendingMenu.buildPendingBusinessHtml(makeGame(), escapeHtml, {}, {}, true, art);
+    const classicHtml = UiPendingMenu.buildPendingBusinessHtml(makeGame(), escapeHtml, {}, {}, false, art);
+
+    assert.ok(html.includes('class="bc-chip-art"'));
+    assert.ok(html.includes('data-card-art="麦畑"'));
+    assert.ok(html.includes('data-card-art="パン屋"'));
+    assert.ok(html.includes('class="bc-chip-name">麦畑</span>'));
+    assert.ok(html.includes('aria-pressed="true"'));
+    assert.ok(html.includes('data-action="resolveBusiness"'));
+    assert.ok(!classicHtml.includes('bc-chip-art'));
+    assert.ok(classicHtml.includes('麦畑'));
+});
+
 runTest('ui pending menu は10人でも相手ごとの施設群と既存交換actionを維持する', () => {
     const players = Array.from({ length: 10 }, (_, index) =>
         makePlayer(index === 9 ? '<Player 10>' : `Player ${index + 1}`, [`施設${index + 1}`])
