@@ -2027,6 +2027,17 @@ runTest('UiBuildMenu card filter transitionはstate更新と再描画要求をpu
     });
 });
 
+runTest('UiBuildMenuは主要施設カードごとに異なる絵の構図を使う', () => {
+    const helper = require('../js/uiBuildMenu');
+    const frames = ['空港', '寿司屋', '牧場', '鉱山'].map(name => {
+        const html = helper.renderFacilityArt(name, name === '空港', name === '牧場' ? '畜産' : '');
+        return html.match(/viewBox="([^"]+)"/)?.[1];
+    });
+
+    assert.strictEqual(new Set(frames).size, frames.length);
+    assert.ok(frames.every(frame => frame && frame !== '0 0 160 80'));
+});
+
 runTest('UiBuildMenu filter controllerは選択・再選択・resetを単独所有する', () => {
     const helper = require('../js/uiBuildMenu');
     const controller = helper.createFilterController();

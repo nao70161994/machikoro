@@ -107,9 +107,9 @@ const UiPendingMenu = (() => {
                 : ' 💤')
             : '';
         const cardLabel = useSunsetIcons && typeof renderFacilityArt === 'function'
-            ? `<span class="bc-chip-art" aria-hidden="true">${renderFacilityArt(card.name, false, card.category)}</span><span class="bc-chip-name">${escapeHtml(card.name)}</span>`
+            ? `<span class="bc-chip-art" aria-hidden="true">${renderFacilityArt(card.name, false, card.category)}</span><span class="bc-chip-copy"><span class="bc-chip-name">${escapeHtml(card.name)}</span><span class="bc-chip-category">${escapeHtml(card.category || '')}</span></span>`
             : escapeHtml(card.name);
-        return `<button class="bc-chip${isSelected ? ' selected' : ''}" aria-pressed="${isSelected ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="${inputId}">${cardLabel}${dormantMark}</button>`;
+        return `<button class="bc-chip${isSelected ? ' selected' : ''}${useSunsetIcons ? ` bc-chip-${escapeHtml(card.color || 'blue')}` : ''}" aria-pressed="${isSelected ? 'true' : 'false'}" data-action="selectBusinessCard" data-idx="${index}" data-input-id="${inputId}">${cardLabel}${dormantMark}</button>`;
     }
 
     function businessCardOptionsForPlayer(player) {

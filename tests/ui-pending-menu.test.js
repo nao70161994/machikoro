@@ -175,6 +175,8 @@ runTest('ui pending menu は夕暮れテーマの交換候補にカードアー�
     assert.ok(html.includes('data-card-art="麦畑"'));
     assert.ok(html.includes('data-card-art="パン屋"'));
     assert.ok(html.includes('class="bc-chip-name">麦畑</span>'));
+    assert.ok(html.includes('class="bc-chip-copy"><span class="bc-chip-name">麦畑</span><span class="bc-chip-category"></span></span>'));
+    assert.ok(html.includes('bc-chip-blue'));
     assert.ok(html.includes('aria-pressed="true"'));
     assert.ok(html.includes('data-action="resolveBusiness"'));
     assert.ok(!classicHtml.includes('bc-chip-art'));

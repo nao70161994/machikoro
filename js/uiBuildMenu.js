@@ -175,13 +175,21 @@ const UiBuildMenu = (() => {
         '商店': 'street', '飲食店': 'street', '特殊': 'street', '大施設': 'civic',
     });
 
+    const FACILITY_ART_FRAMING = Object.freeze({
+        '空港': '6 4 148 70',
+        '寿司屋': '18 5 124 68',
+        '牧場': '19 2 122 72',
+        '鉱山': '8 2 144 72',
+    });
+
     function renderFacilityArt(name, landmark = false, category = '') {
         const named = Object.prototype.hasOwnProperty.call(FACILITY_ART, name) ? FACILITY_ART[name] : null;
         const grouped = Object.prototype.hasOwnProperty.call(CATEGORY_ART, category) ? CATEGORY_ART[category] : null;
         const landmarkMotif = Object.prototype.hasOwnProperty.call(LANDMARK_ART, name) ? LANDMARK_ART[name] : 'landmark';
         const motif = landmark ? landmarkMotif : (named || grouped || 'shop');
         const scene = landmark ? 'landmark' : (CATEGORY_SCENE[category] || 'street');
-        return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#${motif}"></use></svg>`;
+        const viewBox = FACILITY_ART_FRAMING[name] || '0 0 160 80';
+        return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="${viewBox}" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#${motif}"></use></svg>`;
     }
 
     function renderLandmarkBadgeIcon(name) {

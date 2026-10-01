@@ -412,6 +412,16 @@ test('ビジネスセンターの施設交換は絵柄付きカードを狭い�
     await expect(candidateCards).toHaveCount(2);
     await expect(candidateCards.first().locator('.bc-chip-art svg')).toBeVisible();
     await expect(candidateCards.first().locator('.bc-chip-name')).not.toBeEmpty();
+    const illustratedChoice = await candidateCards.first().evaluate(element => ({
+        width: element.getBoundingClientRect().width,
+        height: element.getBoundingClientRect().height,
+        artHeight: element.querySelector('.bc-chip-art').getBoundingClientRect().height,
+        borderRadius: getComputedStyle(element).borderRadius,
+    }));
+    expect(illustratedChoice.width).toBeGreaterThanOrEqual(90);
+    expect(illustratedChoice.height).toBeGreaterThanOrEqual(100);
+    expect(illustratedChoice.artHeight).toBeGreaterThanOrEqual(48);
+    expect(illustratedChoice.borderRadius).not.toBe('20px');
     await candidateCards.nth(1).click();
     await expect(candidateCards.nth(1)).toHaveAttribute('aria-pressed', 'true');
     await expect(candidateCards.first()).toHaveAttribute('aria-pressed', 'false');
@@ -1464,6 +1474,20 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             expect(mobileOrder.actionPanelBackground).toBe('rgba(0, 0, 0, 0)');
             expect(mobileOrder.compactPlayers).toBeGreaterThan(0);
             expect(mobileOrder.actionBottom).toBeLessThanOrEqual(mobileOrder.viewportHeight);
+        } else {
+            const desktopBand = await page.evaluate(() => {
+                const timeline = document.querySelector('#turnTimeline').getBoundingClientRect();
+                const tutorial = document.querySelector('#tutorialBox').getBoundingClientRect();
+                const actions = document.querySelector('.game-action-panel').getBoundingClientRect();
+                return {
+                    timelineCenter: timeline.top + timeline.height / 2,
+                    tutorialCenter: tutorial.top + tutorial.height / 2,
+                    supportBottom: Math.max(timeline.bottom, tutorial.bottom),
+                    actionsTop: actions.top,
+                };
+            });
+            expect(Math.abs(desktopBand.timelineCenter - desktopBand.tutorialCenter)).toBeLessThan(36);
+            expect(desktopBand.supportBottom).toBeLessThan(desktopBand.actionsTop);
         }
         const gameplayPath = testInfo.outputPath(`sunset-gameplay-${width}.png`);
         await page.screenshot({ path: gameplayPath, fullPage: false, animations: 'disabled' });
@@ -1540,6 +1564,11 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
             expect(victoryLayout.winnerWidth).toBeGreaterThanOrEqual(1100);
             expect(victoryLayout.townWidth).toBeGreaterThanOrEqual(1000);
             expect(victoryLayout.artHeight).toBeGreaterThanOrEqual(95);
+            const titleAction = page.locator('#winnerRestartButton');
+            await expect(titleAction).toHaveCSS('border-top-width', '0px');
+            await expect(titleAction).toHaveCSS('text-decoration-line', 'underline');
+            await expect(page.locator('.winner-share-actions .winner-secondary-action').first())
+                .toHaveCSS('border-top-width', '1px');
         }
         const resultPath = testInfo.outputPath(`sunset-result-${width}.png`);
         await page.screenshot({ path: resultPath, fullPage: true, animations: 'disabled' });
