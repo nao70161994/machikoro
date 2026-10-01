@@ -7370,7 +7370,7 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) #diceResult.di
     animation-name: sunset-dice-land;
 }
 @media (prefers-reduced-motion: reduce) {
-    html[data-design="sunset"] #diceResult.dice-result-arrival .dice-face:not(.rolling) { animation: none; }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #diceResult.dice-result-arrival .dice-face:not(.rolling) { animation: none; }
 }
 
 @media (min-width: 900px) {

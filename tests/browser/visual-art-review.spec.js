@@ -374,7 +374,7 @@ test('夕暮れオンライン作成は標準設定を先に見せ必要な設�
     await expect(page.locator('#cardSelectModal')).toBeVisible();
 });
 
-test('夕暮れのダイスは街の配色をまとい出目の形と動き軽減を保つ', async ({ page }) => {
+test('夕暮れのダイスは街の配色をまとい出目の形と動き軽減を保つ', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.locator('.setup-quick-play').click();
     await page.locator('#btnRoll').click();
@@ -395,6 +395,10 @@ test('夕暮れのダイスは街の配色をまとい出目の形と動き軽�
     expect(brandStyle.pipColor).toBe('rgb(38, 61, 80)');
     expect(brandStyle.visiblePips).toBeGreaterThanOrEqual(1);
     expect(brandStyle.visiblePips).toBeLessThanOrEqual(6);
+
+    const dieScreenshotPath = testInfo.outputPath('sunset-brand-die-390.png');
+    await page.screenshot({ path: dieScreenshotPath, fullPage: false, animations: 'disabled' });
+    await testInfo.attach('sunset-brand-die-390.png', { path: dieScreenshotPath, contentType: 'image/png' });
 
     await page.locator('#diceResult').evaluate(element => element.classList.add('dice-result-arrival'));
     expect(await die.evaluate(element => getComputedStyle(element).animationName)).toBe('sunset-dice-land');
@@ -844,8 +848,7 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
         expect(new Set(cards.map(card => card.category)).size).toBeGreaterThan(1);
         if (width === 390) {
             const screenshotPath = testInfo.outputPath('sunset-card-hierarchy-390.png');
-            const firstCard = page.locator('#buildMenu .card-wrapper').first();
-            await firstCard.scrollIntoViewIfNeeded();
+            await page.locator('#buildMenu').scrollIntoViewIfNeeded();
             await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
             await testInfo.attach('sunset-card-hierarchy-390.png', { path: screenshotPath, contentType: 'image/png' });
         }
