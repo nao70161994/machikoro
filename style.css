@@ -6673,6 +6673,13 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-chip {
     box-shadow: inset 0 1px rgba(255, 244, 218, 0.08), 0 5px 12px rgba(7, 18, 25, 0.16);
 }
 
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-modal-inner .bc-chip {
+    flex: 1 1 96px;
+    width: auto !important;
+    min-width: 0;
+    min-height: 108px;
+}
+
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-chip-art {
     display: block;
     width: 100%;
@@ -6759,6 +6766,11 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-step {
 
     html[data-design="sunset"] #turnTimeline { align-self: center; }
     html[data-design="sunset"] #tutorialBox { align-self: center; }
+    html[data-design="sunset"] .player-area,
+    html[data-design="sunset"] .player-area:has(> #playerNavigation) {
+        grid-column: 3;
+        grid-row: 4;
+    }
 
     html[data-design="sunset"] #status .winner-screen {
         max-width: 1320px;
@@ -6802,6 +6814,9 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-step-title
     html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-chip {
         min-height: 102px;
         padding: 5px 6px 7px !important;
+    }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .pending-modal-inner .bc-chip {
+        min-height: 102px;
     }
     html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-chip-art,
     html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-chip-art .sunset-facility-art { height: 52px; }
