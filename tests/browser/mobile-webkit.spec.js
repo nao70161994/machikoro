@@ -141,38 +141,58 @@ async function expectPlayerSelectContained(page, containerSelector, expectedCoun
     }
 }
 
-test('mobile WebKitでapp shellとService Workerが実動作する', async ({ page }) => {
-    const errors = collectRuntimeErrors(page);
-    await prepare(page);
-    await expect(page.locator('#titleScreen')).toBeVisible();
-    await page.locator('#tabOnline').click();
-    await expect(page.locator('#tabContentOnline')).toBeVisible();
-    await expect.poll(() => page.evaluate(async () => {
-        const registration = await navigator.serviceWorker.getRegistration();
-        return !!registration;
-    })).toBe(true);
-    await expect.poll(() => page.evaluate(async () => {
-        await navigator.serviceWorker.ready;
-        const response = await caches.match(new URL('/icons/interface-ui.svg', location.origin).href);
-        return !!response && response.ok;
-    })).toBe(true);
-    await expect.poll(() => page.evaluate(async () => {
-        const response = await caches.match(new URL('/icons/dice-city-wordmark.svg', location.origin).href);
-        return !!response && response.ok;
-    })).toBe(true);
-    await expect.poll(() => page.evaluate(async () => {
-        const response = await caches.match(new URL('/icons/facility-art.svg', location.origin).href);
-        return !!response && response.ok;
-    })).toBe(true);
-    await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
-    await page.context().setOffline(true);
-    const offlineAsset = await page.evaluate(async () => {
-        const response = await fetch('/icons/facility-art.svg');
-        return { ok: response.ok, body: await response.text() };
-    });
-    expect(offlineAsset.ok).toBe(true);
-    expect(offlineAsset.body).toContain('<svg');
-    expect(errors).toEqual([]);
+test('mobile WebKitでapp shellとService Workerが実動作する', async ({ browser }) => {
+    const port = 3322;
+    const origin = `http://127.0.0.1:${port}`;
+    let server = null;
+    let context = null;
+    try {
+        server = await startGenerationServer(port, 'webkit-offline-v1');
+        context = await browser.newContext({
+            ...MOBILE_CONTEXT,
+            baseURL: origin,
+            serviceWorkers: 'allow',
+        });
+        const page = await context.newPage();
+        const errors = collectRuntimeErrors(page);
+        await stubAds(page);
+        await page.goto(origin + '/');
+        await expect(page.locator('#titleScreen')).toBeVisible();
+        await page.locator('#tabOnline').click();
+        await expect(page.locator('#tabContentOnline')).toBeVisible();
+        await expect.poll(() => page.evaluate(async () => {
+            const registration = await navigator.serviceWorker.getRegistration();
+            return !!registration;
+        })).toBe(true);
+        await expect.poll(() => page.evaluate(async () => {
+            await navigator.serviceWorker.ready;
+            const response = await caches.match(new URL('/icons/interface-ui.svg', location.origin).href);
+            return !!response && response.ok;
+        })).toBe(true);
+        await expect.poll(() => page.evaluate(async () => {
+            const response = await caches.match(new URL('/icons/dice-city-wordmark.svg', location.origin).href);
+            return !!response && response.ok;
+        })).toBe(true);
+        await expect.poll(() => page.evaluate(async () => {
+            const response = await caches.match(new URL('/icons/facility-art.svg', location.origin).href);
+            return !!response && response.ok;
+        })).toBe(true);
+        await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+
+        // Stop the origin so the next fetch can only succeed through the active
+        // service worker's precache, without relying on WebKit's offline emulation.
+        await stopGenerationServer(server);
+        const offlineAsset = await page.evaluate(async () => {
+            const response = await fetch('/icons/facility-art.svg');
+            return { ok: response.ok, body: await response.text() };
+        });
+        expect(offlineAsset.ok).toBe(true);
+        expect(offlineAsset.body).toContain('<svg');
+        expect(errors).toEqual([]);
+    } finally {
+        if (context) await context.close();
+        await stopGenerationServer(server);
+    }
 });
 
 test('mobile WebKitでService Worker二世代の待機・適用・cache移行が実動作する', async ({ browser }) => {

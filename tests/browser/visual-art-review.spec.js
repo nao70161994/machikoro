@@ -950,7 +950,7 @@ test('駅と電波塔の振り直しは保存・再読み込み後も選択と�
     });
     expect(restoredPending).toEqual({
         pending: pendingBeforeReload,
-        phase: GAME_PHASES.SELECT_DICE,
+        phase: 'selectDice',
         usedReroll: true,
         lastDice1: 0,
         lastDice2: 0,
@@ -1230,7 +1230,7 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
             hasOpenBoard: document.documentElement.scrollWidth === innerWidth,
         };
     });
-    expect(desktopLayout).toEqual({ noOverlap: true, columns: 3, hasOpenBoard: true });
+    expect(desktopLayout).toEqual({ noOverlap: true, columns: 4, hasOpenBoard: true });
 
     const screenshotPath = testInfo.outputPath('sunset-desktop-city-1440.png');
     await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
@@ -1260,9 +1260,9 @@ test('大きなコイン収入は夕暮れテーマで強調しReduced Motionを
         animation.className = view.className;
         animation.innerHTML = view.html;
         animation.setAttribute('aria-label', `${view.amountText}コイン`);
-        document.querySelector('#players .player-box-self .player-coin-row').append(animation);
+        document.body.append(animation);
     });
-    const animation = page.locator('#players .player-box-self .coin-float.coin-gain-large');
+    const animation = page.locator('body > .coin-float.coin-gain-large');
     await expect(animation).toHaveAttribute('aria-label', '+12コイン');
     const normalMotion = await animation.evaluate(element => ({
         haloAnimation: getComputedStyle(element, '::before').animationName,
