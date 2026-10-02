@@ -3,18 +3,30 @@
 function registerServerProcessHandlers(options = {}) {
     const processTarget = options.processTarget === undefined ? process : options.processTarget;
     const logger = options.logger === undefined ? console : options.logger;
-    if (!processTarget || typeof processTarget.on !== 'function') {
-        throw new TypeError('processTarget.on is required');
+    if (!processTarget || typeof processTarget.on !== 'function' || typeof processTarget.exit !== 'function') {
+        throw new TypeError('processTarget.on and processTarget.exit are required');
     }
     if (!logger || typeof logger.error !== 'function') {
         throw new TypeError('logger.error is required');
     }
+    let fatalExitStarted = false;
+    function terminateForFatalError(event, reason) {
+        if (fatalExitStarted) return;
+        fatalExitStarted = true;
+        try {
+            logger.error(`${event}:`, reason);
+        } finally {
+            // Continuing after either fatal event can leave room and replay state inconsistent.
+            processTarget.exit(1);
+        }
+    }
+
     const handlers = Object.freeze({
         uncaughtException(error) {
-            logger.error('uncaughtException:', error);
+            terminateForFatalError('uncaughtException', error);
         },
         unhandledRejection(reason) {
-            logger.error('unhandledRejection:', reason);
+            terminateForFatalError('unhandledRejection', reason);
         },
     });
     processTarget.on('uncaughtException', handlers.uncaughtException);

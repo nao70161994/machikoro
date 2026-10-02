@@ -67,6 +67,19 @@ Set these in the service that runs `server.js` unless noted otherwise:
 | `EXISTING_ROOM_REJOIN_EFFECT_AUTHORITY_ENABLED=1` | Render | Test/staged only; off by default | Selects the ordered existing-room detach/identity/optional-host-reselection/persist/touch/rejoinData/playerRejoined executor after admission chooses rejoin. | The inline legacy sequence remains the default and rollback path. Real Socket.IO schema E2E covers the enabled path. It does not change admission, tokens, event names, payloads, or reconnect protocol. Unset for immediate rollback. |
 | `LOCAL_SAVE_SCHEMA_WRITE_ENABLED=1` | Render | Staged only; off by default | Keeps legacy `savedGame` and additionally writes/reads a validated `savedGameV1` shadow. | Do not remove the legacy key. Unset for immediate read/write rollback; old clients continue using legacy. Production activation requires an explicit staged decision. |
 
+## Server Process Fatal Errors
+
+`uncaughtException` and `unhandledRejection` are both fatal. The process logs the event and exits with code `1`; it does not continue serving rooms after an error that may have left in-memory game or replay state inconsistent. The hosting supervisor is expected to start a fresh process according to its restart policy. Do not add recovery work after either event as a substitute for fixing the underlying error.
+
+When the service restarts unexpectedly:
+
+1. Check the host's process/restart event and capture the last server log entry, deployed commit, and restart time.
+2. Triage the recorded exception or rejection before redeploying or repeatedly restarting.
+3. Check affected online rooms against the normal reconnect / server-restart restore procedure below; in-memory waiting rooms can be lost when the process exits.
+4. Confirm the health endpoint and create/join a disposable room after the fix is deployed.
+
+All unhandled Promise rejections use the same fail-fast policy as uncaught exceptions. Handle expected operational failures at their call sites; only truly unhandled failures should reach this process-level policy.
+
 ## Incident Response Runbooks
 
 ### Unknown browser notification
