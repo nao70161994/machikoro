@@ -157,7 +157,7 @@ try:
         wait("return document.getElementById('gameScreen').style.display !== 'none'")
     stop(server)
     server = start_server('pwa-smoke-v2')
-    js('return navigator.serviceWorker.getRegistration().then(r=>r.update()).then(()=>true)')
+    js('navigator.serviceWorker.getRegistration().then(r=>r?.update()).catch(()=>{});return true')
     wait("return navigator.serviceWorker.getRegistration().then(r=>r.waiting?.state === 'installed')")
     wait("return document.getElementById('pwaUpdateBanner').offsetHeight > 0")
     assert js("return document.getElementById('pwaUpdateBtn').disabled") == ONLINE_LOBBY
