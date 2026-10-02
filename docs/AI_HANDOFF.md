@@ -3,6 +3,13 @@
 この文書は、途中参加した人間 / AI が最初に読む短い入口です。
 詳細は各専門 doc を参照し、このファイルは現在地と次の安全な一手だけを示します。
 
+## Current source of truth (2026-10-02)
+
+- 現在の保守項目、完了した自動対応、残る実機・設計判断は [`MAINTENANCE_BACKLOG.md`](./MAINTENANCE_BACKLOG.md) を参照してください。以下の日付付きレビュー記録は、その日付時点の履歴であり、最新状態として読み替えないでください。
+- 運用手順とCSP Report-Onlyの収集・確認方法は [`OPERATIONS.md`](./OPERATIONS.md)、オンライン同期と復元の信頼境界は [`ONLINE_SYNC.md`](./ONLINE_SYNC.md) が正本です。
+- 待機室の切断・開始配信競合の復帰処理は2026-10-02に実装・Socket E2E確認済みです。PWAバナーの320/390/1440px操作確認とCSP Report-Only経路もChromiumで確認済みです。WebKit、実機safe-area、TWAの確認は引き続き未完了です。
+- `TECH_DEBT.md` は2026-05-16の歴史資料です。現在の状況として引用しないでください。
+
 ## 2026-08-12 repository review status
 
 - Repository-wide review and repeated cross-review added restore traversal crash/DoS guards, hostless input admission/cooldown guards, and shared local/server snapshot validation before hydration or replay.

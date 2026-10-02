@@ -41,6 +41,8 @@ node server.js
 
 運用フェーズの入口は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) です。ntfy 通知分類、unknown 通知の最優先対応、CI失敗時の対応、PWA stale client 対応、Render 環境変数、公開前確認、Codex へ投げる障害対応テンプレをまとめています。
 
+現在の保守・実機確認待ち一覧は [`docs/MAINTENANCE_BACKLOG.md`](./docs/MAINTENANCE_BACKLOG.md)、過去の技術負債スナップショットは [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) を参照してください。後者は2026-05-16時点の履歴資料です。
+
 - 公開前チェック: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
 - AdSense 審査提出前 / 審査中の公開 URL 確認: [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md)
 - 広告 placeholder 方針: [`docs/ADS_PLAN.md`](./docs/ADS_PLAN.md)
