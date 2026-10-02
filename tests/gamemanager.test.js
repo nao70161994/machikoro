@@ -1277,11 +1277,18 @@ runTest('駅+電波塔 selectDiceCount → rerollConfirm → rerollDice でフ�
     game.rerollDice();
     assert.strictEqual(game.phase, 'selectDice');
     assert.strictEqual(game.usedReroll, true);
+    assert.ok(game.pendingRadioTowerReroll);
+    assert.ok(!game.log.some(entry => entry.message.includes('→ 0')));
 
     // 2回目のselectDiceCount: usedReroll=true なので電波塔が発動せずbuildへ
     game.selectDiceCount(false, 5);
     assert.strictEqual(game.phase, 'build');
     assert.strictEqual(game.lastDiceResult, 5);
+    assert.strictEqual(game.pendingRadioTowerReroll, null);
+    assert.strictEqual(
+        game.log.filter(entry => entry.message === '📡 電波塔で振り直し: 3 → 5').length,
+        1
+    );
 });
 
 runTest('駅+港 2個振り sum≥10 → harborChoice → resolveHarbor でフェーズが進む', () => {
