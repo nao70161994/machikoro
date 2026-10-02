@@ -7,7 +7,7 @@
 
 - 現在の保守項目、完了した自動対応、残る実機・設計判断は [`MAINTENANCE_BACKLOG.md`](./MAINTENANCE_BACKLOG.md) を参照してください。以下の日付付きレビュー記録は、その日付時点の履歴であり、最新状態として読み替えないでください。
 - 運用手順とCSP Report-Onlyの収集・確認方法は [`OPERATIONS.md`](./OPERATIONS.md)、オンライン同期と復元の信頼境界は [`ONLINE_SYNC.md`](./ONLINE_SYNC.md) が正本です。
-- 待機室の切断・開始配信競合の復帰処理は2026-10-02に実装・Socket E2E確認済みです。PWAバナーの320/390/1440px操作確認とCSP Report-Only経路はChromiumで確認済みで、Mobile WebKit release E2Eも2026-10-02に成功しました。物理端末のsafe-area挙動とTWAは未確認です。CSP強制適用はTWA互換性を確認するまで保留します。
+- 待機室の切断・開始配信競合の復帰処理は2026-10-02に実装・Socket E2E確認済みです。PWAバナーのlocal/online両導線を320/390/1440pxでChromium確認し、CSP Report-Only経路とMobile WebKit release E2Eも成功しました。TWA manifest/assetlinks/Bubblewrapのvalidation-only workflowと本番Digital Asset Links照合も成功しています。物理端末のsafe-areaとインストール済みTWAの起動・対局は未確認です。CSP強制適用はその確認まで保留します。
 - `TECH_DEBT.md` は2026-05-16の歴史資料です。現在の状況として引用しないでください。
 
 ## 2026-08-12 repository review status
