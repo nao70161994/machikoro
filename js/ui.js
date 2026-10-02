@@ -5,6 +5,7 @@ const pendingModalFocusController = UiPendingEffects.createFocusController();
 const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
+/** @type {number | null} */
 let logRelatedHighlightTimer = null;
 let gameLogPresentationInitialized = false;
 const uiLogHighlightEffects = UiLogHighlightEffects.create({
@@ -13,7 +14,7 @@ const uiLogHighlightEffects = UiLogHighlightEffects.create({
     getTimer: () => logRelatedHighlightTimer,
     setTimer: timer => { logRelatedHighlightTimer = timer; },
     clearTimeout,
-    schedule: (callback, delay) => setTimeout(callback, delay),
+    schedule: (callback, delay) => window.setTimeout(callback, delay),
 });
 
 function uiGameRuntimeSnapshot() {
@@ -188,9 +189,13 @@ function cycleTutorialLevel() {
 function syncTutorialControls() {
     const tutorial = tutorialSettingsSnapshot();
     const view = UiTutorial.buildControlView(tutorial.tutorialEnabled, tutorial.tutorialLevel);
-    const checkbox = document.getElementById("tutorialEnabled");
+    const checkbox = /** @type {HTMLInputElement | null} */ (
+        document.getElementById("tutorialEnabled")
+    );
     if (checkbox) checkbox.checked = view.enabled;
-    const select = document.getElementById("tutorialLevel");
+    const select = /** @type {HTMLSelectElement | null} */ (
+        document.getElementById("tutorialLevel")
+    );
     if (select) select.value = view.selectedLevel;
     const setButtonLabel = (button, label) => {
         if (!button) return;
@@ -384,11 +389,13 @@ function renderWinnerState(winner) {
         updateResumeButton,
         startConfetti,
         applyTerminalControls(controls) {
-            document.getElementById("btnRoll").disabled = controls.rollDisabled;
-            const btnSkip = document.getElementById("btnSkip");
+            const btnRoll = /** @type {HTMLButtonElement} */ (document.getElementById("btnRoll"));
+            btnRoll.disabled = controls.rollDisabled;
+            const btnSkip = /** @type {HTMLButtonElement} */ (document.getElementById("btnSkip"));
             btnSkip.disabled = controls.skipDisabled;
             btnSkip.textContent = controls.skipText;
-            document.getElementById("btnReroll").style.display = controls.rerollDisplay;
+            const btnReroll = /** @type {HTMLButtonElement} */ (document.getElementById("btnReroll"));
+            btnReroll.style.display = controls.rerollDisplay;
             document.getElementById("diceChoose").innerHTML = controls.diceChooseHtml;
             document.getElementById("buildMenu").innerHTML = controls.buildMenuHtml;
             renderBuildShortcut(true);
@@ -531,15 +538,17 @@ function renderActiveGameState(current) {
             activeGameTurnStateController.set(playerIndex, turnCount, phase);
         },
         setRollDisabled(disabled) {
-            document.getElementById("btnRoll").disabled = disabled;
+            const btnRoll = /** @type {HTMLButtonElement} */ (document.getElementById("btnRoll"));
+            btnRoll.disabled = disabled;
         },
         setSkipButton(skipButton) {
-            const btnSkip = document.getElementById("btnSkip");
+            const btnSkip = /** @type {HTMLButtonElement} */ (document.getElementById("btnSkip"));
             btnSkip.disabled = skipButton.disabled;
             btnSkip.textContent = skipButton.textContent;
         },
         hideReroll() {
-            document.getElementById("btnReroll").style.display = "none";
+            const btnReroll = /** @type {HTMLButtonElement} */ (document.getElementById("btnReroll"));
+            btnReroll.style.display = "none";
         },
         updateDiceDisplay(diceValues) {
             updateDiceDisplay(diceValues);
@@ -1005,28 +1014,33 @@ function renderPlayers() {
     }
     const container = document.getElementById("players");
     if (container && typeof container.addEventListener === 'function' &&
-            !playerPanelDisclosureClickListeners.has(container)) {
+        !playerPanelDisclosureClickListeners.has(container)) {
         container.addEventListener('click', event => {
-            const summary = event.target?.closest?.('summary');
+            const target = /** @type {HTMLElement | null} */ (event.target);
+            const summary = target?.closest('summary');
             const panel = summary?.parentElement;
-            if (!panel?.matches?.('details.player-box-compact')) return;
+            if (!panel || typeof panel.matches !== 'function' ||
+                    !panel.matches('details.player-box-compact')) return;
             event.preventDefault();
-            panel.open = !panel.open;
+            const detailsPanel = /** @type {HTMLDetailsElement} */ (panel);
+            detailsPanel.open = !detailsPanel.open;
             const disclosure = playerPanelDisclosureCache.get(container);
             if (!disclosure) return;
-            if (panel.open) disclosure.openPanelIds.add(panel.id);
-            else disclosure.openPanelIds.delete(panel.id);
+            if (detailsPanel.open) disclosure.openPanelIds.add(detailsPanel.id);
+            else disclosure.openPanelIds.delete(detailsPanel.id);
         }, true);
         playerPanelDisclosureClickListeners.add(container);
     }
     if (container && typeof container.addEventListener === 'function' &&
             !playerPanelDisclosureListeners.has(container)) {
         container.addEventListener('toggle', event => {
-            const panel = event.target;
+            const panel = /** @type {HTMLElement | null} */ (event.target);
             const disclosure = playerPanelDisclosureCache.get(container);
-            if (!panel?.matches?.('details.player-box-compact') || !disclosure) return;
-            if (panel.open) disclosure.openPanelIds.add(panel.id);
-            else disclosure.openPanelIds.delete(panel.id);
+            if (!panel || typeof panel.matches !== 'function' ||
+                    !panel.matches('details.player-box-compact') || !disclosure) return;
+            const detailsPanel = /** @type {HTMLDetailsElement} */ (panel);
+            if (detailsPanel.open) disclosure.openPanelIds.add(detailsPanel.id);
+            else disclosure.openPanelIds.delete(detailsPanel.id);
         }, true);
         playerPanelDisclosureListeners.add(container);
     }
@@ -1042,7 +1056,10 @@ function renderPlayers() {
             ? new Set(previousDisclosure.openPanelIds)
             : new Set();
         if (sameGame) {
-            container.querySelectorAll('details.player-box-compact').forEach(panel => {
+            const panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (
+                container.querySelectorAll('details.player-box-compact')
+            );
+            panels.forEach(panel => {
                 if (panel.open) openPanelIds.add(panel.id);
             });
         }
@@ -1050,7 +1067,10 @@ function renderPlayers() {
         if (document.documentElement?.dataset?.design === 'sunset') {
             animateNewTownBuildings(container, previous?.townBuildingCounts, townBuildingCounts);
         }
-        container.querySelectorAll('details.player-box-compact').forEach(panel => {
+        const panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (
+            container.querySelectorAll('details.player-box-compact')
+        );
+        panels.forEach(panel => {
             if (openPanelIds.has(panel.id)) panel.open = true;
         });
         playerPanelDisclosureCache.set(container, {
@@ -1242,8 +1262,8 @@ function renderBuildMenu() {
         ancestor = ancestor.parentElement;
     }
     const actionElement = activeWithinBuildMenu && typeof activeElement?.closest === 'function'
-        ? activeElement.closest('[data-action]')
-        : activeElement;
+        ? /** @type {HTMLElement | null} */ (activeElement.closest('[data-action]'))
+        : /** @type {HTMLElement | null} */ (activeElement);
     const focusPlan = buildActionFocusController.plan(activeWithinBuildMenu ? {
         action: actionElement?.dataset?.action,
         cardName: actionElement?.dataset?.cardName,
@@ -1273,19 +1293,23 @@ function renderBuildMenu() {
     UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
         findIdentity(identity) {
             if (!identity || typeof buildMenu.querySelectorAll !== 'function') return null;
-            return Array.from(buildMenu.querySelectorAll(`[data-action="${identity.action}"]`))
+            const elements = /** @type {NodeListOf<HTMLElement>} */ (
+                buildMenu.querySelectorAll(`[data-action="${identity.action}"]`)
+            );
+            return Array.from(elements)
                 .find(element => identity.action === 'buildCard'
                     ? element.dataset?.cardName === identity.name
                     : element.dataset?.landmarkName === identity.name) || null;
         },
         focusIdentity: focusBuildActionElement,
         focusFallback() {
-            const btnSkip = document.getElementById('btnSkip');
+            const btnSkip = /** @type {HTMLButtonElement} */ (document.getElementById('btnSkip'));
             return focusBuildActionElement(btnSkip) || UiScreenFocus.focusGame(document);
         },
     });
 }
 
+/** @param {HTMLElement | null} element */
 function focusBuildActionElement(element) {
     if (!element || typeof element.focus !== 'function' ||
             !UiBuildMenu.canRestoreCardFilterFocus(cardFilterFocusFacts(element))) return false;
@@ -1301,11 +1325,13 @@ function focusBuildActionElement(element) {
     return true;
 }
 
+/** @param {HTMLElement} element */
 function cardFilterFocusFacts(element) {
     let ancestor = element;
     let ancestorHidden = false;
     while (ancestor) {
-        const style = ancestor.style || {};
+        const style = /** @type {CSSStyleDeclaration} */ (ancestor.style);
+        /** @type {Window | null} */
         const view = document.defaultView;
         const computed = view && typeof view.getComputedStyle === 'function'
             ? view.getComputedStyle(ancestor)
@@ -1321,16 +1347,34 @@ function cardFilterFocusFacts(element) {
     return {
         connected: element?.isConnected !== false,
         hidden: !!element?.hidden,
-        disabled: !!element?.disabled,
+        disabled: uiDisabledState(element),
         ancestorHidden,
     };
+}
+
+/**
+ * @param {HTMLElement | null} element
+ * @returns {element is HTMLButtonElement | HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement}
+ */
+function isUiDisabledFormControl(element) {
+    return !!element && ['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'].includes(element.tagName);
+}
+
+/** @param {HTMLElement | null} element */
+function uiDisabledState(element) {
+    if (!element) return false;
+    if (isUiDisabledFormControl(element)) return element.disabled;
+    return !!/** @type {HTMLElement & { disabled?: boolean }} */ (element).disabled;
 }
 
 function restoreCardFilterFocus(plan) {
     if (!plan.restore) return false;
     const buildMenu = document.getElementById('buildMenu');
     if (!buildMenu || typeof buildMenu.querySelectorAll !== 'function') return false;
-    const target = Array.from(buildMenu.querySelectorAll('[data-action="setCardFilter"]'))
+    const targets = /** @type {NodeListOf<HTMLElement>} */ (
+        buildMenu.querySelectorAll('[data-action="setCardFilter"]')
+    );
+    const target = Array.from(targets)
         .find(button => button.dataset?.cardFilter === plan.cardFilter);
     if (!target || typeof target.focus !== 'function') return false;
     if (!UiBuildMenu.canRestoreCardFilterFocus(cardFilterFocusFacts(target))) return false;
@@ -1445,7 +1489,8 @@ const uiCardSelectEffects = UiCardSelectEffects.create({
     findToggle(identity) {
         const modal = document.getElementById('cardSelectModal');
         if (!modal || typeof modal.querySelectorAll !== 'function') return null;
-        return Array.from(modal.querySelectorAll('[data-action]')).find(element => {
+        const toggles = /** @type {NodeListOf<HTMLElement>} */ (modal.querySelectorAll('[data-action]'));
+        return Array.from(toggles).find(element => {
             if (!element || !element.dataset || element.dataset.action !== identity.action) {
                 return false;
             }
@@ -1458,14 +1503,14 @@ const uiCardSelectEffects = UiCardSelectEffects.create({
 
 function syncCardSelectStateFromRuntime() {
     const snapshot = GameSelectionState.runtime.snapshot();
-    cardSelectState.replaceCards(snapshot.enabledCards);
-    return cardSelectState.replaceLandmarks(snapshot.enabledLandmarks);
+    cardSelectState.replaceCards([...snapshot.enabledCards]);
+    return cardSelectState.replaceLandmarks([...snapshot.enabledLandmarks]);
 }
 
 function applyCardSelectStateSnapshot() {
     const snapshot = cardSelectState.snapshot();
-    replaceEnabledCardSelection(snapshot.enabledCards);
-    replaceEnabledLandmarkSelection(snapshot.enabledLandmarks);
+    replaceEnabledCardSelection([...snapshot.enabledCards]);
+    replaceEnabledLandmarkSelection([...snapshot.enabledLandmarks]);
 }
 
 function updateGameSelectionSummary() {
@@ -1513,7 +1558,7 @@ function buildRuntimeStateSnapshot(reason = '') {
         if (!el) return null;
         return {
             display: el.style ? el.style.display || '' : '',
-            disabled: !!el.disabled,
+            disabled: uiDisabledState(el),
             inert: !!el.inert,
             htmlLength: typeof el.innerHTML === 'string' ? el.innerHTML.length : 0,
         };
@@ -1868,8 +1913,9 @@ function bindCardSelectModalHandlers() {
     if (modal && typeof modal.addEventListener === 'function') {
         modal.addEventListener('click', handleCardSelectModalClick);
         modal.addEventListener('change', event => {
-            if (event && event.target && event.target.id === 'marketRuleSelect') {
-                replaceMarketRuleSelection(event.target.value);
+            const target = /** @type {HTMLSelectElement | null} */ (event.target);
+            if (target && target.id === 'marketRuleSelect' && typeof target.value === 'string') {
+                replaceMarketRuleSelection(target.value);
                 updateGameSelectionSummary();
             }
         });
@@ -1920,7 +1966,9 @@ function renderCardSelectModal() {
         buildLandmarkHtml: buildLandmarkSelectToggleButtonHtml,
     });
     uiCardSelectEffects.apply(view);
-    const marketRuleSelect = document.getElementById('marketRuleSelect');
+    const marketRuleSelect = /** @type {HTMLSelectElement | null} */ (
+        document.getElementById('marketRuleSelect')
+    );
     const waitingRoom = !!uiOnlineRuntimeSnapshot().myRoomId;
     if (marketRuleSelect) {
         marketRuleSelect.value = GameSelectionState.runtime.snapshot().marketRule;

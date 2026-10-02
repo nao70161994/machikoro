@@ -177,16 +177,17 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/socketOriginPolicy.js'));
 });
 
-runTest('production JavaScriptはcheckJs未対象の3 root以外を型検査する', () => {
+runTest('production JavaScriptはcheckJs未対象の2 root以外を型検査する', () => {
     const productionFiles = execFileSync(
         'git',
         ['ls-files', 'js/*.js', 'server/*.js', 'server.js'],
         { cwd: path.join(__dirname, '..'), encoding: 'utf8' }
     ).trim().split(/\r?\n/).filter(Boolean);
     const excludedRoots = new Set();
-    const lintOnlyRoots = new Set(['js/online.js', 'js/storage.js', 'js/ui.js']);
+    const lintOnlyRoots = new Set(['js/online.js', 'js/storage.js']);
+    const rootRunnerRoots = new Set(['js/main.js', 'js/ui.js']);
     const lintFiles = new Set(eslintConfig.flatMap(entry => entry.files || []));
-    const checkJsFiles = new Set([...config.files, ...mainConfig.files]);
+    const checkJsFiles = new Set([...config.files, ...mainConfig.files, 'js/ui.js']);
 
     for (const file of productionFiles) {
         if (excludedRoots.has(file)) {
@@ -197,6 +198,8 @@ runTest('production JavaScriptはcheckJs未対象の3 root以外を型検査す�
         assert.ok(lintFiles.has(file), 'ESLint missing: ' + file);
         if (lintOnlyRoots.has(file)) {
             assert.ok(!checkJsFiles.has(file), file);
+        } else if (rootRunnerRoots.has(file)) {
+            assert.ok(checkJsFiles.has(file), 'dedicated checkJs runner missing: ' + file);
         } else {
             assert.ok(checkJsFiles.has(file), 'checkJs missing: ' + file);
         }
@@ -214,14 +217,13 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
         .filter(file => ![
             'js/online.js',
             'js/storage.js',
-            'js/ui.js',
             'scripts/report-action-contract.js',
             'scripts/checkjs-root-runner.js',
         ].includes(file))
         .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
         .sort();
-    const checkJsFiles = [...config.files, ...mainConfig.files]
+    const checkJsFiles = [...config.files, ...mainConfig.files, 'js/ui.js']
         .filter(file => file.endsWith('.js'))
         .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
@@ -240,6 +242,7 @@ runTest('main composition root専用checkJsはappShell globalsとの宣言衝突
     assert.ok(checkJsRootRunner);
     assert.ok(checkJsRootRunner.readConfig);
     assert.ok(checkJsRootRunner.checkCompositionRoot);
+    assert.ok(checkJsRootRunner.checkUiCompositionRoot);
     const declarations = fs.readFileSync(
         path.join(__dirname, '..', 'types/checkjs-main-globals.d.ts'),
         'utf8'
@@ -247,6 +250,23 @@ runTest('main composition root専用checkJsはappShell globalsとの宣言衝突
     for (const boundary of ['GameRuntimeState: typeof import(', 'UiGameStatusView: typeof import(',
         'getOnlineActionFlightState: (() => { inFlight?: boolean']) {
         assert.ok(declarations.includes(boundary), boundary);
+    }
+});
+
+runTest('UI composition rootは専用依存境界でcheckJs検査する', () => {
+    assert.ok(checkJsRootRunner.checkUiCompositionRoot);
+    const globals = fs.readFileSync(
+        path.join(__dirname, '..', 'types/checkjs-ui-globals.d.ts'),
+        'utf8'
+    );
+    for (const boundary of [
+        'UiLogDisplay: typeof import(',
+        'GameRuntimeState: typeof import(',
+        'getEnabledCardSelection: (() => Set<string>)',
+        'getEnabledLandmarkSelection: (() => Set<string>)',
+        'getOnlineActionFlightState: (() => { inFlight: boolean })',
+    ]) {
+        assert.ok(globals.includes(boundary), boundary);
     }
 });
 
