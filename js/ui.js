@@ -254,7 +254,7 @@ function syncInitialGameLogPresentation() {
     const isSunsetMobile = document.documentElement?.dataset?.design === 'sunset' &&
         typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
         window.matchMedia('(max-width: 480px)').matches;
-    if (isSunsetMobile) setLogCollapsed(true);
+    setLogCollapsed(isSunsetMobile);
 }
 
 function _render() {

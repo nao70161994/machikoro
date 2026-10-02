@@ -1545,6 +1545,20 @@ runTest('toggleLog wrapperはpure viewでicon・ARIA・classを同期する', ()
     assert.strictEqual(elements.logHeader.getAttribute('aria-expanded'), 'true');
 });
 
+runTest('初回ゲーム表示は画面幅に合わせてログ状態とARIAを両方向へ同期する', () => {
+    for (const [isMobile, expectedExpanded] of [[true, 'false'], [false, 'true']]) {
+        const { context, elements } = loadUiRuntime();
+        elements.gameScreen.style.display = 'block';
+        context.document.documentElement = { dataset: { design: 'sunset' } };
+        context.window = { matchMedia: () => ({ matches: isMobile }) };
+
+        context.syncInitialGameLogPresentation();
+
+        assert.strictEqual(elements.logHeader.getAttribute('aria-expanded'), expectedExpanded);
+        assert.strictEqual(elements.log.classList.contains('collapsed'), isMobile);
+    }
+});
+
 runTest('UI更新関数は対象DOM欠落時に例外化しない', () => {
     const { context } = loadUiRuntime();
     const originalGetElementById = context.document.getElementById;
