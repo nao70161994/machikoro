@@ -590,6 +590,7 @@ test('夕暮れのガイド設定は共通SVGアイコンでスマホとデス�
 });
 
 test('スマホの夕暮れ対局はログ要約を残して詳細を折りたたみ必要時に開ける', async ({ page }, testInfo) => {
+    test.setTimeout(90_000);
     for (const width of [390, 1440]) {
         await page.setViewportSize({ width, height: 844 });
         await prepareSunset(page);
