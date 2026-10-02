@@ -49,10 +49,10 @@ function validateTwaManifest() {
 }
 
 function validateDeliveryFiles() {
-    const server = fs.readFileSync(path.join(ROOT, 'server.js'), 'utf8');
+    const staticAssets = fs.readFileSync(path.join(ROOT, 'server/staticAssets.js'), 'utf8');
     const serviceWorker = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
     const workflow = fs.readFileSync(path.join(ROOT, '.github/workflows/build-apk.yml'), 'utf8');
-    assert.ok(server.includes("app.get('/.well-known/assetlinks.json'"));
+    assert.ok(staticAssets.includes("app.get('/.well-known/assetlinks.json'"));
     assert.ok(serviceWorker.includes("'/manifest.json'"));
     assert.ok(serviceWorker.includes("'/icons/icon-192.png'"));
     assert.ok(serviceWorker.includes("'/icons/icon-512.png'"));
