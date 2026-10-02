@@ -50,7 +50,14 @@ const onlineReadinessController = OnlineReadiness.createController({
 });
 const onlineLobbySelectionRuntime = OnlineLobbySelectionRuntime.createRuntime({
     getSession: () => onlineSessionSnapshot(),
-    getSelection: () => GameSelectionState.runtime.snapshot(),
+    getSelection: () => {
+        const selection = GameSelectionState.runtime.snapshot();
+        return {
+            enabledCards: [...selection.enabledCards],
+            enabledLandmarks: [...selection.enabledLandmarks],
+            marketRule: selection.marketRule,
+        };
+    },
     setReady: ready => setOnlineLobbyReady(ready),
     showNotice: message => onlineClientEffects.showNotice(message),
     replaceCards: cards => replaceEnabledCardSelection(cards),
@@ -1154,6 +1161,7 @@ function _setOnlineActionInFlight(value) {
 function _legacyOnlineRejoinRequestPlan(session) {
     const decisions = OnlineRetryPolicy.requestDecisions;
     const currentSocket = onlineSessionSnapshot().socket;
+    /** @type {'reject' | 'wait-for-socket' | 'exhaust' | 'emit'} */
     let decision = decisions.REJECT;
     if (currentSocket && session.roomId && !(session.playerIndex < 0) && session.playerName && session.reconnectToken) {
         if (currentSocket.connected === false) decision = decisions.WAIT_FOR_SOCKET;

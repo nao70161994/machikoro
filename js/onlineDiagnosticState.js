@@ -6,7 +6,7 @@ const OnlineDiagnosticState = (() => {
         const state = Object.assign(Object.create(null), initialState);
         const keys = Object.freeze(Object.keys(state));
         const knownKeys = new Set(keys);
-        const projection = {};
+        const projection = /** @type {Record<string, *>} */ ({});
 
         function assertKnownKey(key) {
             if (!knownKeys.has(key)) {
@@ -28,7 +28,7 @@ const OnlineDiagnosticState = (() => {
 
         return Object.freeze({
             keys,
-            projection: Object.freeze(projection),
+            projection: /** @type {Record<string, *>} */ (Object.freeze(projection)),
             read(key) {
                 assertKnownKey(key);
                 return state[key];

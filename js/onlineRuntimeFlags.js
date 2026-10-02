@@ -85,6 +85,7 @@ const OnlineRuntimeFlags = (() => {
         });
     }
 
+    /** @returns {Readonly<Record<string, () => boolean>>} */
     function createNamedReaders(getRoot, selectedNames = Object.keys(names), options = {}) {
         const reader = createReader(getRoot);
         if (!Array.isArray(selectedNames)) throw new TypeError('selectedNames must be an array');

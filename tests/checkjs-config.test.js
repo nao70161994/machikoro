@@ -177,17 +177,23 @@ runTest('checkJs configは段階的な検査対象だけを明示列挙する', 
     assert.ok(config.files.includes('server/socketOriginPolicy.js'));
 });
 
-runTest('production JavaScriptはcheckJs未対象のonline root以外を型検査する', () => {
+runTest('production JavaScriptはcomposition rootを含めて全件型検査する', () => {
     const productionFiles = execFileSync(
         'git',
         ['ls-files', 'js/*.js', 'server/*.js', 'server.js'],
         { cwd: path.join(__dirname, '..'), encoding: 'utf8' }
     ).trim().split(/\r?\n/).filter(Boolean);
     const excludedRoots = new Set();
-    const lintOnlyRoots = new Set(['js/online.js']);
-    const rootRunnerRoots = new Set(['js/main.js', 'js/storage.js', 'js/ui.js']);
+    const lintOnlyRoots = new Set();
+    const rootRunnerRoots = new Set(['js/main.js', 'js/online.js', 'js/storage.js', 'js/ui.js']);
     const lintFiles = new Set(eslintConfig.flatMap(entry => entry.files || []));
-    const checkJsFiles = new Set([...config.files, ...mainConfig.files, 'js/ui.js', 'js/storage.js']);
+    const checkJsFiles = new Set([
+        ...config.files,
+        ...mainConfig.files,
+        'js/ui.js',
+        'js/storage.js',
+        'js/online.js',
+    ]);
 
     for (const file of productionFiles) {
         if (excludedRoots.has(file)) {
@@ -205,7 +211,7 @@ runTest('production JavaScriptはcheckJs未対象のonline root以外を型検�
         }
     }
     assert.ok(lintFiles.has('js/online.js'));
-    assert.ok(!lintOnlyRoots.has('js/storage.js'));
+    assert.ok(lintFiles.has('js/storage.js'));
     assert.ok(lintFiles.has('js/ui.js'));
 });
 
@@ -215,14 +221,13 @@ runTest('checkJs対象はmaintenance lint対象からNode専用report scriptだ�
     assert.ok(configuredLintFiles.includes('scripts/report-action-contract.js'));
     const lintFiles = configuredLintFiles
         .filter(file => ![
-            'js/online.js',
             'scripts/report-action-contract.js',
             'scripts/checkjs-root-runner.js',
         ].includes(file))
         .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
         .sort();
-    const checkJsFiles = [...config.files, ...mainConfig.files, 'js/ui.js', 'js/storage.js']
+    const checkJsFiles = [...config.files, ...mainConfig.files, 'js/ui.js', 'js/storage.js', 'js/online.js']
         .filter(file => file.endsWith('.js'))
         .filter((file, index, files) => files.indexOf(file) === index)
         .slice()
@@ -243,6 +248,7 @@ runTest('main composition root専用checkJsはappShell globalsとの宣言衝突
     assert.ok(checkJsRootRunner.checkCompositionRoot);
     assert.ok(checkJsRootRunner.checkUiCompositionRoot);
     assert.ok(checkJsRootRunner.checkStorageCompositionRoot);
+    assert.ok(checkJsRootRunner.checkOnlineCompositionRoot);
     const declarations = fs.readFileSync(
         path.join(__dirname, '..', 'types/checkjs-main-globals.d.ts'),
         'utf8'
@@ -265,6 +271,23 @@ runTest('storage composition rootは保存・復帰依存を明示してcheckJs�
         'StoredOnlineReconnect: typeof import(',
         'runLocalOrSendOnline: ((action: string, data: unknown,',
         'getElementById(elementId: \'localSaveGeneration\'): HTMLSelectElement',
+    ]) {
+        assert.ok(globals.includes(boundary), boundary);
+    }
+});
+
+runTest('online composition rootは対局・再接続依存を実モジュール型で検査する', () => {
+    assert.ok(checkJsRootRunner.checkOnlineCompositionRoot);
+    const globals = fs.readFileSync(
+        path.join(__dirname, '..', 'types/checkjs-online-globals.d.ts'),
+        'utf8'
+    );
+    for (const boundary of [
+        'OnlineComposition: typeof import(',
+        'OnlineReconnectRequest: typeof import(',
+        'OnlineRestoreQueueState: typeof import(',
+        'OnlineRuntimeState: typeof import(',
+        'io: (url?: string, options?: Record<string, unknown>)',
     ]) {
         assert.ok(globals.includes(boundary), boundary);
     }

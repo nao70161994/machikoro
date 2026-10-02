@@ -26,6 +26,10 @@ const STORAGE_ROOT_FILES = Object.freeze([
     'types/checkjs-storage-globals.d.ts',
     'js/storage.js',
 ]);
+const ONLINE_ROOT_FILES = Object.freeze([
+    'types/checkjs-online-globals.d.ts',
+    'js/online.js',
+]);
 
 function readConfig(configPath) {
     const read = ts.readConfigFile(configPath, ts.sys.readFile);
@@ -122,15 +126,44 @@ function checkStorageCompositionRoot() {
     return 0;
 }
 
+function checkOnlineCompositionRoot() {
+    const base = readConfig(BASE_CONFIG);
+    const diagnostics = [...base.errors];
+    if (diagnostics.length === 0) {
+        const rootFiles = base.fileNames.filter(file =>
+            !STORAGE_EXCLUDED_BASE_FILES.has(path.relative(REPO_ROOT, file).split(path.sep).join('/'))
+        );
+        const program = ts.createProgram({
+            rootNames: [...new Set([...rootFiles, ...ONLINE_ROOT_FILES.map(file => path.join(REPO_ROOT, file))])],
+            options: base.options,
+        });
+        diagnostics.push(...ts.getPreEmitDiagnostics(program));
+    }
+
+    if (diagnostics.length > 0) {
+        const host = {
+            getCanonicalFileName: file => file,
+            getCurrentDirectory: () => REPO_ROOT,
+            getNewLine: () => ts.sys.newLine,
+        };
+        process.stderr.write(ts.formatDiagnosticsWithColorAndContext(diagnostics, host));
+        return 1;
+    }
+    process.stdout.write('checkJs online composition-root project passed\n');
+    return 0;
+}
+
 if (require.main === module) {
     const mainStatus = checkCompositionRoot();
     const uiStatus = checkUiCompositionRoot();
     const storageStatus = checkStorageCompositionRoot();
-    process.exitCode = mainStatus || uiStatus || storageStatus;
+    const onlineStatus = checkOnlineCompositionRoot();
+    process.exitCode = mainStatus || uiStatus || storageStatus || onlineStatus;
 }
 
 module.exports = Object.freeze({
     checkCompositionRoot,
+    checkOnlineCompositionRoot,
     checkStorageCompositionRoot,
     checkUiCompositionRoot,
     readConfig,

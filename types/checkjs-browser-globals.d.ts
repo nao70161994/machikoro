@@ -54,7 +54,7 @@ declare var resolveExpertProfileTuning: typeof import("../js/cpuTuning").resolve
 declare var isRoomHost: boolean | undefined;
 declare var isReconnectingOnline: boolean | undefined;
 declare var socket: { connected?: boolean } | undefined;
-declare var sendAction: ((action: string, data: Record<string, unknown>) => boolean) | undefined;
+declare function sendAction(action: string, data?: Record<string, unknown>): boolean;
 declare var OnlineReconnectRuntime: typeof import("../js/onlineReconnectRuntime");
 declare var OnlineGameEngineRuntime: typeof import("../js/onlineGameEngineRuntime");
 
