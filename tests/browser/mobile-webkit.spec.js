@@ -141,6 +141,42 @@ async function expectPlayerSelectContained(page, containerSelector, expectedCoun
     }
 }
 
+test('iPhone WebKitはsafe-area envを評価し画面幅を越えない', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepare(page);
+    const layout = await page.evaluate(() => {
+        const viewportMeta = document.querySelector('meta[name="viewport"]')?.content || '';
+        const probe = document.createElement('div');
+        probe.style.cssText = [
+            'position:fixed',
+            'inset:0',
+            'padding-top:max(16px, env(safe-area-inset-top, 0px))',
+            'padding-right:max(16px, env(safe-area-inset-right, 0px))',
+            'padding-bottom:max(16px, env(safe-area-inset-bottom, 0px))',
+            'padding-left:max(16px, env(safe-area-inset-left, 0px))',
+        ].join(';');
+        document.body.append(probe);
+        const style = getComputedStyle(probe);
+        const safeAreaPadding = [
+            style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft,
+        ].map(value => Number.parseFloat(value));
+        probe.remove();
+        return {
+            viewportMeta,
+            supportsSafeArea: CSS.supports('padding-top: max(16px, env(safe-area-inset-top, 0px))'),
+            safeAreaPadding,
+            viewportWidth: window.innerWidth,
+            documentWidth: document.documentElement.scrollWidth,
+        };
+    });
+
+    expect(layout.viewportMeta).toContain('viewport-fit=cover');
+    expect(layout.supportsSafeArea).toBe(true);
+    expect(layout.safeAreaPadding).toHaveLength(4);
+    expect(layout.safeAreaPadding.every(value => Number.isFinite(value) && value >= 16)).toBe(true);
+    expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
+});
+
 test('mobile WebKitでapp shellとService Workerが実動作する', async ({ browser }) => {
     const port = 3322;
     const origin = `http://127.0.0.1:${port}`;
