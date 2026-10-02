@@ -2225,6 +2225,24 @@ runTest('/api/client-error-test route はdebug endpointにも小さなJSON上限
     assert.ok(routeSource.includes("app.post('/api/client-error-test', json({ limit: '1kb' })"));
 });
 
+runTest('CSP Report-Only は同一originのサイズ制限付きcollectorへ送信する', () => {
+    const securitySource = fs.readFileSync(path.join(__dirname, '..', 'server', 'securityHeaders.js'), 'utf8');
+    const routeSource = fs.readFileSync(
+        path.join(__dirname, '..', 'server', 'reportingHttpRoutes.js'),
+        'utf8'
+    );
+    const gatewaySource = fs.readFileSync(
+        path.join(__dirname, '..', 'server', 'cspReportGateway.js'),
+        'utf8'
+    );
+    assert.ok(securitySource.includes('report-uri /api/csp-report'));
+    assert.ok(routeSource.includes("app.post('/api/csp-report', handlers.cspReport)"));
+    assert.ok(routeSource.includes("limit: dependencies.cspReportJsonLimit"));
+    assert.ok(gatewaySource.includes('blockedOrigin: normalizeBlockedOrigin'));
+    assert.ok(!gatewaySource.includes("report['document-uri']"));
+    assert.ok(!gatewaySource.includes("report['source-file']"));
+});
+
 // ===== validateGameAction =====
 
 runTest('validateGameAction は非現在プレイヤーのアクションを拒否する', () => {

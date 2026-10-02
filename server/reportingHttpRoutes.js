@@ -47,6 +47,10 @@ function registerReportingHttpRoutes(dependencies = {}) {
         dependencies.handleGameLifecycleRequest,
         'handleGameLifecycleRequest'
     );
+    const handleCspReportRequest = requireFunction(
+        dependencies.handleCspReportRequest,
+        'handleCspReportRequest'
+    );
     const warn = typeof dependencies.warn === 'function'
         ? dependencies.warn
         : (...args) => console.warn(...args);
@@ -71,6 +75,11 @@ function registerReportingHttpRoutes(dependencies = {}) {
             status: 503,
             body: Object.freeze({ ok: false, error: 'notification_failed' }),
         }),
+        cspReport: Object.freeze({
+            logPrefix: '[csp-report] handler failed:',
+            status: 503,
+            body: Object.freeze({ ok: false, error: 'report_failed' }),
+        }),
     });
     const handlers = Object.freeze({
         clientError: makeRouteHandler(handleClientErrorRequest, failures.clientError, warn),
@@ -89,6 +98,7 @@ function registerReportingHttpRoutes(dependencies = {}) {
             failures.gameLifecycle,
             warn
         ),
+        cspReport: makeRouteHandler(handleCspReportRequest, failures.cspReport, warn),
     });
 
     app.use('/api/client-error', json({ limit: dependencies.clientErrorJsonLimit }));
@@ -97,6 +107,11 @@ function registerReportingHttpRoutes(dependencies = {}) {
     app.get('/api/client-error-health', handlers.clientErrorHealth);
     app.use('/api/game-lifecycle', json({ limit: '8kb' }));
     app.post('/api/game-lifecycle', handlers.gameLifecycle);
+    app.use('/api/csp-report', json({
+        limit: dependencies.cspReportJsonLimit,
+        type: ['application/csp-report', 'application/json'],
+    }));
+    app.post('/api/csp-report', handlers.cspReport);
 
     return handlers;
 }

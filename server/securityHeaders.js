@@ -32,6 +32,7 @@ function buildContentSecurityPolicyReportOnly(inlineScriptHashes = []) {
         "frame-src 'self' https:",
         "worker-src 'self' blob:",
         "manifest-src 'self'",
+        'report-uri /api/csp-report',
     ].join('; ');
 }
 

@@ -36,6 +36,11 @@ function makeRuntime(overrides = {}) {
             calls.push(['lifecycle-handler', req, res]);
             return Promise.resolve();
         },
+        cspReportJsonLimit: 8192,
+        handleCspReportRequest(req, res) {
+            calls.push(['csp-report-handler', req, res]);
+            return Promise.resolve();
+        },
         warn(...args) { calls.push(['warn', ...args]); },
     };
     Object.assign(dependencies, overrides);
@@ -66,16 +71,23 @@ runTest('reporting HTTP routes は既存path・JSON limit・登録順を維持�
         ['get', '/api/client-error-health'],
         ['use', '/api/game-lifecycle'],
         ['post', '/api/game-lifecycle'],
+        ['use', '/api/csp-report'],
+        ['post', '/api/csp-report'],
     ]);
     assert.deepStrictEqual(calls.filter(call => call[0] === 'json').map(call => call[1]), [
         { limit: 8192 },
         { limit: '1kb' },
         { limit: '8kb' },
+        {
+            limit: 8192,
+            type: ['application/csp-report', 'application/json'],
+        },
     ]);
     assert.strictEqual(registrations[1][2], handlers.clientError);
     assert.strictEqual(registrations[2][3], handlers.clientErrorTest);
     assert.strictEqual(registrations[3][2], handlers.clientErrorHealth);
     assert.strictEqual(registrations[5][2], handlers.gameLifecycle);
+    assert.strictEqual(registrations[7][2], handlers.cspReport);
     assert.ok(Object.isFrozen(handlers));
 });
 
@@ -87,8 +99,10 @@ runTest('reporting HTTP route handler はgatewayへreq/resを同一参照で渡�
     assert.strictEqual(handlers.clientErrorTest(req, res), undefined);
     assert.strictEqual(handlers.clientErrorHealth(req, res), undefined);
     assert.strictEqual(handlers.gameLifecycle(req, res), undefined);
+    assert.strictEqual(handlers.cspReport(req, res), undefined);
     await new Promise(resolve => setImmediate(resolve));
     assert.deepStrictEqual(calls.filter(call => call[0].endsWith('-handler')).map(call => call.slice(1)), [
+        [req, res],
         [req, res],
         [req, res],
         [req, res],
@@ -103,24 +117,28 @@ runTest('reporting HTTP routes は各gateway失敗時のstatus・body・logを�
         handleClientErrorTestRequest: rejected('test boom'),
         handleClientErrorHealthRequest: rejected('health boom'),
         handleGameLifecycleRequest: rejected('lifecycle boom'),
+        handleCspReportRequest: rejected('csp boom'),
     });
     handlers.clientError({}, responseRecorder(calls));
     handlers.clientErrorTest({}, responseRecorder(calls));
     handlers.clientErrorHealth({}, responseRecorder(calls));
     handlers.gameLifecycle({}, responseRecorder(calls));
+    handlers.cspReport({}, responseRecorder(calls));
     await new Promise(resolve => setImmediate(resolve));
     assert.deepStrictEqual(calls.filter(call => call[0] === 'warn'), [
         ['warn', '[client-error] handler failed:', 'client boom'],
         ['warn', '[client-error-test] handler failed:', 'test boom'],
         ['warn', '[client-error-health] handler failed:', 'health boom'],
         ['warn', '[game-lifecycle] handler failed:', 'lifecycle boom'],
+        ['warn', '[csp-report] handler failed:', 'csp boom'],
     ]);
-    assert.deepStrictEqual(calls.filter(call => call[0] === 'status').map(call => call[1]), [503, 503, 503, 503]);
+    assert.deepStrictEqual(calls.filter(call => call[0] === 'status').map(call => call[1]), [503, 503, 503, 503, 503]);
     assert.deepStrictEqual(calls.filter(call => call[0] === 'response-json').map(call => call[1]), [
         { ok: false, error: 'notification_failed' },
         { ok: false, error: 'client_error_test_failed' },
         { ok: false, error: 'client_error_health_failed' },
         { ok: false, error: 'notification_failed' },
+        { ok: false, error: 'report_failed' },
     ]);
 });
 

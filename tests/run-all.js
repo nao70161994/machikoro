@@ -31,6 +31,7 @@ const TEST_GROUPS = {
         'game-lifecycle-gateway.test.js',
         'report-delivery.test.js',
         'reporting-http-routes.test.js',
+        'csp-report-gateway.test.js',
         'game-settings.test.js',
         'server-runtime-limits.test.js',
         'game-runtime-loader.test.js',
@@ -451,6 +452,7 @@ const TEST_GROUPS = {
         'game-lifecycle-gateway.test.js',
         'report-delivery.test.js',
         'reporting-http-routes.test.js',
+        'csp-report-gateway.test.js',
         'game-settings.test.js',
         'server-runtime-limits.test.js',
         'game-runtime-loader.test.js',
@@ -726,6 +728,7 @@ const REQUIRED_TEST_GROUPS = Object.freeze({
     'online-soak.test.js': ['soak'],
     'socket-origin-policy.test.js': ['unit', 'online'],
     'security-headers.test.js': ['unit'],
+    'csp-report-gateway.test.js': ['unit'],
     'pwa-shell.test.js': ['unit', 'pwa'],
     'app-shell-startup-runtime.test.js': ['unit', 'pwa'],
 });

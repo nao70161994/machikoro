@@ -16,6 +16,7 @@
     "types/checkjs-browser-globals.d.ts",
     "types/checkjs-app-shell-globals.d.ts",
     "server.js",
+    "server/cspReportGateway.js",
     "scripts/check-static-files.js",
     "js/Card.js",
     "js/designTheme.js",

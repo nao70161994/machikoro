@@ -55,6 +55,15 @@ const GAME_LIFECYCLE_LIMITS = Object.freeze({
     rateLimitMaxBuckets: 1000,
 });
 
+const CSP_REPORT_LIMITS = Object.freeze({
+    maxJsonBytes: 8 * 1024,
+    rateLimitWindowMs: 60 * 1000,
+    rateLimitMax: 60,
+    rateLimitMaxBuckets: 2000,
+    maxBuckets: 128,
+    maxLogsPerWindow: 20,
+});
+
 module.exports = Object.freeze({
     MAX_ACTION_LOG_LENGTH,
     ROOM_LIFECYCLE_LIMITS,
@@ -64,4 +73,5 @@ module.exports = Object.freeze({
     REJOIN_ADMISSION_LIMITS,
     CLIENT_ERROR_LIMITS,
     GAME_LIFECYCLE_LIMITS,
+    CSP_REPORT_LIMITS,
 });

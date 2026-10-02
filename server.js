@@ -27,6 +27,7 @@ const loadGameRuntime = makeGameRuntimeLoader({
 const { postNtfyNotification } = require('./server/ntfyNotifier');
 const makeReportDelivery = require('./server/reportDelivery');
 const registerReportingHttpRoutes = require('./server/reportingHttpRoutes');
+const { createCspReportCollector, makeCspReportHandler } = require('./server/cspReportGateway');
 const { makeClientErrorReporting } = require('./server/clientErrorReporting');
 const makeClientErrorGateway = require('./server/clientErrorGateway');
 const {
@@ -65,6 +66,7 @@ const {
     REJOIN_ADMISSION_LIMITS,
     CLIENT_ERROR_LIMITS,
     GAME_LIFECYCLE_LIMITS,
+    CSP_REPORT_LIMITS,
 } = require('./server/runtimeLimits');
 const { registerLobbySocketHandlers } = require('./server/lobbySocketHandlers');
 const { registerRejoinSocketHandler } = require('./server/rejoinSocketHandler');
@@ -448,6 +450,7 @@ const clientErrorRateBuckets = new Map();
 const clientErrorDedupeCache = new Map();
 const gameLifecycleRateBuckets = new Map();
 const gameLifecycleDedupeCache = new Map();
+const cspReportRateBuckets = new Map();
 const canonicalStateStore = createCanonicalStateStoreFromEnv(process.env);
 const {
     persistRoomCanonicalState,
@@ -538,6 +541,21 @@ const {
     dedupeCache: gameLifecycleDedupeCache,
     dedupeKey: gameLifecycleDedupeKey,
 });
+const { isRateLimited: isCspReportRateLimited } = makeReportAdmission({
+    limits: CSP_REPORT_LIMITS,
+    rateBuckets: cspReportRateBuckets,
+    dedupeKey: () => '',
+});
+const cspReportCollector = createCspReportCollector({
+    maxBuckets: CSP_REPORT_LIMITS.maxBuckets,
+    maxLogsPerWindow: CSP_REPORT_LIMITS.maxLogsPerWindow,
+    log: (...args) => console.warn(...args),
+});
+const handleCspReportRequest = makeCspReportHandler({
+    rateKey: clientReportRateKey,
+    isRateLimited: isCspReportRateLimited,
+    collector: cspReportCollector,
+});
 
 const IS_MAIN_MODULE = /** @type {{main?: unknown}} */ (require).main === module;
 const BUILD_HASH = IS_MAIN_MODULE ? resolveBuildHash() : (process.env.BUILD_HASH || 'test');
@@ -623,10 +641,12 @@ registerReportingHttpRoutes({
     app,
     json: express.json,
     clientErrorJsonLimit: CLIENT_ERROR_LIMITS.maxJsonBytes,
+    cspReportJsonLimit: CSP_REPORT_LIMITS.maxJsonBytes,
     handleClientErrorRequest,
     handleClientErrorTestRequest,
     handleClientErrorHealthRequest,
     handleGameLifecycleRequest,
+    handleCspReportRequest,
     warn: (...args) => console.warn(...args),
 });
 
