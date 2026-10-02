@@ -14,9 +14,17 @@ const UI_EXCLUDED_BASE_FILES = new Set([
     'js/appShell.js',
     'types/checkjs-app-shell-globals.d.ts',
 ]);
+const STORAGE_EXCLUDED_BASE_FILES = new Set([
+    'js/appShell.js',
+    'types/checkjs-app-shell-globals.d.ts',
+]);
 const UI_ROOT_FILES = Object.freeze([
     'types/checkjs-ui-globals.d.ts',
     'js/ui.js',
+]);
+const STORAGE_ROOT_FILES = Object.freeze([
+    'types/checkjs-storage-globals.d.ts',
+    'js/storage.js',
 ]);
 
 function readConfig(configPath) {
@@ -87,10 +95,43 @@ function checkUiCompositionRoot() {
     return 0;
 }
 
+function checkStorageCompositionRoot() {
+    const base = readConfig(BASE_CONFIG);
+    const diagnostics = [...base.errors];
+    if (diagnostics.length === 0) {
+        const rootFiles = base.fileNames.filter(file =>
+            !STORAGE_EXCLUDED_BASE_FILES.has(path.relative(REPO_ROOT, file).split(path.sep).join('/'))
+        );
+        const program = ts.createProgram({
+            rootNames: [...new Set([...rootFiles, ...STORAGE_ROOT_FILES.map(file => path.join(REPO_ROOT, file))])],
+            options: base.options,
+        });
+        diagnostics.push(...ts.getPreEmitDiagnostics(program));
+    }
+
+    if (diagnostics.length > 0) {
+        const host = {
+            getCanonicalFileName: file => file,
+            getCurrentDirectory: () => REPO_ROOT,
+            getNewLine: () => ts.sys.newLine,
+        };
+        process.stderr.write(ts.formatDiagnosticsWithColorAndContext(diagnostics, host));
+        return 1;
+    }
+    process.stdout.write('checkJs storage composition-root project passed\n');
+    return 0;
+}
+
 if (require.main === module) {
     const mainStatus = checkCompositionRoot();
     const uiStatus = checkUiCompositionRoot();
-    process.exitCode = mainStatus || uiStatus;
+    const storageStatus = checkStorageCompositionRoot();
+    process.exitCode = mainStatus || uiStatus || storageStatus;
 }
 
-module.exports = Object.freeze({ checkCompositionRoot, checkUiCompositionRoot, readConfig });
+module.exports = Object.freeze({
+    checkCompositionRoot,
+    checkStorageCompositionRoot,
+    checkUiCompositionRoot,
+    readConfig,
+});

@@ -734,7 +734,7 @@ function applyAccessibilitySettings(values = {}) {
     if (volumeLabel) volumeLabel.textContent = `${volume}%`;
     Object.entries(effectValues).forEach(([id, checked]) => {
         const element = document.getElementById(id);
-        if (element) element.checked = checked;
+        if (element && 'checked' in element) element.checked = checked;
     });
     if (typeof setSoundVolume === 'function') setSoundVolume(volume);
     if (typeof setSoundEffectEnabled === 'function') {

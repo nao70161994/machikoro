@@ -45,6 +45,28 @@ function normalizeSoundVolume(value) {
     return Math.min(100, Math.max(0, Math.round(volume)));
 }
 
+/** @param {{
+ *   selectedCount: number,
+ *   playerSettings: readonly unknown[],
+ *   tutorialEnabled: boolean,
+ *   tutorialLevel: string,
+ *   cpuSpeed?: string | number | null,
+ *   accessibilityFontScale: string,
+ *   accessibilityReducedMotion: boolean,
+ *   accessibilityHighContrast: boolean,
+ *   accessibilityHaptics: boolean,
+ *   hapticTurnEnabled: boolean,
+ *   hapticDiceEnabled: boolean,
+ *   hapticBuildEnabled: boolean,
+ *   hapticWinEnabled: boolean,
+ *   soundVolume: string | number,
+ *   soundDiceEnabled: boolean,
+ *   soundCoinEnabled: boolean,
+ *   soundBuildEnabled: boolean,
+ *   soundWinEnabled: boolean,
+ * }} values
+ * @returns {{ selectedCount: number, playerSettings: string, [key: string]: string | number }}
+ */
 function serializeSettings(values) {
     const result = {
         selectedCount: values.selectedCount,
