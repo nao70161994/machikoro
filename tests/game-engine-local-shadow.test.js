@@ -48,6 +48,64 @@ runTest('local Engineは明示OFFでlegacy mutable経路へrollbackできる', (
     assert.strictEqual(rt.__test.getLocalGameEngineShadowOutcome(), null);
 });
 
+runTest('local Engineは確実にログを置き換える遷移でだけ入力ログ複製を省く', () => {
+    const rt = loadIntegrationRuntime();
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = true;
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED = false;
+    rt.__test.startLocalGame(symmetricSettings());
+
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.BUILD;
+    game.log = Array.from({ length: 1200 }, (_, index) => ({
+        type: 'gain',
+        message: `historical turn entry ${index}`,
+    }));
+    assert.strictEqual(rt.localGameEngineTransitionLogLimit('nextTurn', { game }), 0);
+    assert.strictEqual(rt.__test.runLocalEngineAction('nextTurn', {}), true);
+    assert.strictEqual(rt.__test.getLocalGameEngineShadowOutcome().report.status, 'matched');
+    assert.deepStrictEqual(
+        Array.from(rt.__test.getGame().log, entry => entry.message),
+        ['👤 Playerのターン']
+    );
+
+    const current = rt.__test.getGame().currentPlayer();
+    current.cards.push(rt.createCardByName('ITベンチャー'));
+    rt.__test.getGame().phase = rt.GAME_PHASES.BUILD;
+    rt.__test.getGame().log = [{ type: 'gain', message: 'keep until IT choice' }];
+    assert.strictEqual(
+        rt.localGameEngineTransitionLogLimit('nextTurn', { game: rt.__test.getGame() }),
+        Number.MAX_SAFE_INTEGER
+    );
+    assert.strictEqual(rt.__test.runLocalEngineAction('nextTurn', {}), true);
+    assert.strictEqual(rt.__test.getLocalGameEngineShadowOutcome().report.status, 'matched');
+    assert.deepStrictEqual(
+        Array.from(rt.__test.getGame().log, entry => entry.message),
+        ['keep until IT choice', '💻 ITベンチャー：1コイン積立しますか？（現在0コイン積立中）']
+    );
+});
+
+runTest('local Engine rerollは確認phaseで入力ログを省いても結果ログが一致する', () => {
+    const rt = loadIntegrationRuntime();
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = true;
+    rt.window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED = false;
+    rt.__test.startLocalGame(symmetricSettings());
+
+    const game = rt.__test.getGame();
+    game.phase = rt.GAME_PHASES.REROLL_CONFIRM;
+    game.pendingTunaDice = [2, 3];
+    game.log = Array.from({ length: 1200 }, (_, index) => ({
+        type: 'gain',
+        message: `historical turn entry ${index}`,
+    }));
+    assert.strictEqual(rt.localGameEngineTransitionLogLimit('rerollDice', { game }), 0);
+    assert.strictEqual(rt.__test.runLocalEngineAction('rerollDice', {
+        forceDice: 4,
+        tunaDice: [2, 3],
+    }), true);
+    assert.strictEqual(rt.__test.getLocalGameEngineShadowOutcome().report.status, 'matched');
+    assert.ok(rt.__test.getGame().log.every(entry => !entry.message.startsWith('historical turn entry')));
+});
+
 runTest('local Engine shadowは未解決乱数payloadをauthority有効時も採用しない', () => {
     const rt = loadIntegrationRuntime();
     rt.window.MACHIKORO_LOCAL_GAME_ENGINE_SHADOW_ENABLED = true;

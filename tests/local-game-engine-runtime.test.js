@@ -77,8 +77,14 @@ function createHarness(options = {}) {
                 : 'sent';
         },
         shopStock: {},
-        snapshot: { serializeGameState: (value, stock, metadata) => ({ game: value, stock: { ...stock }, undoState: metadata.undoState }) },
         stationName: '駅',
+        transitionLogLimit: options.transitionLogLimit,
+        snapshot: {
+            serializeGameState(value, stock, metadata) {
+                calls.push(['snapshotLogLimit', metadata.logLimit]);
+                return { game: value, stock: { ...stock }, undoState: metadata.undoState };
+            },
+        },
     });
     return { calls, controller, runtime, setOnline: value => { online = value; }, setShadow: value => { shadow = value; }, setAuthority: value => { authority = value; } };
 }
@@ -175,6 +181,17 @@ runTest('local game engine runtimeはresolved shadowだけを比較しoutcome co
     assert.strictEqual(h.controller.get(), outcome);
     const unresolved = createHarness({ shadow: true, resolved: false });
     assert.strictEqual(unresolved.runtime.prepare('rollDice', { forceDice: null }), null);
+});
+
+runTest('local game engine runtimeはaction別log limitを遷移入力に適用する', () => {
+    const h = createHarness({
+        shadow: true,
+        transitionLogLimit: action => action === 'nextTurn' ? 0 : Number.MAX_SAFE_INTEGER,
+    });
+    h.runtime.prepare('nextTurn', {});
+    assert.deepStrictEqual(h.calls.find(call => call[0] === 'snapshotLogLimit'), [
+        'snapshotLogLimit', 0,
+    ]);
 });
 
 runTest('local game engine runtimeは必須依存欠落を初期化前に拒否する', () => {

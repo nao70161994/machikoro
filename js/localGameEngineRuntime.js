@@ -27,19 +27,25 @@ const LocalGameEngineRuntime = (() => {
             return dependencies.runtimeAdapter.create(dependencies.adapterOptions());
         }
 
-        function buildSnapshot() {
+        function buildSnapshot(options = {}) {
             const state = dependencies.getGameState();
             return dependencies.snapshot.serializeGameState(state.game, dependencies.shopStock, {
                 undoState: state.undoState,
                 actionSeq: 0,
-                logLimit: Number.MAX_SAFE_INTEGER,
+                logLimit: Number.isInteger(options.logLimit) && options.logLimit >= 0
+                    ? options.logLimit
+                    : Number.MAX_SAFE_INTEGER,
                 pendingActionsFor: dependencies.pendingActionsFor,
             });
         }
 
         function prepare(action, data) {
             if (!dependencies.isShadowEnabled()) return null;
-            const sourceSnapshot = buildSnapshot();
+            const state = dependencies.getGameState();
+            const logLimit = typeof dependencies.transitionLogLimit === 'function'
+                ? dependencies.transitionLogLimit(action, state)
+                : Number.MAX_SAFE_INTEGER;
+            const sourceSnapshot = buildSnapshot({ logLimit });
             if (!dependencies.determinism.isResolved({
                 action,
                 data,

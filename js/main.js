@@ -869,6 +869,30 @@ function isLocalGameEngineAuthorityEnabled() {
         window.MACHIKORO_LOCAL_GAME_ENGINE_AUTHORITY_ENABLED !== false;
 }
 
+function localGameEngineTransitionLogLimit(action, state) {
+    const game = state && state.game;
+    if (!game) return Number.MAX_SAFE_INTEGER;
+    if (action === MAIN_ACTIONS.REROLL_DICE && game.phase === GAME_PHASES.REROLL_CONFIRM) {
+        return 0;
+    }
+    if (action !== MAIN_ACTIONS.NEXT_TURN ||
+            game.phase !== GAME_PHASES.BUILD ||
+            typeof game.checkWinner !== 'function' ||
+            game.checkWinner()) return Number.MAX_SAFE_INTEGER;
+
+    const current = Array.isArray(game.players) && Number.isInteger(game.currentPlayerIndex)
+        ? game.players[game.currentPlayerIndex]
+        : null;
+    if (!current || !Array.isArray(current.cards) || typeof current.isDormant !== 'function') {
+        return Number.MAX_SAFE_INTEGER;
+    }
+    const hasActiveItStartup = current.cards.some(card =>
+        card && card.effect === CARD_EFFECTS.ITSTARTUP && !current.isDormant(card)
+    );
+    // nextTurn can pause for IT Venture without resetting the current turn's log.
+    return hasActiveItStartup ? Number.MAX_SAFE_INTEGER : 0;
+}
+
 const localGameEngineRuntime = LocalGameEngineRuntime.createRuntime({
     actionProposal: CPUActionProposal,
     adapterOptions() {
@@ -904,6 +928,7 @@ const localGameEngineRuntime = LocalGameEngineRuntime.createRuntime({
     shopStock: SHOP_STOCK,
     snapshot: GameSnapshot,
     stationName: LANDMARK_NAMES.STATION,
+    transitionLogLimit: localGameEngineTransitionLogLimit,
 });
 const _localGameEngineShadowOutcomeController = localGameEngineRuntime.outcomeController;
 
