@@ -45,6 +45,23 @@ runTest('game start admissionは開始条件を理由付きplanへ正規化す�
         started: false,
         players: [{ id: 'a' }, { id: 'b' }],
     }, 2).decision, GAME_START_DECISIONS.START);
+    assert.deepStrictEqual(planGameStart({
+        started: false,
+        players: [{ id: 'a', ready: true }, { id: 'b', ready: true }],
+    }, 2, socketId => socketId === 'a'), {
+        decision: GAME_START_DECISIONS.SKIP,
+        reason: GAME_START_SKIP_REASONS.WAITING_HUMAN_SLOTS,
+    });
+    assert.deepStrictEqual(planGameStart({
+        started: false,
+        players: [{ id: 'a', ready: true }, { id: 'b', ready: false }],
+    }, 1, socketId => socketId === 'a'), {
+        decision: GAME_START_DECISIONS.START,
+        room: {
+            started: false,
+            players: [{ id: 'a', ready: true }, { id: 'b', ready: false }],
+        },
+    });
 });
 
 runTest('game start runtimeはmark、emit、logを契約順に一度だけ実行する', () => {

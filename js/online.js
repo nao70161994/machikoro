@@ -100,12 +100,25 @@ function leaveOnlineLobby() {
     const roomId = session.myRoomId;
     return showConfirm('待機室から退出しますか？\n再参加にはルームIDが必要です', () => {
         onlineDomEffects.setInputValue(OnlineDomEffects.ids.roomId, roomId);
-        _removeOnlineSessionStorageItem(roomId);
-        resetOnlineState();
-        onlineDomEffects.setStatusText(`ルーム ${roomId} から退出しました。再参加する場合は参加ボタンを押してください。`);
-        if (typeof switchTab === 'function') switchTab('online');
-        if (typeof switchOnlineTab === 'function') switchOnlineTab('join');
-        onlineClientEffects.updateResumeButton();
+        let finished = false;
+        let leaveAckTimer = null;
+        const finishLeave = () => {
+            if (finished) return;
+            finished = true;
+            if (leaveAckTimer !== null) clearTimeout(leaveAckTimer);
+            _removeOnlineSessionStorageItem(roomId);
+            resetOnlineState();
+            onlineDomEffects.setStatusText(`ルーム ${roomId} から退出しました。再参加する場合は参加ボタンを押してください。`);
+            if (typeof switchTab === 'function') switchTab('online');
+            if (typeof switchOnlineTab === 'function') switchOnlineTab('join');
+            onlineClientEffects.updateResumeButton();
+        };
+        if (!session.socket) {
+            finishLeave();
+            return;
+        }
+        leaveAckTimer = setTimeout(finishLeave, 1000);
+        onlineSocketEffects.leaveWaitingRoom({ roomId }, session.socket, finishLeave);
     });
 }
 

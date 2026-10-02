@@ -247,7 +247,10 @@ function loadOnlineRuntime(options = {}) {
         if (!__onlineRuntimeOptions.withoutIo) {
             io = () => ({
                 on(name, handler) { socketHandlers[name] = handler; },
-                emit(name, payload) { socketEmits.push({ name, payload }); },
+                emit(name, payload, acknowledge) {
+                    socketEmits.push({ name, payload });
+                    if (name === 'leaveWaitingRoom' && typeof acknowledge === 'function') acknowledge(true);
+                },
                 disconnect() { socketDisconnected = true; },
             });
         }
@@ -1656,6 +1659,8 @@ runTest('待機室退出は確認後にsocketと資格情報を片付けroom ID�
     assert.match(confirmation.message, /待機室から退出/);
     confirmation.onOk();
 
+    assert.ok(rt.getSocketEmits().some(entry => entry.name === 'leaveWaitingRoom' &&
+        entry.payload.roomId === 'ROOM01'));
     assert.strictEqual(rt.getSocketDisconnected(), true);
     assert.strictEqual(rt.getOnlineState().socket, null);
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);

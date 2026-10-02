@@ -1,10 +1,5 @@
 'use strict';
 
-const EXPLICIT_LEAVE_REASONS = new Set([
-    'client namespace disconnect',
-    'server namespace disconnect',
-]);
-
 function pruneExpiredWaitingReservations(room, now = Date.now()) {
     if (!room || room.started || !Array.isArray(room.players)) return [];
     const removed = [];
@@ -34,10 +29,6 @@ function isWaitingReservation(player, now = Date.now()) {
         player.reservedUntil > now);
 }
 
-function shouldRemoveWaitingPlayerImmediately(reason) {
-    return EXPLICIT_LEAVE_REASONS.has(reason);
-}
-
 function createDisconnectSocketHandler(dependencies) {
     const {
         io,
@@ -52,7 +43,6 @@ function createDisconnectSocketHandler(dependencies) {
         cancelOnlineRematch = () => false,
         waitingReservationTtlMs,
         reserveWaitingPlayer: reserveWaitingPlayerEffect = reserveWaitingPlayer,
-        shouldRemoveWaitingPlayerImmediately: shouldRemoveWaitingPlayerImmediatelyEffect = shouldRemoveWaitingPlayerImmediately,
     } = dependencies;
     const now = typeof dependencies.now === 'function' ? dependencies.now : Date.now;
     const log = typeof dependencies.log === 'function' ? dependencies.log : console.log;
@@ -124,12 +114,8 @@ function createDisconnectSocketHandler(dependencies) {
             if (roomId && rooms[roomId]) {
                 const room = rooms[roomId];
                 if (!room.started) {
-                    if (shouldRemoveWaitingPlayerImmediatelyEffect(reason)) {
-                        removeWaitingRoomSocket(targetIo, roomId, room, socket);
-                    } else {
-                        const result = reserveWaitingRoomSocket(targetIo, roomId, room, socket);
-                        if (result.ignored) return;
-                    }
+                    const result = reserveWaitingRoomSocket(targetIo, roomId, room, socket);
+                    if (result.ignored) return;
                 } else {
                     const result = handleStartedRoomSocketDisconnect(targetIo, roomId, room, socket);
                     if (result.ignored) return;
@@ -163,5 +149,4 @@ module.exports = {
     isWaitingReservation,
     pruneExpiredWaitingReservations,
     reserveWaitingPlayer,
-    shouldRemoveWaitingPlayerImmediately,
 };

@@ -14,6 +14,7 @@ function makeGameStartCoordinator(dependencies) {
     }
     const rooms = dependencies.rooms;
     const countRoomHumanSlots = requiredFunction('countRoomHumanSlots', dependencies.countRoomHumanSlots);
+    const isSocketConnected = requiredFunction('isSocketConnected', dependencies.isSocketConnected);
     const buildGameStartPayload = requiredFunction('buildGameStartPayload', dependencies.buildGameStartPayload);
     const markRoomGameStarted = requiredFunction('markRoomGameStarted', dependencies.markRoomGameStarted);
     const logGameStarted = requiredFunction('logGameStarted', dependencies.logGameStarted);
@@ -23,7 +24,9 @@ function makeGameStartCoordinator(dependencies) {
         const requiredHumanSlots = room && !room.started
             ? countRoomHumanSlots(room)
             : 0;
-        const plan = planGameStart(room, requiredHumanSlots);
+        const plan = planGameStart(room, requiredHumanSlots, socketId =>
+            isSocketConnected(io, socketId) === true
+        );
         if (plan.decision !== GAME_START_DECISIONS.START) return;
 
         const gameStartPayload = buildGameStartPayload(io, plan.room);

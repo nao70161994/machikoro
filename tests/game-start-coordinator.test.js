@@ -6,11 +6,12 @@ const { runTest } = require('./helpers/test-utils');
 
 runTest('game start coordinatorはready roomを初期化してemit後にlogする', () => {
     const calls = [];
-    const room = { started: false, players: [{}, {}] };
+    const room = { started: false, players: [{ id: 'a', ready: true }, { id: 'b', ready: true }] };
     const payload = { playerNames: ['Alice', 'Bob'] };
     const { checkGameStart } = makeGameStartCoordinator({
         rooms: { ROOM01: room },
         countRoomHumanSlots(candidate) { calls.push(['count', candidate]); return 2; },
+        isSocketConnected() { return true; },
         buildGameStartPayload(io, candidate) { calls.push(['build', io, candidate]); return payload; },
         markRoomGameStarted(candidate, value) { calls.push(['mark', candidate, value]); candidate.started = true; },
         logGameStarted(roomId, value) { calls.push(['log', roomId, value]); },
@@ -31,13 +32,16 @@ runTest('game start coordinatorはready roomを初期化してemit後にlogす�
 runTest('game start coordinatorはmissing、started、not-ready、payload拒否でeffectsを止める', () => {
     const calls = [];
     const rooms = {
-        STARTED: { started: true, players: [{}, {}] },
+        STARTED: { started: true, players: [{ id: 'a' }, { id: 'b' }] },
         WAITING: { started: false, players: [{}] },
-        REJECTED: { started: false, players: [{}, {}] },
+        REJECTED: { started: false, players: [
+            { id: 'a', ready: true }, { id: 'b', ready: true },
+        ] },
     };
     const { checkGameStart } = makeGameStartCoordinator({
         rooms,
         countRoomHumanSlots() { calls.push('count'); return 2; },
+        isSocketConnected() { return true; },
         buildGameStartPayload() { calls.push('build'); return null; },
         markRoomGameStarted() { calls.push('mark'); },
         logGameStarted() { calls.push('log'); },
@@ -54,4 +58,30 @@ runTest('game start coordinatorはmissing、started、not-ready、payload拒否�
 runTest('game start coordinatorは不正な依存をeffects前に拒否する', () => {
     assert.throws(() => makeGameStartCoordinator({}), /rooms must be an object/);
     assert.throws(() => makeGameStartCoordinator({ rooms: {} }), /countRoomHumanSlots must be a function/);
+});
+
+runTest('game start coordinatorはsocket mapにない待機者がいても開始しない', () => {
+    const calls = [];
+    const room = { started: false, players: [
+        { id: 'a', ready: true }, { id: 'b', ready: true },
+    ] };
+    const { checkGameStart } = makeGameStartCoordinator({
+        rooms: { ROOM01: room },
+        countRoomHumanSlots: () => 2,
+        isSocketConnected(io, socketId) {
+            calls.push(['connected?', socketId]);
+            return io.sockets.sockets.has(socketId);
+        },
+        buildGameStartPayload() { calls.push(['build']); return {}; },
+        markRoomGameStarted() { calls.push(['mark']); },
+        logGameStarted() { calls.push(['log']); },
+    });
+    const io = {
+        sockets: { sockets: new Map([['a', { connected: true }]]) },
+        to() { calls.push(['to']); return { emit() { calls.push(['emit']); } }; },
+    };
+
+    checkGameStart(io, 'ROOM01');
+    assert.deepStrictEqual(calls, [['connected?', 'a'], ['connected?', 'b']]);
+    assert.strictEqual(room.started, false);
 });

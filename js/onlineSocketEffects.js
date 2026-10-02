@@ -5,6 +5,7 @@ const OnlineSocketEffects = (() => {
         createRoom: 'createRoom',
         gameAction: 'gameAction',
         joinRoom: 'joinRoom',
+        leaveWaitingRoom: 'leaveWaitingRoom',
         recreateRoom: 'recreateRoom',
         rejoinRoom: 'rejoinRoom',
         removeWaitingPlayer: 'removeWaitingPlayer',
@@ -39,6 +40,14 @@ const OnlineSocketEffects = (() => {
             createRoom: payload => emit(events.createRoom, payload),
             gameAction: (payload, socket = null) => emit(events.gameAction, payload, socket),
             joinRoom: payload => emit(events.joinRoom, payload),
+            leaveWaitingRoom: (payload = {}, socket = null, callback = null) => {
+                const targetSocket = socket || getSocket();
+                if (!targetSocket || typeof targetSocket.emit !== 'function') {
+                    throw new TypeError(`Socket emit unavailable for ${events.leaveWaitingRoom}`);
+                }
+                targetSocket.emit(events.leaveWaitingRoom, payload, callback);
+                return true;
+            },
             recreateRoom: payload => emit(events.recreateRoom, payload),
             rejoinRoom: payload => emit(events.rejoinRoom, payload),
             requestOnlineRematch: (payload = {}, socket = null) =>

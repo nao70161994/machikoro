@@ -12,7 +12,8 @@ const GAME_START_SKIP_REASONS = Object.freeze({
     WAITING_READY_PLAYERS: 'waiting-ready-players',
 });
 
-function planGameStart(room, requiredHumanSlots) {
+/** @param {any} room @param {number} requiredHumanSlots @param {(socketId: string) => boolean} [isSocketConnected] */
+function planGameStart(room, requiredHumanSlots, isSocketConnected = () => true) {
     if (!room) {
         return Object.freeze({
             decision: GAME_START_DECISIONS.SKIP,
@@ -25,14 +26,18 @@ function planGameStart(room, requiredHumanSlots) {
             reason: GAME_START_SKIP_REASONS.ALREADY_STARTED,
         });
     }
-    const connectedHumanPlayers = room.players.filter(player => player && player.id !== null).length;
+    const connectedHumanPlayers = room.players.filter(player =>
+        player && typeof player.id === 'string' && player.id !== '' &&
+            isSocketConnected(player.id)
+    ).length;
     if (connectedHumanPlayers < requiredHumanSlots) {
         return Object.freeze({
             decision: GAME_START_DECISIONS.SKIP,
             reason: GAME_START_SKIP_REASONS.WAITING_HUMAN_SLOTS,
         });
     }
-    if (room.players.some(player => player && player.id !== null && player.ready === false)) {
+    if (room.players.some(player => player && typeof player.id === 'string' &&
+            player.id !== '' && isSocketConnected(player.id) && player.ready === false)) {
         return Object.freeze({
             decision: GAME_START_DECISIONS.SKIP,
             reason: GAME_START_SKIP_REASONS.WAITING_READY_PLAYERS,

@@ -22,6 +22,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         buildLobbyState,
         io,
         checkGameStart,
+        leaveWaitingRoom: leaveWaitingRoomEffect,
         validateSocketCanEnterRoom,
         isValidRoomId,
         pruneExpiredWaitingReservations: pruneExpiredWaitingReservationsEffect = () => [],
@@ -149,6 +150,24 @@ function registerLobbySocketHandlers(socket, dependencies) {
         });
         io.to(roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room));
         checkGameStart(io, roomId);
+    });
+
+    socket.on('leaveWaitingRoom', (payload, acknowledge) => {
+        if (!requirePlainSocketPayload(socket, payload)) {
+            if (typeof acknowledge === 'function') acknowledge(false);
+            return;
+        }
+        const roomId = typeof payload.roomId === 'string' ? payload.roomId.trim().toUpperCase() : '';
+        const room = rooms[roomId];
+        if (!room || room.started || socket.roomId !== roomId ||
+                !room.players.some(player => player && player.id === socket.id &&
+                    player.index === socket.playerIndex) ||
+                typeof leaveWaitingRoomEffect !== 'function') {
+            if (typeof acknowledge === 'function') acknowledge(false);
+            return;
+        }
+        leaveWaitingRoomEffect(socket, roomId, room);
+        if (typeof acknowledge === 'function') acknowledge(true);
     });
 
     socket.on('removeWaitingPlayer', payload => {

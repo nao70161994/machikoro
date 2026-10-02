@@ -54,6 +54,10 @@ function makeRuntime() {
         },
         io,
         checkGameStart(value, roomId) { assert.strictEqual(value, io); trace.push(['check-start', roomId]); },
+        leaveWaitingRoom(socket, roomId, room) {
+            trace.push(['leave-waiting-room', socket.id, roomId]);
+            room.players = room.players.filter(player => player.id !== socket.id);
+        },
         validateSocketCanEnterRoom() { return { ok: true }; },
         isValidRoomId(roomId) { return roomId === 'ROOM01'; },
         now() { return 1_700_000_000_000; },
@@ -66,10 +70,38 @@ runTest('lobby socket handler は待機室管理を含む既存順序で登録�
     const runtime = makeRuntime();
     const socket = makeSocket('host', runtime.trace);
     registerLobbySocketHandlers(socket, runtime.dependencies);
-    assert.deepStrictEqual(Object.keys(socket.handlers), ['createRoom', 'joinRoom', 'removeWaitingPlayer', 'setWaitingReady', 'manageWaitingRoom']);
+    assert.deepStrictEqual(Object.keys(socket.handlers), ['createRoom', 'joinRoom', 'leaveWaitingRoom', 'removeWaitingPlayer', 'setWaitingReady', 'manageWaitingRoom']);
     assert.deepStrictEqual(runtime.trace.slice(0, 3), [
-        ['on', 'createRoom'], ['on', 'joinRoom'], ['on', 'removeWaitingPlayer'],
+        ['on', 'createRoom'], ['on', 'joinRoom'], ['on', 'leaveWaitingRoom'],
     ]);
+});
+
+runTest('leaveWaitingRoomは割当済み本人だけ待機席を即時解放する', () => {
+    const runtime = makeRuntime();
+    runtime.rooms.ROOM01 = {
+        roomId: 'ROOM01',
+        players: [
+            { id: 'host', name: 'Alice', index: 0 },
+            { id: 'guest', name: 'Bob', index: 1 },
+        ],
+        started: false,
+    };
+    const guest = makeSocket('guest', runtime.trace);
+    guest.roomId = 'ROOM01';
+    guest.playerIndex = 1;
+    registerLobbySocketHandlers(guest, runtime.dependencies);
+    runtime.trace.length = 0;
+
+    guest.handlers.leaveWaitingRoom({ roomId: 'ROOM01' });
+    assert.deepStrictEqual(runtime.rooms.ROOM01.players.map(player => player.id), ['host']);
+    assert.ok(runtime.trace.some(entry => entry[0] === 'leave-waiting-room' &&
+        entry[1] === 'guest' && entry[2] === 'ROOM01'));
+
+    runtime.trace.length = 0;
+    guest.handlers.leaveWaitingRoom({ roomId: 'ROOM02' });
+    guest.handlers.leaveWaitingRoom({ roomId: 'ROOM01' });
+    assert.strictEqual(runtime.trace.some(entry => entry[0] === 'leave-waiting-room'), false);
+    assert.deepStrictEqual(runtime.rooms.ROOM01.players.map(player => player.id), ['host']);
 });
 
 runTest('待機室hostは空席をCPU化して手動開始し末尾空き枠だけ変更できる', () => {

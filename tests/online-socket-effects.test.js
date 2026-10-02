@@ -50,6 +50,7 @@ runTest('online Socket effectsはoverride socketとhostless event名を維持す
     });
 
     runtime.gameAction({ action: 'rollDice' }, override.socket);
+    runtime.leaveWaitingRoom({ roomId: 'ABC123' }, override.socket);
     runtime.removeWaitingPlayer({ roomId: 'ABC123', playerIndex: 1 }, override.socket);
     runtime.manageWaitingRoom({ roomId: 'ABC123', action: 'start' }, override.socket);
     runtime.setWaitingReady({ roomId: 'ABC123', ready: true }, override.socket);
@@ -60,6 +61,7 @@ runTest('online Socket effectsはoverride socketとhostless event名を維持す
     assert.deepStrictEqual(current.calls, []);
     assert.deepStrictEqual(override.calls.map(call => call.event), [
         'gameAction',
+        'leaveWaitingRoom',
         'removeWaitingPlayer',
         'manageWaitingRoom',
         'setWaitingReady',

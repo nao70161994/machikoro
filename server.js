@@ -153,7 +153,6 @@ const {
     isWaitingReservation,
     pruneExpiredWaitingReservations,
     reserveWaitingPlayer,
-    shouldRemoveWaitingPlayerImmediately,
 } = require('./server/disconnectSocketHandler');
 const { createOnlineRematchRuntime } = require('./server/onlineRematchRuntime');
 const {
@@ -831,7 +830,6 @@ const disconnectSocketHandler = createDisconnectSocketHandler({
         onlineRematchRuntime.clear(roomId, reason),
     waitingReservationTtlMs: ROOM_LIFECYCLE_LIMITS.waitingReservationTtlMs,
     reserveWaitingPlayer,
-    shouldRemoveWaitingPlayerImmediately,
 });
 const {
     removeWaitingRoomSocket,
@@ -871,6 +869,8 @@ registerSocketConnectionRuntime({
             buildLobbyState,
             io,
             checkGameStart,
+            leaveWaitingRoom: (socket, roomId, room) =>
+                disconnectSocketHandler.removeWaitingRoomSocket(io, roomId, room, socket),
             validateSocketCanEnterRoom,
             isValidRoomId,
             pruneExpiredWaitingReservations,
@@ -1187,6 +1187,12 @@ const { buildGameStartPayload } = makeGameStartPayload({
 const { checkGameStart } = makeGameStartCoordinator({
     rooms,
     countRoomHumanSlots,
+    isSocketConnected(targetIo, socketId) {
+        const sockets = targetIo && targetIo.sockets && targetIo.sockets.sockets;
+        if (!sockets || typeof sockets.get !== 'function') return false;
+        const socket = sockets.get(socketId);
+        return !!socket && socket.connected !== false;
+    },
     buildGameStartPayload,
     markRoomGameStarted,
     logGameStarted: (roomId, payload) => console.log(

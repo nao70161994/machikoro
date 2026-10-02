@@ -145,3 +145,137 @@ runTest('rejoin room lifecycle e2e: 待機席は切断中に開始せず同一to
         restoreHeartbeat();
     }
 });
+
+runTest('rejoin room lifecycle e2e: namespace disconnectは席を予約し明示退出だけ即時削除する', async () => {
+    const httpServer = serverModule.__io.httpServer;
+    const restoreHeartbeat = configureSocketE2EHeartbeat(serverModule.__io);
+    await new Promise((resolve, reject) => {
+        httpServer.once('error', reject);
+        httpServer.listen(0, '127.0.0.1', resolve);
+    });
+    const origin = 'http://127.0.0.1:' + httpServer.address().port;
+    const host = connect(origin);
+    const guest = connect(origin);
+    let rejoined = null;
+    try {
+        await Promise.all([onceEvent(host, 'connect'), onceEvent(guest, 'connect')]);
+        const createdPromise = onceEvent(host, 'roomCreated');
+        host.emit('createRoom', {
+            playerName: 'Alice',
+            playerCount: 3,
+            playerSettings: [{ type: 'human' }, { type: 'human' }, { type: 'human' }],
+            clientVersion: 'waiting-namespace-rejoin-e2e',
+        });
+        const created = await createdPromise;
+        const joinedPromise = onceEvent(guest, 'roomJoined');
+        guest.emit('joinRoom', {
+            roomId: created.roomId,
+            playerName: 'Bob',
+            clientVersion: 'waiting-namespace-rejoin-e2e',
+        });
+        const joined = await joinedPromise;
+        guest.disconnect();
+        const room = serverModule.__rooms[created.roomId];
+        let reserved = room.players.find(player => player.index === joined.playerIndex);
+        for (let attempt = 0; attempt < 50 && reserved && reserved.id !== null; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+            reserved = room.players.find(player => player.index === joined.playerIndex);
+        }
+        assert.strictEqual(room.started, false);
+        assert.strictEqual(reserved.id, null);
+        assert.ok(reserved.reservedUntil > Date.now());
+
+        rejoined = connect(origin);
+        await onceEvent(rejoined, 'connect');
+        const resumedPromise = onceEvent(rejoined, 'roomJoined');
+        const rejoinedListPromise = onceEvent(host, 'playerList');
+        rejoined.emit('rejoinRoom', {
+            roomId: created.roomId,
+            playerIndex: joined.playerIndex,
+            playerName: 'Bob',
+            reconnectToken: joined.reconnectToken,
+            clientVersion: 'waiting-namespace-rejoin-e2e',
+        });
+        await resumedPromise;
+        await rejoinedListPromise;
+        assert.strictEqual(reserved.id, rejoined.id);
+
+        const leftListPromise = onceEvent(host, 'playerList');
+        const leaveAckPromise = new Promise(resolve => {
+            rejoined.emit('leaveWaitingRoom', { roomId: created.roomId }, resolve);
+        });
+        assert.strictEqual(await leaveAckPromise, true);
+        rejoined.disconnect();
+        assert.strictEqual((await leftListPromise).includes('Bob'), false);
+        assert.strictEqual(room.players.some(player => player.index === joined.playerIndex), false);
+    } finally {
+        host.close();
+        guest.close();
+        if (rejoined) rejoined.close();
+        await new Promise(resolve => serverModule.__io.close(resolve));
+        restoreHeartbeat();
+    }
+});
+
+runTest('rejoin room lifecycle e2e: 開始直後に切れた席は同一tokenで開始payloadから復帰する', async () => {
+    const httpServer = serverModule.__io.httpServer;
+    const restoreHeartbeat = configureSocketE2EHeartbeat(serverModule.__io);
+    await new Promise((resolve, reject) => {
+        httpServer.once('error', reject);
+        httpServer.listen(0, '127.0.0.1', resolve);
+    });
+    const origin = 'http://127.0.0.1:' + httpServer.address().port;
+    const host = connect(origin);
+    const guest = connect(origin);
+    let rejoined = null;
+    try {
+        await Promise.all([onceEvent(host, 'connect'), onceEvent(guest, 'connect')]);
+        const hostStartPromise = onceEvent(host, 'gameStart');
+        const createdPromise = onceEvent(host, 'roomCreated');
+        host.emit('createRoom', {
+            playerName: 'Alice',
+            playerCount: 2,
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            clientVersion: 'game-start-rejoin-e2e',
+        });
+        const created = await createdPromise;
+        host.emit('setWaitingReady', { roomId: created.roomId, ready: true });
+        const joinedPromise = onceEvent(guest, 'roomJoined');
+        guest.emit('joinRoom', {
+            roomId: created.roomId,
+            playerName: 'Bob',
+            clientVersion: 'game-start-rejoin-e2e',
+        });
+        const joined = await joinedPromise;
+        guest.emit('setWaitingReady', { roomId: created.roomId, ready: true });
+        await hostStartPromise;
+        const room = serverModule.__rooms[created.roomId];
+        assert.strictEqual(room.started, true);
+
+        const disconnected = onceEvent(host, 'playerDisconnected');
+        guest.disconnect();
+        assert.strictEqual((await disconnected).playerIndex, joined.playerIndex);
+        assert.strictEqual(room.players.find(player => player.index === joined.playerIndex).id, null);
+
+        rejoined = connect(origin);
+        await onceEvent(rejoined, 'connect');
+        const resumedPromise = onceEvent(rejoined, 'rejoinData');
+        rejoined.emit('rejoinRoom', {
+            roomId: created.roomId,
+            playerIndex: joined.playerIndex,
+            playerName: 'Bob',
+            reconnectToken: joined.reconnectToken,
+            clientVersion: 'game-start-rejoin-e2e',
+        });
+        const resumed = await resumedPromise;
+        assert.deepStrictEqual(resumed.gameStartPayload.playerNames.slice().sort(), ['Alice', 'Bob']);
+        assert.strictEqual(resumed.playerIndex, joined.playerIndex);
+        assert.strictEqual(room.players.find(player => player.index === joined.playerIndex).id, rejoined.id);
+    } finally {
+        host.close();
+        guest.close();
+        if (rejoined) rejoined.close();
+        await new Promise(resolve => serverModule.__io.close(resolve));
+        restoreHeartbeat();
+    }
+});

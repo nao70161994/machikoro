@@ -72,7 +72,7 @@ function createSubject(overrides = {}) {
     return { subject, rooms, handlers, calls, emitted, io, socket };
 }
 
-runTest('disconnect socket handlerはhostless復元処理の後にroom切断処理を行う', () => {
+runTest('namespace disconnectでも待機室identityを予約しhostを移譲する', () => {
     const subject = createSubject();
     subject.rooms.ROOM1 = {
         started: false,
@@ -87,11 +87,14 @@ runTest('disconnect socket handlerはhostless復元処理の後にroom切断処�
 
     assert.deepStrictEqual(subject.calls, ['hostless', 'remaining', 'set-host', 'emit-host', 'build-player-list', 'log']);
     assert.strictEqual(subject.rooms.ROOM1.hostPlayerIndex, 1);
-    assert.deepStrictEqual(subject.rooms.ROOM1.players, [{ id: 'socket-2', index: 1, name: 'Bob' }]);
+    assert.deepStrictEqual(subject.rooms.ROOM1.players, [
+        { id: null, index: 0, name: 'Alice', reservedUntil: 64321 },
+        { id: 'socket-2', index: 1, name: 'Bob' },
+    ]);
     assert.deepStrictEqual(subject.emitted, [{
         roomId: 'ROOM1',
         event: 'playerList',
-        payload: ['Bob'],
+        payload: ['Alice', 'Bob'],
     }]);
 });
 
