@@ -1150,3 +1150,7 @@ Run `37143430643` (test commit `cf71dd37`, production-signed APK build `37136395
 Release CI `37143070458` for CSP correction `20878bab` completed successfully: Release, Mobile WebKit and CPU smoke all passed. Prior TWA runs `37143174817` and `37143268104` failed at a second observation of `registration.active.scriptURL` before lobby operations; `cf71dd37` validates version and captures the ready registration before the network fetch. The passing result proves the revised observation path, not a complete root-cause attribution of those earlier failures.
 
 This adds real signed-TWA PWA startup and waiting-room create/exit coverage. It does not prove a worker-version replacement during active gameplay, signed-TWA multiplayer synchronization, process eviction, visibility-event delivery, nonzero CSS safe-area or iPhone behavior. Advertising script dependencies remain unapproved for enforcement; CSP stays Report-Only. Current Android Emulator images and result JSON are in the workflow artifact.
+
+### Final verification record
+
+Final signed TWA run `37158592464` and Release CI `37158589402` both succeeded for `e29f1ccb`. The requirement-by-requirement evidence and remaining unverified conditions are recorded in [DIRECTORY_REVIEW_GOAL_AUDIT.md](./DIRECTORY_REVIEW_GOAL_AUDIT.md). CSP remains Report-Only by the documented rollout decision.
