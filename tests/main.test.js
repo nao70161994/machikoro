@@ -4545,6 +4545,27 @@ runTest('operations docs は保守用contract guardrailを列挙している', (
     assert.ok(operations.includes('Restore action logs must reject unknown action names'));
 });
 
+runTest('実機確認の未対応項目はユーザー作業でなく自動化バックログとして管理する', () => {
+    const root = path.join(__dirname, '..');
+    const read = relativePath => fs.readFileSync(path.join(root, relativePath), 'utf8');
+    const readme = read('README.md');
+    const testPlan = read('TESTPLAN.md');
+    const operations = read('docs/OPERATIONS.md');
+    const handoff = read('docs/AI_HANDOFF.md');
+    const recovery = read('docs/ONLINE_RECOVERY.md');
+    const historical = read('docs/CANONICAL_MIRROR_MANUAL_TEST.md');
+
+    assert.ok(readme.includes('定型的な端末確認はユーザーへ依頼せず'));
+    assert.ok(testPlan.includes('ユーザーへ実機確認を依頼する指示ではありません'));
+    assert.ok(testPlan.includes('通常の作業でユーザーに端末操作を依頼しないでください'));
+    assert.ok(operations.includes('Automation Backlog (Do Not Delegate Routine Device Checks)'));
+    assert.ok(!operations.includes('## Manual Checks Still Required'));
+    assert.ok(handoff.includes('ユーザーに定型的な手動チェックを依頼しないでください'));
+    assert.ok(recovery.includes('routine device checksをユーザーへ依頼しないでください'));
+    assert.ok(historical.includes('Historical scenario checklist'));
+    assert.ok(historical.includes('do not ask the user to perform routine device checks'));
+});
+
 runTest('docs は pending HTML helper 化の現在地を記載している', () => {
     const handoff = fs.readFileSync(path.join(__dirname, '..', 'docs/AI_HANDOFF.md'), 'utf8');
     const audit = fs.readFileSync(path.join(__dirname, '..', 'docs/POST_IMPLEMENTATION_AUDIT.md'), 'utf8');
