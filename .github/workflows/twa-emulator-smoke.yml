@@ -3,6 +3,10 @@ name: TWA Android Emulator smoke
 on:
     workflow_dispatch:
         inputs:
+            signed_apk_run_id:
+                description: '本番署名APKの成功したbuild-apk実行ID（空欄は一時鍵とDAL bypass）'
+                type: string
+                default: ''
             emulate_cutout:
                 description: 'Androidの画面切り欠き付きで検証する'
                 type: boolean
@@ -12,6 +16,7 @@ on:
 
 permissions:
     contents: read
+    actions: read
 
 jobs:
     twa-emulator-smoke:
@@ -19,6 +24,7 @@ jobs:
         timeout-minutes: 45
         env:
             TWA_EMULATOR_CUTOUT: ${{ inputs.emulate_cutout && 'tall' || 'none' }}
+            TWA_SIGNED_APK_RUN_ID: ${{ inputs.signed_apk_run_id || '' }}
 
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -50,6 +56,8 @@ jobs:
 
             - name: Build and exercise TWA in Android Emulator
               uses: ReactiveCircus/android-emulator-runner@c9c93e6ba9c4194322e114c40970d5983d9a07cc # v2.38.0
+              env:
+                  GH_TOKEN: ${{ github.token }}
               with:
                   api-level: 35
                   target: google_apis

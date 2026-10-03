@@ -236,7 +236,7 @@ Continue batch-by-batch re-auditing for small contract-first boundaries. The kno
 ## 2026-07-15 B分類オンライン耐障害化
 
 - B1: ACK timeout、pending保護、restore queue上限、再接続世代管理、durable非依存の2/4クライアントE2E、短縮soak、Ubuntu WebKit nightly。GitHub Actions `29348807863` と Release `29348809695` は成功。
-- APKのsecret不要validation-onlyはActions `29379796044`で成功。GitHubには`ANDROID_KEYSTORE_BASE64`が登録済みだが、`KEYSTORE_STORE_PASSWORD`と`KEYSTORE_KEY_PASSWORD`が未設定で、所有者も値を把握していない。GitHub Actions secretsから元の値は読み戻せないため、バックアップや元のキーストア管理記録を確認できるまで署名APKは生成不能として扱う。新しい鍵への交換は既存インストールの署名更新互換性とDigital Asset Links fingerprintに影響するため、移行方針を決めずに行わない。ユーザーに署名secretの共有や定型的な端末確認を求めず、自動化で確認できないTWA範囲は未検証のまま明記する。
+- APKのsecret不要validation-onlyはActions `29379796044`で成功。2026-10-04、4月4日の旧workflow履歴から元のパスワード設定を発見し、`KEYSTORE_STORE_PASSWORD`と`KEYSTORE_KEY_PASSWORD`を登録。署名APK run `37136395737`で既存キーストアのfingerprint照合・APK生成・uploadまで成功した。鍵を交換せず署名ビルドを復旧したが、本番署名APKのEmulator gameplay/DAL信頼検証は別の確認項目。パスワード値を資料・chat・ログへ再掲しない。
 - 2026-10-04（JST）のAndroid Emulator run `37132532116`（`b082ef9e`）は、standalone表示・建設・表示価格のコイン消費・Undo・Android Home往復後の状態保持・次の人間手番まで成功。native前面状態のdumpと画像をartifactへ保存した。CDP接続と開発用DAL bypassを使うため、本番署名/DAL信頼、プロセス破棄後の復元、visibility通知、nonzero cutout/safe-areaは別の未検証範囲。CSP強制適用の根拠には不足し、Report-Onlyを維持する。
 - 切り欠き付きrun `37133085202`（`884dc8ae`）も同じ操作を成功。Android native cutout `[0,168,0,0]`物理pxを確認し、Chromeが412×820のviewportを提供する経路を検証した。CSS safe-areaは0であり、nonzero CSS safe-area・iPhone cutout・本番署名/DAL信頼・プロセス破棄後の復元は依然未検証。
 - manual online deliveryは固定production originへのGETと読み取り専用Socket.IO handshakeだけに限定し、Actions `29379820494`で成功。定期scheduleは追加しない。

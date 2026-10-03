@@ -259,7 +259,11 @@ async function main() {
         await waitForHumanPhase(page, 'roll');
         const result = {
             status: 'passed',
-            testBoundary: 'TWA rendering/gameplay in Android Emulator; DAL verification is bypassed only for this ephemeral test APK',
+            testBoundary: process.env.TWA_SIGNED_APK_RUN_ID
+                ? 'Production-signed TWA rendering/gameplay in Android Emulator; DAL verification is enabled'
+                : 'TWA rendering/gameplay in Android Emulator; DAL verification is bypassed only for this ephemeral test APK',
+            signedApkRunId: process.env.TWA_SIGNED_APK_RUN_ID || null,
+            dalVerificationBypassed: !process.env.TWA_SIGNED_APK_RUN_ID,
             shell,
             cutoutMode: process.env.TWA_EMULATOR_CUTOUT || 'none',
             nativeCutoutInsets,

@@ -20,6 +20,16 @@ if [ -z "${ANDROID_HOME:-}" ] || [ ! -d "$ANDROID_HOME" ]; then
 fi
 sh scripts/prepare-bubblewrap-android-sdk.sh "$ANDROID_HOME"
 
+if [ -n "${TWA_SIGNED_APK_RUN_ID:-}" ]; then
+    case "$TWA_SIGNED_APK_RUN_ID" in
+        *[!0-9]*) echo 'Signed APK run ID must contain digits only' >&2; exit 1 ;;
+    esac
+    test "$(gh run view "$TWA_SIGNED_APK_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion --jq .conclusion)" = success
+    test "$(gh run view "$TWA_SIGNED_APK_RUN_ID" --repo "$GITHUB_REPOSITORY" --json workflowName --jq .workflowName)" = 'TWA APK ビルド'
+    gh run download "$TWA_SIGNED_APK_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+        -n machikoro-apk -D "$ARTIFACT_DIR/signed-apk"
+    cp "$ARTIFACT_DIR/signed-apk/app-release-signed.apk" app-release-signed.apk
+else
 key_password="$(node -e "process.stdout.write(require('crypto').randomBytes(24).toString('base64url'))")"
 keytool -genkeypair -noprompt -keystore android.keystore -alias android \
     -storepass "$key_password" -keypass "$key_password" -dname 'CN=CI TWA Smoke' \
@@ -51,6 +61,7 @@ expect {
 lassign [wait] pid spawnid os_error_flag value
 exit $value
 EXPECTEOF
+fi
 
 test -s app-release-signed.apk
 adb root
@@ -65,9 +76,13 @@ case "${TWA_EMULATOR_CUTOUT:-none}" in
     *) echo 'Unsupported TWA_EMULATOR_CUTOUT' >&2; exit 1 ;;
 esac
 adb shell am force-stop com.android.chrome || true
-cat > "$ARTIFACT_DIR/chrome-command-line" <<'CHROMEARGS'
+if [ -n "${TWA_SIGNED_APK_RUN_ID:-}" ]; then
+    printf '%s\n' '_ --disable-fre --remote-debugging-port=9222' > "$ARTIFACT_DIR/chrome-command-line"
+else
+    cat > "$ARTIFACT_DIR/chrome-command-line" <<'CHROMEARGS'
 _ --disable-fre --disable-digital-asset-link-verification-for-url="https://machikoro-9jv2.onrender.com" --remote-debugging-port=9222
 CHROMEARGS
+fi
 adb push "$ARTIFACT_DIR/chrome-command-line" /data/local/tmp/chrome-command-line
 adb install -r app-release-signed.apk
 adb forward tcp:9222 localabstract:chrome_devtools_remote
