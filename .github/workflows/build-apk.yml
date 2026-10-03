@@ -130,8 +130,8 @@ jobs:
 
             - name: APK ビルド（PWA validation有効）
               env:
-                  BUBBLEWRAP_SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
-                  BUBBLEWRAP_SIGNING_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+                  BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+                  BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
               run: |
                   sudo apt-get update
                   sudo apt-get install -y expect

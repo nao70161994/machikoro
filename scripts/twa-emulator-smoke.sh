@@ -23,8 +23,8 @@ key_password="$(node -e "process.stdout.write(require('crypto').randomBytes(24).
 keytool -genkeypair -noprompt -keystore android.keystore -alias android \
     -storepass "$key_password" -keypass "$key_password" -dname 'CN=CI TWA Smoke' \
     -keyalg RSA -keysize 2048 -validity 2
-export BUBBLEWRAP_SIGNING_STORE_PASSWORD="$key_password"
-export BUBBLEWRAP_SIGNING_KEY_PASSWORD="$key_password"
+export BUBBLEWRAP_KEYSTORE_PASSWORD="$key_password"
+export BUBBLEWRAP_KEY_PASSWORD="$key_password"
 
 node scripts/create-twa-manifest.js --output twa-manifest.json --version-code 1
 node - <<'NODE'
