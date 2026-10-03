@@ -77,6 +77,22 @@ function injectIndexBuildHash(content, buildHash, options = {}) {
     return String(content).replace('</head>', `    ${scripts}\n</head>`);
 }
 
+/**
+ * Extract exact inline bodies from the trusted, server-generated index HTML.
+ * Do not use this to authorize HTML supplied by a client.
+ * @param {string} content
+ * @returns {string[]}
+ */
+function extractIndexInlineScripts(content) {
+    const scripts = [];
+    const pattern = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+    for (const match of String(content).matchAll(pattern)) {
+        if (/\bsrc\s*=/i.test(match[1]) || !match[2].trim()) continue;
+        scripts.push(match[2]);
+    }
+    return scripts;
+}
+
 function isPublicRootFile(fileName) {
     return PUBLIC_ROOT_FILES.has(String(fileName || '').replace(/^\/+/, ''));
 }
@@ -153,6 +169,7 @@ module.exports = {
     injectServiceWorkerBuildHash,
     injectIndexBuildHash,
     buildIndexBootstrapScripts,
+    extractIndexInlineScripts,
     isPublicRootFile,
     makeStaticAssetHandlers,
     registerStaticMetadataRoutes,

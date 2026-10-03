@@ -8,7 +8,7 @@ const {
     hashInlineScript,
     securityHeadersMiddleware,
 } = require('../server/securityHeaders');
-const { buildIndexBootstrapScripts, injectIndexBuildHash } = require('../server/staticAssets');
+const { buildIndexBootstrapScripts, injectIndexBuildHash, extractIndexInlineScripts } = require('../server/staticAssets');
 
 const headers = {};
 let nextCalled = false;
@@ -55,4 +55,21 @@ securityHeadersMiddleware({}, {
 }, () => {}, { contentSecurityPolicyReportOnly: hashedPolicy });
 assert.strictEqual(customHeaders['Content-Security-Policy-Report-Only'], hashedPolicy);
 
+// Verify every real emitted inline body, including PWA updates, is authorized.
+const fs = require('fs');
+const path = require('path');
+const actualIndex = injectIndexBuildHash(
+    fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8'), 'build-1'
+);
+const actualScripts = extractIndexInlineScripts(actualIndex);
+assert.ok(actualScripts.some(script => script.includes("if ('serviceWorker' in navigator)")));
+const actualPolicy = buildContentSecurityPolicyReportOnly(actualScripts.map(hashInlineScript));
+for (const script of actualScripts) {
+    assert.ok(actualPolicy.includes(`'sha256-${hashInlineScript(script)}'`));
+}
+assert.deepStrictEqual(extractIndexInlineScripts(
+    '<script src="/external.js">ignored</script><script>  </script><script>\nexact();\n</script>'
+), ['\nexact();\n']);
+assert.ok(!actualPolicy.includes(`'sha256-${hashInlineScript('unauthorized();')}'`));
+assert.doesNotMatch(actualPolicy, /script-src[^;]*'unsafe-inline'/);
 console.log('security headers tests passed');

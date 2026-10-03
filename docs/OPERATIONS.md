@@ -520,3 +520,9 @@ A read-only GET of the production index confirmed Report-Only with no enforcing 
 Decision: retain Report-Only. Production report access/review is now verified, but enforcement readiness is not complete. Inventory ad-loader dependencies and move or exactly authorize the static PWA script before any enforcing rollout, then rerun WebKit/PWA and signed-TWA update/online scenarios. Do not add `unsafe-inline`, arbitrary HTTPS script sources, or trust an origin solely because a report names it. Existing signed-TWA local gameplay evidence remains valid; it does not cover online/update or process eviction.
 
 CLI credentials are local tooling state outside Git, not repository content. Use `render logs --resources <service-id> --text '[csp-report]' --direction backward --limit 100 --output json` after CLI authorization; never print the CLI configuration/token.
+
+### PWA inline hash correction
+
+The server now derives inline hashes from the final trusted index HTML after bootstrap injection, preserving the exact body whitespace. This includes the existing PWA update script without moving it or changing reload behavior. External-script bodies and empty scripts are excluded. The regression test inspects the real emitted index, requires the PWA body hash, rejects an unrelated body hash, and preserves the absence of `unsafe-inline`. This corrects the identified PWA policy mismatch; ad dependencies and production enforcement remain separate pending decisions.
+
+Validation: `node --check server.js`, `node --check server/staticAssets.js`, targeted security/static-asset tests, `npm run test:pwa`, `npm test`, and `npm run test:static` all passed. Production deployment and post-deploy report comparison are not yet claimed by these local results.

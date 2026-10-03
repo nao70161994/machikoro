@@ -108,7 +108,7 @@ const {
     PUBLIC_STATIC_DIRS,
     resolveBuildHash,
     injectServiceWorkerBuildHash,
-    buildIndexBootstrapScripts,
+    extractIndexInlineScripts,
     injectIndexBuildHash,
     isPublicRootFile,
     makeStaticAssetHandlers,
@@ -613,11 +613,10 @@ const indexBuildOptions = {
     localSaveSchemaWriteEnabled: LOCAL_SAVE_SCHEMA_WRITE_ENABLED,
     onlineReconnectEventAuthorityEnabled: ONLINE_RECONNECT_EVENT_AUTHORITY_ENABLED,
 };
-const indexBootstrapScripts = buildIndexBootstrapScripts(BUILD_HASH, indexBuildOptions);
-activeContentSecurityPolicyReportOnly = buildContentSecurityPolicyReportOnly(
-    indexBootstrapScripts.map(hashInlineScript)
-);
 const indexContent = injectIndexBuildHash(indexTemplate, BUILD_HASH, indexBuildOptions);
+activeContentSecurityPolicyReportOnly = buildContentSecurityPolicyReportOnly(
+    extractIndexInlineScripts(indexContent).map(hashInlineScript)
+);
 // TWA用 Digital Asset Links（ビルド後にSHA256フィンガープリントを更新すること）
 const ASSET_LINKS = [{
     relation: ['delegate_permission/common.handle_all_urls'],
