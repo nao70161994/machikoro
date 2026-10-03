@@ -1591,17 +1591,23 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         } else {
             const desktopBand = await page.evaluate(() => {
                 const timeline = document.querySelector('#turnTimeline').getBoundingClientRect();
+                const connectivity = document.querySelector('#gameConnectivityPanel').getBoundingClientRect();
                 const tutorial = document.querySelector('#tutorialBox').getBoundingClientRect();
                 const actions = document.querySelector('.game-action-panel').getBoundingClientRect();
+                const build = document.querySelector('#buildMenu').getBoundingClientRect();
                 return {
                     timelineCenter: timeline.top + timeline.height / 2,
-                    tutorialCenter: tutorial.top + tutorial.height / 2,
-                    supportBottom: Math.max(timeline.bottom, tutorial.bottom),
-                    actionsTop: actions.top,
+                    connectivityCenter: connectivity.top + connectivity.height / 2,
+                    timelineBottom: timeline.bottom,
+                    tutorialTop: tutorial.top,
+                    actionBottom: actions.bottom,
+                    buildBottom: build.bottom,
+                    timelineTop: timeline.top,
                 };
             });
-            expect(Math.abs(desktopBand.timelineCenter - desktopBand.tutorialCenter)).toBeLessThan(36);
-            expect(desktopBand.supportBottom).toBeLessThan(desktopBand.actionsTop);
+            expect(Math.abs(desktopBand.timelineCenter - desktopBand.connectivityCenter)).toBeLessThan(36);
+            expect(Math.max(desktopBand.actionBottom, desktopBand.buildBottom)).toBeLessThan(desktopBand.timelineTop);
+            expect(desktopBand.timelineBottom).toBeLessThan(desktopBand.tutorialTop);
         }
         const gameplayPath = testInfo.outputPath(`sunset-gameplay-${width}.png`);
         await page.screenshot({ path: gameplayPath, fullPage: false, animations: 'disabled' });
