@@ -1120,3 +1120,9 @@ Compatibility statement: game rules, CPU choices/strength, save formats, existin
 - `buildIndexBootstrapScripts()` is now the single source for injected inline build/config scripts and their CSP SHA-256 hashes. The per-process Report-Only policy includes only those exact generated bodies, while retaining same-origin plus the explicit ads loader host and no `unsafe-inline`.
 - Build hash JSON now escapes `<`, `>`, `&`, U+2028, and U+2029 before embedding in a script element, preventing a `</script>` sequence from terminating the bootstrap. Tests compare the exact injected script bodies to policy hashes and cover hostile build-hash text.
 - This removes known bootstrap violations from the report policy; ad-created script origins and device/browser validation still precede CSP enforcement.
+
+## 2026-10-04 production-signed TWA evidence
+
+- Missing signing passwords were recovered from the initial workflow history; signed build `37136395737` validated the existing keystore fingerprint and produced the APK without changing the signing identity.
+- Emulator run `37139125780` on `e74c0609` installed that APK with no DAL bypass. Standalone startup, native tall-cutout, paid construction, Undo, Home-and-back state preservation, and the next human turn passed. The artifact result explicitly records `dalVerificationBypassed=false`.
+- This closes production-signed startup and the covered local gameplay path on this Emulator only. Nonzero CSS safe-area, iPhone, process eviction, signed-TWA online/update scenarios, and production CSP report review are not inferred from this smoke. CSP stays Report-Only.
