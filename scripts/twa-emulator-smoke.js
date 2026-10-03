@@ -128,7 +128,21 @@ async function main() {
             return !!registration?.active;
         }, null, { timeout: 60000 });
         const pwaBootstrap = await page.evaluate(async () => {
-            const registration = await navigator.serviceWorker.ready;
+            let readyTimer;
+            let registration;
+            try {
+                registration = await Promise.race([
+                    navigator.serviceWorker.ready,
+                    new Promise((_, reject) => {
+                        readyTimer = setTimeout(() => reject(new Error(
+                            'TWA Service Worker did not become ready within 60 seconds'
+                        )), 60000);
+                    }),
+                ]);
+            } finally {
+                clearTimeout(readyTimer);
+            }
+            if (!registration.active) throw new Error('Ready Service Worker registration lost its active worker');
             const activeWorker = new URL(registration.active.scriptURL).pathname;
             const response = await fetch('/', { cache: 'no-store' });
             if (!response.ok) throw new Error(`Index fetch failed: ${response.status}`);
@@ -183,6 +197,7 @@ async function main() {
             assert.ok(onlineLobby.waitingPanelVisible && onlineLobby.pwaRefreshAvailable);
             assert.ok(onlineLobby.standalone);
             assert.ok(onlineLobby.width <= onlineLobby.viewportWidth, 'TWA online lobby overflows horizontally');
+            await page.locator('#onlineWaitingPanel').scrollIntoViewIfNeeded();
             await page.screenshot({ path: path.join(ARTIFACT_DIR, 'online-lobby.png') });
         } finally {
             const leave = page.locator('[data-ui-action="leaveOnlineLobby"]');
