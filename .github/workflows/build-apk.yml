@@ -103,6 +103,7 @@ jobs:
                       androidSdkPath: '/usr/local/lib/android/sdk'
                   }));
                   "
+                  sh scripts/prepare-bubblewrap-android-sdk.sh /usr/local/lib/android/sdk
 
             - name: キーストア復元
               env:

@@ -17,6 +17,7 @@ if [ -z "${ANDROID_HOME:-}" ] || [ ! -d "$ANDROID_HOME" ]; then
     echo 'Android SDK is not available in the emulator runner' >&2
     exit 1
 fi
+sh scripts/prepare-bubblewrap-android-sdk.sh "$ANDROID_HOME"
 
 key_password="$(node -e "process.stdout.write(require('crypto').randomBytes(24).toString('base64url'))")"
 keytool -genkeypair -noprompt -keystore android.keystore -alias android \

@@ -607,6 +607,7 @@ const TEST_GROUPS = {
     ],
     release: [
         'release-e2e.test.js',
+        'prepare-bubblewrap-android-sdk.test.js',
         'hostless-restore-socket-e2e.test.js',
         'hostless-restore-production-socket-e2e.test.js',
     ],

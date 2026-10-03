@@ -551,7 +551,7 @@ runTest('GitHub Actionsは検証済みcommit SHAへ固定しrelease workflowの�
     for (const file of workflowFiles) {
         const workflow = readRepoFile(path.posix.join('.github', 'workflows', file));
         for (const line of workflow.split('\n').filter(value => /^\s*uses:\s*/.test(value))) {
-            assert.match(line, /uses: actions\/[\w-]+@[a-f0-9]{40} # v\d+\.\d+\.\d+$/);
+            assert.match(line, /uses: [\w.-]+\/[\w.-]+@[a-f0-9]{40} # v\d+\.\d+\.\d+$/);
         }
     }
     const releaseWorkflow = readRepoFile('.github/workflows/release-test.yml');
