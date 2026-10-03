@@ -6281,11 +6281,10 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
     html[data-design="sunset"] #gameScreen[style*="display: block"] {
         grid-template-areas:
             "status status"
-            "connect connect"
-            "timeline timeline"
+            "players actions"
+            "players build"
+            "timeline connect"
             "tutorial tutorial"
-            "actions nav"
-            "build players"
             "log log"
             "leave leave"
             "restart restart";
@@ -6296,7 +6295,6 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
     #turnTimeline { grid-area: timeline; margin: 0; }
     #tutorialBox { grid-area: tutorial; }
     .game-action-panel { grid-area: actions; align-self: start; margin: 0; }
-    #playerNavigation { grid-area: nav; align-self: start; }
     #gameLogContainer { grid-area: log; align-self: start; }
     html[data-design="sunset"] #buildMenu { grid-area: build; min-width: 0; }
     .player-area {
@@ -6314,7 +6312,8 @@ html[data-design="sunset"] .town-street > .town-building { width: 72px; min-widt
         grid-column: 2;
     }
     html[data-design="sunset"] .player-area:has(> #playerNavigation) {
-        grid-row: 5 / span 2;
+        grid-column: 1;
+        grid-row: 2 / span 2;
     }
     #players {
         display: grid;
@@ -6630,7 +6629,7 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-filter-b
     }
 
     html[data-design="sunset"] #gameScreen[style*="display: block"] {
-        grid-template-columns: minmax(220px, 0.7fr) minmax(640px, 2.1fr) minmax(290px, 0.9fr);
+        grid-template-columns: minmax(260px, 0.9fr) minmax(240px, 0.85fr) minmax(420px, 1.4fr);
         grid-template-areas:
             "status status status"
             "connect connect connect"
@@ -6899,9 +6898,9 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-step {
     html[data-design="sunset"] #gameScreen[style*="display: block"] {
         grid-template-areas:
             "status status status"
-            "connect connect connect"
-            "timeline tutorial tutorial"
-            "actions build players"
+            "players actions build"
+            "players timeline connect"
+            "players tutorial tutorial"
             "log log log"
             "leave leave leave"
             "restart restart restart";
@@ -6912,8 +6911,8 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-step {
     html[data-design="sunset"] #tutorialBox { align-self: center; }
     html[data-design="sunset"] .player-area,
     html[data-design="sunset"] .player-area:has(> #playerNavigation) {
-        grid-column: 3;
-        grid-row: 4;
+        grid-column: 1;
+        grid-row: 2 / span 3;
     }
 
     html[data-design="sunset"] #status .winner-screen {

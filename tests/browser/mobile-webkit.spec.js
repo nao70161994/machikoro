@@ -177,6 +177,57 @@ test('iPhone WebKitはsafe-area envを評価し画面幅を越えない', async 
     expect(layout.documentWidth).toBeLessThanOrEqual(layout.viewportWidth);
 });
 
+test('sunset対局の視覚順とキーボードフォーカス順をスマホ・PCで揃える', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepare(page);
+    await selectDesignTheme(page, 'sunset');
+    await startLocalGame(page);
+    await expect(page.locator('#gameScreen')).toBeVisible();
+
+    const structuralOrder = await page.evaluate(() => {
+        const ids = ['status', 'players', 'game-action-panel', 'buildMenu', 'turnTimeline', 'gameConnectivityPanel', 'tutorialBox', 'gameLogContainer'];
+        return ids.map(id => document.getElementById(id) || document.querySelector(`.${id}`))
+            .map(element => element?.id || element?.className || 'missing');
+    });
+    expect(structuralOrder).toEqual([
+        'status', 'players', 'game-action-panel', 'buildMenu', 'turnTimeline',
+        'gameConnectivityPanel', 'tutorialBox', 'gameLogContainer',
+    ]);
+
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.keyboard.press('Tab');
+    await expect.poll(() => page.evaluate(() =>
+        !!document.activeElement?.closest('.player-area')
+    )).toBe(true);
+
+    const phoneLayout = await page.evaluate(() => {
+        const rect = selector => {
+            const element = document.querySelector(selector);
+            const bounds = element.getBoundingClientRect();
+            return { top: bounds.top, bottom: bounds.bottom, left: bounds.left };
+        };
+        return {
+            players: rect('.player-area'),
+            actions: rect('.game-action-panel'),
+            build: rect('#buildMenu'),
+        };
+    });
+    expect(phoneLayout.players.bottom).toBeLessThanOrEqual(phoneLayout.actions.top + 1);
+    expect(phoneLayout.actions.bottom).toBeLessThanOrEqual(phoneLayout.build.top + 1);
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const desktopLayout = await page.evaluate(() => {
+        const left = selector => document.querySelector(selector).getBoundingClientRect().left;
+        return {
+            players: left('.player-area'),
+            actions: left('.game-action-panel'),
+            build: left('#buildMenu'),
+        };
+    });
+    expect(desktopLayout.players).toBeLessThan(desktopLayout.actions);
+    expect(desktopLayout.actions).toBeLessThan(desktopLayout.build);
+});
+
 test('mobile WebKitでapp shellとService Workerが実動作する', async ({ browser }) => {
     const port = 3322;
     const origin = `http://127.0.0.1:${port}`;

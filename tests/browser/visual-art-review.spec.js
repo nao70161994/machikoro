@@ -1337,7 +1337,7 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
         };
     });
     expect(gameRegions.market.top).toBeLessThan(gameRegions.log.top);
-    expect(gameRegions.market.right).toBeLessThan(gameRegions.town.left);
+    expect(gameRegions.town.right).toBeLessThan(gameRegions.market.left);
     expect(gameRegions.log.left).toBeLessThanOrEqual(gameRegions.game.contentLeft + 1);
     expect(gameRegions.log.right).toBeGreaterThanOrEqual(gameRegions.game.contentRight - 1);
     expect(gameRegions.town.bottom).toBeLessThanOrEqual(gameRegions.log.top + 1);
@@ -1349,7 +1349,7 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
         const columns = getComputedStyle(document.querySelector('#buildMenu .card-grid'))
             .gridTemplateColumns.split(' ').length;
         return {
-            noOverlap: action.right <= market.left && market.right <= players.left,
+            noOverlap: players.right <= action.left && action.right <= market.left,
             columns,
             hasOpenBoard: document.documentElement.scrollWidth === innerWidth,
         };

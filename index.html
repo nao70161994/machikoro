@@ -363,23 +363,12 @@
 
     <div id="gameScreen" role="main" aria-label="ゲーム画面" style="display:none">
         <div id="status" class="status"></div>
-        <section id="gameConnectivityPanel" class="game-connectivity-panel" aria-label="通信と進行状況" style="display:none">
-            <div id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
-            <div id="gameActivityStatus" class="game-activity-status is-ready" style="display:none">
-                <span class="game-activity-dot" aria-hidden="true"></span>
-                <span id="gameActivityStatusLabel" role="status" aria-live="polite" aria-atomic="true"></span>
-                <span id="gameActivityStatusElapsed" class="game-activity-elapsed" aria-hidden="true"></span>
-                <span id="gameActivityStatusDetail" class="game-activity-detail"></span>
-            </div>
-            <div id="gameConnectionQuality" class="game-connection-quality is-good" aria-hidden="true" style="display:none"></div>
-        </section>
         <div id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
-        <section id="turnTimeline" class="turn-timeline" aria-labelledby="turnTimelineHeading">
-            <h2 id="turnTimelineHeading">この手番の進行</h2>
-            <ol id="turnTimelineList" class="turn-timeline-list"></ol>
+        <section class="player-area" aria-label="プレイヤー盤面">
+            <nav id="playerNavigation" class="player-navigation" aria-label="プレイヤー・ログ・建設へ移動（横にスクロールできます）" style="display:none"></nav>
+            <div id="players" role="list" aria-label="プレイヤー状況"></div>
         </section>
-        <div id="tutorialBox" class="tutorial-box" role="region" aria-label="操作ガイド" style="display:none"></div>
         <div class="game-action-panel">
             <div id="diceResult"></div>
             <div id="diceResultAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -410,6 +399,22 @@
                 </details>
             </div>
         </div>
+        <div id="buildMenu" role="region" aria-label="建設候補" tabindex="-1"></div>
+        <section id="turnTimeline" class="turn-timeline" aria-labelledby="turnTimelineHeading">
+            <h2 id="turnTimelineHeading">この手番の進行</h2>
+            <ol id="turnTimelineList" class="turn-timeline-list"></ol>
+        </section>
+        <section id="gameConnectivityPanel" class="game-connectivity-panel" aria-label="通信と進行状況" style="display:none">
+            <div id="onlineGameStatus" class="online-game-status" role="status" aria-live="polite" aria-atomic="true" style="display:none"></div>
+            <div id="gameActivityStatus" class="game-activity-status is-ready" style="display:none">
+                <span class="game-activity-dot" aria-hidden="true"></span>
+                <span id="gameActivityStatusLabel" role="status" aria-live="polite" aria-atomic="true"></span>
+                <span id="gameActivityStatusElapsed" class="game-activity-elapsed" aria-hidden="true"></span>
+                <span id="gameActivityStatusDetail" class="game-activity-detail"></span>
+            </div>
+            <div id="gameConnectionQuality" class="game-connection-quality is-good" aria-hidden="true" style="display:none"></div>
+        </section>
+        <div id="tutorialBox" class="tutorial-box" role="region" aria-label="操作ガイド" style="display:none"></div>
         <div id="gameLogContainer" class="log-container">
             <div class="log-header" data-ui-action="toggleLog" role="button" tabindex="0" aria-expanded="true">
                 <span id="logTitle"><span class="game-control-emoji" aria-hidden="true">📋</span><svg class="game-control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#log"></use></svg><span id="logCountLabel">ログ</span></span>
@@ -418,11 +423,6 @@
             <div id="logSummary" class="log-summary"></div>
             <div id="log" class="log"></div>
         </div>
-        <section class="player-area" aria-label="プレイヤー盤面">
-            <nav id="playerNavigation" class="player-navigation" aria-label="プレイヤー・ログ・建設へ移動（横にスクロールできます）" style="display:none"></nav>
-            <div id="players" role="list" aria-label="プレイヤー状況"></div>
-        </section>
-        <div id="buildMenu" role="region" aria-label="建設候補" tabindex="-1"></div>
         <p id="onlineLeaveHelp" class="setting-help" hidden>一時中断する場合はこの画面を閉じてください。次回、タイトルの「再接続する」から戻れます。相手には再接続待ちになります。</p>
         <button id="btnRestart" class="btn-restart" data-ui-action="restartGame"><span class="game-control-emoji" aria-hidden="true">🔄</span><svg class="game-control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#restart"></use></svg><span id="restartButtonLabel">最初からやり直す</span></button>
     </div>

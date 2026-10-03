@@ -2835,7 +2835,7 @@ runTest('広い夕暮れ対局画面は共通の盤面サーフェスと4列市�
     assert.notEqual(desktopStart, -1);
     const desktopCss = css.slice(desktopStart, desktopStart + 4400);
     assert.match(desktopCss, /#gameScreen\[style\*="display: block"\][\s\S]*?background:[\s\S]*?radial-gradient/);
-    assert.match(desktopCss, /grid-template-columns:\s*minmax\(220px, 0\.7fr\) minmax\(640px, 2\.1fr\) minmax\(290px, 0\.9fr\)/);
+    assert.match(desktopCss, /grid-template-columns:\s*minmax\(260px, 0\.9fr\) minmax\(240px, 0\.85fr\) minmax\(420px, 1\.4fr\)/);
     assert.match(desktopCss, /#buildMenu \.build-section \.card-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
     assert.match(desktopCss, /#buildMenu \.card-filter-bar\s*\{[^}]*linear-gradient/);
 });
