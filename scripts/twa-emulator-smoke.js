@@ -72,6 +72,16 @@ async function main() {
     try {
         const page = await waitForPage(browser);
         await page.waitForLoadState('domcontentloaded');
+        const nativeDisplay = execFileSync('adb', ['shell', 'dumpsys', 'display'], {
+            timeout: 10000, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024,
+        });
+        fs.writeFileSync(path.join(ARTIFACT_DIR, 'native-display.txt'), nativeDisplay);
+        const nativeCutoutInsets = Array.from(nativeDisplay.matchAll(
+            /DisplayCutout\{insets=Rect\((\d+), (\d+) - (\d+), (\d+)\)/g
+        ), match => match.slice(1, 5).map(Number)).find(insets => insets.some(value => value > 0)) || null;
+        if (process.env.TWA_EMULATOR_CUTOUT === 'tall') {
+            assert.ok(nativeCutoutInsets, 'Android did not report the requested nonzero display cutout');
+        }
         const shell = await page.evaluate(() => {
             const probe = document.createElement('div');
             probe.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
@@ -251,6 +261,8 @@ async function main() {
             status: 'passed',
             testBoundary: 'TWA rendering/gameplay in Android Emulator; DAL verification is bypassed only for this ephemeral test APK',
             shell,
+            cutoutMode: process.env.TWA_EMULATOR_CUTOUT || 'none',
+            nativeCutoutInsets,
             initial,
             buildBaseline,
             built,
@@ -261,7 +273,7 @@ async function main() {
             backgroundResumeBoundary: 'Android Home and back with CDP attached; no process eviction or visibility-event guarantee',
             nextHumanTurnReachedAfterResume: true,
             artifacts: ['title.png', 'game.png', 'market.png', 'resumed.png',
-                'background-screen.png', 'background-window.txt', 'resumed-window.txt'],
+                'background-screen.png', 'background-window.txt', 'resumed-window.txt', 'native-display.txt'],
         };
         fs.writeFileSync(path.join(ARTIFACT_DIR, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
         console.log(JSON.stringify(result, null, 2));

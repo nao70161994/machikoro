@@ -2,6 +2,11 @@ name: TWA Android Emulator smoke
 
 on:
     workflow_dispatch:
+        inputs:
+            emulate_cutout:
+                description: 'Androidの画面切り欠き付きで検証する'
+                type: boolean
+                default: false
     schedule:
         - cron: '41 18 * * 0'
 
@@ -12,6 +17,8 @@ jobs:
     twa-emulator-smoke:
         runs-on: ubuntu-latest
         timeout-minutes: 45
+        env:
+            TWA_EMULATOR_CUTOUT: ${{ inputs.emulate_cutout && 'tall' || 'none' }}
 
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3

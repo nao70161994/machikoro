@@ -55,6 +55,15 @@ EXPECTEOF
 test -s app-release-signed.apk
 adb root
 adb wait-for-device
+case "${TWA_EMULATOR_CUTOUT:-none}" in
+    none) ;;
+    tall)
+        adb shell cmd overlay enable --user 0 com.android.internal.display.cutout.emulation.tall
+        adb shell cmd overlay list --user 0 > "$ARTIFACT_DIR/cutout-overlays.txt"
+        grep -F '[x] com.android.internal.display.cutout.emulation.tall' "$ARTIFACT_DIR/cutout-overlays.txt"
+        ;;
+    *) echo 'Unsupported TWA_EMULATOR_CUTOUT' >&2; exit 1 ;;
+esac
 adb shell am force-stop com.android.chrome || true
 cat > "$ARTIFACT_DIR/chrome-command-line" <<'CHROMEARGS'
 _ --disable-fre --disable-digital-asset-link-verification-for-url="https://machikoro-9jv2.onrender.com" --remote-debugging-port=9222
