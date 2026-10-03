@@ -109,6 +109,17 @@ async function main() {
         assert.ok(shell.viewport.width > 0 && shell.viewport.height > 0);
         assert.ok(shell.documentWidth <= shell.viewport.width,
             `TWA page overflows horizontally: ${JSON.stringify(shell)}`);
+        // Deployments may finish between TWA launch and the bootstrap assertions.
+        // Resolve an actual client/server mismatch before observing worker state.
+        const versionMismatch = await page.evaluate(async () => {
+            const response = await fetch('/api/version', { cache: 'no-store' });
+            if (!response.ok) throw new Error(`Version fetch failed: ${response.status}`);
+            const version = await response.json();
+            return version.hash !== window.MACHIKORO_CLIENT_VERSION;
+        });
+        if (versionMismatch) {
+            await page.reload({ waitUntil: 'load' });
+        }
         // Exercise the real PWA bootstrap in Android Chrome, without synthetic events.
         await page.waitForFunction(() => typeof window.refreshPwaUpdateState === 'function'
             && typeof window.__machikoroCheckOnlineDelivery === 'function');
@@ -117,6 +128,8 @@ async function main() {
             return !!registration?.active;
         }, null, { timeout: 60000 });
         const pwaBootstrap = await page.evaluate(async () => {
+            const registration = await navigator.serviceWorker.ready;
+            const activeWorker = new URL(registration.active.scriptURL).pathname;
             const response = await fetch('/', { cache: 'no-store' });
             if (!response.ok) throw new Error(`Index fetch failed: ${response.status}`);
             const html = await response.text();
@@ -133,12 +146,11 @@ async function main() {
                     pwa: match[2].includes("if ('serviceWorker' in navigator)"),
                 });
             }
-            const registration = await navigator.serviceWorker.getRegistration();
             return {
                 inlineScripts,
                 reportOnly: !!policy,
                 enforcing: !!response.headers.get('Content-Security-Policy'),
-                activeWorker: new URL(registration.active.scriptURL).pathname,
+                activeWorker,
                 onlineDeliveryAvailable: await window.__machikoroCheckOnlineDelivery(),
             };
         });
