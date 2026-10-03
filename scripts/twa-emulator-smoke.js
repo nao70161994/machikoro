@@ -48,6 +48,24 @@ async function waitForHumanPhase(page, phase, timeoutMs = 30000) {
     }, phase, { timeout: timeoutMs });
 }
 
+async function waitForAndroidFocus(expectedPackage, artifactName) {
+    const deadline = Date.now() + 15000;
+    let dump = '';
+    while (Date.now() < deadline) {
+        dump = execFileSync('adb', ['shell', 'dumpsys', 'window'], {
+            timeout: 10000, encoding: 'utf8',
+        });
+        const focus = dump.split('\n').find(line => line.includes('mCurrentFocus=')) || '';
+        if (focus.includes(`${expectedPackage}/`)) {
+            fs.writeFileSync(path.join(ARTIFACT_DIR, artifactName), dump);
+            return focus.trim();
+        }
+        await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    fs.writeFileSync(path.join(ARTIFACT_DIR, artifactName), dump);
+    throw new Error(`Android foreground did not switch to ${expectedPackage}`);
+}
+
 async function main() {
     fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
     const browser = await connectToBrowser();
@@ -187,10 +205,19 @@ async function main() {
                 })),
             };
         });
+        const homeComponent = execFileSync('adb', ['shell', 'cmd', 'package', 'resolve-activity',
+            '--brief', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.HOME'],
+        { timeout: 10000, encoding: 'utf8' }).trim().split('\n').pop();
+        assert.ok(homeComponent && homeComponent.includes('/'), 'Android Home activity was not resolved');
         execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_HOME'], { timeout: 10000 });
-        await page.waitForFunction(() => document.hidden, null, { polling: 100, timeout: 15000 });
+        // CDP-attached Android Chrome can keep document.visibilityState visible on Home.
+        // Native window focus proves the actual OS background transition instead.
+        const backgroundFocus = await waitForAndroidFocus(homeComponent.split('/')[0], 'background-window.txt');
+        fs.writeFileSync(path.join(ARTIFACT_DIR, 'background-screen.png'),
+            execFileSync('adb', ['exec-out', 'screencap', '-p'], { timeout: 10000 }));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         execFileSync('adb', ['shell', 'monkey', '-p', 'com.machikoro.game', '1'], { timeout: 15000 });
-        await page.waitForFunction(() => !document.hidden, null, { polling: 100, timeout: 15000 });
+        const resumedFocus = await waitForAndroidFocus('com.android.chrome', 'resumed-window.txt');
         const resumed = await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             return {
@@ -223,8 +250,12 @@ async function main() {
             built,
             undoRestoredState: true,
             backgroundResumeStatePreserved: true,
+            backgroundFocus,
+            resumedFocus,
+            backgroundResumeBoundary: 'Android Home and back with CDP attached; no process eviction or visibility-event guarantee',
             nextHumanTurnReachedAfterResume: true,
-            artifacts: ['title.png', 'game.png', 'market.png', 'resumed.png'],
+            artifacts: ['title.png', 'game.png', 'market.png', 'resumed.png',
+                'background-screen.png', 'background-window.txt', 'resumed-window.txt'],
         };
         fs.writeFileSync(path.join(ARTIFACT_DIR, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
         console.log(JSON.stringify(result, null, 2));
