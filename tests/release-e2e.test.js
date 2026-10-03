@@ -549,6 +549,8 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(twaSmokeScript.includes('--disable-fre'));
     assert.ok(twaSmokeRunner.includes("await waitForHumanPhase(page, 'roll')"));
     assert.ok(twaSmokeRunner.includes("await waitForHumanPhase(page, 'build')"));
+    assert.ok(twaSmokeRunner.includes("game.players.findIndex(player =>"));
+    assert.ok(twaSmokeRunner.includes('selectedCard.cost'));
 });
 
 runTest('GitHub Actionsは検証済みcommit SHAへ固定しrelease workflowの権限をread-onlyにする', () => {

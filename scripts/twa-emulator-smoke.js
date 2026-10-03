@@ -103,22 +103,62 @@ async function main() {
         await waitForHumanPhase(page, 'build');
         const buildBaseline = await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
-            return { coins: game.players[0].coins, cards: game.players[0].cards.length };
+            const humanPlayerIndex = game.players.findIndex(player =>
+                !String(player.name || '').includes('CPU')
+            );
+            if (humanPlayerIndex < 0) throw new Error('TWA quick-play did not create a human player');
+            const player = game.players[humanPlayerIndex];
+            return {
+                humanPlayerIndex,
+                coins: player.coins,
+                cards: player.cards.length,
+            };
         });
-        const buildCard = page.locator('#buildMenu .card-btn:not(:disabled)').first();
-        await buildCard.waitFor({ state: 'visible' });
-        const cardBounds = await buildCard.boundingBox();
+        const affordableCards = page.locator('#buildMenu button.card-btn[data-action="buildCard"]:not(:disabled)');
+        const selectedCardIndex = await affordableCards.evaluateAll(buttons => {
+            const costs = buttons.map(button => Number(
+                button.querySelector('.card-cost')?.textContent?.replace(/[^0-9]/g, '') || 0
+            ));
+            const paidIndex = costs.findIndex(cost => cost > 0);
+            return paidIndex >= 0 ? paidIndex : (buttons.length > 0 ? 0 : -1);
+        });
+        assert.ok(selectedCardIndex >= 0, 'there is no affordable market card');
+        const marketCard = affordableCards.nth(selectedCardIndex);
+        await marketCard.waitFor({ state: 'visible' });
+        const cardBounds = await marketCard.boundingBox();
         assert.ok(cardBounds && cardBounds.width > 0 && cardBounds.height > 0,
             'the first affordable market card has no visible hit target');
-        await buildCard.click();
+        const selectedCard = await marketCard.evaluate(button => ({
+            name: button.dataset.cardName,
+            cost: Number(button.querySelector('.card-cost')?.textContent?.replace(/[^0-9]/g, '') || 0),
+        }));
+        await marketCard.click();
         const undo = page.locator('#buildMenu .undo-btn');
         await undo.waitFor({ state: 'visible' });
+        await page.waitForFunction(({ playerIndex, cardCount }) => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            return game.players[playerIndex].cards.length === cardCount;
+        }, {
+            playerIndex: buildBaseline.humanPlayerIndex,
+            cardCount: buildBaseline.cards + 1,
+        });
         const built = await page.evaluate(() => {
             const state = GameRuntimeState.runtime.snapshot();
-            return { coins: state.game.players[0].coins, cards: state.game.players[0].cards.length };
+            const humanPlayerIndex = state.game.players.findIndex(player =>
+                !String(player.name || '').includes('CPU')
+            );
+            const player = state.game.players[humanPlayerIndex];
+            return { coins: player.coins, cards: player.cards.length };
         });
-        assert.strictEqual(built.cards, buildBaseline.cards + 1, 'market card tap did not build a facility');
-        assert.ok(built.coins < buildBaseline.coins, 'market build did not spend coins');
+        assert.strictEqual(built.cards, buildBaseline.cards + 1,
+            `market card ${selectedCard.name} tap did not build a facility`);
+        if (selectedCard.cost > 0) {
+            assert.strictEqual(built.coins, buildBaseline.coins - selectedCard.cost,
+                'market build did not spend the displayed card cost');
+        } else {
+            assert.strictEqual(built.coins, buildBaseline.coins,
+                'zero-cost market build unexpectedly changed the coin balance');
+        }
         await page.screenshot({ path: path.join(ARTIFACT_DIR, 'market.png') });
 
         await undo.click();
@@ -127,9 +167,13 @@ async function main() {
         await page.locator('#confirmModal').waitFor({ state: 'hidden' });
         await page.waitForFunction(expected => {
             const game = GameRuntimeState.runtime.snapshot().game;
-            return game.players[0].cards.length === expected.cards &&
-                game.players[0].coins === expected.coins;
-        }, buildBaseline);
+            const player = game.players[expected.humanPlayerIndex];
+            return player.cards.length === expected.cards && player.coins === expected.coins;
+        }, {
+            humanPlayerIndex: buildBaseline.humanPlayerIndex,
+            cards: buildBaseline.cards,
+            coins: buildBaseline.coins,
+        });
         const result = {
             status: 'passed',
             testBoundary: 'TWA rendering/gameplay in Android Emulator; DAL verification is bypassed only for this ephemeral test APK',
