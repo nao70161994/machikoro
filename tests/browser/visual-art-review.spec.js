@@ -879,6 +879,11 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
     expect(desktopMarketStyle.backgroundImage).toContain('radial-gradient');
     expect(desktopMarketStyle.borderRadius).toBe('16px');
     const desktopMarketPath = testInfo.outputPath('sunset-central-market-1440.png');
+    // WebKit can replace responsive game markup for a frame after the viewport
+    // change above. Let that resize render settle before asking Playwright to scroll.
+    await page.evaluate(() => new Promise(resolve => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
     await desktopMarket.scrollIntoViewIfNeeded();
     await page.screenshot({ path: desktopMarketPath, fullPage: false, animations: 'disabled' });
     await testInfo.attach('sunset-central-market-1440.png', {
