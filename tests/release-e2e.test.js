@@ -508,6 +508,7 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     const nightlyWorkflow = readRepoFile('.github/workflows/nightly-release-test.yml');
     const apkWorkflow = readRepoFile('.github/workflows/build-apk.yml');
     const twaSmokeScript = readRepoFile('scripts/twa-emulator-smoke.sh');
+    const twaSmokeRunner = readRepoFile('scripts/twa-emulator-smoke.js');
     const checklist = readRepoFile('docs/RELEASE_CHECKLIST.md');
     const operations = readRepoFile('docs/OPERATIONS.md');
 
@@ -546,6 +547,8 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(twaSmokeScript.includes('BUBBLEWRAP_KEYSTORE_PASSWORD'));
     assert.ok(twaSmokeScript.includes('BUBBLEWRAP_KEY_PASSWORD'));
     assert.ok(twaSmokeScript.includes('--disable-fre'));
+    assert.ok(twaSmokeRunner.includes("await waitForHumanPhase(page, 'roll')"));
+    assert.ok(twaSmokeRunner.includes("await waitForHumanPhase(page, 'build')"));
 });
 
 runTest('GitHub Actionsは検証済みcommit SHAへ固定しrelease workflowの権限をread-onlyにする', () => {

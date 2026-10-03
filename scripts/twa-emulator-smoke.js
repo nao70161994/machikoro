@@ -39,10 +39,11 @@ async function connectToBrowser(timeoutMs = 90000) {
     throw new Error(`Android Chrome DevTools did not become available: ${lastError && lastError.message}`);
 }
 
-async function waitForGamePhase(page, phase, timeoutMs = 30000) {
+async function waitForHumanPhase(page, phase, timeoutMs = 30000) {
     await page.waitForFunction(expected => {
         const game = globalThis.GameRuntimeState?.runtime?.snapshot?.().game;
-        return game && game.phase === expected;
+        const status = document.getElementById('status')?.textContent || '';
+        return game && game.phase === expected && !status.includes('CPU');
     }, phase, { timeout: timeoutMs });
 }
 
@@ -97,8 +98,9 @@ async function main() {
             `active game overflows the TWA viewport: ${JSON.stringify(initial)}`);
         await page.screenshot({ path: path.join(ARTIFACT_DIR, 'game.png') });
 
+        await waitForHumanPhase(page, 'roll');
         await page.locator('#btnRoll').click();
-        await waitForGamePhase(page, 'build');
+        await waitForHumanPhase(page, 'build');
         const buildBaseline = await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             return { coins: game.players[0].coins, cards: game.players[0].cards.length };
