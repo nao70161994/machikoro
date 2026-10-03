@@ -50,7 +50,8 @@
 - The four-player Android/iPhone completion on 2026-07-18 proves ordinary
   reconnect only. The full 60-second grace, 30-second collection, confirmation
   rotation, mismatch, mixed-old-client, and former-host-return matrix remains
-  manual verification; do not infer it from WebKit or ordinary reconnect.
+  an automation backlog; do not infer it from WebKit or ordinary reconnect,
+  and do not ask the user to exercise it manually.
 
 ## Public naming
 

@@ -41,7 +41,7 @@ node server.js
 
 運用フェーズの入口は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md) です。ntfy 通知分類、unknown 通知の最優先対応、CI失敗時の対応、PWA stale client 対応、Render 環境変数、公開前確認、Codex へ投げる障害対応テンプレをまとめています。
 
-現在の保守・実機確認待ち一覧は [`docs/MAINTENANCE_BACKLOG.md`](./docs/MAINTENANCE_BACKLOG.md)、過去の技術負債スナップショットは [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) を参照してください。後者は2026-05-16時点の履歴資料です。
+現在の保守・自動化バックログ一覧は [`docs/MAINTENANCE_BACKLOG.md`](./docs/MAINTENANCE_BACKLOG.md)、運用確認方法は [`docs/OPERATIONS.md`](./docs/OPERATIONS.md)、過去の技術負債スナップショットは [`docs/TECH_DEBT.md`](./docs/TECH_DEBT.md) を参照してください。後者は2026-05-16時点の履歴資料です。定型的な端末確認はユーザーへ依頼せず、CI / browser / emulator automationを優先します。
 
 - 公開前チェック: [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)
 - AdSense 審査提出前 / 審査中の公開 URL 確認: [`docs/ADSENSE_SETUP.md`](./docs/ADSENSE_SETUP.md)
@@ -100,7 +100,7 @@ node --check js/main.js
 node --check js/online.js
 ```
 
-変更種別別の推奨確認は [`docs/maintenance-checklists.md`](./docs/maintenance-checklists.md) を入口にしてください。リリース前の最終確認は [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)、疑似実機 E2E と CI は [`docs/AUTOMATED_RELEASE_TEST.md`](./docs/AUTOMATED_RELEASE_TEST.md) にまとめています。高リスクの手動確認項目は [`TESTPLAN.md`](./TESTPLAN.md)、オンライン同期の設計入口は [`docs/ONLINE_SYNC.md`](./docs/ONLINE_SYNC.md)、オンライン復元 / 保存 schema の詳細は [`docs/online-restore-schema.md`](./docs/online-restore-schema.md) にまとめています。
+変更種別別の推奨確認は [`docs/maintenance-checklists.md`](./docs/maintenance-checklists.md) を入口にしてください。リリース前の最終確認は [`docs/RELEASE_CHECKLIST.md`](./docs/RELEASE_CHECKLIST.md)、疑似実機 E2E と CI は [`docs/AUTOMATED_RELEASE_TEST.md`](./docs/AUTOMATED_RELEASE_TEST.md) にまとめています。高リスク回帰シナリオと未自動化範囲は [`TESTPLAN.md`](./TESTPLAN.md)、オンライン同期の設計入口は [`docs/ONLINE_SYNC.md`](./docs/ONLINE_SYNC.md)、オンライン復元 / 保存 schema の詳細は [`docs/online-restore-schema.md`](./docs/online-restore-schema.md) にまとめています。
 
 AI / 人間が途中参加するときは、まず [`docs/AI_HANDOFF.md`](./docs/AI_HANDOFF.md) を読み、そこから [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)、[`docs/REFACTOR_PLAN.md`](./docs/REFACTOR_PLAN.md)、[`docs/CARD_SYSTEM.md`](./docs/CARD_SYSTEM.md) へ進んでください。
 

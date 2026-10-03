@@ -1,6 +1,6 @@
 # Operations
 
-This page is the runbook for keeping real-device manual checks small. The target state is: automated nightly regression catches release/PWA/online drift, browser error reports are classified, and only unknown failures page loudly.
+This page is the runbook for automated release/PWA/online checks and production operations. Do not delegate routine device verification to the user; track uncovered behavior as an automation task and classify browser error reports so only unknown failures page loudly.
 
 ## Operator Quick Start
 
