@@ -11,6 +11,7 @@
 - 待機室の切断・開始配信競合の復帰処理は2026-10-02に実装・Socket E2E確認済みです。PWAバナーのlocal/online両導線を320/390/1440pxでChromium確認し、CSP Report-Only経路とMobile WebKit release E2Eも成功しました。TWA manifest/assetlinks/Bubblewrapのvalidation-only workflowと本番Digital Asset Links照合も成功しています。2026-10-02のAndroid 14 TWA起動確認ではタイトル画面が全画面・URLバーなしでしたが、ゲーム操作中のsafe-area/システムバー挙動と実プレイは別の未確認範囲です。署名APK workflowは`37001500443`でrelease validation後に停止しました。`ANDROID_KEYSTORE_BASE64`は登録済みですが、所有者が`KEYSTORE_STORE_PASSWORD`と`KEYSTORE_KEY_PASSWORD`を把握しておらず、GitHubからsecret値を読み戻すこともできません。元のバックアップ等を探し、見つからなければ署名ID移行を明示的に設計するまで署名ビルドは保留です。Termuxでは`adb devices -l`が空で、`dumpsys activity`は`android.permission.DUMP`不足、`uiautomator`は`app_process`へアクセスできず、画面自動化を実行できません。TWA gameplay自動化が可能になるまでCSP強制適用は保留し、ユーザーへ実機操作や署名secretの共有を依頼しません。
 - `TECH_DEBT.md` は2026-05-16の歴史資料です。現在の状況として引用しないでください。
 - 2026-10-04（JST）、Android Emulator run `37132532116`（`b082ef9e`）で建設・コイン消費・Undoに加え、Android Homeへの移動→Chrome Custom Tabへの復帰、対局状態保持、次の人間手番まで成功しました。CDP接続中のHome往復だけが根拠で、プロセス破棄後の復元・visibility通知・nonzero safe-area・本番署名/DAL信頼は未検証です。結果JSON、native window dump、画像はworkflow artifactにあります。
+- 切り欠き付きrun `37133085202`（`884dc8ae`）も成功。Android native cutoutは`[0,168,0,0]`物理px、Chrome viewportは412×820 CSS px、CSS safe-areaはすべて0でした。このAndroid tall-cutoutで建設・Undo・Home往復・次の手番を確認済みですが、nonzero CSS safe-areaやiPhone、本番署名、プロセス破棄は別の未検証範囲です。
 
 ## 2026-08-12 repository review status
 
