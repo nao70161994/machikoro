@@ -151,6 +151,37 @@ async function main() {
         assert.strictEqual(pwaBootstrap.onlineDeliveryAvailable, true);
         await page.screenshot({ path: path.join(ARTIFACT_DIR, 'title.png') });
 
+        // Use the production lobby controls and close the ephemeral test room.
+        await page.locator('#tabOnline').click();
+        await page.locator('#playerNameInput').fill('TWA-Smoke');
+        let onlineLobby;
+        try {
+            await page.locator('#onlineCreateSubmitButton').click();
+            const roomLabel = page.locator('#onlineWaitingPanel .room-id-display');
+            await roomLabel.waitFor({ state: 'visible', timeout: 30000 });
+            const roomId = (await roomLabel.textContent()).trim();
+            assert.match(roomId, /^[A-Z0-9]{6}$/, 'TWA room creation did not return a valid room ID');
+            onlineLobby = await page.evaluate(() => ({
+                waitingPanelVisible: document.getElementById('onlineWaitingPanel').getBoundingClientRect().height > 0,
+                width: document.documentElement.scrollWidth,
+                viewportWidth: innerWidth,
+                pwaRefreshAvailable: typeof window.refreshPwaUpdateState === 'function',
+                standalone: matchMedia('(display-mode: standalone)').matches,
+            }));
+            assert.ok(onlineLobby.waitingPanelVisible && onlineLobby.pwaRefreshAvailable);
+            assert.ok(onlineLobby.standalone);
+            assert.ok(onlineLobby.width <= onlineLobby.viewportWidth, 'TWA online lobby overflows horizontally');
+            await page.screenshot({ path: path.join(ARTIFACT_DIR, 'online-lobby.png') });
+        } finally {
+            const leave = page.locator('[data-ui-action="leaveOnlineLobby"]');
+            if (await leave.isVisible()) {
+                await leave.click();
+                const confirm = page.locator('#confirmModal');
+                if (await confirm.isVisible()) await page.locator('#confirmOkBtn').click();
+                await leave.waitFor({ state: 'hidden' });
+            }
+        }
+        await page.locator('#tabLocal').click();
         await page.locator('.setup-quick-play').click();
         await page.locator('#gameScreen').waitFor({ state: 'visible' });
         const initial = await page.evaluate(() => {
@@ -306,6 +337,7 @@ async function main() {
             dalVerificationBypassed: !process.env.TWA_SIGNED_APK_RUN_ID,
             shell,
             pwaBootstrap,
+            onlineLobby,
             cutoutMode: process.env.TWA_EMULATOR_CUTOUT || 'none',
             nativeCutoutInsets,
             initial,
@@ -317,7 +349,7 @@ async function main() {
             resumedFocus,
             backgroundResumeBoundary: 'Android Home and back with CDP attached; no process eviction or visibility-event guarantee',
             nextHumanTurnReachedAfterResume: true,
-            artifacts: ['title.png', 'game.png', 'market.png', 'resumed.png',
+            artifacts: ['title.png', 'online-lobby.png', 'game.png', 'market.png', 'resumed.png',
                 'background-screen.png', 'background-window.txt', 'resumed-window.txt', 'native-display.txt'],
         };
         fs.writeFileSync(path.join(ARTIFACT_DIR, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
