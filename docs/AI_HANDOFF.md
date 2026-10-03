@@ -3,12 +3,12 @@
 この文書は、途中参加した人間 / AI が最初に読む短い入口です。
 詳細は各専門 doc を参照し、このファイルは現在地と次の安全な一手だけを示します。
 
-## Current source of truth (2026-10-02)
+## Current source of truth (2026-10-03)
 
-- 現在の保守項目、完了した自動対応、残る実機・設計判断は [`MAINTENANCE_BACKLOG.md`](./MAINTENANCE_BACKLOG.md) を参照してください。以下の日付付きレビュー記録は、その日付時点の履歴であり、最新状態として読み替えないでください。
-- 実機確認はCI/emulator/device automationを優先し、ユーザーに定型的な手動チェックを依頼しないでください。実行環境の権限制約で自動化できない項目は、未確認範囲と理由を記録して保留します。
+- 現在の保守項目、完了した自動対応、残るautomation・設計判断は [`MAINTENANCE_BACKLOG.md`](./MAINTENANCE_BACKLOG.md) を参照してください。以下の日付付きレビュー記録は、その日付時点の履歴であり、最新状態として読み替えないでください。
+- ブラウザ / TWA確認はCI、Playwright、Socket E2E、Android emulator等のautomationを優先し、ユーザーに定型的な手動チェックを依頼しないでください。実行環境の権限制約で自動化できない項目は、未確認範囲と具体的な理由を記録して保留します。
 - 運用手順とCSP Report-Onlyの収集・確認方法は [`OPERATIONS.md`](./OPERATIONS.md)、オンライン同期と復元の信頼境界は [`ONLINE_SYNC.md`](./ONLINE_SYNC.md) が正本です。
-- 待機室の切断・開始配信競合の復帰処理は2026-10-02に実装・Socket E2E確認済みです。PWAバナーのlocal/online両導線を320/390/1440pxでChromium確認し、CSP Report-Only経路とMobile WebKit release E2Eも成功しました。TWA manifest/assetlinks/Bubblewrapのvalidation-only workflowと本番Digital Asset Links照合も成功しています。Android 14の既存インストール済みTWAは2026-10-02に起動し、利用者がタイトル画面の全画面・正常表示（URLバーなし）を確認しました。ゲーム操作中のsafe-area/システムバー挙動と実プレイは未確認です。署名APK workflowは`37001500443`でrelease validation後に停止し、`KEYSTORE_STORE_PASSWORD`と`KEYSTORE_KEY_PASSWORD`の未設定が判明しました。CSP強制適用はゲームプレイを含む残りの実機確認まで保留します。
+- 待機室の切断・開始配信競合の復帰処理は2026-10-02に実装・Socket E2E確認済みです。PWAバナーのlocal/online両導線を320/390/1440pxでChromium確認し、CSP Report-Only経路とMobile WebKit release E2Eも成功しました。TWA manifest/assetlinks/Bubblewrapのvalidation-only workflowと本番Digital Asset Links照合も成功しています。2026-10-02のAndroid 14 TWA起動確認ではタイトル画面が全画面・URLバーなしでしたが、ゲーム操作中のsafe-area/システムバー挙動と実プレイは別の未確認範囲です。署名APK workflowは`37001500443`でrelease validation後に停止し、`KEYSTORE_STORE_PASSWORD`と`KEYSTORE_KEY_PASSWORD`の未設定が判明しました。現在のTermux環境では`adb devices -l`に対象端末がなく、署名APKも生成されていません。TWA gameplay自動化が可能になるまでCSP強制適用は保留し、ユーザーへ実機操作や署名secretの共有を依頼しません。
 - `TECH_DEBT.md` は2026-05-16の歴史資料です。現在の状況として引用しないでください。
 
 ## 2026-08-12 repository review status
@@ -223,7 +223,7 @@ AdSense review-period docs/static-page changes use the narrower gate from `docs/
 - Medium fixed: expert eval fast path の pending queue test を static source assertion から behavioral probe へ変更した。
 - 追加した不変条件: eval fast path でも mixed pending queue は `GameManager.nextPendingActionFor()` が示す先頭 field だけを解決する。
 - Docs: `PROJECT_ISSUES.md` / `IMPLEMENTATION_ROADMAP.md` は historical inventory/plan を含むため、最新状態は progress/audit/handoff を優先する。inline handler docs は delegated handler 移行済みとして更新した。
-- Follow-up: ntfy endpoint の shared token/origin gate は production hardening backlog。iPhone/Android の PWA/update/online restore は manual verification required。
+- 当時の follow-up: ntfy endpoint の shared token/origin gate は production hardening backlog。iPhone/Android PWA/update/online restoreの記述は2026-05時点の未自動化記録で、現在の対応方針は冒頭のautomation優先ルールと `MAINTENANCE_BACKLOG.md` / `OPERATIONS.md` を参照してください。
 
 ## 2026-05-20 continuous review Cycle 5 ntfy endpoint gate
 

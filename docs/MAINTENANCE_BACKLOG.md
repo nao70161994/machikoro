@@ -227,20 +227,20 @@ The 2026-08-03 parity harness extraction keeps room construction and live/shadow
 
 ## Next Best Bets
 
-Continue batch-by-batch re-auditing for small contract-first boundaries. The known production authority cutovers still need manual evidence or explicit rollout judgment:
+Continue batch-by-batch re-auditing for small contract-first boundaries. The known production authority cutovers still need automated evidence or explicit rollout judgment:
 
-1. Keep all reconnect event/effect/timer/callback authority flags off by default in production while staged evidence is collected. Automated parity now covers input-gate reads, the compatibility boolean, timer handle/deadline, timeout decisions, ACK-timeout plan and ordered effect executor, incoming gameAction/actionAccepted plans and their malformed-wire/apply-failure/gap/no-game recovery executors and successful commit executor, socket connect/disconnect plans and ordered executors, host-change plan and ordered executor, rejoin request plan and ordered emit executor, terminal cleanup decision and ordered executor, socket-disconnected/restore-lifecycle/normal retry-exhausted status effects, and restore queue flush plan selection and ordered execution, enqueue/overflow/generation-carry/drain/failure-suffix/clear transitions, detached shadow-store read/write parity, plus restore-abort plan selection and ordered effect execution, with legacy fallback; production Socket emit authority, session read, restore queue ownership/abort/handler-flush authority, production restore-abort/rejoin callback authority, other status contexts, storage, protocol, and production cleanup authority remain unchanged. Additional real-device online/PWA evidence is deferred because no further iPhone test device is available.
+1. Keep all reconnect event/effect/timer/callback authority flags off by default in production while staged evidence is collected. Automated parity now covers input-gate reads, the compatibility boolean, timer handle/deadline, timeout decisions, ACK-timeout plan and ordered effect executor, incoming gameAction/actionAccepted plans and their malformed-wire/apply-failure/gap/no-game recovery executors and successful commit executor, socket connect/disconnect plans and ordered executors, host-change plan and ordered executor, rejoin request plan and ordered emit executor, terminal cleanup decision and ordered executor, socket-disconnected/restore-lifecycle/normal retry-exhausted status effects, and restore queue flush plan selection and ordered execution, enqueue/overflow/generation-carry/drain/failure-suffix/clear transitions, detached shadow-store read/write parity, plus restore-abort plan selection and ordered effect execution, with legacy fallback; production Socket emit authority, session read, restore queue ownership/abort/handler-flush authority, production restore-abort/rejoin callback authority, other status contexts, storage, protocol, and production cleanup authority remain unchanged. Additional online/PWA cases belong in browser/emulator automation; do not delegate routine device checks to the user.
 2. Keep `npm run report:action-contract` issue-free and add behavior coverage before the next action/pending path change.
 3. Keep the typed Engine/Snapshot/repository/reconnect/CPU/UI adapter contracts and the matching 306-file no-emit checkJs and scoped ESLint gates synchronized; expand them only by stable adapter boundary, not by repository-wide cleanup.
 
 ## 2026-07-15 B分類オンライン耐障害化
 
 - B1: ACK timeout、pending保護、restore queue上限、再接続世代管理、durable非依存の2/4クライアントE2E、短縮soak、Ubuntu WebKit nightly。GitHub Actions `29348807863` と Release `29348809695` は成功。
-- APKのsecret不要validation-onlyはActions `29379796044`で成功。署名付きAPKは`ANDROID_KEYSTORE_BASE64`、`KEYSTORE_STORE_PASSWORD`、`KEYSTORE_KEY_PASSWORD`の設定後に`build_signed=true`で実行するため、実APKは引き続き人間待ち。
+- APKのsecret不要validation-onlyはActions `29379796044`で成功。署名付きAPKは`ANDROID_KEYSTORE_BASE64`、`KEYSTORE_STORE_PASSWORD`、`KEYSTORE_KEY_PASSWORD`が必要。記録済みworkflow実行では署名secret未設定でAPKを生成できなかった。これは自動TWA検証の外部前提であり、ユーザーに端末確認やsecret共有を求めず、利用可能なautomation runnerで実施できるまでTWA gameplayは未検証として扱う。
 - manual online deliveryは固定production originへのGETと読み取り専用Socket.IO handshakeだけに限定し、Actions `29379820494`で成功。定期scheduleは追加しない。
 - B3: file durable canonical storeは`review/durable-canonical-experimental`だけに隔離。既定storeは`noop`を維持し、canonical transactionとrestart persistenceはmainへ入れない。
 - B4: 現行action ID境界とrolling compatibilityを`docs/PROTOCOL_COMPATIBILITY.md`で固定。dotted stream ID、watermark、非host canonical置換の実装は採用しない。
-- 2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を、再接続ありで勝利まで完走確認。host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新は未確認で、自動WebKitやこの1試合から完了を推定しない。
+- 2026-07-18にAndroid 2台＋iPhone 2台の4人オンライン戦を、再接続ありで勝利まで完走した履歴がある。host移譲、server restart restore、Undo、online CPU、background復帰、PWA更新は別シナリオであり、自動WebKitやこの1試合から完了を推定しない。未確認範囲はE2E/browser/emulator automationで埋め、routine confirmationをユーザーへ依頼しない。
 
 ## 2026-07-29 Current cycle decisions
 

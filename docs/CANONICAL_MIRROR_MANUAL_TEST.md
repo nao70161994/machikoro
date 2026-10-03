@@ -1,5 +1,7 @@
 # Canonical Mirror Manual Regression
 
+> Historical scenario checklist from 2026-05. Reuse these cases as automated Socket/browser/emulator coverage; do not ask the user to perform routine device checks. Current automation status and environment limits are tracked in `docs/MAINTENANCE_BACKLOG.md` and `docs/OPERATIONS.md`.
+
 作成日: 2026-05-17
 対象: PR-031 server canonical mirror / state hash diagnostics
 
@@ -7,7 +9,7 @@
 
 実ブラウザ複数端末で、server canonical mirror が長時間オンライン対戦、再接続、Undo、host 移譲、server restart restore の間も破綻しないことを確認する。
 
-この環境では複数実機ブラウザの長時間操作を代替できないため、確認結果は manual verification required として本手順に記録する。
+当時は複数実機ブラウザの長時間操作を自動化できず、手動手順として記録した。現在は未自動化シナリオをユーザー確認へ回さず、automation backlogとして扱う。
 
 ## 事前準備
 

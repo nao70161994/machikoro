@@ -401,17 +401,17 @@ This evidence covers mixed Android/iPhone basic play, live synchronization, and 
 
 Keep those uncovered paths explicit in `TESTPLAN.md`; do not infer them from this completed match or from automated WebKit.
 
-## Manual Checks Still Required
+## Automation Backlog (Do Not Delegate Routine Device Checks)
 
-Nightly automation reduces but does not fully replace:
+The following are uncovered automation scenarios, not requests for the user to operate devices. Add browser, Socket E2E, or authorized Android-emulator coverage where feasible. If a runner lacks the capability, record that tooling boundary and keep the behavior unverified:
 
-- real iPhone Safari install/update prompt behavior
-- Android Chrome/TWA store packaging behavior
-- additional multi-device online paths listed above
-- screen reader announcement quality
-- full provisional hostless timing on mixed devices, and future server-persisted canonical state design
+- iPhone Safari install/update prompt behavior
+- Android Chrome/TWA install, gameplay, system-bar, and background/resume behavior
+- additional multi-client online paths listed above
+- screen-reader announcement quality
+- full provisional hostless timing; future server-persisted canonical state is a separate design decision
 
-Keep these as explicit manual/design items rather than treating nightly green as proof of real-device completion.
+Green browser CI proves only the covered browser scenarios; do not infer TWA or assistive-technology behavior from it.
 
 ## Design Decision Index
 

@@ -1,10 +1,11 @@
-# Manual Test Plan
+# Regression Test Plan
 
 ## 使い方
 
 注記:
-- 「自動確認」は Node テストで主要な分岐や拒否条件を検査している範囲です。
-- 「手動確認」は複数タブ、Service Worker 更新、実ブラウザの install prompt など、実行環境依存で手動確認が必要な範囲です。
+- この文書は回帰シナリオ一覧です。確認手順はまず Playwright、Socket E2E、Android emulator などで自動化してください。
+- 「自動確認」は現在のテストが検査する範囲です。「未自動化の確認範囲」は自動テストの不足を示し、ユーザーへ実機確認を依頼する指示ではありません。
+- 通常の作業でユーザーに端末操作を依頼しないでください。自動化できない範囲は、その境界と未検証の挙動を記録し、必要な場合は該当リスクを完了扱いにしないでください。
 - 変更種別別の確認コマンド、復元 schema、RL parity fixture への入口は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) です。復元 field の詳細だけを確認する場合は [`docs/online-restore-schema.md`](docs/online-restore-schema.md) を参照してください。
 - 変更内容に近いカテゴリから確認してください。複数カテゴリにまたがる変更では、該当する見出しを組み合わせて使います。
 
@@ -56,21 +57,21 @@
 7. オンライン CPU 進行
    - 自動確認: `tests/online.test.js` / `tests/online-integration.test.js` で action 適用、CPU 手番、再接続まわりの主要分岐を検査する。
    - 配信確認: `npm run test:online-delivery` でローカルサーバーを起動し、`/`, `/api/version`, `/socket.io/socket.io.js`, `/sw.js` が同一 origin で配信されることを検査する。
-   - 手動確認: 複数クライアントで実際に同期表示とCPU進行タイミングを見る。
+   - 自動化対象: 複数クライアントで同期表示とCPU進行タイミングを検査する。
    - 人間1人 + CPU の部屋を作る。
    - CPUターンを数回進める。
    - 期待結果: 手番、建設、ターン終了が通常進行する。
 
 8. ホスト再接続中の CPU
    - 自動確認: 再接続・ホスト復元の状態再構築は `tests/online-integration.test.js` / `tests/storage.test.js` で検査する。
-   - 手動確認: ブラウザ再読込中にCPUが止まらないこと、二重実行されないことを見る。
+   - 自動化対象: 再接続中にCPUが止まらず、二重実行されないことを検査する。
    - オンラインでCPUターン中にホストを再読込する。
    - 再接続後しばらく観察する。
    - 期待結果: CPUが止まらず、同じ行動を二重に実行しない。
 
 9. サーバー再起動後のホスト復元
    - 自動確認: snapshot / actionLog 復元の主要経路と、無効化 stock・重複休業 index・小数 coin の拒否、landmark key・旧 field 欠落の補完は `tests/server.test.js`, `tests/online-integration.test.js`, `tests/storage.test.js` で検査する。
-   - 手動確認: 実サーバープロセス再起動後のブラウザ再接続と表示一致を見る。
+   - 自動化対象: 実サーバープロセス再起動後の再接続と表示一致を検査する。
    - オンライン対戦を開始し、数ターン進める。
    - サーバープロセスを再起動する。
    - ホスト側で再接続を行う。
@@ -78,13 +79,13 @@
 
 10. サーバー再起動後の非ホスト追従
    - 自動確認: `ROOM_NOT_FOUND` 待機や再接続データ処理は `tests/online-integration.test.js` / `tests/storage.test.js` で検査する。
-   - 手動確認: ホスト復元前後で非ホスト画面が追従することを見る。
+   - 自動化対象: ホスト復元前後で非ホスト画面が追従することを検査する。
    - 上記の復元中に非ホスト側でも再接続を行う。
    - 期待結果: `ROOM_NOT_FOUND` 待機後に復帰し、ホスト復元後の状態へ同期する。
 
 11. オンライン `Undo`
    - 自動確認: action 適用・同期拒否の一部は `tests/online.test.js` / `tests/main.test.js` で検査する。
-   - 手動確認: 複数クライアントでUndo後の盤面、在庫、ログが一致することを見る。
+   - 自動化対象: 複数クライアントでUndo後の盤面、在庫、ログが一致することを検査する。
    - 建設後に `Undo` を実行する。
    - 別クライアントでも盤面を見る。
    - 期待結果: コイン、在庫、建設状態、ログが全員で一致して戻る。
@@ -100,7 +101,7 @@
 
 14. 再接続失敗
    - 自動確認: session 保存/削除と再開表示は `tests/storage.test.js`、オンラインエラー処理は `tests/online.test.js` で検査する。
-   - 手動確認: 実ブラウザで古い session を持つ状態から復帰失敗時の表示と次回接続を確認する。
+   - 自動化対象: 古い session で復帰に失敗したときの表示と次回接続を検査する。
    - 無効な `onlineSession` 相当の状態で再接続を試す。
    - 期待結果: `appError` によるエラー表示後、再接続データが消え、次の接続に影響しない。
 
@@ -114,9 +115,9 @@
    - 無効な相手や対象が混ざるケースを確認する。
    - 期待結果: クラッシュせず、無効操作は拒否される。
 
-### Provisional hostless restore manual matrix
+### Provisional hostless restore automation matrix
 
-自動contract testに加え、hostless timingを実機で完了扱いにする前に次を確認します。
+hostless timingを完了扱いにする前に、次のシナリオを自動E2Eで確認します。手動の複数端末確認をユーザーへ依頼しないでください。
 
 - Android 2台 + iPhone 2台の4人戦でhostを離脱させ、通常復元の60秒待機、
   30秒候補収集、承認modalを経て全員が同一盤面へ戻る。
@@ -144,24 +145,22 @@ CPU 判断の変更は、ローカル進行だけでなく保存/復元とオン
 
 18. 5人以上のRL CPU
    - 自動確認: `tests/main.test.js` / `tests/online.test.js` で5人以上でも `AI（深層学習・ランダム）` を選択でき、`rl` のままCPU生成されることを検査する。
-   - 手動確認: ローカルの5人以上設定で `AI（深層学習・ランダム）` を選び、数ターン進めても停止しないことを見る。
-   - 手動確認: オンライン部屋作成で5人以上のRL CPUを含め、参加者一覧と開始後のCPU action が `rl` として同期されることを見る。
+   - 自動化対象: ローカル5人以上で `AI（深層学習・ランダム）` が数ターン進行して停止しないことを検査する。
+   - 自動化対象: オンライン5人以上のRL CPUが参加者一覧と開始後のCPU actionで `rl` として同期されることを検査する。
    - 期待結果: RL CPU は5人以上でも自分 + 脅威度上位3人の相手を見て判断し、保存/復元/オンライン同期で停止しない。
 
 ## PWA / 更新 / バージョン
 
-Service Worker 更新、install prompt、オフライン表示、バージョン不一致は実ブラウザ依存のため、Node テストだけで完結しません。変更種別別の最低確認は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) も参照してください。
+Service Worker 更新、install prompt、オフライン表示、バージョン不一致は実ブラウザ依存です。Nodeテストに加えて `tests/browser/mobile-webkit.spec.js` と `scripts/browser-pwa-smoke.py` のChromium/WebKit automationを使ってください。変更種別別の最低確認は [`docs/maintenance-checklists.md`](docs/maintenance-checklists.md) も参照してください。
 
 19. PWA 更新通知（ゲーム中）
-   - 自動確認: なし。Service Worker の waiting / controllerchange とゲーム中 reload 抑止は実ブラウザ依存のため手動で見る。
-   - 手動確認: 更新通知が出てもゲーム中に自動 reload されないこと、手動更新で安全に戻れることを見る。
+   - 自動確認: `tests/browser/mobile-webkit.spec.js` のService Worker二世代更新E2Eと `scripts/browser-pwa-smoke.py` のpending-update game context。CIで実ブラウザのwaiting / apply / reloadとゲーム中の操作可能性を検査する。
    - 既存タブでゲームを開始し、別ビルド相当の Service Worker 更新を検知させる。
    - ゲーム中に更新通知が表示されても自動 reload されないことを確認する。
    - 期待結果: 手動更新操作まで盤面・手番・pending 状態が維持され、更新操作後に安全に再読込される。
 
 20. PWA 更新通知（タイトル画面）
-   - 自動確認: なし。Service Worker 更新検知と reload は実ブラウザ依存のため手動で見る。
-   - 手動確認: タイトル画面では更新が安全に適用され、古い asset と新しい asset が混在しないことを見る。
+   - 自動確認: `tests/browser/mobile-webkit.spec.js` のService Worker二世代更新E2Eで、controllerchangeと再読込を検査する。
    - タイトル画面またはゲーム未開始状態で Service Worker 更新を検知させる。
    - 初回インストール時に controllerchange が発火しても不要な reload が起きないことを確認する。
    - 初回インストール後、同じタブで更新を検知させた場合は controllerchange によって reload されることを確認する。
@@ -170,7 +169,7 @@ Service Worker 更新、install prompt、オフライン表示、バージョン
 
 21. オフライン / インストール表示
    - 自動確認: `tests/main.test.js` で online/offline 時のオンライン操作無効化・復帰、`beforeinstallprompt` の抑止、standalone / dismiss 済み時の購読抑止を検査する。
-   - 手動確認: 実ブラウザの install prompt 表示、dismiss 後の挙動、オフライン時の画面表示を確認する。
+   - ブラウザ確認: `scripts/browser-pwa-smoke.py` で320/390/1440pxのレイアウトと banner 表示中の市場カード購入・オンライン部屋作成を検査する。OSネイティブのinstall prompt自体はこのWebKit/Chromium smokeの検証対象外。
    - 一度アプリを読み込んだ後、ネットワークを切って再表示する。
    - PWA install prompt またはインストールバナーが出る環境では、表示・dismiss 後の再表示を確認する。
    - dismiss 済みの状態で `beforeinstallprompt` が再発火してもブラウザ標準 prompt が出ず、独自バナーも再表示されないことを確認する。
@@ -179,7 +178,7 @@ Service Worker 更新、install prompt、オフライン表示、バージョン
 22. オンライン参加者のバージョン不一致警告
    - 自動確認: `tests/online.test.js` / `tests/server.test.js` で client version 収集と不一致時ログの主要経路を検査する。
    - 本番配信確認: 公開 URL では `node scripts/check-online-delivery.js --origin https://example.com` を実行し、client version、Service Worker cache 名、Socket.IO client script が同じ build hash / origin で揃うことを検査する。
-   - 手動確認: 古いタブや古い Service Worker 制御下のクライアントを混ぜた実ブラウザで、警告表示と継続動作を確認する。
+   - 自動化対象: 古いタブや Service Worker 制御下のクライアントで警告表示と継続動作を検査する。
    - 片方のクライアントだけ古いタブまたは古い Service Worker 制御下に残した状態でオンライン対戦を開始する。
    - 期待結果: ゲーム開始後のログにバージョン不一致警告が出て、全員に reload を促す。警告後もアプリ固有エラーは `appError` として扱われ、Socket.IO の transport error と混ざらない。
 
@@ -189,7 +188,7 @@ Service Worker 更新、install prompt、オフライン表示、バージョン
 
 23. オンライン再接続 UI
    - 自動確認: `tests/storage.test.js` で有効な再接続データだけ表示し、部屋IDとプレイヤー名を表示することを検査する。
-   - 手動確認: オンライン対戦中にタブを閉じてタイトルへ戻り、再接続通知の部屋ID・プレイヤー名が正しいことを見る。
+   - 自動化対象: 対局中の画面遷移後に再接続通知の部屋ID・プレイヤー名が正しいことを検査する。
    - 壊れた `onlineSession` 相当の localStorage を入れてタイトルを表示する。
    - 期待結果: 壊れた再接続データでは再接続 UI が出ず、有効データでは再接続ボタンからオンラインタブへ移動して復帰を試行する。
 
@@ -200,7 +199,7 @@ Android/TWA workflow を触る場合は、artifact が欠落しても成功扱�
 24. TWA APK artifact 失敗検知
    - 自動確認: `.github/workflows/build-apk.yml` で `app-release-signed.apk` の存在と非空を検査し、upload-artifact は missing artifact を error にする。
    - CI確認: `build_signed=false`ではsecretなしでrelease gate、TWA静的構成、Bubblewrap 1.24.1固定を検証する。
-   - 手動確認: 3つの署名secret設定後に`build_signed=true`で実行し、fingerprintとsigned APK artifactを確認する。
+   - 条件付きCI確認: 署名secretが設定済みの環境だけで`build_signed=true`を実行し、fingerprintとsigned APK artifactを検証する。secret設定をユーザーへ依頼せず、未設定ならTWA自動検証を未完了として記録する。
    - 期待結果: validation-onlyはsecretなしで成功し、署名・fingerprint・APK生成のどれかが失敗した場合はsigned jobが緑にならない。
 
 25. B分類オンライン耐障害化

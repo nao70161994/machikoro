@@ -4,7 +4,7 @@
 
 ## 対象
 
-オンライン再接続、server restart restore、host migration、Undo 同期、ACK timeout 後の再同期を扱う保守メモです。詳細 schema は `docs/online-restore-schema.md`、実機手順は `docs/CANONICAL_MIRROR_MANUAL_TEST.md` を参照してください。
+オンライン再接続、server restart restore、host migration、Undo 同期、ACK timeout 後の再同期を扱う保守メモです。詳細 schema は `docs/online-restore-schema.md`、歴史的な複数端末シナリオ集は `docs/CANONICAL_MIRROR_MANUAL_TEST.md` を参照してください。未確認シナリオはSocket E2E / browser / emulator automationへ移し、routine device checksをユーザーへ依頼しないでください。
 
 ## cleanup 方針
 
@@ -33,7 +33,7 @@
 
 `actionSeq` だけで採用判断を広げる変更は避け、canonical mirror replay と hash 診断を併用します。
 
-## manual verification required
+## Automation backlog
 
 - 複数端末で再接続、Undo、host 移譲、server restart restore を確認する。
 - ACK timeout 後に再同期が走り、二重 action や CPU 二重実行が起きないことを確認する。
