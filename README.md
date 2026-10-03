@@ -36,6 +36,7 @@ node server.js
 - `CPU（最強）` の v2simple 手書き強化は凍結中です。再開条件と評価ゲートは [docs/expert-v2-diagnostics.md](docs/expert-v2-diagnostics.md) に集約します。
 - `AI（深層学習・ランダム）` は v2simple とは別CPUとして扱います。3人以上のRLは現行 `self-only-4p-h256-lr1e5-5000-seed103` を使い、5人以上では脅威度上位3人の相手へ射影して判断します。50戦未満の短期評価は smoke / 足切り専用です。
 - ルールベース CPU と RL CPU は5人以上でも対応します。5人以上のRLは動作対応済みで、5p / 10p の軽量 lineup 評価も registry に記録済みです。追加採用判断では 2p / 3p / 4p / 5p / 10p を分けて確認します。
+- サーバー再起動後の復元は、無料運用ではホスト／参加者が保持する署名付きまたは暫定合意済みの復元情報を使います。サーバー側canonical stateの永続化は既定で無効（`noop`）のため、プロセスをまたぐ正本復元や競技上の信頼性は保証しません。費用のかかる永続ディスクを使う単一インスタンス運用は [運用資料](docs/OPERATIONS.md) を参照してください。
 
 ## 運用ドキュメント
 
@@ -87,6 +88,14 @@ npm run test:smoke
 ```bash
 npm run test:release
 ```
+
+Playwright WebKit の実ブラウザE2Eは別コマンドで、GitHub Actions release workflowでも実行します:
+
+```bash
+npm run test:browser-e2e
+```
+
+このブラウザE2EはTWAやOS標準のインストール／バックグラウンド挙動までは検証しません。自動化ランナーで再現できない範囲は未検証として管理し、定型的な端末確認をユーザーへ依頼しません。
 
 - `test:static`: JS / JSON / shell / Python の構文・parse 確認をまとめて実行します。
 - `test:smoke`: static に加えて core / online / cpu-smoke の主要回帰を実行します。
