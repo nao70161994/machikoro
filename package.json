@@ -20,6 +20,7 @@
     "test:rl": "node tests/run-all.js rl",
     "test:coverage": "node scripts/test-coverage.js",
     "selfplay": "node scripts/selfplay.js",
+    "benchmark:local-engine-shadow": "node --expose-gc scripts/benchmark-local-engine-shadow.js",
     "profile:expert": "node scripts/profile-expert.js",
     "eval-expert-vs-strong": "node scripts/eval-expert-vs-strong.js",
     "eval-expert-v2-benchmark": "node scripts/eval-expert-v2-benchmark-pack.js",

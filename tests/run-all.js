@@ -100,6 +100,7 @@ const TEST_GROUPS = {
         'game-engine-determinism.test.js',
         'local-game-engine-runtime.test.js',
         'game-engine-local-shadow.test.js',
+        'benchmark-local-engine-shadow.test.js',
         'game-engine-runtime-adapter.test.js',
         'game-schema-shadow-parity.test.js',
         'snapshot-contract.test.js',

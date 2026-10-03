@@ -20,12 +20,12 @@ function loadRuntime(options = {}) {
     }
     if (options.includeRL !== false) {
         vm.runInContext(
-            'this.CPU = CPU; this.CPUPendingResolution = CPUPendingResolution; this.CPUEvaluationCache = CPUEvaluationCache; this.CPU_EVALUATION_CACHE_LIMIT = CPU_EVALUATION_CACHE_LIMIT; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
+            'this.CPU = CPU; this.CPUPendingResolution = CPUPendingResolution; this.CPUEvaluationCache = CPUEvaluationCache; this.CPU_EVALUATION_CACHE_LIMIT = CPU_EVALUATION_CACHE_LIMIT; this.RLCPU = RLCPU; this.GameManager = GameManager; this.CARDS = CARDS; this.CARD_EFFECTS = CARD_EFFECTS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
             context
         );
     } else {
         vm.runInContext(
-            'this.CPU = CPU; this.CPUEvaluationCache = CPUEvaluationCache; this.CPU_EVALUATION_CACHE_LIMIT = CPU_EVALUATION_CACHE_LIMIT; this.GameManager = GameManager; this.CARDS = CARDS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
+            'this.CPU = CPU; this.CPUEvaluationCache = CPUEvaluationCache; this.CPU_EVALUATION_CACHE_LIMIT = CPU_EVALUATION_CACHE_LIMIT; this.GameManager = GameManager; this.CARDS = CARDS; this.CARD_EFFECTS = CARD_EFFECTS; this.Player = Player; this.GAME_PHASES = GAME_PHASES; this.LANDMARK_NAMES = LANDMARK_NAMES;',
             context
         );
     }
@@ -1179,6 +1179,11 @@ function playCpuStep(runtime, game, cpu, shopStock, rng) {
                         buildTrace.buildDiagnostics.buildActionLabel = buildTrace.buildDiagnostics.chosenBuildAction.label;
                     }
                 }
+                if (game.phase === runtime.GAME_PHASES.BUILD &&
+                        typeof options.captureBeforeNextTurn === 'function' &&
+                        options.captureBeforeNextTurn({ game, shopStock }) === true) {
+                    return 'captured-before-next-turn';
+                }
                 if (game.phase === runtime.GAME_PHASES.BUILD) game.nextTurn();
                 if (Array.isArray(traceEntries)) traceEntries[traceEntries.length - 1].after = summarizeTraceState(runtime, game, shopStock);
                 return;
@@ -1245,12 +1250,17 @@ function simulateGame(options = {}) {
     try {
         game.enabledLandmarks = resolveEnabledLandmarks(runtime, options.enabledLandmarks);
         let safety = 0;
+        let capturedBeforeNextTurn = false;
         const maxSteps = integerOrDefault(options.maxSteps, 5000);
 
         while (!game.checkWinner() && safety < maxSteps) {
             const cpu = cpuPlayers[game.currentPlayerIndex];
-            playCpuStep(runtime, game, cpu, shopStock, rng);
+            const stepResult = playCpuStep(runtime, game, cpu, shopStock, rng);
             safety++;
+            if (stepResult === 'captured-before-next-turn') {
+                capturedBeforeNextTurn = true;
+                break;
+            }
         }
 
         const winnerPlayer = game.checkWinner();
@@ -1258,6 +1268,7 @@ function simulateGame(options = {}) {
             winner: winnerPlayer ? game.players.indexOf(winnerPlayer) : -1,
             turns: game.turnCount,
             exhausted: safety >= maxSteps,
+            capturedBeforeNextTurn,
             difficulties: difficulties.slice(),
             seed,
             expertPreset: options.expertPreset || 'default',

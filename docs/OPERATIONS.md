@@ -80,6 +80,12 @@ When the service restarts unexpectedly:
 
 All unhandled Promise rejections use the same fail-fast policy as uncaught exceptions. Handle expected operational failures at their call sites; only truly unhandled failures should reach this process-level policy.
 
+## Local Game Engine Shadow Cost
+
+Run `npm run benchmark:local-engine-shadow -- --samples 160 --json` to measure the local `nextTurn` shadow plus direct-authority adoption path against the same state with an unbounded input log. The harness captures deterministic two-player turn-28 and ten-player turn-120 self-play states; its stress case keeps the real ten-player card/player state and replaces that turn's log with 1,000 structured entries. Each sample runs GC before timing. The JSON snapshot byte count is serialized-state size, and `medianPostTransitionHeapDeltaBytes` / `maxPostTransitionHeapDeltaBytes` are immediate post-operation heap deltas, not process RSS or peak live heap. Rendering and CPU scheduling are excluded.
+
+On the recorded Termux Node v26.2.0 Android/arm64 run (160 samples), the real ten-player state had 14 log entries: the production cap removed about 1.0 KB from the serialized input and p50 was 5.20 ms capped vs 5.59 ms unbounded. With the 1,000-entry stress log, the cap reduced input snapshot size from 87.0 KB to 5.1 KB, p50 from 18.04 ms to 5.29 ms, and median post-operation heap delta from 1,049 KB to 439 KB. The current `nextTurn` cap is justified for long logs; these measurements do not justify truncating logs on other actions, where the transition may need the current turn history. The reproduction fixture and assertions live in `scripts/benchmark-local-engine-shadow.js` and `tests/benchmark-local-engine-shadow.test.js`.
+
 ## Incident Response Runbooks
 
 ### Unknown browser notification
