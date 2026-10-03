@@ -607,6 +607,7 @@ const TEST_GROUPS = {
     ],
     release: [
         'release-e2e.test.js',
+        'hostless-restore-socket-e2e.test.js',
     ],
     'cpu-smoke': [
         'cpu.test.js',
