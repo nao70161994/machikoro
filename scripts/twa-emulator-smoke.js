@@ -109,6 +109,46 @@ async function main() {
         assert.ok(shell.viewport.width > 0 && shell.viewport.height > 0);
         assert.ok(shell.documentWidth <= shell.viewport.width,
             `TWA page overflows horizontally: ${JSON.stringify(shell)}`);
+        // Exercise the real PWA bootstrap in Android Chrome, without synthetic events.
+        await page.waitForFunction(() => typeof window.refreshPwaUpdateState === 'function'
+            && typeof window.__machikoroCheckOnlineDelivery === 'function');
+        await page.waitForFunction(async () => {
+            const registration = await navigator.serviceWorker.getRegistration();
+            return !!registration?.active;
+        }, null, { timeout: 60000 });
+        const pwaBootstrap = await page.evaluate(async () => {
+            const response = await fetch('/', { cache: 'no-store' });
+            if (!response.ok) throw new Error(`Index fetch failed: ${response.status}`);
+            const html = await response.text();
+            const policy = response.headers.get('Content-Security-Policy-Report-Only') || '';
+            const inlineScripts = [];
+            for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+                if (/\bsrc\s*=/i.test(match[1]) || !match[2].trim()) continue;
+                const bytes = new TextEncoder().encode(match[2]);
+                const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+                const hash = btoa(String.fromCharCode(...digest));
+                inlineScripts.push({
+                    bytes: bytes.length,
+                    allowed: policy.includes(`'sha256-${hash}'`),
+                    pwa: match[2].includes("if ('serviceWorker' in navigator)"),
+                });
+            }
+            const registration = await navigator.serviceWorker.getRegistration();
+            return {
+                inlineScripts,
+                reportOnly: !!policy,
+                enforcing: !!response.headers.get('Content-Security-Policy'),
+                activeWorker: new URL(registration.active.scriptURL).pathname,
+                onlineDeliveryAvailable: await window.__machikoroCheckOnlineDelivery(),
+            };
+        });
+        assert.ok(pwaBootstrap.reportOnly && !pwaBootstrap.enforcing,
+            'This smoke expects the current Report-Only rollout policy');
+        assert.ok(pwaBootstrap.inlineScripts.some(script => script.pwa), 'PWA inline body was not found');
+        assert.ok(pwaBootstrap.inlineScripts.every(script => script.allowed),
+            'An emitted inline script lacks its exact CSP hash');
+        assert.strictEqual(pwaBootstrap.activeWorker, '/sw.js');
+        assert.strictEqual(pwaBootstrap.onlineDeliveryAvailable, true);
         await page.screenshot({ path: path.join(ARTIFACT_DIR, 'title.png') });
 
         await page.locator('.setup-quick-play').click();
@@ -265,6 +305,7 @@ async function main() {
             signedApkRunId: process.env.TWA_SIGNED_APK_RUN_ID || null,
             dalVerificationBypassed: !process.env.TWA_SIGNED_APK_RUN_ID,
             shell,
+            pwaBootstrap,
             cutoutMode: process.env.TWA_EMULATOR_CUTOUT || 'none',
             nativeCutoutInsets,
             initial,
