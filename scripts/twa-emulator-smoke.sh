@@ -6,6 +6,7 @@ mkdir -p "$ARTIFACT_DIR"
 capture_logcat() {
     adb logcat -d > "$ARTIFACT_DIR/logcat.txt" 2>/dev/null || true
     adb shell dumpsys window windows > "$ARTIFACT_DIR/window.txt" 2>/dev/null || true
+    adb exec-out screencap -p > "$ARTIFACT_DIR/final-screen.png" 2>/dev/null || true
 }
 cleanup() {
     capture_logcat
@@ -56,7 +57,7 @@ adb root
 adb wait-for-device
 adb shell am force-stop com.android.chrome || true
 cat > "$ARTIFACT_DIR/chrome-command-line" <<'CHROMEARGS'
-_ --disable-digital-asset-link-verification-for-url="https://machikoro-9jv2.onrender.com" --remote-debugging-port=9222
+_ --disable-fre --disable-digital-asset-link-verification-for-url="https://machikoro-9jv2.onrender.com" --remote-debugging-port=9222
 CHROMEARGS
 adb push "$ARTIFACT_DIR/chrome-command-line" /data/local/tmp/chrome-command-line
 adb install -r app-release-signed.apk

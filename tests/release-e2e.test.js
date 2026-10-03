@@ -545,6 +545,7 @@ runTest('release workflow と checklist は static safety gate と nightly gate 
     assert.ok(apkWorkflow.includes('BUBBLEWRAP_KEY_PASSWORD'));
     assert.ok(twaSmokeScript.includes('BUBBLEWRAP_KEYSTORE_PASSWORD'));
     assert.ok(twaSmokeScript.includes('BUBBLEWRAP_KEY_PASSWORD'));
+    assert.ok(twaSmokeScript.includes('--disable-fre'));
 });
 
 runTest('GitHub Actionsは検証済みcommit SHAへ固定しrelease workflowの権限をread-onlyにする', () => {
