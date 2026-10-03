@@ -405,6 +405,8 @@ Keep those uncovered paths explicit in `TESTPLAN.md`; do not infer them from thi
 
 The following are uncovered automation scenarios, not requests for the user to operate devices. Add browser, Socket E2E, or authorized Android-emulator coverage where feasible. If a runner lacks the capability, record that tooling boundary and keep the behavior unverified:
 
+On 2026-10-03, the current Termux runner reported no attached devices from `adb devices -l`; `emulator`, `sdkmanager`, `ANDROID_HOME`, and `ANDROID_SDK_ROOT` were unavailable. The GitHub Mobile WebKit job does not install or launch the TWA. Therefore it cannot establish TWA trusted full-screen gameplay or system-bar/safe-area behavior. Do not ask the user for routine device checks; keep those claims unverified until an Android emulator/device automation runner and a valid test or production signing setup are available.
+
 - iPhone Safari install/update prompt behavior
 - Android Chrome/TWA install, gameplay, system-bar, and background/resume behavior
 - additional multi-client online paths listed above
