@@ -3,6 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 const { chromium } = require('@playwright/test');
 const { PRODUCTION_HOST } = require('./create-twa-manifest');
 
@@ -174,6 +175,45 @@ async function main() {
             cards: buildBaseline.cards,
             coins: buildBaseline.coins,
         });
+        const resumeBaseline = await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            return {
+                phase: game.phase,
+                currentPlayerIndex: game.currentPlayerIndex,
+                lastDiceResult: game.lastDiceResult,
+                players: game.players.map(player => ({
+                    coins: player.coins,
+                    cards: player.cards.map(card => card.name),
+                })),
+            };
+        });
+        execFileSync('adb', ['shell', 'input', 'keyevent', 'KEYCODE_HOME'], { timeout: 10000 });
+        await page.waitForFunction(() => document.hidden, null, { polling: 100, timeout: 15000 });
+        execFileSync('adb', ['shell', 'monkey', '-p', 'com.machikoro.game', '1'], { timeout: 15000 });
+        await page.waitForFunction(() => !document.hidden, null, { polling: 100, timeout: 15000 });
+        const resumed = await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            return {
+                phase: game.phase,
+                currentPlayerIndex: game.currentPlayerIndex,
+                lastDiceResult: game.lastDiceResult,
+                players: game.players.map(player => ({
+                    coins: player.coins,
+                    cards: player.cards.map(card => card.name),
+                })),
+            };
+        });
+        assert.deepStrictEqual(resumed, resumeBaseline,
+            'Android background/resume changed the human build-turn state');
+        assert.ok(await page.evaluate(() => matchMedia('(display-mode: standalone)').matches
+            || matchMedia('(display-mode: fullscreen)').matches), 'TWA display mode was lost after resume');
+        await page.screenshot({ path: path.join(ARTIFACT_DIR, 'resumed.png') });
+        // Finish the human turn through the real control after returning from Android Home.
+        await page.locator('#btnSkip').click();
+        await page.locator('#confirmModal').waitFor({ state: 'visible' });
+        await page.locator('#confirmOkBtn').click();
+        await page.locator('#confirmModal').waitFor({ state: 'hidden' });
+        await waitForHumanPhase(page, 'roll');
         const result = {
             status: 'passed',
             testBoundary: 'TWA rendering/gameplay in Android Emulator; DAL verification is bypassed only for this ephemeral test APK',
@@ -182,7 +222,9 @@ async function main() {
             buildBaseline,
             built,
             undoRestoredState: true,
-            artifacts: ['title.png', 'game.png', 'market.png'],
+            backgroundResumeStatePreserved: true,
+            nextHumanTurnReachedAfterResume: true,
+            artifacts: ['title.png', 'game.png', 'market.png', 'resumed.png'],
         };
         fs.writeFileSync(path.join(ARTIFACT_DIR, 'result.json'), `${JSON.stringify(result, null, 2)}\n`);
         console.log(JSON.stringify(result, null, 2));
