@@ -408,12 +408,14 @@ The following are uncovered automation scenarios, not requests for the user to o
 On 2026-10-03, the current Termux runner reported no attached devices from `adb devices -l`; `emulator`, `sdkmanager`, `ANDROID_HOME`, and `ANDROID_SDK_ROOT` were unavailable. The GitHub Mobile WebKit job does not install or launch the TWA. The new `TWA Android Emulator smoke` workflow passed as run `37124937494` on commit `2a88979f` and uploaded `twa-emulator-smoke`: it built and installed an ephemeral APK, confirmed standalone display mode at a 412×827 CSS-pixel viewport with no horizontal overflow, then completed a local market-card purchase with the displayed coin cost and Undo restoration. The workflow uses Chrome's development-only Digital Asset Links verification bypass for the production origin, so it validates the Android Chrome TWA rendering/gameplay path but does not validate production signing or Digital Asset Links trust. The emulator reported zero safe-area insets; notched/cutout layout, a production-signed TWA, Android background/resume, and trusted startup remain unverified. The current Termux runner still cannot access an emulator or device; do not ask the user for routine device checks.
 
 - iPhone Safari install/update prompt behavior
-- production-signed Android Chrome/TWA trust, cutout/safe-area layout, and background/resume behavior
+- production-signed Android Chrome/TWA trust, cutout/safe-area layout, and background process-eviction recovery or visibility-event behavior
 - additional multi-client online paths listed above
 - screen-reader announcement quality
 - full provisional hostless timing; future server-persisted canonical state is a separate design decision
 
 Green browser CI proves only the covered browser scenarios; Mobile WebKit does not prove TWA behavior. The separate passing Android Emulator smoke gives the limited TWA evidence recorded above; neither job proves assistive-technology behavior.
+
+On 2026-10-04 (JST), run `37132532116` on commit `b082ef9e` passed the extended Android Emulator smoke. Its `result.json` recorded a 412×827 standalone viewport without horizontal overflow, a paid facility build (3 → 2 coins, 2 → 3 cards), Undo restoration, native Home launcher focus followed by Chrome Custom Tab focus, unchanged human build-turn state after resume, and successful progression to the next human roll turn. Native window dumps and `background-screen.png`/`resumed.png` are included in the `twa-emulator-smoke` artifact. This proves Home-and-back behavior with CDP attached; it does not prove process eviction, visibility-event delivery, nonzero cutout insets, production signing, or Digital Asset Links trust. The first two extended runs failed in test instrumentation (`document.hidden` waiting and screenshot output buffer), not game assertions; both were corrected before the passing run.
 
 ## Design Decision Index
 
