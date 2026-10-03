@@ -236,7 +236,7 @@ Continue batch-by-batch re-auditing for small contract-first boundaries. The kno
 ## 2026-07-15 B分類オンライン耐障害化
 
 - B1: ACK timeout、pending保護、restore queue上限、再接続世代管理、durable非依存の2/4クライアントE2E、短縮soak、Ubuntu WebKit nightly。GitHub Actions `29348807863` と Release `29348809695` は成功。
-- APKのsecret不要validation-onlyはActions `29379796044`で成功。署名付きAPKは`ANDROID_KEYSTORE_BASE64`、`KEYSTORE_STORE_PASSWORD`、`KEYSTORE_KEY_PASSWORD`が必要。記録済みworkflow実行では署名secret未設定でAPKを生成できなかった。これは自動TWA検証の外部前提であり、ユーザーに端末確認やsecret共有を求めず、利用可能なautomation runnerで実施できるまでTWA gameplayは未検証として扱う。
+- APKのsecret不要validation-onlyはActions `29379796044`で成功。GitHubには`ANDROID_KEYSTORE_BASE64`が登録済みだが、`KEYSTORE_STORE_PASSWORD`と`KEYSTORE_KEY_PASSWORD`が未設定で、所有者も値を把握していない。GitHub Actions secretsから元の値は読み戻せないため、バックアップや元のキーストア管理記録を確認できるまで署名APKは生成不能として扱う。新しい鍵への交換は既存インストールの署名更新互換性とDigital Asset Links fingerprintに影響するため、移行方針を決めずに行わない。ユーザーに署名secretの共有や定型的な端末確認を求めず、自動化で確認できないTWA範囲は未検証のまま明記する。
 - manual online deliveryは固定production originへのGETと読み取り専用Socket.IO handshakeだけに限定し、Actions `29379820494`で成功。定期scheduleは追加しない。
 - B3: file durable canonical storeは`review/durable-canonical-experimental`だけに隔離。既定storeは`noop`を維持し、canonical transactionとrestart persistenceはmainへ入れない。
 - B4: 現行action ID境界とrolling compatibilityを`docs/PROTOCOL_COMPATIBILITY.md`で固定。dotted stream ID、watermark、非host canonical置換の実装は採用しない。
