@@ -7394,3 +7394,9 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) #diceResult.di
         box-shadow: inset 0 1px rgba(255, 239, 204, 0.12);
     }
 }
+
+@media (min-width: 1200px) {
+    html[data-design="sunset"] body:has(#gameScreen[style*="display: block"]) {
+        max-width: 1440px;
+    }
+}

@@ -1351,10 +1351,16 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
         return {
             noOverlap: players.right <= action.left && action.right <= market.left,
             columns,
+            bodyWidth: document.body.getBoundingClientRect().width,
             hasOpenBoard: document.documentElement.scrollWidth === innerWidth,
         };
     });
-    expect(desktopLayout).toEqual({ noOverlap: true, columns: 4, hasOpenBoard: true });
+    expect(desktopLayout).toEqual({
+        noOverlap: true,
+        columns: 4,
+        bodyWidth: 1440,
+        hasOpenBoard: true,
+    });
 
     const screenshotPath = testInfo.outputPath('sunset-desktop-city-1440.png');
     await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
