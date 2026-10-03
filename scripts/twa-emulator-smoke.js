@@ -213,8 +213,14 @@ async function main() {
         // CDP-attached Android Chrome can keep document.visibilityState visible on Home.
         // Native window focus proves the actual OS background transition instead.
         const backgroundFocus = await waitForAndroidFocus(homeComponent.split('/')[0], 'background-window.txt');
-        fs.writeFileSync(path.join(ARTIFACT_DIR, 'background-screen.png'),
-            execFileSync('adb', ['exec-out', 'screencap', '-p'], { timeout: 10000 }));
+        const backgroundImage = fs.openSync(path.join(ARTIFACT_DIR, 'background-screen.png'), 'w');
+        try {
+            execFileSync('adb', ['exec-out', 'screencap', '-p'], {
+                timeout: 10000, stdio: ['ignore', backgroundImage, 'pipe'],
+            });
+        } finally {
+            fs.closeSync(backgroundImage);
+        }
         await new Promise(resolve => setTimeout(resolve, 2000));
         execFileSync('adb', ['shell', 'monkey', '-p', 'com.machikoro.game', '1'], { timeout: 15000 });
         const resumedFocus = await waitForAndroidFocus('com.android.chrome', 'resumed-window.txt');
