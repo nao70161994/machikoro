@@ -8,6 +8,7 @@ const {
 } = require('./helpers/socket-e2e');
 
 process.env.CANONICAL_STATE_STORE = 'noop';
+process.env.GAME_SCHEMA_NEGOTIATION_ENABLED = '1';
 const serverModule = require('../server');
 const connectClient = require('socket.io-client');
 
@@ -276,6 +277,102 @@ runTest('rejoin room lifecycle e2e: 開始直後に切れた席は同一tokenで
         guest.close();
         if (rejoined) rejoined.close();
         await new Promise(resolve => serverModule.__io.close(resolve));
+        restoreHeartbeat();
+    }
+});
+
+runTest('rejoin room lifecycle e2e: gameStart配信直前の切断を旧schema clientが同一tokenで復帰する', async () => {
+    const io = serverModule.__io;
+    const httpServer = io.httpServer;
+    const restoreHeartbeat = configureSocketE2EHeartbeat(io);
+    await new Promise((resolve, reject) => {
+        httpServer.once('error', reject);
+        httpServer.listen(0, '127.0.0.1', resolve);
+    });
+    const origin = 'http://127.0.0.1:' + httpServer.address().port;
+    const host = connect(origin);
+    const guest = connect(origin);
+    let rejoined = null;
+    const originalTo = io.to;
+    let interceptedStart = false;
+    let guestReceivedGameStart = false;
+    guest.on('gameStart', () => { guestReceivedGameStart = true; });
+    try {
+        await Promise.all([onceEvent(host, 'connect'), onceEvent(guest, 'connect')]);
+        const createdPromise = onceEvent(host, 'roomCreated');
+        host.emit('createRoom', {
+            playerName: 'CurrentHost',
+            playerCount: 2,
+            playerSettings: [{ type: 'human' }, { type: 'human' }],
+            gameSchemaCapabilities: { actionVersions: [0, 1], snapshotVersions: [0, 1] },
+            clientVersion: 'schema-race-current',
+        });
+        const created = await createdPromise;
+        host.emit('setWaitingReady', { roomId: created.roomId, ready: true });
+        const joinedPromise = onceEvent(guest, 'roomJoined');
+        guest.emit('joinRoom', {
+            roomId: created.roomId,
+            playerName: 'LegacyGuest',
+            clientVersion: 'schema-race-legacy',
+        });
+        const joined = await joinedPromise;
+
+        io.to = function (targetRoomId, ...args) {
+            const broadcaster = originalTo.call(this, targetRoomId, ...args);
+            if (targetRoomId !== created.roomId) return broadcaster;
+            return {
+                emit(event, ...eventArgs) {
+                    if (event === 'gameStart' && !interceptedStart) {
+                        interceptedStart = true;
+                        const room = serverModule.__rooms[created.roomId];
+                        assert.strictEqual(room.started, true, 'start admission must commit before broadcast');
+                        assert.deepStrictEqual(room.gameStartPayload.gameSchema, {
+                            actionVersion: 0,
+                            snapshotVersion: 0,
+                        }, 'mixed current/legacy peers must negotiate the legacy wire schema');
+                        const guestServerSocket = io.sockets.sockets.get(guest.id);
+                        assert.ok(guestServerSocket, 'guest server socket must still exist at the broadcast boundary');
+                        guestServerSocket.disconnect(true);
+                    }
+                    return broadcaster.emit(event, ...eventArgs);
+                },
+            };
+        };
+
+        const hostStartPromise = onceEvent(host, 'gameStart');
+        const disconnectedPromise = onceEvent(host, 'playerDisconnected');
+        guest.emit('setWaitingReady', { roomId: created.roomId, ready: true });
+        const [gameStart, disconnected] = await Promise.all([hostStartPromise, disconnectedPromise]);
+        assert.strictEqual(interceptedStart, true);
+        assert.strictEqual(guestReceivedGameStart, false);
+        assert.strictEqual(disconnected.playerIndex, joined.playerIndex);
+        assert.deepStrictEqual(gameStart.gameSchema, { actionVersion: 0, snapshotVersion: 0 });
+        const room = serverModule.__rooms[created.roomId];
+        assert.strictEqual(room.players.find(player => player.index === joined.playerIndex).id, null);
+
+        rejoined = connect(origin);
+        await onceEvent(rejoined, 'connect');
+        const rejoinDataPromise = onceEvent(rejoined, 'rejoinData');
+        rejoined.emit('rejoinRoom', {
+            roomId: created.roomId,
+            playerIndex: joined.playerIndex,
+            playerName: 'LegacyGuest',
+            reconnectToken: joined.reconnectToken,
+            clientVersion: 'schema-race-legacy',
+        });
+        const rejoinData = await rejoinDataPromise;
+        assert.strictEqual(rejoinData.playerIndex, joined.playerIndex);
+        assert.deepStrictEqual(rejoinData.gameStartPayload.gameSchema, {
+            actionVersion: 0,
+            snapshotVersion: 0,
+        });
+        assert.strictEqual(room.players.find(player => player.index === joined.playerIndex).id, rejoined.id);
+    } finally {
+        io.to = originalTo;
+        host.close();
+        guest.close();
+        if (rejoined) rejoined.close();
+        await new Promise(resolve => io.close(resolve));
         restoreHeartbeat();
     }
 });
