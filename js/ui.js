@@ -84,7 +84,7 @@ function applyHotseatHandoff(view) {
 
 function acceptHotseatHandoff() {
     applyHotseatHandoff(hotseatHandoffController.dismiss());
-    if (typeof ensureCurrentScreenFocus === 'function') ensureCurrentScreenFocus();
+    UiScreenFocus.ensureCurrentScreenFocus(document);
     return true;
 }
 

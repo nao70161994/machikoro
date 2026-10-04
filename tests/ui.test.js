@@ -2832,3 +2832,21 @@ runTest('手渡し画面は既存modalが閉じてから表示し解除後に背
     assert.strictEqual(elements.gameScreen.inert, false);
     assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none');
 });
+
+runTest('手渡し開始ボタンを閉じたら現在のgame画面へfocusを復帰する', () => {
+    const { context, elements } = loadUiRuntime();
+    elements.titleScreen.style.display = 'none';
+    elements.gameScreen.style.display = 'block';
+    elements.hotseatHandoffButton.parentElement = elements.hotseatHandoffOverlay;
+    elements.hotseatHandoffButton.focus = () => {
+        context.document.activeElement = elements.hotseatHandoffButton;
+    };
+    elements.status.focus = () => {
+        context.document.activeElement = elements.status;
+    };
+    context.applyHotseatHandoff({ visible: true, playerName: 'Bob' });
+    assert.strictEqual(context.document.activeElement, elements.hotseatHandoffButton);
+    context.acceptHotseatHandoff();
+    assert.strictEqual(context.document.activeElement, elements.status);
+    assert.strictEqual(elements.gameScreen.inert, false);
+});
