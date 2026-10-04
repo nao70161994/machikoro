@@ -83,7 +83,7 @@ def capture_market_art_gallery(s):
     if not cards:
         raise RuntimeError('No rendered market cards are available for the art gallery')
     columns=2 if viewport_width<=480 else 5
-    page_size=4 if viewport_width<=480 else 15
+    page_size=4 if viewport_width<=480 else 10
     style="""<style id=\"art-review-style\">#art-review-overlay{position:fixed;inset:0;z-index:2147483646;box-sizing:border-box;width:100vw;height:100vh;overflow:hidden;padding:8px 10px;background:#132538;color:#f8ebd1;display:flex;flex-direction:column;font-family:system-ui,sans-serif}.art-review-heading{display:flex;justify-content:space-between;gap:8px;margin:0 0 6px;font-size:13px;line-height:18px;flex:0 0 auto}.art-review-grid{display:grid;grid-template-columns:repeat(COLUMNS,minmax(0,1fr));gap:4px 7px;align-content:start;min-height:0}.art-review-grid .card-wrapper{width:100%;min-width:0;margin:0}.art-review-grid .card-btn{width:100%;min-width:0}.art-review-grid .card-body{padding:4px 7px 7px}.art-review-grid .card-name{font-size:13px}.art-review-grid .card-effect{font-size:11px;line-height:1.25}.art-review-grid .card-meta-row{min-height:24px}.art-review-grid .card-detail-btn{min-height:24px;padding:2px 7px;font-size:10px}</style>""".replace('COLUMNS',str(columns))
     page_count=(len(cards)+page_size-1)//page_size
     for page_index in range(page_count):
@@ -468,6 +468,7 @@ try:
                         if design == 'sunset':
                             assert js(s,"const name=document.querySelector('.winner-title-name'),outcome=document.querySelector('.winner-title-outcome');return !!name&&!!outcome&&Math.abs(name.getBoundingClientRect().top-outcome.getBoundingClientRect().top)<1"), 'Compact winner name and outcome wrap onto separate lines'
                     assert js(s,"return !document.querySelector('.winner-screen .ad-slot')")
+                    js(s,"window.scrollTo(0,0);document.getElementById('gameScreen').scrollTop=0;document.querySelector('.winner-screen').scrollIntoView({block:'start'})")
                     shot(s,design+'-winner')
                     if design == 'sunset':
                         capture_result_share_card(s)
@@ -475,6 +476,7 @@ try:
                     if design == 'sunset' and os.environ.get('SMOKE_CAPTURE_TOWN_DENSITY') == '1':
                         density=js(s,"const target=document.querySelector('.winner-screen .sunset-town');if(!target)return null;window.__townDensityOriginal=target.outerHTML;const names=Player.landmarkNames(),landmarks=Object.fromEntries(names.map(name=>[name,true]));target.outerHTML=UiBuildMenu.renderTownHtml({cards:CARDS.slice(0,10),landmarks},new Set(names));const town=document.querySelector('.winner-screen .sunset-town'),street=town.querySelector('.town-street'),overflow=town.querySelector('.town-overflow'),range=document.createRange();range.selectNodeContents(overflow);return {facilityCount:town.querySelectorAll('.town-building:not(.town-landmark)').length,landmarkCount:town.querySelectorAll('.town-landmark').length,hasOverflow:!!overflow,overflowSingleLine:range.getClientRects().length===1,fits:town.scrollWidth<=town.clientWidth&&street.scrollWidth<=street.clientWidth&&document.documentElement.scrollWidth<=innerWidth}")
                         assert density and density['facilityCount']==8 and density['landmarkCount']==6 and density['hasOverflow'] and density['overflowSingleLine'] and density['fits'], f"Dense winner town is clipped, wrapped, or incomplete: {density}"
+                        js(s,"document.querySelector('.winner-screen .sunset-town').scrollIntoView({block:'center'})")
                         shot(s,'sunset-winner-town-density')
                         js(s,"const town=document.querySelector('.winner-screen .sunset-town');if(town&&window.__townDensityOriginal)town.outerHTML=window.__townDensityOriginal;delete window.__townDensityOriginal")
                         town_density_captured=True
