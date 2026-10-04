@@ -234,10 +234,11 @@ const UiBuildMenu = (() => {
         if (motifs.has('radio')) landscape.push('<g data-town-feature="beacon"><path d="M89 109L100 43L111 109M94 84H106M97 64H103" fill="none" stroke="#bec0a6" stroke-width="2"/><circle cx="100" cy="40" r="4" fill="#f1cb81"/><circle cx="100" cy="40" r="12" fill="#f1cb81" opacity=".12"/></g>');
         if (motifs.has('mall')) landscape.push('<g data-town-feature="shopping-street" stroke="#d5bd83" stroke-width="2"><path d="M219 131Q285 145 350 130" fill="none"/><path d="M229 134V142M255 139V147M284 141V149M313 138V146M339 133V141"/><path d="M224 141H234V148H224ZM250 146H260V153H250ZM279 148H289V155H279ZM308 145H318V152H308ZM334 140H344V147H334Z" fill="#f8d790" stroke="none"/></g>');
         if (motifs.has('airport')) landscape.push('<g data-town-feature="air-route"><path d="M393 44Q435 27 488 35" fill="none" stroke="#d9d5b6" stroke-width="2" opacity=".5"/><path d="M496 35L510 30L514 20L518 21L516 31L533 34L532 38L515 37L507 44L504 43L508 36L498 39Z" fill="#eee0b6" stroke="#496673" stroke-width="1.5"/></g>');
-        // Above the eight featured lots, additional purchases populate the
-        // distant neighbourhood. Each purchase still changes the scenery,
-        // without rendering dozens of miniature card pictures in the foreground.
-        const population = Math.min(64, Math.max(0, cards.length - 8));
+        // The first copy occupies its featured lot. Further copies and types
+        // beyond those lots populate the distant neighbourhood, so purchases
+        // change the scenery even while the visible town has only a few types.
+        const featuredTypes = Math.min(8, new Set(cards.map(card => card.name)).size);
+        const population = Math.min(64, Math.max(0, cards.length - featuredTypes));
         const residences = Array.from({ length: Math.ceil(population / 2) }, (_, index) => {
             const x = 8 + (index % 16) * 39;
             const y = 82 + Math.floor(index / 16) * 23;

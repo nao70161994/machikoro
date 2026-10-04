@@ -2932,3 +2932,18 @@ runTest('代表区画が埋まっても新しい購入は住宅と窓明かり�
     assert.match(menu.renderTownHtml(player(38)), /data-town-population="30"/);
     assert.match(menu.renderTownHtml(player(1000)), /data-town-population="64"/);
 });
+
+runTest('序盤の重複購入も代表施設とは別の住宅と窓明かりになる', () => {
+    const menu = require('../js/uiBuildMenu');
+    const wheat = { name: '麦畑', category: '農園' };
+    const bakery = { name: 'パン屋', category: '飲食店' };
+    const render = cards => menu.renderTownHtml({ cards, landmarks: {} });
+    const initial = render([wheat, bakery]);
+    assert.match(initial, /data-town-population="0"/);
+    const duplicated = render([wheat, wheat, wheat, wheat]);
+    assert.match(duplicated, /data-town-population="3"/);
+    assert.strictEqual((duplicated.match(/data-town-slot-facility=/g) || []).length, 1);
+    const purchased = render([wheat, bakery, wheat]);
+    assert.match(purchased, /data-town-population="1"/);
+    assert.strictEqual(render([wheat, bakery]), initial, 'Undoで住宅と明かりも元へ戻る');
+});
