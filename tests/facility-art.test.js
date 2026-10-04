@@ -45,6 +45,11 @@ runTest('代表的なランドマークは遊具と港の場面を保ってカ�
     assert.match(port, /viewBox="18 4 130 72"/);
     assert.match(port, /facility-art\.svg#port/);
 });
+runTest('前景主役の施設4種は旧トリミングで牛や飛行機や店内を切らない', () => {
+    for (const name of ['空港', '寿司屋', '牧場', '鉱山']) {
+        assert.match(UiBuildMenu.renderFacilityArt(name, name === '空港'), /viewBox="0 0 160 80"/, name);
+    }
+});
 runTest('市場カードは施設の業種に合った景色を持ち、カード色の意味は上帯に保つ', () => {
     const cardMarkup = name => render(CARDS.find(card => card.name === name));
     assert.ok(cardMarkup('麦畑').includes('facility-scene-pasture'));
@@ -90,9 +95,10 @@ runTest('森林の段枝シルエットは鉱山の稜線と形で区別でき�
     assert.ok(!forest.includes('M13 64Q80 43 147 64V73H13Z'), 'trees grow into the ground, not on a display plinth');
     assert.ok(forest.includes('M0 60Q25 52 54 59T109 58Q138 53 160 61V80H0Z'), 'several tree heights stand on a natural hillside');
     assert.ok(forest.includes('M-4 79Q28 66 61 73T126 72Q146 68 164 77'), 'undulating forest-floor rows add foreground depth');
-    assert.ok(mine.includes('M13 67L55 12L78 41L106 6L147 67'));
-    assert.ok(mine.includes('M18 64L55 17L74 40L62 37L50 48L40 45L31 57Z'), 'faceted rock planes give the mine cliff a worked stone texture');
-    assert.ok(mine.includes('M116 54V36L130 27L144 36V54'), 'a timber hoist marks an active mine entrance');
+    assert.ok(mine.includes('M0 17L27 5L68 12L113 0L160 18V80H0Z'), 'the cliff surrounds a deep mine entrance');
+    assert.ok(mine.includes('data-scene="receding-tunnel"'), 'timber supports recede into the tunnel');
+    assert.ok(mine.includes('M35 80L82 47M128 80L86 47'), 'rails converge within the tunnel');
+    assert.ok(mine.includes('data-scene="foreground-ore-cart"'), 'the ore cart occupies the foreground');
 });
 runTest('麦畑とコーン畑は穂先の光と雄花・畝で農園内の作物差を見せる', () => {
     const field = sprite.match(/<symbol id="field"[\s\S]*?<\/symbol>/)?.[0] || '';
@@ -133,9 +139,10 @@ runTest('建物カードは業種を示す売場・構造の細部を維持す�
     assert.ok(art('family').includes('M31 45H65V60H31ZM95 45H129V60H95Z'));
     assert.ok(art('family').includes('M70 66V49Q70 45 74 45H86Q90 45 90 49V66Z'));
     assert.ok(art('family').includes('M24 62H136M27 64H133'));
-    assert.ok(art('sushi').includes('M49 40H68V52Q58.5 55 49 52Z'));
-    assert.ok(art('sushi').includes('M21 39H30V51Q25.5 55 21 51Z'), 'sushi shop has a distinct hanging lantern');
-    assert.ok(art('sushi').includes('M55 60Q59 56 63 60Z'), 'sushi shop shows plated nigiri outside its noren');
+    assert.ok(art('sushi').includes('M17 9H55V21Q36 26 17 21Z'), 'noren hangs over the counter view');
+    assert.ok(art('sushi').includes('M3 23H13V39Q8 43 3 39Z'), 'sushi shop keeps its hanging lantern');
+    assert.ok(art('sushi').includes('data-scene="foreground-nigiri"'), 'the foreground nigiri and interior counter define the composition');
+    assert.ok(art('sushi').includes('data-scene="counter-interior"'));
     assert.ok(art('stadium').includes('M17 37V14M143 37V14'), 'stadium has paired floodlight towers');
     assert.ok(art('stadium').includes('M46 52V44H54V52M106 52V44H114V52'), 'the pitch has opposing goals');
     assert.ok(art('tv-station').includes('M80 22V5M68 8H92'), 'TV station has a rooftop broadcast mast');
@@ -214,6 +221,8 @@ runTest('牧場は台座でなく地続きの牧草地に家畜と柵を置き�
     assert.ok(ranch.includes('M0 62Q25 55 53 62T108 61Q137 55 160 62V80H0Z'), 'pasture ground flows beyond the scene edges');
     assert.ok(ranch.includes('M0 72Q28 65 59 71T123 70Q145 66 160 72V80H0Z'), 'a second meadow layer adds depth');
     assert.ok(ranch.includes('M1 78Q30 70 61 75T124 74Q146 69 160 75'), 'pasture has a soft grass-row highlight');
+    assert.ok(ranch.includes('data-scene="foreground-cow" transform="translate(-56 -24) scale(1.5)"'));
+    assert.ok(ranch.includes('data-scene="distant-barn"'));
     assert.ok(ranch.includes('M124 42Q121 38 123 36Q127 38 127 42'));
     assert.ok(ranch.includes('circle cx="128.5" cy="45.5" r="1.2"'));
     assert.ok(ranch.includes('M104 55Q109 52 114 55V59H104Z'));
@@ -314,6 +323,8 @@ runTest('空港のランドマークはターミナル窓・入口・滑走路�
     const airport = sprite.match(/<symbol id="airport"[\s\S]*?<\/symbol>/)?.[0] || '';
     assert.ok(airport.includes('<g transform="rotate(-12 72 29)"><path d="M28 22L66 25L95 10L104 13L84 28L115 32L117 38L76 35L61 46L54 44L61 33L31 29Z"'),
         'the aircraft climbs diagonally across the terminal scene');
+    assert.match(airport, /data-scene="foreground-aircraft"[^>]*stroke="#334b53"/, 'the foreground aircraft keeps the shared dark outline outside the terminal group');
+    assert.ok(airport.includes('data-scene="distant-terminal"'));
     assert.ok(airport.includes('M42 51V59M55 51V59M68 51V59M81 51V59M94 51V59M107 51V59'));
     assert.ok(airport.includes('M68 59H82V68H68Z'), 'the terminal has a distinct passenger entrance');
     assert.ok(airport.includes('M49 79H111L92 68H68Z'), 'a foreshortened runway leads from the terminal');
