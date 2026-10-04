@@ -383,7 +383,8 @@ body.modal-open #gameScreen {
 
 .tab-btn {
     flex: 1;
-    min-width: 0;
+    min-width: 44px;
+    min-height: 44px;
     padding: 10px 4px;
     border-radius: 8px;
     font-size: 13px;
