@@ -2201,6 +2201,10 @@ for (const width of [320, 390, 1440]) {
         await page.locator('#btnStart').click();
         await page.locator('#confirmOkBtn').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
+        await page.locator('#btnRoll').click();
+        await expect.poll(() => page.evaluate(() =>
+            GameRuntimeState.runtime.snapshot().game.phase
+        )).toBe('build');
         await page.evaluate(() => {
             cancelCpuSchedule('plaza-review');
             window.scheduleCPU = () => false;

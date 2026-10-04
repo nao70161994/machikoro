@@ -8219,7 +8219,7 @@ html[data-design="plaza"] #gameScreen > .game-action-panel {
     box-sizing: border-box;
     z-index: 40;
     display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: 88px minmax(0, 1fr);
     gap: 6px;
     min-height: 0;
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
@@ -8229,7 +8229,10 @@ html[data-design="plaza"] #gameScreen > .game-action-panel {
     box-shadow: 0 -8px 24px #0006;
 }
 html[data-design="plaza"] .game-action-panel #diceResult { margin: 0; align-self: center; }
-html[data-design="plaza"] .game-action-panel .dice-face { width: 48px; height: 48px; padding: 7px; gap: 3px; }
+html[data-design="plaza"] .game-action-panel .dice-face { width: 36px; height: 36px; padding: 5px; gap: 2px; }
+html[data-design="plaza"] .game-action-panel .dice-display { gap: 4px; }
+html[data-design="plaza"] .game-action-panel .buttons #btnRoll:disabled,
+html[data-design="plaza"] .game-action-panel .buttons #btnSkip:disabled { display: none; }
 html[data-design="plaza"] .game-action-panel .buttons { margin: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px; }
 html[data-design="plaza"] .game-action-panel .buttons button { flex: 1 1 100px; min-height: 44px; height: auto; margin: 0; padding: 6px; font-size: 13px; }
 html[data-design="plaza"] .game-action-toolbar { grid-column: 1 / -1; margin: 0; }
