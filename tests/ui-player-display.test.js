@@ -144,6 +144,26 @@ const players = [
         },
     },
 ];
+const plazaHtml = UiPlayerDisplay.buildPlayersHtml(players, {
+    plaza: true,
+    settings: [{ type: 'human' }, { type: 'cpu', difficulty: 'strong' }],
+    currentPlayerIndex: 1,
+    myPlayerIndex: 0,
+    compactInactive: true,
+    compactCurrentPlayer: true,
+    enabledLandmarks: new Set(['駅', '空港']),
+    getLandmarkEmoji: () => '',
+    compareCardNames: (a, b) => a.localeCompare(b, 'ja'),
+    escapeHtml: value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    buildTownHtml: () => '<div class="town-street"></div>',
+    loanEffect: 'loan',
+});
+assert(plazaHtml.includes('ランドマーク 1/2'));
+assert(plazaHtml.includes('aria-label="緑カード2枚"'));
+assert(plazaHtml.includes('aria-label="紫カード1枚"'));
+assert.strictEqual((plazaHtml.match(/class="plaza-opponent-town"/g) || []).length, 1);
+assert(plazaHtml.includes('class="player-box active player-box-compact"'));
+assert(!plazaHtml.includes('大施設 1/2'));
 const html = UiPlayerDisplay.buildPlayersHtml(players, {
     settings: [
         { type: 'human', difficulty: 'human' },

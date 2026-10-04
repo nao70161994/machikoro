@@ -2189,14 +2189,22 @@ test('オンライン復元の途中表示は祝福せず復元後の本当の�
 });
 
 for (const width of [320, 390, 1440]) {
-    test(`広場テーマは共通アートと街の盤面を表示する ${width}px`, async ({ page }) => {
+    test(`広場テーマは共通アートと街の盤面を表示する ${width}px`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width, height: 844 });
         await stubAds(page);
         await page.goto('/');
         await selectDesignTheme(page, 'plaza');
         await expect(page.locator('.title-brand-mark')).toBeVisible();
-        await page.locator('.setup-quick-play').click();
+        await page.locator('#customGameSetup > summary').click();
+        await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
+        await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
+        await page.locator('#btnStart').click();
+        await page.locator('#confirmOkBtn').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
+        await page.locator('#btnRoll').click();
+        await expect.poll(() => page.evaluate(() =>
+            GameRuntimeState.runtime.snapshot().game.phase
+        )).toBe('build');
         await page.evaluate(() => {
             cancelCpuSchedule('plaza-review');
             window.scheduleCPU = () => false;
@@ -2208,22 +2216,48 @@ for (const width of [320, 390, 1440]) {
         });
         const town = page.locator('.player-box-self .town-street');
         await expect(town.locator('.town-building .sunset-facility-art').first()).toBeVisible();
-        expect((await town.boundingBox()).height).toBeGreaterThan(150);
+        expect((await town.boundingBox()).height).toBeGreaterThan(60);
+        const market = await page.locator('#buildMenu').boundingBox();
+        const own = await page.locator('.player-box-self').boundingBox();
+        const opponents = page.locator('.player-box:not(.player-box-self)');
+        for (const opponent of await opponents.all()) {
+            const box = await opponent.boundingBox();
+            expect(box.y + box.height).toBeLessThanOrEqual(market.y);
+        }
+        expect(own.y).toBeGreaterThan(market.y + market.height - 1);
+        const controls = await page.locator('.game-action-panel').boundingBox();
+        expect(controls.y + controls.height).toBeLessThanOrEqual(845);
+        expect(controls.height).toBeLessThan(180);
+        const updateDismiss = page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]');
+        if (await updateDismiss.isVisible()) await updateDismiss.click();
+        await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
         await expect(page.locator('#buildMenu .sunset-facility-art').first()).toBeVisible();
         expect(await town.locator('.town-backdrop').evaluate(element =>
             getComputedStyle(element).position)).toBe('absolute');
         expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
-        if (width >= 1200) {
-            const players = await page.locator('.player-area').boundingBox();
-            const guide = await page.locator('#tutorialBox').boundingBox();
-            expect(players.y).toBeGreaterThanOrEqual(guide.y + guide.height);
-        }
         if (width === 390) {
             await page.reload();
             await expect(page.locator('html')).toHaveAttribute('data-design', 'plaza');
             await page.locator('#btnResume').click();
             await expect(page.locator('.player-box-self .town-building .sunset-facility-art').first()).toBeVisible();
             expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins)).toBe(30);
+            const before = await page.evaluate(() => {
+                const game = GameRuntimeState.runtime.snapshot().game;
+                return { count: game.currentPlayer().cards.length, turn: game.turnCount };
+            });
+            await page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]').click();
+            await expect.poll(() => page.evaluate(() =>
+                GameRuntimeState.runtime.snapshot().game.currentPlayer().cards.length
+            )).toBe(before.count + 1);
+            await page.locator('#btnSkip').click();
+            await expect.poll(() => page.evaluate(() =>
+                GameRuntimeState.runtime.snapshot().game.turnCount
+            )).toBeGreaterThan(before.turn);
+            if (await page.locator('#hotseatHandoffButton').isVisible()) {
+                await page.locator('#hotseatHandoffButton').click();
+            }
+            await expect(page.locator('#btnRoll')).toBeEnabled();
+            await page.screenshot({ path: testInfo.outputPath('plaza-after-purchase-390.png'), fullPage: true });
         }
     });
 }

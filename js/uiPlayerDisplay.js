@@ -132,7 +132,7 @@ const UiPlayerDisplay = (() => {
         const landmarkTotal = options.enabledLandmarks instanceof Set ? options.enabledLandmarks.size : 0;
         const builtLandmarks = Object.entries(player.landmarks)
             .filter(([name, built]) => options.enabledLandmarks.has(name) && built).length;
-        const assetSummary = `<div class="player-asset-summary" aria-label="カード内訳 青${colorCounts.blue}枚、緑${colorCounts.green}枚、赤${colorCounts.red}枚、紫${colorCounts.purple}枚、大施設${builtLandmarks}個">${colorSummary}<span class="player-landmark-count">大施設 ${builtLandmarks}/${landmarkTotal}</span></div>`;
+        const assetSummary = `<div class="player-asset-summary" aria-label="カード内訳 青${colorCounts.blue}枚、緑${colorCounts.green}枚、赤${colorCounts.red}枚、紫${colorCounts.purple}枚、ランドマーク${builtLandmarks}個">${colorSummary}<span class="player-landmark-count">ランドマーク ${builtLandmarks}/${landmarkTotal}</span></div>`;
         const colorDot = { blue: '#3b82f6', green: '#22c55e', red: '#ef4444', purple: '#a855f7' };
         const cardHtml = Object.entries(cards)
             .sort(([a], [b]) => options.compareCardNames(a, b))
@@ -156,8 +156,10 @@ const UiPlayerDisplay = (() => {
         const coinMark = hasCustomCoinMark ? options.getCoinMark() : '🪙';
         const coinAccessibleLabel = hasCustomCoinMark ? '<span class="screen-reader-only">コイン</span>' : '';
         const selfBadge = isSelf ? '<span class="player-self-badge">あなた</span>' : '';
-        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${assetSummary}`;
         const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player) : '';
+        const miniTown = options.plaza && !isSelf
+            ? `<div class="plaza-opponent-town">${town}</div><div class="plaza-owned-cards">${cardHtml || '施設なし'}</div>` : '';
+        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${assetSummary}${miniTown}`;
         const detail = `<div class="player-detail">${town}<div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
         const playerClasses = `player-box${isActive ? ' active' : ''}${isSelf ? ' player-box-self' : ''}`;
         if (compact) {

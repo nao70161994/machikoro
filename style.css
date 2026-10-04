@@ -1882,7 +1882,8 @@ body.game-finished #gameScreen > #btnRestart {
     border-radius: 50%;
 }
 
-.dot.hidden { background: transparent; }
+.dot.hidden { background: transparent; visibility: hidden; }
+
 
 @keyframes dice-land {
     0% { opacity: 0.45; transform: translateY(-12px) rotate(-10deg) scale(0.82); }
@@ -8151,4 +8152,140 @@ html[data-design="plaza"] #gameLogContainer .log-summary {
     html[data-design="plaza"] .player-area { padding: 8px; border-radius: 18px; }
     html[data-design="plaza"] #buildMenu { padding: 8px; border-radius: 18px; }
     html[data-design="plaza"] .game-action-panel { border-radius: 18px; }
+}
+/* The plaza is one table: opponents, shared market, then the local town.
+   Contents keeps the existing player IDs and event delegation intact. */
+#plazaEvents { display: none; }
+html[data-design="plaza"] #gameScreen[style*="display: block"] {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: none;
+    gap: 10px;
+    padding-bottom: 180px;
+}
+html[data-design="plaza"] #gameScreen > #status,
+html[data-design="plaza"] #gameScreen > #gameConnectivityPanel,
+html[data-design="plaza"] #gameScreen > #turnTimeline,
+html[data-design="plaza"] #gameScreen > #plazaEvents,
+html[data-design="plaza"] #gameScreen > #buildMenu,
+html[data-design="plaza"] #gameScreen > #tutorialBox,
+html[data-design="plaza"] #gameScreen > #gameLogContainer,
+html[data-design="plaza"] #gameScreen > #onlineLeaveHelp,
+html[data-design="plaza"] #gameScreen > #btnRestart {
+    grid-area: auto;
+    grid-column: 1 / -1;
+    grid-row: auto;
+}
+html[data-design="plaza"] #gameScreen > #status { order: 0; }
+html[data-design="plaza"] #gameConnectivityPanel { order: 1; }
+html[data-design="plaza"] #turnTimeline { order: 2; }
+html[data-design="plaza"] #plazaEvents {
+    display: block;
+    order: 3;
+    padding: 8px 12px;
+    background: #112e38;
+    border-radius: 12px;
+    border: 1px solid #d8b56b55;
+}
+html[data-design="plaza"] #plazaEvents h2 { margin: 0 0 4px; font-size: 12px; color: #f0d18c; }
+html[data-design="plaza"] #plazaRecentEvents .log-item {
+    margin: 2px 0;
+    padding: 3px 0;
+    width: 100%;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    min-height: 0;
+}
+html[data-design="plaza"] #gameScreen .player-area,
+html[data-design="plaza"] #players { display: contents; }
+html[data-design="plaza"] #playerNavigation { grid-column: 1 / -1; order: 4; }
+html[data-design="plaza"] #players > .player-box { order: 5; min-width: 0; margin: 0; padding: 8px; }
+html[data-design="plaza"] #players > .player-box-self { order: 7; grid-column: 1 / -1; }
+html[data-design="plaza"] #gameScreen > #buildMenu { order: 6; margin: 0; }
+html[data-design="plaza"] #gameScreen > #tutorialBox { order: 9; }
+html[data-design="plaza"] #gameScreen > #gameLogContainer { order: 10; max-height: none; overflow: visible; }
+html[data-design="plaza"] #gameLogContainer .log-summary { max-height: none; overflow: visible; }
+html[data-design="plaza"] #gameLogContainer .log { max-height: 260px; }
+html[data-design="plaza"] #onlineLeaveHelp,
+html[data-design="plaza"] #btnRestart { order: 11; }
+html[data-design="plaza"] #gameScreen > .game-action-panel {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(100%, 720px);
+    box-sizing: border-box;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 6px;
+    min-height: 0;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    border: 1px solid #d8b56b88;
+    border-radius: 16px 16px 0 0;
+    background: #102e39;
+    box-shadow: 0 -8px 24px #0006;
+}
+html[data-design="plaza"] .game-action-panel #diceResult { margin: 0; align-self: center; }
+html[data-design="plaza"] .game-action-panel .dice-face { width: 36px; height: 36px; padding: 5px; gap: 2px; }
+html[data-design="plaza"] .game-action-panel .dice-display { gap: 4px; }
+html[data-design="plaza"] .game-action-panel .buttons #btnRoll:disabled,
+html[data-design="plaza"] .game-action-panel .buttons #btnSkip:disabled { display: none; }
+html[data-design="plaza"] .game-action-panel .buttons { margin: 0; display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px; }
+html[data-design="plaza"] .game-action-panel .buttons button { flex: 1 1 100px; min-height: 44px; height: auto; margin: 0; padding: 6px; font-size: 13px; }
+html[data-design="plaza"] .game-action-toolbar { grid-column: 1 / -1; margin: 0; }
+html[data-design="plaza"] #diceChoose { grid-column: 1 / -1; }
+html[data-design="plaza"] #players .player-box-compact > summary { padding: 0; }
+html[data-design="plaza"] #players .player-header { display: flex; flex-wrap: wrap; gap: 2px; margin: 0; }
+html[data-design="plaza"] #players .player-name-row { min-width: 0; gap: 3px; flex: 1 1 100%; }
+html[data-design="plaza"] #players .player-icon { width: 22px; height: 22px; padding: 0; }
+html[data-design="plaza"] #players .player-kind-icon { width: 22px; height: 22px; }
+html[data-design="plaza"] #players .player-kind-level { display: none; }
+html[data-design="plaza"] #players .player-name { font-size: 12px; overflow-wrap: anywhere; white-space: normal; overflow: visible; text-overflow: clip; }
+html[data-design="plaza"] #players .player-coins { font-size: 17px; }
+html[data-design="plaza"] #players .player-asset-summary { padding: 0; gap: 3px; }
+html[data-design="plaza"] #players .player-color-chip { min-width: 0; padding: 2px 3px; font-size: 10px; }
+html[data-design="plaza"] #players .player-landmark-count { font-size: 10px; margin: 2px 0; width: 100%; }
+html[data-design="plaza"] #players .player-detail-hint { position: static; display: block; font-size: 11px; margin-top: 4px; }
+html[data-design="plaza"] #players .plaza-owned-cards { display: flex; flex-wrap: nowrap; gap: 2px; overflow-x: auto; max-width: 100%; }
+html[data-design="plaza"] #players .plaza-owned-cards .card-badge { flex: 0 0 auto; font-size: 10px; padding: 3px; margin: 0; min-height: 28px; }
+html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner,
+html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaInstallBanner {
+    top: max(8px, env(safe-area-inset-top, 0px));
+    bottom: auto;
+}
+html[data-design="plaza"] #players .player-box-self .player-name-row { flex-basis: auto; }
+html[data-design="plaza"] #players .player-box-self .player-header { justify-content: space-between; }
+html[data-design="plaza"] #players .player-box-self .town-street { max-height: 150px; }
+html[data-design="plaza"] .plaza-opponent-town .town-summary { display: none; }
+html[data-design="plaza"] .plaza-opponent-town .sunset-town { margin: 4px 0; padding: 0; border: 0; }
+html[data-design="plaza"] .plaza-opponent-town .town-street { height: 55px; min-height: 0; }
+html[data-design="plaza"] #buildMenu .card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+html[data-design="plaza"] #buildMenu .card-btn { min-height: 0; padding: 0; }
+html[data-design="plaza"] #buildMenu .card-btn .sunset-facility-art { height: 58px; }
+html[data-design="plaza"] #buildMenu .card-btn .card-body { padding: 5px; }
+html[data-design="plaza"] #buildMenu .card-btn .card-name { font-size: 12px; }
+html[data-design="plaza"] #buildMenu .card-effect { display: none; }
+html[data-design="plaza"] #buildMenu .card-category-tag { display: none; }
+html[data-design="plaza"] #buildMenu .card-detail-btn { min-height: 32px; }
+@media (max-width: 899px) {
+    html[data-design="plaza"] #gameScreen > #buildMenu {
+        max-height: 340px;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        scrollbar-gutter: stable;
+    }
+    html[data-design="plaza"] #buildMenu .card-filter-bar { top: 0; }
+    html[data-design="plaza"] #players .player-box-self .player-detail {
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    html[data-design="plaza"] #buildMenu h3 { margin: 0 0 6px; font-size: 15px; }
+}
+@media (min-width: 900px) {
+    html[data-design="plaza"] #buildMenu .card-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    html[data-design="plaza"] #players .player-name { font-size: 17px; }
+    html[data-design="plaza"] #players .player-landmark-count { width: auto; margin-left: auto; }
 }
