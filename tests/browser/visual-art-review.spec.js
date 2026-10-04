@@ -2195,7 +2195,11 @@ for (const width of [320, 390, 1440]) {
         await page.goto('/');
         await selectDesignTheme(page, 'plaza');
         await expect(page.locator('.title-brand-mark')).toBeVisible();
-        await page.locator('.setup-quick-play').click();
+        await page.locator('#customGameSetup > summary').click();
+        await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
+        await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
+        await page.locator('#btnStart').click();
+        await page.locator('#confirmOkBtn').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
         await page.evaluate(() => {
             cancelCpuSchedule('plaza-review');
