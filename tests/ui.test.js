@@ -2869,3 +2869,66 @@ runTest('街の発展段階は施設とランドマークを反映し独立し�
     const disabledLandmark = townMenu.renderTownHtml({ cards: Array(6).fill(card), landmarks: { 駅: true } });
     assert.match(disabledLandmark, /data-town-stage="neighborhood"/, '無効なランドマークは発展に数えない');
 });
+
+runTest('街景は購入した施設の種類と有効な完成ランドマークに連動し、取り消し後には戻る', () => {
+    const townMenu = require('../js/uiBuildMenu');
+    const cards = [{ name: '麦畑', category: '農園' }, { name: 'パン屋', category: '飲食店' }];
+    const player = { cards, landmarks: { 駅: false, 港: false, 空港: false } };
+    const before = townMenu.renderTownHtml(player, new Set(['駅', '港', '空港']));
+    assert.match(before, /data-town-feature="gardens"/);
+    assert.doesNotMatch(before, /data-town-feature="railway"|data-town-feature="waterfront"|data-town-feature="air-route"/);
+    const developed = townMenu.renderTownHtml({ cards: [...cards, { name: 'チーズ工場', category: '工業' }], landmarks: { 駅: true, 港: true, 空港: true } }, new Set(['駅', '港', '空港']));
+    for (const feature of ['works', 'railway', 'waterfront', 'air-route']) assert.match(developed, new RegExp(`data-town-feature="${feature}"`));
+    assert.match(before, /data-town-road="2"/);
+    assert.match(developed, /data-town-road="9"/);
+    assert.strictEqual((before.match(/data-town-lamp=/g) || []).length, 1);
+    assert.strictEqual((developed.match(/data-town-lamp=/g) || []).length, 4);
+    assert.strictEqual(townMenu.renderTownHtml(player, new Set(['駅', '港', '空港'])), before, 'Undoで元の所持状態に戻れば景観も戻る');
+    const disabled = townMenu.renderTownHtml({ cards, landmarks: { 駅: true, 港: true, 空港: true } });
+    assert.doesNotMatch(disabled, /data-town-feature="railway"|data-town-feature="waterfront"|data-town-feature="air-route"/);
+    assert.deepStrictEqual(player, { cards, landmarks: { 駅: false, 港: false, 空港: false } }, '描画は正本を変更しない');
+});
+
+runTest('各ランドマークの完成は固有の街景を残す', () => {
+    const townMenu = require('../js/uiBuildMenu');
+    for (const [name, feature] of [['駅', 'railway'], ['ショッピングモール', 'shopping-street'], ['遊園地', 'fairground'], ['電波塔', 'beacon'], ['港', 'waterfront'], ['空港', 'air-route']]) {
+        const html = townMenu.renderTownHtml({ cards: [], landmarks: { [name]: true } }, new Set([name]));
+        assert.match(html, new RegExp(`data-town-feature="${feature}"`), name);
+    }
+});
+
+runTest('街の区画は購入後も既存位置を保ち単独施設の枚数表示を省き余剰種類を景色外に置く', () => {
+    const menu = require('../js/uiBuildMenu');
+    const wheat = { name: '麦畑', category: '農園' };
+    const bakery = { name: 'パン屋', category: '飲食店' };
+    const before = menu.renderTownHtml({ cards: [wheat, bakery], landmarks: {} });
+    const after = menu.renderTownHtml({ cards: [wheat, bakery, wheat, { name: '牧場', category: '牧場' }], landmarks: {} });
+    const lot = html => html.match(/data-town-slot-facility="0"[^>]+/)[0];
+    assert.strictEqual(lot(before), lot(after), '新しい種類の建設で既存施設の区画を動かさない');
+    assert.doesNotMatch(before, /town-building-count/);
+    assert.match(after, /town-building-count">×2/);
+    assert.match(after, /data-town-layout="districts"/);
+    assert.match(after, /town-district-roads/);
+    const dense = menu.renderTownHtml({ cards: Array.from({ length: 12 }, (_, index) => ({ name: `施設${index}`, category: '飲食店' })), landmarks: {} });
+    assert.strictEqual((dense.match(/data-town-slot-facility=/g) || []).length, 8);
+    assert.match(dense, /town-summary[^]*town-overflow">ほか4種[^]*<div class="town-street"/);
+    assert.doesNotMatch(dense.slice(dense.indexOf('<div class="town-street"')), /town-overflow/);
+    const enabled = new Set(['駅', '電波塔']);
+    const station = menu.renderTownHtml({ cards: [], landmarks: { 駅: true, 電波塔: false } }, enabled);
+    const tower = menu.renderTownHtml({ cards: [], landmarks: { 電波塔: true, 駅: true } }, enabled);
+    const landmarkLot = html => html.match(/data-town-slot-landmark="0"[^>]+/)[0];
+    assert.strictEqual(landmarkLot(station), landmarkLot(tower), 'ランドマーク区画は購入順に依存しない');
+});
+
+runTest('代表区画が埋まっても新しい購入は住宅と窓明かりを増やしUndoで戻る', () => {
+    const menu = require('../js/uiBuildMenu');
+    const player = count => ({ cards: Array.from({ length: count }, (_, index) => ({ name: `施設${index}`, category: '飲食店' })), landmarks: {} });
+    const ninth = menu.renderTownHtml(player(9));
+    const tenth = menu.renderTownHtml(player(10));
+    assert.match(ninth, /data-town-population="1"/);
+    assert.match(tenth, /data-town-population="2"/);
+    assert.notStrictEqual(ninth, tenth);
+    assert.strictEqual(menu.renderTownHtml(player(9)), ninth);
+    assert.match(menu.renderTownHtml(player(38)), /data-town-population="30"/);
+    assert.match(menu.renderTownHtml(player(1000)), /data-town-population="64"/);
+});

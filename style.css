@@ -7722,3 +7722,219 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .room-ready-bt
     background: #29465a;
     color: #f0e6d1;
 }
+
+/* The entrance leads into the town; reference material remains a disclosure. */
+.title-world-guide > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    list-style: none;
+}
+.title-world-guide > summary::-webkit-details-marker { display: none; }
+.title-world-guide > summary::after { content: "+"; margin-left: auto; }
+.title-world-guide[open] > summary::after { content: "−"; }
+.title-world-guide > summary:focus-visible { outline: 3px solid #efc487; outline-offset: 4px; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .title-about {
+    margin-top: 4px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #c2cdd4;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-bar {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    gap: 8px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-btn {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    min-height: 44px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-btn.active {
+    border: 0;
+    border-bottom: 2px solid #efc487;
+    background: transparent;
+    box-shadow: none;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) :is(#tabStats, #tabTournament) {
+    flex-grow: 0.65;
+    color: #b5c2ca;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) #tabContentLocal {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    padding-inline: 12px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .legal-links {
+    border: 0;
+    margin-top: 0;
+    padding-top: 4px;
+}
+
+/* A continuous tabletop carries the town, dice and market; only cards have edges. */
+@media (min-width: 1200px) {
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #gameScreen {
+        background: radial-gradient(ellipse at 18% 16%, rgba(230, 185, 103, 0.11), transparent 48%),
+            linear-gradient(135deg, #28404a, #1d3441 56%, #172e3b);
+        border-color: rgba(214, 190, 146, 0.28);
+        box-shadow: inset 0 1px 0 rgba(255, 231, 184, 0.12), 0 16px 36px rgba(7, 18, 26, 0.2);
+    }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #buildMenu,
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #buildMenu .build-section,
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #buildMenu .card-filter-bar,
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .game-action-panel {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+    }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #buildMenu .card-filter-bar {
+        border-bottom: 1px solid rgba(229, 203, 156, 0.2);
+        background: #213845;
+    }
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #players .sunset-town {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+}
+
+/* Celebrations finish quickly, leaving the completed town calm and readable. */
+html[data-design="sunset"] .town-street { position: relative; }
+html[data-design="sunset"] .town-landmark-completion { animation: townLandmarkLight 850ms ease-out both; }
+html[data-design="sunset"] .town-building-landmark-arrival { animation: townLandmarkArrival 850ms ease-out both; }
+html[data-design="sunset"] .town-income-celebration { animation: townIncomeLight 700ms ease-out both; }
+html[data-design="sunset"] .town-construction-arrival { animation: townIncomeLight 650ms ease-out both; }
+html[data-design="sunset"] .town-event-caption {
+    position: absolute;
+    z-index: 3;
+    left: 50%;
+    bottom: 12px;
+    transform: translateX(-50%);
+    max-width: calc(100% - 16px);
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: #213848;
+    color: #ffe3a6;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    pointer-events: none;
+    box-shadow: 0 3px 10px rgba(8, 18, 26, 0.3);
+}
+@keyframes townLandmarkLight {
+    0% { box-shadow: inset 0 0 0 1px rgba(255, 222, 150, 0), 0 0 0 rgba(255, 213, 119, 0); }
+    35% { box-shadow: inset 0 0 0 2px rgba(255, 222, 150, 0.9), 0 0 20px rgba(255, 213, 119, 0.28); }
+    100% { box-shadow: inset 0 0 0 1px rgba(255, 222, 150, 0), 0 0 0 rgba(255, 213, 119, 0); }
+}
+@keyframes townLandmarkArrival {
+    0% { transform: translateY(8px) scale(0.94); }
+    45% { transform: translateY(-3px) scale(1.04); }
+    100% { transform: translateY(0) scale(1); }
+}
+@keyframes townIncomeLight {
+    0%, 100% { filter: brightness(1); }
+    35% { filter: brightness(1.18); }
+}
+
+body.accessibility-reduced-motion :is(.town-landmark-completion, .town-building-landmark-arrival, .town-income-celebration, .town-construction-arrival) { animation: none !important; }
+body.accessibility-reduced-motion .town-landmark-completion { outline: 2px solid #efc487; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+    :is(.town-landmark-completion, .town-building-landmark-arrival, .town-income-celebration, .town-construction-arrival) { animation: none !important; }
+    .town-landmark-completion { outline: 2px solid #efc487; outline-offset: 2px; }
+}
+
+/* Districts share roads and depth instead of presenting owned facilities as a grid. */
+html[data-design="sunset"] .town-street[data-town-layout="districts"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    aspect-ratio: 640 / 420;
+    min-height: 220px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(35, 58, 67, 0.1), rgba(69, 91, 69, 0.24) 65%, rgba(56, 74, 66, 0.36));
+}
+html[data-design="sunset"] .town-street[data-town-layout="districts"]::before,
+html[data-design="sunset"] .town-street[data-town-layout="districts"]::after { display: none; }
+html[data-design="sunset"] .town-street[data-town-layout="districts"] .town-backdrop {
+    inset: 0 0 auto;
+    height: 42%;
+    opacity: 0.48;
+}
+html[data-design="sunset"] .town-district-roads {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+html[data-design="sunset"] .town-street[data-town-layout="districts"] > .town-building,
+html[data-design="sunset"] #players .player-box-self .town-street[data-town-layout="districts"] > .town-building,
+html[data-design="sunset"] #status .winner-screen .town-street[data-town-layout="districts"] > .town-building {
+    position: absolute;
+    left: var(--town-x);
+    top: var(--town-y);
+    width: var(--town-width);
+    max-width: none;
+    padding: 0;
+    margin: 0;
+    transform: none;
+    z-index: 2;
+}
+html[data-design="sunset"] .town-street[data-town-layout="districts"] > .town-building .sunset-facility-art,
+html[data-design="sunset"] #players .player-box-self .town-street[data-town-layout="districts"] > .town-building .sunset-facility-art,
+html[data-design="sunset"] #status .winner-screen .town-street[data-town-layout="districts"] > .town-building .sunset-facility-art {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 1;
+    overflow: hidden;
+    margin: 0;
+    filter: drop-shadow(0 3px 2px rgba(8, 20, 28, 0.18));
+}
+html[data-design="sunset"] .town-street[data-town-layout="districts"] > .town-landmark {
+    z-index: 1;
+}
+html[data-design="sunset"] .town-street[data-town-layout="districts"] .town-building-count {
+    position: absolute;
+    right: 0;
+    bottom: -5px;
+    min-width: 22px;
+    padding: 1px 4px;
+    border-radius: 9px;
+    background: #203747;
+    color: #ffedc3;
+    font-size: 10px;
+    line-height: 1.4;
+}
+html[data-design="sunset"] .sunset-town > .town-overflow {
+    display: block;
+    margin: 4px 0 0;
+    color: #c6d1d4;
+    font-size: 11px;
+    text-align: right;
+}
+html[data-design="sunset"] body.accessibility-high-contrast .town-district-roads { display: none; }
+html[data-design="sunset"] body.accessibility-high-contrast .town-street[data-town-layout="districts"] { background: #000; }
+@media (min-width: 1200px) {
+    html[data-design="sunset"] #status .winner-screen .town-street[data-town-layout="districts"] {
+        aspect-ratio: 640 / 300;
+        min-height: 360px;
+        max-height: 520px;
+    }
+}

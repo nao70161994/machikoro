@@ -935,6 +935,7 @@ const playerPanelDisclosureListeners = new WeakSet();
 const playerPanelDisclosureClickListeners = new WeakSet();
 
 function snapshotTownBuildingCounts(players) {
+    const enabledLandmarks = getEnabledLandmarkSelection();
     return players.map(player => {
         const counts = new Map();
         for (const card of player.cards || []) {
@@ -942,7 +943,7 @@ function snapshotTownBuildingCounts(players) {
             counts.set(key, (counts.get(key) || 0) + 1);
         }
         for (const [name, built] of Object.entries(player.landmarks || {})) {
-            if (built) counts.set(`landmark:${name}`, 1);
+            if (built && enabledLandmarks.has(name)) counts.set(`landmark:${name}`, 1);
         }
         return counts;
     });
@@ -950,14 +951,35 @@ function snapshotTownBuildingCounts(players) {
 
 function animateNewTownBuildings(container, previousCounts, currentCounts) {
     if (!Array.isArray(previousCounts)) return;
+    const landmarkCount = counts => [...counts.keys()].filter(key => key.startsWith('landmark:')).length;
+    const newLeader = UiPlayerDisplay.landmarkLeadChange(previousCounts.map(landmarkCount), currentCounts.map(landmarkCount));
     currentCounts.forEach((counts, playerIndex) => {
         const previous = previousCounts[playerIndex] || new Map();
         const panel = container.querySelector(`#playerBox${playerIndex}`);
         if (!panel) return;
+        // The representative district has a finite number of lots. Purchases
+        // beyond those lots still grow the population and receive a town cue.
+        if ([...counts].some(([key, count]) => key.startsWith('card:') && count > (previous.get(key) || 0))) {
+            panel.querySelector('.town-street')?.classList.add('town-construction-arrival');
+        }
         panel.querySelectorAll('[data-town-building]').forEach(building => {
             const key = building.dataset.townBuilding;
             if ((counts.get(key) || 0) > (previous.get(key) || 0)) {
                 building.classList.add('town-building-arrival');
+                if (key.startsWith('landmark:')) {
+                    building.classList.add('town-building-landmark-arrival');
+                    const street = panel.querySelector('.town-street');
+                    if (!street) return;
+                    street.classList.add('town-landmark-completion');
+                    if (!street.querySelector('.town-event-caption')) {
+                        const caption = document.createElement('span');
+                        caption.className = 'town-event-caption';
+                        caption.setAttribute('aria-hidden', 'true');
+                        caption.textContent = `${key.slice('landmark:'.length)}が完成${newLeader === playerIndex ? '・一歩リード' : ''}`;
+                        street.appendChild(caption);
+                        setTimeout(() => caption.remove(), 1200);
+                    }
+                }
             }
         });
     });
@@ -1074,7 +1096,8 @@ function renderPlayers() {
         }
         container.innerHTML = html;
         if (document.documentElement?.dataset?.design === 'sunset') {
-            animateNewTownBuildings(container, previous?.townBuildingCounts, townBuildingCounts);
+            animateNewTownBuildings(container, previous?.players === currentGame.players
+                ? previous.townBuildingCounts : null, townBuildingCounts);
         }
         const panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (
             container.querySelectorAll('details.player-box-compact')

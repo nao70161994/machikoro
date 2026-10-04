@@ -365,7 +365,9 @@ try:
             filter_style = js(s,"const e=document.querySelector('.card-filter-bar'),active=document.querySelector('.card-filter-btn.active'),style=getComputedStyle(e);return {background:style.backgroundColor,image:style.backgroundImage,active:getComputedStyle(active).backgroundColor}")
             assert filter_style['active'] == 'rgb(51, 73, 90)', 'Sunset market filters do not use the shared blue-green and gold palette'
             if viewport_width >= 1200:
-                assert 'linear-gradient' in filter_style['image'], 'Desktop market filters do not read as part of the shared tabletop'
+                assert filter_style['image'] == 'none' and filter_style['background'] == 'rgb(33, 56, 69)', 'Desktop market filters do not use the quiet shared-board surface'
+                board_layers = js(s,"return ['#buildMenu','#buildMenu .build-section','.game-action-panel','#players .sunset-town'].map(selector=>{const style=getComputedStyle(document.querySelector(selector));return {border:style.borderTopWidth,background:style.backgroundColor,shadow:style.boxShadow}})")
+                assert all(layer['border'] == '0px' and layer['background'] == 'rgba(0, 0, 0, 0)' and layer['shadow'] == 'none' for layer in board_layers), 'Desktop town, action and market still have separate outer panel surfaces'
                 desktop_board_check = js(s,"const screen=document.getElementById('gameScreen'),grid=document.querySelector('#buildMenu .card-grid'),style=getComputedStyle(screen);return {surface:style.backgroundImage,columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length}")
                 assert 'radial-gradient' in desktop_board_check['surface'], 'Desktop game screen has no shared board surface'
                 assert desktop_board_check['columns'] >= 5, f"Desktop market does not use the wide board: {desktop_board_check}"

@@ -1410,6 +1410,13 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     expect(desktopLayout.columns).toBe(6);
     expect(desktopLayout.bodyWidth).toBe(1440);
     expect(desktopLayout.hasOpenBoard).toBe(true);
+    const tabletopLayers = await page.evaluate(() => ['#buildMenu', '#buildMenu .build-section', '.game-action-panel', '#players .sunset-town'].map(selector => {
+        const style = getComputedStyle(document.querySelector(selector));
+        return { border: style.borderTopWidth, background: style.backgroundColor, shadow: style.boxShadow };
+    }));
+    expect(tabletopLayers.every(layer => layer.border === '0px' &&
+        layer.background === 'rgba(0, 0, 0, 0)' && layer.shadow === 'none')).toBe(true);
+
 
     const screenshotPath = testInfo.outputPath('sunset-desktop-city-1440.png');
     await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
@@ -1958,4 +1965,162 @@ test('街の発展背景は動き軽減でも段階を示し住宅・街区・�
     await expect(streets.nth(0).locator('.town-backdrop-neighborhood')).toHaveCSS('opacity', '0');
     await expect(streets.nth(1).locator('.town-backdrop-neighborhood')).toHaveCSS('opacity', '1');
     await expect(streets.nth(2).locator('.town-backdrop-city')).toHaveCSS('opacity', '1');
+});
+
+// These checks use the normal purchase and Undo handlers after fixing a legal
+// human build phase, so scenery must follow game state rather than a demo DOM.
+test('ランドマーク完成は街景を変え再描画・Undo・復元で祝福を誤再生しない', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const humanIndex = await page.evaluate(() => {
+        cancelCpuSchedule('landmark-town-browser-review');
+        window.scheduleCPU = () => false;
+        const state = GameRuntimeState.runtime.snapshot();
+        const humanIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+        state.game.currentPlayerIndex = humanIndex;
+        state.game.phase = GAME_PHASES.BUILD;
+        state.game.builtThisTurn = false;
+        state.game.currentPlayer().coins = 30;
+        render();
+        return humanIndex;
+    });
+    const street = page.locator(`#playerBox${humanIndex} .town-street`);
+    const station = page.locator('#buildMenu [data-action="buildLandmark"][data-landmark-name="駅"]');
+    await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(0);
+    const lampsBefore = await street.locator('[data-town-lamp]').count();
+    await station.click();
+    await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(1);
+    await expect(street).toHaveClass(/town-landmark-completion/);
+    await expect(street.locator('.town-event-caption')).toHaveText('駅が完成・一歩リード');
+    expect(await street.locator('[data-town-lamp]').count()).toBeGreaterThan(lampsBefore);
+    await page.evaluate(() => render());
+    await expect(street.locator('.town-event-caption')).toHaveCount(1);
+    const path = testInfo.outputPath('sunset-station-completion-390.png');
+    await street.screenshot({ path, animations: 'disabled' });
+    await testInfo.attach('sunset-station-completion-390.png', { path, contentType: 'image/png' });
+    await expect(street.locator('.town-event-caption')).toHaveCount(0);
+    await page.evaluate(() => render());
+    await expect(street.locator('.town-event-caption')).toHaveCount(0);
+    await page.locator('#buildMenu .undo-btn').click();
+    await page.locator('#confirmOkBtn').click();
+    await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(0);
+    await expect(street.locator('.town-event-caption')).toHaveCount(0);
+    expect(await street.locator('[data-town-lamp]').count()).toBe(lampsBefore);
+    await station.click();
+    await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(1);
+    await page.evaluate(() => saveGameState());
+    await page.reload();
+    await expect(page.locator('#resumeSection')).toBeVisible();
+    await page.locator('#btnResume').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(1);
+    await expect(street.locator('.town-event-caption')).toHaveCount(0);
+    await expect(street).not.toHaveClass(/town-landmark-completion/);
+});
+
+test('大収入だけ街を短く照らし動き軽減では光のアニメーションを止める', async ({ page }) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        cancelCpuSchedule('income-town-browser-review');
+        window.scheduleCPU = () => false;
+        showCoinAnimation(0, 4);
+    });
+    const street = page.locator('#playerBox0 .town-street');
+    await expect(street).not.toHaveClass(/town-income-celebration/);
+    await page.evaluate(() => showCoinAnimation(0, 5));
+    await expect(street).toHaveClass(/town-income-celebration/);
+    await expect(street).toHaveCSS('animation-name', 'townIncomeLight');
+    await expect(street).toHaveCSS('animation-iteration-count', '1');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(street).toHaveCSS('animation-name', 'none');
+});
+
+test('タイトルの補助案内は折りたたんでもキーボードで開け法的リンクを保つ', async ({ page }) => {
+    await prepareSunset(page);
+    await page.setViewportSize({ width: 320, height: 844 });
+    for (const mode of ['sunset', 'classic', 'high-contrast']) {
+        if (mode === 'classic') await selectDesignTheme(page, 'classic');
+        if (mode === 'high-contrast') {
+            await selectDesignTheme(page, 'sunset');
+            await page.locator('body').evaluate(element => element.classList.add('accessibility-high-contrast'));
+        }
+        const guide = page.locator('.title-world-guide');
+        const summary = guide.locator('summary');
+        await expect(guide).toHaveJSProperty('open', false);
+        await expect(guide.locator('a[href="cards.html"]')).toBeHidden();
+        await summary.scrollIntoViewIfNeeded();
+        await summary.focus();
+        await expect(summary).toBeFocused();
+        expect((await summary.boundingBox()).height).toBeGreaterThanOrEqual(44);
+        await page.keyboard.press('Enter');
+        await expect(guide).toHaveJSProperty('open', true);
+        for (const href of ['how-to-play.html', 'cards.html', 'ai-cpu.html']) {
+            const link = guide.locator(`a[href="${href}"]`);
+            await expect(link).toBeVisible();
+            await link.focus();
+            await expect(link).toBeFocused();
+        }
+        await summary.focus();
+        await page.keyboard.press('Enter');
+        await expect(guide).toHaveJSProperty('open', false);
+        for (const href of ['rules.html', 'privacy.html']) {
+            const link = page.locator(`.legal-links a[href="${href}"]`);
+            await expect(link).toBeVisible();
+            await link.focus();
+            await expect(link).toBeFocused();
+        }
+        for (const tab of ['#tabLocal', '#tabOnline', '#tabStats', '#tabTournament']) {
+            expect((await page.locator(tab).boundingBox()).height).toBeGreaterThanOrEqual(44);
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    }
+});
+
+test('完成した街の比率と最低高さは320pxでも区画を横へ押し出さない', async ({ page }, testInfo) => {
+    await prepareSunset(page);
+    await page.evaluate(() => {
+        const player = new Player('夕暮れの街を育てた長いプレイヤー名');
+        player.cards = Object.values(CARDS);
+        const landmarks = Object.values(LANDMARK_NAMES).filter(name => name !== LANDMARK_NAMES.YAKUSHO);
+        for (const name of landmarks) player.landmarks[name] = true;
+        const scene = document.createElement('main');
+        scene.id = 'district-geometry-review';
+        scene.style.cssText = 'position:fixed;inset:20px auto auto 20px;width:calc(100% - 40px);max-width:640px;z-index:2147483647';
+        scene.innerHTML = UiBuildMenu.renderTownHtml(player, new Set(landmarks));
+        document.body.append(scene);
+    });
+    for (const width of [320, 390, 1440]) {
+        await page.setViewportSize({ width, height: 844 });
+        const scene = page.locator('#district-geometry-review');
+        await expect(scene.locator('[data-town-slot-facility]')).toHaveCount(8);
+        await expect(scene.locator('[data-town-slot-landmark]')).toHaveCount(6);
+        const layout = await scene.evaluate(element => {
+            const town = element.querySelector('.sunset-town').getBoundingClientRect();
+            const streetElement = element.querySelector('.town-street');
+            const street = streetElement.getBoundingClientRect();
+            const figures = [...streetElement.querySelectorAll('.town-building .sunset-facility-art')]
+                .map(art => art.getBoundingClientRect());
+            const overflow = element.querySelector('.town-overflow');
+            return {
+                townLeft: town.left, townRight: town.right,
+                streetLeft: street.left, streetRight: street.right,
+                figuresInside: figures.every(figure => figure.left >= street.left - 1 &&
+                    figure.right <= street.right + 1 && figure.top >= street.top - 1 && figure.bottom <= street.bottom + 1),
+                overflowOutside: overflow !== null && !streetElement.contains(overflow),
+                documentWidth: document.documentElement.scrollWidth,
+            };
+        });
+        expect(layout.streetLeft).toBeGreaterThanOrEqual(layout.townLeft);
+        expect(layout.streetRight).toBeLessThanOrEqual(layout.townRight);
+        expect(layout.figuresInside).toBe(true);
+        expect(layout.overflowOutside).toBe(true);
+        expect(layout.documentWidth).toBeLessThanOrEqual(width);
+        const path = testInfo.outputPath(`sunset-town-districts-${width}.png`);
+        await scene.screenshot({ path, animations: 'disabled' });
+        await testInfo.attach(`sunset-town-districts-${width}.png`, { path, contentType: 'image/png' });
+    }
 });

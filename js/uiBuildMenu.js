@@ -216,7 +216,40 @@ const UiBuildMenu = (() => {
         return '<svg class="card-coin-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#coin"></use></svg>';
     }
 
-    function renderTownBackdrop() {
+    function renderTownScenery(cards, built) {
+        const motifs = new Set(built.map(([name]) => LANDMARK_ART[name]));
+        const scenes = new Set(cards.map(card => CATEGORY_SCENE[card.category]));
+        const development = Math.min(12, cards.length + built.length * 2);
+        const roadEnd = 110 + development * 41;
+        const lamps = Array.from({ length: Math.min(7, Math.floor(development / 2)) }, (_, index) => {
+            const x = 72 + index * 81;
+            return `<g data-town-lamp="${index}" stroke="#d5bd83" stroke-width="2"><path d="M${x} 164V133"/><path d="M${x - 5} 134L${x} 126L${x + 5} 134Z" fill="#f9dfa1"/><circle cx="${x}" cy="132" r="10" fill="#f6d687" opacity=".13" stroke="none"/></g>`;
+        }).join('');
+        const landscape = [];
+        if (scenes.has('pasture')) landscape.push('<g data-town-feature="gardens"><path d="M0 153Q60 127 133 146L168 166H0Z" fill="#7f9272"/><path d="M12 154L115 145M29 164L133 153" stroke="#c6ba7e" stroke-width="3"/><path d="M32 146V135M56 143V133M80 143V132" stroke="#d8c68d" stroke-width="2"/></g>');
+        if (scenes.has('water') || motifs.has('port')) landscape.push('<g data-town-feature="waterfront"><path d="M454 150Q548 131 640 146V180H444Z" fill="#59888c"/><path d="M469 162H529M557 153H615M529 175H614" stroke="#a2c3bb" stroke-width="2"/><path d="M493 145H627V152H493Z" fill="#bfad83"/><path d="M510 150V165M595 150V165" stroke="#536e72" stroke-width="3"/></g>');
+        if (scenes.has('industrial')) landscape.push('<g data-town-feature="works"><path d="M387 120V86H396V120M409 125V94H418V125" fill="#b39a85" stroke="#496772" stroke-width="2"/><path d="M391 83Q380 72 391 61Q406 51 397 43" fill="none" stroke="#b8c1ac" stroke-width="6" opacity=".4"/></g>');
+        if (motifs.has('station')) landscape.push('<g data-town-feature="railway"><path d="M0 170H420M0 176H420" stroke="#a6ab9a" stroke-width="2"/><path d="M58 165V151Q58 147 63 147H142Q148 147 148 153V165Z" fill="#ded3ae" stroke="#3b5968" stroke-width="2"/><path d="M66 151H131V157H66Z" fill="#446779"/><path d="M61 160H144" stroke="#bb875e" stroke-width="3"/><circle cx="75" cy="166" r="3" fill="#304c5b"/><circle cx="132" cy="166" r="3" fill="#304c5b"/></g>');
+        if (motifs.has('park')) landscape.push('<g data-town-feature="fairground" stroke="#d9bd82" stroke-width="2" fill="none"><circle cx="548" cy="74" r="26"/><path d="M548 48V100M522 74H574M530 56L566 92M566 56L530 92M548 74L531 122M548 74L565 122"/><path d="M524 68H532V77H524ZM544 44H552V53H544ZM564 68H572V77H564ZM544 95H552V104H544Z" fill="#d8b482" stroke="#466471"/></g>');
+        if (motifs.has('radio')) landscape.push('<g data-town-feature="beacon"><path d="M89 109L100 43L111 109M94 84H106M97 64H103" fill="none" stroke="#bec0a6" stroke-width="2"/><circle cx="100" cy="40" r="4" fill="#f1cb81"/><circle cx="100" cy="40" r="12" fill="#f1cb81" opacity=".12"/></g>');
+        if (motifs.has('mall')) landscape.push('<g data-town-feature="shopping-street" stroke="#d5bd83" stroke-width="2"><path d="M219 131Q285 145 350 130" fill="none"/><path d="M229 134V142M255 139V147M284 141V149M313 138V146M339 133V141"/><path d="M224 141H234V148H224ZM250 146H260V153H250ZM279 148H289V155H279ZM308 145H318V152H308ZM334 140H344V147H334Z" fill="#f8d790" stroke="none"/></g>');
+        if (motifs.has('airport')) landscape.push('<g data-town-feature="air-route"><path d="M393 44Q435 27 488 35" fill="none" stroke="#d9d5b6" stroke-width="2" opacity=".5"/><path d="M496 35L510 30L514 20L518 21L516 31L533 34L532 38L515 37L507 44L504 43L508 36L498 39Z" fill="#eee0b6" stroke="#496673" stroke-width="1.5"/></g>');
+        // Above the eight featured lots, additional purchases populate the
+        // distant neighbourhood. Each purchase still changes the scenery,
+        // without rendering dozens of miniature card pictures in the foreground.
+        const population = Math.min(64, Math.max(0, cards.length - 8));
+        const residences = Array.from({ length: Math.ceil(population / 2) }, (_, index) => {
+            const x = 8 + (index % 16) * 39;
+            const y = 82 + Math.floor(index / 16) * 23;
+            const secondWindow = population > index * 2 + 1
+                ? `<path d="M${x + 13} ${y + 8}H${x + 17}V${y + 13}H${x + 13}Z" fill="#f0cf8b"/>` : '';
+            return `<g><path d="M${x} ${y + 18}V${y + 4}L${x + 10} ${y - 2}L${x + 21} ${y + 4}V${y + 18}Z" fill="#6e8787" stroke="#425f69" stroke-width="1"/><path d="M${x + 4} ${y + 8}H${x + 8}V${y + 13}H${x + 4}Z" fill="#f0cf8b"/>${secondWindow}</g>`;
+        }).join('');
+        landscape.unshift(`<g class="town-population" data-town-population="${population}">${residences}</g>`);
+        return `<g class="town-state-scenery">${landscape.join('')}<path data-town-road="${development}" d="M14 162Q${Math.round(roadEnd / 2)} 149 ${roadEnd} 162" fill="none" stroke="#baad8b" stroke-width="8" opacity=".55"/><g class="town-backdrop-lamps">${lamps}</g></g>`;
+    }
+
+    function renderTownBackdrop(cards = [], built = []) {
         return `<svg class="town-backdrop" viewBox="0 0 640 180" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
             <path d="M0 106Q94 62 192 106T384 97T640 92V180H0Z" fill="#5b7779" opacity=".45"/>
             <path d="M0 131Q138 103 266 135T640 120V180H0Z" fill="#496b68"/>
@@ -243,11 +276,7 @@ const UiBuildMenu = (() => {
                 <path d="M421 126V68H452V126Z" fill="#779297"/><path d="M417 69H456L451 58H422Z" fill="#415e6b"/>
                 <path d="M428 80H437V91H428ZM443 80H449V91H443ZM428 101H437V112H428ZM443 101H449V112H443Z" fill="#f0d492"/>
             </g>
-            <path d="M0 157Q156 141 315 158T640 147" fill="none" stroke="#a19b83" stroke-width="12" opacity=".38"/>
-            <g class="town-backdrop-lamps" stroke="#d7bf87" stroke-width="2" fill="#f4d998">
-                <path d="M17 155V121M157 153V118M488 152V117M627 149V114"/>
-                <path d="M11 122L17 112L23 122ZM151 119L157 109L163 119ZM482 118L488 108L494 118ZM621 115L627 105L633 115Z"/>
-            </g>
+            ${renderTownScenery(cards, built)}
         </svg>`;
     }
 
@@ -262,14 +291,24 @@ const UiBuildMenu = (() => {
         const built = Object.entries(player.landmarks || {})
             .filter(([name, value]) => value === true && enabledLandmarks.has(name));
         const stage = townDevelopmentStage(cards.length, built.length);
-        const facilities = [...grouped.values()].slice(0, 8).map(({ card, count }) =>
-            `<span class="town-building" data-town-building="card:${escapeText(card.name)}">${renderFacilityArt(card.name, false, card.category)}<span class="town-building-count">×${count}</span></span>`
-        ).join('');
-        const landmarks = built.map(([name]) =>
-            `<span class="town-building town-landmark" data-town-building="landmark:${escapeText(name)}">${renderFacilityArt(name, true)}</span>`
-        ).join('');
+        // Purchase order gives each visible facility a persistent district lot.
+        // New buildings fill vacant lots instead of reflowing the entire town.
+        const facilities = [...grouped.values()].slice(0, 8).map(({ card, count }, index) => {
+            const row = Math.floor(index / 4);
+            const x = (index % 4) * 24 + (row ? 4 : 2);
+            const y = row ? 65 : 37;
+            const countBadge = count > 1 ? `<span class="town-building-count">×${count}</span>` : '';
+            return `<span class="town-building" data-town-slot-facility="${index}" data-town-building="card:${escapeText(card.name)}" style="--town-x:${x}%;--town-y:${y}%;--town-width:23%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
+        }).join('');
+        // Landmark lots are keyed to definition order, not acquisition order.
+        const landmarkSlots = Object.keys(LANDMARK_ART);
+        const landmarks = built.map(([name]) => {
+            const slot = Math.max(0, landmarkSlots.indexOf(name));
+            return `<span class="town-building town-landmark" data-town-slot-landmark="${slot}" data-town-building="landmark:${escapeText(name)}" style="--town-x:${2 + slot * 16}%;--town-y:16%;--town-width:15%">${renderFacilityArt(name, true)}</span>`;
+        }).join('');
         const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種</span>` : '';
-        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個</span></p><div class="town-street" data-town-stage="${stage}" aria-hidden="true">${renderTownBackdrop()}<span class="town-skyline-lights"></span>${facilities}${landmarks}${remaining}</div></div>`;
+        const roads = '<svg class="town-district-roads" viewBox="0 0 640 300" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#465e65" stroke-width="17"/><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#c2b18b" stroke-width="2" stroke-dasharray="9 11" opacity=".55"/></svg>';
+        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個${remaining}</span></p><div class="town-street" data-town-layout="districts" data-town-stage="${stage}" aria-hidden="true">${renderTownBackdrop(cards, built)}${roads}<span class="town-skyline-lights"></span>${landmarks}${facilities}</div></div>`;
     }
 
     function renderBuildCardButton(options) {

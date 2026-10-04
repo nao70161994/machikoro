@@ -1360,6 +1360,14 @@ function showCoinAnimation(playerIndex, diff) {
     const boxes = document.querySelectorAll('.player-box');
     if (!boxes[playerIndex]) return;
     const box = boxes[playerIndex];
+    if (useSunsetIcons && diff >= 5) {
+        const street = box.querySelector('.town-street');
+        if (street) {
+            street.classList.remove('town-income-celebration');
+            void street.getBoundingClientRect().width;
+            street.classList.add('town-income-celebration');
+        }
+    }
     const coinRow = box.querySelector('.player-coin-row') || box;
     const el = document.createElement('div');
     el.className = view.className;

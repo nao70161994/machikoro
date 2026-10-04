@@ -176,6 +176,19 @@ const UiPlayerDisplay = (() => {
         });
     }
 
+    function landmarkLeadChange(previousCounts, currentCounts) {
+        if (!Array.isArray(previousCounts) || !Array.isArray(currentCounts) ||
+                previousCounts.length !== currentCounts.length || currentCounts.length < 2) return -1;
+        const uniqueLeader = counts => {
+            const maximum = Math.max(...counts);
+            return maximum > 0 && counts.filter(count => count === maximum).length === 1
+                ? counts.indexOf(maximum) : -1;
+        };
+        const next = uniqueLeader(currentCounts);
+        return next >= 0 && next !== uniqueLeader(previousCounts) &&
+            currentCounts[next] > previousCounts[next] ? next : -1;
+    }
+
     return Object.freeze({
         difficultyLabel,
         renderPlayerKindIcon,
@@ -188,6 +201,7 @@ const UiPlayerDisplay = (() => {
         buildPlayerHtml,
         buildPlayersHtml,
         buildCoinAnimationView,
+        landmarkLeadChange,
     });
 })();
 

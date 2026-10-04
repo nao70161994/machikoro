@@ -305,3 +305,11 @@ assert(tenPlayerHtml.includes('id="playerBox0"'));
 assert(tenPlayerHtml.includes('id="playerBox9"'));
 
 console.log('ui player display tests passed');
+
+// A tie, Undo, or first restoration is not an overtaking milestone.
+assert.strictEqual(UiPlayerDisplay.landmarkLeadChange(null, [1, 0]), -1);
+assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([1, 0], [1, 1]), -1);
+assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([2, 1], [1, 1]), -1);
+assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([2, 1], [1, 2]), 1);
+assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([1, 0], [2, 0]), -1);
+assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([0, 0, 0], [0, 1, 0]), 1);
