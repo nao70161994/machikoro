@@ -5825,7 +5825,7 @@ html[data-design="sunset"] body.accessibility-high-contrast .town-backdrop { dis
 @media (prefers-reduced-motion: reduce) {
     html[data-design="sunset"] .town-backdrop-neighborhood,
     html[data-design="sunset"] .town-backdrop-city,
-    html[data-design="sunset"] .town-backdrop-lamps { transition: none; }
+    html[data-design="sunset"] .town-backdrop-lamps { transition: none !important; }
 }
 html[data-design="sunset"] .town-street::before {
     content: "";
