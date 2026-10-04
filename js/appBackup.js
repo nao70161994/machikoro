@@ -74,6 +74,18 @@ const AppBackup = (() => {
         return data;
     }
 
+    // Validate the exact downloadable representation, including JSON escaping
+    // and envelope metadata, against the same limit used by import.
+    function serializeEnvelope(input = {}) {
+        const source = isPlainObject(input.data) ? input.data : {};
+        for (const key of ALLOWED_KEYS) {
+            if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
+            if (typeof source[key] !== 'string' || source[key].length > MAX_TOTAL_CHARS) return null;
+        }
+        const text = JSON.stringify(buildEnvelope(input), null, 2);
+        return parseEnvelope(text) ? text : null;
+    }
+
     function apply(envelope, write) {
         if (!envelope || !isPlainObject(envelope.data) || typeof write !== 'function') return false;
         for (const [key, value] of Object.entries(envelope.data)) {
@@ -85,7 +97,7 @@ const AppBackup = (() => {
     }
 
     return Object.freeze({ ALLOWED_KEYS, JSON_KEYS, MAX_TOTAL_CHARS, SCHEMA_VERSION,
-        apply, buildEnvelope, collect, parseEnvelope });
+        apply, buildEnvelope, collect, parseEnvelope, serializeEnvelope });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = AppBackup;

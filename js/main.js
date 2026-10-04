@@ -355,15 +355,19 @@ function validateImportedBackup(envelope) {
 }
 
 function exportAppBackup() {
-    const envelope = AppBackup.buildEnvelope({
+    const text = AppBackup.serializeEnvelope({
         data: AppBackup.collect(key => safeMainStorageGet(key, null)),
         createdAt: new Date().toISOString(),
         clientVersion: typeof window !== 'undefined' ? window.MACHIKORO_CLIENT_VERSION : '',
     });
+    if (text === null || !validateImportedBackup(AppBackup.parseEnvelope(text))) {
+        setAppBackupStatus('保存データが大きすぎるか壊れているため、書き出せませんでした。');
+        return false;
+    }
     const date = new Date().toISOString().slice(0, 10);
     const downloaded = downloadCpuTournamentFile(
         `machikoro-backup-${date}.json`,
-        JSON.stringify(envelope, null, 2),
+        text,
         'application/json'
     );
     setAppBackupStatus(downloaded ? 'バックアップを書き出しました。' : '書き出しに失敗しました。');

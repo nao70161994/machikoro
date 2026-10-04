@@ -28,3 +28,21 @@ runTest('backup importは未知key・壊れたJSON・巨大入力をfail closed�
     assert.strictEqual(AppBackup.parseEnvelope(JSON.stringify({ schemaVersion: 1, app: 'machikoro', data: { unknown: 'x' } })), null);
     assert.strictEqual(AppBackup.parseEnvelope(JSON.stringify({ schemaVersion: 1, app: 'machikoro', data: { gameStats: '{' } })), null);
 });
+
+runTest('backup exportは実際のJSON全体の容量と復元可能性を確認する', () => {
+    const first = JSON.stringify({ padding: 'x'.repeat(1100000) });
+    const second = JSON.stringify([{ padding: 'x'.repeat(1100000) }]);
+    assert.strictEqual(AppBackup.serializeEnvelope({ data: {
+        savedGame: first, savedGameHistoryV1: second,
+    } }), null);
+    assert.strictEqual(AppBackup.serializeEnvelope({ data: {
+        selectedCount: '"'.repeat(AppBackup.MAX_TOTAL_CHARS / 2),
+    } }), null);
+    assert.strictEqual(AppBackup.serializeEnvelope({ data: {
+        gameStats: '{}', savedGame: 'x'.repeat(AppBackup.MAX_TOTAL_CHARS + 1),
+    } }), null);
+    assert.strictEqual(AppBackup.serializeEnvelope({ data: { gameStats: '{' } }), null);
+    const data = { selectedCount: '4', gameStats: '{"games":2}' };
+    const text = AppBackup.serializeEnvelope({ data, createdAt: '2026-10-04' });
+    assert.deepStrictEqual(AppBackup.parseEnvelope(text).data, data);
+});

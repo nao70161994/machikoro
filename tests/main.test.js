@@ -2670,6 +2670,21 @@ runTest('main setup presetは現在設定を保存・適用・削除できる', 
     assert.deepStrictEqual(JSON.parse(rt.localStorage.getItem('machikoroSetupPresetsV1')), []);
 });
 
+runTest('main backup exportは復元不能な容量・JSON・保存状態を成功出力しない', () => {
+    const rt = loadMainRuntime();
+    rt.elements.appBackupStatus = makeElement();
+    rt.localStorage.setItem('gameStats', JSON.stringify({ padding: 'x'.repeat(1100000) }));
+    rt.localStorage.setItem('cpuTournamentHistoryV1', JSON.stringify([{ padding: 'x'.repeat(1100000) }]));
+    assert.strictEqual(rt.exportAppBackup(), false);
+    assert.ok(rt.elements.appBackupStatus.textContent.includes('書き出せません'));
+    rt.localStorage.removeItem('cpuTournamentHistoryV1');
+    rt.localStorage.setItem('gameStats', '{');
+    assert.strictEqual(rt.exportAppBackup(), false);
+    rt.localStorage.setItem('gameStats', '{}');
+    rt.localStorage.setItem('savedGame', '{"legacy":true}');
+    assert.strictEqual(rt.exportAppBackup(), false);
+});
+
 runTest('main backup importは許可keyだけを確認後に復元しreloadする', async () => {
     const rt = loadMainRuntime();
     const envelope = rt.AppBackup.parseEnvelope(JSON.stringify({
