@@ -460,8 +460,7 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'quiet');
     expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).opacity))
         .toBe('0');
-    expect(await town.locator('.town-street').evaluate(element => getComputedStyle(element, '::after').opacity))
-        .toBe('0.42');
+    const initialLampCount = await town.locator('[data-town-lamp]').count();
     const wheat = page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]');
     await expect(wheat).toBeEnabled();
     await wheat.click();
@@ -474,8 +473,7 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'neighborhood');
     expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).opacity))
         .toBe('0.42');
-    expect(await town.locator('.town-street').evaluate(element => getComputedStyle(element, '::after').opacity))
-        .toBe('0.72');
+    expect(await town.locator('[data-town-lamp]').count()).toBeGreaterThan(initialLampCount);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await newTownBuilding.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
     expect(await town.locator('.town-street').evaluate(element =>
@@ -708,11 +706,17 @@ test('CPUの手番でも自分の街を先頭に見せ、極小画面でも街�
         await expect(townArt).toBeVisible();
         const dimensions = await townArt.evaluate(element => {
             const bounds = element.getBoundingClientRect();
-            return { width: bounds.width, height: bounds.height };
+            const street = element.closest('.town-street').getBoundingClientRect();
+            return { width: bounds.width, height: bounds.height, streetWidth: street.width,
+                inside: bounds.left >= street.left && bounds.right <= street.right &&
+                    bounds.top >= street.top && bounds.bottom <= street.bottom };
         });
-        if (width <= 360) expect(dimensions).toEqual({ width: 64, height: 46 });
-        else if (width <= 480) expect(dimensions).toEqual({ width: 80, height: 56 });
-        else expect(dimensions).toEqual({ width: 80, height: 56 });
+        // District scenes keep four facility lots across the street rather
+        // than stretching the old collection grid's fixed-size tiles.
+        expect(dimensions.width).toBeGreaterThanOrEqual(50);
+        expect(Math.abs(dimensions.width - dimensions.streetWidth * 0.23)).toBeLessThan(1);
+        expect(Math.abs(dimensions.height * 2 - dimensions.width)).toBeLessThan(1);
+        expect(dimensions.inside).toBe(true);
         const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
         expect(pageWidth).toBeLessThanOrEqual(width);
         const screenshot = testInfo.outputPath(`sunset-self-town-${width}.png`);
@@ -1333,24 +1337,28 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
         const street = element.querySelector('.town-street');
         return {
             outerBorder: getComputedStyle(element).borderTopWidth,
-            road: getComputedStyle(street, '::after').content,
+            roadCount: street.querySelectorAll('.town-district-roads').length,
+            layout: street.dataset.townLayout,
             scenicBackdrop: getComputedStyle(street).backgroundImage,
         };
     });
     expect(selfTownScene.outerBorder).toBe('0px');
-    expect(selfTownScene.road).toBe('""');
+    expect(selfTownScene.roadCount).toBe(1);
+    expect(selfTownScene.layout).toBe('districts');
     expect(selfTownScene.scenicBackdrop).not.toBe('none');
-    await expect.poll(() => firstBuilding.evaluate(element =>
-        element.getBoundingClientRect().width
-    )).toBeGreaterThanOrEqual(108);
     const bounds = await firstBuilding.evaluate(element => {
         const card = element.getBoundingClientRect();
         const art = element.querySelector('.sunset-facility-art').getBoundingClientRect();
-        return { width: card.width, artHeight: art.height, cardRight: card.right };
+        const street = element.closest('.town-street').getBoundingClientRect();
+        return { width: card.width, artWidth: art.width, artHeight: art.height, streetWidth: street.width,
+            inside: art.left >= street.left && art.right <= street.right &&
+                art.top >= street.top && art.bottom <= street.bottom };
     });
-    expect(bounds.width).toBeGreaterThanOrEqual(108);
-    expect(bounds.artHeight).toBeGreaterThanOrEqual(72);
-    expect(bounds.cardRight).toBeLessThanOrEqual(1440);
+    expect(bounds.width).toBeGreaterThanOrEqual(60);
+    expect(Math.abs(bounds.width - bounds.streetWidth * 0.23)).toBeLessThan(1);
+    expect(Math.abs(bounds.artWidth - bounds.width)).toBeLessThan(1);
+    expect(Math.abs(bounds.artHeight * 2 - bounds.width)).toBeLessThan(1);
+    expect(bounds.inside).toBe(true);
     const gameRegions = await page.evaluate(() => {
         const rect = selector => {
             const bounds = document.querySelector(selector).getBoundingClientRect();
@@ -1536,13 +1544,16 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         expect(gallery.landmarks).toHaveLength(6);
 
         const columns = width <= 480 ? 2 : 5;
-        const pageSize = width <= 480 ? 6 : 15;
+        const pageSize = width <= 480 ? 4 : 10;
         const pages = [
             ...Array.from({ length: Math.ceil(gallery.cards.length / pageSize) }, (_, index) => ({
                 label: `market-${index + 1}`,
                 cards: gallery.cards.slice(index * pageSize, (index + 1) * pageSize),
             })),
-            { label: 'landmarks', cards: gallery.landmarks.map(card => card.html) },
+            ...Array.from({ length: Math.ceil(gallery.landmarks.length / pageSize) }, (_, index) => ({
+                label: `landmarks-${index + 1}`,
+                cards: gallery.landmarks.slice(index * pageSize, (index + 1) * pageSize).map(card => card.html),
+            })),
         ];
         for (const galleryPage of pages) {
             await page.evaluate(({ cards, columns, label }) => {
@@ -1732,7 +1743,7 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         if (width === 1440) {
             const victoryLayout = await page.locator('.winner-screen').evaluate(element => {
                 const town = element.querySelector('.sunset-town');
-                const art = town.querySelector('.sunset-facility-art');
+                const art = town.querySelector('.town-building:not(.town-landmark) .sunset-facility-art');
                 return {
                     winnerWidth: element.getBoundingClientRect().width,
                     townWidth: town.getBoundingClientRect().width,

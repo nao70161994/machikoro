@@ -2947,3 +2947,29 @@ runTest('序盤の重複購入も代表施設とは別の住宅と窓明かり�
     assert.match(purchased, /data-town-population="1"/);
     assert.strictEqual(render([wheat, bakery]), initial, 'Undoで住宅と明かりも元へ戻る');
 });
+
+runTest('街の演出比較は純粋遷移の新playersを同じ対局として扱い保存復帰を初回扱いにする', () => {
+    const { context } = loadUiRuntime();
+    context.document.documentElement = { dataset: { design: 'sunset' } };
+    context.cpuPlayers = [null, null];
+    const player = count => ({ name: 'Alice', coins: 10, cards: Array.from({ length: count }, () => context.createCardByName('麦畑')), dormantCards: [], landmarks: {}, isDormant() { return false; } });
+    const observed = [];
+    context.animateNewTownBuildings = (_container, previous, current) => {
+        observed.push({
+            baseline: previous === null || previous === undefined,
+            increased: Array.isArray(previous) && current.some((counts, index) => [...counts].some(([key, count]) => count > (previous[index]?.get(key) || 0))),
+        });
+    };
+    const install = count => { context.game = { currentPlayerIndex: 0, turnCount: 1, players: [player(count), { ...player(1), name: 'Bob' }] }; context.renderPlayers(); };
+    install(1);
+    assert.deepStrictEqual(observed.pop(), { baseline: true, increased: false });
+    install(2); // Authoritative local adoption replaces the entire game object.
+    assert.deepStrictEqual(observed.pop(), { baseline: false, increased: true });
+    install(2); // An equivalent rehydrated state must not create a purchase.
+    assert.deepStrictEqual(observed.pop(), { baseline: false, increased: false });
+    install(1); // Undo decreases ownership and cannot become a new arrival.
+    assert.deepStrictEqual(observed.pop(), { baseline: false, increased: false });
+    context.cpuPlayers = [null, null]; // Saved-game resume installs a session roster.
+    install(3);
+    assert.deepStrictEqual(observed.pop(), { baseline: true, increased: false });
+});

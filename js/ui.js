@@ -986,7 +986,12 @@ function animateNewTownBuildings(container, previousCounts, currentCounts) {
 }
 
 function renderPlayers() {
-    const currentGame = uiGameRuntimeSnapshot().game;
+    const gameState = uiGameRuntimeSnapshot();
+    const currentGame = gameState.game;
+    // Pure transitions replace the game and player objects after normal actions.
+    // The CPU roster belongs to the session: initializers and saved-game resume
+    // replace it, while action adoption and Undo keep its identity.
+    const townSession = Array.isArray(gameState.cpuPlayers) ? gameState.cpuPlayers : currentGame.players;
     const onlineState = uiOnlineRuntimeSnapshot();
     const settings = currentGame.players.map((player, index) => getPlayerSettingForRender(index, player));
     const onlineMyPlayerIndex = onlineState.isOnlineGame ? onlineState.myPlayerIndex : -1;
@@ -1096,7 +1101,7 @@ function renderPlayers() {
         }
         container.innerHTML = html;
         if (document.documentElement?.dataset?.design === 'sunset') {
-            animateNewTownBuildings(container, previous?.players === currentGame.players
+            animateNewTownBuildings(container, previous?.townSession === townSession
                 ? previous.townBuildingCounts : null, townBuildingCounts);
         }
         const panels = /** @type {NodeListOf<HTMLDetailsElement>} */ (
@@ -1111,6 +1116,7 @@ function renderPlayers() {
         });
         playerPanelRenderCache.set(container, {
             players: currentGame.players,
+            townSession,
             html,
             firstChild: container.firstElementChild,
             townBuildingCounts,
