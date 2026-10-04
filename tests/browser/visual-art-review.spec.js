@@ -2219,6 +2219,10 @@ for (const width of [320, 390, 844, 1440]) {
         await expect(town.locator('.town-building .sunset-facility-art').first()).toBeVisible();
         expect((await town.boundingBox()).height).toBeGreaterThan(60);
         await expect(page.locator('#plazaPlayerHud button')).toHaveCount(4);
+        expect(await page.locator('#plazaPlayerHud').evaluate(hud => [...hud.querySelectorAll('button > span > span')].every(chip => {
+            const bounds = chip.getBoundingClientRect(), button = chip.closest('button').getBoundingClientRect();
+            return bounds.left >= button.left && bounds.right <= button.right && chip.scrollWidth <= chip.clientWidth;
+        }))).toBe(true);
         const initialCamera = await page.locator('#plazaWorld').getAttribute('style');
         await page.locator('[data-field-target="market"]').click();
         expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(initialCamera);
