@@ -2228,6 +2228,8 @@ for (const width of [320, 390, 1440]) {
         const controls = await page.locator('.game-action-panel').boundingBox();
         expect(controls.y + controls.height).toBeLessThanOrEqual(845);
         expect(controls.height).toBeLessThan(180);
+        const updateDismiss = page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]');
+        if (await updateDismiss.isVisible()) await updateDismiss.click();
         await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
         await expect(page.locator('#buildMenu .sunset-facility-art').first()).toBeVisible();
         expect(await town.locator('.town-backdrop').evaluate(element =>
