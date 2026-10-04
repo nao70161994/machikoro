@@ -2135,3 +2135,33 @@ test('完成した街の比率と最低高さは320pxでも区画を横へ押し
         await testInfo.attach(`sunset-town-districts-${width}.png`, { path, contentType: 'image/png' });
     }
 });
+
+test('オンライン復元の途中表示は祝福せず復元後の本当の建設だけを演出する', async ({ page }) => {
+    await prepareSunset(page);
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    const humanIndex = await page.evaluate(() => {
+        cancelCpuSchedule('restore-town-cue-review');
+        window.scheduleCPU = () => false;
+        const state = GameRuntimeState.runtime.snapshot();
+        const index = state.cpuPlayers.findIndex(cpu => !cpu);
+        state.game.currentPlayerIndex = index;
+        state.game.phase = GAME_PHASES.BUILD;
+        state.game.builtThisTurn = false;
+        state.game.currentPlayer().coins = 30;
+        OnlineRuntimeState.runtime.setReplaying(true);
+        render();
+        state.game.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+        render();
+        OnlineRuntimeState.runtime.setReplaying(false);
+        render();
+        return index;
+    });
+    const street = page.locator(`#playerBox${humanIndex} .town-street`);
+    await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(1);
+    await expect(street.locator('.town-event-caption')).toHaveCount(0);
+    await expect(street).not.toHaveClass(/town-landmark-completion/);
+    await page.locator('#buildMenu [data-action="buildLandmark"][data-landmark-name="ショッピングモール"]').click();
+    await expect(street.locator('.town-event-caption')).toHaveText('ショッピングモールが完成・一歩リード');
+    await expect(street).toHaveClass(/town-landmark-completion/);
+});

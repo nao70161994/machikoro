@@ -2973,3 +2973,26 @@ runTest('街の演出比較は純粋遷移の新playersを同じ対局として�
     install(3);
     assert.deepStrictEqual(observed.pop(), { baseline: true, increased: false });
 });
+
+runTest('オンライン復元の途中描画を購入扱いにせず復元後の新購入は演出する', () => {
+    const { context } = loadUiRuntime();
+    context.document.documentElement = { dataset: { design: 'sunset' } };
+    context.cpuPlayers = [null, null];
+    const player = count => ({ name: 'Alice', coins: 10, cards: Array.from({ length: count }, () => context.createCardByName('麦畑')), dormantCards: [], landmarks: {}, isDormant() { return false; } });
+    const observed = [];
+    context.animateNewTownBuildings = (_container, previous, current) => {
+        observed.push(Array.isArray(previous) && current.some((counts, index) => [...counts].some(([key, count]) => count > (previous[index]?.get(key) || 0))));
+    };
+    const install = count => { context.game = { currentPlayerIndex: 0, turnCount: 1, players: [player(count), { ...player(1), name: 'Bob' }] }; context.renderPlayers(); };
+    context.isReplaying = true;
+    install(1); // initGame renders before the stored snapshot is applied.
+    install(4); // Snapshot and replay actions may render with the same roster.
+    assert.strictEqual(observed.length, 0);
+    context.isReplaying = false;
+    context.renderPlayers(); // Identical final markup still establishes a baseline.
+    assert.strictEqual(observed.length, 0);
+    install(5);
+    assert.strictEqual(observed.pop(), true, 'the first real purchase after restoration still animates');
+    install(4);
+    assert.strictEqual(observed.pop(), false, 'Undo cannot become a new arrival');
+});

@@ -1081,6 +1081,14 @@ function renderPlayers() {
         playerPanelDisclosureListeners.add(container);
     }
     const previous = playerPanelRenderCache.get(container);
+    // Restore replay renders the initial game before applying its snapshot and
+    // tail actions. Treat the final restored ownership as the visual baseline,
+    // including when the last replay render already has identical markup.
+    if (previous?.replaying && !onlineState.isReplaying) {
+        previous.townBuildingCounts = snapshotTownBuildingCounts(currentGame.players);
+        previous.townSession = townSession;
+        previous.replaying = false;
+    }
     // Human-turn recovery can render again immediately after a purchase.
     // Keep unchanged panels, including their coin animation and focused cards.
     if (!previous || previous.players !== currentGame.players ||
@@ -1100,7 +1108,7 @@ function renderPlayers() {
             });
         }
         container.innerHTML = html;
-        if (document.documentElement?.dataset?.design === 'sunset') {
+        if (document.documentElement?.dataset?.design === 'sunset' && !onlineState.isReplaying) {
             animateNewTownBuildings(container, previous?.townSession === townSession
                 ? previous.townBuildingCounts : null, townBuildingCounts);
         }
@@ -1117,6 +1125,7 @@ function renderPlayers() {
         playerPanelRenderCache.set(container, {
             players: currentGame.players,
             townSession,
+            replaying: onlineState.isReplaying === true,
             html,
             firstChild: container.firstElementChild,
             townBuildingCounts,
