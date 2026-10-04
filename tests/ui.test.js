@@ -2055,15 +2055,15 @@ runTest('UiBuildMenu card filter transitionはstate更新と再描画要求をpu
     });
 });
 
-runTest('UiBuildMenuは主要施設カードごとに異なる絵の構図を使う', () => {
+runTest('UiBuildMenuは描き分けた主要施設の専用図版を全景で表示する', () => {
     const helper = require('../js/uiBuildMenu');
-    const frames = ['空港', '寿司屋', '牧場', '鉱山'].map(name => {
-        const html = helper.renderFacilityArt(name, name === '空港', name === '牧場' ? '畜産' : '');
-        return html.match(/viewBox="([^"]+)"/)?.[1];
-    });
+    const names = ['空港', '寿司屋', '牧場', '鉱山'];
+    const illustrations = names.map(name => helper.renderFacilityArt(name, name === '空港'));
+    const motifs = illustrations.map(html => html.match(/facility-art\.svg#([^"<>]+)/)?.[1]);
 
-    assert.strictEqual(new Set(frames).size, frames.length);
-    assert.ok(frames.every(frame => frame && frame !== '0 0 160 80'));
+    assert.strictEqual(new Set(motifs).size, names.length);
+    assert.ok(illustrations.every(html => html.includes('viewBox="0 0 160 80"')),
+        'the art itself supplies the camera angle; the former crop must not cut its foreground subjects');
 });
 
 runTest('UiBuildMenu filter controllerは選択・再選択・resetを単独所有する', () => {
@@ -2849,4 +2849,23 @@ runTest('手渡し開始ボタンを閉じたら現在のgame画面へfocusを�
     context.acceptHotseatHandoff();
     assert.strictEqual(context.document.activeElement, elements.status);
     assert.strictEqual(elements.gameScreen.inert, false);
+});
+
+runTest('街の発展段階は施設とランドマークを反映し独立した遠景を描く', () => {
+    const townMenu = require('../js/uiBuildMenu');
+    const card = { name: '麦畑', category: '農園' };
+    const original = { cards: [card, card], landmarks: { 駅: false } };
+    const quiet = townMenu.renderTownHtml(original, new Set(['駅']));
+    assert.match(quiet, /data-town-stage="quiet"/);
+    assert.match(quiet, /class="town-backdrop"/);
+    assert.match(quiet, /class="town-backdrop-neighborhood"/);
+    assert.match(quiet, /class="town-backdrop-city"/);
+    assert.match(quiet, /class="town-backdrop-lamps"/);
+    assert.strictEqual(original.cards.length, 2, '景観の描画はゲーム状態を変えない');
+    const neighborhood = townMenu.renderTownHtml({ cards: [card, card, card], landmarks: {} });
+    assert.match(neighborhood, /data-town-stage="neighborhood"/);
+    const city = townMenu.renderTownHtml({ cards: Array(6).fill(card), landmarks: { 駅: true } }, new Set(['駅']));
+    assert.match(city, /data-town-stage="city"/);
+    const disabledLandmark = townMenu.renderTownHtml({ cards: Array(6).fill(card), landmarks: { 駅: true } });
+    assert.match(disabledLandmark, /data-town-stage="neighborhood"/, '無効なランドマークは発展に数えない');
 });

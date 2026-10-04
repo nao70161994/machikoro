@@ -176,12 +176,12 @@ const UiBuildMenu = (() => {
     });
 
     const FACILITY_ART_FRAMING = Object.freeze({
-        '空港': '6 4 148 70',
+        '空港': '0 0 160 80',
         '遊園地': '12 2 136 76',
         '港': '18 4 130 72',
-        '寿司屋': '18 5 124 68',
-        '牧場': '19 2 122 72',
-        '鉱山': '8 2 144 72',
+        '寿司屋': '0 0 160 80',
+        '牧場': '0 0 160 80',
+        '鉱山': '0 0 160 80',
     });
 
     function renderFacilityArt(name, landmark = false, category = '') {
@@ -216,6 +216,41 @@ const UiBuildMenu = (() => {
         return '<svg class="card-coin-mark" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#coin"></use></svg>';
     }
 
+    function renderTownBackdrop() {
+        return `<svg class="town-backdrop" viewBox="0 0 640 180" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
+            <path d="M0 106Q94 62 192 106T384 97T640 92V180H0Z" fill="#5b7779" opacity=".45"/>
+            <path d="M0 131Q138 103 266 135T640 120V180H0Z" fill="#496b68"/>
+            <g class="town-backdrop-neighborhood" stroke="#294653" stroke-width="2" stroke-linejoin="round">
+                <path d="M24 123V85L54 66L83 85V123Z" fill="#b7b49a"/><path d="M17 86L54 59L90 86" fill="#526a71"/>
+                <path d="M34 92H47V105H34ZM60 92H73V105H60Z" fill="#f1d493"/><path d="M49 123V107H62V123" fill="#405c67"/>
+                <path d="M95 124V95L128 75L159 95V124Z" fill="#829798"/><path d="M89 96L128 69L166 96" fill="#4a636d"/>
+                <path d="M106 103H119V115H106ZM136 103H149V115H136Z" fill="#f0cd8b"/>
+                <path d="M475 128V86H531V128Z" fill="#a3aa99"/><path d="M468 87L481 73H525L539 87Z" fill="#49646d"/>
+                <path d="M486 98H519V113H486Z" fill="#e8cb91"/><path d="M480 96H525L521 101H484Z" fill="#d4b47e"/>
+                <path d="M551 126V84L583 62L614 84V126Z" fill="#b3b49d"/><path d="M545 84L583 55L621 84" fill="#49616c"/>
+                <path d="M564 95H576V109H564ZM591 95H603V109H591Z" fill="#f4d697"/>
+            </g>
+            <g class="town-backdrop-city" stroke="#294653" stroke-width="2" stroke-linejoin="round">
+                <path d="M186 123V69H225V123Z" fill="#758e95"/><path d="M183 69L191 60H219L229 69Z" fill="#425e6c"/>
+                <path d="M195 81H205V92H195ZM212 81H220V92H212ZM195 100H205V111H195ZM212 100H220V111H212Z" fill="#f0cf8d"/>
+                <path d="M247 123V80L271 63L296 80V123Z" fill="#a2ac9c"/><path d="M241 81L271 57L302 81" fill="#4c6870"/>
+                <path d="M257 91H266V103H257ZM277 91H286V103H277Z" fill="#ebca8a"/>
+                <path d="M320 124V56H344V124Z" fill="#afa889"/><path d="M313 56L332 33L351 56Z" fill="#4e6570"/>
+                <circle cx="332" cy="68" r="9" fill="#eddbac"/><path d="M332 62V68L337 71" fill="none"/>
+                <path d="M321 108H343V119H321Z" fill="#e9c983"/>
+                <path d="M365 127V88H403V127Z" fill="#8e9f99"/><path d="M359 88L384 68L409 88" fill="#4c6971"/>
+                <path d="M374 99H383V111H374ZM390 99H399V111H390Z" fill="#efcf8e"/>
+                <path d="M421 126V68H452V126Z" fill="#779297"/><path d="M417 69H456L451 58H422Z" fill="#415e6b"/>
+                <path d="M428 80H437V91H428ZM443 80H449V91H443ZM428 101H437V112H428ZM443 101H449V112H443Z" fill="#f0d492"/>
+            </g>
+            <path d="M0 157Q156 141 315 158T640 147" fill="none" stroke="#a19b83" stroke-width="12" opacity=".38"/>
+            <g class="town-backdrop-lamps" stroke="#d7bf87" stroke-width="2" fill="#f4d998">
+                <path d="M17 155V121M157 153V118M488 152V117M627 149V114"/>
+                <path d="M11 122L17 112L23 122ZM151 119L157 109L163 119ZM482 118L488 108L494 118ZM621 115L627 105L633 115Z"/>
+            </g>
+        </svg>`;
+    }
+
     function renderTownHtml(player, enabledLandmarks = new Set()) {
         const cards = Array.isArray(player.cards) ? player.cards : [];
         const grouped = new Map();
@@ -234,7 +269,7 @@ const UiBuildMenu = (() => {
             `<span class="town-building town-landmark" data-town-building="landmark:${escapeText(name)}">${renderFacilityArt(name, true)}</span>`
         ).join('');
         const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種</span>` : '';
-        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個</span></p><div class="town-street" data-town-stage="${stage}" aria-hidden="true"><span class="town-skyline-lights"></span>${facilities}${landmarks}${remaining}</div></div>`;
+        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個</span></p><div class="town-street" data-town-stage="${stage}" aria-hidden="true">${renderTownBackdrop()}<span class="town-skyline-lights"></span>${facilities}${landmarks}${remaining}</div></div>`;
     }
 
     function renderBuildCardButton(options) {
