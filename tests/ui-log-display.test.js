@@ -73,9 +73,30 @@ assert.strictEqual(summary,
     '<div class="log-detail-row">' +
     '<span class="log-detail-card"><span class="log-detail-label">主体</span><span class="log-detail-value">Alice</span></span>' +
     '<span class="log-detail-card"><span class="log-detail-label">対象カード</span><span class="log-detail-value">麦畑</span></span>' +
-    '<span class="log-detail-card"><span class="log-detail-label">コイン変動</span><span class="log-detail-value">++2コイン</span></span>' +
+    '<span class="log-detail-card"><span class="log-detail-label">コイン変動</span><span class="log-detail-value">+2コイン</span></span>' +
     '</div><span class="log-chip">収入 1</span>'
 );
+
+for (const amount of ['+2', '-2', '0']) {
+    const html = UiLogDisplay.buildLogSummaryHtml([
+        { type: 'gain', message: `🌾 Aliceの麦畑発動 → ${amount}コイン` },
+    ], display, escapeHtml);
+    const expected = amount === '0' ? '+0' : amount;
+    assert.ok(html.includes(`>${expected}コイン</span>`), amount);
+    assert.ok(!html.includes('++'), amount);
+}
+for (const message of ['🏗️ 麦畑を建設！', '🏆 駅を建設！', '🔨 駅を取り壊して+8コイン']) {
+    assert.strictEqual(UiLogDisplay.extractLogDetails({ message }).target, '', message);
+    assert.ok(!UiLogDisplay.buildLogSummaryHtml([{ type: 'build', message }], display, escapeHtml)
+        .includes('相手/対象'), message);
+}
+for (const [message, target] of [
+    ['🚚 麦畑をAliceに渡して+4コイン', 'Alice'],
+    ['🔄 麦畑 ⇔ Aliceの牧場 を交換しました', 'Alice'],
+    ['📺 Aliceから5コイン奪いました', 'Alice'],
+    ['📺 AliceからBobに5コイン', 'Bob'],
+    ['📰 Aliceから5コイン', 'Alice'],
+]) assert.strictEqual(UiLogDisplay.extractLogDetails({ message }).target, target, message);
 
 assert.deepStrictEqual(UiLogDisplay.buildLogToggleView(true), {
     collapsed: true,

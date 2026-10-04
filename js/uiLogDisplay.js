@@ -61,8 +61,19 @@ const UiLogDisplay = (() => {
             }
         }
 
-        const targetMatch = entryMessage.match(/(?:から|を)([^に\s]+)(?:に|の)?/);
-        if (targetMatch && !detail.target) detail.target = targetMatch[1];
+        const targetPatterns = [
+            /^🚚\s+.+を(.+)に渡して[+]4コイン$/u,
+            /^🔄\s+.+ ⇔ (.+)の.+ を交換しました$/u,
+            /^📺\s+.+から(.+)に\d+コイン$/u,
+            /^(?:📺|📰|🏛️)\s+(.+)から\d+コイン/u,
+        ];
+        for (const pattern of targetPatterns) {
+            const match = entryMessage.match(pattern);
+            if (match) {
+                detail.target = match[1];
+                break;
+            }
+        }
 
         const subjectPatterns = [
             /の([^発動\s]+)発動/,
@@ -119,7 +130,7 @@ const UiLogDisplay = (() => {
             if (details.subject) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">対象カード</span><span class="log-detail-value">${escapeHtml(details.subject)}</span></span>`);
             if (details.target) detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">相手/対象</span><span class="log-detail-value">${escapeHtml(details.target)}</span></span>`);
             if (details.amount) {
-                const amountText = `${details.amount.startsWith('-') ? '' : '+'}${details.amount}コイン`;
+                const amountText = `${/^[+-]/.test(details.amount) ? '' : '+'}${details.amount}コイン`;
                 detailCards.push(`<span class="log-detail-card"><span class="log-detail-label">コイン変動</span><span class="log-detail-value">${escapeHtml(amountText)}</span></span>`);
             }
             if (detailCards.length > 0) parts.push(`<div class="log-detail-row">${detailCards.join('')}</div>`);
