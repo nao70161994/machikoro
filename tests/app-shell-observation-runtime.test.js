@@ -107,3 +107,16 @@ runTest('app shell observation runtimeはbuild候補とregistry不足を注入�
 runTest('app shell observation runtimeは必須依存欠落を初期化時に拒否する', () => {
     assert.throws(() => AppShellObservationRuntime.createRuntime(), /activeBlockingModalIds is required/);
 });
+
+runTest('端末手渡しmodalはwatchdog snapshotの可視modalとUI状態に含まれる', () => {
+    const runtime = createRuntime({
+        clientRuntimeSnapshot: require('../js/clientRuntimeSnapshot'),
+        domSnapshot: {
+            snapshotById: id => ({ id, display: id === 'hotseatHandoffOverlay' ? 'flex' : 'none' }),
+            isVisibleById: id => id === 'hotseatHandoffOverlay',
+        },
+    });
+    const snapshot = runtime.buildClientRuntimeSnapshot('handoff');
+    assert.deepStrictEqual(snapshot.visibleModals, ['hotseatHandoffOverlay']);
+    assert.strictEqual(snapshot.ui.hotseatHandoffOverlay.display, 'flex');
+});

@@ -11,6 +11,7 @@ const UI_MODAL_POLICY_REGISTRY = Object.freeze({
     cardSelectModal: Object.freeze({ blocking: true }),
     cardDetailModal: Object.freeze({ blocking: true }),
     confirmModal: Object.freeze({ blocking: true }),
+    hotseatHandoffOverlay: Object.freeze({ blocking: true, gameCritical: true }),
     pendingModal: Object.freeze({ blocking: false, gameCritical: true }),
     noticeToast: Object.freeze({ blocking: false }),
     pwaUpdateBanner: Object.freeze({ blocking: false }),

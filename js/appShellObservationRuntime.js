@@ -140,7 +140,7 @@ const AppShellObservationRuntime = (() => {
         }
 
         function visibleModalIds() {
-            return ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal']
+            return ['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal', 'hotseatHandoffOverlay']
                 .filter(id => visibleElement(id));
         }
 
@@ -373,6 +373,7 @@ const AppShellObservationRuntime = (() => {
                         btnReroll: safeElementSnapshot('btnReroll'),
                         diceChoose: safeElementSnapshot('diceChoose'),
                         cardDetailModal: safeElementSnapshot('cardDetailModal'),
+                        hotseatHandoffOverlay: safeElementSnapshot('hotseatHandoffOverlay'),
                         cardSelectModal: safeElementSnapshot('cardSelectModal'),
                         rulesModal: safeElementSnapshot('rulesModal'),
                     },

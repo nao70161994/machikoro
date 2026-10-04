@@ -1,7 +1,7 @@
 'use strict';
 
 const AppShellUiLockRuntime = (() => {
-    const MODAL_IDS = Object.freeze(['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal']);
+    const MODAL_IDS = Object.freeze(['confirmModal', 'pendingModal', 'rulesModal', 'cardSelectModal', 'cardDetailModal', 'hotseatHandoffOverlay']);
     const SHELL_LOCK_IDS = Object.freeze(['titleScreen', 'gameScreen', 'pwaUpdateBanner', 'pwaInstallBanner']);
     const POST_BUILD_DELAYS = Object.freeze([0, 250, 1500, 3500]);
 

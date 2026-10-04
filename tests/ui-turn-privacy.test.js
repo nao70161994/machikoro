@@ -26,6 +26,16 @@ runTest('hapticsは明示有効かつ動作軽減なしの場合だけ既定patt
     assert.deepStrictEqual(calls, [[35], [22], [32, 24, 42]]);
 });
 
+runTest('handoff再描画は開始ボタンへfocusを奪い直さない', () => {
+    const overlay = { style: {}, setAttribute() {} };
+    let focusCount = 0;
+    const button = { focus() { focusCount++; } };
+    const view = { visible: true, playerName: 'Bob' };
+    UiTurnPrivacy.applyHandoffView(view, { overlay, button, focusInitial: true });
+    UiTurnPrivacy.applyHandoffView(view, { overlay, button, focusInitial: false });
+    assert.strictEqual(focusCount, 1);
+});
+
 runTest('環境haptic adapterは全体設定・効果別設定・動きを減らす設定・端末対応を守る', () => {
     const calls = [];
     const elements = {

@@ -1387,8 +1387,22 @@ runTest('renderActiveGameState は通常手番と同一player追加ターンを�
     assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'flex');
     assert.strictEqual(elements.hotseatHandoffName.textContent, 'Bob');
     assert.strictEqual(elements.hotseatHandoffButton.focused, true);
+    assert.strictEqual(elements.gameScreen.inert, true);
+    assert.strictEqual(elements.titleScreen.inert, true);
+    assert.strictEqual(context.document.body.classList.contains('modal-open'), true);
+    assert.ok(context.visibleBlockingModalIds().includes('hotseatHandoffOverlay'));
+    elements.hotseatHandoffOverlay.querySelectorAll = () => [elements.hotseatHandoffButton];
+    elements.hotseatHandoffOverlay.contains = element => element === elements.hotseatHandoffButton;
+    context.document.activeElement = elements.hotseatHandoffButton;
+    for (const shiftKey of [false, true]) {
+        let prevented = false;
+        context.handleModalKeydown({ key: 'Tab', shiftKey, preventDefault() { prevented = true; } });
+        assert.strictEqual(prevented, true, '手渡し画面のTabは開始ボタンに留まる');
+    }
     assert.strictEqual(context.acceptHotseatHandoff(), true);
     assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none');
+    assert.strictEqual(elements.gameScreen.inert, false);
+    assert.strictEqual(context.document.body.classList.contains('modal-open'), false);
 
     context.cpuPlayers = [null, {}];
     context.game.phase = 'build';
@@ -2803,3 +2817,18 @@ runTest('renderCardSelectModal はカード選択を表示順でソートする'
 if (process.exitCode) {
     throw new Error('uiテストで失敗が発生しました');
 }
+
+runTest('手渡し画面は既存modalが閉じてから表示し解除後に背景lockを残さない', () => {
+    const { context, elements } = loadUiRuntime();
+    context.openAccessibleModal('rulesModal');
+    vm.runInContext("hotseatHandoffController.observe({ turnChanged: true, humanPlayerCount: 2, playerIndex: 1, playerName: 'Bob' })", context);
+    assert.strictEqual(context.applyHotseatHandoff({ visible: true, playerName: 'Bob' }), false);
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none');
+    context.closeAccessibleModal('rulesModal');
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'flex');
+    assert.ok(context.visibleBlockingModalIds().includes('hotseatHandoffOverlay'));
+    assert.strictEqual(elements.gameScreen.inert, true);
+    context.acceptHotseatHandoff();
+    assert.strictEqual(elements.gameScreen.inert, false);
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none');
+});

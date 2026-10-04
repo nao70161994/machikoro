@@ -59,7 +59,8 @@ const UiTurnPrivacy = (() => {
         overlay.style.display = view.visible === true ? 'flex' : 'none';
         overlay.setAttribute('aria-hidden', view.visible === true ? 'false' : 'true');
         if (name) name.textContent = view.playerName || '';
-        if (view.visible === true && elements.button && typeof elements.button.focus === 'function') {
+        if (view.visible === true && elements.focusInitial !== false &&
+                elements.button && typeof elements.button.focus === 'function') {
             elements.button.focus({ preventScroll: true });
         }
         return true;

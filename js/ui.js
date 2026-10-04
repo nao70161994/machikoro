@@ -66,10 +66,19 @@ function triggerUiHaptic(kind) {
 }
 
 function applyHotseatHandoff(view) {
+    const overlay = document.getElementById('hotseatHandoffOverlay');
+    if (!overlay) return false;
+    const wasVisible = overlay.style.display !== 'none' && overlay.style.display !== '';
+    if (view.visible === true && !wasVisible &&
+            !openAccessibleModal('hotseatHandoffOverlay')) return false;
+    if (view.visible !== true && wasVisible) {
+        closeAccessibleModal('hotseatHandoffOverlay', { restoreFocus: false });
+    }
     return UiTurnPrivacy.applyHandoffView(view, {
-        overlay: document.getElementById('hotseatHandoffOverlay'),
+        overlay,
         name: document.getElementById('hotseatHandoffName'),
         button: document.getElementById('hotseatHandoffButton'),
+        focusInitial: view.visible === true && !wasVisible,
     });
 }
 
@@ -1859,6 +1868,10 @@ function runUiModalCloseEffects(id, options, beforeSnapshot,
 
 function closeAccessibleModal(id, options = {}) {
     uiModalRuntime.close(id, options);
+    if (id !== 'hotseatHandoffOverlay' && visibleBlockingModalIds().length === 0) {
+        const handoff = hotseatHandoffController.snapshot();
+        if (handoff.visible) applyHotseatHandoff(handoff);
+    }
 }
 
 function setConfirmModalAwaitingChoice(value) {

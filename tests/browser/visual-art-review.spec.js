@@ -242,6 +242,35 @@ test('夕暮れの復旧・端末受け渡しUIは共通SVG警告と端末記号
     expect(await crash.locator('.crash-icon-emoji').evaluate(element => getComputedStyle(element).display)).not.toBe('none');
 });
 
+test('端末受け渡しは両テーマと画面幅で背景操作とTab移動を遮断する', async ({ page }) => {
+    await stubAds(page);
+    for (const design of ['classic', 'sunset']) {
+        for (const width of [390, 1440]) {
+            await page.setViewportSize({ width, height: 844 });
+            await page.goto('/');
+            await selectDesignTheme(page, design);
+            await page.evaluate(() => {
+                applyHotseatHandoff({ visible: true, playerName: 'プレイヤー2' });
+            });
+            const button = page.locator('#hotseatHandoffButton');
+            await expect(button).toBeFocused();
+            expect(await page.locator('#titleScreen').evaluate(element => element.inert)).toBe(true);
+            expect(await page.locator('#gameScreen').evaluate(element => element.inert)).toBe(true);
+            await page.keyboard.press('Tab');
+            await expect(button).toBeFocused();
+            await page.keyboard.press('Shift+Tab');
+            await expect(button).toBeFocused();
+            await page.keyboard.press('Escape');
+            await expect(page.locator('#hotseatHandoffOverlay')).toBeVisible();
+            await page.keyboard.press('Enter');
+            await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
+            expect(await page.locator('#titleScreen').evaluate(element => element.inert)).toBe(false);
+            expect(await page.locator('#gameScreen').evaluate(element => element.inert)).toBe(false);
+            await expect(page.locator('#titleHeading')).toBeFocused();
+        }
+    }
+});
+
 test('夕暮れのルール説明は専用UI記号とランドマークアートを使う', async ({ page }, testInfo) => {
     await prepareSunset(page);
     await page.evaluate(() => showRules());

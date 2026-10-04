@@ -2223,7 +2223,9 @@ button:not(:disabled):active {
 .crash-icon-svg,
 .crash-action-svg { display: none; }
 .hotseat-handoff-svg { width: 48px; height: 48px; }
-.hotseat-handoff-card h2 { overflow-wrap: anywhere; }
+.hotseat-handoff-card h2 { overflow-wrap: anywhere; text-wrap: balance; }
+#hotseatHandoffName { display: block; }
+.hotseat-handoff-card p { text-wrap: balance; }
 .hotseat-handoff-card button { min-height: 48px; margin-top: 12px; }
 .room-qr-toggle { min-height: 36px; }
 .room-qr-container {

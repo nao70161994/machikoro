@@ -107,3 +107,19 @@ runTest('app shell UI lock runtimeはhuman turn描画後にaction lockを再同�
 runTest('app shell UI lock runtimeは必須依存欠落を初期化時に拒否する', () => {
     assert.throws(() => AppShellUiLockRuntime.createRuntime(), /buildSnapshot is required/);
 });
+
+runTest('手渡しmodal中はwatchdogが背景lockを回復しない', () => {
+    const { runtime, calls } = createHarness({
+        snapshotElement: id => ({ display: id === 'hotseatHandoffOverlay' ? 'flex' : 'none' }),
+    });
+    const snapshot = {
+        visibleModals: ['hotseatHandoffOverlay'],
+        ui: { hotseatHandoffOverlay: { display: 'flex' } },
+    };
+    assert.deepStrictEqual(runtime.activeBlockingModalIds(snapshot), ['hotseatHandoffOverlay']);
+    assert.strictEqual(runtime.hasActiveBlockingModal(snapshot), true);
+    assert.strictEqual(runtime.clearGameScreenLock(snapshot), false);
+    assert.ok(!calls.some(call => call[0] === 'clear-modal' || call[0] === 'remove-body-lock'));
+    runtime.resetForGame();
+    assert.ok(calls.some(call => call[0] === 'hide' && call[1] === 'hotseatHandoffOverlay'));
+});
