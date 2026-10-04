@@ -228,3 +228,30 @@ for (const testCase of [
 runTest('CPU phase handlersは必須依存欠落を初期化前に拒否する', () => {
     assert.throws(() => CpuPhaseHandlers.create(), /dependency is required/);
 });
+
+runTest('CPU phase online buildは購入候補なしを正常な見送りとして次の手番終了へ進める', () => {
+    const h = createHarness({ executeAction: () => true });
+    h.game.phase = h.phases.BUILD;
+    h.setOnline(true);
+    h.proposals.build = null;
+    const cpu = {
+        chooseBuildAction() { return null; },
+        executeBuildAction() { throw new Error('no purchase must not execute'); },
+    };
+    assert.strictEqual(h.handlers.find(handler => handler.name === 'build').run(cpu), true);
+    assert.strictEqual(h.calls.some(call => call[0] === 'execute'), false);
+    assert.strictEqual(h.handlers.find(handler => handler.name === 'nextTurn').run(cpu), true);
+    assert.deepStrictEqual(h.calls.filter(call => call[0] === 'execute'), [['execute', 'nextTurn', {}]]);
+    assert.strictEqual(h.calls.some(call => call[0] === 'nextTurn'), false);
+});
+
+runTest('CPU phase online buildは購入送信拒否を見送りに変換しない', () => {
+    const h = createHarness();
+    h.game.phase = h.phases.BUILD;
+    h.setOnline(true);
+    assert.strictEqual(h.handlers.find(handler => handler.name === 'build').run({
+        chooseBuildAction() {},
+        executeBuildAction() { return false; },
+    }), false);
+    assert.strictEqual(h.calls.some(call => call[0] === 'execute'), false);
+});

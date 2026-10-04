@@ -3,6 +3,9 @@ const assert = require('assert');
 const CpuSchedulerState = require('../js/cpuSchedulerState');
 const CpuTurnSchedulerRuntime = require('../js/cpuTurnSchedulerRuntime');
 const { runTest } = require('./helpers/test-utils');
+const CpuPhaseHandlers = require('../js/cpuPhaseHandlers');
+const CpuTurnStrategy = require('../js/cpuTurnStrategy');
+const { loadCPURuntime } = require('./helpers/runtime-loaders');
 
 function createHarness(options = {}) {
     const calls = [];
@@ -42,6 +45,54 @@ function createHarness(options = {}) {
     });
     return { calls, cpu, game, runtime, timers, setNow: value => { now = value; }, setOnline: value => { online = value; } };
 }
+
+runTest('online CPUはコイン不足で購入候補がなくてもschedulerからnextTurnを一度送る', () => {
+    const rules = loadCPURuntime();
+    const game = new rules.GameManager(2);
+    game.phase = rules.GAME_PHASES.BUILD;
+    game.currentPlayer().coins = 0;
+    const cpu = new rules.CPU('normal');
+    const stock = Object.fromEntries(rules.CARDS.map(card => [card.name, 6]));
+    const timers = [];
+    const sent = [];
+    let inFlight = false;
+    const online = { isOnlineGame: true, isRoomHost: true, isReplaying: false, socket: { connected: true } };
+    const state = { game, cpuPlayers: [cpu, null] };
+    const handlers = CpuPhaseHandlers.create({
+        actions: { NEXT_TURN: 'nextTurn', REROLL_DICE: 'rerollDice' },
+        checkpoint() {},
+        chooseAction: step => CpuTurnStrategy.chooseAction(step, { game, cpu, shopStock: stock }),
+        executeAction(action, data) { sent.push({ action, data }); inFlight = true; return true; },
+        gamePhases: rules.GAME_PHASES,
+        getGameState: () => state,
+        getOnlineState: () => online,
+        pendingResolution: { pendingProgressSignature: () => '' },
+        render() {},
+        shopStock: stock,
+    });
+    const runtime = CpuTurnSchedulerRuntime.createRuntime({
+        checkpoint() {},
+        gamePhases: rules.GAME_PHASES,
+        getActionFlightState: () => ({ inFlight }),
+        getCpuSpeed: () => 0,
+        getGameState: () => state,
+        getOnlineState: () => online,
+        getPhaseHandlers: () => handlers,
+        isReconnectBlocked: () => false,
+        now: () => 100,
+        policy: CpuSchedulerState,
+        recoverBuildError: () => false,
+        setTimeout(fn) { timers.push(fn); return timers.length; },
+        unlockHumanTurn() {},
+    });
+    assert.strictEqual(cpu.chooseBuildAction(game, stock), null);
+    runtime.schedule();
+    for (let count = 0; timers.length && count < 10; count++) timers.shift()();
+    assert.deepStrictEqual(sent, [{ action: 'nextTurn', data: {} }]);
+    assert.strictEqual(game.phase, rules.GAME_PHASES.BUILD);
+    assert.strictEqual(game.currentPlayerIndex, 0);
+    assert.strictEqual(game.currentPlayer().coins, 0);
+});
 
 runTest('CPU turn scheduler runtimeはphase stepをCPU速度後に一度実行してcooldownを予約する', () => {
     const h = createHarness();

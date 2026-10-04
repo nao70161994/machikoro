@@ -136,6 +136,9 @@ const CpuPhaseHandlers = (() => {
                     const actionOnly = typeof cpu.chooseBuildAction === 'function' &&
                         typeof cpu.executeBuildAction === 'function';
                     const proposal = actionOnly ? dependencies.chooseAction('build', cpu) : null;
+                    // No selected purchase is a normal pass. Let the nextTurn
+                    // step send it; a rejected purchase still stops for resync.
+                    if (actionOnly && !proposal && dependencies.getOnlineState().isOnlineGame) return true;
                     const result = actionOnly && proposal
                         ? dependencies.getOnlineState().isOnlineGame
                             ? cpu.executeBuildAction(proposal, current, dependencies.shopStock)
