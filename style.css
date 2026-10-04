@@ -1884,6 +1884,8 @@ body.game-finished #gameScreen > #btnRestart {
 
 .dot.hidden { background: transparent; visibility: hidden; }
 
+#plazaViewport, #plazaPlayerHud, #plazaCameraTools { display: none; }
+
 
 @keyframes dice-land {
     0% { opacity: 0.45; transform: translateY(-12px) rotate(-10deg) scale(0.82); }
@@ -8288,4 +8290,112 @@ html[data-design="plaza"] #buildMenu .card-detail-btn { min-height: 32px; }
     html[data-design="plaza"] #buildMenu .card-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     html[data-design="plaza"] #players .player-name { font-size: 17px; }
     html[data-design="plaza"] #players .player-landmark-count { width: auto; margin-left: auto; }
+}
+
+/* Field and HUD occupy separate layers; the camera transforms only the field. */
+html[data-design="plaza"] #gameScreen[style*="display: block"] {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: hidden;
+    background: #163b38;
+    z-index: 10;
+    display: block;
+}
+html[data-design="plaza"] #gameScreen > #status {
+    position: absolute; top: 0; left: 0; right: 0; height: 30px;
+    box-sizing: border-box; margin: 0; padding: 4px; font-size: 14px;
+    border-radius: 0; z-index: 5;
+}
+html[data-design="plaza"] #plazaPlayerHud {
+    display: flex; position: absolute; top: 30px; left: 0; right: 0;
+    height: 66px; gap: 4px; padding: 4px; box-sizing: border-box;
+    overflow-x: auto; background: #102c35; z-index: 5;
+}
+html[data-design="plaza"] #plazaPlayerHud button {
+    flex: 1 0 140px; min-width: 0; margin: 0; padding: 4px 6px;
+    border: 1px solid #6c8c88; border-radius: 8px; background: #203e48;
+    font-size: 11px; color: #fff0d0; text-align: left;
+}
+html[data-design="plaza"] #plazaPlayerHud button.active { border-color: #e9bf64; }
+html[data-design="plaza"] #plazaPlayerHud strong,
+html[data-design="plaza"] #plazaPlayerHud button > span { display: block; overflow-wrap: anywhere; }
+html[data-design="plaza"] #plazaViewport {
+    display: block; position: absolute; inset: 96px 0 140px;
+    overflow: hidden; touch-action: none; cursor: grab;
+    background: radial-gradient(ellipse at center, #5b7860, #234b41);
+}
+html[data-design="plaza"] #plazaViewport:active { cursor: grabbing; }
+html[data-design="plaza"] #plazaWorld {
+    position: absolute; width: 1680px; height: 1380px; transform-origin: 0 0;
+    background: repeating-linear-gradient(35deg, transparent 0 130px, #a4b5800c 131px 133px), radial-gradient(ellipse, #648164, #385c45);
+}
+html[data-design="plaza"] #plazaWorld .plaza-road { position: absolute; background: #acac86; border: 8px solid #829477; border-radius: 50px; opacity: 0.65; }
+html[data-design="plaza"] .plaza-road-horizontal { left: 80px; top: 610px; width: 1450px; height: 64px; }
+html[data-design="plaza"] .plaza-road-vertical { left: 805px; top: 160px; width: 64px; height: 950px; }
+html[data-design="plaza"] #plazaWorld .player-area,
+html[data-design="plaza"] #plazaWorld #players { display: contents; }
+html[data-design="plaza"] #plazaWorld #playerNavigation { display: none !important; }
+html[data-design="plaza"] #plazaWorld #players > .player-box {
+    position: absolute; width: 450px; min-height: 250px; box-sizing: border-box;
+    padding: 14px; background: #203f43f0; border: 2px solid #aab68a;
+    box-shadow: 0 15px 25px #172b3388; border-radius: 22px;
+}
+html[data-design="plaza"] #plazaWorld #players .player-name { font-size: 18px; }
+html[data-design="plaza"] #plazaWorld .player-name-row { flex-basis: auto; }
+html[data-design="plaza"] #plazaWorld .player-header { justify-content: space-between; }
+html[data-design="plaza"] #plazaWorld .plaza-opponent-town .town-street,
+html[data-design="plaza"] #plazaWorld #players .player-box-self .town-street { height: 190px; max-height: none; }
+html[data-design="plaza"] #plazaWorld #players .player-detail { max-height: none; overflow: visible; }
+html[data-design="plaza"] #plazaWorld .player-box-self { border-color: #edcb74; }
+html[data-design="plaza"] #plazaWorld #buildMenu {
+    position: absolute; left: 555px; top: 420px; width: 570px; height: 470px;
+    max-height: none; box-sizing: border-box; overflow: auto; padding: 12px;
+    background: #213f3bf5; border: 3px solid #dbc27e; border-radius: 28px;
+    box-shadow: 0 15px 25px #172b3388; touch-action: pan-y;
+}
+html[data-design="plaza"] #plazaWorld #buildMenu .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+html[data-design="plaza"] #plazaCameraTools {
+    display: flex; position: absolute; right: 8px; top: 104px;
+    flex-wrap: wrap; gap: 3px; padding: 4px; border-radius: 10px;
+    max-width: calc(100% - 16px); background: #102c35eb; z-index: 5;
+}
+html[data-design="plaza"] #plazaCameraTools button { min-height: 44px; margin: 0; padding: 5px 8px; font-size: 12px; background: #2b4952; }
+html[data-design="plaza"] #plazaZoomLabel { align-self: center; font-size: 11px; }
+html[data-design="plaza"] #gameScreen > #plazaEvents {
+    position: absolute; left: 0; right: 0; bottom: 108px; height: 32px;
+    padding: 4px 8px; margin: 0; border-radius: 0; box-sizing: border-box;
+    overflow: auto; z-index: 5; background: #102c35;
+}
+html[data-design="plaza"] #plazaEvents h2,
+html[data-design="plaza"] #plazaRecentEvents .log-item:not(:last-child) { display: none; }
+html[data-design="plaza"] #plazaRecentEvents .log-item { font-size: 11px; margin: 0; padding: 0; }
+html[data-design="plaza"] #gameScreen > .game-action-panel {
+    position: absolute; left: 0; right: 0; bottom: 0; transform: none;
+    width: 100%; height: 108px; min-height: 0; margin: 0; border-radius: 0;
+    padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
+}
+html[data-design="plaza"] #gameConnectivityPanel { position: absolute; right: 8px; bottom: 145px; width: auto; z-index: 5; padding: 3px; font-size: 10px; }
+html[data-design="plaza"] #gameConnectivityPanel #gameActivityStatus { display: none !important; }
+html[data-design="plaza"] #turnTimeline,
+html[data-design="plaza"] #tutorialBox,
+html[data-design="plaza"] #onlineLeaveHelp,
+html[data-design="plaza"] #btnRestart { display: none !important; }
+html[data-design="plaza"] #gameScreen > #gameLogContainer { display: none; }
+html[data-design="plaza"] #gameScreen > #gameLogContainer.plaza-panel-open {
+    display: block; position: absolute; left: 8px; right: 8px; bottom: 145px;
+    height: min(300px, 50dvh); overflow: auto; z-index: 8; background: #102c35;
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    html[data-design="plaza"] #plazaPlayerHud { height: 56px; }
+    html[data-design="plaza"] #plazaPlayerHud button { flex-basis: 0; font-size: 10px; }
+    html[data-design="plaza"] #plazaViewport { top: 86px; }
+    html[data-design="plaza"] #plazaCameraTools { top: 90px; }
 }

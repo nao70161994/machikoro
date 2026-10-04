@@ -367,6 +367,20 @@
 
     <div id="gameScreen" role="main" aria-label="ゲーム画面" style="display:none">
         <div id="status" class="status"></div>
+        <div id="plazaPlayerHud" aria-label="全員の状況"></div>
+        <div id="plazaViewport" role="region" aria-label="広場フィールド。ドラッグで移動、ピンチで拡大縮小">
+            <div id="plazaWorld"><div class="plaza-road plaza-road-horizontal"></div><div class="plaza-road plaza-road-vertical"></div></div>
+        </div>
+        <nav id="plazaCameraTools" aria-label="フィールドの移動と拡大縮小">
+            <button type="button" data-field-target="self">自分の街</button>
+            <button type="button" data-field-target="market">市場</button>
+            <button type="button" data-field-target="all">全体</button>
+            <button type="button" data-field-panel="log">履歴</button>
+            <button type="button" data-ui-action="restartGame">終了</button>
+            <button type="button" data-field-zoom="out" aria-label="縮小">−</button>
+            <span id="plazaZoomLabel">75%</span>
+            <button type="button" data-field-zoom="in" aria-label="拡大">＋</button>
+        </nav>
         <section id="plazaEvents" aria-label="直近の出来事"><h2>広場の出来事</h2><div id="plazaRecentEvents"></div></section>
         <div id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -776,6 +790,7 @@
     <script src="js/uiLogHighlightEffects.js"></script>
     <script src="js/uiCardOrder.js"></script>
     <script src="js/uiPlayerDisplay.js"></script>
+    <script src="js/plazaField.js"></script>
     <script src="js/uiInputPolicy.js"></script>
     <script src="js/uiBuildMenu.js"></script>
     <script src="js/uiPendingMenu.js"></script>

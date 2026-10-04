@@ -50,6 +50,8 @@ test('広場の4人オンラインで全員の街を表示しダイスと手番�
         }
         const results = await Promise.all(pages.map(page => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.lastDiceResult)));
         expect(new Set(results).size).toBe(1);
+        await expect(active.locator('#plazaPlayerHud button')).toHaveCount(4);
+        await active.locator('[data-field-target="all"]').click();
         await active.screenshot({ path: testInfo.outputPath('plaza-online-4p.png'), fullPage: true });
         await active.locator('#btnSkip').click();
         await expect(active.locator('#confirmModal')).toBeVisible();

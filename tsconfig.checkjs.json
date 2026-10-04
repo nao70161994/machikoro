@@ -20,6 +20,7 @@
     "scripts/check-static-files.js",
     "js/Card.js",
     "js/designTheme.js",
+    "js/plazaField.js",
     "js/marketSupply.js",
     "js/Player.js",
     "js/gameSelectionState.js",

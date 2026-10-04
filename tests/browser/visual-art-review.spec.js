@@ -2188,9 +2188,10 @@ test('オンライン復元の途中表示は祝福せず復元後の本当の�
     expect(purchased.cue).toBe(true);
 });
 
-for (const width of [320, 390, 1440]) {
+for (const width of [320, 390, 844, 1440]) {
     test(`広場テーマは共通アートと街の盤面を表示する ${width}px`, async ({ page }, testInfo) => {
-        await page.setViewportSize({ width, height: 844 });
+        const height = width === 844 ? 390 : 844;
+        await page.setViewportSize({ width, height });
         await stubAds(page);
         await page.goto('/');
         await selectDesignTheme(page, 'plaza');
@@ -2217,20 +2218,30 @@ for (const width of [320, 390, 1440]) {
         const town = page.locator('.player-box-self .town-street');
         await expect(town.locator('.town-building .sunset-facility-art').first()).toBeVisible();
         expect((await town.boundingBox()).height).toBeGreaterThan(60);
-        const market = await page.locator('#buildMenu').boundingBox();
-        const own = await page.locator('.player-box-self').boundingBox();
-        const opponents = page.locator('.player-box:not(.player-box-self)');
-        for (const opponent of await opponents.all()) {
-            const box = await opponent.boundingBox();
-            expect(box.y + box.height).toBeLessThanOrEqual(market.y);
-        }
-        expect(own.y).toBeGreaterThan(market.y + market.height - 1);
+        await expect(page.locator('#plazaPlayerHud button')).toHaveCount(4);
+        const initialCamera = await page.locator('#plazaWorld').getAttribute('style');
+        await page.locator('[data-field-target="market"]').click();
+        expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(initialCamera);
+        await page.locator('[data-field-zoom="in"]').click();
+        await expect(page.locator('#plazaZoomLabel')).toHaveText('96%');
+        await page.locator('[data-field-target="all"]').click();
+        const viewport = await page.locator('#plazaViewport').boundingBox();
+        const beforePan = await page.locator('#plazaWorld').getAttribute('style');
+        await page.mouse.move(viewport.x + 10, viewport.y + viewport.height - 20);
+        await page.mouse.down();
+        await page.mouse.move(viewport.x + 60, viewport.y + viewport.height - 40, { steps: 8 });
+        await page.mouse.up();
+        expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(beforePan);
+        await page.locator('[data-field-target="all"]').click();
+        await page.screenshot({ path: testInfo.outputPath(`plaza-field-all-${width}.png`), fullPage: false });
+        await page.locator('[data-field-target="self"]').click();
         const controls = await page.locator('.game-action-panel').boundingBox();
-        expect(controls.y + controls.height).toBeLessThanOrEqual(845);
+        expect(controls.y + controls.height).toBeLessThanOrEqual(height + 1);
         expect(controls.height).toBeLessThan(180);
         const updateDismiss = page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]');
         if (await updateDismiss.isVisible()) await updateDismiss.click();
         await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
+        await page.locator('[data-field-target="market"]').click();
         await expect(page.locator('#buildMenu .sunset-facility-art').first()).toBeVisible();
         expect(await town.locator('.town-backdrop').evaluate(element =>
             getComputedStyle(element).position)).toBe('absolute');
@@ -2245,6 +2256,7 @@ for (const width of [320, 390, 1440]) {
                 const game = GameRuntimeState.runtime.snapshot().game;
                 return { count: game.currentPlayer().cards.length, turn: game.turnCount };
             });
+            await page.locator('[data-field-target="market"]').click();
             await page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]').click();
             await expect.poll(() => page.evaluate(() =>
                 GameRuntimeState.runtime.snapshot().game.currentPlayer().cards.length

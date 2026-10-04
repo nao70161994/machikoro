@@ -1138,6 +1138,7 @@ function renderPlayers() {
             townBuildingCounts,
         });
     }
+    if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection());
 }
 
 function getEffectText(card) {
