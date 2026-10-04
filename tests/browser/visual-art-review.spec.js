@@ -2189,7 +2189,7 @@ test('オンライン復元の途中表示は祝福せず復元後の本当の�
 });
 
 for (const width of [320, 390, 1440]) {
-    test(`広場テーマは共通アートと街の盤面を表示する ${width}px`, async ({ page }) => {
+    test(`広場テーマは共通アートと街の盤面を表示する ${width}px`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width, height: 844 });
         await stubAds(page);
         await page.goto('/');
@@ -2208,16 +2208,22 @@ for (const width of [320, 390, 1440]) {
         });
         const town = page.locator('.player-box-self .town-street');
         await expect(town.locator('.town-building .sunset-facility-art').first()).toBeVisible();
-        expect((await town.boundingBox()).height).toBeGreaterThan(150);
+        expect((await town.boundingBox()).height).toBeGreaterThan(60);
+        const market = await page.locator('#buildMenu').boundingBox();
+        const own = await page.locator('.player-box-self').boundingBox();
+        const opponents = page.locator('.player-box:not(.player-box-self)');
+        for (const opponent of await opponents.all()) {
+            const box = await opponent.boundingBox();
+            expect(box.y + box.height).toBeLessThanOrEqual(market.y);
+        }
+        expect(own.y).toBeGreaterThan(market.y + market.height - 1);
+        const controls = await page.locator('.game-action-panel').boundingBox();
+        expect(controls.y + controls.height).toBeLessThanOrEqual(845);
+        await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
         await expect(page.locator('#buildMenu .sunset-facility-art').first()).toBeVisible();
         expect(await town.locator('.town-backdrop').evaluate(element =>
             getComputedStyle(element).position)).toBe('absolute');
         expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
-        if (width >= 1200) {
-            const players = await page.locator('.player-area').boundingBox();
-            const guide = await page.locator('#tutorialBox').boundingBox();
-            expect(players.y).toBeGreaterThanOrEqual(guide.y + guide.height);
-        }
         if (width === 390) {
             await page.reload();
             await expect(page.locator('html')).toHaveAttribute('data-design', 'plaza');

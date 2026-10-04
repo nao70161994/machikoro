@@ -113,6 +113,11 @@ function renderLog() {
         logDisplayOptions
     );
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
+    const recent = document.getElementById('plazaRecentEvents');
+    if (recent) recent.innerHTML = UiLogDisplay.buildLogEntriesHtml(
+        history.entries.filter(entry => entry !== '__SEP__').slice(-3),
+        LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions
+    );
     logEl.scrollTop = logEl.scrollHeight;
 }
 
@@ -1003,11 +1008,12 @@ function renderPlayers() {
         buildTownHtml: player => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection()),
         settings,
         currentPlayerIndex: currentGame.currentPlayerIndex,
-        compactInactive: currentGame.players.length >= 5 ||
+        plaza: document.documentElement?.dataset?.design === 'plaza',
+        compactInactive: document.documentElement?.dataset?.design === 'plaza' || currentGame.players.length >= 5 ||
             (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
                 window.matchMedia('(max-width: 480px)').matches),
         myPlayerIndex: primaryPlayerIndex,
-        compactCurrentPlayer: primaryPlayerIndex >= 0 &&
+        compactCurrentPlayer: document.documentElement?.dataset?.design === 'plaza' || primaryPlayerIndex >= 0 &&
             currentGame.currentPlayerIndex !== primaryPlayerIndex &&
             settings[currentGame.currentPlayerIndex]?.type === 'cpu',
         enabledLandmarks: getEnabledLandmarkSelection(),
@@ -1053,6 +1059,7 @@ function renderPlayers() {
         !playerPanelDisclosureClickListeners.has(container)) {
         container.addEventListener('click', event => {
             const target = /** @type {HTMLElement | null} */ (event.target);
+            if (target?.closest('button')) return;
             const summary = target?.closest('summary');
             const panel = summary?.parentElement;
             if (!panel || typeof panel.matches !== 'function' ||
