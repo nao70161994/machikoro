@@ -7,6 +7,7 @@ on:
             - 'index.html'
             - 'js/ui*.js'
             - 'tests/browser/visual-art-review.spec.js'
+            - 'tests/browser/plaza-online.spec.js'
             - '.github/workflows/plaza-visual-review.yml'
 
 permissions:
@@ -25,6 +26,7 @@ jobs:
             - run: npm ci
             - run: npx playwright install --with-deps webkit
             - run: npx playwright test visual-art-review.spec.js --grep '広場テーマは共通アート' --retries=0
+            - run: npx playwright test plaza-online.spec.js --retries=0
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
