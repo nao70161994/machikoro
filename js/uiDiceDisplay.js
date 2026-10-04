@@ -21,11 +21,13 @@ function buildDiceFaceHtml(value, options = {}) {
 
 function buildDiceDisplayView(values, rolling = false) {
     if (rolling) {
+        // A 3x3 grid of active dots looks like an impossible nine-sided die
+        // on a paused mobile frame. Keep the rolling placeholder a valid face.
+        const rollingFace = buildDiceFaceHtml(5, { decorative: true })
+            .replace('class="dice-face"', 'class="dice-face rolling"');
         return Object.freeze({
             html: `<div class="dice-display">
-            <div class="dice-face rolling" aria-hidden="true">
-                ${DICE_DOT_LAYOUTS[1].map(() => '<div class="dot" aria-hidden="true"></div>').join('')}
-            </div>
+            ${rollingFace}
         </div>`,
             opacity: null,
         });

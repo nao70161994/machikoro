@@ -18,7 +18,8 @@ runTest('dice displayは1〜6のdot配置と不正値の1 fallbackを固定す�
 runTest('dice display viewはrolling・empty・複数出目のexact HTML契約を維持する', () => {
     const rolling = UiDiceDisplay.buildView(null, true);
     assert.ok(rolling.html.includes('dice-face rolling'));
-    assert.strictEqual((rolling.html.match(/<div class="dot" aria-hidden="true"><\/div>/g) || []).length, 9);
+    assert.strictEqual((rolling.html.match(/class="dot "/g) || []).length, 5);
+    assert.ok(!rolling.html.includes('サイコロの出目'));
     assert.strictEqual(rolling.opacity, null);
 
     const empty = UiDiceDisplay.buildView([]);

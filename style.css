@@ -8046,6 +8046,50 @@ html[data-design="plaza"] #gameLogContainer {
     background: rgba(9, 33, 44, 0.46);
 }
 html[data-design="plaza"] .design-switcher-current { color: #ffe2a0; }
+html[data-design="plaza"] .player-asset-summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 4px 0 7px;
+    color: #dce8e2;
+    font-size: 11px;
+}
+html[data-design="plaza"] .player-color-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 27px;
+    justify-content: center;
+    padding: 2px 5px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: rgba(7, 22, 30, 0.4);
+    line-height: 1.2;
+}
+html[data-design="plaza"] .player-color-chip strong { font-size: 12px; }
+html[data-design="plaza"] .player-color-blue { color: #79b7ff; }
+html[data-design="plaza"] .player-color-green { color: #7be0a2; }
+html[data-design="plaza"] .player-color-red { color: #ff9696; }
+html[data-design="plaza"] .player-color-purple { color: #d1a5ff; }
+html[data-design="plaza"] .player-landmark-count {
+    margin-left: auto;
+    color: #f0d18c;
+    white-space: nowrap;
+}
+html[data-design="plaza"] #gameLogContainer {
+    max-height: 190px;
+    overflow: hidden;
+}
+html[data-design="plaza"] #gameLogContainer .log {
+    max-height: 120px;
+    overflow-y: auto;
+}
+html[data-design="plaza"] #gameLogContainer .log-summary {
+    display: block;
+    max-height: 54px;
+    overflow: hidden;
+}
 @media (min-width: 1200px) {
     html[data-design="plaza"] body { max-width: 1480px; }
     html[data-design="plaza"] #gameScreen[style*="display: block"] {
@@ -8069,6 +8113,36 @@ html[data-design="plaza"] .design-switcher-current { color: #ffe2a0; }
 }
 @media (max-width: 1199px) {
     html[data-design="plaza"] #gameScreen[style*="display: block"] { margin-inline: 8px; }
+}
+@media (max-width: 899px) {
+    html[data-design="plaza"] #gameScreen[style*="display: block"] {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "status"
+            "connect"
+            "timeline"
+            "log"
+            "players"
+            "actions"
+            "build"
+            "tutorial"
+            "leave"
+            "restart";
+        gap: 8px;
+    }
+    html[data-design="plaza"] #gameLogContainer {
+        grid-area: log;
+        max-height: 164px;
+    }
+    html[data-design="plaza"] #gameLogContainer .log { max-height: 76px; }
+    html[data-design="plaza"] .player-area {
+        position: static;
+        grid-area: players;
+        max-height: none;
+        overflow: visible;
+    }
+    html[data-design="plaza"] .player-asset-summary { margin-bottom: 3px; }
+    html[data-design="plaza"] .player-box-compact .player-asset-summary { padding-right: 62px; }
 }
 @media (max-width: 600px) {
     html[data-design="plaza"] #gameScreen[style*="display: block"] { margin-inline: 0; padding: 8px; border-radius: 22px; }
