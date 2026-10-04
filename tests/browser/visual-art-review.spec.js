@@ -2174,7 +2174,16 @@ test('オンライン復元の途中表示は祝福せず復元後の本当の�
     await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(1);
     await expect(street.locator('.town-event-caption')).toHaveCount(0);
     await expect(street).not.toHaveClass(/town-landmark-completion/);
-    await page.locator('#buildMenu [data-action="buildLandmark"][data-landmark-name="ショッピングモール"]').click();
-    await expect(street.locator('.town-event-caption')).toHaveText('ショッピングモールが完成・一歩リード');
-    await expect(street).toHaveClass(/town-landmark-completion/);
+    const mall = page.locator('#buildMenu [data-action="buildLandmark"][data-landmark-name="ショッピングモール"]');
+    await expect(mall).toBeEnabled();
+    const purchased = await mall.evaluate(button => {
+        button.click();
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const street = document.querySelector(`#playerBox${game.currentPlayerIndex} .town-street`);
+        return { caption: street.querySelector('.town-event-caption')?.textContent,
+            cue: street.classList.contains('town-landmark-completion') };
+    });
+    // The restored station already established a lead: this extends it.
+    expect(purchased.caption).toBe('ショッピングモールが完成');
+    expect(purchased.cue).toBe(true);
 });
