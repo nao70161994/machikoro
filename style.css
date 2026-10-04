@@ -2226,8 +2226,45 @@ button:not(:disabled):active {
 .hotseat-handoff-card h2 { overflow-wrap: anywhere; text-wrap: balance; }
 #hotseatHandoffName { display: block; }
 .hotseat-handoff-card p { text-wrap: balance; }
+.pending-box select[hidden] { display: none; }
 .hotseat-handoff-card button { min-height: 48px; margin-top: 12px; }
 .room-qr-toggle { min-height: 36px; }
+html[data-design="sunset"] .pending-box .pending-facility-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    width: min(100%, 280px);
+    min-height: 86px;
+    padding: 8px;
+    text-align: left;
+}
+html[data-design="sunset"] .pending-choice-art {
+    display: block;
+    flex: 0 0 100px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #f4e7ce;
+}
+html[data-design="sunset"] .pending-choice-art .sunset-facility-art {
+    display: block;
+    width: 100%;
+    height: 66px;
+}
+html[data-design="sunset"] .pending-choice-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+}
+html[data-design="sunset"] .pending-choice-name {
+    font-size: 1rem;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+html[data-design="sunset"] .pending-choice-detail {
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
 .room-qr-container {
     display: none;
     width: min(240px, 100%);
@@ -5757,6 +5794,33 @@ html[data-design="sunset"] .town-street {
     padding-bottom: 6px;
     border-bottom: 4px solid #d3bd97;
 }
+html[data-design="sunset"] .town-backdrop {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.65;
+    pointer-events: none;
+}
+html[data-design="sunset"] .town-backdrop-neighborhood,
+html[data-design="sunset"] .town-backdrop-city,
+html[data-design="sunset"] .town-backdrop-lamps {
+    opacity: 0;
+    transition: opacity 420ms ease-out;
+}
+html[data-design="sunset"] .town-street[data-town-stage="neighborhood"] .town-backdrop-neighborhood,
+html[data-design="sunset"] .town-street[data-town-stage="city"] .town-backdrop-neighborhood { opacity: 1; }
+html[data-design="sunset"] .town-street[data-town-stage="neighborhood"] .town-backdrop-lamps { opacity: 0.45; }
+html[data-design="sunset"] .town-street[data-town-stage="city"] .town-backdrop-city,
+html[data-design="sunset"] .town-street[data-town-stage="city"] .town-backdrop-lamps { opacity: 1; }
+html:not([data-design="sunset"]) .town-backdrop,
+html[data-design="sunset"] body.accessibility-high-contrast .town-backdrop { display: none; }
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="sunset"] .town-backdrop-neighborhood,
+    html[data-design="sunset"] .town-backdrop-city,
+    html[data-design="sunset"] .town-backdrop-lamps { transition: none; }
+}
 html[data-design="sunset"] .town-street::before {
     content: "";
     position: absolute;
@@ -6898,15 +6962,18 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-step {
 /* Desktop keeps progress and contextual help in one compact band. */
 @media (min-width: 1200px) {
     html[data-design="sunset"] #gameScreen[style*="display: block"] {
+        grid-template-columns: minmax(280px, 0.72fr) minmax(0, 2.28fr);
         grid-template-areas:
-            "status status status"
-            "players actions build"
-            "players timeline connect"
-            "players tutorial tutorial"
-            "log log log"
-            "leave leave leave"
-            "restart restart restart";
-        row-gap: 10px;
+            "status status"
+            "players actions"
+            "players build"
+            "players timeline"
+            "players tutorial"
+            "players connect"
+            "log log"
+            "leave leave"
+            "restart restart";
+        row-gap: 12px;
     }
 
     html[data-design="sunset"] #turnTimeline { align-self: center; }
@@ -6914,7 +6981,61 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .bc-step {
     html[data-design="sunset"] .player-area,
     html[data-design="sunset"] .player-area:has(> #playerNavigation) {
         grid-column: 1;
-        grid-row: 2 / span 3;
+        grid-row: 2 / span 5;
+        border-left: 0;
+        padding-left: 0;
+    }
+
+    html[data-design="sunset"] .game-action-panel {
+        position: static;
+        display: grid;
+        grid-template-columns: minmax(110px, auto) minmax(0, 1fr);
+        align-items: center;
+        gap: 6px 18px;
+        padding: 12px 18px;
+        border: 0;
+        border-bottom: 1px solid rgba(215, 184, 123, 0.22);
+        border-radius: 0;
+        background: radial-gradient(ellipse at 15% 50%, rgba(233, 186, 101, 0.09), transparent 70%);
+        box-shadow: none;
+    }
+
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) .game-action-panel {
+        border: 0;
+        border-bottom: 1px solid rgba(215, 184, 123, 0.22);
+        background: radial-gradient(ellipse at 15% 50%, rgba(233, 186, 101, 0.09), transparent 70%);
+        box-shadow: none;
+    }
+
+    html[data-design="sunset"] .game-action-panel #diceResult {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        justify-self: center;
+        min-width: 0;
+    }
+
+    html[data-design="sunset"] .game-action-panel .dice-display { margin: 0; }
+    html[data-design="sunset"] .game-action-panel #diceChoose { grid-column: 2; }
+    html[data-design="sunset"] .game-action-panel #diceChoose:empty { display: none; }
+    html[data-design="sunset"] .game-action-panel > .buttons {
+        grid-column: 2;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 0;
+    }
+    html[data-design="sunset"] .game-action-panel > .buttons > button {
+        width: auto;
+        flex: 1 1 180px;
+        margin: 0;
+        min-height: 48px;
+    }
+    html[data-design="sunset"] .game-action-panel .game-action-toolbar { grid-column: 2; }
+
+    html[data-design="sunset"] #buildMenu .build-section .card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(142px, 1fr));
+        gap: 12px;
     }
 
     html[data-design="sunset"] #status .winner-screen {
@@ -7074,6 +7195,10 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper 
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-btn {
     border: 0;
     border-radius: 12px 12px 0 0;
+    box-shadow: none;
+}
+
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-wrapper .card-btn:disabled {
     box-shadow: none;
 }
 
@@ -7329,7 +7454,7 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-status
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn.can-afford {
     animation: none;
     border-color: #b28a4d;
-    box-shadow: inset 0 0 0 1px rgba(255, 249, 237, 0.72), 0 3px 0 #111e2d;
+    box-shadow: inset 0 0 0 1px rgba(255, 249, 237, 0.72);
 }
 html[data-design="sunset"] body:not(.accessibility-high-contrast) .card-btn:disabled .sunset-facility-art {
     filter: saturate(0.62) brightness(0.92);
@@ -7402,3 +7527,175 @@ html[data-design="sunset"] body:not(.accessibility-high-contrast) #diceResult.di
         max-width: 1440px;
     }
 }
+
+/* Keep declining a rematch quieter than starting the next game. */
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-rematch-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px 20px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-rematch-actions .winner-primary-action {
+    width: min(100%, 420px);
+    flex: 0 1 420px;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .winner-rematch-actions .winner-secondary-action {
+    width: auto;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: #c9d5d8;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+/* 狭い端末では名称を価格から独立させ、施設名と出目を途中で分断しない。 */
+@media (max-width: 360px) {
+    html[data-design="sunset"] .card-btn .card-btn-top {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+    }
+    html[data-design="sunset"] .card-btn .card-name {
+        width: 100%;
+        text-wrap: balance;
+    }
+    html[data-design="sunset"] .card-btn .card-cost {
+        align-self: flex-end;
+        margin-left: 0;
+    }
+    html[data-design="sunset"] .card-btn .card-top-strip {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 3px;
+    }
+    html[data-design="sunset"] .card-btn .card-dice-num {
+        white-space: nowrap;
+    }
+    html[data-design="sunset"] .card-btn .card-category-tag {
+        align-self: flex-end;
+        white-space: nowrap;
+    }
+}
+
+/* A waiting room is a set of seats, with a single status per player. */
+.room-market-symbol { width: 20px; height: 20px; vertical-align: middle; margin-right: 6px; }
+.room-seat-list { list-style: none; padding: 0; margin: 12px 0; }
+.room-seat-list .room-seat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    min-width: 0;
+}
+.room-seat-number { flex: 0 0 28px; text-align: center; font-variant-numeric: tabular-nums; }
+.room-seat-info { flex: 1; min-width: 0; }
+.room-seat-name { display: block; overflow-wrap: anywhere; }
+.room-seat-roles { display: flex; gap: 5px; margin-top: 4px; font-size: 11px; }
+.room-seat-state { flex: 0 0 auto; font-size: 12px; }
+.room-seat-remove { width: auto; min-width: 44px; min-height: 44px; }
+.room-setup-summary > summary { padding: 8px 0; cursor: pointer; }
+html[data-design="sunset"] .room-seat-list .room-seat {
+    border: 0;
+    border-bottom: 1px solid rgba(208, 184, 139, 0.16);
+    background: transparent;
+}
+html[data-design="sunset"] .room-seat-number {
+    display: grid;
+    place-items: center;
+    height: 28px;
+    border-radius: 50%;
+    background: #29465a;
+    color: #f6deb1;
+}
+html[data-design="sunset"] .room-seat-roles > span {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #29465a;
+    color: #f0dfba;
+}
+html[data-design="sunset"] .room-seat[data-seat-state="ready"] .room-seat-state { color: #b3d3b8; }
+html[data-design="sunset"] .room-seat[data-seat-state="reconnecting"] .room-seat-state { color: #efc487; }
+html[data-design="sunset"] .room-seat[data-seat-state="empty"] { opacity: 0.7; }
+html[data-design="sunset"] .room-seat-remove {
+    border: 0;
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    color: #c9d5d8;
+}
+@media (max-width: 360px) {
+    .room-seat-list .room-seat { flex-wrap: wrap; }
+    .room-seat-info { flex-basis: calc(100% - 38px); }
+    .room-seat-state { margin-left: 38px; }
+}
+
+html[data-design="sunset"] #buildMenu .build-card-section > h4 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+@media (max-width: 899px) {
+    html[data-design="sunset"] body:not(.accessibility-high-contrast) #players .player-box-self:not(.active) {
+        border-color: #526b7a;
+        box-shadow: none;
+    }
+}
+
+/* Once a room exists, keep its participants ahead of the title illustration. */
+html[data-design="sunset"] #titleScreen:has(.room-share-panel) .title-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 0;
+    padding: 12px;
+}
+html[data-design="sunset"] #titleScreen:has(.room-share-panel) .sunset-hero,
+html[data-design="sunset"] #titleScreen:has(.room-share-panel) .title-logo-sub { display: none; }
+html[data-design="sunset"] #titleScreen:has(.room-share-panel) .title-brand-mark { width: 36px; }
+html[data-design="sunset"] #titleScreen:has(.room-share-panel) .title-header h1 { font-size: 22px; margin: 0; }
+html[data-design="sunset"] #titleScreen:has(.room-share-panel) .title-buttons-row { width: auto; margin: 0; }
+html[data-design="sunset"] #titleScreen:has(.room-share-panel) .rules-btn { min-height: 44px; padding: 6px 12px; white-space: nowrap; }
+html[data-design="sunset"] .room-share-panel .room-seats {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 8px 0;
+}
+html[data-design="sunset"] .room-share-panel .room-market-rule,
+html[data-design="sunset"] .room-share-panel .room-setup-summary,
+html[data-design="sunset"] .room-share-panel .room-host-controls {
+    border: 0;
+    border-top: 1px solid rgba(208, 184, 139, 0.16);
+    border-radius: 0;
+    background: transparent;
+    padding: 12px 0;
+    margin: 0;
+}
+html[data-design="sunset"] .room-share-panel .room-id-display {
+    background: #203c50;
+    color: #f5d89b;
+}
+html[data-design="sunset"] .room-share-panel .room-id-copy-btn,
+html[data-design="sunset"] .room-share-panel .room-qr-toggle {
+    background: #29465a;
+    color: #f0e6d1;
+    min-height: 44px;
+}
+
+html[data-design="sunset"] .card-dice-num { white-space: nowrap; flex-shrink: 0; }
+html[data-design="sunset"] .card-category-tag { min-width: 0; }
+/* Joining and waiting are distinct stages; leave restores the original forms. */
+html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > .setting-section,
+html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > .online-tabs,
+html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > .online-readiness,
+html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > #onlineCreate,
+html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > #onlineJoin,
+html[data-design="sunset"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) #onlineResumeSection { display: none !important; }

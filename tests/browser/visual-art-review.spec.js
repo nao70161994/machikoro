@@ -1382,19 +1382,34 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
         const players = rect('.player-area');
         const columns = getComputedStyle(document.querySelector('#buildMenu .card-grid'))
             .gridTemplateColumns.split(' ').length;
+        const names = [...document.querySelectorAll('#buildMenu .build-card-section .card-name')]
+            .filter(element => [...element.textContent.trim()].length <= 4);
+        const shortNamesFit = names.every(element => {
+            const style = getComputedStyle(element);
+            return element.getBoundingClientRect().height <= parseFloat(style.lineHeight) * 1.2;
+        });
         return {
-            noOverlap: players.right <= action.left && action.right <= market.left,
+            townBesideBoard: players.right <= action.left && players.right <= market.left,
+            actionAboveMarket: action.bottom <= market.top,
+            actionHeight: action.height,
+            marketTop: market.top,
+            viewportHeight: innerHeight,
+            shortNameCount: names.length,
+            shortNamesFit,
             columns,
             bodyWidth: document.body.getBoundingClientRect().width,
             hasOpenBoard: document.documentElement.scrollWidth === innerWidth,
         };
     });
-    expect(desktopLayout).toEqual({
-        noOverlap: true,
-        columns: 4,
-        bodyWidth: 1440,
-        hasOpenBoard: true,
-    });
+    expect(desktopLayout.townBesideBoard).toBe(true);
+    expect(desktopLayout.actionAboveMarket).toBe(true);
+    expect(desktopLayout.actionHeight).toBeLessThanOrEqual(180);
+    expect(desktopLayout.marketTop).toBeLessThan(desktopLayout.viewportHeight / 2);
+    expect(desktopLayout.shortNameCount).toBeGreaterThanOrEqual(3);
+    expect(desktopLayout.shortNamesFit).toBe(true);
+    expect(desktopLayout.columns).toBe(6);
+    expect(desktopLayout.bodyWidth).toBe(1440);
+    expect(desktopLayout.hasOpenBoard).toBe(true);
 
     const screenshotPath = testInfo.outputPath('sunset-desktop-city-1440.png');
     await page.screenshot({ path: screenshotPath, fullPage: false, animations: 'disabled' });
@@ -1734,3 +1749,150 @@ test('夕暮れタイトルと全施設・ランドマークを390pxと1440pxで
         });
     }
 });
+
+for (const width of [320, 390, 1440]) {
+    test(`引越し屋の絵柄選択は解決用施設indexと同期する (${width}px)`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await prepareSunset(page);
+        await page.locator('.setup-quick-play').click();
+        await expect(page.locator('#gameScreen')).toBeVisible();
+        await page.evaluate(() => {
+            cancelCpuSchedule('mover-card-review');
+            window.scheduleCPU = () => false;
+            const state = GameRuntimeState.runtime.snapshot();
+            state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+            state.game.phase = GAME_PHASES.PENDING;
+            state.game.pendingMover = 1;
+            render();
+        });
+        const modal = page.locator('#pendingModal');
+        const cards = modal.locator('[aria-labelledby="moverGiveHeading"] .bc-chip');
+        await expect(cards).toHaveCount(2);
+        await expect(cards.first().locator('.bc-chip-art svg')).toBeVisible();
+        const secondIndex = await cards.nth(1).getAttribute('data-idx');
+        await cards.nth(1).focus();
+        await page.keyboard.press('Enter');
+        await expect(cards.nth(1)).toHaveAttribute('aria-pressed', 'true');
+        await expect(cards.first()).toHaveAttribute('aria-pressed', 'false');
+        await expect(modal.locator('#moverCardSelect')).toHaveValue(secondIndex);
+        await expect(modal.locator('#moverCardSelect')).toBeHidden();
+        await page.evaluate(() => render());
+        await expect(cards.nth(1)).toHaveAttribute('aria-pressed', 'true');
+        await expect(modal.locator('#moverCardSelect')).toHaveValue(secondIndex);
+        expect(await modal.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+        await expect(modal.locator('[data-action="resolveMover"]')).toHaveCount(1);
+    });
+}
+
+test('320px市場は施設名と価格を分け、複数出目とカテゴリを分断しない', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await prepareSunset(page);
+    await page.evaluate(() => {
+        const gallery = document.createElement('main');
+        gallery.id = 'narrow-market-review';
+        gallery.style.cssText = 'position:absolute;inset:0;z-index:9999;padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;background:#132538;align-content:start';
+        gallery.innerHTML = CARDS.map(card => renderBuildCardButton(card, 6, true)).join('');
+        document.body.append(gallery);
+    });
+    const cards = page.locator('#narrow-market-review .card-btn');
+    const layouts = await cards.evaluateAll(elements => elements.map(element => {
+        const name = element.querySelector('.card-name');
+        const price = element.querySelector('.card-cost');
+        const body = element.querySelector('.card-btn-top');
+        const dice = element.querySelector('.card-dice-num');
+        const category = element.querySelector('.card-category-tag');
+        return {
+            name: name.textContent,
+            nameWidth: name.getBoundingClientRect().width,
+            bodyWidth: body.getBoundingClientRect().width,
+            nameBottom: name.getBoundingClientRect().bottom,
+            priceTop: price.getBoundingClientRect().top,
+            diceBottom: dice.getBoundingClientRect().bottom,
+            categoryTop: category.getBoundingClientRect().top,
+            diceFits: dice.scrollWidth <= dice.clientWidth,
+            categoryFits: category.scrollWidth <= category.clientWidth,
+            nameHeight: name.getBoundingClientRect().height,
+            nameLineHeight: parseFloat(getComputedStyle(name).lineHeight),
+        };
+    }));
+    for (const layout of layouts) {
+        expect(Math.abs(layout.nameWidth - layout.bodyWidth)).toBeLessThan(1);
+        expect(layout.priceTop).toBeGreaterThanOrEqual(layout.nameBottom);
+        expect(layout.categoryTop).toBeGreaterThanOrEqual(layout.diceBottom);
+        expect(layout.diceFits).toBe(true);
+        expect(layout.categoryFits).toBe(true);
+        if (['ドリンク工場', 'ITベンチャー'].includes(layout.name)) {
+            expect(layout.nameHeight).toBeLessThan(layout.nameLineHeight * 1.5);
+        }
+    }
+});
+
+for (const design of ['sunset', 'classic']) {
+    for (const width of [320, 390, 1440]) {
+        test(`待機室は座席を一元表示し長い名称・予約・操作を保つ (${design}, ${width}px)`, async ({ page }, testInfo) => {
+            await page.setViewportSize({ width, height: 844 });
+            await prepareSunset(page);
+            if (design === 'classic') await selectDesignTheme(page, design);
+            await page.locator('#tabOnline').click();
+            await page.evaluate(() => {
+                const names = Array.from({ length: 10 }, (_, index) => index === 3 ? 'CPU（普通）'
+                    : index === 9 ? '待機中...' : `参加者${index + 1}・夕暮れの街を育てる仲間`);
+                const participants = names.flatMap((name, index) => index === 3 || index === 9 ? [] : [{
+                    index, name, connected: index !== 2, ready: index !== 0,
+                    ...(index === 2 ? { reservedUntil: 61000 } : {}),
+                }]);
+                document.getElementById('onlineWaitingPanel').innerHTML = OnlineRoomShare.buildWaitingHtml('ABC123', names, {
+                    isHost: true, myPlayerIndex: 0, hostPlayerIndex: 2, now: 1000, participants,
+                    setupSummary: {
+                        playerSlots: names.map((_, index) => index === 3 ? 'CPU（普通）' : '人間'),
+                        enabledCards: ['麦畑', '牧場'], enabledLandmarks: ['駅'], cpuSpeed: 1500,
+                    },
+                });
+            });
+            const room = page.locator('#onlineWaitingPanel .room-share-panel');
+            await expect(room.locator('.room-seat')).toHaveCount(10);
+            if (design === 'sunset') {
+                await expect(page.locator('#playerNameInput')).toBeHidden();
+                await expect(page.locator('#onlineCreate')).toBeHidden();
+                await expect(page.locator('#onlineJoin')).toBeHidden();
+                await expect(page.locator('#tabContentOnline > .online-tabs')).toBeHidden();
+            }
+            await expect(room.locator('.room-seat[data-seat-state="cpu"]')).toHaveCount(1);
+            await expect(room.locator('.room-seat[data-seat-state="empty"]')).toHaveCount(1);
+            await expect(room.locator('.room-seat[data-seat-state="reconnecting"]')).toHaveCount(1);
+            await expect(room.locator('.room-seat-remove')).toHaveCount(7);
+            await expect(room.locator('.room-seat-roles').first()).toHaveText('あなた');
+            await expect(room.locator('[data-ui-action="setOnlineLobbyReady"]'))
+                .toHaveAttribute('data-ready', 'true');
+            expect(await room.locator('.room-setup-summary').evaluate(element => element.open)).toBe(false);
+            await room.locator('.room-setup-summary > summary').click();
+            await expect(room.locator('.room-setup-summary dl')).toBeVisible();
+            await room.locator('.room-setup-summary > summary').click();
+            const updated = await page.evaluate(() => {
+                const runtime = OnlineDomEffects.createRuntime({ getDocument: () => document });
+                const count = runtime.refreshWaitingReservationCountdowns(2000);
+                return { count, name: document.querySelector('[data-reserved-until]').textContent,
+                    roles: document.querySelector('[data-reserved-until]').parentElement.querySelector('.room-seat-roles').textContent };
+            });
+            expect(updated.count).toBe(1);
+            expect(updated.name).toContain('残り59秒');
+            expect(updated.roles).toBe('ホスト');
+            const bounds = await room.evaluate(element => ({
+                fit: element.scrollWidth <= element.clientWidth,
+                readyHeight: element.querySelector('.room-ready-btn').getBoundingClientRect().height,
+                removeHeights: [...element.querySelectorAll('.room-seat-remove')].map(button => button.getBoundingClientRect().height),
+            }));
+            expect(bounds.fit).toBe(true);
+            expect(bounds.readyHeight).toBeGreaterThanOrEqual(44);
+            for (const height of bounds.removeHeights) expect(height).toBeGreaterThanOrEqual(44);
+            const screenshotPath = testInfo.outputPath(`waiting-seats-${design}-${width}.png`);
+            await room.screenshot({ path: screenshotPath, animations: 'disabled' });
+            await testInfo.attach(`waiting-seats-${design}-${width}.png`, {
+                path: screenshotPath, contentType: 'image/png',
+            });
+            await page.evaluate(() => { document.getElementById('onlineWaitingPanel').innerHTML = ''; });
+            await expect(page.locator('#playerNameInput')).toBeVisible();
+            await expect(page.locator('#tabContentOnline > .online-tabs')).toBeVisible();
+        });
+    }
+}

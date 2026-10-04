@@ -83,7 +83,7 @@ def capture_market_art_gallery(s):
     if not cards:
         raise RuntimeError('No rendered market cards are available for the art gallery')
     columns=2 if viewport_width<=480 else 5
-    page_size=6 if viewport_width<=480 else 15
+    page_size=4 if viewport_width<=480 else 15
     style="""<style id=\"art-review-style\">#art-review-overlay{position:fixed;inset:0;z-index:2147483646;box-sizing:border-box;width:100vw;height:100vh;overflow:hidden;padding:8px 10px;background:#132538;color:#f8ebd1;display:flex;flex-direction:column;font-family:system-ui,sans-serif}.art-review-heading{display:flex;justify-content:space-between;gap:8px;margin:0 0 6px;font-size:13px;line-height:18px;flex:0 0 auto}.art-review-grid{display:grid;grid-template-columns:repeat(COLUMNS,minmax(0,1fr));gap:4px 7px;align-content:start;min-height:0}.art-review-grid .card-wrapper{width:100%;min-width:0;margin:0}.art-review-grid .card-btn{width:100%;min-width:0}.art-review-grid .card-body{padding:4px 7px 7px}.art-review-grid .card-name{font-size:13px}.art-review-grid .card-effect{font-size:11px;line-height:1.25}.art-review-grid .card-meta-row{min-height:24px}.art-review-grid .card-detail-btn{min-height:24px;padding:2px 7px;font-size:10px}</style>""".replace('COLUMNS',str(columns))
     page_count=(len(cards)+page_size-1)//page_size
     for page_index in range(page_count):
@@ -275,9 +275,9 @@ try:
             assert js(s,"return getComputedStyle(document.getElementById('playerNameInput')).backgroundColor") == 'rgb(20, 38, 56)', 'Sunset online name field does not use the shared blue-green palette'
             assert js(s,"return getComputedStyle(document.getElementById('onlineCpuSpeed')).accentColor") == 'rgb(239, 196, 135)', 'Sunset online CPU speed control does not use the sunset gold accent'
             assert js(s,"return !document.querySelector('.online-cpu-speed-settings').open"), 'Sunset online CPU speed advanced setting should start collapsed'
-            js(s,"document.querySelector('.online-cpu-speed-settings > summary').click();return true")
+            js(s,"document.getElementById('onlineAdvancedSettings').open=true;document.querySelector('.online-cpu-speed-settings > summary').click();return true")
             assert js(s,"const e=document.getElementById('onlineCpuSpeed');return e.getBoundingClientRect().height>=44&&getComputedStyle(e).accentColor==='rgb(239, 196, 135)'"), 'Sunset online CPU speed control is not styled after disclosure'
-            js(s,"document.querySelector('.online-cpu-speed-settings > summary').click();return true")
+            js(s,"document.querySelector('.online-cpu-speed-settings > summary').click();document.getElementById('onlineAdvancedSettings').open=false;return true")
             assert js(s,"return getComputedStyle(document.querySelector('#tabContentOnline .setup-secondary-action')).backgroundColor") == 'rgb(41, 70, 90)', 'Sunset online secondary action does not use the shared blue-green palette'
             banner_background = js(s,"return getComputedStyle(document.getElementById('pwaInstallBanner')).backgroundImage")
             assert 'rgb(28, 51, 70)' in banner_background and 'rgb(25, 46, 64)' in banner_background, 'Sunset PWA install banner does not use the shared blue-green palette'
@@ -290,6 +290,10 @@ try:
     js(guest,"document.getElementById('onlineTabJoin').click();document.getElementById('roomIdInput').value="+json.dumps(room)+";document.getElementById('onlineJoinSubmitButton').click()")
     ready="document.querySelector('[data-ui-action=\"setOnlineLobbyReady\"][data-ready=\"true\"]')"
     for s in sessions:wait(s,'return !!'+ready)
+    for s, design in zip(sessions, ['classic', 'sunset']):
+        js(s, "document.getElementById('titleScreen').scrollTop=0;window.scrollTo(0,0)")
+        assert js(s, "return document.documentElement.scrollWidth <= innerWidth"), 'Waiting room overflows horizontally'
+        shot(s, design + '-waiting-room')
     for s in sessions:js(s,ready+'.click()')
     for s,design in zip(sessions,['classic','sunset']):
         wait(s,"return document.getElementById('gameScreen').style.display !== 'none'")
@@ -321,7 +325,7 @@ try:
                 landscape_game_layout = js(s,"const game=getComputedStyle(document.getElementById('gameScreen')),a=document.querySelector('.game-action-panel').getBoundingClientRect(),p=document.querySelector('.player-area').getBoundingClientRect(),c=document.querySelector('.game-connectivity-panel').getBoundingClientRect(),t=document.querySelector('.turn-timeline').getBoundingClientRect();return {ok:game.display==='grid'&&a.right<=p.left&&a.top<0.68*innerHeight&&p.top<0.68*innerHeight&&c.height<=52&&t.height<=52,action:{top:a.top,right:a.right,bottom:a.bottom},players:{top:p.top,left:p.left},connectivity:{top:c.top,height:c.height},timeline:{top:t.top,height:t.height},viewport:{width:innerWidth,height:innerHeight}}")
                 assert landscape_game_layout['ok'], f"Landscape sunset board and controls do not fit the short viewport: {landscape_game_layout}"
             else:
-                wide_game_columns_clear = js(s,"const game=getComputedStyle(document.getElementById('gameScreen'));const a=document.querySelector('.game-action-panel').getBoundingClientRect(),b=document.querySelector('.player-area').getBoundingClientRect();return game.display==='grid' && a.right < b.left && b.top <= 0.60 * innerHeight")
+                wide_game_columns_clear = js(s,"const game=getComputedStyle(document.getElementById('gameScreen'));const a=document.querySelector('.game-action-panel').getBoundingClientRect(),b=document.querySelector('.player-area').getBoundingClientRect(),market=document.getElementById('buildMenu').getBoundingClientRect();const sunsetWide=document.documentElement.dataset.design==='sunset'&&innerWidth>=1200;return game.display==='grid' && (sunsetWide ? b.right<=a.left+1&&a.height<=180&&market.top<0.5*innerHeight : a.right<b.left) && b.top <= 0.60 * innerHeight")
                 assert wide_game_columns_clear, 'Wide game does not align player cities beside the action panel'
             if design == 'classic':
                 classic_town_visible = js(s,"return Array.from(document.querySelectorAll('.player-box .sunset-facility-art')).some(e=>getComputedStyle(e).display!=='none'&&e.getBBox().width>0)")
@@ -360,7 +364,7 @@ try:
                 assert 'linear-gradient' in filter_style['image'], 'Desktop market filters do not read as part of the shared tabletop'
                 desktop_board_check = js(s,"const screen=document.getElementById('gameScreen'),grid=document.querySelector('#buildMenu .card-grid'),style=getComputedStyle(screen);return {surface:style.backgroundImage,columns:getComputedStyle(grid).gridTemplateColumns.split(' ').length}")
                 assert 'radial-gradient' in desktop_board_check['surface'], 'Desktop game screen has no shared board surface'
-                assert desktop_board_check['columns'] == 4, f"Desktop market is not laid out as a four-column board: {desktop_board_check}"
+                assert desktop_board_check['columns'] >= 5, f"Desktop market does not use the wide board: {desktop_board_check}"
             else:
                 assert filter_style['background'] == 'rgb(23, 43, 61)', 'Sunset market filters do not use the shared blue-green palette'
             market_meta_check = js(s,"const wrappers=Array.from(document.querySelectorAll('#buildMenu .card-wrapper')).filter(wrapper=>wrapper.querySelector('.card-stock'));return wrappers.length>0&&wrappers.every(wrapper=>{const card=wrapper.querySelector('.card-btn'),art=wrapper.querySelector('.card-btn .sunset-facility-art'),stock=wrapper.querySelector('.card-stock'),detail=wrapper.querySelector('.card-detail-btn'),icon=detail?.querySelector('.card-detail-icon'),stockRect=stock?.getBoundingClientRect(),cardRect=card?.getBoundingClientRect(),artRect=art?.getBoundingClientRect(),detailRect=detail?.getBoundingClientRect();return !!card&&!!art&&!!stock&&!!detail&&stockRect.top>=cardRect.top&&stockRect.top<artRect.bottom&&stockRect.right<=wrapper.getBoundingClientRect().right&&detailRect.width>=44&&detailRect.height>=44&&getComputedStyle(icon).display!=='none'&&getComputedStyle(detail.querySelector('.card-detail-label')).display==='none'})")
@@ -388,7 +392,7 @@ try:
     if os.environ.get('SMOKE_STOP_AFTER_MARKET') == '1':
         passed=['classic/sunset title and setup at page start','quick start and setup controls do not overlap','4-player start action stays reachable above the PWA install banner','mixed-design online start with ready','sunset city enters the initial viewport','sunset rules dialog uses vector icons without visible emoji duplicates','sunset gameplay hides visible platform emoji fallbacks','market cards and large text scale correctly','market stock badge and detail action fit the card face with accessible targets']
         if viewport_width >= 1200:
-            passed.extend(['desktop game screen uses a shared tabletop surface','desktop market and filters form a four-column play area'])
+            passed.extend(['desktop game screen uses a shared tabletop surface','desktop market and filters form a wide play area'])
         report={'checkedAt':time.strftime('%Y-%m-%dT%H:%M:%S%z'),'browser':subprocess.check_output([browser,'--version'],text=True).strip(),'viewport':str(viewport_width)+'x'+str(viewport_height)+' emulation','baseCommit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','status','--porcelain'],text=True).strip()),'sunsetPlayerAreaTopAtPageStart':player_area_top,'passed':passed,'notCovered':['match gameplay','physical device touch','WebKit','PWA update']}
         (out/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
         print(json.dumps(report,ensure_ascii=False))
