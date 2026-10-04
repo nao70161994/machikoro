@@ -52,6 +52,8 @@ test('広場の4人オンラインで全員の街を表示しダイスと手番�
         expect(new Set(results).size).toBe(1);
         await active.screenshot({ path: testInfo.outputPath('plaza-online-4p.png'), fullPage: true });
         await active.locator('#btnSkip').click();
+        await expect(active.locator('#confirmModal')).toBeVisible();
+        await active.locator('#confirmOkBtn').click();
         for (const page of pages) {
             await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayerIndex)).not.toBe(activeIndex);
         }
