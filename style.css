@@ -8320,13 +8320,14 @@ html[data-design="plaza"] #plazaPlayerHud {
     overflow-x: auto; background: #102c35; z-index: 5;
 }
 html[data-design="plaza"] #plazaPlayerHud button {
-    flex: 1 0 140px; min-width: 0; margin: 0; padding: 4px 6px;
+    flex: 1 0 74px; min-width: 0; width: auto; margin: 0; padding: 3px 4px;
     border: 1px solid #6c8c88; border-radius: 8px; background: #203e48;
-    font-size: 11px; color: #fff0d0; text-align: left;
+    font-size: 10px; line-height: 1.1; color: #fff0d0; text-align: left;
 }
 html[data-design="plaza"] #plazaPlayerHud button.active { border-color: #e9bf64; }
-html[data-design="plaza"] #plazaPlayerHud strong,
-html[data-design="plaza"] #plazaPlayerHud button > span { display: block; overflow-wrap: anywhere; }
+html[data-design="plaza"] #plazaPlayerHud strong { display: block; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-design="plaza"] #plazaPlayerHud button > span { display: block; white-space: nowrap; }
+html[data-design="plaza"] #plazaPlayerHud small { font-size: 9px; }
 html[data-design="plaza"] #plazaViewport {
     display: block; position: absolute; inset: 96px 0 140px;
     overflow: hidden; touch-action: none; cursor: grab;
@@ -8364,10 +8365,11 @@ html[data-design="plaza"] #plazaWorld #buildMenu {
 html[data-design="plaza"] #plazaWorld #buildMenu .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 html[data-design="plaza"] #plazaCameraTools {
     display: flex; position: absolute; right: 8px; top: 104px;
-    flex-wrap: wrap; gap: 3px; padding: 4px; border-radius: 10px;
+    flex-direction: row; flex-wrap: nowrap; gap: 3px; padding: 4px; border-radius: 10px;
+    width: max-content; overflow-x: auto;
     max-width: calc(100% - 16px); background: #102c35eb; z-index: 5;
 }
-html[data-design="plaza"] #plazaCameraTools button { min-height: 44px; margin: 0; padding: 5px 8px; font-size: 12px; background: #2b4952; }
+html[data-design="plaza"] #plazaCameraTools button { flex: 0 0 auto; width: auto; min-height: 44px; height: 44px; margin: 0; padding: 5px 8px; font-size: 12px; background: #2b4952; }
 html[data-design="plaza"] #plazaZoomLabel { align-self: center; font-size: 11px; }
 html[data-design="plaza"] #gameScreen > #plazaEvents {
     position: absolute; left: 0; right: 0; bottom: 108px; height: 32px;

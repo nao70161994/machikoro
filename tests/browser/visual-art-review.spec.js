@@ -2232,6 +2232,25 @@ for (const width of [320, 390, 844, 1440]) {
         await page.mouse.move(viewport.x + 60, viewport.y + viewport.height - 40, { steps: 8 });
         await page.mouse.up();
         expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(beforePan);
+        const pinch = await page.locator('#plazaViewport').evaluate(viewport => {
+            const before = parseInt(document.getElementById('plazaZoomLabel').textContent, 10);
+            const original = viewport.setPointerCapture;
+            // Synthetic touch pointers cannot acquire native capture. Exercise
+            // the real two-pointer handler while leaving native drag tested above.
+            viewport.setPointerCapture = () => {};
+            const rect = viewport.getBoundingClientRect();
+            const send = (type, id, x) => viewport.dispatchEvent(new PointerEvent(type, {
+                pointerId: id, pointerType: 'touch', clientX: rect.left + x,
+                clientY: rect.top + 100, button: 0, bubbles: true,
+            }));
+            try {
+                send('pointerdown', 21, 100); send('pointerdown', 22, 200);
+                send('pointermove', 22, 260);
+                send('pointerup', 22, 260); send('pointerup', 21, 100);
+                return { before, after: parseInt(document.getElementById('plazaZoomLabel').textContent, 10) };
+            } finally { viewport.setPointerCapture = original; }
+        });
+        expect(pinch.after).toBeGreaterThan(pinch.before);
         await page.locator('[data-field-target="all"]').click();
         await page.screenshot({ path: testInfo.outputPath(`plaza-field-all-${width}.png`), fullPage: false });
         await page.locator('[data-field-target="self"]').click();

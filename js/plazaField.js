@@ -14,6 +14,8 @@ const PlazaField = (() => {
     function node(id) { return document.getElementById(id); }
     function paint() {
         const viewport = node('plazaViewport');
+        viewport.scrollLeft = 0;
+        viewport.scrollTop = 0;
         const clampAxis = (value, size, extent) => size <= extent
             ? Math.max((extent - size) / 2 - 80, Math.min((extent - size) / 2 + 80, value))
             : Math.max(extent - size - 80, Math.min(80, value));
@@ -98,6 +100,10 @@ const PlazaField = (() => {
             world.append(screen.querySelector('.player-area'), node('buildMenu'));
             mounted = true; requestAnimationFrame(() => focusTarget('self'));
         } else if (!enabled && mounted) {
+            world.querySelectorAll('#players > .player-box').forEach(item => {
+                (/** @type {HTMLElement} */ (item)).style.removeProperty('left');
+                (/** @type {HTMLElement} */ (item)).style.removeProperty('top');
+            });
             screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
             screen.insertBefore(node('buildMenu'), node('turnTimeline'));
             mounted = false;
@@ -120,7 +126,7 @@ const PlazaField = (() => {
             for (const card of player.cards) if (Object.prototype.hasOwnProperty.call(counts, card.color)) counts[card.color]++;
             const chips = Object.entries(counts).map(([color, count]) => `<span class="player-color-${color}">${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}</span>`).join(' ');
             const built = Object.entries(player.landmarks).filter(([name, value]) => value && enabledLandmarks.has(name)).length;
-            return `<button type="button" data-player-index="${index}" class="${index === currentIndex ? 'active' : ''}" aria-label="${escapeHtml(player.name)}の街を見る"><strong>${index === selfIndex ? 'あなた: ' : ''}${escapeHtml(player.name)}</strong><span>${player.coins}コイン · ${chips}</span><small>ランドマーク ${built}/${enabledLandmarks.size}</small></button>`;
+            return `<button type="button" data-player-index="${index}" class="${index === currentIndex ? 'active' : ''}" aria-label="${escapeHtml(player.name)}の街を見る"><strong>${index === selfIndex ? 'あなた: ' : ''}${escapeHtml(player.name)}</strong><span>${player.coins}コイン</span><span>${chips}</span><small>目標 ${built}/${enabledLandmarks.size}</small></button>`;
         }).join('');
     }
     return Object.freeze({ render, sync, focusTarget });
