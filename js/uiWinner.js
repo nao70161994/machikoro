@@ -69,7 +69,7 @@ function currentStreakGlobals(root) {
 
 function buildWinnerStatsRows(players, winner, escapeHtml, options = {}) {
     if (!Array.isArray(players) || typeof escapeHtml !== 'function') return '';
-    const sunset = options.designTheme === 'sunset';
+    const sunset = options.designTheme === 'sunset' || options.designTheme === 'plaza';
     return players.map((player, index) => ({ player, index }))
         .sort((left, right) => right.player.coins - left.player.coins).map(({ player, index }) => {
         const isWinner = player === winner;
@@ -147,7 +147,7 @@ function buildGameReview(logEntries, logTypes, players, escapeHtml, reviewSummar
 }
 
 function shouldCompactReview(design, viewportWidth) {
-    return design === 'sunset' || (Number.isFinite(viewportWidth) &&
+    return (design === 'sunset' || design === 'plaza') || (Number.isFinite(viewportWidth) &&
         (viewportWidth <= 480 || viewportWidth >= 760));
 }
 
@@ -532,7 +532,7 @@ function buildWinnerScreenHtml(options = {}) {
     const winner = options.winner;
     const escapeHtml = options.escapeHtml;
     if (!winner || typeof escapeHtml !== 'function') return '';
-    const sunset = options.designTheme === 'sunset';
+    const sunset = options.designTheme === 'sunset' || options.designTheme === 'plaza';
     const scoreRows = buildWinnerStatsRows(options.players, winner, escapeHtml, options);
     const streakHtml = buildWinStreakHtml(winner, options.winStreak, escapeHtml);
     const winnerType = sunset

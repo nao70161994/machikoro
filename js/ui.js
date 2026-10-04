@@ -97,8 +97,8 @@ function renderLog() {
     const currentGame = uiGameRuntimeSnapshot().game;
     const cur = currentGame.log || [];
     const logDisplayOptions = {
-        stripLeadingEmoji: document.documentElement?.dataset?.design === 'sunset',
-        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
+        stripLeadingEmoji: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
     };
 
     const history = logHistoryController.append(cur);
@@ -260,7 +260,7 @@ function syncInitialGameLogPresentation() {
     }
     if (gameLogPresentationInitialized) return;
     gameLogPresentationInitialized = true;
-    const isSunsetMobile = document.documentElement?.dataset?.design === 'sunset' &&
+    const isSunsetMobile = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design) &&
         typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
         window.matchMedia('(max-width: 480px)').matches;
     setLogCollapsed(isSunsetMobile);
@@ -745,7 +745,7 @@ function renderDiceChoose() {
         allowedActions: currentUiAllowedActions(),
         disabledAttr: uiActionDisabledAttr,
         phases: GAME_PHASES,
-        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
     };
     const html = UiDiceChoice.buildHtml(options);
     setDiceChooseContent(el, html, UiDiceChoice.choiceIdentity(options));
@@ -819,7 +819,7 @@ function pendingInspectHintHtml() {
 
 function buildPendingTvHtml(game) {
     return UiPendingMenu.buildPendingTvHtml(game, escapeHtml, undefined, undefined,
-        document.documentElement?.dataset?.design === 'sunset');
+        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
 }
 
 function buildBusinessCardChipHtml(player, card, index, inputId, isSelected) {
@@ -840,27 +840,27 @@ function buildBusinessTargetExchangeHtml(player, playerIndex) {
 
 function buildPendingBusinessHtml(game) {
     return UiPendingMenu.buildPendingBusinessHtml(game, escapeHtml, undefined, undefined,
-        document.documentElement?.dataset?.design === 'sunset');
+        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
 }
 
 function buildPendingCleaningHtml(game) {
     return UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml, undefined, undefined,
-        document.documentElement?.dataset?.design === 'sunset');
+        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
 }
 
 function buildPendingMoverHtml(game) {
     return UiPendingMenu.buildPendingMoverHtml(game, escapeHtml, undefined, undefined,
-        document.documentElement?.dataset?.design === 'sunset');
+        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
 }
 
 function buildPendingRenovationHtml(game) {
     return UiPendingMenu.buildPendingRenovationHtml(game, escapeHtml, LANDMARK_NAMES, undefined,
-        document.documentElement?.dataset?.design === 'sunset');
+        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
 }
 
 function buildPendingItHtml(game) {
     return UiPendingMenu.buildPendingItHtml(game, undefined, undefined, undefined,
-        document.documentElement?.dataset?.design === 'sunset');
+        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
 }
 
 function pendingMenuRendererSpecs() {
@@ -879,7 +879,7 @@ function buildPendingMenuHtml(game, allowedActions, nextPending) {
         escapeHtml,
         landmarkNames: LANDMARK_NAMES,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
-        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
     });
 }
 
@@ -1012,14 +1012,14 @@ function renderPlayers() {
             settings[currentGame.currentPlayerIndex]?.type === 'cpu',
         enabledLandmarks: getEnabledLandmarkSelection(),
         getLandmarkEmoji,
-        getCoinMark: document.documentElement?.dataset?.design === 'sunset'
+        getCoinMark: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
             ? UiBuildMenu.renderCoinMark
             : null,
-        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
-        renderPlayerKindIcon: document.documentElement?.dataset?.design === 'sunset'
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        renderPlayerKindIcon: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
             ? UiPlayerDisplay.renderPlayerKindIcon
             : null,
-        getLandmarkBadgeIcon: document.documentElement?.dataset?.design === 'sunset'
+        getLandmarkBadgeIcon: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
             ? UiBuildMenu.renderLandmarkBadgeIcon
             : null,
         compareCardNames: compareCardNamesForDisplay,
@@ -1030,7 +1030,7 @@ function renderPlayers() {
     const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(currentGame.players, {
         currentPlayerIndex: currentGame.currentPlayerIndex,
         myPlayerIndex: onlineMyPlayerIndex,
-        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
         escapeHtml,
     });
     if (navigation) {
@@ -1040,7 +1040,7 @@ function renderPlayers() {
         const gameScreen = document.getElementById('gameScreen');
         const gameLog = document.getElementById('gameLogContainer');
         const promoteNavigation = currentGame.players.length >= 5 &&
-            document.documentElement?.dataset?.design !== 'sunset';
+            !['sunset', 'plaza'].includes(document.documentElement?.dataset?.design);
         const navigationParent = promoteNavigation ? gameScreen : playerArea;
         const navigationAnchor = promoteNavigation ? gameLog : document.getElementById('players');
         if (navigationParent && navigationAnchor &&
@@ -1108,7 +1108,7 @@ function renderPlayers() {
             });
         }
         container.innerHTML = html;
-        if (document.documentElement?.dataset?.design === 'sunset' && !onlineState.isReplaying) {
+        if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design) && !onlineState.isReplaying) {
             animateNewTownBuildings(container, previous?.townSession === townSession
                 ? previous.townBuildingCounts : null, townBuildingCounts);
         }
@@ -1160,7 +1160,7 @@ function renderBuildCardButton(card, stock, canBuildThis, highlighted = false) {
 function renderLandmarkBuildButton(name, built, cost, canBuildThis) {
     return UiBuildMenu.renderLandmarkBuildButton({
         name, built, cost, canBuildThis, escapeHtml, getLandmarkEffectText, getLandmarkEmoji,
-        renderLandmarkMark: document.documentElement?.dataset?.design === 'sunset'
+        renderLandmarkMark: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
             ? UiBuildMenu.renderLandmarkBadgeIcon
             : null,
     });
@@ -1469,7 +1469,7 @@ function showTurnAnnouncer(name, isCPU, playerIndex) {
     el.classList.remove("hiding");
     const view = UiTurnAnnouncer.buildView(name, isCPU);
     el.style.display = view.display;
-    const sunsetHtml = document.documentElement?.dataset?.design === 'sunset'
+    const sunsetHtml = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
         ? UiTurnAnnouncer.buildSunsetHtml(name, isCPU, escapeHtml)
         : '';
     if (sunsetHtml) text.innerHTML = sunsetHtml;
@@ -2070,7 +2070,7 @@ function buildLandmarkDetailContent(name) {
         effectText: getLandmarkEffectText(name),
         escapeHtml,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
-        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
     });
 }
 
@@ -2081,7 +2081,7 @@ function buildCardDetailContent(card) {
         getEffectText,
         safeCardColorName,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
-        useSunsetIcons: document.documentElement?.dataset?.design === 'sunset',
+        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
     });
 }
 
