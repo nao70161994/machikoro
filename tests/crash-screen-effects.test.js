@@ -60,6 +60,22 @@ runTest('crash screen effectsは背景lockを既存属性へ対称復元する',
     assert.strictEqual(locked.style.pointerEvents, 'auto');
 });
 
+runTest('crash背景復元はprototype accessorのnative inertも元値を保持する', () => {
+    const background = makeElement();
+    let nativeInert = true;
+    Object.setPrototypeOf(background, Object.create(Object.prototype, {
+        inert: {
+            get() { return nativeInert; },
+            set(value) { nativeInert = !!value; },
+        },
+    }));
+    assert.strictEqual(Object.hasOwn(background, 'inert'), false);
+    const restore = CrashScreenEffects.disableBackground([background]);
+    CrashScreenEffects.restoreBackground(restore);
+    assert.strictEqual(background.inert, true);
+    assert.strictEqual(Object.hasOwn(background, 'inert'), false);
+});
+
 runTest('crash screen effectsは既存tabindexを保持して初期focusを選ぶ', () => {
     const screen = makeElement();
     screen.attributes.tabindex = '0';

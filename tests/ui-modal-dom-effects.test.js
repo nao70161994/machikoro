@@ -90,6 +90,22 @@ runTest('UI modal DOM effectsは背景inert属性とpointer stateを完全に往
     assert.strictEqual(roots.titleScreen.style.pointerEvents, 'auto');
 });
 
+runTest('UI modal背景復元はprototype accessorのnative inertを保持する', () => {
+    const { roots, runtime } = createHarness({ nativeInert: false });
+    let nativeInert = true;
+    Object.setPrototypeOf(roots.gameScreen, Object.create(Object.prototype, {
+        inert: {
+            get() { return nativeInert; },
+            set(value) { nativeInert = !!value; },
+        },
+    }));
+    assert.strictEqual(Object.hasOwn(roots.gameScreen, 'inert'), false);
+    runtime.setAppInert(true);
+    runtime.setAppInert(false);
+    assert.strictEqual(roots.gameScreen.inert, true);
+    assert.strictEqual(Object.hasOwn(roots.gameScreen, 'inert'), false);
+});
+
 runTest('UI modal DOM effectsはnative inert未定義でも解除時にfalseを明示する', () => {
     const { roots, runtime } = createHarness({ nativeInert: false });
     runtime.setAppInert(true);

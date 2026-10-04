@@ -50,7 +50,7 @@ const CrashScreenEffects = (() => {
             if (!element) continue;
             restore.push({
                 element,
-                hadInert: Object.prototype.hasOwnProperty.call(element, 'inert'),
+                hadInert: typeof element.inert === 'boolean',
                 inert: element.inert,
                 ariaHidden: typeof element.getAttribute === 'function'
                     ? element.getAttribute('aria-hidden')

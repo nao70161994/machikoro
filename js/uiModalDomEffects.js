@@ -111,7 +111,7 @@ const UiModalDomEffects = (() => {
                 .filter(Boolean)
                 .map(element => ({
                     el: element,
-                    hadInert: Object.prototype.hasOwnProperty.call(element, 'inert'),
+                    hadInert: typeof element.inert === 'boolean',
                     inert: element.inert,
                     ariaHidden: element.getAttribute
                         ? element.getAttribute('aria-hidden')
