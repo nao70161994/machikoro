@@ -8262,6 +8262,20 @@ html[data-design="plaza"] #buildMenu .card-btn .card-name { font-size: 12px; }
 html[data-design="plaza"] #buildMenu .card-effect { display: none; }
 html[data-design="plaza"] #buildMenu .card-category-tag { display: none; }
 html[data-design="plaza"] #buildMenu .card-detail-btn { min-height: 32px; }
+@media (max-width: 899px) {
+    html[data-design="plaza"] #gameScreen > #buildMenu {
+        max-height: 340px;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+        scrollbar-gutter: stable;
+    }
+    html[data-design="plaza"] #buildMenu .card-filter-bar { top: 0; }
+    html[data-design="plaza"] #players .player-box-self .player-detail {
+        max-height: 220px;
+        overflow-y: auto;
+    }
+    html[data-design="plaza"] #buildMenu h3 { margin: 0 0 6px; font-size: 15px; }
+}
 @media (min-width: 900px) {
     html[data-design="plaza"] #buildMenu .card-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     html[data-design="plaza"] #players .player-name { font-size: 17px; }
