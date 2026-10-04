@@ -6,7 +6,7 @@ const UiPendingMenu = (() => {
         let currentKey = '';
         let values = {};
         function selections(game) {
-            const key = game ? [game.currentPlayerIndex, game.turnCount, game.phase, game.pendingBusiness].join(':') : '';
+            const key = game ? [game.currentPlayerIndex, game.turnCount, game.phase, game.pendingBusiness, game.pendingMover].join(':') : '';
             if (game !== currentGame || key !== currentKey) {
                 currentGame = game;
                 currentKey = key;
@@ -16,8 +16,10 @@ const UiPendingMenu = (() => {
         }
         function select(game, inputId, index) {
             const selected = selections(game);
-            if (!game || !(game.pendingBusiness > 0) || !Number.isInteger(index)) return false;
-            const target = inputId === 'myCardSelect' ? game.currentPlayerIndex
+            if (!game || !Number.isInteger(index)) return false;
+            const mover = inputId === 'moverCardSelect';
+            if (mover ? !(game.pendingMover > 0) : !(game.pendingBusiness > 0)) return false;
+            const target = inputId === 'myCardSelect' || mover ? game.currentPlayerIndex
                 : (/^theirCardSelect_\d+$/.test(inputId) ? Number(inputId.slice('theirCardSelect_'.length)) : -1);
             const player = game.players[target];
             if (!player || !businessCardOptionsForPlayer(player).some(option => option.index === index)) return false;
@@ -152,22 +154,32 @@ const UiPendingMenu = (() => {
         return [...counts].map(([name, count]) => Object.freeze({ name, count }));
     }
 
-    function buildPendingCleaningHtml(game, escapeHtml, _landmarkNames, _businessSelections, useSunsetIcons) {
-        const cardCounts = cleaningActiveCardCounts(game.players);
-        return `<div class="pending-box">${pendingHeadingHtml('cleaning', '🧹', '清掃業：休業にする施設を選んでください', useSunsetIcons)}${cardCounts.map(({ name, count }) => `<button data-action="resolveCleaning" data-card-name="${escapeHtml(name)}">${escapeHtml(name)}（${count}枚）</button>`).join("")}</div>`;
+    function facilityChoiceHtml(name, detail, landmark, escapeHtml, renderFacilityArt) {
+        return `<span class="pending-choice-art" aria-hidden="true">${renderFacilityArt(name, landmark)}</span><span class="pending-choice-copy"><span class="pending-choice-name">${escapeHtml(name)}</span><span class="pending-choice-detail">${escapeHtml(detail)}</span></span>`;
     }
 
-    function buildPendingMoverHtml(game, escapeHtml, _landmarkNames, _businessSelections, useSunsetIcons) {
+    function buildPendingCleaningHtml(game, escapeHtml, _landmarkNames, _businessSelections, useSunsetIcons, renderFacilityArt) {
+        const cardCounts = cleaningActiveCardCounts(game.players);
+        return `<div class="pending-box">${pendingHeadingHtml('cleaning', '🧹', '清掃業：休業にする施設を選んでください', useSunsetIcons)}${cardCounts.map(({ name, count }) => `<button${useSunsetIcons && typeof renderFacilityArt === 'function' ? ' class="pending-facility-choice"' : ''} data-action="resolveCleaning" data-card-name="${escapeHtml(name)}">${useSunsetIcons && typeof renderFacilityArt === 'function' ? facilityChoiceHtml(name, `稼働中 ${count}枚`, false, escapeHtml, renderFacilityArt) : `${escapeHtml(name)}（${count}枚）`}</button>`).join("")}</div>`;
+    }
+
+    function buildPendingMoverHtml(game, escapeHtml, _landmarkNames, selections = {}, useSunsetIcons, renderFacilityArt) {
         const current = game.currentPlayer();
         const myCards = current.getMinorCards().map(card => ({ card, index: current.cards.indexOf(card) }));
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
-        return `<div class="pending-box">${pendingHeadingHtml('mover', '🚚', '引越し屋：渡す施設と相手を選んでください', useSunsetIcons)}<p><label for="moverCardSelect">渡す施設：</label></p><select id="moverCardSelect">${myCards.map(({ card, index }) => `<option value="${index}">${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
+        const illustrated = useSunsetIcons && typeof renderFacilityArt === 'function';
+        const selectedIndex = selectedBusinessIndex(myCards, 'moverCardSelect', selections);
+        const choices = illustrated
+            ? `<h3 id="moverGiveHeading" class="bc-step-title">1. 渡す施設</h3><div class="bc-chip-group" role="group" aria-labelledby="moverGiveHeading">${buildBusinessCardChipGroupHtml(current, myCards, 'moverCardSelect', escapeHtml, selectedIndex, true, renderFacilityArt)}</div>`
+            : '<p><label for="moverCardSelect">渡す施設：</label></p>';
+        const recipientHeading = illustrated ? '<h3 class="bc-step-title">2. 受け取る相手</h3>' : '';
+        return `<div class="pending-box">${pendingHeadingHtml('mover', '🚚', '引越し屋：渡す施設と相手を選んでください', useSunsetIcons)}${choices}<select id="moverCardSelect"${illustrated ? ' hidden aria-hidden="true" tabindex="-1"' : ''}>${myCards.map(({ card, index }) => `<option value="${index}"${illustrated && index === selectedIndex ? ' selected' : ''}>${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${recipientHeading}${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
     }
 
-    function buildPendingRenovationHtml(game, escapeHtml, landmarkNames, _businessSelections, useSunsetIcons) {
+    function buildPendingRenovationHtml(game, escapeHtml, landmarkNames, _businessSelections, useSunsetIcons, renderFacilityArt) {
         const current = game.currentPlayer();
         const builtLandmarks = Object.entries(current.landmarks).filter(([name, built]) => built && name !== landmarkNames.YAKUSHO).map(([name]) => name);
-        return `<div class="pending-box">${pendingHeadingHtml('remodel', '🔨', '改装屋：取り壊すランドマークを選んでください（+8コイン）', useSunsetIcons)}${builtLandmarks.length > 0 ? builtLandmarks.map(name => `<button data-action="resolveRenovation" data-landmark-name="${escapeHtml(name)}">${escapeHtml(name)}</button>`).join("") : "<p>建設済みのランドマークがありません</p>"}</div>`;
+        return `<div class="pending-box">${pendingHeadingHtml('remodel', '🔨', '改装屋：取り壊すランドマークを選んでください（+8コイン）', useSunsetIcons)}${builtLandmarks.length > 0 ? builtLandmarks.map(name => `<button${useSunsetIcons && typeof renderFacilityArt === 'function' ? ' class="pending-facility-choice"' : ''} data-action="resolveRenovation" data-landmark-name="${escapeHtml(name)}">${useSunsetIcons && typeof renderFacilityArt === 'function' ? facilityChoiceHtml(name, '取り壊して +8コイン', true, escapeHtml, renderFacilityArt) : escapeHtml(name)}</button>`).join("") : "<p>建設済みのランドマークがありません</p>"}</div>`;
     }
 
     function buildPendingItHtml(game, _escapeHtml, _landmarkNames, _businessSelections, useSunsetIcons) {

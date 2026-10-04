@@ -232,3 +232,38 @@ runTest('ui pending menu は引越し屋の施設selectへaccessible nameを関�
     assert.ok(html.includes('<label for="moverCardSelect">渡す施設：</label>'));
     assert.ok(html.includes('<select id="moverCardSelect">'));
 });
+
+runTest('ui pending menu は清掃・改装の候補を施設アートで示し既存actionを保つ', () => {
+    const game = makeGame();
+    const art = (name, landmark) => `<svg data-art="${escapeHtml(name)}" data-landmark="${landmark}"></svg>`;
+    const cleaning = UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml, {}, {}, true, art);
+    const renovation = UiPendingMenu.buildPendingRenovationHtml(game, escapeHtml, { YAKUSHO: '役所' }, {}, true, art);
+    assert.ok(cleaning.includes('class="pending-facility-choice"'));
+    assert.ok(cleaning.includes('data-action="resolveCleaning" data-card-name="麦畑"'));
+    assert.ok(cleaning.includes('data-art="麦畑" data-landmark="false"'));
+    assert.ok(cleaning.includes('稼働中 1枚'));
+    assert.ok(renovation.includes('data-action="resolveRenovation"'));
+    assert.ok(renovation.includes('data-landmark="true"'));
+    assert.ok(renovation.includes('取り壊して +8コイン'));
+    const fallback = UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml, {}, {}, true);
+    assert.ok(!fallback.includes('pending-facility-choice'));
+});
+
+runTest('ui pending menu は引越し屋の絵柄選択を解決用selectと同じindexで保持する', () => {
+    const game = makeGame();
+    game.pendingBusiness = 0;
+    const controller = UiPendingMenu.createBusinessSelectionController();
+    assert.strictEqual(controller.select(game, 'moverCardSelect', 1), true);
+    assert.strictEqual(controller.select(game, 'myCardSelect', 1), false);
+    assert.strictEqual(controller.select(game, 'moverCardSelect', 50), false);
+    const art = name => `<svg data-art="${escapeHtml(name)}"></svg>`;
+    const html = UiPendingMenu.buildPendingMoverHtml(game, escapeHtml, {}, controller.selections(game), true, art);
+    assert.ok(html.includes('id="moverCardSelect" hidden aria-hidden="true" tabindex="-1"'));
+    assert.ok(html.includes('<option value="1" selected>パン屋（休業中）</option>'));
+    assert.ok(html.includes('aria-pressed="true" data-action="selectBusinessCard" data-idx="1" data-input-id="moverCardSelect"'));
+    assert.ok(html.includes('data-action="resolveMover" data-target-index="1"'));
+    assert.ok(html.includes('data-art="パン屋"'));
+    game.pendingMover = 0;
+    assert.strictEqual(controller.select(game, 'moverCardSelect', 0), false);
+    assert.deepStrictEqual(controller.selections(game), {});
+});
