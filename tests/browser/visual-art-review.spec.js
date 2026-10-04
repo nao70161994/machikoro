@@ -460,7 +460,7 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'quiet');
     expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).opacity))
         .toBe('0');
-    const initialLampCount = await town.locator('[data-town-lamp]').count();
+    await expect(town.locator('.town-population')).toHaveAttribute('data-town-population', '0');
     const wheat = page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]');
     await expect(wheat).toBeEnabled();
     await wheat.click();
@@ -473,7 +473,7 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'neighborhood');
     expect(await town.locator('.town-skyline-lights').evaluate(element => getComputedStyle(element).opacity))
         .toBe('0.42');
-    expect(await town.locator('[data-town-lamp]').count()).toBeGreaterThan(initialLampCount);
+    await expect(town.locator('.town-population')).toHaveAttribute('data-town-population', '1');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await newTownBuilding.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
     expect(await town.locator('.town-street').evaluate(element =>
@@ -2001,13 +2001,26 @@ test('ランドマーク完成は街景を変え再描画・Undo・復元で祝�
     const station = page.locator('#buildMenu [data-action="buildLandmark"][data-landmark-name="駅"]');
     await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(0);
     const lampsBefore = await street.locator('[data-town-lamp]').count();
-    await station.click();
+    await expect(station).toBeEnabled();
+    const completed = await station.evaluate(button => {
+        button.click();
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const street = document.querySelector(`#playerBox${game.currentPlayerIndex} .town-street`);
+        const caption = street.querySelector('.town-event-caption');
+        const result = {
+            cue: street.classList.contains('town-landmark-completion'),
+            caption: caption?.textContent,
+            lamps: street.querySelectorAll('[data-town-lamp]').length,
+        };
+        render();
+        result.sameCaptionAfterRender = document.querySelector(`#playerBox${game.currentPlayerIndex} .town-event-caption`) === caption;
+        return result;
+    });
+    expect(completed.cue).toBe(true);
+    expect(completed.caption).toBe('駅が完成・一歩リード');
+    expect(completed.lamps).toBeGreaterThan(lampsBefore);
+    expect(completed.sameCaptionAfterRender).toBe(true);
     await expect(street.locator('[data-town-feature="railway"]')).toHaveCount(1);
-    await expect(street).toHaveClass(/town-landmark-completion/);
-    await expect(street.locator('.town-event-caption')).toHaveText('駅が完成・一歩リード');
-    expect(await street.locator('[data-town-lamp]').count()).toBeGreaterThan(lampsBefore);
-    await page.evaluate(() => render());
-    await expect(street.locator('.town-event-caption')).toHaveCount(1);
     const path = testInfo.outputPath('sunset-station-completion-390.png');
     await street.screenshot({ path, animations: 'disabled' });
     await testInfo.attach('sunset-station-completion-390.png', { path, contentType: 'image/png' });
