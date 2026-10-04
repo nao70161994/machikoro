@@ -97,8 +97,12 @@ def capture_market_art_gallery(s):
     if not landmark_cards or len(landmark_cards)!=len(landmark_names):
         raise RuntimeError('Could not render every landmark card for the art gallery')
     (out/'landmark-art-gallery.json').write_text(json.dumps([{'name':name} for name in landmark_names],ensure_ascii=False,indent=2))
-    js(s,"let overlay=document.getElementById('art-review-overlay');if(!overlay){overlay=document.createElement('div');overlay.id='art-review-overlay';document.body.append(overlay);}const style="+json.dumps(style)+";overlay.innerHTML=style+'<header class=\"art-review-heading\"><strong>ランドマークアートレビュー</strong><span>'+"+json.dumps('1–'+str(len(landmark_cards))+' / '+str(len(landmark_cards)))+"+'</span></header><section class=\"art-review-grid\">'+"+json.dumps(''.join(landmark_cards))+"+'</section>';return true")
-    shot(s,'sunset-landmark-art-gallery')
+    landmark_page_size=4 if viewport_width < 600 else len(landmark_cards)
+    for page_index in range((len(landmark_cards)+landmark_page_size-1)//landmark_page_size):
+        start=page_index*landmark_page_size
+        end=min(len(landmark_cards),start+landmark_page_size)
+        js(s,"let overlay=document.getElementById('art-review-overlay');if(!overlay){overlay=document.createElement('div');overlay.id='art-review-overlay';document.body.append(overlay);}const style="+json.dumps(style)+";overlay.innerHTML=style+'<header class=\"art-review-heading\"><strong>ランドマークアートレビュー</strong><span>'+"+json.dumps(str(start+1)+'–'+str(end)+' / '+str(len(landmark_cards)))+"+'</span></header><section class=\"art-review-grid\">'+"+json.dumps(''.join(landmark_cards[start:end]))+"+'</section>';return true")
+        shot(s,'sunset-landmark-art-gallery'+('' if page_index==0 else '-'+str(page_index+1)))
     js(s,"document.getElementById('art-review-overlay')?.remove()")
     landmark_art_gallery_count=len(landmark_cards)
     return len(cards)

@@ -7700,7 +7700,7 @@ html[data-design="sunset"] .card-dice-num { white-space: nowrap; flex-shrink: 0;
 html[data-design="sunset"] .card-category-tag { min-width: 0; }
 html[data-design="sunset"] #onlineStatus { text-wrap: balance; }
 @media (max-width: 360px) {
-    html[data-design="sunset"] .tab-bar .tab-btn { flex: 1 1 auto; }
+    html[data-design="sunset"] .tab-bar .tab-btn { width: auto; flex: 1 1 auto; }
 }
 /* Joining and waiting are distinct stages; leave restores the original forms. */
 html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > .setting-section,
