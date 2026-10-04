@@ -1221,7 +1221,13 @@ html[data-design="sunset"] .design-switcher select option {
 .room-host-controls li span { min-width: 0; overflow-wrap: anywhere; }
 .room-host-controls button { min-height: 44px; flex: 0 0 auto; }
 .room-slot-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 8px; }
-.room-slot-controls button { min-width: 44px; }
+.room-slot-controls button {
+    width: 44px;
+    min-width: 44px;
+    flex: 0 0 44px;
+    padding-left: 0;
+    padding-right: 0;
+}
 .room-host-start-btn { width: 100%; margin-top: 8px; }
 
 .room-readiness {
@@ -7692,6 +7698,10 @@ html[data-design="sunset"] .room-share-panel .room-qr-toggle {
 
 html[data-design="sunset"] .card-dice-num { white-space: nowrap; flex-shrink: 0; }
 html[data-design="sunset"] .card-category-tag { min-width: 0; }
+html[data-design="sunset"] #onlineStatus { text-wrap: balance; }
+@media (max-width: 360px) {
+    html[data-design="sunset"] .tab-bar .tab-btn { flex: 1 1 auto; }
+}
 /* Joining and waiting are distinct stages; leave restores the original forms. */
 html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > .setting-section,
 html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > .online-tabs,
@@ -7699,3 +7709,15 @@ html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share
 html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > #onlineCreate,
 html[data-design="sunset"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > #onlineJoin,
 html[data-design="sunset"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) #onlineResumeSection { display: none !important; }
+
+html[data-design="sunset"] .room-seat[data-seat-state="preparing"] .room-seat-state,
+html[data-design="sunset"] .room-seat[data-seat-state="empty"] .room-seat-state { color: #b4c1ca; }
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .room-ready-btn[data-ready="true"] {
+    background: #efc487;
+    color: #183045;
+    border: 1px solid #ffe1a6;
+}
+html[data-design="sunset"] body:not(.accessibility-high-contrast) .room-ready-btn[data-ready="false"] {
+    background: #29465a;
+    color: #f0e6d1;
+}

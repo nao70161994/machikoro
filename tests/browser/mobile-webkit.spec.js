@@ -186,13 +186,36 @@ test('sunset対局の視覚順とキーボードフォーカス順をスマホ�
 
     const structuralOrder = await page.evaluate(() => {
         const ids = ['status', 'players', 'game-action-panel', 'buildMenu', 'turnTimeline', 'gameConnectivityPanel', 'tutorialBox', 'gameLogContainer'];
-        return ids.map(id => document.getElementById(id) || document.querySelector(`.${id}`))
-            .map(element => element?.id || element?.className || 'missing');
+        const elements = ids.map(id => document.getElementById(id) || document.querySelector(`.${id}`));
+        return {
+            names: elements.map(element => element?.id || element?.className || 'missing'),
+            follows: elements.slice(1).map((element, index) => !!(elements[index]?.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING)),
+        };
     });
-    expect(structuralOrder).toEqual([
+    expect(structuralOrder.names).toEqual([
         'status', 'players', 'game-action-panel', 'buildMenu', 'turnTimeline',
         'gameConnectivityPanel', 'tutorialBox', 'gameLogContainer',
     ]);
+    expect(structuralOrder.follows.every(Boolean)).toBe(true);
+
+    const expectBoardTabOrder = async () => {
+        const firstPlayerControl = page.locator('.player-area button:visible').first();
+        await firstPlayerControl.focus();
+        const visited = ['players'];
+        for (let index = 0; index < 40 && visited.at(-1) !== 'build'; index++) {
+            await page.keyboard.press('Tab');
+            const owner = await page.evaluate(() => {
+                const active = document.activeElement;
+                if (active?.closest('.player-area')) return 'players';
+                if (active?.closest('.game-action-panel')) return 'actions';
+                if (active?.closest('#buildMenu')) return 'build';
+                return 'outside';
+            });
+            expect(owner).not.toBe('outside');
+            if (visited.at(-1) !== owner) visited.push(owner);
+        }
+        expect(visited).toEqual(['players', 'actions', 'build']);
+    };
 
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press('Tab');
@@ -214,18 +237,25 @@ test('sunset対局の視覚順とキーボードフォーカス順をスマホ�
     });
     expect(phoneLayout.players.bottom).toBeLessThanOrEqual(phoneLayout.actions.top + 1);
     expect(phoneLayout.actions.bottom).toBeLessThanOrEqual(phoneLayout.build.top + 1);
+    await expectBoardTabOrder();
 
     await page.setViewportSize({ width: 1440, height: 900 });
     const desktopLayout = await page.evaluate(() => {
-        const left = selector => document.querySelector(selector).getBoundingClientRect().left;
+        const rect = selector => {
+            const bounds = document.querySelector(selector).getBoundingClientRect();
+            return { left: bounds.left, right: bounds.right, top: bounds.top, bottom: bounds.bottom };
+        };
         return {
-            players: left('.player-area'),
-            actions: left('.game-action-panel'),
-            build: left('#buildMenu'),
+            players: rect('.player-area'),
+            actions: rect('.game-action-panel'),
+            build: rect('#buildMenu'),
         };
     });
-    expect(desktopLayout.players).toBeLessThan(desktopLayout.actions);
-    expect(desktopLayout.actions).toBeLessThan(desktopLayout.build);
+    expect(desktopLayout.players.right).toBeLessThanOrEqual(desktopLayout.actions.left + 1);
+    expect(Math.abs(desktopLayout.actions.left - desktopLayout.build.left)).toBeLessThanOrEqual(1);
+    expect(Math.abs(desktopLayout.actions.right - desktopLayout.build.right)).toBeLessThanOrEqual(1);
+    expect(desktopLayout.actions.bottom).toBeLessThanOrEqual(desktopLayout.build.top + 1);
+    await expectBoardTabOrder();
 });
 
 test('mobile WebKitでapp shellとService Workerが実動作する', async ({ browser }) => {

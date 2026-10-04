@@ -1834,6 +1834,23 @@ for (const design of ['sunset', 'classic']) {
             await prepareSunset(page);
             if (design === 'classic') await selectDesignTheme(page, design);
             await page.locator('#tabOnline').click();
+            if (design === 'sunset' && width <= 390) {
+                const tabs = await page.locator('.tab-bar > .tab-btn').evaluateAll(buttons => buttons.map(button => {
+                    const range = document.createRange();
+                    range.selectNodeContents(button);
+                    const text = range.getBoundingClientRect();
+                    const bounds = button.getBoundingClientRect();
+                    return { label: button.textContent, textLeft: text.left, textRight: text.right,
+                        buttonLeft: bounds.left, buttonRight: bounds.right, height: bounds.height };
+                }));
+                expect(tabs).toHaveLength(4);
+                for (const tab of tabs) {
+                    expect(tab.textLeft, tab.label).toBeGreaterThanOrEqual(tab.buttonLeft);
+                    expect(tab.textRight, tab.label).toBeLessThanOrEqual(tab.buttonRight);
+                    expect(tab.height, tab.label).toBeGreaterThanOrEqual(44);
+                }
+            }
+
             await page.evaluate(() => {
                 const names = Array.from({ length: 10 }, (_, index) => index === 3 ? 'CPU（普通）'
                     : index === 9 ? '待機中...' : `参加者${index + 1}・夕暮れの街を育てる仲間`);
@@ -1856,6 +1873,11 @@ for (const design of ['sunset', 'classic']) {
                 await expect(page.locator('#onlineCreate')).toBeHidden();
                 await expect(page.locator('#onlineJoin')).toBeHidden();
                 await expect(page.locator('#tabContentOnline > .online-tabs')).toBeHidden();
+                const stateColors = await room.evaluate(element => ({
+                    ready: getComputedStyle(element.querySelector('[data-seat-state="ready"] .room-seat-state')).color,
+                    preparing: getComputedStyle(element.querySelector('[data-seat-state="preparing"] .room-seat-state')).color,
+                }));
+                expect(stateColors.ready).not.toBe(stateColors.preparing);
             }
             await expect(room.locator('.room-seat[data-seat-state="cpu"]')).toHaveCount(1);
             await expect(room.locator('.room-seat[data-seat-state="empty"]')).toHaveCount(1);
@@ -1881,10 +1903,12 @@ for (const design of ['sunset', 'classic']) {
                 fit: element.scrollWidth <= element.clientWidth,
                 readyHeight: element.querySelector('.room-ready-btn').getBoundingClientRect().height,
                 removeHeights: [...element.querySelectorAll('.room-seat-remove')].map(button => button.getBoundingClientRect().height),
+                slotWidths: [...element.querySelectorAll('.room-slot-controls button')].map(button => button.getBoundingClientRect().width),
             }));
             expect(bounds.fit).toBe(true);
             expect(bounds.readyHeight).toBeGreaterThanOrEqual(44);
             for (const height of bounds.removeHeights) expect(height).toBeGreaterThanOrEqual(44);
+            for (const width of bounds.slotWidths) expect(width).toBe(44);
             const screenshotPath = testInfo.outputPath(`waiting-seats-${design}-${width}.png`);
             await room.screenshot({ path: screenshotPath, animations: 'disabled' });
             await testInfo.attach(`waiting-seats-${design}-${width}.png`, {
@@ -1896,3 +1920,42 @@ for (const design of ['sunset', 'classic']) {
         });
     }
 }
+
+test('街の発展背景は動き軽減でも段階を示し住宅・街区・街灯を動かさない', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.evaluate(() => {
+        const review = document.createElement('section');
+        review.id = 'town-motion-review';
+        review.innerHTML = [2, 5, 8].map(count => UiBuildMenu.renderTownHtml({
+            cards: Array.from({ length: count }, () => CARDS[0]),
+            landmarks: {},
+        })).join('');
+        document.body.append(review);
+    });
+    const streets = page.locator('#town-motion-review .town-street');
+    await expect(streets).toHaveCount(3);
+    for (const [index, stage] of ['quiet', 'neighborhood', 'city'].entries()) {
+        const street = streets.nth(index);
+        await expect(street).toHaveAttribute('data-town-stage', stage);
+        await expect(street.locator('.town-backdrop')).toBeVisible();
+        const motion = await street.locator(
+            '.town-backdrop-neighborhood, .town-backdrop-city, .town-backdrop-lamps'
+        ).evaluateAll(elements => elements.map(element => {
+            const style = getComputedStyle(element);
+            return {
+                durations: style.transitionDuration.split(',').map(value => parseFloat(value)),
+                animation: style.animationName,
+            };
+        }));
+        expect(motion).toHaveLength(3);
+        for (const group of motion) {
+            expect(group.durations.every(duration => duration === 0)).toBe(true);
+            expect(group.animation).toBe('none');
+        }
+    }
+    await expect(streets.nth(0).locator('.town-backdrop-neighborhood')).toHaveCSS('opacity', '0');
+    await expect(streets.nth(1).locator('.town-backdrop-neighborhood')).toHaveCSS('opacity', '1');
+    await expect(streets.nth(2).locator('.town-backdrop-city')).toHaveCSS('opacity', '1');
+});
