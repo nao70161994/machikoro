@@ -132,7 +132,7 @@ runTest('online lobby start runtimeはroom作成・参加・一覧を同じsessi
     harness.runtime.handlePlayerList(['Alice', '待機中...']);
     assert.strictEqual(harness.calls[0][0], 'renderWaitingLobby');
     assert.strictEqual(harness.calls[0][1], 'ルーム ROOM01。2枠中1人が参加しています。');
-    assert.ok(harness.calls[0][2].includes('参加枠（2枠）: Alice、待機中...'));
+    assert.ok(harness.calls[0][2].includes('参加席 <span>2席</span>'));
     assert.ok(harness.calls[0][2].includes('参加枠が揃い、全員が準備完了になると自動開始します'));
     assert.ok(harness.calls[0][2].includes('data-ui-action="copyOnlineRoomId"'));
 });
@@ -155,7 +155,7 @@ runTest('online lobby start runtimeはhostへ参加者管理metadataを渡す', 
     });
     assert.ok(harness.calls[0][2].includes('removeOnlineLobbyPlayer'));
     assert.ok(harness.calls[0][2].includes('data-player-index="1"'));
-    assert.ok(harness.calls[0][2].includes('Alice（ホスト・あなた）'));
+    assert.ok(harness.calls[0][2].includes('<span>ホスト</span><span>あなた</span>'));
     assert.ok(harness.calls[0][2].includes('data-ui-action="setOnlineLobbyReady" data-ready="true"'));
     assert.ok(harness.calls[0][2].includes('対戦設定'));
     assert.ok(harness.calls[0][2].includes('2人（人間2・CPU0）'));

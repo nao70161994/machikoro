@@ -677,7 +677,13 @@ runTest('integration: online待機一覧は参加枠と自動開始条件を説�
     rt.__test.socketHandlers.playerList(['Alice', '待機中...', 'CPU（普通）']);
 
     const panel = rt.__test.elements.onlineWaitingPanel.innerHTML;
-    assert.ok(panel.includes('参加枠（3枠）: Alice、待機中...、CPU（普通）'));
+    assert.ok(panel.includes('参加席 <span>3席</span>'));
+    assert.strictEqual((panel.match(/class="room-seat"/g) || []).length, 3);
+    assert.ok(panel.includes('Alice</span>'));
+    assert.ok(panel.includes('data-seat-state="empty"'));
+    assert.ok(panel.includes('空いている席'));
+    assert.ok(panel.includes('data-seat-state="cpu"'));
+    assert.ok(panel.includes('CPU（普通）</span>'));
     assert.ok(panel.includes('参加枠が揃い、全員が準備完了になると自動開始します'));
     assert.ok(!panel.includes('(3人)'));
     assert.strictEqual(rt.__test.elements.onlineStatus.textContent,

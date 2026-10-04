@@ -23,14 +23,16 @@ runTest('online room shareはroom IDと参加者をescapeして共有手順を�
     assert.ok(html.includes('data-room-qr-container'));
     assert.ok(html.includes('data-room-id="AB&lt;12"'));
     assert.ok(html.includes('この6文字を参加者に共有してください'));
-    assert.ok(html.includes('参加枠（3枠）: Alice、&lt;Bob&gt;、待機中...'));
+    assert.ok(html.includes('参加席 <span>3席</span>'));
+    assert.ok(html.includes('&lt;Bob&gt;</span>'));
+    assert.ok(html.includes('data-seat-state="empty"'));
     assert.ok(html.includes('参加枠が揃い、全員が準備完了になると自動開始します'));
     assert.ok(html.includes('data-ui-action="leaveOnlineLobby"'));
     assert.ok(html.includes('待機室から退出'));
     assert.ok(!html.includes('<Bob>'));
     const readyHtml = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob']);
-    assert.ok(readyHtml.includes('参加枠（2枠）: Alice、Bob'));
-    assert.ok(!readyHtml.includes('自動開始します'));
+    assert.ok(readyHtml.includes('参加席 <span>2席</span>'));
+    assert.ok(readyHtml.includes('自動開始します'));
     const optionHtml = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'Bob'], {
         marketRule: 'ten-type',
     });
@@ -159,7 +161,7 @@ runTest('online room shareは予約席の再接続残り時間を表示する', 
         myPlayerIndex: 0,
         hostPlayerIndex: 0,
     });
-    assert.match(html, /Alice（ホスト・あなた・再接続待ち・残り60秒）/);
+    assert.match(html, /Alice（再接続待ち・残り60秒）/);
     assert.match(html, /data-reserved-until="61000"/);
     assert.match(html, /data-player-name="Alice"/);
 });
@@ -174,8 +176,11 @@ runTest('online room shareは本人の準備状態と参加者全員の状態を
         ],
     });
     assert.ok(waiting.includes('aria-label="参加者の準備状態"'));
-    assert.ok(waiting.includes('Alice（ホスト）</span><strong>準備完了'));
-    assert.ok(waiting.includes('&lt;Bob&gt;（あなた）</span><strong>準備中'));
+    assert.ok(waiting.includes('data-seat-state="ready"'));
+    assert.ok(waiting.includes('<span>ホスト</span>'));
+    assert.ok(waiting.includes('&lt;Bob&gt;</span>'));
+    assert.ok(waiting.includes('<span>あなた</span>'));
+    assert.ok(waiting.includes('data-seat-state="preparing"'));
     assert.ok(waiting.includes('data-ui-action="setOnlineLobbyReady" data-ready="true" aria-pressed="false"'));
     assert.ok(waiting.includes('準備完了にする'));
 
@@ -225,4 +230,21 @@ runTest('online room shareは389px以下でIDとcopy操作を縦に並べる', (
     assert.ok(narrowRule.includes('flex-direction: column;'));
     assert.ok(narrowRule.includes('.room-id-copy-btn'));
     assert.ok(narrowRule.includes('min-height: 44px;'));
+});
+
+runTest('online waiting uses one seat roster and preserves interleaved CPU/reserved seat actions', () => {
+    const html = OnlineRoomShare.buildWaitingHtml('ABC123', ['Alice', 'CPU（強）', 'Bob（再接続待ち）', '待機中...'], {
+        isHost: true, hostPlayerIndex: 0, myPlayerIndex: 0, now: 1000,
+        participants: [{ index: 0, name: 'Alice', ready: false },
+            { index: 2, name: 'Bob', connected: false, reservedUntil: 61000, ready: true }],
+    });
+    assert.strictEqual((html.match(/class="room-seat"/g) || []).length, 4);
+    assert.strictEqual((html.match(/Bob（再接続待ち/g) || []).length, 2); // Seat and remove accessible name.
+    assert.ok(html.includes('data-seat-state="cpu"'));
+    assert.ok(html.includes('data-seat-state="reconnecting"'));
+    assert.ok(html.includes('data-seat-state="empty"'));
+    assert.ok(html.includes('data-player-index="2"'));
+    assert.ok(!html.includes('data-player-index="1"'));
+    assert.ok(!html.includes('🏪'));
+    assert.ok(html.includes('aria-hidden="true"'));
 });
