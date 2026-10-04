@@ -10,7 +10,8 @@ const { runTest } = require('./helpers/test-utils');
 const sprite = fs.readFileSync(path.join(__dirname, '../icons/facility-art.svg'), 'utf8');
 const titleArt = fs.readFileSync(path.join(__dirname, '../icons/sunset-city.svg'), 'utf8');
 const brandMark = fs.readFileSync(path.join(__dirname, '../icons/dice-city-mark.svg'), 'utf8');
-const styles = fs.readFileSync(path.join(__dirname, '../style.css'), 'utf8');
+const styles = fs.readFileSync(path.join(__dirname, '../style.css'), 'utf8')
+    .replaceAll('html:is([data-design="sunset"], [data-design="plaza"])', 'html[data-design="sunset"]');
 const generator = path.join(__dirname, '../scripts/create-facility-art.py');
 runTest('街とサイコロのブランドマークをタイトルとPWAメタデータで共有する', () => {
     const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');

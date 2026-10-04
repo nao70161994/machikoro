@@ -7,7 +7,8 @@ const { runTest } = require('./helpers/test-utils');
 runTest('夕暮れのPC勝利画面は育てた街を専用の広いイラスト列で見せる', () => {
     const fs = require('fs');
     const path = require('path');
-    const styles = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const styles = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8')
+        .replaceAll('html:is([data-design="sunset"], [data-design="plaza"])', 'html[data-design="sunset"]');
     assert.ok(styles.includes('@media (min-width: 768px) {\n    html[data-design="sunset"] .winner-screen .sunset-town'));
     assert.ok(styles.includes('grid-template-columns: repeat(auto-fit, 160px);'));
     assert.ok(styles.includes('html[data-design="sunset"] .winner-screen .town-building .sunset-facility-art {\n        height: 80px;'));

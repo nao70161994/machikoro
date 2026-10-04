@@ -2187,3 +2187,43 @@ test('オンライン復元の途中表示は祝福せず復元後の本当の�
     expect(purchased.caption).toBe('ショッピングモールが完成');
     expect(purchased.cue).toBe(true);
 });
+
+for (const width of [320, 390, 1440]) {
+    test(`広場テーマは共通アートと街の盤面を表示する ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await stubAds(page);
+        await page.goto('/');
+        await selectDesignTheme(page, 'plaza');
+        await expect(page.locator('.title-brand-mark')).toBeVisible();
+        await page.locator('.setup-quick-play').click();
+        await expect(page.locator('#gameScreen')).toBeVisible();
+        await page.evaluate(() => {
+            cancelCpuSchedule('plaza-review');
+            window.scheduleCPU = () => false;
+            const state = GameRuntimeState.runtime.snapshot();
+            state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+            state.game.phase = GAME_PHASES.BUILD;
+            state.game.currentPlayer().coins = 30;
+            render();
+        });
+        const town = page.locator('.player-box-self .town-street');
+        await expect(town.locator('.town-building .sunset-facility-art').first()).toBeVisible();
+        expect((await town.boundingBox()).height).toBeGreaterThan(150);
+        await expect(page.locator('#buildMenu .sunset-facility-art').first()).toBeVisible();
+        expect(await town.locator('.town-backdrop').evaluate(element =>
+            getComputedStyle(element).position)).toBe('absolute');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+        if (width >= 1200) {
+            const players = await page.locator('.player-area').boundingBox();
+            const guide = await page.locator('#tutorialBox').boundingBox();
+            expect(players.y).toBeGreaterThanOrEqual(guide.y + guide.height);
+        }
+        if (width === 390) {
+            await page.reload();
+            await expect(page.locator('html')).toHaveAttribute('data-design', 'plaza');
+            await page.locator('#btnResume').click();
+            await expect(page.locator('.player-box-self .town-building .sunset-facility-art').first()).toBeVisible();
+            expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins)).toBe(30);
+        }
+    });
+}

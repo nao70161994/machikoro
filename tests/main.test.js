@@ -4,6 +4,12 @@ const path = require('path');
 const vm = require('vm');
 const { createSequenceRandom, createStorage, makeElement, runTest } = require('./helpers/test-utils');
 
+// Project shared sunset/plaza selectors onto sunset for the existing CSS contracts.
+function readSunsetStyles() {
+    return fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8')
+        .replaceAll('html:is([data-design="sunset"], [data-design="plaza"])', 'html[data-design="sunset"]');
+}
+
 function loadMainRuntime(options = {}) {
     const elements = {
         playerCount: makeElement(),
@@ -2706,7 +2712,7 @@ runTest('main backup importは許可keyだけを確認後に復元しreloadす�
 
 runTest('ローカル保存の再開導線は新しいゲーム設定より先に提示する', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const localStart = html.indexOf('<div id="tabContentLocal"');
     const localEnd = html.indexOf('<div id="tabContentOnline"');
     const resumeStart = html.indexOf('<section id="resumeSection"');
@@ -2746,7 +2752,7 @@ runTest('ゲーム内容設定は作成画面に限定し現在の選択概要�
 
 runTest('主要画面とPWA install案内は重複告知しないlandmarkを持つ', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.ok(html.includes('id="titleScreen" role="main" aria-labelledby="titleHeading"'));
     assert.ok(html.includes('id="gameScreen" role="main" aria-label="ゲーム画面"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="region" aria-labelledby="pwaInstallMessage"'));
@@ -2755,7 +2761,7 @@ runTest('主要画面とPWA install案内は重複告知しないlandmarkを持�
 });
 
 runTest('狭幅のPWA install案内は説明とボタンを横幅いっぱいに分ける', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.match(css, /@media \(max-width: 360px\)\s*{[^}]*#pwaInstallBanner\[style\*="display: block"\]\s*{[^}]*grid-template-columns: minmax\(0, 1fr\);/);
     assert.ok(css.includes('#pwaInstallBanner .pwa-banner-actions {\n        display: grid;\n        grid-column: 1 / -1;'));
     assert.ok(css.includes('grid-template-columns: minmax(0, 1fr) 44px;'));
@@ -2786,7 +2792,7 @@ runTest('プレイヤー状況は多人数でも項目単位で辿れるlistと�
 });
 
 runTest('密集した街の施設省略表示は折り返さない', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const overflowRule = css.match(/\.town-overflow\s*{([^}]+)}/);
     assert.ok(overflowRule);
     assert.ok(overflowRule[1].includes('font-size: 11px;'));
@@ -2802,7 +2808,7 @@ runTest('統計結果は名前・勝率・対戦数を対応付けるlistとし�
 });
 
 runTest('統計の長い名称は数値列を残して最大2行で表示する', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const nameRule = css.match(/\.stats-card-name\s*{([\s\S]*?)}/);
     const barRule = css.match(/\.stats-bar-wrap\s*{([\s\S]*?)}/);
     assert.ok(nameRule);
@@ -2825,7 +2831,7 @@ runTest('操作ガイドは過剰に割り込まない名前付きregionとし�
 });
 
 runTest('card detail button はカードに重ならない専用行へ配置する', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const match = css.match(/\.card-detail-btn\s*{([\s\S]*?)}/);
     assert.ok(match);
     assert.ok(match[1].includes('width: auto;'));
@@ -2835,7 +2841,7 @@ runTest('card detail button はカードに重ならない専用行へ配置す�
 });
 
 runTest('夕暮れの市場カードと設定入力は一体感・視認性・キーボードfocusを保つ', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.match(css, /\.card-wrapper \.card-stock\s*\{[^}]*position:\s*absolute;[\s\S]*?top:\s*41px;/);
     assert.match(css, /\.card-wrapper \.card-detail-btn\s*\{[^}]*width:\s*44px;[\s\S]*?min-height:\s*44px;/);
     assert.match(css, /\.card-wrapper \.card-detail-label\s*\{\s*display:\s*none;/);
@@ -2845,7 +2851,7 @@ runTest('夕暮れの市場カードと設定入力は一体感・視認性・�
 });
 
 runTest('広い夕暮れ対局画面は共通の盤面サーフェスと4列市場を使う', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const desktopStart = css.indexOf('@media (min-width: 1200px) {');
     assert.notEqual(desktopStart, -1);
     const desktopCss = css.slice(desktopStart, desktopStart + 4400);
@@ -2856,21 +2862,21 @@ runTest('広い夕暮れ対局画面は共通の盤面サーフェスと4列市�
 });
 
 runTest('PC勝利画面は完成した街を広い展示面で主役にする', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.match(css, /@media \(min-width: 1200px\)\s*\{[\s\S]*?#status \.winner-screen\s*\{[^}]*max-width:\s*1200px;/);
     assert.match(css, /#status \.winner-screen \.sunset-town\s*\{[^}]*max-width:\s*1080px;/);
     assert.match(css, /#status \.winner-screen \.town-building \.sunset-facility-art\s*\{[^}]*height:\s*96px;/);
 });
 
 runTest('スマホの夕暮れダイス選択は重複操作と外枠を減らし44px操作面を保つ', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.match(css, /@media \(max-width: 480px\)\s*\{[\s\S]*?html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) \.game-action-panel\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent;/);
     assert.match(css, /\.game-action-panel:has\(#diceChoose:not\(:empty\)\) #btnRoll\s*\{\s*display:\s*none;/);
     assert.match(css, /html\[data-design="sunset"\] \.dice-choose button\s*\{[^}]*min-height:\s*44px;/);
 });
 
 runTest('頻用する補助操作は一覧密度に応じた共通tap領域を保つ', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const rule = selector => {
         const match = css.match(new RegExp(`(?:^|\\n)\\${selector}\\s*{([\\s\\S]*?)}`));
         assert.ok(match, `${selector} rule exists`);
@@ -2888,7 +2894,7 @@ runTest('頻用する補助操作は一覧密度に応じた共通tap領域を�
 
 runTest('狭幅の開始CTAは人数選択に重ならずPWAとfocusを避ける', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.ok(html.includes('id="btnStart" class="setup-primary-cta" data-ui-action="reviewGameSetup"'));
     assert.ok(html.includes('id="onlineCreateSubmitButton" class="setup-primary-cta" data-ui-action="showCreateRoom"'));
     assert.ok(css.includes('@media (max-width: 480px) {') && css.includes('.setup-action-footer {'));
@@ -2911,7 +2917,7 @@ runTest('狭幅の開始CTAは人数選択に重ならずPWAとfocusを避ける
 });
 
 runTest('pending中のnotice toastは上端safe-areaへ退避しoverlay階層を変えない', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.ok(css.includes('body.pending-surface-visible .notice-toast {'));
     assert.ok(css.includes('top: max(12px, env(safe-area-inset-top, 0px));'));
     assert.ok(css.includes('bottom: auto;'));
@@ -2924,7 +2930,7 @@ runTest('pending中のnotice toastは上端safe-areaへ退避しoverlay階層を
 });
 
 runTest('長い通常modalはsafe-area内へheaderを固定し44pxのcloseを保つ', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.ok(css.includes('--modal-header-scroll-clearance: calc(max(16px, env(safe-area-inset-top, 0px)) + 104px);'));
     assert.ok(css.includes('scroll-padding-top: var(--modal-header-scroll-clearance);'));
     assert.ok(css.includes('.modal-header {\n    position: sticky;\n    top: 0;\n    z-index: 1;'));
@@ -2933,7 +2939,7 @@ runTest('長い通常modalはsafe-area内へheaderを固定し44pxのcloseを保
 });
 
 runTest('建設カードの色filterはカードsection内だけで安全に追従する', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.ok(css.includes('--build-filter-sticky-top: max(8px, env(safe-area-inset-top, 0px));'));
     assert.ok(css.includes('--build-filter-focus-clearance: calc(var(--build-filter-sticky-top) + var(--touch-target-compact) + 22px);'));
     const filterMatch = css.match(/\.card-filter-bar\s*{([\s\S]*?)}/);
@@ -2949,7 +2955,7 @@ runTest('建設カードの色filterはカードsection内だけで安全に追�
 });
 
 runTest('建設カードの判断情報は狭い画面でも読める文字サイズを保つ', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const rule = selector => {
         const escapedSelector = selector.replace(/\./g, '\\.');
         const match = css.match(new RegExp(`^${escapedSelector}\\s*{([^}]*)}`, 'm'));
@@ -2979,7 +2985,7 @@ runTest('タイトルのテーマ名は狭い画面でも読める短い表示�
 });
 
 runTest('タイトルのselectはテーマに馴染む暗色と明確なfocus表示を持つ', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const playerSelect = css.match(/\.player-setting-select\s*{([^}]*)}/);
     assert.ok(playerSelect);
     assert.ok(playerSelect[1].includes('background-color: #121225;'));
@@ -2990,7 +2996,7 @@ runTest('タイトルのselectはテーマに馴染む暗色と明確なfocus表
 });
 
 runTest('夕暮れタイトルはクラシック夜景canvasを重ねず背景色を統一する', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.ok(css.includes('html[data-design="sunset"] #cityCanvas { display: none; }'));
     const sunsetTitle = css.match(/html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) #titleScreen\s*{([^}]*)}/);
     assert.ok(sunsetTitle);
@@ -2999,7 +3005,7 @@ runTest('夕暮れタイトルはクラシック夜景canvasを重ねず背景�
 });
 
 runTest('スマートフォンの夕暮れタイトルは主役の街景を設定カードの横幅まで広げる', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.match(css, /@media \(max-width: 759px\)\s*{\s*html\[data-design="sunset"\] \.sunset-hero\s*{[^}]*width: calc\(100% \+ 32px\);[^}]*margin: 12px -16px;/);
     assert.ok(css.includes('html[data-design="sunset"] .sunset-hero img { border-radius: 16px; }'));
     assert.match(css, /@media \(max-width: 759px\)\s*{\s*\/\* Put the way to play ahead of the visual preference on phones\. \*\/\s*html\[data-design="sunset"\] \.tab-bar { order: 1; }\s*html\[data-design="sunset"\] \.design-switcher { order: 2; }/);
@@ -3008,7 +3014,7 @@ runTest('スマートフォンの夕暮れタイトルは主役の街景を設�
 });
 
 runTest('夕暮れの結果画面は対戦画面と同じ青緑のパネル・操作色を使う', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const winnerPanel = css.match(/html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\)\.game-finished \.status\s*{([^}]*)}/);
     assert.ok(winnerPanel);
     assert.ok(winnerPanel[1].includes('#1d3548'));
@@ -3018,12 +3024,12 @@ runTest('夕暮れの結果画面は対戦画面と同じ青緑のパネル・�
 });
 
 runTest('320px以下の勝者見出しは標準的な名前を一行で表示する', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.match(css, /@media \(max-width: 360px\)\s*{[^}]*\.winner-title\s*{\s*font-size: 20px;/);
 });
 
 runTest('夕暮れの勝利トロフィーは独自のメダル枠で結果画面の主役になる', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const trophy = css.match(/html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) \.winner-trophy-art\s*{([^}]*)}/);
     assert.ok(trophy);
     assert.ok(trophy[1].includes('border-radius: 50%;'));
@@ -3032,7 +3038,7 @@ runTest('夕暮れの勝利トロフィーは独自のメダル枠で結果画�
 });
 
 runTest('夕暮れテーマはセットアップ・オンライン・統計タブの選択色を統一する', () => {
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .tab-bar'));
     assert.ok(css.includes('html[data-design="sunset"] body:not(.accessibility-high-contrast) .online-tabs'));
     assert.ok(css.includes('background: #29465a;'));
@@ -3373,7 +3379,7 @@ runTest('Service Worker STATIC_ASSETS は index.html のJS読み込みと同期�
 
 runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシティで一貫し折り返し対策を持つ', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const privacy = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
     const rules = fs.readFileSync(path.join(__dirname, '..', 'rules.html'), 'utf8');
     const howToPlay = fs.readFileSync(path.join(__dirname, '..', 'how-to-play.html'), 'utf8');
@@ -3481,7 +3487,7 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
 });
 runTest('PWA と TWA の更新検知に必要な安全弁がある', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
     const uiSource = fs.readFileSync(path.join(__dirname, '..', 'js/ui.js'), 'utf8');
     const mainSource = fs.readFileSync(path.join(__dirname, '..', 'js/main.js'), 'utf8');
@@ -3879,7 +3885,7 @@ runTest('公開ページはOGP/Twitter preview用メタ情報と画像を持つ'
 
 runTest('見やすさ設定は保存可能な4操作と適用classを提供する', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     for (const id of [
         'accessibilityFontScale', 'accessibilityReducedMotion',
         'accessibilityHighContrast', 'soundVolume',
@@ -3918,7 +3924,7 @@ runTest('AdSense 審査コードはhead内に1回だけ読み込まれる', () =
 });
 runTest('広告 placeholder は許可された画面だけに配置される', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
+    const css = readSunsetStyles();
     const sw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
     const adSlotsSource = fs.readFileSync(path.join(__dirname, '..', 'js/adSlots.js'), 'utf8');
     const docs = fs.readFileSync(path.join(__dirname, '..', 'docs/ADS_PLAN.md'), 'utf8');

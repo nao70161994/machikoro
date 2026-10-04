@@ -102,3 +102,13 @@ runTest('新版は操作と盤面をガイド・ログより先に置き、従�
     assert.deepStrictEqual(children.map(node => node.name), names);
     assert.strictEqual(children[3], nodes.log);
 });
+
+runTest('広場テーマは夕暮れのアート・操作・アクセシビリティの共通CSSを継承する', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', 'style.css'), 'utf8');
+    const scope = 'html:is([data-design="sunset"], [data-design="plaza"])';
+    assert.ok(css.includes(`${scope} .sunset-facility-art {\n    display: block;`));
+    assert.ok(css.includes(`${scope} body.accessibility-high-contrast`));
+    assert.ok(css.includes(`${scope} .game-action-panel`));
+    assert.ok(css.includes(`${scope} .town-street`));
+    assert.ok(!css.includes('html[data-design="sunset"]'));
+});
