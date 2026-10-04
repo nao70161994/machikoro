@@ -45,6 +45,16 @@ runTest('デザインは従来版が既定で、切替・再起動後も保存�
     assert.strictEqual(storage.values.savedGame, 'saved-game');
     assert.strictEqual(storage.values.onlineSession, 'online-session');
 });
+runTest('盤面モードは端末設定として保存し、ゲーム状態とは独立して切り替えられる', () => {
+    const storage = storageWith();
+    const page = createPage(storage);
+    page.listeners.change({ target: { id: 'designThemeSelect', value: 'plaza' } });
+    assert.strictEqual(page.runtime.current(), 'plaza');
+    assert.strictEqual(page.elements.designThemeCurrentLabel.textContent, '夕暮れの広場');
+    assert.strictEqual(storage.values[DesignTheme.STORAGE_KEY], 'plaza');
+    assert.strictEqual(DesignTheme.normalize('plaza'), 'plaza');
+    assert.strictEqual(DesignTheme.normalize('unknown'), 'classic');
+});
 runTest('別端末のデザイン選択と無関係な設定イベントに干渉しない', () => {
     const host = createPage(storageWith('sunset'));
     const guest = createPage(storageWith());

@@ -4,7 +4,7 @@
 const DesignTheme = (() => {
     const STORAGE_KEY = 'machikoroDesignTheme';
     function normalize(value) {
-        return value === 'sunset' ? 'sunset' : 'classic';
+        return value === 'plaza' || value === 'sunset' ? value : 'classic';
     }
     function arrangeGameSections(documentRef, design) {
         const screen = documentRef.getElementById('gameScreen');
@@ -15,8 +15,8 @@ const DesignTheme = (() => {
         const players = screen.querySelector('.player-area');
         const footer = documentRef.getElementById('onlineLeaveHelp');
         if (![guide, log, actions, players, footer].every(element => element && element.parentElement === screen)) return;
-        if (design === 'sunset' && guide.nextElementSibling === log && log.nextElementSibling === footer) return;
-        const moves = design === 'sunset' ? [[guide, footer], [log, footer]] : [[guide, actions], [log, players]];
+        if (design !== 'classic' && guide.nextElementSibling === log && log.nextElementSibling === footer) return;
+        const moves = design !== 'classic' ? [[guide, footer], [log, footer]] : [[guide, actions], [log, players]];
         for (const [element, anchor] of moves) {
             if (element.nextElementSibling !== anchor) screen.insertBefore(element, anchor);
         }
@@ -31,7 +31,9 @@ const DesignTheme = (() => {
             const control = documentRef.getElementById('designThemeSelect');
             if (control) control.value = selected;
             const currentLabel = documentRef.getElementById('designThemeCurrentLabel');
-            if (currentLabel) currentLabel.textContent = selected === 'sunset' ? '夕暮れの街' : 'クラシック';
+            if (currentLabel) currentLabel.textContent = selected === 'plaza'
+                ? '夕暮れの広場'
+                : (selected === 'sunset' ? '夕暮れの街' : 'クラシック');
             if (persist) {
                 let saved = true;
                 try { getStorage().setItem(STORAGE_KEY, selected); } catch (_) { saved = false; }

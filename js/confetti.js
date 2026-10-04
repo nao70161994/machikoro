@@ -25,7 +25,7 @@ function startConfetti() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
-    const colors = document.documentElement?.dataset?.design === 'sunset'
+    const colors = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
         ? ['#ffe1a6', '#f5c86e', '#fff1d4', '#d98a6e', '#83a49b']
         : ['#f0c040','#e94560','#3b82f6','#22c55e','#a855f7','#ffffff'];
     confettiPieces = Array.from({ length: 80 }, () => ({

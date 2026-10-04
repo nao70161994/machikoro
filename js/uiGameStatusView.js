@@ -1,7 +1,7 @@
 'use strict';
 
 function buildTurnStatusText(current, designTheme = 'classic', isHumanTurn = false) {
-    if (designTheme === 'sunset') return isHumanTurn ? 'あなたのターン' : `${current.name}のターン`;
+    if (designTheme === 'sunset' || designTheme === 'plaza') return isHumanTurn ? 'あなたのターン' : `${current.name}のターン`;
     return `👤 ${current.name}のターン　🪙 ${current.coins}コイン`;
 }
 
