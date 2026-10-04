@@ -20,7 +20,10 @@ const LocalSaveRuntime = (() => {
     function execute(effects = {}) {
         try {
             const state = effects.serialize();
-            effects.save(state);
+            const result = effects.save(state);
+            if (!result || result.legacyWritten !== true) {
+                return Object.freeze({ saved: false, reason: 'save-failed' });
+            }
             return Object.freeze({ saved: true, reason: DECISIONS.SAVE });
         } catch (error) {
             return Object.freeze({ saved: false, reason: 'save-failed' });

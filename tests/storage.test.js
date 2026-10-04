@@ -1580,3 +1580,19 @@ runTest('storage resumeGame はRL preload中に保存が消えても安全に終
 if (process.exitCode) {
     throw new Error('storageテストで失敗が発生しました');
 }
+
+runTest('storageは保存拒否を一度通知し成功後の再失敗も通知する', () => {
+    const rt = loadStorageRuntime();
+    rt.__test.setGame(new rt.GameManager(2));
+    const originalSet = rt.localStorage.setItem;
+    rt.localStorage.setItem = () => { throw new Error('QuotaExceededError'); };
+    assert.strictEqual(rt.saveGameState().saved, false);
+    assert.strictEqual(rt.saveGameState().saved, false);
+    assert.strictEqual(rt.alerts.length, 1);
+    assert.strictEqual(rt.localStorage.getItem('savedGame'), null);
+    rt.localStorage.setItem = originalSet;
+    assert.strictEqual(rt.saveGameState().saved, true);
+    rt.localStorage.setItem = () => { throw new Error('SecurityError'); };
+    assert.strictEqual(rt.saveGameState().saved, false);
+    assert.strictEqual(rt.alerts.length, 2);
+});

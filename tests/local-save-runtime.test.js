@@ -22,7 +22,7 @@ runTest('local save runtimeはserialize後にrepositoryへ保存し失敗を境�
     const state = { players: [] };
     assert.deepStrictEqual(LocalSaveRuntime.execute({
         serialize() { events.push('serialize'); return state; },
-        save(value) { events.push(['save', value]); },
+        save(value) { events.push(['save', value]); return { legacyWritten: true }; },
     }), { saved: true, reason: 'save' });
     assert.deepStrictEqual(events, ['serialize', ['save', state]]);
 
@@ -30,4 +30,17 @@ runTest('local save runtimeはserialize後にrepositoryへ保存し失敗を境�
         serialize() { throw new Error('storage denied'); },
         save() { throw new Error('must not run'); },
     }), { saved: false, reason: 'save-failed' });
+});
+
+runTest('local save runtimeは非例外の保存拒否を失敗として返す', () => {
+    for (const result of [undefined, { legacyWritten: false, versionedWritten: false }]) {
+        assert.deepStrictEqual(LocalSaveRuntime.execute({
+            serialize: () => ({ players: [] }),
+            save: () => result,
+        }), { saved: false, reason: 'save-failed' });
+    }
+    assert.strictEqual(LocalSaveRuntime.execute({
+        serialize: () => ({}),
+        save: () => ({ legacyWritten: true, versionedWritten: false }),
+    }).saved, true);
 });

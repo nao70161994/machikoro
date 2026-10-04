@@ -67,7 +67,7 @@ function createLocalSaveRepository(options) {
                 JSON.stringify(envelope)
             ) === true;
         }
-        if (versionedEnabled && !versionedWritten) storage.remove(LOCAL_SAVE_KEYS.versioned);
+        if (legacyWritten && !versionedWritten) storage.remove(LOCAL_SAVE_KEYS.versioned);
         return Object.freeze({ legacyWritten, versionedWritten });
     }
 

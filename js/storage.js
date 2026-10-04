@@ -17,6 +17,7 @@ function storageHasActiveOnlineContext(snapshot = storageOnlineRuntimeSnapshot()
 const LOCAL_SAVE_SCHEMA_WRITE_ENABLED = typeof window !== 'undefined' &&
     window.MACHIKORO_LOCAL_SAVE_SCHEMA_WRITE_ENABLED === true;
 let localSaveRepository = null;
+let localSaveFailureNotified = false;
 
 function getLocalSaveRepository() {
     if (localSaveRepository) return localSaveRepository;
@@ -150,7 +151,7 @@ function saveGameState() {
         hasWinner: () => currentGame.checkWinner(),
     });
     if (decision !== LocalSaveRuntime.DECISIONS.SAVE) return;
-    LocalSaveRuntime.execute({
+    const result = LocalSaveRuntime.execute({
         serialize: () => GameSnapshot.serializeLocalSaveState(currentGame, SHOP_STOCK, {
             logLimit: 30,
             pendingActionsFor: value =>
@@ -167,6 +168,13 @@ function saveGameState() {
         }),
         save: state => getLocalSaveRepository().save(state),
     });
+    if (!result.saved && !localSaveFailureNotified) {
+        localSaveFailureNotified = true;
+        showNotice('ゲームを保存できませんでした。このまま遊べますが、画面を閉じると進行を失う可能性があります。');
+    } else if (result.saved) {
+        localSaveFailureNotified = false;
+    }
+    return result;
 }
 
 function updateResumeButton() {

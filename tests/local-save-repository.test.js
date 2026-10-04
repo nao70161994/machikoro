@@ -147,3 +147,25 @@ runTest('local save repositoryの削除はlegacy・v1 shadow・旧世代を同�
     assert.strictEqual(storage.value(LocalSaveRepository.keys.versioned), null);
     assert.strictEqual(storage.value(LocalSaveRepository.keys.history), null);
 });
+
+runTest('local save repositoryはON→OFF→ONでも最新の保存から復帰する', () => {
+    const storage = makeStorage();
+    const enabled = LocalSaveRepository.create({ storage, versionedEnabled: true });
+    enabled.save({ turn: 1 });
+    LocalSaveRepository.create({ storage }).save({ turn: 2 });
+    assert.strictEqual(storage.value(LocalSaveRepository.keys.versioned), null);
+    assert.strictEqual(enabled.read(() => true).state.turn, 2);
+});
+
+runTest('local save repositoryはlegacy書き込み拒否で既存shadowを削除しない', () => {
+    const storage = makeStorage();
+    const enabled = LocalSaveRepository.create({ storage, versionedEnabled: true });
+    enabled.save({ turn: 1 });
+    storage.set = () => false;
+    for (const versionedEnabled of [false, true]) {
+        const repository = LocalSaveRepository.create({ storage, versionedEnabled });
+        assert.strictEqual(repository.save({ turn: 2 }).legacyWritten, false);
+        assert.strictEqual(enabled.read(() => true).state.turn, 1);
+        assert.notStrictEqual(storage.value(LocalSaveRepository.keys.versioned), null);
+    }
+});
