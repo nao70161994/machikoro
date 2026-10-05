@@ -2390,3 +2390,42 @@ for (const size of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
         await expect(page.locator('#titleScreen')).toBeVisible();
     });
 }
+
+test('広場をタイトルで選び直しても正の倍率で開始し他テーマへ寸法を持ち越さない', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await prepareSunset(page);
+    const start = async () => {
+        await page.locator('.setup-quick-play').click();
+        await expect(page.locator('#gameScreen')).toBeVisible();
+        await page.evaluate(() => {
+            cancelCpuSchedule('theme-transition-regression');
+            window.scheduleCPU = () => false;
+            const state = GameRuntimeState.runtime.snapshot();
+            state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+            state.game.phase = GAME_PHASES.BUILD;
+            state.game.currentPlayer().coins = 30;
+            render();
+        });
+    };
+    const returnToTitle = async () => {
+        await page.evaluate(() => restartGame());
+        await page.locator('#confirmOkBtn').click();
+        await expect(page.locator('#titleScreen')).toBeVisible();
+    };
+    await start();
+    await returnToTitle();
+    await selectDesignTheme(page, 'plaza');
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await start();
+    await expect.poll(() => page.locator('#plazaWorld').evaluate(element =>
+        new DOMMatrix(getComputedStyle(element).transform).a)).toBeGreaterThanOrEqual(0.12);
+    await page.evaluate(() => PlazaField.focusTarget('market'));
+    expect(await page.locator('#buildMenu').evaluate(element => element.style.height)).not.toBe('');
+    for (const theme of ['sunset', 'classic']) {
+        await returnToTitle();
+        await selectDesignTheme(page, theme);
+        await start();
+        expect(await page.locator('#buildMenu').evaluate(element => element.style.height)).toBe('');
+        await expect(page.locator('.player-asset-summary')).toHaveCount(0);
+    }
+});

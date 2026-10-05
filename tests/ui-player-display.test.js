@@ -159,6 +159,7 @@ const plazaHtml = UiPlayerDisplay.buildPlayersHtml(players, {
     loanEffect: 'loan',
 });
 assert(plazaHtml.includes('ランドマーク 1/2'));
+assert(plazaHtml.includes('player-asset-summary'));
 assert(plazaHtml.includes('aria-label="緑カード2枚"'));
 assert(plazaHtml.includes('aria-label="紫カード1枚"'));
 assert.strictEqual((plazaHtml.match(/class="plaza-opponent-town"/g) || []).length, 1);
@@ -333,3 +334,6 @@ assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([2, 1], [1, 1]), -1);
 assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([2, 1], [1, 2]), 1);
 assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([1, 0], [2, 0]), -1);
 assert.strictEqual(UiPlayerDisplay.landmarkLeadChange([0, 0, 0], [0, 1, 0]), 1);
+
+assert(!tenPlayerHtml.includes('player-asset-summary'));
+assert(!compactCpuTurnHtml.includes('player-asset-summary'));

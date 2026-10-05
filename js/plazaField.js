@@ -8,6 +8,7 @@ const PlazaField = (() => {
     let selfIndex = 0;
     let camera = { x: 0, y: 0, scale: 0.75 };
     let worldHeight = 1380;
+    let pendingFocus = null;
     const pointers = new Map();
     let gesture = null;
     let dragged = false;
@@ -42,10 +43,17 @@ const PlazaField = (() => {
     }
     function focusTarget(target) {
         const viewport = node('plazaViewport');
+        if (!viewport.clientWidth || !viewport.clientHeight) {
+            pendingFocus = target;
+            return;
+        }
+        pendingFocus = null;
         let x = 840, y = worldHeight / 2;
         if (target === 'all') camera.scale = Math.max(0.12, Math.min(viewport.clientWidth / 1680, viewport.clientHeight / worldHeight));
         else {
-            camera.scale = target === 'market' ? Math.min(1, (viewport.clientWidth - 16) / 570) : Math.min(0.85, (viewport.clientWidth - 16) / 450);
+            camera.scale = Math.max(0.12, target === 'market'
+                ? Math.min(1, (viewport.clientWidth - 16) / 570)
+                : Math.min(0.85, (viewport.clientWidth - 16) / 450));
             const item = node(target === 'market' ? 'buildMenu' : `playerBox${Number.isInteger(target) ? target : selfIndex}`);
             if (item && target === 'market') item.style.height = `${Math.max(100, Math.min(470, (viewport.clientHeight - 16) / camera.scale))}px`;
             if (item) { x = item.offsetLeft + item.offsetWidth / 2; y = item.offsetTop + item.offsetHeight / 2; }
@@ -117,7 +125,9 @@ const PlazaField = (() => {
         new ResizeObserver(() => requestAnimationFrame(() => {
             if (!mounted || !viewport.clientWidth || !viewport.clientHeight) return;
             layout();
-            if (lastWidth && lastHeight) {
+            if (pendingFocus !== null) {
+                focusTarget(pendingFocus);
+            } else if (lastWidth && lastHeight) {
                 camera.x += (viewport.clientWidth - lastWidth) / 2;
                 camera.y += (viewport.clientHeight - lastHeight) / 2;
                 paint();
@@ -141,6 +151,8 @@ const PlazaField = (() => {
             });
             screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
             screen.insertBefore(node('buildMenu'), node('turnTimeline'));
+            node('buildMenu').style.removeProperty('height');
+            pendingFocus = null;
             mounted = false;
             DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
         }

@@ -159,7 +159,7 @@ const UiPlayerDisplay = (() => {
         const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player) : '';
         const miniTown = options.plaza && !isSelf
             ? `<div class="plaza-opponent-town">${town}</div><div class="plaza-owned-cards">${cardHtml || '施設なし'}</div>` : '';
-        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${assetSummary}${miniTown}`;
+        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${options.plaza ? assetSummary : ''}${miniTown}`;
         const detail = `<div class="player-detail">${town}<div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
         const playerClasses = `player-box${isActive ? ' active' : ''}${isSelf ? ' player-box-self' : ''}`;
         if (compact) {
