@@ -5829,3 +5829,16 @@ runTest('mirror replay shadowはnegotiated v1をmutable mirrorと同じ状態へ
 if (process.exitCode) {
     throw new Error('serverテストで失敗が発生しました');
 }
+
+runTest('Socket.IO parserは添付数0のbinary packetを拒否してbufferを蓄積しない', () => {
+    const { Decoder } = require('socket.io-parser');
+    const decoder = new Decoder();
+    try {
+        assert.throws(() => decoder.add('50-["bounded-regression"]'), /Illegal attachments/);
+        assert.ok(!decoder.reconstructor);
+        assert.throws(() => decoder.add(Buffer.from([0])));
+        assert.ok(!decoder.reconstructor);
+    } finally {
+        decoder.destroy();
+    }
+});
