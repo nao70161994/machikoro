@@ -262,6 +262,8 @@ function reconnectOnline() {
     }
     try {
         const reconnectPlan = StoredOnlineReconnect.plan(session);
+        if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();
+        else cancelPendingLocalResume();
         const result = StoredOnlineReconnect.execute(reconnectPlan, {
             setReconnecting: setStorageOnlineReconnectLegacyFlag,
             clearRetry() {
@@ -310,6 +312,10 @@ function reconnectOnline() {
         }
         showNotice('再接続処理に失敗しました。もう一度お試しください');
     }
+}
+
+function cancelPendingLocalResume() {
+    return localResumePreloadRuntime.cancel();
 }
 
 function resumeGame(options = {}) {

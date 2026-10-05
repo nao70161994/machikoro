@@ -51,6 +51,12 @@ const LocalGameStartRuntime = (() => {
             return getPortfolio();
         }
 
+        function cancelPendingResume() {
+            if (typeof dependencies.cancelPendingResume === 'function') {
+                dependencies.cancelPendingResume();
+            }
+        }
+
         function hasRlCpuSetting(settings, playerCount) {
             return playerSettings.hasRlCpu(settings, playerCount);
         }
@@ -268,6 +274,7 @@ const LocalGameStartRuntime = (() => {
             playerCount = setupSnapshot().selectedCount,
             settings = setupSnapshot().playerSettings
         ) {
+            cancelPendingResume();
             if (pendingController.isPending()) cancelPendingStart();
             const speed = document.getElementById('cpuSpeed');
             const plan = startPolicy.runtimePlan(playerCount, settings, parseInt(speed.value));
@@ -310,6 +317,7 @@ const LocalGameStartRuntime = (() => {
                 showNotice('深層学習AIモデルを読み込んでいます。');
                 return;
             }
+            cancelPendingResume();
             const preload = preloadForStart(playerCount, settings);
             if (startPolicy.preloadDecision(preload) === startPolicy.REQUEST_DECISIONS.PRELOAD) {
                 pendingController.begin();

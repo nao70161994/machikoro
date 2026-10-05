@@ -7,6 +7,7 @@ const LocalResumePreloadRuntime = (() => {
      *     snapshot: () => { pending: boolean, generation: number },
      *     setPending: (pending: boolean) => { pending: boolean, generation: number },
      *     start: () => { pending: boolean, generation: number },
+     *     cancel: () => { pending: boolean, generation: number },
      *     finish: (generation: number) => {
      *       accepted: boolean,
      *       state: { pending: boolean, generation: number },
@@ -25,6 +26,7 @@ const LocalResumePreloadRuntime = (() => {
                 typeof dependencies.controller.snapshot !== 'function' ||
                 typeof dependencies.controller.setPending !== 'function' ||
                 typeof dependencies.controller.start !== 'function' ||
+                typeof dependencies.controller.cancel !== 'function' ||
                 typeof dependencies.controller.finish !== 'function' ||
                 !dependencies.view || typeof dependencies.view.pendingButton !== 'function' ||
                 !dependencies.effects || typeof dependencies.effects.applyPendingButton !== 'function') {
@@ -55,10 +57,17 @@ const LocalResumePreloadRuntime = (() => {
             return result.accepted;
         }
 
+        function cancel() {
+            const state = dependencies.controller.cancel();
+            apply(state);
+            return state;
+        }
+
         return Object.freeze({
             snapshot: dependencies.controller.snapshot,
             setPending,
             start,
+            cancel,
             finish,
         });
     }

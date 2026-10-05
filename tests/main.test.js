@@ -896,6 +896,21 @@ runTest('main restartGame はゲーム状態とUI lockを未開始状態へ完�
     assert.ok(rt.counters.stopConfetti >= 1);
 });
 
+runTest('main通常開始・quick開始・再開始は保存resumeの旧世代を無効化する', () => {
+    const ResumeState = require('../js/localResumePreloadState');
+    for (const transition of ['start', 'quick', 'restart']) {
+        const rt = loadMainRuntime();
+        const resume = ResumeState.create();
+        const request = resume.start();
+        rt.cancelPendingLocalResume = () => resume.cancel();
+        if (transition === 'start') rt.startGame();
+        else if (transition === 'quick') rt.startQuickCpuGame();
+        else rt.restartGame();
+        assert.strictEqual(resume.finish(request.generation).accepted, false, transition);
+        assert.strictEqual(resume.snapshot().pending, false, transition);
+    }
+});
+
 runTest('main restart後のstartGameは古いgameScreen lockを引き継がず開始通知を再送できる', () => {
     const rt = loadMainRuntime();
     rt.startGame();

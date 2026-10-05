@@ -48,6 +48,7 @@ function createHarness(options = {}) {
         preloadEligibleModels: (...args) => { calls.push(['preload', ...args]); return options.preload || null; },
     };
     const runtime = LocalGameStartRuntime.createRuntime({
+        cancelPendingResume: options.cancelPendingResume,
         console: { warn: error => calls.push(['warn', error]), error: error => calls.push(['error', error]) },
         document: { getElementById: id => elements[id] || null },
         focusGame: () => calls.push(['focusGame']),
@@ -66,6 +67,19 @@ function createHarness(options = {}) {
     });
     return { calls, elements, getState: () => state, runtime };
 }
+
+runTest('local開始とquick開始は古い保存resumeの完了を無効化する', () => {
+    const ResumeState = require('../js/localResumePreloadState');
+    for (const quick of [false, true]) {
+        const resume = ResumeState.create();
+        const request = resume.start();
+        const { runtime, calls } = createHarness({ cancelPendingResume: () => resume.cancel() });
+        if (quick) runtime.startNow();
+        else runtime.start();
+        assert.ok(calls.some(call => call[0] === 'initializeGame'));
+        assert.strictEqual(resume.finish(request.generation).accepted, false);
+    }
+});
 
 runTest('local game start runtimeは人数・設定・RL表示のeffect境界を所有する', () => {
     const { calls, elements, getState, runtime } = createHarness();

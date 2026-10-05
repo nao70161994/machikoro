@@ -20,6 +20,12 @@ const LocalResumePreloadState = (() => {
             return snapshot();
         }
 
+        function cancel() {
+            generation++;
+            pending = false;
+            return snapshot();
+        }
+
         function finish(expectedGeneration) {
             if (expectedGeneration !== generation) {
                 return Object.freeze({ accepted: false, state: snapshot() });
@@ -28,7 +34,7 @@ const LocalResumePreloadState = (() => {
             return Object.freeze({ accepted: true, state: snapshot() });
         }
 
-        return Object.freeze({ snapshot, setPending, start, finish });
+        return Object.freeze({ snapshot, setPending, start, cancel, finish });
     }
 
     return Object.freeze({ create });

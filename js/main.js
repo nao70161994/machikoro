@@ -1,4 +1,4 @@
-/* global UiTurnPrivacy */
+/* global UiTurnPrivacy, cancelPendingLocalResume */
 /** @type {Record<string, number>} */
 const SHOP_STOCK = {};
 
@@ -619,6 +619,9 @@ function formatCpuSpeedLabel(value) {
 }
 
 const localGameStartRuntime = LocalGameStartRuntime.createRuntime({
+    cancelPendingResume: () => {
+        if (typeof cancelPendingLocalResume === 'function') cancelPendingLocalResume();
+    },
     console: typeof console !== 'undefined' ? console : null,
     document,
     focusGame: () => UiScreenFocus.focusGame(document),
@@ -714,6 +717,7 @@ function startGame() {
 }
 
 function cancelPendingLocalGameStart() {
+    if (typeof cancelPendingLocalResume === 'function') cancelPendingLocalResume();
     return localGameStartRuntime.cancelPendingStart();
 }
 

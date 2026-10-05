@@ -60,3 +60,28 @@ runTest('local resume preload runtimeはstate遷移を表示へ反映し古い�
 runTest('local resume preload runtimeは不正な依存を初期化前に拒否する', () => {
     assert.throws(() => LocalResumePreloadRuntime.create({}), TypeError);
 });
+
+runTest('local resume取消は古い成功・失敗callbackを拒否し次の要求を維持する', () => {
+    const state = LocalResumePreloadState.create();
+    const first = state.start();
+    const cancelled = state.cancel();
+    assert.strictEqual(cancelled.pending, false);
+    assert.strictEqual(state.finish(first.generation).accepted, false);
+    const current = state.start();
+    assert.strictEqual(state.finish(first.generation).accepted, false);
+    assert.strictEqual(state.snapshot().pending, true);
+    assert.strictEqual(state.finish(current.generation).accepted, true);
+});
+
+runTest('local resume取消はボタン待機表示も解除する', () => {
+    const calls = [];
+    const runtime = LocalResumePreloadRuntime.create({
+        controller: LocalResumePreloadState.create(), view: LocalResumeView,
+        effects: { applyPendingButton: view => { calls.push(view); return true; } },
+    });
+    const generation = runtime.start();
+    runtime.cancel();
+    assert.strictEqual(runtime.snapshot().pending, false);
+    assert.strictEqual(runtime.finish(generation), false);
+    assert.deepStrictEqual(calls.at(-1), { disabled: false, textContent: '続きから再開' });
+});

@@ -1553,6 +1553,71 @@ runTest('storage resumeGame はRL preload中の連打を一度だけ復元する
     assert.strictEqual(rt.elements.btnResume.disabled, false);
 });
 
+for (const completion of ['resolve', 'reject']) {
+    runTest(`取消済み保存resume preload ${completion}は新しいgameや通知を上書きしない`, async () => {
+        const rt = loadStorageRuntime();
+        let resolvePreload, rejectPreload;
+        rt.RLModelPortfolio = {
+            eligibleLoadState: () => ({ status: 'idle' }),
+            preloadEligibleModels: () => new Promise((resolve, reject) => {
+                resolvePreload = resolve;
+                rejectPreload = reject;
+            }),
+        };
+        rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState()));
+        assert.strictEqual(rt.resumeGame(), true);
+        rt.cancelPendingLocalResume();
+        const replacement = { startedAfterResume: true };
+        rt.__test.setGame(replacement);
+        const notices = rt.alerts.length;
+        if (completion === 'resolve') resolvePreload([]);
+        else rejectPreload(new Error('obsolete saved model failure'));
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        assert.strictEqual(rt.__test.getGame(), replacement);
+        assert.strictEqual(rt.renderCount || 0, 0);
+        assert.strictEqual(rt.alerts.length, notices);
+        assert.strictEqual(rt.elements.btnResume.disabled, false);
+    });
+
+    runTest(`online再接続要求は保存resume preload ${completion}を無効化する`, async () => {
+        const rt = loadStorageRuntime();
+        let resolvePreload, rejectPreload;
+        rt.RLModelPortfolio = {
+            eligibleLoadState: () => ({ status: 'idle' }),
+            preloadEligibleModels: () => new Promise((resolve, reject) => {
+                resolvePreload = resolve;
+                rejectPreload = reject;
+            }),
+        };
+        rt.localStorage.setItem('savedGame', JSON.stringify(makeSavedGameState()));
+        assert.strictEqual(rt.resumeGame(), true);
+        let startCancelled = 0;
+        rt.cancelPendingLocalGameStart = () => {
+            startCancelled++;
+            rt.cancelPendingLocalResume();
+        };
+        rt.localStorage.setItem('onlineSession', JSON.stringify({
+            roomId: 'ROOM01', playerIndex: 0, playerName: 'P1', reconnectToken: 'token',
+        }));
+        // Roll back a failed socket attempt so the online-context guard alone
+        // cannot mask an obsolete saved-game preload completion.
+        rt.initSocket = () => false;
+        rt.reconnectOnline();
+        assert.strictEqual(startCancelled, 1);
+        const notices = rt.alerts.length;
+        if (completion === 'resolve') resolvePreload([]);
+        else rejectPreload(new Error('obsolete resume model'));
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        assert.strictEqual(rt.__test.getGame(), null);
+        assert.strictEqual(rt.renderCount || 0, 0);
+        assert.strictEqual(rt.alerts.length, notices);
+    });
+}
+
 runTest('storage resumeGame はpreload前に選んだRLモデルを再入後も維持する', async () => {
     const rt = loadStorageRuntime();
     const saved = makeSavedGameState();

@@ -91,6 +91,7 @@ declare var renderBuildMenu: (() => void) | undefined;
 declare var renderOnlinePlayerSettings: (() => void) | undefined;
 declare var resetAccessibleModalRuntimeState: (() => void) | undefined;
 declare var resumeGame: (() => void) | undefined;
+declare function cancelPendingLocalResume(): void;
 declare var updateResumeButton: (() => void) | undefined;
 declare var activeModalId: string | null | undefined;
 declare var lastModalFocus: HTMLElement | null | undefined;
