@@ -2374,6 +2374,15 @@ for (const size of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
         });
         await expect(page.locator('.winner-screen')).toBeVisible();
         await expect(page.locator('#plazaViewport')).toBeHidden();
+        await page.evaluate(() => {
+            document.getElementById('pwaUpdateBanner').style.display = 'block';
+            document.body.classList.add('pwa-banner-open');
+        });
+        await expect.poll(async () => {
+            const banner = await page.locator('#pwaUpdateBanner').boundingBox();
+            const screen = await page.locator('#gameScreen').boundingBox();
+            return banner.y + banner.height <= screen.y + 1;
+        }).toBe(true);
         await page.locator('#winnerRestartButton').scrollIntoViewIfNeeded();
         await page.screenshot({ path: testInfo.outputPath(`plaza-winner-${size.width}.png`) });
         await page.locator('#winnerRestartButton').click();

@@ -8437,6 +8437,8 @@ html[data-design="plaza"] body.game-finished #plazaCameraTools,
 html[data-design="plaza"] body.game-finished #plazaEvents { display: none !important; }
 html[data-design="plaza"] body.pwa-banner-open #gameScreen[style*="display: block"] { max-height: none; padding-bottom: 0; }
 html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { bottom: calc(var(--plaza-actions, 84px) + 40px + env(safe-area-inset-bottom, 0px)); max-height: 25dvh; overflow: auto; }
+html[data-design="plaza"] body.game-finished:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { top: 0; bottom: auto; left: 0; right: 0; width: 100%; max-width: none; transform: none; box-sizing: border-box; }
+html[data-design="plaza"] body.game-finished.pwa-banner-open #gameScreen[style*="display: block"] { top: var(--plaza-banner, 100px); height: calc(100dvh - var(--plaza-banner, 100px)); }
 @media (orientation: landscape) and (max-height: 600px) {
     html[data-design="plaza"] #plazaPlayerHud { grid-template-columns: minmax(0, 1fr); left: auto; width: 216px; max-height: calc(100% - 62px - var(--plaza-actions)); }
     html[data-design="plaza"] #plazaPlayerHud button { display: grid; grid-template-columns: 1fr auto; font-size: 11px; }
@@ -8445,5 +8447,5 @@ html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaUpd
     html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; }
     html[data-design="plaza"] #plazaViewport { right: 216px; }
     html[data-design="plaza"] #plazaCameraTools { left: 8px; right: auto; }
-    html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { left: 8px; right: auto; transform: none; max-width: calc(100% - 232px); }
+    html[data-design="plaza"] body:not(.game-finished):has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { left: 8px; right: auto; transform: none; max-width: calc(100% - 232px); }
 }

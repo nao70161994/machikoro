@@ -19,6 +19,7 @@ const PlazaField = (() => {
         screen.style.setProperty('--plaza-top', `${node('status').offsetHeight + (sideHud ? 0 : node('plazaPlayerHud').offsetHeight)}px`);
         screen.style.setProperty('--plaza-actions', `${actions.offsetHeight}px`);
         document.body.style.setProperty('--plaza-actions', `${actions.offsetHeight}px`);
+        document.body.style.setProperty('--plaza-banner', `${node('pwaUpdateBanner').offsetHeight}px`);
     }
     function node(id) { return document.getElementById(id); }
     function paint() {
@@ -110,6 +111,7 @@ const PlazaField = (() => {
         });
         observer.observe(node('plazaPlayerHud'));
         observer.observe(node('status'));
+        observer.observe(node('pwaUpdateBanner'));
         observer.observe(node('gameScreen').querySelector('.game-action-panel'));
         let lastWidth = 0, lastHeight = 0;
         new ResizeObserver(() => requestAnimationFrame(() => {
