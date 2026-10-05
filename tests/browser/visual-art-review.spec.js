@@ -2213,6 +2213,8 @@ for (const width of [320, 390, 844, 1440]) {
             state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
             state.game.phase = GAME_PHASES.BUILD;
             state.game.currentPlayer().coins = 30;
+            // Related-log timer coverage must not depend on a random roll's income.
+            state.game.addLog(LOG_TYPES.BUILD, '🏗️ 麦畑を建設！', { review: false });
             render();
         });
         const town = page.locator('.player-box-self .town-street');
