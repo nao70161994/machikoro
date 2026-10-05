@@ -66,15 +66,21 @@ for (const playerCount of [4, 10]) {
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('/');
-        await page.evaluate(count => {
+        const fixtureState = await page.evaluate(count => {
             startGameNow(count, Array.from({ length: count }, (_, index) => ({
                 type: index === 0 ? 'human' : 'cpu', difficulty: 'normal', name: `街${index + 1}`,
             })));
             cancelCpuSchedule('plaza-full-towns');
             window.scheduleCPU = () => false;
             const state = GameRuntimeState.runtime.snapshot();
+            // Disable actors at the runtime boundary, including recovery through
+            // the watchdog's scheduleCpuTurn path. Player setup retains CPU kinds.
+            state.cpuPlayers.fill(null);
+            cancelCpuSchedule('plaza-full-towns-frozen');
             for (const player of state.game.players) player.cards = CARDS.slice(0, 8).flatMap(card => Array(6).fill(card));
             render();
+            return { turn: state.game.turnCount, player: state.game.currentPlayerIndex,
+                cards: state.game.players.map(player => player.cards.map(card => card.name)) };
         }, playerCount);
         const fits = () => page.evaluate(() => {
             const world = document.getElementById('plazaWorld');
@@ -98,6 +104,24 @@ for (const playerCount of [4, 10]) {
         await expect.poll(fits).toEqual([]);
         await page.locator('[data-field-target="all"]').click();
         await expect.poll(fits).toEqual([]);
+        if (playerCount === 4) {
+            const hiddenCamera = await page.evaluate(async () => {
+                const screen = document.getElementById('gameScreen');
+                const world = document.getElementById('plazaWorld');
+                const detail = document.querySelector('#plazaWorld #players > details:not([open])');
+                const display = screen.style.display;
+                const before = world.style.transform;
+                screen.style.display = 'none';
+                detail.open = true;
+                await Promise.resolve();
+                const after = world.style.transform;
+                detail.open = false;
+                await Promise.resolve();
+                screen.style.display = display;
+                return { before, after };
+            });
+            expect(hiddenCamera.after).toBe(hiddenCamera.before);
+        }
         // Every expanded opponent and a resized market must fit without a game render.
         await page.locator('#plazaWorld #players > details').evaluateAll(elements => {
             elements.forEach(element => { element.open = true; });
@@ -108,6 +132,11 @@ for (const playerCount of [4, 10]) {
         await expect.poll(fits).toEqual([]);
         await page.locator('[data-field-target="market"]').click();
         await expect.poll(fits).toEqual([]);
+        expect(await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            return { turn: game.turnCount, player: game.currentPlayerIndex,
+                cards: game.players.map(player => player.cards.map(card => card.name)) };
+        })).toEqual(fixtureState);
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
