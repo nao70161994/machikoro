@@ -2437,3 +2437,44 @@ test('広場をタイトルで選び直しても正の倍率で開始し他テ�
         await expect(page.locator('.player-asset-summary')).toHaveCount(0);
     }
 });
+
+
+test('広場は場外でマウスを離した後にパンを続けず、フォーカスしたカードを表示する', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 844 });
+    await prepareSunset(page);
+    await selectDesignTheme(page, 'plaza');
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        cancelCpuSchedule('plaza-input-regression');
+        window.scheduleCPU = () => false;
+        const state = GameRuntimeState.runtime.snapshot();
+        state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+        state.game.phase = GAME_PHASES.BUILD;
+        state.game.currentPlayer().coins = 30;
+        render();
+        PlazaField.focusTarget('self');
+    });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const field = await page.locator('#plazaViewport').boundingBox();
+    const before = await page.locator('#plazaWorld').evaluate(element => element.style.transform);
+    const x = field.x + field.width * 0.6;
+    await page.mouse.move(x, field.y + 2);
+    await page.mouse.down();
+    await page.mouse.move(x, field.y - 2);
+    await page.mouse.up();
+    await page.mouse.move(x - 20, field.y + 82);
+    expect(await page.locator('#plazaWorld').evaluate(element => element.style.transform)).toBe(before);
+    const card = page.locator('#buildMenu .card-btn').first();
+    await card.focus();
+    const focusedCardFits = () => card.evaluate(element => {
+        const cardRect = element.getBoundingClientRect();
+        const fieldRect = document.getElementById('plazaViewport').getBoundingClientRect();
+        return document.activeElement === element && cardRect.top >= fieldRect.top - 1 &&
+            cardRect.bottom <= fieldRect.bottom + 1 && cardRect.left >= fieldRect.left - 1 &&
+            cardRect.right <= fieldRect.right + 1;
+    });
+    await expect.poll(focusedCardFits).toBe(true);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect.poll(focusedCardFits).toBe(true);
+});

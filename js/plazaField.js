@@ -12,6 +12,16 @@ const PlazaField = (() => {
     const pointers = new Map();
     let gesture = null;
     let dragged = false;
+    function clearGesture() {
+        const viewport = node('plazaViewport');
+        const pointerIds = [...pointers.keys()];
+        pointers.clear();
+        gesture = null;
+        dragged = false;
+        for (const pointerId of pointerIds) {
+            if (viewport?.hasPointerCapture(pointerId)) viewport.releasePointerCapture(pointerId);
+        }
+    }
     function layout() {
         if (!mounted) return;
         const screen = node('gameScreen');
@@ -66,17 +76,54 @@ const PlazaField = (() => {
         const points = [...pointers.values()], a = points[0], b = points[1] || a;
         gesture = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, distance: Math.hypot(a.x - b.x, a.y - b.y), camera: { ...camera }, market: points.length === 1 && a.market, scrollTop: node('buildMenu').scrollTop };
     }
+    function revealFocus(target = document.activeElement) {
+        const viewport = node('plazaViewport');
+        if (!mounted || pointers.size || !target || !node('plazaWorld').contains(target) ||
+                !viewport.clientWidth || !viewport.clientHeight) return;
+        let rect = target.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        const bounds = viewport.getBoundingClientRect();
+        const ratio = Math.min(1, Math.max(1, viewport.clientWidth - 16) / rect.width,
+            Math.max(1, viewport.clientHeight - 16) / rect.height);
+        if (ratio < 1) {
+            zoom(camera.scale * ratio, viewport.clientWidth / 2, viewport.clientHeight / 2);
+            rect = target.getBoundingClientRect();
+        }
+        const market = node('buildMenu');
+        if (market.contains(target) && target !== market) {
+            const marketBounds = market.getBoundingClientRect();
+            const top = marketBounds.top + market.clientTop * camera.scale;
+            const bottom = top + market.clientHeight * camera.scale;
+            const delta = rect.top < top ? rect.top - top : rect.bottom > bottom ? rect.bottom - bottom : 0;
+            if (delta) market.scrollTop += delta / camera.scale;
+            rect = target.getBoundingClientRect();
+        }
+        const shift = (start, end, min, max) => start < min ? min - start : end > max ? max - end : 0;
+        camera.x += shift(rect.left, rect.right, bounds.left + 8, bounds.right - 8);
+        camera.y += shift(rect.top, rect.bottom, bounds.top + 8, bounds.bottom - 8);
+        paint();
+    }
     function initialize() {
         if (initialized || !node('plazaViewport')) return;
         initialized = true;
         const viewport = node('plazaViewport');
         const point = event => { const rect = viewport.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top, market: !!(/** @type {Element} */ (event.target)).closest('#buildMenu') }; };
+        const end = event => {
+            if (!pointers.delete(event.pointerId)) return;
+            if (pointers.size) begin();
+            else gesture = null;
+        };
         viewport.addEventListener('pointerdown', event => {
-            if (event.button !== 0) return;
+            if (!mounted || event.button !== 0) return;
             pointers.set(event.pointerId, point(event)); dragged = false; begin();
         });
         viewport.addEventListener('pointermove', event => {
             if (!pointers.has(event.pointerId) || !gesture) return;
+            if (event.pointerType === 'mouse' && !(event.buttons & 1)) {
+                end(event);
+                dragged = false;
+                return;
+            }
             pointers.set(event.pointerId, { ...point(event), market: pointers.get(event.pointerId).market });
             const points = [...pointers.values()], a = points[0], b = points[1] || a;
             const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
@@ -88,9 +135,16 @@ const PlazaField = (() => {
             camera = { scale, x: x - (gesture.x - gesture.camera.x) * scale / gesture.camera.scale, y: y - (gesture.y - gesture.camera.y) * scale / gesture.camera.scale };
             paint();
         });
-        const end = event => { pointers.delete(event.pointerId); if (pointers.size) begin(); else gesture = null; };
-        viewport.addEventListener('pointerup', end);
-        viewport.addEventListener('pointercancel', end);
+        // Observe releases outside the field without capturing an ordinary card click.
+        window.addEventListener('pointerup', end, true);
+        window.addEventListener('pointercancel', event => {
+            if (!pointers.has(event.pointerId)) return;
+            end(event);
+            if (!pointers.size) dragged = false;
+        }, true);
+        viewport.addEventListener('lostpointercapture', end);
+        window.addEventListener('blur', clearGesture);
+        viewport.addEventListener('focusin', event => revealFocus(/** @type {Element} */ (event.target)));
         viewport.addEventListener('click', event => { if (dragged) { event.preventDefault(); event.stopPropagation(); dragged = false; } }, true);
         viewport.addEventListener('wheel', event => {
             if ((/** @type {Element} */ (event.target)).closest('#buildMenu')) return;
@@ -133,6 +187,7 @@ const PlazaField = (() => {
                 paint();
             }
             lastWidth = viewport.clientWidth; lastHeight = viewport.clientHeight;
+            revealFocus();
         })).observe(viewport);
         document.addEventListener('change', event => { if ((/** @type {HTMLElement} */ (event.target)).id === 'designThemeSelect') sync(); });
     }
@@ -145,6 +200,7 @@ const PlazaField = (() => {
             world.append(screen.querySelector('.player-area'), node('buildMenu'));
             mounted = true; requestAnimationFrame(() => { layout(); focusTarget('self'); });
         } else if (!enabled && mounted) {
+            clearGesture();
             world.querySelectorAll('#players > .player-box').forEach(item => {
                 (/** @type {HTMLElement} */ (item)).style.removeProperty('left');
                 (/** @type {HTMLElement} */ (item)).style.removeProperty('top');
