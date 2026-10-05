@@ -375,11 +375,13 @@
             <button type="button" data-field-target="self">自分の街</button>
             <button type="button" data-field-target="market">市場</button>
             <button type="button" data-field-target="all">全体</button>
-            <button type="button" data-field-panel="log">履歴</button>
-            <button type="button" data-ui-action="restartGame">終了</button>
-            <button type="button" data-field-zoom="out" aria-label="縮小">−</button>
-            <span id="plazaZoomLabel">75%</span>
-            <button type="button" data-field-zoom="in" aria-label="拡大">＋</button>
+            <details class="plaza-camera-menu"><summary>その他</summary><div>
+                <button type="button" data-field-panel="log">履歴</button>
+                <button type="button" data-ui-action="restartGame">終了</button>
+                <button type="button" data-field-zoom="out" aria-label="縮小">−</button>
+                <span id="plazaZoomLabel">75%</span>
+                <button type="button" data-field-zoom="in" aria-label="拡大">＋</button>
+            </div></details>
         </nav>
         <section id="plazaEvents" aria-label="直近の出来事"><h2>広場の出来事</h2><div id="plazaRecentEvents"></div></section>
         <div id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>

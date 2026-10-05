@@ -355,7 +355,7 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
         await expect(page.locator('#pwaUpdateBtn')).toBeEnabled();
         expect(await page.evaluate(() => window.MACHIKORO_CLIENT_VERSION)).toBe('webkit-e2e-v1');
 
-        await page.locator('[data-ui-action="restartGame"]').click();
+        await page.locator('#btnRestart').click();
         await expect(page.locator('#confirmModal')).toBeVisible();
         await page.locator('#confirmOkBtn').click();
         // Returning to the title runs the production refresh path, which asks the

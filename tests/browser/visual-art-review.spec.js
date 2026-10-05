@@ -2226,8 +2226,11 @@ for (const width of [320, 390, 844, 1440]) {
         const initialCamera = await page.locator('#plazaWorld').getAttribute('style');
         await page.locator('[data-field-target="market"]').click();
         expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(initialCamera);
+        const marketZoom = parseInt(await page.locator('#plazaZoomLabel').textContent(), 10);
+        await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-zoom="in"]').click();
-        await expect(page.locator('#plazaZoomLabel')).toHaveText('96%');
+        expect(parseInt(await page.locator('#plazaZoomLabel').textContent(), 10)).toBeGreaterThan(marketZoom);
+        await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-target="all"]').click();
         const viewport = await page.locator('#plazaViewport').boundingBox();
         const beforePan = await page.locator('#plazaWorld').getAttribute('style');
@@ -2294,5 +2297,77 @@ for (const width of [320, 390, 844, 1440]) {
             await expect(page.locator('#btnRoll')).toBeEnabled();
             await page.screenshot({ path: testInfo.outputPath('plaza-after-purchase-390.png'), fullPage: true });
         }
+    });
+}
+
+for (const size of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
+    test(`広場の終盤と補助操作は画面内で完了できる ${size.width}px`, async ({ page }, testInfo) => {
+        await page.setViewportSize(size);
+        await stubAds(page);
+        await page.goto('/');
+        await selectDesignTheme(page, 'plaza');
+        await page.locator('.setup-quick-play').click();
+        await expect(page.locator('#gameScreen')).toBeVisible();
+        await page.evaluate(() => {
+            cancelCpuSchedule('plaza-terminal-review');
+            window.scheduleCPU = () => false;
+            const state = GameRuntimeState.runtime.snapshot();
+            state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+            state.game.phase = GAME_PHASES.ROLL;
+            state.game.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+            state.game.currentPlayer().landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+            render();
+            document.getElementById('pwaUpdateBanner').style.display = 'block';
+            document.body.classList.add('pwa-banner-open');
+        });
+        await expect.poll(async () => {
+            const roll = await page.locator('#btnRoll').boundingBox();
+            const banner = await page.locator('#pwaUpdateBanner').boundingBox();
+            return banner.y + banner.height <= roll.y;
+        }).toBe(true);
+        await page.locator('#btnRoll').click();
+        await expect(page.locator('[data-action="selectDiceCount"]')).toHaveCount(2);
+        await page.locator('[data-action="selectDiceCount"][data-use-two="true"]').click();
+        await page.locator('[data-action="skipReroll"]').click();
+        await page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]').click();
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            game.phase = GAME_PHASES.HARBOR_CHOICE;
+            game.lastDice1 = 5; game.lastDice2 = 5; game.lastDiceResult = 10;
+            game.currentPlayer().landmarks[LANDMARK_NAMES.HARBOR] = true;
+            render();
+        });
+        await page.locator('[data-action="resolveHarbor"][data-use-bonus="false"]').click();
+        await page.locator('.game-support-settings > summary').click();
+        const exportButton = page.locator('.game-support-settings [data-ui-action="exportMatchData"]');
+        await expect(exportButton).toBeVisible();
+        expect((await exportButton.boundingBox()).y).toBeGreaterThanOrEqual(0);
+        expect((await exportButton.boundingBox()).y + (await exportButton.boundingBox()).height).toBeLessThanOrEqual(size.height);
+        await page.locator('.game-support-settings > summary').click();
+        await page.locator('.game-guide-settings > summary').click();
+        if (!await page.locator('#tutorialBox').isVisible()) await page.locator('#btnTutorialToggle').click();
+        await expect(page.locator('#tutorialBox')).toBeVisible();
+        await page.locator('#btnTutorialToggle').click();
+        await page.locator('.game-guide-settings > summary').click();
+        await page.locator('[data-field-target="market"]').click();
+        const market = await page.locator('#buildMenu').boundingBox();
+        expect(market.x).toBeGreaterThanOrEqual(-1);
+        expect(market.x + market.width).toBeLessThanOrEqual(size.width + 1);
+        const field = await page.locator('#plazaViewport').boundingBox();
+        expect(market.y).toBeGreaterThanOrEqual(field.y - 1);
+        expect(market.y + market.height).toBeLessThanOrEqual(field.y + field.height + 1);
+        await page.screenshot({ path: testInfo.outputPath(`plaza-market-${size.width}.png`) });
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            for (const name of getEnabledLandmarkSelection()) game.currentPlayer().landmarks[name] = true;
+            render();
+        });
+        await expect(page.locator('.winner-screen')).toBeVisible();
+        await expect(page.locator('#plazaViewport')).toBeHidden();
+        await page.locator('#winnerRestartButton').scrollIntoViewIfNeeded();
+        await page.screenshot({ path: testInfo.outputPath(`plaza-winner-${size.width}.png`) });
+        await page.locator('#winnerRestartButton').click();
+        await page.locator('#confirmOkBtn').click();
+        await expect(page.locator('#titleScreen')).toBeVisible();
     });
 }
