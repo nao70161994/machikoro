@@ -152,8 +152,8 @@ const {
 });
 const {
     createDisconnectSocketHandler,
+    makeWaitingReservationPruner,
     isWaitingReservation,
-    pruneExpiredWaitingReservations,
     reserveWaitingPlayer,
 } = require('./server/disconnectSocketHandler');
 const { createOnlineRematchRuntime } = require('./server/onlineRematchRuntime');
@@ -693,6 +693,17 @@ const {
     buildRoomHostChangedPayload,
     isRoomHostConnectedForSockets,
 });
+
+const waitingReservationPruner = makeWaitingReservationPruner({
+    getConnectedPlayers: room => getRemainingConnectedRoomPlayers(room, io.sockets.sockets),
+    setRoomHostPlayerIndex,
+    emitRoomHostChanged: room => emitRoomHostChanged(room.roomId, room),
+    emitPlayerList: room => io.to(room.roomId).emit('playerList', buildPlayerList(room), buildLobbyState(room)),
+});
+
+function pruneExpiredWaitingReservations(room, now) {
+    return waitingReservationPruner(room, now);
+}
 
 function cpuDifficultyLabel(difficulty) {
     return makeGameSettings.cpuDifficultyLabel(difficulty);

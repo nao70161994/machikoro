@@ -416,6 +416,32 @@ runTest('rejoin handlerは期限内の待機席を同一tokenで復元して開�
     ]);
 });
 
+runTest('host期限切れ後に予約参加者が再接続すると待機室hostを復元する', () => {
+    const { makeWaitingReservationPruner } = require('../server/disconnectSocketHandler');
+    const lifecycle = require('../server/roomLifecycle')({ limits: {}, defaultRooms: {} });
+    const fixture = makeFixture({
+        pruneExpiredWaitingReservations: makeWaitingReservationPruner({
+            getConnectedPlayers: room => room.players.filter(player => player.id),
+            setRoomHostPlayerIndex: lifecycle.setRoomHostPlayerIndex,
+            emitRoomHostChanged: room => fixture.events.push(['host-changed', room.hostPlayerIndex]),
+            emitPlayerList() {},
+        }),
+    });
+    Object.assign(fixture.room, {
+        started: false, hostPlayerIndex: 0, hostEpoch: 0,
+        players: [
+            { id: null, index: 0, name: 'Alice', reservedUntil: 1000 },
+            { id: null, index: 1, name: 'Bob', reconnectToken: 'token', reservedUntil: 9999 },
+        ],
+    });
+    fixture.events.length = 0;
+    fixture.handlers.rejoinRoom(validPayload);
+    assert.strictEqual(fixture.room.hostPlayerIndex, 1);
+    assert.strictEqual(fixture.room.hostEpoch, 1);
+    const joined = fixture.events.find(entry => entry[0] === 'socket.emit' && entry[1] === 'roomJoined');
+    assert.strictEqual(joined[2].hostPlayerIndex, 1);
+});
+
 runTest('rejoin handlerはhost予約席の復元後も移譲済みhostと参加者状態を同期する', () => {
     const fixture = makeFixture();
     fixture.room.started = false;

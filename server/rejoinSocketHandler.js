@@ -121,6 +121,7 @@ function registerRejoinSocketHandler(socket, dependencies) {
             socket.roomId = roomId;
             socket.playerIndex = playerIndex;
             room.lastTouchedAt = now();
+            pruneExpiredWaitingReservations(room, room.lastTouchedAt);
             socket.emit('roomJoined', {
                 roomId, playerIndex, reconnectToken, hostPlayerIndex: room.hostPlayerIndex,
             });

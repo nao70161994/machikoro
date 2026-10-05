@@ -12,6 +12,26 @@ function pruneExpiredWaitingReservations(room, now = Date.now()) {
     return removed;
 }
 
+function makeWaitingReservationPruner(dependencies) {
+    return function pruneWaitingReservations(room, now = Date.now()) {
+        const removed = pruneExpiredWaitingReservations(room, now);
+        if (!room || room.started || !Array.isArray(room.players)) return removed;
+        let hostChanged = false;
+        // A still-reserved host keeps its identity until the reservation expires.
+        if (!room.players.some(player => player.index === room.hostPlayerIndex)) {
+            const remaining = dependencies.getConnectedPlayers(room)
+                .slice().sort((left, right) => left.index - right.index);
+            if (remaining.length > 0) {
+                dependencies.setRoomHostPlayerIndex(room, remaining[0].index);
+                dependencies.emitRoomHostChanged(room);
+                hostChanged = true;
+            }
+        }
+        if (removed.length > 0 || hostChanged) dependencies.emitPlayerList(room);
+        return removed;
+    };
+}
+
 function reserveWaitingPlayer(room, socket, now, ttlMs) {
     if (!room || room.started || !socket || !Number.isFinite(now) ||
         !Number.isFinite(ttlMs) || ttlMs <= 0) return null;
@@ -146,6 +166,7 @@ function createDisconnectSocketHandler(dependencies) {
 
 module.exports = {
     createDisconnectSocketHandler,
+    makeWaitingReservationPruner,
     isWaitingReservation,
     pruneExpiredWaitingReservations,
     reserveWaitingPlayer,

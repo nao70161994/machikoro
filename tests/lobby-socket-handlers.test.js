@@ -66,6 +66,31 @@ function makeRuntime() {
     return { rooms, trace, dependencies };
 }
 
+runTest('期限切れhostだけの待機室へjoinした参加者が新hostになる', () => {
+    const runtime = makeRuntime();
+    const { makeWaitingReservationPruner } = require('../server/disconnectSocketHandler');
+    const lifecycle = require('../server/roomLifecycle')({ limits: {}, defaultRooms: runtime.rooms });
+    runtime.rooms.ROOM01 = {
+        roomId: 'ROOM01', started: false, hostPlayerIndex: 1, hostEpoch: 0,
+        maxPlayers: 2, playerSettings: [],
+        players: [{ id: null, name: 'old-host', index: 1, reservedUntil: 1 }],
+    };
+    runtime.dependencies.pruneExpiredWaitingReservations = makeWaitingReservationPruner({
+        getConnectedPlayers: room => room.players.filter(player => player.id),
+        setRoomHostPlayerIndex: lifecycle.setRoomHostPlayerIndex,
+        emitRoomHostChanged: room => runtime.trace.push(['host-changed', room.hostPlayerIndex]),
+        emitPlayerList() {},
+    });
+    const guest = makeSocket('guest', runtime.trace);
+    registerLobbySocketHandlers(guest, runtime.dependencies);
+    guest.handlers.joinRoom({ roomId: 'ROOM01', playerName: 'guest' });
+    assert.strictEqual(runtime.rooms.ROOM01.hostPlayerIndex, guest.playerIndex);
+    assert.strictEqual(guest.playerIndex, 0);
+    assert.ok(runtime.trace.some(entry => entry[0] === 'host-changed' && entry[1] === 0));
+    const joined = runtime.trace.find(entry => entry[0] === 'socket-emit' && entry[1] === 'roomJoined');
+    assert.strictEqual(joined[2].hostPlayerIndex, 0);
+});
+
 runTest('lobby socket handler は待機室管理を含む既存順序で登録する', () => {
     const runtime = makeRuntime();
     const socket = makeSocket('host', runtime.trace);

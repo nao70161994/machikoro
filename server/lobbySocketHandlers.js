@@ -145,6 +145,7 @@ function registerLobbySocketHandlers(socket, dependencies) {
         socket.join(roomId);
         socket.roomId = roomId;
         socket.playerIndex = playerIndex;
+        pruneExpiredWaitingReservationsEffect(room, now());
         socket.emit('roomJoined', {
             roomId, playerIndex, reconnectToken, hostPlayerIndex: room.hostPlayerIndex,
         });

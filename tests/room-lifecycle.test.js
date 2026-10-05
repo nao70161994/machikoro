@@ -107,3 +107,29 @@ runTest('room lifecycle は接続中の開始済みroomをTTL削除しない', (
     assert.ok(rooms.connected);
     assert.strictEqual(rooms.disconnected, undefined);
 });
+
+runTest('待機室GCは期限切れhostを接続中の参加者へ移譲して一覧を通知する', () => {
+    const { makeWaitingReservationPruner } = require('../server/disconnectSocketHandler');
+    const room = {
+        started: false, hostPlayerIndex: 0, hostEpoch: 0, lastTouchedAt: 1,
+        players: [{ id: null, index: 0, reservedUntil: 100 }, { id: 'guest', index: 1 }],
+    };
+    const events = [];
+    const prune = makeWaitingReservationPruner({
+        getConnectedPlayers: current => current.players.filter(player => player.id === 'guest'),
+        setRoomHostPlayerIndex,
+        emitRoomHostChanged: current => events.push(['host', current.hostPlayerIndex]),
+        emitPlayerList: current => events.push(['players', current.players.map(player => player.index)]),
+    });
+    const lifecycle = makeRoomLifecycle({
+        limits: { pendingRoomTtlMs: 1000 }, defaultRooms: { ROOM: room },
+        pruneWaitingRoomReservations: prune, log: { log() {} },
+    });
+    lifecycle.cleanupExpiredRooms(99);
+    assert.strictEqual(room.hostPlayerIndex, 0);
+    assert.deepStrictEqual(events, []);
+    lifecycle.cleanupExpiredRooms(100);
+    assert.strictEqual(room.hostPlayerIndex, 1);
+    assert.strictEqual(room.hostEpoch, 1);
+    assert.deepStrictEqual(events, [['host', 1], ['players', [1]]]);
+});
