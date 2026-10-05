@@ -8402,11 +8402,13 @@ html[data-design="plaza"] #plazaRecentEvents .log-item { font-size: 11px; margin
 html[data-design="plaza"] #gameScreen > .game-action-panel {
     position: absolute; left: 0; right: 0; bottom: 0; transform: none;
     width: 100%; height: auto; min-height: 0; margin: 0; border-radius: 0;
-    grid-template-columns: 64px minmax(0, 1fr); gap: 4px;
+    grid-template-columns: 80px minmax(0, 1fr); gap: 4px;
     max-height: 55dvh; overflow: visible;
     padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
 }
 html[data-design="plaza"] .game-action-panel #diceResult { grid-column: 1; grid-row: 1; }
+html[data-design="plaza"] #gameScreen .game-action-panel #diceResult .dice-display { margin: 0; }
+html[data-design="plaza"] #gameScreen .game-action-panel #diceResult .dice-face { box-sizing: border-box; flex: 0 0 36px; width: 36px; height: 36px; }
 html[data-design="plaza"] .game-action-panel #diceChoose { grid-column: 2; grid-row: 1; max-height: 42dvh; overflow: auto; }
 html[data-design="plaza"] .game-action-panel > .buttons { grid-column: 2; grid-row: 1; }
 html[data-design="plaza"] .game-action-panel:has(#diceChoose:not(:empty)) > .buttons { display: none; }
