@@ -100,12 +100,19 @@ const PlazaField = (() => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
             if (button) focusTarget(Number(button.dataset.playerIndex));
         });
-        const observer = new ResizeObserver(layout);
+        // Apply dependent sizes in the next frame, outside ResizeObserver delivery.
+        // Updating an observed panel here can otherwise trigger a WebKit loop error.
+        let layoutPending = false;
+        const observer = new ResizeObserver(() => {
+            if (layoutPending) return;
+            layoutPending = true;
+            requestAnimationFrame(() => { layoutPending = false; layout(); });
+        });
         observer.observe(node('plazaPlayerHud'));
         observer.observe(node('status'));
         observer.observe(node('gameScreen').querySelector('.game-action-panel'));
         let lastWidth = 0, lastHeight = 0;
-        new ResizeObserver(() => {
+        new ResizeObserver(() => requestAnimationFrame(() => {
             if (!mounted || !viewport.clientWidth || !viewport.clientHeight) return;
             layout();
             if (lastWidth && lastHeight) {
@@ -114,7 +121,7 @@ const PlazaField = (() => {
                 paint();
             }
             lastWidth = viewport.clientWidth; lastHeight = viewport.clientHeight;
-        }).observe(viewport);
+        })).observe(viewport);
         document.addEventListener('change', event => { if ((/** @type {HTMLElement} */ (event.target)).id === 'designThemeSelect') sync(); });
     }
     function sync() {
