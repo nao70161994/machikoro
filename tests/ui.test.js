@@ -3080,3 +3080,39 @@ runTest('手番の実収支はroll開始から建設込みで追跡し途中復�
     game.phase = 'roll';
     assert.strictEqual(context.captureTurnCoinBalance(game, session, false).net, 0);
 });
+
+runTest('広場の赤送金は受取施設と両者のHUD財布を強調し同名と復元を推測しない', () => {
+    const { context, elements } = loadUiRuntime();
+    context.document.documentElement = { dataset: { design: 'plaza' } };
+    const wallets = [makeElement(), makeElement()];
+    const cafe = makeElement();
+    cafe.dataset = { townBuilding: 'card:カフェ' };
+    elements.plazaPlayerHud = { querySelector(selector) {
+        return wallets[Number(selector.match(/index="(\d+)"/)[1])];
+    } };
+    const panels = [
+        { querySelectorAll: () => [], querySelector: () => null },
+        { querySelectorAll: () => [cafe], querySelector: () => null },
+    ];
+    const container = { querySelector: selector => panels[Number(selector.slice(-1))] };
+    const session = [];
+    const game = { players: [{ name: 'Alice' }, { name: 'Bob' }],
+        currentPlayerIndex: 0, turnCount: 1, log: [] };
+    context.animateTownCoinEvents(container, game, session, false);
+    game.log.push({ type: 'lose', message: '💸 Bobのカフェ発動 → 2コイン獲得' });
+    context.animateTownCoinEvents(container, game, session, false);
+    assert.ok(cafe.classList.contains('town-income-pulse'));
+    assert.ok(wallets[1].classList.contains('town-income-pulse'));
+    assert.ok(wallets[0].classList.contains('town-payment-pulse'));
+    const timers = context.timeoutDelays.length;
+    context.animateTownCoinEvents(container, game, session, false);
+    assert.strictEqual(context.timeoutDelays.length, timers);
+    game.log.push({ type: 'gain', message: '🏪 パン屋発動 → +1コイン' });
+    context.animateTownCoinEvents(container, game, session, true);
+    context.animateTownCoinEvents(container, game, session, false);
+    assert.strictEqual(context.timeoutDelays.length, timers);
+    game.players[0].name = 'Bob';
+    game.log.push({ type: 'lose', message: '💸 Bobのカフェ発動 → 1コイン獲得' });
+    context.animateTownCoinEvents(container, game, session, false);
+    assert.strictEqual(context.timeoutDelays.length, timers);
+});

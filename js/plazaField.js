@@ -6,6 +6,8 @@ const PlazaField = (() => {
     let mounted = false;
     let initialized = false;
     let selfIndex = 0;
+    let playerCount = 0;
+    let townObserver = null;
     let camera = { x: 0, y: 0, scale: 0.75 };
     let worldHeight = 1380;
     let pendingFocus = null;
@@ -25,6 +27,7 @@ const PlazaField = (() => {
     }
     function layout() {
         if (!mounted) return;
+        arrangeTowns();
         const screen = node('gameScreen');
         const actions = /** @type {HTMLElement} */ (screen.querySelector('.game-action-panel'));
         const sideHud = window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
@@ -43,6 +46,31 @@ const PlazaField = (() => {
         document.body.style.setProperty('--plaza-banner', `${height(node('pwaUpdateBanner'))}px`);
     }
     function node(id) { return document.getElementById(id); }
+    function arrangeTowns() {
+        if (!node('plazaViewport').clientWidth || !node('plazaViewport').clientHeight) return;
+        const positions = [[580, 970], [70, 470], [580, 0], [1150, 470]];
+        const towns = Array.from({ length: playerCount }, (_, index) => ({
+            item: node(`playerBox${index}`), seat: (index - selfIndex + playerCount) % playerCount,
+        })).filter(entry => entry.item);
+        for (const { item, seat } of towns.filter(entry => entry.seat < 4)) {
+            item.style.left = `${positions[seat][0]}px`;
+            item.style.top = `${positions[seat][1]}px`;
+        }
+        const bottom = item => item.offsetTop + item.offsetHeight;
+        const topTown = towns.find(entry => entry.seat === 2);
+        const market = node('buildMenu');
+        market.style.top = `${Math.max(420, topTown ? bottom(topTown.item) + 32 : 420)}px`;
+        const selfTown = towns.find(entry => entry.seat === 0);
+        if (selfTown) selfTown.item.style.top = `${Math.max(970, bottom(market) + 32)}px`;
+        const extraTop = Math.max(0, ...towns.filter(entry => entry.seat < 4).map(entry => bottom(entry.item))) + 40;
+        const rowHeight = Math.max(0, ...towns.map(entry => entry.item.offsetHeight)) + 40;
+        for (const { item, seat } of towns.filter(entry => entry.seat >= 4)) {
+            item.style.left = `${70 + ((seat - 4) % 3) * 530}px`;
+            item.style.top = `${extraTop + Math.floor((seat - 4) / 3) * rowHeight}px`;
+        }
+        worldHeight = Math.max(1380, bottom(market) + 40, ...towns.map(entry => bottom(entry.item) + 40));
+        node('plazaWorld').style.height = `${worldHeight}px`;
+    }
     function setComparisonOpen(open) {
         node('plazaComparison').hidden = !open;
         node('plazaCameraTools').querySelector('[data-field-panel="comparison"]').setAttribute('aria-expanded', String(open));
@@ -98,6 +126,7 @@ const PlazaField = (() => {
                 : Math.min(0.85, (viewport.clientWidth - 16) / 450));
             const item = node(target === 'market' ? 'buildMenu' : `playerBox${Number.isInteger(target) ? target : selfIndex}`);
             if (item && target === 'market') item.style.height = `${Math.max(100, Math.min(470, (viewport.clientHeight - 16) / camera.scale))}px`;
+            arrangeTowns();
             if (item) { x = item.offsetLeft + item.offsetWidth / 2; y = item.offsetTop + item.offsetHeight / 2; }
         }
         camera.x = viewport.clientWidth / 2 - x * camera.scale;
@@ -244,14 +273,20 @@ const PlazaField = (() => {
         // Apply dependent sizes in the next frame, outside ResizeObserver delivery.
         // Updating an observed panel here can otherwise trigger a WebKit loop error.
         let layoutPending = false;
-        const observer = new ResizeObserver(() => {
+        const queueLayout = () => {
             if (layoutPending) return;
             layoutPending = true;
-            requestAnimationFrame(() => { layoutPending = false; layout(); });
-        });
+            requestAnimationFrame(() => {
+                layoutPending = false; layout();
+                if (mounted && node('plazaViewport').clientWidth && node('plazaViewport').clientHeight) paint();
+            });
+        };
+        const observer = new ResizeObserver(queueLayout);
+        townObserver = new ResizeObserver(queueLayout);
         observer.observe(node('plazaPlayerHud'));
         observer.observe(node('plazaCameraTools'));
         observer.observe(node('plazaEvents'));
+        observer.observe(node('buildMenu'));
         observer.observe(node('status'));
         observer.observe(node('pwaUpdateBanner'));
         observer.observe(node('gameScreen').querySelector('.game-action-panel'));
@@ -282,6 +317,7 @@ const PlazaField = (() => {
             mounted = true; requestAnimationFrame(() => { layout(); focusTarget('self'); });
         } else if (!enabled && mounted) {
             clearGesture();
+            townObserver.disconnect();
             setLogPanelOpen(false);
             setComparisonOpen(false);
             world.querySelectorAll('#players > .player-box').forEach(item => {
@@ -293,6 +329,7 @@ const PlazaField = (() => {
             screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
             screen.insertBefore(node('buildMenu'), node('turnTimeline'));
             node('buildMenu').style.removeProperty('height');
+            node('buildMenu').style.removeProperty('top');
             pendingFocus = null;
             mounted = false;
             DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
@@ -301,12 +338,12 @@ const PlazaField = (() => {
     function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set()) {
         sync(); if (!mounted) return;
         selfIndex = primaryIndex >= 0 ? primaryIndex : currentIndex;
-        const positions = [[580, 970], [70, 470], [580, 0], [1150, 470]];
+        playerCount = players.length;
+        townObserver.disconnect();
         players.forEach((player, index) => {
-            const item = node(`playerBox${index}`), seat = (index - selfIndex + players.length) % players.length;
-            const p = positions[seat] || [70 + ((seat - 4) % 3) * 530, 1250 + Math.floor((seat - 4) / 3) * 380];
+            const item = node(`playerBox${index}`);
             if (item) {
-                item.style.left = `${p[0]}px`; item.style.top = `${p[1]}px`;
+                townObserver.observe(item);
                 item.style.setProperty('--plaza-seat-color', seatColors[index % seatColors.length]);
                 const row = item.querySelector('.player-name-row');
                 if (row && !row.querySelector('.plaza-seat-mark')) {
@@ -318,8 +355,6 @@ const PlazaField = (() => {
                 }
             }
         });
-        worldHeight = players.length > 4 ? 1640 + Math.floor((players.length - 5) / 3) * 380 : 1380;
-        node('plazaWorld').style.height = `${worldHeight}px`;
         const focused = (/** @type {HTMLElement} */ (document.activeElement))?.closest('#plazaPlayerHud button')?.getAttribute('data-player-index');
         node('plazaPlayerHud').innerHTML = players.map((player, index) => {
             const counts = { blue: 0, green: 0, red: 0, purple: 0 };
@@ -327,7 +362,7 @@ const PlazaField = (() => {
             const chips = Object.entries(counts).map(([color, count]) => `<span class="player-color-${color}">${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}</span>`).join(' ');
             const built = Object.entries(player.landmarks).filter(([name, value]) => value && enabledLandmarks.has(name)).length;
             const kindIcon = node(`playerBox${index}`)?.querySelector('.player-icon')?.innerHTML || '';
-            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-label="プレイヤー${index + 1}、${escapeHtml(player.name)}の街を見る${index === selfIndex ? '、あなた' : ''}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span>${escapeHtml(player.name)}</strong><span>${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span>${chips}</span><small>目標 ${built}/${enabledLandmarks.size}</small></button>`;
+            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-label="プレイヤー${index + 1}、${escapeHtml(player.name)}の街を見る${index === selfIndex ? '、あなた' : ''}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span>${escapeHtml(player.name)}</strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span>${chips}</span><small>目標 ${built}/${enabledLandmarks.size}</small></button>`;
         }).join('');
         if (focused !== undefined && focused !== null) (/** @type {HTMLElement} */ (node('plazaPlayerHud').querySelector(`button[data-player-index="${focused}"]`)))?.focus({ preventScroll: true });
         renderComparison(players, enabledLandmarks, escapeHtml);

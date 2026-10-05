@@ -59,3 +59,41 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
+
+for (const playerCount of [4, 10]) {
+    test(`広場の${playerCount}人の育った街は地面の境界と他の街を越えない`, async ({ page }) => {
+        await page.setViewportSize({ width: 1363, height: 936 });
+        await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+        await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+        await page.goto('/');
+        await page.evaluate(count => {
+            startGameNow(count, Array.from({ length: count }, (_, index) => ({
+                type: index === 0 ? 'human' : 'cpu', difficulty: 'normal', name: `街${index + 1}`,
+            })));
+            cancelCpuSchedule('plaza-full-towns');
+            window.scheduleCPU = () => false;
+            const state = GameRuntimeState.runtime.snapshot();
+            for (const player of state.game.players) player.cards = CARDS.slice(0, 8).flatMap(card => Array(6).fill(card));
+            render();
+        }, playerCount);
+        const fits = () => page.evaluate(() => {
+            const world = document.getElementById('plazaWorld').getBoundingClientRect();
+            const towns = Array.from(document.querySelectorAll('#plazaWorld #players > .player-box, #plazaWorld #buildMenu'), item => item.getBoundingClientRect());
+            const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+            return towns.every(town => town.left >= world.left && town.top >= world.top &&
+                town.right <= world.right && town.bottom <= world.bottom) &&
+                towns.every((town, index) => towns.slice(index + 1).every(other => !overlaps(town, other)));
+        });
+        await expect.poll(fits).toBe(true);
+        await page.locator('[data-field-target="all"]').click();
+        await expect.poll(fits).toBe(true);
+        // Every expanded opponent and a resized market must fit without a game render.
+        await page.locator('#plazaWorld #players > details').evaluateAll(elements => {
+            elements.forEach(element => { element.open = true; });
+        });
+        await expect.poll(fits).toBe(true);
+        await page.locator('[data-field-target="market"]').click();
+        await expect.poll(fits).toBe(true);
+        await expect(page.locator('#crashScreen')).toBeHidden();
+    });
+}

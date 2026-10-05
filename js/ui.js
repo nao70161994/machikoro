@@ -998,6 +998,11 @@ function animateTownCoinEvents(container, currentGame, session, replaying) {
             const coins = panel.querySelector('.player-coins');
             if (coins) targets.push(coins);
         }
+        if (document.documentElement?.dataset?.design === 'plaza') {
+            const hudCoins = document.getElementById('plazaPlayerHud')?.querySelector(
+                `[data-player-index="${index}"] .plaza-player-coins`);
+            if (hudCoins) targets.push(hudCoins);
+        }
         for (const element of targets) {
             element.classList.add(cls);
             setTimeout(() => element.classList.remove(cls), 1200);
