@@ -8339,7 +8339,7 @@ html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type {
 html[data-design="plaza"] #plazaPlayerHud small { font-size: 11px; }
 html[data-design="plaza"] #plazaViewport {
     display: block; position: absolute; inset: var(--plaza-top) 0 calc(var(--plaza-actions) + 32px);
-    overflow: hidden; touch-action: none; cursor: grab;
+    overflow: hidden; touch-action: none; cursor: grab; user-select: none;
     background: radial-gradient(ellipse at center, #5b7860, #234b41);
 }
 html[data-design="plaza"] #plazaViewport:active { cursor: grabbing; }
@@ -8426,7 +8426,7 @@ html[data-design="plaza"] #gameScreen > #gameLogContainer.plaza-panel-open {
     display: block; position: absolute; left: 8px; right: 8px; bottom: calc(var(--plaza-actions) + 36px);
     height: min(300px, 50dvh); overflow: auto; z-index: 8; background: #102c35;
 }
-html[data-design="plaza"] #gameScreen > #tutorialBox { position: absolute; left: 8px; bottom: calc(var(--plaza-actions) + 36px); width: min(320px, calc(100% - 16px)); max-height: 35dvh; overflow: auto; box-sizing: border-box; z-index: 7; background: #102c35; }
+html[data-design="plaza"] #gameScreen > #tutorialBox { position: absolute; left: 8px; bottom: calc(var(--plaza-actions) + 36px); width: min(320px, calc(100% - 16px)); max-height: min(120px, 25dvh); overflow: auto; box-sizing: border-box; z-index: 7; background: #102c35; }
 html[data-design="plaza"] body.game-finished #gameScreen[style*="display: block"] { overflow: auto; display: block !important; }
 html[data-design="plaza"] body.game-finished #gameScreen > #status { position: relative; height: auto; z-index: 20; padding: 12px; }
 html[data-design="plaza"] body.game-finished #plazaPlayerHud,

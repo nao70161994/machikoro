@@ -2232,11 +2232,20 @@ for (const width of [320, 390, 844, 1440]) {
         expect(parseInt(await page.locator('#plazaZoomLabel').textContent(), 10)).toBeGreaterThan(marketZoom);
         await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-target="all"]').click();
-        const viewport = await page.locator('#plazaViewport').boundingBox();
+        const dragPoint = await page.locator('#plazaViewport').evaluate(field => {
+            const rect = field.getBoundingClientRect();
+            for (const y of [0.3, 0.5, 0.7]) for (const x of [0.1, 0.5, 0.9]) {
+                const point = { x: rect.left + rect.width * x, y: rect.top + rect.height * y };
+                const hit = document.elementFromPoint(point.x, point.y);
+                if (hit?.closest('#plazaViewport') && !hit.closest('#buildMenu')) return point;
+            }
+            return null;
+        });
+        expect(dragPoint).not.toBeNull();
         const beforePan = await page.locator('#plazaWorld').getAttribute('style');
-        await page.mouse.move(viewport.x + 10, viewport.y + viewport.height - 20);
+        await page.mouse.move(dragPoint.x, dragPoint.y);
         await page.mouse.down();
-        await page.mouse.move(viewport.x + 60, viewport.y + viewport.height - 40, { steps: 8 });
+        await page.mouse.move(dragPoint.x + 50, dragPoint.y - 20, { steps: 8 });
         await page.mouse.up();
         expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(beforePan);
         const pinch = await page.locator('#plazaViewport').evaluate(viewport => {
