@@ -105,7 +105,9 @@ jobs:
             - name: Install WebKit runtime
               run: npx playwright install --with-deps webkit
             - name: Mobile WebKit E2E
-              run: npm run test:browser-e2e
+              # Four-client tests already run several WebKit contexts.
+              # Match the release gate to avoid competing renderer workloads.
+              run: npm run test:browser-e2e -- --workers=1
             - name: Upload WebKit diagnostics
               if: ${{ failure() }}
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
