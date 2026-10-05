@@ -155,7 +155,8 @@ const UiLogDisplay = (() => {
             }
             const cls = classifyLogEntry(entry, display).cls;
             const unnamedGain = cls === 'log-gain' && !coinEvent(entry, display,
-                Object.assign({}, options, { turnPlayerName: '' }))?.actor;
+                Object.assign({}, options, { turnPlayerName: '' }))?.actor &&
+                !/^(.+?)の(.+?)発動/u.test(visibleLogMessage(entry.message, { stripLeadingEmoji: true }));
             return actor && (cls === 'log-dice' || cls === 'log-build' || unnamedGain)
                 ? Object.assign({}, entry, { turnActor: actor }) : entry;
         });
@@ -176,9 +177,12 @@ const UiLogDisplay = (() => {
         let subject = named ? named[2] : '';
         const players = Array.isArray(options.players) ? options.players : [];
         const matchingNames = players.filter(player => player && message.startsWith(`${player.name}の`));
-        if (matchingNames.length === 1) {
-            actor = matchingNames[0].name;
-            subject = message.slice(actor.length + 1).split('発動')[0];
+        if (matchingNames.length) {
+            const longest = Math.max(...matchingNames.map(player => player.name.length));
+            const exact = matchingNames.filter(player => player.name.length === longest);
+            const name = exact[0].name;
+            actor = exact.length === 1 ? name : '';
+            subject = message.slice(name.length + 1).split('発動')[0];
         }
         if (!subject) {
             const cause = message.match(/^(.+?)(?:発動|効果|×\d+：)/);

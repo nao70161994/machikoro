@@ -360,3 +360,23 @@ const conflictingReroll = UiLogDisplay.projectHistoryActors([
     actorHistory[0], '__SEP__', ...rerolledLog, actorHistory[4],
 ], display, actorOptions);
 assert.strictEqual(conflictingReroll[2].turnActor, undefined);
+
+for (const type of ['gain', 'lose']) {
+    const prefixEntry = { type, message: '🌾 街の主の麦畑発動 → +2コイン' };
+    const prefixOptions = { players: [{ name: '街' }, { name: '街の主' }], turnPlayerName: '街' };
+    const preciseEvent = UiLogDisplay.coinEvent(prefixEntry, display, prefixOptions);
+    assert.strictEqual(preciseEvent.actor, '街の主');
+    assert.strictEqual(preciseEvent.subject, '麦畑');
+    assert.strictEqual(preciseEvent.transfer, type === 'lose');
+    const ambiguousEvent = UiLogDisplay.coinEvent(prefixEntry, display, {
+        ...prefixOptions, players: [...prefixOptions.players, { name: '街の主' }],
+    });
+    assert.strictEqual(ambiguousEvent.actor, '');
+    assert.strictEqual(ambiguousEvent.subject, '麦畑');
+    assert.strictEqual(ambiguousEvent.transfer, type === 'lose');
+}
+assert.strictEqual(UiLogDisplay.projectHistoryActors([
+    { type: 'system', message: '👤 街のターン' },
+    { type: 'gain', message: '🌾 街の主の麦畑発動 → +2コイン' },
+], display, { players: [{ name: '街' }, { name: '街の主' }, { name: '街の主' }] })[1].turnActor,
+undefined);
