@@ -122,7 +122,13 @@ function renderLog() {
 }
 
 function highlightLogEntry(playerName = '', targetName = '', cardName = '', logMessage = '') {
-    return uiLogHighlightEffects.highlight(playerName, targetName, cardName, logMessage);
+    const result = uiLogHighlightEffects.highlight(playerName, targetName, cardName, logMessage);
+    if (typeof PlazaField !== 'undefined' && document.documentElement?.dataset?.design === 'plaza') {
+        const index = uiGameRuntimeSnapshot().game.players.findIndex(player =>
+            player.name === playerName || player.name === targetName || logMessage.includes(player.name));
+        if (index >= 0) PlazaField.focusTarget(index);
+    }
+    return result;
 }
 
 function tutorialOptions() {
@@ -1138,6 +1144,7 @@ function renderPlayers() {
             townBuildingCounts,
         });
     }
+    if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection());
 }
 
 function getEffectText(card) {

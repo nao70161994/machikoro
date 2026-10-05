@@ -3,6 +3,7 @@
 const browserMaintenanceFiles = Object.freeze([
     'js/Card.js',
     'js/designTheme.js',
+    'js/plazaField.js',
     'js/marketSupply.js',
     'js/GameManager.js',
     'js/pendingActionQueue.js',
@@ -371,7 +372,7 @@ const mainCompositionGlobals = Object.freeze(Object.fromEntries([
     'LocalGameStart', 'LocalGameStartRuntime', 'LocalPlayerSettings', 'MainAutoSkipRuntime',
     'MainHumanActionRuntime', 'MainUiEventRuntime', 'PageActivationPolicy', 'PageActivationRuntime',
     'RoomQrCode', 'UiCpuTournament', 'UiDiceDisplay', 'UiEventDelegation', 'UiGameStatusView',
-    'UiPlayerCount', 'UiPlayerDisplay', 'UiRangeControl', 'UiScreenFocus', 'UiTabView', 'UiWinner',
+    'UiPlayerCount', 'UiPlayerDisplay', 'PlazaField', 'UiRangeControl', 'UiScreenFocus', 'UiTabView', 'UiWinner',
     '_readOnlineActionLog', 'getEnabledCardSelection', 'getEnabledLandmarkSelection',
     'getLocalSaveRepository', 'isOnlineReconnectInputBlocked', 'isValidSavedGameState',
     'readOnlineSession', 'recordFlowTrace', 'replaceEnabledCardSelection',

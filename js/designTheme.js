@@ -53,7 +53,7 @@ const DesignTheme = (() => {
         });
         return Object.freeze({ apply, current: () => selected });
     }
-    return Object.freeze({ STORAGE_KEY, normalize, initialize });
+    return Object.freeze({ STORAGE_KEY, normalize, initialize, arrangeGameSections });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = DesignTheme;

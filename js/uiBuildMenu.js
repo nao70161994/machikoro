@@ -1,4 +1,5 @@
 'use strict';
+/* global PlazaField */
 
 const UiBuildMenu = (() => {
     const CARD_FILTER_DEFS = Object.freeze([
@@ -129,7 +130,10 @@ const UiBuildMenu = (() => {
                 return false;
             }
         }
-        target.scrollIntoView({ block: 'start' });
+        if (typeof PlazaField !== 'undefined' && typeof document !== 'undefined' &&
+                document.documentElement.dataset.design === 'plaza') {
+            PlazaField.focusTarget('market');
+        } else target.scrollIntoView({ block: 'start' });
         return true;
     }
 

@@ -1884,6 +1884,8 @@ body.game-finished #gameScreen > #btnRestart {
 
 .dot.hidden { background: transparent; visibility: hidden; }
 
+#plazaViewport, #plazaPlayerHud, #plazaCameraTools { display: none; }
+
 
 @keyframes dice-land {
     0% { opacity: 0.45; transform: translateY(-12px) rotate(-10deg) scale(0.82); }
@@ -8253,8 +8255,8 @@ html[data-design="plaza"] #players .plaza-owned-cards { display: flex; flex-wrap
 html[data-design="plaza"] #players .plaza-owned-cards .card-badge { flex: 0 0 auto; font-size: 10px; padding: 3px; margin: 0; min-height: 28px; }
 html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner,
 html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaInstallBanner {
-    top: max(8px, env(safe-area-inset-top, 0px));
-    bottom: auto;
+    top: auto;
+    bottom: calc(148px + env(safe-area-inset-bottom, 0px));
 }
 html[data-design="plaza"] #players .player-box-self .player-name-row { flex-basis: auto; }
 html[data-design="plaza"] #players .player-box-self .player-header { justify-content: space-between; }
@@ -8288,4 +8290,162 @@ html[data-design="plaza"] #buildMenu .card-detail-btn { min-height: 32px; }
     html[data-design="plaza"] #buildMenu .card-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     html[data-design="plaza"] #players .player-name { font-size: 17px; }
     html[data-design="plaza"] #players .player-landmark-count { width: auto; margin-left: auto; }
+}
+
+/* Field and HUD occupy separate layers; the camera transforms only the field. */
+html[data-design="plaza"] #gameScreen[style*="display: block"] {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    --plaza-top: 178px;
+    --plaza-actions: 84px;
+    min-height: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: hidden;
+    background: #163b38;
+    z-index: 10;
+    display: block;
+}
+html[data-design="plaza"] #gameScreen > #status {
+    position: absolute; top: 0; left: 0; right: 0; height: 30px;
+    box-sizing: border-box; margin: 0; padding: 4px; font-size: 14px;
+    border-radius: 0; z-index: 5;
+}
+html[data-design="plaza"] #plazaPlayerHud {
+    display: grid; position: absolute; top: 30px; left: 0; right: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 180px; gap: 4px; padding: 4px; box-sizing: border-box;
+    overflow: auto; background: #102c35; z-index: 5;
+}
+html[data-design="plaza"] #plazaPlayerHud button {
+    flex: 1 0 74px; min-width: 0; width: auto; margin: 0; padding: 3px 4px;
+    border: 1px solid #6c8c88; border-radius: 8px; background: #203e48;
+    font-size: 12px; line-height: 1.2; color: #fff0d0; text-align: left;
+}
+html[data-design="plaza"] #plazaPlayerHud button.active { border-color: #e9bf64; }
+html[data-design="plaza"] #plazaPlayerHud button.self { background: #31534b; }
+html[data-design="plaza"] #plazaPlayerHud strong { display: block; font-size: 12px; white-space: normal; overflow-wrap: anywhere; }
+html[data-design="plaza"] #plazaPlayerHud button > span { display: block; white-space: nowrap; }
+html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    font-size: 12px; line-height: 1.2;
+}
+html[data-design="plaza"] #plazaPlayerHud small { font-size: 11px; }
+html[data-design="plaza"] #plazaViewport {
+    display: block; position: absolute; inset: var(--plaza-top) 0 calc(var(--plaza-actions) + 32px);
+    overflow: hidden; touch-action: none; cursor: grab; user-select: none;
+    background: radial-gradient(ellipse at center, #5b7860, #234b41);
+}
+html[data-design="plaza"] #plazaViewport:active { cursor: grabbing; }
+html[data-design="plaza"] #plazaWorld {
+    position: absolute; width: 1680px; height: 1380px; transform-origin: 0 0;
+    background: repeating-linear-gradient(35deg, transparent 0 130px, #a4b5800c 131px 133px), radial-gradient(ellipse, #648164, #385c45);
+}
+html[data-design="plaza"] #plazaWorld .plaza-road { position: absolute; background: #acac86; border: 8px solid #829477; border-radius: 50px; opacity: 0.65; }
+html[data-design="plaza"] .plaza-road-horizontal { left: 80px; top: 610px; width: 1450px; height: 64px; }
+html[data-design="plaza"] .plaza-road-vertical { left: 805px; top: 160px; width: 64px; height: 950px; }
+html[data-design="plaza"] #plazaWorld .player-area,
+html[data-design="plaza"] #plazaWorld #players { display: contents; }
+html[data-design="plaza"] #plazaWorld #playerNavigation { display: none !important; }
+html[data-design="plaza"] #plazaWorld #players > .player-box {
+    position: absolute; width: 450px; min-height: 250px; box-sizing: border-box;
+    padding: 14px; background: transparent; border: 0;
+    box-shadow: none; border-radius: 0;
+}
+html[data-design="plaza"] #plazaWorld .player-asset-summary,
+html[data-design="plaza"] #plazaWorld .player-coins,
+html[data-design="plaza"] #plazaWorld .town-backdrop,
+html[data-design="plaza"] #plazaWorld .plaza-owned-cards,
+html[data-design="plaza"] #plazaWorld .player-box-compact .player-detail .sunset-town { display: none; }
+html[data-design="plaza"] #plazaWorld .sunset-town { background: transparent; border: 0; box-shadow: none; }
+html[data-design="plaza"] #plazaWorld .town-street { background: transparent; }
+html[data-design="plaza"] #plazaWorld .player-name-row { padding: 4px 8px; background: #173e3bd9; border-radius: 8px; }
+html[data-design="plaza"] #plazaWorld #players .player-name { font-size: 18px; }
+html[data-design="plaza"] #plazaWorld .player-name-row { flex-basis: auto; }
+html[data-design="plaza"] #plazaWorld .player-header { justify-content: space-between; }
+html[data-design="plaza"] #plazaWorld .plaza-opponent-town .town-street,
+html[data-design="plaza"] #plazaWorld #players .player-box-self .town-street { height: 190px; max-height: none; }
+html[data-design="plaza"] #plazaWorld #players .player-detail { max-height: none; overflow: visible; }
+html[data-design="plaza"] #plazaWorld .player-box-self { border-color: #edcb74; }
+html[data-design="plaza"] #plazaWorld #buildMenu {
+    position: absolute; left: 555px; top: 420px; width: 570px; height: 470px;
+    max-height: none; box-sizing: border-box; overflow: auto; padding: 12px;
+    background: #213f3bf5; border: 3px solid #dbc27e; border-radius: 28px;
+    box-shadow: 0 15px 25px #172b3388; touch-action: none;
+}
+html[data-design="plaza"] #plazaWorld #buildMenu .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+html[data-design="plaza"] #plazaCameraTools {
+    display: flex; position: absolute; right: 8px; top: calc(var(--plaza-top) + 8px);
+    flex-direction: row; flex-wrap: nowrap; gap: 3px; padding: 4px; border-radius: 10px;
+    width: max-content; overflow: visible;
+    max-width: calc(100% - 16px); background: #102c35eb; z-index: 5;
+}
+html[data-design="plaza"] .plaza-camera-menu { position: relative; }
+html[data-design="plaza"] .plaza-camera-menu > summary { min-height: 44px; display: flex; align-items: center; padding: 0 8px; font-size: 12px; cursor: pointer; }
+html[data-design="plaza"] .plaza-camera-menu > div { position: absolute; top: 48px; right: 0; display: flex; align-items: center; gap: 4px; width: max-content; padding: 8px; border-radius: 10px; background: #102c35; box-shadow: 0 4px 12px #0006; }
+html[data-design="plaza"] #plazaCameraTools button { flex: 0 0 auto; width: auto; min-height: 44px; height: 44px; margin: 0; padding: 5px 8px; font-size: 12px; background: #2b4952; }
+html[data-design="plaza"] #plazaZoomLabel { align-self: center; font-size: 11px; }
+html[data-design="plaza"] #gameScreen > #plazaEvents {
+    position: absolute; left: 0; right: 0; bottom: var(--plaza-actions); height: 32px;
+    padding: 4px 8px; margin: 0; border-radius: 0; box-sizing: border-box;
+    overflow: auto; z-index: 5; background: #102c35;
+}
+html[data-design="plaza"] #plazaEvents h2,
+html[data-design="plaza"] #plazaRecentEvents .log-item:not(:last-child) { display: none; }
+html[data-design="plaza"] #plazaRecentEvents .log-item { font-size: 11px; margin: 0; padding: 0; }
+html[data-design="plaza"] #gameScreen > .game-action-panel {
+    position: absolute; left: 0; right: 0; bottom: 0; transform: none;
+    width: 100%; height: auto; min-height: 0; margin: 0; border-radius: 0;
+    grid-template-columns: 80px minmax(0, 1fr); gap: 4px;
+    max-height: 55dvh; overflow: visible;
+    padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
+}
+html[data-design="plaza"] .game-action-panel #diceResult { grid-column: 1; grid-row: 1; }
+html[data-design="plaza"] #gameScreen .game-action-panel #diceResult .dice-display { margin: 0; }
+html[data-design="plaza"] #gameScreen .game-action-panel #diceResult .dice-face { box-sizing: border-box; flex: 0 0 36px; width: 36px; height: 36px; }
+html[data-design="plaza"] .game-action-panel #diceChoose { grid-column: 2; grid-row: 1; max-height: 42dvh; overflow: auto; }
+html[data-design="plaza"] .game-action-panel > .buttons { grid-column: 2; grid-row: 1; }
+html[data-design="plaza"] .game-action-panel:has(#diceChoose:not(:empty)) > .buttons { display: none; }
+html[data-design="plaza"] .game-action-panel .dice-choose { margin: 0; padding: 4px; }
+html[data-design="plaza"] .game-action-panel .dice-choose p { margin: 0 0 4px; font-size: 12px; }
+html[data-design="plaza"] .game-action-panel .dice-choose button { min-height: 44px; font-size: 13px; padding: 4px; }
+html[data-design="plaza"] .game-action-toolbar { grid-column: 1 / -1; grid-row: 2; }
+html[data-design="plaza"] .game-guide-settings,
+html[data-design="plaza"] .game-support-settings { position: relative; width: auto; }
+html[data-design="plaza"] .game-action-toolbar .panel-tools { position: fixed; bottom: calc(var(--plaza-actions) + 8px); left: 8px; right: 8px; width: min(320px, calc(100% - 16px)); margin-left: auto; max-height: 50dvh; overflow: auto; padding: 10px; box-sizing: border-box; border-radius: 10px; background: #102c35; box-shadow: 0 0 20px #0008; }
+html[data-design="plaza"] #gameConnectivityPanel { position: absolute; right: 8px; bottom: calc(var(--plaza-actions) + 36px); width: auto; z-index: 5; padding: 3px; font-size: 10px; }
+html[data-design="plaza"] #turnTimeline,
+html[data-design="plaza"] #onlineLeaveHelp,
+html[data-design="plaza"] #btnRestart { display: none !important; }
+html[data-design="plaza"] #gameScreen > #gameLogContainer { display: none; }
+html[data-design="plaza"] #gameScreen > #gameLogContainer.plaza-panel-open {
+    display: block; position: absolute; left: 8px; right: 8px; bottom: calc(var(--plaza-actions) + 36px);
+    height: min(300px, 50dvh); overflow: auto; z-index: 8; background: #102c35;
+}
+html[data-design="plaza"] #gameScreen > #tutorialBox { position: absolute; left: 8px; bottom: calc(var(--plaza-actions) + 36px); width: min(320px, calc(100% - 16px)); max-height: min(120px, 25dvh); overflow: auto; box-sizing: border-box; z-index: 7; background: #102c35; }
+html[data-design="plaza"] body.game-finished #gameScreen[style*="display: block"] { overflow: auto; display: block !important; }
+html[data-design="plaza"] body.game-finished #gameScreen > #status { position: relative; height: auto; z-index: 20; padding: 12px; }
+html[data-design="plaza"] body.game-finished #plazaPlayerHud,
+html[data-design="plaza"] body.game-finished #plazaViewport,
+html[data-design="plaza"] body.game-finished #plazaCameraTools,
+html[data-design="plaza"] body.game-finished #plazaEvents { display: none !important; }
+html[data-design="plaza"] body.pwa-banner-open #gameScreen[style*="display: block"] { max-height: none; padding-bottom: 0; }
+html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { bottom: calc(var(--plaza-actions, 84px) + 40px + env(safe-area-inset-bottom, 0px)); max-height: 25dvh; overflow: auto; }
+html[data-design="plaza"] body.game-finished:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { top: 0; bottom: auto; left: 0; right: 0; width: 100%; max-width: none; transform: none; box-sizing: border-box; }
+html[data-design="plaza"] body.game-finished.pwa-banner-open #gameScreen[style*="display: block"] { top: var(--plaza-banner, 100px); height: calc(100dvh - var(--plaza-banner, 100px)); }
+@media (orientation: landscape) and (max-height: 600px) {
+    html[data-design="plaza"] #plazaPlayerHud { grid-template-columns: minmax(0, 1fr); left: auto; width: 216px; max-height: calc(100% - 62px - var(--plaza-actions)); }
+    html[data-design="plaza"] #plazaPlayerHud button { display: grid; grid-template-columns: 1fr auto; font-size: 11px; }
+    html[data-design="plaza"] #plazaPlayerHud strong { grid-column: 1 / -1; }
+    html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type { grid-column: 1 / -1; grid-row: 3; }
+    html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; }
+    html[data-design="plaza"] #plazaViewport { right: 216px; }
+    html[data-design="plaza"] #plazaCameraTools { left: 8px; right: auto; }
+    html[data-design="plaza"] body:not(.game-finished):has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { left: 8px; right: auto; transform: none; max-width: calc(100% - 232px); }
 }

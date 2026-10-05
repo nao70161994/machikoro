@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
   '/icons/facility-art.svg',
   '/icons/interface-ui.svg',
   '/js/designTheme.js',
+  '/js/plazaField.js',
   '/manifest.json',
   '/manifest.webmanifest',
   '/js/Card.js',

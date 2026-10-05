@@ -1,4 +1,6 @@
 declare var GameActionContract: typeof import("../js/actionContract");
+declare var PlazaField: typeof import("../js/plazaField");
+declare var DesignTheme: typeof import("../js/designTheme");
 declare var GameSnapshot: typeof import("../js/gameSnapshot");
 declare var MarketSupply: typeof import("../js/marketSupply").MarketSupply;
 declare var decrementMarketShopStock: (game: unknown, shopStock: Record<string, number>, cardRef: unknown) => boolean;
