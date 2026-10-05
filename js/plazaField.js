@@ -183,7 +183,10 @@ const PlazaField = (() => {
             const menu = button.closest('details');
             if (menu && !button.dataset.fieldZoom) menu.open = false;
         });
-        node('plazaLogClose').addEventListener('click', () => setLogPanelOpen(false));
+        node('plazaLogClose').addEventListener('click', () => {
+            setLogPanelOpen(false);
+            (/** @type {HTMLElement} */ (node('plazaCameraTools').querySelector('[data-field-panel="log"]'))).focus({ preventScroll: true });
+        });
         node('plazaPlayerHud').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
             if (button) focusTarget(Number(button.dataset.playerIndex));
