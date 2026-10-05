@@ -375,8 +375,8 @@
             <button type="button" data-field-target="self">自分の街</button>
             <button type="button" data-field-target="market">市場</button>
             <button type="button" data-field-target="all">全体</button>
+            <button type="button" data-field-panel="log" aria-controls="gameLogContainer" aria-expanded="false">ログ</button>
             <details class="plaza-camera-menu"><summary>その他</summary><div>
-                <button type="button" data-field-panel="log">履歴</button>
                 <button type="button" data-ui-action="restartGame">終了</button>
                 <button type="button" data-field-zoom="out" aria-label="縮小">−</button>
                 <span id="plazaZoomLabel">75%</span>
@@ -437,6 +437,7 @@
         </section>
         <div id="tutorialBox" class="tutorial-box" role="region" aria-label="操作ガイド" style="display:none"></div>
         <div id="gameLogContainer" class="log-container">
+            <button id="plazaLogClose" type="button" aria-label="ログを閉じる">閉じる</button>
             <div class="log-header" data-ui-action="toggleLog" role="button" tabindex="0" aria-expanded="true">
                 <span id="logTitle"><span class="game-control-emoji" aria-hidden="true">📋</span><svg class="game-control-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#log"></use></svg><span id="logCountLabel">ログ</span></span>
                 <span id="logToggleIcon">▼</span>

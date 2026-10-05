@@ -1884,7 +1884,7 @@ body.game-finished #gameScreen > #btnRestart {
 
 .dot.hidden { background: transparent; visibility: hidden; }
 
-#plazaViewport, #plazaPlayerHud, #plazaCameraTools { display: none; }
+#plazaViewport, #plazaPlayerHud, #plazaCameraTools, #plazaLogClose { display: none; }
 
 
 @keyframes dice-land {
@@ -8427,6 +8427,11 @@ html[data-design="plaza"] #gameScreen > #gameLogContainer { display: none; }
 html[data-design="plaza"] #gameScreen > #gameLogContainer.plaza-panel-open {
     display: block; position: absolute; left: 8px; right: 8px; bottom: calc(var(--plaza-actions) + 36px);
     height: min(300px, 50dvh); overflow: auto; z-index: 8; background: #102c35;
+}
+html[data-design="plaza"] #plazaLogClose {
+    display: block; position: sticky; top: 0; z-index: 1;
+    margin: 0 0 4px auto; min-height: 44px; width: auto; padding: 6px 12px;
+    background: #2b4952;
 }
 html[data-design="plaza"] #gameScreen > #tutorialBox { position: absolute; left: 8px; bottom: calc(var(--plaza-actions) + 36px); width: min(320px, calc(100% - 16px)); max-height: min(120px, 25dvh); overflow: auto; box-sizing: border-box; z-index: 7; background: #102c35; }
 html[data-design="plaza"] body.game-finished #gameScreen[style*="display: block"] { overflow: auto; display: block !important; }

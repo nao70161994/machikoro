@@ -33,6 +33,13 @@ const PlazaField = (() => {
         document.body.style.setProperty('--plaza-banner', `${node('pwaUpdateBanner').offsetHeight}px`);
     }
     function node(id) { return document.getElementById(id); }
+    function setLogPanelOpen(open) {
+        node('gameLogContainer').classList.toggle('plaza-panel-open', open);
+        node('plazaCameraTools').querySelector('[data-field-panel="log"]').setAttribute('aria-expanded', String(open));
+        if (open && node('log').classList.contains('collapsed')) {
+            (/** @type {HTMLElement} */ (node('gameLogContainer').querySelector('.log-header'))).click();
+        }
+    }
     function paint() {
         const viewport = node('plazaViewport');
         viewport.scrollLeft = 0;
@@ -74,7 +81,7 @@ const PlazaField = (() => {
     }
     function begin() {
         const points = [...pointers.values()], a = points[0], b = points[1] || a;
-        gesture = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, distance: Math.hypot(a.x - b.x, a.y - b.y), camera: { ...camera }, market: points.length === 1 && a.market, scrollTop: node('buildMenu').scrollTop };
+        gesture = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, distance: Math.hypot(a.x - b.x, a.y - b.y), camera: { ...camera }, market: points.length === 1 && a.market, scrollTop: node('buildMenu').scrollTop, mode: null };
     }
     function revealFocus(target = document.activeElement) {
         const viewport = node('plazaViewport');
@@ -128,8 +135,18 @@ const PlazaField = (() => {
             const points = [...pointers.values()], a = points[0], b = points[1] || a;
             const x = (a.x + b.x) / 2, y = (a.y + b.y) / 2;
             if (!dragged && points.length === 1 && Math.hypot(x - gesture.x, y - gesture.y) < 7) return;
+            if (!gesture.mode) {
+                const market = node('buildMenu');
+                const dy = y - gesture.y;
+                const canScroll = dy < 0
+                    ? gesture.scrollTop < market.scrollHeight - market.clientHeight - 1
+                    : gesture.scrollTop > 0;
+                // Lock the gesture once: vertical movement scrolls available cards,
+                // horizontal movement or an exhausted market edge moves the board.
+                gesture.mode = gesture.market && Math.abs(dy) >= Math.abs(x - gesture.x) && canScroll ? 'scroll' : 'pan';
+            }
             dragged = true; viewport.setPointerCapture(event.pointerId);
-            if (gesture.market) { node('buildMenu').scrollTop = gesture.scrollTop - (y - gesture.y) / camera.scale; return; }
+            if (gesture.mode === 'scroll') { node('buildMenu').scrollTop = gesture.scrollTop - (y - gesture.y) / camera.scale; return; }
             const ratio = points.length > 1 && gesture.distance > 0 ? Math.hypot(a.x - b.x, a.y - b.y) / gesture.distance : 1;
             const scale = Math.max(0.12, Math.min(1.8, gesture.camera.scale * ratio));
             camera = { scale, x: x - (gesture.x - gesture.camera.x) * scale / gesture.camera.scale, y: y - (gesture.y - gesture.camera.y) * scale / gesture.camera.scale };
@@ -142,7 +159,11 @@ const PlazaField = (() => {
             end(event);
             if (!pointers.size) dragged = false;
         }, true);
-        viewport.addEventListener('lostpointercapture', end);
+        viewport.addEventListener('lostpointercapture', event => {
+            // Touch starts with implicit capture on the child. Transferring it
+            // to the viewport must not end the viewport's ongoing gesture.
+            if (event.target === viewport) end(event);
+        });
         window.addEventListener('blur', clearGesture);
         viewport.addEventListener('focusin', event => revealFocus(/** @type {Element} */ (event.target)));
         viewport.addEventListener('click', event => { if (dragged) { event.preventDefault(); event.stopPropagation(); dragged = false; } }, true);
@@ -153,12 +174,16 @@ const PlazaField = (() => {
         node('plazaCameraTools').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
             if (!button) return;
-            if (button.dataset.fieldPanel) { node('gameLogContainer').classList.toggle('plaza-panel-open'); return; }
+            if (button.dataset.fieldPanel) {
+                setLogPanelOpen(!node('gameLogContainer').classList.contains('plaza-panel-open'));
+                return;
+            }
             if (button.dataset.fieldTarget) focusTarget(button.dataset.fieldTarget);
             else if (button.dataset.fieldZoom) zoom(camera.scale * (button.dataset.fieldZoom === 'in' ? 1.2 : 1 / 1.2), viewport.clientWidth / 2, viewport.clientHeight / 2);
             const menu = button.closest('details');
             if (menu && !button.dataset.fieldZoom) menu.open = false;
         });
+        node('plazaLogClose').addEventListener('click', () => setLogPanelOpen(false));
         node('plazaPlayerHud').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
             if (button) focusTarget(Number(button.dataset.playerIndex));
@@ -201,6 +226,7 @@ const PlazaField = (() => {
             mounted = true; requestAnimationFrame(() => { layout(); focusTarget('self'); });
         } else if (!enabled && mounted) {
             clearGesture();
+            setLogPanelOpen(false);
             world.querySelectorAll('#players > .player-box').forEach(item => {
                 (/** @type {HTMLElement} */ (item)).style.removeProperty('left');
                 (/** @type {HTMLElement} */ (item)).style.removeProperty('top');
