@@ -112,7 +112,8 @@ function renderLog() {
     else titleEl.textContent = `📋 ログ (${history.entryCount})`;
 
     logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(
-        UiLogDisplay.groupCoinEvents(history.entries, LOG_TYPE_DISPLAY,
+        UiLogDisplay.groupCoinEvents(UiLogDisplay.projectHistoryActors(history.entries,
+            LOG_TYPE_DISPLAY, logDisplayOptions), LOG_TYPE_DISPLAY,
             Object.assign({}, logDisplayOptions, { turnPlayerName: '' })),
         LOG_TYPE_DISPLAY,
         escapeHtml,

@@ -104,16 +104,61 @@ const UiLogDisplay = (() => {
                 ? { actor: entry.coinEvent.actor, target: '', subject: entry.coinEvent.subject,
                     amount: `${entry.coinEvent.payment ? '-' : '+'}${entry.coinEvent.amount}` }
                 : extractLogDetails(entry);
+            if (entry.turnActor) details.actor = entry.turnActor;
             const hasRelatedBoardItem = !!(details.actor || details.target || details.subject);
-            const visibleMessage = escapeHtml(visibleLogMessage(entry.message, options));
+            const actorPrefix = entry.turnActor && !visibleLogMessage(entry.message,
+                { stripLeadingEmoji: true }).startsWith(`${entry.turnActor}の`)
+                ? `${entry.turnActor}: ` : '';
+            const visibleMessage = escapeHtml(actorPrefix + visibleLogMessage(entry.message, options));
             const iconHtml = logTypeIconHtml(cls, options);
             const messageHtml = iconHtml ? `${iconHtml}<span>${visibleMessage}</span>` : visibleMessage;
             if (!hasRelatedBoardItem) {
                 return `<div class="log-item ${cls}${latestClass}${iconHtml ? ' log-item-with-icon' : ''}">${messageHtml}</div>`;
             }
-            const accessibleMessage = iconHtml ? visibleMessage : escapeHtml(entry.message);
+            const accessibleMessage = iconHtml ? visibleMessage : escapeHtml(actorPrefix + entry.message);
             return `<button type="button" class="log-item log-related-action ${cls}${latestClass}${iconHtml ? ' log-item-with-icon' : ''}" data-ui-action="highlightLogEntry" data-player-name="${escapeHtml(details.actor)}" data-target-name="${escapeHtml(details.target)}" data-card-name="${escapeHtml(details.subject)}" data-log-message="${escapeHtml(entry.message)}" aria-label="関連する盤面を表示: ${accessibleMessage}">${messageHtml}</button>`;
         }).join('');
+    }
+
+    function projectHistoryActors(entries, display, options = {}) {
+        let actor = '';
+        let precedingActor = '';
+        const players = Array.isArray(options.players) ? options.players : [];
+        const history = Array.isArray(entries) ? entries : [];
+        return history.map((entry, index) => {
+            if (entry === '__SEP__') {
+                precedingActor = actor;
+                actor = '';
+                // Station selection can be rendered before the radio log is
+                // appended. Revisit that entire segment once its reroll is known.
+                let reroll = false, turnMarker = false;
+                for (let next = index + 1; next < history.length && history[next] !== '__SEP__'; next++) {
+                    const candidate = history[next];
+                    if (typeof candidate?.message !== 'string') continue;
+                    if (candidate.message.startsWith('👤')) turnMarker = true;
+                    if (classifyLogEntry(candidate, display).cls === 'log-dice' &&
+                            /^📡 電波塔で振り直し: .+ → .+$/u.test(candidate.message)) reroll = true;
+                }
+                if (reroll && !turnMarker) actor = precedingActor;
+                return entry;
+            }
+            if (precedingActor && classifyLogEntry(entry, display).cls === 'log-system' &&
+                    entry.message === '🎡 遊園地効果！ゾロ目でもう一度ターン') {
+                actor = precedingActor;
+            }
+            precedingActor = '';
+            const marker = typeof entry?.message === 'string'
+                ? entry.message.match(/^👤\s+(.+)のターン$/u) : null;
+            if (marker) {
+                actor = players.filter(player => player?.name === marker[1]).length === 1
+                    ? marker[1] : '';
+            }
+            const cls = classifyLogEntry(entry, display).cls;
+            const unnamedGain = cls === 'log-gain' && !coinEvent(entry, display,
+                Object.assign({}, options, { turnPlayerName: '' }))?.actor;
+            return actor && (cls === 'log-dice' || cls === 'log-build' || unnamedGain)
+                ? Object.assign({}, entry, { turnActor: actor }) : entry;
+        });
     }
 
     // Projection only: never replace the structured history used by save/replay.
@@ -127,7 +172,7 @@ const UiLogDisplay = (() => {
         if (!Number.isSafeInteger(amount)) return null;
         const message = visibleLogMessage(entry.message, { stripLeadingEmoji: true });
         const named = message.match(/^(.+?)の(.+?)発動/);
-        let actor = named ? named[1] : options.turnPlayerName || '';
+        let actor = named ? named[1] : entry.turnActor || options.turnPlayerName || '';
         let subject = named ? named[2] : '';
         const players = Array.isArray(options.players) ? options.players : [];
         const matchingNames = players.filter(player => player && message.startsWith(`${player.name}の`));
@@ -191,7 +236,8 @@ const UiLogDisplay = (() => {
     }
 
     function buildRecentEventsHtml(entries, currentEntries, display, escapeHtml, options = {}) {
-        const recent = groupCoinEvents(entries, display, Object.assign({}, options, { turnPlayerName: '' }))
+        const recent = groupCoinEvents(projectHistoryActors(entries, display, options), display,
+            Object.assign({}, options, { turnPlayerName: '' }))
             .filter(entry => entry !== '__SEP__').slice(-4);
         const summary = turnCoinSummary(currentEntries, display, options);
         const heading = summary && (summary.income || summary.payment)
@@ -317,6 +363,7 @@ const UiLogDisplay = (() => {
         buildLogSummaryHtml,
         coinEvent,
         groupCoinEvents,
+        projectHistoryActors,
         turnCoinSummary,
         buildRecentEventsHtml,
         buildLogToggleView,

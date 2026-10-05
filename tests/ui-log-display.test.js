@@ -254,3 +254,109 @@ assert.strictEqual(UiLogDisplay.turnCoinSummary(coinEntries, display, {
 assert.strictEqual(UiLogDisplay.coinEvent({
     type: 'gain', message: '🐟 Aliceのマグロ漁船発動 → 🎲4+5=9コイン',
 }, display, coinOptions).amount, 9);
+
+const actorHistory = [
+    { type: 'system', message: '👤 CPU普通・2のターン' },
+    { type: 'dice', message: '🚉 駅：1個か2個か選んでください' },
+    { type: 'dice', message: '🎲 5 が出ました' },
+    { type: 'build', message: '🏗️ 寿司屋を建設！' },
+    { type: 'system', message: '👤 あなたのターン' },
+];
+const actorOptions = { players: [{ name: 'CPU普通・2' }, { name: 'あなた' }],
+    turnPlayerName: 'あなた', stripLeadingEmoji: true };
+const actorSource = JSON.stringify(actorHistory);
+const actorRecent = UiLogDisplay.buildRecentEventsHtml(actorHistory, [], display, escapeHtml, actorOptions);
+assert.match(actorRecent, /CPU普通・2: 寿司屋を建設！/);
+assert.match(actorRecent, /CPU普通・2: 5 が出ました/);
+assert.doesNotMatch(actorRecent, /あなた: 寿司屋/);
+assert.strictEqual(JSON.stringify(actorHistory), actorSource);
+const actorProjection = UiLogDisplay.projectHistoryActors([
+    ...actorHistory, { type: 'dice', message: '🎲 2 が出ました' },
+    { type: 'dice', message: '📡 振り直し → 3 が出ました' },
+    '__SEP__', { type: 'build', message: '🏗️ 牧場を建設！' },
+], display, actorOptions);
+assert.strictEqual(actorProjection[5].turnActor, 'あなた');
+assert.strictEqual(actorProjection[6].turnActor, 'あなた');
+assert.strictEqual(actorProjection[8].turnActor, undefined);
+assert.strictEqual(UiLogDisplay.projectHistoryActors([
+    { type: 'dice', message: '📡 振り直し → 3 が出ました' },
+], display, actorOptions)[0].turnActor, undefined);
+assert.strictEqual(UiLogDisplay.projectHistoryActors([
+    { type: 'system', message: '👤 CPUのターン' },
+    { type: 'build', message: '🏗️ 牧場を建設！' },
+], display, { players: [{ name: 'CPU' }, { name: 'CPU' }] })[1].turnActor, undefined);
+
+const greenHistory = [
+    { type: 'system', message: '👤 CPU普通・2のターン' },
+    { type: 'gain', message: '🏪 パン屋発動 → +1コイン' },
+    { type: 'gain', message: '🏪 パン屋発動 → +1コイン' },
+    { type: 'lose', message: '💸 あなたのカフェ発動 → 2コイン獲得' },
+    { type: 'gain', message: '🌾 あなたの麦畑発動 → +1コイン' },
+    { type: 'system', message: '👤 あなたのターン' },
+    { type: 'gain', message: '🏪 パン屋発動 → +3コイン' },
+];
+const greenSource = JSON.stringify(greenHistory);
+const greenGrouped = UiLogDisplay.groupCoinEvents(
+    UiLogDisplay.projectHistoryActors(greenHistory, display, actorOptions), display,
+    { ...actorOptions, turnPlayerName: '' });
+assert.strictEqual(greenGrouped[1].coinEvent.actor, 'CPU普通・2');
+assert.match(greenGrouped[1].message, /CPU普通・2のパン屋.*\+2コイン（2回）/);
+assert.strictEqual(greenGrouped[2].coinEvent.actor, 'あなた');
+assert.strictEqual(greenGrouped[2].coinEvent.transfer, true);
+assert.strictEqual(greenGrouped[3].coinEvent.actor, 'あなた');
+assert.strictEqual(greenGrouped[5].coinEvent.actor, 'あなた');
+assert.strictEqual(JSON.stringify(greenHistory), greenSource);
+
+const repeatEntries = [
+    { type: 'system', message: '👤 CPU普通・2のターン' },
+    { type: 'dice', message: '🎲 3+3=6 が出ました' },
+    '__SEP__',
+    { type: 'system', message: '🎡 遊園地効果！ゾロ目でもう一度ターン' },
+    { type: 'gain', message: '🏪 パン屋発動 → +1コイン' },
+    { type: 'build', message: '🏗️ 寿司屋を建設！' },
+];
+const repeatSource = JSON.stringify(repeatEntries);
+const repeatProjection = UiLogDisplay.projectHistoryActors(repeatEntries, display, actorOptions);
+assert.strictEqual(repeatProjection[4].turnActor, 'CPU普通・2');
+assert.strictEqual(repeatProjection[5].turnActor, 'CPU普通・2');
+assert.strictEqual(JSON.stringify(repeatEntries), repeatSource);
+assert.match(UiLogDisplay.buildRecentEventsHtml(repeatEntries, [], display, escapeHtml,
+    actorOptions), /CPU普通・2: 寿司屋を建設！/);
+for (const history of [
+    repeatEntries.slice(2),
+    [repeatEntries[0], '__SEP__', repeatEntries[4], repeatEntries[3], repeatEntries[5]],
+    [repeatEntries[0], '__SEP__', '__SEP__', repeatEntries[3], repeatEntries[5]],
+    [{ type: 'system', message: '👤 CPUのターン' }, '__SEP__', repeatEntries[3], repeatEntries[5]],
+]) {
+    const projection = UiLogDisplay.projectHistoryActors(history, display,
+        { players: [...actorOptions.players, { name: 'CPU' }, { name: 'CPU' }] });
+    assert.strictEqual(projection.at(-1).turnActor, undefined);
+}
+
+const stationHistory = UiLogDisplay.createHistoryController();
+stationHistory.append([
+    actorHistory[0], { type: 'dice', message: '🎲 5 が出ました' },
+    { type: 'system', message: '電波塔で振り直しますか？' },
+]);
+stationHistory.append([{ type: 'dice', message: '🚉 駅：1個か2個か選んでください' }]);
+const stationReset = stationHistory.snapshot();
+assert.strictEqual(UiLogDisplay.projectHistoryActors(stationReset.entries, display,
+    actorOptions).at(-1).turnActor, undefined);
+const rerolledLog = [
+    { type: 'dice', message: '🚉 駅：1個か2個か選んでください' },
+    { type: 'dice', message: '🎲 3 が出ました' },
+    { type: 'dice', message: '📡 電波塔で振り直し: 5 → 3' },
+    { type: 'build', message: '🏗️ パン屋を建設！' },
+    { type: 'gain', message: '🏪 パン屋発動 → +1コイン' },
+];
+const stationResult = stationHistory.append(rerolledLog);
+const stationSource = JSON.stringify(stationResult.entries);
+const stationActors = UiLogDisplay.projectHistoryActors(stationResult.entries, display, actorOptions);
+for (const entry of stationActors.slice(-5)) assert.strictEqual(entry.turnActor, 'CPU普通・2');
+assert.strictEqual(JSON.stringify(stationResult.entries), stationSource);
+assert.strictEqual(UiLogDisplay.projectHistoryActors(rerolledLog, display, actorOptions)
+    .at(-1).turnActor, undefined);
+const conflictingReroll = UiLogDisplay.projectHistoryActors([
+    actorHistory[0], '__SEP__', ...rerolledLog, actorHistory[4],
+], display, actorOptions);
+assert.strictEqual(conflictingReroll[2].turnActor, undefined);
