@@ -219,3 +219,38 @@ const sunsetSummary = UiLogDisplay.buildLogSummaryHtml([
 assert.match(sunsetSummary, /最新: Aliceのターン/);
 assert.doesNotMatch(sunsetSummary, /👤/);
 assert.match(relatedHtml, /aria-label="関連する盤面を表示:/);
+
+const coinEntries = [
+    { type: 'lose', message: '💸 Bobのカフェ発動 → 2コイン獲得' },
+    { type: 'lose', message: '💸 Bobのカフェ発動 → 1コイン獲得' },
+    { type: 'gain', message: '🌾 Aliceの麦畑発動 → +2コイン' },
+    { type: 'gain', message: '🌾 Aliceの麦畑発動 → +2コイン' },
+    { type: 'gain', message: '🌾 Bobの麦畑発動 → +2コイン' },
+];
+const coinSource = JSON.stringify(coinEntries);
+const coinOptions = { turnPlayerName: 'Alice', players: [{ name: 'Alice' }, { name: 'Bob' }] };
+const grouped = UiLogDisplay.groupCoinEvents(coinEntries, display, coinOptions);
+assert.strictEqual(grouped.length, 3);
+assert.match(grouped[0].message, /Bobのカフェ.*3コイン支払い（2回）/);
+assert.match(grouped[1].message, /Aliceの麦畑.*\+4コイン（2回）/);
+assert.strictEqual(grouped[2].message, coinEntries[4].message);
+assert.deepStrictEqual(UiLogDisplay.turnCoinSummary(coinEntries, display, coinOptions), {
+    actor: 'Alice', income: 4, payment: 3, net: 1,
+});
+assert.strictEqual(JSON.stringify(coinEntries), coinSource);
+const recentCoins = UiLogDisplay.buildRecentEventsHtml(coinEntries, coinEntries, display, escapeHtml, coinOptions);
+assert.match(recentCoins, /収入4 \/ 支払い3 \/ \+1コイン/);
+assert.match(recentCoins, /カフェ/);
+assert.match(recentCoins, /麦畑/);
+assert.strictEqual(UiLogDisplay.groupCoinEvents([
+    coinEntries[2], '__SEP__', coinEntries[3],
+], display).length, 3);
+assert.strictEqual(UiLogDisplay.groupCoinEvents([
+    coinEntries[2], { type: 'build', message: '🏗️ 牧場を建設！' }, coinEntries[3],
+], display).length, 3);
+assert.strictEqual(UiLogDisplay.turnCoinSummary(coinEntries, display, {
+    turnPlayerName: 'CPU', players: [{ name: 'CPU' }, { name: 'CPU' }],
+}), null);
+assert.strictEqual(UiLogDisplay.coinEvent({
+    type: 'gain', message: '🐟 Aliceのマグロ漁船発動 → 🎲4+5=9コイン',
+}, display, coinOptions).amount, 9);

@@ -2933,7 +2933,7 @@ runTest('代表区画が埋まっても新しい購入は住宅と窓明かり�
     assert.match(menu.renderTownHtml(player(1000)), /data-town-population="64"/);
 });
 
-runTest('序盤の重複購入も代表施設とは別の住宅と窓明かりになる', () => {
+runTest('序盤の重複購入は同種の複数区画と住宅の窓明かりになる', () => {
     const menu = require('../js/uiBuildMenu');
     const wheat = { name: '麦畑', category: '農園' };
     const bakery = { name: 'パン屋', category: '飲食店' };
@@ -2942,7 +2942,7 @@ runTest('序盤の重複購入も代表施設とは別の住宅と窓明かり�
     assert.match(initial, /data-town-population="0"/);
     const duplicated = render([wheat, wheat, wheat, wheat]);
     assert.match(duplicated, /data-town-population="3"/);
-    assert.strictEqual((duplicated.match(/data-town-slot-facility=/g) || []).length, 1);
+    assert.strictEqual((duplicated.match(/data-town-slot-facility=/g) || []).length, 4);
     const purchased = render([wheat, bakery, wheat]);
     assert.match(purchased, /data-town-population="1"/);
     assert.strictEqual(render([wheat, bakery]), initial, 'Undoで住宅と明かりも元へ戻る');
@@ -2995,4 +2995,88 @@ runTest('オンライン復元の途中描画を購入扱いにせず復元後�
     assert.strictEqual(observed.pop(), true, 'the first real purchase after restoration still animates');
     install(4);
     assert.strictEqual(observed.pop(), false, 'Undo cannot become a new arrival');
+});
+
+runTest('街の収入演出は同種の全区画を強調し再描画・Undo・復元で再発火しない', () => {
+    const { context } = loadUiRuntime();
+    const lots = [makeElement(), makeElement()];
+    lots.forEach(lot => { lot.dataset = { townBuilding: 'card:麦畑' }; });
+    const panel = { querySelectorAll: () => lots, querySelector: () => null };
+    const container = { querySelector: () => panel };
+    const session = [];
+    const game = {
+        players: [{ name: 'Alice' }], currentPlayerIndex: 0, turnCount: 2,
+        log: [{ type: 'dice', message: '🎲 1 が出ました' }],
+    };
+    const gain = { type: 'gain', message: '🌾 Aliceの麦畑発動 → +2コイン' };
+    context.animateTownCoinEvents(container, game, session, false);
+    game.log.push(gain);
+    context.animateTownCoinEvents(container, game, session, false);
+    assert.ok(lots.every(lot => lot.classList.contains('town-income-pulse')));
+    const timers = context.timeoutDelays.length;
+    context.animateTownCoinEvents(container, game, session, false);
+    assert.strictEqual(context.timeoutDelays.length, timers);
+    lots.forEach(lot => lot.classList.remove('town-income-pulse'));
+    game.log.pop();
+    context.animateTownCoinEvents(container, game, session, false);
+    assert.ok(lots.every(lot => !lot.classList.contains('town-income-pulse')));
+    game.log.push(gain);
+    context.animateTownCoinEvents(container, game, session, true);
+    context.animateTownCoinEvents(container, game, session, false);
+    assert.strictEqual(context.timeoutDelays.length, timers);
+    game.log.push(gain);
+    context.animateTownCoinEvents(container, game, [], false);
+    assert.strictEqual(context.timeoutDelays.length, timers);
+});
+
+runTest('広場の市場は広い画面でも自動建設可filterを使い手動選択を維持する', () => {
+    const { context, elements } = loadUiRuntime();
+    context.document.documentElement = { dataset: { design: 'plaza' } };
+    context.window = { matchMedia: () => ({ matches: false }) };
+    const player = { coins: 10, landmarks: {}, countCardIncludingDormant() { return 0; } };
+    context.GameManager = { allowedActionsFor: () => new Set(['buildCard']) };
+    context.game = {
+        phase: 'build', currentPlayerIndex: 0, builtThisTurn: false, pendingRenovation: 0,
+        currentPlayer() { return player; },
+    };
+    context.cpuPlayers = [null];
+    context.renderBuildMenu();
+    assert.match(elements.buildMenu.innerHTML, /data-card-filter="affordable"[^>]+aria-pressed="true"/);
+    context.setCardFilter('blue');
+    context.renderBuildMenu();
+    assert.match(elements.buildMenu.innerHTML, /data-card-filter="blue"[^>]+aria-pressed="true"/);
+    assert.match(elements.buildMenu.innerHTML, /data-card-filter="affordable"[^>]+aria-pressed="false"/);
+});
+
+runTest('広場ログのcameraは完全一致した番号playerだけへ移動する', () => {
+    const { context } = loadUiRuntime();
+    context.window = { setTimeout: context.setTimeout, clearTimeout: context.clearTimeout };
+    context.document.documentElement = { dataset: { design: 'plaza' } };
+    const focused = [];
+    context.PlazaField = { focusTarget: index => focused.push(index) };
+    context.game = { players: [{ name: 'CPU（普通）・1' }, { name: 'CPU（普通）・10' }] };
+    context.highlightLogEntry('CPU（普通）・10', '', '', 'CPU（普通）・10の麦畑発動');
+    assert.deepStrictEqual(focused, [1]);
+    context.game = { players: [{ name: 'CPU（普通）' }, { name: 'CPU（普通）' }] };
+    context.highlightLogEntry('CPU（普通）', '', '', 'CPU（普通）の麦畑発動');
+    assert.deepStrictEqual(focused, [1]);
+});
+
+runTest('手番の実収支はroll開始から建設込みで追跡し途中復元やreplayで推測しない', () => {
+    const { context } = loadUiRuntime();
+    const session = [];
+    const game = { phase: 'roll', turnCount: 1, currentPlayerIndex: 0,
+        players: [{ name: 'Alice', coins: 3 }] };
+    assert.strictEqual(context.captureTurnCoinBalance(game, session, false).net, 0);
+    game.phase = 'build';
+    game.players[0].coins = 8;
+    assert.strictEqual(context.captureTurnCoinBalance(game, session, false).net, 5);
+    game.players[0].coins = 4;
+    assert.strictEqual(context.captureTurnCoinBalance(game, session, false).net, 1);
+    assert.strictEqual(context.captureTurnCoinBalance(game, [], false), null);
+    assert.strictEqual(context.captureTurnCoinBalance(game, session, true), null);
+    assert.strictEqual(context.captureTurnCoinBalance(game, session, false), null);
+    game.turnCount++;
+    game.phase = 'roll';
+    assert.strictEqual(context.captureTurnCoinBalance(game, session, false).net, 0);
 });

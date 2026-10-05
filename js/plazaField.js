@@ -12,6 +12,7 @@ const PlazaField = (() => {
     const pointers = new Map();
     let gesture = null;
     let dragged = false;
+    const seatColors = ['#efc979', '#91c9e8', '#e7a4b7', '#aed393', '#c2b0ec', '#e8b48e', '#8cd0c7', '#ddd49b', '#afbfdc', '#d9add1'];
     function clearGesture() {
         const viewport = node('plazaViewport');
         const pointerIds = [...pointers.keys()];
@@ -27,12 +28,35 @@ const PlazaField = (() => {
         const screen = node('gameScreen');
         const actions = /** @type {HTMLElement} */ (screen.querySelector('.game-action-panel'));
         const sideHud = window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
-        screen.style.setProperty('--plaza-top', `${node('status').offsetHeight + (sideHud ? 0 : node('plazaPlayerHud').offsetHeight)}px`);
-        screen.style.setProperty('--plaza-actions', `${actions.offsetHeight}px`);
-        document.body.style.setProperty('--plaza-actions', `${actions.offsetHeight}px`);
-        document.body.style.setProperty('--plaza-banner', `${node('pwaUpdateBanner').offsetHeight}px`);
+        const height = element => Math.ceil(element.getBoundingClientRect().height);
+        const statusHeight = height(node('status'));
+        const hudHeight = height(node('plazaPlayerHud'));
+        const toolsHeight = height(node('plazaCameraTools'));
+        screen.style.setProperty('--plaza-status', `${statusHeight}px`);
+        screen.style.setProperty('--plaza-hud', `${hudHeight}px`);
+        screen.style.setProperty('--plaza-tools', `${toolsHeight}px`);
+        screen.style.setProperty('--plaza-events', `${height(node('plazaEvents'))}px`);
+        screen.style.setProperty('--plaza-top', `${statusHeight + toolsHeight + (sideHud ? 0 : hudHeight)}px`);
+        screen.style.setProperty('--plaza-actions', `${height(actions)}px`);
+        document.body.style.setProperty('--plaza-actions', `${height(actions)}px`);
+        document.body.style.setProperty('--plaza-banner', `${height(node('pwaUpdateBanner'))}px`);
     }
     function node(id) { return document.getElementById(id); }
+    function setComparisonOpen(open) {
+        node('plazaComparison').hidden = !open;
+        node('plazaCameraTools').querySelector('[data-field-panel="comparison"]').setAttribute('aria-expanded', String(open));
+    }
+    function renderComparison(players, enabledLandmarks, escapeHtml) {
+        const names = [...new Set(players.flatMap(player => player.cards.map(card => card.name)))];
+        const heads = players.map((player, index) => `<th scope="col"><span class="plaza-seat-mark" style="--plaza-seat-color:${seatColors[index % seatColors.length]}">${index + 1}</span>${escapeHtml(player.name)}</th>`).join('');
+        const rows = names.map(name => `<tr><th scope="row">${escapeHtml(name)}</th>${players.map(player => {
+            const cards = player.cards.filter(card => card.name === name);
+            const dormant = cards.filter(card => player.isDormant(card)).length;
+            return `<td>${cards.length}${dormant ? `（休${dormant}）` : ''}</td>`;
+        }).join('')}</tr>`).join('');
+        const landmarks = [...enabledLandmarks].map(name => `<tr><th scope="row">${escapeHtml(name)}</th>${players.map(player => `<td>${player.landmarks[name] ? '建設済' : '未建設'}</td>`).join('')}</tr>`).join('');
+        node('plazaComparisonBody').innerHTML = `<table><caption>施設の所有枚数とランドマーク</caption><thead><tr><th scope="col">施設</th>${heads}</tr></thead><tbody>${rows}${landmarks}</tbody></table>`;
+    }
     function setLogPanelOpen(open) {
         node('gameLogContainer').classList.toggle('plaza-panel-open', open);
         node('plazaCameraTools').querySelector('[data-field-panel="log"]').setAttribute('aria-expanded', String(open));
@@ -175,10 +199,31 @@ const PlazaField = (() => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
             if (!button) return;
             if (button.dataset.fieldPanel) {
-                setLogPanelOpen(!node('gameLogContainer').classList.contains('plaza-panel-open'));
+                if (button.dataset.fieldPanel === 'comparison') {
+                    setLogPanelOpen(false);
+                    setComparisonOpen(node('plazaComparison').hidden);
+                } else {
+                    setComparisonOpen(false);
+                    setLogPanelOpen(!node('gameLogContainer').classList.contains('plaza-panel-open'));
+                }
                 return;
             }
-            if (button.dataset.fieldTarget) focusTarget(button.dataset.fieldTarget);
+            if (button.dataset.fieldSection) {
+                setComparisonOpen(false);
+                setLogPanelOpen(false);
+                focusTarget('market');
+                const market = node('buildMenu');
+                const sections = Array.from(market.querySelectorAll('.build-section'));
+                const section = button.dataset.fieldSection === 'facilities'
+                    ? market.querySelector('.build-card-section')
+                    : sections.find(item => !item.classList.contains('build-card-section'));
+                const heading = /** @type {HTMLElement | null} */ (section?.querySelector('h4'));
+                if (heading) {
+                    market.scrollTop += (heading.getBoundingClientRect().top - market.getBoundingClientRect().top) / camera.scale - 12;
+                    heading.setAttribute('tabindex', '-1');
+                    heading.focus({ preventScroll: true });
+                }
+            } else if (button.dataset.fieldTarget) focusTarget(button.dataset.fieldTarget);
             else if (button.dataset.fieldZoom) zoom(camera.scale * (button.dataset.fieldZoom === 'in' ? 1.2 : 1 / 1.2), viewport.clientWidth / 2, viewport.clientHeight / 2);
             const menu = button.closest('details');
             if (menu && !button.dataset.fieldZoom) menu.open = false;
@@ -186,6 +231,10 @@ const PlazaField = (() => {
         node('plazaLogClose').addEventListener('click', () => {
             setLogPanelOpen(false);
             (/** @type {HTMLElement} */ (node('plazaCameraTools').querySelector('[data-field-panel="log"]'))).focus({ preventScroll: true });
+        });
+        node('plazaComparisonClose').addEventListener('click', () => {
+            setComparisonOpen(false);
+            (/** @type {HTMLElement} */ (node('plazaCameraTools').querySelector('[data-field-panel="comparison"]'))).focus({ preventScroll: true });
         });
         node('plazaPlayerHud').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
@@ -200,6 +249,8 @@ const PlazaField = (() => {
             requestAnimationFrame(() => { layoutPending = false; layout(); });
         });
         observer.observe(node('plazaPlayerHud'));
+        observer.observe(node('plazaCameraTools'));
+        observer.observe(node('plazaEvents'));
         observer.observe(node('status'));
         observer.observe(node('pwaUpdateBanner'));
         observer.observe(node('gameScreen').querySelector('.game-action-panel'));
@@ -230,9 +281,12 @@ const PlazaField = (() => {
         } else if (!enabled && mounted) {
             clearGesture();
             setLogPanelOpen(false);
+            setComparisonOpen(false);
             world.querySelectorAll('#players > .player-box').forEach(item => {
                 (/** @type {HTMLElement} */ (item)).style.removeProperty('left');
                 (/** @type {HTMLElement} */ (item)).style.removeProperty('top');
+                (/** @type {HTMLElement} */ (item)).style.removeProperty('--plaza-seat-color');
+                item.querySelector('.plaza-seat-mark')?.remove();
             });
             screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
             screen.insertBefore(node('buildMenu'), node('turnTimeline'));
@@ -249,7 +303,18 @@ const PlazaField = (() => {
         players.forEach((player, index) => {
             const item = node(`playerBox${index}`), seat = (index - selfIndex + players.length) % players.length;
             const p = positions[seat] || [70 + ((seat - 4) % 3) * 530, 1250 + Math.floor((seat - 4) / 3) * 380];
-            if (item) { item.style.left = `${p[0]}px`; item.style.top = `${p[1]}px`; }
+            if (item) {
+                item.style.left = `${p[0]}px`; item.style.top = `${p[1]}px`;
+                item.style.setProperty('--plaza-seat-color', seatColors[index % seatColors.length]);
+                const row = item.querySelector('.player-name-row');
+                if (row && !row.querySelector('.plaza-seat-mark')) {
+                    const mark = document.createElement('span');
+                    mark.className = 'plaza-seat-mark';
+                    mark.textContent = String(index + 1);
+                    mark.setAttribute('aria-label', `プレイヤー${index + 1}`);
+                    row.prepend(mark);
+                }
+            }
         });
         worldHeight = players.length > 4 ? 1640 + Math.floor((players.length - 5) / 3) * 380 : 1380;
         node('plazaWorld').style.height = `${worldHeight}px`;
@@ -259,9 +324,11 @@ const PlazaField = (() => {
             for (const card of player.cards) if (Object.prototype.hasOwnProperty.call(counts, card.color)) counts[card.color]++;
             const chips = Object.entries(counts).map(([color, count]) => `<span class="player-color-${color}">${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}</span>`).join(' ');
             const built = Object.entries(player.landmarks).filter(([name, value]) => value && enabledLandmarks.has(name)).length;
-            return `<button type="button" data-player-index="${index}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-label="${escapeHtml(player.name)}の街を見る${index === selfIndex ? '、あなた' : ''}"${index === currentIndex ? ' aria-current="true"' : ''}><strong>${index + 1}. ${escapeHtml(player.name)}</strong><span>${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span>${chips}</span><small>目標 ${built}/${enabledLandmarks.size}</small></button>`;
+            const kindIcon = node(`playerBox${index}`)?.querySelector('.player-icon')?.innerHTML || '';
+            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-label="プレイヤー${index + 1}、${escapeHtml(player.name)}の街を見る${index === selfIndex ? '、あなた' : ''}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span>${escapeHtml(player.name)}</strong><span>${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span>${chips}</span><small>目標 ${built}/${enabledLandmarks.size}</small></button>`;
         }).join('');
         if (focused !== undefined && focused !== null) (/** @type {HTMLElement} */ (node('plazaPlayerHud').querySelector(`button[data-player-index="${focused}"]`)))?.focus({ preventScroll: true });
+        renderComparison(players, enabledLandmarks, escapeHtml);
         layout();
     }
     return Object.freeze({ render, sync, focusTarget });

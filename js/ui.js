@@ -5,6 +5,7 @@ const pendingModalFocusController = UiPendingEffects.createFocusController();
 const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
+const turnCoinBalanceCache = new WeakMap();
 /** @type {number | null} */
 let logRelatedHighlightTimer = null;
 let gameLogPresentationInitialized = false;
@@ -99,6 +100,10 @@ function renderLog() {
     const logDisplayOptions = {
         stripLeadingEmoji: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
         useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        players: currentGame.players,
+        turnPlayerName: currentGame.players[currentGame.currentPlayerIndex]?.name || '',
+        turnBalance: captureTurnCoinBalance(currentGame, uiGameRuntimeSnapshot().cpuPlayers,
+            uiOnlineRuntimeSnapshot().isReplaying === true),
     };
 
     const history = logHistoryController.append(cur);
@@ -107,26 +112,47 @@ function renderLog() {
     else titleEl.textContent = `📋 ログ (${history.entryCount})`;
 
     logEl.innerHTML = UiLogDisplay.buildLogEntriesHtml(
-        history.entries,
+        UiLogDisplay.groupCoinEvents(history.entries, LOG_TYPE_DISPLAY,
+            Object.assign({}, logDisplayOptions, { turnPlayerName: '' })),
         LOG_TYPE_DISPLAY,
         escapeHtml,
         logDisplayOptions
     );
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
     const recent = document.getElementById('plazaRecentEvents');
-    if (recent) recent.innerHTML = UiLogDisplay.buildLogEntriesHtml(
-        history.entries.filter(entry => entry !== '__SEP__').slice(-3),
+    if (recent) recent.innerHTML = UiLogDisplay.buildRecentEventsHtml(
+        history.entries, cur,
         LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions
     );
     logEl.scrollTop = logEl.scrollHeight;
 }
 
+function captureTurnCoinBalance(currentGame, session, replaying) {
+    const player = currentGame.players[currentGame.currentPlayerIndex];
+    if (!player || !Number.isSafeInteger(player.coins) || !Array.isArray(session)) return null;
+    const previous = turnCoinBalanceCache.get(session);
+    const newTurn = !previous || previous.turnCount !== currentGame.turnCount ||
+        previous.playerIndex !== currentGame.currentPlayerIndex || previous.replaying;
+    const baseline = replaying ? null : newTurn
+        ? currentGame.phase === GAME_PHASES.ROLL ? player.coins : null
+        : previous.baseline;
+    turnCoinBalanceCache.set(session, {
+        turnCount: currentGame.turnCount, playerIndex: currentGame.currentPlayerIndex,
+        baseline, replaying,
+    });
+    return baseline === null ? null : { actor: player.name, net: player.coins - baseline };
+}
+
 function highlightLogEntry(playerName = '', targetName = '', cardName = '', logMessage = '') {
     const result = uiLogHighlightEffects.highlight(playerName, targetName, cardName, logMessage);
     if (typeof PlazaField !== 'undefined' && document.documentElement?.dataset?.design === 'plaza') {
-        const index = uiGameRuntimeSnapshot().game.players.findIndex(player =>
-            player.name === playerName || player.name === targetName || logMessage.includes(player.name));
-        if (index >= 0) PlazaField.focusTarget(index);
+        const players = uiGameRuntimeSnapshot().game.players;
+        const exact = players.map((player, index) =>
+            player.name === playerName || player.name === targetName ? index : -1).filter(index => index >= 0);
+        const matches = exact.length ? exact : !playerName && !targetName
+            ? players.map((player, index) => logMessage.includes(player.name) ? index : -1).filter(index => index >= 0)
+            : [];
+        if (matches.length === 1) PlazaField.focusTarget(matches[0]);
     }
     return result;
 }
@@ -944,6 +970,51 @@ const playerPanelRenderCache = new WeakMap();
 const playerPanelDisclosureCache = new WeakMap();
 const playerPanelDisclosureListeners = new WeakSet();
 const playerPanelDisclosureClickListeners = new WeakSet();
+const townCoinEventCache = new WeakMap();
+
+function animateTownCoinEvents(container, currentGame, session, replaying) {
+    const entries = Array.isArray(currentGame.log) ? currentGame.log : [];
+    const signatures = entries.map(entry => `${entry.type}\u0000${entry.message}`);
+    const previous = townCoinEventCache.get(container);
+    townCoinEventCache.set(container, {
+        session, replaying, turnCount: currentGame.turnCount,
+        playerIndex: currentGame.currentPlayerIndex, signatures,
+    });
+    // Rehydrate/replay/Undo/reroll establish a fresh visual baseline. Only append
+    // events in the same live turn may animate; rendering twice never repeats it.
+    if (!previous || previous.session !== session || replaying || previous.replaying ||
+            previous.turnCount !== currentGame.turnCount ||
+            previous.playerIndex !== currentGame.currentPlayerIndex ||
+            previous.signatures.length > signatures.length ||
+            previous.signatures.some((value, index) => value !== signatures[index])) return;
+    const pulse = (index, subject, cls) => {
+        const panel = container.querySelector(`#playerBox${index}`);
+        if (!panel) return;
+        const targets = Array.from(panel.querySelectorAll('[data-town-building]'))
+            .filter(element => element.dataset.townBuilding === `card:${subject}` ||
+                element.dataset.townBuilding === `landmark:${subject}`);
+        if (cls === 'town-payment-pulse') {
+            const coins = panel.querySelector('.player-coins');
+            if (coins) targets.push(coins);
+        }
+        for (const element of targets) {
+            element.classList.add(cls);
+            setTimeout(() => element.classList.remove(cls), 1200);
+        }
+    };
+    const players = currentGame.players;
+    const options = { players, turnPlayerName: players[currentGame.currentPlayerIndex]?.name || '' };
+    for (const entry of entries.slice(previous.signatures.length)) {
+        const event = UiLogDisplay.coinEvent(entry, LOG_TYPE_DISPLAY, options);
+        if (!event || event.amount <= 0) continue;
+        const indices = players.map((player, index) => player.name === event.actor ? index : -1)
+            .filter(index => index >= 0);
+        if (indices.length !== 1) continue;
+        pulse(indices[0], event.subject, event.payment && !event.transfer
+            ? 'town-payment-pulse' : 'town-income-pulse');
+        if (event.transfer) pulse(currentGame.currentPlayerIndex, event.subject, 'town-payment-pulse');
+    }
+}
 
 function snapshotTownBuildingCounts(players) {
     const enabledLandmarks = getEnabledLandmarkSelection();
@@ -1145,6 +1216,9 @@ function renderPlayers() {
         });
     }
     if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection());
+    if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
+        animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
+    }
 }
 
 function getEffectText(card) {
@@ -1343,8 +1417,8 @@ function renderBuildMenu() {
         isHumanTurn: buildGateOpen && isCurrentHumanUiTurn(),
         allowedActions: buildGateOpen ? currentUiAllowedActions() : new Set(),
     });
-    const compactMarketViewport = typeof window !== 'undefined' &&
-        typeof window.matchMedia === 'function' &&
+    const compactMarketViewport = document.documentElement?.dataset?.design === 'plaza' ||
+        typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
         window.matchMedia('(max-width: 480px)').matches;
     if (compactMarketViewport && actionState.canBuildCardAction &&
             !buildMenuFilterController.wasManuallySelected()) {

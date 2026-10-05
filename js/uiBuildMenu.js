@@ -296,14 +296,30 @@ const UiBuildMenu = (() => {
         const built = Object.entries(player.landmarks || {})
             .filter(([name, value]) => value === true && enabledLandmarks.has(name));
         const stage = townDevelopmentStage(cards.length, built.length);
-        // Purchase order gives each visible facility a persistent district lot.
-        // New buildings fill vacant lots instead of reflowing the entire town.
-        const facilities = [...grouped.values()].slice(0, 8).map(({ card, count }, index) => {
+        // Seven founding districts keep their locations. The eighth is a
+        // recent-acquisition window, so later facility types also reach the
+        // town without moving those districts or allocating unbounded lots.
+        const districts = [...grouped.values()].slice(0, 7);
+        const foundingNames = new Set(districts.map(entry => entry.card.name));
+        for (let index = cards.length - 1; index >= 0; index--) {
+            if (!foundingNames.has(cards[index].name)) {
+                districts.push(grouped.get(cards[index].name));
+                break;
+            }
+        }
+        const lots = districts.map(entry => ({ ...entry, copy: 0 }));
+        for (let copy = 1; copy < 6 && lots.length < 16; copy++) {
+            for (const entry of districts) {
+                if (entry.count > copy && lots.length < 16) lots.push({ ...entry, copy });
+            }
+        }
+        const facilities = lots.map(({ card, count, copy }, index) => {
             const row = Math.floor(index / 4);
-            const x = (index % 4) * 24 + (row ? 4 : 2);
-            const y = row ? 65 : 37;
-            const countBadge = count > 1 ? `<span class="town-building-count">×${count}</span>` : '';
-            return `<span class="town-building" data-town-slot-facility="${index}" data-town-building="card:${escapeText(card.name)}" style="--town-x:${x}%;--town-y:${y}%;--town-width:23%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
+            const x = (index % 4) * 24 + 2;
+            const y = 30 + row * 17;
+            const countBadge = copy === 0 && count > 1
+                ? `<span class="town-building-count">×${count}</span>` : '';
+            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" style="--town-x:${x}%;--town-y:${y}%;--town-width:22%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
         }).join('');
         // Landmark lots are keyed to definition order, not acquisition order.
         const landmarkSlots = Object.keys(LANDMARK_ART);

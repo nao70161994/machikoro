@@ -75,3 +75,23 @@ runTest('UI log highlight effectsは関連項目なし・gameなしをfalseで�
 runTest('UI log highlight effectsは必須依存を初期化時に検証する', () => {
     assert.throws(() => UiLogHighlightEffects.create({}), TypeError);
 });
+
+runTest('UI log highlight effectsは番号のprefixで別playerを選ばず同名旧保存を推測しない', () => {
+    const boxes = [makeElement(), makeElement()];
+    let players = [{ name: 'CPU（普通）・1' }, { name: 'CPU（普通）・10' }];
+    const effects = UiLogHighlightEffects.create({
+        document: {
+            body: null, querySelectorAll: () => [],
+            getElementById: id => id === 'playerBox0' ? boxes[0] : id === 'playerBox1' ? boxes[1] : null,
+        },
+        getGame: () => ({ players }), getTimer: () => null,
+        setTimer() {}, clearTimeout() {}, schedule: () => 1,
+    });
+    assert.strictEqual(effects.highlight('CPU（普通）・10', '', '', 'CPU（普通）・10の麦畑発動'), true);
+    assert.ok(!boxes[0].classes.has('log-related-highlight'));
+    assert.ok(boxes[1].classes.has('log-related-highlight'));
+    boxes[1].classes.clear();
+    players = [{ name: 'CPU（普通）' }, { name: 'CPU（普通）' }];
+    assert.strictEqual(effects.highlight('CPU（普通）', '', '', 'CPU（普通）の麦畑発動'), false);
+    assert.ok(boxes.every(box => !box.classes.has('log-related-highlight')));
+});

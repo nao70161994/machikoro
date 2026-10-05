@@ -100,7 +100,10 @@ const UiLogDisplay = (() => {
             if (entry === '__SEP__') return '<div class="log-separator"></div>';
             const { cls } = classifyLogEntry(entry, display);
             const latestClass = index === lastEntryIndex ? ' log-latest' : '';
-            const details = extractLogDetails(entry);
+            const details = entry.coinEvent
+                ? { actor: entry.coinEvent.actor, target: '', subject: entry.coinEvent.subject,
+                    amount: `${entry.coinEvent.payment ? '-' : '+'}${entry.coinEvent.amount}` }
+                : extractLogDetails(entry);
             const hasRelatedBoardItem = !!(details.actor || details.target || details.subject);
             const visibleMessage = escapeHtml(visibleLogMessage(entry.message, options));
             const iconHtml = logTypeIconHtml(cls, options);
@@ -111,6 +114,94 @@ const UiLogDisplay = (() => {
             const accessibleMessage = iconHtml ? visibleMessage : escapeHtml(entry.message);
             return `<button type="button" class="log-item log-related-action ${cls}${latestClass}${iconHtml ? ' log-item-with-icon' : ''}" data-ui-action="highlightLogEntry" data-player-name="${escapeHtml(details.actor)}" data-target-name="${escapeHtml(details.target)}" data-card-name="${escapeHtml(details.subject)}" data-log-message="${escapeHtml(entry.message)}" aria-label="関連する盤面を表示: ${accessibleMessage}">${messageHtml}</button>`;
         }).join('');
+    }
+
+    // Projection only: never replace the structured history used by save/replay.
+    function coinEvent(entry, display, options = {}) {
+        if (!entry || typeof entry.message !== 'string') return null;
+        const cls = classifyLogEntry(entry, display).cls;
+        if (cls !== 'log-gain' && cls !== 'log-lose') return null;
+        const amounts = [...entry.message.matchAll(/([+-]?\d+)コイン/g)];
+        if (!amounts.length) return null;
+        const amount = Math.abs(Number(amounts[amounts.length - 1][1]));
+        if (!Number.isSafeInteger(amount)) return null;
+        const message = visibleLogMessage(entry.message, { stripLeadingEmoji: true });
+        const named = message.match(/^(.+?)の(.+?)発動/);
+        let actor = named ? named[1] : options.turnPlayerName || '';
+        let subject = named ? named[2] : '';
+        const players = Array.isArray(options.players) ? options.players : [];
+        const matchingNames = players.filter(player => player && message.startsWith(`${player.name}の`));
+        if (matchingNames.length === 1) {
+            actor = matchingNames[0].name;
+            subject = message.slice(actor.length + 1).split('発動')[0];
+        }
+        if (!subject) {
+            const cause = message.match(/^(.+?)(?:発動|効果|×\d+：)/);
+            subject = cause ? cause[1].replace(/[！!：:]+$/, '') : '';
+        }
+        if (!subject) return null;
+        return Object.freeze({ actor, subject, amount, payment: cls === 'log-lose',
+            transfer: cls === 'log-lose' && !!named });
+    }
+
+    function groupCoinEvents(entries, display, options = {}) {
+        const paymentMessage = (event, count) => {
+            const who = event.actor ? `${event.actor}の` : '';
+            const repeats = count > 1 ? `（${count}回）` : '';
+            return `${who}${event.subject}${event.transfer ? 'へ' : 'で'}${event.amount}コイン支払い${repeats}`;
+        };
+        const grouped = [];
+        for (const entry of Array.isArray(entries) ? entries : []) {
+            const event = coinEvent(entry, display, options);
+            const previous = grouped[grouped.length - 1];
+            if (event && previous && previous.coinEvent && previous.type === entry.type &&
+                    previous.coinEvent.actor === event.actor &&
+                    previous.coinEvent.subject === event.subject &&
+                    previous.coinEvent.transfer === event.transfer) {
+                const amount = previous.coinEvent.amount + event.amount;
+                if (Number.isSafeInteger(amount)) {
+                    previous.coinEvent = Object.assign({}, event, { amount });
+                    previous.count++;
+                    const who = event.actor ? `${event.actor}の` : '';
+                    previous.message = event.payment ? paymentMessage(previous.coinEvent, previous.count)
+                        : `${who}${event.subject}発動 → +${amount}コイン（${previous.count}回）`;
+                    continue;
+                }
+            }
+            grouped.push(entry === '__SEP__' ? entry : Object.assign({}, entry,
+                event ? { coinEvent: event, count: 1,
+                    message: event.payment ? paymentMessage(event, 1) : entry.message } : {}));
+        }
+        return grouped;
+    }
+
+    function turnCoinSummary(entries, display, options = {}) {
+        const actor = options.turnPlayerName || '';
+        if (!actor) return null;
+        const players = Array.isArray(options.players) ? options.players : [];
+        if (players.filter(player => player && player.name === actor).length > 1) return null;
+        let income = 0, payment = 0;
+        for (const entry of Array.isArray(entries) ? entries : []) {
+            const event = coinEvent(entry, display, options);
+            if (!event) continue;
+            if (event.payment) payment += event.amount;
+            else if (event.actor === actor) income += event.amount;
+        }
+        return Object.freeze({ actor, income, payment, net: income - payment });
+    }
+
+    function buildRecentEventsHtml(entries, currentEntries, display, escapeHtml, options = {}) {
+        const recent = groupCoinEvents(entries, display, Object.assign({}, options, { turnPlayerName: '' }))
+            .filter(entry => entry !== '__SEP__').slice(-4);
+        const summary = turnCoinSummary(currentEntries, display, options);
+        const heading = summary && (summary.income || summary.payment)
+            ? `<div class="plaza-event-summary">${escapeHtml(summary.actor)}の施設収支: 収入${summary.income} / 支払い${summary.payment} / ${summary.net >= 0 ? '+' : ''}${summary.net}コイン</div>`
+            : '';
+        const balance = options.turnBalance;
+        const balanceHtml = balance && Number.isSafeInteger(balance.net)
+            ? `<div class="plaza-event-summary">${escapeHtml(balance.actor)}のこの手番: ${balance.net >= 0 ? '+' : ''}${balance.net}コイン（建設・特殊効果を含む）</div>`
+            : '';
+        return balanceHtml + heading + buildLogEntriesHtml(recent, display, escapeHtml, options);
     }
 
     function buildLogSummaryHtml(currentLog, display, escapeHtml, options = {}) {
@@ -224,6 +315,10 @@ const UiLogDisplay = (() => {
         extractLogDetails,
         buildLogEntriesHtml,
         buildLogSummaryHtml,
+        coinEvent,
+        groupCoinEvents,
+        turnCoinSummary,
+        buildRecentEventsHtml,
         buildLogToggleView,
         updateLogHistory,
         createHistoryController,

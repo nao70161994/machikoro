@@ -50,9 +50,12 @@ const UiLogHighlightEffects = (() => {
             const game = dependencies.getGame();
             if (!game || !Array.isArray(game.players)) return false;
             const relatedNames = new Set([playerName, targetName].filter(Boolean));
+            if ([...relatedNames].some(name =>
+                game.players.filter(player => player && player.name === name).length > 1)) return false;
             const matches = [];
             game.players.forEach((player, index) => {
-                if (!player || (!relatedNames.has(player.name) && !String(logMessage).includes(player.name))) return;
+                if (!player || game.players.filter(candidate => candidate && candidate.name === player.name).length !== 1) return;
+                if (relatedNames.size > 0 ? !relatedNames.has(player.name) : !String(logMessage).includes(player.name)) return;
                 const box = /** @type {HighlightElement | null} */ (
                     document.getElementById(`playerBox${index}`)
                 );

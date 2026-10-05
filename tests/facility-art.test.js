@@ -423,9 +423,41 @@ runTest('街の施設数は建設と取消に追従し、無効なランドマ�
     const built = UiBuildMenu.renderTownHtml(player, enabled);
     assert.ok(built.includes('施設 2枚 · ランドマーク 1個'));
     assert.ok(built.includes('×2'));
-    assert.strictEqual((built.match(/facility-art.svg#field/g) || []).length, 1);
+    assert.strictEqual((built.match(/facility-art.svg#field/g) || []).length, 2);
     player.cards.pop();
     assert.strictEqual(UiBuildMenu.renderTownHtml(player, enabled), original);
+});
+
+runTest('同種施設は複数lotに広がり大量所持でも16lotとランドマークを保つ', () => {
+    const forest = CARDS.find(card => card.name === '森林');
+    const six = UiBuildMenu.renderTownHtml({ cards: Array(6).fill(forest), landmarks: {} });
+    assert.strictEqual((six.match(/facility-art.svg#forest/g) || []).length, 6);
+    assert.strictEqual((six.match(/town-building-count/g) || []).length, 1);
+    const cards = CARDS.slice(0, 8).flatMap(card => Array(100).fill(card));
+    const landmarks = { '駅': true, '港': true, '空港': true };
+    const html = UiBuildMenu.renderTownHtml({ cards, landmarks }, new Set(Object.keys(landmarks)));
+    assert.strictEqual((html.match(/data-town-slot-facility=/g) || []).length, 16);
+    assert.strictEqual((html.match(/data-town-slot-landmark=/g) || []).length, 3);
+    assert.ok(html.includes('施設 800枚'));
+    assert.strictEqual(UiBuildMenu.renderTownHtml({ cards, landmarks }, new Set(Object.keys(landmarks))), html);
+});
+
+runTest('九種類目以降と省略済み施設の追加購入は固定の最新区画へ現れUndoと復元で戻る', () => {
+    const cards = Array.from({ length: 10 }, (_, index) => ({ name: `施設${index}`, category: '農園' }));
+    const render = owned => UiBuildMenu.renderTownHtml({ cards: owned, landmarks: {} });
+    const before = render(cards.slice(0, 8));
+    const ninth = render(cards.slice(0, 9));
+    const tenth = render(cards);
+    assert.ok(ninth.includes('data-town-building="card:施設8"'));
+    assert.ok(tenth.includes('data-town-building="card:施設9"'));
+    assert.ok(tenth.includes('ほか2種'));
+    const fixed = html => [...html.matchAll(/data-town-slot-facility="[0-6]"[^>]+/g)].map(match => match[0]);
+    assert.deepStrictEqual(fixed(before), fixed(tenth));
+    const repurchased = render([...cards, cards[7]]);
+    assert.ok(repurchased.includes('data-town-slot-facility="7" data-town-copy="0" data-town-building="card:施設7"'));
+    assert.ok(repurchased.includes('town-building-count">×2'));
+    assert.strictEqual(render(cards.slice(0, 9)), ninth, 'Undo reproduces exact prior lots');
+    assert.strictEqual(render(JSON.parse(JSON.stringify(cards))), tenth, 'Restore needs no presentation history');
 });
 
 runTest('街の発展段階は施設と有効なランドマークの両方に応じて進む', () => {
