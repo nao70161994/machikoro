@@ -13,7 +13,7 @@ const uiLogHighlightEffects = UiLogHighlightEffects.create({
     getGame: () => uiGameRuntimeSnapshot().game,
     getTimer: () => logRelatedHighlightTimer,
     setTimer: timer => { logRelatedHighlightTimer = timer; },
-    clearTimeout,
+    clearTimeout: timer => window.clearTimeout(timer),
     schedule: (callback, delay) => window.setTimeout(callback, delay),
 });
 
