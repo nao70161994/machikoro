@@ -8507,3 +8507,11 @@ html[data-design="plaza"] #plazaComparison:not([hidden]) { bottom: calc(var(--pl
     html[data-design="plaza"] .game-action-toolbar > details > summary { display: flex; align-items: center; min-height: 44px; padding: 4px; box-sizing: border-box; }
     html[data-design="plaza"] #plazaPlayerHud { max-height: calc(100% - var(--plaza-top) - var(--plaza-sidebar-actions, 60px)); }
 }
+
+/* Keep the full town art at high device pixel ratios without allocating a
+   separate blurred SVG surface for every district on the camera's world.
+   The SVG scenes retain their own shadows; event highlights are on the lot. */
+html[data-design="plaza"] #plazaWorld #players .town-street[data-town-layout="districts"] > .town-building .sunset-facility-art,
+html[data-design="plaza"] #plazaWorld #players .town-skyline-lights {
+    filter: none;
+}

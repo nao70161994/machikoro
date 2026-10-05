@@ -49,28 +49,42 @@ const PlazaField = (() => {
     function arrangeTowns() {
         if (!node('plazaViewport').clientWidth || !node('plazaViewport').clientHeight) return;
         const positions = [[580, 970], [70, 470], [580, 0], [1150, 470]];
+        // Measure once before changing absolute positions. Reading offsetTop
+        // after each write forces layout repeatedly when many towns are shown.
         const towns = Array.from({ length: playerCount }, (_, index) => ({
             item: node(`playerBox${index}`), seat: (index - selfIndex + playerCount) % playerCount,
-        })).filter(entry => entry.item);
-        for (const { item, seat } of towns.filter(entry => entry.seat < 4)) {
-            item.style.left = `${positions[seat][0]}px`;
-            item.style.top = `${positions[seat][1]}px`;
-        }
-        const bottom = item => item.offsetTop + item.offsetHeight;
-        const topTown = towns.find(entry => entry.seat === 2);
+        })).filter(entry => entry.item).map(entry => ({ ...entry,
+            height: entry.item.offsetHeight, left: 0, top: 0,
+        }));
         const market = node('buildMenu');
-        market.style.top = `${Math.max(420, topTown ? bottom(topTown.item) + 32 : 420)}px`;
-        const selfTown = towns.find(entry => entry.seat === 0);
-        if (selfTown) selfTown.item.style.top = `${Math.max(970, bottom(market) + 32)}px`;
-        const extraTop = Math.max(0, ...towns.filter(entry => entry.seat < 4).map(entry => bottom(entry.item))) + 40;
-        const rowHeight = Math.max(0, ...towns.map(entry => entry.item.offsetHeight)) + 40;
-        for (const { item, seat } of towns.filter(entry => entry.seat >= 4)) {
-            item.style.left = `${70 + ((seat - 4) % 3) * 530}px`;
-            item.style.top = `${extraTop + Math.floor((seat - 4) / 3) * rowHeight}px`;
+        const marketHeight = market.offsetHeight;
+        for (const entry of towns.filter(entry => entry.seat < 4)) {
+            [entry.left, entry.top] = positions[entry.seat];
         }
-        worldHeight = Math.max(1380, bottom(market) + 40, ...towns.map(entry => bottom(entry.item) + 40));
-        node('plazaWorld').style.height = `${worldHeight}px`;
+        const bottom = entry => entry.top + entry.height;
+        const topTown = towns.find(entry => entry.seat === 2);
+        const marketTop = Math.max(420, topTown ? bottom(topTown) + 32 : 420);
+        const selfTown = towns.find(entry => entry.seat === 0);
+        if (selfTown) selfTown.top = Math.max(970, marketTop + marketHeight + 32);
+        const extraTop = Math.max(0, ...towns.filter(entry => entry.seat < 4).map(bottom)) + 40;
+        const rowHeight = Math.max(0, ...towns.map(entry => entry.height)) + 40;
+        for (const entry of towns.filter(entry => entry.seat >= 4)) {
+            entry.left = 70 + ((entry.seat - 4) % 3) * 530;
+            entry.top = extraTop + Math.floor((entry.seat - 4) / 3) * rowHeight;
+        }
+        const setPixels = (item, property, value) => {
+            const pixels = `${value}px`;
+            if (item.style[property] !== pixels) item.style[property] = pixels;
+        };
+        for (const entry of towns) {
+            setPixels(entry.item, 'left', entry.left);
+            setPixels(entry.item, 'top', entry.top);
+        }
+        setPixels(market, 'top', marketTop);
+        worldHeight = Math.max(1380, marketTop + marketHeight + 40, ...towns.map(entry => bottom(entry) + 40));
+        setPixels(node('plazaWorld'), 'height', worldHeight);
     }
+
     function setComparisonOpen(open) {
         node('plazaComparison').hidden = !open;
         node('plazaCameraTools').querySelector('[data-field-panel="comparison"]').setAttribute('aria-expanded', String(open));
@@ -102,8 +116,11 @@ const PlazaField = (() => {
             : Math.max(extent - size - 80, Math.min(80, value));
         camera.x = clampAxis(camera.x, 1680 * camera.scale, viewport.clientWidth);
         camera.y = clampAxis(camera.y, worldHeight * camera.scale, viewport.clientHeight);
-        node('plazaWorld').style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
-        node('plazaZoomLabel').textContent = `${Math.round(camera.scale * 100)}%`;
+        const transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
+        const world = node('plazaWorld');
+        if (world.style.transform !== transform) world.style.transform = transform;
+        const label = `${Math.round(camera.scale * 100)}%`;
+        if (node('plazaZoomLabel').textContent !== label) node('plazaZoomLabel').textContent = label;
     }
     function zoom(scale, x, y) {
         const next = Math.max(0.12, Math.min(1.8, scale));
