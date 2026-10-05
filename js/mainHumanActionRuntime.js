@@ -381,7 +381,7 @@ const MainHumanActionRuntime = (() => {
                 );
                 dependencies.checkpoint('skip-nextTurn-returned', { result });
             };
-            if (currentGame.builtThisTurn) {
+            if (currentGame.builtThisTurn || !currentGame.currentPlayer().landmarks[dependencies.landmarkNames.AIRPORT]) {
                 finishTurn();
                 return;
             }

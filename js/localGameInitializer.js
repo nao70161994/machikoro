@@ -76,7 +76,7 @@ const LocalGameInitializer = (() => {
                 const originalIndex = order[index];
                 const setting = shuffledSettings[index];
                 game.players[index].name = setting.type === 'cpu'
-                    ? dependencies.cpuLabel(setting.difficulty)
+                    ? `${dependencies.cpuLabel(setting.difficulty)}・${index + 1}`
                     : dependencies.normalizePlayerName(setting.name, originalIndex);
                 cpuPlayers.push(setting.type === 'cpu'
                     ? dependencies.createCpu(setting.difficulty, {

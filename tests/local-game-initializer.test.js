@@ -71,7 +71,7 @@ runTest('local game initializerは固定乱数で順序・名前・CPU options�
     const { calls, game, runtime, shopStock, getRandomCallCount } = createHarness();
     const result = runtime.initialize(3);
     assert.deepStrictEqual(result.order, [2, 1, 0]);
-    assert.deepStrictEqual(game.players.map(player => player.name), ['C', 'CPU:expert', 'A']);
+    assert.deepStrictEqual(game.players.map(player => player.name), ['C', 'CPU:expert・2', 'A']);
     assert.strictEqual(result.cpuPlayers[0], null);
     assert.strictEqual(result.cpuPlayers[1].difficulty, 'expert');
     assert.deepStrictEqual(result.cpuPlayers[1].options, {
@@ -97,6 +97,16 @@ runTest('local game initializerはresetからrender・CPU予約までのeffect�
         'landmarks', 'stock', 'stock', 'cpuPlayers', 'addLog', 'render', 'scheduleCpu',
     ]);
     assert.strictEqual(calls[0][1], 'init-cancel-cpu');
+});
+
+runTest('同じ難易度のCPUはシャッフル後の席番号で区別できる', () => {
+    const { runtime } = createHarness({
+        playerSettings: Array.from({ length: 3 }, () => ({ type: 'cpu', difficulty: 'normal', name: 'CPU' })),
+    });
+    const result = runtime.initialize(3);
+    assert.deepStrictEqual(result.game.players.map(player => player.name), [
+        'CPU:normal・1', 'CPU:normal・2', 'CPU:normal・3',
+    ]);
 });
 
 runTest('local game initializerは選択済みRL model identityをCPU生成へ渡す', () => {

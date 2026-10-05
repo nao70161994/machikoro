@@ -1158,12 +1158,16 @@ runTest('main 開始前確認は人数・参加者・速度・選択内容を確
         { type: 'human', difficulty: 'normal', name: '花子' },
         { type: 'cpu', difficulty: 'strong', name: 'CPU太郎' },
     ]);
+    rt.replaceEnabledCardSelection(['麦畑', 'パン屋']);
+    rt.replaceEnabledLandmarkSelection(['駅']);
     rt.reviewGameSetup();
     assert.ok(message.includes('人数: 2人'));
     assert.ok(message.includes('花子（人間）'));
     assert.ok(message.includes('CPU太郎'));
     assert.ok(message.includes('CPU速度: 1.5秒'));
     assert.ok(message.includes('施設:'));
+    assert.ok(message.includes('施設: 2種 / ランドマーク: 1種'));
+    assert.ok(!message.includes('undefined'));
     assert.ok(message.includes('市場: 通常市場（全種類）'));
     assert.ok(message.includes('標準設定との差分:'));
     assert.ok(message.includes('・CPU（強）1人'));
@@ -2015,7 +2019,7 @@ runTest('main init は固定乱数でプレイヤー順シャッフル後も名�
     rt.init(3);
 
     const names = rt.__test.getGame().players.map(player => player.name);
-    assert.deepStrictEqual(names, ['CPU（強）', '花子', '太郎']);
+    assert.deepStrictEqual(names, ['CPU（強）・1', '花子', '太郎']);
     assert.deepStrictEqual(Array.from(rt.__test.getCpuPlayers()[0].options.expertOpponentDifficulties), ['strong', 'human', 'human']);
     assert.strictEqual(rt.__test.getShopStock()['麦畑'], 6);
     assert.strictEqual(rt.__test.getShopStock()['スタジアム'], 3);

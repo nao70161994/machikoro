@@ -760,7 +760,7 @@ function reviewGameSetup() {
         `人数: ${setup.selectedCount}人`,
         ...players,
         `CPU速度: ${formatCpuSpeedLabel(speed || 1500)}`,
-        `施設: ${cards.length}種 / ランドマーク: ${landmarks.length}種`,
+        `施設: ${Array.from(cards).length}種 / ランドマーク: ${Array.from(landmarks).length}種`,
         `市場: ${marketRule}`,
         '',
         '標準設定との差分:',

@@ -190,7 +190,7 @@ runTest('main human action runtimeは空港skip確認後にUndoを消してnextT
     ]);
 });
 
-runTest('main human action runtimeは建設後のターン終了確認を省き、未建設時は確認する', () => {
+runTest('main human action runtimeは通常の貯金と建設後のターン終了を確認なしで進める', () => {
     const afterBuild = createHarness({ builtThisTurn: true });
     afterBuild.runtime.onSkip();
     assert.strictEqual(afterBuild.calls.some(call => call[0] === 'showConfirm'), false);
@@ -198,7 +198,8 @@ runTest('main human action runtimeは建設後のターン終了確認を省き�
 
     const withoutBuild = createHarness();
     withoutBuild.runtime.onSkip();
-    assert.strictEqual(withoutBuild.calls.some(call => call[0] === 'showConfirm'), true);
+    assert.strictEqual(withoutBuild.calls.some(call => call[0] === 'showConfirm'), false);
+    assert.ok(withoutBuild.calls.some(call => call[0] === 'nextTurn'));
 });
 
 runTest('main human action runtimeはBusiness Center不使用を同じactionのcanonical payloadで送る', () => {
