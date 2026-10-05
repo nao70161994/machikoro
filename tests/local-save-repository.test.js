@@ -128,6 +128,44 @@ runTest('local save repositoryは直前2世代を保持して世代指定で読�
     assert.strictEqual(repository.read(() => true, 3).ok, false);
 });
 
+runTest('local save repositoryは同じ状態の再保存で復元世代を消費しない', () => {
+    const storage = makeStorage();
+    const repository = LocalSaveRepository.create({ storage });
+    for (const turn of [1, 2, 3, 3, 3]) repository.save({ turn });
+
+    assert.strictEqual(repository.read(() => true).state.turn, 3);
+    assert.deepStrictEqual(repository.readHistory().map(entry => entry.state.turn), [2, 1]);
+});
+
+runTest('local save repositoryは最新保存の書き込み失敗で復元世代を消費しない', () => {
+    const storage = makeStorage();
+    const repository = LocalSaveRepository.create({ storage, versionedEnabled: true });
+    for (const turn of [1, 2, 3]) repository.save({ turn });
+    const before = Object.fromEntries(Object.values(LocalSaveRepository.keys).map(key =>
+        [key, storage.value(key)]));
+    const write = storage.set;
+    storage.set = (key, value) => key === LocalSaveRepository.keys.legacy
+        ? false
+        : write(key, value);
+
+    assert.strictEqual(repository.save({ turn: 4 }).legacyWritten, false);
+    for (const [key, value] of Object.entries(before)) assert.strictEqual(storage.value(key), value);
+    assert.strictEqual(repository.read(() => true).state.turn, 3);
+    assert.deepStrictEqual(repository.readHistory().map(entry => entry.state.turn), [2, 1]);
+});
+
+runTest('local save repositoryは同じ状態でもshadowのflag切替と再作成を適用する', () => {
+    const storage = makeStorage();
+    const enabled = LocalSaveRepository.create({ storage, versionedEnabled: true });
+    enabled.save({ turn: 1 });
+    enabled.save({ turn: 2 });
+    LocalSaveRepository.create({ storage }).save({ turn: 2 });
+    assert.strictEqual(storage.value(LocalSaveRepository.keys.versioned), null);
+    assert.strictEqual(enabled.save({ turn: 2 }).versionedWritten, true);
+    assert.strictEqual(enabled.read(() => true).state.turn, 2);
+    assert.deepStrictEqual(enabled.readHistory().map(entry => entry.state.turn), [1]);
+});
+
 runTest('local save repositoryは不正な旧世代を検証してfail closedにする', () => {
     const storage = makeStorage({
         savedGame: JSON.stringify({ players: [{ name: 'latest' }] }),
@@ -135,6 +173,17 @@ runTest('local save repositoryは不正な旧世代を検証してfail closedに
     });
     const repository = LocalSaveRepository.create({ storage });
     assert.strictEqual(repository.read(state => Array.isArray(state.players), 1).ok, false);
+});
+
+runTest('local save repositoryは旧世代だけが残っても復元でき孤立shadowは使わない', () => {
+    const storage = makeStorage({
+        savedGameV1: JSON.stringify(GameSnapshot.createSnapshotEnvelope({ turn: 99 })),
+        savedGameHistoryV1: JSON.stringify([{ state: { turn: 7 } }]),
+    });
+    const repository = LocalSaveRepository.create({ storage, versionedEnabled: true });
+    assert.strictEqual(repository.exists(), true);
+    assert.strictEqual(repository.read(() => true).ok, false);
+    assert.strictEqual(repository.read(() => true, 1).state.turn, 7);
 });
 
 runTest('local save repositoryの削除はlegacy・v1 shadow・旧世代を同時に消す', () => {

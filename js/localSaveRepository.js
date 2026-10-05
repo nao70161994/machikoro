@@ -49,16 +49,18 @@ function createLocalSaveRepository(options) {
         }
     }
 
-    function rotateCurrentIntoHistory() {
-        const current = decode(LOCAL_SAVE_KEYS.legacy);
+    function rotateCurrentIntoHistory(current) {
         if (!current) return;
         const entries = [{ state: current.state }, ...readHistoryEntries()].slice(0, MAX_PREVIOUS_SAVES);
         storage.set(LOCAL_SAVE_KEYS.history, JSON.stringify(entries));
     }
 
     function save(state) {
-        rotateCurrentIntoHistory();
-        const legacyWritten = storage.set(LOCAL_SAVE_KEYS.legacy, JSON.stringify(state)) === true;
+        const serialized = JSON.stringify(state);
+        const previous = decode(LOCAL_SAVE_KEYS.legacy);
+        const changed = previous && JSON.stringify(previous.state) !== serialized;
+        const legacyWritten = storage.set(LOCAL_SAVE_KEYS.legacy, serialized) === true;
+        if (legacyWritten && changed) rotateCurrentIntoHistory(previous);
         let versionedWritten = false;
         if (legacyWritten && versionedEnabled) {
             const envelope = snapshot.createSnapshotEnvelope(state);
@@ -125,7 +127,7 @@ function createLocalSaveRepository(options) {
     }
 
     function exists() {
-        return !!storage.get(LOCAL_SAVE_KEYS.legacy, null);
+        return !!storage.get(LOCAL_SAVE_KEYS.legacy, null) || readHistoryEntries().length > 0;
     }
 
     return Object.freeze({ save, read, readHistory: readHistoryEntries, remove, exists });

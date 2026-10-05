@@ -38,9 +38,11 @@ const LocalResumeView = (() => {
         });
     }
 
-    function generationOptions(previousCount) {
+    function generationOptions(previousCount, availableGenerations = null) {
         const count = Number.isInteger(previousCount) ? Math.max(0, Math.min(2, previousCount)) : 0;
-        return Object.freeze(Array.from({ length: count + 1 }, (_, index) => Object.freeze({
+        const indices = Array.from({ length: count + 1 }, (_, index) => index)
+            .filter(index => !Array.isArray(availableGenerations) || availableGenerations.includes(index));
+        return Object.freeze(indices.map(index => Object.freeze({
             value: index,
             label: index === 0 ? '最新の保存' : `${index}つ前の保存`,
         })));

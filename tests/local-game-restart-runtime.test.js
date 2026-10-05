@@ -2,6 +2,7 @@
 const assert = require('assert');
 const LocalGameRestartRuntime = require('../js/localGameRestartRuntime');
 const UiPlayerCount = require('../js/uiPlayerCount');
+const LocalSaveRepository = require('../js/localSaveRepository');
 const { makeElement, runTest } = require('./helpers/test-utils');
 
 function createHarness(options = {}) {
@@ -29,7 +30,10 @@ function createHarness(options = {}) {
         getClearOnlineSessionStorage: () => options.clearOnline || null,
         playerCount: UiPlayerCount,
         refreshPwaUpdateState: () => calls.push(['refreshPwa']),
-        removeStorage: key => calls.push(['remove', key]),
+        removeStorage: key => {
+            calls.push(['remove', key]);
+            if (options.storage) options.storage.remove(key);
+        },
         renderPlayerSettings: () => calls.push(['renderSettings']),
         resetFullLog: () => calls.push(['resetLog']),
         resetLifecycle: reason => calls.push(['resetLifecycle', reason]),
@@ -50,21 +54,41 @@ runTest('local game restart runtimeは確認後の全effect順と既存理由を
     assert.deepStrictEqual(calls, [['confirm', LocalGameRestartRuntime.CONFIRM_MESSAGE]]);
     confirm();
     assert.deepStrictEqual(calls.map(call => call[0]), [
-        'confirm', 'checkpoint', 'remove', 'remove', 'remove', 'remove', 'remove', 'remove',
+        'confirm', 'checkpoint', 'remove', 'remove', 'remove', 'remove', 'remove', 'remove', 'remove', 'remove',
         'cancelCpu', 'cancelDelayed', 'cancelAutoSkip', 'stopConfetti', 'resetOnline',
         'resetUi', 'resetLifecycle', 'game', 'coins', 'winSound', 'undo', 'resetLog',
         'setup', 'cpuPlayers', 'renderSettings', 'updateResume', 'drawSkyline',
         'refreshPwa', 'focusTitle', 'checkpoint',
     ]);
-    assert.deepStrictEqual(calls.slice(2, 8).map(call => call[1]), [
-        'savedGame', ...LocalGameRestartRuntime.ONLINE_STORAGE_KEYS,
+    assert.deepStrictEqual(calls.slice(2, 10).map(call => call[1]), [
+        'savedGame', 'savedGameV1', 'savedGameHistoryV1', ...LocalGameRestartRuntime.ONLINE_STORAGE_KEYS,
     ]);
-    assert.deepStrictEqual(calls[8], ['cancelCpu', 'restart-game-cancel-cpu']);
-    assert.deepStrictEqual(calls[13], ['resetUi', 'restart-game-reset-ui-locks']);
-    assert.deepStrictEqual(calls[14], ['resetLifecycle', 'restart-game-lifecycle-reset']);
+    assert.deepStrictEqual(calls[10], ['cancelCpu', 'restart-game-cancel-cpu']);
+    assert.deepStrictEqual(calls[15], ['resetUi', 'restart-game-reset-ui-locks']);
+    assert.deepStrictEqual(calls[16], ['resetLifecycle', 'restart-game-lifecycle-reset']);
     assert.strictEqual(elements.gameScreen.style.display, 'none');
     assert.strictEqual(elements.titleScreen.style.display, 'block');
     assert.strictEqual(elements.playerCount.textContent, '2人');
+});
+
+runTest('local game restart runtimeは確認後に保存全世代を削除して再開を復活させない', () => {
+    const values = new Map();
+    const storage = {
+        get: (key, fallback = null) => values.has(key) ? values.get(key) : fallback,
+        set: (key, value) => { values.set(key, value); return true; },
+        remove: key => values.delete(key),
+    };
+    const repository = LocalSaveRepository.create({ storage, versionedEnabled: true });
+    for (const turn of [1, 2, 3]) repository.save({ turn });
+    const { runtime, confirm } = createHarness({ storage });
+    runtime.restart();
+    assert.strictEqual(repository.exists(), true);
+    assert.strictEqual(repository.read(() => true, 2).state.turn, 1);
+    confirm();
+    assert.strictEqual(repository.exists(), false);
+    assert.strictEqual(repository.read(() => true).ok, false);
+    assert.deepStrictEqual(repository.readHistory(), []);
+    for (const key of Object.values(LocalSaveRepository.keys)) assert.strictEqual(storage.get(key), null);
 });
 
 runTest('local game restart runtimeはonline storage facadeをfallbackより優先する', () => {

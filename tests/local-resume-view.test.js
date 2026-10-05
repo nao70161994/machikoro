@@ -54,3 +54,9 @@ runTest('local resume viewは最新と最大2つ前までの世代選択肢を�
     ]);
     assert.ok(Object.isFrozen(LocalResumeView.generationOptions(2)));
 });
+
+runTest('local resume viewは利用可能な旧世代の元の番号を維持する', () => {
+    assert.deepStrictEqual(LocalResumeView.generationOptions(2, [2]), [
+        { value: 2, label: '2つ前の保存' },
+    ]);
+});

@@ -80,3 +80,5 @@ interface Document {
         'hapticBuildEnabled' | 'hapticWinEnabled' | 'soundDiceEnabled' |
         'soundCoinEnabled' | 'soundBuildEnabled' | 'soundWinEnabled'): HTMLInputElement;
 }
+
+declare function cancelPendingLocalGameStart(): void;

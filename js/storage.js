@@ -1,3 +1,4 @@
+/* global cancelPendingLocalGameStart */
 const storageClientStorageFacade = ClientStorage.createFacade();
 
 function storageGameRuntimeSnapshot() {
@@ -180,7 +181,15 @@ function saveGameState() {
 function updateResumeButton() {
     const repository = getLocalSaveRepository();
     const localSaveExists = repository.exists();
-    const decodedSave = localSaveExists ? repository.read() : null;
+    const previousCount = repository.readHistory().length;
+    const availableGenerations = [];
+    let decodedSave = null;
+    for (let index = 0; index <= previousCount; index++) {
+        const decoded = repository.read(isValidSavedGameState, index);
+        if (!decoded.ok) continue;
+        availableGenerations.push(index);
+        if (!decodedSave) decodedSave = decoded;
+    }
     const view = LocalResumeView.resumeSections(
         localSaveExists,
         readOnlineSession(),
@@ -188,7 +197,8 @@ function updateResumeButton() {
     );
     localResumeEffects.applyResumeSections(view);
     localResumeEffects.applyGenerationOptions(
-        LocalResumeView.generationOptions(repository.readHistory().length)
+        LocalResumeView.generationOptions(previousCount,
+            availableGenerations.length ? availableGenerations : null)
     );
 }
 
@@ -317,13 +327,16 @@ function resumeGame(options = {}) {
         repositoryExists: repository.exists(),
     });
     if (initialDecision !== 'read-save') return false;
+    if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();
     let validatedSave = false;
+    let generationIndex = 0;
     try {
         const generationElement = typeof document !== 'undefined'
             ? document.getElementById('localSaveGeneration') : null;
-        const generationIndex = Number.isInteger(options.generationIndex)
+        const requestedGeneration = Number.isInteger(options.generationIndex)
             ? options.generationIndex
             : Number.parseInt(generationElement && generationElement.value || '0', 10) || 0;
+        generationIndex = Math.max(0, requestedGeneration);
         const decoded = repository.read(isValidSavedGameState, generationIndex);
         const decodedState = decoded && decoded.state;
         let savedCpuSettings = Array.isArray(options.rlCpuSettings)
@@ -521,7 +534,10 @@ function resumeGame(options = {}) {
         return true;
     } catch(e) {
         localResumePreloadRuntime.setPending(false);
-        if (!validatedSave) repository.remove();
+        if (!validatedSave && generationIndex === 0 &&
+                !repository.readHistory().some(entry => isValidSavedGameState(entry.state))) {
+            repository.remove();
+        }
         updateResumeButton();
         const resumeButton = document.getElementById("btnResume");
         if (validatedSave && resumeButton && typeof resumeButton.focus === 'function') {

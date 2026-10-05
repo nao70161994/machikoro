@@ -5,6 +5,7 @@ const LocalResumeEffects = (() => {
      * @typedef {{
      *   disabled?: boolean,
      *   innerHTML?: string,
+     *   value?: string,
      *   textContent?: string | null,
      *   style?: { display: string },
      * }} ResumeElement
@@ -60,7 +61,9 @@ const LocalResumeEffects = (() => {
             select.innerHTML = (options || []).map(option =>
                 `<option value="${option.value}">${option.label}</option>`
             ).join('');
-            if (label && label.style) label.style.display = options && options.length > 1 ? 'flex' : 'none';
+            select.value = options && options.length ? String(options[0].value) : '';
+            if (label && label.style) label.style.display = options &&
+                (options.length > 1 || options[0]?.value > 0) ? 'flex' : 'none';
             return true;
         }
 

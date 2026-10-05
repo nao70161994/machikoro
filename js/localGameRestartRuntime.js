@@ -43,6 +43,8 @@ const LocalGameRestartRuntime = (() => {
         function execute() {
             dependencies.checkpoint('restart-game-confirmed-start');
             dependencies.removeStorage('savedGame');
+            dependencies.removeStorage('savedGameV1');
+            dependencies.removeStorage('savedGameHistoryV1');
             clearOnlineStorage();
             dependencies.cancelCpuSchedule('restart-game-cancel-cpu');
             dependencies.cancelDelayedHumanAction();

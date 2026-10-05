@@ -618,6 +618,56 @@ runTest('storage resumeGame は壊れた保存データを破棄して alert す
     assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
 });
 
+runTest('storage resumeGame は不正または欠落した旧世代を選んでも最新と他世代を消さない', () => {
+    for (const generationIndex of [1, 3]) {
+        const rt = loadStorageRuntime();
+        const latest = JSON.stringify(makeSavedGameState({ turnCount: 9 }));
+        const history = JSON.stringify([
+            { state: { invalid: true } },
+            { state: makeSavedGameState({ turnCount: 7 }) },
+        ]);
+        rt.localStorage.setItem('savedGame', latest);
+        rt.localStorage.setItem('savedGameHistoryV1', history);
+        rt.elements.localSaveGeneration = makeElement({ value: String(generationIndex) });
+
+        assert.strictEqual(rt.resumeGame(), false);
+        assert.strictEqual(rt.localStorage.getItem('savedGame'), latest);
+        assert.strictEqual(rt.localStorage.getItem('savedGameHistoryV1'), history);
+        assert.strictEqual(rt.__test.getGame(), null);
+        assert.deepStrictEqual(rt.alerts, ['セーブデータの読み込みに失敗しました']);
+        assert.strictEqual(rt.resumeGame({ generationIndex: 2 }), true);
+        assert.strictEqual(rt.__test.getGame().turnCount, 7);
+        assert.strictEqual(rt.resumeGame({ generationIndex: 0 }), true);
+        assert.strictEqual(rt.__test.getGame().turnCount, 9);
+    }
+});
+
+runTest('storage resumeGame は最新が壊れていても有効な旧世代を維持して再開候補にする', () => {
+    for (const current of ['{broken', null]) {
+        const rt = loadStorageRuntime();
+        const history = JSON.stringify([
+            { state: { invalid: true } },
+            { state: makeSavedGameState({ turnCount: 7 }) },
+        ]);
+        if (current !== null) rt.localStorage.setItem('savedGame', current);
+        rt.localStorage.setItem('savedGameHistoryV1', history);
+        rt.localStorage.setItem('savedGameV1', JSON.stringify(
+            rt.GameSnapshot.createSnapshotEnvelope(makeSavedGameState({ turnCount: 99 }))));
+
+        assert.strictEqual(rt.resumeGame({ generationIndex: 0 }), false);
+        assert.strictEqual(rt.localStorage.getItem('savedGame'), current);
+        assert.strictEqual(rt.localStorage.getItem('savedGameHistoryV1'), history);
+        assert.strictEqual(rt.elements.resumeSection.style.display, 'flex');
+        assert.strictEqual(rt.elements.localSaveGeneration.value, '2');
+        assert.strictEqual(rt.elements.localSaveGenerationLabel.style.display, 'flex');
+        assert.ok(!rt.elements.localSaveGeneration.innerHTML.includes('value="0"'));
+        assert.ok(!rt.elements.localSaveGeneration.innerHTML.includes('value="1"'));
+        assert.strictEqual(rt.elements.localResumeMarketDetails.textContent, '🏪 通常市場・7ターン');
+        assert.strictEqual(rt.resumeGame(), true);
+        assert.strictEqual(rt.__test.getGame().turnCount, 7);
+    }
+});
+
 runTest('storage resumeGame は巨大pending件数をhydrate前に拒否する', () => {
     const rt = loadStorageRuntime();
     const state = makeSavedGameState({

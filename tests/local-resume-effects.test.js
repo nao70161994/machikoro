@@ -80,6 +80,17 @@ runTest('local resume effectsはlocalとonlineの表示を同じ順序で反映�
     );
 });
 
+runTest('local resume effectsは旧世代しかない場合も番号を表示して選択する', () => {
+    const elements = createElements();
+    const effects = LocalResumeEffects.create({ getElementById: id => elements[id] || null });
+    effects.applyGenerationOptions([{ value: 2, label: '2つ前の保存' }]);
+    assert.strictEqual(elements.localSaveGeneration.value, '2');
+    assert.strictEqual(elements.localSaveGenerationLabel.style.display, 'flex');
+    effects.applyGenerationOptions([]);
+    assert.strictEqual(elements.localSaveGeneration.value, '');
+    assert.strictEqual(elements.localSaveGenerationLabel.style.display, 'none');
+});
+
 runTest('local resume effectsは対象DOMがなくても安全に終了する', () => {
     const effects = LocalResumeEffects.create({ getElementById: () => null });
     assert.strictEqual(effects.applyPendingButton({
