@@ -713,6 +713,10 @@ function startGame() {
     return localGameStartRuntime.start();
 }
 
+function cancelPendingLocalGameStart() {
+    return localGameStartRuntime.cancelPendingStart();
+}
+
 function startQuickCpuGame() {
     const quickSettings = LocalPlayerSettings.normalizeSettings([
         { type: 'human', difficulty: 'normal', name: defaultLocalPlayerName(0) },
@@ -781,6 +785,7 @@ const localGameRestartRuntime = LocalGameRestartRuntime.createRuntime({
     renderPlayerSettings: () => renderPlayerSettings(),
     resetFullLog: () => resetFullLog(),
     resetLifecycle(reason) {
+        cancelPendingLocalGameStart();
         if (typeof resetGameLifecycleForRestart === 'function') resetGameLifecycleForRestart(reason);
     },
     resetOnline() {

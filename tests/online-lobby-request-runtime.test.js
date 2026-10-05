@@ -262,3 +262,34 @@ runTest('online lobby request runtimeは必須adapter欠落を初期化前に拒
     assert.ok(Object.isFrozen(runtime));
     assert.ok(Object.isFrozen(OnlineLobbyRequestRuntime.TEXT));
 });
+
+
+for (const fail of [false, true]) {
+    for (const replacement of ['join', 'finish']) {
+        runTest(`online create preload ${fail ? '失敗' : '成功'}は${replacement}後の部屋を上書きしない`, async () => {
+            let settle;
+            const preload = new Promise((resolve, reject) => {
+                settle = () => fail ? reject(new Error('late model failure')) : resolve();
+            });
+            const portfolio = {
+                eligibleLoadState: () => ({ status: 'idle', ready: 0, total: 1, errors: [] }),
+                preloadEligibleModels: () => preload,
+                safeFallbackSettings: () => { throw new Error('stale fallback must not run'); },
+            };
+            const { runtime, calls } = createHarness({
+                playerSettings: [{ type: 'human' }, { type: 'cpu', difficulty: 'rl' }], portfolio,
+            });
+            assert.strictEqual(runtime.showCreate(), true);
+            if (replacement === 'join') assert.strictEqual(runtime.join(), true);
+            else runtime.finish();
+            const before = calls.length;
+            settle();
+            await preload.catch(() => {});
+            await Promise.resolve();
+            assert.strictEqual(calls.length, before);
+            assert.strictEqual(calls.filter(call => call[0] === 'createRoom').length, 0);
+            assert.strictEqual(calls.filter(call => call[0] === 'joinRoom').length,
+                replacement === 'join' ? 1 : 0);
+        });
+    }
+}

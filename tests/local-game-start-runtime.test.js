@@ -224,3 +224,31 @@ runTest('local game start runtimeは必須依存をeffect前に検証する', ()
     const { runtime } = createHarness();
     assert.ok(Object.isFrozen(runtime));
 });
+
+
+for (const fail of [false, true]) {
+    for (const replacement of ['quick', 'cancel']) {
+        runTest(`local preload ${fail ? '失敗' : '成功'}は${replacement}後の対局を上書きしない`, async () => {
+            let settle;
+            const preload = new Promise((resolve, reject) => {
+                settle = () => fail ? reject(new Error('late model failure')) : resolve();
+            });
+            const { runtime, calls, getState } = createHarness({ difficulty: 'rl', preload });
+            runtime.start();
+            const quickSettings = [
+                { type: 'human', difficulty: 'normal', name: 'quick-human' },
+                { type: 'cpu', difficulty: 'normal', name: 'quick-cpu' },
+            ];
+            if (replacement === 'quick') runtime.startNow(2, quickSettings);
+            else runtime.cancelPendingStart();
+            const before = calls.length;
+            settle();
+            await preload.catch(() => {});
+            await Promise.resolve();
+            assert.strictEqual(calls.length, before);
+            assert.strictEqual(calls.filter(call => call[0] === 'initializeGame').length,
+                replacement === 'quick' ? 1 : 0);
+            if (replacement === 'quick') assert.strictEqual(getState().playerSettings[1].name, 'quick-cpu');
+        });
+    }
+}

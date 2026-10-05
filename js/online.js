@@ -1,3 +1,4 @@
+/* global cancelPendingLocalGameStart */
 // オンライン対戦（タイトル画面設定）
 const onlineSetupStateController = OnlineSetupState.createController();
 const onlineLobbyRequestController = OnlineLobbyRequestState.createController();
@@ -3074,6 +3075,9 @@ function getOnlineLobbyRequestRuntime() {
     if (onlineLobbyRequestRuntime) return onlineLobbyRequestRuntime;
     onlineLobbyRequestRuntime = OnlineLobbyRequestRuntime.createRuntime({
         applyButtonView: (id, view) => onlineDomEffects.applyButtonView(id, view),
+        cancelPendingLocalStart: () => {
+            if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();
+        },
         clearTimer: timer => clearTimeout(timer),
         controller: onlineLobbyRequestController,
         createRoom: payload => onlineSocketEffects.createRoom(payload),
@@ -3220,6 +3224,7 @@ function getOnlineGameInitializer() {
 }
 
 function initOnlineGame(playerNames, playerSettings, playerOrder, options = {}) {
+    if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();
     return getOnlineGameInitializer().initialize({
         myOriginalPlayerIndex: onlineSessionSnapshot().myOriginalPlayerIndex,
         playerNames,

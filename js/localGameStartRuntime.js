@@ -268,6 +268,7 @@ const LocalGameStartRuntime = (() => {
             playerCount = setupSnapshot().selectedCount,
             settings = setupSnapshot().playerSettings
         ) {
+            if (pendingController.isPending()) cancelPendingStart();
             const speed = document.getElementById('cpuSpeed');
             const plan = startPolicy.runtimePlan(playerCount, settings, parseInt(speed.value));
             return startPolicy.execute(plan, {
@@ -292,6 +293,11 @@ const LocalGameStartRuntime = (() => {
             });
         }
 
+        function cancelPendingStart() {
+            pendingController.cancel();
+            updateReadinessUi();
+        }
+
         function start() {
             if (startPolicy.initialDecision({ startPending: pendingController.isPending() }) ===
                     startPolicy.REQUEST_DECISIONS.IGNORE_PENDING) return;
@@ -307,13 +313,16 @@ const LocalGameStartRuntime = (() => {
             const preload = preloadForStart(playerCount, settings);
             if (startPolicy.preloadDecision(preload) === startPolicy.REQUEST_DECISIONS.PRELOAD) {
                 pendingController.begin();
+                const generation = pendingController.currentGeneration();
                 updateReadinessUi();
                 showNotice('深層学習AIモデルを読み込んでいます。');
                 preload.then(() => {
+                    if (!pendingController.isCurrent(generation)) return;
                     pendingController.finish();
                     updateReadinessUi();
                     startNow(playerCount, settings);
                 }).catch(error => {
+                    if (!pendingController.isCurrent(generation)) return;
                     pendingController.finish();
                     if (!startWithSafeFallback(playerCount, settings, error)) {
                         const logger = dependencies.console;
@@ -329,6 +338,7 @@ const LocalGameStartRuntime = (() => {
 
         return Object.freeze({
             pendingController,
+            cancelPendingStart,
             changeCount,
             renderPlayerSettings,
             changePlayerType,

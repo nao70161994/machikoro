@@ -21,16 +21,21 @@ const LocalGameStart = (() => {
 
     function createPendingController() {
         let pending = false;
+        let generation = 0;
 
         function isPending() { return pending; }
         function begin() {
             if (pending) return false;
             pending = true;
+            generation++;
             return true;
         }
         function finish() { pending = false; }
+        function cancel() { pending = false; generation++; }
+        function currentGeneration() { return generation; }
+        function isCurrent(value) { return value === generation; }
 
-        return Object.freeze({ isPending, begin, finish });
+        return Object.freeze({ isPending, begin, finish, cancel, currentGeneration, isCurrent });
     }
 
     function initialDecision(facts = {}) {

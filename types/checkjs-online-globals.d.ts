@@ -98,3 +98,5 @@ interface Window {
     io: typeof io;
     MACHIKORO_CLIENT_VERSION?: string;
 }
+
+declare function cancelPendingLocalGameStart(): void;

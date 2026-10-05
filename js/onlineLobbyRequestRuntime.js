@@ -50,6 +50,12 @@ const OnlineLobbyRequestRuntime = (() => {
             return dependencies.getModelPortfolio();
         }
 
+        function cancelPendingLocalStart() {
+            if (typeof dependencies.cancelPendingLocalStart === 'function') {
+                dependencies.cancelPendingLocalStart();
+            }
+        }
+
         function canPreloadModels() {
             const portfolio = modelPortfolio();
             return !!portfolio && (typeof portfolio.preloadSelectedModels === 'function' ||
@@ -200,6 +206,7 @@ const OnlineLobbyRequestRuntime = (() => {
                 parseInt(dependencies.inputValue(dependencies.ids.cpuSpeed))
             );
             if (!dependencies.initSocket()) return false;
+            cancelPendingLocalStart();
             begin('create');
             dependencies.setHost(true);
             const selection = dependencies.getSelection();
@@ -255,17 +262,25 @@ const OnlineLobbyRequestRuntime = (() => {
             }
             const preload = preloadForCreate(playerCount, settings);
             if (preload && typeof preload.then === 'function') {
-                setCreatePending(true);
+                cancelPendingLocalStart();
+                // Model loading owns the same generation as lobby requests, without
+                // starting the server-response timer before anything is emitted.
+                const request = dependencies.controller.begin('create');
+                if (request.replacedTimer) dependencies.clearTimer(request.replacedTimer);
+                updateReadinessUi();
+                renderJoinPending();
                 dependencies.applyButtonView(dependencies.ids.createButton, {
                     disabled: true,
                     textContent: 'モデル読み込み中',
                 });
                 dependencies.showNotice(TEXT.MODEL_LOADING);
                 preload.then(() => {
+                    if (!dependencies.controller.isCurrent('create', request.generation)) return;
                     setCreatePending(false);
                     updateReadinessUi();
                     emitCreate(name, playerCount, settings);
                 }).catch(error => {
+                    if (!dependencies.controller.isCurrent('create', request.generation)) return;
                     setCreatePending(false);
                     if (!emitCreateWithSafeFallback(name, playerCount, settings, error)) {
                         dependencies.warn('online-rl-create-preload', error, true);
@@ -295,6 +310,7 @@ const OnlineLobbyRequestRuntime = (() => {
             dependencies.setPlayerName(name);
             dependencies.setHost(false);
             if (!dependencies.initSocket()) return false;
+            cancelPendingLocalStart();
             begin('join');
             const payload = {
                 roomId,
