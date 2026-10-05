@@ -77,23 +77,34 @@ for (const playerCount of [4, 10]) {
             render();
         }, playerCount);
         const fits = () => page.evaluate(() => {
-            const world = document.getElementById('plazaWorld').getBoundingClientRect();
-            const towns = Array.from(document.querySelectorAll('#plazaWorld #players > .player-box, #plazaWorld #buildMenu'), item => item.getBoundingClientRect());
+            const world = document.getElementById('plazaWorld');
+            // Check layout in the world's own coordinate space, independently
+            // of the shared camera zoom, and report exact placement violations.
+            const towns = Array.from(document.querySelectorAll('#plazaWorld #players > .player-box, #plazaWorld #buildMenu'), item => ({
+                id: item.id, parent: item.offsetParent === world,
+                left: item.offsetLeft, top: item.offsetTop,
+                right: item.offsetLeft + item.offsetWidth,
+                bottom: item.offsetTop + item.offsetHeight,
+            }));
             const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-            return towns.every(town => town.left >= world.left && town.top >= world.top &&
-                town.right <= world.right && town.bottom <= world.bottom) &&
-                towns.every((town, index) => towns.slice(index + 1).every(other => !overlaps(town, other)));
+            const violations = towns.filter(town => !town.parent || town.left < 0 || town.top < 0 ||
+                town.right > world.offsetWidth || town.bottom > world.offsetHeight)
+                .map(town => ({ boundary: town, width: world.offsetWidth, height: world.offsetHeight }));
+            towns.forEach((town, index) => towns.slice(index + 1).forEach(other => {
+                if (overlaps(town, other)) violations.push({ overlap: [town, other] });
+            }));
+            return violations;
         });
-        await expect.poll(fits).toBe(true);
+        await expect.poll(fits).toEqual([]);
         await page.locator('[data-field-target="all"]').click();
-        await expect.poll(fits).toBe(true);
+        await expect.poll(fits).toEqual([]);
         // Every expanded opponent and a resized market must fit without a game render.
         await page.locator('#plazaWorld #players > details').evaluateAll(elements => {
             elements.forEach(element => { element.open = true; });
         });
-        await expect.poll(fits).toBe(true);
+        await expect.poll(fits).toEqual([]);
         await page.locator('[data-field-target="market"]').click();
-        await expect.poll(fits).toBe(true);
+        await expect.poll(fits).toEqual([]);
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
