@@ -2221,7 +2221,7 @@ for (const width of [320, 390, 844, 1440]) {
         await expect(page.locator('#plazaPlayerHud button')).toHaveCount(4);
         // The second tap cancels the native browser timer created by the first.
         // Passing clearTimeout as an object method used to throw Illegal invocation.
-        const logAction = page.locator('#plazaRecentEvents [data-ui-action="highlightLogEntry"]').last();
+        const logAction = page.locator('#plazaRecentEvents [data-ui-action="highlightLogEntry"]:visible').last();
         await logAction.click();
         await logAction.click();
         await expect(page.locator('#crashScreen')).toBeHidden();
