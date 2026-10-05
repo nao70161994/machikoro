@@ -8436,5 +8436,12 @@ html[data-design="plaza"] body.game-finished #plazaEvents { display: none !impor
 html[data-design="plaza"] body.pwa-banner-open #gameScreen[style*="display: block"] { max-height: none; padding-bottom: 0; }
 html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { bottom: calc(var(--plaza-actions, 84px) + 40px + env(safe-area-inset-bottom, 0px)); max-height: 25dvh; overflow: auto; }
 @media (orientation: landscape) and (max-height: 600px) {
-    html[data-design="plaza"] #plazaPlayerHud { grid-template-columns: repeat(4, minmax(0, 1fr)); max-height: 90px; }
+    html[data-design="plaza"] #plazaPlayerHud { grid-template-columns: minmax(0, 1fr); left: auto; width: 216px; max-height: calc(100% - 62px - var(--plaza-actions)); }
+    html[data-design="plaza"] #plazaPlayerHud button { display: grid; grid-template-columns: 1fr auto; font-size: 11px; }
+    html[data-design="plaza"] #plazaPlayerHud strong { grid-column: 1 / -1; }
+    html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type { grid-column: 1 / -1; grid-row: 3; }
+    html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; }
+    html[data-design="plaza"] #plazaViewport { right: 216px; }
+    html[data-design="plaza"] #plazaCameraTools { left: 8px; right: auto; }
+    html[data-design="plaza"] body:has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { left: 8px; right: auto; transform: none; max-width: calc(100% - 232px); }
 }

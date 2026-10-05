@@ -15,7 +15,8 @@ const PlazaField = (() => {
         if (!mounted) return;
         const screen = node('gameScreen');
         const actions = /** @type {HTMLElement} */ (screen.querySelector('.game-action-panel'));
-        screen.style.setProperty('--plaza-top', `${node('status').offsetHeight + node('plazaPlayerHud').offsetHeight}px`);
+        const sideHud = window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+        screen.style.setProperty('--plaza-top', `${node('status').offsetHeight + (sideHud ? 0 : node('plazaPlayerHud').offsetHeight)}px`);
         screen.style.setProperty('--plaza-actions', `${actions.offsetHeight}px`);
         document.body.style.setProperty('--plaza-actions', `${actions.offsetHeight}px`);
     }
