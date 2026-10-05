@@ -7865,7 +7865,7 @@ html:is([data-design="sunset"], [data-design="plaza"]) .town-street[data-town-la
     display: block;
     width: 100%;
     min-width: 0;
-    aspect-ratio: 640 / 420;
+    aspect-ratio: 640 / 480;
     min-height: 220px;
     padding: 0;
     border: 0;
@@ -7937,9 +7937,9 @@ html:is([data-design="sunset"], [data-design="plaza"]) body.accessibility-high-c
 html:is([data-design="sunset"], [data-design="plaza"]) body.accessibility-high-contrast .town-street[data-town-layout="districts"] { background: #000; }
 @media (min-width: 1200px) {
     html:is([data-design="sunset"], [data-design="plaza"]) #status .winner-screen .town-street[data-town-layout="districts"] {
-        aspect-ratio: 640 / 300;
+        aspect-ratio: 640 / 480;
         min-height: 360px;
-        max-height: 520px;
+        max-height: none;
     }
 }
 
@@ -8370,7 +8370,7 @@ html[data-design="plaza"] #plazaWorld #players .player-name { font-size: 18px; }
 html[data-design="plaza"] #plazaWorld .player-name-row { flex-basis: auto; }
 html[data-design="plaza"] #plazaWorld .player-header { justify-content: space-between; }
 html[data-design="plaza"] #plazaWorld .plaza-opponent-town .town-street,
-html[data-design="plaza"] #plazaWorld #players .player-box-self .town-street { height: 190px; max-height: none; }
+html[data-design="plaza"] #plazaWorld #players .player-box-self .town-street { height: 320px; max-height: none; }
 html[data-design="plaza"] #plazaWorld #players .player-detail { max-height: none; overflow: visible; }
 html[data-design="plaza"] #plazaWorld .player-box-self { border-color: #edcb74; }
 html[data-design="plaza"] #plazaWorld #buildMenu {
@@ -8399,8 +8399,9 @@ html[data-design="plaza"] #gameScreen > #plazaEvents {
 html[data-design="plaza"] #plazaEvents h2,
 html[data-design="plaza"] #plazaRecentEvents .log-item:not(:last-child) { display: none; }
 html[data-design="plaza"] #plazaRecentEvents .log-item { font-size: 11px; margin: 0; padding: 0; }
-html[data-design="plaza"] #gameScreen > .game-action-panel {
-    position: absolute; left: 0; right: 0; bottom: 0; transform: none;
+html[data-design="plaza"] #gameScreen[style*="display: block"] > .game-action-panel {
+    position: absolute; inset: auto 0 0; transform: none;
+    grid-area: auto; align-self: auto; justify-self: stretch;
     width: 100%; height: auto; min-height: 0; margin: 0; border-radius: 0;
     grid-template-columns: 80px minmax(0, 1fr); gap: 4px;
     max-height: 55dvh; overflow: visible;
@@ -8485,7 +8486,6 @@ html[data-design="plaza"] #plazaComparison th[scope="row"] { position: sticky; l
 html[data-design="plaza"] #plazaComparison caption { padding: 6px; text-align: left; }
 html[data-design="plaza"] body.game-finished #plazaComparison { display: none !important; }
 
-html:is([data-design="sunset"], [data-design="plaza"]) .town-building[data-town-copy] .sunset-facility-art { height: 34px; max-height: 34px; }
 html:is([data-design="sunset"], [data-design="plaza"]) .town-building[data-town-copy] { min-height: 0; }
 html[data-design="plaza"] .plaza-event-summary { padding: 3px 4px; font-size: 12px; line-height: 1.4; color: #ffe7ac; }
 html:is([data-design="sunset"], [data-design="plaza"]) .town-income-pulse { outline: 3px solid #f5d36f; outline-offset: 2px; filter: drop-shadow(0 0 8px #f5d36f); }
@@ -8499,5 +8499,11 @@ html[data-design="plaza"] #gameScreen > #tutorialBox { bottom: calc(var(--plaza-
 html[data-design="plaza"] #plazaComparison:not([hidden]) { bottom: calc(var(--plaza-actions) + var(--plaza-events, 32px) + 4px); }
 @media (orientation: landscape) and (max-height: 600px) {
     html[data-design="plaza"] #plazaComparison:not([hidden]) { right: 224px; }
-    html[data-design="plaza"] #gameScreen > #plazaEvents { right: 216px; max-height: 74px; }
+    html[data-design="plaza"] #gameScreen > #plazaEvents { right: 216px; max-height: 32px; }
+    html[data-design="plaza"] #gameScreen[style*="display: block"] > .game-action-panel { right: 216px; width: auto; padding: 4px; }
+    html[data-design="plaza"] #gameScreen .game-action-panel > .buttons > button { min-height: 44px; padding: 4px; font-size: 13px; }
+    html[data-design="plaza"] .game-action-toolbar { position: absolute; right: -216px; bottom: 0; width: 216px; box-sizing: border-box; padding: 4px; background: #102c35; }
+    html[data-design="plaza"] .game-action-toolbar > details { flex: 1; }
+    html[data-design="plaza"] .game-action-toolbar > details > summary { display: flex; align-items: center; min-height: 44px; padding: 4px; box-sizing: border-box; }
+    html[data-design="plaza"] #plazaPlayerHud { max-height: calc(100% - var(--plaza-top) - var(--plaza-sidebar-actions, 60px)); }
 }

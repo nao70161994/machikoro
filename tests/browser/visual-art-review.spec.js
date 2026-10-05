@@ -467,7 +467,8 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
     await expect(page.locator('#confirmModal')).toBeHidden();
     await expect(page.locator('#buildMenu .undo-btn')).toBeVisible();
     await expect(page.locator('#btnSkip')).toHaveText('建設完了・ターン終了');
-    const newTownBuilding = page.locator(`#playerBox${starting.humanIndex} [data-town-building="card:麦畑"]`);
+    await expect(page.locator(`#playerBox${starting.humanIndex} [data-town-building="card:麦畑"]`)).toHaveCount(2);
+    const newTownBuilding = page.locator(`#playerBox${starting.humanIndex} [data-town-building="card:麦畑"][data-town-copy="1"]`);
     await expect(newTownBuilding)
         .toHaveClass(/town-building-arrival/);
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'neighborhood');

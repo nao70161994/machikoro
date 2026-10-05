@@ -35,6 +35,7 @@ const PlazaField = (() => {
         screen.style.setProperty('--plaza-status', `${statusHeight}px`);
         screen.style.setProperty('--plaza-hud', `${hudHeight}px`);
         screen.style.setProperty('--plaza-tools', `${toolsHeight}px`);
+        screen.style.setProperty('--plaza-sidebar-actions', `${height(screen.querySelector('.game-action-toolbar'))}px`);
         screen.style.setProperty('--plaza-events', `${height(node('plazaEvents'))}px`);
         screen.style.setProperty('--plaza-top', `${statusHeight + toolsHeight + (sideHud ? 0 : hudHeight)}px`);
         screen.style.setProperty('--plaza-actions', `${height(actions)}px`);
@@ -254,6 +255,7 @@ const PlazaField = (() => {
         observer.observe(node('status'));
         observer.observe(node('pwaUpdateBanner'));
         observer.observe(node('gameScreen').querySelector('.game-action-panel'));
+        observer.observe(node('gameScreen').querySelector('.game-action-toolbar'));
         let lastWidth = 0, lastHeight = 0;
         new ResizeObserver(() => requestAnimationFrame(() => {
             if (!mounted || !viewport.clientWidth || !viewport.clientHeight) return;
@@ -299,7 +301,7 @@ const PlazaField = (() => {
     function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set()) {
         sync(); if (!mounted) return;
         selfIndex = primaryIndex >= 0 ? primaryIndex : currentIndex;
-        const positions = [[580, 970], [70, 470], [580, 30], [1150, 470]];
+        const positions = [[580, 970], [70, 470], [580, 0], [1150, 470]];
         players.forEach((player, index) => {
             const item = node(`playerBox${index}`), seat = (index - selfIndex + players.length) % players.length;
             const p = positions[seat] || [70 + ((seat - 4) % 3) * 530, 1250 + Math.floor((seat - 4) / 3) * 380];

@@ -319,7 +319,7 @@ const UiBuildMenu = (() => {
             const y = 30 + row * 17;
             const countBadge = copy === 0 && count > 1
                 ? `<span class="town-building-count">×${count}</span>` : '';
-            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" style="--town-x:${x}%;--town-y:${y}%;--town-width:22%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
+            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" style="--town-x:${x}%;--town-y:${y}%;--town-width:23%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
         }).join('');
         // Landmark lots are keyed to definition order, not acquisition order.
         const landmarkSlots = Object.keys(LANDMARK_ART);

@@ -8,13 +8,33 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.goto('/');
         await page.locator('.setup-quick-play').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
-        await expect.poll(() => page.evaluate(() => {
-            const hud = document.getElementById('plazaPlayerHud').getBoundingClientRect();
-            const tools = document.getElementById('plazaCameraTools').getBoundingClientRect();
-            const field = document.getElementById('plazaViewport').getBoundingClientRect();
-            const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-            return !overlaps(hud, tools) && !overlaps(hud, field) && !overlaps(tools, field);
-        })).toBe(true);
+        for (const phase of ['ROLL', 'BUILD']) {
+            await page.evaluate(requestedPhase => {
+                cancelCpuSchedule('plaza-overview');
+                window.scheduleCPU = () => false;
+                const state = GameRuntimeState.runtime.snapshot();
+                state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+                state.game.phase = GAME_PHASES[requestedPhase];
+                state.game.currentPlayer().coins = 30;
+                render();
+            }, phase);
+            await expect.poll(() => page.evaluate(() => {
+                const regions = [
+                    document.getElementById('plazaPlayerHud'),
+                    document.getElementById('plazaCameraTools'),
+                    document.getElementById('plazaViewport'),
+                    document.querySelector('#gameScreen > .game-action-panel'),
+                    document.getElementById('plazaEvents'),
+                    document.querySelector('#gameScreen .game-action-toolbar'),
+                ].map(element => element.getBoundingClientRect());
+                const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+                const separate = regions.slice(0, 5).every((region, index) => regions.slice(index + 1, 5).every(other => !overlaps(region, other)));
+                const sidebar = window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+                return separate && Math.abs(regions[3].bottom - window.innerHeight) < 1 &&
+                    (!sidebar || (regions[2].height > 220 && !overlaps(regions[0], regions[5]) &&
+                        !overlaps(regions[2], regions[5])));
+            })).toBe(true);
+        }
         const marks = await page.locator('#plazaPlayerHud .plaza-seat-mark').allTextContents();
         expect(marks).toEqual(['1', '2']);
         await expect(page.locator('#playerBox0 .plaza-seat-mark')).toHaveText('1');
