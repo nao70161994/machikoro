@@ -300,6 +300,15 @@ const PlazaField = (() => {
         };
         const observer = new ResizeObserver(queueLayout);
         townObserver = new ResizeObserver(queueLayout);
+        // Disclosure changes must move the market and neighbouring towns before
+        // the newly opened content is painted. ResizeObserver's deferred frame is
+        // still used for image/font/viewport sizing, but can lag on a busy renderer.
+        new MutationObserver(records => {
+            if (!mounted || !node('plazaViewport').clientWidth || !node('plazaViewport').clientHeight ||
+                    !records.some(record => record.target instanceof HTMLDetailsElement)) return;
+            arrangeTowns();
+            paint();
+        }).observe(node('players'), { subtree: true, attributes: true, attributeFilter: ['open'] });
         observer.observe(node('plazaPlayerHud'));
         observer.observe(node('plazaCameraTools'));
         observer.observe(node('plazaEvents'));

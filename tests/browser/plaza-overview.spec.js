@@ -102,6 +102,9 @@ for (const playerCount of [4, 10]) {
         await page.locator('#plazaWorld #players > details').evaluateAll(elements => {
             elements.forEach(element => { element.open = true; });
         });
+        // Open-attribute mutations must reconcile positions immediately, rather
+        // than leaving expanded content outside the world until a later frame.
+        expect(await fits()).toEqual([]);
         await expect.poll(fits).toEqual([]);
         await page.locator('[data-field-target="market"]').click();
         await expect.poll(fits).toEqual([]);
