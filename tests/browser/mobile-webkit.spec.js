@@ -642,19 +642,19 @@ test('320pxから480pxでpending中の長文toastが選択肢を隠さない', a
     }
 });
 
-test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達可能', async ({ page }) => {
-    await prepare(page);
-    await page.locator('#customGameSetup > summary').click();
-    await page.evaluate(() => {
-        document.body.classList.add('pwa-banner-open');
-        document.getElementById('pwaUpdateBanner').style.display = 'block';
-    });
+for (const width of [320, 360, 390, 480]) {
+    test(`${width}pxで長い通常modalのheaderとcloseがscroll中も到達可能`, async ({ page }) => {
+        await prepare(page);
+        await page.locator('#customGameSetup > summary').click();
+        await page.evaluate(() => {
+            document.body.classList.add('pwa-banner-open');
+            document.getElementById('pwaUpdateBanner').style.display = 'block';
+        });
 
-    const modalCases = [
-        { open: '[data-ui-action="showRules"]', modal: '#rulesModal', close: '[data-ui-action="closeRules"]' },
-        { open: '#tabContentLocal [data-ui-action="showCardSelect"]', modal: '#cardSelectModal', close: '[data-action="closeCardSelect"]' },
-    ];
-    for (const width of [320, 360, 390, 480]) {
+        const modalCases = [
+            { open: '[data-ui-action="showRules"]', modal: '#rulesModal', close: '[data-ui-action="closeRules"]' },
+            { open: '#tabContentLocal [data-ui-action="showCardSelect"]', modal: '#cardSelectModal', close: '[data-action="closeCardSelect"]' },
+        ];
         await page.setViewportSize({ width, height: 844 });
         for (const modalCase of modalCases) {
             const openButton = page.locator(modalCase.open);
@@ -738,8 +738,8 @@ test('320pxから480pxで長い通常modalのheaderとcloseがscroll中も到達
             );
             await expect(modal).toBeHidden();
         }
-    }
-});
+    });
+}
 
 test('320pxから480pxで統計の長い実名称と999戦が2行以内に収まる', async ({ page }) => {
     await prepare(page);
