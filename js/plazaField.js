@@ -1,5 +1,5 @@
 'use strict';
-/* global DesignTheme, ResizeObserver, requestAnimationFrame */
+/* global DesignTheme, ResizeObserver, MutationObserver, HTMLDetailsElement, requestAnimationFrame */
 
 // Device-local camera: never saved or transmitted as a game action.
 const PlazaField = (() => {
