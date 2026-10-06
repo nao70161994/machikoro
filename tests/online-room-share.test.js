@@ -248,3 +248,43 @@ runTest('online waiting uses one seat roster and preserves interleaved CPU/reser
     assert.ok(!html.includes('🏪'));
     assert.ok(html.includes('aria-hidden="true"'));
 });
+
+runTest('待機テーブルは2〜10席を両側へ正確に分け空席と通信操作を維持する', () => {
+    for (let count = 2; count <= 10; count++) {
+        const names = Array.from({ length: count }, (_, index) => index === 0 ? 'あなた' : '待機中...');
+        const options = { isHost: true, myPlayerIndex: 0, hostPlayerIndex: 0,
+            participants: [{ index: 0, name: 'あなた', ready: false, connected: true }] };
+        const html = OnlineRoomShare.buildWaitingHtml('ABC123', names, options);
+        assert.strictEqual((html.match(/class="room-seat"/g) || []).length, count);
+        assert.ok(html.includes(`data-seat-count="${count}"`));
+        assert.ok(html.includes(`着席 1/${count}席 · 空席 ${count - 1}`));
+        assert.strictEqual((html.match(/data-seat-self="true"/g) || []).length, 1);
+        assert.ok(html.includes('着席したら「準備完了にする」を押してください'));
+        assert.ok(html.includes('data-ui-action="setOnlineLobbyReady" data-ready="true"'));
+        assert.ok(html.includes('data-ui-action="startOnlineLobbyNow"'));
+        assert.ok(html.includes('class="room-game-table-art"'));
+        const slots = [...html.matchAll(/data-seat-index="(\d+)" data-seat-side="(near|far)"/g)];
+        assert.strictEqual(slots.length, count);
+        assert.deepStrictEqual(slots.map(match => Number(match[1])), Array.from({ length: count }, (_, index) => index));
+        assert.strictEqual(slots.filter(match => match[2] === 'near').length, Math.ceil(count / 2));
+        assert.strictEqual(slots.filter(match => match[2] === 'far').length, Math.floor(count / 2));
+        assert.ok(html.includes(`style="--room-table-columns:${Math.ceil(count / 2)}"`));
+        assert.ok(!html.includes('--room-seat-x') && !html.includes('--room-seat-y'));
+        assert.strictEqual(OnlineRoomShare.buildWaitingHtml('ABC123', names, options), html);
+    }
+});
+
+runTest('待機テーブルのCPU・準備中・再接続待ちとホスト/自分は色に頼らず表示する', () => {
+    const html = OnlineRoomShare.buildWaitingHtml('ABC123', ['ホスト', 'CPU（普通）', '準備者', '切断者'], {
+        myPlayerIndex: 0, hostPlayerIndex: 0, participants: [
+            { index: 0, name: 'ホスト', connected: true, ready: true },
+            { index: 2, name: '準備者', connected: true, ready: false },
+            { index: 3, name: '切断者', connected: false, ready: true, reservedUntil: 5000 },
+        ], now: 1000,
+    });
+    assert.ok(html.includes('着席 4/4席 · 空席 0 · CPU 1 · 準備中 1 · 再接続待ち 1'));
+    assert.ok(html.includes('<span>ホスト</span><span>あなた</span>'));
+    assert.ok(html.includes('data-reserved-until="5000"'));
+    assert.ok(html.includes('再接続を待っています'));
+    assert.ok(!html.includes('data-ui-action="removeOnlineLobbyPlayer"'));
+});

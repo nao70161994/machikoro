@@ -8660,6 +8660,56 @@ html[data-design="plaza"] body.game-finished.pwa-notices-docked #gameScreen[styl
     height: 100dvh;
 }
 
+/* Lobby seats use one roster; narrow containers retain readable, ordered chairs. */
+.room-seats { container-type: inline-size; }
+.room-table-status, .room-table-next-step { font-size: 13px; line-height: 1.6; }
+.room-table-layout { position: relative; margin: 16px auto; }
+.room-game-table { display: grid; justify-items: center; gap: 6px; margin: 8px auto 20px; }
+.room-game-table-art { width: min(240px, 70%); height: auto; }
+.room-game-table > span { font-size: 12px; }
+.room-table-layout .room-seat-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.room-table-layout .room-seat-list .room-seat {
+    position: relative;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 6px;
+    align-content: start;
+    padding: 12px 8px;
+    box-sizing: border-box;
+    border-radius: 12px;
+    background: rgba(78, 111, 102, .15);
+    box-shadow: 0 3px 8px #0002;
+}
+.room-seat-chair { grid-column: 1; width: 28px; height: 28px; color: #b8a47a; }
+.room-table-layout .room-seat-number { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; font-size: 11px; }
+.room-table-layout .room-seat-info { grid-column: 1 / -1; padding-right: 10px; }
+.room-table-layout .room-seat-roles { flex-wrap: wrap; }
+.room-table-layout .room-seat-state { grid-column: 1 / -1; margin-left: 0; }
+.room-table-layout .room-seat-remove { grid-column: 1 / -1; margin: 0; justify-self: start; }
+.room-table-layout .room-seat[data-seat-self="true"] { box-shadow: inset 0 0 0 2px #c5a65b, 0 3px 8px #0002; }
+@container (min-width: 640px) {
+    .room-table-layout {
+        display: grid;
+        grid-template-columns: repeat(var(--room-table-columns), minmax(0, 1fr));
+        gap: 16px;
+        width: 680px;
+        max-width: 100%;
+        margin: 24px auto;
+    }
+    .room-game-table {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        margin: 16px auto;
+        width: 320px;
+        max-width: 100%;
+    }
+    .room-game-table-art { width: 100%; }
+    .room-table-layout .room-seat-list { display: contents; }
+    .room-table-layout .room-seat-list .room-seat { width: 100%; max-width: 180px; justify-self: center; }
+    .room-table-layout .room-seat[data-seat-side="near"] { grid-row: 1; }
+    .room-table-layout .room-seat[data-seat-side="far"] { grid-row: 3; }
+}
+
 /* Keep seat identity readable when viewing every town at once. */
 html[data-design="plaza"] #plazaWorld .plaza-town-seat-flag {
     position: absolute;

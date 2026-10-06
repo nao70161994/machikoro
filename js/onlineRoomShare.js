@@ -93,7 +93,10 @@ const OnlineRoomShare = (() => {
         for (const player of participants) {
             if (Number.isInteger(player.index) && player.index >= 0) seatIndexes.add(player.index);
         }
-        const seats = Array.from(seatIndexes).sort((left, right) => left - right).map(index => {
+        const orderedSeats = Array.from(seatIndexes).sort((left, right) => left - right);
+        const tableColumns = Math.ceil(orderedSeats.length / 2);
+        const counts = { empty: 0, preparing: 0, reconnecting: 0, cpu: 0 };
+        const seats = orderedSeats.map((index, position) => {
             const player = participants.find(candidate => candidate.index === index);
             const label = player ? player.name : hasPlayerList ? players[index] : WAITING_SLOT_LABEL;
             const empty = label === WAITING_SLOT_LABEL || label === undefined;
@@ -101,6 +104,7 @@ const OnlineRoomShare = (() => {
             const disconnected = player && player.connected === false;
             const state = disconnected ? 'reconnecting' : empty ? 'empty' : cpu ? 'cpu'
                 : player && player.ready === false ? 'preparing' : 'ready';
+            if (Object.prototype.hasOwnProperty.call(counts, state)) counts[state]++;
             const stateLabel = disconnected ? '再接続待ち' : empty ? '参加待ち' : cpu ? 'CPU'
                 : !player ? '参加済み' : player.ready === false ? '準備中' : '準備完了';
             const roles = player ? [index === options.hostPlayerIndex ? 'ホスト' : '',
@@ -113,10 +117,21 @@ const OnlineRoomShare = (() => {
                 ? `${name}（再接続待ち${remainingSeconds > 0 ? `・残り${remainingSeconds}秒` : ''}）` : name;
             const remove = options.isHost === true && player && index !== options.hostPlayerIndex
                 ? `<button type="button" class="room-seat-remove" data-ui-action="removeOnlineLobbyPlayer" data-player-index="${index}" aria-label="${escapeText(`${name}${disconnected ? '（再接続待ち）' : ''}を待機室から外す`)}">外す</button>` : '';
-            return `<li class="room-seat" data-seat-state="${state}"><span class="room-seat-number" aria-label="席${index + 1}">${index + 1}</span><div class="room-seat-info"><span class="room-seat-name"${countdown}>${escapeText(displayName)}</span>${roles.length ? `<span class="room-seat-roles">${roles.map(role => `<span>${role}</span>`).join('')}</span>` : ''}</div><strong class="room-seat-state">${stateLabel}</strong>${remove}</li>`;
+            const side = position < tableColumns ? 'near' : 'far';
+            const self = index === options.myPlayerIndex && !!player;
+            const chair = '<svg class="room-seat-chair" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M10 27V10Q10 6 15 6H33Q38 6 38 10V27M8 27H40V35H8ZM12 35V43M36 35V43" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M16 12H32V23H16Z" fill="currentColor" opacity=".18"/></svg>';
+            return `<li class="room-seat" data-seat-state="${state}" data-seat-index="${index}" data-seat-side="${side}"${self ? ' data-seat-self="true"' : ''}>${chair}<span class="room-seat-number" aria-label="席${index + 1}">${index + 1}</span><div class="room-seat-info"><span class="room-seat-name"${countdown}>${escapeText(displayName)}</span>${roles.length ? `<span class="room-seat-roles">${roles.map(role => `<span>${role}</span>`).join('')}</span>` : ''}</div><strong class="room-seat-state">${stateLabel}</strong>${remove}</li>`;
         }).join('');
+        const occupied = orderedSeats.length - counts.empty;
+        const nextStep = selfParticipant && selfParticipant.ready === false
+            ? '着席したら「準備完了にする」を押してください。'
+            : counts.reconnecting > 0 ? '再接続を待っています。ホストは参加席を管理できます。'
+            : counts.empty > 0 ? 'ルームIDを共有して、空いている席へ参加してもらいましょう。'
+            : counts.preparing > 0 ? 'ほかの参加者が準備を完了するまでお待ちください。'
+            : '全員の準備が揃うと対戦が始まります。';
+        const tableArt = '<svg class="room-game-table-art" viewBox="0 0 240 160" aria-hidden="true" focusable="false"><ellipse cx="120" cy="91" rx="106" ry="60" fill="#284b4b" stroke="#b6a071" stroke-width="8"/><ellipse cx="120" cy="83" rx="98" ry="54" fill="#52756a" stroke="#d1bd89" stroke-width="3"/><path d="M40 87Q120 54 200 87M66 114Q120 87 174 114" fill="none" stroke="#b4be8b" stroke-width="3"/><path d="M69 77V62L84 51L99 62V77ZM150 78V60H173V78" fill="#d3c5a0" stroke="#3f6065" stroke-width="2"/><rect x="105" y="78" width="29" height="29" rx="5" fill="#f4dfac" stroke="#304f57" stroke-width="2"/><g fill="#3d5c61"><circle cx="112" cy="85" r="2"/><circle cx="127" cy="100" r="2"/><circle cx="119" cy="92" r="2"/></g></svg>';
         const readiness = seats
-            ? `<section class="room-readiness room-seats" aria-label="参加者の準備状態"><h4>参加席 <span>${seatIndexes.size}席</span></h4><ul class="room-seat-list">${seats}</ul>${selfParticipant ? `<button type="button" class="room-ready-btn" data-ui-action="setOnlineLobbyReady" data-ready="${selfParticipant.ready === false ? 'true' : 'false'}" aria-pressed="${selfParticipant.ready === false ? 'false' : 'true'}">${selfParticipant.ready === false ? '準備完了にする' : '準備を取り消す'}</button>` : ''}<p class="room-ready-help">参加枠が揃い、全員が準備完了になると自動開始します。</p></section>`
+            ? `<section class="room-readiness room-seats" aria-label="参加者の準備状態"><h4>参加席 <span>${seatIndexes.size}席</span></h4><p class="room-table-status">着席 ${occupied}/${orderedSeats.length}席 · 空席 ${counts.empty}${counts.cpu ? ` · CPU ${counts.cpu}` : ''}${counts.preparing ? ` · 準備中 ${counts.preparing}` : ''}${counts.reconnecting ? ` · 再接続待ち ${counts.reconnecting}` : ''}</p><div class="room-table-layout" data-seat-count="${orderedSeats.length}" style="--room-table-columns:${tableColumns}"><div class="room-game-table">${tableArt}<span>このテーブルで対戦します</span></div><ul class="room-seat-list">${seats}</ul></div>${selfParticipant ? `<button type="button" class="room-ready-btn" data-ui-action="setOnlineLobbyReady" data-ready="${selfParticipant.ready === false ? 'true' : 'false'}" aria-pressed="${selfParticipant.ready === false ? 'false' : 'true'}">${selfParticipant.ready === false ? '準備完了にする' : '準備を取り消す'}</button>` : ''}<p class="room-table-next-step">${nextStep}</p><p class="room-ready-help">参加枠が揃い、全員が準備完了になると自動開始します。</p></section>`
             : '<div class="waiting-players">プレイヤーを待っています...</div>';
         const management = options.isHost === true
             ? `<section class="room-host-controls" aria-label="ホストの待機室管理"><h4>ホスト操作</h4><div class="room-slot-controls"><button type="button" data-ui-action="changeOnlineLobbySlots" data-delta="-1" aria-label="参加枠を1つ減らす">−</button><span>参加枠 ${hasPlayerList ? players.length : 0}</span><button type="button" data-ui-action="changeOnlineLobbySlots" data-delta="1" aria-label="参加枠を1つ増やす">＋</button></div><button type="button" class="room-host-start-btn" data-ui-action="startOnlineLobbyNow">空席をCPU（普通）にして開始</button></section>`
