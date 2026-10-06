@@ -16,7 +16,7 @@ CIは対象のコミットを確認し、`release-test`、`cpu-difficulty-smoke`
 
 ## 現在の構成
 
-- バニラJavaScriptのbrowser-global構成です。`index.html`がクライアントの読み込み順を定義します。ルールは`GameManager`、実行状態はruntime adapter、描画はUI helperとcomposition rootに分かれています。
+- バニラJavaScriptのbrowser-global構成です。`index.html`がクライアントの読み込み順を定義し、`tests/runtime-dependencies.test.js`が主要な依存と読み込み順を検証します。ルールは`GameManager`、実行状態はruntime adapter、描画はUI helperとcomposition rootに分かれています。
 - オンラインの検証・アクション生成・replay・snapshot・再接続はクライアントと`server/`の専用モジュールが担当します。待機室の見た目を変える際も、サーバー上の席とプレイヤー対応を変えません。
 - 見た目は`style.css`、施設・街の描画は`js/uiBuildMenu.js`、広場のカメラ・HUDは`js/plazaField.js`が中心です。既存テーマの切り替えを維持します。
 - 静的検査は`npm run test:static`、通常の回帰テストは`npm test`。追加のオンライン・PWA・release・WebKit検証は変更の影響範囲に合わせて実行します。
