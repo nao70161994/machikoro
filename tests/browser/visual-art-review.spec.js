@@ -2200,6 +2200,14 @@ for (const width of [320, 390, 844, 1440]) {
         await page.locator('#customGameSetup > summary').click();
         await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
         await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
+        // Use the supported fast CPU setting: this art fixture still plays
+        // real CPU turns after save/resume, without waiting at the default pace.
+        await page.locator('#cpuSpeed').evaluate(input => {
+            input.value = input.min;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        await expect(page.locator('#cpuSpeed')).toHaveValue('100');
         await page.locator('#btnStart').click();
         await page.locator('#confirmOkBtn').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
@@ -2212,7 +2220,6 @@ for (const width of [320, 390, 844, 1440]) {
             window.scheduleCPU = () => false;
             const state = GameRuntimeState.runtime.snapshot();
             state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
-            GameRuntimeState.runtime.setCpuPlayers([]);
             state.game.phase = GAME_PHASES.BUILD;
             state.game.currentPlayer().coins = 30;
             // Related-log timer coverage must not depend on a random roll's income.
@@ -2316,6 +2323,7 @@ for (const width of [320, 390, 844, 1440]) {
             await page.reload();
             await expect(page.locator('html')).toHaveAttribute('data-design', 'plaza');
             await page.locator('#btnResume').click();
+            await expect(page.locator('#cpuSpeed')).toHaveValue('100');
             await expect(page.locator('.player-box-self .town-building .sunset-facility-art').first()).toBeVisible();
             expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins)).toBe(30);
             const before = await page.evaluate(() => {
