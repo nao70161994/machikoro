@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+const { verifyWinnerNotices } = require('./helpers/winner-notices');
 
 async function stubAds(page) {
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({
@@ -2408,7 +2409,9 @@ for (const size of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
         await page.screenshot({ path: testInfo.outputPath(`plaza-market-${size.width}.png`) });
         await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
-            for (const name of getEnabledLandmarkSelection()) game.currentPlayer().landmarks[name] = true;
+            for (const name of getEnabledLandmarkSelection()) {
+                if (Player.isKnownLandmark(name)) game.currentPlayer().landmarks[name] = true;
+            }
             render();
         });
         await expect(page.locator('.winner-screen')).toBeVisible();
@@ -2417,16 +2420,14 @@ for (const size of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
             document.getElementById('pwaUpdateBanner').style.display = 'block';
             document.body.classList.add('pwa-banner-open');
         });
-        await expect.poll(async () => {
-            const banner = await page.locator('#pwaUpdateBanner').boundingBox();
-            const screen = await page.locator('#gameScreen').boundingBox();
-            return banner.y + banner.height <= screen.y + 1;
-        }).toBe(true);
+        await verifyWinnerNotices(page);
         await page.locator('#winnerRestartButton').scrollIntoViewIfNeeded();
         await page.screenshot({ path: testInfo.outputPath(`plaza-winner-${size.width}.png`) });
         await page.locator('#winnerRestartButton').click();
         await page.locator('#confirmOkBtn').click();
         await expect(page.locator('#titleScreen')).toBeVisible();
+        await expect(page.locator('#pwaResultNotices')).toHaveCount(0);
+        expect(await page.locator('#pwaUpdateBanner').evaluate(banner => banner.parentElement === document.body)).toBe(true);
     });
 }
 

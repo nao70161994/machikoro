@@ -155,3 +155,75 @@ runTest('PWA shellはdismiss契約とstandalone時の未登録を維持する', 
     standalone.controller.bindInstallHandlers();
     assert.strictEqual(standalone.listeners.beforeinstallprompt, undefined);
 });
+
+runTest('勝利中のPWA通知は折り畳み結果末尾へ移り再描画とタイトル復帰でDOMを保つ', () => {
+    const { makeElement } = require('./helpers/test-utils');
+    function node(id = '') {
+        const element = makeElement({ id, children: [], parentNode: null });
+        element.appendChild = child => element.insertBefore(child, null);
+        element.insertBefore = (child, next) => {
+            child.remove();
+            const index = next ? element.children.indexOf(next) : -1;
+            element.children.splice(index < 0 ? element.children.length : index, 0, child);
+            child.parentNode = element;
+            return child;
+        };
+        element.remove = () => {
+            if (element.parentNode) {
+                const siblings = element.parentNode.children;
+                siblings.splice(siblings.indexOf(element), 1);
+                element.parentNode = null;
+            }
+        };
+        Object.defineProperty(element, 'nextSibling', { get() {
+            const siblings = element.parentNode?.children || [];
+            return siblings[siblings.indexOf(element) + 1] || null;
+        } });
+        return element;
+    }
+    const body = node(), screen = node('gameScreen'), update = node('pwaUpdateBanner'), install = node('pwaInstallBanner');
+    screen.style.display = 'block';
+    update.style.display = 'block';
+    install.style.display = 'none';
+    body.appendChild(screen); body.appendChild(update); body.appendChild(install);
+    const find = (element, id) => element.id === id ? element : element.children.map(child => find(child, id)).find(Boolean);
+    let mutation;
+    const document = { body, createElement: () => node(), getElementById: id => find(body, id) };
+    const controller = PwaShell.createInstallController({ document, window: {
+        matchMedia: () => ({ matches: true }),
+        MutationObserver: function(callback) { mutation = callback; this.observe = () => {}; },
+    }, readStorage: () => null, writeStorage() {} });
+    controller.bindInstallHandlers();
+    assert.ok(body.classList.contains('pwa-banner-open'));
+    body.classList.add('game-finished');
+    mutation();
+    const dock = document.getElementById('pwaResultNotices');
+    assert.strictEqual(dock.parentNode, screen);
+    assert.strictEqual(dock.open, undefined);
+    assert.strictEqual(update.parentNode, dock);
+    assert.strictEqual(document.getElementById('pwaUpdateBanner'), update);
+    assert.ok(!body.classList.contains('pwa-banner-open'));
+    assert.ok(body.classList.contains('pwa-notices-docked'));
+    assert.match(dock.children[0].textContent, /更新/);
+    dock.open = true;
+    mutation();
+    assert.strictEqual(dock.open, true);
+    dock.remove(); // Simulate a whole-screen render replacing the result DOM.
+    mutation();
+    assert.strictEqual(document.getElementById('pwaUpdateBanner'), update);
+    assert.strictEqual(dock.parentNode, screen);
+    controller.setBannerVisible('pwaUpdateBanner', false);
+    assert.strictEqual(dock.hidden, true);
+    controller.setBannerVisible('pwaInstallBanner', true);
+    assert.strictEqual(dock.hidden, false);
+    assert.match(dock.children[0].textContent, /ホーム画面/);
+    assert.strictEqual(document.getElementById('pwaInstallBanner'), install);
+    screen.style.display = 'none';
+    mutation();
+    assert.strictEqual(document.getElementById('pwaResultNotices'), undefined);
+    assert.strictEqual(update.parentNode, body);
+    assert.strictEqual(install.parentNode, body);
+    assert.deepStrictEqual(body.children, [screen, update, install]);
+    assert.ok(body.classList.contains('pwa-banner-open'));
+    assert.ok(!body.classList.contains('pwa-notices-docked'));
+});
