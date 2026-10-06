@@ -107,6 +107,16 @@ for (const playerCount of [4, 10]) {
         await expect.poll(fits).toEqual([]);
         await page.locator('[data-field-target="all"]').click();
         await expect.poll(fits).toEqual([]);
+        await expect(page.locator('#plazaWorld .plaza-town-seat-flag')).toHaveCount(playerCount);
+        await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('#plazaWorld .plaza-town-seat-flag')).every(flag => {
+            const index = Number(flag.dataset.playerIndex);
+            const rect = flag.getBoundingClientRect();
+            const hud = document.querySelector(`#plazaPlayerHud button[data-player-index="${index}"]`);
+            return flag.textContent === String(index + 1) && flag.closest('.player-box').id === `playerBox${index}` &&
+                flag.getAttribute('aria-hidden') === 'true' &&
+                getComputedStyle(flag).getPropertyValue('--plaza-seat-color') === getComputedStyle(hud).getPropertyValue('--plaza-seat-color') &&
+                rect.width >= 20 && rect.width <= 24 && rect.height >= 20 && rect.height <= 24;
+        }))).toBe(true);
         if (playerCount === 4) {
             const hiddenCamera = await page.evaluate(async () => {
                 const screen = document.getElementById('gameScreen');

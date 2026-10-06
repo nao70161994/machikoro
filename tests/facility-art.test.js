@@ -422,7 +422,7 @@ runTest('街の施設数は建設と取消に追従し、無効なランドマ�
     player.cards.push(wheat);
     const built = UiBuildMenu.renderTownHtml(player, enabled);
     assert.ok(built.includes('施設 2枚 · ランドマーク 1個'));
-    assert.ok(built.includes('×2'));
+    assert.ok(!built.includes('town-building-count'));
     assert.strictEqual((built.match(/facility-art.svg#field/g) || []).length, 2);
     player.cards.pop();
     assert.strictEqual(UiBuildMenu.renderTownHtml(player, enabled), original);
@@ -432,7 +432,7 @@ runTest('同種施設は複数lotに広がり大量所持でも16lotとランド
     const forest = CARDS.find(card => card.name === '森林');
     const six = UiBuildMenu.renderTownHtml({ cards: Array(6).fill(forest), landmarks: {} });
     assert.strictEqual((six.match(/facility-art.svg#forest/g) || []).length, 6);
-    assert.strictEqual((six.match(/town-building-count/g) || []).length, 1);
+    assert.strictEqual((six.match(/town-building-count/g) || []).length, 0);
     const cards = CARDS.slice(0, 8).flatMap(card => Array(100).fill(card));
     const landmarks = { '駅': true, '港': true, '空港': true };
     const html = UiBuildMenu.renderTownHtml({ cards, landmarks }, new Set(Object.keys(landmarks)));
@@ -440,6 +440,21 @@ runTest('同種施設は複数lotに広がり大量所持でも16lotとランド
     assert.strictEqual((html.match(/data-town-slot-landmark=/g) || []).length, 3);
     assert.ok(html.includes('施設 800枚'));
     assert.strictEqual(UiBuildMenu.renderTownHtml({ cards, landmarks }, new Set(Object.keys(landmarks))), html);
+});
+
+runTest('並べた同種の絵は一枚ずつ数え、省略分だけ追加枚数を表示する', () => {
+    const forest = CARDS.find(card => card.name === '森林');
+    for (const total of [1, 2, 6, 7, 1000]) {
+        const html = UiBuildMenu.renderTownHtml({ cards: Array(total).fill(forest), landmarks: {} });
+        const shown = Math.min(total, 6);
+        assert.strictEqual((html.match(/data-town-slot-facility=/g) || []).length, shown);
+        assert.ok(html.includes(`data-town-owned="${total}" data-town-visible="${shown}"`));
+        assert.ok(!html.includes(`×${total}`));
+        assert.strictEqual((html.match(/town-building-count/g) || []).length, total > shown ? 1 : 0);
+        if (total > shown) assert.ok(html.includes(`+${total - shown}枚`));
+    }
+    const many = UiBuildMenu.renderTownHtml({ cards: CARDS.slice(0, 8).flatMap(card => Array(100).fill(card)), landmarks: {} });
+    assert.strictEqual((many.match(/>\+98枚</g) || []).length, 8);
 });
 
 runTest('九種類目以降と省略済み施設の追加購入は固定の最新区画へ現れUndoと復元で戻る', () => {
@@ -455,7 +470,7 @@ runTest('九種類目以降と省略済み施設の追加購入は固定の最�
     assert.deepStrictEqual(fixed(before), fixed(tenth));
     const repurchased = render([...cards, cards[7]]);
     assert.ok(repurchased.includes('data-town-slot-facility="7" data-town-copy="0" data-town-building="card:施設7"'));
-    assert.ok(repurchased.includes('town-building-count">×2'));
+    assert.ok(!repurchased.includes('town-building-count'));
     assert.strictEqual(render(cards.slice(0, 9)), ninth, 'Undo reproduces exact prior lots');
     assert.strictEqual(render(JSON.parse(JSON.stringify(cards))), tenth, 'Restore needs no presentation history');
 });
@@ -478,11 +493,74 @@ runTest('街の装飾は発展と主産業に応じて育ち上限内でUndoと�
     assert.strictEqual(count(maximum, 'bench'), 4);
     assert.ok(maximum.includes('data-town-growth="24"'));
     assert.strictEqual((maximum.match(/data-town-slot-facility=/g) || []).length, 6);
-    assert.ok(maximum.includes('×1000'));
+    assert.ok(maximum.includes('+994枚'));
+    assert.ok(maximum.includes('data-town-owned="1000" data-town-visible="6"'));
     assert.strictEqual(render([forest]), quiet);
     assert.strictEqual(render(JSON.parse(JSON.stringify(Array(12).fill(forest)))), city);
     const scenery = maximum.match(/<svg class="town-growth-scenery"[^]*?<\/svg>/)[0];
     assert.ok(!scenery.includes('filter=') && !scenery.includes('<animate'));
+});
+
+runTest('全体表示用の街シルエットは発展段階と産業と有効な目標だけを反映する', () => {
+    const render = (name, count, landmarks = {}, enabled = new Set()) => UiBuildMenu.renderTownHtml({
+        cards: Array(count).fill(CARDS.find(card => card.name === name)), landmarks,
+    }, enabled);
+    assert.ok(render('麦畑', 1).includes('data-town-silhouette-count="1"'));
+    assert.ok(render('麦畑', 3).includes('data-town-silhouette-count="3"'));
+    assert.ok(render('麦畑', 12).includes('data-town-silhouette-count="6"'));
+    for (const [name, character] of [['麦畑', 'gardens'], ['森林', 'woodland'],
+        ['サンマ漁船', 'waterfront'], ['チーズ工場', 'industrial']]) {
+        assert.ok(render(name, 12).includes(`data-town-silhouette="${character}"`));
+    }
+    const industrialPort = render('チーズ工場', 30, { 港: true }, new Set(['港']));
+    assert.ok(industrialPort.includes('data-town-character="waterfront"'));
+    assert.ok(industrialPort.includes('data-town-silhouette-kind="industrial"'));
+    assert.ok(industrialPort.includes('fill="#5b9293"'), 'port retains waterfront ground');
+    assert.ok(industrialPort.includes('fill="#aa9f85"'), 'industrial ownership retains chimneys');
+    assert.ok(!industrialPort.includes('fill="#b9cfbd"'), 'port does not replace factory skyline with fishing sails');
+    const goals = render('麦畑', 2, { 駅: true, 港: true, 空港: false }, new Set(['駅', '空港']));
+    assert.strictEqual((goals.match(/data-town-growth-landmark=/g) || []).length, 1);
+    assert.ok(goals.includes('data-town-growth-landmark="駅"'));
+    assert.ok(goals.includes('data-town-landmark-marker="pennant"'));
+    const forestCity = render('森林', 12);
+    assert.strictEqual((forestCity.match(/data-town-canopy="layered"/g) || []).length, 6);
+    const scenery = forestCity.match(/<svg class="town-growth-scenery"[^]*?<\/svg>/)[0];
+    assert.ok(scenery.includes('fill="#789776"'));
+    assert.ok(scenery.includes('fill="#456e5d"'));
+    assert.ok(!scenery.includes('filter=') && !scenery.includes('<animate'));
+    assert.ok(!goals.includes('data-town-growth-landmark="港"'));
+});
+
+runTest('全ランドマークの完成旗は最大数でも街のviewBox内に収まる', () => {
+    const { Player } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const names = Player.landmarkNames();
+    const landmarks = Object.fromEntries(names.map(name => [name, true]));
+    const html = UiBuildMenu.renderTownHtml({ cards: [], landmarks }, new Set(names));
+    const markers = [...html.matchAll(/<g data-town-growth-landmark="[^"]+" data-town-landmark-marker="pennant">([^]*?)<\/g>/g)];
+    assert.strictEqual(markers.length, names.length);
+    for (const [, marker] of markers) {
+        const pole = marker.match(/d="M(\d+) 80V(\d+)"/);
+        assert.ok(pole);
+        for (const [, path] of marker.matchAll(/d="([^"]+)"/g)) {
+            for (const [, command, argumentsText] of path.matchAll(/([MLQVZ])([^MLQVZ]*)/g)) {
+                const values = argumentsText.trim().split(/[ ,]+/).filter(Boolean).map(Number);
+                if (command === 'Z') continue;
+                if (command === 'V') {
+                    assert.ok(values.every(y => y >= 0 && y <= 480));
+                } else {
+                    assert.strictEqual(values.length % 2, 0);
+                    for (let index = 0; index < values.length; index += 2) {
+                        assert.ok(values[index] >= 0 && values[index] <= 640);
+                        assert.ok(values[index + 1] >= 0 && values[index + 1] <= 480);
+                    }
+                }
+            }
+        }
+        const shadow = marker.match(/<ellipse cx="([\d.]+)" cy="([\d.]+)" rx="([\d.]+)" ry="([\d.]+)"/);
+        assert.ok(shadow);
+        const [, x, y, rx, ry] = shadow.map(Number);
+        assert.ok(x - rx >= 0 && x + rx <= 640 && y - ry >= 0 && y + ry <= 480);
+    }
 });
 
 runTest('街の発展段階は施設と有効なランドマークの両方に応じて進む', () => {

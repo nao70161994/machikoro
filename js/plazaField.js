@@ -120,6 +120,10 @@ const PlazaField = (() => {
         const transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
         const world = node('plazaWorld');
         if (world.style.transform !== transform) world.style.transform = transform;
+        const inverseScale = String(1 / camera.scale);
+        if (world.style.getPropertyValue('--plaza-inverse-scale') !== inverseScale) {
+            world.style.setProperty('--plaza-inverse-scale', inverseScale);
+        }
         const label = `${Math.round(camera.scale * 100)}%`;
         if (node('plazaZoomLabel').textContent !== label) node('plazaZoomLabel').textContent = label;
     }
@@ -352,11 +356,13 @@ const PlazaField = (() => {
                 (/** @type {HTMLElement} */ (item)).style.removeProperty('top');
                 (/** @type {HTMLElement} */ (item)).style.removeProperty('--plaza-seat-color');
                 item.querySelector('.plaza-seat-mark')?.remove();
+                item.querySelector('.plaza-town-seat-flag')?.remove();
             });
             screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
             screen.insertBefore(node('buildMenu'), node('turnTimeline'));
             node('buildMenu').style.removeProperty('height');
             node('buildMenu').style.removeProperty('top');
+            world.style.removeProperty('--plaza-inverse-scale');
             pendingFocus = null;
             mounted = false;
             hudCurrentIndex = null;
@@ -373,6 +379,14 @@ const PlazaField = (() => {
             if (item) {
                 townObserver.observe(item);
                 item.style.setProperty('--plaza-seat-color', seatColors[index % seatColors.length]);
+                if (!item.querySelector('.plaza-town-seat-flag')) {
+                    const flag = document.createElement('span');
+                    flag.className = 'plaza-town-seat-flag';
+                    flag.textContent = String(index + 1);
+                    flag.setAttribute('aria-hidden', 'true');
+                    flag.dataset.playerIndex = String(index);
+                    (item.querySelector('summary') || item).appendChild(flag);
+                }
                 const row = item.querySelector('.player-name-row');
                 if (row && !row.querySelector('.plaza-seat-mark')) {
                     const mark = document.createElement('span');

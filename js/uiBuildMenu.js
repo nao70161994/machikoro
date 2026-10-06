@@ -316,10 +316,24 @@ const UiBuildMenu = (() => {
             const y = 204 + Math.floor(index / 2) * 54;
             return `<g data-town-growth-lamp="${index}"><path d="M${x} ${y}V${y - 24}H${x + 9}" fill="none" stroke="#b8b393" stroke-width="3"/><path d="M${x + 4} ${y - 24}H${x + 14}L${x + 12} ${y - 18}H${x + 6}Z" fill="#f4d189"/><path d="M${x + 4} ${y - 4}H${x + 17}" stroke="#edcb8b" stroke-width="3" opacity=".5"/></g>`;
         }).join('');
-        const skyline = Array.from({ length: stage === 'city' ? 6 : stage === 'neighborhood' ? 3 : 0 }, (_, index) => {
-            const x = 30 + index * 98;
-            const h = industry ? 26 + (index % 3) * 12 : 18 + (index % 3) * 9;
-            return `<path d="M${x} 64V${64 - h}L${x + 20} ${54 - h}L${x + 40} ${64 - h}V64Z" fill="#6d8989"/><path d="M${x + 9} ${52 - h}H${x + 15}M${x + 26} ${52 - h}H${x + 32}" stroke="#e7cc91" stroke-width="3"/>`;
+        const skylineCount = stage === 'city' ? 6 : stage === 'neighborhood' ? 3 : 1;
+        const skyline = Array.from({ length: skylineCount }, (_, index) => {
+            const x = 24 + index * 100;
+            const h = (stage === 'city' ? 52 : stage === 'neighborhood' ? 34 : 20) + (index % 2) * 8;
+            if (dominant === 'woodland') {
+                const pine = (left, bottom, scale, light) => `<g transform="translate(${left} ${bottom}) scale(${scale})"><path d="M21 0V-18H27V0Z" fill="#9d8968"/><path d="M24 -60L10 -40H17L5 -24H13L0 -7Q24 0 48 -7L35 -24H43L31 -40H38Z" fill="${light ? '#789776' : '#456e5d'}" stroke="#385d53" stroke-width="1.5"/><path d="M24 -58L17 -41H24L13 -25H25L8 -10Q18 -6 24 -7Z" fill="${light ? '#adc094' : '#759775'}" opacity=".65"/></g>`;
+                return `<g data-town-canopy="layered"><ellipse cx="${x + 34}" cy="82" rx="43" ry="7" fill="#284f47" opacity=".35"/>${pine(x - 3, 80, h / 84, false)}${pine(x + 35, 83, h / 92, false)}${pine(x + 13, 84, h / 62, true)}</g>`;
+            }
+            if (water && !industry) return `<path d="M${x} 73H${x + 64}L${x + 52} 87H${x + 12}Z" fill="#375d69"/><path d="M${x + 28} 73V${78 - h}L${x + 57} 66H${x + 28}" fill="#b9cfbd" stroke="#718f90" stroke-width="3"/>`;
+            if (industry) return `<path d="M${x} 78V48L${x + 16} 36V48L${x + 32} 36V48H${x + 62}V78Z" fill="#587a80" stroke="#9aaf99" stroke-width="3"/><path d="M${x + 45} 48V${78 - h}H${x + 54}V48" fill="#aa9f85"/>`;
+            if (rural) return `<path d="M${x} 78L${x + 32} ${80 - h}L${x + 64} 78Z" fill="#8aa174"/><path d="M${x + 10} 72H${x + 54}M${x + 18} 61H${x + 46}" stroke="#d7be78" stroke-width="4"/>`;
+            return `<path d="M${x} 78V${78 - h}L${x + 24} ${66 - h}L${x + 48} ${78 - h}V78Z" fill="#62828a" stroke="#9aaf99" stroke-width="3"/><path d="M${x + 12} ${86 - h}H${x + 18}M${x + 30} ${86 - h}H${x + 36}" stroke="#e7cc91" stroke-width="4"/>`;
+        }).join('');
+        const markedLandmarks = built.slice(0, Object.keys(LANDMARK_ART).length);
+        const landmarkBeacons = markedLandmarks.map(([name], index) => {
+            const x = Math.round(40 + index * 560 / Math.max(1, markedLandmarks.length - 1));
+            const y = 19 + (index % 2) * 7;
+            return `<g data-town-growth-landmark="${escapeText(name)}" data-town-landmark-marker="pennant"><ellipse cx="${x}" cy="81" rx="10" ry="3" fill="#274d48" opacity=".3"/><path d="M${x} 80V${y}" stroke="#bbb69a" stroke-width="3"/><path d="M${x + 2} ${y + 2}Q${x + 13} ${y - 1} ${x + 23} ${y + 4}L${x + 18} ${y + 11}L${x + 23} ${y + 18}Q${x + 12} ${y + 13} ${x + 2} ${y + 16}Z" fill="#e4c37e" stroke="#af8d59" stroke-width="1.5"/><path d="M${x + 4} ${y + 5}Q${x + 11} ${y + 2} ${x + 18} ${y + 6}" fill="none" stroke="#f4dea3" stroke-width="2"/></g>`;
         }).join('');
         const furnishings = Array.from({ length: Math.min(4, Math.floor(development / 4)) }, (_, index) => {
             const x = 62 + index * 148;
@@ -328,7 +342,7 @@ const UiBuildMenu = (() => {
         const ground = water
             ? '<path d="M0 69Q160 53 320 70T640 66V100Q470 85 320 100T0 96Z" fill="#5b9293"/><path d="M20 83H140M200 87H310M390 83H520" stroke="#abc8b9" stroke-width="3"/>'
             : `<path d="M0 76Q160 49 320 73T640 70V107H0Z" fill="${rural ? '#7c9677' : '#667f78'}"/>`;
-        return `<svg class="town-growth-scenery" data-town-growth="${development}" data-town-character="${landscape}" viewBox="0 0 640 480" preserveAspectRatio="none" aria-hidden="true" focusable="false">${ground}<g class="town-growth-skyline">${skyline}</g><g fill="none">${roads}</g>${trees}${lamps}${furnishings}</svg>`;
+        return `<svg class="town-growth-scenery" data-town-growth="${development}" data-town-character="${landscape}" viewBox="0 0 640 480" preserveAspectRatio="none" aria-hidden="true" focusable="false">${ground}<g class="town-growth-skyline" data-town-silhouette="${landscape}" data-town-silhouette-kind="${industry ? 'industrial' : dominant === 'woodland' ? 'woodland' : landscape}" data-town-silhouette-count="${skylineCount}">${skyline}${landmarkBeacons}</g><g fill="none">${roads}</g>${trees}${lamps}${furnishings}</svg>`;
     }
 
     function renderTownHtml(player, enabledLandmarks = new Set()) {
@@ -359,13 +373,17 @@ const UiBuildMenu = (() => {
                 if (entry.count > copy && lots.length < 16) lots.push({ ...entry, copy });
             }
         }
+        const visibleCopies = new Map();
+        for (const lot of lots) visibleCopies.set(lot.card.name, (visibleCopies.get(lot.card.name) || 0) + 1);
         const facilities = lots.map(({ card, count, copy }, index) => {
             const row = Math.floor(index / 4);
             const x = (index % 4) * 24 + 2;
             const y = 30 + row * 17;
-            const countBadge = copy === 0 && count > 1
-                ? `<span class="town-building-count">×${count}</span>` : '';
-            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" style="--town-x:${x}%;--town-y:${y}%;--town-width:23%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
+            const shown = visibleCopies.get(card.name);
+            const remainingCopies = count - shown;
+            const countBadge = copy === 0 && remainingCopies > 0
+                ? `<span class="town-building-count" title="所有${count}枚・絵${shown}枚・省略${remainingCopies}枚">+${remainingCopies}枚</span>` : '';
+            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" data-town-owned="${count}" data-town-visible="${shown}" style="--town-x:${x}%;--town-y:${y}%;--town-width:23%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
         }).join('');
         // Landmark lots are keyed to definition order, not acquisition order.
         const landmarkSlots = Object.keys(LANDMARK_ART);

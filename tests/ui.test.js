@@ -2903,10 +2903,12 @@ runTest('街の区画は購入後も既存位置を保ち単独施設の枚数�
     const bakery = { name: 'パン屋', category: '飲食店' };
     const before = menu.renderTownHtml({ cards: [wheat, bakery], landmarks: {} });
     const after = menu.renderTownHtml({ cards: [wheat, bakery, wheat, { name: '牧場', category: '牧場' }], landmarks: {} });
-    const lot = html => html.match(/data-town-slot-facility="0"[^>]+/)[0];
+    const lot = html => html.match(/data-town-slot-facility="0"[^>]+/)[0]
+        .replace(/ data-town-(?:owned|visible)="\d+"/g, '');
     assert.strictEqual(lot(before), lot(after), '新しい種類の建設で既存施設の区画を動かさない');
     assert.doesNotMatch(before, /town-building-count/);
-    assert.match(after, /town-building-count">×2/);
+    assert.doesNotMatch(after, /town-building-count/);
+    assert.strictEqual((after.match(/data-town-building="card:麦畑"/g) || []).length, 2);
     assert.match(after, /data-town-layout="districts"/);
     assert.match(after, /town-district-roads/);
     const dense = menu.renderTownHtml({ cards: Array.from({ length: 12 }, (_, index) => ({ name: `施設${index}`, category: '飲食店' })), landmarks: {} });
