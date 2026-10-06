@@ -1,5 +1,5 @@
 'use strict';
-/* global DesignTheme, ResizeObserver, MutationObserver, HTMLDetailsElement, requestAnimationFrame */
+/* global DesignTheme, ResizeObserver, MutationObserver, HTMLDetailsElement, requestAnimationFrame, Player, UiPlayerInsights */
 
 // Device-local camera: never saved or transmitted as a game action.
 const PlazaField = (() => {
@@ -8,6 +8,63 @@ const PlazaField = (() => {
     let selfIndex = 0;
     let playerCount = 0;
     let hudCurrentIndex = null;
+    let insightsIndex = null;
+    let insightsListener = null;
+    let insightsSession = null;
+    let insightsFacts = null;
+
+    function closePlayerInsights(restoreFocus = false) {
+        const index = insightsIndex;
+        insightsIndex = null;
+        node('plazaPlayerInsights').hidden = true;
+        delete node('plazaPlayerInsights').dataset.playerIndex;
+        node('plazaPlayerHud').querySelectorAll('[aria-controls="plazaPlayerInsights"]').forEach(button => button.setAttribute('aria-expanded', 'false'));
+        if (restoreFocus && index !== null) {
+            /** @type {HTMLButtonElement | null} */ (node('plazaPlayerHud').querySelector('button[data-player-index="' + index + '"]'))?.focus({ preventScroll: true });
+        }
+    }
+
+    function renderPlayerInsights() {
+        if (insightsIndex === null || !insightsFacts?.players[insightsIndex]) return;
+        const player = insightsFacts.players[insightsIndex];
+        node('plazaPlayerInsightsHeading').textContent = `${insightsIndex + 1}. ${player.name}の街`;
+        const body = node('plazaPlayerInsightsBody');
+        const active = document.activeElement;
+        const focusedCard = body.contains(active) ? active?.getAttribute('data-card-name') : null;
+        const html = UiPlayerInsights.buildHtml(player, insightsFacts.escapeHtml, {
+            enabledLandmarks: insightsFacts.enabledLandmarks,
+            landmarkNames: Player._LANDMARK_DEFS.map(landmark => landmark.name),
+        });
+        if (body.innerHTML !== html) {
+            body.innerHTML = html;
+            if (focusedCard) {
+                const button = Array.from(/** @type {NodeListOf<HTMLButtonElement>} */ (body.querySelectorAll('button[data-card-name]'))).find(item => item.getAttribute('data-card-name') === focusedCard);
+                (button || node('plazaPlayerInsightsClose')).focus({ preventScroll: true });
+            }
+        }
+    }
+
+    function setEventsOpen(open) {
+        node('plazaEvents').classList.toggle('plaza-events-expanded', open);
+        const button = node('plazaCameraTools').querySelector('[data-field-panel="events"]');
+        button?.setAttribute('aria-expanded', String(open));
+        sync();
+    }
+
+    function openPlayerInsights(index) {
+        if (!Number.isInteger(index) || !insightsFacts?.players[index]) return;
+        setComparisonOpen(false);
+        setLogPanelOpen(false);
+        setEventsOpen(false);
+        insightsIndex = index;
+        renderPlayerInsights();
+        node('plazaPlayerInsights').hidden = false;
+        node('plazaPlayerInsights').dataset.playerIndex = String(index);
+        (/** @type {NodeListOf<HTMLButtonElement>} */ (node('plazaPlayerHud').querySelectorAll('button[aria-controls="plazaPlayerInsights"]'))).forEach(button => button.setAttribute('aria-expanded', String(Number(button.dataset.playerIndex) === index)));
+        node('plazaPlayerInsightsClose').focus({ preventScroll: true });
+        insightsListener?.();
+    }
+
     let townObserver = null;
     let camera = { x: 0, y: 0, scale: 0.75 };
     let worldHeight = 1380;
@@ -98,8 +155,8 @@ const PlazaField = (() => {
             const dormant = cards.filter(card => player.isDormant(card)).length;
             return `<td>${cards.length}${dormant ? `（休${dormant}）` : ''}</td>`;
         }).join('')}</tr>`).join('');
-        const landmarks = [...enabledLandmarks].map(name => `<tr><th scope="row">${escapeHtml(name)}</th>${players.map(player => `<td>${player.landmarks[name] ? '建設済' : '未建設'}</td>`).join('')}</tr>`).join('');
-        node('plazaComparisonBody').innerHTML = `<table><caption>施設の所有枚数とランドマーク</caption><thead><tr><th scope="col">施設</th>${heads}</tr></thead><tbody>${rows}${landmarks}</tbody></table>`;
+        const landmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name)).map(name => `<tr><th scope="row">${escapeHtml(name)}</th>${players.map(player => `<td>${player.landmarks[name] ? '建設済' : '未建設'}</td>`).join('')}</tr>`).join('');
+        node('plazaComparisonBody').innerHTML = `<table><caption>施設の所有枚数とランドマーク</caption><thead><tr><th scope="col">施設</th>${heads}</tr></thead><tbody>${rows}${landmarks}<tr><th scope="row">役所</th>${players.map(player => `<td>${player.hasYakusho ? 'あり' : 'なし'}</td>`).join('')}</tr></tbody></table>`;
     }
     function setLogPanelOpen(open) {
         node('gameLogContainer').classList.toggle('plaza-panel-open', open);
@@ -250,7 +307,15 @@ const PlazaField = (() => {
         node('plazaCameraTools').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
             if (!button) return;
+            if (button.dataset.fieldPanel || button.dataset.fieldSection || button.dataset.fieldTarget) closePlayerInsights();
             if (button.dataset.fieldPanel) {
+                if (button.dataset.fieldPanel === 'events') {
+                    setComparisonOpen(false);
+                    setLogPanelOpen(false);
+                    setEventsOpen(!node('plazaEvents').classList.contains('plaza-events-expanded'));
+                    return;
+                }
+                setEventsOpen(false);
                 if (button.dataset.fieldPanel === 'comparison') {
                     setLogPanelOpen(false);
                     setComparisonOpen(node('plazaComparison').hidden);
@@ -280,6 +345,13 @@ const PlazaField = (() => {
             const menu = button.closest('details');
             if (menu && !button.dataset.fieldZoom) menu.open = false;
         });
+        node('plazaEvents').addEventListener('keydown', event => {
+            if (event.key === 'Escape' && node('plazaEvents').classList.contains('plaza-events-expanded')) {
+                event.preventDefault();
+                setEventsOpen(false);
+                (/** @type {HTMLElement | null} */ (node('plazaCameraTools').querySelector('[data-field-panel="events"]')))?.focus({ preventScroll: true });
+            }
+        });
         node('plazaLogClose').addEventListener('click', () => {
             setLogPanelOpen(false);
             (/** @type {HTMLElement} */ (node('plazaCameraTools').querySelector('[data-field-panel="log"]'))).focus({ preventScroll: true });
@@ -290,7 +362,19 @@ const PlazaField = (() => {
         });
         node('plazaPlayerHud').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
-            if (button) focusTarget(Number(button.dataset.playerIndex));
+            if (button) {
+                const index = Number(button.dataset.playerIndex);
+                focusTarget(index);
+                openPlayerInsights(index);
+            }
+        });
+        node('plazaPlayerInsightsClose').addEventListener('click', () => closePlayerInsights(true));
+        node('plazaPlayerInsights').addEventListener('keydown', event => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                closePlayerInsights(true);
+            }
         });
         // Apply dependent sizes in the next frame, outside ResizeObserver delivery.
         // Updating an observed panel here can otherwise trigger a WebKit loop error.
@@ -349,6 +433,9 @@ const PlazaField = (() => {
         } else if (!enabled && mounted) {
             clearGesture();
             townObserver.disconnect();
+            closePlayerInsights();
+            insightsSession = null;
+            insightsFacts = null;
             setLogPanelOpen(false);
             setComparisonOpen(false);
             world.querySelectorAll('#players > .player-box').forEach(item => {
@@ -369,8 +456,18 @@ const PlazaField = (() => {
             DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
         }
     }
-    function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set()) {
+    function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set(), sessionToken) {
         sync(); if (!mounted) return;
+        // Action adoption can replace Player objects. Only the stable roster
+        // token identifies a different match/resume; ordinary actions keep the panel.
+        if (sessionToken !== undefined && insightsSession !== null && insightsSession !== sessionToken) {
+            closePlayerInsights();
+            setEventsOpen(false);
+        }
+        if (insightsIndex !== null && !players[insightsIndex]) closePlayerInsights();
+        if (sessionToken !== undefined) insightsSession = sessionToken;
+        insightsFacts = { players, escapeHtml, enabledLandmarks };
+
         selfIndex = primaryIndex >= 0 ? primaryIndex : currentIndex;
         playerCount = players.length;
         townObserver.disconnect();
@@ -403,9 +500,10 @@ const PlazaField = (() => {
             const counts = { blue: 0, green: 0, red: 0, purple: 0 };
             for (const card of player.cards) if (Object.prototype.hasOwnProperty.call(counts, card.color)) counts[card.color]++;
             const chips = Object.entries(counts).map(([color, count]) => `<span class="player-color-${color}">${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}</span>`).join(' ');
-            const built = Object.entries(player.landmarks).filter(([name, value]) => value && enabledLandmarks.has(name)).length;
+            const goalLandmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name));
+            const built = goalLandmarks.filter(name => player.landmarks[name] === true).length;
             const kindIcon = node(`playerBox${index}`)?.querySelector('.player-icon')?.innerHTML || '';
-            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-label="プレイヤー${index + 1}、${escapeHtml(player.name)}の街を見る${index === selfIndex ? '、あなた' : ''}、${player.coins}コイン、目標${built}/${enabledLandmarks.size}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span></strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${enabledLandmarks.size}</small></button>`;
+            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-controls="plazaPlayerInsights" aria-expanded="${index === insightsIndex}" aria-label="プレイヤー${index + 1}、${escapeHtml(player.name)}の街と施設詳細を見る${index === selfIndex ? '、あなた' : ''}、${player.coins}コイン、目標${built}/${goalLandmarks.length}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span></strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${goalLandmarks.length}</small></button>`;
         });
         node('plazaPlayerHud').innerHTML = `<div class="plaza-hud-self">${hudButtons[selfIndex]}</div><div class="plaza-hud-opponents" aria-label="相手の状況">${hudButtons.filter((button, index) => index !== selfIndex).join('')}</div>`;
         if (focused !== undefined && focused !== null) (/** @type {HTMLElement} */ (node('plazaPlayerHud').querySelector(`button[data-player-index="${focused}"]`)))?.focus({ preventScroll: true });
@@ -423,9 +521,10 @@ const PlazaField = (() => {
         }
         hudCurrentIndex = currentIndex;
         renderComparison(players, enabledLandmarks, escapeHtml);
+        renderPlayerInsights();
         layout();
     }
-    return Object.freeze({ render, sync, focusTarget });
+    return Object.freeze({ render, sync, focusTarget, selectedPlayerIndex: () => insightsIndex, setInsightsListener: listener => { insightsListener = listener; } });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = PlazaField;

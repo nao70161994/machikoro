@@ -376,6 +376,7 @@
             <button type="button" data-field-target="market">市場</button>
             <button type="button" data-field-target="all">全体</button>
             <button type="button" data-field-panel="log" aria-controls="gameLogContainer" aria-expanded="false">ログ</button>
+            <button type="button" class="plaza-events-toggle" data-field-panel="events" aria-controls="plazaEvents" aria-expanded="false">出来事</button>
             <button type="button" data-field-panel="comparison" aria-controls="plazaComparison" aria-expanded="false">施設比較</button>
             <details class="plaza-camera-menu"><summary>その他</summary><div>
                 <button type="button" data-field-section="facilities">施設へ</button>
@@ -391,7 +392,12 @@
             <p>数字は所有枚数、括弧内は休業中の枚数です。</p>
             <div id="plazaComparisonBody"></div>
         </section>
-        <section id="plazaEvents" aria-label="直近の出来事"><h2>広場の出来事</h2><div id="plazaRecentEvents"></div></section>
+        <section id="plazaPlayerInsights" aria-labelledby="plazaPlayerInsightsHeading" hidden>
+            <div class="plaza-insights-header"><h2 id="plazaPlayerInsightsHeading"></h2><button id="plazaPlayerInsightsClose" type="button">詳細を閉じる</button></div>
+            <details class="plaza-income-disclosure"><summary>出目別収支を調べる</summary><div id="plazaPlayerInsightsIncome" hidden></div></details>
+            <div id="plazaPlayerInsightsBody"></div>
+        </section>
+        <section id="plazaEvents" aria-label="直近の出来事"><h2>広場の出来事</h2><div id="plazaBuildReceipt" aria-live="polite"></div><div id="plazaDiceReceipt"></div><details class="plaza-recent-history"><summary>直近の履歴</summary><div id="plazaRecentEvents"></div></details></section>
         <div id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
         <section class="player-area" aria-label="プレイヤー盤面">
@@ -798,9 +804,14 @@
     <script src="js/online.js"></script>
     <script src="js/uiNotice.js"></script>
     <script src="js/uiLogDisplay.js"></script>
+    <script src="js/uiPlazaEvents.js"></script>
+    <script src="js/uiPlazaFeedback.js"></script>
+    <script src="js/uiIncomePreview.js"></script>
+    <script src="js/uiIncomePreviewPanel.js"></script>
     <script src="js/uiLogHighlightEffects.js"></script>
     <script src="js/uiCardOrder.js"></script>
     <script src="js/uiPlayerDisplay.js"></script>
+    <script src="js/uiPlayerInsights.js"></script>
     <script src="js/plazaField.js"></script>
     <script src="js/uiInputPolicy.js"></script>
     <script src="js/uiBuildMenu.js"></script>

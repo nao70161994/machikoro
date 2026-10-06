@@ -1,3 +1,9 @@
+declare var UiLogDisplay: typeof import("../js/uiLogDisplay");
+declare var UiIncomePreview: typeof import("../js/uiIncomePreview");
+declare var UiIncomePreviewPanel: typeof import("../js/uiIncomePreviewPanel");
+declare var UiPlayerInsights: typeof import("../js/uiPlayerInsights");
+declare var UiPlazaEvents: typeof import("../js/uiPlazaEvents");
+declare var UiPlazaFeedback: typeof import("../js/uiPlazaFeedback");
 declare var GameActionContract: typeof import("../js/actionContract");
 declare var PlazaField: typeof import("../js/plazaField");
 declare var DesignTheme: typeof import("../js/designTheme");
@@ -132,6 +138,12 @@ interface Window {
     UiModalOpen: unknown;
     UiModalClose: unknown;
     UiPlayerDisplay: unknown;
+    UiIncomePreview: unknown;
+    UiIncomePreviewPanel: unknown;
+    UiPlayerInsights: unknown;
+    UiPlazaEvents: unknown;
+    UiPlazaFeedback: unknown;
+
     UiInputPolicy: unknown;
     UiPendingMenu: unknown;
     UiPendingEffects: unknown;

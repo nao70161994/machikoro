@@ -345,6 +345,15 @@ const UiBuildMenu = (() => {
         return `<svg class="town-growth-scenery" data-town-growth="${development}" data-town-character="${landscape}" viewBox="0 0 640 480" preserveAspectRatio="none" aria-hidden="true" focusable="false">${ground}<g class="town-growth-skyline" data-town-silhouette="${landscape}" data-town-silhouette-kind="${industry ? 'industrial' : dominant === 'woodland' ? 'woodland' : landscape}" data-town-silhouette-count="${skylineCount}">${skyline}${landmarkBeacons}</g><g fill="none">${roads}</g>${trees}${lamps}${furnishings}</svg>`;
     }
 
+    function shouldAnimateTownLot(previousCount, ownedCount, copy, visibleCount) {
+        if (![previousCount, ownedCount, copy, visibleCount].every(Number.isSafeInteger) ||
+                previousCount < 0 || ownedCount <= previousCount || copy < 0 ||
+                visibleCount <= 0 || copy >= visibleCount) return false;
+        // Each picture represents one copy. Beyond the finite lots, only the
+        // representative remainder badge changes; existing copies do not arrive again.
+        return previousCount >= visibleCount ? copy === 0 : copy >= previousCount;
+    }
+
     function renderTownHtml(player, enabledLandmarks = new Set()) {
         const cards = Array.isArray(player.cards) ? player.cards : [];
         const grouped = new Map();
@@ -588,7 +597,7 @@ const UiBuildMenu = (() => {
         return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div><span class="market-status-emoji" aria-hidden="true">🏪</span><svg class="market-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
     }
 
-    return Object.freeze({ renderTownHtml, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
+    return Object.freeze({ renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

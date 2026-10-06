@@ -1,3 +1,8 @@
+declare var UiIncomePreview: typeof import("../js/uiIncomePreview");
+declare var UiIncomePreviewPanel: typeof import("../js/uiIncomePreviewPanel");
+declare var UiPlayerInsights: typeof import("../js/uiPlayerInsights");
+declare var UiPlazaEvents: typeof import("../js/uiPlazaEvents");
+declare var UiPlazaFeedback: typeof import("../js/uiPlazaFeedback");
 // Exact browser globals consumed by the UI composition root. Keep stateful
 // effects optional where the classic-script runtime permits them to be absent.
 declare var ClientStorage: typeof import("../js/clientStorage");

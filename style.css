@@ -8732,3 +8732,85 @@ html[data-design="plaza"] #plazaWorld .plaza-town-seat-flag {
     transform: scale(var(--plaza-inverse-scale, 1));
     transform-origin: top left;
 }
+
+/* Plaza player insights: separate from camera gestures and market scrolling. */
+#plazaPlayerInsights { display: none; }
+html[data-design="plaza"] #plazaPlayerInsights:not([hidden]) {
+    display: block; position: absolute; z-index: 9;
+    inset: calc(var(--plaza-top) + 8px) 8px calc(var(--plaza-actions) + var(--plaza-events, 32px) + 4px);
+    width: min(420px, calc(100% - 16px)); max-width: 100%;
+    padding: 12px; box-sizing: border-box; min-height: 0; overflow: auto;
+    background: #102c35; color: #f7edd2; border: 2px solid #dbc27e; border-radius: 14px;
+    touch-action: pan-y;
+}
+html[data-design="plaza"] .plaza-insights-header { display: flex; align-items: center; gap: 8px; }
+html[data-design="plaza"] .plaza-insights-header h2 { flex: 1; min-width: 0; margin: 0; font-size: 16px; overflow-wrap: anywhere; }
+html[data-design="plaza"] #plazaPlayerInsightsClose { width: auto; min-width: 44px; min-height: 44px; margin: 0; padding: 6px 8px; }
+html[data-design="plaza"] #plazaPlayerInsightsBody h3 { font-size: 14px; margin: 12px 0 6px; }
+html[data-design="plaza"] #plazaPlayerInsightsBody ul { list-style: none; margin: 0; padding: 0; }
+html[data-design="plaza"] #plazaPlayerInsightsBody button { width: 100%; min-height: 44px; text-align: left; margin: 3px 0; padding: 6px 8px; overflow-wrap: anywhere; }
+html[data-design="plaza"] body.pwa-banner-open:not(.game-finished) #plazaPlayerInsights:not([hidden]) {
+    bottom: calc(var(--plaza-actions) + max(var(--plaza-events, 32px) + 4px, var(--plaza-banner, 0px) + 44px + env(safe-area-inset-bottom, 0px)));
+}
+html[data-design="plaza"] body.game-finished #plazaPlayerInsights { display: none !important; }
+@media (orientation: landscape) and (max-height: 600px) {
+    html[data-design="plaza"] #plazaPlayerInsights:not([hidden]) { right: 224px; width: min(420px, calc(100% - 232px)); }
+}
+
+/* Fixed-screen receipts retain the roll and key outcome while the town stays
+   visible. Full transfers and history are explicit, independently scrollable. */
+html[data-design="plaza"] .plaza-event-receipt p { margin: 0; }
+html[data-design="plaza"] .plaza-receipt-dice { font-size: 17px; font-weight: 800; color: #ffe6a4; }
+html[data-design="plaza"] .plaza-receipt-totals { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: #f7edd2; }
+html[data-design="plaza"] .plaza-important-event { font-size: 13px; font-weight: 700; color: #ffe6a4; overflow-wrap: anywhere; }
+html[data-design="plaza"] .plaza-important-landmark { color: #ffd779; }
+html[data-design="plaza"] .plaza-receipt-details > summary,
+html[data-design="plaza"] .plaza-recent-history > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 12px; color: #f7edd2; }
+html[data-design="plaza"] .plaza-receipt-details ul { margin: 4px 0; padding-left: 18px; font-size: 12px; line-height: 1.5; }
+html[data-design="plaza"] .plaza-receipt-incomplete { color: #ffe6a4; font-size: 12px; }
+html[data-design="plaza"] #gameScreen > #plazaEvents { max-height: min(150px, 24dvh); overscroll-behavior: contain; touch-action: pan-y; }
+@media (orientation: landscape) and (max-height: 600px) {
+    html[data-design="plaza"] #gameScreen > #plazaEvents { max-height: 84px; }
+}
+
+html[data-design="plaza"] .income-preview-controls { display: grid; gap: 8px; }
+html[data-design="plaza"] .income-preview-controls label { display: grid; gap: 4px; font-size: 13px; }
+html[data-design="plaza"] .income-preview-controls select,
+html[data-design="plaza"] .income-preview-controls button { min-height: 44px; max-width: 100%; }
+html[data-design="plaza"] .income-preview-help,
+html[data-design="plaza"] .income-preview-notes { font-size: 12px; line-height: 1.5; }
+html[data-design="plaza"] .income-preview-expected { color: #ffe6a4; font-weight: 700; }
+html[data-design="plaza"] .income-preview-table-scroll { overflow-x: auto; overscroll-behavior: contain; }
+html[data-design="plaza"] .income-preview-table-scroll table { width: 100%; border-collapse: collapse; font-size: 12px; }
+html[data-design="plaza"] .income-preview-table-scroll th,
+html[data-design="plaza"] .income-preview-table-scroll td { padding: 6px; border-bottom: 1px solid #53716e; text-align: left; }
+html[data-design="plaza"] .income-preview-table-scroll small { display: block; }
+
+html[data-design="plaza"] .plaza-wallet-purchase { outline: 2px solid #e8c477; outline-offset: 2px; }
+html[data-design="plaza"] .plaza-market-purchased { outline: 3px solid #ffe6a4; outline-offset: 2px; box-shadow: 0 0 12px #e8c47788; }
+html[data-design="plaza"] .plaza-purchase-feedback { box-shadow: inset 3px 0 #e8c477; }
+html[data-design="plaza"] .plaza-landmark-feedback { box-shadow: inset 5px 0 #ffd779, inset 0 0 20px #ffd77933; }
+html[data-design="plaza"] .plaza-important-feedback { background: #234850; }
+html[data-design="plaza"] .plaza-build-result { margin: 0; font-size: 13px; color: #ffe6a4; }
+html[data-design="plaza"] .plaza-build-landmark { font-weight: 800; }
+html[data-design="plaza"] .plaza-build-result button { width: auto; min-height: 44px; margin: 2px 6px; padding: 4px 8px; font-size: 12px; }
+html[data-design="plaza"] .plaza-receipt-featured { font-size: 12px; color: #ffe6a4; }
+
+html[data-design="plaza"] #plazaCameraTools .plaza-events-toggle { display: none; }
+@media (orientation: landscape) and (max-height: 600px) {
+    html[data-design="plaza"] #plazaCameraTools .plaza-events-toggle { display: block; }
+    html[data-design="plaza"] #gameScreen > #plazaEvents:not(.plaza-events-expanded) { height: 32px; max-height: 32px; overflow: hidden; }
+    html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-event-receipt { display: flex; align-items: center; gap: 8px; height: 24px; overflow: hidden; }
+    html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-receipt-dice { flex: 0 0 auto; }
+    html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-receipt-featured,
+    html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-important-event { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-receipt-totals,
+    html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-receipt-details,
+    html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-recent-history,
+    html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) #plazaBuildReceipt { display: none; }
+    html[data-design="plaza"] #gameScreen > #plazaEvents.plaza-events-expanded { max-height: min(200px, 55dvh); }
+}
+html[data-design="plaza"] .plaza-recent-history:has(#plazaRecentEvents:empty),
+html[data-design="plaza"] .plaza-receipt-totals:empty { display: none; }
+html[data-design="plaza"] #gameScreen > #plazaEvents { min-height: 32px; }
+html[data-design="plaza"] .plaza-income-disclosure > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: #ffe6a4; font-weight: 700; }

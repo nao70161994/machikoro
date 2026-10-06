@@ -7,6 +7,21 @@ const path = require('path');
 const { CARDS } = require('./helpers/runtime-loaders').loadGameRuntime();
 const UiBuildMenu = require('../js/uiBuildMenu');
 const { runTest } = require('./helpers/test-utils');
+
+runTest('同種施設の追加は新しい区画だけを演出し省略分の増加は代表区画に限定する', () => {
+    const player = count => ({ cards: Array.from({ length: count }, () => CARDS.find(card => card.name === '森林')), landmarks: {} });
+    const arrivals = (before, after) => {
+        const html = UiBuildMenu.renderTownHtml(player(after));
+        return [...html.matchAll(/data-town-copy="(\d+)"[^>]*data-town-visible="(\d+)"/g)]
+            .filter(match => UiBuildMenu.shouldAnimateTownLot(before, after, Number(match[1]), Number(match[2])))
+            .map(match => Number(match[1]));
+    };
+    assert.deepStrictEqual(arrivals(0, 1), [0]);
+    assert.deepStrictEqual(arrivals(3, 4), [3], '既存の3区画を新しい建物として再登場させない');
+    assert.deepStrictEqual(arrivals(6, 7), [0], '省略枚数だけ増える場合は代表表示を強調');
+    assert.deepStrictEqual(arrivals(7, 6), [], 'Undoは建設として演出しない');
+    assert.deepStrictEqual(arrivals(4, 4), [], '同じ所有状態の再描画は演出しない');
+});
 const sprite = fs.readFileSync(path.join(__dirname, '../icons/facility-art.svg'), 'utf8');
 const titleArt = fs.readFileSync(path.join(__dirname, '../icons/sunset-city.svg'), 'utf8');
 const brandMark = fs.readFileSync(path.join(__dirname, '../icons/dice-city-mark.svg'), 'utf8');

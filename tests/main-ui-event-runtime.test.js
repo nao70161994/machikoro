@@ -9,7 +9,7 @@ const { makeElement, runTest } = require('./helpers/test-utils');
 function createHarness() {
     const calls = [];
     const handlers = {};
-    const elements = Object.fromEntries(['diceChoose', 'pendingMenu', 'buildMenu', 'players', 'speedLabel', 'onlineSpeedLabel', 'pwaUpdateBanner', 'pwaInstallBanner', 'roomIdInput', 'onlineJoinSubmitButton'].map(id => [id, makeElement({ id, addEventListener: (name, fn) => { handlers[id + ':' + name] = fn; } })]));
+    const elements = Object.fromEntries(['diceChoose', 'pendingMenu', 'buildMenu', 'players', 'plazaPlayerInsightsBody', 'speedLabel', 'onlineSpeedLabel', 'pwaUpdateBanner', 'pwaInstallBanner', 'roomIdInput', 'onlineJoinSubmitButton'].map(id => [id, makeElement({ id, addEventListener: (name, fn) => { handlers[id + ':' + name] = fn; } })]));
     elements.pwaUpdateBanner.contains = element => element && element.parentElement === elements.pwaUpdateBanner;
     const document = {
         activeElement: null,
@@ -231,6 +231,7 @@ runTest('main UI event runtimeはstatic/delegated listenerを一度だけ所有�
     assert.deepStrictEqual(Object.keys(h.handlers).sort(), [
         'buildMenu:click', 'diceChoose:click', 'document:change', 'document:click',
         'document:input', 'document:keydown', 'pendingMenu:click', 'players:click',
+        'plazaPlayerInsightsBody:click',
     ]);
 });
 
@@ -301,4 +302,12 @@ runTest('main UI event runtimeはmainとonline tabを矢印・Home・Endでfocus
 
 runTest('main UI event runtimeは必須依存欠落を初期化前に拒否する', () => {
     assert.throws(() => MainUiEventRuntime.createRuntime(), /dependencies are required/);
+});
+
+runTest('HUD施設詳細は既存カード詳細のplayer commandへ委譲する', () => {
+    const h = createHarness();
+    h.runtime.bindDelegated();
+    assert.strictEqual(typeof h.handlers['plazaPlayerInsightsBody:click'], 'function');
+    h.handlers['plazaPlayerInsightsBody:click'](h.event({ action: 'showCardDetail', cardName: '森林' }));
+    assert.deepStrictEqual(h.calls, [['preventDefault'], ['showCardDetail', '森林']]);
 });

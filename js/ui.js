@@ -1,4 +1,4 @@
-/* global MutationObserver */
+/* global Element, MutationObserver, UiPlazaEvents, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
@@ -7,6 +7,70 @@ const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
 const turnCoinBalanceCache = new WeakMap();
+const plazaIncomePreviewPanel = typeof UiIncomePreviewPanel !== 'undefined' ? UiIncomePreviewPanel.create({
+    document,
+    getGame: () => uiGameRuntimeSnapshot().game,
+    getSelectedPlayerIndex: () => PlazaField.selectedPlayerIndex(),
+    getSession: () => uiGameRuntimeSnapshot().cpuPlayers,
+    preview: UiIncomePreview.create({
+        simulation: CPUSimulation, createGame: count => new GameManager(count),
+        cloneCard: card => createCardByName(card.name),
+        defaultLandmarks: () => Player.landmarkNames(), cards: CARDS,
+        tunaEffect: CARD_EFFECTS.TUNA, harborName: LANDMARK_NAMES.HARBOR,
+    }),
+    stationName: LANDMARK_NAMES.STATION, harborName: LANDMARK_NAMES.HARBOR,
+}) : null;
+if (plazaIncomePreviewPanel) {
+    plazaIncomePreviewPanel.init();
+    document.getElementById('plazaPlayerInsightsIncome').hidden = false;
+    PlazaField.setInsightsListener(() => plazaIncomePreviewPanel.refresh());
+}
+
+const plazaFeedback = typeof UiPlazaFeedback !== 'undefined' ? UiPlazaFeedback.create({
+    document,
+    getGame: () => uiGameRuntimeSnapshot().game,
+    getSession: () => uiGameRuntimeSnapshot().cpuPlayers,
+    isReplaying: () => uiOnlineRuntimeSnapshot().isReplaying === true,
+    isVisible: () => document.documentElement.dataset.design === 'plaza' &&
+        document.getElementById('gameScreen').style.display !== 'none',
+    getEnabledLandmarks: () => getEnabledLandmarkSelection(),
+    getReceipt: () => document.getElementById('plazaDiceReceipt'),
+    getMarketCard: (name, landmark) => Array.from(document.querySelectorAll('#buildMenu .card-btn'))
+        .find(button => (landmark ? button.getAttribute('data-landmark-name') : button.getAttribute('data-card-name')) === name),
+    isWinner: (game, index) => game.checkWinner() === game.players[index],
+    playLandmarkSound: () => {
+        const game = uiGameRuntimeSnapshot().game;
+        const online = uiOnlineRuntimeSnapshot();
+        // Human build commands already play their sound. Observers and CPU
+        // turns use this receipt cue once; replay and winners never reach it.
+        if (currentCpuPlayerAt(game.currentPlayerIndex) ||
+                (online.isOnlineGame && online.myPlayerIndex !== game.currentPlayerIndex)) playSound('build');
+    },
+    onMilestones: events => {
+        const target = document.getElementById('plazaBuildReceipt');
+        if (!target) return;
+        target.innerHTML = events.filter(event => !event.winner).map(event =>
+            `<p class="plaza-build-result${event.landmark ? ' plaza-build-landmark' : ''}">${escapeHtml(event.message)}${event.landmark ? `：${escapeHtml(getLandmarkEffectText(event.name))}` : ''}<button type="button" data-built-town-index="${event.playerIndex}">建設した街を見る</button></p>`).join('');
+    },
+}) : null;
+if (plazaFeedback) document.getElementById('plazaBuildReceipt').addEventListener('click', event => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const button = target.closest('[data-built-town-index]');
+    if (button) PlazaField.focusTarget(Number(button.getAttribute('data-built-town-index')));
+});
+if (plazaFeedback && typeof MutationObserver !== 'undefined') {
+    const gameScreen = document.getElementById('gameScreen');
+    const feedbackVisibilityObserver = new MutationObserver(() => {
+        if (document.documentElement.dataset.design !== 'plaza' ||
+                gameScreen.style.display === 'none' || document.body.classList.contains('game-finished')) {
+            plazaFeedback.reset();
+        }
+    });
+    feedbackVisibilityObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-design'] });
+    feedbackVisibilityObserver.observe(gameScreen, { attributes: true, attributeFilter: ['style'] });
+    feedbackVisibilityObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+}
 /** @type {number | null} */
 let logRelatedHighlightTimer = null;
 let gameLogPresentationInitialized = false;
@@ -121,6 +185,14 @@ function renderLog() {
         logDisplayOptions
     );
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
+    const receipt = document.getElementById('plazaDiceReceipt');
+    if (receipt && typeof UiPlazaEvents !== 'undefined') {
+        receipt.innerHTML = UiPlazaEvents.buildReceiptHtml(UiPlazaEvents.project(cur, {
+            players: currentGame.players, turnPlayerIndex: currentGame.currentPlayerIndex,
+            display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
+            landmarkNames: Player.landmarkNames(),
+        }), escapeHtml);
+    }
     const recent = document.getElementById('plazaRecentEvents');
     if (recent) recent.innerHTML = UiLogDisplay.buildRecentEventsHtml(
         history.entries, cur,
@@ -357,6 +429,7 @@ function clearOnlineSessionAfterWin() {
 }
 
 function renderWinnerState(winner) {
+    plazaFeedback?.reset();
     if (document.body && document.body.classList) document.body.classList.add('game-finished');
     const gameState = uiGameRuntimeSnapshot();
     const currentGame = gameState.game;
@@ -684,6 +757,7 @@ function renderActiveGameState(current) {
         playerIndex: currentGame.currentPlayerIndex,
         playerName: current.name,
     });
+    plazaFeedback?.refresh();
     if (handoff.visible) applyHotseatHandoff(handoff);
 }
 
@@ -1140,7 +1214,12 @@ function animateNewTownBuildings(container, previousCounts, currentCounts) {
         }
         panel.querySelectorAll('[data-town-building]').forEach(building => {
             const key = building.dataset.townBuilding;
-            if ((counts.get(key) || 0) > (previous.get(key) || 0)) {
+            const previousCount = previous.get(key) || 0;
+            const ownedCount = counts.get(key) || 0;
+            const arrived = key.startsWith('landmark:') ? ownedCount > previousCount
+                : UiBuildMenu.shouldAnimateTownLot(previousCount, ownedCount,
+                    Number(building.dataset.townCopy || 0), Number(building.dataset.townVisible || ownedCount));
+            if (arrived) {
                 building.classList.add('town-building-arrival');
                 if (key.startsWith('landmark:')) {
                     building.classList.add('town-building-landmark-arrival');
@@ -1309,7 +1388,8 @@ function renderPlayers() {
             townBuildingCounts,
         });
     }
-    if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection());
+    if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection(), townSession);
+    plazaIncomePreviewPanel?.refresh(currentGame);
     if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
         animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
     } else clearTownCoinEffects();

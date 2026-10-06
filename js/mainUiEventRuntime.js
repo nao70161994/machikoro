@@ -211,6 +211,7 @@ const MainUiEventRuntime = (() => {
             const bindings = [
                 ['diceChoose', handleDiceClick], ['pendingMenu', handlePendingClick],
                 ['buildMenu', handleBuildClick], ['players', handlePlayerClick],
+                ['plazaPlayerInsightsBody', handlePlayerClick],
             ];
             for (const [id, handler] of bindings) {
                 const element = dependencies.document.getElementById(id);
