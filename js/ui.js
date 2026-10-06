@@ -7,6 +7,7 @@ const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
 const turnCoinBalanceCache = new WeakMap();
+const plazaReceiptRenderCache = new WeakMap();
 const plazaIncomePreviewPanel = typeof UiIncomePreviewPanel !== 'undefined' ? UiIncomePreviewPanel.create({
     document,
     getGame: () => uiGameRuntimeSnapshot().game,
@@ -187,11 +188,28 @@ function renderLog() {
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
     const receipt = document.getElementById('plazaDiceReceipt');
     if (receipt && typeof UiPlazaEvents !== 'undefined') {
-        receipt.innerHTML = UiPlazaEvents.buildReceiptHtml(UiPlazaEvents.project(cur, {
+        const projected = UiPlazaEvents.project(cur, {
             players: currentGame.players, turnPlayerIndex: currentGame.currentPlayerIndex,
             display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
             landmarkNames: Player.landmarkNames(),
-        }), escapeHtml);
+        });
+        const html = UiPlazaEvents.buildReceiptHtml(projected, escapeHtml);
+        const diceKey = JSON.stringify(projected.dice);
+        const session = uiGameRuntimeSnapshot().cpuPlayers;
+        const previous = plazaReceiptRenderCache.get(receipt);
+        const sameResult = Boolean(previous) && previous.session === session && previous.turn === currentGame.turnCount &&
+            previous.actor === currentGame.currentPlayerIndex && previous.dice === diceKey;
+        if (!sameResult || previous.html !== html) {
+            const details = /** @type {HTMLDetailsElement | null} */ (receipt.querySelector('details'));
+            const keepOpen = sameResult && details?.open;
+            const keepFocus = sameResult && receipt.contains(document.activeElement);
+            receipt.innerHTML = html;
+            const nextDetails = /** @type {HTMLDetailsElement | null} */ (receipt.querySelector('details'));
+            if (nextDetails && keepOpen) nextDetails.open = true;
+            if (keepFocus) /** @type {HTMLElement | null} */ (nextDetails?.querySelector('summary'))?.focus({ preventScroll: true });
+            plazaReceiptRenderCache.set(receipt, { html, session, turn: currentGame.turnCount,
+                actor: currentGame.currentPlayerIndex, dice: diceKey });
+        }
     }
     const recent = document.getElementById('plazaRecentEvents');
     if (recent) recent.innerHTML = UiLogDisplay.buildRecentEventsHtml(

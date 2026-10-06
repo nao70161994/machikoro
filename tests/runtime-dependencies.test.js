@@ -128,6 +128,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiPlayerDisplay.js', 'js/ui.js'],
             ['js/uiInputPolicy.js', 'js/ui.js'],
             ['js/uiBuildMenu.js', 'js/ui.js'],
+            ['js/plazaTownLayout.js', 'js/plazaField.js'],
             ['js/plazaField.js', 'js/ui.js'],
             ['js/onlineRoomShare.js', 'js/online.js'],
             ['js/uiPendingMenu.js', 'js/ui.js'],

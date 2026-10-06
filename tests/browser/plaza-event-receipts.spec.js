@@ -49,6 +49,10 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         if (viewport.width === 844) await page.locator('[data-field-panel="events"]').click();
         await receipt.locator('summary').click();
         await expect(receipt.locator('.plaza-receipt-activations')).toContainText('街1：森林 +6コイン');
+        await receipt.locator('summary').focus();
+        await page.evaluate(() => render());
+        await expect(receipt.locator('details')).toHaveAttribute('open', '');
+        await expect(receipt.locator('summary')).toBeFocused();
         await receipt.locator('summary').click();
         await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
@@ -188,4 +192,59 @@ test('テーマ離脱と勝利境界で建設の表示と演出を清掃する',
     await expect(page.locator('.winner-screen')).toBeVisible();
     await expect(page.locator('#plazaBuildReceipt')).toBeEmpty();
     await expect(page.locator('#crashScreen')).toBeHidden();
+});
+
+for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 },
+    { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+    test(`10人の全体ビューは市場と全街を重ねず横にも使う ${viewport.width}`, async ({ page }) => {
+        await prepare(page, viewport, 10);
+        await page.locator('[data-field-target="all"]').click();
+        const measured = await page.evaluate(() => {
+            const world = document.getElementById('plazaWorld');
+            const boxes = Array.from({ length: 10 }, (_, index) => document.getElementById(`playerBox${index}`));
+            boxes.push(document.getElementById('buildMenu'));
+            return { width: world.offsetWidth, height: world.offsetHeight,
+                boxes: boxes.map(item => ({ left: item.offsetLeft, top: item.offsetTop,
+                    width: item.offsetWidth, height: item.offsetHeight })) };
+        });
+        expect(measured.width).toBeGreaterThan(measured.height);
+        for (let index = 0; index < measured.boxes.length; index++) {
+            const a = measured.boxes[index];
+            expect(a.left + a.width).toBeLessThanOrEqual(measured.width);
+            expect(a.top + a.height).toBeLessThanOrEqual(measured.height);
+            for (const b of measured.boxes.slice(index + 1)) {
+                expect(a.left + a.width <= b.left || b.left + b.width <= a.left ||
+                    a.top + a.height <= b.top || b.top + b.height <= a.top).toBe(true);
+            }
+        }
+        await page.locator('[data-field-target="market"]').click();
+        await expect(page.locator('#buildMenu')).toBeInViewport();
+        await page.locator('[data-field-target="self"]').click();
+        await expect(page.locator('#playerBox0')).toBeInViewport();
+        await test.info().attach(`overview-10-${viewport.width}`, { body: await page.screenshot(), contentType: 'image/png' });
+    });
+}
+
+test('画面外の赤施設への支払いと残高不足はログ無しで追える', async ({ page }) => {
+    await prepare(page, { width: 390, height: 844 }, 10);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach((player, index) => {
+            player.cards = Array.from({ length: index ? 3 : 1 }, () => createCardByName(index ? 'カフェ' : 'パン屋'));
+            player.coins = index ? 30 : 5;
+        });
+        render();
+        game.rollDice(3);
+        render();
+        acceptHotseatHandoff();
+    });
+    const receipt = page.locator('#plazaDiceReceipt');
+    await expect(receipt.locator('.plaza-receipt-dice')).toHaveText('出目 3');
+    await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街1 -4');
+    await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街10 +3');
+    await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街9 +2');
+    await receipt.locator('summary').click();
+    await expect(receipt.locator('.plaza-receipt-activations')).toContainText('街1 → 街10');
+    await expect(receipt.locator('.plaza-receipt-activations')).toContainText('カフェ');
+    await expect(page.locator('#gameLogContainer')).not.toHaveClass(/plaza-panel-open/);
 });

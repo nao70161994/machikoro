@@ -1,5 +1,5 @@
 'use strict';
-/* global DesignTheme, ResizeObserver, MutationObserver, HTMLDetailsElement, requestAnimationFrame, Player, UiPlayerInsights */
+/* global DesignTheme, ResizeObserver, MutationObserver, HTMLDetailsElement, requestAnimationFrame, Player, UiPlayerInsights, PlazaTownLayout */
 
 // Device-local camera: never saved or transmitted as a game action.
 const PlazaField = (() => {
@@ -67,6 +67,7 @@ const PlazaField = (() => {
 
     let townObserver = null;
     let camera = { x: 0, y: 0, scale: 0.75 };
+    let worldWidth = 1680;
     let worldHeight = 1380;
     let pendingFocus = null;
     const pointers = new Map();
@@ -106,40 +107,29 @@ const PlazaField = (() => {
     function node(id) { return document.getElementById(id); }
     function arrangeTowns() {
         if (!node('plazaViewport').clientWidth || !node('plazaViewport').clientHeight) return;
-        const positions = [[580, 970], [70, 470], [580, 0], [1150, 470]];
-        // Measure once before changing absolute positions. Reading offsetTop
-        // after each write forces layout repeatedly when many towns are shown.
+        // Read all dimensions before writing positions to avoid repeated layouts.
         const towns = Array.from({ length: playerCount }, (_, index) => ({
             item: node(`playerBox${index}`), seat: (index - selfIndex + playerCount) % playerCount,
         })).filter(entry => entry.item).map(entry => ({ ...entry,
-            height: entry.item.offsetHeight, left: 0, top: 0,
+            width: entry.item.offsetWidth, height: entry.item.offsetHeight,
         }));
         const market = node('buildMenu');
-        const marketHeight = market.offsetHeight;
-        for (const entry of towns.filter(entry => entry.seat < 4)) {
-            [entry.left, entry.top] = positions[entry.seat];
-        }
-        const bottom = entry => entry.top + entry.height;
-        const topTown = towns.find(entry => entry.seat === 2);
-        const marketTop = Math.max(420, topTown ? bottom(topTown) + 32 : 420);
-        const selfTown = towns.find(entry => entry.seat === 0);
-        if (selfTown) selfTown.top = Math.max(970, marketTop + marketHeight + 32);
-        const extraTop = Math.max(0, ...towns.filter(entry => entry.seat < 4).map(bottom)) + 40;
-        const rowHeight = Math.max(0, ...towns.map(entry => entry.height)) + 40;
-        for (const entry of towns.filter(entry => entry.seat >= 4)) {
-            entry.left = 70 + ((entry.seat - 4) % 3) * 530;
-            entry.top = extraTop + Math.floor((entry.seat - 4) / 3) * rowHeight;
-        }
+        const measured = PlazaTownLayout.calculate({ towns,
+            marketWidth: market.offsetWidth, marketHeight: market.offsetHeight });
         const setPixels = (item, property, value) => {
             const pixels = `${value}px`;
             if (item.style[property] !== pixels) item.style[property] = pixels;
         };
         for (const entry of towns) {
-            setPixels(entry.item, 'left', entry.left);
-            setPixels(entry.item, 'top', entry.top);
+            const position = measured.positions[entry.seat];
+            setPixels(entry.item, 'left', position.left);
+            setPixels(entry.item, 'top', position.top);
         }
-        setPixels(market, 'top', marketTop);
-        worldHeight = Math.max(1380, marketTop + marketHeight + 40, ...towns.map(entry => bottom(entry) + 40));
+        setPixels(market, 'left', measured.marketLeft);
+        setPixels(market, 'top', measured.marketTop);
+        worldWidth = measured.width;
+        worldHeight = measured.height;
+        setPixels(node('plazaWorld'), 'width', worldWidth);
         setPixels(node('plazaWorld'), 'height', worldHeight);
     }
 
@@ -172,7 +162,7 @@ const PlazaField = (() => {
         const clampAxis = (value, size, extent) => size <= extent
             ? Math.max((extent - size) / 2 - 80, Math.min((extent - size) / 2 + 80, value))
             : Math.max(extent - size - 80, Math.min(80, value));
-        camera.x = clampAxis(camera.x, 1680 * camera.scale, viewport.clientWidth);
+        camera.x = clampAxis(camera.x, worldWidth * camera.scale, viewport.clientWidth);
         camera.y = clampAxis(camera.y, worldHeight * camera.scale, viewport.clientHeight);
         const transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
         const world = node('plazaWorld');
@@ -197,8 +187,8 @@ const PlazaField = (() => {
             return;
         }
         pendingFocus = null;
-        let x = 840, y = worldHeight / 2;
-        if (target === 'all') camera.scale = Math.max(0.12, Math.min(viewport.clientWidth / 1680, viewport.clientHeight / worldHeight));
+        let x = worldWidth / 2, y = worldHeight / 2;
+        if (target === 'all') camera.scale = Math.max(0.12, Math.min(viewport.clientWidth / worldWidth, viewport.clientHeight / worldHeight));
         else {
             camera.scale = Math.max(0.12, target === 'market'
                 ? Math.min(1, (viewport.clientWidth - 16) / 570)
@@ -449,6 +439,7 @@ const PlazaField = (() => {
             screen.insertBefore(node('buildMenu'), node('turnTimeline'));
             node('buildMenu').style.removeProperty('height');
             node('buildMenu').style.removeProperty('top');
+            node('buildMenu').style.removeProperty('left');
             world.style.removeProperty('--plaza-inverse-scale');
             pendingFocus = null;
             mounted = false;

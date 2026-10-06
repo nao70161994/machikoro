@@ -5,6 +5,7 @@ declare var UiPlayerInsights: typeof import("../js/uiPlayerInsights");
 declare var UiPlazaEvents: typeof import("../js/uiPlazaEvents");
 declare var UiPlazaFeedback: typeof import("../js/uiPlazaFeedback");
 declare var GameActionContract: typeof import("../js/actionContract");
+declare var PlazaTownLayout: typeof import("../js/plazaTownLayout");
 declare var PlazaField: typeof import("../js/plazaField");
 declare var DesignTheme: typeof import("../js/designTheme");
 declare var GameSnapshot: typeof import("../js/gameSnapshot");

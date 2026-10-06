@@ -182,7 +182,8 @@ for (const width of [320, 390]) {
             const hud = document.getElementById('plazaPlayerHud').getBoundingClientRect();
             const field = document.getElementById('plazaViewport').getBoundingClientRect();
             const tools = document.getElementById('plazaCameraTools').getBoundingClientRect();
-            const controls = Array.from(document.querySelectorAll('#plazaCameraTools > button, #plazaCameraTools > details > summary'));
+            const controls = Array.from(document.querySelectorAll('#plazaCameraTools > button, #plazaCameraTools > details > summary'))
+                .filter(control => control.getBoundingClientRect().width > 0);
             const buttons = Array.from(document.querySelectorAll('#plazaPlayerHud button'));
             const opponents = document.querySelector('#plazaPlayerHud .plaza-hud-opponents');
             const opponentBounds = opponents.getBoundingClientRect();
