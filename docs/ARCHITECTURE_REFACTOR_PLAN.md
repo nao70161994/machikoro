@@ -1,5 +1,7 @@
 # Architecture Refactor Plan
 
+現在の構成・未完了事項は [CURRENT_STATUS.md](CURRENT_STATUS.md) を先に確認してください。この文書の日付付き記録は履歴として参照します。
+
 Last updated: 2026-08-10
 
 This document is a design plan, not an implementation request. The current codebase has already gained many guardrails around payload limits, canonical action data, restore audit, UI escaping, client-version checks, and privacy redaction. The next large maintenance gains require clearer ownership boundaries rather than more one-off fixes.

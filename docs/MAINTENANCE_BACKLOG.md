@@ -1,5 +1,7 @@
 # Maintenance Backlog
 
+現在の構成・未完了事項は [CURRENT_STATUS.md](CURRENT_STATUS.md) を先に確認してください。この文書の日付付き記録は履歴として参照します。
+
 Last updated: 2026-10-04
 
 This backlog is a maintenance inventory after the June 2026 safety/refactor cycles. It is not a request to continue broad refactoring. Use it to decide whether a future change is a small safe fix, a design task, a real-device verification task, or something that should be left alone.

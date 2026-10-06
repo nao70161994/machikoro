@@ -1,5 +1,7 @@
 # Implementation progress
 
+現在の構成・未完了事項は [CURRENT_STATUS.md](CURRENT_STATUS.md) を先に確認してください。この文書の日付付き記録は履歴として参照します。
+
 作成日: 2026-05-17
 
 `docs/IMPLEMENTATION_ROADMAP.md` の PR 候補を順に処理した記録です。各項目は 1 PR 単位で commit / push します。
