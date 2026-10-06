@@ -2212,6 +2212,7 @@ for (const width of [320, 390, 844, 1440]) {
             window.scheduleCPU = () => false;
             const state = GameRuntimeState.runtime.snapshot();
             state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+            GameRuntimeState.runtime.setCpuPlayers([]);
             state.game.phase = GAME_PHASES.BUILD;
             state.game.currentPlayer().coins = 30;
             // Related-log timer coverage must not depend on a random roll's income.
@@ -2230,10 +2231,29 @@ for (const width of [320, 390, 844, 1440]) {
         await expect(page.locator('#crashScreen')).toBeHidden();
         await expect(page.locator('.log-related-highlight').first()).toBeAttached();
         await expect(page.locator('.log-related-highlight')).toHaveCount(0, { timeout: 5000 });
-        expect(await page.locator('#plazaPlayerHud').evaluate(hud => [...hud.querySelectorAll('button > span > span')].every(chip => {
-            const bounds = chip.getBoundingClientRect(), button = chip.closest('button').getBoundingClientRect();
-            return bounds.left >= button.left && bounds.right <= button.right && chip.scrollWidth <= chip.clientWidth;
-        }))).toBe(true);
+        const chipLayout = await page.locator('#plazaPlayerHud').evaluate(hud => {
+            const buttons = [...hud.querySelectorAll('button')];
+            const categories = buttons.map(button => {
+                const chips = [...button.querySelectorAll('.plaza-player-facilities > span')];
+                const visible = chips.filter(chip => chip.getClientRects().length > 0 &&
+                    getComputedStyle(chip).visibility !== 'hidden');
+                const buttonBounds = button.getBoundingClientRect();
+                return { self: button.classList.contains('self'), total: chips.length,
+                    visible: visible.length, fits: visible.every(chip => {
+                        const bounds = chip.getBoundingClientRect();
+                        return bounds.left >= buttonBounds.left && bounds.right <= buttonBounds.right &&
+                            chip.scrollWidth <= chip.clientWidth;
+                    }) };
+            });
+            return categories;
+        });
+        expect(chipLayout).toHaveLength(4);
+        expect(chipLayout.filter(button => button.self)).toHaveLength(1);
+        for (const button of chipLayout) {
+            expect(button.total).toBe(4);
+            expect(button.visible).toBe(button.self || width >= 844 ? 4 : 0);
+            expect(button.fits).toBe(true);
+        }
         const initialCamera = await page.locator('#plazaWorld').getAttribute('style');
         await page.locator('[data-field-target="market"]').click();
         expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(initialCamera);

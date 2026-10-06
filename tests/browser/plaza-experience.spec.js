@@ -44,12 +44,29 @@ test('縦持ちのガイドは序盤の説明を保ち後から開閉できる',
     await expect(guide).not.toHaveAttribute('open', '');
     await expect(guide.locator('.tutorial-body')).toBeHidden();
     expect(await guide.boundingBox().then(box => box.height)).toBeLessThanOrEqual(48);
+    // The real update banner remains present while the guide opens and closes.
+    await page.evaluate(() => {
+        document.body.classList.add('pwa-banner-open');
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
+    });
+    await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => {
+        const guide = document.getElementById('tutorialBox').getBoundingClientRect();
+        const banner = document.getElementById('pwaUpdateBanner').getBoundingClientRect();
+        return guide.bottom <= banner.top && guide.top >= 0;
+    })).toBe(true);
     await guide.locator('summary').click();
     await expect(guide.locator('.tutorial-body')).toBeVisible();
+    await expect.poll(() => page.evaluate(() => {
+        const guide = document.getElementById('tutorialBox').getBoundingClientRect();
+        const banner = document.getElementById('pwaUpdateBanner').getBoundingClientRect();
+        return guide.bottom <= banner.top && guide.top >= 0;
+    })).toBe(true);
     await page.evaluate(() => render());
     await expect(guide.locator('.tutorial-body')).toBeVisible();
     await guide.locator('summary').click();
     await expect(guide.locator('.tutorial-body')).toBeHidden();
+    await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
     await expect(page.locator('#crashScreen')).toBeHidden();
 });
 

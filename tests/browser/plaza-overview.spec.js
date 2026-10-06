@@ -155,7 +155,10 @@ for (const width of [320, 390]) {
             startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
                 type: index === 0 ? 'human' : 'cpu', difficulty: 'normal', name: `街${index + 1}`,
             })));
-            GameRuntimeState.runtime.snapshot().cpuPlayers.fill(null);
+            // Empty actors freeze scheduling while allowing UI CPU kinds to
+            // fall back to setup. Null slots would turn every seat into human
+            // and move the primary/self town when the fixture changes turns.
+            GameRuntimeState.runtime.setCpuPlayers([]);
             cancelCpuSchedule('compact-hud');
             GameRuntimeState.runtime.snapshot().game.log = [];
             resetFullLog();
@@ -163,6 +166,7 @@ for (const width of [320, 390]) {
             acceptHotseatHandoff();
         });
         await expect(page.locator('#plazaPlayerHud .plaza-hud-self button')).toHaveClass(/self/);
+        const selfIndex = await page.locator('#plazaPlayerHud .plaza-hud-self button').getAttribute('data-player-index');
         await expect(page.locator('#plazaPlayerHud .plaza-hud-opponents button')).toHaveCount(3);
         await expect.poll(() => page.evaluate(() => {
             const hud = document.getElementById('plazaPlayerHud').getBoundingClientRect();
@@ -195,6 +199,7 @@ for (const width of [320, 390]) {
         });
         const last = page.locator('#plazaPlayerHud .plaza-hud-opponents button').last();
         await expect(last).toHaveAttribute('aria-current', 'true');
+        await expect(page.locator('#plazaPlayerHud .plaza-hud-self button')).toHaveAttribute('data-player-index', selfIndex);
         expect(await last.evaluate(button => {
             const bounds = button.parentElement.getBoundingClientRect();
             const rect = button.getBoundingClientRect();
