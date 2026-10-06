@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
-async function prepare(page) {
-    await page.setViewportSize({ width: 390, height: 844 });
+async function prepare(page, width = 390) {
+    await page.setViewportSize({ width, height: 844 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
@@ -99,29 +99,31 @@ for (const reduced of [false, true]) {
     });
 }
 
-test('赤施設の送金は受取と支払いを区別し画面離脱で片付ける', async ({ page }) => {
-    await prepare(page);
-    const result = await page.evaluate(() => {
-        const state = GameRuntimeState.runtime.snapshot(), game = state.game;
-        const receiverIndex = Number(document.querySelector('.plaza-hud-opponents button').dataset.playerIndex);
-        const receiver = game.players[receiverIndex];
-        receiver.cards = [createCardByName('寿司屋')];
-        game.log = [];
-        render();
-        acceptHotseatHandoff();
-        game.currentPlayer().coins -= 2;
-        receiver.coins += 2;
-        game.addLog(LOG_TYPES.LOSE, `💸 ${receiver.name}の寿司屋発動 → 2コイン獲得`);
-        const coins = game.players.map(player => player.coins);
-        render();
-        return { coins, after: game.players.map(player => player.coins),
-            markers: Array.from(document.querySelectorAll('.plaza-coin-amount'), marker => marker.textContent) };
+for (const width of [390, 1363]) {
+    test(`赤施設の送金は受取と支払いを区別し画面離脱で片付ける ${width}px`, async ({ page }) => {
+        await prepare(page, width);
+        const result = await page.evaluate(() => {
+            const state = GameRuntimeState.runtime.snapshot(), game = state.game;
+            const receiverIndex = Number(document.querySelector('.plaza-hud-opponents button').dataset.playerIndex);
+            const receiver = game.players[receiverIndex];
+            receiver.cards = [createCardByName('寿司屋')];
+            game.log = [];
+            render();
+            acceptHotseatHandoff();
+            game.currentPlayer().coins -= 2;
+            receiver.coins += 2;
+            game.addLog(LOG_TYPES.LOSE, `💸 ${receiver.name}の寿司屋発動 → 2コイン獲得`);
+            const coins = game.players.map(player => player.coins);
+            render();
+            return { coins, after: game.players.map(player => player.coins),
+                markers: Array.from(document.querySelectorAll('.plaza-coin-amount'), marker => marker.textContent) };
+        });
+        expect(result.markers.sort()).toEqual(['+2', '-2']);
+        expect(result.after).toEqual(result.coins);
+        expect(await page.evaluate(async () => {
+            document.getElementById('gameScreen').style.display = 'none';
+            await Promise.resolve();
+            return document.querySelectorAll('.plaza-coin-amount').length;
+        })).toBe(0);
     });
-    expect(result.markers.sort()).toEqual(['+2', '-2']);
-    expect(result.after).toEqual(result.coins);
-    expect(await page.evaluate(async () => {
-        document.getElementById('gameScreen').style.display = 'none';
-        await Promise.resolve();
-        return document.querySelectorAll('.plaza-coin-amount').length;
-    })).toBe(0);
-});
+}

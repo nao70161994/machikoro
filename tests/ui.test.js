@@ -3155,6 +3155,17 @@ runTest('広場の森林6枚は一つの+6表示に集約し飛行数と可視�
     assert.strictEqual(markers.length, count);
     wallet.getBoundingClientRect = () => rect(20, 40, 80, 20);
     forest.getBoundingClientRect = () => rect(120, 300, 60, 40);
+    wallet.closest = () => ({ getBoundingClientRect: () => rect(0, 0, 0, 0) });
+    const fallbackCount = markers.length;
+    context.showTownCoinAmount(forest, wallet, 2, false);
+    assert.strictEqual(markers.length, fallbackCount + 1);
+    assert.strictEqual(markers.at(-1).textContent, '+2');
+    context.clearTownCoinEffects();
+    wallet.closest = () => ({ getBoundingClientRect: () => rect(120, 20, 270, 100) });
+    const clippedCount = markers.length;
+    context.showTownCoinAmount(forest, wallet, 2, false);
+    assert.strictEqual(markers.length, clippedCount);
+    wallet.closest = () => null;
     context.window.matchMedia = () => ({ matches: true });
     context.showTownCoinAmount(forest, wallet, 3, false);
     assert.ok(markers.at(-1).className.includes('plaza-coin-static'));

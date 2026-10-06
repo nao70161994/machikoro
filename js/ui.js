@@ -1008,7 +1008,9 @@ function showTownCoinAmount(source, wallet, amount, payment) {
     const target = wallet.getBoundingClientRect();
     const origin = source?.getBoundingClientRect?.();
     const hud = document.getElementById('plazaPlayerHud')?.getBoundingClientRect?.();
-    const walletViewport = wallet.closest?.('.plaza-hud-opponents')?.getBoundingClientRect?.() || hud;
+    const opponentBounds = wallet.closest?.('.plaza-hud-opponents')?.getBoundingClientRect?.();
+    const walletViewport = opponentBounds?.width > 0 && opponentBounds?.height > 0
+        ? opponentBounds : hud;
     const viewport = document.getElementById('plazaViewport')?.getBoundingClientRect?.();
     const screen = document.getElementById('gameScreen');
     const visible = (rect, bounds) => rect && bounds && rect.width > 0 && rect.height > 0 &&
