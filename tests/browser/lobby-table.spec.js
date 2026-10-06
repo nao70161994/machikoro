@@ -8,7 +8,7 @@ for (const width of [320, 390, 844, 1440]) {
         await page.goto('/');
         await page.locator('#tabOnline').click();
         await expect(page.locator('#tabContentOnline')).toBeVisible();
-        for (const count of [2, 3, 4, 8, 9, 10]) {
+        for (const count of [2, 3, 4, 5, 6, 7, 8, 9, 10]) {
             await page.evaluate(count => {
                 const names = Array.from({ length: count }, (_, index) => index === count - 1
                     ? '待機中...' : index === 2 ? 'CPU（普通）'
