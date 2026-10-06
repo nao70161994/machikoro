@@ -1,3 +1,4 @@
+/* global MutationObserver */
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
@@ -187,6 +188,8 @@ function getTutorialMessage() {
     return UiTutorial.getMessage(tutorialOptions());
 }
 
+const tutorialDisclosureState = new WeakMap();
+
 function renderTutorial() {
     safeRenderStep('syncTutorialControls', () => syncTutorialControls());
     const box = document.getElementById("tutorialBox");
@@ -200,7 +203,18 @@ function renderTutorial() {
     }
     const message = getTutorialMessage();
     box.style.display = "block";
-    box.innerHTML = UiTutorial.buildHtml(message, escapeHtml);
+    const session = uiGameRuntimeSnapshot().cpuPlayers;
+    const previous = tutorialDisclosureState.get(session);
+    const disclosure = /** @type {HTMLDetailsElement} */ (box.querySelector?.('.plaza-guide-disclosure'));
+    const expanded = previous && previous.box === box && disclosure ? disclosure.open : false;
+    const compact = UiTutorial.shouldCompact({
+        design: document.documentElement?.dataset?.design,
+        portrait: typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(orientation: portrait)').matches,
+        level: tutorial.tutorialLevel, turnCount: currentGame.turnCount,
+    });
+    if (Array.isArray(session)) tutorialDisclosureState.set(session, { box });
+    box.innerHTML = UiTutorial.buildHtml(message, escapeHtml, { compact, expanded });
 }
 
 function applyTutorialSettingChange(plan) {
@@ -972,6 +986,64 @@ const playerPanelDisclosureCache = new WeakMap();
 const playerPanelDisclosureListeners = new WeakSet();
 const playerPanelDisclosureClickListeners = new WeakSet();
 const townCoinEventCache = new WeakMap();
+const townCoinEffects = new Set();
+const townCoinPulses = new Set();
+let townCoinVisibilityObserver = null;
+
+function clearTownCoinEffects() {
+    for (const effect of townCoinEffects) {
+        clearTimeout(effect.timer);
+        effect.clear();
+    }
+    townCoinEffects.clear();
+    for (const effect of townCoinPulses) {
+        clearTimeout(effect.timer);
+        effect.clear();
+    }
+    townCoinPulses.clear();
+}
+
+function showTownCoinAmount(source, wallet, amount, payment) {
+    if (townCoinEffects.size >= 6 || !wallet?.getBoundingClientRect || !document.body?.appendChild) return;
+    const target = wallet.getBoundingClientRect();
+    const origin = source?.getBoundingClientRect?.();
+    const hud = document.getElementById('plazaPlayerHud')?.getBoundingClientRect?.();
+    const walletViewport = wallet.closest?.('.plaza-hud-opponents')?.getBoundingClientRect?.() || hud;
+    const viewport = document.getElementById('plazaViewport')?.getBoundingClientRect?.();
+    const screen = document.getElementById('gameScreen');
+    const visible = (rect, bounds) => rect && bounds && rect.width > 0 && rect.height > 0 &&
+        rect.left < bounds.right && rect.right > bounds.left &&
+        rect.top < bounds.bottom && rect.bottom > bounds.top;
+    const screenBounds = { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+    if (!visible(target, hud) || !visible(target, walletViewport) ||
+            !visible(target, screenBounds) || screen?.style.display === 'none') return;
+    const reduced = document.body.classList?.contains('accessibility-reduced-motion') ||
+        (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const staticAmount = reduced || payment || !visible(origin, viewport) || !visible(origin, screenBounds);
+    const marker = document.createElement('span');
+    marker.className = `plaza-coin-amount${staticAmount ? ' plaza-coin-static' : ''}${payment ? ' plaza-coin-payment' : ''}`;
+    marker.textContent = `${payment ? '-' : '+'}${amount}`;
+    marker.setAttribute('aria-hidden', 'true');
+    const start = staticAmount ? target : origin;
+    marker.style.left = `${start.left + start.width / 2}px`;
+    marker.style.top = `${start.top + start.height / 2}px`;
+    marker.style.setProperty('--coin-dx', `${target.left + target.width / 2 - start.left - start.width / 2}px`);
+    marker.style.setProperty('--coin-dy', `${target.top + target.height / 2 - start.top - start.height / 2}px`);
+    document.body.appendChild(marker);
+    const effect = { clear: () => marker.remove(), timer: null };
+    effect.timer = setTimeout(() => { effect.clear(); townCoinEffects.delete(effect); }, 900);
+    townCoinEffects.add(effect);
+    if (!townCoinVisibilityObserver && typeof MutationObserver !== 'undefined') {
+        townCoinVisibilityObserver = new MutationObserver(() => {
+            if (document.documentElement.dataset.design !== 'plaza' || screen.style.display === 'none') {
+                clearTownCoinEffects();
+            }
+        });
+        townCoinVisibilityObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-design'] });
+        townCoinVisibilityObserver.observe(screen, { attributes: true, attributeFilter: ['style'] });
+    }
+}
 
 function animateTownCoinEvents(container, currentGame, session, replaying) {
     const entries = Array.isArray(currentGame.log) ? currentGame.log : [];
@@ -987,8 +1059,11 @@ function animateTownCoinEvents(container, currentGame, session, replaying) {
             previous.turnCount !== currentGame.turnCount ||
             previous.playerIndex !== currentGame.currentPlayerIndex ||
             previous.signatures.length > signatures.length ||
-            previous.signatures.some((value, index) => value !== signatures[index])) return;
-    const pulse = (index, subject, cls) => {
+            previous.signatures.some((value, index) => value !== signatures[index])) {
+        clearTownCoinEffects();
+        return;
+    }
+    const pulse = (index, subject, cls, amount) => {
         const panel = container.querySelector(`#playerBox${index}`);
         if (!panel) return;
         const targets = Array.from(panel.querySelectorAll('[data-town-building]'))
@@ -1002,23 +1077,34 @@ function animateTownCoinEvents(container, currentGame, session, replaying) {
             const hudCoins = document.getElementById('plazaPlayerHud')?.querySelector(
                 `[data-player-index="${index}"] .plaza-player-coins`);
             if (hudCoins) targets.push(hudCoins);
+            if (hudCoins) showTownCoinAmount(targets[0] || hudCoins, hudCoins, amount,
+                cls === 'town-payment-pulse');
         }
         for (const element of targets) {
             element.classList.add(cls);
-            setTimeout(() => element.classList.remove(cls), 1200);
+            const effect = { clear: () => element.classList.remove(cls), timer: null };
+            effect.timer = setTimeout(() => { effect.clear(); townCoinPulses.delete(effect); }, 1200);
+            townCoinPulses.add(effect);
         }
     };
     const players = currentGame.players;
     const options = { players, turnPlayerName: players[currentGame.currentPlayerIndex]?.name || '' };
+    const grouped = new Map();
     for (const entry of entries.slice(previous.signatures.length)) {
         const event = UiLogDisplay.coinEvent(entry, LOG_TYPE_DISPLAY, options);
         if (!event || event.amount <= 0) continue;
         const indices = players.map((player, index) => player.name === event.actor ? index : -1)
             .filter(index => index >= 0);
         if (indices.length !== 1) continue;
-        pulse(indices[0], event.subject, event.payment && !event.transfer
-            ? 'town-payment-pulse' : 'town-income-pulse');
-        if (event.transfer) pulse(currentGame.currentPlayerIndex, event.subject, 'town-payment-pulse');
+        const key = JSON.stringify([indices[0], event.subject, event.payment, event.transfer]);
+        const previousEvent = grouped.get(key);
+        const amount = (previousEvent?.amount || 0) + event.amount;
+        if (Number.isSafeInteger(amount)) grouped.set(key, { ...event, index: indices[0], amount });
+    }
+    for (const event of grouped.values()) {
+        pulse(event.index, event.subject, event.payment && !event.transfer
+            ? 'town-payment-pulse' : 'town-income-pulse', event.amount);
+        if (event.transfer) pulse(currentGame.currentPlayerIndex, event.subject, 'town-payment-pulse', event.amount);
     }
 }
 
@@ -1224,7 +1310,7 @@ function renderPlayers() {
     if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection());
     if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
         animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
-    }
+    } else clearTownCoinEffects();
 }
 
 function getEffectText(card) {

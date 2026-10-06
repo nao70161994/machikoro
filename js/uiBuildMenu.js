@@ -285,6 +285,52 @@ const UiBuildMenu = (() => {
         </svg>`;
     }
 
+    function renderTownGrowth(cards, built) {
+        const development = Math.min(24, cards.length + built.length * 3);
+        const stage = townDevelopmentStage(cards.length, built.length);
+        const characters = new Map();
+        for (const card of cards) {
+            const character = FACILITY_ART[card.name] === 'forest' ? 'woodland'
+                : CATEGORY_SCENE[card.category] || 'street';
+            characters.set(character, (characters.get(character) || 0) + 1);
+        }
+        const dominant = [...characters].sort((a, b) => b[1] - a[1])[0]?.[0] || 'street';
+        const water = dominant === 'water' || built.some(([name]) => LANDMARK_ART[name] === 'port');
+        const industry = dominant === 'industrial';
+        const rural = dominant === 'pasture' || dominant === 'woodland';
+        const landscape = water ? 'waterfront' : industry ? 'industrial'
+            : dominant === 'woodland' ? 'woodland' : rural ? 'gardens' : 'street';
+        const roadCount = stage === 'city' ? 4 : stage === 'neighborhood' ? 2 : 1;
+        const extent = Math.min(624, 160 + development * 22);
+        const roads = Array.from({ length: roadCount }, (_, index) => {
+            const y = 207 + index * 81;
+            return `<path d="M16 ${y}H${extent}" stroke="#445e64" stroke-width="${stage === 'city' ? 18 : 12}"/><path d="M16 ${y}H${extent}" stroke="#c6b98d" stroke-width="2" stroke-dasharray="12 12"/>`;
+        }).join('');
+        const trees = Array.from({ length: Math.min(10, 2 + Math.floor(development / 3)) }, (_, index) => {
+            const x = index % 2 ? 622 : 10;
+            const y = 126 + Math.floor(index / 2) * 72;
+            return `<g data-town-growth-tree="${index}"><path d="M${x} ${y + 18}V${y - 3}" stroke="#a79873" stroke-width="4"/><path d="M${x - 10} ${y + 4}Q${x - 17} ${y - 13} ${x} ${y - 24}Q${x + 17} ${y - 13} ${x + 10} ${y + 4}Z" fill="#78977e" stroke="#405f62" stroke-width="2"/><path d="M${x - 5} ${y - 5}Q${x} ${y - 17} ${x + 5} ${y - 12}" fill="none" stroke="#a8b28c" stroke-width="2"/></g>`;
+        }).join('');
+        const lamps = Array.from({ length: Math.min(10, Math.floor(development / 2)) }, (_, index) => {
+            const x = index % 2 ? 474 : 160;
+            const y = 204 + Math.floor(index / 2) * 54;
+            return `<g data-town-growth-lamp="${index}"><path d="M${x} ${y}V${y - 24}H${x + 9}" fill="none" stroke="#b8b393" stroke-width="3"/><path d="M${x + 4} ${y - 24}H${x + 14}L${x + 12} ${y - 18}H${x + 6}Z" fill="#f4d189"/><path d="M${x + 4} ${y - 4}H${x + 17}" stroke="#edcb8b" stroke-width="3" opacity=".5"/></g>`;
+        }).join('');
+        const skyline = Array.from({ length: stage === 'city' ? 6 : stage === 'neighborhood' ? 3 : 0 }, (_, index) => {
+            const x = 30 + index * 98;
+            const h = industry ? 26 + (index % 3) * 12 : 18 + (index % 3) * 9;
+            return `<path d="M${x} 64V${64 - h}L${x + 20} ${54 - h}L${x + 40} ${64 - h}V64Z" fill="#6d8989"/><path d="M${x + 9} ${52 - h}H${x + 15}M${x + 26} ${52 - h}H${x + 32}" stroke="#e7cc91" stroke-width="3"/>`;
+        }).join('');
+        const furnishings = Array.from({ length: Math.min(4, Math.floor(development / 4)) }, (_, index) => {
+            const x = 62 + index * 148;
+            return `<g data-town-growth-bench="${index}" stroke="#bea97c" stroke-width="3"><path d="M${x} 465H${x + 26}M${x + 3} 459H${x + 23}M${x + 4} 465V471M${x + 22} 465V471"/><path d="M${x + 33} 467V455H${x + 45}V467Z" fill="#647f78" stroke="#9aaa84" stroke-width="2"/><path d="M${x + 32} 455Q${x + 39} 442 ${x + 46} 455" fill="#9caf87" stroke="none"/></g>`;
+        }).join('');
+        const ground = water
+            ? '<path d="M0 69Q160 53 320 70T640 66V100Q470 85 320 100T0 96Z" fill="#5b9293"/><path d="M20 83H140M200 87H310M390 83H520" stroke="#abc8b9" stroke-width="3"/>'
+            : `<path d="M0 76Q160 49 320 73T640 70V107H0Z" fill="${rural ? '#7c9677' : '#667f78'}"/>`;
+        return `<svg class="town-growth-scenery" data-town-growth="${development}" data-town-character="${landscape}" viewBox="0 0 640 480" preserveAspectRatio="none" aria-hidden="true" focusable="false">${ground}<g class="town-growth-skyline">${skyline}</g><g fill="none">${roads}</g>${trees}${lamps}${furnishings}</svg>`;
+    }
+
     function renderTownHtml(player, enabledLandmarks = new Set()) {
         const cards = Array.isArray(player.cards) ? player.cards : [];
         const grouped = new Map();
@@ -329,7 +375,7 @@ const UiBuildMenu = (() => {
         }).join('');
         const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種</span>` : '';
         const roads = '<svg class="town-district-roads" viewBox="0 0 640 300" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#465e65" stroke-width="17"/><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#c2b18b" stroke-width="2" stroke-dasharray="9 11" opacity=".55"/></svg>';
-        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個${remaining}</span></p><div class="town-street" data-town-layout="districts" data-town-stage="${stage}" aria-hidden="true">${renderTownBackdrop(cards, built)}${roads}<span class="town-skyline-lights"></span>${landmarks}${facilities}</div></div>`;
+        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個${remaining}</span></p><div class="town-street" data-town-layout="districts" data-town-stage="${stage}" aria-hidden="true">${renderTownBackdrop(cards, built)}${roads}${renderTownGrowth(cards, built)}<span class="town-skyline-lights"></span>${landmarks}${facilities}</div></div>`;
     }
 
     function renderBuildCardButton(options) {

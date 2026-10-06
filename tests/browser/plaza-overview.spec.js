@@ -17,6 +17,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
                 state.game.phase = GAME_PHASES[requestedPhase];
                 state.game.currentPlayer().coins = 30;
                 render();
+                acceptHotseatHandoff();
             }, phase);
             await expect.poll(() => page.evaluate(() => {
                 const regions = [
@@ -36,7 +37,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             })).toBe(true);
         }
         const marks = await page.locator('#plazaPlayerHud .plaza-seat-mark').allTextContents();
-        expect(marks).toEqual(['1', '2']);
+        expect(marks.slice().sort()).toEqual(['1', '2']);
         await expect(page.locator('#playerBox0 .plaza-seat-mark')).toHaveText('1');
         await expect(page.locator('#playerBox1 .plaza-seat-mark')).toHaveText('2');
         const comparisonButton = page.locator('[data-field-panel="comparison"]');
@@ -56,6 +57,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-section="facilities"]').click();
         await expect(page.locator('#buildMenu .build-card-section h4')).toBeFocused();
+        await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
@@ -79,6 +81,7 @@ for (const playerCount of [4, 10]) {
             cancelCpuSchedule('plaza-full-towns-frozen');
             for (const player of state.game.players) player.cards = CARDS.slice(0, 8).flatMap(card => Array(6).fill(card));
             render();
+            acceptHotseatHandoff();
             return { turn: state.game.turnCount, player: state.game.currentPlayerIndex,
                 cards: state.game.players.map(player => player.cards.map(card => card.name)) };
         }, playerCount);
@@ -137,6 +140,79 @@ for (const playerCount of [4, 10]) {
             return { turn: game.turnCount, player: game.currentPlayerIndex,
                 cards: game.players.map(player => player.cards.map(card => card.name)) };
         })).toEqual(fixtureState);
+        await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
         await expect(page.locator('#crashScreen')).toBeHidden();
+    });
+}
+
+for (const width of [320, 390]) {
+    test(`縦持ち広場は自分を優先し相手の状況を短い列で確認できる ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+        await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+        await page.goto('/');
+        await page.evaluate(() => {
+            startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
+                type: index === 0 ? 'human' : 'cpu', difficulty: 'normal', name: `街${index + 1}`,
+            })));
+            GameRuntimeState.runtime.snapshot().cpuPlayers.fill(null);
+            cancelCpuSchedule('compact-hud');
+            GameRuntimeState.runtime.snapshot().game.log = [];
+            resetFullLog();
+            render();
+            acceptHotseatHandoff();
+        });
+        await expect(page.locator('#plazaPlayerHud .plaza-hud-self button')).toHaveClass(/self/);
+        await expect(page.locator('#plazaPlayerHud .plaza-hud-opponents button')).toHaveCount(3);
+        await expect.poll(() => page.evaluate(() => {
+            const hud = document.getElementById('plazaPlayerHud').getBoundingClientRect();
+            const field = document.getElementById('plazaViewport').getBoundingClientRect();
+            const tools = document.getElementById('plazaCameraTools').getBoundingClientRect();
+            const controls = Array.from(document.querySelectorAll('#plazaCameraTools > button, #plazaCameraTools > details > summary'));
+            const buttons = Array.from(document.querySelectorAll('#plazaPlayerHud button'));
+            const opponents = document.querySelector('#plazaPlayerHud .plaza-hud-opponents');
+            const opponentBounds = opponents.getBoundingClientRect();
+            const opponentButtons = Array.from(opponents.querySelectorAll('button'));
+            return tools.height <= 60 && controls.length === 6 && controls.every(control => {
+                const rect = control.getBoundingClientRect();
+                return rect.width >= 44 && rect.height >= 44 && rect.left >= 0 && rect.right <= innerWidth;
+            }) && opponentBounds.bottom <= hud.bottom &&
+                opponents.scrollHeight <= opponents.clientHeight &&
+                opponentButtons.every(button => {
+                    const rect = button.getBoundingClientRect();
+                    return rect.top >= opponentBounds.top && rect.bottom <= opponentBounds.bottom &&
+                        getComputedStyle(button.querySelector('.plaza-player-facilities')).display === 'none';
+                }) &&
+                hud.height <= 112 && field.height > 480 && buttons.every(button =>
+                button.getBoundingClientRect().height >= 44 && button.querySelector('.plaza-player-coins') &&
+                button.textContent.includes('目標'));
+        })).toBe(true);
+        await page.evaluate(() => {
+            const buttons = document.querySelectorAll('#plazaPlayerHud .plaza-hud-opponents button');
+            GameRuntimeState.runtime.snapshot().game.currentPlayerIndex = Number(buttons[buttons.length - 1].dataset.playerIndex);
+            render();
+            acceptHotseatHandoff();
+        });
+        const last = page.locator('#plazaPlayerHud .plaza-hud-opponents button').last();
+        await expect(last).toHaveAttribute('aria-current', 'true');
+        expect(await last.evaluate(button => {
+            const bounds = button.parentElement.getBoundingClientRect();
+            const rect = button.getBoundingClientRect();
+            return rect.left >= bounds.left && rect.right <= bounds.right;
+        })).toBe(true);
+        await last.focus();
+        await expect(last).toBeFocused();
+        expect(await last.evaluate(button => {
+            const bounds = button.parentElement.getBoundingClientRect();
+            const rect = button.getBoundingClientRect();
+            return rect.left >= bounds.left && rect.right <= bounds.right;
+        })).toBe(true);
+        await last.press('Enter');
+        await expect(last).toBeFocused();
+        await page.locator('[data-field-panel="comparison"]').click();
+        await expect(page.locator('#plazaComparison thead th')).toHaveCount(5);
+        await page.locator('#plazaComparisonClose').click();
+        await expect(page.locator('[data-field-panel="comparison"]')).toBeFocused();
+        await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
     });
 }

@@ -7,6 +7,7 @@ const PlazaField = (() => {
     let initialized = false;
     let selfIndex = 0;
     let playerCount = 0;
+    let hudCurrentIndex = null;
     let townObserver = null;
     let camera = { x: 0, y: 0, scale: 0.75 };
     let worldHeight = 1380;
@@ -358,6 +359,7 @@ const PlazaField = (() => {
             node('buildMenu').style.removeProperty('top');
             pendingFocus = null;
             mounted = false;
+            hudCurrentIndex = null;
             DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
         }
     }
@@ -382,15 +384,30 @@ const PlazaField = (() => {
             }
         });
         const focused = (/** @type {HTMLElement} */ (document.activeElement))?.closest('#plazaPlayerHud button')?.getAttribute('data-player-index');
-        node('plazaPlayerHud').innerHTML = players.map((player, index) => {
+        const previousScroll = node('plazaPlayerHud').querySelector('.plaza-hud-opponents')?.scrollLeft || 0;
+        const hudButtons = players.map((player, index) => {
             const counts = { blue: 0, green: 0, red: 0, purple: 0 };
             for (const card of player.cards) if (Object.prototype.hasOwnProperty.call(counts, card.color)) counts[card.color]++;
             const chips = Object.entries(counts).map(([color, count]) => `<span class="player-color-${color}">${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}</span>`).join(' ');
             const built = Object.entries(player.landmarks).filter(([name, value]) => value && enabledLandmarks.has(name)).length;
             const kindIcon = node(`playerBox${index}`)?.querySelector('.player-icon')?.innerHTML || '';
-            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-label="プレイヤー${index + 1}、${escapeHtml(player.name)}の街を見る${index === selfIndex ? '、あなた' : ''}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span>${escapeHtml(player.name)}</strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span>${chips}</span><small>目標 ${built}/${enabledLandmarks.size}</small></button>`;
-        }).join('');
+            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-label="プレイヤー${index + 1}、${escapeHtml(player.name)}の街を見る${index === selfIndex ? '、あなた' : ''}、${player.coins}コイン、目標${built}/${enabledLandmarks.size}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span></strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${enabledLandmarks.size}</small></button>`;
+        });
+        node('plazaPlayerHud').innerHTML = `<div class="plaza-hud-self">${hudButtons[selfIndex]}</div><div class="plaza-hud-opponents" aria-label="相手の状況">${hudButtons.filter((button, index) => index !== selfIndex).join('')}</div>`;
         if (focused !== undefined && focused !== null) (/** @type {HTMLElement} */ (node('plazaPlayerHud').querySelector(`button[data-player-index="${focused}"]`)))?.focus({ preventScroll: true });
+        const opponents = /** @type {HTMLElement} */ (node('plazaPlayerHud').querySelector('.plaza-hud-opponents'));
+        opponents.scrollLeft = previousScroll;
+        if (hudCurrentIndex !== currentIndex && focused == null &&
+                window.matchMedia('(orientation: portrait) and (max-width: 600px)').matches) {
+            const active = opponents.querySelector(`button[data-player-index="${currentIndex}"]`);
+            if (active) {
+                const bounds = opponents.getBoundingClientRect();
+                const rect = active.getBoundingClientRect();
+                if (rect.left < bounds.left) opponents.scrollLeft += rect.left - bounds.left;
+                else if (rect.right > bounds.right) opponents.scrollLeft += rect.right - bounds.right;
+            }
+        }
+        hudCurrentIndex = currentIndex;
         renderComparison(players, enabledLandmarks, escapeHtml);
         layout();
     }

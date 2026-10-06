@@ -460,6 +460,31 @@ runTest('九種類目以降と省略済み施設の追加購入は固定の最�
     assert.strictEqual(render(JSON.parse(JSON.stringify(cards))), tenth, 'Restore needs no presentation history');
 });
 
+runTest('街の装飾は発展と主産業に応じて育ち上限内でUndoと復元に一致する', () => {
+    const forest = CARDS.find(card => card.name === '森林');
+    const fish = CARDS.find(card => card.name === 'サンマ漁船');
+    const render = cards => UiBuildMenu.renderTownHtml({ cards, landmarks: {} });
+    const quiet = render([forest]);
+    const city = render(Array(12).fill(forest));
+    const maximum = render(Array(1000).fill(forest));
+    assert.ok(city.includes('data-town-character="woodland"'));
+    assert.ok(render(Array(8).fill(fish)).includes('data-town-character="waterfront"'));
+    const count = (html, name) => (html.match(new RegExp(`data-town-growth-${name}=`, 'g')) || []).length;
+    assert.ok(count(city, 'lamp') > count(quiet, 'lamp'));
+    assert.ok(count(city, 'tree') > count(quiet, 'tree'));
+    assert.ok(count(city, 'bench') > count(quiet, 'bench'));
+    assert.strictEqual(count(maximum, 'tree'), 10);
+    assert.strictEqual(count(maximum, 'lamp'), 10);
+    assert.strictEqual(count(maximum, 'bench'), 4);
+    assert.ok(maximum.includes('data-town-growth="24"'));
+    assert.strictEqual((maximum.match(/data-town-slot-facility=/g) || []).length, 6);
+    assert.ok(maximum.includes('×1000'));
+    assert.strictEqual(render([forest]), quiet);
+    assert.strictEqual(render(JSON.parse(JSON.stringify(Array(12).fill(forest)))), city);
+    const scenery = maximum.match(/<svg class="town-growth-scenery"[^]*?<\/svg>/)[0];
+    assert.ok(!scenery.includes('filter=') && !scenery.includes('<animate'));
+});
+
 runTest('街の発展段階は施設と有効なランドマークの両方に応じて進む', () => {
     const wheat = CARDS.find(card => card.name === '麦畑');
     const quiet = UiBuildMenu.renderTownHtml({ cards: [wheat, wheat], landmarks: {} });

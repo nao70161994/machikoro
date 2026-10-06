@@ -208,3 +208,16 @@ runTest('tutorial HTMLは空メッセージで既存fallbackとtag省略を維�
         ].join('\n')
     );
 });
+
+runTest('縦持ち広場の初心者ガイドは3手番後だけ折り畳み全文を開ける', () => {
+    const options = { design: 'plaza', portrait: true, level: 'beginner', turnCount: 3 };
+    assert.strictEqual(UiTutorial.shouldCompact(options), true);
+    for (const change of [{ turnCount: 2 }, { portrait: false }, { design: 'classic' }, { level: 'advanced' }]) {
+        assert.strictEqual(UiTutorial.shouldCompact({ ...options, ...change }), false);
+    }
+    const html = UiTutorial.buildHtml({ title: 'ガイド', body: '全文', tags: ['手番'] }, String,
+        { compact: true, expanded: true });
+    assert.match(html, /<details class="plaza-guide-disclosure" open>/);
+    assert.match(html, /<summary>ガイド：全文<\/summary>/);
+    assert.match(html, /tutorial-body.*全文/);
+});

@@ -8515,3 +8515,108 @@ html[data-design="plaza"] #plazaWorld #players .town-street[data-town-layout="di
 html[data-design="plaza"] #plazaWorld #players .town-skyline-lights {
     filter: none;
 }
+
+/* State-derived town growth: bounded scenery beneath the owned facility lots. */
+.town-growth-scenery { display: none; }
+html:is([data-design="sunset"], [data-design="plaza"]) .town-growth-scenery {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+html:is([data-design="sunset"], [data-design="plaza"]) .town-street[data-town-stage="quiet"] .town-district-roads,
+html:is([data-design="sunset"], [data-design="plaza"]) .town-street[data-town-stage="neighborhood"] .town-district-roads { opacity: .25; }
+html:is([data-design="sunset"], [data-design="plaza"]) body.accessibility-high-contrast .town-growth-scenery { display: none; }
+
+/* Portrait HUD: keep your wallet visible and let opponents scroll in one row. */
+html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
+html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
+    display: contents;
+}
+@media (orientation: portrait) and (max-width: 600px) {
+    html[data-design="plaza"] #plazaPlayerHud {
+        display: flex; flex-direction: column; gap: 4px; max-height: 112px; overflow: hidden;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self {
+        display: flex; flex: 0 0 auto; min-width: 0;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
+        display: flex; flex: 0 0 auto; gap: 4px; overflow-x: auto; overflow-y: hidden;
+        min-width: 0; padding-bottom: 0; scrollbar-width: thin;
+        overscroll-behavior-x: contain;
+    }
+    html[data-design="plaza"] #plazaPlayerHud button {
+        display: grid; grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center; min-height: 44px; padding: 4px 6px;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents button {
+        flex: 0 0 154px;
+    }
+    html[data-design="plaza"] #plazaPlayerHud strong {
+        display: flex; align-items: center; gap: 4px; min-width: 0; grid-column: 1 / -1;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-player-name {
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+    }
+    html[data-design="plaza"] #plazaPlayerHud button > .plaza-player-coins {
+        display: block; grid-column: 1; font-size: 12px; font-weight: 700;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents button > .plaza-player-facilities {
+        display: none;
+    }
+    html[data-design="plaza"] #plazaPlayerHud small {
+        grid-column: 2; grid-row: 2; white-space: nowrap;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self button {
+        flex: 1 1 auto; grid-template-columns: minmax(0, 1fr) auto;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self strong {
+        grid-column: 1; grid-row: 1;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self .plaza-player-coins {
+        grid-column: 2; grid-row: 1; font-size: 15px;
+    }
+}
+
+@media (orientation: portrait) and (max-width: 600px) {
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self button > .plaza-player-facilities {
+        display: grid; grid-column: 1; grid-row: 2; font-size: 10px; gap: 2px;
+    }
+}
+
+/* Plaza income travel and compact guide: device-local presentation only. */
+.plaza-coin-amount {
+    position: fixed; z-index: 1200; pointer-events: none;
+    padding: 3px 7px; border-radius: 12px; background: #f5d36f; color: #25372d;
+    font-size: 15px; font-weight: 800; line-height: 1.2;
+    animation: plazaCoinTravel 850ms ease-out both;
+}
+.plaza-coin-payment { background: #ff8f9c; color: #492833; }
+.plaza-coin-static { animation: none; transform: translate(-50%, -50%); }
+@keyframes plazaCoinTravel {
+    0% { transform: translate(-50%, -50%); opacity: 1; }
+    80% { transform: translate(calc(-50% + var(--coin-dx)), calc(-50% + var(--coin-dy))); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--coin-dx)), calc(-50% + var(--coin-dy))); opacity: 0; }
+}
+html[data-design="plaza"] .plaza-guide-disclosure > summary {
+    display: block; cursor: pointer; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; min-height: 44px; line-height: 44px; font-size: 12px;
+}
+html[data-design="plaza"] .plaza-guide-disclosure > summary::before { content: '▶ '; }
+html[data-design="plaza"] .plaza-guide-disclosure[open] > summary::before { content: '▼ '; }
+body.accessibility-reduced-motion .plaza-coin-amount { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+    .plaza-coin-amount { animation: none; }
+}
+
+/* Keep all six camera entries reachable in one row at the narrowest portrait. */
+@media (orientation: portrait) and (max-width: 360px) {
+    html[data-design="plaza"] #plazaCameraTools > button,
+    html[data-design="plaza"] #plazaCameraTools > .plaza-camera-menu > summary {
+        min-width: 44px; min-height: 44px; box-sizing: border-box;
+        padding-left: 4px; padding-right: 4px; font-size: 11px;
+    }
+}
