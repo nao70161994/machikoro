@@ -8537,6 +8537,9 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
     display: contents;
 }
 @media (orientation: portrait) and (max-width: 600px) {
+    html[data-design="plaza"] #plazaCameraTools button {
+        min-width: 44px;
+    }
     html[data-design="plaza"] #plazaPlayerHud {
         display: flex; flex-direction: column; gap: 4px; max-height: 112px; overflow: hidden;
     }
