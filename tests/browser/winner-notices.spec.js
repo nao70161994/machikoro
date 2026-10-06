@@ -26,6 +26,7 @@ async function selectDesignTheme(page, design) {
 
 for (const sample of [
     { theme: 'sunset', width: 390, height: 844 },
+    { theme: 'classic', width: 390, height: 844 },
     { theme: 'classic', width: 1440, height: 900 },
 ]) {
     test(`勝利の通知は完成した結果の後から操作できる ${sample.theme} ${sample.width}px`, async ({ page }) => {

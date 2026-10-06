@@ -12,7 +12,10 @@ async function verifyWinnerNotices(page) {
     await expect(page.locator('#pwaInstallBanner')).toBeHidden();
     await expect(page.locator('.winner-title')).toBeVisible();
     const town = page.locator('.winner-screen .sunset-town');
-    if (await page.locator('html').getAttribute('data-design') === 'classic') {
+    // Classic keeps the town on tablet/desktop and omits it on narrow screens.
+    const classicNarrow = await page.locator('html').getAttribute('data-design') === 'classic' &&
+        page.viewportSize().width < 760;
+    if (classicNarrow) {
         await expect(town).toBeHidden();
     } else {
         await expect(town).toBeVisible();
