@@ -40,6 +40,11 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             render();
             acceptHotseatHandoff();
         });
+        await page.evaluate(() => {
+            document.getElementById('pwaUpdateBanner').style.display = 'flex';
+            document.body.classList.add('pwa-banner-open');
+            PlazaField.sync();
+        });
         const receipt = page.locator('#plazaDiceReceipt');
         await expect(receipt.locator('.plaza-receipt-dice')).toHaveText('出目 5');
         await expect(receipt.locator('.plaza-receipt-featured')).toContainText('森林 発動6回 +6コイン');

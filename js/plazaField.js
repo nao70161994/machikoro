@@ -98,11 +98,15 @@ const PlazaField = (() => {
         screen.style.setProperty('--plaza-hud', `${hudHeight}px`);
         screen.style.setProperty('--plaza-tools', `${toolsHeight}px`);
         screen.style.setProperty('--plaza-sidebar-actions', `${height(screen.querySelector('.game-action-toolbar'))}px`);
-        screen.style.setProperty('--plaza-events', `${height(node('plazaEvents'))}px`);
+        const eventsHeight = `${height(node('plazaEvents'))}px`;
+        screen.style.setProperty('--plaza-events', eventsHeight);
+        document.body.style.setProperty('--plaza-events', eventsHeight);
         screen.style.setProperty('--plaza-top', `${statusHeight + toolsHeight + (sideHud ? 0 : hudHeight)}px`);
         screen.style.setProperty('--plaza-actions', `${height(actions)}px`);
         document.body.style.setProperty('--plaza-actions', `${height(actions)}px`);
-        document.body.style.setProperty('--plaza-banner', `${height(node('pwaUpdateBanner'))}px`);
+        const bannerHeight = height(node('pwaUpdateBanner'));
+        document.body.style.setProperty('--plaza-banner', `${bannerHeight}px`);
+        document.body.classList.toggle('plaza-update-visible', bannerHeight > 0);
     }
     function node(id) { return document.getElementById(id); }
     function arrangeTowns() {

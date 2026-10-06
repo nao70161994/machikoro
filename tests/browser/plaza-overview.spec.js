@@ -224,6 +224,8 @@ for (const width of [320, 390]) {
             return rect.left >= bounds.left && rect.right <= bounds.right;
         })).toBe(true);
         await last.press('Enter');
+        await expect(page.locator('#plazaPlayerInsightsClose')).toBeFocused();
+        await page.locator('#plazaPlayerInsightsClose').press('Escape');
         await expect(last).toBeFocused();
         await page.locator('[data-field-panel="comparison"]').click();
         await expect(page.locator('#plazaComparison thead th')).toHaveCount(5);
