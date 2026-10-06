@@ -157,7 +157,7 @@ try:
         wait("return document.getElementById('gameScreen').style.display !== 'none'")
     stop(server)
     server = start_server('pwa-smoke-v2')
-    js('navigator.serviceWorker.getRegistration().then(r=>r?.update()).catch(()=>{});return true')
+    js("return navigator.serviceWorker.getRegistration().then(r=>{if(!r)throw new Error('Service Worker registration missing');return r.update().then(()=>true)})")
     wait("return navigator.serviceWorker.getRegistration().then(r=>r.waiting?.state === 'installed')")
     wait("return document.getElementById('pwaUpdateBanner').offsetHeight > 0")
     assert js("return document.getElementById('pwaUpdateBtn').disabled") == ONLINE_LOBBY
@@ -232,12 +232,19 @@ try:
     report['status'] = 'passed'
     write_report(report)
 except Exception as error:
+    worker_state = None
+    if session:
+        try:
+            worker_state = js("return navigator.serviceWorker.getRegistration().then(async r=>({active:r?.active?.state,waiting:r?.waiting?.state,installing:r?.installing?.state,controller:navigator.serviceWorker.controller?.scriptURL,clientVersion:window.MACHIKORO_CLIENT_VERSION,cacheKeys:await caches.keys()}))")
+        except Exception as diagnostic_error:
+            worker_state = {'diagnosticError': str(diagnostic_error)}
     write_report({
         'status': 'failed',
         'checkedAt': time.strftime('%Y-%m-%dT%H:%M:%S%z'),
         'context': 'online-lobby' if ONLINE_LOBBY else 'local',
         'baseCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'error': str(error),
+        'workerState': worker_state,
     })
     if session:
         try:
