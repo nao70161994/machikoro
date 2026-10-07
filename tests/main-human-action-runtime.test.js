@@ -103,7 +103,11 @@ function createHarness(options = {}) {
             return options.sendResult === undefined ? 'sent' : options.sendResult;
         },
         shopStock: stock,
-        showConfirm: (message, callback) => { calls.push(['showConfirm', message]); callback(); },
+        showConfirm: (message, callback) => {
+            calls.push(['showConfirm', message]);
+            if (options.deferConfirm) delayed.push(callback);
+            else callback();
+        },
         traceBuild: (stage, details) => calls.push(['traceBuild', stage, details]),
         triggerHaptic: kind => { if (typeof options.onHaptic === 'function') options.onHaptic(kind); },
         unlockHumanTurn: reason => calls.push(['unlockHumanTurn', reason]),
@@ -190,7 +194,7 @@ runTest('main human action runtimeは空港skip確認後にUndoを消してnextT
     ]);
 });
 
-runTest('main human action runtimeは通常の貯金と建設後のターン終了を確認なしで進める', () => {
+runTest('main human action runtimeは建設後は即終了し建設を見送る時は確認する', () => {
     const afterBuild = createHarness({ builtThisTurn: true });
     afterBuild.runtime.onSkip();
     assert.strictEqual(afterBuild.calls.some(call => call[0] === 'showConfirm'), false);
@@ -198,7 +202,7 @@ runTest('main human action runtimeは通常の貯金と建設後のターン終�
 
     const withoutBuild = createHarness();
     withoutBuild.runtime.onSkip();
-    assert.strictEqual(withoutBuild.calls.some(call => call[0] === 'showConfirm'), false);
+    assert.deepStrictEqual(withoutBuild.calls.find(call => call[0] === 'showConfirm'), ['showConfirm', '建設せずにターン終了しますか？']);
     assert.ok(withoutBuild.calls.some(call => call[0] === 'nextTurn'));
 });
 
@@ -234,4 +238,15 @@ runTest('main human action runtimeは必須依存欠落を初期化前に拒否�
     assert.throws(() => MainHumanActionRuntime.createRuntime(), /dependency is required/);
     const harness = createHarness();
     assert.ok(Object.isFrozen(harness.runtime));
+});
+
+runTest('未建設の終了はローカルとオンライン双方で確認するまで進めない', () => {
+    for (const online of [false, true]) {
+        const h = createHarness({ online, deferConfirm: true });
+        h.runtime.onSkip();
+        assert.ok(h.calls.some(call => call[0] === 'showConfirm'));
+        assert.ok(!h.calls.some(call => ['clearUndoState', 'runAction', 'nextTurn', 'sendAction'].includes(call[0])));
+        h.flushDelayed();
+        assert.ok(h.calls.some(call => call[0] === 'nextTurn'));
+    }
 });
