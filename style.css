@@ -8815,6 +8815,12 @@ html[data-design="plaza"] .plaza-receipt-totals:empty { display: none; }
 html[data-design="plaza"] #gameScreen > #plazaEvents { min-height: 32px; }
 html[data-design="plaza"] .plaza-income-disclosure > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: #ffe6a4; font-weight: 700; }
 
+/* Opening the log temporarily yields the guide's shared overlay space without
+   changing the user's tutorial setting or disclosure state. */
+html[data-design="plaza"] #gameScreen:has(> #gameLogContainer.plaza-panel-open) > #tutorialBox {
+    display: none !important;
+}
+
 /* Updates sit above the event receipt, leaving its disclosure operable. */
 html[data-design="plaza"] body:not(.game-finished):has(#gameScreen[style*="display: block"]) #pwaUpdateBanner {
     bottom: calc(var(--plaza-actions, 84px) + var(--plaza-events, 32px) + 4px + env(safe-area-inset-bottom, 0px));
