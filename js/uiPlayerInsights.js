@@ -24,7 +24,7 @@ const UiPlayerInsights = (() => {
     function buildHtml(player, escapeHtml, options = {}) {
         const view = snapshot(player, options);
         const facilities = view.cards.map(row => `<li><button type="button" data-action="showCardDetail" data-card-name="${escapeHtml(row.name)}">${escapeHtml(row.name)} ×${row.count}${row.dormant ? `（休業 ${row.dormant}枚）` : ''}</button></li>`).join('');
-        const landmarks = view.landmarks.map(row => `<li><button type="button" data-action="showCardDetail" data-card-name="${escapeHtml(row.name)}">${escapeHtml(row.name)}：${row.built ? '建設済' : '未建設'}</button></li>`).join('');
+        const landmarks = view.landmarks.map(row => `<li><button type="button" data-action="showLandmarkDetail" data-landmark-name="${escapeHtml(row.name)}">${escapeHtml(row.name)}：${row.built ? '建設済' : '未建設'}</button></li>`).join('');
         return `<p class="plaza-insights-coins">所持 ${escapeHtml(String(view.coins))}コイン</p><h3>所有施設</h3><ul class="plaza-insights-facilities">${facilities || '<li>施設なし</li>'}</ul><h3>ランドマーク</h3><ul class="plaza-insights-landmarks">${landmarks}</ul><p>役所：${view.hasYakusho ? 'あり' : 'なし'}</p>`;
     }
 

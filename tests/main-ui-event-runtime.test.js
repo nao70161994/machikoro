@@ -311,3 +311,10 @@ runTest('HUD施設詳細は既存カード詳細のplayer commandへ委譲する
     h.handlers['plazaPlayerInsightsBody:click'](h.event({ action: 'showCardDetail', cardName: '森林' }));
     assert.deepStrictEqual(h.calls, [['preventDefault'], ['showCardDetail', '森林']]);
 });
+
+runTest('HUDランドマーク詳細はlandmark属性とtrueを既存モーダルへ渡す', () => {
+    const h = createHarness();
+    h.runtime.bindDelegated();
+    h.handlers['plazaPlayerInsightsBody:click'](h.event({ action: 'showLandmarkDetail', landmarkName: '駅' }));
+    assert.deepStrictEqual(h.calls, [['preventDefault'], ['showCardDetail', '駅', true]]);
+});

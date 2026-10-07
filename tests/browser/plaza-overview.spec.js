@@ -37,9 +37,11 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             })).toBe(true);
         }
         const marks = await page.locator('#plazaPlayerHud .plaza-seat-mark').allTextContents();
-        expect(marks.slice().sort()).toEqual(['1', '2']);
-        await expect(page.locator('#playerBox0 .plaza-seat-mark')).toHaveText('1');
-        await expect(page.locator('#playerBox1 .plaza-seat-mark')).toHaveText('2');
+        expect(marks.slice().sort()).toEqual(['席1', '席2']);
+        await expect(page.locator('#playerBox0 .plaza-seat-mark')).toHaveText('席1');
+        await expect(page.locator('#playerBox1 .plaza-seat-mark')).toHaveText('席2');
+        await expect(page.locator('#playerBox0 .plaza-seat-mark')).toHaveAttribute('aria-label', '席1');
+        await expect(page.locator('#plazaPlayerHud [data-player-index="0"]')).toHaveAttribute('aria-label', /^席1、/);
         const comparisonButton = page.locator('[data-field-panel="comparison"]');
         await comparisonButton.click();
         await expect(comparisonButton).toHaveAttribute('aria-expanded', 'true');
@@ -112,10 +114,10 @@ for (const playerCount of [4, 10]) {
             const index = Number(flag.dataset.playerIndex);
             const rect = flag.getBoundingClientRect();
             const hud = document.querySelector(`#plazaPlayerHud button[data-player-index="${index}"]`);
-            return flag.textContent === String(index + 1) && flag.closest('.player-box').id === `playerBox${index}` &&
+            return flag.textContent === `席${index + 1}` && flag.closest('.player-box').id === `playerBox${index}` &&
                 flag.getAttribute('aria-hidden') === 'true' &&
                 getComputedStyle(flag).getPropertyValue('--plaza-seat-color') === getComputedStyle(hud).getPropertyValue('--plaza-seat-color') &&
-                rect.width >= 20 && rect.width <= 24 && rect.height >= 20 && rect.height <= 24;
+                rect.width >= 20 && rect.width <= 64 && rect.height >= 20 && rect.height <= 24;
         }))).toBe(true);
         if (playerCount === 4) {
             const hiddenCamera = await page.evaluate(async () => {

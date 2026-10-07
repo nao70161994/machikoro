@@ -126,8 +126,9 @@ const UiEventDelegation = (() => {
             else if (name === 'buildLandmark') args = [element.dataset.landmarkName];
             else if (name === 'showLandmarkDetail') args = [element.dataset.landmarkName, true];
             else if (name === 'setCardFilter') args = [element.dataset.cardFilter || ''];
-        } else if (family === 'player' && name === 'showCardDetail') {
-            args = [element.dataset.cardName];
+        } else if (family === 'player') {
+            if (name === 'showCardDetail') args = [element.dataset.cardName];
+            else if (name === 'showLandmarkDetail') args = [element.dataset.landmarkName, true];
         }
         return Object.freeze({ family, name, args: Object.freeze(args) });
     }

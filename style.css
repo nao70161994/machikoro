@@ -8458,8 +8458,8 @@ html[data-design="plaza"] body.game-finished.pwa-banner-open #gameScreen[style*=
 
 html[data-design="plaza"] .plaza-seat-mark {
     display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
-    width: 22px; height: 22px; margin-right: 5px; border: 2px solid var(--plaza-seat-color, #efc979);
-    border-radius: 50%; color: var(--plaza-seat-color, #efc979); background: #102c35;
+    min-width: 22px; width: auto; padding: 0 4px; height: 22px; margin-right: 5px; border: 2px solid var(--plaza-seat-color, #efc979);
+    border-radius: 11px; color: var(--plaza-seat-color, #efc979); background: #102c35;
     font-size: 13px; font-weight: 800; line-height: 1;
 }
 html[data-design="plaza"] #plazaPlayerHud button { border-left: 4px solid var(--plaza-seat-color); }
@@ -8715,7 +8715,9 @@ html[data-design="plaza"] #plazaWorld .plaza-town-seat-flag {
     position: absolute;
     left: 0;
     top: 0;
-    width: 22px;
+    min-width: 22px;
+    width: max-content;
+    padding: 0 4px;
     height: 22px;
     display: grid;
     place-items: center;
@@ -8817,7 +8819,7 @@ html[data-design="plaza"] .plaza-income-disclosure > summary { min-height: 44px;
 
 /* Opening the log temporarily yields the guide's shared overlay space without
    changing the user's tutorial setting or disclosure state. */
-html[data-design="plaza"] #gameScreen:has(> #gameLogContainer.plaza-panel-open) > #tutorialBox {
+html[data-design="plaza"] #gameScreen:has(> #gameLogContainer.plaza-panel-open, > #plazaComparison:not([hidden]), > #plazaPlayerInsights:not([hidden]), > #plazaEvents.plaza-events-expanded, > #plazaEvents details[open]) > #tutorialBox {
     display: none !important;
 }
 
@@ -8836,4 +8838,20 @@ html[data-design="plaza"] body.plaza-update-visible:not(.game-finished) #gameScr
     html[data-design="plaza"] body.plaza-update-visible #gameScreen > #plazaEvents.plaza-events-expanded {
         max-height: min(200px, max(84px, calc(100dvh - var(--plaza-top) - var(--plaza-actions) - var(--plaza-banner, 0px) - 100px)));
     }
+}
+
+/* A pending choice owns attention; the market remains available to explore. */
+html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-secondary {
+    max-height: 180px; border-color: #698b83; box-shadow: none;
+}
+html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-secondary .sunset-facility-art {
+    opacity: .8;
+}
+html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-secondary.plaza-market-exploring,
+html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-secondary:focus-within {
+    max-height: none; border-color: #dbc27e;
+}
+html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-secondary.plaza-market-exploring .sunset-facility-art,
+html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-secondary:focus-within .sunset-facility-art {
+    opacity: 1;
 }

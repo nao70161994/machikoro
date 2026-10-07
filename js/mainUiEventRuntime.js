@@ -193,7 +193,9 @@ const MainUiEventRuntime = (() => {
             }));
         }
         function handlePlayerClick(event) {
-            return execute(event, 'player', () => effectMap(['showCardDetail']));
+            return execute(event, 'player', () => Object.assign({}, effectMap(['showCardDetail']), {
+                showLandmarkDetail: (...args) => invoke('showCardDetail', ...args),
+            }));
         }
 
         function bindStatic() {
