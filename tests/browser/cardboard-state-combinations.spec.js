@@ -148,3 +148,38 @@ test('選択状態を復元中と復元直後は自動スクロールを再生�
     expect(calls).toBe(0);
     expect(await snapshot(page)).toEqual(before);
 });
+
+test('選択中のビュー復帰はスクロールせずキーボードで選択へ戻れる', async ({ page }) => {
+    await prepare(page, 'REROLL_CONFIRM');
+    const before = await snapshot(page);
+    const calls = await page.evaluate(async () => {
+        const element = document.getElementById('diceChoose');
+        const original = element.scrollIntoView;
+        let count = 0;
+        element.scrollIntoView = () => { count++; };
+        try {
+            CardBoardField.detach();
+            CardBoardField.render({
+                game: GameRuntimeState.runtime.snapshot().game, selfIndex: 0, escapeHtml,
+                enabledLandmarks: getEnabledLandmarkSelection(), session: 'local-choice-restore',
+                replaying: false, display: LOG_TYPE_DISPLAY,
+            });
+            await Promise.resolve();
+            return count;
+        } finally { element.scrollIntoView = original; }
+    });
+    expect(calls).toBe(0);
+    expect(await snapshot(page)).toEqual(before);
+    await page.evaluate(() => {
+        document.getElementById('pwaUpdateBanner').style.display = 'flex';
+        document.body.classList.add('pwa-banner-open');
+    });
+    await page.locator('#cardboardChoiceJump').click();
+    await page.locator('#cardboardChoiceJump').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('#diceChoose button:not(:disabled)').first()).toBeFocused();
+    await expect.poll(() => page.locator('#diceChoose').evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        return bounds.height > 0 && bounds.top >= 0 && bounds.bottom <= innerHeight;
+    })).toBe(true);
+});

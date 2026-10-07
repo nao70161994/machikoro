@@ -16,8 +16,14 @@ test('4テーマ混在オンラインは途中切替と再接続でも同じ正�
         dice: GameRuntimeState.runtime.snapshot().game.lastDiceResult,
         room: onlineSessionSnapshot().myRoomId,
         seq: _lastAppliedOnlineActionSeq(),
+        localUndoPresent: GameRuntimeState.runtime.snapshot().undoState != null,
         state: (() => {
-            const state = GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
+            // The shared gameplay snapshot excludes each device's Undo UI cache.
+            // Actual server-approved Undo is exercised separately below.
+            const state = GameSnapshot.serializeGameState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, {
+                pendingActionsFor: GameManager.serializedPendingActionsFor,
+                logLimit: Number.MAX_SAFE_INTEGER,
+            });
             // online.js adds these recipient-local transport notices outside
             // canonical actions (including SYSTEM review counts). Retain all
             // gameplay logs and every other reviewSummary field for comparison.
@@ -40,13 +46,18 @@ test('4テーマ混在オンラインは途中切替と再接続でも同じ正�
             await expect.poll(async () => {
                 const states = await Promise.all(pages.map(snapshot));
                 latest = states;
-                return 1 + states.slice(1).filter(state => !isDeepStrictEqual(state, states[0])).length;
+                const canonical = states.map(({ localUndoPresent, ...state }) => state);
+                return 1 + canonical.slice(1).filter(state => !isDeepStrictEqual(state, canonical[0])).length;
             }).toBe(1);
         } catch (error) {
             await testInfo.attach('online-state-difference', { body: JSON.stringify(latest, null, 2), contentType: 'application/json' });
             throw error;
         }
-        return snapshot(pages[0]);
+        await testInfo.attach('local-undo-cache-presence', {
+            body: JSON.stringify(latest.map(state => state.localUndoPresent)), contentType: 'application/json',
+        });
+        const { localUndoPresent, ...canonical } = await snapshot(pages[0]);
+        return canonical;
     };
     const selectTheme = async (page, theme) => {
         await page.evaluate(value => {
@@ -111,9 +122,16 @@ test('4テーマ混在オンラインは途中切替と再接続でも同じ正�
         const built = await synchronized();
         const actorIndex = beforeBuild.currentPlayerIndex;
         expect(built.state.builtThisTurn).toBe(true);
-        expect(built.state.playerCoins[actorIndex]).toBe(beforeBuild.state.playerCoins[actorIndex] - 1);
-        expect(built.state.playerCardNames[actorIndex].filter(name => name === '麦畑').length)
-            .toBe(beforeBuild.state.playerCardNames[actorIndex].filter(name => name === '麦畑').length + 1);
+        expect(built.state.players[actorIndex].coins).toBe(beforeBuild.state.players[actorIndex].coins - 1);
+        expect(built.state.players[actorIndex].cards.filter(name => name === '麦畑').length)
+            .toBe(beforeBuild.state.players[actorIndex].cards.filter(name => name === '麦畑').length + 1);
+        const undoCache = await active.evaluate(() => JSON.stringify(GameRuntimeState.runtime.snapshot().undoState));
+        expect(undoCache).not.toBe('null');
+        for (const theme of ['cardboard', 'plaza', 'cardboard']) {
+            await selectTheme(active, theme);
+            expect(await synchronized()).toEqual(built);
+            expect(await active.evaluate(() => JSON.stringify(GameRuntimeState.runtime.snapshot().undoState))).toBe(undoCache);
+        }
         await active.locator('#buildMenu [data-action="undoBuild"]').click();
         await expect(active.locator('#confirmModal')).toBeVisible();
         await active.locator('#confirmOkBtn').click();

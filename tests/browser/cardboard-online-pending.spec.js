@@ -24,8 +24,14 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
         dice: GameRuntimeState.runtime.snapshot().game.lastDiceResult,
         room: onlineSessionSnapshot().myRoomId,
         seq: _lastAppliedOnlineActionSeq(),
+        localUndoPresent: GameRuntimeState.runtime.snapshot().undoState != null,
         state: (() => {
-            const state = GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
+            // The shared gameplay snapshot excludes each device's Undo UI cache.
+            // Actual server-approved Undo is exercised separately below.
+            const state = GameSnapshot.serializeGameState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, {
+                pendingActionsFor: GameManager.serializedPendingActionsFor,
+                logLimit: Number.MAX_SAFE_INTEGER,
+            });
             // online.js adds these recipient-local transport notices outside
             // canonical actions (including SYSTEM review counts). Retain all
             // gameplay logs and every other reviewSummary field for comparison.
@@ -48,13 +54,18 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
             await expect.poll(async () => {
                 const states = await Promise.all(pages.map(snapshot));
                 latest = states;
-                return 1 + states.slice(1).filter(state => !isDeepStrictEqual(state, states[0])).length;
+                const canonical = states.map(({ localUndoPresent, ...state }) => state);
+                return 1 + canonical.slice(1).filter(state => !isDeepStrictEqual(state, canonical[0])).length;
             }).toBe(1);
         } catch (error) {
             await testInfo.attach('online-state-difference', { body: JSON.stringify(latest, null, 2), contentType: 'application/json' });
             throw error;
         }
-        return snapshot(pages[0]);
+        await testInfo.attach('local-undo-cache-presence', {
+            body: JSON.stringify(latest.map(state => state.localUndoPresent)), contentType: 'application/json',
+        });
+        const { localUndoPresent, ...canonical } = await snapshot(pages[0]);
+        return canonical;
     };
     const selectTheme = async (page, theme) => {
         await page.evaluate(value => {
@@ -134,11 +145,11 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
             await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.pendingTV)).toBe(0);
         }
         const after = await synchronized();
-        expect(after.state.playerCoins[targetIndex]).toBe(before.state.playerCoins[targetIndex] - 5);
-        expect(after.state.playerCoins[actorIndex]).toBe(before.state.playerCoins[actorIndex] + 5);
+        expect(after.state.players[targetIndex].coins).toBe(before.state.players[targetIndex].coins - 5);
+        expect(after.state.players[actorIndex].coins).toBe(before.state.players[actorIndex].coins + 5);
         expect(after.phase).toBe('build');
         const finalMirror = server.getRoomCanonicalMirror(canonicalRoom);
-        expect(finalMirror.game.players.map(player => player.coins)).toEqual(after.state.playerCoins);
+        expect(finalMirror.game.players.map(player => player.coins)).toEqual(after.state.players.map(player => player.coins));
         expect(finalMirror.game.pendingTV).toBe(0);
         expect(finalMirror.game.phase).toBe(after.phase);
         expect(canonicalRoom.actionLog.at(-1).action).toBe('resolveTV');

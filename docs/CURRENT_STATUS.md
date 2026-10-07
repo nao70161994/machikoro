@@ -41,6 +41,7 @@ CIは対象のコミットを確認し、`release-test`、`cpu-difficulty-smoke`
 - CI `c38c8375` はrelease/CPU成功、WebKit4件失敗。保存fixtureの在庫不整合、混在オンラインの端末別接続通知をゲーム状態と比較していた2件、表示切替による320px広場toolbar折返しを修正。ゲームログ/全ゲームstateは厳密比較を維持し通知3種類だけ比較から除外。320pxは3項目44pxを保ち盤面482px・HUD/カメラ各条件をnativeで確認。これらのWebKit再実行は未完了です。
 - 追加の全scope監査で、縦持ちの結果が市場より下で見えない・市場探索後の選択へ戻りにくい・PC上席で多種類カードが20pxへ潰れる問題を修正。結果を縦画面の先頭側stickyへ移し、本人の新しいSELECT_DICE/REROLL/HARBOR開始時だけ操作へスクロール（replay・復元直後・古いmicrotaskは抑制）。Chromium390pxで市場→振り直しの可視性と結果順序、1440pxで6種類/長い出目のカードが111pxを保ち内部欠けなしを確認。各修正の独立再レビューで追加指摘なし。4選択状態×4ビューのfull snapshot（pending/Undo/市場/個々の出目含む）・Reduced Motion/ガイド/ログ/PWA・復元scrollのbrowser組合せspecを追加しましたがWebKit実行前です。
 - `d5e7af64`のローカル全unitは成功し、CI37572782951はrelease/CPU成功、WebKit実行中。未完了: 最新表示修正のCI、4テーマ混在オンライン購入/Undo/reconnect/pending再実行、追加組合せspecと全scope最終独立レビュー。新ビューはまだ完成扱いにしません。
+- 完了監査の補強: Chromium844pxで2〜10人すべての表示切替・施設詳細・購入Undoを確認。初回/復元/ビュー再入場では選択への自動scrollを抑制し、本人の新しい選択だけ移動します。「選択へ戻る」のEnter操作・移動後focusと更新通知中のhit test、アクセシビリティツリー上のbutton名をChromium390pxで確認（実スクリーンリーダーの音声は未検証）。オンライン2specはUndo用部分状態から、個々の出目/pending/市場を含むfull snapshot比較へ強化し、購入済み状態での表示切替によるUndo cache保持も追加しました。型検査・関連13unit・読込順は成功。追加browser specは最新CI待ちで、goalは進行中です。
 - 前回の未建設終了確認のCI失敗は、既存オンラインWebKitテストが確認なしを期待していたためです。確認を承認する操作へ更新し、`8ce60ffc`でPush済みです。
 
 - 建設せずターン終了する場合は通常・空港所持の双方で確認を表示します。建設後の終了は即実行を維持します。キャンセル時の状態不変、承認前のlocal/onlineアクション未実行を関連unitと390px Chromiumで確認しています。
