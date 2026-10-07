@@ -1,5 +1,9 @@
 const { test, expect } = require('@playwright/test');
 
+// These assertions measure the ordinary board without an update banner.
+// Banner reservation and actions are covered by the PWA/receipt suites.
+test.use({ serviceWorkers: 'block' });
+
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }, { width: 1363, height: 936 }, { width: 844, height: 390 }]) {
     test(`広場の状況・操作・盤面を分離し施設比較へ移動できる ${viewport.width}x${viewport.height}`, async ({ page }) => {
         await page.setViewportSize(viewport);
