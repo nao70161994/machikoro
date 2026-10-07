@@ -126,3 +126,19 @@ test('同じ出目の内訳更新は開閉とフォーカスを保ち、次手�
     });
     await expect(page.locator('#cardboardDiceReceipt details[open]')).toHaveCount(0);
 });
+
+test('所有施設をスクロール中の収支更新でも表示位置を保つ', async ({ page }) => {
+    await prepare(page, { width: 390, height: 844 });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = CARDS.map(card => createCardByName(card.name));
+        render();
+        const cards = document.querySelector('#cardboardSeats [data-player-index="0"] .cardboard-cards');
+        cards.scrollTop = 200;
+    });
+    const scroll = () => page.locator('#cardboardSeats [data-player-index="0"] .cardboard-cards').evaluate(element => element.scrollTop);
+    const before = await scroll();
+    expect(before).toBeGreaterThan(0);
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[0].coins++; render(); });
+    expect(await scroll()).toBe(before);
+});

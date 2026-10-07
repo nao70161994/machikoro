@@ -73,8 +73,16 @@ const CardBoardField = (() => {
         const seat = focused?.dataset.cardboardPlayerIndex;
         const summaryFocused = focused?.tagName === 'SUMMARY';
         const scrollTop = element.scrollTop;
+        const childScroll = ['.cardboard-cards', '.cardboard-landmarks'].map(selector => ({
+            selector, top: element.querySelector(selector)?.scrollTop || 0,
+            left: element.querySelector(selector)?.scrollLeft || 0,
+        }));
         element.innerHTML = html;
         element.scrollTop = scrollTop;
+        for (const position of childScroll) {
+            const child = element.querySelector(position.selector);
+            if (child) { child.scrollTop = position.top; child.scrollLeft = position.left; }
+        }
         if (!focused) return;
         const target = summaryFocused ? element.querySelector('summary') : Array.from(element.querySelectorAll('button')).find(button =>
             seat !== undefined ? button.dataset.cardboardPlayerIndex === seat
