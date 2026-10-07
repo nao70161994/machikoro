@@ -33,6 +33,7 @@ CIは対象のコミットを確認し、`release-test`、`cpu-difficulty-smoke`
 
 ## 残る確認と次の優先候補
 
+- 今回の検証状況: d27319e6のrelease/CPU CIは成功し、WebKit確認中です。ローカル25ケースは24成功後、シャッフル由来のテストsessionを修正した残り1ケースも成功。実Service Workerの対局中更新保留・新版適用・offline、オンライン待機室再起動後の更新保留/適用もChromiumで成功。詳細は[再レビュー記録](CARDBOARD_REVIEW_2026-10-07.md)。
 - 進行中goal（2026-10-07再レビュー対応）: 既存4ビューを維持し、カード盤面の5〜10人で自分＋相手2人を安定表示、カテゴリ色の面積拡大、rosterの色別チップ、常時説明の短縮を実装しました。共有市場は`SharedMarketMount`、共通ターン結果は`UiTurnEvents`、receipt描画は`UiTurnReceipt`へ分離しています。旧`UiPlazaEvents`は互換APIです。
 - 出目演出は実際の確定DICEログに任意の`diceResolution`メタデータを付加し、日本語ログの正規表現判定を撤去しました。`DicePresentation`が既知6項目を検証します。これは通常Engine採用・snapshot・保存でも保持され、古いログにない場合は安全にbaselineへ戻します。既存の端末ローカルsequenceは新しいゲームオブジェクトの採用時に初期化されるため、この判定には使いません。ルール・actionやsnapshotのstate schemaは増やしていません。
 - 今回の関連unit・構文・静的ファイル・型・lint確認は成功。全体unitも成功し、最新ブラウザ回帰と最新実装HEADのCIは確認中です。独立再レビューで旧保存からの非駅振り直し演出漏れを見つけ、修正後10ケースが成功しました。高速テーマ切替時のランドマーク移動によるフォーカス消失と、開いたreceiptの不要な再描画を検証中に発見し修正しました。以下の過去実装の証拠は今回の完了根拠へ流用しません。

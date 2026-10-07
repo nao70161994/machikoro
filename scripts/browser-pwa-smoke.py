@@ -157,8 +157,10 @@ try:
         wait("return document.getElementById('gameScreen').style.display !== 'none'")
     stop(server)
     server = start_server('pwa-smoke-v2')
-    js("return navigator.serviceWorker.getRegistration().then(r=>{if(!r)throw new Error('Service Worker registration missing');return r.update().then(()=>true)})")
-    wait("return navigator.serviceWorker.getRegistration().then(r=>r.waiting?.state === 'installed')")
+    # Observe installation separately: WebDriver's synchronous-script deadline
+    # must not abort a valid background update on slower Android browsers.
+    js("return navigator.serviceWorker.getRegistration().then(r=>{if(!r)throw new Error('Service Worker registration missing');r.update().catch(error=>{window.__pwaSmokeUpdateError=String(error)});return true})")
+    wait("if(window.__pwaSmokeUpdateError)throw new Error(window.__pwaSmokeUpdateError);return navigator.serviceWorker.getRegistration().then(r=>r.waiting?.state === 'installed')")
     wait("return document.getElementById('pwaUpdateBanner').offsetHeight > 0")
     assert js("return document.getElementById('pwaUpdateBtn').disabled") == ONLINE_LOBBY
     assert js('return window.MACHIKORO_CLIENT_VERSION') == 'pwa-smoke-v1'

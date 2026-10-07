@@ -13,7 +13,7 @@
 | 共通ターン結果 | `UiTurnEvents.project` と `UiTurnReceipt.buildHtml`。旧APIは互換facade | 従来13ケース＋共有実装の同一性テスト成功。特殊送金は断定集計せず原文と未集計を保持 |
 | 出目のpresentation identity | 任意のDICEログmetadataを`DicePresentation`で検証。ログ文言regexを撤去 | 10ケース成功。実GMの別文言reroll、旧snapshotのhydrate、新規roll、駅の途中選択、同出目、圧縮・replay・Undo等。実Engine遷移→新GM採用でも通常/振り直しを強調する回帰成功 |
 | フォーカスと再描画 | ランドマーク移動時の復元、同じreceiptのHTML再生成を抑制 | receiptの開閉・focus回帰は修正後Chromium成功。高速往復もChromium成功 |
-| 互換性・検証完了 | 読込順/SW/lint/checkJs/テストへ新境界を登録 | 構文・型・lint・静的ファイル成功。全体unitは修正版再実行で成功。旧保存rerollの独立指摘を修正してtargeted再成功。最新25件ブラウザ・最新CIは確認中、ソース独立再レビューの具体的指摘は解消済み |
+| 互換性・検証完了 | 読込順/SW/lint/checkJs/テストへ新境界を登録 | 構文・型・lint・静的ファイル成功。全体unitは修正版再実行で成功。旧保存rerollの独立指摘を修正してtargeted再成功。ブラウザ25件は24成功後、シャッフル由来のfixtureを修正した残り1件も成功。d27319e6のrelease/CPU CIは成功、WebKitは確認中。ソース独立再レビューの具体的指摘は解消済み |
 
 ## 証拠と制約
 
@@ -24,3 +24,9 @@ Native ChromiumはTermux向けtooling適応を使っており、WebKitの代替�
 
 オンライン比較では端末別接続通知等の診断をゲーム状態と区別する既存の方針を維持。
 実機の発話・聴感・触覚は自動ブラウザでは確認していない。通常の実機チェックをユーザーへ依頼しない。
+
+## PWA実ブラウザ確認
+
+- `artifacts/product-pwa-browser/20261007-193701-6f27a9b2/result.json`: 対局中のv2待機、手動更新可能、バナー表示中の市場操作、タイトル復帰後の更新/reload、v1 cache削除、設定維持、サーバー停止後のタイトル/アート表示が成功。対象実装d27319e6、dirty=false。
+- `artifacts/product-pwa-online-lobby/20261007-193902-5470b923/result.json`: UIから部屋作成、サーバー再起動後の更新保留、手動更新無効、旧版維持、再接続情報をUIで破棄した後の新版適用が成功。dirtyは検証補助の待ち方修正のみ。
+- 検証補助がWebDriver同期scriptの30秒期限で更新promiseを待ち切れなかったため、`update()`を非同期開始し、既存の45秒期限でwaiting/installedを観測する方式へ修正。update拒否は捕捉して検証を失敗させる。アプリの更新コードや期限は変更していない。
