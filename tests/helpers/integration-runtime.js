@@ -293,6 +293,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/mainUiEventRuntime.js',
         'js/citySkyline.js',
         'js/snapshotInventoryValidation.js',
+        'js/dicePresentation.js',
         'js/savedGameValidation.js',
         'js/storageSettings.js',
         'js/localResumePolicy.js',
