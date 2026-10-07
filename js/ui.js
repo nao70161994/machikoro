@@ -886,6 +886,8 @@ function renderDiceChoose() {
     const options = {
         phase: currentGame.phase,
         lastDiceResult: currentGame.lastDiceResult,
+        lastDice1: currentGame.lastDice1,
+        lastDice2: currentGame.lastDice2,
         allowedActions: currentUiAllowedActions(),
         disabledAttr: uiActionDisabledAttr,
         phases: GAME_PHASES,

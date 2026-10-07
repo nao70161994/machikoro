@@ -255,3 +255,30 @@ test('画面外の赤施設への支払いと残高不足はログ無しで追�
     await expect(receipt.locator('.plaza-receipt-activations')).toContainText('カフェ');
     await expect(page.locator('#gameLogContainer')).not.toHaveClass(/plaza-panel-open/);
 });
+
+test('電波塔の確認は実際に振った2個の出目と1個の出目を表示する', async ({ page }) => {
+    await prepare(page, { width: 390, height: 844 });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
+        game.players[0].landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+        game.phase = GAME_PHASES.ROLL;
+        game.rollDice();
+        game.selectDiceCount(true, 5, 1);
+        render();
+        acceptHotseatHandoff();
+    });
+    await expect(page.locator('#diceChoose')).toContainText('5 + 1（合計6） を振り直しますか？');
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        // 次の手番の1個振りを確認する。
+        game.phase = GAME_PHASES.ROLL;
+        game.usedReroll = false;
+        game.rollDice();
+        game.selectDiceCount(false, 5);
+        render();
+        acceptHotseatHandoff();
+    });
+    await expect(page.locator('#diceChoose')).toContainText('5 を振り直しますか？');
+    await expect(page.locator('#diceChoose')).not.toContainText('合計');
+});

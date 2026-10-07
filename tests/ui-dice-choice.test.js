@@ -14,7 +14,7 @@ runTest('dice choice HTMLは駅の2択とdisabled契約を維持する', () => {
 });
 
 runTest('dice choice HTMLは電波塔と港の出目・action属性を維持する', () => {
-    assert.strictEqual(build(phases.REROLL_CONFIRM, ['rerollDice', 'skipReroll']), '<div class="dice-choose"><p>📡 電波塔：🎲8 を振り直しますか？</p><button data-action="rerollDice">振り直す</button><button data-action="skipReroll" disabled>このまま使う</button></div>');
+    assert.strictEqual(build(phases.REROLL_CONFIRM, ['rerollDice', 'skipReroll']), '<div class="dice-choose"><p>📡 電波塔：合計8 を振り直しますか？</p><button data-action="rerollDice">振り直す</button><button data-action="skipReroll" disabled>このまま使う</button></div>');
     assert.strictEqual(build(phases.HARBOR_CHOICE, ['resolveHarbor'], 10), '<div class="dice-choose"><p>⚓ 港効果：合計10に+2しますか？</p><button data-action="resolveHarbor" data-use-bonus="true">+2する（→12）</button><button data-action="resolveHarbor" data-use-bonus="false">そのまま使う（10）</button></div>');
 });
 
@@ -87,4 +87,17 @@ runTest('dice choice focus controllerはidentity変化だけを新しい選択�
         phase: 'harbor',
         phases: { HARBOR_CHOICE: 'harbor' },
     }), 'harborChoice');
+});
+
+runTest('電波塔は2個の実出目と合計を分けて表示し1個振りも維持する', () => {
+    for (const useSunsetIcons of [false, true]) {
+        const options = { phase: phases.REROLL_CONFIRM, allowedActions: new Set(['rerollDice', 'skipReroll']), disabledAttr: enabled, phases, useSunsetIcons };
+        const two = UiDiceChoice.buildHtml({ ...options, lastDice1: 5, lastDice2: 1, lastDiceResult: 6 });
+        assert.ok(two.includes('5 + '));
+        assert.ok(two.includes('1（合計6）'));
+        const one = UiDiceChoice.buildHtml({ ...options, lastDice1: 5, lastDice2: 0, lastDiceResult: 5 });
+        assert.ok(one.includes('5 を振り直しますか？'));
+        assert.ok(!one.includes('合計'));
+        assert.ok(!one.includes(' + '));
+    }
 });

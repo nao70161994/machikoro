@@ -98,7 +98,15 @@ const UiDiceChoice = (() => {
             return `<div class="dice-choose"><p>${stationMark} 駅：何個振りますか？</p><button data-action="selectDiceCount" data-use-two="false"${disabled}>${dieMark} 1個</button><button data-action="selectDiceCount" data-use-two="true"${disabled}>${sunset ? dieMark + dieMark : '🎲🎲'} 2個（合計を使う）</button></div>`;
         }
         if (options.phase === phases.REROLL_CONFIRM && (allowedActions.has('rerollDice') || allowedActions.has('skipReroll'))) {
-            return `<div class="dice-choose"><p>${radioMark} 電波塔：${dieMark}${result} を振り直しますか？</p><button data-action="rerollDice"${disabledAttr('rerollDice')}>振り直す</button><button data-action="skipReroll"${disabledAttr('skipReroll')}>このまま使う</button></div>`;
+            const first = options.lastDice1;
+            const second = options.lastDice2;
+            const validFace = value => Number.isInteger(value) && value >= 1 && value <= 6;
+            const diceResult = validFace(first) && validFace(second)
+                ? `${dieMark}${first} + ${dieMark}${second}（合計${result}）`
+                : validFace(first) && first === result
+                    ? `${dieMark}${first}`
+                    : `合計${result}`;
+            return `<div class="dice-choose"><p>${radioMark} 電波塔：${diceResult} を振り直しますか？</p><button data-action="rerollDice"${disabledAttr('rerollDice')}>振り直す</button><button data-action="skipReroll"${disabledAttr('skipReroll')}>このまま使う</button></div>`;
         }
         if (options.phase === phases.HARBOR_CHOICE && allowedActions.has('resolveHarbor')) {
             const disabled = disabledAttr('resolveHarbor');

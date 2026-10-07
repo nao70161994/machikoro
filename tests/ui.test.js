@@ -976,6 +976,8 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
         currentPlayerIndex: 0,
         allowed: [],
         lastDiceResult: 10,
+        lastDice1: 5,
+        lastDice2: 5,
     };
     context.cpuPlayers = [null, null];
 
@@ -998,7 +1000,7 @@ runTest('renderDiceChoose は allowedActionsFor と同期してdice/harbor選択
     elements.diceChoose.style.display = 'none';
     context.renderDiceChoose();
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="rerollDice"'));
-    assert.ok(elements.diceChoose.innerHTML.includes('📡 電波塔：🎲10'));
+    assert.ok(elements.diceChoose.innerHTML.includes('📡 電波塔：🎲5 + 🎲5（合計10）'));
     assert.ok(elements.diceChoose.innerHTML.includes('data-action="skipReroll"'));
     assert.strictEqual(elements.diceChoose.style.display, 'block');
 
@@ -1028,7 +1030,7 @@ runTest('夕暮れのサイコロ選択は駅・電波塔・港とダイスを�
     context.GAME_PHASES.REROLL_CONFIRM = 'rerollConfirm';
     context.GAME_PHASES.HARBOR_CHOICE = 'harborChoice';
     context.GameManager = { allowedActionsFor(game) { return new Set(game.allowed || []); } };
-    context.game = { phase: 'selectDice', currentPlayerIndex: 0, allowed: ['selectDice'], lastDiceResult: 5 };
+    context.game = { phase: 'selectDice', currentPlayerIndex: 0, allowed: ['selectDice'], lastDiceResult: 5, lastDice1: 5, lastDice2: 0 };
     context.cpuPlayers = [null, null];
 
     context.renderDiceChoose();
