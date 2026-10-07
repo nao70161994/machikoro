@@ -538,3 +538,9 @@ This adds real signed-TWA PWA startup and waiting-room create/exit coverage. It 
 ### Final verification record
 
 Final signed TWA run `37158592464` and Release CI `37158589402` both succeeded for `e29f1ccb`. The requirement-by-requirement evidence and remaining unverified conditions are recorded in [DIRECTORY_REVIEW_GOAL_AUDIT.md](./DIRECTORY_REVIEW_GOAL_AUDIT.md). CSP remains Report-Only by the documented rollout decision.
+
+## 画面向きと既存APKの更新
+
+Web manifest（`manifest.json` / `manifest.webmanifest`）とTWA生成設定の `orientation` は `any` です。縦向きへ固定せず、端末・OSの自動回転設定に従って縦横の画面を利用できます。
+
+既存のインストール済みAPKにはビルド時の縦向き固定設定が残ります。Web配信やService Workerの更新だけではAPK側の設定は変わりません。新しい設定でTWA APKを再ビルドし、同じ署名鍵・package IDと増加したversionCodeを使って更新インストールする必要があります。変更後APKでの実際の回転は、Android Emulator等の検証結果が得られるまで未検証として扱います。

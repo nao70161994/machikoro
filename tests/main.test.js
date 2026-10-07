@@ -3454,7 +3454,7 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.strictEqual(manifest.display, 'standalone');
     assert.strictEqual(manifest.background_color, '#0f0e17');
     assert.strictEqual(manifest.theme_color, '#0f0e17');
-    assert.strictEqual(manifest.orientation, 'portrait');
+    assert.strictEqual(manifest.orientation, 'any');
     assert.deepStrictEqual(manifest.icons.map((icon) => icon.src).sort(), ['/icons/dice-city-mark.svg', '/icons/icon-192.png', '/icons/icon-512.png']);
     assert.deepStrictEqual(manifest.icons.find((icon) => icon.type === 'image/svg+xml'), {
         src: '/icons/dice-city-mark.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any',
@@ -3469,7 +3469,7 @@ runTest('公開タイトル変更後のロゴ/PWA/公開ページはダイスシ
     assert.strictEqual(webmanifest.display, 'standalone');
     assert.strictEqual(webmanifest.background_color, '#0f0e17');
     assert.strictEqual(webmanifest.theme_color, '#0f0e17');
-    assert.strictEqual(webmanifest.orientation, 'portrait');
+    assert.strictEqual(webmanifest.orientation, 'any');
     assert.deepStrictEqual(webmanifest.icons.map((icon) => icon.src).sort(), ['/icons/dice-city-mark.svg', '/icons/icon-192.png', '/icons/icon-512.png']);
     assert.deepStrictEqual(webmanifest.icons.find((icon) => icon.type === 'image/svg+xml'), {
         src: '/icons/dice-city-mark.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any',
@@ -4330,7 +4330,7 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(releaseChecklist.includes('image alt metadata'));
     assert.ok(releaseChecklist.includes('the local OGP/PWA icon dimension check in `docs/ADSENSE_SETUP.md` passes'));
     assert.ok(releaseChecklist.includes('OGP and PWA icon metadata sizes stay aligned with the 512x512 and 192x192 PNG assets'));
-    assert.ok(releaseChecklist.includes('manifest `id`, `start_url`, language, display mode, theme colors, and portrait orientation stay stable'));
+    assert.ok(releaseChecklist.includes('manifest `id`, `start_url`, language, display mode, theme colors, and unrestricted (`any`) orientation stay stable'));
     assert.ok(releaseChecklist.includes('title-page PWA head metadata keeps one manifest link to `/manifest.webmanifest` and stays aligned with the manifest name, theme color, mobile web app flags, status bar style, and Apple touch icon'));
     assert.ok(releaseChecklist.includes('`og:site_name`, `og:type`, and `twitter:card` stay stable'));
     assert.ok(releaseChecklist.includes('exactly one charset, one viewport, one HTML title, one `robots` meta with `index,follow`, and one shared `style.css` stylesheet'));
@@ -4457,8 +4457,8 @@ runTest('広告 placeholder は許可された画面だけに配置される', (
     assert.ok(adsenseSetup.includes('name="twitter:image" content="/icons/icon-512.png"'));
     assert.ok(adsenseSetup.includes('property="og:image:alt"'));
     assert.ok(adsenseSetup.includes('name="twitter:image:alt"'));
-    assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"'));
-    assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"'));
+    assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|theme_color|orientation|192x192|512x512|icon-192|icon-512"'));
+    assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|theme_color|orientation|192x192|512x512|icon-192|icon-512"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/api/version" | grep -E "hash"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/" | grep -E "index,follow|style.css|登録不要|privacy.html|rules.html|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));
     assert.ok(adsenseSetup.includes('curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E "index,follow|style.css|privacy.html|アカウント登録なし|勝利条件|カード選択|サイコロの出目|施設とランドマークの建設|保存と再開|最終更新日: 2026-05-27|og:description|twitter:description|og:image|twitter:image|og:image:alt|twitter:image:alt"'));

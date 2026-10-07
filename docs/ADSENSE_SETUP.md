@@ -46,8 +46,8 @@ for path in / /privacy.html /rules.html /manifest.json /manifest.webmanifest /ic
     exit 1
   fi
 done
-curl -fsS "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"
-curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|theme_color|portrait|192x192|512x512|icon-192|icon-512"
+curl -fsS "$PUBLIC_ORIGIN/manifest.json" | grep -E "ダイスシティ|start_url|standalone|theme_color|orientation|192x192|512x512|icon-192|icon-512"
+curl -fsS "$PUBLIC_ORIGIN/manifest.webmanifest" | grep -E "ダイスシティ|start_url|standalone|theme_color|orientation|192x192|512x512|icon-192|icon-512"
 curl -fsS "$PUBLIC_ORIGIN/" | grep -E 'property="og:image" content="/icons/icon-512.png"|property="og:image:width" content="512"|property="og:image:height" content="512"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
 curl -fsS "$PUBLIC_ORIGIN/rules.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|property="og:image:width" content="512"|property="og:image:height" content="512"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'
 curl -fsS "$PUBLIC_ORIGIN/privacy.html" | grep -E 'property="og:image" content="/icons/icon-512.png"|property="og:image:width" content="512"|property="og:image:height" content="512"|name="twitter:image" content="/icons/icon-512.png"|property="og:image:alt"|name="twitter:image:alt"'

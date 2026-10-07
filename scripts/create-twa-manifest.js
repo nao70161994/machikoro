@@ -8,7 +8,7 @@ function createTwaManifest(versionCode = 1) {
     if (!Number.isSafeInteger(numericVersion) || numericVersion < 1) throw new Error('version-code must be a positive integer');
     return {
         packageId: 'com.machikoro.game', host: PRODUCTION_HOST,
-        name: 'ダイスシティ', launcherName: 'ダイスシティ', display: 'standalone', orientation: 'portrait',
+        name: 'ダイスシティ', launcherName: 'ダイスシティ', display: 'standalone', orientation: 'any',
         themeColor: '#0f0e17', backgroundColor: '#0f0e17', startUrl: '/',
         iconUrl: `https://${PRODUCTION_HOST}/icons/icon-512.png`, maskableIconUrl: `https://${PRODUCTION_HOST}/icons/icon-512.png`,
         monochromeIconUrl: `https://${PRODUCTION_HOST}/icons/icon-512.png`, appVersion: String(numericVersion), appVersionCode: numericVersion,

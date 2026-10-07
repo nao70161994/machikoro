@@ -13,10 +13,12 @@ function readPngSize(relativePath) {
 
 function validateWebManifest() {
     const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8'));
+    const webmanifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'manifest.webmanifest'), 'utf8'));
+    assert.deepStrictEqual(webmanifest, manifest, 'both web manifests must use the same PWA configuration');
     assert.strictEqual(manifest.id, '/');
     assert.strictEqual(manifest.start_url, '/');
     assert.strictEqual(manifest.display, 'standalone');
-    assert.strictEqual(manifest.orientation, 'portrait');
+    assert.strictEqual(manifest.orientation, 'any');
     assert.strictEqual(manifest.theme_color, '#0f0e17');
     assert.strictEqual(manifest.background_color, '#0f0e17');
     const requiredIcons = new Map([['/icons/icon-192.png', 192], ['/icons/icon-512.png', 512]]);
@@ -37,7 +39,7 @@ function validateTwaManifest() {
     assert.strictEqual(twa.host, PRODUCTION_HOST);
     assert.strictEqual(twa.startUrl, '/');
     assert.strictEqual(twa.display, 'standalone');
-    assert.strictEqual(twa.orientation, 'portrait');
+    assert.strictEqual(twa.orientation, 'any');
     assert.deepStrictEqual(twa.signingKey, { path: 'android.keystore', alias: 'android' });
     for (const key of ['iconUrl', 'maskableIconUrl', 'monochromeIconUrl', 'webManifestUrl']) {
         const url = new URL(twa[key]);
