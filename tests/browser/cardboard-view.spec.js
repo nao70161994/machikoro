@@ -156,3 +156,19 @@ test('新しい出目だけを強調し表示切替で過去の演出を再生�
     await page.waitForTimeout(1000);
     await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
 });
+
+test('PC上席の多種類カードも出目・絵・名前・枚数を潰さずスクロールできる', async ({ page }) => {
+    await prepare(page, { width: 1440, height: 936 });
+    await page.evaluate(() => {
+        const index = Number(document.querySelector('#cardboardSeats [data-seat-position="top"]').dataset.playerIndex);
+        GameRuntimeState.runtime.snapshot().game.players[index].cards = CARDS.map(card => createCardByName(card.name));
+        render();
+    });
+    const panel = page.locator('#cardboardSeats [data-seat-position="top"]');
+    expect(await panel.locator('.cardboard-card').count()).toBeGreaterThan(6);
+    expect(await panel.locator('.cardboard-card').evaluateAll(cards => cards.every(card =>
+        card.clientHeight >= 90 && card.scrollHeight <= card.clientHeight + 1 &&
+        card.querySelector('.cardboard-dice').scrollWidth <= card.querySelector('.cardboard-dice').clientWidth + 1
+    ))).toBe(true);
+    expect(await panel.locator('.cardboard-cards').evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+});

@@ -1,5 +1,5 @@
 'use strict';
-/* global MutationObserver, CardBoardFeedback, UiCardBoard, UiPlazaEvents, UiBuildMenu, PlazaField, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardFeedback, UiCardBoard, UiPlazaEvents, UiBuildMenu, PlazaField, CARDS, Player */
 
 // Presentation state only: no game actions, storage, random calls or rule updates.
 const CardBoardField = (() => {
@@ -11,6 +11,7 @@ const CardBoardField = (() => {
     let session = null;
     let receiptSession = null;
     let feedbackTimer = null;
+    let previousChoice = null;
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
     const node = id => document.getElementById(id);
     const enabled = () => document.documentElement.dataset.design === 'cardboard';
@@ -22,6 +23,7 @@ const CardBoardField = (() => {
     }
 
     function detach() {
+        previousChoice = null;
         clearFeedback();
         feedback?.reset();
         if (!mounted) return;
@@ -60,6 +62,7 @@ const CardBoardField = (() => {
         initialized = true;
         const clearHiddenFeedback = () => {
             if (document.hidden || node('gameScreen')?.style.display === 'none') {
+                previousChoice = null;
                 clearFeedback();
                 feedback?.reset();
             }
@@ -127,6 +130,17 @@ const CardBoardField = (() => {
         if (!validIndex(selectedIndex)) selectedIndex = selfIndex;
         const newRoll = feedback?.refresh(facts) === true;
         if (facts.replaying || feedback?.wasInvalidated()) clearFeedback();
+        const choice = [GAME_PHASES.SELECT_DICE, GAME_PHASES.REROLL_CONFIRM, GAME_PHASES.HARBOR_CHOICE].includes(game.phase)
+            && currentIndex === selfIndex ? `${game.turnCount}:${currentIndex}:${game.phase}` : null;
+        if (choice && choice !== previousChoice && !facts.replaying) {
+            const currentFacts = facts;
+            queueMicrotask(() => {
+                if (enabled() && facts === currentFacts && !facts.replaying && previousChoice === choice && !document.hidden && node('gameScreen')?.style.display !== 'none') {
+                    node('diceChoose')?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                }
+            });
+        }
+        previousChoice = choice;
         const events = UiPlazaEvents.project(game.log, {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
             cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
@@ -185,6 +199,7 @@ const CardBoardField = (() => {
         initialize();
         if (nextFacts.session !== session) {
             selectedIndex = null;
+            previousChoice = null;
             clearFeedback();
             feedback?.reset();
             session = nextFacts.session;
