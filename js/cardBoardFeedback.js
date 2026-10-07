@@ -1,10 +1,15 @@
 'use strict';
+/* global DicePresentation */
 
 // Device-local presentation boundary only. No timers, sound, or game mutations.
 const CardBoardFeedback = (() => {
-    const rollPattern = /^🎲 (?:[1-6] が出ました|[1-6]\+[1-6]=(?:[2-9]|1[0-2]))$/u;
-    const radioPattern = /^📡 電波塔で振り直し: (.+) → (.+)$/u;
-    const signature = entry => JSON.stringify([entry?.type, entry?.message]);
+    const presentation = typeof DicePresentation !== 'undefined' ? DicePresentation : require('./dicePresentation');
+    const signature = entry => JSON.stringify([entry?.type, entry?.message, entry?.diceResolution]);
+    function resolution(entry, game) {
+        const value = presentation.read(entry?.diceResolution, game.players.length);
+        return value?.turn === game.turnCount && value?.actor === game.currentPlayerIndex && value?.rerolled === (game.usedReroll === true)
+            ? presentation.identity(value) : null;
+    }
     function digest(entries, length = entries.length) {
         let first = 2166136261, second = 5381;
         for (let index = 0; index < length; index++) {
@@ -19,9 +24,6 @@ const CardBoardFeedback = (() => {
         }
         return `${first}:${second}`;
     }
-    function outcome(game) {
-        return game.lastDice2 ? `${game.lastDice1}+${game.lastDice2}=${game.lastDiceResult}` : String(game.lastDice1);
-    }
     function create() {
         let previous = null;
         let invalidated = false;
@@ -30,28 +32,26 @@ const CardBoardFeedback = (() => {
             const game = facts.game;
             if (!game || !Array.isArray(game.log) || !Array.isArray(game.players)) { previous = null; invalidated = true; return false; }
             const log = game.log;
+            const resolutions = log.map(entry => resolution(entry, game));
             const snapshot = {
                 session: facts.session, replaying: facts.replaying === true,
                 turn: game.turnCount, actor: game.currentPlayerIndex, players: game.players.length,
-                rerolled: game.usedReroll === true, outcome: outcome(game),
+                rerolled: game.usedReroll === true,
+                resolution: resolutions.filter(Boolean).at(-1) || null,
                 length: log.length, digest: digest(log),
-                tail: log.slice(-100).map(signature),
             };
             const old = previous;
             previous = snapshot;
             if (!old || old.session !== snapshot.session || old.replaying || snapshot.replaying ||
                 snapshot.players !== old.players || snapshot.turn < old.turn) { invalidated = true; return false; }
             const append = log.length >= old.length && digest(log, old.length) === old.digest;
-            if (append && log.slice(old.length).some(entry => rollPattern.test(entry?.message || ''))) return true;
-            // A radio reroll intentionally replaces the current turn's log.
-            // Accept only its false→true transition and exact old/new dice metadata.
+            // Metadata survives engine adoption; unlike message text, it denotes
+            // an actual completed roll. Initial/restore history is only a baseline.
+            const resolved = snapshot.resolution !== null && snapshot.resolution !== old.resolution;
+            if (append && resolved && resolutions.slice(old.length).filter(Boolean).length === 1) return true;
             invalidated = !append || old.turn !== snapshot.turn || old.actor !== snapshot.actor;
-            if (old.turn !== snapshot.turn || old.actor !== snapshot.actor || old.rerolled || !snapshot.rerolled) return false;
-            const reroll = log.some(entry => rollPattern.test(entry?.message || '')) && log.some(entry => {
-                const match = (entry?.message || '').match(radioPattern);
-                return match && match[1] === old.outcome && match[2] === snapshot.outcome &&
-                    !old.tail.includes(signature(entry));
-            });
+            const reroll = resolved && old.turn === snapshot.turn && old.actor === snapshot.actor &&
+                !old.rerolled && snapshot.rerolled && resolutions.filter(Boolean).length === 1;
             if (reroll) invalidated = false;
             return reroll;
         }

@@ -3,6 +3,19 @@ const assert = require('assert');
 const { runTest } = require('./helpers/test-utils');
 const UiLogDisplay = require('../js/uiLogDisplay');
 const UiPlazaEvents = require('../js/uiPlazaEvents');
+const UiTurnEvents = require('../js/uiTurnEvents');
+const UiTurnReceipt = require('../js/uiTurnReceipt');
+runTest('両ビューと互換APIは同じ投影・receipt実装を共有する', () => {
+    assert.strictEqual(UiPlazaEvents.project, UiTurnEvents.project);
+    assert.strictEqual(UiPlazaEvents.buildReceiptHtml, UiTurnReceipt.buildHtml);
+});
+runTest('共通投影は構造化された出目を表示文言に依存せず扱う', () => {
+    const receipt = UiTurnEvents.project([{ type: 'dice', message: 'Localized roll result',
+        diceResolution: { dice1: 5, dice2: 1, result: 6, turn: 1, actor: 0, rerolled: true } }], {
+        players: [{ name: 'A', cards: [] }], logTypes: { DICE: 'dice' },
+    });
+    assert.deepStrictEqual(receipt.dice, { values: [5, 1], base: 6, effective: 6, rerolled: true, harbor: false });
+});
 const types = Object.freeze({ DICE: 'dice', GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', SYSTEM: 'system', ERROR: 'error' });
 const display = UiLogDisplay.makeLogTypeDisplay(types);
 const players = [

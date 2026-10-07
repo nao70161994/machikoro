@@ -1,5 +1,5 @@
 'use strict';
-/* global DesignTheme, ResizeObserver, MutationObserver, HTMLDetailsElement, requestAnimationFrame, Player, UiPlayerInsights, PlazaTownLayout, GAME_PHASES */
+/* global DesignTheme, ResizeObserver, MutationObserver, HTMLDetailsElement, requestAnimationFrame, Player, UiPlayerInsights, PlazaTownLayout, SharedMarketMount, GAME_PHASES */
 
 // Device-local camera: never saved or transmitted as a game action.
 const PlazaField = (() => {
@@ -418,7 +418,7 @@ const PlazaField = (() => {
             lastWidth = viewport.clientWidth; lastHeight = viewport.clientHeight;
             revealFocus();
         })).observe(viewport);
-        document.addEventListener('change', event => { if ((/** @type {HTMLElement} */ (event.target)).id === 'designThemeSelect') sync(); });
+        document.addEventListener('design-theme-change', sync);
     }
     function sync() {
         initialize();
@@ -426,36 +426,42 @@ const PlazaField = (() => {
         if (!screen || !world) return;
         const enabled = document.documentElement.dataset.design === 'plaza';
         if (enabled && !mounted) {
-            world.append(screen.querySelector('.player-area'), node('buildMenu'));
+            SharedMarketMount.mount('plaza', world, detach);
+            world.append(screen.querySelector('.player-area'));
             mounted = true; requestAnimationFrame(() => { layout(); focusTarget('self'); });
         } else if (!enabled && mounted) {
-            clearGesture();
-            townObserver.disconnect();
-            closePlayerInsights();
-            insightsSession = null;
-            insightsFacts = null;
-            setLogPanelOpen(false);
-            setComparisonOpen(false);
-            world.querySelectorAll('#players > .player-box').forEach(item => {
-                (/** @type {HTMLElement} */ (item)).style.removeProperty('left');
-                (/** @type {HTMLElement} */ (item)).style.removeProperty('top');
-                (/** @type {HTMLElement} */ (item)).style.removeProperty('--plaza-seat-color');
-                item.querySelector('.plaza-seat-mark')?.remove();
-                item.querySelector('.plaza-town-seat-flag')?.remove();
-            });
-            screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
-            screen.insertBefore(node('buildMenu'), node('turnTimeline'));
-            node('buildMenu').style.removeProperty('height');
-            node('buildMenu').style.removeProperty('top');
-            node('buildMenu').style.removeProperty('left');
-            node('buildMenu').classList.remove('plaza-market-secondary', 'plaza-market-exploring');
-            marketPhase = undefined;
-            world.style.removeProperty('--plaza-inverse-scale');
-            pendingFocus = null;
-            mounted = false;
-            hudCurrentIndex = null;
-            DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
+            detach();
         }
+    }
+    function detach() {
+        if (!mounted) return;
+        const screen = node('gameScreen'), world = node('plazaWorld');
+        clearGesture();
+        townObserver.disconnect();
+        closePlayerInsights();
+        insightsSession = null;
+        insightsFacts = null;
+        setLogPanelOpen(false);
+        setComparisonOpen(false);
+        world.querySelectorAll('#players > .player-box').forEach(item => {
+            (/** @type {HTMLElement} */ (item)).style.removeProperty('left');
+            (/** @type {HTMLElement} */ (item)).style.removeProperty('top');
+            (/** @type {HTMLElement} */ (item)).style.removeProperty('--plaza-seat-color');
+            item.querySelector('.plaza-seat-mark')?.remove();
+            item.querySelector('.plaza-town-seat-flag')?.remove();
+        });
+        screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
+        SharedMarketMount.release('plaza');
+        node('buildMenu').style.removeProperty('height');
+        node('buildMenu').style.removeProperty('top');
+        node('buildMenu').style.removeProperty('left');
+        node('buildMenu').classList.remove('plaza-market-secondary', 'plaza-market-exploring');
+        marketPhase = undefined;
+        world.style.removeProperty('--plaza-inverse-scale');
+        pendingFocus = null;
+        mounted = false;
+        hudCurrentIndex = null;
+        DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
     }
     function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set(), sessionToken, phase) {
         sync(); if (!mounted) return;

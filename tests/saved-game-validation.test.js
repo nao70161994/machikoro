@@ -353,6 +353,16 @@ runTest('saved game validatorは復元logを構造化entryの直近30件へ正�
     assert.deepStrictEqual(normalized[0], { type: 'system', message: 'log-1' });
     assert.deepStrictEqual(normalized.at(-1), { type: 'system', message: 'log-30' });
     assert.deepStrictEqual(SavedGameValidation.normalizeSavedLog(null), []);
+    const resolution = { dice1: 5, dice2: 1, result: 6, rerolled: true, turn: 7, actor: 2 };
+    assert.deepStrictEqual(SavedGameValidation.normalizeSavedLog([
+        { type: 'dice', message: 'result', diceResolution: { ...resolution, unknown: 'discard' } },
+        { type: 'dice', message: 'legacy' },
+        { type: 'dice', message: 'invalid', diceResolution: { ...resolution, dice1: 100 } },
+    ]), [
+        { type: 'dice', message: 'result', diceResolution: resolution },
+        { type: 'dice', message: 'legacy' },
+        { type: 'dice', message: 'invalid' },
+    ]);
 });
 
 runTest('saved game validatorはruntimeへ渡す数値を安全な範囲に限定する', () => {

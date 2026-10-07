@@ -302,6 +302,17 @@ class GameManager {
         this.diceResolutionSequence++;
     }
 
+    _logDiceResolution(message) {
+        this.addLog(LOG_TYPES.DICE, message, { diceResolution: {
+            dice1: this.lastDice1,
+            dice2: this.lastDice2,
+            result: this.lastDiceResult,
+            rerolled: this.usedReroll === true,
+            turn: this.turnCount,
+            actor: this.currentPlayerIndex,
+        } });
+    }
+
     rollDice(forceDice = null, tunaDice = null) {
         const start = GameDicePolicy.planRollStart({
             phase: this.phase,
@@ -321,7 +332,7 @@ class GameManager {
             dice1: d1,
             hasAmusementPark: () => this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK],
         }));
-        this.addLog(LOG_TYPES.DICE, `🎲 ${d1} が出ました`);
+        this._logDiceResolution(`🎲 ${d1} が出ました`);
         this.afterRoll(tunaDice);
     }
 
@@ -342,7 +353,7 @@ class GameManager {
             dice2: d2,
             hasAmusementPark: () => this.currentPlayer().landmarks[LANDMARK_NAMES.AMUSEMENT_PARK],
         }));
-        this.addLog(LOG_TYPES.DICE, selection.useTwo
+        this._logDiceResolution(selection.useTwo
             ? `🎲 ${d1}+${d2}=${this.lastDiceResult}`
             : `🎲 ${d1} が出ました`);
         this._logPendingRadioTowerReroll();
@@ -1246,7 +1257,22 @@ class GameManager {
     }
 
     addLog(type, msg, options = {}) {
-        this.log.push({ type, message: msg });
+        /** @type {{type: string, message: string, diceResolution?: {dice1: number, dice2: number, result: number, rerolled: boolean, turn: number, actor: number}}} */
+        const entry = { type, message: msg };
+        const resolution = options.diceResolution;
+        if (type === LOG_TYPES.DICE && resolution &&
+                Number.isSafeInteger(resolution.dice1) && resolution.dice1 >= 1 && resolution.dice1 <= 6 &&
+                Number.isSafeInteger(resolution.dice2) && resolution.dice2 >= 0 && resolution.dice2 <= 6 &&
+                resolution.result === resolution.dice1 + resolution.dice2 &&
+                typeof resolution.rerolled === 'boolean' &&
+                Number.isSafeInteger(resolution.turn) && resolution.turn >= 0 &&
+                Number.isInteger(resolution.actor) && resolution.actor >= 0 && resolution.actor < this.players.length) {
+            entry.diceResolution = {
+                dice1: resolution.dice1, dice2: resolution.dice2, result: resolution.result,
+                rerolled: resolution.rerolled, turn: resolution.turn, actor: resolution.actor,
+            };
+        }
+        this.log.push(entry);
         if (options.review === false) return;
         if (!this.reviewSummary || typeof this.reviewSummary !== 'object') {
             this.reviewSummary = {

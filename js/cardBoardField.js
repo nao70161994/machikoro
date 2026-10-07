@@ -1,13 +1,13 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardFeedback, UiCardBoard, UiPlazaEvents, UiBuildMenu, PlazaField, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, SharedMarketMount, CARDS, Player */
 
 // Presentation state only: no game actions, storage, random calls or rule updates.
 const CardBoardField = (() => {
+    const renderedHtml = new WeakMap();
     let facts = null;
     let initialized = false;
     let mounted = false;
     let selectedIndex = null;
-    let marketAnchor = null;
     let session = null;
     let receiptSession = null;
     let feedbackTimer = null;
@@ -31,13 +31,12 @@ const CardBoardField = (() => {
         if (!mounted) return;
         const market = node('buildMenu');
         const goals = node('cardboardGoalsBody');
+        const focusedGoal = goals.contains(document.activeElement)
+            ? /** @type {HTMLElement} */ (document.activeElement) : null;
         // Restore the original nodes, preserving delegated actions and market identity.
         for (const section of Array.from(goals.children)) market.appendChild(section);
-        if (market.parentElement === node('cardboardMarket') && marketAnchor?.parentNode) {
-            marketAnchor.parentNode.insertBefore(market, marketAnchor);
-        }
-        marketAnchor?.remove();
-        marketAnchor = null;
+        focusedGoal?.focus({ preventScroll: true });
+        SharedMarketMount.release('cardboard');
         node('cardboardSeats').querySelectorAll('.cardboard-player').forEach(element => element.remove());
         node('cardboardDiceReceipt').replaceChildren();
         receiptSession = null;
@@ -53,8 +52,11 @@ const CardBoardField = (() => {
         // renderBuildMenu replaces its children; never retain an obsolete action button.
         const sections = Array.from(market.querySelectorAll('.build-section')).filter(section => !section.classList.contains('build-card-section'));
         if (sections.length) {
+            const focused = sections.some(section => section.contains(document.activeElement))
+                ? /** @type {HTMLElement} */ (document.activeElement) : null;
             body.replaceChildren();
             for (const section of sections) body.appendChild(section);
+            focused?.focus({ preventScroll: true });
         }
         node('cardboardGoals').hidden = !body.children.length || facts?.game.currentPlayerIndex !== facts?.selfIndex;
     }
@@ -85,15 +87,17 @@ const CardBoardField = (() => {
             node('cardboardSeats').querySelector(`[data-player-index="${selectedIndex}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         });
         document.addEventListener('design-theme-change', () => {
-            // The existing plaza must restore its shared market before we take it.
             if (!enabled()) detach();
-            if (typeof PlazaField !== 'undefined') PlazaField.sync();
             draw();
         });
     }
 
     function replaceHtml(element, html) {
-        if (element.innerHTML === html) return;
+        // Native details.open and normalized HTML entities change innerHTML
+        // without changing the requested content. Do not replace a focused
+        // disclosure just because the user opened it between renders.
+        if (renderedHtml.get(element) === html && (!html || element.childNodes.length)) return;
+        renderedHtml.set(element, html);
         const active = document.activeElement;
         const focused = element.contains(active) ? /** @type {HTMLElement} */ (active) : null;
         const action = focused?.dataset.action;
@@ -125,10 +129,7 @@ const CardBoardField = (() => {
         const { game, escapeHtml, enabledLandmarks } = facts;
         if (!game?.players?.length) return;
         if (!mounted) {
-            const market = node('buildMenu');
-            marketAnchor = document.createComment('cardboard-market-origin');
-            market.parentNode.insertBefore(marketAnchor, market);
-            node('cardboardMarket').appendChild(market);
+            SharedMarketMount.mount('cardboard', node('cardboardMarket'), detach);
             node('cardboardBoard').hidden = false;
             mounted = true;
         }
@@ -151,7 +152,7 @@ const CardBoardField = (() => {
         previousChoice = choice;
         choiceInitialized = true;
         if (node('cardboardChoiceJump')) node('cardboardChoiceJump').hidden = !choice;
-        const events = UiPlazaEvents.project(game.log, {
+        const events = UiTurnEvents.project(game.log, {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
             cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
         });
@@ -160,9 +161,7 @@ const CardBoardField = (() => {
         }));
         const seats = node('cardboardSeats');
         seats.dataset.playerCount = String(game.players.length);
-        const indices = game.players.length <= 4
-            ? game.players.map((_, index) => index)
-            : [...new Set([selfIndex, currentIndex, selectedIndex])];
+        const indices = UiCardBoard.selectDetailIndices(game.players.length, { selfIndex, currentIndex, selectedIndex });
         const others = indices.filter(index => index !== selfIndex);
         seats.querySelectorAll('.cardboard-player').forEach(element => {
             if (!indices.includes(Number(/** @type {HTMLElement} */ (element).dataset.playerIndex))) element.remove();
@@ -192,7 +191,7 @@ const CardBoardField = (() => {
         const open = disclosure?.open;
         const previousDice = receipt.dataset.dice;
         const dice = JSON.stringify([game.turnCount, currentIndex, events.dice]);
-        replaceHtml(receipt, UiPlazaEvents.buildReceiptHtml(events, escapeHtml));
+        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml));
         const nextDisclosure = receipt.querySelector('details');
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
         receipt.dataset.dice = dice;

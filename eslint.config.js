@@ -4,6 +4,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/Card.js',
     'js/designTheme.js',
     'js/plazaTownLayout.js',
+    'js/sharedMarketMount.js',
     'js/plazaField.js',
     'js/uiIncomePreview.js',
     'js/uiIncomePreviewPanel.js',
@@ -11,6 +12,9 @@ const browserMaintenanceFiles = Object.freeze([
     'js/cardBoardFeedback.js',
     'js/cardBoardField.js',
     'js/uiPlayerInsights.js',
+    'js/dicePresentation.js',
+    'js/uiTurnEvents.js',
+    'js/uiTurnReceipt.js',
     'js/uiPlazaEvents.js',
     'js/uiPlazaFeedback.js',
 

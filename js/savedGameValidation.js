@@ -1,4 +1,8 @@
 'use strict';
+/* global DicePresentation */
+
+const SavedGameDicePresentationApi = typeof DicePresentation !== 'undefined'
+    ? DicePresentation : require('./dicePresentation');
 
 const SAVED_PENDING_ACTION_BY_FIELD = Object.freeze({
     pendingTV: 'resolveTV',
@@ -116,7 +120,11 @@ function normalizeSavedLog(log) {
             typeof entry.type === 'string' &&
             typeof entry.message === 'string')
         .slice(-MAX_SAVED_LOG_ENTRIES)
-        .map(entry => ({ type: entry.type, message: entry.message }));
+        .map(entry => {
+            const normalized = { type: entry.type, message: entry.message };
+            const resolution = SavedGameDicePresentationApi.read(entry.diceResolution);
+            return resolution ? { ...normalized, diceResolution: resolution } : normalized;
+        });
 }
 
 function reconstructMissingShopStock(state, options = {}) {

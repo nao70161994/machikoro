@@ -1,3 +1,7 @@
+declare var DicePresentation: typeof import("../js/dicePresentation");
+declare var SharedMarketMount: typeof import("../js/sharedMarketMount");
+declare var UiTurnEvents: typeof import("../js/uiTurnEvents");
+declare var UiTurnReceipt: typeof import("../js/uiTurnReceipt");
 declare var CardBoardFeedback: typeof import("../js/cardBoardFeedback");
 declare var UiBuildMenu: typeof import("../js/uiBuildMenu");
 declare var UiCardBoard: typeof import("../js/uiCardBoard");
@@ -147,6 +151,8 @@ interface Window {
     UiIncomePreviewPanel: unknown;
     UiPlayerInsights: unknown;
     UiPlazaEvents: unknown;
+    UiTurnEvents: unknown;
+    UiTurnReceipt: unknown;
     UiPlazaFeedback: unknown;
 
     UiInputPolicy: unknown;

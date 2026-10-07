@@ -1,4 +1,4 @@
-/* global CardBoardField, Element, MutationObserver, UiPlazaEvents, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
+/* global CardBoardField, Element, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
@@ -187,13 +187,13 @@ function renderLog() {
     );
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
     const receipt = document.getElementById('plazaDiceReceipt');
-    if (receipt && typeof UiPlazaEvents !== 'undefined') {
-        const projected = UiPlazaEvents.project(cur, {
+    if (receipt && typeof UiTurnEvents !== 'undefined') {
+        const projected = UiTurnEvents.project(cur, {
             players: currentGame.players, turnPlayerIndex: currentGame.currentPlayerIndex,
             display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
             landmarkNames: Player.landmarkNames(),
         });
-        const html = UiPlazaEvents.buildReceiptHtml(projected, escapeHtml);
+        const html = UiTurnReceipt.buildHtml(projected, escapeHtml);
         const diceKey = JSON.stringify(projected.dice);
         const session = uiGameRuntimeSnapshot().cpuPlayers;
         const previous = plazaReceiptRenderCache.get(receipt);

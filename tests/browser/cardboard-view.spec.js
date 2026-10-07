@@ -51,13 +51,21 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#cardboardDiceReceipt')).toContainText('出目 3');
         await expect(page.locator('#gameLogContainer')).not.toHaveClass(/plaza-panel-open/);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-        await testInfo.attach(`cardboard-${viewport.width}`, { body: await page.screenshot(), contentType: 'image/png' });
+        const screenshot = testInfo.outputPath(`cardboard-${viewport.width}.png`);
+        await page.screenshot({ path: screenshot });
+        await testInfo.attach(`cardboard-${viewport.width}`, { path: screenshot, contentType: 'image/png' });
     });
 }
 
 test('10人のカード盤面は自分・手番・選択相手を読める大きさで表示する', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 }, 10);
     await expect(page.locator('#cardboardRoster button')).toHaveCount(10);
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(3);
+    await expect(page.locator('#cardboardSeats [data-player-index="1"]')).toBeVisible();
+    await expect(page.locator('#cardboardSeats [data-player-index="2"]')).toBeVisible();
+    await expect(page.locator('#cardboardRoster .cardboard-roster-trend')).toHaveCount(10);
+    const chips = page.locator('#cardboardRoster button').first().locator('.cardboard-color-count');
+    await expect(chips).toHaveCount(4);
     await page.locator('#cardboardRoster [data-cardboard-player-index="9"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="9"]')).toBeVisible();
     expect(await page.locator('#cardboardSeats > .cardboard-player').count()).toBeLessThanOrEqual(3);
@@ -65,6 +73,59 @@ test('10人のカード盤面は自分・手番・選択相手を読める大き
     const before = await state(page);
     await page.setViewportSize({ width: 844, height: 390 });
     await page.setViewportSize({ width: 390, height: 844 });
+    expect(await state(page)).toEqual(before);
+});
+
+for (const width of [320, 390, 1440]) {
+    test(`カテゴリ4色はカード面とラベル付きrosterで識別できる ${width}`, async ({ page }, testInfo) => {
+        await prepare(page, { width, height: 936 }, 10);
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            game.players[0].cards = ['blue', 'green', 'red', 'purple'].map(color =>
+                createCardByName(CARDS.find(card => card.color === color).name));
+            render();
+        });
+        const cards = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card');
+        await expect(cards).toHaveCount(4);
+        const backgrounds = await cards.evaluateAll(elements => elements.map(element => getComputedStyle(element).backgroundColor));
+        expect(new Set(backgrounds).size).toBe(4);
+        const chips = page.locator('#cardboardRoster button').first().locator('.cardboard-color-count');
+        await expect(chips).toHaveText(['青 1', '緑 1', '赤 1', '紫 1']);
+        expect(await chips.evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1))).toBe(true);
+        expect(await cards.evaluateAll(elements => elements.every(element => element.textContent.includes('手番')))).toBe(true);
+        await page.locator('#cardboardSeats [data-player-index="0"]').scrollIntoViewIfNeeded();
+        const screenshot = testInfo.outputPath(`category-colors-${width}.png`);
+        await page.screenshot({ path: screenshot });
+        await testInfo.attach('category-colors', { path: screenshot, contentType: 'image/png' });
+    });
+}
+
+test('共有市場の高速往復は単一DOMと施設・ランドマークのフォーカスを維持する', async ({ page }) => {
+    await prepare(page, { width: 1440, height: 936 });
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); acceptHotseatHandoff(); });
+    const before = await state(page);
+    const result = await page.evaluate(() => {
+        const market = document.getElementById('buildMenu');
+        document.getElementById('cardboardGoals').open = true;
+        const landmark = document.querySelector('#cardboardGoalsBody [data-action="buildLandmark"]');
+        landmark.focus();
+        const checks = [{ singleMarket: true, sameFocus: document.activeElement === landmark,
+            active: document.activeElement.outerHTML.slice(0, 300), initial: true }];
+        for (let index = 0; index < 20; index++) {
+            const select = document.getElementById('gameDesignThemeSelect');
+            select.value = index % 2 ? 'cardboard' : 'plaza';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            checks.push({
+                singleMarket: document.querySelectorAll('#buildMenu').length === 1 && document.getElementById('buildMenu') === market,
+                sameFocus: document.activeElement === landmark,
+                active: document.activeElement.outerHTML.slice(0, 300),
+                connected: landmark.isConnected,
+                disabled: landmark.disabled,
+            });
+        }
+        return checks;
+    });
+    expect(result.filter(check => !check.singleMarket || !check.sameFocus)).toEqual([]);
     expect(await state(page)).toEqual(before);
 });
 

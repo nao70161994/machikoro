@@ -2,7 +2,71 @@
 
 const assert = require('assert');
 const GameEngineRuntimeAdapter = require('../js/gameEngineRuntimeAdapter');
+const GameEngine = require('../js/gameEngine');
+const GameSnapshot = require('../js/gameSnapshot');
+const CardBoardFeedback = require('../js/cardBoardFeedback');
+const { loadGameRuntime } = require('./helpers/runtime-loaders');
 const { runTest } = require('./helpers/test-utils');
+
+runTest('出目確定メタデータはpure Engine遷移と新GameManager採用を通じて保持する', () => {
+    const runtime = loadGameRuntime();
+    const game = new runtime.GameManager(2);
+    game.players[0].landmarks['電波塔'] = true;
+    const adapter = GameEngineRuntimeAdapter.create({
+        createGame: count => new runtime.GameManager(count),
+        landmarkNames: () => runtime.Player.landmarkNames(),
+        createCardByName: runtime.createCardByName,
+        assignShopStockSnapshot: (target, source) => Object.assign(target, source),
+        decrementShopStock: runtime.decrementShopStock,
+        pendingActionsFor: value => runtime.GameManager.pendingActionsFor(value),
+        logLimit: Number.MAX_SAFE_INTEGER,
+    });
+    let snapshot = GameSnapshot.serializeGameState(game, {});
+    const feedback = CardBoardFeedback.create();
+    const session = [];
+    assert.strictEqual(feedback.refresh({ game, session }), false);
+    for (const action of ['rollDice', 'rerollDice']) {
+        const transitioned = GameEngine.transitionSnapshot({ snapshot, action, data: { forceDice: 3 },
+            hydrate: adapter.hydrate, serialize: adapter.serialize });
+        assert.strictEqual(transitioned.ok, true, action);
+        snapshot = transitioned.snapshot;
+        const adopted = adapter.hydrate(snapshot).game;
+        assert.strictEqual(feedback.refresh({ game: adopted, session }), true, `${action}: 実際の採用後にも新規演出`);
+        assert.strictEqual(feedback.refresh({ game: adopted, session }), false);
+        assert.strictEqual(adopted.diceResolutionSequence, 0, '端末ローカルsequenceは新GMで初期化される');
+        assert.deepStrictEqual(JSON.parse(JSON.stringify(adopted.log.find(entry => entry.diceResolution).diceResolution)), {
+            dice1: 3, dice2: 0, result: 3, rerolled: action === 'rerollDice', turn: game.turnCount, actor: 0,
+        });
+    }
+});
+
+runTest('確定出目だけが既知メタデータを持ち駅選択途中や無効optionsへ付加しない', () => {
+    const runtime = loadGameRuntime();
+    const game = new runtime.GameManager(2);
+    game.players[0].landmarks['駅'] = true;
+    game.players[0].landmarks['電波塔'] = true;
+    game.rollDice();
+    assert.strictEqual(game.log.some(entry => entry.diceResolution), false);
+    game.selectDiceCount(true, 5, 1);
+    const first = game.log.find(entry => entry.diceResolution);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(first.diceResolution)), {
+        dice1: 5, dice2: 1, result: 6, rerolled: false, turn: game.turnCount, actor: 0,
+    });
+    game.rerollDice();
+    assert.strictEqual(game.log.some(entry => entry.diceResolution), false);
+    game.selectDiceCount(false, 6);
+    assert.strictEqual(game.log.filter(entry => entry.diceResolution).length, 1);
+    assert.strictEqual(game.log.find(entry => entry.diceResolution).diceResolution.rerolled, true);
+    const valid = { dice1: 1, dice2: 2, result: 3, rerolled: false, turn: 1, actor: 0, arbitrary: true };
+    game.addLog('dice', '文言に依存しない', { diceResolution: valid });
+    assert.deepStrictEqual(Object.keys(game.log.at(-1).diceResolution).sort(), ['actor', 'dice1', 'dice2', 'rerolled', 'result', 'turn']);
+    for (const invalid of [{ ...valid, result: 4 }, { ...valid, dice2: 7 }, { ...valid, actor: 2 }, { ...valid, rerolled: 1 }]) {
+        game.addLog('dice', '無効', { diceResolution: invalid });
+        assert.strictEqual(game.log.at(-1).diceResolution, undefined);
+    }
+    game.addLog('system', '通常ログ', { diceResolution: valid });
+    assert.strictEqual(game.log.at(-1).diceResolution, undefined);
+});
 
 function makePlayer(index) {
     return {
