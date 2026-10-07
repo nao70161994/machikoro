@@ -8906,6 +8906,12 @@ html[data-design="cardboard"] .cardboard-roster-seat {
 }
 html[data-design="cardboard"] .cardboard-roster-seat { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; text-align: left; }
 html[data-design="cardboard"] .cardboard-roster-seat[aria-pressed="true"] { background: #e2f3ff; box-shadow: inset 0 -3px #1766bd; }
+html[data-design="cardboard"] .cardboard-roster-trend { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; }
+html[data-design="cardboard"] .cardboard-color-count { padding: 2px 5px; border-radius: 5px; color: #fff; font-size: 11px; font-weight: 800; line-height: 1.35; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html[data-design="cardboard"] .cardboard-color-count-blue { background: var(--cardboard-blue); }
+html[data-design="cardboard"] .cardboard-color-count-green { background: var(--cardboard-green); }
+html[data-design="cardboard"] .cardboard-color-count-red { background: var(--cardboard-red); }
+html[data-design="cardboard"] .cardboard-color-count-purple { background: var(--cardboard-purple); }
 html[data-design="cardboard"] .cardboard-player {
     min-width: 0;
     padding: 10px;
@@ -8928,6 +8934,7 @@ html[data-design="cardboard"] .cardboard-player-header h3 { margin: 0; font-size
 html[data-design="cardboard"] .cardboard-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); grid-auto-rows: max-content; align-content: start; gap: 8px; align-items: stretch; }
 html[data-design="cardboard"] .cardboard-card {
     --cardboard-card-color: var(--cardboard-blue);
+    --cardboard-card-tint: #e2efff;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -8936,23 +8943,25 @@ html[data-design="cardboard"] .cardboard-card {
     padding: 0 0 6px;
     border: 2px solid var(--cardboard-card-color);
     border-radius: 10px;
-    background: var(--cardboard-paper);
+    background: var(--cardboard-card-tint);
     color: #183447;
     text-align: left;
     font: inherit;
     box-shadow: 0 2px 3px #243a4120;
     overflow: hidden;
 }
-html[data-design="cardboard"] .cardboard-card-blue { --cardboard-card-color: var(--cardboard-blue); }
-html[data-design="cardboard"] .cardboard-card-green { --cardboard-card-color: var(--cardboard-green); }
-html[data-design="cardboard"] .cardboard-card-red { --cardboard-card-color: var(--cardboard-red); }
-html[data-design="cardboard"] .cardboard-card-purple { --cardboard-card-color: var(--cardboard-purple); }
+html[data-design="cardboard"] .cardboard-card-blue { --cardboard-card-color: var(--cardboard-blue); --cardboard-card-tint: #e2efff; }
+html[data-design="cardboard"] .cardboard-card-green { --cardboard-card-color: var(--cardboard-green); --cardboard-card-tint: #dff2e4; }
+html[data-design="cardboard"] .cardboard-card-red { --cardboard-card-color: var(--cardboard-red); --cardboard-card-tint: #ffe2e6; }
+html[data-design="cardboard"] .cardboard-card-purple { --cardboard-card-color: var(--cardboard-purple); --cardboard-card-tint: #efe3ff; }
 html[data-design="cardboard"] .cardboard-dice { display: block; padding: 4px 7px; color: #fff; background: var(--cardboard-card-color); font-size: 21px; font-weight: 900; line-height: 1.2; letter-spacing: .02em; }
 html[data-design="cardboard"] .cardboard-art { display: block; width: 100%; height: 62px; object-fit: contain; background: #f3ecd8; }
 html[data-design="cardboard"] .cardboard-art svg,
 html[data-design="cardboard"] .cardboard-card .sunset-facility-art { display: block; width: 100%; height: 62px; }
 html[data-design="cardboard"] .cardboard-name { display: block; padding: 5px 6px 2px; font-size: 13px; font-weight: 800; line-height: 1.35; }
 html[data-design="cardboard"] .cardboard-count { display: block; padding: 0 6px; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; }
+html[data-design="cardboard"] .cardboard-card .cardboard-name { margin-top: 0; padding: 5px 6px; color: #fff; background: var(--cardboard-card-color); }
+html[data-design="cardboard"] .cardboard-card .cardboard-count { align-self: flex-start; margin: 4px 6px 0; padding: 2px 5px; border-radius: 5px; color: #fff; background: var(--cardboard-card-color); font-size: 14px; }
 html[data-design="cardboard"] .cardboard-category,
 html[data-design="cardboard"] .cardboard-dormant { display: block; margin: 2px 6px; font-size: 11px; line-height: 1.4; }
 html[data-design="cardboard"] .cardboard-dormant { padding: 2px 4px; background: #f1e5d5; border-radius: 4px; color: #693b20; }

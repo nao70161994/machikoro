@@ -4,8 +4,20 @@
 // Read-only card board. Rules, selected seats, and event boundaries belong to callers.
 const UiCardBoard = (() => {
     const colors = new Set(['blue', 'green', 'red', 'purple']);
-    const colorLabels = Object.freeze({ blue: '青：全員の手番', green: '緑：自分の手番',
-        red: '赤：相手から支払い', purple: '紫：自分の手番の特殊効果' });
+    const colorNames = Object.freeze({ blue: '青', green: '緑', red: '赤', purple: '紫' });
+    const colorLabels = Object.freeze({ blue: '青：全員の手番に発動', green: '緑：自分の手番に発動',
+        red: '赤：相手の手番に相手から支払い', purple: '紫：自分の手番の特殊効果' });
+    function selectDetailIndices(playerCount, options = {}) {
+        const count = Number.isInteger(playerCount) ? Math.max(0, Math.min(10, playerCount)) : 0;
+        const all = Array.from({ length: count }, (_, index) => index);
+        if (count <= 4) return all;
+        const selected = new Set();
+        for (const index of [options.selfIndex, options.currentIndex, options.selectedIndex, ...all]) {
+            if (Number.isInteger(index) && index >= 0 && index < count) selected.add(index);
+            if (selected.size === 3) break;
+        }
+        return [...selected];
+    }
     function escapeDefault(value) {
         return String(value ?? '').replace(/[&<>"']/g, character =>
             ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
@@ -51,7 +63,7 @@ const UiCardBoard = (() => {
             const event = activationFor(options.events, card.name, index);
             const eventAttrs = event ? ` data-cardboard-activation-count="${event.count}" data-cardboard-activation-net="${event.net}"` : '';
             const eventHtml = event ? `<span class="cardboard-activation">確認済み：${event.net > 0 ? '+' : ''}${event.net}コイン · 発動${event.count}回</span>` : '';
-            return `<button type="button" class="cardboard-card cardboard-card-${color}${dormant === count ? ' cardboard-card-dormant' : ''}${event ? ' cardboard-card-activated' : ''}" data-action="showCardDetail" data-card-name="${escape(card.name)}"${eventAttrs}><span class="cardboard-dice" aria-label="発動する出目 ${escape(dice.join('・'))}">${escape(dice.join('・') || '—')}</span><span class="cardboard-category"><span class="card-family-mark" data-category="${escape(card.category)}" aria-hidden="true"></span>${escape(card.category)} · ${escape(colorLabels[color] || '分類不明')}</span><span class="cardboard-art">${art(card.name, false, card.category)}</span><span class="cardboard-name">${escape(card.name)}</span><span class="cardboard-count">所有 ×${count}</span>${dormant ? `<span class="cardboard-dormant">休業 ${dormant}枚 / 稼働 ${count - dormant}枚</span>` : ''}${eventHtml}</button>`;
+            return `<button type="button" class="cardboard-card cardboard-card-${color}${dormant === count ? ' cardboard-card-dormant' : ''}${event ? ' cardboard-card-activated' : ''}" data-action="showCardDetail" data-card-name="${escape(card.name)}"${eventAttrs}><span class="cardboard-dice" aria-label="発動する出目 ${escape(dice.join('・'))}">${escape(dice.join('・') || '—')}</span><span class="cardboard-category"><span aria-hidden="true"><span class="card-family-mark" data-category="${escape(card.category)}"></span>${escape(colorNames[color] || '不明')} · ${escape(card.category)}</span><span class="visually-hidden">${escape(card.category)}。${escape(colorLabels[color] || '分類不明')}。詳しい効果を開く。</span></span><span class="cardboard-art">${art(card.name, false, card.category)}</span><span class="cardboard-name">${escape(card.name)}</span><span class="cardboard-count">所有 ×${count}</span>${dormant ? `<span class="cardboard-dormant">休業 ${dormant}枚 / 稼働 ${count - dormant}枚</span>` : ''}${eventHtml}</button>`;
         }).join('');
         const names = landmarkNames(player, options);
         const landmarks = names.map(name => {
@@ -70,11 +82,11 @@ const UiCardBoard = (() => {
             const built = names.filter(name => player.landmarks?.[name] === true).length;
             const counts = { blue: 0, green: 0, red: 0, purple: 0 };
             for (const card of player.cards || []) { if (Object.hasOwn(counts, card.color)) counts[card.color]++; }
-            const trend = `青${counts.blue} 緑${counts.green} 赤${counts.red} 紫${counts.purple}`;
+            const trend = Object.keys(counts).map(color => `<span class="cardboard-color-count cardboard-color-count-${color}">${colorNames[color]} ${counts[color]}</span>`).join('');
             return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}" data-cardboard-player-index="${index}" aria-pressed="${index === options.selectedIndex}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong>席${index + 1}・${escape(player.name)}${index === options.selfIndex ? '（自分）' : ''}</strong><span>${escape(player.coins)}コイン · 目標 ${built}/${names.length}</span><small class="cardboard-roster-trend">${trend}</small></button>`;
         }).join('')}</nav>`;
     }
-    return Object.freeze({ buildPlayerHtml, buildRosterHtml });
+    return Object.freeze({ buildPlayerHtml, buildRosterHtml, selectDetailIndices });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = UiCardBoard;
 if (typeof window !== 'undefined') window.UiCardBoard = UiCardBoard;

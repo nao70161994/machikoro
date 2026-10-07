@@ -19,7 +19,8 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     assert.ok(html.includes('休業 1枚 / 稼働 1枚'));
     assert.ok(html.includes('cardboard-card-blue'));
     assert.ok(html.includes('発動する出目 5'));
-    assert.ok(html.includes('工業 · 青：全員の手番'));
+    assert.ok(html.includes('青 · 工業'));
+    assert.ok(html.includes('class="visually-hidden">工業。青：全員の手番に発動。詳しい効果を開く。'));
     assert.ok(html.includes('data-action="showLandmarkDetail" data-landmark-name="駅"'));
     assert.ok(html.includes('建設済'));
     assert.ok(html.includes('未建設'));
@@ -64,6 +65,43 @@ runTest('席・名前の同一性と選択/現在/自分を分離し10席に制�
     assert.strictEqual((html.match(/aria-current="true"/g) || []).length, 1);
     assert.ok(html.includes('席10・&lt;街の主&gt;'));
     assert.ok(!html.includes('席11'));
+    assert.strictEqual((html.match(/class="cardboard-color-count cardboard-color-count-blue"/g) || []).length, 10);
+    assert.ok(html.includes('cardboard-color-count-blue">青 2</span>'));
+    assert.ok(html.includes('cardboard-color-count-green">緑 0</span>'));
+    assert.ok(html.includes('cardboard-color-count-red">赤 0</span>'));
+    assert.ok(html.includes('cardboard-color-count-purple">紫 0</span>'));
+});
+runTest('2〜4人は全員、5〜10人は役割を優先し重複時も必ず3人を比較できる', () => {
+    for (let count = 2; count <= 4; count++) {
+        assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, { selfIndex: 1, currentIndex: 1, selectedIndex: 1 }),
+            Array.from({ length: count }, (_, index) => index));
+    }
+    for (let count = 5; count <= 10; count++) {
+        for (let self = 0; self < count; self++) {
+            for (let current = 0; current < count; current++) {
+                for (let selected = 0; selected < count; selected++) {
+                    const roles = { selfIndex: self, currentIndex: current, selectedIndex: selected };
+                    const indices = UiCardBoard.selectDetailIndices(count, roles);
+                    assert.strictEqual(indices.length, 3);
+                    assert.strictEqual(new Set(indices).size, 3);
+                    assert.strictEqual(indices[0], self);
+                    assert.ok(indices.includes(current));
+                    assert.ok(indices.includes(selected));
+                    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, roles), indices);
+                    if (self === current && self === selected) {
+                        assert.deepStrictEqual(indices.slice(1), Array.from({ length: count }, (_, index) => index)
+                            .filter(index => index !== self).slice(0, 2));
+                    }
+                }
+            }
+        }
+    }
+});
+runTest('不正な席は詳細表示へ持ち込まず入力を変更しない', () => {
+    const roles = { selfIndex: 9, currentIndex: -1, selectedIndex: '1' };
+    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(5, roles), [0, 1, 2]);
+    assert.deepStrictEqual(roles, { selfIndex: 9, currentIndex: -1, selectedIndex: '1' });
+    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(0, roles), []);
 });
 runTest('空状態と任意アダプタ不在でも安全なHTMLを返す', () => {
     const html = UiCardBoard.buildPlayerHtml({ name: '"<script>', coins: 0, cards: [], landmarks: {} });
