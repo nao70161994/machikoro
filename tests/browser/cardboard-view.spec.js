@@ -146,8 +146,15 @@ test('所有施設をスクロール中の収支更新でも表示位置を保�
 test('新しい出目だけを強調し表示切替で過去の演出を再生しない', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 });
     await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
-    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.rollDice(3); render(); acceptHotseatHandoff(); });
-    await expect(page.locator('#cardboardBoard')).toHaveClass(/cardboard-new-roll/);
+    const revealed = await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.rollDice(3);
+        render();
+        acceptHotseatHandoff();
+        // Observe the short pulse in the same browser task that creates it;
+        // a separate protocol request can arrive after its 900ms lifetime.
+        return document.getElementById('cardboardBoard').classList.contains('cardboard-new-roll');
+    });
+    expect(revealed).toBe(true);
     const before = await state(page);
     await selectTheme(page, 'plaza');
     await selectTheme(page, 'cardboard');

@@ -67,7 +67,7 @@ for (const scenario of ['SELECT_DICE', 'REROLL_CONFIRM', 'HARBOR_CHOICE', 'TV'])
         for (const theme of ['classic', 'sunset', 'plaza', 'cardboard']) {
             await switchTheme(page, theme);
             expect(await snapshot(page)).toEqual(before);
-            if (scenario === 'REROLL_CONFIRM') await expect(page.locator('#diceChoose')).toContainText('5 + 1（合計6）');
+            if (scenario === 'REROLL_CONFIRM') await expect(page.locator('#diceChoose')).toContainText(/5\s*\+\s*🎲?1（合計6）/u);
         }
         const action = {
             SELECT_DICE: '#diceChoose [data-use-two="false"]',
@@ -77,7 +77,8 @@ for (const scenario of ['SELECT_DICE', 'REROLL_CONFIRM', 'HARBOR_CHOICE', 'TV'])
         }[scenario];
         await expect(page.locator(action)).toBeEnabled();
         await page.locator(action).click();
-        expect((await snapshot(page)).phase).not.toBe(before.phase);
+        // Dice selection commits after the shared roll animation finishes.
+        await expect.poll(async () => (await snapshot(page)).phase).toBe('build');
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
@@ -90,15 +91,16 @@ test('動きを減らす設定とガイド・ログ・更新通知があって�
         render();
         acceptHotseatHandoff();
         document.getElementById('log').classList.remove('collapsed');
-        document.getElementById('pwaUpdateBanner').style.display = 'flex';
-        document.body.classList.add('pwa-banner-open');
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
     });
     await expect(page.locator('#tutorialBox')).toBeVisible();
     await expect(page.locator('#gameLogContainer')).toBeVisible();
     await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
+    await expect(page.locator('body')).toHaveClass(/pwa-banner-open/);
     const before = await snapshot(page);
     const target = page.locator('[data-action="resolveTV"][data-target-index="1"]');
     await target.click();
+    await expect.poll(async () => (await snapshot(page)).pendingTV).toBe(0);
     const after = await snapshot(page);
     expect(after.pendingTV).toBe(0);
     expect(after.players[0].coins).toBe(before.players[0].coins + 5);
@@ -171,9 +173,9 @@ test('選択中のビュー復帰はスクロールせずキーボードで選�
     expect(calls).toBe(0);
     expect(await snapshot(page)).toEqual(before);
     await page.evaluate(() => {
-        document.getElementById('pwaUpdateBanner').style.display = 'flex';
-        document.body.classList.add('pwa-banner-open');
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
     });
+    await expect(page.locator('body')).toHaveClass(/pwa-banner-open/);
     await page.locator('#cardboardChoiceJump').click();
     await page.locator('#cardboardChoiceJump').focus();
     await page.keyboard.press('Enter');

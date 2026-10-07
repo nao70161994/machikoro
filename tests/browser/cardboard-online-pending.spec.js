@@ -1,6 +1,11 @@
 const { test, expect, devices } = require('@playwright/test');
 const { isDeepStrictEqual } = require('node:util');
 
+// Four-client DOM snapshots on every evaluation exhausted the 90s deadline
+// after the gameplay checks. Keep trace actions/sources, explicit state-diff
+// attachments and configured failure screenshots without repeated DOM captures.
+test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true } });
+
 // Test-only canonical fixture is distributed exclusively through real rejoin snapshots.
 test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適用する', async ({ browser, baseURL }, testInfo) => {
     test.setTimeout(90000);
@@ -13,6 +18,7 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
         httpServer.listen(0, '127.0.0.1', resolve);
     });
     baseURL = `http://127.0.0.1:${httpServer.address().port}`;
+    let primaryFailure = false;
     const contexts = [];
     const pages = [];
     const errors = [];
@@ -24,6 +30,7 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
         dice: GameRuntimeState.runtime.snapshot().game.lastDiceResult,
         room: onlineSessionSnapshot().myRoomId,
         seq: _lastAppliedOnlineActionSeq(),
+        localSystemCount: GameRuntimeState.runtime.snapshot().game.reviewSummary?.counts?.[LOG_TYPES.SYSTEM] ?? 0,
         localUndoPresent: GameRuntimeState.runtime.snapshot().undoState != null,
         state: (() => {
             // The shared gameplay snapshot excludes each device's Undo UI cache.
@@ -33,18 +40,18 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
                 logLimit: Number.MAX_SAFE_INTEGER,
             });
             // online.js adds these recipient-local transport notices outside
-            // canonical actions (including SYSTEM review counts). Retain all
-            // gameplay logs and every other reviewSummary field for comparison.
+            // canonical actions. Retain every nonlocal gameplay log.
             const localNotice = entry => entry.type === LOG_TYPES.SYSTEM && (
                 entry.message === '👑 あなたがホストになりました' ||
                 (entry.message.startsWith('🔌 ') && (entry.message.endsWith('が再接続しました') || entry.message.endsWith('が切断しました')))
             );
-            const noticeCount = state.log.filter(localNotice).length;
             state.log = state.log.filter(entry => !localNotice(entry));
-            if (noticeCount && state.reviewSummary.counts[LOG_TYPES.SYSTEM] !== undefined) {
-                state.reviewSummary.counts[LOG_TYPES.SYSTEM] -= noticeCount;
-                if (state.reviewSummary.counts[LOG_TYPES.SYSTEM] === 0) delete state.reviewSummary.counts[LOG_TYPES.SYSTEM];
-            }
+            // SYSTEM counts mix canonical events with recipient-local notices
+            // cumulatively, while turn/reroll logs are cleared. Historical local
+            // counts cannot be recovered from the remaining log. Diagnose only
+            // this count separately; retain nonlocal SYSTEM logs and all other
+            // review fields and gameplay state in the strict comparison.
+            delete state.reviewSummary.counts[LOG_TYPES.SYSTEM];
             return state;
         })(),
     }));
@@ -54,7 +61,7 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
             await expect.poll(async () => {
                 const states = await Promise.all(pages.map(snapshot));
                 latest = states;
-                const canonical = states.map(({ localUndoPresent, ...state }) => state);
+                const canonical = states.map(({ localUndoPresent, localSystemCount, ...state }) => state);
                 return 1 + canonical.slice(1).filter(state => !isDeepStrictEqual(state, canonical[0])).length;
             }).toBe(1);
         } catch (error) {
@@ -64,7 +71,10 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
         await testInfo.attach('local-undo-cache-presence', {
             body: JSON.stringify(latest.map(state => state.localUndoPresent)), contentType: 'application/json',
         });
-        const { localUndoPresent, ...canonical } = await snapshot(pages[0]);
+        await testInfo.attach('local-system-counts', {
+            body: JSON.stringify(latest.map(state => state.localSystemCount)), contentType: 'application/json',
+        });
+        const { localUndoPresent, localSystemCount, ...canonical } = await snapshot(pages[0]);
         return canonical;
     };
     const selectTheme = async (page, theme) => {
@@ -154,9 +164,17 @@ test('4テーマのTV選択は正本snapshot復元後に同じ承認actionを適
         expect(finalMirror.game.phase).toBe(after.phase);
         expect(canonicalRoom.actionLog.at(-1).action).toBe('resolveTV');
         expect(errors).toEqual([]);
+    } catch (error) {
+        primaryFailure = true;
+        throw error;
     } finally {
-        await Promise.all(contexts.map(context => context.close()));
-        restoreHeartbeat();
-        await new Promise(resolve => server.__io.close(resolve));
+        const cleanup = await Promise.allSettled(contexts.map(context => context.close()));
+        // Always attempt both server cleanups even when a browser close fails.
+        cleanup.push(...await Promise.allSettled([
+            Promise.resolve().then(() => restoreHeartbeat()),
+            new Promise(resolve => server.__io.close(resolve)),
+        ]));
+        const rejected = cleanup.find(result => result.status === 'rejected');
+        if (!primaryFailure && rejected) throw rejected.reason;
     }
 });

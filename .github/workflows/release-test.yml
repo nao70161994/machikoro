@@ -75,7 +75,8 @@ jobs:
 
   mobile-webkit:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # Serialized WebKit tests took 34m; leave time to upload failure evidence.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
