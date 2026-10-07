@@ -9163,3 +9163,27 @@ html[data-design="cardboard"] .game-action-panel .buttons #btnRoll:disabled {
     html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-activation,
     html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-dormant { grid-column: 1 / -1; }
 }
+/* A fresh, confirmed roll briefly owns the table; restoring a view never pulses. */
+html[data-design="cardboard"] .cardboard-new-roll #cardboardDiceReceipt .plaza-receipt-dice {
+    animation: cardboard-roll-reveal 900ms ease-out both;
+    color: #103f7a;
+    text-shadow: 0 1px #fff;
+}
+html[data-design="cardboard"] .cardboard-new-roll .cardboard-card-activated {
+    box-shadow: 0 0 0 4px #f4bc20, 0 0 18px #f4bc2066;
+}
+@keyframes cardboard-roll-reveal {
+    from { transform: scale(1.08); background: #ffe89c; }
+    to { transform: scale(1); background: transparent; }
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion .cardboard-new-roll .plaza-receipt-dice { animation: none; background: #ffe89c; }
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] .cardboard-new-roll .plaza-receipt-dice { animation: none; background: #ffe89c; }
+}
+/* Keep all three local tool disclosures on one row in the narrow plaza HUD. */
+html[data-design="plaza"] .game-action-toolbar > details > summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+}

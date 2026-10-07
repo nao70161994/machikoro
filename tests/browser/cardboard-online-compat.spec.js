@@ -1,8 +1,9 @@
 const { test, expect, devices } = require('@playwright/test');
+const { isDeepStrictEqual } = require('node:util');
 
 // Real Socket.IO room and server-generated dice, following plaza-online and
 // mobile-webkit's saved online reconnect path. No game/action state is injected.
-test('4テーマ混在オンラインは途中切替と再接続でも同じ正本を保持する', async ({ browser, baseURL }) => {
+test('4テーマ混在オンラインは途中切替と再接続でも同じ正本を保持する', async ({ browser, baseURL }, testInfo) => {
     test.setTimeout(90000);
     const contexts = [];
     const pages = [];
@@ -15,13 +16,36 @@ test('4テーマ混在オンラインは途中切替と再接続でも同じ正�
         dice: GameRuntimeState.runtime.snapshot().game.lastDiceResult,
         room: onlineSessionSnapshot().myRoomId,
         seq: _lastAppliedOnlineActionSeq(),
-        state: GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER),
+        state: (() => {
+            const state = GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
+            // online.js adds these recipient-local transport notices outside
+            // canonical actions (including SYSTEM review counts). Retain all
+            // gameplay logs and every other reviewSummary field for comparison.
+            const localNotice = entry => entry.type === LOG_TYPES.SYSTEM && (
+                entry.message === '👑 あなたがホストになりました' ||
+                (entry.message.startsWith('🔌 ') && (entry.message.endsWith('が再接続しました') || entry.message.endsWith('が切断しました')))
+            );
+            const noticeCount = state.log.filter(localNotice).length;
+            state.log = state.log.filter(entry => !localNotice(entry));
+            if (noticeCount && state.reviewSummary.counts[LOG_TYPES.SYSTEM] !== undefined) {
+                state.reviewSummary.counts[LOG_TYPES.SYSTEM] -= noticeCount;
+                if (state.reviewSummary.counts[LOG_TYPES.SYSTEM] === 0) delete state.reviewSummary.counts[LOG_TYPES.SYSTEM];
+            }
+            return state;
+        })(),
     }));
     const synchronized = async () => {
-        await expect.poll(async () => {
-            const states = await Promise.all(pages.map(snapshot));
-            return new Set(states.map(state => JSON.stringify(state))).size;
-        }).toBe(1);
+        let latest;
+        try {
+            await expect.poll(async () => {
+                const states = await Promise.all(pages.map(snapshot));
+                latest = states;
+                return 1 + states.slice(1).filter(state => !isDeepStrictEqual(state, states[0])).length;
+            }).toBe(1);
+        } catch (error) {
+            await testInfo.attach('online-state-difference', { body: JSON.stringify(latest, null, 2), contentType: 'application/json' });
+            throw error;
+        }
         return snapshot(pages[0]);
     };
     const selectTheme = async (page, theme) => {

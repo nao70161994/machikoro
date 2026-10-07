@@ -1,3 +1,4 @@
+declare var CardBoardFeedback: typeof import("../js/cardBoardFeedback");
 declare var UiCardBoard: typeof import("../js/uiCardBoard");
 declare var CardBoardField: typeof import("../js/cardBoardField");
 declare var UiIncomePreview: typeof import("../js/uiIncomePreview");

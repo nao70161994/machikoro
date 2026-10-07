@@ -1,11 +1,11 @@
 const { test, expect } = require('@playwright/test');
 
-async function prepare(page, viewport, count = 4) {
+async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.setViewportSize(viewport);
     await page.addInitScript(() => { if (!localStorage.getItem('machikoroDesignTheme')) localStorage.setItem('machikoroDesignTheme', 'cardboard'); });
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
-    await page.evaluate(count => {
+    await page.evaluate(({ count, controlledCards }) => {
         startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}` })));
         const state = GameRuntimeState.runtime.snapshot();
         state.cpuPlayers.fill(null);
@@ -13,13 +13,13 @@ async function prepare(page, viewport, count = 4) {
         state.game.currentPlayerIndex = 0;
         state.game.players.forEach((player, index) => {
             player.name = `街${index + 1}`;
-            player.cards = Array.from({ length: index ? 2 : 4 }, () => createCardByName(index ? 'カフェ' : '麦畑'));
+            if (controlledCards) player.cards = Array.from({ length: index ? 2 : 4 }, () => createCardByName(index ? 'カフェ' : '麦畑'));
             player.coins = 30;
         });
         setTutorialEnabled(false);
         render();
         acceptHotseatHandoff();
-    }, count);
+    }, { count, controlledCards });
 }
 const state = page => page.evaluate(() => GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
 async function selectTheme(page, theme) {
@@ -69,11 +69,11 @@ test('10人のカード盤面は自分・手番・選択相手を読める大き
 });
 
 test('購入とUndo・保存再開はカード盤面と既存ビューで共通の状態を使う', async ({ page }) => {
-    await prepare(page, { width: 390, height: 844 });
+    await prepare(page, { width: 390, height: 844 }, 4, false);
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); acceptHotseatHandoff(); });
     const before = await state(page);
     await page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]').click();
-    await expect(page.locator('#cardboardSeats [data-player-index="0"] .cardboard-count')).toHaveText('所有 ×5');
+    await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×2');
     const built = await state(page);
     await selectTheme(page, 'plaza');
     expect(await state(page)).toEqual(built);
@@ -141,4 +141,18 @@ test('所有施設をスクロール中の収支更新でも表示位置を保�
     expect(before).toBeGreaterThan(0);
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[0].coins++; render(); });
     expect(await scroll()).toBe(before);
+});
+
+test('新しい出目だけを強調し表示切替で過去の演出を再生しない', async ({ page }) => {
+    await prepare(page, { width: 390, height: 844 });
+    await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.rollDice(3); render(); acceptHotseatHandoff(); });
+    await expect(page.locator('#cardboardBoard')).toHaveClass(/cardboard-new-roll/);
+    const before = await state(page);
+    await selectTheme(page, 'plaza');
+    await selectTheme(page, 'cardboard');
+    await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
+    expect(await state(page)).toEqual(before);
+    await page.waitForTimeout(1000);
+    await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
 });

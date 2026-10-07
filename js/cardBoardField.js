@@ -1,5 +1,5 @@
 'use strict';
-/* global UiCardBoard, UiPlazaEvents, UiBuildMenu, PlazaField, CARDS, Player */
+/* global MutationObserver, CardBoardFeedback, UiCardBoard, UiPlazaEvents, UiBuildMenu, PlazaField, CARDS, Player */
 
 // Presentation state only: no game actions, storage, random calls or rule updates.
 const CardBoardField = (() => {
@@ -10,10 +10,20 @@ const CardBoardField = (() => {
     let marketAnchor = null;
     let session = null;
     let receiptSession = null;
+    let feedbackTimer = null;
+    const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
     const node = id => document.getElementById(id);
     const enabled = () => document.documentElement.dataset.design === 'cardboard';
 
+    function clearFeedback() {
+        if (feedbackTimer !== null) clearTimeout(feedbackTimer);
+        feedbackTimer = null;
+        node('cardboardBoard')?.classList.remove('cardboard-new-roll');
+    }
+
     function detach() {
+        clearFeedback();
+        feedback?.reset();
         if (!mounted) return;
         const market = node('buildMenu');
         const goals = node('cardboardGoalsBody');
@@ -48,6 +58,14 @@ const CardBoardField = (() => {
     function initialize() {
         if (initialized || !node('cardboardBoard')) return;
         initialized = true;
+        const clearHiddenFeedback = () => {
+            if (document.hidden || node('gameScreen')?.style.display === 'none') {
+                clearFeedback();
+                feedback?.reset();
+            }
+        };
+        document.addEventListener('visibilitychange', clearHiddenFeedback);
+        new MutationObserver(clearHiddenFeedback).observe(node('gameScreen'), { attributes: true, attributeFilter: ['style'] });
         node('cardboardRoster').addEventListener('click', event => {
             const button = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cardboard-player-index]'));
             if (!button) return;
@@ -107,6 +125,8 @@ const CardBoardField = (() => {
         const currentIndex = validIndex(game.currentPlayerIndex) ? game.currentPlayerIndex : 0;
         const selfIndex = validIndex(facts.selfIndex) ? facts.selfIndex : currentIndex;
         if (!validIndex(selectedIndex)) selectedIndex = selfIndex;
+        const newRoll = feedback?.refresh(facts) === true;
+        if (facts.replaying || feedback?.wasInvalidated()) clearFeedback();
         const events = UiPlazaEvents.project(game.log, {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
             cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
@@ -153,6 +173,11 @@ const CardBoardField = (() => {
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
         receipt.dataset.dice = dice;
         receiptSession = session;
+        if (newRoll) {
+            clearFeedback();
+            node('cardboardBoard').classList.add('cardboard-new-roll');
+            feedbackTimer = setTimeout(clearFeedback, 900);
+        }
         updateMarket();
     }
 
@@ -160,6 +185,8 @@ const CardBoardField = (() => {
         initialize();
         if (nextFacts.session !== session) {
             selectedIndex = null;
+            clearFeedback();
+            feedback?.reset();
             session = nextFacts.session;
         }
         facts = nextFacts;
