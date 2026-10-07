@@ -8,7 +8,9 @@ async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.evaluate(({ count, controlledCards }) => {
         startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}` })));
         const state = GameRuntimeState.runtime.snapshot();
-        state.cpuPlayers.fill(null);
+        // This fixture replaces the shuffled CPU session with controlled human
+        // seats. Give presentation controllers the new session identity too.
+        GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: count }, () => null));
         cancelCpuSchedule('cardboard-view');
         state.game.currentPlayerIndex = 0;
         state.game.players.forEach((player, index) => {
