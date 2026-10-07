@@ -112,3 +112,7 @@ runTest('広場テーマは夕暮れのアート・操作・アクセシビリ�
     assert.ok(css.includes(`${scope} .town-street`));
     assert.ok(!css.includes('html[data-design="sunset"]'));
 });
+
+runTest('カード盤面のテーマも端末設定として保存できる', () => {
+    assert.strictEqual(DesignTheme.normalize('cardboard'), 'cardboard');
+});

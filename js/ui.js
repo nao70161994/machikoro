@@ -1,4 +1,4 @@
-/* global Element, MutationObserver, UiPlazaEvents, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
+/* global CardBoardField, Element, MutationObserver, UiPlazaEvents, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
@@ -1409,6 +1409,7 @@ function renderPlayers() {
         });
     }
     if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection(), townSession, currentGame.phase);
+    if (typeof CardBoardField !== 'undefined') CardBoardField.render({ game: currentGame, selfIndex: primaryPlayerIndex, escapeHtml, enabledLandmarks: getEnabledLandmarkSelection(), session: townSession, display: LOG_TYPE_DISPLAY });
     plazaIncomePreviewPanel?.refresh(currentGame);
     if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
         animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
@@ -1584,7 +1585,7 @@ function renderBuildMenu() {
     let activeWithinBuildMenu = false;
     let ancestor = activeElement;
     while (ancestor) {
-        if (ancestor === buildMenu) {
+        if (ancestor === buildMenu || ancestor === document.getElementById('cardboardGoalsBody')) {
             activeWithinBuildMenu = true;
             break;
         }
@@ -1619,12 +1620,13 @@ function renderBuildMenu() {
         buildMenuFilterController.setAutomatic('affordable');
     }
     buildMenu.innerHTML = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction);
+    if (typeof CardBoardField !== 'undefined') CardBoardField.updateMarket();
     UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
         findIdentity(identity) {
             if (!identity || typeof buildMenu.querySelectorAll !== 'function') return null;
-            const elements = /** @type {NodeListOf<HTMLElement>} */ (
-                buildMenu.querySelectorAll(`[data-action="${identity.action}"]`)
-            );
+            const elements = [buildMenu, document.getElementById('cardboardGoalsBody')].filter(Boolean).flatMap(container => Array.from(
+                /** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll(`[data-action="${identity.action}"]`))
+            ));
             return Array.from(elements)
                 .find(element => identity.action === 'buildCard'
                     ? element.dataset?.cardName === identity.name

@@ -1,10 +1,11 @@
 'use strict';
+/* global CustomEvent */
 
 // This preference is device-local and never enters game saves or online actions.
 const DesignTheme = (() => {
     const STORAGE_KEY = 'machikoroDesignTheme';
     function normalize(value) {
-        return value === 'plaza' || value === 'sunset' ? value : 'classic';
+        return value === 'cardboard' || value === 'plaza' || value === 'sunset' ? value : 'classic';
     }
     function arrangeGameSections(documentRef, design) {
         const screen = documentRef.getElementById('gameScreen');
@@ -28,10 +29,12 @@ const DesignTheme = (() => {
             selected = normalize(value);
             documentRef.documentElement.setAttribute('data-design', selected);
             arrangeGameSections(documentRef, selected);
-            const control = documentRef.getElementById('designThemeSelect');
-            if (control) control.value = selected;
+            for (const id of ['designThemeSelect', 'gameDesignThemeSelect']) {
+                const control = documentRef.getElementById(id);
+                if (control) control.value = selected;
+            }
             const currentLabel = documentRef.getElementById('designThemeCurrentLabel');
-            if (currentLabel) currentLabel.textContent = selected === 'plaza'
+            if (currentLabel) currentLabel.textContent = selected === 'cardboard' ? 'にぎわい広場（カード盤面）' : selected === 'plaza'
                 ? '夕暮れの広場'
                 : (selected === 'sunset' ? '夕暮れの街' : 'クラシック');
             if (persist) {
@@ -42,6 +45,9 @@ const DesignTheme = (() => {
                     ? 'デザインを変更しました。次回もこの設定で開きます。'
                     : 'デザインを変更しました。この端末では設定を保存できないため、今回のみ適用します。';
             }
+            if (typeof documentRef.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') {
+                documentRef.dispatchEvent(new CustomEvent('design-theme-change', { detail: { design: selected } }));
+            }
         }
         apply(selected);
         const sync = () => apply(selected);
@@ -49,7 +55,7 @@ const DesignTheme = (() => {
             documentRef.addEventListener('DOMContentLoaded', sync, { once: true });
         } else sync();
         documentRef.addEventListener('change', event => {
-            if (event.target && event.target.id === 'designThemeSelect') apply(event.target.value, true);
+            if (event.target && ['designThemeSelect', 'gameDesignThemeSelect'].includes(event.target.id)) apply(event.target.value, true);
         });
         return Object.freeze({ apply, current: () => selected });
     }

@@ -7,6 +7,8 @@ const browserMaintenanceFiles = Object.freeze([
     'js/plazaField.js',
     'js/uiIncomePreview.js',
     'js/uiIncomePreviewPanel.js',
+    'js/uiCardBoard.js',
+    'js/cardBoardField.js',
     'js/uiPlayerInsights.js',
     'js/uiPlazaEvents.js',
     'js/uiPlazaFeedback.js',

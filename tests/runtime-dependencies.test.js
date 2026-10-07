@@ -32,6 +32,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/uiPlazaFeedback.js', 'js/ui.js'],
             ['js/cpuSimulation.js', 'js/uiIncomePreview.js', 'js/uiIncomePreviewPanel.js', 'js/ui.js'],
             ['js/uiPlayerInsights.js', 'js/plazaField.js', 'js/ui.js'],
+            ['js/uiBuildMenu.js', 'js/uiCardBoard.js', 'js/cardBoardField.js', 'js/ui.js'],
             ['js/gameSetupState.js', 'js/ui.js'],
             ['js/gameSelectionState.js', 'js/gameSetupState.js', 'js/storage.js'],
             ['js/gameRuntimeState.js', 'js/online.js'],

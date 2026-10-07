@@ -152,6 +152,8 @@ const STATIC_ASSETS = [
   '/js/uiPlazaFeedback.js',
   '/js/uiIncomePreview.js',
   '/js/uiIncomePreviewPanel.js',
+  '/js/uiCardBoard.js',
+  '/js/cardBoardField.js',
   '/js/uiPlayerInsights.js',
   '/js/uiLogHighlightEffects.js',
   '/js/uiCardOrder.js',

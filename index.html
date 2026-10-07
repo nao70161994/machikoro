@@ -286,6 +286,7 @@
                             <option value="classic">クラシック（従来版）</option>
                             <option value="sunset">夕暮れの街</option>
                             <option value="plaza">夕暮れの広場（盤面）</option>
+                            <option value="cardboard">にぎわい広場（カード盤面）</option>
                         </select>
                         <p id="designThemeHelp">見た目だけを変更します。ルール・保存データ・オンライン対戦は共通です。いつでもここで戻せます。</p>
                         <p id="designThemeStatus" role="status" aria-live="polite"></p>
@@ -367,6 +368,15 @@
 
     <div id="gameScreen" role="main" aria-label="ゲーム画面" style="display:none">
         <div id="status" class="status"></div>
+
+        <div id="cardboardBoard" hidden role="region" aria-label="にぎわい広場のカード盤面">
+            <div id="cardboardControls"><p>出目と所有枚数を見比べて、施設を選びましょう。</p></div>
+            <div id="cardboardRoster"></div>
+            <div id="cardboardSeats"><div id="cardboardMarket" aria-label="共有市場"></div></div>
+            <div id="cardboardDiceReceipt" aria-label="出目と発動結果" aria-live="polite"></div>
+            <details id="cardboardGoals"><summary>自分のランドマークを建設</summary><div id="cardboardGoalsBody"></div></details>
+        </div>
+
         <div id="plazaPlayerHud" aria-label="全員の状況"></div>
         <div id="plazaViewport" role="region" aria-label="広場フィールド。ドラッグで移動、ピンチで拡大縮小">
             <div id="plazaWorld"><div class="plaza-road plaza-road-horizontal"></div><div class="plaza-road plaza-road-vertical"></div></div>
@@ -416,6 +426,7 @@
                 <button id="btnSkip" data-ui-action="onSkip" disabled>建設しないでターン終了</button>
             </div>
             <div class="game-action-toolbar">
+        <details class="game-design-switcher"><summary>画面デザイン</summary><label for="gameDesignThemeSelect">この端末の表示</label><select id="gameDesignThemeSelect"><option value="classic">クラシック</option><option value="sunset">夕暮れの街</option><option value="plaza">夕暮れの広場</option><option value="cardboard">にぎわい広場（カード盤面）</option></select></details>
                 <details class="game-guide-settings">
                     <summary>ガイド設定</summary>
                     <div class="panel-tools">
@@ -816,6 +827,8 @@
     <script src="js/plazaField.js"></script>
     <script src="js/uiInputPolicy.js"></script>
     <script src="js/uiBuildMenu.js"></script>
+    <script src="js/uiCardBoard.js"></script>
+    <script src="js/cardBoardField.js"></script>
     <script src="js/uiPendingMenu.js"></script>
     <script src="js/uiPendingEffects.js"></script>
     <script src="js/uiCardDetail.js"></script>

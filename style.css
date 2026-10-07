@@ -8855,3 +8855,311 @@ html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-secondary.plaza-ma
 html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-secondary:focus-within .sunset-facility-art {
     opacity: 1;
 }
+
+/* にぎわい広場: a local card-table view. All selectors are theme-scoped. */
+html[data-design="cardboard"] {
+    --cardboard-ink: #183447;
+    --cardboard-paper: #fffdf5;
+    --cardboard-blue: #1766bd;
+    --cardboard-green: #187343;
+    --cardboard-red: #bc3043;
+    --cardboard-purple: #7944ad;
+}
+html[data-design="cardboard"] body {
+    background: radial-gradient(ellipse at top, #e4f1dc, #b7d7bd 65%, #91b7a8);
+    color: var(--cardboard-ink);
+}
+html[data-design="cardboard"] #gameScreen[style*="display: block"] {
+    display: block !important;
+    max-width: 1600px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 12px 12px calc(32px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    isolation: isolate;
+}
+html[data-design="cardboard"] #cardboardBoard {
+    display: grid;
+    grid-template-columns: minmax(210px, 1fr) minmax(300px, 1.6fr) minmax(210px, 1fr);
+    grid-template-areas: "roster roster roster" "controls controls controls" "top top top" "left market right" "bottom bottom bottom" "receipt receipt receipt";
+    align-items: start;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #dde9c8, #b8d5b7 55%, #d5e7cb);
+    box-shadow: inset 0 0 0 2px #ffffff80, 0 10px 32px #244f3b20;
+}
+html[data-design="cardboard"] #cardboardSeats { display: contents; }
+html[data-design="cardboard"] #cardboardRoster { grid-area: roster; display: flex; flex-wrap: wrap; gap: 6px; }
+html[data-design="cardboard"] #cardboardControls { grid-area: controls; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+html[data-design="cardboard"] #cardboardControls button,
+html[data-design="cardboard"] #cardboardControls select,
+html[data-design="cardboard"] .cardboard-roster-seat {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid #769483;
+    border-radius: 12px;
+    color: var(--cardboard-ink);
+    background: #fffdf4;
+    font: inherit;
+}
+html[data-design="cardboard"] .cardboard-roster-seat { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; text-align: left; }
+html[data-design="cardboard"] .cardboard-roster-seat[aria-pressed="true"] { background: #e2f3ff; box-shadow: inset 0 -3px #1766bd; }
+html[data-design="cardboard"] .cardboard-player {
+    min-width: 0;
+    padding: 10px;
+    border-radius: 16px;
+    background: #fffdf5e8;
+    box-shadow: 0 3px 10px #284b3520;
+    color: var(--cardboard-ink);
+    overflow-wrap: anywhere;
+}
+html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] { grid-area: top; }
+html[data-design="cardboard"] .cardboard-player[data-seat-position="left"] { grid-area: left; }
+html[data-design="cardboard"] .cardboard-player[data-seat-position="right"] { grid-area: right; }
+html[data-design="cardboard"] .cardboard-player[data-seat-position="bottom"] { grid-area: bottom; }
+html[data-design="cardboard"] .cardboard-player[data-seat-position="focus"] { grid-column: 1 / -1; }
+html[data-design="cardboard"] .cardboard-player.is-current,
+html[data-design="cardboard"] .cardboard-player[data-current="true"] { box-shadow: inset 0 4px #d69d20, 0 3px 10px #284b3520; }
+html[data-design="cardboard"] .cardboard-player-header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-bottom: 8px; }
+html[data-design="cardboard"] .cardboard-player-header h2,
+html[data-design="cardboard"] .cardboard-player-header h3 { margin: 0; font-size: 17px; color: var(--cardboard-ink); }
+html[data-design="cardboard"] .cardboard-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; align-items: stretch; }
+html[data-design="cardboard"] .cardboard-card {
+    --cardboard-card-color: var(--cardboard-blue);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 6px;
+    border: 2px solid var(--cardboard-card-color);
+    border-radius: 10px;
+    background: var(--cardboard-paper);
+    color: #183447;
+    text-align: left;
+    font: inherit;
+    box-shadow: 0 2px 3px #243a4120;
+    overflow: hidden;
+}
+html[data-design="cardboard"] .cardboard-card-blue { --cardboard-card-color: var(--cardboard-blue); }
+html[data-design="cardboard"] .cardboard-card-green { --cardboard-card-color: var(--cardboard-green); }
+html[data-design="cardboard"] .cardboard-card-red { --cardboard-card-color: var(--cardboard-red); }
+html[data-design="cardboard"] .cardboard-card-purple { --cardboard-card-color: var(--cardboard-purple); }
+html[data-design="cardboard"] .cardboard-dice { display: block; padding: 4px 7px; color: #fff; background: var(--cardboard-card-color); font-size: 21px; font-weight: 900; line-height: 1.2; letter-spacing: .02em; }
+html[data-design="cardboard"] .cardboard-art { display: block; width: 100%; height: 62px; object-fit: contain; background: #f3ecd8; }
+html[data-design="cardboard"] .cardboard-art svg,
+html[data-design="cardboard"] .cardboard-card .sunset-facility-art { display: block; width: 100%; height: 62px; }
+html[data-design="cardboard"] .cardboard-name { display: block; padding: 5px 6px 2px; font-size: 13px; font-weight: 800; line-height: 1.35; }
+html[data-design="cardboard"] .cardboard-count { display: block; padding: 0 6px; font-size: 16px; font-weight: 900; font-variant-numeric: tabular-nums; }
+html[data-design="cardboard"] .cardboard-category,
+html[data-design="cardboard"] .cardboard-dormant { display: block; margin: 2px 6px; font-size: 11px; line-height: 1.4; }
+html[data-design="cardboard"] .cardboard-dormant { padding: 2px 4px; background: #f1e5d5; border-radius: 4px; color: #693b20; }
+html[data-design="cardboard"] .cardboard-card[data-cardboard-activation-count]:not([data-cardboard-activation-count="0"]) { outline: 3px solid #f4bc20; outline-offset: 1px; box-shadow: 0 0 0 5px #fff2b580; }
+html[data-design="cardboard"] .cardboard-net,
+html[data-design="cardboard"] .cardboard-activation { display: block; padding: 3px 6px; font-size: 12px; font-weight: 800; background: #fff0ac; color: #563a00; }
+html[data-design="cardboard"] .cardboard-landmarks { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+html[data-design="cardboard"] .cardboard-landmark { min-height: 44px; padding: 6px 8px; border: 1px solid #b99b56; border-radius: 8px; background: #fff6da; color: #5a481b; font: inherit; font-size: 12px; }
+html[data-design="cardboard"] .cardboard-landmark.built { background: #f8df83; font-weight: 800; box-shadow: inset 0 -2px #b99b56; }
+html[data-design="cardboard"] .cardboard-landmark.unbuilt { border-style: dashed; }
+html[data-design="cardboard"] #cardboardMarket { grid-area: market; min-width: 0; padding: 10px; border-radius: 18px; background: #f3edda; box-shadow: inset 0 0 0 2px #d6c49d; }
+html[data-design="cardboard"] #cardboardMarket #buildMenu { position: static; width: auto; max-width: none; min-width: 0; margin: 0; padding: 0; max-height: 680px; overflow-y: auto; color: var(--cardboard-ink); }
+html[data-design="cardboard"] #cardboardMarket .build-card-section { background: transparent; border: 0; padding: 6px 0; }
+html[data-design="cardboard"] #cardboardMarket .card-grid { grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 8px; }
+html[data-design="cardboard"] #cardboardMarket .card-btn { color: var(--cardboard-ink); background: #fffdf5; }
+html[data-design="cardboard"] #cardboardMarket .card-color-blue { border-color: var(--cardboard-blue); }
+html[data-design="cardboard"] #cardboardMarket .card-color-green { border-color: var(--cardboard-green); }
+html[data-design="cardboard"] #cardboardMarket .card-color-red { border-color: var(--cardboard-red); }
+html[data-design="cardboard"] #cardboardMarket .card-color-purple { border-color: var(--cardboard-purple); }
+html[data-design="cardboard"] #cardboardMarket .card-top-strip { color: #fff; background: var(--cardboard-blue); }
+html[data-design="cardboard"] #cardboardMarket .card-color-green .card-top-strip { background: var(--cardboard-green); }
+html[data-design="cardboard"] #cardboardMarket .card-color-red .card-top-strip { background: var(--cardboard-red); }
+html[data-design="cardboard"] #cardboardMarket .card-color-purple .card-top-strip { background: var(--cardboard-purple); }
+html[data-design="cardboard"] #cardboardMarket .card-color-landmark .card-top-strip { color: #533f11; background: #f8df83; }
+html[data-design="cardboard"] #cardboardMarket .card-name { color: var(--cardboard-ink); }
+html[data-design="cardboard"] #cardboardMarket .card-effect,
+html[data-design="cardboard"] #cardboardMarket .card-stock,
+html[data-design="cardboard"] #cardboardMarket .card-detail-btn { color: #3c5361; }
+html[data-design="cardboard"] #cardboardDiceReceipt { grid-area: receipt; padding: 10px 14px; border-radius: 14px; background: #fffaf0; color: var(--cardboard-ink); }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { margin: 0; font-size: 28px; font-weight: 900; color: #24527a; }
+html[data-design="cardboard"] #cardboardDiceReceipt details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+html[data-design="cardboard"] #cardboardDiceReceipt p { margin: 4px 0; }
+html[data-design="cardboard"] #gameScreen > .game-action-panel,
+html[data-design="cardboard"] #gameScreen > #tutorialBox,
+html[data-design="cardboard"] #gameScreen > #gameLogContainer,
+html[data-design="cardboard"] #gameScreen > #plazaComparison,
+html[data-design="cardboard"] #gameScreen > #plazaPlayerInsights { position: static; inset: auto; width: auto; max-width: none; max-height: none; margin: 10px 0; transform: none; }
+html[data-design="cardboard"] #gameScreen > .game-action-panel { background: #fffdf5; color: var(--cardboard-ink); }
+html[data-design="cardboard"] #gameScreen :is(button, select, summary):focus-visible { outline: 3px solid #075b9e; outline-offset: 3px; }
+@media (max-width: 760px) {
+    html[data-design="cardboard"] #gameScreen[style*="display: block"] { padding: 8px 6px 32px; }
+    html[data-design="cardboard"] #cardboardBoard { display: flex; flex-direction: column; gap: 10px; padding: 8px; border-radius: 16px; }
+    html[data-design="cardboard"] #cardboardSeats { display: flex; flex-direction: column; width: 100%; gap: 10px; }
+    html[data-design="cardboard"] .cardboard-player { width: 100%; box-sizing: border-box; }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="bottom"] { order: -1; }
+    html[data-design="cardboard"] #cardboardMarket { width: 100%; box-sizing: border-box; }
+    html[data-design="cardboard"] #cardboardDiceReceipt { width: 100%; box-sizing: border-box; }
+    html[data-design="cardboard"] #cardboardRoster { flex-wrap: nowrap; width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+    html[data-design="cardboard"] .cardboard-roster-seat { flex: 0 0 150px; }
+    html[data-design="cardboard"] #cardboardMarket #buildMenu { max-height: 580px; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    html[data-design="cardboard"] #cardboardBoard { grid-template-columns: minmax(150px, 1fr) minmax(260px, 1.6fr) minmax(150px, 1fr); }
+    html[data-design="cardboard"] .cardboard-cards { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    html[data-design="cardboard"] #gameScreen > .game-action-panel { position: sticky; bottom: 0; z-index: 4; padding: 8px; box-shadow: 0 -3px 14px #18344720; }
+    html[data-design="cardboard"] body.pwa-banner-open #gameScreen > .game-action-panel { position: static; }
+    html[data-design="cardboard"] #cardboardMarket #buildMenu { max-height: 440px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardBoard *,
+    html[data-design="cardboard"] #cardboardBoard *::before,
+    html[data-design="cardboard"] #cardboardBoard *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-card,
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-player,
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMarket { border: 2px solid #152b38; }
+html[data-design="cardboard"] #cardboardGoals {
+    grid-column: 1 / -1;
+    min-width: 0;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: #fff3cc;
+    color: #533f11;
+}
+html[data-design="cardboard"] #cardboardGoals > summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    cursor: pointer;
+    font-weight: 800;
+}
+html[data-design="cardboard"] #cardboardGoals .card-grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); }
+html[data-design="cardboard"] #cardboardGoals .card-color-landmark { background: #fffdf5; color: #533f11; border-color: #b99b56; }
+html[data-design="cardboard"] #cardboardGoals .card-top-strip { color: #533f11; background: #f8df83; }
+html[data-design="cardboard"] #cardboardGoals .card-effect,
+html[data-design="cardboard"] #cardboardGoals .card-name,
+html[data-design="cardboard"] #cardboardGoals .card-detail-btn { color: #533f11; }
+html[data-design="cardboard"] #cardboardBoard [hidden] { display: none !important; }
+@media (max-width: 760px) {
+    html[data-design="cardboard"] #cardboardGoals { width: 100%; box-sizing: border-box; }
+}
+
+/* The shared controls stay before the board; original player panels belong to
+   the other views and are never duplicated on the card table. */
+html[data-design="cardboard"] #gameScreen { display: flex; flex-direction: column; }
+html[data-design="cardboard"] #gameScreen > #status { order: -5; }
+html[data-design="cardboard"] #gameScreen > .game-design-switcher { order: -4; }
+html[data-design="cardboard"] #gameScreen > .game-action-panel { order: -3; }
+html[data-design="cardboard"] #gameScreen > #cardboardBoard { order: -2; }
+html[data-design="cardboard"] #gameScreen > .player-area,
+html[data-design="cardboard"] #playerNavigation { display: none; }
+html[data-design="cardboard"] #gameScreen[style*="display: block"] { display: flex !important; }
+html[data-design="cardboard"] .cardboard-cards { max-height: 300px; overflow: auto; overscroll-behavior: contain; }
+html[data-design="cardboard"] .cardboard-landmark .cardboard-art { display: none; }
+html[data-design="cardboard"] .cardboard-landmarks { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); }
+html[data-design="cardboard"] body.game-finished #cardboardBoard { display: none; }
+html[data-design="cardboard"] #cardboardBoard {
+    grid-template-areas: "roster roster roster" "controls controls controls" "top top top" "left receipt right" "left market right" "bottom bottom bottom";
+}
+.game-design-switcher > summary { min-height: 44px; cursor: pointer; }
+.game-design-switcher select { min-height: 44px; max-width: 100%; }
+
+
+/* Keep the card table in the first screenful, rather than expanding the shared
+   classic controls and roster into a second dashboard. */
+html[data-design="cardboard"] #gameScreen > #status:not(.game-winner) {
+    background: #fff9e8;
+    color: #183447;
+    border-color: #c7a347;
+    padding: 8px 10px;
+    font-size: 14px;
+}
+html[data-design="cardboard"] #gameScreen > .game-action-panel {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    align-self: stretch;
+    grid-area: auto;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 10px;
+    padding: 8px;
+    border-color: #91ab94;
+}
+html[data-design="cardboard"] .game-action-panel #diceResult { grid-column: 1; grid-row: 1; }
+html[data-design="cardboard"] .game-action-panel #diceChoose:not(:empty) { grid-column: 1 / -1; }
+html[data-design="cardboard"] .game-action-panel .dice-display { margin: 0; gap: 4px; }
+html[data-design="cardboard"] .game-action-panel .dice-face { width: 42px; height: 42px; padding: 5px; border-radius: 9px; }
+html[data-design="cardboard"] .game-action-panel .dice { font-size: 34px; margin: 0; }
+html[data-design="cardboard"] .game-action-panel .buttons { grid-column: 2; grid-row: 1; display: flex; flex-direction: row; flex-wrap: wrap; gap: 5px; }
+html[data-design="cardboard"] .game-action-panel .buttons button {
+    flex: 1 1 120px;
+    min-height: 44px;
+    padding: 7px 10px;
+    margin: 0;
+    font-size: 13px;
+    background: #1766bd;
+    color: #fff;
+    border: 1px solid #0f4e94;
+}
+html[data-design="cardboard"] .game-action-panel .buttons button:disabled {
+    opacity: 1;
+    background: #e2e7e7;
+    color: #52616a;
+    border-color: #c0cbcd;
+    box-shadow: none;
+}
+html[data-design="cardboard"] .game-action-panel .buttons #btnSkip:not(:disabled) { background: #fff9e8; color: #263d4b; border-color: #8f9d9c; }
+html[data-design="cardboard"] .game-action-panel .game-action-toolbar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+html[data-design="cardboard"] .game-action-toolbar > details > summary { min-height: 44px; display: flex; align-items: center; font-size: 12px; color: #425969; }
+html[data-design="cardboard"] #cardboardRoster { display: block; }
+html[data-design="cardboard"] .cardboard-roster { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; max-width: 100%; padding: 2px 2px 5px; overscroll-behavior-inline: contain; }
+html[data-design="cardboard"] .cardboard-roster-seat { flex: 0 0 auto; max-width: 210px; min-height: 44px; padding: 6px 9px; font-size: 12px; }
+html[data-design="cardboard"] .cardboard-player-current { box-shadow: inset 0 4px #d69d20, 0 3px 10px #284b3520; }
+html[data-design="cardboard"] .cardboard-landmark-built { background: #f8df83; font-weight: 800; box-shadow: inset 0 -2px #b99b56; }
+html[data-design="cardboard"] .cardboard-landmark-unbuilt { border-style: dashed; }
+html[data-design="cardboard"] .cardboard-card-dormant { background: #f0ede6; border-style: dashed; }
+html[data-design="cardboard"] .cardboard-card-activated { outline: 3px solid #f4bc20; outline-offset: 1px; }
+@media (max-width: 760px) {
+    html[data-design="cardboard"] #cardboardBoard { gap: 8px; }
+    html[data-design="cardboard"] #cardboardControls { font-size: 12px; }
+    html[data-design="cardboard"] #cardboardControls p { margin: 0; }
+    html[data-design="cardboard"] .cardboard-player-header h2 { font-size: 16px; }
+}
+
+/* Ownership summaries share the same compact header and goal strip at every seat. */
+html[data-design="cardboard"] .cardboard-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 8px; }
+html[data-design="cardboard"] .cardboard-header h2 { margin: 0; font-size: 17px; }
+html[data-design="cardboard"] .cardboard-header p { margin: 0; font-size: 13px; }
+html[data-design="cardboard"] .cardboard-player > h3 { margin: 8px 0 2px; font-size: 13px; }
+html[data-design="cardboard"] .cardboard-landmark { width: auto; margin: 0; }
+html[data-design="cardboard"] .game-action-panel .buttons #btnRoll:disabled {
+    background: #e2e7e7;
+    color: #52616a;
+    border-color: #c0cbcd;
+    box-shadow: none;
+}
+@media (min-width: 761px) {
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 4px 12px;
+    }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] > .cardboard-header { grid-column: 1 / -1; }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] > .cardboard-cards { grid-column: 1; grid-row: 2 / 4; max-height: 160px; }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] > h3 { grid-column: 2; grid-row: 2; }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] > .cardboard-landmarks { grid-column: 2; grid-row: 3; margin-top: 0; align-self: start; }
+}
+@media (min-width: 761px) {
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] > .cardboard-cards { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-card { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-content: start; }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-dice { grid-column: 1; grid-row: 1; }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-art { grid-column: 1; grid-row: 2 / 5; }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-category,
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-name,
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-count { grid-column: 2; }
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-activation,
+    html[data-design="cardboard"] .cardboard-player[data-seat-position="top"] .cardboard-dormant { grid-column: 1 / -1; }
+}
