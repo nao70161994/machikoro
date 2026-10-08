@@ -90,7 +90,9 @@ jobs:
       - name: Mobile WebKit E2E
         # Four-client online tests share this runner with the visual suites.
         # Serialize browsers so CPU contention does not consume test deadlines.
-        run: npm run test:browser-e2e -- --workers=1
+        # Theme screenshots run in the path-filtered visual workflow. Nightly
+        # still runs the complete browser suite through test:browser-e2e.
+        run: npm run test:browser-release -- --workers=1
       - name: Upload WebKit visual review and diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
