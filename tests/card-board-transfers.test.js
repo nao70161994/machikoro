@@ -49,6 +49,8 @@ runTest('表示中HUDへ向かう演出と文字summaryは同じ確定収支を�
     assert.strictEqual(controller.play({ container, events }), true);
     assert.strictEqual(animated.length, 2, '0円/非表示相手は移動しない');
     assert.ok(animated[0].frames.at(-1).transform.includes('380px'));
+    assert.strictEqual(animated[0].options.delay, 0);
+    assert.strictEqual(animated[1].options.delay, 100, '複数の送金先は解決順に少しずつ表示する');
     assert.ok(container.children[0].children[0].textContent.includes('街B → 街C：0コイン'));
     assert.strictEqual(typeof timer(), 'function');
     controller.clear();

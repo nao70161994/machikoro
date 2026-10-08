@@ -72,7 +72,8 @@ const CardBoardTransfers = (() => {
             // Read endpoints first, then animate without touching game state.
             const displayed = routes.slice(0, 8).map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);
-            for (const { route, from, to } of displayed) {
+            for (let index = 0; index < displayed.length; index++) {
+                const { route, from, to } = displayed[index];
                 if (reducedMotion || route.amount === 0 || !from || !to) continue;
                 const coin = documentRef.createElement('span');
                 coin.className = 'cardboard-transfer';
@@ -87,7 +88,7 @@ const CardBoardTransfers = (() => {
                         { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: .15 },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(1)`, opacity: 1, offset: .85 },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(.8)`, opacity: 0 },
-                    ], { duration: 900, easing: 'ease-in-out', fill: 'both' });
+                    ], { duration: 700, delay: index * 100, easing: 'ease-in-out', fill: 'both' });
                     animation.finished?.catch(() => {});
                     animations.push(animation);
                 } else coin.remove();
