@@ -71,7 +71,14 @@ const CardBoardTransfers = (() => {
             const spokenRoutes = routes.slice(0, 8).map(route => route.text).join('、');
             const omittedRoutes = routes.length > 8 ? `、ほか${routes.length - 8}件` : '';
             summaryElement.setAttribute('aria-label', `${spokenRoutes}${omittedRoutes}${events.incomplete ? '。未集計の特殊効果は出目の内訳で確認' : ''}`);
-            const seatName = index => index === 'pool' ? '分配プール' : index === null ? '銀行' : `席${index + 1}`;
+            const seatName = index => {
+                if (index === 'pool') return '分配プール';
+                if (index === null) return '銀行';
+                const participantName = events.participantNames?.[index];
+                if (!participantName) return `席${index + 1}`;
+                const duplicateName = events.participantNames.filter(name => name === participantName).length > 1;
+                return duplicateName ? `${participantName}（席${index + 1}）` : participantName;
+            };
             summaryElement.textContent = routes.slice(0, 8).map(route =>
                 `${seatName(route.from)}→${seatName(route.to)} ${route.amount}`).join(' / ') +
                 (routes.length > 8 ? ` / ほか${routes.length - 8}件` : '') + 'コイン' +

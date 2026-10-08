@@ -52,7 +52,7 @@ runTest('表示中HUDへ向かう演出と文字summaryは同じ確定収支を�
     assert.ok(animated[0].frames.at(-1).transform.includes('380px'));
     assert.strictEqual(animated[0].options.delay, 0);
     assert.strictEqual(animated[1].options.delay, 100, '複数の送金先は解決順に少しずつ表示する');
-    assert.ok(container.children[0].children[0].textContent.includes('席2→席3 0'));
+    assert.ok(container.children[0].children[0].textContent.includes('街B→街C 0'));
     assert.ok(container.children[0].children[0].attributes['aria-label'].includes('街B → 街C：0コイン'));
     assert.strictEqual(typeof timer(), 'function');
     controller.clear();
@@ -68,11 +68,22 @@ runTest('Reduced Motionでも誰から誰への金額を静止表示し未集計
     controller.play({ container, events: { ...events, incomplete: true }, reducedMotion: true });
     assert.strictEqual(animated.length, 0);
     const text = container.children[0].children[0].textContent;
-    assert.ok(text.includes('席1→席2 5'));
+    assert.ok(text.includes('街A→街B 5'));
+    assert.ok(text.includes('銀行→街A 4'));
     assert.ok(container.children[0].children[0].attributes['aria-label'].includes('街A → 街B：5コイン'));
     assert.ok(text.includes('未集計の特殊効果'));
     controller.clear();
     assert.strictEqual(controller.play({ container, events: {} }), false);
+});
+
+runTest('同名のプレイヤー間だけ席番号を添えて送金先を区別する', () => {
+    const { container } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events: { participantNames: ['街A', '街A'], activations: [
+        { from: 0, to: 1, amount: 2 },
+    ] }, reducedMotion: true });
+    assert.ok(container.children[0].children[0].textContent.includes('街A（席1）→街A（席2） 2'));
+    controller.clear();
 });
 
 runTest('実ルールの赤施設・残高不足を共通projectionから同じ送金方向と実額で表示する', () => {
@@ -99,6 +110,6 @@ runTest('アプリ内の動きを減らす設定でもWAAPIの送金を止め文
     const controller = CardBoardTransfers.create();
     controller.play({ container, events, reducedMotion: false });
     assert.strictEqual(animated.length, 0);
-    assert.ok(container.children[0].children[0].textContent.includes('席1→席2 5'));
+    assert.ok(container.children[0].children[0].textContent.includes('街A→街B 5'));
     controller.clear();
 });
