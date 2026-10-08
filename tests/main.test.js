@@ -3697,7 +3697,12 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     assert.ok(workflow.includes('run: npm run test:online'));
     assert.ok(workflow.includes('mobile-webkit:'));
     assert.ok(workflow.includes('npx playwright install --with-deps webkit'));
-    assert.ok(workflow.includes('run: npm run test:browser-e2e'));
+    assert.ok(workflow.includes('run: npm run test:browser-release'));
+    const nightlyWorkflow = fs.readFileSync(
+        path.join(__dirname, '..', '.github/workflows/nightly-release-test.yml'),
+        'utf8'
+    );
+    assert.ok(nightlyWorkflow.includes('run: npm run test:browser-e2e -- --workers=1'));
 });
 
 runTest('Mobile WebKit release gateは実Service Worker二世代の更新を検証する', () => {
