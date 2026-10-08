@@ -76,7 +76,7 @@
     "pretest": "node tests/check-prerequisites.js",
     "test:soak": "node tests/run-all.js soak",
     "test:browser-e2e": "playwright test",
-    "test:browser-release": "playwright test --grep-invert '4テーマのゲーム画面ビジュアル回帰'",
+    "test:browser-pr": "playwright test cardboard-online-compat.spec.js seeded-browser-match.spec.js --workers=1",
     "test:browser-visual": "playwright test theme-visual-regression.spec.js",
     "test:browser-online-compat": "playwright test cardboard-online-compat.spec.js",
     "test:apk-validation": "node scripts/validate-apk-config.js",

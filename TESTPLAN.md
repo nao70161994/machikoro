@@ -214,4 +214,4 @@ Android/TWA workflow を触る場合は、artifact が欠落しても成功扱�
 - 意図したデザイン変更で基準画像を更新する場合だけ、Linux + Playwright WebKit で `npm run test:browser-visual -- --update-snapshots --workers=1` を実行し、全 PNG の差分を確認して同じ変更に含める。CI では更新モードを使わない。
 - オンラインのテーマ互換性と回転: `npm run test:browser-online-compat -- --workers=1`。4クライアントの canonical state、建設、Undo、テーマ切替、回転、再接続を比較する。
 - 固定seedの実ブラウザCPU対局: `npm run test:browser-e2e -- seeded-browser-match.spec.js --workers=1`。最大5分かけて勝者まで実行し、失敗時は標準 trace / screenshot / video とゲーム状態・進行履歴を確認する。
-- PR の WebKit対局ゲートは `test:browser-release` を使い、基準画像 suite は変更パスに応じた既存 `Plaza visual review` 内で一度実行する。夜間は `test:browser-e2e` で画像比較を含む全 browser suite を続ける。
+- PR の WebKit対局ゲートは `test:browser-pr` で4テーマ混在オンラインと固定seed終局対局を実行する。基準画像 suite と Plaza/オンライン回帰は変更パスに応じた `Plaza visual review` 内で一度実行する。夜間は `test:browser-e2e` で画像比較を含む全 browser suite を続ける。
