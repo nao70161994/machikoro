@@ -298,7 +298,7 @@ const CardBoardField = (() => {
             }));
             for (const landmark of newlyBuiltLandmarks) {
                 if (landmark.index !== index) continue;
-                const button = Array.from(panel.querySelectorAll('.cardboard-landmark')).find(item => item.dataset.landmarkName === landmark.name);
+                const button = Array.from(/** @type {NodeListOf<HTMLElement>} */ (panel.querySelectorAll('.cardboard-landmark'))).find(item => item.dataset.landmarkName === landmark.name);
                 if (!button) continue;
                 button.classList.remove('cardboard-landmark-newly-built');
                 void button.offsetWidth;
