@@ -26,7 +26,7 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
         await page.evaluate(() => {
             localStorage.setItem('machikoroTutorialEnabled', 'false');
             startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
-                type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}`,
+                type: 'human', name: `街${index + 1}`,
             })));
             const runtime = GameRuntimeState.runtime;
             const state = runtime.snapshot();
@@ -91,6 +91,7 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     document.documentElement.classList.add('visual-regression-capture');
                 }, theme);
                 await expect(page.locator('html')).toHaveAttribute('data-design', theme);
+                await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
                 await expect(page.locator('#gameScreen')).toBeVisible();
 
                 const layout = await page.evaluate(() => {
