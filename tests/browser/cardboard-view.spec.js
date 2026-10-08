@@ -203,9 +203,13 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             const visibleMarketArt = await page.locator('#cardboardMarket .compact-market-art').first().evaluate(art => {
                 const center = document.getElementById('cardboardCenter').getBoundingClientRect();
                 const bounds = art.getBoundingClientRect();
-                return Math.max(0, Math.min(center.bottom, bounds.bottom) - Math.max(center.top, bounds.top));
+                return {
+                    visibleHeight: Math.max(0, Math.min(center.bottom, bounds.bottom) - Math.max(center.top, bounds.top)),
+                    width: bounds.width,
+                };
             });
-            expect(visibleMarketArt).toBeGreaterThanOrEqual(20);
+            expect(visibleMarketArt.visibleHeight).toBeGreaterThanOrEqual(20);
+            expect(visibleMarketArt.width).toBeGreaterThanOrEqual(40);
         }
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
         const screenshot = testInfo.outputPath(`cardboard-${viewport.width}.png`);

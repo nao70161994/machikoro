@@ -9396,6 +9396,14 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
         align-content: start;
         overflow: auto;
     }
+    /* Landscape market cards are the primary purchase surface. Widen the
+       artwork without taking more vertical space from the short viewport. */
+    html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-buy {
+        grid-template-columns: 20px 40px minmax(0, 1fr);
+    }
+    html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-art {
+        width: 40px;
+    }
     html[data-design="cardboard"] #cardboardChoiceJump { display: none; }
     html[data-design="cardboard"] #cardboardActionSlot:has(#diceChoose .dice-choose) .game-action-panel { display: block; }
     html[data-design="cardboard"] #cardboardActionSlot:has(#diceChoose .dice-choose) :is(#diceResult, .buttons),
