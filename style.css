@@ -8945,6 +8945,18 @@ html[data-design="cardboard"] .cardboard-color-count-green { background: var(--c
 html[data-design="cardboard"] .cardboard-color-count-red { background: var(--cardboard-red); }
 html[data-design="cardboard"] .cardboard-color-count-purple { background: var(--cardboard-purple); }
 html[data-design="cardboard"] .cardboard-player { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 7px; border-radius: 12px; background: #fffdf5e8; box-shadow: 0 3px 10px #284b3520; color: var(--cardboard-ink); }
+html[data-design="cardboard"] :is(.cardboard-player, .cardboard-roster-seat) { border-top: 4px solid var(--cardboard-seat-accent, #718783); }
+html[data-design="cardboard"] :is([data-player-index="0"], [data-cardboard-player-index="0"]) { --cardboard-seat-accent: #2878b8; }
+html[data-design="cardboard"] :is([data-player-index="1"], [data-cardboard-player-index="1"]) { --cardboard-seat-accent: #c4514f; }
+html[data-design="cardboard"] :is([data-player-index="2"], [data-cardboard-player-index="2"]) { --cardboard-seat-accent: #25816a; }
+html[data-design="cardboard"] :is([data-player-index="3"], [data-cardboard-player-index="3"]) { --cardboard-seat-accent: #7954a5; }
+html[data-design="cardboard"] :is([data-player-index="4"], [data-cardboard-player-index="4"]) { --cardboard-seat-accent: #a45b24; }
+html[data-design="cardboard"] :is([data-player-index="5"], [data-cardboard-player-index="5"]) { --cardboard-seat-accent: #a63f6a; }
+html[data-design="cardboard"] :is([data-player-index="6"], [data-cardboard-player-index="6"]) { --cardboard-seat-accent: #537832; }
+html[data-design="cardboard"] :is([data-player-index="7"], [data-cardboard-player-index="7"]) { --cardboard-seat-accent: #286f72; }
+html[data-design="cardboard"] :is([data-player-index="8"], [data-cardboard-player-index="8"]) { --cardboard-seat-accent: #6a5b9a; }
+html[data-design="cardboard"] :is([data-player-index="9"], [data-cardboard-player-index="9"]) { --cardboard-seat-accent: #8a6b24; }
+html[data-design="cardboard"] .cardboard-player-kind { border-radius: 50%; background: color-mix(in srgb, var(--cardboard-seat-accent) 16%, transparent); }
 html[data-design="cardboard"] .cardboard-player-self { order: -3; }
 html[data-design="cardboard"] .cardboard-player-selected { order: -2; outline: 2px solid #1766bd; outline-offset: -2px; }
 html[data-design="cardboard"] .cardboard-player-focus { order: -2; }
