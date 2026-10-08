@@ -3,6 +3,32 @@ const { test, expect } = require('@playwright/test');
 const MATCH_SEED = 0x4d414348;
 const MAX_MATCH_MS = 300000;
 
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus || page.isClosed()) return;
+    try {
+        const diagnostics = await page.evaluate(() => {
+            const game = typeof GameRuntimeState !== 'undefined'
+                ? GameRuntimeState.runtime.snapshot().game : null;
+            return {
+                seed: window.__matchSeed,
+                history: window.__browserMatchHistory || [],
+                state: game && typeof GameSnapshot !== 'undefined'
+                    ? GameSnapshot.serializeUndoState(game, SHOP_STOCK, 100) : null,
+                visibleScreen: [...document.querySelectorAll('#titleScreen, #gameScreen, .winner-screen')]
+                    .filter(element => element.getBoundingClientRect().width > 0)
+                    .map(element => element.id || element.className),
+            };
+        });
+        await testInfo.attach('seeded-match-failure-state.json', {
+            body: JSON.stringify(diagnostics, null, 2), contentType: 'application/json',
+        });
+    } catch (error) {
+        await testInfo.attach('seeded-match-diagnostic-error.txt', {
+            body: String(error), contentType: 'text/plain',
+        });
+    }
+});
+
 test('固定seedの実ブラウザCPU対局は開始から勝者決定まで停止せず進む', async ({ page }, testInfo) => {
     test.setTimeout(MAX_MATCH_MS + 30000);
     const pageErrors = [];
