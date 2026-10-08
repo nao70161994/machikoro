@@ -563,6 +563,7 @@ function renderWinnerState(winner) {
         renderLog,
         renderPlayers,
         focusWinnerAction() {
+            /** @type {HTMLDivElement | null} */
             const heading = document.querySelector('.winner-title');
             if (heading && typeof heading.focus === 'function') {
                 heading.focus({ preventScroll: true });
