@@ -9282,6 +9282,18 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] #diceChoose .dice-choose p { grid-column: 1 / -1; margin: 0; color: var(--cardboard-ink); font-size: 11px; line-height: 18px; }
     html[data-design="cardboard"] #diceChoose .dice-choose button { width: 100%; min-height: 44px; margin: 0; padding: 3px; background: #1766bd; color: #fff; font-size: 12px; }
 }
+@media (min-width: 1200px) and (min-height: 481px) {
+    /* On roomy desktop tables, give owned facilities enough width to read as cards. */
+    html[data-design="cardboard"] .cardboard-player:not([data-seat-position="top"]):not([data-seat-position="bottom"]) .cardboard-cards {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards {
+        grid-auto-columns: 100px;
+    }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-art {
+        height: 30px;
+    }
+}
 @media (prefers-reduced-motion: reduce) {
     html[data-design="cardboard"] #cardboardBoard *,
     html[data-design="cardboard"] #cardboardBoard *::before,
