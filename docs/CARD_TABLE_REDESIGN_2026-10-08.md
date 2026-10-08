@@ -1,6 +1,6 @@
 # にぎわい広場の卓上盤面再設計（2026-10-08）
 
-状態: 実装・ローカル検証・独立再レビュー済み。最新HEADの必要CI確認待ち。ゴール未完了。
+状態: 完了。実装HEAD `785f6fa2` の必要CI全成功と、担当外のsource/画像再レビューを確認済み。
 
 ## 要件と確認結果
 
@@ -14,7 +14,7 @@
 | 4テーマ互換 | 混在onlineのserver dice/建設/Undo/途中切替/再接続、TV正本復元後承認action、4ビュー選択状態・保存・pending・高速往復・focusを確認 |
 | ガイド/ログ/PWA併用 | 排他開閉、横更新通知＋駅/電波塔/港3件、ガイドON実購入4テーマ＋市場退出時ガイド復帰が成功 |
 | 独立レビュー | 専用市場/状態境界のsource、横6卓と収支、縦/多人数/更新通知の画像sampling、紫/scroll/ガイドの担当外再レビューで具体的未対応指摘なし |
-| 品質ゲート | ローカル全unit/static/types、変更JS構文が成功。最新HEADのrelease/CPU/WebKit CIは結果待ち |
+| 品質ゲート | ローカル全unit/static/types、変更JS構文が成功。実装HEAD `785f6fa2`のrelease/CPU/WebKit CIがすべて成功 |
 
 横/PC2〜4人は一画面の卓、縦持ちと多人数は専用適応表示です。全人数全画像を網羅目視したとは扱いません。自動ブラウザの到達・配置検証と、担当外の実画像確認を区別します。
 
@@ -39,7 +39,7 @@
 - 通常配置はService Workerをblock。更新通知併用は別条件で確認し、実SW lifecycleの証拠はCIのPWA gateで確認する。
 - ローカル画像は`artifacts/plaza-experience/card-table-review-evidence/`に保存。CI画像は対象runの`release-mobile-webkit-review` artifact。
 
-旧HEADや旧CIのgreenを今回の完了証拠にしません。現HEADとrunは`git log -1`および`gh run list -R nao70161994/machikoro`で対応付けます。`608bd2b3`までPush済み、全CIの成功確認は残っています。
+旧HEADや旧CIのgreenを今回の完了証拠にしません。現HEADとrunは`git log -1`および`gh run list -R nao70161994/machikoro`で対応付けます。`785f6fa2`の[CI 37730974870](https://github.com/nao70161994/machikoro/actions/runs/37730974870)はrelease・CPU・WebKit全成功。WebKitは188件成功（30.0分）、再試行なし。静的検査・unit・PWA・オンライン/再接続・releaseの各gateも成功しました。以降の完了記録コミットは文書のみで、実装・テスト・CI設定に差分はありません。
 
 ## 境界・未検証範囲
 
