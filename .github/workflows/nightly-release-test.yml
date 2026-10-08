@@ -103,7 +103,7 @@ jobs:
             - name: Install dependencies
               run: npm ci
             - name: Install WebKit runtime
-              run: npx playwright install --with-deps webkit
+              run: npx playwright install --with-deps webkit chromium
             - name: Mobile WebKit E2E
               # Four-client tests already run several WebKit contexts.
               # Match the release gate to avoid competing renderer workloads.

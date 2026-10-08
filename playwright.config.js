@@ -17,9 +17,21 @@ module.exports = defineConfig({
     projects: [
         {
             name: 'mobile-webkit',
+            testIgnore: /seeded-browser-match\.spec\.js/,
             use: {
                 ...devices['iPhone 13'],
                 serviceWorkers: 'allow',
+            },
+        },
+        {
+            name: 'chromium-desktop',
+            testMatch: /seeded-browser-match\.spec\.js/,
+            use: {
+                ...devices['Desktop Chrome'],
+                browserName: 'chromium',
+                serviceWorkers: 'block',
+                video: 'off',
+                trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true },
             },
         },
     ],

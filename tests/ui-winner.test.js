@@ -229,7 +229,7 @@ runTest('ui winnerはhuman/CPU文言・turn・広告slotを既存HTMLへ合成�
         winner, players: [winner], isCpuWinner: false, turnCount: 9, winStreak: 1,
         canRematch: true, resultAdSlot: '<div class="ad">ad</div>', escapeHtml,
     });
-    assert.ok(human.includes('<div class="winner-title"><span class="winner-title-name">Alice</span><span class="winner-title-outcome">の勝利！</span></div>'));
+    assert.ok(human.includes('<div class="winner-title" role="heading" aria-level="1" tabindex="-1"><span class="winner-title-name">Alice</span><span class="winner-title-outcome">の勝利！</span></div>'));
     assert.ok(human.includes('<svg class="winner-trophy-art" viewBox="0 0 64 64" aria-hidden="true" focusable="false">'));
     assert.ok(!human.includes('<div class="winner-emoji">'));
     assert.ok(human.includes('<span class="winner-sub-turn">'));

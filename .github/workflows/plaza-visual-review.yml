@@ -6,10 +6,23 @@ on:
             - 'style.css'
             - 'index.html'
             - 'js/ui*.js'
+            - 'js/designTheme.js'
+            - 'js/cardBoard*.js'
+            - 'js/plaza*.js'
             - 'js/plazaField.js'
             - 'tests/browser/visual-art-review.spec.js'
+            - 'tests/browser/theme-visual-regression.spec.js'
             - 'tests/browser/plaza-online.spec.js'
+            - 'playwright.config.js'
+            - 'package.json'
             - '.github/workflows/plaza-visual-review.yml'
+    workflow_dispatch:
+        inputs:
+            refresh_baselines:
+                description: Generate candidate baselines for review; never used by pull request checks
+                required: true
+                default: false
+                type: boolean
 
 permissions:
     contents: read
@@ -26,10 +39,25 @@ jobs:
                   cache: npm
             - run: npm ci
             - run: npx playwright install --with-deps webkit
-            - run: npx playwright test visual-art-review.spec.js plaza-online.spec.js --grep '広場テーマは共通アート|広場の4人オンライン|広場の終盤と補助操作' --retries=0 --workers=1
+            - name: Compare theme baselines at target viewports
+              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
+              run: npm run test:browser-visual -- --retries=0 --workers=1
+            - name: Generate candidate theme baselines
+              if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
+              run: npm run test:browser-visual -- --update-snapshots --retries=0 --workers=1
+            - name: Upload generated baseline candidates
+              if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: theme-visual-baseline-candidates
+                  path: tests/browser/theme-visual-regression.spec.js-snapshots/
+                  if-no-files-found: error
+            - name: Plaza visual and online review
+              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
+              run: npx playwright test visual-art-review.spec.js plaza-online.spec.js --grep '広場テーマは共通アート|広場の4人オンライン|広場の終盤と補助操作' --retries=0 --workers=1
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
-                  name: plaza-visual-review
+                  name: theme-and-plaza-visual-review
                   path: test-results/
                   if-no-files-found: warn

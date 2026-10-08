@@ -95,7 +95,9 @@ runTest('integration: ローカル開始→勝利→統計タブ表示まで連�
     assert.strictEqual(rt.__test.elements.gameScreen.style.display, 'block');
     assert.ok(rt.__test.elements.status.innerHTML.includes('勝利'));
     assert.ok(rt.__test.elements.status.innerHTML.includes('data-ui-action="restartGame"'));
-    assert.strictEqual(rt.__test.elements.winnerRestartButton.focused, true);
+    assert.strictEqual(rt.__test.elements.status.classList.contains('game-winner'), true);
+    assert.strictEqual(rt.__test.elements.winnerTitle.focused, true);
+    assert.strictEqual(rt.__test.elements.winnerTitle.scrolledIntoView, true);
     assert.strictEqual(stats.local.totalGames, 2);
     assert.ok(rt.__test.elements.tabContentStats.innerHTML.includes('総ゲーム数'));
 });
