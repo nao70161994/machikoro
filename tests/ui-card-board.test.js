@@ -65,6 +65,9 @@ runTest('席・名前の同一性と選択/現在/自分を分離し10席に制�
     const players = Array.from({ length: 12 }, () => ({ ...player }));
     const html = UiCardBoard.buildRosterHtml(players, { ...options, selectedIndex: 2 });
     assert.strictEqual((html.match(/class="cardboard-roster-seat/g) || []).length, 10);
+    assert.deepStrictEqual(Array.from(html.matchAll(/data-avatar-index="(\d+)"/g), match => Number(match[1])),
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    assert.strictEqual((html.match(/icons\/interface-ui\.svg#resident-\d/g) || []).length, 10);
     assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1);
     assert.strictEqual((html.match(/aria-current="true"/g) || []).length, 1);
     assert.ok(html.includes('席10・&lt;街の主&gt;'));

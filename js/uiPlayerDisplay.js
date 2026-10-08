@@ -32,6 +32,11 @@ const UiPlayerDisplay = (() => {
         return '<svg class="player-kind-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4" fill="#e8c58f" stroke="#654e3d" stroke-width="1.4"/><path d="M4 21C4.5 16.5 7.2 14 12 14S19.5 16.5 20 21Z" fill="#7896a0" stroke="#304b59" stroke-width="1.5" stroke-linejoin="round"/></svg>';
     }
 
+    function renderPlayerAvatar(index = 0) {
+        const seat = Number.isInteger(index) ? ((index % 10) + 10) % 10 : 0;
+        return `<svg class="player-avatar" data-avatar-index="${seat}" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#resident-${seat}"></use></svg>`;
+    }
+
     function resolvePlayerSetting(options = {}) {
         const settings = Array.isArray(options.playerSettings) ? options.playerSettings : [];
         const cpus = Array.isArray(options.cpuPlayers) ? options.cpuPlayers : [];
@@ -159,7 +164,8 @@ const UiPlayerDisplay = (() => {
         const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player) : '';
         const miniTown = options.plaza && !isSelf
             ? `<div class="plaza-opponent-town">${town}</div><div class="plaza-owned-cards">${cardHtml || '施設なし'}</div>` : '';
-        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${options.plaza ? assetSummary : ''}${miniTown}`;
+        const avatar = options.showPlayerAvatars === true ? renderPlayerAvatar(index) : '';
+        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${avatar}${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${options.plaza ? assetSummary : ''}${miniTown}`;
         const detail = `<div class="player-detail">${town}<div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
         const playerClasses = `player-box${isActive ? ' active' : ''}${isSelf ? ' player-box-self' : ''}`;
         if (compact) {
@@ -204,6 +210,7 @@ const UiPlayerDisplay = (() => {
     return Object.freeze({
         difficultyLabel,
         renderPlayerKindIcon,
+        renderPlayerAvatar,
         normalizeCpuDifficulty,
         playerKindAccessibleLabel,
         resolvePlayerSetting,

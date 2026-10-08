@@ -450,11 +450,17 @@ test('10人のカード盤面は自分・手番・選択相手を読める大き
     await expect(page.locator('#cardboardSeats [data-player-index="1"]')).toBeVisible();
     await expect(page.locator('#cardboardSeats [data-player-index="2"]')).toBeVisible();
     await expect(page.locator('#cardboardRoster .cardboard-roster-trend')).toHaveCount(10);
+    const avatarIndices = await page.locator('#cardboardRoster .cardboard-player-kind')
+        .evaluateAll(elements => elements.map(element => element.dataset.avatarIndex));
+    expect(avatarIndices).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+    await expect(page.locator('#cardboardRoster .cardboard-player-avatar')).toHaveCount(10);
     const chips = page.locator('#cardboardRoster button').first().locator('.cardboard-color-count');
     await expect(chips).toHaveCount(4);
     await page.locator('#cardboardRoster [data-cardboard-player-index="9"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="9"]')).toBeVisible();
     await expect(page.locator('#cardboardSeats [data-player-index="9"]')).toHaveClass(/cardboard-player-selected/);
+    await expect(page.locator('#cardboardSeats [data-player-index="9"] .cardboard-player-avatar use'))
+        .toHaveAttribute('href', 'icons/interface-ui.svg#resident-9');
     expect(await page.locator('#cardboardSeats > .cardboard-player').count()).toBeLessThanOrEqual(3);
     await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toBeVisible();
     await page.evaluate(() => {

@@ -46,9 +46,11 @@ const UiCardBoard = (() => {
             ? `CPU（${setting.difficulty === 'weak' ? '弱' : setting.difficulty === 'strong' ? '強' : setting.difficulty === 'expert' ? '最強' : setting.difficulty === 'rl' ? '深層学習' : '普通'}）`
             : '人間';
         const icon = typeof options.renderPlayerKindIcon === 'function'
-            ? options.renderPlayerKindIcon(setting)
+            ? options.renderPlayerKindIcon(setting, index)
             : setting.type === 'cpu' ? '🤖' : '👤';
-        return `<span class="cardboard-player-kind" aria-label="${label}" title="${label}">${icon}</span>`;
+        const avatarIndex = ((index % 10) + 10) % 10;
+        const avatar = `<svg class="cardboard-player-avatar" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#resident-${avatarIndex}"></use></svg>`;
+        return `<span class="cardboard-player-kind" data-avatar-index="${avatarIndex}" aria-label="${label}" title="${label}">${avatar}<span class="cardboard-player-kind-indicator">${icon}</span></span>`;
     }
     function activationFor(events, name, index) {
         const matching = (events?.activations || []).filter(event => event.facility === true &&

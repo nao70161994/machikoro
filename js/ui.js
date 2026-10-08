@@ -1291,6 +1291,7 @@ function renderPlayers() {
         settings,
         currentPlayerIndex: currentGame.currentPlayerIndex,
         plaza: document.documentElement?.dataset?.design === 'plaza',
+        showPlayerAvatars: document.documentElement?.dataset?.design === 'sunset',
         compactInactive: document.documentElement?.dataset?.design === 'plaza' || currentGame.players.length >= 5 ||
             (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
                 window.matchMedia('(max-width: 480px)').matches),
