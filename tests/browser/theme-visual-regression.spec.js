@@ -25,15 +25,18 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
         await page.goto('/');
         await page.evaluate(() => {
             localStorage.setItem('machikoroTutorialEnabled', 'false');
+            const originalRandom = Math.random;
+            Math.random = () => 0.99;
             startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
                 type: 'human', name: `街${index + 1}`,
             })));
+            Math.random = originalRandom;
             const runtime = GameRuntimeState.runtime;
             const state = runtime.snapshot();
             runtime.setCpuPlayers(Array.from({ length: 4 }, () => null));
             cancelCpuSchedule('theme-visual-regression');
             state.game.currentPlayerIndex = 0;
-            state.game.phase = GAME_PHASES.BUILD;
+            state.game.phase = GAME_PHASES.ROLL;
             state.game.turnCount = 2;
             state.game.builtThisTurn = false;
             state.game.lastDiceResult = null;
@@ -49,6 +52,7 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
             render();
             acceptHotseatHandoff();
             PlazaField.focusTarget('self');
+            document.getElementById('buildMenu').classList.remove('plaza-market-exploring');
             const updateBanner = document.getElementById('pwaUpdateBanner');
             if (updateBanner) updateBanner.style.display = 'none';
             document.body.classList.remove('pwa-banner-open');
