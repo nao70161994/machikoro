@@ -157,6 +157,21 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     expect(await state(page)).toEqual(before);
 });
 
+test('ランドマーク完成は新しい建設だけを短く祝う', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 });
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); });
+    await selectTheme(page, 'cardboard');
+    const station = page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]');
+    await expect(station).toHaveClass(/cardboard-landmark-unbuilt/);
+    await page.locator('#cardboardMarket .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
+    await page.locator('#cardboardMarket [data-action="buildLandmark"][data-landmark-name="駅"]').click();
+    await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).toHaveClass(/cardboard-landmark-built/);
+    await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).toHaveClass(/cardboard-landmark-newly-built/);
+    await selectTheme(page, 'plaza');
+    await selectTheme(page, 'cardboard');
+    await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).not.toHaveClass(/cardboard-landmark-newly-built/);
+});
+
 test('10人CPU対局で自分の席が未確定でも現在手番のカード盤面を表示する', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 }, 10);
     const errors = [];

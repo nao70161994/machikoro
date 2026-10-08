@@ -8969,6 +8969,14 @@ html[data-design="cardboard"] .cardboard-landmark .cardboard-art { display: none
 html[data-design="cardboard"] .cardboard-landmark .cardboard-name { padding: 0 2px; font-size: 11px; }
 html[data-design="cardboard"] .cardboard-landmark-status { font-size: 10px; }
 html[data-design="cardboard"] .cardboard-landmark-built { background: #f8df83; border-style: solid; font-weight: 800; box-shadow: inset 0 -2px #b99b56; }
+html[data-design="cardboard"] .cardboard-landmark-newly-built { position: relative; z-index: 1; animation: cardboard-landmark-complete 1100ms cubic-bezier(.2, .8, .25, 1) both; }
+@keyframes cardboard-landmark-complete {
+    0% { transform: scale(.92); box-shadow: 0 0 0 0 #e4aa2a00; }
+    38% { transform: scale(1.1); box-shadow: 0 0 0 5px #f3c64c, 0 0 24px #e3a91eaa; }
+    68% { transform: scale(1.03); box-shadow: 0 0 0 3px #f3c64c, 0 0 16px #e3a91e77; }
+    100% { transform: scale(1); box-shadow: inset 0 -2px #b99b56; }
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion .cardboard-landmark-newly-built { animation: none; outline: 3px solid #b47a09; }
 html[data-design="cardboard"] #cardboardCenter { display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 0; order: -2; padding: 6px; border-radius: 12px; background: #f8f1df; box-shadow: inset 0 0 0 1px #b7a36d; }
 html[data-design="cardboard"] #cardboardMarket { min-width: 0; min-height: 0; }
 html[data-design="cardboard"] #cardboardMarket #buildMenu { position: static; width: 100%; max-width: none; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; color: var(--cardboard-ink); }
@@ -9124,6 +9132,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] .cardboard-card .cardboard-dice { position: relative; }
     html[data-design="cardboard"] .cardboard-card .cardboard-dice::after { content: attr(data-category-label); position: absolute; right: 1px; bottom: 1px; padding: 0 1px; border-radius: 2px; background: #fffdf5; color: #18313d; font-size: 11px; line-height: 12px; font-weight: 800; }
     html[data-design="cardboard"] #cardboardBoard { grid-template-rows: 79px minmax(150px, 1fr) 79px; min-height: 332px; }
+    html[data-design="cardboard"] #cardboardBoard:is([data-player-count="3"], [data-player-count="4"]) { grid-template-rows: 88px minmax(130px, 1fr) 88px; }
     html[data-design="cardboard"] #cardboardBoard:not(:has(.cardboard-player[data-seat-position="top"])) { grid-template-rows: minmax(150px, 1fr) 79px; }
     html[data-design="cardboard"] .cardboard-player { padding: 4px; }
     html[data-design="cardboard"] .cardboard-header h2 { font-size: 12px; }
@@ -9142,12 +9151,12 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-category { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-header h2 { font-size: 10px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-player-coins b { font-size: 12px; line-height: 1; }
-    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-art { height: 14px; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-art { height: 28px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-dice { font-size: 13px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-name { padding: 2px 3px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards { grid-auto-rows: minmax(0, 1fr); align-items: stretch; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card { min-height: 0; height: 100%; padding-bottom: 2px; }
-    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card .cardboard-art { flex: 1 1 auto; min-height: 0; max-height: 14px; height: auto; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card .cardboard-art { flex: 1 1 auto; min-height: 0; max-height: 28px; height: auto; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card .cardboard-name,
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-count { flex: 0 0 auto; font-size: 11px; line-height: 1.1; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card:has(.cardboard-dormant, .cardboard-activation) { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-rows: repeat(4, 14px); padding: 0; }

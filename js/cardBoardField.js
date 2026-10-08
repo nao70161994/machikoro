@@ -37,6 +37,7 @@ const CardBoardField = (() => {
     let receiptSession = null;
     let feedbackTimer = null;
     let previousChoice = null;
+    let previousBuiltLandmarks = null;
     let choiceInitialized = false;
     let themeFocus = null;
     const transfers = typeof CardBoardTransfers !== 'undefined' ? CardBoardTransfers.create() : null;
@@ -211,9 +212,14 @@ const CardBoardField = (() => {
 
     function draw() {
         if (!facts || !node('cardboardBoard')) return;
-        if (!enabled()) { detach(); return; }
         const { game, escapeHtml, enabledLandmarks } = facts;
         if (!game?.players?.length) return;
+        const builtLandmarks = game.players.map(player => Object.keys(player.landmarks || {}).filter(name => player.landmarks[name] === true));
+        const newlyBuiltLandmarks = !facts.replaying && previousBuiltLandmarks
+            ? builtLandmarks.flatMap((names, index) => names.filter(name => !previousBuiltLandmarks[index]?.includes(name)).map(name => ({ index, name })))
+            : [];
+        previousBuiltLandmarks = builtLandmarks;
+        if (!enabled()) { detach(); return; }
         if (!mounted) {
             const actions = document.querySelector('#gameScreen .game-action-panel');
             if (actions) {
@@ -290,6 +296,14 @@ const CardBoardField = (() => {
                 index, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events, contentOnly: true,
                 renderFacilityArt: UiBuildMenu.renderFacilityArt,
             }));
+            for (const landmark of newlyBuiltLandmarks) {
+                if (landmark.index !== index) continue;
+                const button = Array.from(panel.querySelectorAll('.cardboard-landmark')).find(item => item.dataset.landmarkName === landmark.name);
+                if (!button) continue;
+                button.classList.remove('cardboard-landmark-newly-built');
+                void button.offsetWidth;
+                button.classList.add('cardboard-landmark-newly-built');
+            }
             scrollMemory.restore(`player:${index}`, panel);
         }
         const receipt = node('cardboardDiceReceipt');
@@ -328,6 +342,7 @@ const CardBoardField = (() => {
             scrollMemory.clear();
             selectedIndex = null;
             previousChoice = null;
+            previousBuiltLandmarks = null;
             choiceInitialized = false;
             clearFeedback();
             feedback?.reset();
