@@ -56,6 +56,8 @@ test('同じ出目で連鎖した施設カードを発動順に強調する', as
         ];
         return {
             rolling: document.getElementById('cardboardBoard').classList.contains('cardboard-new-roll'),
+            diceSizes: [...document.querySelectorAll('#cardboardActionSlot #diceResult .dice-face')]
+                .map(dice => getComputedStyle(dice).width),
             transferSummary: document.querySelector('#cardboardDiceReceipt .cardboard-transfer-summary-inline')?.textContent || '',
             cards: selectors.map(selector => {
                 const card = document.querySelector(selector);
@@ -74,6 +76,7 @@ test('同じ出目で連鎖した施設カードを発動順に強調する', as
     await page.screenshot({ path: portraitScreenshot });
     await testInfo.attach('施設連鎖の縦持ちレシート配置', { path: portraitScreenshot, contentType: 'image/png' });
     expect(sequence.rolling).toBe(true);
+    expect(sequence.diceSizes).toEqual(['44px']);
     expect(sequence.transferSummary).toContain('席1→席4 1');
     expect(sequence.cards.every(card => card.active)).toBe(true);
     expect(sequence.cards.map(card => card.order)).toEqual(['0', '1', '2', '3']);
