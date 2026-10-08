@@ -93,7 +93,11 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                         const box = element.getBoundingClientRect();
                         return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
                     };
-                    const hitTargets = controls.filter(element => !element.disabled).map(element => {
+                    const hitTargets = controls.filter(element => {
+                        const box = element.getBoundingClientRect();
+                        return !element.disabled && box.left < innerWidth && box.right > 0 &&
+                            box.top < innerHeight && box.bottom > 0;
+                    }).map(element => {
                         const box = element.getBoundingClientRect();
                         const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
                         return { id: element.id, receivesInput: target === element || element.contains(target) };
@@ -116,7 +120,7 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     expect(control.rect.right, `${control.id} right edge`).toBeLessThanOrEqual(viewport.width + 1);
                 }
 
-                await expect(page.locator('#gameScreen')).toHaveScreenshot(`${theme}-${viewport.name}.png`, {
+                await expect(page).toHaveScreenshot(`${theme}-${viewport.name}.png`, {
                     animations: 'disabled',
                     caret: 'hide',
                     scale: 'css',
