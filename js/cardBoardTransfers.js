@@ -79,10 +79,20 @@ const CardBoardTransfers = (() => {
                 const duplicateName = events.participantNames.filter(name => name === participantName).length > 1;
                 return duplicateName ? `${participantName}（席${index + 1}）` : participantName;
             };
-            summaryElement.textContent = routes.slice(0, 8).map(route =>
-                `${seatName(route.from)}→${seatName(route.to)} ${route.amount}`).join(' / ') +
-                (routes.length > 8 ? ` / ほか${routes.length - 8}件` : '') + 'コイン' +
+            const escapeText = value => String(value).replace(/[&<>"']/g, character =>
+                ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+            const shownRoutes = routes.slice(0, 8);
+            const summaryText = shownRoutes.map(route =>
+                `${seatName(route.from)}→${seatName(route.to)} ${route.amount}コイン`).join(' / ') +
+                (routes.length > 8 ? ` / ほか${routes.length - 8}件` : '') +
                 (events.incomplete ? ' / 未集計の特殊効果は出目の内訳で確認' : '');
+            const routeHtml = shownRoutes.map(route =>
+                `<span class="cardboard-transfer-route">${escapeText(seatName(route.from))}→${escapeText(seatName(route.to))} ${route.amount}コイン</span>`
+            ).join('<span class="cardboard-transfer-separator" aria-hidden="true"> / </span>');
+            summaryElement.textContent = summaryText;
+            summaryElement.innerHTML = routeHtml +
+                (routes.length > 8 ? `<span class="cardboard-transfer-extra">ほか${routes.length - 8}件</span>` : '') +
+                (events.incomplete ? '<span class="cardboard-transfer-extra">未集計の特殊効果は内訳へ</span>' : '');
             // Read endpoints first, then animate without touching game state.
             const displayed = routes.slice(0, 8).map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);

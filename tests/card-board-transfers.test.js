@@ -53,6 +53,9 @@ runTest('表示中HUDへ向かう演出と文字summaryは同じ確定収支を�
     assert.strictEqual(animated[0].options.delay, 0);
     assert.strictEqual(animated[1].options.delay, 100, '複数の送金先は解決順に少しずつ表示する');
     assert.ok(container.children[0].children[0].textContent.includes('街B→街C 0'));
+    assert.ok(container.children[0].children[0].textContent.includes('街A→街B 5コイン'));
+    assert.ok(container.children[0].children[0].textContent.includes('銀行→街A 4コイン'));
+    assert.ok(container.children[0].children[0].innerHTML.includes('cardboard-transfer-route'));
     assert.ok(container.children[0].children[0].attributes['aria-label'].includes('街B → 街C：0コイン'));
     assert.strictEqual(typeof timer(), 'function');
     controller.clear();
@@ -68,10 +71,11 @@ runTest('Reduced Motionでも誰から誰への金額を静止表示し未集計
     controller.play({ container, events: { ...events, incomplete: true }, reducedMotion: true });
     assert.strictEqual(animated.length, 0);
     const text = container.children[0].children[0].textContent;
-    assert.ok(text.includes('街A→街B 5'));
-    assert.ok(text.includes('銀行→街A 4'));
+    assert.ok(text.includes('街A→街B 5コイン'));
+    assert.ok(text.includes('銀行→街A 4コイン'));
     assert.ok(container.children[0].children[0].attributes['aria-label'].includes('街A → 街B：5コイン'));
     assert.ok(text.includes('未集計の特殊効果'));
+    assert.ok(container.children[0].children[0].innerHTML.includes('cardboard-transfer-extra'));
     controller.clear();
     assert.strictEqual(controller.play({ container, events: {} }), false);
 });
@@ -82,7 +86,20 @@ runTest('同名のプレイヤー間だけ席番号を添えて送金先を区�
     controller.play({ container, events: { participantNames: ['街A', '街A'], activations: [
         { from: 0, to: 1, amount: 2 },
     ] }, reducedMotion: true });
-    assert.ok(container.children[0].children[0].textContent.includes('街A（席1）→街A（席2） 2'));
+    assert.ok(container.children[0].children[0].textContent.includes('街A（席1）→街A（席2） 2コイン'));
+    assert.ok(container.children[0].children[0].innerHTML.includes('街A（席1）→街A（席2） 2コイン'));
+    controller.clear();
+});
+
+runTest('送金 summary はプレイヤー名をHTMLとして解釈せずescapeする', () => {
+    const { container } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events: { participantNames: ['<img src=x>', '街B'], activations: [
+        { from: 0, to: 1, amount: 1 },
+    ] }, reducedMotion: true });
+    const summary = container.children[0].children[0];
+    assert.ok(summary.innerHTML.includes('&lt;img src=x&gt;→街B 1コイン'));
+    assert.strictEqual(summary.textContent, '<img src=x>→街B 1コイン');
     controller.clear();
 });
 
@@ -110,6 +127,6 @@ runTest('アプリ内の動きを減らす設定でもWAAPIの送金を止め文
     const controller = CardBoardTransfers.create();
     controller.play({ container, events, reducedMotion: false });
     assert.strictEqual(animated.length, 0);
-    assert.ok(container.children[0].children[0].textContent.includes('街A→街B 5'));
+    assert.ok(container.children[0].children[0].textContent.includes('街A→街B 5コイン'));
     controller.clear();
 });
