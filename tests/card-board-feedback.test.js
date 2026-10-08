@@ -228,3 +228,16 @@ runTest('電波塔と港の選択後に確定する収支だけを一度渡し�
         assert.deepStrictEqual(helper.takeResultLogs(), []);
     }
 });
+runTest('過去の確定送金metadataの改変も新規演出の根拠にしない', () => {
+    const helper = CardBoardFeedback.create(), facts = fixture();
+    helper.refresh(facts);
+    facts.game.log.push(roll(facts.game));
+    helper.refresh(facts);
+    facts.game.log.push({ type: 'special', message: '確定', coinResolution: { owner: 0, subject: 'テレビ局', activation: 1, transfers: [{ from: 1, to: 0, amount: 1 }] } });
+    helper.refresh(facts);
+    facts.game.log.at(-1).coinResolution.transfers[0].amount = 5;
+    facts.game.turnCount++;
+    facts.game.log.push(roll(facts.game));
+    assert.strictEqual(helper.refresh(facts), false);
+    assert.strictEqual(helper.wasInvalidated(), true);
+});

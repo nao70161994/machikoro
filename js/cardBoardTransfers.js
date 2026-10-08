@@ -7,7 +7,7 @@ const CardBoardTransfers = (() => {
     function project(events) {
         const groups = new Map();
         for (const event of events?.activations || []) {
-            const validIndex = index => index === null || Number.isInteger(index) && index >= 0 && index < (events.participantNames?.length || 0);
+            const validIndex = index => index === null || index === 'pool' || Number.isInteger(index) && index >= 0 && index < (events.participantNames?.length || 0);
             if (!validIndex(event.from) || !validIndex(event.to) || event.from === event.to ||
                 !Number.isSafeInteger(event.amount) || event.amount < 0) continue;
             const key = JSON.stringify([event.from, event.to]);
@@ -16,7 +16,7 @@ const CardBoardTransfers = (() => {
             if (!Number.isSafeInteger(amount)) continue;
             groups.set(key, { from: event.from, to: event.to, amount });
         }
-        const name = index => index === null ? '銀行' : String(events.participantNames[index]);
+        const name = index => index === 'pool' ? '分配プール' : index === null ? '銀行' : String(events.participantNames[index]);
         return [...groups.values()].map(route => ({ ...route,
             text: `${name(route.from)} → ${name(route.to)}：${route.amount}コイン`,
         }));
@@ -51,7 +51,7 @@ const CardBoardTransfers = (() => {
             if (!bounds.width || !bounds.height) return false;
             const center = { x: bounds.width / 2, y: bounds.height / 2 };
             const location = index => {
-                if (index === null) return center;
+                if (index === null || index === 'pool') return center;
                 const header = container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
                 if (!header) return null;
                 const rect = header.getBoundingClientRect();

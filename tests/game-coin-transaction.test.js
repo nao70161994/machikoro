@@ -54,3 +54,16 @@ runTest('coin transactionは空の連続徴収をidentity planにする', () => 
         total: 0,
     });
 });
+runTest('表示用確定送金はendpoint・重複pair・safe integerを検証してコピーする', () => {
+    const value = { owner: 0, subject: '公園', activation: 1, transfers: [{ from: null, to: 'pool', amount: 1 }, { from: 'pool', to: 0, amount: 0 }] };
+    const normalized = GameCoinTransaction.readResolution(value, 2);
+    assert.deepStrictEqual(normalized, value);
+    assert.notStrictEqual(normalized.transfers, value.transfers);
+    for (const transfers of [
+        [{ from: 'other', to: 0, amount: 1 }],
+        [{ from: 0, to: 0, amount: 1 }],
+        [{ from: null, to: 1, amount: -1 }],
+        [{ from: null, to: 1, amount: 1 }, { from: null, to: 1, amount: 2 }],
+        [{ from: 0, to: 1, amount: Number.MAX_SAFE_INTEGER }, { from: null, to: 1, amount: 1 }],
+    ]) assert.strictEqual(GameCoinTransaction.readResolution({ ...value, transfers }, 2), null);
+});

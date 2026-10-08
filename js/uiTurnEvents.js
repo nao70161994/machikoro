@@ -1,9 +1,10 @@
 'use strict';
-/* global UiLogDisplay, DicePresentation */
+/* global UiLogDisplay, DicePresentation, GameCoinTransaction */
 
 // Device-local receipt projection. Structured rule/replay logs remain untouched.
 const UiTurnEvents = (() => {
     const dicePresentation = typeof DicePresentation !== 'undefined' ? DicePresentation : require('./dicePresentation');
+    const transactions = typeof GameCoinTransaction !== 'undefined' ? GameCoinTransaction : require('./gameCoinTransaction');
     function project(entries, options = {}) {
         const helper = options.logDisplay || (typeof UiLogDisplay !== 'undefined' ? UiLogDisplay
             : typeof require === 'function' ? require('./uiLogDisplay') : null);
@@ -68,7 +69,31 @@ const UiTurnEvents = (() => {
         const groups = new Map();
         const balances = players.map((player, index) => ({ index, name: player.name, income: 0, payment: 0, facilityNet: 0, otherLogNet: 0 }));
         const unparsed = [];
+        const seenResolutions = new Set();
         for (const entry of history.slice(boundary)) {
+            const resolution = transactions.readResolution(entry.coinResolution, players.length);
+            if (resolution && cards.has(resolution.subject)) {
+                const identity = JSON.stringify([resolution.owner, resolution.subject, resolution.activation]);
+                if (seenResolutions.has(identity)) continue;
+                const projected = balances.map(balance => ({ ...balance }));
+                const safe = resolution.transfers.every(({ from, to, amount }) => {
+                    if (Number.isInteger(from)) { projected[from].payment += amount; projected[from].facilityNet -= amount; }
+                    if (Number.isInteger(to)) { projected[to].income += amount; projected[to].facilityNet += amount; }
+                    return projected.every(balance => Number.isSafeInteger(balance.payment) &&
+                        Number.isSafeInteger(balance.income) && Number.isSafeInteger(balance.facilityNet));
+                });
+                if (!safe) { unparsed.push(entry.message); continue; }
+                seenResolutions.add(identity);
+                for (const transfer of resolution.transfers) {
+                    const { from, to, amount } = transfer;
+                    const key = JSON.stringify(['typed', identity, from, to]);
+                    groups.set(key, { from, to, amount, subject: resolution.subject, facility: true,
+                        owner: resolution.owner, activation: identity, count: 1 });
+                    if (Number.isInteger(from)) { balances[from].payment += amount; balances[from].facilityNet -= amount; }
+                    if (Number.isInteger(to)) { balances[to].income += amount; balances[to].facilityNet += amount; }
+                }
+                continue;
+            }
             const cls = helper.classifyLogEntry(entry, display).cls;
             if (cls === 'log-special' && /[+-]?\d+コイン/u.test(entry.message)) {
                 // Purple effects may log both individual transfers and their

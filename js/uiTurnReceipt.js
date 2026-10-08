@@ -5,7 +5,7 @@ const UiTurnReceipt = (() => {
     function buildReceiptHtml(receipt, escapeHtml) {
         if (!receipt || typeof escapeHtml !== 'function') return '';
         const escape = value => escapeHtml(String(value));
-        const name = index => receipt.participantNames?.[index] || receipt.balances.find(balance => balance.index === index)?.name || '';
+        const name = index => index === 'pool' ? '分配プール' : index === null ? '銀行' : receipt.participantNames?.[index] || receipt.balances.find(balance => balance.index === index)?.name || '';
         const important = receipt.important.map(event => `<li class="plaza-important-event plaza-important-${event.kind}">${escape(event.message)}</li>`).join('');
         const dice = receipt.dice ? `<p class="plaza-receipt-dice">出目 ${escape(receipt.dice.values.join('+') || receipt.dice.base)}${receipt.dice.values.length > 1 ? `=${escape(receipt.dice.base)}` : ''}${receipt.dice.harbor ? ` → ${escape(receipt.dice.effective)}（港）` : ''}${receipt.dice.rerolled ? '（振り直し）' : ''}</p>` : '';
         const balances = receipt.balances.map(balance => `<li data-receipt-player-index="${balance.index}">${escape(balance.name)}：ログ確認分 収入${escape(balance.income)} / 支払い${escape(balance.payment)}（確認済み施設差引${balance.facilityNet >= 0 ? '+' : ''}${escape(balance.facilityNet)}）</li>`).join('');

@@ -694,7 +694,7 @@ class GameManager {
 
     _processPurple(current, ci, dice) {
         const revivedCards = this._reviveDormantCardsForDice(current, dice, card => card.color === "purple");
-        for (const card of current.cards) {
+        for (const [cardIndex, card] of current.cards.entries()) {
             if (!GameCardActivationPolicy.isActivationCandidate({
                 card,
                 revivedCards,
@@ -717,6 +717,7 @@ class GameManager {
                 );
                 applyCoinTransactionPlan(this.players, plan);
                 this.addLog(LOG_TYPES.SPECIAL, `🏟️ スタジアム発動 → +${plan.total}コイン`, {
+                    coinResolution: this.collectionResolution(card.name, plan, cardIndex),
                     gainAmount: plan.total,
                     loseAmount: plan.total,
                 });
@@ -744,10 +745,12 @@ class GameManager {
                     requestedAmounts
                 );
                 applyCoinTransactionPlan(this.players, plan);
+                const coinResolution = this.collectionResolution(card.name, plan, cardIndex);
                 plan.transfers.forEach((transfer, index) => {
-                    if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `📰 ${this.players[index].name}から${transfer}コイン`);
+                    if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `📰 ${this.players[index].name}から${transfer}コイン`, { coinResolution });
                 });
                 this.addLog(LOG_TYPES.SPECIAL, `📰 出版社発動 → 合計+${plan.total}コイン`, {
+                    coinResolution,
                     gainAmount: plan.total,
                     loseAmount: plan.total,
                 });
@@ -762,10 +765,12 @@ class GameManager {
                     requestedAmounts
                 );
                 applyCoinTransactionPlan(this.players, plan);
+                const coinResolution = this.collectionResolution(card.name, plan, cardIndex);
                 plan.transfers.forEach((transfer, index) => {
-                    if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `🏛️ ${this.players[index].name}から${transfer}コイン`);
+                    if (transfer > 0) this.addLog(LOG_TYPES.SPECIAL, `🏛️ ${this.players[index].name}から${transfer}コイン`, { coinResolution });
                 });
                 this.addLog(LOG_TYPES.SPECIAL, `🏛️ 税務署発動 → 合計+${plan.total}コイン`, {
+                    coinResolution,
                     gainAmount: plan.total,
                     loseAmount: plan.total,
                 });
@@ -788,6 +793,7 @@ class GameManager {
                 );
                 applyCoinTransactionPlan(this.players, plan);
                 this.addLog(LOG_TYPES.SPECIAL, `💻 ITベンチャー発動 → 積立${current.itVentureCoins}コイン × ${this.players.length - 1}人 → +${plan.total}コイン`, {
+                    coinResolution: this.collectionResolution(card.name, plan, cardIndex),
                     gainAmount: plan.total,
                     loseAmount: plan.total,
                 });
@@ -804,6 +810,13 @@ class GameManager {
                     return totals;
                 }, { gain: 0, lose: 0 });
                 this.addLog(LOG_TYPES.SPECIAL, `🌳 公園発動 → 全員${plan.each}コインに均等分配`, {
+                    coinResolution: this.coinResolution(card.name, [
+                        ...plan.balances.map((balance, index) => {
+                            const delta = balance - balancesBefore[index];
+                            return { from: delta < 0 ? index : 'pool', to: delta < 0 ? 'pool' : index, amount: Math.abs(delta) };
+                        }),
+                        ...(plan.bankContribution > 0 ? [{ from: null, to: 'pool', amount: plan.bankContribution }] : []),
+                    ], cardIndex),
                     gainAmount: parkTotals.gain,
                     loseAmount: parkTotals.lose,
                 });
@@ -839,6 +852,7 @@ class GameManager {
         target.coins = transition.targetCoins;
         current.coins = transition.actorCoins;
         this.addLog(LOG_TYPES.SPECIAL, `📺 ${target.name}から${transition.transfer}コイン奪いました`, {
+            coinResolution: this.coinResolution('テレビ局', [{ from: targetIndex, to: this.currentPlayerIndex, amount: transition.transfer }], this.pendingTV),
             gainAmount: transition.transfer,
             loseAmount: transition.transfer,
         });
@@ -937,6 +951,7 @@ class GameManager {
         if (cleaning.reward <= 0) return false;
         current.coins += cleaning.reward;
         this.addLog(LOG_TYPES.SPECIAL, `🧹 ${cardName}×${cleaning.reward}軒を休業 → 銀行から+${cleaning.reward}コイン`, {
+            coinResolution: this.coinResolution('清掃業', [{ from: null, to: this.currentPlayerIndex, amount: cleaning.reward }], this.pendingCleaning),
             gainAmount: cleaning.reward,
         });
         this._consumePendingAction('pendingCleaning');
@@ -983,6 +998,7 @@ class GameManager {
         if (transition.dormant) target.makeDormant(transition.card);
         current.coins = transition.actorCoins;
         this.addLog(LOG_TYPES.SPECIAL, `🚚 ${myCard.name}を${target.name}に渡して+4コイン`, {
+            coinResolution: this.coinResolution('引越し屋', [{ from: null, to: this.currentPlayerIndex, amount: 4 }], this.pendingMover),
             gainAmount: 4,
         });
         this._consumePendingAction('pendingMover');
@@ -1021,6 +1037,7 @@ class GameManager {
         current.landmarks[transition.landmarkName] = false;
         current.coins = transition.actorCoins;
         this.addLog(LOG_TYPES.BUILD, `🔨 ${landmarkName}を取り壊して+${transition.reward}コイン`, {
+            coinResolution: this.coinResolution('改装屋', [{ from: null, to: this.currentPlayerIndex, amount: transition.reward }], this.pendingRenovation),
             gainAmount: transition.reward,
         });
         this._consumePendingAction('pendingRenovation');
@@ -1256,8 +1273,19 @@ class GameManager {
         return false;
     }
 
+    coinResolution(subject, transfers, activation) {
+        // The owned-card ordinal or remaining pending count is shared gameplay
+        // state. Log lengths can differ because transport notices are local.
+        return { owner: this.currentPlayerIndex, subject, activation, transfers };
+    }
+
+    collectionResolution(subject, plan, activation) {
+        return this.coinResolution(subject, plan.transfers.flatMap((amount, from) =>
+            from === this.currentPlayerIndex ? [] : [{ from, to: this.currentPlayerIndex, amount }]), activation);
+    }
+
     addLog(type, msg, options = {}) {
-        /** @type {{type: string, message: string, diceResolution?: {dice1: number, dice2: number, result: number, rerolled: boolean, turn: number, actor: number}}} */
+        /** @type {{type: string, message: string, coinResolution?: ReturnType<typeof GameCoinTransaction.readResolution>, diceResolution?: {dice1: number, dice2: number, result: number, rerolled: boolean, turn: number, actor: number}}} */
         const entry = { type, message: msg };
         const resolution = options.diceResolution;
         if (type === LOG_TYPES.DICE && resolution &&
@@ -1272,6 +1300,8 @@ class GameManager {
                 rerolled: resolution.rerolled, turn: resolution.turn, actor: resolution.actor,
             };
         }
+        const coinResolution = GameCoinTransaction.readResolution(options.coinResolution, this.players.length);
+        if (coinResolution) entry.coinResolution = coinResolution;
         this.log.push(entry);
         if (options.review === false) return;
         if (!this.reviewSummary || typeof this.reviewSummary !== 'object') {

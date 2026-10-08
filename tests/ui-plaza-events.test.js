@@ -156,7 +156,7 @@ runTest('実スタジアムSPECIAL金銭を消さず原文と未集計表示を�
     game.players[1].cards = [];
     game.rollDice(6);
     assert.ok(game.log.some(log => log.type === LOG_TYPES.SPECIAL && log.message.includes('スタジアム')));
-    const receipt = UiPlazaEvents.project(game.log, { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES });
+    const receipt = UiPlazaEvents.project(game.log.map(({ type, message }) => ({ type, message })), { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES });
     assert.strictEqual(receipt.incomplete, true);
     assert.ok(receipt.unparsed.some(message => message.includes('スタジアム')));
     assert.strictEqual(receipt.balances.length, 0);
@@ -192,4 +192,79 @@ runTest('残高不足で0コインの赤発動でも支払元と先を表示す�
     assert.ok(html.includes('街1 → 街2'));
     assert.ok(!html.includes('-0コイン'));
     assert.ok(!html.includes(' → ：'));
+});
+
+runTest('確定紫収支は実額とownerを保持し複数payerでもカード発動を重複しない', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const UiCardBoard = require('../js/uiCardBoard');
+    for (const name of ['スタジアム', '出版社', '税務署', 'ITベンチャー']) {
+        const game = new GameManager(3);
+        game.currentPlayerIndex = 0;
+        game.players.forEach((player, index) => { player.name = `街${index}`; player.coins = index === 1 ? 1 : 20; player.cards = index ? [createCardByName('パン屋')] : [createCardByName(name)]; });
+        game.players[0].itVentureCoins = 3;
+        const before = game.players.map(player => player.coins);
+        const dice = createCardByName(name).diceNums[0];
+        game.rollDice(dice);
+        const receipt = UiTurnEvents.project(game.log, { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES });
+        assert.strictEqual(receipt.incomplete, false, `${name}の確定済み個別ログは未集計にしない`);
+        const events = receipt.activations.filter(event => event.subject === name);
+        assert.strictEqual(events.length, 2, name);
+        assert.ok(events.every(event => event.owner === 0));
+        assert.strictEqual(events.reduce((sum, event) => sum + event.amount, 0), game.players[0].coins - before[0]);
+        const html = UiCardBoard.buildPlayerHtml(game.players[0], { index: 0, events: receipt });
+        assert.ok(html.includes('data-cardboard-activation-count="1"'), name);
+        assert.strictEqual(UiTurnEvents.project([...game.log, ...game.log.slice(-1)], { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES }).activations.filter(event => event.subject === name).length, 2);
+    }
+});
+runTest('確定TVの0額と保存正規化は保持し壊れたmetadataは旧ログfallbackへ戻す', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const validation = require('../js/savedGameValidation');
+    const game = new GameManager(2);
+    game.players[0].cards = [createCardByName('テレビ局')]; game.players[1].cards = []; game.players[1].coins = 0;
+    game.rollDice(6); game.resolveTV(1);
+    const entry = game.log.at(-1);
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(validation.normalizeSavedLog([entry])[0])), JSON.parse(JSON.stringify(entry)));
+    const options = { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES };
+    const receipt = UiTurnEvents.project(game.log, options);
+    assert.ok(receipt.activations.some(event => event.subject === 'テレビ局' && event.from === 1 && event.to === 0 && event.amount === 0));
+    const malformed = { ...entry, coinResolution: { ...entry.coinResolution, transfers: [{ from: 99, to: 0, amount: 5 }] } };
+    assert.strictEqual(validation.normalizeSavedLog([malformed])[0].coinResolution, undefined);
+    assert.strictEqual(UiTurnEvents.project([game.log[0], malformed], options).activations.length, 0);
+});
+runTest('公園は実deltaだけを分配プール経由で示し他人の利益をownerへ加算しない', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const game = new GameManager(4);
+    game.players.forEach((player, index) => { player.name = `街${index}`; player.coins = [30, 0, 1, 4][index]; player.cards = index ? [] : [createCardByName('公園')]; });
+    game.players[0].landmarks['駅'] = true;
+    game.rollDice(); game.selectDiceCount(true, 5, 6);
+    const receipt = UiTurnEvents.project(game.log, { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES });
+    assert.deepStrictEqual(Array.from(receipt.balances, balance => balance.facilityNet), [-21, 9, 8, 5]);
+    assert.ok(receipt.activations.some(event => event.from === null && event.to === 'pool' && event.amount === 1));
+    assert.ok(receipt.activations.every(event => event.from === 'pool' || event.to === 'pool'));
+    const html = require('../js/uiCardBoard').buildPlayerHtml(game.players[0], { index: 0, events: receipt });
+    assert.ok(html.includes('data-cardboard-activation-net="-21"'));
+    assert.ok(html.includes('data-cardboard-activation-count="1"'));
+    assert.ok(UiTurnReceipt.buildHtml(receipt, escape).includes('分配プール'));
+    assert.ok(require('../js/cardBoardTransfers').project(receipt).some(route => route.text === '銀行 → 分配プール：1コイン'));
+});
+runTest('確定送金identityは端末ローカル通知数やsnapshot復元のログ切詰めで変わらない', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const metadata = [];
+    for (const localCount of [0, 2, 4, 7]) {
+        const game = new GameManager(2);
+        game.players[0].cards = [createCardByName('テレビ局')]; game.players[1].cards = [];
+        game.players[1].coins = 10;
+        game.rollDice(6);
+        game.log = Array.from({ length: localCount }, () => ({ type: LOG_TYPES.SYSTEM, message: '🔌 端末ローカル通知' }));
+        assert.strictEqual(game.resolveTV(1), true);
+        metadata.push(JSON.parse(JSON.stringify(game.log.at(-1).coinResolution)));
+    }
+    assert.ok(metadata.every(value => JSON.stringify(value) === JSON.stringify(metadata[0])));
+    assert.strictEqual(metadata[0].activation, 1);
+    const game = new GameManager(2);
+    game.players[0].cards = [createCardByName('スタジアム')];
+    game.players[1].cards = [];
+    game.log = Array.from({ length: 9 }, () => ({ type: LOG_TYPES.SYSTEM, message: '通知' }));
+    game._processPurple(game.players[0], 0, 6);
+    assert.strictEqual(game.log.at(-1).coinResolution.activation, 0, '所有カードordinalを使用する');
 });

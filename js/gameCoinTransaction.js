@@ -1,6 +1,29 @@
 'use strict';
 
 const GameCoinTransaction = (() => {
+    // Optional presentation evidence; never used to apply a transaction.
+    function readResolution(value, playerCount = 10) {
+        if (!value || !Number.isInteger(value.owner) || value.owner < 0 || value.owner >= playerCount ||
+                typeof value.subject !== 'string' || !value.subject || value.subject.length > 80 ||
+                !Number.isSafeInteger(value.activation) || value.activation < 0 ||
+                !Array.isArray(value.transfers) || !value.transfers.length || value.transfers.length > 20) return null;
+        const validSeat = seat => seat === null || seat === 'pool' || Number.isInteger(seat) && seat >= 0 && seat < playerCount;
+        let total = 0;
+        const transfers = [];
+        const pairs = new Set();
+        for (const transfer of value.transfers) {
+            if (!transfer || !validSeat(transfer.from) || !validSeat(transfer.to) || transfer.from === transfer.to ||
+                    !Number.isSafeInteger(transfer.amount) || transfer.amount < 0) return null;
+            const pair = JSON.stringify([transfer.from, transfer.to]);
+            if (pairs.has(pair)) return null;
+            pairs.add(pair);
+            total += transfer.amount;
+            if (!Number.isSafeInteger(total)) return null;
+            transfers.push({ from: transfer.from, to: transfer.to, amount: transfer.amount });
+        }
+        return { owner: value.owner, subject: value.subject, activation: value.activation, transfers };
+    }
+
     function assertInputs(balances, receiverIndex, requestedAmounts) {
         if (!Array.isArray(balances) || !Array.isArray(requestedAmounts) ||
                 balances.length !== requestedAmounts.length) {
@@ -68,6 +91,7 @@ const GameCoinTransaction = (() => {
     }
 
     return Object.freeze({
+        readResolution,
         collectionPlan,
         equalDistributionPlan,
         sequentialCollectionPlan,

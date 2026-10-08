@@ -35,12 +35,15 @@ const UiCardBoard = (() => {
     }
     function activationFor(events, name, index) {
         const matching = (events?.activations || []).filter(event => event.facility === true &&
-            event.subject === name && (event.to !== null ? event.to === index : event.from === index) &&
+            event.subject === name && (Number.isInteger(event.owner) ? event.owner === index : event.to !== null ? event.to === index : event.from === index) &&
             Number.isSafeInteger(event.amount) && event.amount >= 0);
         if (!matching.length) return null;
         let net = 0, count = 0;
+        const activations = new Set();
         for (const event of matching) {
             net += (event.to === index ? event.amount : 0) - (event.from === index ? event.amount : 0);
+            if (event.activation && activations.has(event.activation)) continue;
+            if (event.activation) activations.add(event.activation);
             count += Number.isSafeInteger(event.count) && event.count > 0 ? event.count : 1;
         }
         return Number.isSafeInteger(net) && Number.isSafeInteger(count) ? { net, count } : null;

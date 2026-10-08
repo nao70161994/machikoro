@@ -5,7 +5,7 @@
 const CardBoardFeedback = (() => {
     const presentation = typeof DicePresentation !== 'undefined' ? DicePresentation : require('./dicePresentation');
     const phases = (typeof GameActionContract !== 'undefined' ? GameActionContract : require('./actionContract')).phases;
-    const signature = entry => JSON.stringify([entry?.type, entry?.message, entry?.diceResolution]);
+    const signature = entry => JSON.stringify([entry?.type, entry?.message, entry?.diceResolution, entry?.coinResolution]);
     function resolution(entry, game) {
         const value = presentation.read(entry?.diceResolution, game.players.length);
         return value?.turn === game.turnCount && value?.actor === game.currentPlayerIndex && value?.rerolled === (game.usedReroll === true)
