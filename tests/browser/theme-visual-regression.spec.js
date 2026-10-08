@@ -35,7 +35,7 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
             const state = runtime.snapshot();
             runtime.setCpuPlayers(Array.from({ length: 4 }, () => null));
             cancelCpuSchedule('theme-visual-regression');
-            state.game.currentPlayerIndex = 0;
+            state.game.currentPlayerIndex = 3;
             state.game.phase = GAME_PHASES.ROLL;
             state.game.turnCount = 2;
             state.game.builtThisTurn = false;
