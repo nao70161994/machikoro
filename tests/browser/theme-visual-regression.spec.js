@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
 const THEMES = ['classic', 'sunset', 'plaza', 'cardboard'];
+test.use({ serviceWorkers: 'block' });
 const VIEWPORTS = [
     { width: 320, height: 844, name: 'phone-320' },
     { width: 390, height: 844, name: 'phone-390' },
@@ -43,6 +44,11 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
             setTutorialEnabled(false);
             render();
             acceptHotseatHandoff();
+            const updateBanner = document.getElementById('pwaUpdateBanner');
+            if (updateBanner) updateBanner.style.display = 'none';
+            document.body.classList.remove('pwa-banner-open');
+            const installBanner = document.getElementById('pwaInstallBanner');
+            if (installBanner) installBanner.style.display = 'none';
         });
     });
 
@@ -125,6 +131,7 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                 await expect(page).toHaveScreenshot(`${theme}-${viewport.name}.png`, {
                     animations: 'disabled',
                     caret: 'hide',
+                    fullPage: false,
                     scale: 'css',
                     maxDiffPixelRatio: 0.012,
                 });
