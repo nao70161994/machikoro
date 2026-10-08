@@ -9174,6 +9174,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] body.pwa-banner-open #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) { height: calc(100dvh - 242px - env(safe-area-inset-bottom, 0px)); min-height: 276px; }
 }
 @media (max-width: 760px) {
+    html[data-design="cardboard"] #gameScreen > #status:not(.game-winner) { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; box-shadow: 0 2px 8px #284b3540; }
     html[data-design="cardboard"] #cardboardControls { flex-wrap: wrap; }
     html[data-design="cardboard"] #cardboardBoard { border-radius: 12px; padding: 6px; }
     html[data-design="cardboard"] .cardboard-cards { max-height: 190px; }
