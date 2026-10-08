@@ -1,0 +1,59 @@
+name: Theme visual regression
+
+on:
+    pull_request:
+        paths:
+            - 'style.css'
+            - 'index.html'
+            - 'js/designTheme.js'
+            - 'js/ui*.js'
+            - 'js/cardBoard*.js'
+            - 'js/plaza*.js'
+            - 'tests/browser/theme-visual-regression.spec.js'
+            - 'playwright.config.js'
+            - '.github/workflows/theme-visual-regression.yml'
+    workflow_dispatch:
+        inputs:
+            refresh_baselines:
+                description: Generate candidate baselines for review; never used by pull request checks
+                required: true
+                default: false
+                type: boolean
+
+permissions:
+    contents: read
+
+jobs:
+    theme-visual:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+            - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+              with:
+                  node-version: '20'
+                  cache: npm
+            - run: npm ci
+            - run: npx playwright install --with-deps webkit
+            - name: Compare theme baselines at target viewports
+              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
+              run: npm run test:browser-visual -- --retries=0 --workers=1
+            - name: Generate candidate theme baselines
+              if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
+              run: npm run test:browser-visual -- --update-snapshots --retries=0 --workers=1
+            - name: Upload generated baseline candidates
+              if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: theme-visual-baseline-candidates
+                  path: tests/browser/theme-visual-regression.spec.js-snapshots/
+                  if-no-files-found: error
+            - name: Upload screenshots, traces, and failure diagnostics
+              if: always()
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: theme-visual-regression
+                  path: |
+                      playwright-report/
+                      test-results/
+                  if-no-files-found: warn

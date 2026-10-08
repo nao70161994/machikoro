@@ -208,3 +208,10 @@ Android/TWA workflow を触る場合は、artifact が欠落しても成功扱�
    - 手動確認済み（2026-07-18）: Android 2台＋iPhone 2台の4人戦を、再接続ありで勝利まで完走した。
    - 未確認: host移譲、server restart restore、Undo同期、online CPU、background復帰、PWA更新延期は個別に確認する。
    - 期待結果: ACK timeoutでもpendingを失わず、canonical rejoin後に重複送信せず復帰し、restore中eventの順序と上限を守る。
+# ブラウザ自動テストの実行範囲
+
+- 日常のテーマ表示変更: `npm run test:browser-visual -- --grep 'classic|sunset|plaza|cardboard'`（通常は `npm run test:browser-visual` で4テーマ×4 viewport を実行）。比較対象は `tests/browser/theme-visual-regression.spec.js-snapshots/`。
+- 意図したデザイン変更で基準画像を更新する場合だけ、Linux + Playwright WebKit で `npm run test:browser-visual -- --update-snapshots --workers=1` を実行し、全 PNG の差分を確認して同じ変更に含める。CI では更新モードを使わない。
+- オンラインのテーマ互換性と回転: `npm run test:browser-online-compat -- --workers=1`。4クライアントの canonical state、建設、Undo、テーマ切替、回転、再接続を比較する。
+- 固定seedの実ブラウザCPU対局: `npm run test:browser-e2e -- seeded-browser-match.spec.js --workers=1`。最大5分かけて勝者まで実行し、失敗時は標準 trace / screenshot / video とゲーム状態・進行履歴を確認する。
+- PR と夜間の WebKit 全件実行は既存 `test:browser-e2e` の安全ゲートとして継続する。テーマ CSS / UI の変更時は専用 `Theme visual regression` workflow も起動する。

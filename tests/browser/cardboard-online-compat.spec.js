@@ -163,6 +163,13 @@ test('4テーマ混在オンラインは途中切替と再接続でも同じ正�
         expect(rolled.currentPlayerIndex).toBe(beforeBuild.currentPlayerIndex);
         expect(rolled.turnCount).toBe(beforeBuild.turnCount);
         expect(rolled.dice).toBe(beforeBuild.dice);
+        const beforeRotation = await synchronized();
+        await active.setViewportSize({ width: 844, height: 390 });
+        await expect(active.locator('#gameScreen')).toBeVisible();
+        expect(await synchronized()).toEqual(beforeRotation);
+        await active.setViewportSize({ width: 390, height: 844 });
+        await expect(active.locator('#gameScreen')).toBeVisible();
+        expect(await synchronized()).toEqual(beforeRotation);
         // Changing each local presentation must neither emit actions nor mutate state.
         for (let index = 0; index < pages.length; index += 1) {
             await selectTheme(pages[index], themes[(index + 1) % themes.length]);
