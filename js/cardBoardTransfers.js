@@ -68,10 +68,12 @@ const CardBoardTransfers = (() => {
             summaryElement.className = 'cardboard-transfer-summary';
             summaryElement.setAttribute('role', 'status');
             summaryElement.setAttribute('aria-live', 'polite');
-            const participantName = index => index === 'pool' ? '分配プール' : index === null ? '銀行'
-                : String(events.participantNames?.[index] ?? `席${index + 1}`);
+            const spokenRoutes = routes.slice(0, 8).map(route => route.text).join('、');
+            const omittedRoutes = routes.length > 8 ? `、ほか${routes.length - 8}件` : '';
+            summaryElement.setAttribute('aria-label', `${spokenRoutes}${omittedRoutes}${events.incomplete ? '。未集計の特殊効果は出目の内訳で確認' : ''}`);
+            const seatName = index => index === 'pool' ? '分配プール' : index === null ? '銀行' : `席${index + 1}`;
             summaryElement.textContent = routes.slice(0, 8).map(route =>
-                `${participantName(route.from)}→${participantName(route.to)} ${route.amount}`).join(' / ') +
+                `${seatName(route.from)}→${seatName(route.to)} ${route.amount}`).join(' / ') +
                 (routes.length > 8 ? ` / ほか${routes.length - 8}件` : '') + 'コイン' +
                 (events.incomplete ? ' / 未集計の特殊効果は出目の内訳で確認' : '');
             // Read endpoints first, then animate without touching game state.

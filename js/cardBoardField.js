@@ -281,6 +281,9 @@ const CardBoardField = (() => {
             ...(focusPortrait ? { maxVisible: 2, preferSelected: true } : {}),
         });
         const others = indices.filter(index => index !== selfIndex);
+        const focusedIndex = focusPortrait
+            ? others.find(index => index === selectedIndex) ?? others.find(index => index === currentIndex) ?? others[0] ?? null
+            : null;
         seats.querySelectorAll('.cardboard-player').forEach(element => {
             if (!indices.includes(Number(/** @type {HTMLElement} */ (element).dataset.playerIndex))) element.remove();
         });
@@ -299,6 +302,7 @@ const CardBoardField = (() => {
             panel.classList.toggle('cardboard-player-self', index === selfIndex);
             panel.classList.toggle('cardboard-player-current', index === currentIndex);
             panel.classList.toggle('cardboard-player-selected', index === selectedIndex && index !== selfIndex);
+            panel.classList.toggle('cardboard-player-focus', index === focusedIndex);
             /** @type {HTMLElement} */ (panel).dataset.seatPosition = position;
             replaceHtml(panel, UiCardBoard.buildPlayerHtml(game.players[index], {
                 index, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events, contentOnly: true,

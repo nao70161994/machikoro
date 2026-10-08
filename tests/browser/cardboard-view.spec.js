@@ -74,7 +74,7 @@ test('同じ出目で連鎖した施設カードを発動順に強調する', as
     await page.screenshot({ path: portraitScreenshot });
     await testInfo.attach('施設連鎖の縦持ちレシート配置', { path: portraitScreenshot, contentType: 'image/png' });
     expect(sequence.rolling).toBe(true);
-    expect(sequence.transferSummary).toContain('街1→街4 1');
+    expect(sequence.transferSummary).toContain('席1→席4 1');
     expect(sequence.cards.every(card => card.active)).toBe(true);
     expect(sequence.cards.map(card => card.order)).toEqual(['0', '1', '2', '3']);
     expect(sequence.cards.map(card => card.delay)).toEqual(['0s', '0.1s', '0.2s', '0.3s']);
@@ -195,6 +195,15 @@ test('2人戦のカード盤面はPC・縦持ち・横持ちで街と市場を�
 test('4人戦の縦持ちは自分と選択相手を市場の前に切り替えて表示する', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 }, 4);
     await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(2);
+    const initialLayout = await page.evaluate(() => ({
+        self: document.querySelector('#cardboardSeats .cardboard-player-self').getBoundingClientRect().top,
+        focus: document.querySelector('#cardboardSeats .cardboard-player-focus').getBoundingClientRect().top,
+        market: document.getElementById('cardboardMarket').getBoundingClientRect().top,
+        defaultOpponent: document.querySelector('#cardboardSeats .cardboard-player-focus').dataset.playerIndex,
+    }));
+    expect(initialLayout.self).toBeLessThan(initialLayout.focus);
+    expect(initialLayout.focus).toBeLessThan(initialLayout.market);
+    expect(initialLayout.defaultOpponent).toBe('1');
     await page.locator('#cardboardRoster [data-cardboard-player-index="3"]').click();
     await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(2);
     await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toBeVisible();
@@ -202,10 +211,12 @@ test('4人戦の縦持ちは自分と選択相手を市場の前に切り替え�
     const layout = await page.evaluate(() => ({
         self: document.querySelector('#cardboardSeats .cardboard-player-self').getBoundingClientRect().top,
         selected: document.querySelector('#cardboardSeats .cardboard-player-selected').getBoundingClientRect().top,
+        focus: document.querySelector('#cardboardSeats .cardboard-player-focus').getBoundingClientRect().top,
         market: document.getElementById('cardboardMarket').getBoundingClientRect().top,
         hiddenOpponent: document.querySelector('#cardboardSeats [data-player-index="1"]') === null,
     }));
     expect(layout.self).toBeLessThan(layout.selected);
+    expect(layout.focus).toBe(layout.selected);
     expect(layout.selected).toBeLessThan(layout.market);
     expect(layout.hiddenOpponent).toBe(true);
     const screenshot = testInfo.outputPath('cardboard-4p-portrait-selected-city.png');
