@@ -413,7 +413,13 @@ test('4人戦の後半は施設が増えてもカード列をスクロールし�
                     artHeights: [...list.querySelectorAll('.cardboard-art')].map(art => art.getBoundingClientRect().height),
                 };
             });
-            return { cards, scrollWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth };
+            const marketCard = document.querySelector('#cardboardMarket .compact-market-item:not(.compact-market-landmark)');
+            const filter = document.querySelector('#cardboardMarket .compact-market-filter-disclosure').getBoundingClientRect();
+            const goals = document.querySelector('#cardboardMarket .compact-market-goal-disclosure').getBoundingClientRect();
+            return { cards, marketCardWidth: marketCard?.getBoundingClientRect().width,
+                marketFilter: { left: filter.left, right: filter.right, top: filter.top, bottom: filter.bottom },
+                marketGoals: { left: goals.left, right: goals.right, top: goals.top, bottom: goals.bottom },
+                scrollWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth };
         });
         expect(layout.cards).toHaveLength(4);
         expect(layout.scrollWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
@@ -425,6 +431,11 @@ test('4人戦の後半は施設が増えてもカード列をスクロールし�
             expect(horizontalLists.every(cards => cards.scrollbar === 'thin'), JSON.stringify(layout)).toBe(true);
         } else {
             expect(layout.cards.every(cards => cards.scrollWidth > cards.clientWidth || cards.scrollHeight > cards.clientHeight), JSON.stringify(layout)).toBe(true);
+        }
+        if (viewport.name === 'landscape') {
+            expect(layout.marketCardWidth, JSON.stringify(layout)).toBeGreaterThanOrEqual(168);
+            expect(layout.marketFilter.top, JSON.stringify(layout)).toBe(layout.marketGoals.top);
+            expect(layout.marketCardWidth, JSON.stringify(layout)).toBeGreaterThan(layout.marketFilter.right - layout.marketFilter.left);
         }
         const screenshot = testInfo.outputPath(`cardboard-late-4p-${viewport.name}.png`);
         await page.screenshot({ path: screenshot, fullPage: viewport.name === 'portrait' });
