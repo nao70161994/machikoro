@@ -8964,6 +8964,23 @@ html[data-design="cardboard"] .cardboard-player-current { box-shadow: inset 0 3p
 html[data-design="cardboard"] .cardboard-header { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; min-width: 0; margin-bottom: 5px; }
 html[data-design="cardboard"] .cardboard-header h2 { min-width: 0; max-width: 100%; margin: 0; color: var(--cardboard-ink); font-size: 14px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-design="cardboard"] .cardboard-player-hud { display: flex; flex-wrap: wrap; gap: 3px 8px; margin: 0; color: var(--cardboard-ink); font-size: 12px; line-height: 1.25; }
+html[data-design="cardboard"] .cardboard-city-disclosure { flex: 0 0 auto; margin: 1px 0 3px; }
+html[data-design="cardboard"] .cardboard-city-disclosure > summary { display: flex; align-items: center; min-height: 44px; color: #365d65; font-size: 11px; font-weight: 700; cursor: pointer; }
+html[data-design="cardboard"] .cardboard-city-close-label { display: none; }
+html[data-design="cardboard"] .cardboard-city-disclosure[open] .cardboard-city-open-label { display: none; }
+html[data-design="cardboard"] .cardboard-city-disclosure[open] .cardboard-city-close-label { display: inline; }
+html[data-design="cardboard"] .cardboard-city-disclosure[open] { position: fixed; left: 50%; bottom: max(8px, env(safe-area-inset-bottom, 0px)); z-index: 30; width: min(760px, calc(100vw - 24px)); max-height: 78dvh; padding: 4px 7px 7px; transform: translateX(-50%); overflow: auto; border: 1px solid #c5a75c; border-radius: 9px; background: #fffdf5; box-shadow: 0 4px 22px #18344766; }
+html[data-design="cardboard"] .cardboard-city-disclosure[open] > summary { position: sticky; top: -4px; z-index: 2; margin: -4px -7px 5px; padding: 0 7px; border-bottom: 1px solid #d8c794; background: #fffdf5; color: var(--cardboard-ink); }
+html[data-design="cardboard"] .cardboard-city-disclosure .sunset-town { display: block; margin: 0; padding: 8px; border: 1px solid #94a99a; border-radius: 8px; background: linear-gradient(180deg, #e3efd8, #b5cfac); color: var(--cardboard-ink); }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-summary { margin: 0 0 5px; font-size: 12px; }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-summary span { color: #425969; font-size: 11px; }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-street[data-town-layout="districts"] { position: relative; display: block; width: 100%; min-width: 0; height: clamp(150px, 32dvh, 260px); min-height: 150px; padding: 0; overflow: hidden; border: 0; aspect-ratio: auto; background: linear-gradient(180deg, #d5e4cc, #99b995 68%, #789c7c); }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-backdrop { display: block; position: absolute; inset: 0 0 auto; width: 100%; height: 46%; opacity: .7; }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-district-roads { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-growth-scenery { display: block; }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-street[data-town-layout="districts"] > .town-building { position: absolute; left: var(--town-x); top: var(--town-y); z-index: 2; width: var(--town-width); min-width: 0; padding: 0; margin: 0; transform: none; }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-street[data-town-layout="districts"] > .town-building .sunset-facility-art { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; margin: 0; filter: drop-shadow(0 3px 2px #102b3d30); }
+html[data-design="cardboard"] .cardboard-city-disclosure .town-street[data-town-layout="districts"] .town-building-count { position: absolute; right: 0; bottom: -5px; min-width: 22px; padding: 1px 4px; border-radius: 9px; background: #203747; color: #ffedc3; font-size: 10px; text-align: center; }
 html[data-design="cardboard"] .cardboard-player-coins b { font-size: 17px; font-variant-numeric: tabular-nums; }
 html[data-design="cardboard"] .cardboard-turn-marker { padding: 2px 5px; border-radius: 4px; background: #ffdf80; color: #604300; font-size: 10px; font-weight: 800; }
 html[data-design="cardboard"] .cardboard-player > h3 { margin: 5px 0 2px; font-size: 11px; }

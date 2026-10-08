@@ -44,7 +44,7 @@ const CardBoardField = (() => {
     let themeFocus = null;
     const transfers = typeof CardBoardTransfers !== 'undefined' ? CardBoardTransfers.create() : null;
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
-    const disclosureSelector = '.compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
+    const disclosureSelector = '.compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details, .cardboard-city-disclosure';
     function closeDisclosures(except = null) {
         node('cardboardBoard')?.querySelectorAll(disclosureSelector).forEach(element => {
             const details = /** @type {HTMLDetailsElement} */ (element);
@@ -309,6 +309,7 @@ const CardBoardField = (() => {
             replaceHtml(panel, UiCardBoard.buildPlayerHtml(game.players[index], {
                 index, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events, contentOnly: true,
                 renderFacilityArt: UiBuildMenu.renderFacilityArt,
+                renderTownHtml: UiBuildMenu.renderTownHtml,
                 setting: facts.playerSettings?.[index], renderPlayerKindIcon: facts.renderPlayerKindIcon,
             }));
             for (const landmark of newlyBuiltLandmarks) {

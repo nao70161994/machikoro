@@ -132,6 +132,14 @@ runTest('カード卓の各席と一覧で人間・CPUの共通アイコンを�
     assert.ok(roster.includes('aria-label="CPU（強）"'));
     assert.strictEqual((roster.match(/<svg data-kind=/g) || []).length, 2);
 });
+runTest('カード卓から夕暮れの広場と共通の街並みを開ける', () => {
+    const html = UiCardBoard.buildPlayerHtml(player, { ...options,
+        renderTownHtml: (town, landmarks) => `<div class="sunset-town" data-cards="${town.cards.length}" data-landmarks="${landmarks.size}"></div>`,
+    });
+    assert.ok(html.includes('<details class="cardboard-city-disclosure"><summary><span class="cardboard-city-open-label">街並みを眺める</span><span class="cardboard-city-close-label">街並みを閉じる</span></summary>'));
+    assert.ok(html.includes('class="sunset-town" data-cards="2" data-landmarks="3"'));
+    assert.ok(!UiCardBoard.buildPlayerHtml(player, options).includes('cardboard-city-disclosure'));
+});
 runTest('contentOnlyは外枠だけを除外し同一の中身を返す', () => {
     const wrapped = UiCardBoard.buildPlayerHtml(player, options);
     const content = UiCardBoard.buildPlayerHtml(player, { ...options, contentOnly: true });
