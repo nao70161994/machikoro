@@ -23,6 +23,7 @@ function fixture() {
         animate(frames, options) { animated.push({ frames, options }); return { cancel: () => { cancelled++; }, finished: Promise.resolve() }; }
         getBoundingClientRect() { return { left: 0, top: 0, width: 600, height: 400 }; }
         querySelector(selector) {
+            if (selector.startsWith('#cardboardDiceReceipt')) return null;
             if (selector.includes('"2"')) return null;
             return { getBoundingClientRect: () => ({ left: selector.includes('"1"') ? 400 : 20, top: 20, width: 100, height: 40 }) };
         }
@@ -51,7 +52,7 @@ runTest('表示中HUDへ向かう演出と文字summaryは同じ確定収支を�
     assert.ok(animated[0].frames.at(-1).transform.includes('380px'));
     assert.strictEqual(animated[0].options.delay, 0);
     assert.strictEqual(animated[1].options.delay, 100, '複数の送金先は解決順に少しずつ表示する');
-    assert.ok(container.children[0].children[0].textContent.includes('街B → 街C：0コイン'));
+    assert.ok(container.children[0].children[0].textContent.includes('街B→街C 0'));
     assert.strictEqual(typeof timer(), 'function');
     controller.clear();
     assert.strictEqual(container.children.length, 0);
@@ -66,7 +67,7 @@ runTest('Reduced Motionでも誰から誰への金額を静止表示し未集計
     controller.play({ container, events: { ...events, incomplete: true }, reducedMotion: true });
     assert.strictEqual(animated.length, 0);
     const text = container.children[0].children[0].textContent;
-    assert.ok(text.includes('街A → 街B：5コイン'));
+    assert.ok(text.includes('街A→街B 5'));
     assert.ok(text.includes('未集計の特殊効果'));
     controller.clear();
     assert.strictEqual(controller.play({ container, events: {} }), false);
@@ -96,6 +97,6 @@ runTest('アプリ内の動きを減らす設定でもWAAPIの送金を止め文
     const controller = CardBoardTransfers.create();
     controller.play({ container, events, reducedMotion: false });
     assert.strictEqual(animated.length, 0);
-    assert.ok(container.children[0].children[0].textContent.includes('街A → 街B：5コイン'));
+    assert.ok(container.children[0].children[0].textContent.includes('街A→街B 5'));
     controller.clear();
 });

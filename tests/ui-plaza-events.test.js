@@ -38,7 +38,7 @@ runTest('領収投影は施設の複数発動と支払元先を集約しrawロ�
     assert.deepStrictEqual(receipt.dice.values, [5]);
     assert.strictEqual(receipt.activations[0].amount, 6);
     assert.strictEqual(receipt.activations[0].count, 2);
-    assert.deepStrictEqual(receipt.activations[1], { from: 0, to: 1, subject: '寿司屋', facility: true, amount: 2, count: 1 });
+    assert.deepStrictEqual(receipt.activations[1], { from: 0, to: 1, subject: '寿司屋', facility: true, amount: 2, count: 1, order: 1 });
     assert.strictEqual(receipt.balances[0].facilityNet, 4);
     assert.strictEqual(receipt.balances[1].facilityNet, 2);
     assert.strictEqual(JSON.stringify(logs), original);
@@ -230,6 +230,30 @@ runTest('確定TVの0額と保存正規化は保持し壊れたmetadataは旧ロ
     const malformed = { ...entry, coinResolution: { ...entry.coinResolution, transfers: [{ from: 99, to: 0, amount: 5 }] } };
     assert.strictEqual(validation.normalizeSavedLog([malformed])[0].coinResolution, undefined);
     assert.strictEqual(UiTurnEvents.project([game.log[0], malformed], options).activations.length, 0);
+});
+runTest('同じ出目の施設連鎖は順番を保ち複数送金元は同じ発動順にまとめる', () => {
+    const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
+    const game = new GameManager(4);
+    game.players[0].cards = [createCardByName('パン屋')];
+    game.players[1].cards = [createCardByName('カフェ')];
+    game.players[2].cards = [createCardByName('カフェ')];
+    game.players[3].cards = [createCardByName('カフェ')];
+    game.rollDice(3);
+    const receipt = UiTurnEvents.project(game.log, { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES });
+    const bakery = receipt.activations.find(event => event.subject === 'パン屋');
+    const cafes = receipt.activations.filter(event => event.subject === 'カフェ');
+    assert.strictEqual(bakery.order, 3);
+    assert.deepStrictEqual(cafes.map(event => event.to), [3, 2, 1]);
+    assert.deepStrictEqual(cafes.map(event => event.order), [0, 1, 2]);
+
+    const stadium = new GameManager(4);
+    stadium.players[0].cards = [createCardByName('スタジアム')];
+    stadium.rollDice(6);
+    const stadiumRoutes = UiTurnEvents.project(stadium.log, {
+        players: stadium.players, turnPlayerIndex: 0, logTypes: LOG_TYPES,
+    }).activations.filter(event => event.subject === 'スタジアム');
+    assert.ok(stadiumRoutes.length > 1);
+    assert.strictEqual(new Set(stadiumRoutes.map(event => event.order)).size, 1);
 });
 runTest('公園は実deltaだけを分配プール経由で示し他人の利益をownerへ加算しない', () => {
     const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();

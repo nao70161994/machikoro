@@ -35,6 +35,53 @@ async function selectTheme(page, theme) {
     await expect(page.locator('html')).toHaveAttribute('data-design', theme);
 }
 
+test('同じ出目で連鎖した施設カードを発動順に強調する', async ({ page }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    const sequence = await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = [createCardByName('パン屋')];
+        game.players[1].cards = [createCardByName('カフェ')];
+        game.players[2].cards = [createCardByName('カフェ')];
+        game.players[3].cards = [createCardByName('カフェ')];
+        render();
+        acceptHotseatHandoff();
+        game.rollDice(3);
+        render();
+        const selectors = [
+            '#cardboardSeats [data-player-index="3"] [data-card-name="カフェ"]',
+            '#cardboardSeats [data-player-index="2"] [data-card-name="カフェ"]',
+            '#cardboardSeats [data-player-index="1"] [data-card-name="カフェ"]',
+            '#cardboardSeats [data-player-index="0"] [data-card-name="パン屋"]',
+        ];
+        return {
+            rolling: document.getElementById('cardboardBoard').classList.contains('cardboard-new-roll'),
+            transferSummary: document.querySelector('#cardboardDiceReceipt .cardboard-transfer-summary-inline')?.textContent || '',
+            cards: selectors.map(selector => {
+                const card = document.querySelector(selector);
+                return { active: card.classList.contains('cardboard-card-activated'),
+                    order: card.dataset.cardboardActivationOrder, delay: getComputedStyle(card).animationDelay,
+                    animation: getComputedStyle(card).animationName };
+            }),
+        };
+    });
+    await page.waitForTimeout(120);
+    const screenshot = testInfo.outputPath('cardboard-chain-activation.png');
+    await page.screenshot({ path: screenshot });
+    await testInfo.attach('施設連鎖の発動順演出', { path: screenshot, contentType: 'image/png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    const portraitScreenshot = testInfo.outputPath('cardboard-chain-activation-portrait.png');
+    await page.screenshot({ path: portraitScreenshot });
+    await testInfo.attach('施設連鎖の縦持ちレシート配置', { path: portraitScreenshot, contentType: 'image/png' });
+    expect(sequence.rolling).toBe(true);
+    expect(sequence.transferSummary).toContain('街1→街4 1');
+    expect(sequence.cards.every(card => card.active)).toBe(true);
+    expect(sequence.cards.map(card => card.order)).toEqual(['0', '1', '2', '3']);
+    expect(sequence.cards.map(card => card.delay)).toEqual(['0s', '0.1s', '0.2s', '0.3s']);
+    expect(sequence.cards.every(card => card.animation === 'cardboard-activation-chain')).toBe(true);
+    await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
+});
+
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
     test(`カード盤面は4ビュー切替でも同一状態と共有市場を保つ ${viewport.width}`, async ({ page }, testInfo) => {
         await prepare(page, viewport);

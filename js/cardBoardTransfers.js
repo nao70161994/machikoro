@@ -24,6 +24,7 @@ const CardBoardTransfers = (() => {
 
     function create() {
         let layer = null;
+        let summaryElement = null;
         let timeout = null;
         let view = null;
         let animations = [];
@@ -32,6 +33,8 @@ const CardBoardTransfers = (() => {
             timeout = null;
             for (const animation of animations) animation.cancel();
             animations = [];
+            summaryElement?.remove();
+            summaryElement = null;
             layer?.remove();
             layer = null;
             view = null;
@@ -61,17 +64,24 @@ const CardBoardTransfers = (() => {
             };
             layer = documentRef.createElement('div');
             layer.className = 'cardboard-transfers';
-            const summary = documentRef.createElement('p');
-            summary.className = 'cardboard-transfer-summary';
-            summary.setAttribute('role', 'status');
-            summary.setAttribute('aria-live', 'polite');
-            summary.textContent = routes.slice(0, 8).map(route => route.text).join(' / ') +
-                (routes.length > 8 ? ` / ほか${routes.length - 8}件（出目の内訳で確認）` : '') +
+            summaryElement = documentRef.createElement('p');
+            summaryElement.className = 'cardboard-transfer-summary';
+            summaryElement.setAttribute('role', 'status');
+            summaryElement.setAttribute('aria-live', 'polite');
+            const participantName = index => index === 'pool' ? '分配プール' : index === null ? '銀行'
+                : String(events.participantNames?.[index] ?? `席${index + 1}`);
+            summaryElement.textContent = routes.slice(0, 8).map(route =>
+                `${participantName(route.from)}→${participantName(route.to)} ${route.amount}`).join(' / ') +
+                (routes.length > 8 ? ` / ほか${routes.length - 8}件` : '') + 'コイン' +
                 (events.incomplete ? ' / 未集計の特殊効果は出目の内訳で確認' : '');
-            layer.appendChild(summary);
             // Read endpoints first, then animate without touching game state.
             const displayed = routes.slice(0, 8).map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);
+            const receipt = container.querySelector('#cardboardDiceReceipt .plaza-event-receipt');
+            if (receipt?.isConnected) {
+                summaryElement.classList.add('cardboard-transfer-summary-inline');
+                receipt.appendChild(summaryElement);
+            } else layer.appendChild(summaryElement);
             for (let index = 0; index < displayed.length; index++) {
                 const { route, from, to } = displayed[index];
                 if (reducedMotion || route.amount === 0 || !from || !to) continue;
@@ -93,7 +103,7 @@ const CardBoardTransfers = (() => {
                     animations.push(animation);
                 } else coin.remove();
             }
-            timeout = view?.setTimeout(clear, 1600) ?? null;
+            timeout = view?.setTimeout(clear, 2600) ?? null;
             return true;
         }
         return Object.freeze({ play, clear });

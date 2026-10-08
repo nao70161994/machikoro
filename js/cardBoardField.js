@@ -327,11 +327,13 @@ const CardBoardField = (() => {
         if (newRoll) {
             if (feedbackTimer !== null) clearTimeout(feedbackTimer);
             node('cardboardBoard').classList.add('cardboard-new-roll');
+            const lastActivationOrder = events.activations.reduce((last, event) =>
+                Number.isInteger(event.order) ? Math.max(last, Math.min(7, event.order)) : last, 0);
 
             feedbackTimer = setTimeout(() => {
                 feedbackTimer = null;
                 node('cardboardBoard')?.classList.remove('cardboard-new-roll');
-            }, 900);
+            }, Math.max(1400, lastActivationOrder * 100 + 900));
         }
     }
 

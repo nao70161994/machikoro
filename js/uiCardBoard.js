@@ -46,7 +46,10 @@ const UiCardBoard = (() => {
             if (event.activation) activations.add(event.activation);
             count += Number.isSafeInteger(event.count) && event.count > 0 ? event.count : 1;
         }
-        return Number.isSafeInteger(net) && Number.isSafeInteger(count) ? { net, count } : null;
+        const order = matching.reduce((earliest, event) => Number.isInteger(event.order)
+            ? earliest === null ? event.order : Math.min(earliest, event.order) : earliest, null);
+        return Number.isSafeInteger(net) && Number.isSafeInteger(count)
+            ? { net, count, order: Math.max(0, order ?? 0) } : null;
     }
     function buildPlayerHtml(player, options = {}) {
         const { escape, art } = helpers(options);
@@ -64,7 +67,8 @@ const UiCardBoard = (() => {
             const color = colors.has(card.color) ? card.color : 'unknown';
             const dice = (Array.isArray(card.diceNums) ? card.diceNums : []).filter(value => Number.isInteger(value) && value >= 1 && value <= 14);
             const event = activationFor(options.events, card.name, index);
-            const eventAttrs = event ? ` data-cardboard-activation-count="${event.count}" data-cardboard-activation-net="${event.net}"` : '';
+            const activationOrder = event ? Math.min(7, event.order) : 0;
+            const eventAttrs = event ? ` data-cardboard-activation-count="${event.count}" data-cardboard-activation-net="${event.net}" data-cardboard-activation-order="${activationOrder}" style="--cardboard-activation-delay:${activationOrder * 100}ms"` : '';
             const eventHtml = event ? `<span class="cardboard-activation" data-short-label="${event.net > 0 ? '+' : ''}${event.net} · ${event.count}回">確認済み：${event.net > 0 ? '+' : ''}${event.net}コイン · 発動${event.count}回</span>` : '';
             return `<button type="button" class="cardboard-card cardboard-card-${color}${dormant === count ? ' cardboard-card-dormant' : ''}${event ? ' cardboard-card-activated' : ''}" data-action="showCardDetail" data-card-name="${escape(card.name)}"${eventAttrs}><span class="cardboard-dice" data-category-label="${escape(colorNames[color] || '不明')}" aria-label="発動する出目 ${escape(dice.join('・'))}">${escape(dice.join('・') || '—')}</span><span class="cardboard-category"><span aria-hidden="true"><span class="card-family-mark" data-category="${escape(card.category)}"></span>${escape(colorNames[color] || '不明')} · ${escape(card.category)}</span><span class="visually-hidden">${escape(card.category)}。${escape(colorLabels[color] || '分類不明')}。詳しい効果を開く。</span></span><span class="cardboard-art">${art(card.name, false, card.category)}</span><span class="cardboard-name">${escape(card.name)}</span><span class="cardboard-count">所有 ×${count}</span>${dormant ? `<span class="cardboard-dormant" data-short-label="休${dormant} 稼${count - dormant}">休業 ${dormant}枚 / 稼働 ${count - dormant}枚</span>` : ''}${eventHtml}</button>`;
         }).join('');

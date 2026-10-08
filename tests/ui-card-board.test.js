@@ -39,8 +39,8 @@ runTest('全色・複数出目と全休業でも施設詳細を使える', () =>
 });
 runTest('確認できた施設発動だけを一致した所有者へ示し0を推測しない', () => {
     const events = { activations: [
-        { facility: true, subject: '森林', from: null, to: 1, amount: 3, count: 2 },
-        { facility: true, subject: '森林', from: 1, to: 2, amount: 1, count: 1 },
+        { facility: true, subject: '森林', from: null, to: 1, amount: 3, count: 2, order: 2 },
+        { facility: true, subject: '森林', from: 1, to: 2, amount: 1, count: 1, order: 3 },
         { facility: true, subject: '森林', from: null, to: 3, amount: 50, count: 1 },
         { facility: false, subject: '森林', from: null, to: 1, amount: 99, count: 1 },
         { facility: true, subject: '森林の別施設', from: null, to: 1, amount: 99, count: 1 },
@@ -49,6 +49,8 @@ runTest('確認できた施設発動だけを一致した所有者へ示し0を�
     const html = UiCardBoard.buildPlayerHtml(player, { ...options, events });
     assert.ok(html.includes('data-cardboard-activation-net="3"'));
     assert.ok(html.includes('data-cardboard-activation-count="2"'));
+    assert.ok(html.includes('data-cardboard-activation-order="2"'));
+    assert.ok(html.includes('style="--cardboard-activation-delay:200ms"'));
     assert.ok(html.includes('data-short-label="+3 · 2回"'));
     assert.ok(html.includes('data-short-label="休1 稼1"'));
     assert.ok(!UiCardBoard.buildPlayerHtml(player, options).includes('cardboard-activation'));
