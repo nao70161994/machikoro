@@ -1,5 +1,5 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, SharedMarketMount, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, DesignTheme, CARDS, Player */
 
 // Presentation state only: no game actions, storage, random calls or rule updates.
 const CardBoardField = (() => {
@@ -7,17 +7,30 @@ const CardBoardField = (() => {
     let facts = null;
     let initialized = false;
     let mounted = false;
+    let actionOrigin = null;
+    let toolbarOrigin = null;
+    let guideOrigin = null;
     let selectedIndex = null;
     let session = null;
     let receiptSession = null;
     let feedbackTimer = null;
     let previousChoice = null;
     let choiceInitialized = false;
+    let themeFocus = null;
+    const transfers = typeof CardBoardTransfers !== 'undefined' ? CardBoardTransfers.create() : null;
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
+    const disclosureSelector = '.compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
+    function closeDisclosures(except = null) {
+        node('cardboardBoard')?.querySelectorAll(disclosureSelector).forEach(element => {
+            const details = /** @type {HTMLDetailsElement} */ (element);
+            if (details !== except) details.open = false;
+        });
+    }
     const node = id => document.getElementById(id);
     const enabled = () => document.documentElement.dataset.design === 'cardboard';
 
     function clearFeedback() {
+        transfers?.clear();
         if (feedbackTimer !== null) clearTimeout(feedbackTimer);
         feedbackTimer = null;
         node('cardboardBoard')?.classList.remove('cardboard-new-roll');
@@ -29,14 +42,22 @@ const CardBoardField = (() => {
         clearFeedback();
         feedback?.reset();
         if (!mounted) return;
-        const market = node('buildMenu');
-        const goals = node('cardboardGoalsBody');
-        const focusedGoal = goals.contains(document.activeElement)
-            ? /** @type {HTMLElement} */ (document.activeElement) : null;
-        // Restore the original nodes, preserving delegated actions and market identity.
-        for (const section of Array.from(goals.children)) market.appendChild(section);
-        focusedGoal?.focus({ preventScroll: true });
-        SharedMarketMount.release('cardboard');
+        const guide = node('tutorialBox');
+        if (guide && guideOrigin?.parentNode) guideOrigin.parentNode.insertBefore(guide, guideOrigin);
+        guideOrigin?.remove();
+        guideOrigin = null;
+        const toolbar = node('cardboardControls')?.querySelector('.game-action-toolbar');
+        if (toolbar && toolbarOrigin?.parentNode) toolbarOrigin.parentNode.insertBefore(toolbar, toolbarOrigin);
+        toolbarOrigin?.remove();
+        toolbarOrigin = null;
+        const actions = node('cardboardActionSlot')?.querySelector('.game-action-panel');
+        if (actions && actionOrigin?.parentNode) actionOrigin.parentNode.insertBefore(actions, actionOrigin);
+        actionOrigin?.remove();
+        actionOrigin = null;
+        if (typeof DesignTheme !== 'undefined') DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
+        node('gameLogContainer')?.classList.remove('cardboard-panel-open');
+        node('cardboardLogToggle')?.setAttribute('aria-expanded', 'false');
+        node('cardboardMarket')?.replaceChildren();
         node('cardboardSeats').querySelectorAll('.cardboard-player').forEach(element => element.remove());
         node('cardboardDiceReceipt').replaceChildren();
         receiptSession = null;
@@ -45,25 +66,20 @@ const CardBoardField = (() => {
         mounted = false;
     }
 
-    function updateMarket() {
-        if (!mounted) return;
-        const market = node('buildMenu');
-        const body = node('cardboardGoalsBody');
-        // renderBuildMenu replaces its children; never retain an obsolete action button.
-        const sections = Array.from(market.querySelectorAll('.build-section')).filter(section => !section.classList.contains('build-card-section'));
-        if (sections.length) {
-            const focused = sections.some(section => section.contains(document.activeElement))
-                ? /** @type {HTMLElement} */ (document.activeElement) : null;
-            body.replaceChildren();
-            for (const section of sections) body.appendChild(section);
-            focused?.focus({ preventScroll: true });
-        }
-        node('cardboardGoals').hidden = !body.children.length || facts?.game.currentPlayerIndex !== facts?.selfIndex;
+    function updateMarket(html) {
+        if (!mounted || typeof html !== 'string') return;
+        replaceHtml(node('cardboardMarket'), html);
     }
 
     function initialize() {
         if (initialized || !node('cardboardBoard')) return;
         initialized = true;
+        node('cardboardBoard').addEventListener('toggle', event => {
+            const details = /** @type {HTMLDetailsElement} */ (event.target);
+            if (!details.matches?.(disclosureSelector) || !details.open) return;
+            closeDisclosures(details);
+            facts?.closeLog?.();
+        }, true);
         const clearHiddenFeedback = () => {
             if (document.hidden || node('gameScreen')?.style.display === 'none') {
                 previousChoice = null;
@@ -86,10 +102,39 @@ const CardBoardField = (() => {
             draw();
             node('cardboardSeats').querySelector(`[data-player-index="${selectedIndex}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         });
+        const captureThemeFocus = () => {
+            const active = /** @type {HTMLElement | null} */ (document.activeElement);
+            const marketFocus = active?.closest?.('#cardboardMarket, #buildMenu') ? {
+                action: active.dataset.action, cardName: active.dataset.cardName,
+                landmarkName: active.dataset.landmarkName, cardFilter: active.dataset.cardFilter,
+            } : null;
+            return { active, marketFocus };
+        };
+        document.addEventListener('design-theme-will-change', () => { themeFocus = captureThemeFocus(); });
         document.addEventListener('design-theme-change', () => {
+            const { active, marketFocus } = themeFocus || captureThemeFocus();
+            themeFocus = null;
             if (!enabled()) detach();
             draw();
+            facts?.refreshMarket?.();
+            if (marketFocus?.action) {
+                const market = node(enabled() ? 'cardboardMarket' : 'buildMenu');
+                const target = Array.from(market?.querySelectorAll('button') || []).find(button =>
+                    !button.disabled && button.dataset.action === marketFocus.action &&
+                    button.dataset.cardName === marketFocus.cardName &&
+                    button.dataset.landmarkName === marketFocus.landmarkName &&
+                    button.dataset.cardFilter === marketFocus.cardFilter);
+                focusVisible(target);
+            } else if (active?.isConnected) active.focus({ preventScroll: true });
         });
+    }
+
+    function focusVisible(target) {
+        if (!target) return;
+        for (let parent = target.parentElement; parent; parent = parent.parentElement) {
+            if (parent.tagName === 'DETAILS' && target.tagName !== 'SUMMARY') parent.open = true;
+        }
+        target.focus({ preventScroll: true });
     }
 
     function replaceHtml(element, html) {
@@ -104,23 +149,32 @@ const CardBoardField = (() => {
         const card = focused?.dataset.cardName;
         const landmark = focused?.dataset.landmarkName;
         const seat = focused?.dataset.cardboardPlayerIndex;
+        const filter = focused?.dataset.cardFilter;
         const summaryFocused = focused?.tagName === 'SUMMARY';
+        const disclosureClass = summaryFocused ? focused.parentElement?.className : null;
         const scrollTop = element.scrollTop;
-        const childScroll = ['.cardboard-cards', '.cardboard-landmarks'].map(selector => ({
+        const childScroll = ['.cardboard-cards', '.cardboard-landmarks', '.compact-market-facilities'].map(selector => ({
             selector, top: element.querySelector(selector)?.scrollTop || 0,
             left: element.querySelector(selector)?.scrollLeft || 0,
         }));
+        const disclosures = ['.compact-market-filter-disclosure', '.compact-market-goal-disclosure'].map(selector => ({
+            selector, open: (/** @type {HTMLDetailsElement | null} */ (element.querySelector(selector)))?.open,
+        }));
         element.innerHTML = html;
+        for (const disclosure of disclosures) {
+            const child = /** @type {HTMLDetailsElement | null} */ (element.querySelector(disclosure.selector));
+            if (child && disclosure.open !== undefined) child.open = disclosure.open;
+        }
         element.scrollTop = scrollTop;
         for (const position of childScroll) {
             const child = element.querySelector(position.selector);
             if (child) { child.scrollTop = position.top; child.scrollLeft = position.left; }
         }
         if (!focused) return;
-        const target = summaryFocused ? element.querySelector('summary') : Array.from(element.querySelectorAll('button')).find(button =>
+        const target = summaryFocused ? Array.from(element.querySelectorAll('details')).find(details => details.className === disclosureClass)?.querySelector('summary') : Array.from(element.querySelectorAll('button')).find(button =>
             seat !== undefined ? button.dataset.cardboardPlayerIndex === seat
-                : button.dataset.action === action && button.dataset.cardName === card && button.dataset.landmarkName === landmark);
-        target?.focus({ preventScroll: true });
+                : button.dataset.action === action && button.dataset.cardName === card && button.dataset.landmarkName === landmark && button.dataset.cardFilter === filter);
+        focusVisible(target);
     }
 
     function draw() {
@@ -129,7 +183,24 @@ const CardBoardField = (() => {
         const { game, escapeHtml, enabledLandmarks } = facts;
         if (!game?.players?.length) return;
         if (!mounted) {
-            SharedMarketMount.mount('cardboard', node('cardboardMarket'), detach);
+            const actions = document.querySelector('#gameScreen .game-action-panel');
+            if (actions) {
+                actionOrigin = document.createComment('cardboard action origin');
+                actions.parentNode.insertBefore(actionOrigin, actions);
+                node('cardboardActionSlot').appendChild(actions);
+                const toolbar = actions.querySelector('.game-action-toolbar');
+                if (toolbar) {
+                    toolbarOrigin = document.createComment('cardboard toolbar origin');
+                    toolbar.parentNode.insertBefore(toolbarOrigin, toolbar);
+                    node('cardboardControls').appendChild(toolbar);
+                }
+            }
+            const guide = node('tutorialBox');
+            if (guide) {
+                guideOrigin = document.createComment('cardboard guide origin');
+                guide.parentNode.insertBefore(guideOrigin, guide);
+                node('cardboardControls').appendChild(guide);
+            }
             node('cardboardBoard').hidden = false;
             mounted = true;
         }
@@ -161,6 +232,7 @@ const CardBoardField = (() => {
         }));
         const seats = node('cardboardSeats');
         seats.dataset.playerCount = String(game.players.length);
+        node('cardboardBoard').dataset.playerCount = String(game.players.length);
         const indices = UiCardBoard.selectDetailIndices(game.players.length, { selfIndex, currentIndex, selectedIndex });
         const others = indices.filter(index => index !== selfIndex);
         seats.querySelectorAll('.cardboard-player').forEach(element => {
@@ -196,12 +268,23 @@ const CardBoardField = (() => {
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
         receipt.dataset.dice = dice;
         receiptSession = session;
-        if (newRoll) {
-            clearFeedback();
-            node('cardboardBoard').classList.add('cardboard-new-roll');
-            feedbackTimer = setTimeout(clearFeedback, 900);
+        const freshResultLogs = feedback?.takeResultLogs() || [];
+        if (freshResultLogs.length) {
+            const freshEvents = UiTurnEvents.project(freshResultLogs, {
+                players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
+                cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
+            });
+            transfers?.play({ container: node('cardboardBoard'), events: freshEvents });
         }
-        updateMarket();
+        if (newRoll) {
+            if (feedbackTimer !== null) clearTimeout(feedbackTimer);
+            node('cardboardBoard').classList.add('cardboard-new-roll');
+
+            feedbackTimer = setTimeout(() => {
+                feedbackTimer = null;
+                node('cardboardBoard')?.classList.remove('cardboard-new-roll');
+            }, 900);
+        }
     }
 
     function render(nextFacts) {
@@ -217,7 +300,7 @@ const CardBoardField = (() => {
         facts = nextFacts;
         draw();
     }
-    return Object.freeze({ render, updateMarket, detach });
+    return Object.freeze({ render, updateMarket, detach, closeDisclosures });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

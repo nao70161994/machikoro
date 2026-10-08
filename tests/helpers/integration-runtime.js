@@ -246,6 +246,7 @@ function loadIntegrationRuntime(options = {}) {
         'js/uiDomSnapshot.js',
         'js/uiRecoveryEffects.js',
         'js/uiWatchdogAsyncRecovery.js',
+        'js/uiMarketTarget.js',
         'js/uiWatchdogRecoveryRuntime.js',
         'js/appShellUiLockRuntime.js',
         'js/appShellComposition.js',

@@ -221,3 +221,11 @@ runTest('縦持ち広場の初心者ガイドは3手番後だけ折り畳み全�
     assert.match(html, /<summary>ガイド：全文<\/summary>/);
     assert.match(html, /tutorial-body.*全文/);
 });
+
+runTest('カード卓のガイドは開始時と横持ちでも全文を折り畳む', () => {
+    for (const portrait of [true, false]) {
+        for (const level of ['beginner', 'advanced']) {
+            assert.strictEqual(UiTutorial.shouldCompact({ design: 'cardboard', portrait, level, turnCount: 0 }), true);
+        }
+    }
+});

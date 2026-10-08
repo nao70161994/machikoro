@@ -61,6 +61,20 @@ function createHarness(overrides = {}) {
     return { calls, snapshots, runtime: UiWatchdogRecoveryRuntime.createRuntime(dependencies) };
 }
 
+runTest('カード盤面のUndo復旧はsnapshotが示す専用市場へ挿入する', () => {
+    const targets = [];
+    const { runtime } = createHarness({
+        appShellGameRuntimeSnapshot: () => ({ undoState: {} }),
+        appShellRecoveryEffects: {
+            ensureHtmlChildren: id => { targets.push(id); return { changed: true, elements: [] }; },
+            releaseInteractionLock: () => false,
+        },
+    });
+    assert.strictEqual(runtime.ensurePostBuildUndoButtonForRecovery({ phase: 'build', builtThisTurn: true,
+        allowedActions: ['undoBuild'], ui: { buildMenu: { id: 'cardboardMarket' } } }), true);
+    assert.deepStrictEqual(targets, ['cardboardMarket']);
+});
+
 runTest('watchdog recovery runtimeはfreeze kindを対応handlerへ送り回復traceを残す', () => {
     const { calls, runtime } = createHarness();
     const before = {

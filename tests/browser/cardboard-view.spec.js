@@ -42,8 +42,9 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             expect(await state(page)).toEqual(before);
         }
         await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
-        await expect(page.locator('#cardboardMarket #buildMenu')).toHaveCount(1);
-        await expect(page.locator('#cardboardGoalsBody [data-action="buildLandmark"]')).not.toHaveCount(0);
+        await expect(page.locator('#cardboardMarket #buildMenu')).toHaveCount(0);
+        await expect(page.locator('#buildMenu')).toHaveCount(1);
+        await expect(page.locator('#cardboardMarket [data-action="buildLandmark"]')).not.toHaveCount(0);
         await expect(page.locator('#cardboardSeats [data-player-index="0"] .cardboard-count')).toHaveText('所有 ×4');
         await page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]').click();
         await expect(page.locator('#cardDetailModal')).toBeVisible();
@@ -102,14 +103,14 @@ for (const width of [320, 390, 1440]) {
     });
 }
 
-test('共有市場の高速往復は単一DOMと施設・ランドマークのフォーカスを維持する', async ({ page }) => {
+test('専用市場との高速往復は正本とランドマーク操作のフォーカスを維持する', async ({ page }) => {
     await prepare(page, { width: 1440, height: 936 });
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); acceptHotseatHandoff(); });
     const before = await state(page);
     const result = await page.evaluate(() => {
         const market = document.getElementById('buildMenu');
-        document.getElementById('cardboardGoals').open = true;
-        const landmark = document.querySelector('#cardboardGoalsBody [data-action="buildLandmark"]');
+        document.querySelector('#cardboardMarket .compact-market-goal-disclosure').open = true;
+        const landmark = document.querySelector('#cardboardMarket [data-action="buildLandmark"]');
         landmark.focus();
         const checks = [{ singleMarket: true, sameFocus: document.activeElement === landmark,
             active: document.activeElement.outerHTML.slice(0, 300), initial: true }];
@@ -119,10 +120,11 @@ test('共有市場の高速往復は単一DOMと施設・ランドマークの�
             select.dispatchEvent(new Event('change', { bubbles: true }));
             checks.push({
                 singleMarket: document.querySelectorAll('#buildMenu').length === 1 && document.getElementById('buildMenu') === market,
-                sameFocus: document.activeElement === landmark,
+                sameFocus: document.activeElement?.dataset.action === 'buildLandmark' &&
+                    document.activeElement?.dataset.landmarkName === landmark.dataset.landmarkName,
                 active: document.activeElement.outerHTML.slice(0, 300),
-                connected: landmark.isConnected,
-                disabled: landmark.disabled,
+                connected: document.activeElement.isConnected,
+                disabled: document.activeElement.disabled,
             });
         }
         return checks;
@@ -135,13 +137,13 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await prepare(page, { width: 390, height: 844 }, 4, false);
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); acceptHotseatHandoff(); });
     const before = await state(page);
-    await page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]').click();
+    await page.locator('#cardboardMarket [data-action="buildCard"][data-card-name="麦畑"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×2');
     const built = await state(page);
     await selectTheme(page, 'plaza');
     expect(await state(page)).toEqual(built);
     await selectTheme(page, 'cardboard');
-    await page.locator('#buildMenu .undo-btn').click();
+    await page.locator('#cardboardMarket .undo-btn').click();
     await page.locator('#confirmOkBtn').click();
     expect(await state(page)).toEqual(before);
     await page.evaluate(() => saveGameState());
@@ -197,9 +199,9 @@ test('所有施設をスクロール中の収支更新でも表示位置を保�
         game.players[0].cards = CARDS.map(card => createCardByName(card.name));
         render();
         const cards = document.querySelector('#cardboardSeats [data-player-index="0"] .cardboard-cards');
-        cards.scrollTop = 200;
+        cards.scrollLeft = 200;
     });
-    const scroll = () => page.locator('#cardboardSeats [data-player-index="0"] .cardboard-cards').evaluate(element => element.scrollTop);
+    const scroll = () => page.locator('#cardboardSeats [data-player-index="0"] .cardboard-cards').evaluate(element => element.scrollLeft);
     const before = await scroll();
     expect(before).toBeGreaterThan(0);
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[0].coins++; render(); });
@@ -240,5 +242,7 @@ test('PC上席の多種類カードも出目・絵・名前・枚数を潰さず
         card.clientHeight >= 90 && card.scrollHeight <= card.clientHeight + 1 &&
         card.querySelector('.cardboard-dice').scrollWidth <= card.querySelector('.cardboard-dice').clientWidth + 1
     ))).toBe(true);
-    expect(await panel.locator('.cardboard-cards').evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true);
+    expect(await panel.locator('.cardboard-cards').evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true);
+    await panel.locator('.cardboard-cards').evaluate(element => { element.scrollLeft = 200; });
+    expect(await panel.locator('.cardboard-cards').evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
 });

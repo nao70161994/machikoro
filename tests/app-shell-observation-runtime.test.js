@@ -51,6 +51,21 @@ function createRuntime(overrides = {}) {
     return AppShellObservationRuntime.createRuntime(dependencies);
 }
 
+runTest('カード盤面の診断は非表示の旧市場でなく表示中の専用市場を検査する', () => {
+    const contract = Object.freeze({ group: 'build', targetId: 'buildMenu', requiresContent: true });
+    const runtime = createRuntime({
+        document: { documentElement: { dataset: { design: 'cardboard' } }, getElementById: id => id === 'cardboardMarket' ? {} : null },
+        actionUiRegistry: {
+            childSelectors: {}, containerSpecForAction: () => contract,
+            missingContainerEntries: () => [], snapshot: () => ({}),
+        },
+    });
+    assert.strictEqual(runtime.actionContainerSpecForAction({}, 'buildCard').targetId, 'cardboardMarket');
+    assert.strictEqual(contract.targetId, 'buildMenu');
+    const snapshot = runtime.buildClientRuntimeSnapshot('compact-market');
+    assert.strictEqual(snapshot.dom.ui.buildMenu.id, 'cardboardMarket');
+});
+
 runTest('app shell observation runtimeはgame/cpu/online/DOM factを既存snapshot形状へ組み立てる', () => {
     const game = {
         phase: 'build', builtThisTurn: false, turnCount: 3, currentPlayerIndex: 1,

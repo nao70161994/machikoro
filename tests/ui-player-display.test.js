@@ -312,6 +312,11 @@ const sunsetNavigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(tenPlayer
     useSunsetIcons: true,
     escapeHtml: String,
 });
+const compactNavigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(tenPlayers, {
+    escapeHtml: value => String(value), marketTargetId: 'cardboardMarket',
+});
+assert.ok(compactNavigationHtml.includes('href="#cardboardMarket"'));
+assert.ok(!compactNavigationHtml.includes('href="#buildMenu"'));
 assert(sunsetNavigationHtml.includes('href="#gameLogContainer"><svg class="player-navigation-icon"'));
 assert(sunsetNavigationHtml.includes('href="#buildMenu"><svg class="player-navigation-icon"'));
 assert(sunsetNavigationHtml.includes('interface-ui.svg#log'));

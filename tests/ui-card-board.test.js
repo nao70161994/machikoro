@@ -49,6 +49,8 @@ runTest('確認できた施設発動だけを一致した所有者へ示し0を�
     const html = UiCardBoard.buildPlayerHtml(player, { ...options, events });
     assert.ok(html.includes('data-cardboard-activation-net="3"'));
     assert.ok(html.includes('data-cardboard-activation-count="2"'));
+    assert.ok(html.includes('data-short-label="+3 · 2回"'));
+    assert.ok(html.includes('data-short-label="休1 稼1"'));
     assert.ok(!UiCardBoard.buildPlayerHtml(player, options).includes('cardboard-activation'));
     const zero = UiCardBoard.buildPlayerHtml(player, { ...options, events: { activations: [
         { facility: true, subject: '森林', from: 1, to: null, amount: 0, count: 1 },

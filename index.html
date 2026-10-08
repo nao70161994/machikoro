@@ -371,11 +371,15 @@
 
         <div id="cardboardBoard" hidden role="region" aria-label="にぎわい広場のカード盤面">
             <button type="button" id="cardboardChoiceJump" hidden aria-controls="diceChoose">選択へ戻る</button>
-            <div id="cardboardControls"><p>出目と所有枚数を見比べて、施設を選びましょう。</p></div>
+            <div id="cardboardControls"><button type="button" data-ui-action="restartGame">終了</button><button type="button" id="cardboardLogToggle" data-ui-action="toggleLog" aria-controls="gameLogContainer" aria-expanded="false">ログ</button><p>出目と所有枚数を見比べて、施設を選びましょう。</p></div>
             <div id="cardboardRoster"></div>
-            <div id="cardboardSeats"><div id="cardboardMarket" aria-label="共有市場"></div></div>
-            <div id="cardboardDiceReceipt" aria-label="出目と発動結果" aria-live="polite"></div>
-            <details id="cardboardGoals"><summary>自分のランドマークを建設</summary><div id="cardboardGoalsBody"></div></details>
+            <div id="cardboardSeats">
+                <div id="cardboardCenter">
+                    <div id="cardboardActionSlot"></div>
+                    <div id="cardboardDiceReceipt" aria-label="出目と発動結果" aria-live="polite"></div>
+                    <div id="cardboardMarket" role="region" aria-label="共有市場" tabindex="-1"></div>
+                </div>
+            </div>
         </div>
 
         <div id="plazaPlayerHud" aria-label="全員の状況"></div>
@@ -825,6 +829,7 @@
     <script src="js/uiIncomePreviewPanel.js"></script>
     <script src="js/uiLogHighlightEffects.js"></script>
     <script src="js/uiCardOrder.js"></script>
+    <script src="js/uiMarketTarget.js"></script>
     <script src="js/uiPlayerDisplay.js"></script>
     <script src="js/uiPlayerInsights.js"></script>
     <script src="js/plazaTownLayout.js"></script>
@@ -832,7 +837,9 @@
     <script src="js/plazaField.js"></script>
     <script src="js/uiInputPolicy.js"></script>
     <script src="js/uiBuildMenu.js"></script>
+    <script src="js/uiCompactMarket.js"></script>
     <script src="js/uiCardBoard.js"></script>
+    <script src="js/cardBoardTransfers.js"></script>
     <script src="js/cardBoardFeedback.js"></script>
     <script src="js/cardBoardField.js"></script>
     <script src="js/uiPendingMenu.js"></script>

@@ -116,3 +116,35 @@ runTest('広場テーマは夕暮れのアート・操作・アクセシビリ�
 runTest('カード盤面のテーマも端末設定として保存できる', () => {
     assert.strictEqual(DesignTheme.normalize('cardboard'), 'cardboard');
 });
+
+runTest('テーマ切替は非表示化前に通知し既存change通知は更新後に保つ', () => {
+    const original = global.CustomEvent;
+    global.CustomEvent = class {
+        constructor(type, options) { this.type = type; this.detail = options.detail; }
+    };
+    try {
+        const storage = storageWith('cardboard');
+        const events = [];
+        let design;
+        const document = {
+            readyState: 'complete',
+            documentElement: { setAttribute(key, value) { if (key === 'data-design') design = value; } },
+            getElementById() { return null; }, addEventListener() {},
+            dispatchEvent(event) { events.push({ type: event.type, design, detail: event.detail }); },
+        };
+        const runtime = DesignTheme.initialize(document, () => storage);
+        events.length = 0;
+        runtime.apply('plaza', true);
+        assert.deepStrictEqual(events, [
+            { type: 'design-theme-will-change', design: 'cardboard', detail: { design: 'plaza' } },
+            { type: 'design-theme-change', design: 'plaza', detail: { design: 'plaza' } },
+        ]);
+        assert.strictEqual(runtime.current(), 'plaza');
+        assert.strictEqual(storage.values[DesignTheme.STORAGE_KEY], 'plaza');
+        assert.strictEqual(storage.values.savedGame, 'saved-game');
+        assert.strictEqual(storage.values.onlineSession, 'online-session');
+    } finally {
+        if (original === undefined) delete global.CustomEvent;
+        else global.CustomEvent = original;
+    }
+});

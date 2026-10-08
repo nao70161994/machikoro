@@ -15,6 +15,7 @@ runTest('共通投影は構造化された出目を表示文言に依存せず�
         players: [{ name: 'A', cards: [] }], logTypes: { DICE: 'dice' },
     });
     assert.deepStrictEqual(receipt.dice, { values: [5, 1], base: 6, effective: 6, rerolled: true, harbor: false });
+    assert.match(UiTurnReceipt.buildHtml(receipt, String), /出目 5\+1=6（振り直し）/u);
 });
 const types = Object.freeze({ DICE: 'dice', GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', SYSTEM: 'system', ERROR: 'error' });
 const display = UiLogDisplay.makeLogTypeDisplay(types);

@@ -88,7 +88,7 @@ const UiPlayerDisplay = (() => {
         }).join('');
         const destinations = [
             ['#gameLogContainer', 'ログ', '📋', 'log'],
-            ['#buildMenu', '建設', '🏗️', 'build'],
+            [options.marketTargetId === 'cardboardMarket' ? '#cardboardMarket' : '#buildMenu', '建設', '🏗️', 'build'],
         ];
         const destinationLinks = destinations.map(([href, label, emoji, icon]) => {
             const mark = options.useSunsetIcons

@@ -1,9 +1,10 @@
 'use strict';
-/* global DicePresentation */
+/* global DicePresentation, GameActionContract */
 
 // Device-local presentation boundary only. No timers, sound, or game mutations.
 const CardBoardFeedback = (() => {
     const presentation = typeof DicePresentation !== 'undefined' ? DicePresentation : require('./dicePresentation');
+    const phases = (typeof GameActionContract !== 'undefined' ? GameActionContract : require('./actionContract')).phases;
     const signature = entry => JSON.stringify([entry?.type, entry?.message, entry?.diceResolution]);
     function resolution(entry, game) {
         const value = presentation.read(entry?.diceResolution, game.players.length);
@@ -27,7 +28,9 @@ const CardBoardFeedback = (() => {
     function create() {
         let previous = null;
         let invalidated = false;
+        let resultLogs = [];
         function refresh(facts = {}) {
+            resultLogs = [];
             invalidated = false;
             const game = facts.game;
             if (!game || !Array.isArray(game.log) || !Array.isArray(game.players)) { previous = null; invalidated = true; return false; }
@@ -36,7 +39,7 @@ const CardBoardFeedback = (() => {
             const snapshot = {
                 session: facts.session, replaying: facts.replaying === true,
                 turn: game.turnCount, actor: game.currentPlayerIndex, players: game.players.length,
-                rerolled: game.usedReroll === true,
+                rerolled: game.usedReroll === true, phase: game.phase,
                 resolution: resolutions.filter(Boolean).at(-1) || null,
                 length: log.length, digest: digest(log),
             };
@@ -48,14 +51,25 @@ const CardBoardFeedback = (() => {
             // Metadata survives engine adoption; unlike message text, it denotes
             // an actual completed roll. Initial/restore history is only a baseline.
             const resolved = snapshot.resolution !== null && snapshot.resolution !== old.resolution;
-            if (append && resolved && resolutions.slice(old.length).filter(Boolean).length === 1) return true;
+            if (append && resolved && resolutions.slice(old.length).filter(Boolean).length === 1) {
+                resultLogs = log.slice();
+                return true;
+            }
             invalidated = !append || old.turn !== snapshot.turn || old.actor !== snapshot.actor;
             const reroll = resolved && old.turn === snapshot.turn && old.actor === snapshot.actor &&
                 !old.rerolled && snapshot.rerolled && resolutions.filter(Boolean).length === 1;
-            if (reroll) invalidated = false;
+            if (reroll) { invalidated = false; resultLogs = log.slice(); }
+            // A resolved roll may still await radio/harbor/special choices.
+            // Only their new append is presented; never replay earlier income.
+            const waiting = [phases.REROLL_CONFIRM, phases.HARBOR_CHOICE, phases.PENDING].includes(old.phase);
+            if (!invalidated && append && waiting && snapshot.resolution &&
+                old.resolution === snapshot.resolution && !game.builtThisTurn && log.length > old.length) {
+                const anchor = log.findLast(entry => resolution(entry, game) === snapshot.resolution);
+                if (anchor) resultLogs = [anchor, ...log.slice(old.length)];
+            }
             return reroll;
         }
-        return Object.freeze({ refresh, wasInvalidated: () => invalidated, reset() { previous = null; invalidated = true; } });
+        return Object.freeze({ refresh, takeResultLogs() { const logs = resultLogs; resultLogs = []; return logs; }, wasInvalidated: () => invalidated, reset() { previous = null; invalidated = true; resultLogs = []; } });
     }
     return Object.freeze({ create });
 })();

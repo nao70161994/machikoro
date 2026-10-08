@@ -1,6 +1,8 @@
 'use strict';
+/* global UiMarketTarget */
 
 const AppShellObservationRuntime = (() => {
+    const marketTarget = typeof UiMarketTarget !== 'undefined' ? UiMarketTarget : require('./uiMarketTarget');
     function createRuntime(dependencies = {}) {
         const {
             actionUiRegistry,
@@ -172,7 +174,7 @@ const AppShellObservationRuntime = (() => {
         }
 
         function actionContainerSpecForAction(snapshot, action) {
-            return actionUiRegistry.containerSpecForAction(snapshot, action);
+            return marketTarget.adaptSpec(actionUiRegistry.containerSpecForAction(snapshot, action), document);
         }
 
         function expectedActionContainerEntries(snapshot) {
@@ -366,7 +368,7 @@ const AppShellObservationRuntime = (() => {
                         gameScreen: safeElementSnapshot('gameScreen'),
                         pendingModal: safeElementSnapshot('pendingModal'),
                         pendingMenu: safeElementSnapshot('pendingMenu'),
-                        buildMenu: safeElementSnapshot('buildMenu'),
+                        buildMenu: safeElementSnapshot(marketTarget.id(document)),
                         btnSkip: safeElementSnapshot('btnSkip'),
                         confirmModal: safeElementSnapshot('confirmModal'),
                         btnRoll: safeElementSnapshot('btnRoll'),

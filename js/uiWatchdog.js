@@ -393,6 +393,7 @@ const UiWatchdog = (() => {
     function snapshotStateById(snapshot, id, targetSource = '') {
         const ui = snapshot && snapshot.ui || {};
         const buttons = snapshot && snapshot.actionButtons && snapshot.actionButtons.buttons || {};
+        if (id === 'cardboardMarket' && ui.buildMenu?.id === id) return ui.buildMenu;
         if (targetSource === 'actionButtons') return buttons[id] || ui[id];
         return ui[id] || buttons[id];
     }

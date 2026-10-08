@@ -1,3 +1,6 @@
+declare var CardBoardTransfers: typeof import("../js/cardBoardTransfers");
+declare var UiMarketTarget: typeof import("../js/uiMarketTarget");
+declare var UiCompactMarket: typeof import("../js/uiCompactMarket");
 declare var DicePresentation: typeof import("../js/dicePresentation");
 declare var SharedMarketMount: typeof import("../js/sharedMarketMount");
 declare var UiTurnEvents: typeof import("../js/uiTurnEvents");

@@ -2,7 +2,7 @@
 
 const UiDomSnapshot = (() => {
     const INTERACTIVE_SELECTOR = 'button, [role="button"], [data-action], [data-ui-action], input, select, textarea, a[href]';
-    const GAME_SCREEN_CHILD_IDS = Object.freeze(['btnRoll', 'btnSkip', 'btnReroll', 'diceChoose', 'buildMenu']);
+    const GAME_SCREEN_CHILD_IDS = Object.freeze(['btnRoll', 'btnSkip', 'btnReroll', 'diceChoose', 'buildMenu', 'cardboardMarket']);
 
     function createRuntime(options = {}) {
         const getDocument = typeof options.getDocument === 'function' ? options.getDocument : () => null;

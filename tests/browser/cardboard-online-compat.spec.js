@@ -122,8 +122,11 @@ test('4テーマ混在オンラインは途中切替と再接続でも同じ正�
         let rolled = await synchronized();
         expect(rolled.seq).toBeGreaterThan(initial.seq);
         const beforeBuild = rolled;
-        await active.locator('#btnBuildShortcut').click();
-        const wheat = active.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]');
+        if (await active.evaluate(() => document.documentElement.dataset.design !== 'cardboard')) {
+            await active.locator('#btnBuildShortcut').click();
+        }
+        const marketId = await active.evaluate(() => document.documentElement.dataset.design === 'cardboard' ? 'cardboardMarket' : 'buildMenu');
+        const wheat = active.locator(`#${marketId} [data-action="buildCard"][data-card-name="麦畑"]`);
         await expect(wheat).toBeEnabled();
         await wheat.click();
         for (const page of pages) {
@@ -142,7 +145,7 @@ test('4テーマ混在オンラインは途中切替と再接続でも同じ正�
             expect(await synchronized()).toEqual(built);
             expect(await active.evaluate(() => JSON.stringify(GameRuntimeState.runtime.snapshot().undoState))).toBe(undoCache);
         }
-        await active.locator('#buildMenu [data-action="undoBuild"]').click();
+        await active.locator('#cardboardMarket [data-action="undoBuild"]').click();
         await expect(active.locator('#confirmModal')).toBeVisible();
         await active.locator('#confirmOkBtn').click();
         for (const page of pages) {

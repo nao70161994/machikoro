@@ -26,7 +26,12 @@ const DesignTheme = (() => {
         let selected = 'classic';
         try { selected = normalize(getStorage().getItem(STORAGE_KEY)); } catch (_) {}
         function apply(value, persist = false) {
-            selected = normalize(value);
+            const next = normalize(value);
+            // Capture focus before CSS hides the outgoing presentation.
+            if (typeof documentRef.dispatchEvent === 'function' && typeof CustomEvent !== 'undefined') {
+                documentRef.dispatchEvent(new CustomEvent('design-theme-will-change', { detail: { design: next } }));
+            }
+            selected = next;
             documentRef.documentElement.setAttribute('data-design', selected);
             arrangeGameSections(documentRef, selected);
             for (const id of ['designThemeSelect', 'gameDesignThemeSelect']) {

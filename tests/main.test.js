@@ -395,6 +395,8 @@ function loadMainRuntime(options = {}) {
     vm.runInContext(uiRecoveryEffectsSource, context, { filename: 'js/uiRecoveryEffects.js' });
     const uiWatchdogAsyncRecoverySource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdogAsyncRecovery.js'), 'utf8');
     vm.runInContext(uiWatchdogAsyncRecoverySource, context, { filename: 'js/uiWatchdogAsyncRecovery.js' });
+    const uiMarketTargetSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiMarketTarget.js'), 'utf8');
+    vm.runInContext(uiMarketTargetSource, context, { filename: 'js/uiMarketTarget.js' });
     const uiWatchdogRecoveryRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/uiWatchdogRecoveryRuntime.js'), 'utf8');
     vm.runInContext(uiWatchdogRecoveryRuntimeSource, context, { filename: 'js/uiWatchdogRecoveryRuntime.js' });
     const appShellUiLockRuntimeSource = fs.readFileSync(path.join(__dirname, '..', 'js/appShellUiLockRuntime.js'), 'utf8');

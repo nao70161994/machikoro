@@ -193,6 +193,7 @@ const MainUiEventRuntime = (() => {
             }));
         }
         function handlePlayerClick(event) {
+            if (event.target?.closest?.('#cardboardMarket')?.id === 'cardboardMarket') return false;
             return execute(event, 'player', () => Object.assign({}, effectMap(['showCardDetail']), {
                 showLandmarkDetail: (...args) => invoke('showCardDetail', ...args),
             }));
@@ -214,7 +215,7 @@ const MainUiEventRuntime = (() => {
                 ['diceChoose', handleDiceClick], ['pendingMenu', handlePendingClick],
                 ['buildMenu', handleBuildClick], ['players', handlePlayerClick],
                 ['plazaPlayerInsightsBody', handlePlayerClick],
-                ['cardboardSeats', handlePlayerClick], ['cardboardGoalsBody', handleBuildClick],
+                ['cardboardSeats', handlePlayerClick], ['cardboardMarket', handleBuildClick],
             ];
             for (const [id, handler] of bindings) {
                 const element = dependencies.document.getElementById(id);

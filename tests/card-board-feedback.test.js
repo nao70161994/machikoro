@@ -186,3 +186,45 @@ runTest('同一identityの重複や壊れたmetadataを新規出目扱いせず�
     facts.game.log.push(roll(facts.game));
     assert.strictEqual(helper.refresh(facts), false, '既存metadataの書き換えはprefix不整合');
 });
+
+runTest('電波塔と港の選択後に確定する収支だけを一度渡し建設・復元では再生しない', () => {
+    const UiTurnEvents = require('../js/uiTurnEvents');
+    const CardBoardTransfers = require('../js/cardBoardTransfers');
+    for (const choice of ['radio', 'harbor']) {
+        const { GameManager, LANDMARK_NAMES, createCardByName, LOG_TYPES } = realRuntime();
+        const game = new GameManager(2), helper = CardBoardFeedback.create();
+        const facts = { game, session: [] };
+        game.players.forEach((player, index) => {
+            player.name = `街${index + 1}`;
+            player.cards = [createCardByName(choice === 'radio' ? '麦畑' : 'リンゴ園')];
+        });
+        game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
+        game.players[0].landmarks[choice === 'radio' ? LANDMARK_NAMES.RADIO_TOWER : LANDMARK_NAMES.HARBOR] = true;
+        helper.refresh(facts);
+        assert.deepStrictEqual(helper.takeResultLogs(), []);
+        game.rollDice();
+        helper.refresh(facts);
+        game.selectDiceCount(choice !== 'radio', choice === 'radio' ? 1 : 5, 5);
+        assert.strictEqual(helper.refresh(facts), true);
+        const routesFor = logs => CardBoardTransfers.project(UiTurnEvents.project(logs, {
+            players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES,
+        }));
+        assert.deepStrictEqual(routesFor(helper.takeResultLogs()), []);
+        if (choice === 'radio') game.skipReroll();
+        else game.resolveHarbor(false);
+        assert.strictEqual(helper.refresh(facts), false, '選択後にdice pulseを重複させない');
+        const routes = routesFor(helper.takeResultLogs());
+        assert.strictEqual(routes.length, 2);
+        assert.ok(routes.every(route => route.from === null && route.amount === (choice === 'radio' ? 1 : 3)));
+        assert.deepStrictEqual(helper.takeResultLogs(), []);
+        helper.refresh(facts);
+        assert.deepStrictEqual(helper.takeResultLogs(), []);
+        game.addLog(LOG_TYPES.BUILD, '建設しました');
+        helper.refresh(facts);
+        assert.deepStrictEqual(helper.takeResultLogs(), []);
+        helper.reset(); helper.refresh(facts);
+        assert.deepStrictEqual(helper.takeResultLogs(), []);
+        facts.replaying = true; helper.refresh(facts);
+        assert.deepStrictEqual(helper.takeResultLogs(), []);
+    }
+});

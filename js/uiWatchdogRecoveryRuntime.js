@@ -1,6 +1,8 @@
 'use strict';
+/* global UiMarketTarget */
 
 const UiWatchdogRecoveryRuntime = (() => {
+    const marketTarget = typeof UiMarketTarget !== 'undefined' ? UiMarketTarget : require('./uiMarketTarget');
     function createRuntime(dependencies = {}) {
         const {
             appShellAsyncRecovery,
@@ -144,7 +146,7 @@ const UiWatchdogRecoveryRuntime = (() => {
                 return false;
             }
             const ensured = appShellRecoveryEffects.ensureHtmlChildren(
-                'buildMenu',
+                marketTarget.fromSnapshot(snapshot),
                 '[data-action="undoBuild"]',
                 '<button class="undo-btn" data-action="undoBuild">↩ 建設を取り消す</button>',
                 /data-action=["']undoBuild["']/

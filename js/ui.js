@@ -1,4 +1,5 @@
-/* global CardBoardField, Element, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
+/* global UiMarketTarget */
+/* global UiCompactMarket, CardBoardField, Element, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
@@ -32,7 +33,7 @@ const plazaFeedback = typeof UiPlazaFeedback !== 'undefined' ? UiPlazaFeedback.c
     getGame: () => uiGameRuntimeSnapshot().game,
     getSession: () => uiGameRuntimeSnapshot().cpuPlayers,
     isReplaying: () => uiOnlineRuntimeSnapshot().isReplaying === true,
-    isVisible: () => document.documentElement.dataset.design === 'plaza' &&
+    isVisible: () => document.documentElement?.dataset?.design === 'plaza' &&
         document.getElementById('gameScreen').style.display !== 'none',
     getEnabledLandmarks: () => getEnabledLandmarkSelection(),
     getReceipt: () => document.getElementById('plazaDiceReceipt'),
@@ -63,7 +64,7 @@ if (plazaFeedback) document.getElementById('plazaBuildReceipt').addEventListener
 if (plazaFeedback && typeof MutationObserver !== 'undefined') {
     const gameScreen = document.getElementById('gameScreen');
     const feedbackVisibilityObserver = new MutationObserver(() => {
-        if (document.documentElement.dataset.design !== 'plaza' ||
+        if (document.documentElement?.dataset?.design !== 'plaza' ||
                 gameScreen.style.display === 'none' || document.body.classList.contains('game-finished')) {
             plazaFeedback.reset();
         }
@@ -387,6 +388,11 @@ function setLogCollapsed(collapsed) {
     if (log.classList.contains('collapsed') !== (collapsed === true)) {
         log.classList.toggle('collapsed');
     }
+    if (document.documentElement?.dataset?.design === 'cardboard') {
+        document.getElementById('gameLogContainer')?.classList.toggle('cardboard-panel-open', !collapsed);
+        if (!collapsed && typeof CardBoardField !== 'undefined') CardBoardField.closeDisclosures();
+        document.getElementById('cardboardLogToggle')?.setAttribute('aria-expanded', String(!collapsed));
+    }
     const view = UiLogDisplay.buildLogToggleView(collapsed);
     icon.textContent = view.iconText;
     header.classList.toggle('collapsed', view.collapsed);
@@ -405,7 +411,7 @@ function syncInitialGameLogPresentation() {
     const isSunsetMobile = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design) &&
         typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
         window.matchMedia('(max-width: 480px)').matches;
-    setLogCollapsed(isSunsetMobile);
+    setLogCollapsed(isSunsetMobile || document.documentElement?.dataset?.design === 'cardboard');
 }
 
 function _render() {
@@ -1132,7 +1138,7 @@ function showTownCoinAmount(source, wallet, amount, payment) {
     townCoinEffects.add(effect);
     if (!townCoinVisibilityObserver && typeof MutationObserver !== 'undefined') {
         townCoinVisibilityObserver = new MutationObserver(() => {
-            if (document.documentElement.dataset.design !== 'plaza' || screen.style.display === 'none') {
+            if (document.documentElement?.dataset?.design !== 'plaza' || screen.style.display === 'none') {
                 clearTownCoinEffects();
             }
         });
@@ -1304,6 +1310,7 @@ function renderPlayers() {
     });
     const navigation = document.getElementById('playerNavigation');
     const navigationHtml = UiPlayerDisplay.buildPlayerNavigationHtml(currentGame.players, {
+        marketTargetId: typeof UiMarketTarget !== 'undefined' ? UiMarketTarget.id(document) : 'buildMenu',
         currentPlayerIndex: currentGame.currentPlayerIndex,
         myPlayerIndex: onlineMyPlayerIndex,
         useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
@@ -1409,7 +1416,7 @@ function renderPlayers() {
         });
     }
     if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection(), townSession, currentGame.phase);
-    if (typeof CardBoardField !== 'undefined') CardBoardField.render({ game: currentGame, selfIndex: primaryPlayerIndex, escapeHtml, enabledLandmarks: getEnabledLandmarkSelection(), session: townSession, replaying: uiOnlineRuntimeSnapshot().isReplaying === true, display: LOG_TYPE_DISPLAY });
+    if (typeof CardBoardField !== 'undefined') CardBoardField.render({ game: currentGame, selfIndex: primaryPlayerIndex, escapeHtml, enabledLandmarks: getEnabledLandmarkSelection(), session: townSession, replaying: uiOnlineRuntimeSnapshot().isReplaying === true, display: LOG_TYPE_DISPLAY, refreshMarket: renderBuildMenu, closeLog: () => setLogCollapsed(true) });
     plazaIncomePreviewPanel?.refresh(currentGame);
     if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
         animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
@@ -1517,13 +1524,23 @@ function buildUndoBuildButtonHtml() {
     return UiBuildMenu.buildUndoBuildButtonHtml(currentUndoBuildActionState());
 }
 
-function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction) {
+function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction, compact = false) {
     const currentGame = uiGameRuntimeSnapshot().game;
     const highlightedCardNames = typeof MarketSupply !== 'undefined' &&
         typeof MarketSupply.consumePendingHighlightNames === 'function'
         ? MarketSupply.consumePendingHighlightNames(currentGame && currentGame.marketSupply)
         : [];
     const filterBtnsHtml = buildCardFilterBarHtml();
+    if (compact) return UiCompactMarket.buildHtml({
+        cards: CARDS, cardFilter: buildMenuFilterController.get(), enabledCards: getEnabledCardSelection(),
+        shopStock: SHOP_STOCK, current, canBuildCardAction, canBuildLandmarkAction,
+        compareCardsForDisplay, getShopStockCount, highlightedCardNames,
+        landmarks: current.landmarks, enabledLandmarks: getEnabledLandmarkSelection(),
+        currentCoins: current.coins, landmarkCost: Player.landmarkCost,
+        filterBtnsHtml, undoBtn: buildUndoBuildButtonHtml(), escapeHtml, getEffectText, getLandmarkEffectText,
+        renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        marketStatusHtml: UiBuildMenu.buildMarketStatusHtml(currentGame?.marketSupply, SHOP_STOCK, currentGame?.players),
+    });
     const cardHtml = buildVisibleCardButtonsHtml(current, canBuildCardAction, highlightedCardNames) ||
         UiBuildMenu.buildCardEmptyStateHtml(buildMenuFilterController.get());
     const landmarkHtml = buildLandmarkButtonsHtml(current, canBuildLandmarkAction);
@@ -1573,11 +1590,13 @@ function renderBuildShortcut(forceHidden = false) {
 }
 
 function focusBuildMenu() {
-    return UiBuildMenu.focusAndScrollToBuildMenu(document.getElementById('buildMenu'));
+    return UiBuildMenu.focusAndScrollToBuildMenu(document.getElementById(
+        document.documentElement?.dataset?.design === 'cardboard' ? 'cardboardMarket' : 'buildMenu'));
 }
 
 function renderBuildMenu() {
-    const buildMenu = document.getElementById("buildMenu");
+    const compact = document.documentElement?.dataset?.design === 'cardboard';
+    const buildMenu = document.getElementById(compact ? 'cardboardMarket' : 'buildMenu');
     const currentGame = uiGameRuntimeSnapshot().game;
     renderBuildShortcut();
     if (!buildMenu || !currentGame) return;
@@ -1585,7 +1604,7 @@ function renderBuildMenu() {
     let activeWithinBuildMenu = false;
     let ancestor = activeElement;
     while (ancestor) {
-        if (ancestor === buildMenu || ancestor === document.getElementById('cardboardGoalsBody')) {
+        if (ancestor === buildMenu) {
             activeWithinBuildMenu = true;
             break;
         }
@@ -1619,12 +1638,13 @@ function renderBuildMenu() {
             !buildMenuFilterController.wasManuallySelected()) {
         buildMenuFilterController.setAutomatic('affordable');
     }
-    buildMenu.innerHTML = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction);
-    if (typeof CardBoardField !== 'undefined') CardBoardField.updateMarket();
+    const marketHtml = buildBuildMenuHtml(current, actionState.canBuildCardAction, actionState.canBuildLandmarkAction, compact);
+    if (compact && typeof CardBoardField !== 'undefined') CardBoardField.updateMarket(marketHtml);
+    else buildMenu.innerHTML = marketHtml;
     UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
         findIdentity(identity) {
             if (!identity || typeof buildMenu.querySelectorAll !== 'function') return null;
-            const elements = [buildMenu, document.getElementById('cardboardGoalsBody')].filter(Boolean).flatMap(container => Array.from(
+            const elements = [buildMenu].flatMap(container => Array.from(
                 /** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll(`[data-action="${identity.action}"]`))
             ));
             return Array.from(elements)
@@ -1642,6 +1662,9 @@ function renderBuildMenu() {
 
 /** @param {HTMLElement | null} element */
 function focusBuildActionElement(element) {
+    for (let parent = element?.parentElement; parent; parent = parent.parentElement) {
+        if (parent.tagName === 'DETAILS') (/** @type {HTMLDetailsElement} */ (parent)).open = true;
+    }
     if (!element || typeof element.focus !== 'function' ||
             !UiBuildMenu.canRestoreCardFilterFocus(cardFilterFocusFacts(element))) return false;
     try {
@@ -1700,7 +1723,7 @@ function uiDisabledState(element) {
 
 function restoreCardFilterFocus(plan) {
     if (!plan.restore) return false;
-    const buildMenu = document.getElementById('buildMenu');
+    const buildMenu = document.getElementById(document.documentElement?.dataset?.design === 'cardboard' ? 'cardboardMarket' : 'buildMenu');
     if (!buildMenu || typeof buildMenu.querySelectorAll !== 'function') return false;
     const targets = /** @type {NodeListOf<HTMLElement>} */ (
         buildMenu.querySelectorAll('[data-action="setCardFilter"]')
@@ -1908,7 +1931,7 @@ function buildRuntimeStateSnapshot(reason = '') {
             gameScreen: elementState('gameScreen'),
             pendingModal: elementState('pendingModal'),
             pendingMenu: elementState('pendingMenu'),
-            buildMenu: elementState('buildMenu'),
+            buildMenu: elementState(typeof UiMarketTarget !== 'undefined' ? UiMarketTarget.id(document) : 'buildMenu'),
             btnSkip: elementState('btnSkip'),
             confirmModal: elementState('confirmModal'),
             rulesModal: elementState('rulesModal'),
@@ -2340,6 +2363,10 @@ function toggleLandmark(name) {
 }
 
 function toggleLog() {
+    if (document.documentElement?.dataset?.design === 'cardboard') {
+        const open = document.getElementById('gameLogContainer')?.classList.contains('cardboard-panel-open');
+        return setLogCollapsed(Boolean(open));
+    }
     const log = document.getElementById("log");
     if (!log || !log.classList) return false;
     const collapsed = log.classList.toggle("collapsed");

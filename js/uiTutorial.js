@@ -82,6 +82,7 @@ const UiTutorial = (() => {
     }
 
     function shouldCompact(options) {
+        if (options.design === 'cardboard') return true;
         return options.design === 'plaza' && options.portrait === true &&
             options.level !== 'advanced' && Number.isInteger(options.turnCount) && options.turnCount >= 3;
     }
