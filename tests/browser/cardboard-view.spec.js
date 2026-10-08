@@ -224,6 +224,41 @@ test('4人戦の縦持ちは自分と選択相手を市場の前に切り替え�
     await testInfo.attach('4人戦の縦持ちで選んだ街と市場', { path: screenshot, contentType: 'image/png' });
 });
 
+test('サイコロ選択への移動ボタンは人間の選択中だけ小さく表示する', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 936 });
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.goto('/');
+    const result = await page.evaluate(() => {
+        const design = document.getElementById('designThemeSelect');
+        design.value = 'cardboard';
+        design.dispatchEvent(new Event('change', { bubbles: true }));
+        startGameNow(2, [
+            { type: 'human', name: '人間' },
+            { type: 'cpu', difficulty: 'normal', name: 'CPU' },
+        ]);
+        cancelCpuSchedule('choice-jump-visibility');
+        const state = GameRuntimeState.runtime.snapshot();
+        const game = state.game;
+        const cpuIndex = state.cpuPlayers.findIndex(Boolean);
+        const humanIndex = state.cpuPlayers.findIndex(player => !player);
+        game.players[humanIndex].landmarks[LANDMARK_NAMES.STATION] = true;
+        game.currentPlayerIndex = humanIndex;
+        game.phase = GAME_PHASES.SELECT_DICE;
+        render();
+        const button = document.getElementById('cardboardChoiceJump');
+        const rect = button.getBoundingClientRect();
+        const human = { hidden: button.hidden, width: rect.width, right: rect.right, viewportWidth: innerWidth };
+        game.currentPlayerIndex = cpuIndex;
+        game.phase = GAME_PHASES.SELECT_DICE;
+        render();
+        return { human, hiddenForCpu: button.hidden };
+    });
+    expect(result.human.hidden).toBe(false);
+    expect(result.human.width).toBeLessThan(200);
+    expect(result.human.right).toBeLessThanOrEqual(result.human.viewportWidth);
+    expect(result.hiddenForCpu).toBe(true);
+});
+
 test('ゲーム中に隠れたインストール案内はカード盤面の高さを使わない', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 4);
     await page.evaluate(() => {

@@ -250,8 +250,9 @@ const CardBoardField = (() => {
         if (!validIndex(selectedIndex)) selectedIndex = selfIndex;
         const newRoll = feedback?.refresh(facts) === true;
         if (facts.replaying || feedback?.wasInvalidated()) clearFeedback();
+        const hasVisibleChoice = Boolean(node('diceChoose')?.querySelector('button:not(:disabled)'));
         const choice = [GAME_PHASES.SELECT_DICE, GAME_PHASES.REROLL_CONFIRM, GAME_PHASES.HARBOR_CHOICE].includes(game.phase)
-            && currentIndex === selfIndex ? `${game.turnCount}:${currentIndex}:${game.phase}` : null;
+            && currentIndex === selfIndex && hasVisibleChoice ? `${game.turnCount}:${currentIndex}:${game.phase}` : null;
         if (choiceInitialized && choice && choice !== previousChoice && !facts.replaying) {
             const currentFacts = facts;
             queueMicrotask(() => {
