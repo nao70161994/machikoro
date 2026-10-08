@@ -222,6 +222,62 @@ test('ゲーム中に隠れたインストール案内はカード盤面の高�
     expect(updateMaxHeight).not.toBe('none');
 });
 
+test('4人戦の後半は施設が増えてもカード列をスクロールして読める', async ({ page }, testInfo) => {
+    const viewports = [
+        { name: 'desktop', width: 1440, height: 936 },
+        { name: 'landscape', width: 844, height: 390 },
+        { name: 'portrait', width: 390, height: 844 },
+    ];
+    await prepare(page, viewports[0], 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const cardNames = CARDS.slice(0, 12).map(card => card.name);
+        const landmarks = Array.from(getEnabledLandmarkSelection()).slice(0, 5);
+        game.turnCount = 48;
+        game.phase = GAME_PHASES.BUILD;
+        game.players.forEach((player, index) => {
+            player.coins = 28 + index * 7;
+            player.cards = Array.from({ length: 12 }, (_, cardIndex) =>
+                createCardByName(cardNames[(cardIndex + index * 3) % cardNames.length]));
+            landmarks.forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+    });
+    for (const viewport of viewports) {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        const layout = await page.evaluate(() => {
+            const panels = [...document.querySelectorAll('#cardboardSeats > .cardboard-player')];
+            const cards = panels.map(panel => {
+                const list = panel.querySelector('.cardboard-cards');
+                const style = getComputedStyle(list);
+                return {
+                    seat: panel.dataset.seatPosition,
+                    count: panel.querySelectorAll('.cardboard-card').length,
+                    clientWidth: list.clientWidth, scrollWidth: list.scrollWidth,
+                    clientHeight: list.clientHeight, scrollHeight: list.scrollHeight,
+                    scrollbar: style.scrollbarWidth,
+                    artHeights: [...list.querySelectorAll('.cardboard-art')].map(art => art.getBoundingClientRect().height),
+                };
+            });
+            return { cards, scrollWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth };
+        });
+        expect(layout.cards).toHaveLength(4);
+        expect(layout.scrollWidth).toBeLessThanOrEqual(layout.viewportWidth + 1);
+        expect(layout.cards.every(cards => cards.count >= 8), JSON.stringify(layout)).toBe(true);
+        expect(layout.cards.flatMap(cards => cards.artHeights).every(height => height >= 20), JSON.stringify(layout)).toBe(true);
+        if (viewport.width >= 761) {
+            const horizontalLists = layout.cards.filter(cards => ['top', 'bottom'].includes(cards.seat));
+            expect(horizontalLists.every(cards => cards.scrollWidth > cards.clientWidth), JSON.stringify(layout)).toBe(true);
+            expect(horizontalLists.every(cards => cards.scrollbar === 'thin'), JSON.stringify(layout)).toBe(true);
+        } else {
+            expect(layout.cards.every(cards => cards.scrollWidth > cards.clientWidth || cards.scrollHeight > cards.clientHeight), JSON.stringify(layout)).toBe(true);
+        }
+        const screenshot = testInfo.outputPath(`cardboard-late-4p-${viewport.name}.png`);
+        await page.screenshot({ path: screenshot, fullPage: viewport.name === 'portrait' });
+        await testInfo.attach(`4人後半 ${viewport.name}`, { path: screenshot, contentType: 'image/png' });
+    }
+});
+
 test('10人のカード盤面は自分・手番・選択相手を読める大きさで表示する', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 }, 10);
     await expect(page.locator('#cardboardRoster button')).toHaveCount(10);

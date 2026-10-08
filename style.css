@@ -9157,8 +9157,13 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-category { font-size: 9px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-name { font-size: 10px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-count { font-size: 10px; }
-    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards { scrollbar-width: none; }
-    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards::-webkit-scrollbar { display: none; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards {
+        scrollbar-width: thin;
+        scrollbar-color: #758d78 #e8ece4;
+    }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards::-webkit-scrollbar { width: 5px; height: 5px; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards::-webkit-scrollbar-track { background: #e8ece4; border-radius: 4px; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards::-webkit-scrollbar-thumb { background: #758d78; border-radius: 4px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-turn-marker { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
     html[data-design="cardboard"] #cardboardDiceReceipt { max-height: 110px; overflow: auto; }
     html[data-design="cardboard"] #cardboardBoard:not(:has(.cardboard-player[data-seat-position="left"])) { grid-template-columns: minmax(20px, .3fr) minmax(400px, 2fr) minmax(20px, .3fr); }
