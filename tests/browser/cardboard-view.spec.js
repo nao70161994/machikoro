@@ -420,6 +420,32 @@ test('10人のカード盤面は自分・手番・選択相手を読める大き
     const portraitScreenshot = testInfo.outputPath('cardboard-10p-portrait.png');
     await page.screenshot({ path: portraitScreenshot });
     await testInfo.attach('10人戦の縦持ちカード盤面', { path: portraitScreenshot, contentType: 'image/png' });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[9].landmarks[LANDMARK_NAMES.STATION] = true;
+        render();
+    });
+    const beforeCityPreview = await state(page);
+    const cityDisclosure = page.locator('#cardboardSeats [data-player-index="9"] .cardboard-city-disclosure');
+    await cityDisclosure.locator('summary').click();
+    await expect(cityDisclosure).toHaveAttribute('open', '');
+    await expect(cityDisclosure.locator('summary')).toHaveText('街並みを閉じる');
+    await expect(cityDisclosure.locator('[data-town-building="landmark:駅"] .sunset-facility-art')).toBeVisible();
+    const cityBounds = await cityDisclosure.evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        return { left: bounds.left, right: bounds.right, bottom: bounds.bottom,
+            viewportWidth: innerWidth, viewportHeight: innerHeight };
+    });
+    expect(cityBounds.left).toBeGreaterThanOrEqual(0);
+    expect(cityBounds.right).toBeLessThanOrEqual(cityBounds.viewportWidth);
+    expect(cityBounds.bottom).toBeLessThanOrEqual(cityBounds.viewportHeight);
+    expect(await state(page)).toEqual(beforeCityPreview);
+    const cityScreenshot = testInfo.outputPath('cardboard-10p-city-preview.png');
+    await page.screenshot({ path: cityScreenshot });
+    await testInfo.attach('10人戦で10番席の街並みを表示', { path: cityScreenshot, contentType: 'image/png' });
+    await cityDisclosure.locator('summary').click();
+    await expect(cityDisclosure).not.toHaveAttribute('open', '');
+    expect(await state(page)).toEqual(beforeCityPreview);
     const before = await state(page);
     await page.setViewportSize({ width: 844, height: 390 });
     await page.evaluate(() => {
