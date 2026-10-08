@@ -9068,12 +9068,22 @@ html[data-design="cardboard"] .compact-market-refilled { outline: 2px solid #d59
 html[data-design="cardboard"] #cardboardChoiceJump { position: fixed; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 6; min-height: 44px; margin: 0; padding: 6px 11px; border: 2px solid #fffdf5; border-radius: 9px; background: #1766bd; color: #fff; box-shadow: 0 3px 12px #18344740; }
 html[data-design="cardboard"] body.pwa-banner-open #cardboardChoiceJump { top: 8px; bottom: auto; }
 html[data-design="cardboard"] .cardboard-new-roll .plaza-receipt-dice { animation: cardboard-roll-reveal 900ms ease-out both; color: #103f7a; text-shadow: 0 1px #fff; }
+html[data-design="cardboard"] #diceResult.dice-result-arrival .dice-face:not(.rolling) {
+    animation: cardboard-dice-land 520ms cubic-bezier(.18, .78, .25, 1) both;
+}
+html[data-design="cardboard"] #diceResult.dice-result-arrival .dice-face:nth-child(2) { animation-delay: 75ms; }
 html[data-design="cardboard"] .cardboard-new-roll .cardboard-card-activated { box-shadow: 0 0 0 4px #f4bc20, 0 0 18px #f4bc2066; }
 html[data-design="cardboard"] .cardboard-transfers { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
 html[data-design="cardboard"] .cardboard-transfer { position: absolute; max-width: 260px; padding: 4px 8px; border: 1px solid #a57919; border-radius: 16px; background: #ffeb9d; color: #563a00; box-shadow: 0 3px 9px #5e420033; font-size: 14px; font-weight: 900; white-space: nowrap; }
 html[data-design="cardboard"] .cardboard-transfer-static { left: 50%; top: 45%; max-width: calc(100% - 24px); transform: translate(-50%, -50%); white-space: normal; text-align: center; }
 html[data-design="cardboard"] .cardboard-transfer-summary { position: absolute; left: 50%; bottom: 8px; max-width: calc(100% - 24px); transform: translateX(-50%); padding: 4px 8px; border-radius: 6px; background: #fff9e8ee; color: #563a00; font-size: 12px; text-align: center; }
 @keyframes cardboard-roll-reveal { from { transform: scale(1.08); background: #ffe89c; } to { transform: scale(1); background: transparent; } }
+@keyframes cardboard-dice-land {
+    0% { opacity: .45; transform: translateY(-12px) rotate(-14deg) scale(.78); }
+    58% { opacity: 1; transform: translateY(3px) rotate(3deg) scale(1.08); }
+    82% { transform: translateY(-1px) rotate(-1deg) scale(.98); }
+    100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
 html[data-design="cardboard"] body.accessibility-reduced-motion .cardboard-new-roll .plaza-receipt-dice { animation: none; background: #ffe89c; }
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-card,
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-player,
@@ -9212,18 +9222,17 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] #cardboardDiceReceipt :is(.plaza-receipt-featured, .plaza-event-receipt > .plaza-important-event) { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt:has(> .plaza-important-event) > .plaza-receipt-featured { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-totals { display: flex; gap: 5px; grid-column: 2; grid-row: 2; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; overflow: hidden; white-space: nowrap; }
-    html[data-design="cardboard"] #cardboardDiceReceipt { height: 30px; max-height: 30px; overflow: hidden; }
-    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt { grid-template-rows: 30px; height: 30px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt { height: 44px; max-height: 44px; overflow: visible; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt { grid-template-rows: 44px; height: 44px; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { grid-row: 1; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-totals { display: none; }
     html[data-design="cardboard"] #cardboardDiceReceipt details { grid-column: 3; grid-row: 1; align-self: center; }
-    html[data-design="cardboard"] #cardboardDiceReceipt details > summary { min-height: 30px; font-size: 10px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt details > summary { min-height: 44px; font-size: 10px; }
     html[data-design="cardboard"] #cardboardDiceReceipt:has(details[open]) { height: auto; max-height: 120px; overflow: auto; }
-    html[data-design="cardboard"] #cardboardDiceReceipt:has(details[open]) .plaza-event-receipt { height: auto; min-height: 30px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt:has(details[open]) .plaza-event-receipt { height: auto; min-height: 44px; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-details { grid-column: 3; grid-row: 1 / 3; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-details > summary { justify-content: center; width: 44px; height: 44px; min-height: 44px; padding: 0; border: 1px solid #b7a36d; border-radius: 5px; background: #fffdf5; font-size: 0; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-details > summary::before { content: "内訳"; font-size: 11px; }
-    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-details { display: none; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-details[open] { position: fixed; top: 50%; left: 50%; z-index: 30; width: min(360px, calc(100vw - 24px)); max-height: 65dvh; padding: 8px; transform: translate(-50%, -50%); overflow: auto; border: 1px solid #b7a36d; border-radius: 8px; background: #fffdf5; box-shadow: 0 5px 24px #18344766; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-details[open] > summary { width: 100%; }
     html[data-design="cardboard"] #cardboardCenter { gap: 2px; padding: 4px; }

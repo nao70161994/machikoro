@@ -56,7 +56,10 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#cardboardDiceReceipt')).toContainText('出目 3');
         await expect(page.locator('#gameLogContainer')).not.toHaveClass(/plaza-panel-open/);
         if (viewport.width === 844) {
-            await expect(page.locator('#cardboardDiceReceipt .plaza-receipt-details')).toBeHidden();
+            await expect(page.locator('#cardboardDiceReceipt .plaza-receipt-details')).toBeVisible();
+            const receiptSummary = await page.locator('#cardboardDiceReceipt .plaza-receipt-details > summary').boundingBox();
+            expect(receiptSummary.width).toBeGreaterThanOrEqual(44);
+            expect(receiptSummary.height).toBeGreaterThanOrEqual(44);
             const landscapeCardArt = await page.locator('#cardboardSeats [data-seat-position="top"], #cardboardSeats [data-seat-position="bottom"]')
                 .evaluateAll(panels => panels.flatMap(panel => [...panel.querySelectorAll('.cardboard-card')].map(card => {
                     const art = card.querySelector('.cardboard-art');
@@ -308,6 +311,7 @@ test('所有施設と市場のスクロール位置は収支更新と4ビュー�
 });
 
 test('新しい出目だけを強調し表示切替で過去の演出を再生しない', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
     await prepare(page, { width: 390, height: 844 });
     await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
     const revealed = await page.evaluate(() => {
@@ -319,6 +323,9 @@ test('新しい出目だけを強調し表示切替で過去の演出を再生�
         return document.getElementById('cardboardBoard').classList.contains('cardboard-new-roll');
     });
     expect(revealed).toBe(true);
+    expect(await page.locator('#diceResult.dice-result-arrival .dice-face:not(.rolling)').evaluateAll(elements =>
+        elements.map(element => getComputedStyle(element).animationName)
+    )).toEqual(['cardboard-dice-land']);
     const before = await state(page);
     await selectTheme(page, 'plaza');
     await selectTheme(page, 'cardboard');
