@@ -86,7 +86,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Install WebKit runtime
-        run: npx playwright install --with-deps webkit
+        run: npx playwright install --with-deps webkit chromium
       - name: Mobile WebKit E2E
         # PRs run the high-risk mixed-theme online and deterministic full-match
         # scenarios. Nightly retains every browser spec through test:browser-e2e.

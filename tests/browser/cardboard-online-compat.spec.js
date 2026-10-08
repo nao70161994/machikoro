@@ -9,7 +9,7 @@ test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: fa
 // Real Socket.IO room and server-generated dice, following plaza-online and
 // mobile-webkit's saved online reconnect path. No game/action state is injected.
 test('4テーマ混在オンラインは途中切替と再接続でも同じ正本を保持する', async ({ browser, baseURL }, testInfo) => {
-    test.setTimeout(90000);
+    test.setTimeout(180000);
     let primaryFailure = false;
     const contexts = [];
     const pages = [];

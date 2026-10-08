@@ -3697,10 +3697,15 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     assert.ok(workflow.includes('name: Online sync and reconnect E2E gate'));
     assert.ok(workflow.includes('run: npm run test:online'));
     assert.ok(workflow.includes('mobile-webkit:'));
-    assert.ok(workflow.includes('npx playwright install --with-deps webkit'));
+    assert.ok(workflow.includes('npx playwright install --with-deps webkit chromium'));
     assert.ok(workflow.includes('run: npm run test:browser-pr'));
     assert.ok(packageConfig.scripts['test:browser-pr'].includes('cardboard-online-compat.spec.js'));
     assert.ok(packageConfig.scripts['test:browser-pr'].includes('seeded-browser-match.spec.js'));
+    assert.ok(packageConfig.scripts['test:browser-pr'].includes('--project=mobile-webkit'));
+    assert.ok(packageConfig.scripts['test:browser-pr'].includes('--project=chromium-desktop'));
+    const playwrightConfig = fs.readFileSync(path.join(__dirname, '..', 'playwright.config.js'), 'utf8');
+    assert.ok(playwrightConfig.includes("name: 'chromium-desktop'"));
+    assert.ok(playwrightConfig.includes('testIgnore: /seeded-browser-match\\.spec\\.js/'));
     const nightlyWorkflow = fs.readFileSync(
         path.join(__dirname, '..', '.github/workflows/nightly-release-test.yml'),
         'utf8'

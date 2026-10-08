@@ -213,5 +213,5 @@ Android/TWA workflow を触る場合は、artifact が欠落しても成功扱�
 - 日常のテーマ表示変更: `npm run test:browser-visual -- --grep 'classic|sunset|plaza|cardboard'`（通常は `npm run test:browser-visual` で4テーマ×4 viewport を実行）。比較対象は `tests/browser/theme-visual-regression.spec.js-snapshots/`。
 - 意図したデザイン変更で基準画像を更新する場合だけ、Linux + Playwright WebKit で `npm run test:browser-visual -- --update-snapshots --workers=1` を実行し、全 PNG の差分を確認して同じ変更に含める。CI では更新モードを使わない。
 - オンラインのテーマ互換性と回転: `npm run test:browser-online-compat -- --workers=1`。4クライアントの canonical state、建設、Undo、テーマ切替、回転、再接続を比較する。
-- 固定seedの実ブラウザCPU対局: `npm run test:browser-e2e -- seeded-browser-match.spec.js --workers=1`。最大5分かけて勝者まで実行し、失敗時は標準 trace / screenshot / video とゲーム状態・進行履歴を確認する。
-- PR の WebKit対局ゲートは `test:browser-pr` で4テーマ混在オンラインと固定seed終局対局を実行する。基準画像 suite と Plaza/オンライン回帰は変更パスに応じた `Plaza visual review` 内で一度実行する。夜間は `test:browser-e2e` で画像比較を含む全 browser suite を続ける。
+- 固定seedの実ブラウザCPU対局: Chromiumデスクトップで `npm run test:browser-e2e -- seeded-browser-match.spec.js --project=chromium-desktop --workers=1`。最大5分かけて勝者まで実行し、失敗時はtrace / screenshot / ゲーム状態・進行履歴を確認する。
+- PR のブラウザゲートは `test:browser-pr` で4テーマ混在オンラインをWebKit、固定seed終局対局をChromiumで実行する。基準画像 suite と Plaza/オンライン回帰は変更パスに応じた `Plaza visual review` 内で一度実行する。夜間は `test:browser-e2e` で画像比較を含む全 browser suite を続ける。
