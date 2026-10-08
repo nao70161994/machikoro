@@ -9187,10 +9187,19 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] .compact-market-facilities { max-height: 250px; }
 }
 @media (orientation: landscape) and (max-height: 480px) and (min-width: 761px) {
+    html[data-design="cardboard"] #gameScreen > #status:not(.game-winner) { position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px #284b3540; }
     html[data-design="cardboard"] .cardboard-card .cardboard-dice { position: relative; }
     html[data-design="cardboard"] .cardboard-card .cardboard-dice::after { content: attr(data-category-label); position: absolute; right: 1px; bottom: 1px; padding: 0 1px; border-radius: 2px; background: #fffdf5; color: #18313d; font-size: 11px; line-height: 12px; font-weight: 800; }
     html[data-design="cardboard"] #cardboardBoard { grid-template-rows: 79px minmax(150px, 1fr) 79px; min-height: 332px; }
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="3"], [data-player-count="4"]) { grid-template-rows: 88px minmax(130px, 1fr) 88px; }
+    /* Four full player rails otherwise leave too little room for the market.
+       Let this table extend slightly below a short landscape viewport so its
+       facility cards keep their artwork and a usable touch height. */
+    html[data-design="cardboard"] #cardboardBoard[data-player-count="4"] {
+        height: calc(100dvh - 10px);
+        min-height: 380px;
+        grid-template-rows: 88px minmax(178px, 1fr) 88px;
+    }
     html[data-design="cardboard"] #cardboardBoard:not(:has(.cardboard-player[data-seat-position="top"])) { grid-template-rows: minmax(150px, 1fr) 79px; }
     html[data-design="cardboard"] .cardboard-player { padding: 4px; }
     html[data-design="cardboard"] .cardboard-header h2 { font-size: 12px; }
