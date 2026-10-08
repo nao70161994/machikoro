@@ -507,6 +507,7 @@ function renderWinnerState(winner) {
     UiWinnerEffects.execute({ statusHtml, winnerStatusText, firstPresentation }, {
         setStatusHtml(html) {
             const status = document.getElementById('status');
+            status?.classList.add('game-winner');
             if (status.innerHTML !== html) status.innerHTML = html;
         },
         announceWinner(text) {
@@ -562,8 +563,11 @@ function renderWinnerState(winner) {
         renderLog,
         renderPlayers,
         focusWinnerAction() {
-            const action = document.getElementById('winnerRestartButton');
-            if (action && typeof action.focus === 'function') action.focus();
+            const heading = document.querySelector('.winner-title');
+            if (heading && typeof heading.focus === 'function') {
+                heading.focus({ preventScroll: true });
+                heading.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+            }
         },
     });
 }
@@ -637,6 +641,7 @@ async function shareGameResultImage() {
 
 function renderActiveGameState(current) {
     if (document.body && document.body.classList) document.body.classList.remove('game-finished');
+    document.getElementById('status')?.classList.remove('game-winner');
     UiWinner.gameOriginRuntime.reset();
     const gameState = uiGameRuntimeSnapshot();
     const onlineState = uiOnlineRuntimeSnapshot();

@@ -1,7 +1,9 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs/promises');
+const path = require('node:path');
 
 const MATCH_SEED = 0x4d414348;
-const MAX_MATCH_MS = 300000;
+const MAX_MATCH_MS = 600000;
 
 test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.status === testInfo.expectedStatus || page.isClosed()) return;
@@ -29,8 +31,9 @@ test.afterEach(async ({ page }, testInfo) => {
     }
 });
 
-test('固定seedの実ブラウザCPU対局は開始から勝者決定まで停止せず進む', async ({ page }, testInfo) => {
+test('固定seedのにぎわい広場CPU対局は完成演出を通って勝者まで進む', async ({ page }, testInfo) => {
     test.setTimeout(MAX_MATCH_MS + 30000);
+    await page.setViewportSize({ width: 1440, height: 900 });
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(error.message));
     await page.addInitScript(seed => {
@@ -45,12 +48,36 @@ test('固定seedの実ブラウザCPU対局は開始から勝者決定まで停�
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     await page.evaluate(() => {
+        const design = document.getElementById('designThemeSelect');
+        design.value = 'cardboard';
+        design.dispatchEvent(new Event('change', { bubbles: true }));
         GameSetupState.runtime.setCpuSpeed(100);
         document.getElementById('cpuSpeed').value = '100';
         startGameNow(2, [
             { type: 'cpu', difficulty: 'weak', name: '固定CPU1' },
             { type: 'cpu', difficulty: 'weak', name: '固定CPU2' },
         ]);
+        window.__matchPresentation = { rolls: 0, activations: 0, transfers: 0, landmarkCelebrations: 0 };
+        const board = document.getElementById('cardboardBoard');
+        new MutationObserver(records => {
+            for (const record of records) {
+                if (record.type === 'attributes') {
+                    const target = record.target;
+                    const oldClass = record.oldValue || '';
+                    if (target === board && target.classList.contains('cardboard-new-roll') && !oldClass.includes('cardboard-new-roll')) window.__matchPresentation.rolls++;
+                    if (target.classList.contains('cardboard-card-activated') && !oldClass.includes('cardboard-card-activated')) window.__matchPresentation.activations++;
+                    if (target.classList.contains('cardboard-landmark-newly-built') && !oldClass.includes('cardboard-landmark-newly-built')) window.__matchPresentation.landmarkCelebrations++;
+                }
+                if (record.type === 'childList' && [...record.addedNodes].some(node => node.nodeType === Node.ELEMENT_NODE && node.classList.contains('cardboard-transfers'))) window.__matchPresentation.transfers++;
+                if (record.type === 'childList') {
+                    for (const added of record.addedNodes) {
+                        if (added.nodeType !== Node.ELEMENT_NODE) continue;
+                        const activated = (added.matches('.cardboard-card-activated') ? 1 : 0) + added.querySelectorAll('.cardboard-card-activated').length;
+                        window.__matchPresentation.activations += activated;
+                    }
+                }
+            }
+        }).observe(board, { subtree: true, childList: true, attributes: true, attributeOldValue: true, attributeFilter: ['class'] });
         window.__matchMonitor = setInterval(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             const point = {
@@ -89,6 +116,8 @@ test('固定seedの実ブラウザCPU対局は開始から勝者決定まで停�
         const game = GameRuntimeState.runtime.snapshot().game;
         return {
             seed: window.__matchSeed,
+            design: document.documentElement.dataset.design,
+            presentation: window.__matchPresentation,
             winner: game.checkWinner()?.name || null,
             turns: game.turnCount,
             phase: game.phase,
@@ -97,13 +126,26 @@ test('固定seedの実ブラウザCPU対局は開始から勝者決定まで停�
         };
     });
     expect(result.turns).toBeGreaterThan(0);
+    expect(result.design).toBe('cardboard');
     expect(result.winner).toBeTruthy();
+    expect(result.presentation.rolls).toBeGreaterThan(0);
+    expect(result.presentation.activations).toBeGreaterThan(0);
+    expect(result.presentation.transfers).toBeGreaterThan(0);
+    expect(result.presentation.landmarkCelebrations).toBeGreaterThan(0);
     expect(pageErrors).toEqual([]);
     await testInfo.attach('seeded-match-result.json', {
         body: JSON.stringify(result, null, 2), contentType: 'application/json',
     });
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    const winnerScreenshot = await page.screenshot({ animations: 'disabled', fullPage: true });
     await testInfo.attach('seeded-match-winner.png', {
-        body: await page.screenshot({ animations: 'disabled' }), contentType: 'image/png',
+        body: winnerScreenshot, contentType: 'image/png',
     });
+    if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
+        const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
+        await fs.mkdir(artifactDir, { recursive: true });
+        await fs.writeFile(path.join(artifactDir, 'seeded-match-winner.png'), winnerScreenshot);
+        await fs.writeFile(path.join(artifactDir, 'seeded-match-result.json'), JSON.stringify(result, null, 2));
+    }
     await page.evaluate(() => clearInterval(window.__matchMonitor));
 });

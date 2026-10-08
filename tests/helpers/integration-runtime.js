@@ -36,6 +36,7 @@ function loadIntegrationRuntime(options = {}) {
         gameScreen: makeElement(),
         gameConnectionQuality: makeElement({ style: { display: 'none' } }),
         status: makeElement(),
+        winnerTitle: makeElement({ scrollIntoView() { this.scrolledIntoView = true; } }),
         winnerRestartButton: makeElement(),
         coinChangeAnnouncer: makeElement(),
         turnTimelineList: makeElement(),
@@ -87,6 +88,7 @@ function loadIntegrationRuntime(options = {}) {
                 return elements[id];
             },
             querySelector(selector) {
+                if (selector === '.winner-title') return elements.winnerTitle;
                 return null;
             },
             querySelectorAll() { return []; },
