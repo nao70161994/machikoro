@@ -129,6 +129,42 @@ test('市場を閲覧中に振り直しへ進んだら選択肢が見える位�
     await expect(page.locator('#diceChoose [data-action="skipReroll"]')).toBeEnabled();
 });
 
+for (const scenario of ['SELECT_DICE', 'REROLL_CONFIRM', 'HARBOR_CHOICE']) {
+    test(`横持ち更新通知と補助パネル併用でも${scenario}を操作できる`, async ({ page }, testInfo) => {
+        await prepare(page, scenario);
+        await page.setViewportSize({ width: 844, height: 390 });
+        await page.evaluate(() => {
+            setTutorialEnabled(true);
+            render();
+            acceptHotseatHandoff();
+            document.getElementById('pwaUpdateBanner').style.display = 'block';
+            setLogCollapsed(false);
+        });
+        await expect(page.locator('body')).toHaveClass(/pwa-banner-open/);
+        await expect(page.locator('#gameLogContainer')).toBeVisible();
+        await page.locator('#cardboardLogToggle').click();
+        await expect(page.locator('#gameLogContainer')).toBeHidden();
+        const action = {
+            SELECT_DICE: '#diceChoose [data-use-two="false"]',
+            REROLL_CONFIRM: '#diceChoose [data-action="skipReroll"]',
+            HARBOR_CHOICE: '#diceChoose [data-action="resolveHarbor"][data-use-bonus="false"]',
+        }[scenario];
+        const button = page.locator(action);
+        await button.scrollIntoViewIfNeeded();
+        expect(await button.evaluate(element => {
+            const r = element.getBoundingClientRect();
+            const banner = document.getElementById('pwaUpdateBanner').getBoundingClientRect();
+            return r.top >= 0 && r.bottom <= banner.top + 1 && r.left >= 0 && r.right <= innerWidth + 1;
+        })).toBe(true);
+        const screenshot = testInfo.outputPath(`card-table-update-${scenario}.png`);
+        await page.screenshot({ path: screenshot });
+        await testInfo.attach('横持ち更新通知と選択操作', { path: screenshot, contentType: 'image/png' });
+        await button.click();
+        await expect.poll(async () => (await snapshot(page)).phase).toBe('build');
+        await expect(page.locator('#crashScreen')).toBeHidden();
+    });
+}
+
 test('選択状態を復元中と復元直後は自動スクロールを再生しない', async ({ page }) => {
     await prepare(page, 'REROLL_CONFIRM');
     const before = await snapshot(page);

@@ -57,6 +57,36 @@ for (const count of [5, 10]) {
     });
 }
 
+for (const width of [320, 390, 1440]) {
+    for (const count of width === 1440 ? [5, 10] : [2, 3, 4, 5, 10]) {
+        test(`適応盤面で所有施設と市場詳細へ到達できる ${width}px ${count}人`, async ({ page }, testInfo) => {
+            await prepare(page, { width, height: width === 1440 ? 936 : 844 }, count);
+            const before = await state(page);
+            await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(count <= 4 ? count : 3);
+            expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+            const owned = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card').first();
+            expect(await owned.evaluate(element => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(70);
+            await owned.click();
+            await expect(page.locator('#cardDetailModal')).toBeVisible();
+            await page.keyboard.press('Escape');
+            await expect(page.locator('#cardDetailModal')).toBeHidden();
+            const detail = page.locator('#cardboardMarket .compact-market-detail').first();
+            await detail.click();
+            await expect(page.locator('#cardDetailModal')).toBeVisible();
+            await page.keyboard.press('Escape');
+            await expect(page.locator('#cardDetailModal')).toBeHidden();
+            if (count >= 5) {
+                await page.locator(`#cardboardRoster [data-cardboard-player-index="${count - 1}"]`).click();
+                await expect(page.locator(`#cardboardSeats [data-player-index="${count - 1}"]`)).toBeVisible();
+            }
+            expect(await state(page)).toEqual(before);
+            const screenshot = testInfo.outputPath(`card-table-adaptive-${width}-${count}p.png`);
+            await page.screenshot({ path: screenshot });
+            await testInfo.attach('適応盤面の詳細操作後', { path: screenshot, contentType: 'image/png' });
+        });
+    }
+}
+
 test('専用市場の内部スクロールは所持金と在庫の再描画で先頭へ戻らない', async ({ page }) => {
     await prepare(page);
     const list = page.locator('#cardboardMarket .compact-market-facilities');
