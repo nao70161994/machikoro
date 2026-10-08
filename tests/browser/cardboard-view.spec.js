@@ -82,6 +82,51 @@ test('同じ出目で連鎖した施設カードを発動順に強調する', as
     await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
 });
 
+test('街並み表示はPC・縦持ち・横持ちで開閉でき状態を変えない', async ({ page }, testInfo) => {
+    for (const viewport of [
+        { name: 'portrait', width: 390, height: 844 },
+        { name: 'landscape', width: 844, height: 390 },
+        { name: 'desktop', width: 1440, height: 936 },
+    ]) {
+        await prepare(page, { width: viewport.width, height: viewport.height }, 4, false);
+        await page.evaluate(() => {
+            GameRuntimeState.runtime.snapshot().game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
+            render();
+            acceptHotseatHandoff();
+        });
+        const before = await state(page);
+        const disclosure = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-city-disclosure');
+        const summary = disclosure.locator('summary');
+        await expect(summary).toHaveText('街並みを眺める');
+        await summary.click();
+        await expect(disclosure).toHaveAttribute('open', '');
+        await expect(summary).toHaveText('街並みを閉じる');
+        await expect(disclosure.locator('.town-backdrop')).toBeVisible();
+        await expect(disclosure.locator('[data-town-building="landmark:駅"] .sunset-facility-art')).toBeVisible();
+        const bounds = await disclosure.evaluate(element => {
+            const panel = element.getBoundingClientRect();
+            const scene = element.querySelector('.town-street').getBoundingClientRect();
+            return { viewport: { width: innerWidth, height: innerHeight },
+                panel: { left: panel.left, right: panel.right, bottom: panel.bottom },
+                scene: { width: scene.width, height: scene.height },
+                documentWidth: document.documentElement.scrollWidth };
+        });
+        expect(bounds.panel.left).toBeGreaterThanOrEqual(0);
+        expect(bounds.panel.right).toBeLessThanOrEqual(bounds.viewport.width);
+        expect(bounds.panel.bottom).toBeLessThanOrEqual(bounds.viewport.height);
+        expect(bounds.scene.width).toBeGreaterThan(0);
+        expect(bounds.scene.height).toBeGreaterThan(0);
+        expect(bounds.documentWidth).toBe(bounds.viewport.width);
+        expect(await state(page)).toEqual(before);
+        const screenshot = testInfo.outputPath(`cardboard-city-preview-${viewport.name}.png`);
+        await page.screenshot({ path: screenshot });
+        await testInfo.attach(`街並み表示 ${viewport.name}`, { path: screenshot, contentType: 'image/png' });
+        await summary.click();
+        await expect(disclosure).not.toHaveAttribute('open', '');
+        expect(await state(page)).toEqual(before);
+    }
+});
+
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
     test(`カード盤面は4ビュー切替でも同一状態と共有市場を保つ ${viewport.width}`, async ({ page }, testInfo) => {
         await prepare(page, viewport);
