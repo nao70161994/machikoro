@@ -1,5 +1,8 @@
 const { test, expect } = require('@playwright/test');
 
+// Real SW lifecycle is covered by the PWA suites; these cases exercise UI state.
+test.use({ serviceWorkers: 'block' });
+
 async function prepare(page, scenario) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
@@ -83,17 +86,17 @@ for (const scenario of ['SELECT_DICE', 'REROLL_CONFIRM', 'HARBOR_CHOICE', 'TV'])
     });
 }
 
-test('動きを減らす設定とガイド・ログ・更新通知があってもTV対象を選べる', async ({ page }) => {
+test('動きを減らす設定でガイドからログへ切り替え更新通知があってもTV対象を選べる', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await prepare(page, 'TV');
     await page.evaluate(() => {
         setTutorialEnabled(true);
         render();
         acceptHotseatHandoff();
-        document.getElementById('log').classList.remove('collapsed');
+        setLogCollapsed(false);
         document.getElementById('pwaUpdateBanner').style.display = 'block';
     });
-    await expect(page.locator('#tutorialBox')).toBeVisible();
+    await expect(page.locator('#tutorialBox')).toBeHidden();
     await expect(page.locator('#gameLogContainer')).toBeVisible();
     await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
     await expect(page.locator('body')).toHaveClass(/pwa-banner-open/);
