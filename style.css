@@ -9175,6 +9175,11 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
 }
 @media (max-width: 760px) {
     html[data-design="cardboard"] #gameScreen > #status:not(.game-winner) { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; box-shadow: 0 2px 8px #284b3540; }
+    /* Put the active table and its controls directly after the local player's
+       city so a portrait player does not scroll through an opponent first. */
+    html[data-design="cardboard"] #cardboardCenter { order: -2; }
+    html[data-design="cardboard"] .cardboard-player-selected,
+    html[data-design="cardboard"] .cardboard-player-focus { order: -1; }
     html[data-design="cardboard"] #cardboardControls { flex-wrap: wrap; }
     html[data-design="cardboard"] #cardboardBoard { border-radius: 12px; padding: 6px; }
     html[data-design="cardboard"] .cardboard-cards { max-height: 190px; }
