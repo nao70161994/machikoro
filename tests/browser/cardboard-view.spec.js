@@ -179,6 +179,15 @@ test('2人戦のカード盤面はPC・縦持ち・横持ちで街と市場を�
         const screenshot = testInfo.outputPath(`cardboard-2p-${viewport.name}.png`);
         await page.screenshot({ path: screenshot, fullPage: viewport.name === 'portrait' });
         await testInfo.attach(`2人戦 ${viewport.name}`, { path: screenshot, contentType: 'image/png' });
+        await page.locator('#btnBuildShortcut').click();
+        const marketCard = await page.locator('#cardboardMarket .compact-market-item').first().boundingBox();
+        expect(marketCard, `${viewport.name}: market card should be brought into view`).not.toBeNull();
+        expect(marketCard.y, `${viewport.name}: market card should be brought into view`).toBeGreaterThanOrEqual(0);
+        expect(marketCard.y + marketCard.height, `${viewport.name}: market card should fit in the viewport`)
+            .toBeLessThanOrEqual(viewport.height);
+        const marketScreenshot = testInfo.outputPath(`cardboard-2p-${viewport.name}-market-focus.png`);
+        await page.screenshot({ path: marketScreenshot });
+        await testInfo.attach(`2人戦 ${viewport.name} 市場へ移動`, { path: marketScreenshot, contentType: 'image/png' });
     }
 });
 
