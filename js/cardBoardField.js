@@ -106,6 +106,11 @@ const CardBoardField = (() => {
             closeDisclosures(details);
             facts?.closeLog?.();
         }, true);
+        node('cardboardBoard').addEventListener('click', event => {
+            const landmarkButton = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target)
+                .closest('#cardboardMarket .compact-market-goal-disclosure [data-action="buildLandmark"]'));
+            if (landmarkButton) closeDisclosures();
+        });
         const clearHiddenFeedback = () => {
             if (document.hidden || node('gameScreen')?.style.display === 'none') {
                 previousChoice = null;
@@ -321,6 +326,28 @@ const CardBoardField = (() => {
                 button.classList.add('cardboard-landmark-newly-built');
             }
             scrollMemory.restore(`player:${index}`, panel);
+            if (newlyBuiltLandmarks.some(landmark => landmark.index === index)) {
+                const strip = panel.querySelector('.cardboard-landmarks');
+                const completed = Array.from(strip?.querySelectorAll('.cardboard-landmark') || [])
+                    .find(item => newlyBuiltLandmarks.some(landmark => landmark.index === index && landmark.name === item.dataset.landmarkName));
+                if (strip && completed) {
+                    const stripBounds = strip.getBoundingClientRect();
+                    const completedBounds = completed.getBoundingClientRect();
+                    const visibleLeft = stripBounds.left + strip.clientLeft;
+                    const visibleRight = visibleLeft + strip.clientWidth;
+                    if (completedBounds.left < visibleLeft || completedBounds.right > visibleRight) {
+                        const centerOffset = (completedBounds.left + completedBounds.right - visibleLeft - visibleRight) / 2;
+                        const maxScroll = strip.scrollWidth - strip.clientWidth;
+                        const left = Math.max(0, Math.min(maxScroll, strip.scrollLeft + centerOffset));
+                        const reducedMotion = document.body.classList.contains('accessibility-reduced-motion') ||
+                            window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+                        strip.scrollTo({ left, behavior: reducedMotion ? 'auto' : 'smooth' });
+                    }
+                    completed.focus({ preventScroll: true });
+                    const goalDisclosure = node('cardboardMarket')?.querySelector('.compact-market-goal-disclosure');
+                    if (goalDisclosure) goalDisclosure.open = false;
+                }
+            }
         }
         const receipt = node('cardboardDiceReceipt');
         const disclosure = receipt.querySelector('details');

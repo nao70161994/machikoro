@@ -590,6 +590,55 @@ test('ランドマーク完成は新しい建設だけを短く祝う', async ({
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).not.toHaveClass(/cardboard-landmark-newly-built/);
 });
 
+test('画面外にある完成ランドマークを横列内へ移して強調する', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    const landmarkName = await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.phase = GAME_PHASES.BUILD;
+        game.players[0].coins = 999;
+        const goals = Array.from(getEnabledLandmarkSelection());
+        game.players[0].landmarks = Object.fromEntries(goals.map((name, index) => [name, index < 3]));
+        render();
+        acceptHotseatHandoff();
+        return goals[3];
+    });
+    const tile = page.locator(`#cardboardSeats [data-player-index="0"] [data-landmark-name="${landmarkName}"]`);
+    const strip = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-landmarks');
+    const before = await page.evaluate(name => {
+        const player = document.querySelector('#cardboardSeats [data-player-index="0"]');
+        const stripElement = player.querySelector('.cardboard-landmarks');
+        const tileElement = [...stripElement.querySelectorAll('.cardboard-landmark')].find(item => item.dataset.landmarkName === name);
+        const visibleLeft = stripElement.getBoundingClientRect().left + stripElement.clientLeft;
+        const visibleRight = visibleLeft + stripElement.clientWidth;
+        const bounds = tileElement.getBoundingClientRect();
+        return { outside: bounds.left < visibleLeft || bounds.right > visibleRight, scrollY };
+    }, landmarkName);
+    expect(before.outside).toBe(true);
+    await page.locator('#cardboardMarket .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
+    await page.locator(`#cardboardMarket [data-action="buildLandmark"][data-landmark-name="${landmarkName}"]`).click();
+    await expect(tile).toHaveClass(/cardboard-landmark-newly-built/);
+    await expect(tile).toBeFocused();
+    await expect(page.locator('#cardboardMarket .compact-market-goal-disclosure')).not.toHaveAttribute('open', '');
+    await page.waitForFunction(name => {
+        const player = document.querySelector('#cardboardSeats [data-player-index="0"]');
+        const stripElement = player.querySelector('.cardboard-landmarks');
+        const tileElement = [...stripElement.querySelectorAll('.cardboard-landmark')].find(item => item.dataset.landmarkName === name);
+        const visibleLeft = stripElement.getBoundingClientRect().left + stripElement.clientLeft;
+        const visibleRight = visibleLeft + stripElement.clientWidth;
+        const bounds = tileElement.getBoundingClientRect();
+        return bounds.left >= visibleLeft - 1 && bounds.right <= visibleRight + 1;
+    }, landmarkName);
+    const after = await page.evaluate(() => ({
+        scrollY,
+        scrollLeft: document.querySelector('#cardboardSeats [data-player-index="0"] .cardboard-landmarks').scrollLeft,
+    }));
+    expect(after.scrollY).toBe(before.scrollY);
+    expect(after.scrollLeft).toBeGreaterThan(0);
+    const screenshot = testInfo.outputPath('cardboard-landmark-auto-reveal.png');
+    await page.screenshot({ path: screenshot });
+    await testInfo.attach('完成ランドマークを列内に表示', { path: screenshot, contentType: 'image/png' });
+});
+
 test('にぎわい広場の勝利画面はPC幅で街と結果を中央に読める大きさで表示する', async ({ page }) => {
     await prepare(page, { width: 1440, height: 900 }, 2, false);
     await page.evaluate(() => {
