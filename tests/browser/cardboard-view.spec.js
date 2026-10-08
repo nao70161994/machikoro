@@ -191,6 +191,37 @@ test('2人戦のカード盤面はPC・縦持ち・横持ちで街と市場を�
     }
 });
 
+test('ゲーム中に隠れたインストール案内はカード盤面の高さを使わない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4);
+    await page.evaluate(() => {
+        document.getElementById('pwaInstallBanner').style.display = 'block';
+        document.getElementById('pwaUpdateBanner').style.display = 'none';
+        document.body.classList.add('pwa-banner-open');
+    });
+    await expect(page.locator('#pwaInstallBanner')).toBeHidden();
+    const installState = await page.evaluate(() => ({
+        maxHeight: getComputedStyle(document.getElementById('gameScreen')).maxHeight,
+        overflow: getComputedStyle(document.getElementById('gameScreen')).overflow,
+        gameBottom: document.getElementById('gameScreen').getBoundingClientRect().bottom,
+        boardBottom: document.getElementById('cardboardBoard').getBoundingClientRect().bottom,
+        viewportHeight: innerHeight,
+    }));
+    expect(installState.maxHeight).toBe('none');
+    expect(installState.overflow).toBe('visible');
+    expect(installState.boardBottom).toBeLessThanOrEqual(installState.viewportHeight);
+    expect(installState.gameBottom).toBeGreaterThanOrEqual(installState.boardBottom);
+    const screenshot = testInfo.outputPath('cardboard-install-banner-hidden-landscape.png');
+    await page.screenshot({ path: screenshot });
+    await testInfo.attach('案内が隠れた横持ち盤面', { path: screenshot, contentType: 'image/png' });
+
+    await page.evaluate(() => {
+        document.getElementById('pwaInstallBanner').style.display = 'none';
+        document.getElementById('pwaUpdateBanner').style.display = 'block';
+    });
+    const updateMaxHeight = await page.locator('#gameScreen').evaluate(element => getComputedStyle(element).maxHeight);
+    expect(updateMaxHeight).not.toBe('none');
+});
+
 test('10人のカード盤面は自分・手番・選択相手を読める大きさで表示する', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 }, 10);
     await expect(page.locator('#cardboardRoster button')).toHaveCount(10);

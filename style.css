@@ -9031,6 +9031,11 @@ html[data-design="cardboard"] #gameScreen > #gameLogContainer { position: fixed;
 html[data-design="cardboard"] #gameLogContainer:not(.cardboard-panel-open) { display: none; }
 html[data-design="cardboard"] body.pwa-banner-open #gameScreen > #gameLogContainer { bottom: calc(128px + env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 180px); }
 html[data-design="cardboard"] #gameScreen :is(button, select, summary):focus-visible { outline: 3px solid #075b9e; outline-offset: 2px; }
+/* The install prompt is hidden while a game is active, so it must not leave a blank banner-sized gap. Keep the reserved space when an update prompt is actually visible. */
+html[data-design="cardboard"] body.pwa-banner-open:has(#gameScreen[style*="display: block"]):has(#pwaInstallBanner[style*="display: block"]):not(:has(#pwaUpdateBanner[style*="display: block"])) #gameScreen[style*="display: block"] {
+    max-height: none;
+    overflow: visible;
+}
 html[data-design="cardboard"] .compact-market { min-width: 0; color: var(--cardboard-ink); }
 html[data-design="cardboard"] :is(.compact-market-filter-disclosure, .compact-market-goal-disclosure) > summary { display: flex; align-items: center; min-height: 44px; padding: 4px 7px; border: 1px solid #b7a36d; border-radius: 6px; background: #fffdf5; color: var(--cardboard-ink); font-size: 12px; cursor: pointer; }
 html[data-design="cardboard"] .compact-market-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
