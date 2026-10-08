@@ -9305,6 +9305,32 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] .compact-market-facilities { flex: 1; max-height: none; grid-auto-rows: max-content; }
 }
 @media (orientation: landscape) and (max-height: 480px) and (min-width: 761px) {
+    /* Use the short landscape center column for several market rows. A single
+       clipped row leaves the rest of this prominent area visually empty. */
+    html[data-design="cardboard"] #cardboardMarket,
+    html[data-design="cardboard"] #cardboardMarket .compact-market {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+    }
+    html[data-design="cardboard"] #cardboardMarket .compact-market {
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+        grid-template-rows: minmax(128px, 1fr);
+        align-items: stretch;
+    }
+    html[data-design="cardboard"] #cardboardMarket .compact-market-facilities {
+        grid-column: 2;
+        grid-row: 1;
+        width: 100%;
+        height: 100%;
+        min-height: 128px;
+        max-height: none;
+        grid-auto-rows: 64px;
+        align-content: start;
+        overflow: auto;
+    }
     html[data-design="cardboard"] #cardboardChoiceJump { display: none; }
     html[data-design="cardboard"] #cardboardActionSlot:has(#diceChoose .dice-choose) .game-action-panel { display: block; }
     html[data-design="cardboard"] #cardboardActionSlot:has(#diceChoose .dice-choose) :is(#diceResult, .buttons),
