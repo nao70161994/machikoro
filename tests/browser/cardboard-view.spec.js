@@ -131,6 +131,57 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
     });
 }
 
+test('2人戦のカード盤面はPC・縦持ち・横持ちで街と市場を優先して見せる', async ({ page }, testInfo) => {
+    const viewports = [
+        { name: 'desktop', width: 1440, height: 900 },
+        { name: 'portrait', width: 390, height: 844 },
+        { name: 'landscape', width: 844, height: 390 },
+    ];
+    await prepare(page, viewports[0], 2);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.phase = GAME_PHASES.BUILD;
+        render();
+    });
+    await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+    for (const viewport of viewports) {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height });
+        await page.evaluate(() => {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+        });
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(2);
+        await expect(page.locator('#cardboardMarket')).toBeVisible();
+        const layout = await page.evaluate(() => {
+            const rect = element => {
+                const box = element.getBoundingClientRect();
+                return { top: box.top, bottom: box.bottom, left: box.left, right: box.right, width: box.width, height: box.height };
+            };
+            const players = [...document.querySelectorAll('#cardboardSeats > .cardboard-player')];
+            const art = [...document.querySelectorAll('#cardboardSeats .cardboard-art')];
+            return {
+                players: players.map(rect), market: rect(document.getElementById('cardboardMarket')),
+                selfTop: rect(document.querySelector('#cardboardSeats .cardboard-player-self')).top,
+                selectedTop: rect(document.querySelector('#cardboardSeats .cardboard-player-selected')).top,
+                artHeights: art.map(element => element.getBoundingClientRect().height),
+                viewportWidth: innerWidth, scrollWidth: document.documentElement.scrollWidth,
+            };
+        });
+        expect(layout.players).toHaveLength(2);
+        expect(layout.artHeights.some(height => height >= 22), JSON.stringify(layout)).toBe(true);
+        expect(layout.scrollWidth, JSON.stringify(layout)).toBeLessThanOrEqual(layout.viewportWidth + 1);
+        await expect(page.locator('#cardboardSeats [data-player-index="1"]')).toHaveClass(/cardboard-player-selected/);
+        if (viewport.name === 'portrait') {
+            expect(layout.selfTop).toBeLessThan(layout.selectedTop);
+            expect(layout.selectedTop).toBeLessThan(layout.market.top);
+        }
+        const screenshot = testInfo.outputPath(`cardboard-2p-${viewport.name}.png`);
+        await page.screenshot({ path: screenshot, fullPage: viewport.name === 'portrait' });
+        await testInfo.attach(`2人戦 ${viewport.name}`, { path: screenshot, contentType: 'image/png' });
+    }
+});
+
 test('10人のカード盤面は自分・手番・選択相手を読める大きさで表示する', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 }, 10);
     await expect(page.locator('#cardboardRoster button')).toHaveCount(10);
