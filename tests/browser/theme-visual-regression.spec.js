@@ -35,6 +35,10 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
             state.game.currentPlayerIndex = 0;
             state.game.phase = GAME_PHASES.BUILD;
             state.game.turnCount = 2;
+            state.game.builtThisTurn = false;
+            state.game.lastDiceResult = null;
+            state.game.lastDice1 = 0;
+            state.game.lastDice2 = 0;
             state.game.players.forEach((player, index) => {
                 player.name = `街${index + 1}`;
                 player.coins = 8 + index;
@@ -44,6 +48,7 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
             setTutorialEnabled(false);
             render();
             acceptHotseatHandoff();
+            PlazaField.focusTarget('self');
             const updateBanner = document.getElementById('pwaUpdateBanner');
             if (updateBanner) updateBanner.style.display = 'none';
             document.body.classList.remove('pwa-banner-open');
