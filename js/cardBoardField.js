@@ -3,6 +3,28 @@
 
 // Presentation state only: no game actions, storage, random calls or rule updates.
 const CardBoardField = (() => {
+    function createScrollMemory() {
+        const positions = new Map();
+        const selectors = ['.cardboard-cards', '.cardboard-landmarks', '.compact-market-facilities', '.cardboard-roster'];
+        function capture(key, element) {
+            if (!element) return;
+            positions.set(key, ['', ...selectors].map(selector => {
+                const target = selector ? element.querySelector(selector) : element;
+                return { selector, top: target?.scrollTop || 0, left: target?.scrollLeft || 0 };
+            }));
+        }
+        function restore(key, element) {
+            const stored = positions.get(key);
+            if (!stored || !element) return;
+            for (const position of stored) {
+                const target = position.selector ? element.querySelector(position.selector) : element;
+                if (target) { target.scrollTop = position.top; target.scrollLeft = position.left; }
+            }
+            positions.delete(key);
+        }
+        return Object.freeze({ capture, restore, clear: () => positions.clear() });
+    }
+    const scrollMemory = createScrollMemory();
     const renderedHtml = new WeakMap();
     let facts = null;
     let initialized = false;
@@ -69,6 +91,7 @@ const CardBoardField = (() => {
     function updateMarket(html) {
         if (!mounted || typeof html !== 'string') return;
         replaceHtml(node('cardboardMarket'), html);
+        scrollMemory.restore('market', node('cardboardMarket'));
     }
 
     function initialize() {
@@ -110,7 +133,16 @@ const CardBoardField = (() => {
             } : null;
             return { active, marketFocus };
         };
-        document.addEventListener('design-theme-will-change', () => { themeFocus = captureThemeFocus(); });
+        document.addEventListener('design-theme-will-change', () => {
+            themeFocus = captureThemeFocus();
+            // Capture before the outgoing theme's CSS hides its scroll boxes.
+            if (enabled() && mounted) {
+                scrollMemory.capture('market', node('cardboardMarket'));
+                scrollMemory.capture('roster', node('cardboardRoster'));
+                node('cardboardSeats').querySelectorAll('.cardboard-player').forEach(panel =>
+                    scrollMemory.capture(`player:${/** @type {HTMLElement} */ (panel).dataset.playerIndex}`, panel));
+            }
+        });
         document.addEventListener('design-theme-change', () => {
             const { active, marketFocus } = themeFocus || captureThemeFocus();
             themeFocus = null;
@@ -230,6 +262,7 @@ const CardBoardField = (() => {
         replaceHtml(node('cardboardRoster'), UiCardBoard.buildRosterHtml(game.players, {
             selfIndex, currentIndex, selectedIndex, escapeHtml, enabledLandmarks,
         }));
+        scrollMemory.restore('roster', node('cardboardRoster'));
         const seats = node('cardboardSeats');
         seats.dataset.playerCount = String(game.players.length);
         node('cardboardBoard').dataset.playerCount = String(game.players.length);
@@ -257,6 +290,7 @@ const CardBoardField = (() => {
                 index, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events, contentOnly: true,
                 renderFacilityArt: UiBuildMenu.renderFacilityArt,
             }));
+            scrollMemory.restore(`player:${index}`, panel);
         }
         const receipt = node('cardboardDiceReceipt');
         const disclosure = receipt.querySelector('details');
@@ -290,6 +324,8 @@ const CardBoardField = (() => {
     function render(nextFacts) {
         initialize();
         if (nextFacts.session !== session) {
+            detach();
+            scrollMemory.clear();
             selectedIndex = null;
             previousChoice = null;
             choiceInitialized = false;
@@ -300,7 +336,7 @@ const CardBoardField = (() => {
         facts = nextFacts;
         draw();
     }
-    return Object.freeze({ render, updateMarket, detach, closeDisclosures });
+    return Object.freeze({ render, updateMarket, detach, closeDisclosures, createScrollMemory });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

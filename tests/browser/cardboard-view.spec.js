@@ -192,7 +192,7 @@ test('同じ出目の内訳更新は開閉とフォーカスを保ち、次手�
     await expect(page.locator('#cardboardDiceReceipt details[open]')).toHaveCount(0);
 });
 
-test('所有施設をスクロール中の収支更新でも表示位置を保つ', async ({ page }) => {
+test('所有施設と市場のスクロール位置は収支更新と4ビュー往復でも保つ', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 });
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
@@ -200,12 +200,32 @@ test('所有施設をスクロール中の収支更新でも表示位置を保�
         render();
         const cards = document.querySelector('#cardboardSeats [data-player-index="0"] .cardboard-cards');
         cards.scrollLeft = 200;
+        document.querySelector('#cardboardMarket .compact-market-facilities').scrollTop = 120;
     });
     const scroll = () => page.locator('#cardboardSeats [data-player-index="0"] .cardboard-cards').evaluate(element => element.scrollLeft);
     const before = await scroll();
     expect(before).toBeGreaterThan(0);
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[0].coins++; render(); });
     expect(await scroll()).toBe(before);
+    const marketScroll = () => page.locator('#cardboardMarket .compact-market-facilities').evaluate(element => element.scrollTop);
+    const beforeMarket = await marketScroll();
+    expect(beforeMarket).toBeGreaterThan(0);
+    const snapshot = () => page.evaluate(() => GameSnapshot.serializeGameState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, {
+        pendingActionsFor: GameManager.serializedPendingActionsFor, logLimit: Number.MAX_SAFE_INTEGER,
+    }));
+    const beforeSwitch = await snapshot();
+    for (const other of ['plaza', 'classic', 'sunset']) {
+        for (const theme of [other, 'cardboard']) {
+            await page.evaluate(value => {
+                const select = document.getElementById('gameDesignThemeSelect');
+                select.value = value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            }, theme);
+        }
+        expect(await scroll()).toBe(before);
+        expect(await marketScroll()).toBe(beforeMarket);
+        expect(await snapshot()).toEqual(beforeSwitch);
+    }
 });
 
 test('新しい出目だけを強調し表示切替で過去の演出を再生しない', async ({ page }) => {
