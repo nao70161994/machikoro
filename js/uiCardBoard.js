@@ -40,6 +40,16 @@ const UiCardBoard = (() => {
         const enabled = options.enabledLandmarks || known;
         return [...enabled].filter(name => known.includes(name));
     }
+    function playerKindHtml(index, options) {
+        const setting = options.playerSettings?.[index] || options.setting || {};
+        const label = setting.type === 'cpu'
+            ? `CPU（${setting.difficulty === 'weak' ? '弱' : setting.difficulty === 'strong' ? '強' : setting.difficulty === 'expert' ? '最強' : setting.difficulty === 'rl' ? '深層学習' : '普通'}）`
+            : '人間';
+        const icon = typeof options.renderPlayerKindIcon === 'function'
+            ? options.renderPlayerKindIcon(setting)
+            : setting.type === 'cpu' ? '🤖' : '👤';
+        return `<span class="cardboard-player-kind" aria-label="${label}" title="${label}">${icon}</span>`;
+    }
     function activationFor(events, name, index) {
         const matching = (events?.activations || []).filter(event => event.facility === true &&
             event.subject === name && (Number.isInteger(event.owner) ? event.owner === index : event.to !== null ? event.to === index : event.from === index) &&
@@ -85,7 +95,7 @@ const UiCardBoard = (() => {
             return `<button type="button" class="cardboard-landmark ${built ? 'cardboard-landmark-built' : 'cardboard-landmark-unbuilt'}" data-action="showLandmarkDetail" data-landmark-name="${escape(name)}" title="${escape(name)}：${built ? '建設済' : '未建設'}"><span class="cardboard-art" aria-hidden="true">${art(name, true)}</span><span class="cardboard-name">${escape(name)}</span><span class="cardboard-landmark-status">${built ? '建設済' : '未建設'}</span></button>`;
         }).join('');
         const builtCount = names.filter(name => player.landmarks?.[name] === true).length;
-        const content = `<header class="cardboard-header"><h2 title="席${index + 1}・${escape(player.name)}">席${index + 1}・${escape(player.name)}${index === options.selfIndex ? '（自分）' : ''}</h2><p class="cardboard-player-hud"><span class="cardboard-player-coins"><b>${escape(player.coins)}</b>コイン</span><span class="cardboard-player-progress">目標 ${builtCount}/${names.length}</span>${index === options.currentIndex ? '<span class="cardboard-turn-marker">現在の手番</span>' : ''}</p></header>${options.events?.incomplete ? '<p class="cardboard-events-incomplete">収支はログから確認できた分のみです。</p>' : ''}<div class="cardboard-cards">${cards || '<p class="cardboard-empty">所有施設なし</p>'}</div><h3>ランドマーク</h3><div class="cardboard-landmarks">${landmarks || '<p class="cardboard-empty">対象ランドマークなし</p>'}</div>`;
+        const content = `<header class="cardboard-header"><h2 title="席${index + 1}・${escape(player.name)}">${playerKindHtml(index, options)}<span>席${index + 1}・${escape(player.name)}${index === options.selfIndex ? '（自分）' : ''}</span></h2><p class="cardboard-player-hud"><span class="cardboard-player-coins"><b>${escape(player.coins)}</b>コイン</span><span class="cardboard-player-progress">目標 ${builtCount}/${names.length}</span>${index === options.currentIndex ? '<span class="cardboard-turn-marker">現在の手番</span>' : ''}</p></header>${options.events?.incomplete ? '<p class="cardboard-events-incomplete">収支はログから確認できた分のみです。</p>' : ''}<div class="cardboard-cards">${cards || '<p class="cardboard-empty">所有施設なし</p>'}</div><h3>ランドマーク</h3><div class="cardboard-landmarks">${landmarks || '<p class="cardboard-empty">対象ランドマークなし</p>'}</div>`;
         if (options.contentOnly === true) return content;
         return `<section class="cardboard-player${index === options.selfIndex ? ' cardboard-player-self' : ''}${index === options.currentIndex ? ' cardboard-player-current' : ''}" data-cardboard-player-index="${index}">${content}</section>`;
     }
@@ -97,7 +107,7 @@ const UiCardBoard = (() => {
             const counts = { blue: 0, green: 0, red: 0, purple: 0 };
             for (const card of player.cards || []) { if (Object.hasOwn(counts, card.color)) counts[card.color]++; }
             const trend = Object.keys(counts).map(color => `<span class="cardboard-color-count cardboard-color-count-${color}">${colorNames[color]} ${counts[color]}</span>`).join('');
-            return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}" data-cardboard-player-index="${index}" aria-pressed="${index === options.selectedIndex}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong>席${index + 1}・${escape(player.name)}${index === options.selfIndex ? '（自分）' : ''}</strong><span>${escape(player.coins)}コイン · 目標 ${built}/${names.length}</span><small class="cardboard-roster-trend">${trend}</small></button>`;
+            return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}" data-cardboard-player-index="${index}" aria-pressed="${index === options.selectedIndex}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong>${playerKindHtml(index, options)}<span>席${index + 1}・${escape(player.name)}${index === options.selfIndex ? '（自分）' : ''}</span></strong><span>${escape(player.coins)}コイン · 目標 ${built}/${names.length}</span><small class="cardboard-roster-trend">${trend}</small></button>`;
         }).join('')}</nav>`;
     }
     return Object.freeze({ buildPlayerHtml, buildRosterHtml, selectDetailIndices });

@@ -8932,6 +8932,12 @@ html[data-design="cardboard"] #cardboardRoster { min-width: 0; order: -4; }
 html[data-design="cardboard"] .cardboard-roster { display: flex; gap: 5px; overflow-x: auto; max-width: 100%; padding: 2px 2px 5px; overscroll-behavior-inline: contain; }
 html[data-design="cardboard"] .cardboard-roster-seat { display: flex; flex: 0 0 174px; flex-wrap: wrap; gap: 3px 7px; align-items: center; min-height: 44px; max-width: 210px; margin: 0; padding: 5px 8px; border: 1px solid #769483; border-radius: 9px; color: var(--cardboard-ink); background: #fffdf4; font: inherit; font-size: 12px; text-align: left; }
 html[data-design="cardboard"] .cardboard-roster-seat[aria-pressed="true"] { background: #e2f3ff; box-shadow: inset 0 -3px #1766bd; }
+html[data-design="cardboard"] .cardboard-roster-seat strong { display: flex; align-items: center; gap: 5px; min-width: 0; }
+html[data-design="cardboard"] .cardboard-header h2 { display: flex; align-items: center; gap: 5px; }
+html[data-design="cardboard"] .cardboard-player-kind { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; min-width: 20px; height: 22px; color: #304b59; font-size: 15px; line-height: 1; }
+html[data-design="cardboard"] .cardboard-player-kind .player-kind-icon { display: block; width: 20px; height: 20px; }
+html[data-design="cardboard"] .cardboard-player-kind .player-kind-level { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+html[data-design="cardboard"] .cardboard-player-kind + span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-design="cardboard"] .cardboard-roster-trend { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; }
 html[data-design="cardboard"] .cardboard-color-count { padding: 2px 5px; border-radius: 5px; color: #fff; font-size: 11px; font-weight: 800; line-height: 1.35; font-variant-numeric: tabular-nums; white-space: nowrap; }
 html[data-design="cardboard"] .cardboard-color-count-blue { background: var(--cardboard-blue); }

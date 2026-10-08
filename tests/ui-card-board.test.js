@@ -119,6 +119,19 @@ runTest('空状態と任意アダプタ不在でも安全なHTMLを返す', () =
     assert.ok(!html.includes('<script>'));
     assert.ok(html.includes('対象ランドマークなし'));
 });
+runTest('カード卓の各席と一覧で人間・CPUの共通アイコンを示す', () => {
+    const players = [player, { ...player, name: 'CPU街' }];
+    const playerSettings = [{ type: 'human' }, { type: 'cpu', difficulty: 'strong' }];
+    const renderPlayerKindIcon = setting => `<svg data-kind="${setting.type}"></svg>${setting.type === 'cpu' ? '<span class="player-kind-level">強</span>' : ''}`;
+    const shared = { ...options, playerSettings, renderPlayerKindIcon };
+    const panel = UiCardBoard.buildPlayerHtml(players[1], { ...shared, index: 1 });
+    const roster = UiCardBoard.buildRosterHtml(players, shared);
+    assert.ok(panel.includes('aria-label="CPU（強）"'));
+    assert.ok(panel.includes('<svg data-kind="cpu"></svg>'));
+    assert.ok(roster.includes('aria-label="人間"'));
+    assert.ok(roster.includes('aria-label="CPU（強）"'));
+    assert.strictEqual((roster.match(/<svg data-kind=/g) || []).length, 2);
+});
 runTest('contentOnlyは外枠だけを除外し同一の中身を返す', () => {
     const wrapped = UiCardBoard.buildPlayerHtml(player, options);
     const content = UiCardBoard.buildPlayerHtml(player, { ...options, contentOnly: true });

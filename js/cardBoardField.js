@@ -270,6 +270,7 @@ const CardBoardField = (() => {
         });
         replaceHtml(node('cardboardRoster'), UiCardBoard.buildRosterHtml(game.players, {
             selfIndex, currentIndex, selectedIndex, escapeHtml, enabledLandmarks,
+            playerSettings: facts.playerSettings, renderPlayerKindIcon: facts.renderPlayerKindIcon,
         }));
         scrollMemory.restore('roster', node('cardboardRoster'));
         const seats = node('cardboardSeats');
@@ -308,6 +309,7 @@ const CardBoardField = (() => {
             replaceHtml(panel, UiCardBoard.buildPlayerHtml(game.players[index], {
                 index, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events, contentOnly: true,
                 renderFacilityArt: UiBuildMenu.renderFacilityArt,
+                setting: facts.playerSettings?.[index], renderPlayerKindIcon: facts.renderPlayerKindIcon,
             }));
             for (const landmark of newlyBuiltLandmarks) {
                 if (landmark.index !== index) continue;

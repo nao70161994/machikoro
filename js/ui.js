@@ -1422,7 +1422,7 @@ function renderPlayers() {
         });
     }
     if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection(), townSession, currentGame.phase);
-    if (typeof CardBoardField !== 'undefined') CardBoardField.render({ game: currentGame, selfIndex: primaryPlayerIndex, escapeHtml, enabledLandmarks: getEnabledLandmarkSelection(), session: townSession, replaying: uiOnlineRuntimeSnapshot().isReplaying === true, display: LOG_TYPE_DISPLAY, refreshMarket: renderBuildMenu, closeLog: () => setLogCollapsed(true) });
+    if (typeof CardBoardField !== 'undefined') CardBoardField.render({ game: currentGame, selfIndex: primaryPlayerIndex, playerSettings: settings, renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon, escapeHtml, enabledLandmarks: getEnabledLandmarkSelection(), session: townSession, replaying: uiOnlineRuntimeSnapshot().isReplaying === true, display: LOG_TYPE_DISPLAY, refreshMarket: renderBuildMenu, closeLog: () => setLogCollapsed(true) });
     plazaIncomePreviewPanel?.refresh(currentGame);
     if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
         animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
