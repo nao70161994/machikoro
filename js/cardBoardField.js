@@ -291,6 +291,7 @@ const CardBoardField = (() => {
                         : index === others[0] ? 'left' : index === others[1] ? 'top' : 'right';
             panel.classList.toggle('cardboard-player-self', index === selfIndex);
             panel.classList.toggle('cardboard-player-current', index === currentIndex);
+            panel.classList.toggle('cardboard-player-selected', index === selectedIndex && index !== selfIndex);
             /** @type {HTMLElement} */ (panel).dataset.seatPosition = position;
             replaceHtml(panel, UiCardBoard.buildPlayerHtml(game.players[index], {
                 index, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events, contentOnly: true,

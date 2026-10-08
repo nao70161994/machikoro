@@ -131,7 +131,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
     });
 }
 
-test('10人のカード盤面は自分・手番・選択相手を読める大きさで表示する', async ({ page }) => {
+test('10人のカード盤面は自分・手番・選択相手を読める大きさで表示する', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 }, 10);
     await expect(page.locator('#cardboardRoster button')).toHaveCount(10);
     await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(3);
@@ -142,10 +142,34 @@ test('10人のカード盤面は自分・手番・選択相手を読める大き
     await expect(chips).toHaveCount(4);
     await page.locator('#cardboardRoster [data-cardboard-player-index="9"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="9"]')).toBeVisible();
+    await expect(page.locator('#cardboardSeats [data-player-index="9"]')).toHaveClass(/cardboard-player-selected/);
     expect(await page.locator('#cardboardSeats > .cardboard-player').count()).toBeLessThanOrEqual(3);
     await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toBeVisible();
+    await page.evaluate(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    });
+    const portraitOrder = await page.evaluate(() => ({
+        self: document.querySelector('#cardboardSeats .cardboard-player-self').getBoundingClientRect().top,
+        selected: document.querySelector('#cardboardSeats .cardboard-player-selected').getBoundingClientRect().top,
+        market: document.getElementById('cardboardCenter').getBoundingClientRect().top,
+    }));
+    expect(portraitOrder.self).toBeLessThan(portraitOrder.selected);
+    expect(portraitOrder.selected).toBeLessThan(portraitOrder.market);
+    const portraitScreenshot = testInfo.outputPath('cardboard-10p-portrait.png');
+    await page.screenshot({ path: portraitScreenshot });
+    await testInfo.attach('10人戦の縦持ちカード盤面', { path: portraitScreenshot, contentType: 'image/png' });
     const before = await state(page);
     await page.setViewportSize({ width: 844, height: 390 });
+    await page.evaluate(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    });
+    const landscapeScreenshot = testInfo.outputPath('cardboard-10p-landscape.png');
+    await page.screenshot({ path: landscapeScreenshot });
+    await testInfo.attach('10人戦の横持ちカード盤面', { path: landscapeScreenshot, contentType: 'image/png' });
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await state(page)).toEqual(before);
 });

@@ -8940,6 +8940,7 @@ html[data-design="cardboard"] .cardboard-color-count-red { background: var(--car
 html[data-design="cardboard"] .cardboard-color-count-purple { background: var(--cardboard-purple); }
 html[data-design="cardboard"] .cardboard-player { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 7px; border-radius: 12px; background: #fffdf5e8; box-shadow: 0 3px 10px #284b3520; color: var(--cardboard-ink); }
 html[data-design="cardboard"] .cardboard-player-self { order: -3; }
+html[data-design="cardboard"] .cardboard-player-selected { order: -2; outline: 2px solid #1766bd; outline-offset: -2px; }
 html[data-design="cardboard"] .cardboard-player-current { box-shadow: inset 0 3px #d69d20, 0 3px 10px #284b3520; }
 html[data-design="cardboard"] .cardboard-header { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; min-width: 0; margin-bottom: 5px; }
 html[data-design="cardboard"] .cardboard-header h2 { min-width: 0; max-width: 100%; margin: 0; color: var(--cardboard-ink); font-size: 14px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -8997,7 +8998,7 @@ html[data-design="cardboard"] .cardboard-landmark-newly-built { position: relati
     100% { transform: scale(1); box-shadow: inset 0 -2px #b99b56; }
 }
 html[data-design="cardboard"] body.accessibility-reduced-motion .cardboard-landmark-newly-built { animation: none; outline: 3px solid #b47a09; }
-html[data-design="cardboard"] #cardboardCenter { display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 0; order: -2; padding: 6px; border-radius: 12px; background: #f8f1df; box-shadow: inset 0 0 0 1px #b7a36d; }
+html[data-design="cardboard"] #cardboardCenter { display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 0; order: -1; padding: 6px; border-radius: 12px; background: #f8f1df; box-shadow: inset 0 0 0 1px #b7a36d; }
 html[data-design="cardboard"] #cardboardMarket { min-width: 0; min-height: 0; }
 html[data-design="cardboard"] #cardboardMarket #buildMenu { position: static; width: 100%; max-width: none; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; color: var(--cardboard-ink); }
 html[data-design="cardboard"] #cardboardDiceReceipt { min-width: 0; padding: 3px 6px; border-radius: 6px; background: #fffaf0; color: var(--cardboard-ink); font-size: 11px; }
