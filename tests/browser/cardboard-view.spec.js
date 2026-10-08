@@ -85,6 +85,40 @@ test('同じ出目で連鎖した施設カードを発動順に強調する', as
     await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
 });
 
+test('縦持ちで盤面に出ていない席への送金もロスターまで動く', async ({ page }, testInfo) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await prepare(page, { width: 390, height: 844 }, 4, false);
+    const event = await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayerIndex = 0;
+        game.players.forEach((player, index) => {
+            player.name = `街${index + 1}`;
+            player.coins = 20 + index;
+            player.cards = [createCardByName(index === 0 ? 'パン屋' : 'カフェ')];
+        });
+        render();
+        acceptHotseatHandoff();
+        game.rollDice(3);
+        render();
+        return {
+            hiddenSeats: [...document.querySelectorAll('#cardboardRoster [data-cardboard-player-index]')]
+                .filter(seat => !document.querySelector(`#cardboardSeats [data-player-index="${seat.dataset.cardboardPlayerIndex}"]`))
+                .map(seat => seat.dataset.cardboardPlayerIndex),
+            routeCount: document.querySelectorAll('#cardboardBoard .cardboard-transfer').length,
+            summary: document.querySelector('#cardboardDiceReceipt .cardboard-transfer-summary-inline')?.textContent || '',
+        };
+    });
+    await page.waitForTimeout(100);
+    const screenshot = testInfo.outputPath('cardboard-portrait-hidden-seat-transfers.png');
+    await page.screenshot({ path: screenshot });
+    await testInfo.attach('縦持ちの全席送金演出', { path: screenshot, contentType: 'image/png' });
+    expect(event.hiddenSeats.length).toBeGreaterThanOrEqual(2);
+    expect(event.routeCount).toBe(4);
+    expect(event.summary).toContain('街1→街2 1コイン');
+    expect(event.summary).toContain('街1→街3 1コイン');
+    expect(event.summary).toContain('街1→街4 1コイン');
+});
+
 test('街並み表示はPC・縦持ち・横持ちで開閉でき状態を変えない', async ({ page }, testInfo) => {
     for (const viewport of [
         { name: 'portrait', width: 390, height: 844 },

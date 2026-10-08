@@ -56,11 +56,28 @@ const CardBoardTransfers = (() => {
             const location = index => {
                 if (index === null || index === 'pool') return center;
                 const header = container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
-                if (!header) return null;
-                const rect = header.getBoundingClientRect();
-                if (!rect.width || !rect.height) return null;
-                return { x: rect.left + rect.width / 2 - bounds.left,
-                    y: rect.top + rect.height / 2 - bounds.top };
+                const visibleHeader = header?.getBoundingClientRect();
+                if (visibleHeader?.width && visibleHeader.height) {
+                    return { x: visibleHeader.left + visibleHeader.width / 2 - bounds.left,
+                        y: visibleHeader.top + visibleHeader.height / 2 - bounds.top };
+                }
+                // Portrait tables intentionally show only the current player's
+                // city and one opponent. Route other transfers through that
+                // player's roster chip so every payer/payee still has a visible
+                // endpoint without expanding the board or changing game state.
+                const roster = container.querySelector('#cardboardRoster');
+                const seat = roster?.querySelector(`[data-cardboard-player-index="${index}"]`);
+                const rosterRect = roster?.getBoundingClientRect();
+                const seatRect = seat?.getBoundingClientRect();
+                if (!rosterRect?.width || !seatRect?.width || !seatRect.height) return null;
+                const left = Math.max(bounds.left, rosterRect.left);
+                const right = Math.min(bounds.right, rosterRect.right);
+                if (right <= left) return null;
+                const x = Math.max(left + Math.min(8, (right - left) / 2),
+                    Math.min(seatRect.left + seatRect.width / 2, right - Math.min(8, (right - left) / 2)));
+                const y = Math.max(bounds.top, Math.min(seatRect.top + seatRect.height / 2, bounds.bottom));
+                return { x: x - bounds.left,
+                    y: y - bounds.top };
             };
             layer = documentRef.createElement('div');
             layer.className = 'cardboard-transfers';

@@ -9,9 +9,16 @@ const events = { participantNames: ['街A', '街B', '街C'], activations: [
     { from: 0, to: 1, amount: 2 }, { from: 0, to: 1, amount: 3 },
     { from: null, to: 0, amount: 4 }, { from: 1, to: 2, amount: 0 },
 ] };
-function fixture() {
+function fixture(options = {}) {
     let timer = null, cancelled = 0;
     const animated = [];
+    const hiddenPlayerIndexes = options.hiddenPlayerIndexes || [2];
+    const roster = {
+        getBoundingClientRect: () => ({ left: 100, top: 50, right: 300, bottom: 80, width: 200, height: 30 }),
+        querySelector: selector => selector.includes('"2"') ? {
+            getBoundingClientRect: () => ({ left: 330, top: 50, right: 410, bottom: 80, width: 80, height: 30 }),
+        } : null,
+    };
     const documentRef = { defaultView: { matchMedia: () => ({ matches: false }),
         setTimeout: callback => { timer = callback; return 1; }, clearTimeout: () => { timer = null; } },
         createElement: () => new Element() };
@@ -21,10 +28,12 @@ function fixture() {
         remove() { if (this.parentNode) this.parentNode.children.splice(this.parentNode.children.indexOf(this), 1); this.isConnected = false; }
         setAttribute(name, value) { this.attributes[name] = value; }
         animate(frames, options) { animated.push({ frames, options }); return { cancel: () => { cancelled++; }, finished: Promise.resolve() }; }
-        getBoundingClientRect() { return { left: 0, top: 0, width: 600, height: 400 }; }
+        getBoundingClientRect() { return { left: 0, top: 0, right: 600, bottom: 400, width: 600, height: 400 }; }
         querySelector(selector) {
             if (selector.startsWith('#cardboardDiceReceipt')) return null;
-            if (selector.includes('"2"')) return null;
+            if (selector === '#cardboardRoster') return options.roster === false ? null : roster;
+            const playerIndex = selector.match(/\[data-player-index="(\d+)"\]/)?.[1];
+            if (playerIndex !== undefined && hiddenPlayerIndexes.includes(Number(playerIndex))) return null;
             return { getBoundingClientRect: () => ({ left: selector.includes('"1"') ? 400 : 20, top: 20, width: 100, height: 40 }) };
         }
     }
@@ -78,6 +87,17 @@ runTest('Reduced Motionでも誰から誰への金額を静止表示し未集計
     assert.ok(container.children[0].children[0].innerHTML.includes('cardboard-transfer-extra'));
     controller.clear();
     assert.strictEqual(controller.play({ container, events: {} }), false);
+});
+
+runTest('画面に出ていないプレイヤーへの送金は見えるロスターチップへ向ける', () => {
+    const { container, animated } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events: { participantNames: ['街A', '街B', '街C'], activations: [
+        { from: 2, to: 0, amount: 4 },
+    ] } });
+    assert.strictEqual(animated.length, 1);
+    assert.ok(animated[0].frames.at(-1).transform.includes('-222px'), '画面外の街Cチップ位置を見えるロスター端へ収める');
+    controller.clear();
 });
 
 runTest('同名のプレイヤー間だけ席番号を添えて送金先を区別する', () => {
