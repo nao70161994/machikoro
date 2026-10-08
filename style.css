@@ -9185,6 +9185,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] .cardboard-cards { max-height: 190px; }
     html[data-design="cardboard"] .cardboard-player-self .cardboard-cards { display: grid; grid-auto-flow: column; grid-auto-columns: 86px; grid-template-columns: none; max-height: 150px; }
     html[data-design="cardboard"] .compact-market-facilities { max-height: 250px; }
+    html[data-design="cardboard"] .cardboard-landmark { min-height: 68px; }
+    html[data-design="cardboard"] .cardboard-landmark .cardboard-art { display: block; flex: 0 0 22px; height: 22px; background: transparent; }
 }
 @media (orientation: landscape) and (max-height: 480px) and (min-width: 761px) {
     html[data-design="cardboard"] #gameScreen > #status:not(.game-winner) { position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px #284b3540; }
@@ -9359,6 +9361,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] .cardboard-player:not([data-seat-position="top"]):not([data-seat-position="bottom"]) .cardboard-cards {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="left"], [data-seat-position="right"]) .cardboard-landmark { min-height: 68px; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="left"], [data-seat-position="right"]) .cardboard-landmark .cardboard-art { display: block; flex: 0 0 22px; height: 22px; background: transparent; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards {
         grid-auto-columns: 100px;
     }
