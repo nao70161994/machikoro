@@ -703,6 +703,7 @@ test('PC上席の多種類カードも出目・絵・名前・枚数を潰さず
     expect(await panel.locator('.cardboard-card').count()).toBeGreaterThan(6);
     expect(await panel.locator('.cardboard-card').evaluateAll(cards => cards.every(card =>
         card.clientHeight >= 90 && card.scrollHeight <= card.clientHeight + 1 &&
+        card.querySelector('.cardboard-art').getBoundingClientRect().height >= 34 &&
         card.querySelector('.cardboard-dice').scrollWidth <= card.querySelector('.cardboard-dice').clientWidth + 1
     ))).toBe(true);
     expect(await panel.locator('.cardboard-cards').evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true);

@@ -9416,7 +9416,19 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
         grid-auto-columns: 100px;
     }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-art {
-        height: 30px;
+        height: 36px;
+    }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-category {
+        margin: 0 4px;
+        line-height: 1.05;
+    }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-name {
+        padding: 2px 3px;
+        line-height: 1.1;
+    }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-count {
+        padding: 1px 4px 0;
+        line-height: 1.1;
     }
 }
 @media (prefers-reduced-motion: reduce) {
