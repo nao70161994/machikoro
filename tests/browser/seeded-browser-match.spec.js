@@ -19,6 +19,8 @@ test('固定seedの実ブラウザCPU対局は開始から勝者決定まで停�
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     await page.evaluate(() => {
+        GameSetupState.runtime.setCpuSpeed(100);
+        document.getElementById('cpuSpeed').value = '100';
         startGameNow(2, [
             { type: 'cpu', difficulty: 'weak', name: '固定CPU1' },
             { type: 'cpu', difficulty: 'weak', name: '固定CPU2' },

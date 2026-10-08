@@ -95,8 +95,10 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     };
                     const hitTargets = controls.filter(element => {
                         const box = element.getBoundingClientRect();
-                        return !element.disabled && box.left < innerWidth && box.right > 0 &&
-                            box.top < innerHeight && box.bottom > 0;
+                        const centerX = box.left + box.width / 2;
+                        const centerY = box.top + box.height / 2;
+                        return !element.disabled && centerX >= 0 && centerX < innerWidth &&
+                            centerY >= 0 && centerY < innerHeight;
                     }).map(element => {
                         const box = element.getBoundingClientRect();
                         const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
