@@ -35,6 +35,8 @@ const CardBoardField = (() => {
     let selectedIndex = null;
     let session = null;
     let receiptSession = null;
+    let narrowFourPlayerMode = null;
+    let resizeFrame = null;
     let feedbackTimer = null;
     let previousChoice = null;
     let previousBuiltLandmarks = null;
@@ -272,7 +274,12 @@ const CardBoardField = (() => {
         const seats = node('cardboardSeats');
         seats.dataset.playerCount = String(game.players.length);
         node('cardboardBoard').dataset.playerCount = String(game.players.length);
-        const indices = UiCardBoard.selectDetailIndices(game.players.length, { selfIndex, currentIndex, selectedIndex });
+        const focusPortrait = game.players.length === 4 && typeof window !== 'undefined' &&
+            typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px)').matches;
+        const indices = UiCardBoard.selectDetailIndices(game.players.length, {
+            selfIndex, currentIndex, selectedIndex,
+            ...(focusPortrait ? { maxVisible: 2, preferSelected: true } : {}),
+        });
         const others = indices.filter(index => index !== selfIndex);
         seats.querySelectorAll('.cardboard-player').forEach(element => {
             if (!indices.includes(Number(/** @type {HTMLElement} */ (element).dataset.playerIndex))) element.remove();
@@ -352,7 +359,21 @@ const CardBoardField = (() => {
             session = nextFacts.session;
         }
         facts = nextFacts;
+        narrowFourPlayerMode = nextFacts.game.players.length === 4 && typeof window !== 'undefined' &&
+            typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px)').matches;
         draw();
+    }
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+        window.addEventListener('resize', () => {
+            if (!facts || !enabled() || resizeFrame !== null) return;
+            const nextMode = facts.game.players.length === 4 && typeof window.matchMedia === 'function' &&
+                window.matchMedia('(max-width: 760px)').matches;
+            if (nextMode === narrowFourPlayerMode) return;
+            resizeFrame = window.requestAnimationFrame(() => {
+                resizeFrame = null;
+                if (facts && enabled()) render(facts);
+            });
+        }, { passive: true });
     }
     return Object.freeze({ render, updateMarket, detach, closeDisclosures, createScrollMemory });
 })();

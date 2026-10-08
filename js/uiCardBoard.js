@@ -10,11 +10,18 @@ const UiCardBoard = (() => {
     function selectDetailIndices(playerCount, options = {}) {
         const count = Number.isInteger(playerCount) ? Math.max(0, Math.min(10, playerCount)) : 0;
         const all = Array.from({ length: count }, (_, index) => index);
-        if (count <= 4) return all;
+        const maxVisible = Number.isInteger(options.maxVisible)
+            ? Math.max(0, Math.min(count, options.maxVisible))
+            : count <= 4 ? count : 3;
+        if (!maxVisible) return [];
+        if (count <= 4 && maxVisible === count) return all;
         const selected = new Set();
-        for (const index of [options.selfIndex, options.currentIndex, options.selectedIndex, ...all]) {
+        const priority = options.preferSelected === true
+            ? [options.selfIndex, options.selectedIndex, options.currentIndex, ...all]
+            : [options.selfIndex, options.currentIndex, options.selectedIndex, ...all];
+        for (const index of priority) {
             if (Number.isInteger(index) && index >= 0 && index < count) selected.add(index);
-            if (selected.size === 3) break;
+            if (selected.size === maxVisible) break;
         }
         return [...selected];
     }

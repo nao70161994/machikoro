@@ -90,7 +90,8 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             await selectTheme(page, theme);
             expect(await state(page)).toEqual(before);
         }
-        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
+        const expectedSeats = viewport.width < 761 && viewport.height > viewport.width ? 2 : 4;
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(expectedSeats);
         await expect(page.locator('#cardboardMarket #buildMenu')).toHaveCount(0);
         await expect(page.locator('#buildMenu')).toHaveCount(1);
         await expect(page.locator('#cardboardMarket [data-action="buildLandmark"]')).not.toHaveCount(0);
@@ -189,6 +190,27 @@ test('2人戦のカード盤面はPC・縦持ち・横持ちで街と市場を�
         await page.screenshot({ path: marketScreenshot });
         await testInfo.attach(`2人戦 ${viewport.name} 市場へ移動`, { path: marketScreenshot, contentType: 'image/png' });
     }
+});
+
+test('4人戦の縦持ちは自分と選択相手を市場の前に切り替えて表示する', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4);
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(2);
+    await page.locator('#cardboardRoster [data-cardboard-player-index="3"]').click();
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(2);
+    await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toBeVisible();
+    await expect(page.locator('#cardboardSeats [data-player-index="3"]')).toHaveClass(/cardboard-player-selected/);
+    const layout = await page.evaluate(() => ({
+        self: document.querySelector('#cardboardSeats .cardboard-player-self').getBoundingClientRect().top,
+        selected: document.querySelector('#cardboardSeats .cardboard-player-selected').getBoundingClientRect().top,
+        market: document.getElementById('cardboardMarket').getBoundingClientRect().top,
+        hiddenOpponent: document.querySelector('#cardboardSeats [data-player-index="1"]') === null,
+    }));
+    expect(layout.self).toBeLessThan(layout.selected);
+    expect(layout.selected).toBeLessThan(layout.market);
+    expect(layout.hiddenOpponent).toBe(true);
+    const screenshot = testInfo.outputPath('cardboard-4p-portrait-selected-city.png');
+    await page.screenshot({ path: screenshot, fullPage: true });
+    await testInfo.attach('4人戦の縦持ちで選んだ街と市場', { path: screenshot, contentType: 'image/png' });
 });
 
 test('ゲーム中に隠れたインストール案内はカード盤面の高さを使わない', async ({ page }, testInfo) => {

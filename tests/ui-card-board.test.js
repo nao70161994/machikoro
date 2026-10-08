@@ -75,7 +75,7 @@ runTest('席・名前の同一性と選択/現在/自分を分離し10席に制�
     assert.ok(html.includes('cardboard-color-count-red">赤 0</span>'));
     assert.ok(html.includes('cardboard-color-count-purple">紫 0</span>'));
 });
-runTest('2〜4人は全員、5〜10人は役割を優先し重複時も必ず3人を比較できる', () => {
+runTest('2〜4人は既定で全員、必要な画面幅では役割を絞り5〜10人は3人を比較できる', () => {
     for (let count = 2; count <= 4; count++) {
         assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, { selfIndex: 1, currentIndex: 1, selectedIndex: 1 }),
             Array.from({ length: count }, (_, index) => index));
@@ -100,6 +100,12 @@ runTest('2〜4人は全員、5〜10人は役割を優先し重複時も必ず3�
             }
         }
     }
+    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(4, {
+        selfIndex: 0, currentIndex: 2, selectedIndex: 3, maxVisible: 2, preferSelected: true,
+    }), [0, 3]);
+    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(4, {
+        selfIndex: 0, currentIndex: 2, selectedIndex: 0, maxVisible: 2, preferSelected: true,
+    }), [0, 2]);
 });
 runTest('不正な席は詳細表示へ持ち込まず入力を変更しない', () => {
     const roles = { selfIndex: 9, currentIndex: -1, selectedIndex: '1' };
