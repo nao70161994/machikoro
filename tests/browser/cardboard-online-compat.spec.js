@@ -1,5 +1,7 @@
 const { test, expect, devices } = require('@playwright/test');
 const { isDeepStrictEqual } = require('node:util');
+const fs = require('node:fs/promises');
+const path = require('node:path');
 
 // Four-client DOM snapshots on every evaluation exhausted the 90s deadline
 // after the gameplay checks. Keep trace actions/sources, explicit state-diff
@@ -110,6 +112,22 @@ test('4テーマ混在オンラインは途中切替と再接続でも同じ正�
             await expect(page.locator('#players > .player-box')).toHaveCount(4);
         }
         const initial = await synchronized();
+        for (let index = 0; index < pages.length; index += 1) {
+            await pages[index].evaluate(() => {
+                window.scrollTo({ top: 0, behavior: 'instant' });
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+            });
+            const screenshot = await pages[index].screenshot({ animations: 'disabled' });
+            await testInfo.attach(`4p-online-${themes[index]}-initial.png`, {
+                body: screenshot, contentType: 'image/png',
+            });
+            if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
+                const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
+                await fs.mkdir(artifactDir, { recursive: true });
+                await fs.writeFile(path.join(artifactDir, `4p-online-${themes[index]}-initial.png`), screenshot);
+            }
+        }
         let active;
         for (const page of pages) {
             if (await page.locator('#btnRoll').isVisible() && await page.locator('#btnRoll').isEnabled()) active = page;
