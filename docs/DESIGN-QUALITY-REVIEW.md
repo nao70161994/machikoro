@@ -335,3 +335,5 @@ Round 29で見つかった1440px全体表示の余白を減らすため、2〜4�
 変更後run [37946202053](https://github.com/nao70161994/machikoro/actions/runs/37946202053) でplaza visual/art、4人同期、viewport/focus/marketの全stepが成功。4人/10人および回転後marketに退行なし。1440px 4人overview画像では表示クラスタの見た目の拡大は小さく、少人数時の空き席削減に狙いを絞る必要があるため、2人overviewを追加撮影し、実DOMのworld幅/高さが旧固定領域より縮むことを確認するassertionを `plaza-overview.spec.js` に追加した。
 
 16画面baselineはこのrunでも差分比較が失敗。旧UI期待値との違いが残るため、未確認の画面を含む基準画像更新は行わず、独立レビューを続ける。
+
+2人overview検証 [37947711272](https://github.com/nao70161994/machikoro/actions/runs/37947711272) では、compact world寸法と2/4/10人の境界/非重複、plaza visual/art、4人オンライン同期、viewport/focus/marketの全stepが成功。2人・施設48枚/人のhigh-density screenshotでも街2つと市場が盤面内に収まり、重なりはない。whole-boardでは詳細カードが小さくなるが、これは全領域表示のoverviewであり、個別focusで街/市場を拡大する操作経路は維持されている。画像はWebKit emulationで、物理端末確認ではない。baselineは引き続き16枚中10枚fail/6枚passで、旧期待画像との構造差を目視レビュー後に更新する。
