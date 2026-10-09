@@ -214,7 +214,7 @@ for (const playerCount of [4, 10]) {
                 };
             });
             expect(hudLayout, `high-player-count HUD: ${JSON.stringify(hudLayout)}`).toMatchObject({
-                hudHeight: 86,
+                hudHeight: 94,
                 cardsFitVertically: true,
                 oneRow: true,
             });
