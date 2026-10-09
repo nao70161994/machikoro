@@ -6,7 +6,7 @@
 - 対象テーマ: にぎわい広場
 - 実施日: 2026-10-09
 - 比較基準: 「みんなと街コロ」の完成度。固有アートやキャラクターは使用しない。
-- 実ブラウザ確認: Termux 上の Chromium headless を CDP で操作。844×390 の画面エミュレーションであり、物理スマートフォンの実機確認ではない。
+- 実ブラウザ確認: Termux 上の Chromium headless を CDP で操作。端末サイズはブラウザエミュレーションであり、物理スマートフォンの実機確認ではない。
 
 ## 改善・再レビュー 1
 
@@ -92,3 +92,34 @@
 ### 回帰確認と未達事項
 
 `tests/browser/cardboard-table.spec.js` に320px縦持ちのフェーズ別操作検証を追加した。`npm test` は横持ち盤面とタイトル変更前の時点で実行し exit 0、今回のフェーズ操作に対応する `node tests/ui-card-board.test.js` も成功した。Playwrightの browser spec はTermuxの `android` 未対応で実行できないため、この新規ケースはCIで実行する必要がある。縦持ちは1画面に街/市場を全部押し込まず、上下スクロールで選ぶ構造である。実機操作、2〜4人の長時間完走、5〜10人の実進行、オンライン再接続、ランドマーク/勝利演出、4テーマ間の回帰は未完了であり、このGoalは継続する。
+
+## 改善・再レビュー 4
+
+### 実際のCPU対局
+
+1440×900のChromiumブラウザで、にぎわい広場の2人弱CPU戦を開始から勝利まで実行した。両CPUの手番が進み、108ターンで「CPU（弱）・1」が勝利画面へ到達した。完了時の正本状態は勝者あり、2人ともCPU、ブラウザ例外なし。表示監視ではサイコロ112回、カード発動530回、コイン移動120回、ランドマーク完成演出44回を観測した。中盤・終盤・勝利画面を撮影し、勝利画面では完成した街、ランドマーク、施設数、勝者と再戦導線を確認した。
+
+- [対局開始](../artifacts/design-review/round-4/cpu-match-start.png)
+- [中盤・50ターン付近](../artifacts/design-review/round-4/cpu-match-turn-50.png)
+- [終盤・100ターン付近](../artifacts/design-review/round-4/cpu-match-turn-100.png)
+- [勝利画面](../artifacts/design-review/round-4/cpu-match-winner.png)
+- [対局結果JSON](../artifacts/design-review/round-4/cpu-match-result.json)
+
+対局中の画面を目視し、中盤でも市場、現在の手番、所有施設、直近イベントを識別でき、終盤には施設アートが街の成長としてまとまって見えることを確認した。勝利画面は大きな街の一覧と結果・再戦操作を同じ流れで確認できる。一方、対局検証は2人戦・弱CPU・1440×900だけであり、4人戦やスマホ画面の実進行、ブラウザのCI spec実行、物理端末は未確認。これだけで商用品質の達成とは判定しない。
+
+追加で同じ固定seedの4人弱CPU戦も開始から完走させた。126ターンで「CPU（弱）・3」が勝利し、監視時間は約8分44秒、サイコロ128回、カード発動453回、コイン移動109回、ランドマーク完成演出52回、ブラウザ例外0件だった。4人の順位・残高と勝者の街を勝利画面で確認した。これはPC幅での実進行確認であり、4人スマホ横持ち、5〜10人CPU完走や対人オンライン対局の証明ではない。
+
+- [4人戦の開始](../artifacts/design-review/round-4/cpu-match-4p-start.png)
+- [4人戦の勝利画面](../artifacts/design-review/round-4/cpu-match-4p-winner.png)
+- [4人戦の結果JSON](../artifacts/design-review/round-4/cpu-match-4p-result.json)
+
+勝利後の4人対局状態を保持したまま、classic / sunset / plaza / cardboard を順に切り替えた。各切替前後の `GameSnapshot.serializeGameState` が4テーマすべてで完全一致し、表示テーマだけが変わることをCDP経由の実ブラウザで確認した。この確認はテーマ変更のゲーム状態不変性を検査したもので、オンライン再接続や各テーマの対人対局までは対象にしていない。
+
+### 残課題と次の確認
+
+- 4テーマの途中切替によるゲーム状態不変性を実ブラウザで確かめる。
+- 保存/復元、Undo、フォーカス復元、PWA更新、カード/市場スクロール、Reduced Motionの既存回帰テストと実ブラウザ検証結果を整理する。
+- 5〜10人の実進行、オンライン再接続、複数カード発動・大きな収益・ランドマークのイベント画面を確認する。
+- PlaywrightはTermux上でAndroid platform非対応のため起動できない。Chromium CDP確認をPlaywright CI成功として扱わず、CI実行結果を別途確認する。
+
+今回 `npm run test:browser-visual` も実行したが、Playwrightは `Unsupported platform: android` でブラウザ起動前に終了した。既存16画像は保持されている。UI関連のNodeテストと `npm test` は exit 0 で完了した。Playwrightでの画像回帰実行結果は引き続きCI環境での確認が必要。

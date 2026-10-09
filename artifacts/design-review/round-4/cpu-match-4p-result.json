@@ -1,0 +1,43 @@
+{
+  "turn": 126,
+  "phase": "build",
+  "winner": "CPU（弱）・3",
+  "coins": [
+    5,
+    14,
+    7,
+    30
+  ],
+  "landmarks": [
+    5,
+    3,
+    6,
+    1
+  ],
+  "players": [
+    {
+      "name": "CPU（弱）・1",
+      "cards": 27
+    },
+    {
+      "name": "CPU（弱）・2",
+      "cards": 27
+    },
+    {
+      "name": "CPU（弱）・3",
+      "cards": 27
+    },
+    {
+      "name": "CPU（弱）・4",
+      "cards": 29
+    }
+  ],
+  "presentation": {
+    "rolls": 128,
+    "activations": 453,
+    "transfers": 109,
+    "landmarkCelebrations": 52
+  },
+  "errors": [],
+  "elapsedMs": 523585
+}

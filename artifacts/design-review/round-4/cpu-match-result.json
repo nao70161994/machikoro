@@ -1,0 +1,35 @@
+{
+  "turn": 108,
+  "phase": "build",
+  "winner": "CPU（弱）・1",
+  "landmarks": [
+    6,
+    2
+  ],
+  "coins": [
+    12,
+    0
+  ],
+  "cpu": [
+    true,
+    true
+  ],
+  "speed": 100,
+  "health": {
+    "token": 481,
+    "scheduledUntil": 1791509022357,
+    "stepScheduled": false,
+    "stepActive": false,
+    "activeStep": null,
+    "isCpuTurn": true,
+    "currentPlayerIndex": 0,
+    "blockedReason": "winner"
+  },
+  "presentation": {
+    "rolls": 112,
+    "activations": 530,
+    "transfers": 120,
+    "landmarkCelebrations": 44
+  },
+  "errors": []
+}
