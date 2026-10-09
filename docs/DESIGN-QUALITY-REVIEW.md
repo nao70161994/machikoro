@@ -316,4 +316,5 @@ Run [37936184402](https://github.com/nao70161994/machikoro/actions/runs/37936184
 
 市場パネルを新しいviewportへ再フォーカスした後、10人終盤のカード名はpanel内、価格の下端だけが1.8px外側という計測値になった。短い横画面のart枠を36pxへ調整し、回転後の画像をassertion前に保存してレビューする。また1363×936の比較表操作に不要な固定frame待ちを外し、Playwrightの可視性/フォーカス待ちへ委ねる。
 
-- 変更後のWebKit結果はrun [37938067726](https://github.com/nao70161994/machikoro/actions/runs/37938067726) で確認中。
+- Run [37938067726](https://github.com/nao70161994/machikoro/actions/runs/37938067726) では、WebKitのplaza visual/art確認と4人オンライン同期が成功。16画面の既存theme baseline比較は差分で失敗し、基準画像は更新していない。viewport/focus/market検査は実行途中でcancelledとなり、成功扱いにはできない。Playwright依存導入に約17分かかった。
+- 同じcommitの未完了検査を再確認するため、`refresh_baselines=false` でworkflowを再dispatchした（run [37941318602](https://github.com/nao70161994/machikoro/actions/runs/37941318602)）。短横画面のカード名/価格boundsと回転後の市場表示の合格を、この再実行で確認する。baseline差分の理由も次回のrun出力で特定し、意図しない製品退行か既存の期待値ずれか判断する。
