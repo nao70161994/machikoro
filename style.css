@@ -8694,7 +8694,7 @@ html:is([data-design="sunset"], [data-design="plaza"]) body.accessibility-high-c
 }
 
 /* High player counts keep every seat in one scannable, horizontally scrollable HUD row. */
-@media (min-width: 601px) {
+@media (min-width: 601px) and (min-height: 601px) {
     html[data-design="plaza"] #plazaPlayerHud:has(button[data-player-index="4"]) {
         display: flex; flex-wrap: nowrap; height: 86px; max-height: 86px;
         overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin;
