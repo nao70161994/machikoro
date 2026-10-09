@@ -3021,8 +3021,11 @@ runTest('夕暮れタイトルはクラシック夜景canvasを重ねず背景�
     assert.ok(css.includes('html[data-design="sunset"] #cityCanvas { display: none; }'));
     const sunsetTitle = css.match(/html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) #titleScreen\s*{([^}]*)}/);
     assert.ok(sunsetTitle);
-    assert.ok(sunsetTitle[1].includes('#172a38 100%'));
-    assert.ok(!sunsetTitle[1].includes('#30273b'));
+    assert.ok(sunsetTitle[1].includes('background: transparent;'));
+    const sunsetViewport = css.match(/html\[data-design="sunset"\]:has\(body > #titleScreen:not\(\[style\*="display: none"\]\)\):not\(:has\(body\.accessibility-high-contrast\)\)\s*{([^}]*)}/);
+    assert.ok(sunsetViewport);
+    assert.ok(sunsetViewport[1].includes('#172a38 100%'));
+    assert.ok(!sunsetViewport[1].includes('#30273b'));
 });
 
 runTest('スマートフォンの夕暮れタイトルは主役の街景を設定カードの横幅まで広げる', () => {

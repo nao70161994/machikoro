@@ -41,6 +41,19 @@ body {
     margin: 0 auto;
 }
 
+/* The title backdrop and city scene belong to the viewport; keep content padding inside the title. */
+html:has(body > #titleScreen:not([style*="display: none"])) {
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1020 40%, #2a1a10 70%, #1a0a00 100%);
+}
+
+body:has(> #titleScreen:not([style*="display: none"])) {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
 body.modal-open,
 body.modal-open #titleScreen,
 body.modal-open #gameScreen {
@@ -49,6 +62,7 @@ body.modal-open #gameScreen {
 
 /* ===== タイトル画面 ===== */
 #titleScreen {
+    width: 100vw;
     min-height: 100vh;
     min-height: 100dvh;
     display: flex;
@@ -58,15 +72,15 @@ body.modal-open #gameScreen {
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    background: linear-gradient(180deg, #0a0a1a 0%, #1a1020 40%, #2a1a10 70%, #1a0a00 100%);
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+    background: transparent;
 }
 
 #cityCanvas {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
-    width: 100%;
+    width: 100vw;
     pointer-events: none;
     z-index: 0;
 }
@@ -81,6 +95,10 @@ body.modal-open #gameScreen {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+@media (min-width: 760px) {
+    #titleScreen > .title-content { margin-inline: auto; }
 }
 
 .title-header {
@@ -4218,6 +4236,11 @@ html:is([data-design="sunset"], [data-design="plaza"]) .card-detail-coin path {
     .local-save-generation-label { flex-basis: 100%; }
 }
 
+@media (max-width: 480px) {
+    .local-resume-actions { flex-wrap: wrap; align-items: stretch; }
+    .local-save-generation-label { flex: 1 0 100%; }
+}
+
 .new-game-divider {
     display: flex;
     align-items: center;
@@ -4317,7 +4340,9 @@ html:is([data-design="sunset"], [data-design="plaza"]) .card-detail-coin path {
 }
 
 .delete-save-btn {
-    width: 40px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
     padding: 0;
     background: #1a1a2e;
     border: 1px solid #6a7a8a;
@@ -4975,8 +5000,14 @@ html:is([data-design="sunset"], [data-design="plaza"]) body:not(.accessibility-h
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
 }
 html:is([data-design="sunset"], [data-design="plaza"]) body:not(.accessibility-high-contrast) #titleScreen {
+    background: transparent;
+}
+html:is([data-design="sunset"], [data-design="plaza"]):has(body > #titleScreen:not([style*="display: none"])):not(:has(body.accessibility-high-contrast)) {
     background: radial-gradient(ellipse at 75% 10%, #675047 0, transparent 52%),
         linear-gradient(180deg, #24394b 0%, #192938 65%, #172a38 100%);
+}
+html:has(body.accessibility-high-contrast > #titleScreen:not([style*="display: none"])) {
+    background: #000;
 }
 html:is([data-design="sunset"], [data-design="plaza"]) #cityCanvas { display: none; }
 html:is([data-design="sunset"], [data-design="plaza"]) body:not(.accessibility-high-contrast) .tab-bar,
@@ -5543,6 +5574,19 @@ html:is([data-design="sunset"], [data-design="plaza"]) body:not(.accessibility-h
         color: #ffedce;
         box-shadow: inset 0 1px rgba(255, 255, 255, 0.12);
     }
+}
+
+@media (orientation: landscape) and (max-height: 480px) and (min-width: 761px) {
+    .title-content { padding: 8px 20px; gap: 8px 16px; }
+    .title-header { align-self: center; }
+    .title-header h1 { font-size: 30px; letter-spacing: 2px; margin-bottom: 0; }
+    .title-logo-sub,
+    .title-logo-deco,
+    .sunset-hero { display: none; }
+    .title-buttons-row { margin: 0; }
+    .title-buttons-row .rules-btn { min-height: 36px; padding: 4px 12px; }
+    .tab-bar { min-height: 40px; }
+    .local-resume-notice { padding: 8px 10px; }
 }
 
 /* Treat facility art as a small illustrated scene, not a bare utility icon. */
