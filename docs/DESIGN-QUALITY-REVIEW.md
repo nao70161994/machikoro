@@ -283,3 +283,5 @@ Run [37923439916](https://github.com/nao70161994/machikoro/actions/runs/37923439
 - Round 23のログ操作順変更後の再検証run [37924923394](https://github.com/nao70161994/machikoro/actions/runs/37924923394) は、Playwright依存セットアップに約24分を要し、25分のjob timeoutでbaseline比較開始直後に終了した。ブラウザ結果は得られなかった。
 
 Run 37927610915ではbaseline比較の後、plaza field viewport/focus/market 8件と4人オンライン同期が成功。市場の名前/価格も画像で確認できた。visual-art側はカメラのパン/ピンチ後に出来事タブをクリックする操作で45秒 timeoutした。ジェスチャ状態と履歴クリックを同じケースに混ぜず、出来事→関連街フォーカスを独立した844×390 testへ分離して安全性を検証する。
+
+Round 24の分離後検証は [37929038545](https://github.com/nao70161994/machikoro/actions/runs/37929038545) で進行中。
