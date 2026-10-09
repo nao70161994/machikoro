@@ -345,3 +345,11 @@ baselineのclassic/sunset landscape actual/expectedを比較し、844×390pxで�
 Run [37949665650](https://github.com/nao70161994/machikoro/actions/runs/37949665650) ではlandscape compaction assertion、plaza visual/art、4人online同期、viewport/focus/marketが成功。classic landscape snapshotはpassへ戻り、9枚の旧画像差分が残った。差分のある9枚のexpected/actualを目視比較し、HUD、街詳細、market可視領域の現行レイアウトが意図した変更であることを確認した。workflow `refresh_baselines=true` のcandidate run [37951006261](https://github.com/nao70161994/machikoro/actions/runs/37951006261) が出力した全16枚と追跡baselineをchecksum比較し、異なる9枚のみをレビュー後に更新。他7枚は同一なので保持した。次の通常Plaza runで全16 snapshotの再現性を確認する。
 
 通常run [37951761321](https://github.com/nao70161994/machikoro/actions/runs/37951761321) は更新後の16/16 baseline比較、plaza visual/art、4人online同期、field viewport/focus/marketの全stepが成功。これでbaselineの再現性を確認できた。次の独立レビューでは他の非Plaza画面とイベント演出に範囲を広げる。
+
+## Round 32: latest HEADのPlaza画面を再確認
+
+HEAD `1792c3d8` でPlaza visual reviewを再実行。run [37953056688](https://github.com/nao70161994/machikoro/actions/runs/37953056688) は16画面baseline、Plazaのアート/終盤補助操作、4人オンライン同期、盤面viewport/focus/market検査がすべて成功した。端末上ではなくGitHub ActionsのWebKit/Chromiumで実行。
+
+artifactの320×844px画像では、中央市場は2列の大型アートカードで、施設名・出目・価格を読める。4人終盤の市場フォーカスでは全員の残高と色別施設数が上部HUDにあり、左右の街とカード市場が同時に見える。10人横画面では上部プレイヤー要約と市場フォーカスを使う構成を確認。狭い320pxではCPU名が省略されるが、プレイヤー識別と席番号は残る。今回の対象画像ではカード切れ/操作ボタンの画面外逸脱は見つからなかった。
+
+勝利artifactは1ターンのテスト状態で、街が疎な画像は通常対局の終局品質を証明しない。固定状態fixtureの目視だけではGoal 7の完走条件を満たさないため、次にrelease-test workflowのmobile WebKit job（seeded browser matchを含む）を最新HEADで実行し、実進行から終局したPlaza局の画像と操作結果を確認する。物理端末での確認は未実施。
