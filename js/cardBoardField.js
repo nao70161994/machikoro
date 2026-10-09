@@ -281,14 +281,17 @@ const CardBoardField = (() => {
         const seats = node('cardboardSeats');
         seats.dataset.playerCount = String(game.players.length);
         node('cardboardBoard').dataset.playerCount = String(game.players.length);
-        const focusPortrait = game.players.length === 4 && typeof window !== 'undefined' &&
-            typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px)').matches;
+        const compactPortrait = game.players.length === 4 && typeof window !== 'undefined' &&
+            typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches;
+        const compactLandscape = typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(min-width: 761px) and (max-width: 1024px) and (orientation: landscape) and (max-height: 480px)').matches;
+        const focusCompactTable = compactPortrait || compactLandscape;
         const indices = UiCardBoard.selectDetailIndices(game.players.length, {
             selfIndex, currentIndex, selectedIndex,
-            ...(focusPortrait ? { maxVisible: 2, preferSelected: true } : {}),
+            ...(focusCompactTable ? { maxVisible: 2, preferSelected: true } : {}),
         });
         const others = indices.filter(index => index !== selfIndex);
-        const focusedIndex = focusPortrait
+        const focusedIndex = focusCompactTable
             ? others.find(index => index === selectedIndex) ?? others.find(index => index === currentIndex) ?? others[0] ?? null
             : null;
         seats.querySelectorAll('.cardboard-player').forEach(element => {
