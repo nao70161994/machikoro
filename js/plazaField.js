@@ -316,6 +316,7 @@ const PlazaField = (() => {
         node('plazaCameraTools').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
             if (!button) return;
+            let focusAfterDisclosureClose = null;
             if (button.dataset.fieldPanel || button.dataset.fieldSection || button.dataset.fieldTarget) closePlayerInsights();
             if (button.dataset.fieldPanel) {
                 if (button.dataset.fieldPanel === 'events') {
@@ -347,12 +348,19 @@ const PlazaField = (() => {
                 if (heading) {
                     market.scrollTop += (heading.getBoundingClientRect().top - market.getBoundingClientRect().top) / camera.scale - 12;
                     heading.setAttribute('tabindex', '-1');
-                    heading.focus({ preventScroll: true });
+                    focusAfterDisclosureClose = heading;
                 }
             } else if (button.dataset.fieldTarget) focusTarget(button.dataset.fieldTarget);
             else if (button.dataset.fieldZoom) zoom(camera.scale * (button.dataset.fieldZoom === 'in' ? 1.2 : 1 / 1.2), viewport.clientWidth / 2, viewport.clientHeight / 2);
             const menu = button.closest('details');
             if (menu && !button.dataset.fieldZoom) menu.open = false;
+            if (focusAfterDisclosureClose) {
+                // A closed details element can clear focus moved during the same
+                // click dispatch. Focus the market heading after that transition.
+                requestAnimationFrame(() => {
+                    if (focusAfterDisclosureClose.isConnected) focusAfterDisclosureClose.focus({ preventScroll: true });
+                });
+            }
         });
         node('plazaEvents').addEventListener('keydown', event => {
             if (event.key === 'Escape' && node('plazaEvents').classList.contains('plaza-events-expanded')) {
