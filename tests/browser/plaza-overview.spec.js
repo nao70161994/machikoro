@@ -199,6 +199,27 @@ for (const playerCount of [4, 10]) {
         await testInfo.attach(`plaza-endgame-market-focus-${playerCount}p.png`, {
             path: marketScreenshot, contentType: 'image/png',
         });
+        if (playerCount >= 5 && width >= 900) {
+            const hudLayout = await page.evaluate(() => {
+                const hud = document.getElementById('plazaPlayerHud');
+                const hudBounds = hud.getBoundingClientRect();
+                const toolsBounds = document.getElementById('plazaCameraTools').getBoundingClientRect();
+                const cards = Array.from(hud.querySelectorAll('button')).map(button => button.getBoundingClientRect());
+                return {
+                    hudHeight: hudBounds.height,
+                    toolsTop: toolsBounds.top,
+                    hudBottom: hudBounds.bottom,
+                    cardsFitVertically: cards.every(card => card.top >= hudBounds.top && card.bottom <= hudBounds.bottom),
+                    oneRow: cards.every(card => Math.abs(card.top - cards[0].top) < 2),
+                };
+            });
+            expect(hudLayout, `high-player-count HUD: ${JSON.stringify(hudLayout)}`).toMatchObject({
+                hudHeight: 86,
+                cardsFitVertically: true,
+                oneRow: true,
+            });
+            expect(hudLayout.toolsTop).toBeGreaterThanOrEqual(hudLayout.hudBottom - 1);
+        }
         expect(await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             return { turn: game.turnCount, player: game.currentPlayerIndex,
