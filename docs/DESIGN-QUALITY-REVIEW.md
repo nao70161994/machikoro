@@ -159,3 +159,5 @@ Round 12の実対局勝利画像では、全画面に80個の紙吹雪が継続�
 - `node --check`（confetti.js、confetti unit/browser tests）、`node tests/confetti.test.js`、`git diff --check` は成功。変更後のブラウザ表示レビューは未完了。
 
 Round 13の初回CIでは、WebKitの勝利画面テスト1件が落下開始済みの粒の現在位置を「上端から来た」条件と比較して失敗した。描画演出の失敗ではなく、アニメーション進行中の座標を起動位置と誤認したテスト条件だったため、粒に不変の生成位置 `launchY` を持たせて検証するよう修正した。`node tests/confetti.test.js` は再度成功。修正コミットでWebKitを再実行し、添付画像を目視するまでRound 13は未完了とする。
+
+Round 13の2回目CIでは粒の生成位置チェックが成功し、スクリーンショット保存行まで到達したが、ブラウザテストがPlaywright fixture `testInfo` を引数で受け取っておらず失敗した。browser specのテスト引数を修正した。アプリ描画や紙吹雪の実行時エラーではない。再push後に同じCIで完走と画像レビューを確認する。

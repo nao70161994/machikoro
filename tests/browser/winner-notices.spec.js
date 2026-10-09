@@ -30,7 +30,7 @@ for (const sample of [
     { theme: 'classic', width: 1440, height: 900 },
     { theme: 'plaza', width: 844, height: 390 },
 ]) {
-    test(`勝利の通知は完成した結果の後から操作できる ${sample.theme} ${sample.width}px`, async ({ page }) => {
+    test(`勝利の通知は完成した結果の後から操作できる ${sample.theme} ${sample.width}px`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width: sample.width, height: sample.height });
         await stubAds(page);
         await page.goto('/');
