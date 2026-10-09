@@ -113,13 +113,13 @@ runTest('紙吹雪は街を隠しにくい量と濃さで上から一度だけ�
     runtime.context.startConfetti();
 
     const pieces = vm.runInContext('confettiPieces', runtime.context);
-    assert.strictEqual(pieces.length, 48);
-    assert.ok(pieces.every(piece => piece.y === piece.launchY && piece.launchY <= 0 && piece.launchY >= -96 && piece.r <= 4.5 && piece.opacity <= 0.7));
+    assert.strictEqual(pieces.length, 32);
+    assert.ok(pieces.every(piece => piece.y === piece.launchY && piece.launchY <= 0 && piece.launchY >= -96 && piece.r <= 4.5 && piece.opacity <= 0.4));
     pieces[0].y = runtime.canvas.height - 1;
     runtime.calls.intervalCallback();
 
     assert.ok(pieces[0].y > runtime.canvas.height, '画面下へ抜けた紙吹雪は上から再出現しない');
-    assert.ok(runtime.calls.alphas.every(alpha => alpha <= 0.7));
+    assert.ok(runtime.calls.alphas.every(alpha => alpha <= 0.4));
     assert.ok(runtime.calls.fillRect < pieces.length, '画面下に抜けた紙吹雪は描画しない');
     assert.strictEqual(runtime.calls.timeoutDelay, 3600);
 });

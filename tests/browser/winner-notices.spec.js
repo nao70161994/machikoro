@@ -58,8 +58,8 @@ for (const sample of [
                 maximumOpacity: Math.max(...confettiPieces.map(piece => piece.opacity)),
                 allEnterFromTop: confettiPieces.every(piece => piece.launchY <= 0 && piece.launchY >= -96),
             }));
-            expect(confettiReview.count).toBe(48);
-            expect(confettiReview.maximumOpacity).toBeLessThanOrEqual(0.7);
+            expect(confettiReview.count).toBe(32);
+            expect(confettiReview.maximumOpacity).toBeLessThanOrEqual(0.4);
             expect(confettiReview.allEnterFromTop).toBe(true);
             await page.waitForTimeout(500);
             const celebrationPath = testInfo.outputPath('plaza-winner-celebration-844x390.png');

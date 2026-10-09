@@ -28,7 +28,7 @@ function startConfetti() {
     const colors = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
         ? ['#ffe1a6', '#f5c86e', '#fff1d4', '#d98a6e', '#83a49b']
         : ['#f0c040','#e94560','#3b82f6','#22c55e','#a855f7','#ffffff'];
-    confettiPieces = Array.from({ length: 48 }, () => {
+    confettiPieces = Array.from({ length: 32 }, () => {
         const launchY = -Math.random() * 96;
         return {
             x: Math.random() * canvas.width,
@@ -37,7 +37,7 @@ function startConfetti() {
             r: Math.random() * 2 + 2.5,
             color: colors[Math.floor(Math.random() * colors.length)],
             speed: Math.random() * 2 + 2.5,
-            opacity: 0.45 + Math.random() * 0.25,
+            opacity: 0.25 + Math.random() * 0.15,
             angle: Math.random() * Math.PI * 2,
             spin: (Math.random() - 0.5) * 0.15,
         };
