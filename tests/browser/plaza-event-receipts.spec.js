@@ -33,6 +33,14 @@ async function prepare(page, viewport, count = 4) {
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
 }
 
+async function attachReceiptScreenshot(page, testInfo, viewportWidth, stage) {
+    const screenshot = await page.screenshot();
+    const screenshotPath = testInfo.outputPath(`plaza-receipt-${stage}-${viewportWidth}.png`);
+    await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+    await fs.writeFile(screenshotPath, screenshot);
+    await testInfo.attach(`receipt-${stage}-${viewportWidth}`, { path: screenshotPath, contentType: 'image/png' });
+}
+
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 },
     { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
     test(`ログを閉じたまま出目・複数発動・建設・目標達成が読める ${viewport.width}`, async ({ page }) => {
@@ -56,6 +64,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         if (viewport.width === 844) await page.locator('[data-field-panel="events"]').click();
         await receipt.locator('summary').click();
         await expect(receipt.locator('.plaza-receipt-activations')).toContainText('街1：森林 +6コイン');
+        await attachReceiptScreenshot(page, test.info(), viewport.width, 'roll');
         await receipt.locator('summary').focus();
         await page.evaluate(() => render());
         await expect(receipt.locator('details')).toHaveAttribute('open', '');
@@ -79,11 +88,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#plazaBuildReceipt')).toContainText('サイコロを1個か2個か選べる');
         await page.locator('[data-built-town-index="0"]').click();
         await expect(page.locator('#crashScreen')).toBeHidden();
-        const screenshot = await page.screenshot();
-        const screenshotPath = test.info().outputPath(`plaza-receipt-${viewport.width}.png`);
-        await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
-        await fs.writeFile(screenshotPath, screenshot);
-        await test.info().attach(`receipt-${viewport.width}`, { path: screenshotPath, contentType: 'image/png' });
+        await attachReceiptScreenshot(page, test.info(), viewport.width, 'build');
     });
 }
 
