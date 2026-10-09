@@ -301,3 +301,5 @@ PlazaFieldのResizeObserverは、viewportの縮小後もカメラ中心と倍率
 Run [37932248560](https://github.com/nao70161994/machikoro/actions/runs/37932248560) では回転後の市場全体がviewport内に入るassertionを含むplaza field検査が成功した。スクリーンショットを再確認すると、カード名と価格の下端が市場パネルからわずかに切れているため、短い横画面の市場アート枠を40pxへ調整し、回転後もカード名/価格が全体表示される条件を加える。
 
 Release pseudo E2E [37932055149](https://github.com/nao70161994/machikoro/actions/runs/37932055149) は3 jobすべて成功。Static safety、unit、PWA、online sync/reconnect、release pseudo E2E、Mobile WebKit、CPU difficulty smokeを確認した。このworkflowのcheckoutは回転後カメラ修正前のcommitなので、回転後変更はPlaza visual runで別途検証する。
+
+- 横画面市場アート縮小と回転後カード情報assertionはPlaza WebKit run [37933873646](https://github.com/nao70161994/machikoro/actions/runs/37933873646) で進行中。
