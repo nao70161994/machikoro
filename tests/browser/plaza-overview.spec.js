@@ -199,7 +199,7 @@ for (const playerCount of [4, 10]) {
         await testInfo.attach(`plaza-endgame-market-focus-${playerCount}p.png`, {
             path: marketScreenshot, contentType: 'image/png',
         });
-        if (playerCount >= 5 && width >= 900) {
+        if (playerCount >= 5 && marketLayout.viewport.width >= 900) {
             const hudLayout = await page.evaluate(() => {
                 const hud = document.getElementById('plazaPlayerHud');
                 const hudBounds = hud.getBoundingClientRect();
