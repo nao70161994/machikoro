@@ -135,7 +135,7 @@ test('広場の最近の出来事から関連する街へ安全に移動でき�
     await expect(page.locator('.log-related-highlight').first()).toBeAttached();
 });
 
-for (const playerCount of [4, 10]) {
+for (const playerCount of [2, 4, 10]) {
     test(`広場の${playerCount}人の育った街は地面の境界と他の街を越えない`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width: 1363, height: 936 });
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
@@ -184,6 +184,15 @@ for (const playerCount of [4, 10]) {
         await expect.poll(fits).toEqual([]);
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         await expect(page.locator('#plazaWorld .plaza-town-seat-flag')).toHaveCount(playerCount);
+        if (playerCount === 2) {
+            const overview = await page.evaluate(() => {
+                const world = document.getElementById('plazaWorld');
+                return { width: world.offsetWidth, height: world.offsetHeight };
+            });
+            expect(overview.width, `2人盤面幅: ${JSON.stringify(overview)}`).toBeLessThan(1680);
+            expect(overview.height, `2人盤面高: ${JSON.stringify(overview)}`).toBeLessThan(1380);
+            await page.screenshot({ path: testInfo.outputPath('plaza-overview-2p-1363x936.png') });
+        }
         await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('#plazaWorld .plaza-town-seat-flag')).every(flag => {
             const index = Number(flag.dataset.playerIndex);
             const rect = flag.getBoundingClientRect();

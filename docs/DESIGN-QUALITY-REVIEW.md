@@ -332,4 +332,6 @@ theme baselineは16枚中6枚pass、10枚fail。差分は `classic-landscape-844
 
 Round 29で見つかった1440px全体表示の余白を減らすため、2〜4人用の町/市場配置を固定1680×1380px以上の空領域から、各街と市場の実測幅/高さを元にしたカードナル配置へ変更した。北側の街、市場、左右の街、自分の街の間隔と外周paddingだけを残し、5〜10人用grid layoutは従来の間隔と配置を保つ。`node --check js/plazaTownLayout.js` と `node tests/plaza-town-layout.test.js` は成功（2〜10人の配置/境界/非重複、compact少人数、10人gridの12項目）。
 
-変更後の最初の実画面検証runで、1440px overviewの街カードが十分大きくなったか、320/390px・844×390pxでpan/zoomとプレイヤー表示が崩れないかを確認する。視覚ベースラインは旧UIとの差分が残るため、更新せず引き続き独立レビューする。
+変更後run [37946202053](https://github.com/nao70161994/machikoro/actions/runs/37946202053) でplaza visual/art、4人同期、viewport/focus/marketの全stepが成功。4人/10人および回転後marketに退行なし。1440px 4人overview画像では表示クラスタの見た目の拡大は小さく、少人数時の空き席削減に狙いを絞る必要があるため、2人overviewを追加撮影し、実DOMのworld幅/高さが旧固定領域より縮むことを確認するassertionを `plaza-overview.spec.js` に追加した。
+
+16画面baselineはこのrunでも差分比較が失敗。旧UI期待値との違いが残るため、未確認の画面を含む基準画像更新は行わず、独立レビューを続ける。
