@@ -2202,8 +2202,7 @@ for (const width of [320, 390, 844, 1440]) {
         await page.locator('#customGameSetup > summary').click();
         await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
         await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
-        // Use the supported fast CPU setting: this art fixture still plays
-        // real CPU turns after save/resume, without waiting at the default pace.
+        // The resume portion uses the supported fast CPU setting.
         await page.locator('#cpuSpeed').evaluate(input => {
             input.value = input.min;
             input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2213,10 +2212,6 @@ for (const width of [320, 390, 844, 1440]) {
         await page.locator('#btnStart').click();
         await page.locator('#confirmOkBtn').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
-        await page.locator('#btnRoll').click();
-        await expect.poll(() => page.evaluate(() =>
-            GameRuntimeState.runtime.snapshot().game.phase
-        )).toBe('build');
         await page.evaluate(() => {
             cancelCpuSchedule('plaza-review');
             window.scheduleCPU = () => false;

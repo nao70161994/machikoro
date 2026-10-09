@@ -284,4 +284,8 @@ Run [37923439916](https://github.com/nao70161994/machikoro/actions/runs/37923439
 
 Run 37927610915ではbaseline比較の後、plaza field viewport/focus/market 8件と4人オンライン同期が成功。市場の名前/価格も画像で確認できた。visual-art側はカメラのパン/ピンチ後に出来事タブをクリックする操作で45秒 timeoutした。ジェスチャ状態と履歴クリックを同じケースに混ぜず、出来事→関連街フォーカスを独立した844×390 testへ分離して安全性を検証する。
 
-Round 24の分離後検証は [37929038545](https://github.com/nao70161994/machikoro/actions/runs/37929038545) で進行中。
+Run [37929038545](https://github.com/nao70161994/machikoro/actions/runs/37929038545) では、分離した最近の出来事→関連する街の操作を含むplaza field viewport/focus/market全8検査と4人オンライン同期が成功。visual-art側では320pxと844pxの画面fixtureが開始後の実際のダイス/CPU進行を待っている間に45秒で止まり、自動復旧表示が出た。表示確認用の状態を開始直後に直接構成し、不要なCPU/ダイス待機を外す。再開後の購入操作は実UIで続ける。
+
+## Round 25: 視覚fixtureの初期状態を決定的にする
+
+320/390/844/1440の画像テストでは、開始時に実際のサイコロを振りCPUの進行を待ってから同じBuild状態をfixtureで作っていた。この待機は描画確認の目的には不要で、WebKitの320px/844pxで45秒のテストtimeoutと自動復旧状態を起こした。開始後ただちにCPU scheduleを止め、Build状態・コイン・ログを設定して画像/レイアウト確認へ進む。390pxの保存再開・市場から購入・ターン終了は通常のUI操作のまま維持する。
