@@ -2399,7 +2399,13 @@ for (const size of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
         expect(market.x).toBeGreaterThanOrEqual(-1);
         expect(market.x + market.width).toBeLessThanOrEqual(size.width + 1);
         const field = await page.locator('#plazaViewport').boundingBox();
-        if (size.width === 844) expect(field.height).toBeGreaterThan(220);
+        if (size.width === 844) {
+            const layout = await page.evaluate(() => Object.fromEntries([
+                ['status', '#status'], ['hud', '#plazaPlayerHud'], ['tools', '#plazaCameraTools'],
+                ['actions', '#gameScreen > .game-action-panel'], ['events', '#plazaEvents'],
+            ].map(([name, selector]) => [name, Math.ceil(document.querySelector(selector).getBoundingClientRect().height)])));
+            expect(field.height, JSON.stringify(layout)).toBeGreaterThan(220);
+        }
         expect(market.y).toBeGreaterThanOrEqual(field.y - 1);
         expect(market.y + market.height).toBeLessThanOrEqual(field.y + field.height + 1);
         await page.screenshot({ path: testInfo.outputPath(`plaza-market-${size.width}.png`) });
