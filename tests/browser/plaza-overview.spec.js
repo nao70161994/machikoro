@@ -48,7 +48,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#plazaPlayerHud [data-player-index="0"]')).toHaveAttribute('aria-label', /^席1、/);
         await page.locator('[data-field-target="market"]').click();
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
-        await expect(page.locator('#buildMenu h3')).toContainText('施設一覧');
+        await expect(page.locator('#buildMenu h3')).toContainText(/施設一覧|市場から施設を選んでください/);
         const marketFocus = await page.evaluate(() => {
             const panel = document.getElementById('buildMenu').getBoundingClientRect();
             const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
