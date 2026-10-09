@@ -9054,7 +9054,7 @@ html[data-design="cardboard"] body.game-finished #cardboardBoard { display: none
 
     html:is([data-design="sunset"], [data-design="plaza"]) body.game-finished #status .winner-screen > .sunset-town .town-street[data-town-layout="districts"] {
         min-height: 112px;
-        max-height: 132px;
+        max-height: 180px;
         aspect-ratio: 640 / 260;
     }
 

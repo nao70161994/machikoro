@@ -82,6 +82,7 @@ for (const sample of [
                     viewport: { width: innerWidth, height: innerHeight },
                     title: bounds('.winner-title'),
                     town: bounds('.winner-screen .sunset-town'),
+                    townArt: bounds('.winner-screen .sunset-town .town-street[data-town-layout="districts"]'),
                     stats: bounds('.winner-stats'),
                     rematch: bounds('#winnerRematchButton'),
                     share: bounds('.winner-share-actions'),
@@ -95,6 +96,7 @@ for (const sample of [
                 expect(rect.bottom, `${name} stays inside the first landscape viewport`).toBeLessThanOrEqual(resultLayout.viewport.height);
             }
             expect(resultLayout.town.left, 'the town sits beside the winner details').toBeGreaterThan(resultLayout.title.left);
+            expect(resultLayout.townArt.bottom - resultLayout.townArt.top, 'the town art uses the landscape space for readable buildings').toBeGreaterThanOrEqual(160);
         }
         await verifyWinnerNotices(page);
         await page.locator('#winnerRestartButton').click();
