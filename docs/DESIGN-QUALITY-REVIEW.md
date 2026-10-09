@@ -327,3 +327,9 @@ Run [37944311727](https://github.com/nao70161994/machikoro/actions/runs/37944311
 theme baselineは16枚中6枚pass、10枚fail。差分は `classic-landscape-844`, `classic-desktop-1440`, `sunset-phone-320`, `sunset-phone-390`, `sunset-landscape-844`, `sunset-desktop-1440`, `plaza-phone-320`, `plaza-phone-390`, `plaza-landscape-844`, `plaza-desktop-1440`。Plaza 390pxと844pxのexpected/actualを目視し、新画面では手番HUD、複数プレイヤー残高、dice action、建設操作が追加/再配置され、旧baselineはこれらを含まない旧画面だった。classic landscape、sunset 320px/1440pxも確認し、現行の操作とカード表示は崩れていない。差分は現行機能と旧画面の構造差で説明できるが、全16枚の品質確認と残る差分の独立再レビューが終わるまではbaselineを更新しない。
 
 残課題として、Plazaの1440px「全体」画面はカメラが盤面全域を収めるため街カードが小さくなり、左右の緑地が広く見える。全体overviewの縮尺/街間隔と、個別の街・市場focusを比較して改善する。実画面レビューの成果と未解決点は引き続き設計反復に使う。
+
+## Round 30: 少人数overviewの盤面密度
+
+Round 29で見つかった1440px全体表示の余白を減らすため、2〜4人用の町/市場配置を固定1680×1380px以上の空領域から、各街と市場の実測幅/高さを元にしたカードナル配置へ変更した。北側の街、市場、左右の街、自分の街の間隔と外周paddingだけを残し、5〜10人用grid layoutは従来の間隔と配置を保つ。`node --check js/plazaTownLayout.js` と `node tests/plaza-town-layout.test.js` は成功（2〜10人の配置/境界/非重複、compact少人数、10人gridの12項目）。
+
+変更後の最初の実画面検証runで、1440px overviewの街カードが十分大きくなったか、320/390px・844×390pxでpan/zoomとプレイヤー表示が崩れないかを確認する。視覚ベースラインは旧UIとの差分が残るため、更新せず引き続き独立レビューする。

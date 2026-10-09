@@ -33,13 +33,17 @@ for (let count = 2; count <= 10; count++) {
         }
     });
 }
-runTest('2〜4人は既存cardinal位置と北/市場/selfのoverflow移動を維持する', () => {
+runTest('2〜4人は盤面を詰めて配置し北/市場/selfのoverflowを避ける', () => {
+    const compact = verify(Array.from({ length: 4 }, (_, seat) => ({ seat, width: 450, height: 260 })), 420);
+    assert.ok(compact.width < 1680, '4人盤面の横方向の空白を減らす');
+    assert.ok(compact.height < 1380, '4人盤面の縦方向の空白を減らす');
+
     const result = verify(Array.from({ length: 4 }, (_, seat) => ({ seat, width: 450, height: seat === 2 ? 900 : 260 })), 800);
-    assert.deepStrictEqual(result.positions[1], { left: 70, top: 470 });
-    assert.deepStrictEqual(result.positions[2], { left: 580, top: 0 });
-    assert.deepStrictEqual(result.positions[3], { left: 1150, top: 470 });
-    assert.strictEqual(result.marketTop, 932);
-    assert.deepStrictEqual(result.positions[0], { left: 580, top: 1764 });
+    assert.deepStrictEqual(result.positions[1], { left: 40, top: 972 });
+    assert.deepStrictEqual(result.positions[2], { left: 557, top: 40 });
+    assert.deepStrictEqual(result.positions[3], { left: 1074, top: 972 });
+    assert.strictEqual(result.marketTop, 972);
+    assert.deepStrictEqual(result.positions[0], { left: 557, top: 1804 });
 });
 runTest('5〜10人は先頭4席を市場の下左上右に維持しextraを番号順に配置する', () => {
     for (let count = 5; count <= 10; count++) {
