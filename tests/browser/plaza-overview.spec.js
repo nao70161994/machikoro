@@ -64,6 +64,17 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         expect(marketFocus.panel.bottom).toBeLessThanOrEqual(marketFocus.viewport.bottom);
         expect(marketFocus.panel.width).toBeGreaterThanOrEqual(Math.min(viewport.width - 16, 570) - 1);
         if (viewport.width <= 600) expect(marketFocus.columns).toBe(2);
+        if (viewport.width === 844) {
+            const firstCard = await page.evaluate(() => {
+                const panel = document.getElementById('buildMenu').getBoundingClientRect();
+                const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
+                const name = document.querySelector('#buildMenu .card-btn .card-name').getBoundingClientRect();
+                const cost = document.querySelector('#buildMenu .card-btn .card-cost').getBoundingClientRect();
+                return [name, cost].every(rect => rect.height > 0 && rect.top >= panel.top &&
+                    rect.bottom <= panel.bottom && rect.top >= viewport.top && rect.bottom <= viewport.bottom);
+            });
+            expect(firstCard).toBe(true);
+        }
         const marketScreenshot = testInfo.outputPath(`plaza-market-focus-${viewport.width}x${viewport.height}.png`);
         await page.screenshot({ path: marketScreenshot, fullPage: false, animations: 'disabled' });
         await testInfo.attach(`plaza-market-focus-${viewport.width}x${viewport.height}.png`, {

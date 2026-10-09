@@ -8713,6 +8713,12 @@ html:is([data-design="sunset"], [data-design="plaza"]) body.accessibility-high-c
     }
 }
 
+@media (orientation: landscape) and (max-height: 600px) and (min-width: 601px) {
+    html[data-design="plaza"] #plazaWorld #buildMenu { padding: 8px; }
+    html[data-design="plaza"] body:not(.accessibility-high-contrast) #plazaWorld #buildMenu .build-card-section { padding: 0 6px 6px; }
+    html[data-design="plaza"] #plazaWorld #buildMenu .card-filter-bar { gap: 4px; margin-bottom: 2px; padding-block: 2px; }
+}
+
 /* Plaza income travel and compact guide: device-local presentation only. */
 .plaza-coin-amount {
     position: fixed; z-index: 1200; pointer-events: none;
