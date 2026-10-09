@@ -2226,6 +2226,7 @@ for (const width of [320, 390, 844, 1440]) {
             state.game.currentPlayer().coins = 30;
             // Related-log timer coverage must not depend on a random roll's income.
             state.game.addLog(LOG_TYPES.BUILD, '🏗️ 麦畑を建設！', { review: false });
+            state.game.addLog(LOG_TYPES.SYSTEM, `👤 ${state.game.currentPlayer().name}のターン`);
             render();
         });
         const town = page.locator('.player-box-self .town-street');
