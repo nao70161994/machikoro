@@ -353,3 +353,9 @@ HEAD `1792c3d8` でPlaza visual reviewを再実行。run [37953056688](https://g
 artifactの320×844px画像では、中央市場は2列の大型アートカードで、施設名・出目・価格を読める。4人終盤の市場フォーカスでは全員の残高と色別施設数が上部HUDにあり、左右の街とカード市場が同時に見える。10人横画面では上部プレイヤー要約と市場フォーカスを使う構成を確認。狭い320pxではCPU名が省略されるが、プレイヤー識別と席番号は残る。今回の対象画像ではカード切れ/操作ボタンの画面外逸脱は見つからなかった。
 
 勝利artifactは1ターンのテスト状態で、街が疎な画像は通常対局の終局品質を証明しない。固定状態fixtureの目視だけではGoal 7の完走条件を満たさないため、次にrelease-test workflowのmobile WebKit job（seeded browser matchを含む）を最新HEADで実行し、実進行から終局したPlaza局の画像と操作結果を確認する。物理端末での確認は未実施。
+
+## Round 33: 実プレイ完走後の勝利画面をレビュー
+
+`release-test.yml` をHEAD `1da8c5af` でdispatchしたrun [37954311955](https://github.com/nao70161994/machikoro/actions/runs/37954311955) は、release-test、CPU難易度smoke、mobile WebKitの全jobが成功。mobile WebKitではタイトル/操作ケースとseeded CPU対局が通り、固定勝利fixtureではない実局結果を保存した。2人クラシックは87ターンで、街は41/38施設。Plaza 4人戦は124ターンで、街は26/29/25/30施設。画像と結果JSONは `/data/data/com.termux/files/usr/tmp/machikoro-release-review-37954311955/release-mobile-webkit-review/_temp/machikoro-review/` に取得した。
+
+1440pxの2人対局終局画面は街の施設アートが盤面の主役になり、勝者、コイン、再戦/共有/タイトル導線が同時に見える。844×390pxの4人Plazaでは勝者と育った街を左右に分け、施設26枚とランドマーク6個の街が表示され、主要操作も画面内に収まる。スクリーンショットの誤った短期fixture評価を実局確認で解消した。CPU対局と横画面の終局について重大な崩れは確認しなかった。これはCI上のPlaywright/WebKit確認であり、物理スマートフォンでの実機確認ではない。次は対局中のカード連鎖/コイン移動の視覚理解と、タイトル保存データ画面を最新artifact上で続けてレビューする。
