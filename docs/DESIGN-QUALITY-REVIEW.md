@@ -297,3 +297,5 @@ Run [37930715856](https://github.com/nao70161994/machikoro/actions/runs/37930715
 ## Round 26: 画面回転後に選択中の盤面を再配置する
 
 PlazaFieldのResizeObserverは、viewportの縮小後もカメラ中心と倍率を維持するだけだった。選択中の市場が新しい短い画面から切れるため、寸法が変わったときは現在のfocus targetでカメラを再配置し、対象サイズを新しいviewportに合わせ直す。10人終盤のPC→844×390 browser testは、visibility/交差だけでなく市場パネル全体がviewport内に収まることを確認する。
+
+- WebKit検証は [37932248560](https://github.com/nao70161994/machikoro/actions/runs/37932248560) で進行中。Release pseudo E2Eは [37932055149](https://github.com/nao70161994/machikoro/actions/runs/37932055149) で進行中。
