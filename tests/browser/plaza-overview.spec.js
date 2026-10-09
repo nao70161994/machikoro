@@ -222,6 +222,13 @@ for (const playerCount of [4, 10]) {
         }
         if (playerCount === 10) {
             await page.setViewportSize({ width: 844, height: 390 });
+            await expect.poll(() => page.evaluate(() => {
+                const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
+                const market = document.getElementById('buildMenu').getBoundingClientRect();
+                return viewport.width === 844 && market.width > 0 && market.height > 0 &&
+                    market.left < viewport.right && market.right > viewport.left &&
+                    market.top < viewport.bottom && market.bottom > viewport.top;
+            })).toBe(true);
             const compactHud = await page.evaluate(() => {
                 const hud = document.getElementById('plazaPlayerHud');
                 const bounds = hud.getBoundingClientRect();
