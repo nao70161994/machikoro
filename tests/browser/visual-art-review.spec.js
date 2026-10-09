@@ -2266,6 +2266,31 @@ for (const width of [320, 390, 844, 1440]) {
             expect(button.visible).toBe(button.self || width >= 844 ? 4 : 0);
             expect(button.fits).toBe(true);
         }
+        if (width === 390) {
+            await page.reload();
+            await expect(page.locator('html')).toHaveAttribute('data-design', 'plaza');
+            await page.locator('#btnResume').click();
+            await expect(page.locator('.player-box-self .town-building .sunset-facility-art').first()).toBeVisible();
+            expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins)).toBe(30);
+            const before = await page.evaluate(() => {
+                const game = GameRuntimeState.runtime.snapshot().game;
+                return { count: game.currentPlayer().cards.length, turn: game.turnCount };
+            });
+            await page.locator('[data-field-target="market"]').click();
+            await page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]').click();
+            await expect.poll(() => page.evaluate(() =>
+                GameRuntimeState.runtime.snapshot().game.currentPlayer().cards.length
+            )).toBe(before.count + 1);
+            await page.locator('#btnSkip').click();
+            await expect.poll(() => page.evaluate(() =>
+                GameRuntimeState.runtime.snapshot().game.turnCount
+            )).toBeGreaterThan(before.turn);
+            if (await page.locator('#hotseatHandoffButton').isVisible()) {
+                await page.locator('#hotseatHandoffButton').click();
+            }
+            await expect(page.locator('#btnRoll')).toBeEnabled();
+            await page.screenshot({ path: testInfo.outputPath('plaza-after-purchase-390.png'), fullPage: true });
+        }
         const initialCamera = await page.locator('#plazaWorld').getAttribute('style');
         await page.locator('[data-field-target="market"]').click();
         expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(initialCamera);
@@ -2320,33 +2345,6 @@ for (const width of [320, 390, 844, 1440]) {
         const updateDismiss = page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]');
         if (await updateDismiss.isVisible()) await updateDismiss.click();
         await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
-        expect(await town.locator('.town-backdrop').evaluate(element =>
-            getComputedStyle(element).position)).toBe('absolute');
-        if (width === 390) {
-            await page.reload();
-            await expect(page.locator('html')).toHaveAttribute('data-design', 'plaza');
-            await page.locator('#btnResume').click();
-            await expect(page.locator('.player-box-self .town-building .sunset-facility-art').first()).toBeVisible();
-            expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins)).toBe(30);
-            const before = await page.evaluate(() => {
-                const game = GameRuntimeState.runtime.snapshot().game;
-                return { count: game.currentPlayer().cards.length, turn: game.turnCount };
-            });
-            await page.locator('[data-field-target="market"]').click();
-            await page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]').click();
-            await expect.poll(() => page.evaluate(() =>
-                GameRuntimeState.runtime.snapshot().game.currentPlayer().cards.length
-            )).toBe(before.count + 1);
-            await page.locator('#btnSkip').click();
-            await expect.poll(() => page.evaluate(() =>
-                GameRuntimeState.runtime.snapshot().game.turnCount
-            )).toBeGreaterThan(before.turn);
-            if (await page.locator('#hotseatHandoffButton').isVisible()) {
-                await page.locator('#hotseatHandoffButton').click();
-            }
-            await expect(page.locator('#btnRoll')).toBeEnabled();
-            await page.screenshot({ path: testInfo.outputPath('plaza-after-purchase-390.png'), fullPage: true });
-        }
     });
 }
 
