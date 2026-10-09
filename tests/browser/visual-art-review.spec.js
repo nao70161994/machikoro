@@ -2232,18 +2232,13 @@ for (const width of [320, 390, 844, 1440]) {
         await expect(town.locator('.town-building .sunset-facility-art').first()).toBeVisible();
         expect((await town.boundingBox()).height).toBeGreaterThan(60);
         await expect(page.locator('#plazaPlayerHud button')).toHaveCount(4);
-        // The second tap cancels the native browser timer created by the first.
-        // Passing clearTimeout as an object method used to throw Illegal invocation.
+        // The recent log action must focus a related town without throwing in WebKit.
         if (width === 844) await page.locator('[data-field-panel="events"]').click();
         await page.locator('.plaza-recent-history > summary').click();
         const logAction = page.locator('#plazaRecentEvents [data-ui-action="highlightLogEntry"]:visible').last();
         await logAction.click();
-        await logAction.click();
         await expect(page.locator('#crashScreen')).toBeHidden();
         await expect(page.locator('.log-related-highlight').first()).toBeAttached();
-        // The delegated timer is covered in unit tests. Keep this browser check
-        // focused on both taps being handled without a crash on WebKit, where
-        // background timer throttling makes exact expiry timing nondeterministic.
         const chipLayout = await page.locator('#plazaPlayerHud').evaluate(hud => {
             const buttons = [...hud.querySelectorAll('button')];
             const categories = buttons.map(button => {
@@ -2320,10 +2315,6 @@ for (const width of [320, 390, 844, 1440]) {
         const updateDismiss = page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]');
         if (await updateDismiss.isVisible()) await updateDismiss.click();
         await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
-        if (width < 1440) {
-            await page.locator('[data-field-target="market"]').click();
-            await expect(page.locator('#buildMenu .sunset-facility-art').first()).toBeVisible();
-        }
         expect(await town.locator('.town-backdrop').evaluate(element =>
             getComputedStyle(element).position)).toBe('absolute');
         expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);

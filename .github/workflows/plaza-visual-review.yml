@@ -39,7 +39,7 @@ jobs:
                   node-version: '20'
                   cache: npm
             - run: npm ci
-            - run: npx playwright install --with-deps webkit
+            - run: npx playwright install --with-deps webkit chromium
             - name: Compare theme baselines at target viewports
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
               run: npm run test:browser-visual -- --output=test-results/theme-baseline --retries=0 --workers=1
@@ -66,5 +66,7 @@ jobs:
               if: always()
               with:
                   name: theme-and-plaza-visual-review
-                  path: test-results/
+                  path: |
+                      test-results/**/*.png
+                      test-results/**/error-context.md
                   if-no-files-found: warn
