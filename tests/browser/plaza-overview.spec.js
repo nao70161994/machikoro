@@ -91,7 +91,6 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('#plazaComparisonClose').click();
         await expect(comparisonButton).toBeFocused();
         await expect(page.locator('#plazaComparison')).toBeHidden();
-        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         if (await page.locator('#btnBuildShortcut').isVisible()) {
             await page.locator('#btnBuildShortcut').click();
             await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');

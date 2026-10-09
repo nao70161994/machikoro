@@ -302,7 +302,7 @@ Run [37932248560](https://github.com/nao70161994/machikoro/actions/runs/37932248
 
 Release pseudo E2E [37932055149](https://github.com/nao70161994/machikoro/actions/runs/37932055149) は3 jobすべて成功。Static safety、unit、PWA、online sync/reconnect、release pseudo E2E、Mobile WebKit、CPU difficulty smokeを確認した。このworkflowのcheckoutは回転後カメラ修正前のcommitなので、回転後変更はPlaza visual runで別途検証する。
 
-- 横画面市場アート縮小と回転後カード情報assertionはPlaza WebKit run [37933873646](https://github.com/nao70161994/machikoro/actions/runs/37933873646) で進行中。
+- 横画面市場アート縮小と回転後カード情報assertionはPlaza WebKit run [37933873646](https://github.com/nao70161994/machikoro/actions/runs/37933873646) で実施。visual-artは成功したが、10人市場の名前/価格 boundsが未達だった。
 
 ## Round 27: 回転後のカード情報と320pxの描画負荷
 
@@ -310,4 +310,10 @@ Run 37933873646ではPlaza online syncは成功し、visual-artの320px fixture�
 
 320pxはプレイ画面表示fixtureを2人戦へ絞り、390/844/1440の4人戦と別のoverview 320px/4人戦検査で多人数表示を確認する。モード数ではなく低幅端末での自動復旧が再現する条件を切り分ける。
 
-- 変更後のWebKit結果はrun [37936184402](https://github.com/nao70161994/machikoro/actions/runs/37936184402) で実行中。
+Run [37936184402](https://github.com/nao70161994/machikoro/actions/runs/37936184402) では320px用fixtureを2人にした後、Plaza visual-artと4人オンライン同期が成功。field view testは二箇所失敗した。1363×936では比較表を閉じた後に追加していた2 frame待ちがページevaluate timeoutを起こしたため削除。10人の844×390リサイズでは市場全体は入ったが、施設価格下端がmarket panelを1.8px越えていた。回転後の画像とboundsをログへ残し、art枠を36pxへ詰めて再検証する。
+
+## Round 28: 短い横画面のカード価格を収める
+
+市場パネルを新しいviewportへ再フォーカスした後、10人終盤のカード名はpanel内、価格の下端だけが1.8px外側という計測値になった。短い横画面のart枠を36pxへ調整し、回転後の画像をassertion前に保存してレビューする。また1363×936の比較表操作に不要な固定frame待ちを外し、Playwrightの可視性/フォーカス待ちへ委ねる。
+
+- 変更後のWebKit結果は次のPlaza review runに追加する。

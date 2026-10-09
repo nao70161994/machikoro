@@ -8718,7 +8718,7 @@ html:is([data-design="sunset"], [data-design="plaza"]) body.accessibility-high-c
     html[data-design="plaza"] body:not(.accessibility-high-contrast) #plazaWorld #buildMenu .build-card-section { padding: 0 6px 6px; }
     html[data-design="plaza"] #plazaWorld #buildMenu .card-filter-bar { gap: 4px; margin-bottom: 2px; padding-block: 2px; }
     html[data-design="plaza"] #plazaWorld #buildMenu .card-btn .sunset-facility-art {
-        height: 40px; min-height: 40px; aspect-ratio: auto; margin-block: 2px;
+        height: 36px; min-height: 36px; aspect-ratio: auto; margin-block: 2px;
     }
 }
 
