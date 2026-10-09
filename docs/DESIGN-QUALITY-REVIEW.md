@@ -204,3 +204,9 @@ Round 14の画面検証を最新コードで再実行したCI run [37890980288](
 Round 15のCIでは2人CPU desktop完走と既存のタイトル/テーマ/receipt検証は通過した。新規4人plaza横画面も開始から勝利まで進み、出目/収益/送金/ランドマーク条件を満たしたが、終了時点の最新receiptはbuildログに切り替わっており、終了後にdice receiptが表示されるという誤ったassertだけが失敗した。Plaza画面が対局中にdice receiptを表示した時点をMutationObserverで計測し、実対局中の表示履歴として検証するよう直す。
 
 Round 15の再試行では4人plaza横画面matchが勝利まで達し、receiptの対局中表示も確認されたが、送金数assertがflakyになった。カード卓専用DOM observerがplazaでも稼働し、plaza側の構造化ログ集計と重複・不一致のイベント数を混在させていた。observerをcardboard限定へ移し、plazaの送金は実際に起きた場合の観測値として記録し、ランダムなCPU編成で毎回の発生を完走条件にしない。収入とランドマーク、出目、receipt表示は実対局の継続条件として維持する。修正後は再び横画面matchとartifact画像を確認する。
+
+Round 15の修正版CI run [37894107030](https://github.com/nao70161994/machikoro/actions/runs/37894107030) は全3ジョブ成功、WebKitの全シナリオもflakyなしで成功した。plaza 4人CPU対局は844×390pxのviewportで140 game turns、勝者「CPU（弱）・1」まで完走。構造化ログで出目19、収入/支払い148、送金6、ランドマーク建設4、画面に表示されたreceipt更新448回を記録し、施設32枚・ランドマーク6個の終盤街を勝利画面まで表示した。対局完走画像は[こちら](../artifacts/design-review/round-15-plaza-4p-landscape-winner.png)。これはGitHub Actions上のChromium viewport emulationで、物理端末ではない。
+
+独立レビューでは、4席情報・勝者・再戦・共有とタイトル導線は844×390px内で読め、育った街もアートパネルで見える。施設32枚の終盤では各施設名は表示せずアート主体の小さな配置になるため、詳細を確認するには街の選択/拡大機能が必要。画面全体のバランスは前進したが、施設単体の存在感・イベント演出・異なる進行密度での見やすさを引き続き磨く。
+
+Round 15はplaza 4人横画面の開始〜勝利サイクルを完了。Goal全体は継続し、2人plazaの複数サイズ、5〜10人、2〜4人中盤/イベント表示の実プレイ、4テーマのタイトル〜終局比較、オンラインの全操作/復旧、物理スマートフォン確認は未達。
