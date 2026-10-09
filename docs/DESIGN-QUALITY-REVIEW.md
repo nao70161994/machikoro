@@ -337,3 +337,7 @@ Round 29で見つかった1440px全体表示の余白を減らすため、2〜4�
 16画面baselineはこのrunでも差分比較が失敗。旧UI期待値との違いが残るため、未確認の画面を含む基準画像更新は行わず、独立レビューを続ける。
 
 2人overview検証 [37947711272](https://github.com/nao70161994/machikoro/actions/runs/37947711272) では、compact world寸法と2/4/10人の境界/非重複、plaza visual/art、4人オンライン同期、viewport/focus/marketの全stepが成功。2人・施設48枚/人のhigh-density screenshotでも街2つと市場が盤面内に収まり、重なりはない。whole-boardでは詳細カードが小さくなるが、これは全領域表示のoverviewであり、個別focusで街/市場を拡大する操作経路は維持されている。画像はWebKit emulationで、物理端末確認ではない。baselineは引き続き16枚中10枚fail/6枚passで、旧期待画像との構造差を目視レビュー後に更新する。
+
+## Round 31: 短い横画面で手番プレイヤーに集中
+
+baselineのclassic/sunset landscape actual/expectedを比較し、844×390pxでは非手番の街詳細が全て展開されてプレイヤー列を占めるため、手番街/サイコロ/市場が押し下げられている実課題を確認。`ui.js` はmax-height 600pxのlandscapeで非手番をsummaryへ折りたたみ、classic/sunsetの4人landscapeでは3つがcompactになるbrowser assertionを追加した。`node --check` と `node tests/ui-player-display.test.js` は成功。変更後のPlaza review workflowで再撮影し、縦320/390px、844×390px、1440px、既存online/market検査とbaseline差分を見直す。

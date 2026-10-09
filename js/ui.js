@@ -1293,7 +1293,8 @@ function renderPlayers() {
         plaza: document.documentElement?.dataset?.design === 'plaza',
         compactInactive: document.documentElement?.dataset?.design === 'plaza' || currentGame.players.length >= 5 ||
             (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
-                window.matchMedia('(max-width: 480px)').matches),
+                (window.matchMedia('(max-width: 480px)').matches ||
+                    window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches)),
         myPlayerIndex: primaryPlayerIndex,
         compactCurrentPlayer: document.documentElement?.dataset?.design === 'plaza' || primaryPlayerIndex >= 0 &&
             currentGame.currentPlayerIndex !== primaryPlayerIndex &&

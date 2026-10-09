@@ -103,6 +103,9 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     await expect(page.locator('#plazaPlayerHud')).toContainText('街1');
                     await expect(page.locator('#plazaPlayerHud')).toContainText('街4');
                 }
+                if (['classic', 'sunset'].includes(theme) && viewport.name === 'landscape-844') {
+                    await expect(page.locator('#players details.player-box-compact')).toHaveCount(3);
+                }
                 await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
                 await expect(page.locator('#gameScreen')).toBeVisible();
 
