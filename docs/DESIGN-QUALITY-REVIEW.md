@@ -239,3 +239,5 @@ Round 17のcandidate 16画像を目視した。再描画後は全4席HUDが表�
 Plaza self viewから市場が部分的に見切れていたため、`plaza-field-market` のフォーカス状態を追加し、市場パネルをmarketかall表示時だけ可視化する。施設の購入や詳細操作へは専用の「市場」カメラボタンで移動でき、all表示では街と市場を同時に確認できる。plaza overview browser testに各フォーカス時のvisibilityを追加する。ルール・市場在庫・ゲーム状態は変更しない。
 
 - 変更後の候補画像/市場操作レビューは未実施。CSSはfixtureで確認した320/390/844×390/1440の条件で再生成し、self表示の余白とmarket/all表示のアクセスを確認する。
+
+Round 19の市場画像レビューに向け、320/390幅ではカメラを縮小する代わりに市場パネル幅をviewportへ合わせて等倍で開き、カードグリッドを2列にする。844×390とPCは570pxパネルのまま。market focus時のパネル境界・幅・見出し・列数の検査と、320/390/1363/844の4 viewport screenshot artifactをoverview browser testへ追加した。これらの最新画面はCI未確認。

@@ -8435,6 +8435,11 @@ html[data-design="plaza"] #plazaWorld #buildMenu {
     box-shadow: 0 15px 25px #172b3388; touch-action: none;
 }
 html[data-design="plaza"] #plazaWorld #buildMenu .card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 600px) {
+    html[data-design="plaza"] #plazaWorld #buildMenu.plaza-market-exploring .card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
 html[data-design="plaza"] #plazaCameraTools {
     display: flex; position: absolute; left: 0; right: 0; top: calc(var(--plaza-status, 30px) + var(--plaza-hud, 74px));
     flex-direction: row; flex-wrap: wrap; gap: 3px; padding: 4px; border-radius: 0;

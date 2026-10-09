@@ -5,7 +5,7 @@ const { test, expect } = require('@playwright/test');
 test.use({ serviceWorkers: 'block' });
 
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }, { width: 1363, height: 936 }, { width: 844, height: 390 }]) {
-    test(`広場の状況・操作・盤面を分離し施設比較へ移動できる ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    test(`広場の状況・操作・盤面を分離し施設比較へ移動できる ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
         await page.setViewportSize(viewport);
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
@@ -155,6 +155,27 @@ for (const playerCount of [4, 10]) {
         await page.locator('[data-field-target="market"]').click();
         await expect.poll(fits).toEqual([]);
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
+        await expect(page.locator('#buildMenu h3')).toHaveText('施設一覧');
+        const marketLayout = await page.evaluate(() => {
+            const panel = document.getElementById('buildMenu').getBoundingClientRect();
+            const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
+            return {
+                panel: { left: panel.left, right: panel.right, top: panel.top, bottom: panel.bottom, width: panel.width },
+                viewport: { left: viewport.left, right: viewport.right, top: viewport.top, bottom: viewport.bottom },
+                columns: getComputedStyle(document.querySelector('#buildMenu .card-grid')).gridTemplateColumns.split(' ').length,
+            };
+        });
+        expect(marketLayout.panel.left).toBeGreaterThanOrEqual(marketLayout.viewport.left);
+        expect(marketLayout.panel.right).toBeLessThanOrEqual(marketLayout.viewport.right);
+        expect(marketLayout.panel.top).toBeGreaterThanOrEqual(marketLayout.viewport.top);
+        expect(marketLayout.panel.bottom).toBeLessThanOrEqual(marketLayout.viewport.bottom);
+        expect(marketLayout.panel.width).toBeGreaterThanOrEqual(Math.min(viewport.width - 16, 570) - 1);
+        if (viewport.width <= 600) expect(marketLayout.columns).toBe(2);
+        const marketScreenshot = testInfo.outputPath(`plaza-market-focus-${viewport.width}x${viewport.height}.png`);
+        await page.screenshot({ path: marketScreenshot, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`plaza-market-focus-${viewport.width}x${viewport.height}.png`, {
+            path: marketScreenshot, contentType: 'image/png',
+        });
         expect(await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             return { turn: game.turnCount, player: game.currentPlayerIndex,

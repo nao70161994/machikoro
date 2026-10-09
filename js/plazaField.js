@@ -196,16 +196,23 @@ const PlazaField = (() => {
             return;
         }
         pendingFocus = null;
-        node('buildMenu').classList.toggle('plaza-market-exploring', target === 'market');
+        const market = node('buildMenu');
+        market.classList.toggle('plaza-market-exploring', target === 'market');
+        if (target === 'market') {
+            market.style.width = `${Math.min(570, Math.max(200, viewport.clientWidth - 16))}px`;
+        } else {
+            market.style.removeProperty('width');
+            market.style.removeProperty('height');
+        }
         arrangeTowns();
         let x = worldWidth / 2, y = worldHeight / 2;
         if (target === 'all') camera.scale = Math.max(0.12, Math.min(viewport.clientWidth / worldWidth, viewport.clientHeight / worldHeight));
         else {
             const focusedTownScale = 1.1;
             camera.scale = Math.max(0.12, target === 'market'
-                ? Math.min(1, (viewport.clientWidth - 16) / 570)
+                ? Math.min(1, (viewport.clientWidth - 16) / market.offsetWidth)
                 : Math.min(focusedTownScale, (viewport.clientWidth - 16) / 450));
-            const item = node(target === 'market' ? 'buildMenu' : `playerBox${Number.isInteger(target) ? target : selfIndex}`);
+            const item = target === 'market' ? market : node(`playerBox${Number.isInteger(target) ? target : selfIndex}`);
             if (item && target === 'market') item.style.height = `${Math.max(100, Math.min(470, (viewport.clientHeight - 16) / camera.scale))}px`;
             arrangeTowns();
             if (item) { x = item.offsetLeft + item.offsetWidth / 2; y = item.offsetTop + item.offsetHeight / 2; }
@@ -471,6 +478,7 @@ const PlazaField = (() => {
         screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
         SharedMarketMount.release('plaza');
         node('buildMenu').style.removeProperty('height');
+        node('buildMenu').style.removeProperty('width');
         node('buildMenu').style.removeProperty('top');
         node('buildMenu').style.removeProperty('left');
         node('buildMenu').classList.remove('plaza-market-secondary', 'plaza-market-exploring');
