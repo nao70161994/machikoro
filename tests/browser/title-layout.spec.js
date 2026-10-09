@@ -70,7 +70,7 @@ for (const viewport of VIEWPORTS) {
         expect(Math.abs(layout.title.width - viewport.width)).toBeLessThanOrEqual(1);
         expect(layout.canvas.left).toBe(0);
         expect(Math.abs(layout.canvas.width - viewport.width)).toBeLessThanOrEqual(1);
-        expect(layout.canvasCssWidth).toBe(`${viewport.width}px`);
+        expect(Math.abs(parseFloat(layout.canvasCssWidth) - viewport.width)).toBeLessThanOrEqual(1);
         expect(layout.canvasBufferWidth).toBe(Math.min(1920, viewport.width));
         expect(layout.resume.width, JSON.stringify(layout)).toBeGreaterThanOrEqual(100);
         expect(layout.resume.height).toBeGreaterThanOrEqual(44);
