@@ -289,3 +289,5 @@ Run [37929038545](https://github.com/nao70161994/machikoro/actions/runs/37929038
 ## Round 25: 視覚fixtureの初期状態を決定的にする
 
 320/390/844/1440の画像テストでは、開始時に実際のサイコロを振りCPUの進行を待ってから同じBuild状態をfixtureで作っていた。この待機は描画確認の目的には不要で、WebKitの320px/844pxで45秒のテストtimeoutと自動復旧状態を起こした。開始後ただちにCPU scheduleを止め、Build状態・コイン・ログを設定して画像/レイアウト確認へ進む。390pxの保存再開・市場から購入・ターン終了は通常のUI操作のまま維持する。
+
+Round 25のWebKit再検証は [37930715856](https://github.com/nao70161994/machikoro/actions/runs/37930715856) で進行中。
