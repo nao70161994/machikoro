@@ -317,5 +317,5 @@ Run [37936184402](https://github.com/nao70161994/machikoro/actions/runs/37936184
 市場パネルを新しいviewportへ再フォーカスした後、10人終盤のカード名はpanel内、価格の下端だけが1.8px外側という計測値になった。短い横画面のart枠を36pxへ調整し、回転後の画像をassertion前に保存してレビューする。また1363×936の比較表操作に不要な固定frame待ちを外し、Playwrightの可視性/フォーカス待ちへ委ねる。
 
 - Run [37938067726](https://github.com/nao70161994/machikoro/actions/runs/37938067726) では、WebKitのplaza visual/art確認と4人オンライン同期が成功。16画面の既存theme baseline比較は差分で失敗し、基準画像は更新していない。viewport/focus/market検査は実行途中でcancelledとなり、成功扱いにはできない。Playwright依存導入に約17分かかった。
-- 同じcommitの未完了検査を再確認するため、`refresh_baselines=false` でworkflowを再dispatchした（run [37941318602](https://github.com/nao70161994/machikoro/actions/runs/37941318602)）。短横画面のカード名/価格boundsと回転後の市場表示の合格を、この再実行で確認する。baseline差分の理由も次回のrun出力で特定し、意図しない製品退行か既存の期待値ずれか判断する。
-- run 37938067726の所要時間を照合すると、viewport/focus/market検査が開始してから25分job timeoutでcancelledとなっていた。browser installだけで17〜20分かかるため、Plaza review workflowのjob timeoutを45分へ広げ、画面検査が全て終わる時間を確保する。実行負荷はGitHub Actions側で、端末上のブラウザ/テスト実行は避ける。
+- 未完了検査の再実行 [37941318602](https://github.com/nao70161994/machikoro/actions/runs/37941318602) は、browser導入に約21分、baseline比較に約3分を使い、既存16画面の差分で比較stepが失敗した。基準画像は更新していない。plaza visual/artとオンライン同期、market viewportの後続stepは起動したが、旧25分job上限が迫るため全検査結果は未確定。
+- run 37938067726のviewport/focus/market検査が開始後cancelledになった原因は、run全体が25分job timeoutに達したことと確認。browser導入だけで17〜21分かかるため、Plaza review workflowのtimeoutを45分へ拡張した（commit `f47d9904`）。この設定の再実行は [37944311727](https://github.com/nao70161994/machikoro/actions/runs/37944311727) で進行中。端末側ではブラウザ/テストを実行していない。
