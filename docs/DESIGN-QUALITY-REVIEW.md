@@ -316,4 +316,4 @@ Run [37936184402](https://github.com/nao70161994/machikoro/actions/runs/37936184
 
 市場パネルを新しいviewportへ再フォーカスした後、10人終盤のカード名はpanel内、価格の下端だけが1.8px外側という計測値になった。短い横画面のart枠を36pxへ調整し、回転後の画像をassertion前に保存してレビューする。また1363×936の比較表操作に不要な固定frame待ちを外し、Playwrightの可視性/フォーカス待ちへ委ねる。
 
-- 変更後のWebKit結果は次のPlaza review runに追加する。
+- 変更後のWebKit結果はrun [37938067726](https://github.com/nao70161994/machikoro/actions/runs/37938067726) で確認中。
