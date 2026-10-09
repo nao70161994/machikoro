@@ -220,6 +220,30 @@ for (const playerCount of [4, 10]) {
             });
             expect(hudLayout.toolsTop).toBeGreaterThanOrEqual(hudLayout.hudBottom - 1);
         }
+        if (playerCount === 10) {
+            await page.setViewportSize({ width: 844, height: 390 });
+            const compactHud = await page.evaluate(() => {
+                const hud = document.getElementById('plazaPlayerHud');
+                const bounds = hud.getBoundingClientRect();
+                const tools = document.getElementById('plazaCameraTools').getBoundingClientRect();
+                const buttons = Array.from(hud.querySelectorAll('button')).map(button => button.getBoundingClientRect());
+                return {
+                    height: bounds.height,
+                    toolsBottom: tools.bottom,
+                    hudTop: bounds.top,
+                    buttonsFit: buttons.length === 10 && buttons.every(button =>
+                        button.top >= bounds.top && button.bottom <= bounds.bottom && button.height >= 44),
+                };
+            });
+            expect(compactHud.height).toBe(44);
+            expect(compactHud.toolsBottom).toBeLessThanOrEqual(compactHud.hudTop + 1);
+            expect(compactHud.buttonsFit).toBe(true);
+            const mobileHudScreenshot = testInfo.outputPath('plaza-endgame-market-focus-10p-844x390.png');
+            await page.screenshot({ path: mobileHudScreenshot, fullPage: false, animations: 'disabled' });
+            await testInfo.attach('plaza-endgame-market-focus-10p-844x390.png', {
+                path: mobileHudScreenshot, contentType: 'image/png',
+            });
+        }
         expect(await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             return { turn: game.turnCount, player: game.currentPlayerIndex,
