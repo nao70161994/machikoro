@@ -423,21 +423,7 @@ const PlazaField = (() => {
                 focusTarget(pendingFocus);
             } else if (lastWidth && lastHeight) {
                 const width = viewport.clientWidth, height = viewport.clientHeight;
-                const targetWidth = focusedTarget === 'market' ? 570 : focusedTarget === 'all' ? worldWidth : 450;
-                const maxScale = focusedTarget === 'all'
-                    ? Math.min(width / worldWidth, height / worldHeight)
-                    : Math.min(focusedTarget === 'market' ? 1 : 1.1, Math.max(0.12, (width - 16) / targetWidth));
-                if (width < lastWidth && camera.scale > maxScale) {
-                    const centerX = (lastWidth / 2 - camera.x) / camera.scale;
-                    const centerY = (lastHeight / 2 - camera.y) / camera.scale;
-                    camera.scale = maxScale;
-                    camera.x = width / 2 - centerX * camera.scale;
-                    camera.y = height / 2 - centerY * camera.scale;
-                } else {
-                    camera.x += (width - lastWidth) / 2;
-                    camera.y += (height - lastHeight) / 2;
-                }
-                paint();
+                if (width !== lastWidth || height !== lastHeight) focusTarget(focusedTarget);
             }
             lastWidth = viewport.clientWidth; lastHeight = viewport.clientHeight;
             revealFocus();

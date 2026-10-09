@@ -282,7 +282,7 @@ Run [37923439916](https://github.com/nao70161994/machikoro/actions/runs/37923439
 - 37923439916の844×390画像はGitHub Actions上のWebKit viewport emulationで、物理端末の撮影ではない。
 - Round 23のログ操作順変更後の再検証run [37924923394](https://github.com/nao70161994/machikoro/actions/runs/37924923394) は、Playwright依存セットアップに約24分を要し、25分のjob timeoutでbaseline比較開始直後に終了した。ブラウザ結果は得られなかった。
 
-Run 37927610915ではbaseline比較の後、plaza field viewport/focus/market 8件と4人オンライン同期が成功。市場の名前/価格も画像で確認できた。visual-art側はカメラのパン/ピンチ後に出来事タブをクリックする操作で45秒 timeoutした。ジェスチャ状態と履歴クリックを同じケースに混ぜず、出来事→関連街フォーカスを独立した844×390 testへ分離して安全性を検証する。
+Run 37927610915ではbaseline比較の後、plaza field viewport/focus/marketと4人オンライン同期が成功。市場の名前/価格も画像で確認できた。visual-art側はカメラのパン/ピンチ後に出来事タブをクリックする操作で45秒 timeoutした。ジェスチャ状態と履歴クリックを同じケースに混ぜず、出来事→関連街フォーカスを独立した844×390 testへ分離して安全性を検証した。
 
 Run [37929038545](https://github.com/nao70161994/machikoro/actions/runs/37929038545) では、分離した最近の出来事→関連する街の操作を含むplaza field viewport/focus/market全8検査と4人オンライン同期が成功。visual-art側では320pxと844pxの画面fixtureが開始後の実際のダイス/CPU進行を待っている間に45秒で止まり、自動復旧表示が出た。表示確認用の状態を開始直後に直接構成し、不要なCPU/ダイス待機を外す。再開後の購入操作は実UIで続ける。
 
@@ -290,4 +290,10 @@ Run [37929038545](https://github.com/nao70161994/machikoro/actions/runs/37929038
 
 320/390/844/1440の画像テストでは、開始時に実際のサイコロを振りCPUの進行を待ってから同じBuild状態をfixtureで作っていた。この待機は描画確認の目的には不要で、WebKitの320px/844pxで45秒のテストtimeoutと自動復旧状態を起こした。開始後ただちにCPU scheduleを止め、Build状態・コイン・ログを設定して画像/レイアウト確認へ進む。390pxの保存再開・市場から購入・ターン終了は通常のUI操作のまま維持する。
 
-Round 25のWebKit再検証は [37930715856](https://github.com/nao70161994/machikoro/actions/runs/37930715856) で進行中。
+Run [37930715856](https://github.com/nao70161994/machikoro/actions/runs/37930715856) で visual-art-review、4人オンライン同期、plaza field viewport/focus/market の各stepが成功。全runは4テーマ基準画像10枚の既存差分によりfailureだが、Plaza関連stepはすべて成功した。開始後のBuild状態をfixtureで直接作る変更後、320/390/844/1440の描画と再開後の購入操作を確認した。
+
+独立目視では、10人戦をPCから844×390へ切り替えたとき、市場パネルがviewport上端へ寄りカード列の見出し部分が切れていた。ResizeObserverは選択中の視点を保持して市場を再配置していなかったため、viewport寸法変更時に現在選択中の街/市場/全体へ再フォーカスし、viewport内に市場全体が収まるassertionへ強化する。
+
+## Round 26: 画面回転後に選択中の盤面を再配置する
+
+PlazaFieldのResizeObserverは、viewportの縮小後もカメラ中心と倍率を維持するだけだった。選択中の市場が新しい短い画面から切れるため、寸法が変わったときは現在のfocus targetでカメラを再配置し、対象サイズを新しいviewportに合わせ直す。10人終盤のPC→844×390 browser testは、visibility/交差だけでなく市場パネル全体がviewport内に収まることを確認する。
