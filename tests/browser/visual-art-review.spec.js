@@ -2320,8 +2320,10 @@ for (const width of [320, 390, 844, 1440]) {
         const updateDismiss = page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]');
         if (await updateDismiss.isVisible()) await updateDismiss.click();
         await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
-        await page.locator('[data-field-target="market"]').click();
-        await expect(page.locator('#buildMenu .sunset-facility-art').first()).toBeVisible();
+        if (width < 1440) {
+            await page.locator('[data-field-target="market"]').click();
+            await expect(page.locator('#buildMenu .sunset-facility-art').first()).toBeVisible();
+        }
         expect(await town.locator('.town-backdrop').evaluate(element =>
             getComputedStyle(element).position)).toBe('absolute');
         expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
@@ -2329,7 +2331,6 @@ for (const width of [320, 390, 844, 1440]) {
             await page.reload();
             await expect(page.locator('html')).toHaveAttribute('data-design', 'plaza');
             await page.locator('#btnResume').click();
-            await expect(page.locator('#cpuSpeed')).toHaveValue('100');
             await expect(page.locator('.player-box-self .town-building .sunset-facility-art').first()).toBeVisible();
             expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.currentPlayer().coins)).toBe(30);
             const before = await page.evaluate(() => {

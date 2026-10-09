@@ -8600,6 +8600,7 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     html[data-design="plaza"] #gameScreen > .game-action-panel > .buttons { margin-right: 220px; }
     html[data-design="plaza"] #gameScreen .game-action-panel > .buttons > button { min-height: 44px; padding: 4px; font-size: 13px; }
     html[data-design="plaza"] .game-action-toolbar { position: absolute; right: 4px; bottom: 4px; width: 216px; min-height: 44px; box-sizing: border-box; padding: 0; background: transparent; }
+    html[data-design="plaza"] #gameScreen:has(#diceChoose:not(:empty)) .game-action-toolbar { visibility: hidden; pointer-events: none; }
     html[data-design="plaza"] .game-action-toolbar > details { flex: 1; }
     html[data-design="plaza"] .game-action-toolbar > details > summary {
         display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 44px;
