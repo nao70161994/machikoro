@@ -310,4 +310,4 @@ Run 37933873646ではPlaza online syncは成功し、visual-artの320px fixture�
 
 320pxはプレイ画面表示fixtureを2人戦へ絞り、390/844/1440の4人戦と別のoverview 320px/4人戦検査で多人数表示を確認する。モード数ではなく低幅端末での自動復旧が再現する条件を切り分ける。
 
-- 変更後のWebKit結果は次のPlaza review runに追加する。
+- 変更後のWebKit結果はrun [37936184402](https://github.com/nao70161994/machikoro/actions/runs/37936184402) で実行中。
