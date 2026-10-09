@@ -53,14 +53,22 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 - 横持ちの2〜4人戦では、プレイヤーHUDを画面上部に横一列で配置。4人分の残高・施設色別枚数・ランドマーク進捗を約200px幅の席カードにまとめる。
 - 5〜10人戦では自分の席を残し、相手席の列だけを横スクロールできるようにする。
 - 盤面ビューを横幅いっぱいに戻し、HUDの実測高さを盤面開始位置へ反映する。
+- 横画面では空のイベント帯を隠し、出目や重要イベントが発生したときだけ表示する。
 - 下部のダイス操作は全幅で使い、補助設定は右側の44pxターゲット内に短い見出しで置く。
+- 街を選んだときの最大表示倍率を1.1に上げ、横幅を狭めたときは表示中の街が画面内へ収まるまでカメラを縮小して中心を保つ。
+- PC幅では席カードのプレイヤー名を15px、残高を14pxへ拡大する。
 - PWA更新通知も横持ちで画面幅を使えるようにする。
 
 ### 検証状況
 
-- CDPブラウザで修正途中の横HUDを表示し、4席が各203×56pxで全幅に収まり、横はみ出しがないことを確認した。最終の下部操作レイアウトCSSを加えた後の画面撮影と目視レビューは未実施。スクリーンショットの数値や見た目を最終版の確認証拠として扱わない。
+- CDPでChromiumを実操作し、844×390pxの4人戦で4席が各203×56px、街の施設アートが53px、盤面ビューが844×188pxで表示されることを確認。横はみ出しは0px。
+- 席3を実クリックして街の詳細を開き、閉じられることを確認。ダイスを実クリックすると空のイベント帯が出目レシートへ切り替わり、`出目 6`を表示した。
+- 10人戦では相手HUDが629px幅・1859pxスクロール幅となり、横スクロール後に席10を選択して詳細を開いた。文書横はみ出しは0px。
+- 同じ4人戦の状態で844×390から390×844へ回転すると街はx=8〜382px、幅374pxに収まる。320×844ではx=8〜312px、幅304pxに収まる。いずれも文書横はみ出し0px。縦画面はカメラを回転追従させたブラウザ表示で、実機センサーによる回転ではない。
+- 1440×936pxではHUDのカード名15px・残高14px、席カード幅355px、盤面横幅1440pxで表示され、横はみ出しは0px。
+- [修正前・844×390pxの4人戦](../artifacts/design-review/round-6-plaza-landscape-before.png)、[横持ち4人戦・修正後](../artifacts/design-review/round-6-plaza-landscape-final.png)、[出目レシート](../artifacts/design-review/round-6-plaza-landscape-roll.png)、[縦320px](../artifacts/design-review/round-6-plaza-portrait-320.png)、[縦390px](../artifacts/design-review/round-6-plaza-portrait-390.png)、[PC 1440px](../artifacts/design-review/round-6-plaza-desktop-1440.png)。すべてChromiumのviewport emulationで撮影しており、物理端末の実機確認ではない。
 - `node tests/plaza-town-layout.test.js`, `node tests/ui-plaza-events.test.js`, `node tests/ui-plaza-feedback.test.js`: 成功。
 - `node --check js/plazaField.js`, `node --check tests/browser/plaza-landscape-hud.spec.js`: 成功。
-- `tests/browser/plaza-landscape-hud.spec.js` は4人の席表示・操作、10人時の相手席スクロール・選択を自動確認する。TermuxのPlaywrightはAndroid platformをサポートせず起動できないため、このspecはCIでの実行が必要。
+- `tests/browser/plaza-landscape-hud.spec.js` は横4人、2サイズへの回転、PC 1440px、10人の相手席スクロール・選択、空イベント帯と出目表示を確認する。TermuxのPlaywrightはAndroid platformをサポートせず起動できないため、このspecはCIでの実行が必要。ここでのブラウザ実操作はCDP経由で、Playwright成功と混同しない。
 
-このサイクルは最終画面の再撮影と操作確認が残っており、完了扱いにしない。タイトル修正と合わせても、4テーマ横断・ゲーム中盤/終盤・オンライン再接続・CPU完走・物理端末の評価は未達。
+独立目視レビューでは、横HUD・街アート倍率・出目表示・各画面幅での収まりは改善した。一方、街の背景はまだ広い空き地が目立ち、施設数が増えた中盤/終盤の視覚密度、2人戦、全体盤面・市場への視線誘導、他テーマとの品質差、物理端末は未評価。この横画面サイクルは序盤4人戦について完了したが、タイトル修正と合わせたGoal全体は未完了。

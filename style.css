@@ -8440,6 +8440,9 @@ html[data-design="plaza"] #gameScreen > #plazaEvents {
     padding: 4px 8px; margin: 0; border-radius: 0; box-sizing: border-box;
     overflow: auto; z-index: 5; background: #102c35;
 }
+html[data-design="plaza"] #gameScreen > #plazaEvents:not(:has(#plazaBuildReceipt > *, #plazaDiceReceipt .plaza-receipt-dice, #plazaDiceReceipt .plaza-receipt-featured, #plazaDiceReceipt .plaza-important-event, #plazaDiceReceipt .plaza-receipt-totals:not(:empty), .plaza-recent-history[open])) {
+    display: none;
+}
 html[data-design="plaza"] #plazaEvents h2,
 html[data-design="plaza"] #plazaRecentEvents .log-item:not(:last-child) { display: none; }
 html[data-design="plaza"] #plazaRecentEvents .log-item { font-size: 11px; margin: 0; padding: 0; }
@@ -8547,9 +8550,9 @@ html[data-design="plaza"] #plazaComparison:not([hidden]) { bottom: calc(var(--pl
         height: 64px; max-height: 64px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px;
         overflow: hidden; background: #102c35;
     }
-    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
-    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: flex; flex: 0 0 auto; min-width: 0; gap: 4px; }
-    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
+    html[data-design="plaza"] #gameScreen #plazaPlayerHud .plaza-hud-self,
+    html[data-design="plaza"] #gameScreen #plazaPlayerHud .plaza-hud-opponents { display: flex; flex: 0 0 auto; min-width: 0; gap: 4px; }
+    html[data-design="plaza"] #gameScreen #plazaPlayerHud .plaza-hud-opponents {
         flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin;
     }
     html[data-design="plaza"] #plazaPlayerHud button {
@@ -9393,4 +9396,12 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
 /* All three local tool disclosures keep a 44px target in the narrow portrait plaza HUD. */
 @media (orientation: portrait) and (max-width: 600px) {
     html[data-design="plaza"] .game-action-toolbar > details > summary { min-height: 44px; display: flex; align-items: center; font-size: 12px; }
+}
+@media (min-width: 1000px) and (min-height: 601px) {
+    html[data-design="plaza"] #plazaPlayerHud button { padding: 8px 10px; font-size: 14px; line-height: 1.25; }
+    html[data-design="plaza"] #plazaPlayerHud strong { font-size: 15px; }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-seat-mark { min-width: 26px; width: auto; height: 26px; font-size: 14px; }
+    html[data-design="plaza"] #plazaPlayerHud button > .plaza-player-coins { font-size: 14px; }
+    html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type { font-size: 12px; }
+    html[data-design="plaza"] #plazaPlayerHud small { font-size: 12px; }
 }

@@ -72,6 +72,7 @@ const PlazaField = (() => {
     let worldWidth = 1680;
     let worldHeight = 1380;
     let pendingFocus = null;
+    let focusedTarget = 'self';
     const pointers = new Map();
     let gesture = null;
     let dragged = false;
@@ -186,6 +187,7 @@ const PlazaField = (() => {
         paint();
     }
     function focusTarget(target) {
+        focusedTarget = target;
         const viewport = node('plazaViewport');
         if (!viewport.clientWidth || !viewport.clientHeight) {
             pendingFocus = target;
@@ -197,9 +199,10 @@ const PlazaField = (() => {
         let x = worldWidth / 2, y = worldHeight / 2;
         if (target === 'all') camera.scale = Math.max(0.12, Math.min(viewport.clientWidth / worldWidth, viewport.clientHeight / worldHeight));
         else {
+            const focusedTownScale = 1.1;
             camera.scale = Math.max(0.12, target === 'market'
                 ? Math.min(1, (viewport.clientWidth - 16) / 570)
-                : Math.min(0.85, (viewport.clientWidth - 16) / 450));
+                : Math.min(focusedTownScale, (viewport.clientWidth - 16) / 450));
             const item = node(target === 'market' ? 'buildMenu' : `playerBox${Number.isInteger(target) ? target : selfIndex}`);
             if (item && target === 'market') item.style.height = `${Math.max(100, Math.min(470, (viewport.clientHeight - 16) / camera.scale))}px`;
             arrangeTowns();
@@ -410,8 +413,21 @@ const PlazaField = (() => {
             if (pendingFocus !== null) {
                 focusTarget(pendingFocus);
             } else if (lastWidth && lastHeight) {
-                camera.x += (viewport.clientWidth - lastWidth) / 2;
-                camera.y += (viewport.clientHeight - lastHeight) / 2;
+                const width = viewport.clientWidth, height = viewport.clientHeight;
+                const targetWidth = focusedTarget === 'market' ? 570 : focusedTarget === 'all' ? worldWidth : 450;
+                const maxScale = focusedTarget === 'all'
+                    ? Math.min(width / worldWidth, height / worldHeight)
+                    : Math.min(focusedTarget === 'market' ? 1 : 1.1, Math.max(0.12, (width - 16) / targetWidth));
+                if (width < lastWidth && camera.scale > maxScale) {
+                    const centerX = (lastWidth / 2 - camera.x) / camera.scale;
+                    const centerY = (lastHeight / 2 - camera.y) / camera.scale;
+                    camera.scale = maxScale;
+                    camera.x = width / 2 - centerX * camera.scale;
+                    camera.y = height / 2 - centerY * camera.scale;
+                } else {
+                    camera.x += (width - lastWidth) / 2;
+                    camera.y += (height - lastHeight) / 2;
+                }
                 paint();
             }
             lastWidth = viewport.clientWidth; lastHeight = viewport.clientHeight;
