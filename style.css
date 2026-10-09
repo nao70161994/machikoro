@@ -59,14 +59,24 @@ body.modal-open #gameScreen {
     overflow-x: hidden;
     overflow-y: auto;
     padding-bottom: env(safe-area-inset-bottom, 0);
+    isolation: isolate;
+    background: transparent;
+}
+
+#titleScreen::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background: linear-gradient(180deg, #0a0a1a 0%, #1a1020 40%, #2a1a10 70%, #1a0a00 100%);
 }
 
 #cityCanvas {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     left: 0;
-    width: 100%;
+    width: 100vw;
     pointer-events: none;
     z-index: 0;
 }
@@ -2299,6 +2309,8 @@ html:is([data-design="sunset"], [data-design="plaza"]) .pending-choice-detail {
 .accessibility-high-contrast #titleScreen,
 .accessibility-high-contrast #gameScreen,
 .accessibility-high-contrast .modal { background-color: #000; color: #fff; }
+.accessibility-high-contrast #titleScreen::before { background: #000; }
+.accessibility-high-contrast #cityCanvas { display: none; }
 .accessibility-high-contrast .panel,
 .accessibility-high-contrast .setting-section,
 .accessibility-high-contrast .player-box,
@@ -4213,7 +4225,7 @@ html:is([data-design="sunset"], [data-design="plaza"]) .card-detail-coin path {
     min-height: 44px;
 }
 
-@media (max-width: 389px) {
+@media (max-width: 480px) {
     .local-resume-actions { flex-wrap: wrap; }
     .local-save-generation-label { flex-basis: 100%; }
 }
@@ -4317,7 +4329,10 @@ html:is([data-design="sunset"], [data-design="plaza"]) .card-detail-coin path {
 }
 
 .delete-save-btn {
-    width: 40px;
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
     padding: 0;
     background: #1a1a2e;
     border: 1px solid #6a7a8a;
@@ -9906,6 +9921,31 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
         padding: 1px 4px 0;
         line-height: 1.1;
     }
+}
+@media (orientation: landscape) and (min-width: 761px) and (max-height: 480px) {
+    #titleScreen {
+        align-items: stretch;
+    }
+    #titleScreen .title-content {
+        gap: 8px 16px;
+        padding: 8px 16px;
+    }
+    #titleScreen .title-header {
+        display: flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0;
+    }
+    #titleScreen .title-header h1 { font-size: 28px; }
+    #titleScreen .title-logo-sub,
+    #titleScreen .title-logo-deco,
+    #titleScreen .sunset-hero { display: none; }
+    #titleScreen .title-buttons-row { flex: 0 0 auto; margin: 0; }
+    #titleScreen .rules-btn { min-height: 44px; padding: 4px 12px; }
+    #titleScreen .tab-bar { min-height: 44px; align-self: center; }
+    #titleScreen .tab-btn { min-height: 44px; padding: 4px 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
     html[data-design="cardboard"] #cardboardBoard *,
