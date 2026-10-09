@@ -217,3 +217,10 @@ Round 15の実対局画像を独立レビューし、plaza 4人・844×390pxの�
 
 - 変更後のCIスクリーンショット確認は未実施。ローカル端末ではPlaywrightを起動せず、既存の勝利画面ブラウザジョブで検証する。
 - 他の画面比率や物理端末、施設が少ない勝利時への影響はCI画像を確認してから判断する。
+
+## Round 17: Plaza visual fixtureでテーマ変更後のHUDを再描画する
+
+Round 16の検証runでplazaの4 viewportだけ16画面回帰に失敗した。CI artifactのDOM snapshotでは `#plazaPlayerHud` が空で、テストが対局開始後にテーマを直接切り替えた後、テーマ固有UIを再描画していないことを確認した。これは実プレイ（テーマ変更時に通常renderが走る）と異なるfixture状態だった。テーマ切替後に `render()` を呼ぶようfixtureを修正し、plazaの4席HUDが揃うことをassertする。初回artifactで撮影されたHUD空の画像は実プレイ評価に使わない。
+
+- 変更後の候補画像生成と目視確認は未実施。GitHub Actionsでベースライン候補を作り、plaza 4幅と他テーマの差分を目視してから扱う。
+- 初回plaza visual runではplaza以外12条件成功、plaza 4幅が差分率5〜14%で失敗した。failure artifactはfixture不備の診断根拠として保存済みだが、基準画像を機械的に更新しない。

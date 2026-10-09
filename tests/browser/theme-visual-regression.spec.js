@@ -92,9 +92,17 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     const select = document.getElementById('gameDesignThemeSelect');
                     select.value = themeName;
                     select.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Theme changes in a live match preserve game state but must
+                    // rebuild theme-specific presentation such as the plaza HUD.
+                    render();
                     document.documentElement.classList.add('visual-regression-capture');
                 }, theme);
                 await expect(page.locator('html')).toHaveAttribute('data-design', theme);
+                if (theme === 'plaza') {
+                    await expect(page.locator('#plazaPlayerHud button[data-player-index]')).toHaveCount(4);
+                    await expect(page.locator('#plazaPlayerHud')).toContainText('街1');
+                    await expect(page.locator('#plazaPlayerHud')).toContainText('街4');
+                }
                 await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
                 await expect(page.locator('#gameScreen')).toBeVisible();
 
