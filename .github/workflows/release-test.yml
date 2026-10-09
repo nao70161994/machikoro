@@ -88,8 +88,8 @@ jobs:
       - name: Install WebKit runtime
         run: npx playwright install --with-deps webkit chromium
       - name: Mobile WebKit E2E
-        # PRs verify plaza event receipts and the landscape victory viewport
-        # alongside mixed-theme online and deterministic full-match scenarios.
+        # PRs verify title/resume and plaza events at mobile sizes, landscape
+        # victory, mixed-theme online play, and a deterministic full match.
         run: npm run test:browser-pr
         env:
           CARDBOARD_REVIEW_ARTIFACT_DIR: ${{ runner.temp }}/machikoro-review

@@ -173,3 +173,10 @@ Round 13の2回目CIでは粒の生成位置チェックが成功し、スクリ
 - 実対局の完走画像はChromium desktopで、plaza 2人戦が83ターンで勝利し、施設39枚・ランドマーク6個まで育った状態を記録。実ブラウザ開始から勝利までの通し確認としては有効だが、画面幅844×390pxでの実対局完走を示すものではない。
 - 端末のローカルでは `node tests/confetti.test.js`、編集ファイルの `node --check`、`node scripts/check-static-files.js`（809 JavaScript、25 JSON）、`git diff --check` を実行。全て成功。重いブラウザ検証はGitHub Actions上で行い、実機負荷を避けた。
 - Round 13の紙吹雪改善はこのサイクルで完了。ただしGoal全体は継続する。残る大きな項目は、4テーマの各画面・幅でタイトルから終局まで実レビュー、施設密度の変化とカード詳細、市場/建設/保留選択の操作性、2〜4人戦の実対局幅違い、5〜10人戦、全オンライン操作/復旧、物理端末確認である。
+
+## Round 14: タイトルと保存再開をCIの実ブラウザ確認へ追加
+
+タイトル全幅背景・Canvas寸法・保存データ選択/削除・横書きの再開操作はローカル画面レビューで修正済みだったが、PR用Playwright経路では継続確認されていなかった。`test:browser-pr` に `title-layout.spec.js` のmobile WebKit実行を追加し、320px/390px縦、844×390横、1440×936 PCでレイアウト計測、削除確認のcancel、保存ゲーム再開まで操作する。各幅の画像をrunner tempへ保存し、Playwrightの後段実行がレポートを上書きしてもレビュー成果物へ残す。workflow説明も更新した。
+
+- `node --check tests/browser/title-layout.spec.js`、package script確認、`node scripts/check-static-files.js`（809 JavaScript、25 JSON）、`git diff --check` は成功。
+- CIの横持ち画面でタイトル/保存再開を4幅まとめて実行した結果と画像レビューは未確認。端末のBrowserテストは起動せず、次回CIに回す。

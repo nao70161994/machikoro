@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('fs/promises');
+const path = require('path');
 
 test.use({ serviceWorkers: 'block' });
 
@@ -77,9 +79,14 @@ for (const viewport of VIEWPORTS) {
         expect(layout.resumeTextFits).toBe(true);
         expect(layout.resumeHit).toBe(true);
         expect(layout.removeHit).toBe(true);
-        const path = testInfo.outputPath(`title-${viewport.name}.png`);
-        await page.screenshot({ path });
-        await testInfo.attach('全幅タイトルと保存再開操作', { path, contentType: 'image/png' });
+        const screenshotPath = testInfo.outputPath(`title-${viewport.name}.png`);
+        const screenshot = await page.screenshot({ path: screenshotPath });
+        await testInfo.attach('全幅タイトルと保存再開操作', { path: screenshotPath, contentType: 'image/png' });
+        if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
+            const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
+            await fs.mkdir(artifactDir, { recursive: true });
+            await fs.writeFile(path.join(artifactDir, `title-${viewport.name}.png`), screenshot);
+        }
 
         await page.locator('#btnDeleteSave').click();
         await expect(page.locator('#confirmModal')).toBeVisible();

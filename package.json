@@ -76,7 +76,7 @@
     "pretest": "node tests/check-prerequisites.js",
     "test:soak": "node tests/run-all.js soak",
     "test:browser-e2e": "playwright test",
-    "test:browser-pr": "playwright test cardboard-online-compat.spec.js --project=mobile-webkit --workers=1 && playwright test winner-notices.spec.js --project=mobile-webkit --workers=1 && playwright test plaza-event-receipts.spec.js --grep 'ログを閉じたまま出目' --project=mobile-webkit --workers=1 && playwright test seeded-browser-match.spec.js --project=chromium-desktop --workers=1",
+    "test:browser-pr": "playwright test title-layout.spec.js --project=mobile-webkit --workers=1 && playwright test cardboard-online-compat.spec.js --project=mobile-webkit --workers=1 && playwright test winner-notices.spec.js --project=mobile-webkit --workers=1 && playwright test plaza-event-receipts.spec.js --grep 'ログを閉じたまま出目' --project=mobile-webkit --workers=1 && playwright test seeded-browser-match.spec.js --project=chromium-desktop --workers=1",
     "test:browser-visual": "playwright test theme-visual-regression.spec.js",
     "test:browser-online-compat": "playwright test cardboard-online-compat.spec.js",
     "test:apk-validation": "node scripts/validate-apk-config.js",
