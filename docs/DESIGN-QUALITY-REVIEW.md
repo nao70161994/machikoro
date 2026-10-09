@@ -319,3 +319,11 @@ Run [37936184402](https://github.com/nao70161994/machikoro/actions/runs/37936184
 - Run [37938067726](https://github.com/nao70161994/machikoro/actions/runs/37938067726) では、WebKitのplaza visual/art確認と4人オンライン同期が成功。16画面の既存theme baseline比較は差分で失敗し、基準画像は更新していない。viewport/focus/market検査は実行途中でcancelledとなり、成功扱いにはできない。Playwright依存導入に約17分かかった。
 - 未完了検査の再実行 [37941318602](https://github.com/nao70161994/machikoro/actions/runs/37941318602) は、browser導入に約21分、baseline比較に約3分を使い、既存16画面の差分で比較stepが失敗した。基準画像は更新していない。plaza visual/artとオンライン同期、market viewportの後続stepは起動したが、旧25分job上限が迫るため全検査結果は未確定。
 - run 37938067726のviewport/focus/market検査が開始後cancelledになった原因は、run全体が25分job timeoutに達したことと確認。browser導入だけで17〜21分かかるため、Plaza review workflowのtimeoutを45分へ拡張した（commit `f47d9904`）。この設定の再実行は [37944311727](https://github.com/nao70161994/machikoro/actions/runs/37944311727) で進行中。端末側ではブラウザ/テストを実行していない。
+
+## Round 29: 新レイアウトの実画面レビュー
+
+Run [37944311727](https://github.com/nao70161994/machikoro/actions/runs/37944311727) でplaza visual/art、4人オンライン同期、field viewport/focus/marketの3 stepが成功。1440px全体表示、390px縦、844×390px横、320pxの市場/勝利、390pxの購入後画面をWebKit screenshotで確認した（物理端末ではない）。横画面市場の施設絵・名称・価格は読み取れ、回転後の市場とカード情報boundsも通過。320pxでも市場カード絵・出目・名前・値段・説明ボタンを確認できた。844px勝利画面では勝者、残高、街の発展、再戦/共有/タイトル導線が一枚に整理されている。
+
+theme baselineは16枚中6枚pass、10枚fail。差分は `classic-landscape-844`, `classic-desktop-1440`, `sunset-phone-320`, `sunset-phone-390`, `sunset-landscape-844`, `sunset-desktop-1440`, `plaza-phone-320`, `plaza-phone-390`, `plaza-landscape-844`, `plaza-desktop-1440`。Plaza 390pxと844pxのexpected/actualを目視し、新画面では手番HUD、複数プレイヤー残高、dice action、建設操作が追加/再配置され、旧baselineはこれらを含まない旧画面だった。classic landscape、sunset 320px/1440pxも確認し、現行の操作とカード表示は崩れていない。差分は現行機能と旧画面の構造差で説明できるが、全16枚の品質確認と残る差分の独立再レビューが終わるまではbaselineを更新しない。
+
+残課題として、Plazaの1440px「全体」画面はカメラが盤面全域を収めるため街カードが小さくなり、左右の緑地が広く見える。全体overviewの縮尺/街間隔と、個別の街・市場focusを比較して改善する。実画面レビューの成果と未解決点は引き続き設計反復に使う。
