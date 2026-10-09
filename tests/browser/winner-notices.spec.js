@@ -28,6 +28,7 @@ for (const sample of [
     { theme: 'sunset', width: 390, height: 844 },
     { theme: 'classic', width: 390, height: 844 },
     { theme: 'classic', width: 1440, height: 900 },
+    { theme: 'plaza', width: 844, height: 390 },
 ]) {
     test(`勝利の通知は完成した結果の後から操作できる ${sample.theme} ${sample.width}px`, async ({ page }) => {
         await page.setViewportSize({ width: sample.width, height: sample.height });
@@ -48,6 +49,30 @@ for (const sample of [
             document.body.classList.add('pwa-banner-open');
         });
         await expect(page.locator('.winner-screen')).toBeVisible();
+        if (sample.theme === 'plaza' && sample.width === 844) {
+            const resultLayout = await page.evaluate(() => {
+                const bounds = selector => {
+                    const rect = document.querySelector(selector).getBoundingClientRect();
+                    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+                };
+                return {
+                    viewport: { width: innerWidth, height: innerHeight },
+                    title: bounds('.winner-title'),
+                    town: bounds('.winner-screen .sunset-town'),
+                    stats: bounds('.winner-stats'),
+                    rematch: bounds('#winnerRematchButton'),
+                    share: bounds('.winner-share-actions'),
+                    restart: bounds('#winnerRestartButton'),
+                };
+            });
+            for (const [name, rect] of Object.entries(resultLayout).filter(([name]) => name !== 'viewport')) {
+                expect(rect.left, `${name} stays inside the left edge`).toBeGreaterThanOrEqual(0);
+                expect(rect.right, `${name} stays inside the right edge`).toBeLessThanOrEqual(resultLayout.viewport.width);
+                expect(rect.top, `${name} stays inside the top edge`).toBeGreaterThanOrEqual(0);
+                expect(rect.bottom, `${name} stays inside the first landscape viewport`).toBeLessThanOrEqual(resultLayout.viewport.height);
+            }
+            expect(resultLayout.town.left, 'the town sits beside the winner details').toBeGreaterThan(resultLayout.title.left);
+        }
         await verifyWinnerNotices(page);
         await page.locator('#winnerRestartButton').click();
         await page.locator('#confirmOkBtn').click();
