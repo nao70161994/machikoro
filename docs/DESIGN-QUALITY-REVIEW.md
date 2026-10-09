@@ -280,4 +280,6 @@ Run [37923439916](https://github.com/nao70161994/machikoro/actions/runs/37923439
 出来事ログから関連する街を選ぶ操作はカメラを移動するため、画面撮影とパン/ズーム検査の後へ移し、同操作自体の安全性 assertion は残す。37923439916では、この操作が後続カメラassertionを不安定化し、plaza visual reviewが844px一件のみ失敗した。4人オンライン同期は成功。視覚ベースラインは更新せず、16画面中10画面の既存差分は継続して目視審査する。
 
 - 37923439916の844×390画像はGitHub Actions上のWebKit viewport emulationで、物理端末の撮影ではない。
-- Round 23のログ操作順変更後の再検証はrun [37924923394](https://github.com/nao70161994/machikoro/actions/runs/37924923394) で実施。Playwright依存セットアップに約24分を要し、25分のjob timeoutによりbaseline比較の開始直後にキャンセルされたため、ブラウザ結果は得られていない。run [37927610915](https://github.com/nao70161994/machikoro/actions/runs/37927610915) を別runnerで再実行中。
+- Round 23のログ操作順変更後の再検証run [37924923394](https://github.com/nao70161994/machikoro/actions/runs/37924923394) は、Playwright依存セットアップに約24分を要し、25分のjob timeoutでbaseline比較開始直後に終了した。ブラウザ結果は得られなかった。
+
+Run 37927610915ではbaseline比較の後、plaza field viewport/focus/market 8件と4人オンライン同期が成功。市場の名前/価格も画像で確認できた。visual-art側はカメラのパン/ピンチ後に出来事タブをクリックする操作で45秒 timeoutした。ジェスチャ状態と履歴クリックを同じケースに混ぜず、出来事→関連街フォーカスを独立した844×390 testへ分離して安全性を検証する。

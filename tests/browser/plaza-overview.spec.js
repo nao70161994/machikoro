@@ -108,6 +108,34 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
     });
 }
 
+test('広場の最近の出来事から関連する街へ安全に移動できる', async ({ page }) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.goto('/');
+    await page.locator('.setup-quick-play').click();
+    await expect(page.locator('#gameScreen')).toBeVisible();
+    await page.evaluate(() => {
+        cancelCpuSchedule('plaza-recent-event-review');
+        window.scheduleCPU = () => false;
+        const state = GameRuntimeState.runtime.snapshot();
+        state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+        state.game.phase = GAME_PHASES.BUILD;
+        state.game.currentPlayer().coins = 30;
+        state.game.addLog(LOG_TYPES.BUILD, '🏗️ 麦畑を建設！', { review: false });
+        state.game.addLog(LOG_TYPES.SYSTEM, `👤 ${state.game.currentPlayer().name}のターン`);
+        render();
+    });
+    await page.locator('[data-field-panel="events"]').click();
+    await expect(page.locator('#plazaEvents')).toBeVisible();
+    await page.locator('.plaza-recent-history > summary').click();
+    const logAction = page.locator('#plazaRecentEvents [data-ui-action="highlightLogEntry"]:visible').last();
+    await expect(logAction).toBeVisible();
+    await logAction.click();
+    await expect(page.locator('#crashScreen')).toBeHidden();
+    await expect(page.locator('.log-related-highlight').first()).toBeAttached();
+});
+
 for (const playerCount of [4, 10]) {
     test(`広場の${playerCount}人の育った街は地面の境界と他の街を越えない`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width: 1363, height: 936 });

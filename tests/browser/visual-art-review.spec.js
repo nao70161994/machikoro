@@ -2342,16 +2342,6 @@ for (const width of [320, 390, 844, 1440]) {
         const updateDismiss = page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]');
         if (await updateDismiss.isVisible()) await updateDismiss.click();
         await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
-        // Keep the history interaction last because it deliberately moves the field camera.
-        if (width === 844) {
-            await page.locator('[data-field-panel="events"]').click();
-            await expect(page.locator('#plazaEvents')).toBeVisible();
-            await page.locator('.plaza-recent-history > summary').click();
-            const logAction = page.locator('#plazaRecentEvents [data-ui-action="highlightLogEntry"]:visible').last();
-            await logAction.click();
-            await expect(page.locator('#crashScreen')).toBeHidden();
-            await expect(page.locator('.log-related-highlight').first()).toBeAttached();
-        }
     });
 }
 
