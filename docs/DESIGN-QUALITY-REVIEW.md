@@ -365,3 +365,9 @@ artifactの320×844px画像では、中央市場は2列の大型アートカー�
 Round 33のCI title-landscape画像を確認し、844×390pxでページ内容が長い場合にタイトルの先頭がscrollport上端から押し出される状態を発見した。短い横画面のタイトルコンテンツからblock方向のauto marginを外し、`title-layout.spec.js` で320/390縦、844横、1440 desktopのタイトル見出しが上端より上に出ないことを検査。レビューworkflowにもこの4幅の保存再開/削除操作テストを追加した。変更は `7cedb59b`。
 
 run [37956025398](https://github.com/nao70161994/machikoro/actions/runs/37956025398) の初回ではtitle/saved-game responsive E2E、16画面baseline、Plazaアート、4人オンラインが成功。盤面テストの市場を閉じた後のbuild heading focus assertionだけが失敗したため、期待値を緩和せず同一runを再実行した。GitHubのrerunは成功済みstepを再実行しなかった。2回目ではPlazaのonline/field/focusを含む後段が成功し、focus failureは再現しなかった。一方、baseline比較で`plaza-phone-390`のみ差分0.03（閾値0.012）が再発。actual/expected/diffを取得して確認し、基準画像は更新していない。横画面タイトルの変更とは対象幅・CSS条件とも別であり、ビジュアルfixture/描画安定性の独立した調査項目として残す。run全体は成功扱いにしない。
+
+## Round 35: タイトルとPlaza回帰を再検証
+
+Plazaの施設セクション移動でフォーカスしたh4が、同じクリック処理内で親detailsを閉じた時に失われうる順序を修正。detailsを閉じた後の次フレームで、接続中の市場見出しへフォーカスする。変更 `8d1b8502`。再試行run [37959744306](https://github.com/nao70161994/machikoro/actions/runs/37959744306) は全step成功し、16画面baseline（plaza-phone-390を含む）、タイトル/保存再開4幅E2E、Plazaアート/終盤補助操作、4人オンライン、盤面focus/viewport/marketを通過した。
+
+同runの844×390pxタイトル画像を目視し、上端にタイトルを残したまま中断ゲーム、保存セレクター、再開/削除、CPUクイック開始が読めることを確認。画面全高より内容が長い場合は縦スクロールする構成。物理スマートフォンではなくCI WebKitでの確認。Round 34で記録した390px差分はこのrunでは再現せず、baselineの変更は不要だった。
