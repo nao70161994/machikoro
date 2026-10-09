@@ -2291,6 +2291,13 @@ for (const width of [320, 390, 844, 1440]) {
             await expect(page.locator('#btnRoll')).toBeEnabled();
             await page.screenshot({ path: testInfo.outputPath('plaza-after-purchase-390.png'), fullPage: true });
         }
+        if (width === 844) {
+            await page.locator('[data-field-target="all"]').click();
+        }
+        if (await page.locator('.plaza-camera-menu').evaluate(menu => menu.open)) {
+            await page.locator('.plaza-camera-menu > summary').click();
+        }
+        await page.locator('[data-field-target="self"]').click();
         const initialCamera = await page.locator('#plazaWorld').getAttribute('style');
         await page.locator('[data-field-target="market"]').click();
         expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(initialCamera);
