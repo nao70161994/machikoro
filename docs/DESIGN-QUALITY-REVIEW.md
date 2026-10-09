@@ -104,4 +104,12 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 - [広場の終盤画面・修正前](../artifacts/design-review/round-7-plaza-endgame-before-watchdog-opt.png)、[広場の勝利画面・修正後](../artifacts/design-review/round-7-plaza-cpu-victory-after-watchdog-opt.png)。844×390px Chromium emulationで撮影し、目視確認した。勝利画面は縦スクロールが残り、横持ち一画面内で結果と街全体を同時に見せるレイアウトは未達。物理端末では確認していない。
 - テスト中はChromiumを終了してから直列で `MACHIKORO_TEST_CONCURRENCY=1 npm test` を実行し、終了コード0。`tests/main.test.js`、`tests/app-shell-observation-runtime.test.js`、`tests/ui-watchdog-runtime.test.js`、`tests/ui-watchdog-recovery-runtime.test.js`、編集したJSの構文確認も通過。
 
+## Round 8: 横持ちの勝利画面を再配置
+
+844×390pxの実対局勝利スクリーンショットを再確認し、トロフィーと街が縦に並ぶため、結果操作が初期表示域から押し出される問題を優先した。
+
+- 夕暮れの街・にぎわい広場の短い横画面に限り、勝者情報と街を左右2列に配置。最終統計、再戦、共有、タイトルへ戻るボタンを左列へ並べ、育てた街を右列で見せる。
+- 終盤密度を模した勝利画面fixtureを844×390px Chromium headlessで表示・撮影し、見た目と要素位置を確認した。勝者名、統計、再戦、共有、タイトルへ戻るボタンはいずれも390px viewport内（タイトルへ戻るボタン下端386px）。街は上部の右列に収まり、詳細記録は下へスクロールして読める。
+- このroundの撮影はCSSレイアウトを確認するfixtureであり、実対局DOMや物理スマートフォンの撮影ではない。実対局の勝利画面は修正前スクリーンショットでのみ確認済み。横持ちの新レイアウトを実対局データで再撮影する確認は未完了。
+
 この改善でCPU対局の遅延とDOM診断負荷は大きく下がり、実ブラウザ勝利まで確認できた。一方、残高/施設数が極端に大きくなった対局のカード・盤面表現、勝利画面の横持ちレイアウト、他テーマ・オンライン対局・実機は引き続き確認が必要。
