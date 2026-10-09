@@ -318,3 +318,4 @@ Run [37936184402](https://github.com/nao70161994/machikoro/actions/runs/37936184
 
 - Run [37938067726](https://github.com/nao70161994/machikoro/actions/runs/37938067726) では、WebKitのplaza visual/art確認と4人オンライン同期が成功。16画面の既存theme baseline比較は差分で失敗し、基準画像は更新していない。viewport/focus/market検査は実行途中でcancelledとなり、成功扱いにはできない。Playwright依存導入に約17分かかった。
 - 同じcommitの未完了検査を再確認するため、`refresh_baselines=false` でworkflowを再dispatchした（run [37941318602](https://github.com/nao70161994/machikoro/actions/runs/37941318602)）。短横画面のカード名/価格boundsと回転後の市場表示の合格を、この再実行で確認する。baseline差分の理由も次回のrun出力で特定し、意図しない製品退行か既存の期待値ずれか判断する。
+- run 37938067726の所要時間を照合すると、viewport/focus/market検査が開始してから25分job timeoutでcancelledとなっていた。browser installだけで17〜20分かかるため、Plaza review workflowのjob timeoutを45分へ広げ、画面検査が全て終わる時間を確保する。実行負荷はGitHub Actions側で、端末上のブラウザ/テスト実行は避ける。
