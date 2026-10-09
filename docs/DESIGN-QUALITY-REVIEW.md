@@ -157,3 +157,5 @@ Round 12の実対局勝利画像では、全画面に80個の紙吹雪が継続�
 - `tests/confetti.test.js` に個数、寸法、不透明度、再出現しないこと、時間、既存のReduced Motion設定を検証する回帰を追加。全5件成功。
 - `tests/browser/winner-notices.spec.js` はplaza 844×390pxの勝利画面で粒数と登場方向を確認し、目視用スクリーンショットをCIレポートへ添付する。Termux上ではブラウザを起動せず、最新CIでWebKitの描画と添付画像をレビューする。
 - `node --check`（confetti.js、confetti unit/browser tests）、`node tests/confetti.test.js`、`git diff --check` は成功。変更後のブラウザ表示レビューは未完了。
+
+Round 13の初回CIでは、WebKitの勝利画面テスト1件が落下開始済みの粒の現在位置を「上端から来た」条件と比較して失敗した。描画演出の失敗ではなく、アニメーション進行中の座標を起動位置と誤認したテスト条件だったため、粒に不変の生成位置 `launchY` を持たせて検証するよう修正した。`node tests/confetti.test.js` は再度成功。修正コミットでWebKitを再実行し、添付画像を目視するまでRound 13は未完了とする。

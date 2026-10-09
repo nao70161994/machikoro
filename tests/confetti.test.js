@@ -114,7 +114,7 @@ runTest('紙吹雪は街を隠しにくい量と濃さで上から一度だけ�
 
     const pieces = vm.runInContext('confettiPieces', runtime.context);
     assert.strictEqual(pieces.length, 48);
-    assert.ok(pieces.every(piece => piece.y <= 0 && piece.r <= 4.5 && piece.opacity <= 0.7));
+    assert.ok(pieces.every(piece => piece.y === piece.launchY && piece.launchY <= 0 && piece.launchY >= -96 && piece.r <= 4.5 && piece.opacity <= 0.7));
     pieces[0].y = runtime.canvas.height - 1;
     runtime.calls.intervalCallback();
 

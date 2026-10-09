@@ -54,7 +54,7 @@ for (const sample of [
             const confettiReview = await page.evaluate(() => ({
                 count: confettiPieces.length,
                 maximumOpacity: Math.max(...confettiPieces.map(piece => piece.opacity)),
-                allEnterFromTop: confettiPieces.every(piece => piece.y <= 0),
+                allEnterFromTop: confettiPieces.every(piece => piece.launchY <= 0 && piece.launchY >= -96),
             }));
             expect(confettiReview.count).toBe(48);
             expect(confettiReview.maximumOpacity).toBeLessThanOrEqual(0.7);
