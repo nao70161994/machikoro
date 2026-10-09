@@ -155,7 +155,7 @@ for (const playerCount of [4, 10]) {
         await page.locator('[data-field-target="market"]').click();
         await expect.poll(fits).toEqual([]);
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
-        await expect(page.locator('#buildMenu h3')).toHaveText('施設一覧');
+        await expect(page.locator('#buildMenu h3')).toContainText('施設一覧');
         const marketLayout = await page.evaluate(() => {
             const panel = document.getElementById('buildMenu').getBoundingClientRect();
             const viewport = document.getElementById('plazaViewport').getBoundingClientRect();

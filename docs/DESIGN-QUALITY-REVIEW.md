@@ -247,3 +247,12 @@ Round 19の市場画像レビューに向け、320/390幅ではカメラを縮�
 `plaza-overview.spec.js`がPlaywright上にある一方、既存workflowのbrowserコマンドとpath filterのどちらにも含まれていないことを確認。Plaza visual review workflowに独立ステップとして追加し、320/390/844×390/1363幅のレイアウト、全体/市場/街フォーカス、4/10人の街配置、施設比較、キーボード復帰などをPR時に実行する。スクリーンショットattachmentは既存のtest-results artifactへ含める。candidate baseline生成runではこの通常レビューstepを実行しない。
 
 - workflow変更後のCI実行・市場フォーカス画像確認は未実施。
+
+Plaza overviewの初回CI [37898664545](https://github.com/nao70161994/machikoro/actions/runs/37898664545)でfixtureと重なりを区別した。市場見出しの完全一致失敗は装飾絵文字によるテスト期待値の誤り。844×390pxでは画面上部の手番帯・ナビ・HUDが領域を取り、フィールド高が220pxを下回っていたため製品側を変更する。短い横画面だけ手番帯を外し、現在手番のHUD強調へ集約し、HUDボタンを48pxにする。結果、最低220pxのフィールド条件を満たす余裕を確保する。
+
+## Round 21: 横画面のフィールド表示領域を広げる
+
+Plaza横画面の手番表示がHUDのアクティブ席情報と重複していたため、status帯を非表示にし、seat HUDの金色アクティブ枠へ手番を集約。HUDボタン高を56pxから48pxへ調整して画面高を盤面へ戻す。`plaza-overview`のフィールド高220px検査を維持し、操作ボタンの44px最低条件も維持する。施設見出しは共通の装飾アイコンを含むため部分一致で確認する。
+
+- 844×390px変更後の画像と全viewportのCI結果は未確認。Release/Plaza workflowを最新SHAで再実行する。
+- theme snapshot比較が失敗してもPlaza online/art reviewを走らせるよう同じworkflowの実行条件を独立化する。比較、盤面操作、オンライン/アート検証が同じrunからそれぞれ結果を返す。

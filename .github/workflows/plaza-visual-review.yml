@@ -54,7 +54,7 @@ jobs:
                   path: tests/browser/theme-visual-regression.spec.js-snapshots/
                   if-no-files-found: error
             - name: Plaza visual and online review
-              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
+              if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true) }}
               run: npx playwright test visual-art-review.spec.js plaza-online.spec.js --grep '広場テーマは共通アート|広場の4人オンライン|広場の終盤と補助操作' --retries=0 --workers=1
             - name: Plaza field viewport, focus, and market review
               if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true) }}
