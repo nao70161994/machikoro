@@ -8544,15 +8544,18 @@ html[data-design="plaza"] #plazaViewport { bottom: calc(var(--plaza-actions) + v
 html[data-design="plaza"] #gameScreen > #gameLogContainer.plaza-panel-open,
 html[data-design="plaza"] #gameScreen > #tutorialBox { bottom: calc(var(--plaza-actions) + var(--plaza-events, 32px) + 4px); }
 html[data-design="plaza"] #plazaComparison:not([hidden]) { bottom: calc(var(--plaza-actions) + var(--plaza-events, 32px) + 4px); }
+/* At default widths, let each seat button participate in the auto-fit HUD grid. */
+html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
+html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: contents; }
 @media (orientation: landscape) and (max-height: 600px) {
     html[data-design="plaza"] #plazaPlayerHud {
         top: calc(var(--plaza-status, 30px) + var(--plaza-tools, 52px)); left: 0; right: 0; width: auto;
         height: 64px; max-height: 64px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px;
         overflow: hidden; background: #102c35;
     }
-    html[data-design="plaza"] #gameScreen #plazaPlayerHud .plaza-hud-self,
-    html[data-design="plaza"] #gameScreen #plazaPlayerHud .plaza-hud-opponents { display: flex; flex: 0 0 auto; min-width: 0; gap: 4px; }
-    html[data-design="plaza"] #gameScreen #plazaPlayerHud .plaza-hud-opponents {
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: flex; flex: 0 0 auto; min-width: 0; gap: 4px; }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
         flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin;
     }
     html[data-design="plaza"] #plazaPlayerHud button {
@@ -8616,10 +8619,6 @@ html:is([data-design="sunset"], [data-design="plaza"]) .town-street[data-town-st
 html:is([data-design="sunset"], [data-design="plaza"]) body.accessibility-high-contrast .town-growth-scenery { display: none; }
 
 /* Portrait HUD: keep your wallet visible and let opponents scroll in one row. */
-html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
-html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
-    display: contents;
-}
 @media (orientation: portrait) and (max-width: 600px) {
     html[data-design="plaza"] #plazaCameraTools button {
         min-width: 44px;
