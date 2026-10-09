@@ -41,6 +41,7 @@ for (const viewport of VIEWPORTS) {
             const canvas = document.getElementById('cityCanvas');
             const resumeButton = document.getElementById('btnResume');
             const removeButton = document.getElementById('btnDeleteSave');
+            const generationSelect = document.getElementById('localSaveGeneration');
             const rect = element => {
                 const value = element.getBoundingClientRect();
                 return { left: value.left, right: value.right, top: value.top, bottom: value.bottom,
@@ -58,6 +59,12 @@ for (const viewport of VIEWPORTS) {
                 title: rect(title), canvas: rect(canvas), canvasCssWidth: getComputedStyle(canvas).width,
                 canvasBufferWidth: canvas.width,
                 resume: rect(resumeButton), remove: rect(removeButton),
+                generationSelectStyle: {
+                    background: getComputedStyle(generationSelect).backgroundColor,
+                    color: getComputedStyle(generationSelect).color,
+                    colorScheme: getComputedStyle(generationSelect).colorScheme,
+                },
+                removeWhiteSpace: getComputedStyle(removeButton).whiteSpace,
                 resumeTextFits: resumeButton.scrollWidth <= resumeButton.clientWidth,
                 resumeHit: centerTarget(resumeButton), removeHit: centerTarget(removeButton),
             };
@@ -74,8 +81,12 @@ for (const viewport of VIEWPORTS) {
         expect(layout.canvasBufferWidth).toBe(Math.min(1920, viewport.width));
         expect(layout.resume.width, JSON.stringify(layout)).toBeGreaterThanOrEqual(100);
         expect(layout.resume.height).toBeGreaterThanOrEqual(44);
-        expect(layout.remove.width).toBeGreaterThanOrEqual(44);
+        expect(layout.remove.width).toBeGreaterThanOrEqual(64);
         expect(layout.remove.height).toBeGreaterThanOrEqual(44);
+        expect(layout.removeWhiteSpace).toBe('nowrap');
+        expect(layout.generationSelectStyle).toEqual({
+            background: 'rgb(24, 45, 63)', color: 'rgb(255, 244, 223)', colorScheme: 'dark',
+        });
         expect(layout.resumeTextFits).toBe(true);
         expect(layout.resumeHit).toBe(true);
         expect(layout.removeHit).toBe(true);

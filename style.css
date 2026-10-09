@@ -4229,6 +4229,16 @@ html:is([data-design="sunset"], [data-design="plaza"]) .card-detail-coin path {
     width: 100%;
     min-width: 0;
     min-height: 44px;
+    border: 1px solid #526a7d;
+    border-radius: 8px;
+    background-color: #182d3f;
+    color: #fff4df;
+    color-scheme: dark;
+}
+
+.local-save-generation-label select option {
+    background-color: #182d3f;
+    color: #fff4df;
 }
 
 @media (max-width: 389px) {
@@ -4340,8 +4350,8 @@ html:is([data-design="sunset"], [data-design="plaza"]) .card-detail-coin path {
 }
 
 .delete-save-btn {
-    width: 44px;
-    min-width: 44px;
+    width: 64px;
+    min-width: 64px;
     min-height: 44px;
     padding: 0;
     background: #1a1a2e;
@@ -4350,6 +4360,7 @@ html:is([data-design="sunset"], [data-design="plaza"]) .card-detail-coin path {
     color: #a7a9be;
     font-size: 16px;
     text-align: center;
+    white-space: nowrap;
 }
 
 /* ===== 取り消しボタン ===== */
