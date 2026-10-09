@@ -112,8 +112,10 @@ for (const playerCount of [4, 10]) {
         });
         await expect.poll(fits).toEqual([]);
         await expect(page.locator('#plazaWorld .plaza-town-seat-flag').first()).toHaveCSS('display', 'none');
+        await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'hidden');
         await page.locator('[data-field-target="all"]').click();
         await expect.poll(fits).toEqual([]);
+        await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         await expect(page.locator('#plazaWorld .plaza-town-seat-flag')).toHaveCount(playerCount);
         await expect.poll(() => page.evaluate(() => Array.from(document.querySelectorAll('#plazaWorld .plaza-town-seat-flag')).every(flag => {
             const index = Number(flag.dataset.playerIndex);
@@ -152,6 +154,7 @@ for (const playerCount of [4, 10]) {
         await expect.poll(fits).toEqual([]);
         await page.locator('[data-field-target="market"]').click();
         await expect.poll(fits).toEqual([]);
+        await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         expect(await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             return { turn: game.turnCount, player: game.currentPlayerIndex,

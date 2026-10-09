@@ -8829,6 +8829,7 @@ html[data-design="plaza"] #plazaWorld .plaza-town-seat-flag {
     transform-origin: top left;
 }
 html[data-design="plaza"] #plazaWorld:not(.plaza-field-overview) .plaza-town-seat-flag { display: none; }
+html[data-design="plaza"] #plazaWorld:not(.plaza-field-market):not(.plaza-field-overview) #buildMenu { visibility: hidden; }
 
 /* Plaza player insights: separate from camera gestures and market scrolling. */
 #plazaPlayerInsights { display: none; }

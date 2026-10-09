@@ -188,6 +188,7 @@ const PlazaField = (() => {
     }
     function focusTarget(target) {
         focusedTarget = target;
+        node('plazaWorld').classList.toggle('plaza-field-market', target === 'market');
         node('plazaWorld').classList.toggle('plaza-field-overview', target === 'all');
         const viewport = node('plazaViewport');
         if (!viewport.clientWidth || !viewport.clientHeight) {
@@ -466,7 +467,7 @@ const PlazaField = (() => {
             item.querySelector('.plaza-seat-mark')?.remove();
             item.querySelector('.plaza-town-seat-flag')?.remove();
         });
-        world.classList.remove('plaza-field-overview');
+        world.classList.remove('plaza-field-market', 'plaza-field-overview');
         screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
         SharedMarketMount.release('plaza');
         node('buildMenu').style.removeProperty('height');

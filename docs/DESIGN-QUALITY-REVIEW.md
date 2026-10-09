@@ -231,3 +231,11 @@ Round 17のcandidate 16画像を目視した。再描画後は全4席HUDが表�
 
 - Round 17 candidate generation CI run [37895928809](https://github.com/nao70161994/machikoro/actions/runs/37895928809) は成功し、16画像をartifactで取得。plazaの320/390 portrait、844×390 landscape、1440 desktopを確認。これはWebKit browser emulation。
 - Round 18の表示変更後画像・操作確認は未実施。基準画像候補を再生成してから、俯瞰/フォーカス双方と4幅を再レビューする。
+
+独立レビューの追加所見: focus-self画像では市場が隣接した世界座標に一部入り、320/390 portraitやdesktopで市場カードの端だけがフィールド端・アクションバーに切れて見える。街・市場・全体のタブがあるため、この断片的な市場表示は視覚ノイズとなり、カード操作対象も曖昧。次ラウンドでself focus中は市場を隠し、market/all focusでのみ表示する。世界配置寸法は保持するのでカメラ境界・市場サイズ計算を崩さず、専用の「市場」操作から常にアクセスできる状態を検証する。
+
+## Round 19: フォーカス外の市場カード断片を隠す
+
+Plaza self viewから市場が部分的に見切れていたため、`plaza-field-market` のフォーカス状態を追加し、市場パネルをmarketかall表示時だけ可視化する。施設の購入や詳細操作へは専用の「市場」カメラボタンで移動でき、all表示では街と市場を同時に確認できる。plaza overview browser testに各フォーカス時のvisibilityを追加する。ルール・市場在庫・ゲーム状態は変更しない。
+
+- 変更後の候補画像/市場操作レビューは未実施。CSSはfixtureで確認した320/390/844×390/1440の条件で再生成し、self表示の余白とmarket/all表示のアクセスを確認する。
