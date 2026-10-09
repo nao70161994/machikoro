@@ -91,6 +91,8 @@ jobs:
         # PRs verify plaza event receipts and the landscape victory viewport
         # alongside mixed-theme online and deterministic full-match scenarios.
         run: npm run test:browser-pr
+        env:
+          CARDBOARD_REVIEW_ARTIFACT_DIR: ${{ runner.temp }}/machikoro-review
       - name: Upload WebKit visual review and diagnostics
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -99,6 +101,7 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            ${{ runner.temp }}/machikoro-review/
           if-no-files-found: ignore
 
   cpu-difficulty-smoke:

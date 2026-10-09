@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('fs/promises');
+const path = require('path');
 const { verifyWinnerNotices } = require('./helpers/winner-notices');
 
 async function stubAds(page) {
@@ -66,6 +68,11 @@ for (const sample of [
                 path: celebrationPath,
                 contentType: 'image/png',
             });
+            if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
+                const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
+                await fs.mkdir(artifactDir, { recursive: true });
+                await fs.writeFile(path.join(artifactDir, 'plaza-winner-celebration-844x390.png'), await fs.readFile(celebrationPath));
+            }
             const resultLayout = await page.evaluate(() => {
                 const bounds = selector => {
                     const rect = document.querySelector(selector).getBoundingClientRect();
