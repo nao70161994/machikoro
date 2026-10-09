@@ -215,8 +215,8 @@ Round 15はplaza 4人横画面の開始〜勝利サイクルを完了。Goal全�
 
 Round 15の実対局画像を独立レビューし、plaza 4人・844×390pxの勝利画面で、街アートの横幅に対して表示高が132pxで頭打ちになり、施設が小さく見える点を確認した。短い横画面のsunset/plaza勝利表示で街の最大高を180pxへ増やし、WebKit勝利画面検証にアート領域の最低高160pxを追加した。勝利画面全体のはみ出し検査と他3条件は維持する。
 
-- 変更後のCIスクリーンショット確認は未実施。ローカル端末ではPlaywrightを起動せず、既存の勝利画面ブラウザジョブで検証する。
-- 他の画面比率や物理端末、施設が少ない勝利時への影響はCI画像を確認してから判断する。
+- 変更後のCI run [37895193709](https://github.com/nao70161994/machikoro/actions/runs/37895193709) はrelease-test、CPU difficulty smoke、mobile WebKitの全3 job成功。844×390pxでplaza勝利画面を含むWebKit検証が成功した。artifactの4人CPU対局結果は130ターン、収益/支払い135件、送金12件、ランドマーク演出7件。勝利画像では横長パネル内で育った街の施設アートが明瞭になり、操作導線も画面内に残る。Chromium viewport emulationによる画像で、物理端末確認ではない。
+- 施設が少ない勝利時、別の横画面比率、sunset全条件、物理端末の確認は未実施。
 
 ## Round 17: Plaza visual fixtureでテーマ変更後のHUDを再描画する
 
@@ -224,3 +224,10 @@ Round 16の検証runでplazaの4 viewportだけ16画面回帰に失敗した。C
 
 - 変更後の候補画像生成と目視確認は未実施。GitHub Actionsでベースライン候補を作り、plaza 4幅と他テーマの差分を目視してから扱う。
 - 初回plaza visual runではplaza以外12条件成功、plaza 4幅が差分率5〜14%で失敗した。failure artifactはfixture不備の診断根拠として保存済みだが、基準画像を機械的に更新しない。
+
+## Round 18: フォーカス街カードの席番号重複を解消する
+
+Round 17のcandidate 16画像を目視した。再描画後は全4席HUDが表示され、plazaのviewport別配置も一貫した。選択中の街ではヘッダー内の席番号と、街の左上に固定された席フラグが重なって二重に見える。全体俯瞰時は各街を見分けるフラグが有効なので、`plaza-field-overview` 状態をフィールドへ付与し、俯瞰時だけフラグを表示する。通常の街/市場フォーカスではヘッダーの席番号に一本化する。overview browser testはselfフォーカスで非表示、全体表示で既存の席色・位置・大きさ検査を行う。
+
+- Round 17 candidate generation CI run [37895928809](https://github.com/nao70161994/machikoro/actions/runs/37895928809) は成功し、16画像をartifactで取得。plazaの320/390 portrait、844×390 landscape、1440 desktopを確認。これはWebKit browser emulation。
+- Round 18の表示変更後画像・操作確認は未実施。基準画像候補を再生成してから、俯瞰/フォーカス双方と4幅を再レビューする。

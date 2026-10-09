@@ -111,6 +111,7 @@ for (const playerCount of [4, 10]) {
             return violations;
         });
         await expect.poll(fits).toEqual([]);
+        await expect(page.locator('#plazaWorld .plaza-town-seat-flag').first()).toHaveCSS('display', 'none');
         await page.locator('[data-field-target="all"]').click();
         await expect.poll(fits).toEqual([]);
         await expect(page.locator('#plazaWorld .plaza-town-seat-flag')).toHaveCount(playerCount);
