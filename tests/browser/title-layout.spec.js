@@ -38,6 +38,8 @@ for (const viewport of VIEWPORTS) {
         const layout = await page.evaluate(() => {
             const body = document.body;
             const title = document.getElementById('titleScreen');
+            const titleHeader = title.querySelector('.title-header');
+            const titleHeading = title.querySelector('#titleHeading');
             const canvas = document.getElementById('cityCanvas');
             const resumeButton = document.getElementById('btnResume');
             const removeButton = document.getElementById('btnDeleteSave');
@@ -56,7 +58,8 @@ for (const viewport of VIEWPORTS) {
             return {
                 documentWidth: document.documentElement.scrollWidth,
                 body: rect(body), bodyMaxWidth: getComputedStyle(body).maxWidth,
-                title: rect(title), canvas: rect(canvas), canvasCssWidth: getComputedStyle(canvas).width,
+                title: rect(title), titleHeader: rect(titleHeader), titleHeading: rect(titleHeading),
+                canvas: rect(canvas), canvasCssWidth: getComputedStyle(canvas).width,
                 canvasBufferWidth: canvas.width,
                 resume: rect(resumeButton), remove: rect(removeButton),
                 generationSelectStyle: {
@@ -75,6 +78,8 @@ for (const viewport of VIEWPORTS) {
         expect(layout.bodyMaxWidth).toBe('none');
         expect(layout.title.left).toBe(0);
         expect(Math.abs(layout.title.width - viewport.width)).toBeLessThanOrEqual(1);
+        expect(layout.titleHeader.top, JSON.stringify(layout)).toBeGreaterThanOrEqual(0);
+        expect(layout.titleHeading.top, JSON.stringify(layout)).toBeGreaterThanOrEqual(0);
         expect(layout.canvas.left).toBe(0);
         expect(Math.abs(layout.canvas.width - viewport.width)).toBeLessThanOrEqual(1);
         expect(Math.abs(parseFloat(layout.canvasCssWidth) - viewport.width)).toBeLessThanOrEqual(1);

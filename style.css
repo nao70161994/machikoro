@@ -5588,6 +5588,13 @@ html:is([data-design="sunset"], [data-design="plaza"]) body:not(.accessibility-h
 }
 
 @media (orientation: landscape) and (max-height: 480px) and (min-width: 761px) {
+    /* Keep the title at the start of its own scrollport when the setup content
+       is taller than a phone held sideways. Auto block margins otherwise
+       center an overflowing flex child and clip the brand at the top edge. */
+    body:has(> #titleScreen:not([style*="display: none"])) #titleScreen > .title-content {
+        margin-block: 0;
+    }
+
     .title-content { padding: 8px 20px; gap: 8px 16px; }
     .title-header { align-self: center; }
     .title-header h1 { font-size: 30px; letter-spacing: 2px; margin-bottom: 0; }

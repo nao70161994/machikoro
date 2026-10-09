@@ -11,6 +11,7 @@ on:
             - 'js/plaza*.js'
             - 'js/plazaField.js'
             - 'tests/browser/visual-art-review.spec.js'
+            - 'tests/browser/title-layout.spec.js'
             - 'tests/browser/theme-visual-regression.spec.js'
             - 'tests/browser/plaza-online.spec.js'
             - 'tests/browser/plaza-overview.spec.js'
@@ -43,6 +44,9 @@ jobs:
             - name: Compare theme baselines at target viewports
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
               run: npm run test:browser-visual -- --output=test-results/theme-baseline --retries=0 --workers=1
+            - name: Title and saved-game responsive interaction review
+              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
+              run: npx playwright test title-layout.spec.js --project=mobile-webkit --output=test-results/title-layout --retries=0 --workers=1
             - name: Generate candidate theme baselines
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
               run: npm run test:browser-visual -- --output=test-results/theme-baseline --update-snapshots --retries=0 --workers=1
