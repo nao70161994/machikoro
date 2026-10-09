@@ -8977,6 +8977,11 @@ html[data-design="plaza"] #gameScreen:has(> #gameLogContainer.plaza-panel-open, 
 html[data-design="plaza"] body:not(.game-finished):has(#gameScreen[style*="display: block"]) #pwaUpdateBanner {
     bottom: calc(var(--plaza-actions, 84px) + var(--plaza-events, 32px) + 4px + env(safe-area-inset-bottom, 0px));
 }
+/* Recovery is complete, so its informational toast must not keep covering
+   the receipt or action underneath while the notice fades away. */
+html[data-design="plaza"] #gameConnectivityPanel:has(.game-activity-status.is-recovered) {
+    pointer-events: none;
+}
 html[data-design="plaza"] body.plaza-update-visible:not(.game-finished) #plazaViewport,
 html[data-design="plaza"] body.plaza-update-visible:not(.game-finished) #plazaPlayerInsights:not([hidden]),
 html[data-design="plaza"] body.plaza-update-visible:not(.game-finished) #plazaComparison:not([hidden]),
