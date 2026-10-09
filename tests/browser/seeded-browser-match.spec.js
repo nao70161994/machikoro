@@ -64,7 +64,17 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
             type: 'cpu', difficulty: 'weak', name: `固定CPU${index + 1}`,
         }));
         startGameNow(playerCount, players);
-        window.__matchPresentation = { rolls: 0, activations: 0, transfers: 0, landmarkCelebrations: 0 };
+        window.__matchPresentation = { rolls: 0, activations: 0, transfers: 0, landmarkCelebrations: 0, receipts: 0 };
+        if (designName === 'plaza') {
+            const receipt = document.getElementById('plazaDiceReceipt');
+            new MutationObserver(() => {
+                const dice = receipt.querySelector('.plaza-receipt-dice');
+                const events = document.getElementById('plazaEvents');
+                if (dice && events.getClientRects().length && getComputedStyle(events).display !== 'none') {
+                    window.__matchPresentation.receipts++;
+                }
+            }).observe(receipt, { childList: true, subtree: true });
+        }
         const board = document.getElementById('cardboardBoard');
         new MutationObserver(records => {
             for (const record of records) {
@@ -153,7 +163,7 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
     expect(result.presentation.transfers).toBeGreaterThan(0);
     expect(result.presentation.landmarkCelebrations).toBeGreaterThan(0);
     expect(pageErrors).toEqual([]);
-    if (MATCH_DESIGN === 'plaza') await expect(page.locator('#plazaDiceReceipt .plaza-receipt-dice')).toBeVisible();
+    if (MATCH_DESIGN === 'plaza') expect(result.presentation.receipts).toBeGreaterThan(0);
     await testInfo.attach('seeded-match-result.json', {
         body: JSON.stringify(result, null, 2), contentType: 'application/json',
     });
