@@ -8497,7 +8497,7 @@ html[data-design="plaza"] body.game-finished.pwa-banner-open #gameScreen[style*=
     html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; }
     html[data-design="plaza"] #plazaViewport { right: 216px; }
     html[data-design="plaza"] #plazaCameraTools { left: 0; right: 0; top: var(--plaza-status, 30px); }
-    html[data-design="plaza"] body:not(.game-finished):has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { left: 8px; right: auto; transform: none; max-width: calc(100% - 232px); }
+    html[data-design="plaza"] body:not(.game-finished):has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { left: 8px; right: 8px; transform: none; max-width: calc(100% - 16px); }
 }
 
 html[data-design="plaza"] .plaza-seat-mark {
@@ -8542,14 +8542,51 @@ html[data-design="plaza"] #gameScreen > #gameLogContainer.plaza-panel-open,
 html[data-design="plaza"] #gameScreen > #tutorialBox { bottom: calc(var(--plaza-actions) + var(--plaza-events, 32px) + 4px); }
 html[data-design="plaza"] #plazaComparison:not([hidden]) { bottom: calc(var(--plaza-actions) + var(--plaza-events, 32px) + 4px); }
 @media (orientation: landscape) and (max-height: 600px) {
-    html[data-design="plaza"] #plazaComparison:not([hidden]) { right: 224px; }
-    html[data-design="plaza"] #gameScreen > #plazaEvents { right: 216px; max-height: 32px; }
-    html[data-design="plaza"] #gameScreen[style*="display: block"] > .game-action-panel { right: 216px; width: auto; padding: 4px; }
+    html[data-design="plaza"] #plazaPlayerHud {
+        top: calc(var(--plaza-status, 30px) + var(--plaza-tools, 52px)); left: 0; right: 0; width: auto;
+        height: 64px; max-height: 64px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px;
+        overflow: hidden; background: #102c35;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: flex; flex: 0 0 auto; min-width: 0; gap: 4px; }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
+        flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin;
+    }
+    html[data-design="plaza"] #plazaPlayerHud button {
+        display: grid; flex: 0 0 clamp(148px, calc((100vw - 32px) / 4), 204px); grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: 22px 22px; align-content: center; gap: 0 4px; width: auto; height: 56px; min-height: 56px;
+        box-sizing: border-box; padding: 3px 6px; font-size: 12px;
+    }
+    html[data-design="plaza"] #plazaPlayerHud strong { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 3px; min-width: 0; white-space: nowrap; }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-seat-mark { min-width: 18px; width: 18px; height: 18px; margin: 0; padding: 0; font-size: 10px; }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-kind-mark { display: none; }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-design="plaza"] #plazaPlayerHud button > .plaza-player-coins { grid-column: 2; grid-row: 1; font-size: 11px; font-weight: 700; }
+    html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type {
+        display: flex; grid-column: 1; grid-row: 2; align-items: center; gap: 4px; font-size: 10px; white-space: nowrap;
+    }
+    html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; align-self: center; font-size: 10px; white-space: nowrap; }
+    html[data-design="plaza"] #plazaComparison:not([hidden]) { right: 8px; }
+    html[data-design="plaza"] #plazaViewport { right: 0; }
+    html[data-design="plaza"] #gameScreen > #plazaEvents { right: 0; max-height: 32px; }
+    html[data-design="plaza"] #gameScreen > .game-action-panel {
+        position: absolute; inset: auto 0 0; transform: none; width: 100%; height: auto; min-height: 0;
+        margin: 0; padding: 4px 8px; border-radius: 0; grid-template-columns: 80px minmax(0, 1fr); gap: 4px;
+    }
+    html[data-design="plaza"] #gameScreen > .game-action-panel > .buttons { margin-right: 220px; }
     html[data-design="plaza"] #gameScreen .game-action-panel > .buttons > button { min-height: 44px; padding: 4px; font-size: 13px; }
-    html[data-design="plaza"] .game-action-toolbar { position: absolute; right: -216px; bottom: 0; width: 216px; box-sizing: border-box; padding: 4px; background: #102c35; }
+    html[data-design="plaza"] .game-action-toolbar { position: absolute; right: 4px; bottom: 4px; width: 216px; min-height: 44px; box-sizing: border-box; padding: 0; background: transparent; }
     html[data-design="plaza"] .game-action-toolbar > details { flex: 1; }
-    html[data-design="plaza"] .game-action-toolbar > details > summary { display: flex; align-items: center; min-height: 44px; padding: 4px; box-sizing: border-box; }
-    html[data-design="plaza"] #plazaPlayerHud { max-height: calc(100% - var(--plaza-top) - var(--plaza-sidebar-actions, 60px)); }
+    html[data-design="plaza"] .game-action-toolbar > details > summary {
+        display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 44px;
+        padding: 4px; box-sizing: border-box; overflow: hidden; font-size: 0; white-space: nowrap;
+    }
+    html[data-design="plaza"] .game-design-switcher > summary::after,
+    html[data-design="plaza"] .game-guide-settings > summary::after,
+    html[data-design="plaza"] .game-support-settings > summary::after { font-size: 11px; }
+    html[data-design="plaza"] .game-design-switcher > summary::after { content: "画面"; }
+    html[data-design="plaza"] .game-guide-settings > summary::after { content: "ガイド"; }
+    html[data-design="plaza"] .game-support-settings > summary::after { content: "記録"; }
 }
 
 /* Keep the full town art at high device pixel ratios without allocating a
@@ -9353,5 +9390,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCenter 
     html[data-design="cardboard"] #cardboardBoard *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
     html[data-design="cardboard"] .cardboard-new-roll .plaza-receipt-dice { background: #ffe89c; }
 }
-/* All three local tool disclosures keep a 44px target in the narrow plaza HUD. */
-html[data-design="plaza"] .game-action-toolbar > details > summary { min-height: 44px; display: flex; align-items: center; font-size: 12px; }
+/* All three local tool disclosures keep a 44px target in the narrow portrait plaza HUD. */
+@media (orientation: portrait) and (max-width: 600px) {
+    html[data-design="plaza"] .game-action-toolbar > details > summary { min-height: 44px; display: flex; align-items: center; font-size: 12px; }
+}

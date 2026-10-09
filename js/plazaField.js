@@ -91,7 +91,6 @@ const PlazaField = (() => {
         arrangeTowns();
         const screen = node('gameScreen');
         const actions = /** @type {HTMLElement} */ (screen.querySelector('.game-action-panel'));
-        const sideHud = window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
         const height = element => Math.ceil(element.getBoundingClientRect().height);
         const statusHeight = height(node('status'));
         const hudHeight = height(node('plazaPlayerHud'));
@@ -103,7 +102,7 @@ const PlazaField = (() => {
         const eventsHeight = `${height(node('plazaEvents'))}px`;
         screen.style.setProperty('--plaza-events', eventsHeight);
         document.body.style.setProperty('--plaza-events', eventsHeight);
-        screen.style.setProperty('--plaza-top', `${statusHeight + toolsHeight + (sideHud ? 0 : hudHeight)}px`);
+        screen.style.setProperty('--plaza-top', `${statusHeight + toolsHeight + hudHeight}px`);
         screen.style.setProperty('--plaza-actions', `${height(actions)}px`);
         document.body.style.setProperty('--plaza-actions', `${height(actions)}px`);
         const bannerHeight = height(node('pwaUpdateBanner'));
