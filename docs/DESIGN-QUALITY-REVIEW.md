@@ -91,4 +91,4 @@
 
 ### 回帰確認と未達事項
 
-`tests/browser/cardboard-table.spec.js` に320px縦持ちのフェーズ別操作検証を追加した。ローカルの自動テストでは `node tests/ui-card-board.test.js` と `npm test` が成功した一方、Playwrightの browser spec はTermuxの `android` 未対応で実行できないため、この新規ケースはCIで実行する必要がある。縦持ちは1画面に街/市場を全部押し込まず、上下スクロールで選ぶ構造である。実機操作、2〜4人の長時間完走、5〜10人の実進行、オンライン再接続、ランドマーク/勝利演出、4テーマ間の回帰は未完了であり、このGoalは継続する。
+`tests/browser/cardboard-table.spec.js` に320px縦持ちのフェーズ別操作検証を追加した。`npm test` は横持ち盤面とタイトル変更前の時点で実行し exit 0、今回のフェーズ操作に対応する `node tests/ui-card-board.test.js` も成功した。Playwrightの browser spec はTermuxの `android` 未対応で実行できないため、この新規ケースはCIで実行する必要がある。縦持ちは1画面に街/市場を全部押し込まず、上下スクロールで選ぶ構造である。実機操作、2〜4人の長時間完走、5〜10人の実進行、オンライン再接続、ランドマーク/勝利演出、4テーマ間の回帰は未完了であり、このGoalは継続する。
