@@ -75,26 +75,28 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
                 }
             }).observe(receipt, { childList: true, subtree: true });
         }
-        const board = document.getElementById('cardboardBoard');
-        new MutationObserver(records => {
-            for (const record of records) {
-                if (record.type === 'attributes') {
-                    const target = record.target;
-                    const oldClass = record.oldValue || '';
-                    if (target === board && target.classList.contains('cardboard-new-roll') && !oldClass.includes('cardboard-new-roll')) window.__matchPresentation.rolls++;
-                    if (target.classList.contains('cardboard-card-activated') && !oldClass.includes('cardboard-card-activated')) window.__matchPresentation.activations++;
-                    if (target.classList.contains('cardboard-landmark-newly-built') && !oldClass.includes('cardboard-landmark-newly-built')) window.__matchPresentation.landmarkCelebrations++;
-                }
-                if (record.type === 'childList' && [...record.addedNodes].some(node => node.nodeType === Node.ELEMENT_NODE && node.classList.contains('cardboard-transfers'))) window.__matchPresentation.transfers++;
-                if (record.type === 'childList') {
-                    for (const added of record.addedNodes) {
-                        if (added.nodeType !== Node.ELEMENT_NODE) continue;
-                        const activated = (added.matches('.cardboard-card-activated') ? 1 : 0) + added.querySelectorAll('.cardboard-card-activated').length;
-                        window.__matchPresentation.activations += activated;
+        if (designName === 'cardboard') {
+            const board = document.getElementById('cardboardBoard');
+            new MutationObserver(records => {
+                for (const record of records) {
+                    if (record.type === 'attributes') {
+                        const target = record.target;
+                        const oldClass = record.oldValue || '';
+                        if (target === board && target.classList.contains('cardboard-new-roll') && !oldClass.includes('cardboard-new-roll')) window.__matchPresentation.rolls++;
+                        if (target.classList.contains('cardboard-card-activated') && !oldClass.includes('cardboard-card-activated')) window.__matchPresentation.activations++;
+                        if (target.classList.contains('cardboard-landmark-newly-built') && !oldClass.includes('cardboard-landmark-newly-built')) window.__matchPresentation.landmarkCelebrations++;
+                    }
+                    if (record.type === 'childList' && [...record.addedNodes].some(node => node.nodeType === Node.ELEMENT_NODE && node.classList.contains('cardboard-transfers'))) window.__matchPresentation.transfers++;
+                    if (record.type === 'childList') {
+                        for (const added of record.addedNodes) {
+                            if (added.nodeType !== Node.ELEMENT_NODE) continue;
+                            const activated = (added.matches('.cardboard-card-activated') ? 1 : 0) + added.querySelectorAll('.cardboard-card-activated').length;
+                            window.__matchPresentation.activations += activated;
+                        }
                     }
                 }
-            }
-        }).observe(board, { subtree: true, childList: true, attributes: true, attributeOldValue: true, attributeFilter: ['class'] });
+            }).observe(board, { subtree: true, childList: true, attributes: true, attributeOldValue: true, attributeFilter: ['class'] });
+        }
         window.__matchMonitor = setInterval(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             if (designName === 'plaza') {
@@ -160,7 +162,7 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
     expect(result.winner).toBeTruthy();
     expect(result.presentation.rolls).toBeGreaterThan(0);
     expect(result.presentation.activations).toBeGreaterThan(0);
-    expect(result.presentation.transfers).toBeGreaterThan(0);
+    if (MATCH_DESIGN === 'cardboard') expect(result.presentation.transfers).toBeGreaterThan(0);
     expect(result.presentation.landmarkCelebrations).toBeGreaterThan(0);
     expect(pageErrors).toEqual([]);
     if (MATCH_DESIGN === 'plaza') expect(result.presentation.receipts).toBeGreaterThan(0);

@@ -195,10 +195,12 @@ Round 14の画面検証を最新コードで再実行したCI run [37890980288](
 
 ## Round 15: plaza 4人戦の横持ちCPU完走シナリオを追加
 
-2人のbrowser完走specを拡張し、テーマ・人数・viewportを環境指定できるようにした。既存シナリオの1440×900px 2人「カード卓」CPU matchを維持し、新たに844×390px・plaza・4人弱CPUのシナリオを `test:browser-pr` に加える。plazaではdice/収入/送金/ランドマーク建設の構造化ログで完走イベントを確認し、実画面の収益receipt、winner townと結果操作を操作/撮影する。viewport専用の完走画像と状態JSONをCI artifactへ出力する。
+2人のbrowser完走specを拡張し、テーマ・人数・viewportを環境指定できるようにした。既存シナリオの1440×900px 2人「カード卓」CPU matchを維持し、新たに844×390px・plaza・4人弱CPUのシナリオを `test:browser-pr` に加える。plazaではdice/収入/ランドマーク建設の構造化ログとreceiptの対局中表示を確認し、勝利時の街と結果操作を操作/撮影する。実際に送金が発生した場合は記録するが、毎回送金施設を建てるCPU対局とは限らないため、送金数を完走の必須条件にしない。viewport専用の完走画像と状態JSONをCI artifactへ出力する。
 
 この追加に伴いRound 12〜14の一部記録を訂正する。従来の `seeded-browser-match.spec.js` は開始時にテーマを `cardboard` に固定していたため、「plaza 2人戦」と記述した実ブラウザ完走は、実際にはカード卓2人戦だった。スクリーンショットの表示/JSONが示すとおり、plazaの完走実証として扱わない。旧記録を訂正し、今回のplaza 4人横画面対局を開始から勝利まで検証して初めて、その範囲の証拠とする。
 
 - `node --check tests/browser/seeded-browser-match.spec.js`、package scriptのparse、`git diff --check` を実行。実ブラウザ完走は最新CI待ち。
 
 Round 15のCIでは2人CPU desktop完走と既存のタイトル/テーマ/receipt検証は通過した。新規4人plaza横画面も開始から勝利まで進み、出目/収益/送金/ランドマーク条件を満たしたが、終了時点の最新receiptはbuildログに切り替わっており、終了後にdice receiptが表示されるという誤ったassertだけが失敗した。Plaza画面が対局中にdice receiptを表示した時点をMutationObserverで計測し、実対局中の表示履歴として検証するよう直す。
+
+Round 15の再試行では4人plaza横画面matchが勝利まで達し、receiptの対局中表示も確認されたが、送金数assertがflakyになった。カード卓専用DOM observerがplazaでも稼働し、plaza側の構造化ログ集計と重複・不一致のイベント数を混在させていた。observerをcardboard限定へ移し、plazaの送金は実際に起きた場合の観測値として記録し、ランダムなCPU編成で毎回の発生を完走条件にしない。収入とランドマーク、出目、receipt表示は実対局の継続条件として維持する。修正後は再び横画面matchとartifact画像を確認する。
