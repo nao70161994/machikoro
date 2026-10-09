@@ -101,7 +101,7 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 - 修正後の約2.5秒profile（同じ保存対局の終盤）では、それぞれ約75ms、約56ms。後者は施設がさらに増えた状態で取得した。CPU sampled timeの比較であり、物理端末の時間保証ではない。
 - 修正前のcheckpointには弱CPUのrollが約9.5秒、harborChoiceが約8.3秒の処理時間として記録されていた。修正版を再開した直後の記録ではbuild約1.4秒、selectDice約1.0秒だった。step時間は選択・ゲーム適用・renderを含むためCPU思考時間だけではない。
 - 終盤では両者の街に48枚と46枚の施設があり、勝者が6ランドマーク、相手が5ランドマークを建設。`GameManager`のturnCountは108、勝利結果UIには109ターンと表示された。
-- [広場の終盤画面・修正前](../artifacts/design-review/round-7-plaza-endgame-before-watchdog-opt.png)、[広場の勝利画面・修正後](../artifacts/design-review/round-7-plaza-cpu-victory-after-watchdog-opt.png)。844×390px Chromium emulationで撮影し、目視確認した。勝利画面は縦スクロールが残り、横持ち一画面内で結果と街全体を同時に見せるレイアウトは未達。物理端末では確認していない。
+- [広場の終盤画面](../artifacts/design-review/round-7-plaza-endgame-before-watchdog-opt.png)、[ラウンド8変更前の勝利画面](../artifacts/design-review/round-7-plaza-cpu-victory-after-watchdog-opt.png)。844×390px Chromium emulationで撮影し、目視確認した。横持ちの勝利画面は後続のRound 8で再配置した。
 - テスト中はChromiumを終了してから直列で `MACHIKORO_TEST_CONCURRENCY=1 npm test` を実行し、終了コード0。`tests/main.test.js`、`tests/app-shell-observation-runtime.test.js`、`tests/ui-watchdog-runtime.test.js`、`tests/ui-watchdog-recovery-runtime.test.js`、編集したJSの構文確認も通過。
 
 ## Round 8: 横持ちの勝利画面を再配置
@@ -112,4 +112,10 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 - 終盤密度を模した勝利画面fixtureを844×390px Chromium headlessで表示・撮影し、見た目と要素位置を確認した。勝者名、統計、再戦、共有、タイトルへ戻るボタンはいずれも390px viewport内（タイトルへ戻るボタン下端386px）。街は上部の右列に収まり、詳細記録は下へスクロールして読める。
 - このroundの撮影はCSSレイアウトを確認するfixtureであり、実対局DOMや物理スマートフォンの撮影ではない。実対局の勝利画面は修正前スクリーンショットでのみ確認済み。横持ちの新レイアウトを実対局データで再撮影する確認は未完了。
 
-この改善でCPU対局の遅延とDOM診断負荷は大きく下がり、実ブラウザ勝利まで確認できた。一方、残高/施設数が極端に大きくなった対局のカード・盤面表現、勝利画面の横持ちレイアウト、他テーマ・オンライン対局・実機は引き続き確認が必要。
+## Round 9: 保存済み対局の中盤を再確認
+
+- 前回のChromium CPU対局プロフィールにあった弱CPU同士の保存データを再開。新規ゲームは作らず、844×390pxで実画面を撮影した: [保存対局の中盤画面](../artifacts/design-review/round-9-plaza-resumed-midgame-844x390.png)。この時点はランドマークを対象にした保留選択中で、結果を返す対象を選ぶ状況だった。
+- 実対局再開から数秒でChromiumの大きな子プロセスが約685MiB RSSとなり、CDPの状態取得も遅くなった。利用可能メモリは約3.1GiBだった。以前の長時間対局で操作不能になった兆候を避けるため、勝利まで自動進行を続けずChromiumを終了した。終了後は利用可能メモリ約3.8GiBへ戻った。
+- 再開時の画面撮影は実対局の中盤確認であり、CPU対局の完走やRound 8勝利画面の実DOM再確認の証拠にはしない。中盤/終盤を通した低メモリ観察方法と、ランドマーク保留中のイベント説明・対象選択の読みやすさを次のレビュー対象に残す。
+
+この改善でCPU対局の遅延とDOM診断負荷は大きく下がり、実ブラウザ勝利まで確認できた。一方、残高/施設数が極端に大きくなった対局のカード・盤面表現、勝利画面の横持ち新レイアウトを実対局DOMでの再撮影、他テーマ・オンライン対局・実機は引き続き確認が必要。
