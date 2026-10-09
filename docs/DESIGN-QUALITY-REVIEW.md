@@ -180,3 +180,5 @@ Round 13の2回目CIでは粒の生成位置チェックが成功し、スクリ
 
 - `node --check tests/browser/title-layout.spec.js`、package script確認、`node scripts/check-static-files.js`（809 JavaScript、25 JSON）、`git diff --check` は成功。
 - CIの横持ち画面でタイトル/保存再開を4幅まとめて実行した結果と画像レビューは未確認。端末のBrowserテストは起動せず、次回CIに回す。
+
+Round 14を含む最初のCIは他の2ジョブ成功、WebKitのタイトル4画面中3画面成功。844×390pxのみ、WebKitのbounding box `843.984375px` を整数844pxとの完全一致で比べたため落ちた。1px未満のCSSサブピクセル丸めであり、body幅・左端・横はみ出し条件は満たしているため、title/canvas幅のみ1px以内を許容するアサーションへ直し、画面外余白や横スクロールを許す緩和はしていない。再実行後に横画面の再開・削除操作と画像成果物を確認する。
