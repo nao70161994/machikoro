@@ -82,7 +82,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#plazaComparison')).toBeHidden();
         await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-section="landmarks"]').click();
-        await expect(page.locator('#buildMenu .build-section h4').last()).toBeFocused();
+        await expect(page.locator('#buildMenu .build-section:not(.build-card-section) h4').first()).toBeFocused();
         expect(await page.locator('#buildMenu').evaluate(element => element.scrollTop)).toBeGreaterThan(0);
         await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-section="facilities"]').click();
