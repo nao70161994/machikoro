@@ -76,6 +76,37 @@ runTest('新しい手番では前手番の出目収支と重要建設を持ち�
     assert.deepStrictEqual(receipt.important, []);
 });
 
+runTest('長い過去ログでも領収は最新手番だけ分類する', () => {
+    let classified = 0;
+    const countingLogDisplay = { ...UiLogDisplay, classifyLogEntry(entry, types) {
+        classified++;
+        return UiLogDisplay.classifyLogEntry(entry, types);
+    } };
+    const logs = Array.from({ length: 250 }, (_, index) => [
+        entry('system', `👤 過去${index}のターン`), entry('dice', '🎲 2 が出ました'),
+        entry('gain', '🌾 あなたの街の森林発動 → +1コイン'),
+    ]).flat();
+    logs.push(entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 5 が出ました'),
+        entry('gain', '🌾 あなたの街の森林発動 → +3コイン'));
+    const receipt = UiPlazaEvents.project(logs, { players, turnPlayerIndex: 0,
+        display, logDisplay: countingLogDisplay });
+    assert.strictEqual(receipt.dice.base, 5);
+    assert.strictEqual(receipt.balances[0].income, 3);
+    assert.ok(classified < 12, `only the latest turn should be classified, got ${classified}`);
+    const previousClassified = classified;
+    logs.push(entry('gain', '🌾 あなたの街の森林発動 → +2コイン'));
+    const updated = UiPlazaEvents.project(logs, { players, turnPlayerIndex: 0,
+        display, logDisplay: countingLogDisplay });
+    assert.strictEqual(updated.balances[0].income, 5);
+    assert.ok(classified - previousClassified < 12,
+        `appended log updates should only classify the current turn, got ${classified - previousClassified}`);
+    logs.push(entry('system', '👤 CPUのターン'));
+    const nextTurn = UiPlazaEvents.project(logs, { players, turnPlayerIndex: 1,
+        display, logDisplay: countingLogDisplay });
+    assert.strictEqual(nextTurn.dice, null);
+    assert.deepStrictEqual(nextTurn.balances, []);
+});
+
 runTest('重要ランドマークと追加手番は通常末尾4件から押し流されない', () => {
     const receipt = project([entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 5 が出ました'),
         entry('build', '🏆 駅を建設！'), entry('system', '🎡 遊園地効果！ゾロ目でもう一度ターン'),

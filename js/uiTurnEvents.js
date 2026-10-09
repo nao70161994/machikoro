@@ -5,12 +5,25 @@
 const UiTurnEvents = (() => {
     const dicePresentation = typeof DicePresentation !== 'undefined' ? DicePresentation : require('./dicePresentation');
     const transactions = typeof GameCoinTransaction !== 'undefined' ? GameCoinTransaction : require('./gameCoinTransaction');
+    const turnStartByLog = new WeakMap();
     function project(entries, options = {}) {
         const helper = options.logDisplay || (typeof UiLogDisplay !== 'undefined' ? UiLogDisplay
             : typeof require === 'function' ? require('./uiLogDisplay') : null);
         const display = options.display || (options.logTypes ? helper.makeLogTypeDisplay(options.logTypes) : {});
         const players = (options.players || []).slice(0, 10);
-        const history = (Array.isArray(entries) ? entries : []).filter(entry => entry && typeof entry.message === 'string');
+        const sourceHistory = Array.isArray(entries) ? entries : [];
+        const cachedTurn = turnStartByLog.get(sourceHistory);
+        const canAppend = cachedTurn && cachedTurn.length <= sourceHistory.length;
+        let scanFrom = canAppend ? cachedTurn.length : 0;
+        let scanStart = canAppend ? cachedTurn.start : 0;
+        for (let index = scanFrom; index < sourceHistory.length; index++) {
+            const message = sourceHistory[index]?.message;
+            if (typeof message !== 'string' || !message.startsWith('👤 ') || !message.endsWith('のターン')) continue;
+            scanStart = index > 0 && sourceHistory[index - 1]?.message === '🎡 遊園地効果！ゾロ目でもう一度ターン'
+                ? index - 1 : index;
+        }
+        turnStartByLog.set(sourceHistory, { length: sourceHistory.length, start: scanStart });
+        const history = sourceHistory.slice(scanStart).filter(entry => entry && typeof entry.message === 'string');
         const uniqueIndex = name => {
             const indices = players.map((player, index) => player.name === name ? index : -1).filter(index => index >= 0);
             return indices.length === 1 ? indices[0] : null;

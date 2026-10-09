@@ -126,8 +126,9 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 
 - 画面下部の短縮収益行に、施設名、席番号付きの送金元/先、金額、複数発動数をまとめて表示。席番号は上部HUDの同じ席番号と対応し、長い名前でも短いイベント帯を圧迫しにくい。詳細欄では「銀行」や参加者名を含む完全な送金経路を維持し、片側が銀行のケースも明示する。
 - `tests/ui-plaza-events.test.js` で銀行からの収入とプレイヤー間送金経路を検証し、`tests/browser/plaza-event-receipts.spec.js` で短縮行の収益表示期待値を更新した。
+- 同じ描画経路が毎回全ログを分類しないよう、同じログ配列の末尾追加位置と最新手番開始位置を `WeakMap` に保持し、追加されたログだけを調べて現手番を投影する。復元やリセット後の新配列は全体を一度走査し、その後の追記は追加分だけ走査する。250ターン相当の過去ログから始め、複数回の追記でも分類対象を最新手番に限定しつつ出目と収入の集計が変わらないことをテストした。カード盤面と送金演出が使う共通投影のテストも再実行した。
 - 同receiptの4画面幅チェックを `test:browser-pr` のモバイルWebKit必須セットへ追加する。Round 10の勝利画面チェックと合わせ、実画面上の出目・複数発動・建設・目標達成をPR時に確認する。
-- `node --check`（編集JSとbrowser spec）、`node tests/ui-plaza-events.test.js`、`git diff --check` は成功。短縮行の変更後スクリーンショットはローカルPlaywrightが起動できないため未取得。次のPR CIで画面表示・折り返しとWebKit挙動を確認する。
+- `node --check`（編集JSとbrowser spec）、`node tests/ui-plaza-events.test.js`、`node tests/ui-card-board.test.js`、`node tests/card-board-transfers.test.js`、`git diff --check` は成功。短縮行の変更後スクリーンショットはローカルPlaywrightが起動できないため未取得。次のPR CIで画面表示・折り返しとWebKit挙動を確認する。
 
 ## Round 9: 保存済み対局の中盤を再確認
 
