@@ -8515,7 +8515,7 @@ html[data-design="plaza"] body.game-finished.pwa-banner-open #gameScreen[style*=
     html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type { grid-column: 1 / -1; grid-row: 3; }
     html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; }
     html[data-design="plaza"] #plazaViewport { right: 216px; }
-    html[data-design="plaza"] #plazaCameraTools { left: 0; right: 0; top: var(--plaza-status, 30px); }
+    html[data-design="plaza"] #plazaCameraTools { left: 0; right: 0; top: var(--plaza-status, 30px); padding-block: 0; }
     html[data-design="plaza"] body:not(.game-finished):has(#gameScreen[style*="display: block"]) #pwaUpdateBanner { left: 8px; right: 8px; transform: none; max-width: calc(100% - 16px); }
 }
 
@@ -8568,7 +8568,7 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     html[data-design="plaza"] body:not(.game-finished) #gameScreen > #status { display: none; }
     html[data-design="plaza"] #plazaPlayerHud {
         top: calc(var(--plaza-status, 30px) + var(--plaza-tools, 52px)); left: 0; right: 0; width: auto;
-        height: 56px; max-height: 56px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px;
+        height: 48px; max-height: 48px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 0 4px;
         overflow: hidden; background: #102c35;
     }
     html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
@@ -8592,10 +8592,10 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; align-self: center; font-size: 10px; white-space: nowrap; }
     html[data-design="plaza"] #plazaComparison:not([hidden]) { right: 8px; }
     html[data-design="plaza"] #plazaViewport { right: 0; }
-    html[data-design="plaza"] #gameScreen > #plazaEvents { right: 0; max-height: 32px; }
+    html[data-design="plaza"] #gameScreen > #plazaEvents { right: 0; height: 28px; max-height: 28px; padding-block: 2px; }
     html[data-design="plaza"] #gameScreen > .game-action-panel {
         position: absolute; inset: auto 0 0; transform: none; width: 100%; height: auto; min-height: 0;
-        margin: 0; padding: 4px 8px; border-radius: 0; grid-template-columns: 80px minmax(0, 1fr); gap: 4px;
+        margin: 0; padding: 0 8px env(safe-area-inset-bottom, 0px); border-radius: 0; grid-template-columns: 80px minmax(0, 1fr); gap: 4px;
     }
     html[data-design="plaza"] #gameScreen > .game-action-panel > .buttons { margin-right: 220px; }
     html[data-design="plaza"] #gameScreen .game-action-panel > .buttons > button { min-height: 44px; padding: 4px; font-size: 13px; }
@@ -8909,7 +8909,7 @@ html[data-design="plaza"] .plaza-receipt-transfer > b { font-variant-numeric: ta
 html[data-design="plaza"] #plazaCameraTools .plaza-events-toggle { display: none; }
 @media (orientation: landscape) and (max-height: 600px) {
     html[data-design="plaza"] #plazaCameraTools .plaza-events-toggle { display: block; }
-    html[data-design="plaza"] #gameScreen > #plazaEvents:not(.plaza-events-expanded) { height: 32px; max-height: 32px; overflow: hidden; }
+    html[data-design="plaza"] #gameScreen > #plazaEvents:not(.plaza-events-expanded) { height: 28px; max-height: 28px; padding-block: 2px; overflow: hidden; }
     html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-event-receipt { display: flex; align-items: center; gap: 8px; height: 24px; overflow: hidden; }
     html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-receipt-dice { flex: 0 0 auto; }
     html[data-design="plaza"] #plazaEvents:not(.plaza-events-expanded) .plaza-receipt-featured,

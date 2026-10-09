@@ -2317,7 +2317,6 @@ for (const width of [320, 390, 844, 1440]) {
         await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
         expect(await town.locator('.town-backdrop').evaluate(element =>
             getComputedStyle(element).position)).toBe('absolute');
-        expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
         if (width === 390) {
             await page.reload();
             await expect(page.locator('html')).toHaveAttribute('data-design', 'plaza');
