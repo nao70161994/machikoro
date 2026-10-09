@@ -13,6 +13,7 @@ on:
             - 'tests/browser/visual-art-review.spec.js'
             - 'tests/browser/theme-visual-regression.spec.js'
             - 'tests/browser/plaza-online.spec.js'
+            - 'tests/browser/plaza-overview.spec.js'
             - 'playwright.config.js'
             - 'package.json'
             - '.github/workflows/plaza-visual-review.yml'
@@ -55,6 +56,9 @@ jobs:
             - name: Plaza visual and online review
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
               run: npx playwright test visual-art-review.spec.js plaza-online.spec.js --grep '広場テーマは共通アート|広場の4人オンライン|広場の終盤と補助操作' --retries=0 --workers=1
+            - name: Plaza field viewport, focus, and market review
+              if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true) }}
+              run: npx playwright test plaza-overview.spec.js --project=mobile-webkit --retries=0 --workers=1
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:

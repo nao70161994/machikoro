@@ -241,3 +241,9 @@ Plaza self viewから市場が部分的に見切れていたため、`plaza-fiel
 - 変更後の候補画像/市場操作レビューは未実施。CSSはfixtureで確認した320/390/844×390/1440の条件で再生成し、self表示の余白とmarket/all表示のアクセスを確認する。
 
 Round 19の市場画像レビューに向け、320/390幅ではカメラを縮小する代わりに市場パネル幅をviewportへ合わせて等倍で開き、カードグリッドを2列にする。844×390とPCは570pxパネルのまま。market focus時のパネル境界・幅・見出し・列数の検査と、320/390/1363/844の4 viewport screenshot artifactをoverview browser testへ追加した。これらの最新画面はCI未確認。
+
+## Round 20: Plaza overview検証をPR CIへ接続する
+
+`plaza-overview.spec.js`がPlaywright上にある一方、既存workflowのbrowserコマンドとpath filterのどちらにも含まれていないことを確認。Plaza visual review workflowに独立ステップとして追加し、320/390/844×390/1363幅のレイアウト、全体/市場/街フォーカス、4/10人の街配置、施設比較、キーボード復帰などをPR時に実行する。スクリーンショットattachmentは既存のtest-results artifactへ含める。candidate baseline生成runではこの通常レビューstepを実行しない。
+
+- workflow変更後のCI実行・市場フォーカス画像確認は未実施。
