@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs/promises');
+const path = require('node:path');
 
 async function prepare(page, viewport, count = 4) {
     await page.setViewportSize(viewport);
@@ -77,7 +79,11 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#plazaBuildReceipt')).toContainText('サイコロを1個か2個か選べる');
         await page.locator('[data-built-town-index="0"]').click();
         await expect(page.locator('#crashScreen')).toBeHidden();
-        await test.info().attach(`receipt-${viewport.width}`, { body: await page.screenshot(), contentType: 'image/png' });
+        const screenshot = await page.screenshot();
+        const screenshotPath = test.info().outputPath(`plaza-receipt-${viewport.width}.png`);
+        await fs.mkdir(path.dirname(screenshotPath), { recursive: true });
+        await fs.writeFile(screenshotPath, screenshot);
+        await test.info().attach(`receipt-${viewport.width}`, { path: screenshotPath, contentType: 'image/png' });
     });
 }
 
