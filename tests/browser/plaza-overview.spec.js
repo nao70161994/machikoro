@@ -46,6 +46,30 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#playerBox1 .plaza-seat-mark')).toHaveText('席2');
         await expect(page.locator('#playerBox0 .plaza-seat-mark')).toHaveAttribute('aria-label', '席1');
         await expect(page.locator('#plazaPlayerHud [data-player-index="0"]')).toHaveAttribute('aria-label', /^席1、/);
+        await page.locator('[data-field-target="market"]').click();
+        await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
+        await expect(page.locator('#buildMenu h3')).toContainText('施設一覧');
+        const marketFocus = await page.evaluate(() => {
+            const panel = document.getElementById('buildMenu').getBoundingClientRect();
+            const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
+            return {
+                panel: { left: panel.left, right: panel.right, top: panel.top, bottom: panel.bottom, width: panel.width },
+                viewport: { left: viewport.left, right: viewport.right, top: viewport.top, bottom: viewport.bottom, width: innerWidth },
+                columns: getComputedStyle(document.querySelector('#buildMenu .card-grid')).gridTemplateColumns.split(' ').length,
+            };
+        });
+        expect(marketFocus.panel.left).toBeGreaterThanOrEqual(marketFocus.viewport.left);
+        expect(marketFocus.panel.right).toBeLessThanOrEqual(marketFocus.viewport.right);
+        expect(marketFocus.panel.top).toBeGreaterThanOrEqual(marketFocus.viewport.top);
+        expect(marketFocus.panel.bottom).toBeLessThanOrEqual(marketFocus.viewport.bottom);
+        expect(marketFocus.panel.width).toBeGreaterThanOrEqual(Math.min(viewport.width - 16, 570) - 1);
+        if (viewport.width <= 600) expect(marketFocus.columns).toBe(2);
+        const marketScreenshot = testInfo.outputPath(`plaza-market-focus-${viewport.width}x${viewport.height}.png`);
+        await page.screenshot({ path: marketScreenshot, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`plaza-market-focus-${viewport.width}x${viewport.height}.png`, {
+            path: marketScreenshot, contentType: 'image/png',
+        });
+        await page.locator('[data-field-target="self"]').click();
         const comparisonButton = page.locator('[data-field-panel="comparison"]');
         await comparisonButton.click();
         await expect(comparisonButton).toHaveAttribute('aria-expanded', 'true');
@@ -69,7 +93,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
 }
 
 for (const playerCount of [4, 10]) {
-    test(`広場の${playerCount}人の育った街は地面の境界と他の街を越えない`, async ({ page }) => {
+    test(`広場の${playerCount}人の育った街は地面の境界と他の街を越えない`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width: 1363, height: 936 });
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
@@ -161,7 +185,7 @@ for (const playerCount of [4, 10]) {
             const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
             return {
                 panel: { left: panel.left, right: panel.right, top: panel.top, bottom: panel.bottom, width: panel.width },
-                viewport: { left: viewport.left, right: viewport.right, top: viewport.top, bottom: viewport.bottom },
+                viewport: { left: viewport.left, right: viewport.right, top: viewport.top, bottom: viewport.bottom, width: innerWidth, height: innerHeight },
                 columns: getComputedStyle(document.querySelector('#buildMenu .card-grid')).gridTemplateColumns.split(' ').length,
             };
         });
@@ -169,11 +193,10 @@ for (const playerCount of [4, 10]) {
         expect(marketLayout.panel.right).toBeLessThanOrEqual(marketLayout.viewport.right);
         expect(marketLayout.panel.top).toBeGreaterThanOrEqual(marketLayout.viewport.top);
         expect(marketLayout.panel.bottom).toBeLessThanOrEqual(marketLayout.viewport.bottom);
-        expect(marketLayout.panel.width).toBeGreaterThanOrEqual(Math.min(viewport.width - 16, 570) - 1);
-        if (viewport.width <= 600) expect(marketLayout.columns).toBe(2);
-        const marketScreenshot = testInfo.outputPath(`plaza-market-focus-${viewport.width}x${viewport.height}.png`);
+        expect(marketLayout.panel.width).toBeGreaterThanOrEqual(Math.min(marketLayout.viewport.width - 16, 570) - 1);
+        const marketScreenshot = testInfo.outputPath(`plaza-endgame-market-focus-${playerCount}p.png`);
         await page.screenshot({ path: marketScreenshot, fullPage: false, animations: 'disabled' });
-        await testInfo.attach(`plaza-market-focus-${viewport.width}x${viewport.height}.png`, {
+        await testInfo.attach(`plaza-endgame-market-focus-${playerCount}p.png`, {
             path: marketScreenshot, contentType: 'image/png',
         });
         expect(await page.evaluate(() => {

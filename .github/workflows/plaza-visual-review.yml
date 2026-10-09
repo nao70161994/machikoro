@@ -42,10 +42,10 @@ jobs:
             - run: npx playwright install --with-deps webkit
             - name: Compare theme baselines at target viewports
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
-              run: npm run test:browser-visual -- --retries=0 --workers=1
+              run: npm run test:browser-visual -- --output=test-results/theme-baseline --retries=0 --workers=1
             - name: Generate candidate theme baselines
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
-              run: npm run test:browser-visual -- --update-snapshots --retries=0 --workers=1
+              run: npm run test:browser-visual -- --output=test-results/theme-baseline --update-snapshots --retries=0 --workers=1
             - name: Upload generated baseline candidates
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -55,10 +55,10 @@ jobs:
                   if-no-files-found: error
             - name: Plaza visual and online review
               if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true) }}
-              run: npx playwright test visual-art-review.spec.js plaza-online.spec.js --grep '広場テーマは共通アート|広場の4人オンライン|広場の終盤と補助操作' --retries=0 --workers=1
+              run: npx playwright test visual-art-review.spec.js plaza-online.spec.js --grep '広場テーマは共通アート|広場の4人オンライン|広場の終盤と補助操作' --output=test-results/plaza-visual --retries=0 --workers=1
             - name: Plaza field viewport, focus, and market review
               if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true) }}
-              run: npx playwright test plaza-overview.spec.js --project=mobile-webkit --retries=0 --workers=1
+              run: npx playwright test plaza-overview.spec.js --project=mobile-webkit --output=test-results/plaza-overview --retries=0 --workers=1
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
