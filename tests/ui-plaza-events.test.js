@@ -43,6 +43,8 @@ runTest('領収投影は施設の複数発動と支払元先を集約しrawロ�
     assert.strictEqual(receipt.balances[1].facilityNet, 2);
     assert.strictEqual(JSON.stringify(logs), original);
     assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('あなたの街 → CPU'));
+    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('席1 → 席2'));
+    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('銀行 → 席1'));
 });
 
 runTest('港選択は出目だけ更新しマグロ内部ダイスとpendingは新区間にしない', () => {
@@ -93,6 +95,15 @@ runTest('重複名は断定せず原文へ戻し「の」を含む前方一致�
     const precise = project([entry('gain', '🌾 街の人の森林発動 → +3コイン')], { players: names });
     assert.strictEqual(precise.balances[0].index, 1);
     assert.strictEqual(precise.activations[0].subject, '森林');
+});
+
+runTest('手番プレイヤーが特定できない収入は短縮行で送金方向を推測しない', () => {
+    const receipt = UiPlazaEvents.project([entry('gain', '🌾 あなたの街の森林発動 → +3コイン')], {
+        players, display, logDisplay: UiLogDisplay,
+    });
+    const html = UiPlazaEvents.buildReceiptHtml(receipt, escape);
+    assert.doesNotMatch(html, /plaza-receipt-featured/u);
+    assert.ok(html.includes('銀行 → あなたの街：森林 +3コイン'));
 });
 
 runTest('確認できない収入は原文で保持し空港効果は施設収支に含めない', () => {

@@ -8880,6 +8880,10 @@ html[data-design="plaza"] .plaza-build-result { margin: 0; font-size: 13px; colo
 html[data-design="plaza"] .plaza-build-landmark { font-weight: 800; }
 html[data-design="plaza"] .plaza-build-result button { width: auto; min-height: 44px; margin: 2px 6px; padding: 4px 8px; font-size: 12px; }
 html[data-design="plaza"] .plaza-receipt-featured { font-size: 12px; color: #ffe6a4; }
+html[data-design="plaza"] .plaza-receipt-transfer { display: inline-flex; align-items: center; gap: 3px; max-width: 100%; margin-right: 5px; padding: 1px 4px; border: 1px solid #e2b96f55; border-radius: 6px; background: #102c3580; vertical-align: middle; }
+html[data-design="plaza"] .plaza-receipt-transfer > :is(strong, b) { color: #fff1cb; }
+html[data-design="plaza"] .plaza-receipt-transfer > strong { font-weight: 700; }
+html[data-design="plaza"] .plaza-receipt-transfer > b { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 html[data-design="plaza"] #plazaCameraTools .plaza-events-toggle { display: none; }
 @media (orientation: landscape) and (max-height: 600px) {

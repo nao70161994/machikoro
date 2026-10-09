@@ -120,6 +120,15 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 - package scriptの内容確認、`node --check tests/browser/winner-notices.spec.js`、`node scripts/check-static-files.js`（809 JavaScript、25 JSON）、`git diff --check` は成功。
 - GitHub上には現ブランチのPRもworkflow実行もまだ無いため、WebKitでの実行結果は未取得。Termux上ではPlaywrightのAndroid platform起動制約があるためローカル実行していない。
 
+## Round 11: 収益レシートへ送金経路を表示
+
+任天堂の公式紹介では、出目ごとの収益表示や施設コンボの把握がデジタル版の体験要素として説明されている。[公式記事](https://www.nintendo.com/jp/topics/article/1408afb9-9061-4c0c-8a6a-816b5caeccde) 既存のplaza短縮レシートは施設と金額を出す一方、プレイヤー間送金の相手は詳細を開くまで省略されていた。
+
+- 画面下部の短縮収益行に、施設名、席番号付きの送金元/先、金額、複数発動数をまとめて表示。席番号は上部HUDの同じ席番号と対応し、長い名前でも短いイベント帯を圧迫しにくい。詳細欄では「銀行」や参加者名を含む完全な送金経路を維持し、片側が銀行のケースも明示する。
+- `tests/ui-plaza-events.test.js` で銀行からの収入とプレイヤー間送金経路を検証し、`tests/browser/plaza-event-receipts.spec.js` で短縮行の収益表示期待値を更新した。
+- 同receiptの4画面幅チェックを `test:browser-pr` のモバイルWebKit必須セットへ追加する。Round 10の勝利画面チェックと合わせ、実画面上の出目・複数発動・建設・目標達成をPR時に確認する。
+- `node --check`（編集JSとbrowser spec）、`node tests/ui-plaza-events.test.js`、`git diff --check` は成功。短縮行の変更後スクリーンショットはローカルPlaywrightが起動できないため未取得。次のPR CIで画面表示・折り返しとWebKit挙動を確認する。
+
 ## Round 9: 保存済み対局の中盤を再確認
 
 - 前回のChromium CPU対局プロフィールにあった弱CPU同士の保存データを再開。新規ゲームは作らず、844×390pxで実画面を撮影した: [保存対局の中盤画面](../artifacts/design-review/round-9-plaza-resumed-midgame-844x390.png)。この時点はランドマークを対象にした保留選択中で、結果を返す対象を選ぶ状況だった。

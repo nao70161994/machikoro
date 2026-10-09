@@ -6,12 +6,12 @@ const UiTurnReceipt = (() => {
         if (!receipt || typeof escapeHtml !== 'function') return '';
         const escape = value => escapeHtml(String(value));
         const name = index => index === 'pool' ? '分配プール' : index === null ? '銀行' : receipt.participantNames?.[index] || receipt.balances.find(balance => balance.index === index)?.name || '';
+        const shortName = index => Number.isInteger(index) ? `席${index + 1}` : name(index);
         const important = receipt.important.map(event => `<li class="plaza-important-event plaza-important-${event.kind}">${escape(event.message)}</li>`).join('');
         const dice = receipt.dice ? `<p class="plaza-receipt-dice">出目 ${escape(receipt.dice.values.join('+') || receipt.dice.base)}${receipt.dice.values.length > 1 ? `=${escape(receipt.dice.base)}` : ''}${receipt.dice.harbor ? ` → ${escape(receipt.dice.effective)}（港）` : ''}${receipt.dice.rerolled ? '（振り直し）' : ''}</p>` : '';
         const balances = receipt.balances.map(balance => `<li data-receipt-player-index="${balance.index}">${escape(balance.name)}：ログ確認分 収入${escape(balance.income)} / 支払い${escape(balance.payment)}（確認済み施設差引${balance.facilityNet >= 0 ? '+' : ''}${escape(balance.facilityNet)}）</li>`).join('');
         const activations = receipt.activations.map(event => {
-            const route = event.from !== null && event.to !== null
-                ? `${name(event.from)} → ${name(event.to)}` : name(event.to === null ? event.from : event.to);
+            const route = `${name(event.from)} → ${name(event.to)}`;
             const sign = event.to === null ? '-' : event.from === null ? '+' : '';
             return `<li class="plaza-receipt-activation">${escape(route)}：${escape(event.subject)} ${sign}${escape(event.amount)}コイン${event.count > 1 ? `（${escape(event.count)}回）` : ''}</li>`;
         }).join('');
@@ -25,9 +25,16 @@ const UiTurnReceipt = (() => {
             const net = balance.income - balance.payment;
             return `<span>${escape(balance.name)} ${net >= 0 ? '+' : ''}${escape(net)}</span>`;
         }).join('');
-        const featured = receipt.activations.filter(event => event.facility &&
-            (event.from === receipt.actorIndex || event.to === receipt.actorIndex)).slice(0, 2);
-        const featuredHtml = featured.length ? `<p class="plaza-receipt-featured">${featured.map(event => `${escape(event.subject)}${event.count > 1 ? ` 発動${escape(event.count)}回` : ''} ${event.amount === 0 ? '' : event.from === receipt.actorIndex ? '-' : '+'}${escape(event.amount)}コイン`).join(' / ')}</p>` : '';
+        const featured = Number.isInteger(receipt.actorIndex)
+            ? receipt.activations.filter(event => event.facility &&
+                (event.from === receipt.actorIndex || event.to === receipt.actorIndex)).slice(0, 2)
+            : [];
+        const featuredHtml = featured.length ? `<p class="plaza-receipt-featured">${featured.map(event => {
+            const route = `${shortName(event.from)} → ${shortName(event.to)}`;
+            const sign = event.amount === 0 ? '' : event.from === receipt.actorIndex ? '-' : '+';
+            const repeat = event.count > 1 ? `（${escape(event.count)}回）` : '';
+            return `<span class="plaza-receipt-transfer" title="${escape(`${name(event.from)} → ${name(event.to)}`)}"><strong>${escape(event.subject)}</strong> ${escape(route)} <b>${sign}${escape(event.amount)}コイン</b>${repeat}</span>`;
+        }).join(' / ')}</p>` : '';
         const hasDetails = receipt.important.length || receipt.activations.length || receipt.unparsed.length;
         return `<section class="plaza-event-receipt" aria-label="今回の出目と確認できた収支">${headline}${dice}${featuredHtml}<p class="plaza-receipt-totals">${shortBalances}${receipt.incomplete ? '<span>特殊効果は詳細へ</span>' : ''}</p>${hasDetails ? `<details class="plaza-receipt-details"><summary>発動・支払いの内訳${receipt.incomplete ? '（未集計あり）' : ''}</summary>${incomplete}<ul class="plaza-important-events">${important}</ul><ul class="plaza-receipt-balances">${balances}</ul><ul class="plaza-receipt-activations">${activations}${omitted}${fallback}</ul></details>` : ''}</section>`;
     }

@@ -47,7 +47,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         });
         const receipt = page.locator('#plazaDiceReceipt');
         await expect(receipt.locator('.plaza-receipt-dice')).toHaveText('出目 5');
-        await expect(receipt.locator('.plaza-receipt-featured')).toContainText('森林 発動6回 +6コイン');
+        await expect(receipt.locator('.plaza-receipt-featured')).toContainText('森林 銀行 → 席1 +6コイン（6回）');
         await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街1 +6');
         await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街4 +2');
         await expect(page.locator('#gameLogContainer')).not.toHaveClass(/plaza-panel-open/);
@@ -248,6 +248,7 @@ test('画面外の赤施設への支払いと残高不足はログ無しで追�
     await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街1 -4');
     await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街10 +3');
     await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街9 +2');
+    await expect(receipt.locator('.plaza-receipt-featured')).toContainText('カフェ 席1 → 席10');
     await receipt.locator('summary').click();
     await expect(receipt.locator('.plaza-receipt-activations')).toContainText('街1 → 街10');
     await expect(receipt.locator('.plaza-receipt-activations')).toContainText('街1 → 街2');
