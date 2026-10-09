@@ -266,19 +266,30 @@ for (const playerCount of [4, 10]) {
         }
         if (playerCount === 10) {
             await page.setViewportSize({ width: 844, height: 390 });
-            await expect.poll(() => page.evaluate(() => {
+            const resizedMarketLayout = async () => page.evaluate(() => {
                 const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
                 const market = document.getElementById('buildMenu').getBoundingClientRect();
                 const name = document.querySelector('#buildMenu .card-btn .card-name').getBoundingClientRect();
                 const cost = document.querySelector('#buildMenu .card-btn .card-cost').getBoundingClientRect();
-                return viewport.width === 844 && market.width > 0 && market.height > 0 &&
-                    market.left >= viewport.left && market.right <= viewport.right &&
-                    market.top >= viewport.top && market.bottom <= viewport.bottom &&
-                    name.top >= market.top && name.bottom <= market.bottom &&
-                    cost.top >= market.top && cost.bottom <= market.bottom &&
-                    name.top >= viewport.top && name.bottom <= viewport.bottom &&
-                    cost.top >= viewport.top && cost.bottom <= viewport.bottom;
-            })).toBe(true);
+                return {
+                    viewport: { width: viewport.width, height: viewport.height, top: viewport.top, bottom: viewport.bottom },
+                    market: { left: market.left, right: market.right, top: market.top, bottom: market.bottom, width: market.width, height: market.height },
+                    name: { top: name.top, bottom: name.bottom }, cost: { top: cost.top, bottom: cost.bottom },
+                    panelInside: market.width > 0 && market.height > 0 && market.left >= viewport.left &&
+                        market.right <= viewport.right && market.top >= viewport.top && market.bottom <= viewport.bottom,
+                    cardInfoInside: name.top >= market.top && name.bottom <= market.bottom && cost.top >= market.top &&
+                        cost.bottom <= market.bottom && name.top >= viewport.top && name.bottom <= viewport.bottom &&
+                        cost.top >= viewport.top && cost.bottom <= viewport.bottom,
+                };
+            });
+            await expect.poll(resizedMarketLayout).toMatchObject({ viewport: { width: 844 }, panelInside: true });
+            const mobileHudScreenshot = testInfo.outputPath('plaza-endgame-market-focus-10p-844x390.png');
+            await page.screenshot({ path: mobileHudScreenshot, fullPage: false, animations: 'disabled' });
+            await testInfo.attach('plaza-endgame-market-focus-10p-844x390.png', {
+                path: mobileHudScreenshot, contentType: 'image/png',
+            });
+            const resizedLayout = await resizedMarketLayout();
+            expect(resizedLayout.cardInfoInside, `market card bounds after resize: ${JSON.stringify(resizedLayout)}`).toBe(true);
             const compactHud = await page.evaluate(() => {
                 const hud = document.getElementById('plazaPlayerHud');
                 const bounds = hud.getBoundingClientRect();
@@ -295,11 +306,6 @@ for (const playerCount of [4, 10]) {
             expect(compactHud.height).toBe(44);
             expect(compactHud.toolsBottom).toBeLessThanOrEqual(compactHud.hudTop + 1);
             expect(compactHud.buttonsFit).toBe(true);
-            const mobileHudScreenshot = testInfo.outputPath('plaza-endgame-market-focus-10p-844x390.png');
-            await page.screenshot({ path: mobileHudScreenshot, fullPage: false, animations: 'disabled' });
-            await testInfo.attach('plaza-endgame-market-focus-10p-844x390.png', {
-                path: mobileHudScreenshot, contentType: 'image/png',
-            });
         }
         expect(await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;

@@ -303,3 +303,11 @@ Run [37932248560](https://github.com/nao70161994/machikoro/actions/runs/37932248
 Release pseudo E2E [37932055149](https://github.com/nao70161994/machikoro/actions/runs/37932055149) は3 jobすべて成功。Static safety、unit、PWA、online sync/reconnect、release pseudo E2E、Mobile WebKit、CPU difficulty smokeを確認した。このworkflowのcheckoutは回転後カメラ修正前のcommitなので、回転後変更はPlaza visual runで別途検証する。
 
 - 横画面市場アート縮小と回転後カード情報assertionはPlaza WebKit run [37933873646](https://github.com/nao70161994/machikoro/actions/runs/37933873646) で進行中。
+
+## Round 27: 回転後のカード情報と320pxの描画負荷
+
+Run 37933873646ではPlaza online syncは成功し、visual-artの320px fixtureは開始後の進行監視で自動復旧状態になり45秒timeout、10人横持ち検査は市場カード情報のbounds assertionが失敗。10人PC→844×390画面ではviewportと市場panelは内側へ再配置されたため、カード情報側の位置を計測可能にし、アート枠を40pxへ短縮。回転後の失敗時にもスクリーンショットと実際のbounds値を残す。
+
+320pxはプレイ画面表示fixtureを2人戦へ絞り、390/844/1440の4人戦と別のoverview 320px/4人戦検査で多人数表示を確認する。モード数ではなく低幅端末での自動復旧が再現する条件を切り分ける。
+
+- 変更後のWebKit結果は次のPlaza review runに追加する。

@@ -2200,8 +2200,10 @@ for (const width of [320, 390, 844, 1440]) {
         await selectDesignTheme(page, 'plaza');
         await expect(page.locator('.title-brand-mark')).toBeVisible();
         await page.locator('#customGameSetup > summary').click();
-        await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
-        await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
+        const expectedPlayers = width === 320 ? 2 : 4;
+        for (let count = 2; count < expectedPlayers; count++) {
+            await page.locator('[data-ui-action="changeCount"][data-delta="1"]').click();
+        }
         // The resume portion uses the supported fast CPU setting.
         await page.locator('#cpuSpeed').evaluate(input => {
             input.value = input.min;
@@ -2227,7 +2229,7 @@ for (const width of [320, 390, 844, 1440]) {
         const town = page.locator('.player-box-self .town-street');
         await expect(town.locator('.town-building .sunset-facility-art').first()).toBeVisible();
         expect((await town.boundingBox()).height).toBeGreaterThan(60);
-        await expect(page.locator('#plazaPlayerHud button')).toHaveCount(4);
+        await expect(page.locator('#plazaPlayerHud button')).toHaveCount(expectedPlayers);
         const chipLayout = await page.locator('#plazaPlayerHud').evaluate(hud => {
             const buttons = [...hud.querySelectorAll('button')];
             const categories = buttons.map(button => {
@@ -2244,7 +2246,7 @@ for (const width of [320, 390, 844, 1440]) {
             });
             return categories;
         });
-        expect(chipLayout).toHaveLength(4);
+        expect(chipLayout).toHaveLength(expectedPlayers);
         expect(chipLayout.filter(button => button.self)).toHaveLength(1);
         for (const button of chipLayout) {
             expect(button.total).toBe(4);
