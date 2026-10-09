@@ -2439,6 +2439,39 @@ runTest('markClientFlowCheckpoint はsnapshot生成失敗を外へ伝播しな�
     assert.strictEqual(checkpoint.snapshotFailed, true);
 });
 
+runTest('CPU処理checkpointは通常と遅延記録でDOMを省き、エラー時と人間手番では詳細DOMを残す', () => {
+    const rt = loadMainRuntime();
+    const game = { currentPlayerIndex: 0 };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{ difficulty: 'weak' }]);
+    vm.runInContext(`
+        var checkpointSnapshotCalls = [];
+        buildClientRuntimeSnapshot = (event, options) => {
+            checkpointSnapshotCalls.push({ event, includeDom: options.includeDom });
+            return { event, includeDom: options.includeDom };
+        };
+    `, rt);
+
+    const progress = rt.markClientFlowCheckpoint('scheduleCPU-step-run');
+    const slow = rt.markClientFlowCheckpoint('scheduleCPU-step-slow');
+    const error = rt.markClientFlowCheckpoint('scheduleCPU-step-error');
+    const deliveryFailure = rt.markClientFlowCheckpoint('client-error-fetch-failed');
+    assert.strictEqual(progress.snapshot.includeDom, false);
+    assert.strictEqual(slow.snapshot.includeDom, false);
+    assert.strictEqual(error.snapshot.includeDom, true);
+    assert.strictEqual(deliveryFailure.snapshot.includeDom, false);
+    assert.deepStrictEqual(Array.from(rt.checkpointSnapshotCalls, item => ({ ...item })), [
+        { event: 'scheduleCPU-step-run', includeDom: false },
+        { event: 'scheduleCPU-step-slow', includeDom: false },
+        { event: 'scheduleCPU-step-error', includeDom: true },
+        { event: 'client-error-fetch-failed', includeDom: false },
+    ]);
+
+    rt.__test.setCpuPlayers([null]);
+    const humanTurn = rt.markClientFlowCheckpoint('scheduleCPU-step-run');
+    assert.strictEqual(humanTurn.snapshot.includeDom, true);
+});
+
 runTest('appShell crashResume はクラッシュ画面を閉じて resumeGame を呼ぶ', () => {
     const rt = loadMainRuntime();
     rt.showCrashScreen(new Error('boom'));

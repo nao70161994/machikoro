@@ -145,9 +145,14 @@ const UiWatchdogRuntime = (() => {
                 return false;
             }
             const observedAt = now();
-            const snapshot = buildSnapshot('freeze-watchdog');
+            // Progress tracking only needs game/CPU/online state. DOM snapshots
+            // inspect every interactive descendant and force computed styles;
+            // defer that work until the state has actually stalled long enough
+            // to require freeze classification or recovery.
+            let snapshot = buildSnapshot('freeze-watchdog', { includeDom: false });
             const progress = monitor.observeProgress(stateKey(snapshot), observedAt);
             if (!progress.shouldClassify) return false;
+            snapshot = buildSnapshot('freeze-watchdog', { includeDom: true });
             const freezeKind = classify(snapshot);
             if (!freezeKind) return false;
             const reportKey = freezeKind + '|' + issueDedupeSignature(snapshot);

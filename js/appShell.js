@@ -141,16 +141,16 @@ const collectInteractabilityObservations = appShellObservationRuntime.collectInt
 const primaryUiIssue = appShellObservationRuntime.primaryUiIssue;
 const primaryActionButtonStates = appShellObservationRuntime.primaryActionButtonStates;
 
-function collectUiLockSnapshot(reason = 'ui-lock-snapshot') {
-    return appShellObservationRuntime.collectUiLockSnapshot(reason);
+function collectUiLockSnapshot(reason = 'ui-lock-snapshot', options = {}) {
+    return appShellObservationRuntime.collectUiLockSnapshot(reason, options);
 }
 
 function validateUiInteractability(snapshot = collectUiLockSnapshot()) {
     return appShellObservationRuntime.validateUiInteractability(snapshot);
 }
 
-function buildClientRuntimeSnapshot(reason = '') {
-    return appShellObservationRuntime.buildClientRuntimeSnapshot(reason);
+function buildClientRuntimeSnapshot(reason = '', options = {}) {
+    return appShellObservationRuntime.buildClientRuntimeSnapshot(reason, options);
 }
 
 function isHumanTurnSnapshot(snapshot) {
@@ -292,11 +292,22 @@ function safeAppShellStorageRemove(key) {
     appShellStorage.remove(key);
 }
 
+function clientCheckpointIncludesDom(event) {
+    const gameState = appShellGameRuntimeSnapshot();
+    const game = gameState && gameState.game;
+    const isCpuTurn = !!(game && Array.isArray(gameState.cpuPlayers) && gameState.cpuPlayers[game.currentPlayerIndex]);
+    if (!isCpuTurn) return true;
+    return /^(?:scheduleCPU-step-error|scheduleCPU-build-error-recovery(?:-error)?|scheduleCPU-pending-no-progress(?:-retry|-exhausted)?|cpu-action-rejected)$/.test(event) ||
+        /(?:stall|freeze|recovery|interactability)/i.test(event);
+}
+
 function markClientFlowCheckpoint(event, details = {}) {
     const checkpoint = ClientCheckpoint.record({
         event,
         details,
-        buildSnapshot: () => buildClientRuntimeSnapshot(event),
+        buildSnapshot: () => buildClientRuntimeSnapshot(event, {
+            includeDom: clientCheckpointIncludesDom(event),
+        }),
         timestamp: () => new Date().toISOString(),
         getRoot: () => appShellComposition.resolve('root'),
         persist(value) {

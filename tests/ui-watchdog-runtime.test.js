@@ -122,6 +122,33 @@ runTest('watchdog runtimeは重複report抑止時も回復だけを実行する'
     assert.deepStrictEqual(calls.map(call => call[0]), ['recover']);
 });
 
+runTest('freeze watchdogは進行監視を軽量snapshotで行い、停止時だけ詳細snapshotを作る', () => {
+    const snapshotOptions = [];
+    let checks = 0;
+    const { runtime } = createHarness({
+        buildSnapshot: (_reason, options) => {
+            snapshotOptions.push(options);
+            return {
+                key: 'same-state', phase: 'build', freezeKind: '',
+                interactabilityIssues: [],
+            };
+        },
+        monitor: {
+            observeProgress: () => ({ shouldClassify: ++checks > 1, stagnantMs: checks > 1 ? 5000 : 0 }),
+            decideReport: () => 'recover',
+            reset: () => {},
+        },
+    });
+    assert.strictEqual(runtime.check(), false);
+    assert.deepStrictEqual(snapshotOptions, [{ includeDom: false }]);
+    assert.strictEqual(runtime.check(), false);
+    assert.deepStrictEqual(snapshotOptions, [
+        { includeDom: false },
+        { includeDom: false },
+        { includeDom: true },
+    ]);
+});
+
 runTest('watchdog runtimeはbackground中の経過を停止時間に数えない', () => {
     const { calls, runtime } = createHarness({ isPageHidden: () => true });
     assert.strictEqual(runtime.check(), false);

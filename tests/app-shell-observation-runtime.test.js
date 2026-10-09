@@ -119,6 +119,28 @@ runTest('app shell observation runtimeはbuild候補とregistry不足を注入�
     assert.ok(Object.isFrozen(runtime));
 });
 
+runTest('軽量watchdog snapshotは画面DOMを走査せずゲーム進行情報を保つ', () => {
+    let domReads = 0;
+    const runtime = createRuntime({
+        domSnapshot: {
+            snapshotById: id => { domReads++; return { id, display: 'block' }; },
+            isVisibleById: () => { domReads++; return false; },
+        },
+        getGameRuntimeSnapshot: () => ({
+            game: { phase: 'pending', builtThisTurn: false, turnCount: 12, currentPlayerIndex: 1,
+                pendingIT: true, checkWinner: () => false, allowedActions: () => ['resolveIT'] },
+            cpuPlayers: [{}, {}],
+        }),
+    });
+    const snapshot = runtime.buildClientRuntimeSnapshot('freeze-watchdog', { includeDom: false });
+    assert.strictEqual(snapshot.game.phase, 'pending');
+    assert.strictEqual(snapshot.game.turnCount, 12);
+    assert.strictEqual(snapshot.cpu.isCpuTurn, true);
+    assert.deepStrictEqual(snapshot.allowedActions, ['resolveIT']);
+    assert.deepStrictEqual(snapshot.dom, {});
+    assert.strictEqual(domReads, 0);
+});
+
 runTest('app shell observation runtimeは必須依存欠落を初期化時に拒否する', () => {
     assert.throws(() => AppShellObservationRuntime.createRuntime(), /activeBlockingModalIds is required/);
 });

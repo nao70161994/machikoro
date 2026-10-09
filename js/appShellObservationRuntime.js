@@ -165,8 +165,8 @@ const AppShellObservationRuntime = (() => {
             return uiWatchdog.isElementUsablyEnabled(snapshot);
         }
 
-        function collectUiLockSnapshot(reason = 'ui-lock-snapshot') {
-            return buildClientRuntimeSnapshot(reason);
+        function collectUiLockSnapshot(reason = 'ui-lock-snapshot', options = {}) {
+            return buildClientRuntimeSnapshot(reason, options);
         }
 
         function uiLockReasonForElement(state) {
@@ -297,7 +297,7 @@ const AppShellObservationRuntime = (() => {
             }
         }
 
-        function buildClientRuntimeSnapshot(reason = '') {
+        function buildClientRuntimeSnapshot(reason = '', options = {}) {
             const gameState = getGameRuntimeSnapshot();
             const onlineState = getOnlineRuntimeSnapshot();
             const currentGame = gameState.game;
@@ -315,6 +315,39 @@ const AppShellObservationRuntime = (() => {
             } catch (_) {}
             let hasWinner = false;
             try { hasWinner = !!(hasGame && typeof currentGame.checkWinner === 'function' && currentGame.checkWinner()); } catch (_) {}
+            const includeDom = options.includeDom !== false;
+            const dom = includeDom ? {
+                activeElement: document && document.activeElement ? {
+                    id: document.activeElement.id || '',
+                    tagName: document.activeElement.tagName || '',
+                    className: document.activeElement.className || '',
+                } : null,
+                bodyClassName: document && document.body ? classListText(document.body) : '',
+                visibleModals: visibleModalIds(),
+                overlays: {
+                    noticeToast: safeElementSnapshot('noticeToast'),
+                    pwaUpdateBanner: safeElementSnapshot('pwaUpdateBanner'),
+                    pwaInstallBanner: safeElementSnapshot('pwaInstallBanner'),
+                    turnAnnouncer: safeElementSnapshot('turnAnnouncer'),
+                    crashScreen: safeElementSnapshot('crashScreen'),
+                },
+                actionButtons: primaryActionButtonStates(),
+                ui: {
+                    gameScreen: safeElementSnapshot('gameScreen'),
+                    pendingModal: safeElementSnapshot('pendingModal'),
+                    pendingMenu: safeElementSnapshot('pendingMenu'),
+                    buildMenu: safeElementSnapshot(marketTarget.id(document)),
+                    btnSkip: safeElementSnapshot('btnSkip'),
+                    confirmModal: safeElementSnapshot('confirmModal'),
+                    btnRoll: safeElementSnapshot('btnRoll'),
+                    btnReroll: safeElementSnapshot('btnReroll'),
+                    diceChoose: safeElementSnapshot('diceChoose'),
+                    cardDetailModal: safeElementSnapshot('cardDetailModal'),
+                    hotseatHandoffOverlay: safeElementSnapshot('hotseatHandoffOverlay'),
+                    cardSelectModal: safeElementSnapshot('cardSelectModal'),
+                    rulesModal: safeElementSnapshot('rulesModal'),
+                },
+            } : {};
             return clientRuntimeSnapshot.build({
                 reason,
                 timestamp: nowIso(),
@@ -348,38 +381,7 @@ const AppShellObservationRuntime = (() => {
                     socketConnected: onlineState.socket ? onlineState.socket.connected !== false : null,
                 },
                 allowedActions: allowedActionListForSnapshot(),
-                dom: {
-                    activeElement: document && document.activeElement ? {
-                        id: document.activeElement.id || '',
-                        tagName: document.activeElement.tagName || '',
-                        className: document.activeElement.className || '',
-                    } : null,
-                    bodyClassName: document && document.body ? classListText(document.body) : '',
-                    visibleModals: visibleModalIds(),
-                    overlays: {
-                        noticeToast: safeElementSnapshot('noticeToast'),
-                        pwaUpdateBanner: safeElementSnapshot('pwaUpdateBanner'),
-                        pwaInstallBanner: safeElementSnapshot('pwaInstallBanner'),
-                        turnAnnouncer: safeElementSnapshot('turnAnnouncer'),
-                        crashScreen: safeElementSnapshot('crashScreen'),
-                    },
-                    actionButtons: primaryActionButtonStates(),
-                    ui: {
-                        gameScreen: safeElementSnapshot('gameScreen'),
-                        pendingModal: safeElementSnapshot('pendingModal'),
-                        pendingMenu: safeElementSnapshot('pendingMenu'),
-                        buildMenu: safeElementSnapshot(marketTarget.id(document)),
-                        btnSkip: safeElementSnapshot('btnSkip'),
-                        confirmModal: safeElementSnapshot('confirmModal'),
-                        btnRoll: safeElementSnapshot('btnRoll'),
-                        btnReroll: safeElementSnapshot('btnReroll'),
-                        diceChoose: safeElementSnapshot('diceChoose'),
-                        cardDetailModal: safeElementSnapshot('cardDetailModal'),
-                        hotseatHandoffOverlay: safeElementSnapshot('hotseatHandoffOverlay'),
-                        cardSelectModal: safeElementSnapshot('cardSelectModal'),
-                        rulesModal: safeElementSnapshot('rulesModal'),
-                    },
-                },
+                dom,
             });
         }
 

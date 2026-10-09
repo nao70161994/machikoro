@@ -61,6 +61,21 @@ function createHarness(overrides = {}) {
     return { calls, snapshots, runtime: UiWatchdogRecoveryRuntime.createRuntime(dependencies) };
 }
 
+runTest('CPU手番後の操作可能性syncはDOM診断を省き、人間手番では通常通り実行する', () => {
+    const game = { currentPlayerIndex: 1 };
+    const cpuTurn = createHarness({
+        appShellGameRuntimeSnapshot: () => ({ game, cpuPlayers: [null, { difficulty: 'weak' }] }),
+    });
+    assert.strictEqual(cpuTurn.runtime.syncUiInteractabilityAfterRender('cpu-turn'), false);
+    assert.deepStrictEqual(cpuTurn.calls, []);
+
+    const humanTurn = createHarness({
+        appShellGameRuntimeSnapshot: () => ({ game, cpuPlayers: [null, null] }),
+    });
+    assert.strictEqual(humanTurn.runtime.syncUiInteractabilityAfterRender('human-turn'), false);
+    assert.deepStrictEqual(humanTurn.calls, [['snapshot', 'human-turn']]);
+});
+
 runTest('カード盤面のUndo復旧はsnapshotが示す専用市場へ挿入する', () => {
     const targets = [];
     const { runtime } = createHarness({

@@ -82,3 +82,26 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 - Chromium終了後は利用可能メモリが約4.9GiBに戻った。Termux/Chromium由来のログにはGoogle登録エンドポイント廃止やグラフィックスバックエンド関連のエラーもあった。これらとページ内CPU増加との因果関係は特定できていない。
 - この試行は開始から勝利までの完走検証にはならない。終盤の描画・CPU負荷または自動手番処理を切り分ける必要があり、2人CPU対局完走は未検証として扱う。物理スマートフォンでの試験でもない。
 - 別途、軽量なCPUシミュレーション `timeout 45 node scripts/selfplay.js --games 1 --max-steps 1200 --fast --lite weak weak --details` は3.3秒で完走し、68ターンで1Pが全6ランドマークを建設して勝利した。これはルール/CPUのシミュレーション確認であり、実ブラウザ対局の完走を代替しない。
+
+## 2026-10-09 — 広場CPU対局の描画負荷を計測・修正、実ブラウザで完走
+
+### 原因と修正
+
+実ブラウザのCPUプロファイルでは、プレイヤー操作可能性を確認する診断が毎回画面全体のDOMを走査し、各ボタンのcomputed styleと祖先状態を調べていた。CPUの自動手番中も、手番アクション後のrender・毎秒のfreeze watchdog・各CPU checkpointで同様の全走査が行われていた。
+
+- CPUが操作中のrender直後は、人間向けの操作性診断を行わない。次の人間手番では通常どおり診断する。
+- watchdogは進行を軽量なゲーム/オンライン状態で監視し、状態が5秒以上停滞した場合だけ詳細DOM snapshotを取り、既存の復旧判定へ渡す。
+- CPU通常進行・遅延・通信再試行のcheckpointは軽量snapshotを保存する。CPU処理エラー、no-progress、freeze、UI復旧では詳細DOMを残す。
+
+### 実ブラウザ確認とプロファイル
+
+保存した同じ弱CPU同士の対局を再開し、表示をclassicへ切り替えたときの進行を確認した後、plazaへ途中切替した。CPU対局は最終的に勝利画面まで完走した。操作上のテーマ切替でゲーム状態は維持され、plazaで勝利した。
+
+- 修正前の約2.5秒CPU profile（約85ターン）では、`snapshotById`が約535ms、`isInteractiveElementUsable`が約585msのsampled self timeを占めた。
+- 修正後の約2.5秒profile（同じ保存対局の終盤）では、それぞれ約75ms、約56ms。後者は施設がさらに増えた状態で取得した。CPU sampled timeの比較であり、物理端末の時間保証ではない。
+- 修正前のcheckpointには弱CPUのrollが約9.5秒、harborChoiceが約8.3秒の処理時間として記録されていた。修正版を再開した直後の記録ではbuild約1.4秒、selectDice約1.0秒だった。step時間は選択・ゲーム適用・renderを含むためCPU思考時間だけではない。
+- 終盤では両者の街に48枚と46枚の施設があり、勝者が6ランドマーク、相手が5ランドマークを建設。`GameManager`のturnCountは108、勝利結果UIには109ターンと表示された。
+- [広場の終盤画面・修正前](../artifacts/design-review/round-7-plaza-endgame-before-watchdog-opt.png)、[広場の勝利画面・修正後](../artifacts/design-review/round-7-plaza-cpu-victory-after-watchdog-opt.png)。844×390px Chromium emulationで撮影し、目視確認した。勝利画面は縦スクロールが残り、横持ち一画面内で結果と街全体を同時に見せるレイアウトは未達。物理端末では確認していない。
+- テスト中はChromiumを終了してから直列で `MACHIKORO_TEST_CONCURRENCY=1 npm test` を実行し、終了コード0。`tests/main.test.js`、`tests/app-shell-observation-runtime.test.js`、`tests/ui-watchdog-runtime.test.js`、`tests/ui-watchdog-recovery-runtime.test.js`、編集したJSの構文確認も通過。
+
+この改善でCPU対局の遅延とDOM診断負荷は大きく下がり、実ブラウザ勝利まで確認できた。一方、残高/施設数が極端に大きくなった対局のカード・盤面表現、勝利画面の横持ちレイアウト、他テーマ・オンライン対局・実機は引き続き確認が必要。
