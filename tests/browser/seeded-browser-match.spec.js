@@ -5,6 +5,11 @@ const path = require('node:path');
 const MATCH_SEED = 0x4d414348;
 const requestedPlayerCount = Number(process.env.CARDBOARD_MATCH_PLAYER_COUNT);
 const MATCH_PLAYER_COUNT = requestedPlayerCount === 4 ? 4 : 2;
+const MATCH_DESIGN = process.env.CARDBOARD_MATCH_DESIGN === 'plaza' ? 'plaza' : 'cardboard';
+const MATCH_DESIGN_LABEL = MATCH_DESIGN === 'plaza' ? 'にぎわい広場' : 'カード卓';
+const MATCH_VIEWPORT = process.env.CARDBOARD_MATCH_VIEWPORT === 'plaza-landscape'
+    ? { width: 844, height: 390, name: 'plaza-landscape' }
+    : { width: 1440, height: 900, name: 'desktop' };
 const MAX_MATCH_MS = MATCH_PLAYER_COUNT === 4 ? 900000 : 600000;
 
 test.afterEach(async ({ page }, testInfo) => {
@@ -33,9 +38,9 @@ test.afterEach(async ({ page }, testInfo) => {
     }
 });
 
-test(`${MATCH_PLAYER_COUNT}人固定seedのにぎわい広場CPU対局は完成演出を通って勝者まで進む`, async ({ page }, testInfo) => {
+test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完成演出を通って勝者まで進む ${MATCH_VIEWPORT.name}`, async ({ page }, testInfo) => {
     test.setTimeout(MAX_MATCH_MS + 30000);
-    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.setViewportSize({ width: MATCH_VIEWPORT.width, height: MATCH_VIEWPORT.height });
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(error.message));
     await page.addInitScript(seed => {
@@ -49,9 +54,9 @@ test(`${MATCH_PLAYER_COUNT}人固定seedのにぎわい広場CPU対局は完成�
     }, MATCH_SEED);
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
-    await page.evaluate(playerCount => {
+    await page.evaluate(({ playerCount, designName }) => {
         const design = document.getElementById('designThemeSelect');
-        design.value = 'cardboard';
+        design.value = designName;
         design.dispatchEvent(new Event('change', { bubbles: true }));
         GameSetupState.runtime.setCpuSpeed(100);
         document.getElementById('cpuSpeed').value = '100';
@@ -82,6 +87,17 @@ test(`${MATCH_PLAYER_COUNT}人固定seedのにぎわい広場CPU対局は完成�
         }).observe(board, { subtree: true, childList: true, attributes: true, attributeOldValue: true, attributeFilter: ['class'] });
         window.__matchMonitor = setInterval(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
+            if (designName === 'plaza') {
+                const logs = game.log || [];
+                const newLogs = logs.slice(window.__matchLogOffset);
+                for (const entry of newLogs) {
+                    if (entry.type === LOG_TYPES.DICE && entry.diceResolution) window.__matchPresentation.rolls++;
+                    if ([LOG_TYPES.GAIN, LOG_TYPES.LOSE].includes(entry.type)) window.__matchPresentation.activations++;
+                    if (entry.coinResolution?.transfers?.length) window.__matchPresentation.transfers++;
+                    if (entry.type === LOG_TYPES.BUILD && entry.message.startsWith('🏆')) window.__matchPresentation.landmarkCelebrations++;
+                }
+                window.__matchLogOffset = logs.length;
+            }
             const point = {
                 at: Date.now(), turns: game.turnCount, phase: game.phase,
                 currentPlayerIndex: game.currentPlayerIndex,
@@ -92,7 +108,7 @@ test(`${MATCH_PLAYER_COUNT}人固定seedのにぎわい広場CPU対局は完成�
             const history = window.__browserMatchHistory;
             if (!history.length || JSON.stringify(history[history.length - 1]) !== JSON.stringify(point)) history.push(point);
         }, 1000);
-    }, MATCH_PLAYER_COUNT);
+    }, { playerCount: MATCH_PLAYER_COUNT, designName: MATCH_DESIGN });
     await expect(page.locator('#gameScreen')).toBeVisible();
     await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().cpuPlayers.filter(Boolean).length)).toBe(MATCH_PLAYER_COUNT);
 
@@ -129,7 +145,7 @@ test(`${MATCH_PLAYER_COUNT}人固定seedのにぎわい広場CPU対局は完成�
         };
     });
     expect(result.turns).toBeGreaterThan(0);
-    expect(result.design).toBe('cardboard');
+    expect(result.design).toBe(MATCH_DESIGN);
     expect(result.playerCount).toBe(MATCH_PLAYER_COUNT);
     expect(result.winner).toBeTruthy();
     expect(result.presentation.rolls).toBeGreaterThan(0);
@@ -137,19 +153,20 @@ test(`${MATCH_PLAYER_COUNT}人固定seedのにぎわい広場CPU対局は完成�
     expect(result.presentation.transfers).toBeGreaterThan(0);
     expect(result.presentation.landmarkCelebrations).toBeGreaterThan(0);
     expect(pageErrors).toEqual([]);
+    if (MATCH_DESIGN === 'plaza') await expect(page.locator('#plazaDiceReceipt .plaza-receipt-dice')).toBeVisible();
     await testInfo.attach('seeded-match-result.json', {
         body: JSON.stringify(result, null, 2), contentType: 'application/json',
     });
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    const winnerScreenshot = await page.screenshot({ animations: 'disabled', fullPage: true });
+    const winnerScreenshot = await page.screenshot({ animations: 'disabled', fullPage: MATCH_VIEWPORT.height > 500 });
     await testInfo.attach('seeded-match-winner.png', {
         body: winnerScreenshot, contentType: 'image/png',
     });
     if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
         const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
         await fs.mkdir(artifactDir, { recursive: true });
-        await fs.writeFile(path.join(artifactDir, `seeded-match-${MATCH_PLAYER_COUNT}p-winner.png`), winnerScreenshot);
-        await fs.writeFile(path.join(artifactDir, `seeded-match-${MATCH_PLAYER_COUNT}p-result.json`), JSON.stringify(result, null, 2));
+        await fs.writeFile(path.join(artifactDir, `seeded-match-${MATCH_PLAYER_COUNT}p-${MATCH_DESIGN}-${MATCH_VIEWPORT.name}-winner.png`), winnerScreenshot);
+        await fs.writeFile(path.join(artifactDir, `seeded-match-${MATCH_PLAYER_COUNT}p-${MATCH_DESIGN}-${MATCH_VIEWPORT.name}-result.json`), JSON.stringify(result, null, 2));
     }
     await page.evaluate(() => clearInterval(window.__matchMonitor));
 });

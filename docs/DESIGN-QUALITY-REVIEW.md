@@ -192,3 +192,11 @@ Round 14の画面検証を最新コードで再実行したCI run [37890980288](
 - 320pxと844×390pxのタイトル画像を目視し、保存選択の文字が暗背景上で読め、「削除」が一行で表示されることを確認。背景は左右端まで続き、保存選択・再開・削除の横方向の配置も保っている。
 - `style.css` のselect配色とdelete幅修正がユーザー視認上の不備を直した。CPU・オンラインのゲーム状態には変更なし。
 - Round 14のタイトル/保存再開サイクルを完了。4テーマ共通の各モード画面や、にぎわい広場の2〜4人・5〜10人の開始/中盤/終盤/イベントにわたる実プレイ評価、物理端末は引き続き未完了。
+
+## Round 15: plaza 4人戦の横持ちCPU完走シナリオを追加
+
+2人のbrowser完走specを拡張し、テーマ・人数・viewportを環境指定できるようにした。既存シナリオの1440×900px 2人「カード卓」CPU matchを維持し、新たに844×390px・plaza・4人弱CPUのシナリオを `test:browser-pr` に加える。plazaではdice/収入/送金/ランドマーク建設の構造化ログで完走イベントを確認し、実画面の収益receipt、winner townと結果操作を操作/撮影する。viewport専用の完走画像と状態JSONをCI artifactへ出力する。
+
+この追加に伴いRound 12〜14の一部記録を訂正する。従来の `seeded-browser-match.spec.js` は開始時にテーマを `cardboard` に固定していたため、「plaza 2人戦」と記述した実ブラウザ完走は、実際にはカード卓2人戦だった。スクリーンショットの表示/JSONが示すとおり、plazaの完走実証として扱わない。旧記録を訂正し、今回のplaza 4人横画面対局を開始から勝利まで検証して初めて、その範囲の証拠とする。
+
+- `node --check tests/browser/seeded-browser-match.spec.js`、package scriptのparse、`git diff --check` を実行。実ブラウザ完走は最新CI待ち。
