@@ -8897,7 +8897,9 @@ html[data-design="plaza"] .plaza-receipt-details ul { margin: 4px 0; padding-lef
 html[data-design="plaza"] .plaza-receipt-incomplete { color: #ffe6a4; font-size: 12px; }
 html[data-design="plaza"] #gameScreen > #plazaEvents { max-height: min(150px, 24dvh); overscroll-behavior: contain; touch-action: pan-y; }
 @media (orientation: landscape) and (max-height: 600px) {
-    html[data-design="plaza"] #gameScreen > #plazaEvents { max-height: 84px; }
+    html[data-design="plaza"] #gameScreen > #plazaEvents:not(.plaza-events-expanded) {
+        height: 24px; min-height: 24px; max-height: 24px; box-sizing: border-box; padding-block: 2px;
+    }
 }
 
 html[data-design="plaza"] .income-preview-controls { display: grid; gap: 8px; }
