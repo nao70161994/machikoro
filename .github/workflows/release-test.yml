@@ -88,8 +88,8 @@ jobs:
       - name: Install WebKit runtime
         run: npx playwright install --with-deps webkit chromium
       - name: Mobile WebKit E2E
-        # PRs run the high-risk mixed-theme online and deterministic full-match
-        # scenarios. Nightly retains every browser spec through test:browser-e2e.
+        # PRs also verify the plaza landscape victory viewport alongside the
+        # mixed-theme online and deterministic full-match scenarios.
         run: npm run test:browser-pr
       - name: Upload WebKit visual review and diagnostics
         if: ${{ always() }}

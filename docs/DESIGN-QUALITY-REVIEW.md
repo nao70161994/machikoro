@@ -113,6 +113,13 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 - このroundの撮影はCSSレイアウトを確認するfixtureであり、実対局DOMや物理スマートフォンの撮影ではない。実対局の勝利画面は修正前スクリーンショットでのみ確認済み。横持ちの新レイアウトを実対局データで再撮影する確認は未完了。
 - ブラウザ回帰 `tests/browser/winner-notices.spec.js` に、plaza 844×390pxで実アプリの勝利描画を作り、街・統計・再戦・共有・タイトルへ戻る要素のviewport内配置を検証するケースを追加。TermuxのPlaywrightがAndroid platformで起動できない制約のため、このケースの実行はCIで未確認。
 
+## Round 10: 横持ち勝利チェックをPR必須ブラウザ検証へ追加
+
+- `test:browser-pr` に `winner-notices.spec.js --project=mobile-webkit --workers=1` を追加。勝利画面の横持ち配置を、混合テーマオンライン・対局完走シナリオと合わせてPR時のモバイルWebKit検証に含める。
+- `release-test.yml` の説明を更新し、この画面チェックがPRブラウザセットに含まれることを明記した。
+- package scriptの内容確認、`node --check tests/browser/winner-notices.spec.js`、`node scripts/check-static-files.js`（809 JavaScript、25 JSON）、`git diff --check` は成功。
+- GitHub上には現ブランチのPRもworkflow実行もまだ無いため、WebKitでの実行結果は未取得。Termux上ではPlaywrightのAndroid platform起動制約があるためローカル実行していない。
+
 ## Round 9: 保存済み対局の中盤を再確認
 
 - 前回のChromium CPU対局プロフィールにあった弱CPU同士の保存データを再開。新規ゲームは作らず、844×390pxで実画面を撮影した: [保存対局の中盤画面](../artifacts/design-review/round-9-plaza-resumed-midgame-844x390.png)。この時点はランドマークを対象にした保留選択中で、結果を返す対象を選ぶ状況だった。
