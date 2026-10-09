@@ -9091,6 +9091,7 @@ html[data-design="cardboard"] .game-action-panel .dice { font-size: 28px; margin
 html[data-design="cardboard"] #cardboardActionSlot .buttons { grid-column: 2; grid-row: 1; display: flex; flex-direction: row; flex-wrap: wrap; gap: 4px; margin: 0; }
 html[data-design="cardboard"] #cardboardActionSlot .buttons button { flex: 1 1 100px; min-height: 44px; margin: 0; padding: 4px 7px; border: 1px solid #0f4e94; border-radius: 7px; background: #1766bd; color: #fff; font-size: 12px; }
 html[data-design="cardboard"] #cardboardActionSlot .buttons button:disabled { opacity: 1; background: #e2e7e7; color: #52616a; border-color: #c0cbcd; box-shadow: none; }
+html[data-design="cardboard"] #cardboardActionSlot .buttons:has(#btnSkip:not(:disabled)) #btnRoll:disabled { display: none; }
 html[data-design="cardboard"] #cardboardActionSlot #btnSkip:not(:disabled) { background: #fff9e8; color: #263d4b; border-color: #8f9d9c; }
 html[data-design="cardboard"] .game-action-toolbar { display: flex; flex-wrap: wrap; gap: 3px 10px; grid-column: 1 / -1; }
 html[data-design="cardboard"] .game-action-toolbar > details > summary { display: flex; align-items: center; min-height: 44px; color: #425969; font-size: 11px; cursor: pointer; }

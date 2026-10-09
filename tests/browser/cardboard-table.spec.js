@@ -157,6 +157,54 @@ test('にぎわい広場の横持ちイベント中に盤面と市場を操作�
     expect(errors).toEqual([]);
 });
 
+test('にぎわい広場の320px縦持ちでフェーズに合う操作だけを見せる', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.goto('/');
+    await page.evaluate(() => {
+        if (typeof _pwaInstallController !== 'undefined') _pwaInstallController.dismissInstall();
+        startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
+        cancelCpuSchedule('cardboard-portrait-actions');
+        GameRuntimeState.runtime.setCpuPlayers(Array(4).fill(null));
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayerIndex = 0;
+        game.phase = GAME_PHASES.BUILD;
+        game.players[0].coins = 12;
+        setTutorialEnabled(false);
+        render();
+        acceptHotseatHandoff();
+    });
+    await expect(page.locator('#btnRoll')).toBeHidden();
+    await expect(page.locator('#btnBuildShortcut')).toBeVisible();
+    await expect(page.locator('#btnSkip')).toBeEnabled();
+    const controls = await page.locator('#cardboardActionSlot .buttons button:visible').evaluateAll(buttons =>
+        buttons.map(button => {
+            const rect = button.getBoundingClientRect();
+            const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            const style = getComputedStyle(button);
+            return {
+                label: button.innerText.trim(),
+                rect: rect.toJSON(),
+                textFits: button.scrollHeight <= button.clientHeight,
+                receivesInput: hit === button || button.contains(hit),
+                minHeight: parseFloat(style.minHeight),
+            };
+        })
+    );
+    expect(controls).toHaveLength(2);
+    for (const button of controls) {
+        expect(button.textFits, button.label).toBe(true);
+        expect(button.receivesInput, button.label).toBe(true);
+        expect(button.rect.width).toBeGreaterThanOrEqual(96);
+        expect(button.minHeight).toBeGreaterThanOrEqual(44);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(321);
+    const path = testInfo.outputPath('cardboard-portrait-320-build-actions.png');
+    await page.screenshot({ path });
+    await testInfo.attach('縦持ちの建設操作', { path, contentType: 'image/png' });
+});
+
 test('10人戦終盤の施設密度でも自分の街と市場を選択できる', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
