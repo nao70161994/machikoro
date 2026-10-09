@@ -8456,7 +8456,7 @@ html[data-design="plaza"] #gameScreen > #plazaEvents {
     padding: 4px 8px; margin: 0; border-radius: 0; box-sizing: border-box;
     overflow: auto; z-index: 5; background: #102c35;
 }
-html[data-design="plaza"] #gameScreen > #plazaEvents:not(:has(#plazaBuildReceipt > *, #plazaDiceReceipt .plaza-receipt-dice, #plazaDiceReceipt .plaza-receipt-featured, #plazaDiceReceipt .plaza-important-event, #plazaDiceReceipt .plaza-receipt-totals:not(:empty), .plaza-recent-history[open])) {
+html[data-design="plaza"] #gameScreen > #plazaEvents:not(.plaza-events-expanded):not(:has(#plazaBuildReceipt > *, #plazaDiceReceipt .plaza-receipt-dice, #plazaDiceReceipt .plaza-receipt-featured, #plazaDiceReceipt .plaza-important-event, #plazaDiceReceipt .plaza-receipt-totals:not(:empty), .plaza-recent-history[open])) {
     display: none;
 }
 html[data-design="plaza"] #plazaEvents h2,
@@ -8897,9 +8897,7 @@ html[data-design="plaza"] .plaza-receipt-details ul { margin: 4px 0; padding-lef
 html[data-design="plaza"] .plaza-receipt-incomplete { color: #ffe6a4; font-size: 12px; }
 html[data-design="plaza"] #gameScreen > #plazaEvents { max-height: min(150px, 24dvh); overscroll-behavior: contain; touch-action: pan-y; }
 @media (orientation: landscape) and (max-height: 600px) {
-    html[data-design="plaza"] #gameScreen > #plazaEvents:not(.plaza-events-expanded) {
-        height: 24px; min-height: 24px; max-height: 24px; box-sizing: border-box; padding-block: 2px;
-    }
+    html[data-design="plaza"] #gameScreen > #plazaEvents { max-height: 84px; }
 }
 
 html[data-design="plaza"] .income-preview-controls { display: grid; gap: 8px; }
@@ -8946,6 +8944,11 @@ html[data-design="plaza"] #plazaCameraTools .plaza-events-toggle { display: none
 html[data-design="plaza"] .plaza-recent-history:has(#plazaRecentEvents:empty),
 html[data-design="plaza"] .plaza-receipt-totals:empty { display: none; }
 html[data-design="plaza"] #gameScreen > #plazaEvents { min-height: 32px; }
+@media (orientation: landscape) and (max-height: 600px) {
+    html[data-design="plaza"] #gameScreen > #plazaEvents:not(.plaza-events-expanded) {
+        height: 24px; min-height: 24px; max-height: 24px; box-sizing: border-box; padding-block: 2px;
+    }
+}
 html[data-design="plaza"] .plaza-income-disclosure > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: #ffe6a4; font-weight: 700; }
 
 /* Auxiliary panels and an explicitly focused market temporarily yield the

@@ -2234,7 +2234,8 @@ for (const width of [320, 390, 844, 1440]) {
         expect((await town.boundingBox()).height).toBeGreaterThan(60);
         await expect(page.locator('#plazaPlayerHud button')).toHaveCount(4);
         // The recent log action must focus a related town without throwing in WebKit.
-        if (width === 844) await page.locator('[data-field-panel="events"]').click();
+        await page.locator('[data-field-panel="events"]').click();
+        await expect(page.locator('#plazaEvents')).toBeVisible();
         await page.locator('.plaza-recent-history > summary').click();
         const logAction = page.locator('#plazaRecentEvents [data-ui-action="highlightLogEntry"]:visible').last();
         await logAction.click();
