@@ -80,6 +80,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('#plazaComparisonClose').click();
         await expect(comparisonButton).toBeFocused();
         await expect(page.locator('#plazaComparison')).toBeHidden();
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-section="landmarks"]').click();
         await expect(page.locator('#buildMenu .build-section:not(.build-card-section) h4').first()).toBeFocused();

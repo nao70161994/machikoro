@@ -2310,6 +2310,7 @@ for (const width of [320, 390, 844, 1440]) {
             } finally { viewport.setPointerCapture = original; }
         });
         expect(pinch.after).toBeGreaterThan(pinch.before);
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         await page.locator('[data-field-target="all"]').click();
         await page.screenshot({ path: testInfo.outputPath(`plaza-field-all-${width}.png`), fullPage: false });
         await page.locator('[data-field-target="self"]').click();
