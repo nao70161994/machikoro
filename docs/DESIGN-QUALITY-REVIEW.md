@@ -359,3 +359,9 @@ artifactの320×844px画像では、中央市場は2列の大型アートカー�
 `release-test.yml` をHEAD `1da8c5af` でdispatchしたrun [37954311955](https://github.com/nao70161994/machikoro/actions/runs/37954311955) は、release-test、CPU難易度smoke、mobile WebKitの全jobが成功。mobile WebKitではタイトル/操作ケースとseeded CPU対局が通り、固定勝利fixtureではない実局結果を保存した。2人クラシックは87ターンで、街は41/38施設。Plaza 4人戦は124ターンで、街は26/29/25/30施設。画像と結果JSONは `/data/data/com.termux/files/usr/tmp/machikoro-release-review-37954311955/release-mobile-webkit-review/_temp/machikoro-review/` に取得した。
 
 1440pxの2人対局終局画面は街の施設アートが盤面の主役になり、勝者、コイン、再戦/共有/タイトル導線が同時に見える。844×390pxの4人Plazaでは勝者と育った街を左右に分け、施設26枚とランドマーク6個の街が表示され、主要操作も画面内に収まる。スクリーンショットの誤った短期fixture評価を実局確認で解消した。CPU対局と横画面の終局について重大な崩れは確認しなかった。これはCI上のPlaywright/WebKit確認であり、物理スマートフォンでの実機確認ではない。次は対局中のカード連鎖/コイン移動の視覚理解と、タイトル保存データ画面を最新artifact上で続けてレビューする。
+
+## Round 34: 横持ちタイトルの上端クリップを修正
+
+Round 33のCI title-landscape画像を確認し、844×390pxでページ内容が長い場合にタイトルの先頭がscrollport上端から押し出される状態を発見した。短い横画面のタイトルコンテンツからblock方向のauto marginを外し、`title-layout.spec.js` で320/390縦、844横、1440 desktopのタイトル見出しが上端より上に出ないことを検査。レビューworkflowにもこの4幅の保存再開/削除操作テストを追加した。変更は `7cedb59b`。
+
+run [37956025398](https://github.com/nao70161994/machikoro/actions/runs/37956025398) の初回ではtitle/saved-game responsive E2E、16画面baseline、Plazaアート、4人オンラインが成功。盤面テストの市場を閉じた後のbuild heading focus assertionだけが失敗したため、期待値を緩和せず同一runを再実行した。GitHubのrerunは成功済みstepを再実行しなかった。2回目ではPlazaのonline/field/focusを含む後段が成功し、focus failureは再現しなかった。一方、baseline比較で`plaza-phone-390`のみ差分0.03（閾値0.012）が再発。actual/expected/diffを取得して確認し、基準画像は更新していない。横画面タイトルの変更とは対象幅・CSS条件とも別であり、ビジュアルfixture/描画安定性の独立した調査項目として残す。run全体は成功扱いにしない。
