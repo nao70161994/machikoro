@@ -149,3 +149,11 @@ TermuxのChromiumをCDPで操作し、2世代保存を復元して画面を確�
 - 端末でローカルChromiumや大規模テストは実行していない。レビュー画像はCI artifactから取得し、作業ツリーはソース変更前にclean、空きメモリは3.7GiB以上を確認した。
 
 このrunで直近のreceiptログ増分走査変更も含むrelease-testが成功し、Plaza receiptの4画面幅と混合テーマオンライン経路をブラウザで再確認した。Goal全体ではタイトル/保存再開、plaza序盤/中盤/終盤、勝利の実対局各画面を4テーマ・各画面幅で統合評価する作業、再接続以外のオンライン操作、物理端末での確認が残る。
+
+## Round 13: 勝利時の紙吹雪を街アートの後ろへ退かせる
+
+Round 12の実対局勝利画像では、全画面に80個の紙吹雪が継続して再出現し、密度の高い街アートや結果へ重なっていた。祝福演出は残しつつ街の視認を優先するため、紙吹雪を48個に減らし、小型化・不透明度上限70%・上端からの一方向の落下へ変更した。画面下へ抜けた粒は戻さず、3.6秒で演出を終了する。
+
+- `tests/confetti.test.js` に個数、寸法、不透明度、再出現しないこと、時間、既存のReduced Motion設定を検証する回帰を追加。全5件成功。
+- `tests/browser/winner-notices.spec.js` はplaza 844×390pxの勝利画面で粒数と登場方向を確認し、目視用スクリーンショットをCIレポートへ添付する。Termux上ではブラウザを起動せず、最新CIでWebKitの描画と添付画像をレビューする。
+- `node --check`（confetti.js、confetti unit/browser tests）、`node tests/confetti.test.js`、`git diff --check` は成功。変更後のブラウザ表示レビューは未完了。

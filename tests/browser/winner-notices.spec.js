@@ -50,6 +50,22 @@ for (const sample of [
         });
         await expect(page.locator('.winner-screen')).toBeVisible();
         if (sample.theme === 'plaza' && sample.width === 844) {
+            await expect(page.locator('#confettiCanvas')).toHaveCSS('display', 'block');
+            const confettiReview = await page.evaluate(() => ({
+                count: confettiPieces.length,
+                maximumOpacity: Math.max(...confettiPieces.map(piece => piece.opacity)),
+                allEnterFromTop: confettiPieces.every(piece => piece.y <= 0),
+            }));
+            expect(confettiReview.count).toBe(48);
+            expect(confettiReview.maximumOpacity).toBeLessThanOrEqual(0.7);
+            expect(confettiReview.allEnterFromTop).toBe(true);
+            await page.waitForTimeout(500);
+            const celebrationPath = testInfo.outputPath('plaza-winner-celebration-844x390.png');
+            await page.screenshot({ path: celebrationPath, fullPage: false, animations: 'disabled' });
+            await testInfo.attach('plaza-winner-celebration-844x390.png', {
+                path: celebrationPath,
+                contentType: 'image/png',
+            });
             const resultLayout = await page.evaluate(() => {
                 const bounds = selector => {
                     const rect = document.querySelector(selector).getBoundingClientRect();

@@ -28,12 +28,13 @@ function startConfetti() {
     const colors = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
         ? ['#ffe1a6', '#f5c86e', '#fff1d4', '#d98a6e', '#83a49b']
         : ['#f0c040','#e94560','#3b82f6','#22c55e','#a855f7','#ffffff'];
-    confettiPieces = Array.from({ length: 80 }, () => ({
+    confettiPieces = Array.from({ length: 48 }, () => ({
         x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height - canvas.height,
-        r: Math.random() * 5 + 3,
+        y: -Math.random() * 96,
+        r: Math.random() * 2 + 2.5,
         color: colors[Math.floor(Math.random() * colors.length)],
-        speed: Math.random() * 2.5 + 1,
+        speed: Math.random() * 2 + 2.5,
+        opacity: 0.45 + Math.random() * 0.25,
         angle: Math.random() * Math.PI * 2,
         spin: (Math.random() - 0.5) * 0.15,
     }));
@@ -44,8 +45,9 @@ function startConfetti() {
         for (const p of confettiPieces) {
             p.y += p.speed;
             p.angle += p.spin;
-            if (p.y > canvas.height) p.y = -10;
+            if (p.y > canvas.height) continue;
             ctx.save();
+            ctx.globalAlpha = p.opacity;
             ctx.translate(p.x, p.y);
             ctx.rotate(p.angle);
             ctx.fillStyle = p.color;
@@ -53,7 +55,7 @@ function startConfetti() {
             ctx.restore();
         }
     }, 16);
-    confettiTimeout = setTimeout(stopConfetti, 5000);
+    confettiTimeout = setTimeout(stopConfetti, 3600);
 }
 
 function stopConfetti() {

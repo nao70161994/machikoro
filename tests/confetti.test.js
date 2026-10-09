@@ -5,7 +5,7 @@ const vm = require('vm');
 const { runTest } = require('./helpers/test-utils');
 
 function loadConfettiRuntime(options = {}) {
-    const calls = { setInterval: 0, setTimeout: 0, clearInterval: 0, clearRect: 0 };
+    const calls = { setInterval: 0, setTimeout: 0, clearInterval: 0, clearRect: 0, fillRect: 0, alphas: [] };
     const canvas = {
         style: {},
         width: 0,
@@ -16,8 +16,9 @@ function loadConfettiRuntime(options = {}) {
                 save() {},
                 translate() {},
                 rotate() {},
-                fillRect() {},
+                fillRect() { calls.fillRect++; },
                 restore() {},
+                set globalAlpha(value) { calls.alphas.push(value); },
                 fillStyle: '',
             };
         },
@@ -46,12 +47,17 @@ function loadConfettiRuntime(options = {}) {
                 return id === 'confettiCanvas' ? canvas : null;
             },
         },
-        setInterval() {
+        setInterval(callback) {
             calls.setInterval++;
+            calls.intervalCallback = callback;
             return 1;
         },
         clearInterval() { calls.clearInterval++; },
-        setTimeout() { calls.setTimeout++; },
+        setTimeout(callback, delay) {
+            calls.setTimeout++;
+            calls.timeoutDelay = delay;
+            calls.timeoutCallback = callback;
+        },
     };
     context.globalThis = context;
     vm.createContext(context);
@@ -99,4 +105,21 @@ runTest('startConfetti は夕暮れテーマで金・クリーム・テラコッ
     const colors = vm.runInContext('Array.from(new Set(confettiPieces.map(piece => piece.color)))', runtime.context);
     assert.ok(colors.length > 0);
     assert.ok(colors.every(color => ['#ffe1a6', '#f5c86e', '#fff1d4', '#d98a6e', '#83a49b'].includes(color)));
+});
+
+runTest('紙吹雪は街を隠しにくい量と濃さで上から一度だけ流れる', () => {
+    const runtime = loadConfettiRuntime();
+
+    runtime.context.startConfetti();
+
+    const pieces = vm.runInContext('confettiPieces', runtime.context);
+    assert.strictEqual(pieces.length, 48);
+    assert.ok(pieces.every(piece => piece.y <= 0 && piece.r <= 4.5 && piece.opacity <= 0.7));
+    pieces[0].y = runtime.canvas.height - 1;
+    runtime.calls.intervalCallback();
+
+    assert.ok(pieces[0].y > runtime.canvas.height, '画面下へ抜けた紙吹雪は上から再出現しない');
+    assert.ok(runtime.calls.alphas.every(alpha => alpha <= 0.7));
+    assert.ok(runtime.calls.fillRect < pieces.length, '画面下に抜けた紙吹雪は描画しない');
+    assert.strictEqual(runtime.calls.timeoutDelay, 3600);
 });
