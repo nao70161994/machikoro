@@ -8565,7 +8565,7 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
 html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: contents; }
 @media (orientation: landscape) and (max-height: 600px) {
     /* The highlighted seat already carries turn, name, and wallet information. */
-    html[data-design="plaza"] #gameScreen > #status { display: none; }
+    html[data-design="plaza"] body:not(.game-finished) #gameScreen > #status { display: none; }
     html[data-design="plaza"] #plazaPlayerHud {
         top: calc(var(--plaza-status, 30px) + var(--plaza-tools, 52px)); left: 0; right: 0; width: auto;
         height: 56px; max-height: 56px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 4px;

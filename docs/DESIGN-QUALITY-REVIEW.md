@@ -256,3 +256,4 @@ Plaza横画面の手番表示がHUDのアクティブ席情報と重複してい
 
 - 844×390px変更後の画像と全viewportのCI結果は未確認。Release/Plaza workflowを最新SHAで再実行する。
 - theme snapshot比較が失敗してもPlaza online/art reviewを走らせるよう同じworkflowの実行条件を独立化する。比較、盤面操作、オンライン/アート検証が同じrunからそれぞれ結果を返す。
+- Release WebKitのplaza勝利通知はstatus帯をゲーム終了後にも隠す退行を検出。手番帯を消すCSSを対局中にだけ限定し、勝利画面の表示検査を維持する。
