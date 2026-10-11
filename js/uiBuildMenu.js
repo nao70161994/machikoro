@@ -354,6 +354,19 @@ const UiBuildMenu = (() => {
         return previousCount >= visibleCount ? copy === 0 : copy >= previousCount;
     }
 
+    function townFacilityLotPosition(index, totalCount) {
+        const columns = 4, lotWidth = 23, columnStride = 24;
+        const row = Math.floor(index / columns);
+        const rowStart = row * columns;
+        const rowCount = Math.min(columns, totalCount - rowStart);
+        const rowWidth = lotWidth + Math.max(0, rowCount - 1) * columnStride;
+        return {
+            x: (100 - rowWidth) / 2 + (index - rowStart) * columnStride,
+            y: 30 + row * 17,
+            width: lotWidth,
+        };
+    }
+
     function renderTownHtml(player, enabledLandmarks = new Set()) {
         const cards = Array.isArray(player.cards) ? player.cards : [];
         const grouped = new Map();
@@ -385,14 +398,12 @@ const UiBuildMenu = (() => {
         const visibleCopies = new Map();
         for (const lot of lots) visibleCopies.set(lot.card.name, (visibleCopies.get(lot.card.name) || 0) + 1);
         const facilities = lots.map(({ card, count, copy }, index) => {
-            const row = Math.floor(index / 4);
-            const x = (index % 4) * 24 + 2;
-            const y = 30 + row * 17;
+            const position = townFacilityLotPosition(index, lots.length);
             const shown = visibleCopies.get(card.name);
             const remainingCopies = count - shown;
             const countBadge = copy === 0 && remainingCopies > 0
                 ? `<span class="town-building-count" title="所有${count}枚・絵${shown}枚・省略${remainingCopies}枚">+${remainingCopies}枚</span>` : '';
-            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" data-town-owned="${count}" data-town-visible="${shown}" style="--town-x:${x}%;--town-y:${y}%;--town-width:23%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
+            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" data-town-owned="${count}" data-town-visible="${shown}" style="--town-x:${position.x}%;--town-y:${position.y}%;--town-width:${position.width}%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
         }).join('');
         // Landmark lots are keyed to definition order, not acquisition order.
         const landmarkSlots = Object.keys(LANDMARK_ART);

@@ -248,6 +248,70 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
     });
 }
 
+for (const scenario of [
+    { width: 390, height: 844, players: 2, cards: 2 },
+    { width: 390, height: 844, players: 4, cards: 5 },
+    { width: 1440, height: 936, players: 2, cards: 2 },
+    { width: 1440, height: 936, players: 4, cards: 5 },
+]) {
+    test(`広場の施設アートは行ごとに中央へ並ぶ ${scenario.players}人 ${scenario.cards}施設 ${scenario.width}px`, async ({ page }, testInfo) => {
+        await page.setViewportSize({ width: scenario.width, height: scenario.height });
+        await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+        await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+        await page.goto('/');
+        await page.evaluate(({ playerCount, cardCount }) => {
+            startGameNow(playerCount, Array.from({ length: playerCount }, (_, index) => ({
+                type: 'human', name: `街${index + 1}`,
+            })));
+            const state = GameRuntimeState.runtime.snapshot();
+            state.game.currentPlayerIndex = 0;
+            state.game.players[0].cards = CARDS.slice(0, cardCount);
+            state.game.phase = GAME_PHASES.BUILD;
+            state.cpuPlayers.fill(null);
+            cancelCpuSchedule('plaza-center-town-lots');
+            window.scheduleCPU = () => false;
+            render();
+            acceptHotseatHandoff();
+            PlazaField.focusTarget('self');
+        }, { playerCount: scenario.players, cardCount: scenario.cards });
+        const layout = await page.evaluate(() => {
+            const street = document.querySelector('#plazaWorld #players .player-box-self .town-street');
+            const bounds = street.getBoundingClientRect();
+            const lots = Array.from(street.querySelectorAll('[data-town-slot-facility]')).map(lot => ({
+                row: lot.style.getPropertyValue('--town-y'),
+                x: Number.parseFloat(lot.style.getPropertyValue('--town-x')),
+                width: Number.parseFloat(lot.style.getPropertyValue('--town-width')),
+                left: lot.getBoundingClientRect().left,
+                right: lot.getBoundingClientRect().right,
+            }));
+            return { bounds: { left: bounds.left, right: bounds.right, width: bounds.width }, lots };
+        });
+        expect(layout.lots).toHaveLength(scenario.cards);
+        const rows = new Map();
+        for (const lot of layout.lots) {
+            const entries = rows.get(lot.row) || [];
+            entries.push(lot);
+            rows.set(lot.row, entries);
+        }
+        for (const entries of rows.values()) {
+            const centerPercent = (Math.min(...entries.map(lot => lot.x)) +
+                Math.max(...entries.map(lot => lot.x + lot.width))) / 2;
+            expect(Math.abs(centerPercent - 50)).toBeLessThanOrEqual(0.01);
+            expect(entries.every(lot => lot.left >= layout.bounds.left && lot.right <= layout.bounds.right)).toBe(true);
+        }
+        const screenshot = testInfo.outputPath(`plaza-town-lots-centered-${scenario.players}p-${scenario.cards}lots-${scenario.width}px.png`);
+        await page.screenshot({ path: screenshot, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`plaza-town-lots-centered-${scenario.players}p-${scenario.cards}lots-${scenario.width}px.png`, {
+            path: screenshot, contentType: 'image/png',
+        });
+        if (scenario.width === 390 && scenario.players === 2 && scenario.cards === 2) {
+            const boardImage = await page.locator('#plazaWorld #players .player-box-self .sunset-town').screenshot({ animations: 'disabled' });
+            console.log(`PLAZA_REVIEW_IMAGE:${boardImage.toString('base64')}`);
+        }
+        await expect(page.locator('#crashScreen')).toBeHidden();
+    });
+}
+
 test('広場の最近の出来事から関連する街へ安全に移動できる', async ({ page }) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
