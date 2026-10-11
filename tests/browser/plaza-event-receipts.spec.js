@@ -46,12 +46,17 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
     test(`ログを閉じたまま出目・複数発動・建設・目標達成が読める ${viewport.width}`, async ({ page }) => {
         await prepare(page, viewport);
         await page.evaluate(() => {
-            const game = GameRuntimeState.runtime.snapshot().game;
-            const rollDice = game.rollDice.bind(game);
-            game.rollDice = (...args) => {
-                game.rollDice = rollDice;
-                return rollDice(5, ...args.slice(1));
-            };
+            const crypto = window.crypto;
+            const getRandomValues = crypto.getRandomValues.bind(crypto);
+            const values = [4, 0, 0];
+            Object.defineProperty(crypto, 'getRandomValues', {
+                configurable: true,
+                value(buffer) {
+                    if (values.length) buffer[0] = values.shift();
+                    else getRandomValues(buffer);
+                    return buffer;
+                },
+            });
         });
         await page.locator('#btnRoll').click();
         await expect(page.locator('#plazaDiceReceipt .plaza-receipt-dice')).toHaveText('出目 5', { timeout: 5000 });
