@@ -1,3 +1,4 @@
+ 1 file changed, 8 insertions(+)
 # デザイン品質レビュー記録
 
 ## 2026-10-09 — 最新mainのタイトル・保存再開を再レビュー
@@ -392,3 +393,11 @@ Plazaの施設セクション移動でフォーカスしたh4が、同じクリ�
 再実行run [38116307065](https://github.com/nao70161994/machikoro/actions/runs/38116307065) では320×844、390×844、844×390、1440×936の2人戦盤面viewport/focus/market検証を含むPlaza field viewport stepが成功。2〜10人レイアウト単体テストも成功。Release run [38116306970](https://github.com/nao70161994/machikoro/actions/runs/38116306970) はStatic、Unit、PWA、Online/Reconnect、Release E2E、Mobile WebKit、CPU smokeの全jobが成功。
 
 ただし同Plaza runの既存4テーマ画面baselineで `plaza-phone-390` のみ6745 pixels（約3%）の差があり、比較stepはfailure。320px、844px横、1440px、その他テーマは通過。変更した2人用縦画面の道路/盤面と関連する差分の可能性があるが、artifactのactual/diff画像を目視で確認できていないため原因確定・baseline更新はしていない。最新画面artifactは保存済み。これはWebKit/ChromiumのCI結果であり、物理スマートフォンでの確認ではない。Goalは未完了。
+
+## Round 38: 2人席の識別と操作テストの独立再確認
+
+Round 37のPlaza WebKit失敗ログでは、ゲーム開始後の自分の席が常にindex 0とは限らず、1440pxで街順のassertionが誤った相手を選んでいた。また、1363pxの操作テストは比較モーダルを閉じた直後のカメラ移動中に建設ショートカットを押し、Playwrightの安定待ちが45秒でtimeoutした。テストは `.player-box-self` から自分の街を取得するようにし、ショートカットの実操作を盤面全体表示から市場へ移る独立操作として前に移動した。UI動作の期待を緩めず、CIで再検証した。
+
+最新run [38118020099](https://github.com/nao70161994/machikoro/actions/runs/38118020099) はPlaza visual review全step成功。16画面baseline（390px含む）、タイトル/保存操作、出目/建設レシート、Plaza art、4人オンライン、2人戦を含む盤面 viewport/focus/market が成功した。Release run [38118020118](https://github.com/nao70161994/machikoro/actions/runs/38118020118) もStatic、Unit、PWA、オンライン同期/再接続、Release E2E、Mobile WebKit、CPU難易度smokeの全job成功。以前の390px差分は同じrunの失敗job再実行で16画面すべて通過し、再現しなかった。baselineは更新していない。
+
+これはCI上の操作・画像比較結果で、今回のartifact画像自体は直接目視できていない。物理スマートフォン検証も未実施。したがって画像の美しさを成功したCIだけから推定せず、目視レビューと全画面の再設計は未完了として継続する。
