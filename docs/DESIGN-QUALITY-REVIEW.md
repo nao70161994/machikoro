@@ -371,3 +371,14 @@ run [37956025398](https://github.com/nao70161994/machikoro/actions/runs/37956025
 Plazaの施設セクション移動でフォーカスしたh4が、同じクリック処理内で親detailsを閉じた時に失われうる順序を修正。detailsを閉じた後の次フレームで、接続中の市場見出しへフォーカスする。変更 `8d1b8502`。再試行run [37959744306](https://github.com/nao70161994/machikoro/actions/runs/37959744306) は全step成功し、16画面baseline（plaza-phone-390を含む）、タイトル/保存再開4幅E2E、Plazaアート/終盤補助操作、4人オンライン、盤面focus/viewport/marketを通過した。
 
 同runの844×390pxタイトル画像を目視し、上端にタイトルを残したまま中断ゲーム、保存セレクター、再開/削除、CPUクイック開始が読めることを確認。画面全高より内容が長い場合は縦スクロールする構成。物理スマートフォンではなくCI WebKitでの確認。Round 34で記録した390px差分はこのrunでは再現せず、baselineの変更は不要だった。
+
+
+## Round 36: 出目・建設レシートの実操作と独立レビュー
+
+出目レシート確認を内部状態の直接変更から実際の「サイコロを振る」ボタン操作へ移した。最初の実装ではGameManagerインスタンスのメソッドを差し替えてもUIの遅延アクションに届かず、320/390/1440pxで期待した出目にならなかった。CIログを確認し、ブラウザの乱数APIだけを一時固定してUI経路は実動作させる形に変更。320/390/844×390/1440pxの出目・収支・複数発動確認はrun [38111588012](https://github.com/nao70161994/machikoro/actions/runs/38111588012) で成功した。
+
+同じ長いテストに続けていた建設fixtureはRelease WebKitで1440pxの同期ページ評価が45秒で止まったため、出目と建設/ランドマークを独立テストへ分割し、両方をrelease browser-prとPlaza workflowの対象にした。建設レシートは4幅で検査し、レシート確認の目的と関係しない建設済み街の選択クリックは外した。GitHub APIによるファイル更新で閉じ括弧が欠ける不備も静的ゲートが検出したため、実ブランチ内容を再取得して構文を修正した。期待値・ベースラインは緩和していない。
+
+最新run [38114215316](https://github.com/nao70161994/machikoro/actions/runs/38114215316) は16画面baseline、タイトル/保存操作、出目・建設レシート8ケース、Plazaアート/補助操作、4人オンライン、盤面viewport/focus/marketが全て成功。Release run [38114215352](https://github.com/nao70161994/machikoro/actions/runs/38114215352) もStatic、Unit、PWA、オンライン同期/再接続、Release E2E、Mobile WebKit、CPU難易度smokeの全jobが成功。以前のPlaza runで844px視覚fixtureのtimeoutが一度あったが、最新runでは同じ視覚fixtureが成功し再現しなかった。
+
+これはGitHub Actions上のWebKit/Chromiumブラウザ検証であり、物理スマートフォンの確認ではない。最新runの画像artifactは保存済みだが、このラウンドでは新しい外観コード変更はなく、直前までの画面レビューを継続している。商用ゲーム品質のGoalは未完了で、設定/待機/ヘルプ/エラー復旧など全画面の独立レビュー、複数人数の実プレイ再レビュー、スクリーンショットの追加目視が残る。
