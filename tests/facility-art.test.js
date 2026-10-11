@@ -445,13 +445,13 @@ runTest('街の施設数は建設と取消に追従し、無効なランドマ�
 
 runTest('街の施設lotは行ごとの枚数に合わせて中央へ配置する', () => {
     const two = UiBuildMenu.renderTownHtml({ cards: CARDS.slice(0, 2), landmarks: {} });
-    assert.ok(two.includes('style="--town-x:26.5%;--town-y:30%;--town-width:23%"'));
-    assert.ok(two.includes('style="--town-x:50.5%;--town-y:30%;--town-width:23%"'));
+    assert.ok(two.includes('style="--town-x:10.5%;--town-y:30%;--town-width:38%"'));
+    assert.ok(two.includes('style="--town-x:51.5%;--town-y:30%;--town-width:38%"'));
 
     const five = UiBuildMenu.renderTownHtml({ cards: CARDS.slice(0, 5), landmarks: {} });
     assert.ok(five.includes('style="--town-x:2.5%;--town-y:30%;--town-width:23%"'));
     assert.ok(five.includes('style="--town-x:74.5%;--town-y:30%;--town-width:23%"'));
-    assert.ok(five.includes('style="--town-x:38.5%;--town-y:47%;--town-width:23%"'));
+    assert.ok(five.includes('style="--town-x:26%;--town-y:47%;--town-width:48%"'));
 });
 
 runTest('同種施設は複数lotに広がり大量所持でも16lotとランドマークを保つ', () => {

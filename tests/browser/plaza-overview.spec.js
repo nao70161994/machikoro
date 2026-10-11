@@ -297,6 +297,8 @@ for (const scenario of [
             const centerPercent = (Math.min(...entries.map(lot => lot.x)) +
                 Math.max(...entries.map(lot => lot.x + lot.width))) / 2;
             expect(Math.abs(centerPercent - 50)).toBeLessThanOrEqual(0.01);
+            const expectedWidth = entries.length === 1 ? 48 : entries.length === 2 ? 38 : entries.length === 3 ? 30 : 23;
+            expect(entries.every(lot => lot.width === expectedWidth)).toBe(true);
             expect(entries.every(lot => lot.left >= layout.bounds.left && lot.right <= layout.bounds.right)).toBe(true);
         }
         const screenshot = testInfo.outputPath(`plaza-town-lots-centered-${scenario.players}p-${scenario.cards}lots-${scenario.width}px.png`);
@@ -304,10 +306,6 @@ for (const scenario of [
         await testInfo.attach(`plaza-town-lots-centered-${scenario.players}p-${scenario.cards}lots-${scenario.width}px.png`, {
             path: screenshot, contentType: 'image/png',
         });
-        if (scenario.width === 390 && scenario.players === 2 && scenario.cards === 2) {
-            const boardImage = await page.locator('#plazaWorld #players .player-box-self .sunset-town').screenshot({ animations: 'disabled' });
-            console.log(`PLAZA_REVIEW_IMAGE:${boardImage.toString('base64')}`);
-        }
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }

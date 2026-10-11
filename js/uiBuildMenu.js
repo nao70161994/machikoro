@@ -355,10 +355,12 @@ const UiBuildMenu = (() => {
     }
 
     function townFacilityLotPosition(index, totalCount) {
-        const columns = 4, lotWidth = 23, columnStride = 24;
+        const columns = 4;
         const row = Math.floor(index / columns);
         const rowStart = row * columns;
         const rowCount = Math.min(columns, totalCount - rowStart);
+        const lotWidth = rowCount === 1 ? 48 : rowCount === 2 ? 38 : rowCount === 3 ? 30 : 23;
+        const columnStride = lotWidth + (rowCount === 4 ? 1 : 3);
         const rowWidth = lotWidth + Math.max(0, rowCount - 1) * columnStride;
         return {
             x: (100 - rowWidth) / 2 + (index - rowStart) * columnStride,

@@ -414,3 +414,11 @@ Round 37のPlaza WebKit失敗ログでは、ゲーム開始後の自分の席が
 新しい4幅browser reviewは self town の幅とPC拡大、縦画面/PCの表示領域内boundsを検査し、各幅でfocus screenshotをartifactに保存する。長いPlaza操作ケースでカメラメニュー操作がtimeoutしたため、施設/ランドマークナビゲーションを状態管理を止めた独立UI testへ分離した。既存テストの期待値を弱めず、2〜10人配置の単体テストも通過した。
 
 Plaza run [38120234366](https://github.com/nao70161994/machikoro/actions/runs/38120234366) は16画面baseline、タイトル/保存操作、出目/建設レシート、Plazaアート/オンライン、4幅focus screenshot、2〜10人終盤配置を含む全step成功。Release run [38120234461](https://github.com/nao70161994/machikoro/actions/runs/38120234461) はStatic、Unit、PWA、Online/Reconnect、Release E2E、Mobile WebKit、CPU smokeが全job成功。画像artifactには新しいfocus screenshotを保存したが、この実行の画像そのものは直接目視していない。CI browser検証であり実機確認ではない。全画面品質と中盤/終盤の直接画像レビューは未完了。
+
+## Round 41: 実画面で街の施設密度を再評価
+
+施設rowを中央配置する初回修正はPlazaの複数viewport確認で成功。Release run [38121826804](https://github.com/nao70161994/machikoro/actions/runs/38121826804) はUnit gateを含むrelease-testとCPU smokeが成功した。Plaza run [38121486320](https://github.com/nao70161994/machikoro/actions/runs/38121486320) の完了ログから390px/2人/2施設のWebKit画像を抽出し直接確認した。
+
+画像では横方向の偏りは直った一方、施設rowは街幅の約半分に収まり、上下の空地が大きく見えた。中央寄せだけでは施設アートの存在感を改善できないと判断し、1行あたりのlot数に合わせて幅を可変にした。2lotは各38%、3lotは30%、4lotは23%、単独rowは48%。各rowの中央とstreet内boundsを保ち、2/4人と390/1440pxのbrowser assertionでadaptive widthを検査する。施設art test、UI test、構文確認が成功。CIへ大量のbase64を残す一時診断ログは画像を取得後に削除した。
+
+更新したadaptive widthのPlaza/WebKit実画像レビューは新しいCIで進行中。今回目視した画像は序盤2施設の一状態だけで、縦320px、横持ち、PC、中盤/終盤、イベント、物理端末の品質証拠ではない。街景全体の余白と都市密度は引き続き改善対象とする。Goalは未完了。
