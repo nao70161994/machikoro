@@ -107,8 +107,6 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await attachReceiptScreenshot(page, test.info(), viewport.width, 'build');
     });
 }
-    });
-}
 
 for (const count of [4, 10]) {
     test(`HUD詳細と読み取り専用の試算は対局更新で条件を保つ ${count}人`, async ({ page }) => {
