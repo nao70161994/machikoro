@@ -452,3 +452,7 @@ Plaza run [38127436672](https://github.com/nao70161994/machikoro/actions/runs/38
 ## Round 46: 更新バナーのブラウザfixtureを実際の表示経路に合わせる
 
 320pxの出目レシートartifactでは更新バナーの説明文が縦に折り返されていた。原因を追うと、製品コードは `display: block` を設定してCSS Gridへ切り替えるのに対し、レシート用browser fixtureだけが `display: flex` を直接指定し、実際の表示状態を再現していなかった。CSSを場当たり的に変更せず、fixtureを製品と同じ `block` に修正し、320pxでcomputed displayがgrid、説明文とバナーに十分な幅があることを検査する。ローカルではPlaywright/WebKitを実行できないため、修正後の実画面とレシート画像は次のCIで再確認する。今回の原因判定はartifactとアプリのバナー表示処理の照合によるもので、スマートフォン実機の評価ではない。
+
+## Round 47: 画面高に合わせた街景のbaselineを再確認
+
+CI [38130524088](https://github.com/nao70161994/machikoro/actions/runs/38130524088) のexpected/actualを目視比較し、`plaza-landscape-844` と `plaza-desktop-1440` の差分を調査した。844×390pxは街景内の道路・施設群が上下に中央寄せされ、1440×936pxは育てた街と施設アートが旧画像より大きく画面中央に表示される。どちらも直近のPlaza街景レイアウト変更による意図した改善と判断し、この2枚だけ実画像で置き換え、他14枚は維持した。同CIでは16画面比較にこの2差分があり、Plaza viewport/focus/market試験も1363pxで一件timeout、出目レシート確認はbaseline failureのためskipされた。実際の更新バナー確認は次のCIで必ず行い、timeoutが再発する場合はfixture/操作原因を調べる。Release E2EとMobile WebKitは成功したが、Plaza workflow全体は成功扱いにしない。
