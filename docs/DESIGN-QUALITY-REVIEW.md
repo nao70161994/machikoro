@@ -442,3 +442,9 @@ Commit `c0bcb87a` のCIではrelease-testとCPU smokeが成功。Plazaの実ブ�
 Plaza run [38127436672](https://github.com/nao70161994/machikoro/actions/runs/38127436672) ではPlazaアート、4人オンライン同期、2人/4人のviewport・focus・market検査が成功。320px overviewの150px幅条件も成功し、artifactの画像では2つの街、市場、操作帯が縮小される中でも街の施設アートが以前より大きく読める。これはCI WebKit画像で、実機ではない。
 
 このrunの16画面比較で残った差分は `sunset-phone-390` と `plaza-landscape-844` の2枚のみ。expectedとlatest actualを並べて確認した。390px夕暮れ画面は建物2種が左側に小さく固まっていた旧画像に比べ、街と施設アートが横方向へ広がり中央に配置される。844×390px Plazaは新しい街景aspectと施設配置が中央viewportを使い、旧画像の左上に小さく寄った街より認識しやすい。両差分とも最近の街景変更による意図した改善と判定し、actualの2枚だけをsnapshotへ採用。他14枚は変更していない。次runで16枚全体の再現性を確認する。物理端末、中盤/終盤、イベント/連鎖画面の評価は未完了。
+
+## Round 45: 縦画面Plazaも新しい街高へ同期
+
+最新16画面run [38128402085](https://github.com/nao70161994/machikoro/actions/runs/38128402085) で `plaza-phone-320` と `plaza-phone-390` のみが各3%差分。実際のActual/expectedを比較したところ、height:autoにより市街アートが旧固定320px高の画像より大きくなっている。320pxでは施設2種が周囲の街に埋もれず、390pxでも街scene内のアートが拡大して認識しやすい。プレイヤー名と施設chips、HUD、ダイス操作は残り、Plaza viewport/focus/market検査とRelease/Mobile WebKit/CPU smokeは成功した。
+
+この2枚は新しい縦画面レイアウトの意図した差分としてActualをsnapshotへ採用。他12枚は維持。次CIで16枚すべての再現性を確認する。ここでの画面評価はCI WebKit emulationで、物理端末ではない。商用品質全体、4テーマ全画面、中盤/終盤イベント、複数発動、Undo/再接続中の演出誤再生は未完了。
