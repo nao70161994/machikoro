@@ -79,6 +79,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.evaluate(() => render());
         await expect(receipt.locator('details')).toHaveAttribute('open', '');
         await expect(receipt.locator('summary')).toBeFocused();
+    });
 }
 
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 },
