@@ -406,3 +406,11 @@ Round 37のPlaza WebKit失敗ログでは、ゲーム開始後の自分の席が
 リポジトリにあるPlazaの4幅Playwright基準画像を開き、最新成功run [38118020099](https://github.com/nao70161994/machikoro/actions/runs/38118020099) が同じ16画面画像を比較して成功したことと照合した。画像を直接目視した結果、390pxでは育てた街が中央の小さな範囲にとどまり、周囲の芝地が大きく空く。施設アートも小さく左側へ寄り、中央の縦道路/光の柱が街より目立つ。320pxでもゲーム情報と操作ボタンは読み取れるが、建設施設の存在感が弱い。844×390pxと1440pxは相手HUDと操作帯が安定して見える一方、街は画面幅の一部しか使わず、広い空き地が画面の主役になる。
 
 これは序盤の4人戦・自分の街フォーカス画像なので、施設が少ない状態の証拠に限られる。中盤/終盤の新画像や直近実行artifactの目視とは区別する。次のデザイン改善ではPlazaFieldの自分の街focus倍率が現在最大1.1に固定されている点を調べ、viewportの幅と高さに応じて街・施設アートを大きく見せながら盤面全体を追える挙動を設計する。PCで不必要に小さくならないこと、844×390pxや縦持ちでランドマーク/カードが切れないことを新しいbrowser assertionsで確認し、意図的な画像差分もactual画像を目視して評価する。現時点では当該倍率は未変更で、Goalは未完了。
+
+## Round 40: 自分の街のフォーカスをviewportに適応
+
+`PlazaField.focusTarget('self')` の固定110%上限をやめ、街の実測幅/高さとviewport寸法に応じてフォーカス倍率を計算する。320/390pxの縦画面では幅に合わせ、PCでは高さに収めながら従来より大きく表示する。短い844×390px横画面は現行の110%上限を維持し、パン/ズームで詳細を見る操作を残す。市場focus、全体focus、共通ゲーム状態は変更しない。
+
+新しい4幅browser reviewは self town の幅とPC拡大、縦画面/PCの表示領域内boundsを検査し、各幅でfocus screenshotをartifactに保存する。長いPlaza操作ケースでカメラメニュー操作がtimeoutしたため、施設/ランドマークナビゲーションを状態管理を止めた独立UI testへ分離した。既存テストの期待値を弱めず、2〜10人配置の単体テストも通過した。
+
+Plaza run [38120234366](https://github.com/nao70161994/machikoro/actions/runs/38120234366) は16画面baseline、タイトル/保存操作、出目/建設レシート、Plazaアート/オンライン、4幅focus screenshot、2〜10人終盤配置を含む全step成功。Release run [38120234461](https://github.com/nao70161994/machikoro/actions/runs/38120234461) はStatic、Unit、PWA、Online/Reconnect、Release E2E、Mobile WebKit、CPU smokeが全job成功。画像artifactには新しいfocus screenshotを保存したが、この実行の画像そのものは直接目視していない。CI browser検証であり実機確認ではない。全画面品質と中盤/終盤の直接画像レビューは未完了。
