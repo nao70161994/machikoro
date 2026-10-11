@@ -95,17 +95,38 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('#plazaComparisonClose').click();
         await expect(comparisonButton).toBeFocused();
         await expect(page.locator('#plazaComparison')).toBeHidden();
-        await page.locator('.plaza-camera-menu > summary').click();
-        await page.locator('[data-field-section="landmarks"]').click();
-        await expect(page.locator('#buildMenu .build-section:not(.build-card-section) h4').first()).toBeFocused();
-        expect(await page.locator('#buildMenu').evaluate(element => element.scrollTop)).toBeGreaterThan(0);
-        await page.locator('.plaza-camera-menu > summary').click();
-        await page.locator('[data-field-section="facilities"]').click();
-        await expect(page.locator('#buildMenu .build-card-section h4')).toBeFocused();
         await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
+
+test('広場のその他メニューから施設とランドマークへ移動できる', async ({ page }) => {
+    await page.setViewportSize({ width: 1363, height: 936 });
+    await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.goto('/');
+    await page.evaluate(() => {
+        startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
+        const state = GameRuntimeState.runtime.snapshot();
+        state.game.currentPlayerIndex = 0;
+        state.game.phase = GAME_PHASES.BUILD;
+        state.cpuPlayers.fill(null);
+        cancelCpuSchedule('plaza-camera-menu-navigation');
+        window.scheduleCPU = () => false;
+        render();
+        acceptHotseatHandoff();
+        PlazaField.focusTarget('self');
+    });
+    const menu = page.locator('.plaza-camera-menu > summary');
+    await menu.click();
+    await page.locator('[data-field-section="landmarks"]').click();
+    await expect(page.locator('#buildMenu .build-section:not(.build-card-section) h4').first()).toBeFocused();
+    expect(await page.locator('#buildMenu').evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+    await menu.click();
+    await page.locator('[data-field-section="facilities"]').click();
+    await expect(page.locator('#buildMenu .build-card-section h4')).toBeFocused();
+    await expect(page.locator('#crashScreen')).toBeHidden();
+});
 
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 },
     { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
