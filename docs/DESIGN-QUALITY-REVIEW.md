@@ -448,3 +448,7 @@ Plaza run [38127436672](https://github.com/nao70161994/machikoro/actions/runs/38
 最新16画面run [38128402085](https://github.com/nao70161994/machikoro/actions/runs/38128402085) で `plaza-phone-320` と `plaza-phone-390` のみが各3%差分。実際のActual/expectedを比較したところ、height:autoにより市街アートが旧固定320px高の画像より大きくなっている。320pxでは施設2種が周囲の街に埋もれず、390pxでも街scene内のアートが拡大して認識しやすい。プレイヤー名と施設chips、HUD、ダイス操作は残り、Plaza viewport/focus/market検査とRelease/Mobile WebKit/CPU smokeは成功した。
 
 この2枚は新しい縦画面レイアウトの意図した差分としてActualをsnapshotへ採用。他12枚は維持。次CIで16枚すべての再現性を確認する。ここでの画面評価はCI WebKit emulationで、物理端末ではない。商用品質全体、4テーマ全画面、中盤/終盤イベント、複数発動、Undo/再接続中の演出誤再生は未完了。
+
+## Round 46: 更新バナーのブラウザfixtureを実際の表示経路に合わせる
+
+320pxの出目レシートartifactでは更新バナーの説明文が縦に折り返されていた。原因を追うと、製品コードは `display: block` を設定してCSS Gridへ切り替えるのに対し、レシート用browser fixtureだけが `display: flex` を直接指定し、実際の表示状態を再現していなかった。CSSを場当たり的に変更せず、fixtureを製品と同じ `block` に修正し、320pxでcomputed displayがgrid、説明文とバナーに十分な幅があることを検査する。ローカルではPlaywright/WebKitを実行できないため、修正後の実画面とレシート画像は次のCIで再確認する。今回の原因判定はartifactとアプリのバナー表示処理の照合によるもので、スマートフォン実機の評価ではない。

@@ -61,10 +61,23 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('#btnRoll').click();
         await expect(page.locator('#plazaDiceReceipt .plaza-receipt-dice')).toHaveText('出目 5', { timeout: 5000 });
         await page.evaluate(() => {
-            document.getElementById('pwaUpdateBanner').style.display = 'flex';
+            document.getElementById('pwaUpdateBanner').style.display = 'block';
             document.body.classList.add('pwa-banner-open');
             PlazaField.sync();
         });
+        if (viewport.width === 320) {
+            const updateLayout = await page.locator('#pwaUpdateBanner').evaluate(banner => {
+                const message = document.getElementById('pwaUpdateMsg');
+                return {
+                    display: getComputedStyle(banner).display,
+                    messageWidth: message.getBoundingClientRect().width,
+                    bannerWidth: banner.getBoundingClientRect().width,
+                };
+            });
+            expect(updateLayout.display).toBe('grid');
+            expect(updateLayout.messageWidth).toBeGreaterThan(120);
+            expect(updateLayout.bannerWidth).toBeGreaterThan(280);
+        }
         const receipt = page.locator('#plazaDiceReceipt');
         await expect(receipt.locator('.plaza-receipt-dice')).toHaveText('出目 5');
         await expect(receipt.locator('.plaza-receipt-featured')).toContainText('森林 銀行 → 席1 +6コイン（6回）');
