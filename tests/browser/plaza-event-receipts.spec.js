@@ -79,9 +79,15 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.evaluate(() => render());
         await expect(receipt.locator('details')).toHaveAttribute('open', '');
         await expect(receipt.locator('summary')).toBeFocused();
-        await receipt.locator('summary').click();
+}
+
+for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 },
+    { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+    test(`施設とランドマークの建設結果が追える ${viewport.width}`, async ({ page }) => {
+        await prepare(page, viewport);
         await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
+            game.phase = GAME_PHASES.BUILD;
             game.buildCard(createCardByName('森林'));
             render();
             acceptHotseatHandoff();
@@ -99,6 +105,8 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('[data-built-town-index="0"]').click();
         await expect(page.locator('#crashScreen')).toBeHidden();
         await attachReceiptScreenshot(page, test.info(), viewport.width, 'build');
+    });
+}
     });
 }
 
