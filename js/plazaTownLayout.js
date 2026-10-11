@@ -2,9 +2,33 @@
 
 // Layout receives measured sizes only; camera and DOM ownership stay in PlazaField.
 const PlazaTownLayout = (() => {
-    function calculate({ towns, marketWidth, marketHeight }) {
+    function calculate({ towns, marketWidth, marketHeight, orientation = 'landscape' }) {
         const positions = {};
         const gap = 40, padding = 70;
+        if (towns.length === 2) {
+            const compactGap = 32, compactPadding = 40;
+            const self = towns.find(town => town.seat === 0);
+            const opponent = towns.find(town => town.seat === 1);
+            if (!self || !opponent) throw new Error('Two-player layout requires seats 0 and 1');
+            if (orientation === 'landscape') {
+                const contentHeight = Math.max(self.height, opponent.height, marketHeight);
+                const marketLeft = compactPadding + opponent.width + compactGap;
+                const selfLeft = marketLeft + marketWidth + compactGap;
+                positions[1] = { left: compactPadding, top: compactPadding + (contentHeight - opponent.height) / 2 };
+                positions[0] = { left: selfLeft, top: compactPadding + (contentHeight - self.height) / 2 };
+                return { positions, marketLeft, marketTop: compactPadding + (contentHeight - marketHeight) / 2,
+                    width: selfLeft + self.width + compactPadding, height: contentHeight + compactPadding * 2 };
+            }
+            const contentWidth = Math.max(self.width, opponent.width, marketWidth);
+            const left = compactPadding + (contentWidth - marketWidth) / 2;
+            const townLeft = town => compactPadding + (contentWidth - town.width) / 2;
+            positions[1] = { left: townLeft(opponent), top: compactPadding };
+            const marketTop = compactPadding + opponent.height + compactGap;
+            positions[0] = { left: townLeft(self), top: marketTop + marketHeight + compactGap };
+            return { positions, marketLeft: left, marketTop,
+                width: contentWidth + compactPadding * 2,
+                height: positions[0].top + self.height + compactPadding };
+        }
         if (towns.length <= 4) {
             const compactGap = 32, compactPadding = 40;
             const north = towns.find(town => town.seat === 2);
