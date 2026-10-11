@@ -120,7 +120,10 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         const layout = await page.evaluate(() => {
             const bounds = id => {
                 const item = document.getElementById(id);
-                return { left: item.offsetLeft, top: item.offsetTop, width: item.offsetWidth, height: item.offsetHeight };
+                // offsetLeft may be relative to a nested offset parent; the inline
+                // coordinates are the world-space positions assigned by PlazaField.
+                return { left: Number.parseFloat(item.style.left), top: Number.parseFloat(item.style.top),
+                    width: item.offsetWidth, height: item.offsetHeight };
             };
             return {
                 horizontal: document.getElementById('plazaViewport').clientWidth >= document.getElementById('plazaViewport').clientHeight,
@@ -144,12 +147,14 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             expect(layout.world.classes).toContain('plaza-two-player-horizontal');
             expect(layout.opponent.left + layout.opponent.width).toBeLessThan(layout.market.left);
             expect(layout.self.left).toBeGreaterThan(layout.market.left + layout.market.width);
-            expect(Math.abs(layout.self.top - layout.opponent.top)).toBeLessThanOrEqual(1);
+            expect(Math.abs(layout.self.top + layout.self.height / 2 -
+                layout.opponent.top - layout.opponent.height / 2)).toBeLessThanOrEqual(1);
         } else {
             expect(layout.world.classes).toContain('plaza-two-player-vertical');
             expect(layout.opponent.top + layout.opponent.height).toBeLessThan(layout.market.top);
             expect(layout.self.top).toBeGreaterThan(layout.market.top + layout.market.height);
-            expect(Math.abs(layout.self.left - layout.opponent.left)).toBeLessThanOrEqual(1);
+            expect(Math.abs(layout.self.left + layout.self.width / 2 -
+                layout.opponent.left - layout.opponent.width / 2)).toBeLessThanOrEqual(1);
         }
         const screenshot = testInfo.outputPath(`plaza-two-player-overview-${viewport.width}x${viewport.height}.png`);
         await page.screenshot({ path: screenshot, fullPage: false, animations: 'disabled' });
