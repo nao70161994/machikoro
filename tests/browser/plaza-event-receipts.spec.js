@@ -46,10 +46,15 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
     test(`ログを閉じたまま出目・複数発動・建設・目標達成が読める ${viewport.width}`, async ({ page }) => {
         await prepare(page, viewport);
         await page.evaluate(() => {
-            GameRuntimeState.runtime.snapshot().game.rollDice(5);
-            render();
-            acceptHotseatHandoff();
+            const game = GameRuntimeState.runtime.snapshot().game;
+            const rollDice = game.rollDice.bind(game);
+            game.rollDice = (...args) => {
+                game.rollDice = rollDice;
+                return rollDice(5, ...args.slice(1));
+            };
         });
+        await page.locator('#btnRoll').click();
+        await expect(page.locator('#plazaDiceReceipt .plaza-receipt-dice')).toHaveText('出目 5', { timeout: 5000 });
         await page.evaluate(() => {
             document.getElementById('pwaUpdateBanner').style.display = 'flex';
             document.body.classList.add('pwa-banner-open');
