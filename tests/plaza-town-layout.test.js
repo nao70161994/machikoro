@@ -3,8 +3,9 @@ const assert = require('assert');
 const { runTest } = require('./helpers/test-utils');
 const PlazaTownLayout = require('../js/plazaTownLayout');
 
-function verify(towns, marketHeight) {
+function verify(towns, marketHeight, orientation) {
     const input = { towns, marketWidth: 520, marketHeight };
+    if (orientation) input.orientation = orientation;
     const before = JSON.stringify(input);
     const result = PlazaTownLayout.calculate(input);
     assert.strictEqual(JSON.stringify(input), before, 'measured inputs remain unchanged');
@@ -22,6 +23,21 @@ function verify(towns, marketHeight) {
     assert.strictEqual(Object.keys(result.positions).length, towns.length);
     return result;
 }
+
+runTest('2人の盤面は縦持ちで縦積み、横持ちで横並びになる', () => {
+    const towns = [{ seat: 0, width: 450, height: 320 }, { seat: 1, width: 450, height: 320 }];
+    const portrait = verify(towns, 470, 'portrait');
+    assert.ok(portrait.positions[1].top + 320 < portrait.marketTop);
+    assert.ok(portrait.positions[0].top > portrait.marketTop + 470);
+    assert.strictEqual(portrait.positions[0].left, portrait.positions[1].left);
+    assert.strictEqual(portrait.width, 600);
+    const landscape = verify(towns, 470, 'landscape');
+    assert.ok(landscape.positions[1].left + 450 < landscape.marketLeft);
+    assert.ok(landscape.positions[0].left > landscape.marketLeft + 520);
+    assert.strictEqual(landscape.positions[0].top, landscape.positions[1].top);
+    assert.strictEqual(landscape.height, 550);
+    assert.notDeepStrictEqual(landscape, portrait);
+});
 
 for (let count = 2; count <= 10; count++) {
     runTest(`${count}人の通常/成熟/詳細展開サイズで市場と全街を境界内に分離する`, () => {

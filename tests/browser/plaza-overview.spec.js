@@ -107,6 +107,59 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
     });
 }
 
+for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 },
+    { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+    test(`2人の広場は画面方向に合わせて街と市場を配置する ${viewport.width}x${viewport.height}`, async ({ page }, testInfo) => {
+        await page.setViewportSize(viewport);
+        await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+        await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+        await page.goto('/');
+        await page.locator('.setup-quick-play').click();
+        await expect(page.locator('#gameScreen')).toBeVisible();
+        await page.locator('[data-field-target="all"]').click();
+        const layout = await page.evaluate(() => {
+            const bounds = id => {
+                const item = document.getElementById(id);
+                return { left: item.offsetLeft, top: item.offsetTop, width: item.offsetWidth, height: item.offsetHeight };
+            };
+            return {
+                horizontal: document.getElementById('plazaViewport').clientWidth >= document.getElementById('plazaViewport').clientHeight,
+                world: { width: document.getElementById('plazaWorld').offsetWidth, height: document.getElementById('plazaWorld').offsetHeight,
+                    classes: document.getElementById('plazaWorld').className },
+                self: bounds('playerBox0'), opponent: bounds('playerBox1'), market: bounds('buildMenu'),
+                zoom: Number.parseInt(document.getElementById('plazaZoomLabel').textContent, 10),
+                screenCardWidth: document.getElementById('playerBox0').getBoundingClientRect().width,
+            };
+        });
+        expect(layout.horizontal).toBe(viewport.width >= viewport.height);
+        expect(layout.screenCardWidth).toBeGreaterThanOrEqual(150);
+        expect(layout.zoom).toBeGreaterThanOrEqual(30);
+        for (const item of [layout.self, layout.opponent, layout.market]) {
+            expect(item.left).toBeGreaterThanOrEqual(0);
+            expect(item.top).toBeGreaterThanOrEqual(0);
+            expect(item.left + item.width).toBeLessThanOrEqual(layout.world.width);
+            expect(item.top + item.height).toBeLessThanOrEqual(layout.world.height);
+        }
+        if (layout.horizontal) {
+            expect(layout.world.classes).toContain('plaza-two-player-horizontal');
+            expect(layout.opponent.left + layout.opponent.width).toBeLessThan(layout.market.left);
+            expect(layout.self.left).toBeGreaterThan(layout.market.left + layout.market.width);
+            expect(Math.abs(layout.self.top - layout.opponent.top)).toBeLessThanOrEqual(1);
+        } else {
+            expect(layout.world.classes).toContain('plaza-two-player-vertical');
+            expect(layout.opponent.top + layout.opponent.height).toBeLessThan(layout.market.top);
+            expect(layout.self.top).toBeGreaterThan(layout.market.top + layout.market.height);
+            expect(Math.abs(layout.self.left - layout.opponent.left)).toBeLessThanOrEqual(1);
+        }
+        const screenshot = testInfo.outputPath(`plaza-two-player-overview-${viewport.width}x${viewport.height}.png`);
+        await page.screenshot({ path: screenshot, fullPage: false, animations: 'disabled' });
+        await testInfo.attach(`plaza-two-player-overview-${viewport.width}x${viewport.height}.png`, {
+            path: screenshot, contentType: 'image/png',
+        });
+        await expect(page.locator('#crashScreen')).toBeHidden();
+    });
+}
+
 test('広場の最近の出来事から関連する街へ安全に移動できる', async ({ page }) => {
     await page.setViewportSize({ width: 844, height: 390 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));

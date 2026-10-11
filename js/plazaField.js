@@ -120,8 +120,14 @@ const PlazaField = (() => {
             width: entry.item.offsetWidth, height: entry.item.offsetHeight,
         }));
         const market = node('buildMenu');
+        const viewport = node('plazaViewport');
+        const horizontal = viewport.clientWidth >= viewport.clientHeight;
+        const world = node('plazaWorld');
+        world.classList.toggle('plaza-two-player-horizontal', playerCount === 2 && horizontal);
+        world.classList.toggle('plaza-two-player-vertical', playerCount === 2 && !horizontal);
         const measured = PlazaTownLayout.calculate({ towns,
-            marketWidth: market.offsetWidth, marketHeight: market.offsetHeight });
+            marketWidth: market.offsetWidth, marketHeight: market.offsetHeight,
+            orientation: horizontal ? 'landscape' : 'portrait' });
         const setPixels = (item, property, value) => {
             const pixels = `${value}px`;
             if (item.style[property] !== pixels) item.style[property] = pixels;
@@ -468,7 +474,8 @@ const PlazaField = (() => {
             item.querySelector('.plaza-seat-mark')?.remove();
             item.querySelector('.plaza-town-seat-flag')?.remove();
         });
-        world.classList.remove('plaza-field-market', 'plaza-field-overview');
+        world.classList.remove('plaza-field-market', 'plaza-field-overview',
+            'plaza-two-player-horizontal', 'plaza-two-player-vertical');
         screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
         SharedMarketMount.release('plaza');
         node('buildMenu').style.removeProperty('height');
