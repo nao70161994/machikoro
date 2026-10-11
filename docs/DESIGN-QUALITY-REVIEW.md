@@ -429,4 +429,10 @@ Plaza run [38120234366](https://github.com/nao70161994/machikoro/actions/runs/38
 
 タイトル画面の `width: 100vw` と左右safe-area paddingはcontent-boxのままだと幅が加算され、切り欠きのある端末でviewportを越える可能性があった。`width: 100%` と `box-sizing: border-box` に揃え、small/dynamic viewport単位の高さを順に指定した。既存の `tests/main.test.js` にこのCSS契約を追加し、同suite 162件成功、`node --check tests/main.test.js`、`git diff --check` が成功。
 
-Termux/Androidのローカル環境ではPlaywrightが `Unsupported platform: android` で起動できず、実ブラウザ画面は今回撮影できていない。GitHub Actionsのtitle-layout WebKit画像でsafe-areaと全幅を再確認する必要がある。変更はまだpushしていない。これはタイトルの表示幅の修正であり、保存データ画面、4テーマ全画面、実プレイ完走、Plazaのカード存在感/イベント演出の完了証拠ではない。Goalは未完了。
+Termux/Androidのローカル環境ではPlaywrightが `Unsupported platform: android` で起動できず、実ブラウザ画面は今回撮影できていない。その後、変更はcommit `c0bcb87a` として作業branchへpushし、GitHub Actionsでtitle/save、Plaza、Release検証を開始した。タイトルのsafe-area表示はWebKit画像で再確認が必要。これはタイトルの表示幅の修正であり、保存データ画面、4テーマ全画面、実プレイ完走、Plazaのカード存在感/イベント演出の完了証拠ではない。Goalは未完了。
+
+## Round 43: 小型縦画面でPlazaの街を読める大きさに保つ
+
+Commit `c0bcb87a` のCIではrelease-testとCPU smokeが成功。Plazaの実ブラウザ画像比較では既知の `sunset-phone-390` と `plaza-landscape-844` の差分が再発し、Actual/expected/diffを確認した。どちらも以前の街レイアウト更新による差分であり、このタイトルCSS変更からは生じていない。baselineは更新しない。
+
+同runの320×844px・2人overview検査は街幅146.97pxで150px基準に届かず失敗。画像上でも全体表示は街2面、市場、操作帯を縦に縮小して並べ、街の施設アートは小さくなっていた。原因はPlaza field内の街景高さを常に320pxに固定し、行数由来のaspect比を無視していたこと。Plaza fieldではheightをautoへ戻し、既存の行数aspect比とmin-heightを使うようにした。これで縦画面のworld総高を減らしてoverview時の縮小率を上げる狙い。既存のplaza-overview 4 viewport testが150px幅条件を持つため、検査数は増やさずCIで再確認する。修正後画像・CI結果は未確認。タイトル画像の該当caseも次runで併せて確認。Goalは未完了。
