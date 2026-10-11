@@ -424,3 +424,9 @@ Plaza run [38120234366](https://github.com/nao70161994/machikoro/actions/runs/38
 更新したadaptive widthのPlaza/WebKit画像はrun [38123095506](https://github.com/nao70161994/machikoro/actions/runs/38123095506) から直接取得して目視した。2施設rowは画面幅の約8割まで広がり、前画像より施設を認識しやすい。一方で縦方向の空地と中央道路が強く、施設群が広い背景に浮いて見えたため、施設行数に応じて街景の高さを変え、施設全体を縦方向に中央配置する調整を追加した。これは今回の作業バッチで次にまとめて確認する。
 
 テストは既存16画面ビジュアル回帰を維持し、この変更に固有の確認を390px/2人と1440px/4人の2画面へ絞った。単体では2施設/5施設の区画座標と街景aspectを検証する。調査用画像ログおよび重複UI assertionは削除し、既存テスト群をまとめて一度実行する。今回直接確認できたのは序盤2施設の390px画像だけで、縦320px、横持ち、中盤/終盤、イベント、物理端末の品質証拠はまだない。Goalは未完了。
+
+## Round 42: タイトル背景のsafe-area幅を修正
+
+タイトル画面の `width: 100vw` と左右safe-area paddingはcontent-boxのままだと幅が加算され、切り欠きのある端末でviewportを越える可能性があった。`width: 100%` と `box-sizing: border-box` に揃え、small/dynamic viewport単位の高さを順に指定した。既存の `tests/main.test.js` にこのCSS契約を追加し、同suite 162件成功、`node --check tests/main.test.js`、`git diff --check` が成功。
+
+Termux/Androidのローカル環境ではPlaywrightが `Unsupported platform: android` で起動できず、実ブラウザ画面は今回撮影できていない。GitHub Actionsのtitle-layout WebKit画像でsafe-areaと全幅を再確認する必要がある。変更はまだpushしていない。これはタイトルの表示幅の修正であり、保存データ画面、4テーマ全画面、実プレイ完走、Plazaのカード存在感/イベント演出の完了証拠ではない。Goalは未完了。

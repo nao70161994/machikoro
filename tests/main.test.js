@@ -2808,6 +2808,9 @@ runTest('主要画面とPWA install案内は重複告知しないlandmarkを持�
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = readSunsetStyles();
     assert.ok(html.includes('id="titleScreen" role="main" aria-labelledby="titleHeading"'));
+    const titleScreenRule = css.match(/#titleScreen\s*{([^}]*)}/);
+    assert.ok(titleScreenRule);
+    assert.match(titleScreenRule[1], /width: 100%;[\s\S]*box-sizing: border-box;[\s\S]*min-height: 100svh;[\s\S]*min-height: 100dvh;/);
     assert.ok(html.includes('id="gameScreen" role="main" aria-label="ゲーム画面"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="region" aria-labelledby="pwaInstallMessage"'));
     assert.ok(html.includes('id="pwaInstallMessage" aria-live="polite" aria-atomic="true"'));

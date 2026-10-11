@@ -62,8 +62,10 @@ body.modal-open #gameScreen {
 
 /* ===== タイトル画面 ===== */
 #titleScreen {
-    width: 100vw;
+    width: 100%;
+    box-sizing: border-box;
     min-height: 100vh;
+    min-height: 100svh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
