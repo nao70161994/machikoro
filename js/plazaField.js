@@ -214,11 +214,21 @@ const PlazaField = (() => {
         let x = worldWidth / 2, y = worldHeight / 2;
         if (target === 'all') camera.scale = Math.max(0.12, Math.min(viewport.clientWidth / worldWidth, viewport.clientHeight / worldHeight));
         else {
-            const focusedTownScale = 1.1;
-            camera.scale = Math.max(0.12, target === 'market'
-                ? Math.min(1, (viewport.clientWidth - 16) / market.offsetWidth)
-                : Math.min(focusedTownScale, (viewport.clientWidth - 16) / 450));
             const item = target === 'market' ? market : node(`playerBox${Number.isInteger(target) ? target : selfIndex}`);
+            if (target === 'market') {
+                camera.scale = Math.max(0.12, Math.min(1, (viewport.clientWidth - 16) / market.offsetWidth));
+            } else {
+                const preferredTownScale = 1.55;
+                const widthScale = (viewport.clientWidth - 16) / Math.max(1, item?.offsetWidth || 450);
+                // On tall and desktop viewports, fit the focused town vertically
+                // instead of leaving the old fixed 110% cap. A short landscape
+                // viewport keeps the previous close-up so the board stays legible;
+                // players can pan/zoom there to inspect the whole town.
+                const heightScale = viewport.clientHeight >= 320 && item?.offsetHeight
+                    ? (viewport.clientHeight - 16) / item.offsetHeight
+                    : 1.1;
+                camera.scale = Math.max(0.12, Math.min(preferredTownScale, widthScale, heightScale));
+            }
             if (item && target === 'market') item.style.height = `${Math.max(100, Math.min(470, (viewport.clientHeight - 16) / camera.scale))}px`;
             arrangeTowns();
             if (item) { x = item.offsetLeft + item.offsetWidth / 2; y = item.offsetTop + item.offsetHeight / 2; }
