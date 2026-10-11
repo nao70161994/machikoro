@@ -103,7 +103,6 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         });
         await expect(page.locator('#plazaBuildReceipt')).toContainText('駅が完成');
         await expect(page.locator('#plazaBuildReceipt')).toContainText('サイコロを1個か2個か選べる');
-        await page.locator('[data-built-town-index="0"]').click();
         await expect(page.locator('#crashScreen')).toBeHidden();
         await attachReceiptScreenshot(page, test.info(), viewport.width, 'build');
     });
