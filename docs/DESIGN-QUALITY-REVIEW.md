@@ -382,3 +382,13 @@ Plazaの施設セクション移動でフォーカスしたh4が、同じクリ�
 最新run [38114215316](https://github.com/nao70161994/machikoro/actions/runs/38114215316) は16画面baseline、タイトル/保存操作、出目・建設レシート8ケース、Plazaアート/補助操作、4人オンライン、盤面viewport/focus/marketが全て成功。Release run [38114215352](https://github.com/nao70161994/machikoro/actions/runs/38114215352) もStatic、Unit、PWA、オンライン同期/再接続、Release E2E、Mobile WebKit、CPU難易度smokeの全jobが成功。以前のPlaza runで844px視覚fixtureのtimeoutが一度あったが、最新runでは同じ視覚fixtureが成功し再現しなかった。
 
 これはGitHub Actions上のWebKit/Chromiumブラウザ検証であり、物理スマートフォンの確認ではない。最新runの画像artifactは保存済みだが、このラウンドでは新しい外観コード変更はなく、直前までの画面レビューを継続している。商用ゲーム品質のGoalは未完了で、設定/待機/ヘルプ/エラー復旧など全画面の独立レビュー、複数人数の実プレイ再レビュー、スクリーンショットの追加目視が残る。
+
+## Round 37: 2人戦の画面方向に合わせた広場配置
+
+にぎわい広場の2人戦は縦画面で相手・市場・自分を縦に、横画面で相手・市場・自分を横に並べるよう配置し、道路も中央軸に合わせた。市場と街の座標は測定サイズから計算し、2〜10人の既存配置単体テストは維持。変更は `f2e1425a` 相当の2人盤面配置コミット。GitHubブランチ反映時にスタイルシートのAPI転送が出力上限で欠落したことをSHA照合で検知し、完全なファイル内容へ修復した（`95d42f84`）。作業ブランチはリモートと同期し、5ファイルのblob hashを確認した。
+
+初回ブラウザ検証では2人戦の4幅テスト中3ケースが失敗。ログから、テストがDOM内の `offsetLeft/offsetTop` を盤面座標として使っていたこと、異なる大きさの街の上端/左端を揃える前提が実際の中央揃えと違うことを確認。テストをPlazaFieldが設定した盤面座標と街の中心点で測るよう修正した。製品コードの幾何条件や画像baselineは緩和していない。
+
+再実行run [38116307065](https://github.com/nao70161994/machikoro/actions/runs/38116307065) では320×844、390×844、844×390、1440×936の2人戦盤面viewport/focus/market検証を含むPlaza field viewport stepが成功。2〜10人レイアウト単体テストも成功。Release run [38116306970](https://github.com/nao70161994/machikoro/actions/runs/38116306970) はStatic、Unit、PWA、Online/Reconnect、Release E2E、Mobile WebKit、CPU smokeの全jobが成功。
+
+ただし同Plaza runの既存4テーマ画面baselineで `plaza-phone-390` のみ6745 pixels（約3%）の差があり、比較stepはfailure。320px、844px横、1440px、その他テーマは通過。変更した2人用縦画面の道路/盤面と関連する差分の可能性があるが、artifactのactual/diff画像を目視で確認できていないため原因確定・baseline更新はしていない。最新画面artifactは保存済み。これはWebKit/ChromiumのCI結果であり、物理スマートフォンでの確認ではない。Goalは未完了。
