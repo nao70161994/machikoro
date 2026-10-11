@@ -436,3 +436,9 @@ Termux/Androidのローカル環境ではPlaywrightが `Unsupported platform: an
 Commit `c0bcb87a` のCIではrelease-testとCPU smokeが成功。Plazaの実ブラウザ画像比較では既知の `sunset-phone-390` と `plaza-landscape-844` の差分が再発し、Actual/expected/diffを確認した。どちらも以前の街レイアウト更新による差分であり、このタイトルCSS変更からは生じていない。baselineは更新しない。
 
 同runの320×844px・2人overview検査は街幅146.97pxで150px基準に届かず失敗。画像上でも全体表示は街2面、市場、操作帯を縦に縮小して並べ、街の施設アートは小さくなっていた。原因はPlaza field内の街景高さを常に320pxに固定し、行数由来のaspect比を無視していたこと。Plaza fieldではheightをautoへ戻し、既存の行数aspect比とmin-heightを使うようにした。これで縦画面のworld総高を減らしてoverview時の縮小率を上げる狙い。既存のplaza-overview 4 viewport testが150px幅条件を持つため、検査数は増やさずCIで再確認する。修正後画像・CI結果は未確認。タイトル画像の該当caseも次runで併せて確認。Goalは未完了。
+
+## Round 44: 変更後の街景を画像で再確認
+
+Plaza run [38127436672](https://github.com/nao70161994/machikoro/actions/runs/38127436672) ではPlazaアート、4人オンライン同期、2人/4人のviewport・focus・market検査が成功。320px overviewの150px幅条件も成功し、artifactの画像では2つの街、市場、操作帯が縮小される中でも街の施設アートが以前より大きく読める。これはCI WebKit画像で、実機ではない。
+
+このrunの16画面比較で残った差分は `sunset-phone-390` と `plaza-landscape-844` の2枚のみ。expectedとlatest actualを並べて確認した。390px夕暮れ画面は建物2種が左側に小さく固まっていた旧画像に比べ、街と施設アートが横方向へ広がり中央に配置される。844×390px Plazaは新しい街景aspectと施設配置が中央viewportを使い、旧画像の左上に小さく寄った街より認識しやすい。両差分とも最近の街景変更による意図した改善と判定し、actualの2枚だけをsnapshotへ採用。他14枚は変更していない。次runで16枚全体の再現性を確認する。物理端末、中盤/終盤、イベント/連鎖画面の評価は未完了。
