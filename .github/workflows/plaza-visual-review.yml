@@ -50,7 +50,7 @@ jobs:
               run: npx playwright test title-layout.spec.js --project=mobile-webkit --output=test-results/title-layout --retries=0 --workers=1
             - name: Plaza dice and earnings receipt review
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
-              run: npx playwright test plaza-event-receipts.spec.js --grep 'ログを閉じたまま出目' --project=mobile-webkit --output=test-results/plaza-event-receipts --retries=0 --workers=1
+              run: npx playwright test plaza-event-receipts.spec.js --grep 'ログを閉じたまま出目|施設とランドマーク' --project=mobile-webkit --output=test-results/plaza-event-receipts --retries=0 --workers=1
             - name: Generate candidate theme baselines
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
               run: npm run test:browser-visual -- --output=test-results/theme-baseline --update-snapshots --retries=0 --workers=1
