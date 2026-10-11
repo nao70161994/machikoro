@@ -306,6 +306,11 @@ for (const scenario of [
         await testInfo.attach(`plaza-town-lots-centered-${scenario.players}p-${scenario.cards}lots-${scenario.width}px.png`, {
             path: screenshot, contentType: 'image/png',
         });
+        if (scenario.width === 390 && scenario.players === 2 && scenario.cards === 2) {
+            const reviewImage = await page.locator('#plazaWorld #players .player-box-self .sunset-town')
+                .screenshot({ type: 'jpeg', quality: 45, animations: 'disabled' });
+            console.log(`PLAZA_REVIEW_JPEG:${reviewImage.toString('base64')}`);
+        }
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
