@@ -46,6 +46,10 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#playerBox1 .plaza-seat-mark')).toHaveText('席2');
         await expect(page.locator('#playerBox0 .plaza-seat-mark')).toHaveAttribute('aria-label', '席1');
         await expect(page.locator('#plazaPlayerHud [data-player-index="0"]')).toHaveAttribute('aria-label', /^席1、/);
+        if (await page.locator('#btnBuildShortcut').isVisible()) {
+            await page.locator('#btnBuildShortcut').click();
+            await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
+        }
         await page.locator('[data-field-target="market"]').click();
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         await expect(page.locator('#buildMenu h3')).toContainText(/施設一覧|市場から施設を選んでください/);
@@ -91,10 +95,6 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('#plazaComparisonClose').click();
         await expect(comparisonButton).toBeFocused();
         await expect(page.locator('#plazaComparison')).toBeHidden();
-        if (await page.locator('#btnBuildShortcut').isVisible()) {
-            await page.locator('#btnBuildShortcut').click();
-            await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
-        }
         await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-section="landmarks"]').click();
         await expect(page.locator('#buildMenu .build-section:not(.build-card-section) h4').first()).toBeFocused();
@@ -118,20 +118,22 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#gameScreen')).toBeVisible();
         await page.locator('[data-field-target="all"]').click();
         const layout = await page.evaluate(() => {
-            const bounds = id => {
-                const item = document.getElementById(id);
+            const bounds = item => {
                 // offsetLeft may be relative to a nested offset parent; the inline
                 // coordinates are the world-space positions assigned by PlazaField.
                 return { left: Number.parseFloat(item.style.left), top: Number.parseFloat(item.style.top),
                     width: item.offsetWidth, height: item.offsetHeight };
             };
+            const towns = [...document.querySelectorAll('#plazaWorld #players > .player-box')];
+            const self = towns.find(item => item.classList.contains('player-box-self'));
+            const opponent = towns.find(item => !item.classList.contains('player-box-self'));
             return {
                 horizontal: document.getElementById('plazaViewport').clientWidth >= document.getElementById('plazaViewport').clientHeight,
                 world: { width: document.getElementById('plazaWorld').offsetWidth, height: document.getElementById('plazaWorld').offsetHeight,
                     classes: document.getElementById('plazaWorld').className },
-                self: bounds('playerBox0'), opponent: bounds('playerBox1'), market: bounds('buildMenu'),
+                self: bounds(self), opponent: bounds(opponent), market: bounds(document.getElementById('buildMenu')),
                 zoom: Number.parseInt(document.getElementById('plazaZoomLabel').textContent, 10),
-                screenCardWidth: document.getElementById('playerBox0').getBoundingClientRect().width,
+                screenCardWidth: self.getBoundingClientRect().width,
             };
         });
         expect(layout.horizontal).toBe(viewport.width >= viewport.height);
