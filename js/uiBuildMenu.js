@@ -362,9 +362,13 @@ const UiBuildMenu = (() => {
         const lotWidth = rowCount === 1 ? 48 : rowCount === 2 ? 38 : rowCount === 3 ? 30 : 23;
         const columnStride = lotWidth + (rowCount === 4 ? 1 : 3);
         const rowWidth = lotWidth + Math.max(0, rowCount - 1) * columnStride;
+        const rowTotal = Math.ceil(totalCount / columns);
+        const lastRowCount = Math.min(columns, totalCount - (rowTotal - 1) * columns);
+        const lastRowWidth = lastRowCount === 1 ? 48 : lastRowCount === 2 ? 38 : lastRowCount === 3 ? 30 : 23;
+        const rowStackHeight = (rowTotal - 1) * 17 + lastRowWidth / 2;
         return {
             x: (100 - rowWidth) / 2 + (index - rowStart) * columnStride,
-            y: 30 + row * 17,
+            y: Math.max(25, (100 - rowStackHeight) / 2) + row * 17,
             width: lotWidth,
         };
     }
@@ -398,6 +402,8 @@ const UiBuildMenu = (() => {
             }
         }
         const visibleCopies = new Map();
+        const townRows = Math.ceil(lots.length / 4);
+        const townAspect = townRows === 1 ? (640 / 340).toFixed(4) : townRows === 2 ? '1.6' : (640 / 480).toFixed(4);
         for (const lot of lots) visibleCopies.set(lot.card.name, (visibleCopies.get(lot.card.name) || 0) + 1);
         const facilities = lots.map(({ card, count, copy }, index) => {
             const position = townFacilityLotPosition(index, lots.length);
@@ -415,7 +421,7 @@ const UiBuildMenu = (() => {
         }).join('');
         const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種</span>` : '';
         const roads = '<svg class="town-district-roads" viewBox="0 0 640 300" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#465e65" stroke-width="17"/><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#c2b18b" stroke-width="2" stroke-dasharray="9 11" opacity=".55"/></svg>';
-        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個${remaining}</span></p><div class="town-street" data-town-layout="districts" data-town-stage="${stage}" aria-hidden="true">${renderTownBackdrop(cards, built)}${roads}${renderTownGrowth(cards, built)}<span class="town-skyline-lights"></span>${landmarks}${facilities}</div></div>`;
+        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個${remaining}</span></p><div class="town-street" data-town-layout="districts" data-town-stage="${stage}" data-town-rows="${townRows}" style="--town-aspect:${townAspect}" aria-hidden="true">${renderTownBackdrop(cards, built)}${roads}${renderTownGrowth(cards, built)}<span class="town-skyline-lights"></span>${landmarks}${facilities}</div></div>`;
     }
 
     function renderBuildCardButton(options) {

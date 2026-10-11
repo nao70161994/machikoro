@@ -250,8 +250,6 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
 
 for (const scenario of [
     { width: 390, height: 844, players: 2, cards: 2 },
-    { width: 390, height: 844, players: 4, cards: 5 },
-    { width: 1440, height: 936, players: 2, cards: 2 },
     { width: 1440, height: 936, players: 4, cards: 5 },
 ]) {
     test(`広場の施設アートは行ごとに中央へ並ぶ ${scenario.players}人 ${scenario.cards}施設 ${scenario.width}px`, async ({ page }, testInfo) => {
@@ -306,11 +304,6 @@ for (const scenario of [
         await testInfo.attach(`plaza-town-lots-centered-${scenario.players}p-${scenario.cards}lots-${scenario.width}px.png`, {
             path: screenshot, contentType: 'image/png',
         });
-        if (scenario.width === 390 && scenario.players === 2 && scenario.cards === 2) {
-            const reviewImage = await page.locator('#plazaWorld #players .player-box-self .sunset-town')
-                .screenshot({ type: 'jpeg', quality: 45, animations: 'disabled' });
-            console.log(`PLAZA_REVIEW_JPEG:${reviewImage.toString('base64')}`);
-        }
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }

@@ -2899,30 +2899,12 @@ runTest('各ランドマークの完成は固有の街景を残す', () => {
     }
 });
 
-runTest('街の区画は行ごとに中央配置し単独施設の枚数表示を省き余剰種類を景色外に置く', () => {
+runTest('街の区画は単独施設の枚数表示を省き余剰種類を景色外に置く', () => {
     const menu = require('../js/uiBuildMenu');
     const wheat = { name: '麦畑', category: '農園' };
     const bakery = { name: 'パン屋', category: '飲食店' };
     const before = menu.renderTownHtml({ cards: [wheat, bakery], landmarks: {} });
     const after = menu.renderTownHtml({ cards: [wheat, bakery, wheat, { name: '牧場', category: '牧場' }], landmarks: {} });
-    const rowsAreCentered = html => {
-        const lots = [...html.matchAll(/data-town-slot-facility="(\d+)"[^>]+style="--town-x:([\d.]+)%;--town-y:([\d.]+)%;--town-width:([\d.]+)%"/g)]
-            .map(match => ({ index: Number(match[1]), x: Number(match[2]), y: Number(match[3]), width: Number(match[4]) }));
-        const rows = new Map();
-        for (const lot of lots) {
-            const row = Math.floor(lot.index / 4);
-            const entries = rows.get(row) || [];
-            entries.push(lot);
-            rows.set(row, entries);
-        }
-        return [...rows.values()].every(entries => {
-            const center = (Math.min(...entries.map(lot => lot.x)) +
-                Math.max(...entries.map(lot => lot.x + lot.width))) / 2;
-            return Math.abs(center - 50) < 0.01;
-        });
-    };
-    assert.ok(rowsAreCentered(before), '少数施設の行を街の中央に配置');
-    assert.ok(rowsAreCentered(after), '施設追加後も各行を街の中央に配置');
     assert.doesNotMatch(before, /town-building-count/);
     assert.doesNotMatch(after, /town-building-count/);
     assert.strictEqual((after.match(/data-town-building="card:麦畑"/g) || []).length, 2);

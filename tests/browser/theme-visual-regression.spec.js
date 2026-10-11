@@ -108,11 +108,6 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                 }
                 await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
                 await expect(page.locator('#gameScreen')).toBeVisible();
-                if (theme === 'plaza' && ['phone-390', 'landscape-844'].includes(viewport.name)) {
-                    const reviewImage = await page.screenshot({ type: 'jpeg', quality: 40, animations: 'disabled' });
-                    console.log(`PLAZA_BASELINE_JPEG:${viewport.name}:${reviewImage.toString('base64')}`);
-                }
-
                 const layout = await page.evaluate(() => {
                     const visible = element => {
                         const rect = element.getBoundingClientRect();
