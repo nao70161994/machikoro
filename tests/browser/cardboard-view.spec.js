@@ -74,6 +74,17 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         expect(marketWidth).toBeGreaterThanOrEqual(96);
         expect(marketArt.height).toBeGreaterThanOrEqual(54);
         if (viewport.width === 844) {
+            const marketHeading = await page.locator('#cardboardMarket .compact-market').evaluate(element => ({
+                pseudoContent: getComputedStyle(element, '::before').content,
+                pseudoWhiteSpace: getComputedStyle(element, '::before').whiteSpace,
+                headingBounds: (() => {
+                    const heading = element.querySelector('.compact-market-header h2');
+                    return { width: heading.getBoundingClientRect().width, height: heading.getBoundingClientRect().height };
+                })(),
+            }));
+            expect(marketHeading.pseudoContent).toContain('中央市場');
+            expect(marketHeading.pseudoWhiteSpace).toBe('nowrap');
+            expect(marketHeading.headingBounds.width).toBeLessThanOrEqual(1);
             for (const [selector, label, accessibleName] of [
                 ['.game-design-switcher > summary', '画面', '表示テーマを変更'],
                 ['.game-guide-settings > summary', 'ヒント', 'チュートリアルの表示と詳しさを設定'],
@@ -99,6 +110,20 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             const expandBounds = await expandMarket.boundingBox();
             expect(expandBounds.width).toBeGreaterThanOrEqual(44);
             expect(expandBounds.height).toBeGreaterThanOrEqual(44);
+        }
+        if (viewport.width >= 1200) {
+            const marketHeading = await page.locator('#cardboardMarket .compact-market').evaluate(element => {
+                const heading = element.querySelector('.compact-market-header h2');
+                const textRange = document.createRange();
+                textRange.selectNodeContents(heading);
+                const textBounds = textRange.getBoundingClientRect();
+                const expandBounds = element.querySelector('.compact-market-expand').getBoundingClientRect();
+                return { lines: textRange.getClientRects().length, textRight: textBounds.right,
+                    expandLeft: expandBounds.left, expandWidth: expandBounds.width };
+            });
+            expect(marketHeading.lines).toBe(1);
+            expect(marketHeading.textRight).toBeLessThanOrEqual(marketHeading.expandLeft);
+            expect(marketHeading.expandWidth).toBeLessThan(120);
         }
         if (viewport.height > 480) {
             const ownedArt = await page.locator('#cardboardSeats .cardboard-player-self .cardboard-card .cardboard-art').first().boundingBox();
