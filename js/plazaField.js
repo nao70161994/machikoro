@@ -185,11 +185,11 @@ const PlazaField = (() => {
     }
     function focusComparisonToggle() {
         const cardboardToggle = node('cardboardCompareToggle');
-        const plazaToggle = node('plazaCameraTools').querySelector('[data-field-panel="comparison"]');
+        const plazaToggle = /** @type {HTMLElement | null} */ (node('plazaCameraTools').querySelector('[data-field-panel="comparison"]'));
         const design = document.documentElement.dataset.design;
         const preferred = design === 'cardboard' ? cardboardToggle : design === 'plaza' ? plazaToggle : null;
         const target = preferred?.getClientRects().length
-            ? preferred : node('gameDesignThemeSelect')?.closest('details')?.querySelector('summary');
+            ? preferred : /** @type {HTMLElement | null} */ (node('gameDesignThemeSelect')?.closest('details')?.querySelector('summary'));
         target?.focus({ preventScroll: true });
     }
     function renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, selectedIndex) {
@@ -478,7 +478,8 @@ const PlazaField = (() => {
                 return;
             }
             if (event.key === 'Tab' && !node('plazaComparison').hidden) {
-                const focusable = Array.from(node('plazaComparison').querySelectorAll('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])'))
+                const focusable = Array.from(node('plazaComparison').querySelectorAll('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])'),
+                    element => /** @type {HTMLElement} */ (element))
                     .filter(element => element.getClientRects().length);
                 if (!focusable.length) {
                     event.preventDefault();
@@ -537,7 +538,8 @@ const PlazaField = (() => {
             }
             if (event.key === 'Tab') {
                 const panel = node('plazaPlayerInsights');
-                const focusable = Array.from(panel.querySelectorAll('button:not([disabled]), a[href], summary, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+                const focusable = Array.from(panel.querySelectorAll('button:not([disabled]), a[href], summary, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+                    element => /** @type {HTMLElement} */ (element))
                     .filter(element => element.getClientRects().length > 0);
                 if (!focusable.length) {
                     event.preventDefault();

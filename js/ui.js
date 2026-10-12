@@ -2465,9 +2465,9 @@ function showCardDetail(name, isLandmark = false) {
     if (!canOpenBlockingModal('cardDetailModal')) return false;
     title.textContent = content.title;
     body.innerHTML = content.html;
-    const target = document.activeElement;
+    const target = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const opened = openAccessibleModal('cardDetailModal');
-    cardDetailFocusOrigin = opened && target && typeof target.focus === 'function'
+    cardDetailFocusOrigin = opened && target
         ? { target, action: target.dataset?.action, cardName: target.dataset?.cardName,
             landmarkName: target.dataset?.landmarkName }
         : null;
@@ -2480,13 +2480,13 @@ function closeCardDetail() {
     cardDetailFocusOrigin = null;
     if (document.getElementById('cardDetailModal')?.style.display !== 'none') return;
     if (!origin || origin.target?.isConnected) return;
-    const replacement = Array.from(document.querySelectorAll('[data-action]')).find(element =>
+    const replacement = Array.from(/** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('button[data-action]'))).find(element =>
         element.dataset.action === origin.action && element.dataset.cardName === origin.cardName &&
         element.dataset.landmarkName === origin.landmarkName && !element.disabled &&
         element.getClientRects().length > 0);
     if (!replacement) return;
     for (let parent = replacement.parentElement; parent; parent = parent.parentElement) {
-        if (parent.tagName === 'DETAILS') parent.open = true;
+        if (parent instanceof HTMLDetailsElement) parent.open = true;
     }
     replacement.focus({ preventScroll: true });
 }

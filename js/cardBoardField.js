@@ -59,7 +59,8 @@ const CardBoardField = (() => {
             if (details !== except) details.open = false;
         });
     }
-    const node = id => document.getElementById(id);
+    /** @param {string} id @returns {HTMLElement | null} */
+    function node(id) { return document.getElementById(id); }
     const enabled = () => document.documentElement.dataset.design === 'cardboard';
 
     function turnEventsFor(game, display) {
@@ -199,7 +200,7 @@ const CardBoardField = (() => {
     }
 
     function closeMarket(restoreFocus = true) {
-        const dialog = node('cardboardMarketDialog');
+        const dialog = /** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'));
         restoreMarketFocus = restoreFocus;
         setMarketExpanded(false);
         const wasOpen = dialog?.open === true;
@@ -209,7 +210,7 @@ const CardBoardField = (() => {
     }
 
     function openMarket() {
-        const dialog = node('cardboardMarketDialog');
+        const dialog = /** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'));
         const market = node('cardboardMarket');
         const slot = node('cardboardMarketDialogSlot');
         if (!enabled() || !dialog || !market || !slot || typeof dialog.showModal !== 'function') return false;
@@ -219,7 +220,7 @@ const CardBoardField = (() => {
         slot.appendChild(market);
         dialog.showModal();
         setMarketExpanded(true);
-        (market.querySelector('.compact-market-buy:not(:disabled), .compact-market-detail') || node('cardboardMarketClose'))?.focus({ preventScroll: true });
+        (/** @type {HTMLElement | null} */ (market.querySelector('.compact-market-buy:not(:disabled), .compact-market-detail') || node('cardboardMarketClose')))?.focus({ preventScroll: true });
         return true;
     }
 
@@ -257,7 +258,7 @@ const CardBoardField = (() => {
     function updateMarket(html) {
         if (!mounted || typeof html !== 'string') return;
         replaceHtml(node('cardboardMarket'), html);
-        setMarketExpanded(node('cardboardMarketDialog')?.open === true);
+        setMarketExpanded(/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open === true);
         scrollMemory.restore('market', node('cardboardMarket'));
     }
 
@@ -398,7 +399,7 @@ const CardBoardField = (() => {
             : buttons.find(button => !button.disabled && matchesFocus(button));
         if (!target && ['buildCard', 'buildLandmark'].includes(action)) {
             target = buttons.find(button => !button.disabled && button.dataset.action === action) ||
-                (node('cardboardMarketDialog')?.open ? node('cardboardMarketClose') : null);
+                (/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open ? node('cardboardMarketClose') : null);
         }
         focusVisible(target);
     }
@@ -521,7 +522,7 @@ const CardBoardField = (() => {
             const newBuild = newlyBuiltCards.find(build => build.playerIndex === index);
             const activatedCard = newRoll ? panel.querySelector('.cardboard-card-activated') : null;
             const builtCard = newBuild
-                ? Array.from(panel.querySelectorAll('.cardboard-card')).find(item => item.dataset.cardName === newBuild.name)
+                ? Array.from(/** @type {NodeListOf<HTMLElement>} */ (panel.querySelectorAll('.cardboard-card'))).find(item => item.dataset.cardName === newBuild.name)
                 : null;
             const card = activatedCard || builtCard;
             const cardList = card?.closest('.cardboard-cards');
