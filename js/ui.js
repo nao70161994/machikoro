@@ -1,5 +1,5 @@
 /* global UiMarketTarget */
-/* global UiCompactMarket, CardBoardField, Element, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
+/* global UiCompactMarket, CardBoardField, Element, HTMLElement, HTMLDetailsElement, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();

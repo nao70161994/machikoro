@@ -1097,4 +1097,4 @@ headless Chromiumの実ブラウザ操作で出目3を確定し、パン屋の�
 
 ## Round 202: PR静的ゲートのDOM型を整合
 
-PRの静的ゲートはESLintを通過した後、`checkJs`で新しい市場ダイアログと市場フォーカス処理のDOM型を絞れていない点を検出した。市場ダイアログを`HTMLDialogElement`として扱い、フォーカス可能な要素を`HTMLElement`へ限定し、詳細メニューは`HTMLDetailsElement`判定後に開く。カード卓で使う`UiPlayerDisplay`の型付きブラウザglobal宣言も追加した。`npm run test:types`はcomposition root 4系統を含め成功。PR CIの更新commitでの再確認は継続中。
+PRの静的ゲートは、DOM型を絞った後にESLintで`HTMLElement`/`HTMLDetailsElement`を宣言する必要も検出した。市場ダイアログを`HTMLDialogElement`として扱い、フォーカス可能な要素を`HTMLElement`へ限定し、詳細メニューは`HTMLDetailsElement`判定後に開く。カード卓で使う`UiPlayerDisplay`の型付きブラウザglobal宣言も追加した。`npm run test:types`はcomposition root 4系統を含め成功。ESLint global宣言の追加確認とPR CI再確認は継続中。
