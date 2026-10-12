@@ -41,7 +41,7 @@ function blendHex(foreground, background, alpha) {
 
 function ruleFor(selector) {
     const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`));
+    const match = css.match(new RegExp(`(?:^|\\n)\\s*${escaped}\\s*\\{([^}]*)\\}`));
     assert.ok(match, `${selector} rule is required`);
     return match[1];
 }

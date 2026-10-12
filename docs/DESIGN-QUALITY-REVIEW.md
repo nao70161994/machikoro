@@ -1102,3 +1102,7 @@ PRの静的ゲートは、DOM型を絞った後にESLintで`HTMLElement`/`HTMLDe
 ## Round 203: 手番境界がない収益ログを今回の演出から除外
 
 PR unit gateで、helperを宣言前に使うテストfixtureのTDZエラーと、手番index/手番境界のない古い収益ログが「今回の収支」短縮欄へ出るケースを検出した。fixtureの共通helperを先に定義する。収益の詳細ログは事実として残し、現在の手番が特定できたときだけ常時表示の短縮イベント欄へ集約する`turnContextKnown`を追加した。`tests/ui-plaza-events.test.js`の対象スイート全件が成功。最新PRでの一括unit/browser再確認は継続中。
+
+## Round 204: コントラストテストのCSSセレクタ照合を厳密化
+
+unit gateで、`.crash-btn-primary`の共通スタイルを検証するテストが、先に書かれたカード卓テーマ固有の複合selectorを誤って拾っていた。CSSテスト補助の一致を行頭selector単位に限定し、共通の白文字/赤背景コントラスト契約を実際の共通ルールで検証する。コントラスト閾値や期待背景色は緩めず、`node tests/ui-color-contrast.test.js`は全件成功。最新PRでの一括再確認を継続する。
