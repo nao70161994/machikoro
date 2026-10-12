@@ -81,6 +81,9 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         const receipt = page.locator('#plazaDiceReceipt');
         await expect(receipt.locator('.plaza-receipt-dice')).toHaveText('出目 5');
         await expect(receipt.locator('.plaza-receipt-featured')).toContainText('森林 銀行 → 席1 +6コイン（6回）');
+        await expect(receipt.locator('.plaza-receipt-activation-count')).toHaveText('施設発動6回');
+        await expect(receipt.locator('.plaza-receipt-transfer').first()).toHaveAttribute('data-flow', 'incoming');
+        await expect(receipt.locator('.plaza-receipt-transfer').first()).toHaveAttribute('aria-label', /銀行から街1へ受け取り、6コイン/);
         await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街1 +6');
         await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街4 +2');
         await expect(page.locator('#gameLogContainer')).not.toHaveClass(/plaza-panel-open/);
@@ -107,6 +110,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             acceptHotseatHandoff();
         });
         await expect(page.locator('#plazaBuildReceipt')).toContainText('森林を建設');
+        await expect(page.locator('#plazaBuildReceipt .sunset-facility-art')).toHaveCount(1);
         await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
             game.builtThisTurn = false;
@@ -116,6 +120,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         });
         await expect(page.locator('#plazaBuildReceipt')).toContainText('駅が完成');
         await expect(page.locator('#plazaBuildReceipt')).toContainText('サイコロを1個か2個か選べる');
+        await expect(page.locator('#plazaBuildReceipt .sunset-facility-art')).toHaveCount(1);
         await expect(page.locator('#crashScreen')).toBeHidden();
         await attachReceiptScreenshot(page, test.info(), viewport.width, 'build');
     });
@@ -126,7 +131,21 @@ for (const count of [4, 10]) {
         await prepare(page, { width: 390, height: 844 }, count);
         await page.locator('#plazaPlayerHud button[data-player-index="1"]').click();
         await expect(page.locator('#plazaPlayerInsights')).toBeVisible();
-        await expect(page.locator('#plazaPlayerInsightsBody')).toContainText('森林 ×2');
+        await expect(page.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
+        await expect(page.getByRole('button', { name: /森林、出目 .*所有 2枚/ })).toBeVisible();
+        const insightArt = page.locator('#plazaPlayerInsightsBody .plaza-insight-card .sunset-facility-art').first();
+        await expect(insightArt).toBeVisible();
+        await expect.poll(() => insightArt.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(64);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        const insightCard = page.locator('#plazaPlayerInsightsBody .plaza-insight-card button').first();
+        await insightCard.hover();
+        await expect(insightCard).toHaveCSS('transform', 'none');
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+        await page.locator('#plazaPlayerInsightsClose').focus();
+        await page.keyboard.press('Shift+Tab');
+        await expect(page.locator('#plazaPlayerInsightsBody button').last()).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(page.locator('#plazaPlayerInsightsClose')).toBeFocused();
         await expect(page.locator('[data-income-target]')).toHaveValue('1');
         await page.locator('.plaza-income-disclosure > summary').click();
         await page.locator('[data-income-roller]').selectOption('1');
@@ -174,6 +193,7 @@ test('支払い・電波塔の振り直し・追加手番をログ外の結果�
         acceptHotseatHandoff();
     });
     await expect(page.locator('.plaza-receipt-totals')).toContainText('街1 -3');
+    await expect(page.locator('.plaza-receipt-transfer').first()).toHaveAttribute('data-flow', 'outgoing');
     await page.locator('.plaza-receipt-details > summary').click();
     await expect(page.locator('.plaza-receipt-activations')).toContainText('街1 → 街2');
     await page.locator('.plaza-receipt-details > summary').click();

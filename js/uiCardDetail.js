@@ -28,18 +28,20 @@ const UiCardDetail = (() => {
     }
 
     function detailArt(options) {
-        const { name, landmark, category = '', color = 'landmark', renderFacilityArt, useSunsetIcons } = options;
-        if (!useSunsetIcons || typeof renderFacilityArt !== 'function') return '';
+        const { name, landmark, category = '', color = 'landmark', renderFacilityArt,
+            useSunsetIcons, showFacilityArt = useSunsetIcons } = options;
+        if (!showFacilityArt || typeof renderFacilityArt !== 'function') return '';
         return '<div class="card-detail-art card-color-' + color + '" aria-hidden="true">' +
             renderFacilityArt(name, landmark, category) + '</div>';
     }
 
     function buildLandmarkDetailContent(options) {
-        const { name, emoji, cost, effectText, escapeHtml, useSunsetIcons = false, renderFacilityArt } = options;
+        const { name, emoji, cost, effectText, escapeHtml, useSunsetIcons = false,
+            showFacilityArt = useSunsetIcons, renderFacilityArt } = options;
         const effect = escapeHtml(effectText);
         const title = useSunsetIcons ? name : `${emoji} ${name}`;
         const coin = useSunsetIcons ? renderDetailMark('coin') : '💰';
-        const art = detailArt({ name, landmark: true, renderFacilityArt, useSunsetIcons });
+        const art = detailArt({ name, landmark: true, renderFacilityArt, useSunsetIcons, showFacilityArt });
         return {
             title,
             html: art + `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>${coin} ${cost}</span></div><div class="card-detail-row"><span>種別</span><span>ランドマーク</span></div></div><div class="card-detail-effect">${effect}</div>`,
@@ -47,7 +49,8 @@ const UiCardDetail = (() => {
     }
 
     function buildCardDetailContent(options) {
-        const { card, escapeHtml, getEffectText, safeCardColorName, useSunsetIcons = false, renderFacilityArt } = options;
+        const { card, escapeHtml, getEffectText, safeCardColorName, useSunsetIcons = false,
+            showFacilityArt = useSunsetIcons, renderFacilityArt } = options;
         const safeColor = safeCardColorName(card.color);
         const coin = useSunsetIcons ? renderDetailMark('coin') : '💰';
         const dice = useSunsetIcons ? renderDetailMark('dice') : '🎲';
@@ -58,6 +61,7 @@ const UiCardDetail = (() => {
             color: safeColor,
             renderFacilityArt,
             useSunsetIcons,
+            showFacilityArt,
         });
         return {
             title: card.name,

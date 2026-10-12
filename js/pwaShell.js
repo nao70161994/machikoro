@@ -87,7 +87,12 @@ const PwaShell = (() => {
             if (!documentRef || !documentRef.body || !documentRef.body.classList) return;
             const installBanner = documentRef.getElementById('pwaInstallBanner');
             const updateBanner = documentRef.getElementById('pwaUpdateBanner');
-            const visible = (installBanner && installBanner.style.display === 'block') ||
+            const gameScreen = documentRef.getElementById('gameScreen');
+            const gameVisible = gameScreen && gameScreen.style &&
+                gameScreen.style.display !== 'none' && gameScreen.style.display !== '';
+            // The install banner is visually suppressed during a live game.
+            // Its inline display state must not reserve a blank strip there.
+            const visible = (installBanner && installBanner.style.display === 'block' && !gameVisible) ||
                 (updateBanner && updateBanner.style.display === 'block');
             const docked = syncResultNotices();
             setBodyClass('pwa-banner-open', !!visible && !docked);

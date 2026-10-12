@@ -373,7 +373,7 @@ const UiBuildMenu = (() => {
         };
     }
 
-    function renderTownHtml(player, enabledLandmarks = new Set()) {
+    function renderTownHtml(player, enabledLandmarks = new Set(), options = {}) {
         const cards = Array.isArray(player.cards) ? player.cards : [];
         const grouped = new Map();
         for (const card of cards) {
@@ -409,9 +409,26 @@ const UiBuildMenu = (() => {
             const position = townFacilityLotPosition(index, lots.length);
             const shown = visibleCopies.get(card.name);
             const remainingCopies = count - shown;
+            const activationEvents = Number.isInteger(options.playerIndex) ? (options.events?.activations || []).filter(event => event.facility === true &&
+                event.subject === card.name && (Number.isInteger(event.owner) ? event.owner === options.playerIndex
+                    : event.to !== null ? event.to === options.playerIndex : event.from === options.playerIndex) &&
+                Number.isSafeInteger(event.amount)) : [];
+            const activationIds = new Set();
+            let activationNet = 0;
+            let activationCount = 0;
+            for (const event of activationEvents) {
+                activationNet += (event.to === options.playerIndex ? event.amount : 0) -
+                    (event.from === options.playerIndex ? event.amount : 0);
+                if (event.activation && activationIds.has(event.activation)) continue;
+                if (event.activation) activationIds.add(event.activation);
+                activationCount += Number.isSafeInteger(event.count) && event.count > 0 ? event.count : 1;
+            }
+            const activated = Number.isSafeInteger(activationNet) && activationCount > 0;
+            const activationBadge = activated
+                ? `<span class="town-activation-mark" aria-hidden="true">発動${activationCount}回${activationNet ? ` · ${activationNet > 0 ? '+' : ''}${activationNet}` : ''}</span>` : '';
             const countBadge = copy === 0 && remainingCopies > 0
                 ? `<span class="town-building-count" title="所有${count}枚・絵${shown}枚・省略${remainingCopies}枚">+${remainingCopies}枚</span>` : '';
-            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" data-town-owned="${count}" data-town-visible="${shown}" style="--town-x:${position.x}%;--town-y:${position.y}%;--town-width:${position.width}%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
+            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}${activated ? ' plaza-town-building-activated' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" data-town-owned="${count}" data-town-visible="${shown}"${activated ? ` data-town-activation-count="${activationCount}" data-town-activation-net="${activationNet}" title="${activationCount}回発動・収支${activationNet > 0 ? '+' : ''}${activationNet}コイン"` : ''} style="--town-x:${position.x}%;--town-y:${position.y}%;--town-width:${position.width}%">${renderFacilityArt(card.name, false, card.category)}${activationBadge}${countBadge}</span>`;
         }).join('');
         // Landmark lots are keyed to definition order, not acquisition order.
         const landmarkSlots = Object.keys(LANDMARK_ART);

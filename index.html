@@ -55,15 +55,16 @@
                 </div>
             </div>
 
-            <div id="onlineResumeSection" style="display:none">
+            <section id="onlineResumeSection" role="region" aria-labelledby="onlineResumeHeading" style="display:none">
                 <div class="online-resume-notice">
+                    <h2 id="onlineResumeHeading" class="visually-hidden">中断したオンライン対局</h2>
                     <span id="onlineResumeDescription">オンラインゲームが中断されました</span>
-                    <div style="display:flex;gap:6px;margin-top:6px">
-                        <button data-ui-action="reconnectOnline" class="resume-btn" style="flex:1">再接続する</button>
+                    <div class="online-resume-actions">
+                        <button data-ui-action="reconnectOnline" class="resume-btn">再接続する</button>
                         <button data-ui-action="deleteOnlineSession" class="delete-save-btn" aria-label="オンライン再接続データを削除">削除</button>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <div class="tab-bar" role="tablist" aria-label="ゲームモード">
                 <button class="tab-btn active" data-ui-action="switchTab" data-tab="local" id="tabLocal" role="tab" aria-selected="true" aria-controls="tabContentLocal" tabindex="0">この端末</button>
@@ -77,14 +78,14 @@
                     <div class="local-resume-copy">
                         <h2 id="localResumeHeading">中断したゲーム</h2>
                         <p>保存した対戦を続きから再開できます。</p>
-                        <p id="localResumeMarketDetails" class="local-resume-market-details"></p>
+                        <p id="localResumeMarketDetails" class="local-resume-market-details" role="status" aria-live="polite" aria-atomic="true"></p>
                     </div>
                     <div class="local-resume-actions">
-                        <label id="localSaveGenerationLabel" class="local-save-generation-label" for="localSaveGeneration" style="display:none">再開する保存データ
-                            <select id="localSaveGeneration" class="text-input" data-ui-change="localSaveGeneration"><option value="0">最新の保存</option></select>
+                        <label id="localSaveGenerationLabel" class="local-save-generation-label" for="localSaveGeneration" style="display:none">再開する保存データを選択
+                            <select id="localSaveGeneration" class="text-input" data-ui-change="localSaveGeneration" aria-describedby="localResumeMarketDetails"><option value="0">最新の保存データ</option></select>
                         </label>
-                        <button id="btnResume" data-ui-action="resumeGame" class="resume-btn">続きから再開</button>
-                        <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除">削除</button>
+                        <button id="btnResume" data-ui-action="resumeGame" class="resume-btn" aria-describedby="localResumeMarketDetails">続きから再開</button>
+                        <button id="btnDeleteSave" data-ui-action="deleteSavedGame" class="delete-save-btn" aria-label="保存データを削除" aria-describedby="localResumeMarketDetails">削除</button>
                     </div>
                 </section>
                 <button type="button" class="setup-quick-play" data-ui-action="startQuickCpuGame">
@@ -371,16 +372,23 @@
 
         <div id="cardboardBoard" hidden role="region" aria-label="にぎわい広場のカード盤面">
             <button type="button" id="cardboardChoiceJump" hidden aria-controls="diceChoose">選択へ戻る</button>
-            <div id="cardboardControls"><button type="button" data-ui-action="restartGame">終了</button><button type="button" id="cardboardLogToggle" data-ui-action="toggleLog" aria-controls="gameLogContainer" aria-expanded="false">ログ</button><p>出目と所有枚数を見比べて、施設を選びましょう。</p></div>
+            <div id="cardboardControls"><button type="button" data-ui-action="restartGame">終了</button><button type="button" id="cardboardLogToggle" data-ui-action="toggleLog" aria-controls="gameLogContainer" aria-expanded="false">ログ</button><button type="button" id="cardboardCompareToggle" aria-controls="plazaComparison" aria-haspopup="dialog" aria-label="全員の施設カードを比較" aria-expanded="false">施設比較</button><p>出目と所有枚数を見比べて、施設を選びましょう。</p></div>
             <div id="cardboardRoster"></div>
             <div id="cardboardSeats">
                 <div id="cardboardCenter">
                     <div id="cardboardActionSlot"></div>
-                    <div id="cardboardDiceReceipt" aria-label="出目と発動結果" aria-live="polite"></div>
+                    <div id="cardboardDiceReceipt" role="region" aria-label="出目と発動結果" aria-live="off"></div>
                     <div id="cardboardMarket" role="region" aria-label="共有市場" tabindex="-1"></div>
                 </div>
             </div>
         </div>
+        <dialog id="cardboardMarketDialog" aria-modal="true" aria-labelledby="cardboardMarketDialogHeading">
+            <header class="cardboard-market-dialog-header">
+                <h2 id="cardboardMarketDialogHeading">中央市場</h2>
+                <button type="button" id="cardboardMarketClose">盤面へ戻る</button>
+            </header>
+            <div id="cardboardMarketDialogSlot"></div>
+        </dialog>
 
         <div id="plazaPlayerHud" aria-label="全員の状況"></div>
         <div id="plazaViewport" role="region" aria-label="広場フィールド。ドラッグで移動、ピンチで拡大縮小">
@@ -392,7 +400,7 @@
             <button type="button" data-field-target="all">全体</button>
             <button type="button" data-field-panel="log" aria-controls="gameLogContainer" aria-expanded="false">ログ</button>
             <button type="button" class="plaza-events-toggle" data-field-panel="events" aria-controls="plazaEvents" aria-expanded="false">出来事</button>
-            <button type="button" data-field-panel="comparison" aria-controls="plazaComparison" aria-expanded="false">施設比較</button>
+            <button type="button" data-field-panel="comparison" aria-controls="plazaComparison" aria-haspopup="dialog" aria-label="全員の施設カードを比較" aria-expanded="false">施設比較</button>
             <details class="plaza-camera-menu"><summary>その他</summary><div>
                 <button type="button" data-field-section="facilities">施設へ</button>
                 <button type="button" data-field-section="landmarks">ランドマークへ</button>
@@ -402,12 +410,14 @@
                 <button type="button" data-field-zoom="in" aria-label="拡大">＋</button>
             </div></details>
         </nav>
-        <section id="plazaComparison" aria-labelledby="plazaComparisonHeading" hidden>
-            <div class="plaza-comparison-header"><h2 id="plazaComparisonHeading">全員の所有施設</h2><button id="plazaComparisonClose" type="button">比較を閉じる</button></div>
-            <p>数字は所有枚数、括弧内は休業中の枚数です。</p>
-            <div id="plazaComparisonBody"></div>
+        <section id="plazaComparison" role="dialog" aria-modal="true" aria-labelledby="plazaComparisonHeading" hidden>
+            <div class="plaza-comparison-panel">
+                <div class="plaza-comparison-header"><h2 id="plazaComparisonHeading" tabindex="-1">全員の所有施設</h2><button id="plazaComparisonClose" type="button">比較を閉じる</button></div>
+                <p>数字は所有枚数、括弧内は休業中の枚数です。</p>
+                <div id="plazaComparisonBody"></div>
+            </div>
         </section>
-        <section id="plazaPlayerInsights" aria-labelledby="plazaPlayerInsightsHeading" hidden>
+        <section id="plazaPlayerInsights" role="dialog" aria-modal="true" aria-labelledby="plazaPlayerInsightsHeading" tabindex="-1" hidden>
             <div class="plaza-insights-header"><h2 id="plazaPlayerInsightsHeading"></h2><button id="plazaPlayerInsightsClose" type="button">詳細を閉じる</button></div>
             <details class="plaza-income-disclosure"><summary>出目別収支を調べる</summary><div id="plazaPlayerInsightsIncome" hidden></div></details>
             <div id="plazaPlayerInsightsBody"></div>
@@ -431,16 +441,16 @@
                 <button id="btnSkip" data-ui-action="onSkip" disabled>建設しないでターン終了</button>
             </div>
             <div class="game-action-toolbar">
-                <details class="game-design-switcher"><summary>画面デザイン</summary><label for="gameDesignThemeSelect">この端末の表示</label><select id="gameDesignThemeSelect"><option value="classic">クラシック</option><option value="sunset">夕暮れの街</option><option value="plaza">夕暮れの広場</option><option value="cardboard">にぎわい広場（カード盤面）</option></select></details>
+                <details class="game-design-switcher"><summary aria-label="表示テーマを変更">画面デザイン</summary><label for="gameDesignThemeSelect">この端末の表示</label><select id="gameDesignThemeSelect"><option value="classic">クラシック</option><option value="sunset">夕暮れの街</option><option value="plaza">夕暮れの広場</option><option value="cardboard">にぎわい広場（カード盤面）</option></select></details>
                 <details class="game-guide-settings">
-                    <summary>ガイド設定</summary>
+                    <summary aria-label="チュートリアルの表示と詳しさを設定">ガイド設定</summary>
                     <div class="panel-tools">
                         <button id="btnTutorialToggle" class="tutorial-toggle-btn" data-ui-action="toggleTutorial" aria-label="チュートリアル表示を切り替える"><span class="tutorial-toggle-emoji" aria-hidden="true">💡</span><svg class="tutorial-toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#book"></use></svg><span class="tutorial-toggle-label"></span></button>
                         <button id="btnTutorialLevel" class="tutorial-toggle-btn" data-ui-action="cycleTutorialLevel" aria-label="チュートリアルの詳しさを切り替える"><span class="tutorial-toggle-emoji" aria-hidden="true">🧠</span><svg class="tutorial-toggle-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#target"></use></svg><span class="tutorial-toggle-label"></span></button>
                     </div>
                 </details>
                 <details class="game-support-settings">
-                    <summary>対局データ・問題報告</summary>
+                    <summary aria-label="対局データと問題報告の操作">対局データ・問題報告</summary>
                     <div class="panel-tools">
                         <button type="button" class="game-diagnostics-copy" data-ui-action="copyAppDiagnostics"
                             aria-label="問題報告用の対局診断をコピー">診断をコピー</button>

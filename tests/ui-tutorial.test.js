@@ -209,12 +209,15 @@ runTest('tutorial HTMLは空メッセージで既存fallbackとtag省略を維�
     );
 });
 
-runTest('縦持ち広場の初心者ガイドは3手番後だけ折り畳み全文を開ける', () => {
-    const options = { design: 'plaza', portrait: true, level: 'beginner', turnCount: 3 };
-    assert.strictEqual(UiTutorial.shouldCompact(options), true);
-    for (const change of [{ turnCount: 2 }, { portrait: false }, { design: 'classic' }, { level: 'advanced' }]) {
-        assert.strictEqual(UiTutorial.shouldCompact({ ...options, ...change }), false);
+runTest('狭い広場画面のガイドは開始時から折り畳み必要な時に全文を開ける', () => {
+    for (const level of ['beginner', 'advanced']) {
+        assert.strictEqual(UiTutorial.shouldCompact({ design: 'plaza', portrait: true, level, turnCount: 0 }), true);
+        assert.strictEqual(UiTutorial.shouldCompact({ design: 'plaza', landscapeShort: true, level, turnCount: 1 }), true);
     }
+    for (const options of [
+        { design: 'plaza', portrait: false, landscapeShort: false, level: 'beginner', turnCount: 8 },
+        { design: 'classic', portrait: true, level: 'beginner', turnCount: 1 },
+    ]) assert.strictEqual(UiTutorial.shouldCompact(options), false);
     const html = UiTutorial.buildHtml({ title: 'ガイド', body: '全文', tags: ['手番'] }, String,
         { compact: true, expanded: true });
     assert.match(html, /<details class="plaza-guide-disclosure" open>/);

@@ -6,8 +6,11 @@
 const CardBoardTransfers = (() => {
     function project(events) {
         const groups = new Map();
-        for (const event of events?.activations || []) {
-            const validIndex = index => index === null || index === 'pool' || Number.isInteger(index) && index >= 0 && index < (events.participantNames?.length || 0);
+        const activations = Array.isArray(events?.activations) ? events.activations : [];
+        for (const event of activations) {
+            if (!event || typeof event !== 'object') continue;
+            const validIndex = index => index === null || index === 'pool' || Number.isInteger(index) && index >= 0 &&
+                (!Array.isArray(events.participantNames) || index < events.participantNames.length);
             if (!validIndex(event.from) || !validIndex(event.to) || event.from === event.to ||
                 !Number.isSafeInteger(event.amount) || event.amount < 0) continue;
             const key = JSON.stringify([event.from, event.to]);
@@ -16,7 +19,8 @@ const CardBoardTransfers = (() => {
             if (!Number.isSafeInteger(amount)) continue;
             groups.set(key, { from: event.from, to: event.to, amount });
         }
-        const name = index => index === 'pool' ? '分配プール' : index === null ? '銀行' : String(events.participantNames[index]);
+        const name = index => index === 'pool' ? '分配プール' : index === null ? '銀行'
+            : String(events.participantNames?.[index] || `席${index + 1}`);
         return [...groups.values()].map(route => ({ ...route,
             text: `${name(route.from)} → ${name(route.to)}：${route.amount}コイン`,
         }));
@@ -40,7 +44,9 @@ const CardBoardTransfers = (() => {
             clear();
             const { container, events } = options;
             if (!container?.isConnected || !events) return false;
-            const routes = project(events);
+            // Zero-value activations belong in the dice receipt, but a coin
+            // flight for them reads as movement and duplicates that receipt.
+            const routes = project(events).filter(route => route.amount > 0);
             if (!routes.length && !events.incomplete) return false;
             const documentRef = container.ownerDocument;
             view = documentRef.defaultView;
@@ -53,11 +59,19 @@ const CardBoardTransfers = (() => {
             const location = index => {
                 if (index === null || index === 'pool') return center;
                 const header = container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
-                if (!header) return null;
-                const rect = header.getBoundingClientRect();
-                if (!rect.width || !rect.height) return null;
-                return { x: rect.left + rect.width / 2 - bounds.left,
-                    y: rect.top + rect.height / 2 - bounds.top };
+                let rect = header?.getBoundingClientRect();
+                if (!rect?.width || !rect.height) {
+                    const seat = container.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${index}"]`);
+                    rect = seat?.getBoundingClientRect();
+                }
+                if (!rect?.width || !rect.height) return null;
+                const inset = 8;
+                const clamp = (value, extent) => Math.max(Math.min(inset, extent / 2),
+                    Math.min(extent - Math.min(inset, extent / 2), value));
+                return {
+                    x: clamp(rect.left + rect.width / 2 - bounds.left, bounds.width),
+                    y: clamp(rect.top + rect.height / 2 - bounds.top, bounds.height),
+                };
             };
             layer = documentRef.createElement('div');
             layer.className = 'cardboard-transfers';
@@ -65,19 +79,25 @@ const CardBoardTransfers = (() => {
             summary.className = 'cardboard-transfer-summary';
             summary.setAttribute('role', 'status');
             summary.setAttribute('aria-live', 'polite');
-            summary.textContent = routes.slice(0, 8).map(route => route.text).join(' / ') +
-                (routes.length > 8 ? ` / ほか${routes.length - 8}件（出目の内訳で確認）` : '') +
+            summary.setAttribute('aria-label', routes.map(route => route.text).join('。') +
+                (events.incomplete ? '。未集計の特殊効果は出目の内訳で確認' : ''));
+            summary.textContent = routes.slice(0, 3).map(route => route.text).join(' / ') +
+                (routes.length > 3 ? ` / ほか${routes.length - 3}件（出目の内訳で確認）` : '') +
                 (events.incomplete ? ' / 未集計の特殊効果は出目の内訳で確認' : '');
             layer.appendChild(summary);
             // Read endpoints first, then animate without touching game state.
             const displayed = routes.slice(0, 8).map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);
+            let animationIndex = 0;
             for (const { route, from, to } of displayed) {
                 if (reducedMotion || route.amount === 0 || !from || !to) continue;
                 const coin = documentRef.createElement('span');
                 coin.className = 'cardboard-transfer';
+                coin.dataset.flow = route.from === null ? 'incoming' : route.to === null ? 'outgoing' : 'between';
+                if (route.to !== null && route.amount >= 5) coin.dataset.large = 'true';
                 coin.setAttribute('aria-hidden', 'true');
-                coin.textContent = `${route.amount}コイン`;
+                const direction = route.from === null ? '+' : route.to === null ? '−' : '→';
+                coin.textContent = `${direction} ${route.amount}コイン`;
                 coin.style.left = `${from.x}px`;
                 coin.style.top = `${from.y}px`;
                 layer.appendChild(coin);
@@ -87,7 +107,8 @@ const CardBoardTransfers = (() => {
                         { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: .15 },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(1)`, opacity: 1, offset: .85 },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(.8)`, opacity: 0 },
-                    ], { duration: 900, easing: 'ease-in-out', fill: 'both' });
+                    ], { duration: 900, delay: animationIndex * 70, easing: 'ease-in-out', fill: 'both' });
+                    animationIndex++;
                     animation.finished?.catch(() => {});
                     animations.push(animation);
                 } else coin.remove();

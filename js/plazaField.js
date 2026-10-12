@@ -4,6 +4,7 @@
 // Device-local camera: never saved or transmitted as a game action.
 const PlazaField = (() => {
     let mounted = false;
+    let comparisonWasOpenDuringThemeChange = false;
     let initialized = false;
     let selfIndex = 0;
     let playerCount = 0;
@@ -13,6 +14,23 @@ const PlazaField = (() => {
     let insightsListener = null;
     let insightsSession = null;
     let insightsFacts = null;
+    let comparisonSignature = null;
+    let cameraTransitionTimer = null;
+
+    function clearCameraTransition() {
+        if (cameraTransitionTimer !== null) clearTimeout(cameraTransitionTimer);
+        cameraTransitionTimer = null;
+        node('plazaWorld')?.classList.remove('plaza-camera-moving');
+    }
+
+    function animateCameraTransition() {
+        clearCameraTransition();
+        if (document.hidden || document.body.classList.contains('accessibility-reduced-motion') ||
+                window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true) return;
+        const world = node('plazaWorld');
+        world?.classList.add('plaza-camera-moving');
+        cameraTransitionTimer = setTimeout(clearCameraTransition, 300);
+    }
 
     function closePlayerInsights(restoreFocus = false) {
         const index = insightsIndex;
@@ -36,9 +54,15 @@ const PlazaField = (() => {
         const html = UiPlayerInsights.buildHtml(player, insightsFacts.escapeHtml, {
             enabledLandmarks: insightsFacts.enabledLandmarks,
             landmarkNames: Player._LANDMARK_DEFS.map(landmark => landmark.name),
+            cardDefinitions: insightsFacts.cardDefinitions,
+            renderFacilityArt: insightsFacts.renderFacilityArt,
         });
         if (body.innerHTML !== html) {
+            const scrollTop = body.scrollTop;
+            const scrollLeft = body.scrollLeft;
             body.innerHTML = html;
+            body.scrollTop = scrollTop;
+            body.scrollLeft = scrollLeft;
             if (focusedCard) {
                 const button = Array.from(/** @type {NodeListOf<HTMLButtonElement>} */ (body.querySelectorAll('button[data-card-name], button[data-landmark-name]'))).find(item => item.getAttribute(focusAttribute) === focusedCard);
                 (button || node('plazaPlayerInsightsClose')).focus({ preventScroll: true });
@@ -147,18 +171,75 @@ const PlazaField = (() => {
 
     function setComparisonOpen(open) {
         node('plazaComparison').hidden = !open;
+        document.body.classList.toggle('plaza-comparison-open', open);
         node('plazaCameraTools').querySelector('[data-field-panel="comparison"]').setAttribute('aria-expanded', String(open));
+        node('cardboardCompareToggle')?.setAttribute('aria-expanded', String(open));
     }
-    function renderComparison(players, enabledLandmarks, escapeHtml) {
-        const names = [...new Set(players.flatMap(player => player.cards.map(card => card.name)))];
-        const heads = players.map((player, index) => `<th scope="col"><span class="plaza-seat-mark" style="--plaza-seat-color:${seatColors[index % seatColors.length]}">席${index + 1}</span>${escapeHtml(player.name)}</th>`).join('');
-        const rows = names.map(name => `<tr><th scope="row">${escapeHtml(name)}</th>${players.map(player => {
-            const cards = player.cards.filter(card => card.name === name);
-            const dormant = cards.filter(card => player.isDormant(card)).length;
-            return `<td>${cards.length}${dormant ? `（休${dormant}）` : ''}</td>`;
-        }).join('')}</tr>`).join('');
-        const landmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name)).map(name => `<tr><th scope="row">${escapeHtml(name)}</th>${players.map(player => `<td>${player.landmarks[name] ? '建設済' : '未建設'}</td>`).join('')}</tr>`).join('');
-        node('plazaComparisonBody').innerHTML = `<table><caption>施設の所有枚数とランドマーク</caption><thead><tr><th scope="col">施設</th>${heads}</tr></thead><tbody>${rows}${landmarks}<tr><th scope="row">役所</th>${players.map(player => `<td>${player.hasYakusho ? 'あり' : 'なし'}</td>`).join('')}</tr></tbody></table>`;
+    function toggleComparison(open = null) {
+        const nextOpen = typeof open === 'boolean' ? open : node('plazaComparison').hidden;
+        setEventsOpen(false);
+        setLogPanelOpen(false);
+        setComparisonOpen(nextOpen);
+        if (nextOpen) node('plazaComparisonHeading').focus({ preventScroll: true });
+        return nextOpen;
+    }
+    function focusComparisonToggle() {
+        const cardboardToggle = node('cardboardCompareToggle');
+        const plazaToggle = node('plazaCameraTools').querySelector('[data-field-panel="comparison"]');
+        const design = document.documentElement.dataset.design;
+        const preferred = design === 'cardboard' ? cardboardToggle : design === 'plaza' ? plazaToggle : null;
+        const target = preferred?.getClientRects().length
+            ? preferred : node('gameDesignThemeSelect')?.closest('details')?.querySelector('summary');
+        target?.focus({ preventScroll: true });
+    }
+    function renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, selectedIndex) {
+        const landmarkNames = [...enabledLandmarks];
+        const enabledNames = enabledCards instanceof Set ? enabledCards : new Set(Array.isArray(enabledCards) ? enabledCards : []);
+        const signature = JSON.stringify(players.map(player => [
+            player.name,
+            player.cards.map(card => [card.name, player.isDormant(card)]),
+            landmarkNames.map(name => [name, player.landmarks[name] === true]),
+            player.hasYakusho === true,
+        ]).concat([[...enabledNames].sort(), currentIndex, selectedIndex]));
+        if (signature === comparisonSignature) return;
+        comparisonSignature = signature;
+        const definitions = new Map((Array.isArray(cardDefinitions) ? cardDefinitions : []).map(card => [card.name, card]));
+        const renderArt = typeof renderFacilityArt === 'function' ? renderFacilityArt : () => '';
+        const ownedNames = new Set(players.flatMap(player => player.cards.map(card => card.name)));
+        const names = [...new Set([
+            ...(enabledNames.size ? [...enabledNames] : [...ownedNames]),
+            ...ownedNames,
+        ])].filter(name => definitions.has(name)).sort((left, right) => {
+            const leftRoll = Number.isFinite(definitions.get(left)?.diceNums?.[0]) ? definitions.get(left).diceNums[0] : Number.POSITIVE_INFINITY;
+            const rightRoll = Number.isFinite(definitions.get(right)?.diceNums?.[0]) ? definitions.get(right).diceNums[0] : Number.POSITIVE_INFINITY;
+            return leftRoll - rightRoll || left.localeCompare(right, 'ja');
+        });
+        const heads = players.map((player, index) => {
+            const isSelected = index === selectedIndex;
+            const isCurrent = index === currentIndex;
+            const classes = [isSelected ? 'is-self' : '', isCurrent ? 'is-turn' : ''].filter(Boolean).join(' ');
+            return `<th scope="col"${classes ? ` class="${classes}"` : ''}${isCurrent ? ' aria-current="true"' : ''}><span class="plaza-seat-mark" style="--plaza-seat-color:${seatColors[index % seatColors.length]}">席${index + 1}</span><span class="plaza-comparison-player-name" title="${escapeHtml(player.name)}">${escapeHtml(player.name)}</span>${isSelected ? '<small>あなた</small>' : ''}${isCurrent ? '<small>手番</small>' : ''}</th>`;
+        }).join('');
+        const rows = names.map(name => {
+            const definition = definitions.get(name);
+            const color = ['blue', 'green', 'red', 'purple'].includes(definition?.color) ? definition.color : 'blue';
+            const dice = Array.isArray(definition?.diceNums) && definition.diceNums.length
+                ? definition.diceNums.join('・') : '—';
+            return `<tr class="plaza-comparison-card plaza-comparison-${color}"><th scope="row"><span class="plaza-comparison-facility-art">${renderArt(name, false, definition?.category || '')}</span><span>${escapeHtml(name)}</span><small class="plaza-comparison-dice">出目 ${escapeHtml(dice)}</small></th>${players.map(player => {
+                const cards = player.cards.filter(card => card.name === name);
+                const dormant = cards.filter(card => player.isDormant(card)).length;
+                const classes = [player === players[selectedIndex] ? 'is-self' : '', player === players[currentIndex] ? 'is-turn' : ''].filter(Boolean).join(' ');
+                const label = `${player.name}、${name}、所有${cards.length}枚${dormant ? `、休業${dormant}枚` : ''}`;
+                return `<td${classes ? ` class="${classes}"` : ''} aria-label="${escapeHtml(label)}">${cards.length}${dormant ? `（休${dormant}）` : ''}</td>`;
+            }).join('')}</tr>`;
+        }).join('');
+        const landmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name)).map(name => `<tr class="plaza-comparison-landmark"><th scope="row"><span class="plaza-comparison-facility-art">${renderArt(name, true)}</span><span>${escapeHtml(name)}</span></th>${players.map(player => `<td>${player.landmarks[name] ? '建設済' : '未建設'}</td>`).join('')}</tr>`).join('');
+        const body = node('plazaComparisonBody');
+        const scrollTop = body.scrollTop;
+        const scrollLeft = body.scrollLeft;
+        body.innerHTML = `<table><caption>施設の所有枚数とランドマーク</caption><thead><tr><th scope="col">施設</th>${heads}</tr></thead><tbody>${rows}${landmarks}<tr><th scope="row">役所</th>${players.map(player => `<td>${player.hasYakusho ? 'あり' : 'なし'}</td>`).join('')}</tr></tbody></table>`;
+        body.scrollTop = scrollTop;
+        body.scrollLeft = scrollLeft;
     }
     function setLogPanelOpen(open) {
         node('gameLogContainer').classList.toggle('plaza-panel-open', open);
@@ -194,6 +275,7 @@ const PlazaField = (() => {
     }
     function focusTarget(target) {
         focusedTarget = target;
+        animateCameraTransition();
         node('plazaWorld').classList.toggle('plaza-field-market', target === 'market');
         node('plazaWorld').classList.toggle('plaza-field-overview', target === 'all');
         const viewport = node('plazaViewport');
@@ -280,6 +362,7 @@ const PlazaField = (() => {
         };
         viewport.addEventListener('pointerdown', event => {
             if (!mounted || event.button !== 0) return;
+            clearCameraTransition();
             pointers.set(event.pointerId, point(event)); dragged = false; begin();
         });
         viewport.addEventListener('pointermove', event => {
@@ -323,6 +406,9 @@ const PlazaField = (() => {
             if (event.target === viewport) end(event);
         });
         window.addEventListener('blur', clearGesture);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) clearCameraTransition();
+        });
         viewport.addEventListener('focusin', event => revealFocus(/** @type {Element} */ (event.target)));
         viewport.addEventListener('click', event => { if (dragged) { event.preventDefault(); event.stopPropagation(); dragged = false; } }, true);
         viewport.addEventListener('wheel', event => {
@@ -343,8 +429,7 @@ const PlazaField = (() => {
                 }
                 setEventsOpen(false);
                 if (button.dataset.fieldPanel === 'comparison') {
-                    setLogPanelOpen(false);
-                    setComparisonOpen(node('plazaComparison').hidden);
+                    toggleComparison();
                 } else {
                     setComparisonOpen(false);
                     setLogPanelOpen(!node('gameLogContainer').classList.contains('plaza-panel-open'));
@@ -385,13 +470,54 @@ const PlazaField = (() => {
                 (/** @type {HTMLElement | null} */ (node('plazaCameraTools').querySelector('[data-field-panel="events"]')))?.focus({ preventScroll: true });
             }
         });
+        node('plazaComparison').addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !node('plazaComparison').hidden) {
+                event.preventDefault();
+                setComparisonOpen(false);
+                focusComparisonToggle();
+                return;
+            }
+            if (event.key === 'Tab' && !node('plazaComparison').hidden) {
+                const focusable = Array.from(node('plazaComparison').querySelectorAll('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])'))
+                    .filter(element => element.getClientRects().length);
+                if (!focusable.length) {
+                    event.preventDefault();
+                    node('plazaComparisonHeading').focus({ preventScroll: true });
+                    return;
+                }
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                const active = document.activeElement;
+                if (event.shiftKey && (active === first || active === node('plazaComparisonHeading'))) {
+                    event.preventDefault();
+                    last.focus({ preventScroll: true });
+                } else if (!event.shiftKey && (active === last || active === node('plazaComparisonHeading'))) {
+                    event.preventDefault();
+                    first.focus({ preventScroll: true });
+                }
+            }
+        });
+        node('plazaComparison').addEventListener('click', event => {
+            if (event.target !== node('plazaComparison') || node('plazaComparison').hidden) return;
+            setComparisonOpen(false);
+            focusComparisonToggle();
+        });
         node('plazaLogClose').addEventListener('click', () => {
             setLogPanelOpen(false);
             (/** @type {HTMLElement} */ (node('plazaCameraTools').querySelector('[data-field-panel="log"]'))).focus({ preventScroll: true });
         });
         node('plazaComparisonClose').addEventListener('click', () => {
             setComparisonOpen(false);
-            (/** @type {HTMLElement} */ (node('plazaCameraTools').querySelector('[data-field-panel="comparison"]'))).focus({ preventScroll: true });
+            focusComparisonToggle();
+        });
+        document.addEventListener('design-theme-will-change', () => {
+            comparisonWasOpenDuringThemeChange = !node('plazaComparison').hidden;
+            if (comparisonWasOpenDuringThemeChange) setComparisonOpen(false);
+        });
+        document.addEventListener('design-theme-change', () => {
+            if (!comparisonWasOpenDuringThemeChange) return;
+            comparisonWasOpenDuringThemeChange = false;
+            requestAnimationFrame(focusComparisonToggle);
         });
         node('plazaPlayerHud').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
@@ -407,6 +533,26 @@ const PlazaField = (() => {
                 event.preventDefault();
                 event.stopPropagation();
                 closePlayerInsights(true);
+                return;
+            }
+            if (event.key === 'Tab') {
+                const panel = node('plazaPlayerInsights');
+                const focusable = Array.from(panel.querySelectorAll('button:not([disabled]), a[href], summary, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+                    .filter(element => element.getClientRects().length > 0);
+                if (!focusable.length) {
+                    event.preventDefault();
+                    panel.focus();
+                    return;
+                }
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+                    event.preventDefault();
+                    first.focus();
+                }
             }
         });
         // Apply dependent sizes in the next frame, outside ResizeObserver delivery.
@@ -470,6 +616,7 @@ const PlazaField = (() => {
     function detach() {
         if (!mounted) return;
         const screen = node('gameScreen'), world = node('plazaWorld');
+        clearCameraTransition();
         clearGesture();
         townObserver.disconnect();
         closePlayerInsights();
@@ -500,7 +647,7 @@ const PlazaField = (() => {
         hudCurrentIndex = null;
         DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
     }
-    function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set(), sessionToken, phase) {
+    function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set(), sessionToken, phase, cardDefinitions, renderFacilityArt, enabledCards) {
         sync(); if (!mounted) return;
         const choosing = [GAME_PHASES.SELECT_DICE, GAME_PHASES.REROLL_CONFIRM,
             GAME_PHASES.HARBOR_CHOICE, GAME_PHASES.PENDING].includes(phase);
@@ -515,7 +662,7 @@ const PlazaField = (() => {
         }
         if (insightsIndex !== null && !players[insightsIndex]) closePlayerInsights();
         if (sessionToken !== undefined) insightsSession = sessionToken;
-        insightsFacts = { players, escapeHtml, enabledLandmarks };
+        insightsFacts = { players, escapeHtml, enabledLandmarks, cardDefinitions, renderFacilityArt };
 
         selfIndex = primaryIndex >= 0 ? primaryIndex : currentIndex;
         playerCount = players.length;
@@ -552,7 +699,7 @@ const PlazaField = (() => {
             const goalLandmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name));
             const built = goalLandmarks.filter(name => player.landmarks[name] === true).length;
             const kindIcon = node(`playerBox${index}`)?.querySelector('.player-icon')?.innerHTML || '';
-            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-controls="plazaPlayerInsights" aria-expanded="${index === insightsIndex}" aria-label="席${index + 1}、${escapeHtml(player.name)}の街と施設詳細を見る${index === selfIndex ? '、あなた' : ''}、${player.coins}コイン、目標${built}/${goalLandmarks.length}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">席${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span></strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${goalLandmarks.length}</small></button>`;
+            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-controls="plazaPlayerInsights" aria-expanded="${index === insightsIndex}" aria-label="席${index + 1}、${escapeHtml(player.name)}の街と施設詳細を見る${index === selfIndex ? '、あなた' : ''}${index === currentIndex ? '、手番' : ''}、${player.coins}コイン、目標${built}/${goalLandmarks.length}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">席${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span><span class="plaza-turn-mark">手番</span></strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${goalLandmarks.length}</small></button>`;
         });
         node('plazaPlayerHud').innerHTML = `<div class="plaza-hud-self">${hudButtons[selfIndex]}</div><div class="plaza-hud-opponents" aria-label="相手の状況">${hudButtons.filter((button, index) => index !== selfIndex).join('')}</div>`;
         if (focused !== undefined && focused !== null) (/** @type {HTMLElement} */ (node('plazaPlayerHud').querySelector(`button[data-player-index="${focused}"]`)))?.focus({ preventScroll: true });
@@ -569,11 +716,11 @@ const PlazaField = (() => {
             }
         }
         hudCurrentIndex = currentIndex;
-        renderComparison(players, enabledLandmarks, escapeHtml);
+        renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, selfIndex);
         renderPlayerInsights();
         layout();
     }
-    return Object.freeze({ render, sync, focusTarget, selectedPlayerIndex: () => insightsIndex, setInsightsListener: listener => { insightsListener = listener; } });
+    return Object.freeze({ render, sync, focusTarget, toggleComparison, selectedPlayerIndex: () => insightsIndex, setInsightsListener: listener => { insightsListener = listener; } });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = PlazaField;

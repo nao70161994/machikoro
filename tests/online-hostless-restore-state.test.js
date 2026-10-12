@@ -93,7 +93,7 @@ runTest('hostless restore socket adapterはroom gateと既存effect順を保つ'
     assert.deepStrictEqual(calls.splice(0), [
         ['status', '♻️ 参加者間の復元データ一致を確認しています...'],
         ['candidate', 4],
-        ['status', '❌ 復元候補の世代が一致しません。保存データは削除されていません。'],
+        ['status', '❌ 参加者の保存時点が一致しません。保存データは残っています。全員が同じ対局データを選んで再接続してください。'],
     ]);
 
     handlers.get('confirmation')({ roomId: 'ROOM01', candidateCount: 2 });

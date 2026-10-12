@@ -7,8 +7,24 @@ const pendingModalFocusController = UiPendingEffects.createFocusController();
 const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
+let cardDetailFocusOrigin = null;
 const turnCoinBalanceCache = new WeakMap();
 const plazaReceiptRenderCache = new WeakMap();
+const plazaTurnEventsCache = new WeakMap();
+
+function plazaTurnEventsFor(game, maxActivations = 12) {
+    if (!game || typeof game !== 'object') return null;
+    const key = `${game.turnCount}:${game.currentPlayerIndex}:${game.log?.length || 0}:${maxActivations}`;
+    const cached = plazaTurnEventsCache.get(game);
+    if (cached?.key === key) return cached.events;
+    const events = UiTurnEvents.project(game.log || [], {
+        players: game.players, turnPlayerIndex: game.currentPlayerIndex,
+        display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
+        landmarkNames: Player.landmarkNames(), maxActivations,
+    });
+    plazaTurnEventsCache.set(game, { key, events });
+    return events;
+}
 const plazaIncomePreviewPanel = typeof UiIncomePreviewPanel !== 'undefined' ? UiIncomePreviewPanel.create({
     document,
     getGame: () => uiGameRuntimeSnapshot().game,
@@ -51,8 +67,10 @@ const plazaFeedback = typeof UiPlazaFeedback !== 'undefined' ? UiPlazaFeedback.c
     onMilestones: events => {
         const target = document.getElementById('plazaBuildReceipt');
         if (!target) return;
-        target.innerHTML = events.filter(event => !event.winner).map(event =>
-            `<p class="plaza-build-result${event.landmark ? ' plaza-build-landmark' : ''}">${escapeHtml(event.message)}${event.landmark ? `：${escapeHtml(getLandmarkEffectText(event.name))}` : ''}<button type="button" data-built-town-index="${event.playerIndex}">建設した街を見る</button></p>`).join('');
+        target.innerHTML = events.filter(event => !event.winner).map(event => {
+            const category = event.landmark ? '' : CARDS.find(card => card.name === event.name)?.category || '';
+            return `<article class="plaza-build-result${event.landmark ? ' plaza-build-landmark' : ''}"><div class="plaza-build-result-art">${UiBuildMenu.renderFacilityArt(event.name, event.landmark, category)}</div><div class="plaza-build-result-copy"><p>${escapeHtml(event.message)}${event.landmark ? `：${escapeHtml(getLandmarkEffectText(event.name))}` : ''}</p><button type="button" data-built-town-index="${event.playerIndex}">建設した街を見る</button></div></article>`;
+        }).join('');
     },
 }) : null;
 if (plazaFeedback) document.getElementById('plazaBuildReceipt').addEventListener('click', event => {
@@ -189,11 +207,7 @@ function renderLog() {
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
     const receipt = document.getElementById('plazaDiceReceipt');
     if (receipt && typeof UiTurnEvents !== 'undefined') {
-        const projected = UiTurnEvents.project(cur, {
-            players: currentGame.players, turnPlayerIndex: currentGame.currentPlayerIndex,
-            display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
-            landmarkNames: Player.landmarkNames(),
-        });
+        const projected = plazaTurnEventsFor(currentGame);
         const html = UiTurnReceipt.buildHtml(projected, escapeHtml);
         const diceKey = JSON.stringify(projected.dice);
         const session = uiGameRuntimeSnapshot().cpuPlayers;
@@ -302,6 +316,8 @@ function renderTutorial() {
         design: document.documentElement?.dataset?.design,
         portrait: typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
             window.matchMedia('(orientation: portrait)').matches,
+        landscapeShort: typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches,
         level: tutorial.tutorialLevel, turnCount: currentGame.turnCount,
     });
     if (Array.isArray(session)) tutorialDisclosureState.set(session, { box });
@@ -454,6 +470,8 @@ function clearOnlineSessionAfterWin() {
 
 function renderWinnerState(winner) {
     plazaFeedback?.reset();
+    if (typeof PlazaField !== 'undefined') PlazaField.toggleComparison(false);
+    if (typeof CardBoardField !== 'undefined') CardBoardField.closeMarket(false);
     if (document.body && document.body.classList) document.body.classList.add('game-finished');
     const gameState = uiGameRuntimeSnapshot();
     const currentGame = gameState.game;
@@ -1283,14 +1301,16 @@ function renderPlayers() {
     const settings = currentGame.players.map((player, index) => getPlayerSettingForRender(index, player));
     const onlineMyPlayerIndex = onlineState.isOnlineGame ? onlineState.myPlayerIndex : -1;
     const localCpuGame = !onlineState.isOnlineGame && settings.some(setting => setting.type === 'cpu');
+    const plazaDesign = document.documentElement?.dataset?.design === 'plaza';
     const primaryPlayerIndex = onlineState.isOnlineGame
         ? onlineMyPlayerIndex
         : (localCpuGame ? settings.findIndex(setting => setting.type === 'human') : currentGame.currentPlayerIndex);
     const html = UiPlayerDisplay.buildPlayersHtml(currentGame.players, {
-        buildTownHtml: player => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection()),
+        buildTownHtml: (player, index) => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection(),
+            plazaDesign ? { playerIndex: index, events: plazaTurnEventsFor(currentGame, 1000) } : undefined),
         settings,
         currentPlayerIndex: currentGame.currentPlayerIndex,
-        plaza: document.documentElement?.dataset?.design === 'plaza',
+        plaza: plazaDesign,
         compactInactive: document.documentElement?.dataset?.design === 'plaza' || currentGame.players.length >= 5 ||
             (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
                 (window.matchMedia('(max-width: 480px)').matches ||
@@ -1422,8 +1442,32 @@ function renderPlayers() {
             townBuildingCounts,
         });
     }
-    if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection(), townSession, currentGame.phase);
-    if (typeof CardBoardField !== 'undefined') CardBoardField.render({ game: currentGame, selfIndex: primaryPlayerIndex, escapeHtml, enabledLandmarks: getEnabledLandmarkSelection(), session: townSession, replaying: uiOnlineRuntimeSnapshot().isReplaying === true, display: LOG_TYPE_DISPLAY, refreshMarket: renderBuildMenu, closeLog: () => setLogCollapsed(true) });
+    if (typeof PlazaField !== 'undefined') PlazaField.render(
+        currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml,
+        getEnabledLandmarkSelection(), townSession, currentGame.phase, CARDS, UiBuildMenu.renderFacilityArt,
+        getEnabledCardSelection(),
+    );
+    if (typeof CardBoardField !== 'undefined') CardBoardField.render({
+        game: currentGame,
+        playerSettings: settings,
+        selfIndex: primaryPlayerIndex,
+        escapeHtml,
+        enabledLandmarks: getEnabledLandmarkSelection(),
+        session: townSession,
+        replaying: uiOnlineRuntimeSnapshot().isReplaying === true,
+        display: LOG_TYPE_DISPLAY,
+        refreshMarket: renderBuildMenu,
+        closeLog: () => setLogCollapsed(true),
+        onBuildMilestones: milestones => {
+            if (currentGame.checkWinner()) return;
+            const online = uiOnlineRuntimeSnapshot();
+            const remoteOrCpuBuild = milestones.some(build =>
+                currentCpuPlayerAt(build.playerIndex) ||
+                (online.isOnlineGame && online.myPlayerIndex !== build.playerIndex)
+            );
+            if (remoteOrCpuBuild) playSound('build');
+        },
+    });
     plazaIncomePreviewPanel?.refresh(currentGame);
     if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
         animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
@@ -2389,6 +2433,7 @@ function buildLandmarkDetailContent(name) {
         escapeHtml,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
         useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        showFacilityArt: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
     });
 }
 
@@ -2400,6 +2445,7 @@ function buildCardDetailContent(card) {
         safeCardColorName,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
         useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        showFacilityArt: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
     });
 }
 
@@ -2419,11 +2465,30 @@ function showCardDetail(name, isLandmark = false) {
     if (!canOpenBlockingModal('cardDetailModal')) return false;
     title.textContent = content.title;
     body.innerHTML = content.html;
-    return openAccessibleModal('cardDetailModal');
+    const target = document.activeElement;
+    const opened = openAccessibleModal('cardDetailModal');
+    cardDetailFocusOrigin = opened && target && typeof target.focus === 'function'
+        ? { target, action: target.dataset?.action, cardName: target.dataset?.cardName,
+            landmarkName: target.dataset?.landmarkName }
+        : null;
+    return opened;
 }
 
 function closeCardDetail() {
     closeAccessibleModal('cardDetailModal');
+    const origin = cardDetailFocusOrigin;
+    cardDetailFocusOrigin = null;
+    if (document.getElementById('cardDetailModal')?.style.display !== 'none') return;
+    if (!origin || origin.target?.isConnected) return;
+    const replacement = Array.from(document.querySelectorAll('[data-action]')).find(element =>
+        element.dataset.action === origin.action && element.dataset.cardName === origin.cardName &&
+        element.dataset.landmarkName === origin.landmarkName && !element.disabled &&
+        element.getClientRects().length > 0);
+    if (!replacement) return;
+    for (let parent = replacement.parentElement; parent; parent = parent.parentElement) {
+        if (parent.tagName === 'DETAILS') parent.open = true;
+    }
+    replacement.focus({ preventScroll: true });
 }
 
 function escapeHtml(str) {

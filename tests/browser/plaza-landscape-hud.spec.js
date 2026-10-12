@@ -82,6 +82,9 @@ test('横持ちの4人戦は全席を読みやすく並べ、広場と操作域�
     expect(layout.allButtonsHit).toBe(true);
     expect(layout.townArtHeights.length).toBeGreaterThan(0);
     expect(Math.min(...layout.townArtHeights)).toBeGreaterThanOrEqual(50);
+    await expect(page.locator('#plazaPlayerHud button.active .plaza-turn-mark')).toHaveText('手番');
+    await expect(page.locator('#plazaPlayerHud button.active')).toHaveAttribute('aria-label', /手番/);
+    await expect(page.locator('#plazaPlayerHud button:not(.active) .plaza-turn-mark').first()).toBeHidden();
     const screenshot = testInfo.outputPath('plaza-landscape-4p.png');
     await page.screenshot({ path: screenshot });
     await testInfo.attach('横持ち4人戦のHUDと広場', { path: screenshot, contentType: 'image/png' });

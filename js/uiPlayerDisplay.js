@@ -156,7 +156,7 @@ const UiPlayerDisplay = (() => {
         const coinMark = hasCustomCoinMark ? options.getCoinMark() : '🪙';
         const coinAccessibleLabel = hasCustomCoinMark ? '<span class="screen-reader-only">コイン</span>' : '';
         const selfBadge = isSelf ? '<span class="player-self-badge">あなた</span>' : '';
-        const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player) : '';
+        const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player, index) : '';
         const miniTown = options.plaza && !isSelf
             ? `<div class="plaza-opponent-town">${town}</div><div class="plaza-owned-cards">${cardHtml || '施設なし'}</div>` : '';
         const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${options.plaza ? assetSummary : ''}${miniTown}`;

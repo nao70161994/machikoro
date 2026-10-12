@@ -18,6 +18,7 @@ function createSubject(options = {}) {
     const elements = {
         pwaInstallBanner: banner(),
         pwaUpdateBanner: banner(),
+        gameScreen: { style: { display: 'none' } },
     };
     let focusRestoreCalls = 0;
     const document = {
@@ -59,6 +60,17 @@ runTest('PWA shellはupdate banner表示中にinstall bannerを重ねない', ()
 
     assert.strictEqual(subject.elements.pwaInstallBanner.style.display, 'none');
     assert.strictEqual(subject.classes.has('pwa-banner-open'), true);
+});
+
+runTest('ゲーム中にCSSで隠れるinstall bannerは余白を予約しない', () => {
+    const subject = createSubject();
+    subject.elements.pwaInstallBanner.style.display = 'block';
+    subject.elements.gameScreen.style.display = 'block';
+
+    subject.controller.updateBannerBodyState();
+
+    assert.strictEqual(subject.elements.pwaInstallBanner.style.display, 'block');
+    assert.strictEqual(subject.classes.has('pwa-banner-open'), false);
 });
 
 runTest('PWA shellはbeforeinstallpromptを一度だけ登録してprompt完了後に閉じる', async () => {

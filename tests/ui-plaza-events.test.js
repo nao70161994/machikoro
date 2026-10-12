@@ -9,6 +9,26 @@ runTest('両ビューと互換APIは同じ投影・receipt実装を共有する'
     assert.strictEqual(UiPlazaEvents.project, UiTurnEvents.project);
     assert.strictEqual(UiPlazaEvents.buildReceiptHtml, UiTurnReceipt.buildHtml);
 });
+runTest('復元ログに参加者名がなくても施設収支の送受信者を席番号で示す', () => {
+    const html = UiTurnReceipt.buildHtml({
+        important: [], dice: null, balances: [], participantNames: [], unparsed: [],
+        activations: [{ from: 0, to: 1, subject: '施設', amount: 2, count: 1, facility: true, activation: 'a', owner: 0 }],
+        omittedActivations: 0, incomplete: false, unparsedCount: 0,
+    }, String);
+    assert.ok(html.includes('席1 → 席2'));
+});
+runTest('不完全なプレイヤー表示名は共通投影で席番号へ正規化する', () => {
+    const receipt = UiTurnEvents.project([], { players: [{ name: ' ' }, { name: '街B' }], turnPlayerIndex: 0 });
+    assert.strictEqual(receipt.actorName, '席1');
+    assert.deepStrictEqual(receipt.participantNames, ['席1', '街B']);
+});
+runTest('重複プレイヤー名のログは現在のゲーム状態から手番席を保つ', () => {
+    const receipt = UiTurnEvents.project([entry('system', '👤 CPUのターン')], {
+        players: [{ name: 'CPU' }, { name: 'CPU' }], turnPlayerIndex: 1,
+    });
+    assert.strictEqual(receipt.actorIndex, 1);
+    assert.strictEqual(receipt.actorName, 'CPU');
+});
 runTest('共通投影は構造化された出目を表示文言に依存せず扱う', () => {
     const receipt = UiTurnEvents.project([{ type: 'dice', message: 'Localized roll result',
         diceResolution: { dice1: 5, dice2: 1, result: 6, turn: 1, actor: 0, rerolled: true } }], {
@@ -28,6 +48,16 @@ const project = (logs, extra = {}) => UiPlazaEvents.project(logs, { players, tur
     display, logDisplay: UiLogDisplay, landmarkNames: ['駅', '港'], ...extra });
 const escape = value => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 
+runTest('同じ配列長のUndo後も最新のターン境界を再計算する', () => {
+    const logs = [entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 1 が出ました'),
+        entry('system', '👤 CPUのターン'), entry('build', '🏗️ パン屋を建設！')];
+    assert.strictEqual(project(logs).dice, null);
+    // Undo may rewrite entries in place while retaining the log array and its
+    // length. The last turn marker disappears, so the earlier die is current.
+    logs[2].message = '取り消された手番';
+    assert.deepStrictEqual(project(logs).dice.values, [1]);
+});
+
 runTest('領収投影は施設の複数発動と支払元先を集約しrawログを変更しない', () => {
     const logs = [entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 5 が出ました'),
         entry('gain', '🌾 あなたの街の森林発動 → +3コイン'), entry('gain', '🌾 あなたの街の森林発動 → +3コイン'),
@@ -45,6 +75,7 @@ runTest('領収投影は施設の複数発動と支払元先を集約しrawロ�
     assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('あなたの街 → CPU'));
     assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('席1 → 席2'));
     assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('銀行 → 席1'));
+    assert.match(UiPlazaEvents.buildReceiptHtml(receipt, escape), /data-flow="incoming" data-large="true"/u);
 });
 
 runTest('港選択は出目だけ更新しマグロ内部ダイスとpendingは新区間にしない', () => {

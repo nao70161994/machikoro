@@ -88,7 +88,7 @@ const OnlineHostlessRestoreState = (() => {
             if (roomId !== getSession().myRoomId) return;
             setStatusText('♻️ 参加者間の復元データ一致を確認しています...');
             if (!submitCandidate(generation)) {
-                setStatusText('❌ 復元候補の世代が一致しません。保存データは削除されていません。');
+                setStatusText('❌ 参加者の保存時点が一致しません。保存データは残っています。全員が同じ対局データを選んで再接続してください。');
             }
         });
 

@@ -48,6 +48,14 @@ const UiCardBoard = (() => {
         }
         return Number.isSafeInteger(net) && Number.isSafeInteger(count) ? { net, count } : null;
     }
+    function playerKind(options, index) {
+        const setting = options.playerSettings?.[index];
+        if (!setting) return { html: '', label: '' };
+        return {
+            html: typeof options.renderPlayerKindIcon === 'function' ? options.renderPlayerKindIcon(setting) : '',
+            label: typeof options.playerKindAccessibleLabel === 'function' ? options.playerKindAccessibleLabel(setting) : '',
+        };
+    }
     function buildPlayerHtml(player, options = {}) {
         const { escape, art } = helpers(options);
         const index = Number.isInteger(options.index) ? options.index : 0;
@@ -65,28 +73,60 @@ const UiCardBoard = (() => {
             const dice = (Array.isArray(card.diceNums) ? card.diceNums : []).filter(value => Number.isInteger(value) && value >= 1 && value <= 14);
             const event = activationFor(options.events, card.name, index);
             const eventAttrs = event ? ` data-cardboard-activation-count="${event.count}" data-cardboard-activation-net="${event.net}"` : '';
+            const majorIncomeClass = event?.net >= 5 ? ' cardboard-card-major-income' : '';
             const eventHtml = event ? `<span class="cardboard-activation" data-short-label="${event.net > 0 ? '+' : ''}${event.net} · ${event.count}回">確認済み：${event.net > 0 ? '+' : ''}${event.net}コイン · 発動${event.count}回</span>` : '';
-            return `<button type="button" class="cardboard-card cardboard-card-${color}${dormant === count ? ' cardboard-card-dormant' : ''}${event ? ' cardboard-card-activated' : ''}" data-action="showCardDetail" data-card-name="${escape(card.name)}"${eventAttrs}><span class="cardboard-dice" data-category-label="${escape(colorNames[color] || '不明')}" aria-label="発動する出目 ${escape(dice.join('・'))}">${escape(dice.join('・') || '—')}</span><span class="cardboard-category"><span aria-hidden="true"><span class="card-family-mark" data-category="${escape(card.category)}"></span>${escape(colorNames[color] || '不明')} · ${escape(card.category)}</span><span class="visually-hidden">${escape(card.category)}。${escape(colorLabels[color] || '分類不明')}。詳しい効果を開く。</span></span><span class="cardboard-art">${art(card.name, false, card.category)}</span><span class="cardboard-name">${escape(card.name)}</span><span class="cardboard-count">所有 ×${count}</span>${dormant ? `<span class="cardboard-dormant" data-short-label="休${dormant} 稼${count - dormant}">休業 ${dormant}枚 / 稼働 ${count - dormant}枚</span>` : ''}${eventHtml}</button>`;
+            const accessibleLabel = [
+                card.name,
+                `${colorNames[color] || '不明'}、${card.category}。${colorLabels[color] || '分類不明'}`,
+                `出目 ${dice.join('、') || 'なし'}`,
+                `所有 ${count}枚`,
+                dormant ? `休業 ${dormant}枚、稼働 ${count - dormant}枚` : '',
+                event ? `今回、確認できた純収支 ${event.net > 0 ? '+' : ''}${event.net}コイン、発動 ${event.count}回` : '',
+                '詳しい効果を表示',
+            ].filter(Boolean).join('。');
+            return `<button type="button" class="cardboard-card cardboard-card-${color}${dormant === count ? ' cardboard-card-dormant' : ''}${event ? ' cardboard-card-activated' : ''}${majorIncomeClass}" data-action="showCardDetail" data-card-name="${escape(card.name)}" aria-label="${escape(accessibleLabel)}"${eventAttrs}><span class="cardboard-dice" data-category-label="${escape(colorNames[color] || '不明')}" aria-hidden="true">${escape(dice.join('・') || '—')}</span><span class="cardboard-category"><span aria-hidden="true"><span class="card-family-mark" data-category="${escape(card.category)}"></span>${escape(colorNames[color] || '不明')} · ${escape(card.category)}</span><span class="visually-hidden">${escape(card.category)}。${escape(colorLabels[color] || '分類不明')}。詳しい効果を開く。</span></span><span class="cardboard-art" aria-hidden="true">${art(card.name, false, card.category)}</span><span class="cardboard-name">${escape(card.name)}</span><span class="cardboard-count">所有 ×${count}</span>${dormant ? `<span class="cardboard-dormant" data-short-label="休${dormant} 稼${count - dormant}">休業 ${dormant}枚 / 稼働 ${count - dormant}枚</span>` : ''}${eventHtml}</button>`;
         }).join('');
         const names = landmarkNames(player, options);
         const landmarks = names.map(name => {
             const built = player.landmarks?.[name] === true;
-            return `<button type="button" class="cardboard-landmark ${built ? 'cardboard-landmark-built' : 'cardboard-landmark-unbuilt'}" data-action="showLandmarkDetail" data-landmark-name="${escape(name)}" title="${escape(name)}：${built ? '建設済' : '未建設'}"><span class="cardboard-art" aria-hidden="true">${art(name, true)}</span><span class="cardboard-name">${escape(name)}</span><span class="cardboard-landmark-status">${built ? '建設済' : '未建設'}</span></button>`;
+            return `<button type="button" class="cardboard-landmark ${built ? 'cardboard-landmark-built' : 'cardboard-landmark-unbuilt'}" data-action="showLandmarkDetail" data-landmark-name="${escape(name)}" aria-label="${escape(name)}、${built ? '建設済' : '未建設'}。詳細を表示" title="${escape(name)}：${built ? '建設済' : '未建設'}"><span class="cardboard-art" aria-hidden="true">${art(name, true)}</span><span class="cardboard-landmark-copy"><span class="cardboard-name">${escape(name)}</span><span class="cardboard-landmark-status">${built ? '建設済' : '未建設'}</span></span></button>`;
         }).join('');
         const builtCount = names.filter(name => player.landmarks?.[name] === true).length;
-        const content = `<header class="cardboard-header"><h2 title="席${index + 1}・${escape(player.name)}">席${index + 1}・${escape(player.name)}${index === options.selfIndex ? '（自分）' : ''}</h2><p class="cardboard-player-hud"><span class="cardboard-player-coins"><b>${escape(player.coins)}</b>コイン</span><span class="cardboard-player-progress">目標 ${builtCount}/${names.length}</span>${index === options.currentIndex ? '<span class="cardboard-turn-marker">現在の手番</span>' : ''}</p></header>${options.events?.incomplete ? '<p class="cardboard-events-incomplete">収支はログから確認できた分のみです。</p>' : ''}<div class="cardboard-cards">${cards || '<p class="cardboard-empty">所有施設なし</p>'}</div><h3>ランドマーク</h3><div class="cardboard-landmarks">${landmarks || '<p class="cardboard-empty">対象ランドマークなし</p>'}</div>`;
+        const kind = playerKind(options, index);
+        const kindBadge = kind.html ? `<span class="cardboard-player-kind" aria-hidden="true">${kind.html}</span>` : '';
+        const kindDescription = kind.label ? `<span class="visually-hidden">${escape(kind.label)}。</span>` : '';
+        const content = `<header class="cardboard-header"><h2 class="cardboard-player-heading" title="席${index + 1}・${escape(player.name)}"><span class="cardboard-player-heading-name">席${index + 1}・${escape(player.name)}${index === options.selfIndex ? '（自分）' : ''}</span>${kindBadge}${kindDescription}</h2><p class="cardboard-player-hud"><span class="cardboard-player-coins"><b>${escape(player.coins)}</b>コイン</span><span class="cardboard-player-progress">目標 ${builtCount}/${names.length}</span>${index === options.currentIndex ? '<span class="cardboard-turn-marker">現在の手番</span>' : ''}</p></header>${options.events?.incomplete ? '<p class="cardboard-events-incomplete">収支はログから確認できた分のみです。</p>' : ''}<div class="cardboard-cards">${cards || '<p class="cardboard-empty">所有施設なし</p>'}</div><h3>ランドマーク</h3><div class="cardboard-landmarks">${landmarks || '<p class="cardboard-empty">対象ランドマークなし</p>'}</div>`;
         if (options.contentOnly === true) return content;
         return `<section class="cardboard-player${index === options.selfIndex ? ' cardboard-player-self' : ''}${index === options.currentIndex ? ' cardboard-player-current' : ''}" data-cardboard-player-index="${index}">${content}</section>`;
     }
     function buildRosterHtml(players, options = {}) {
         const { escape } = helpers(options);
-        return `<nav class="cardboard-roster" aria-label="表示するプレイヤー">${players.slice(0, 10).map((player, index) => {
+        const activationCounts = new Map();
+        for (const activation of options.events?.activations || []) {
+            if (!Number.isInteger(activation.owner) || activation.owner < 0 || activation.owner >= players.length) continue;
+            const owners = activationCounts.get(activation.owner) || new Map();
+            const identity = activation.activation || `legacy:${activation.subject}`;
+            const repeats = Number.isSafeInteger(activation.count) && activation.count > 0 ? activation.count : 1;
+            // A single typed activation can have several recipient routes. Keep
+            // the highest repeat count for that activation instead of summing routes.
+            owners.set(identity, Math.max(owners.get(identity) || 0, repeats));
+            activationCounts.set(activation.owner, owners);
+        }
+        return `<nav class="cardboard-roster" aria-label="表示するプレイヤー。選ぶと街のカードを大きく表示">${players.slice(0, 10).map((player, index) => {
             const names = landmarkNames(player, options);
             const built = names.filter(name => player.landmarks?.[name] === true).length;
             const counts = { blue: 0, green: 0, red: 0, purple: 0 };
             for (const card of player.cards || []) { if (Object.hasOwn(counts, card.color)) counts[card.color]++; }
             const trend = Object.keys(counts).map(color => `<span class="cardboard-color-count cardboard-color-count-${color}">${colorNames[color]} ${counts[color]}</span>`).join('');
-            return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}" data-cardboard-player-index="${index}" aria-pressed="${index === options.selectedIndex}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong>席${index + 1}・${escape(player.name)}${index === options.selfIndex ? '（自分）' : ''}</strong><span>${escape(player.coins)}コイン · 目標 ${built}/${names.length}</span><small class="cardboard-roster-trend">${trend}</small></button>`;
+            const kind = playerKind(options, index);
+            const kindIcon = kind.html ? `<span class="cardboard-roster-kind" aria-hidden="true">${kind.html}</span>` : '';
+            const kindLabel = kind.label;
+            const roles = `${index === options.selfIndex ? '<span class="cardboard-roster-badge cardboard-roster-self-badge">あなた</span>' : ''}${index === options.currentIndex ? '<span class="cardboard-roster-badge cardboard-roster-turn-badge">手番</span>' : ''}`;
+            const activationCount = [...(activationCounts.get(index)?.values() || [])].reduce((total, count) =>
+                Number.isSafeInteger(total + count) ? total + count : total, 0);
+            const activationBadge = activationCount ? `<span class="cardboard-roster-badge cardboard-roster-activation-badge">施設 ${activationCount}回</span>` : '';
+            const roleLabels = `${index === options.selfIndex ? '、あなた' : ''}${index === options.currentIndex ? '、現在の手番' : ''}`;
+            return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}${activationCount ? ' cardboard-roster-activated' : ''}" data-cardboard-player-index="${index}" title="席${index + 1}・${escape(player.name)}" aria-pressed="${index === options.selectedIndex}" aria-label="席${index + 1}・${escape(player.name)}${roleLabels}${kindLabel ? `、${escape(kindLabel)}` : ''}、${escape(player.coins)}コイン、目標 ${built}/${names.length}${activationCount ? `、今回施設発動 ${activationCount}回` : ''}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong><span class="cardboard-roster-seat-number">席${index + 1}</span>${kindIcon}<span class="cardboard-roster-name">${escape(player.name)}</span>${roles}${activationBadge}</strong><span>${escape(player.coins)}コイン · 目標 ${built}/${names.length}</span><small class="cardboard-roster-trend">${trend}</small></button>`;
         }).join('')}</nav>`;
     }
     return Object.freeze({ buildPlayerHtml, buildRosterHtml, selectDetailIndices });

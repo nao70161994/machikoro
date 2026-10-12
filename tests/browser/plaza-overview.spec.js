@@ -89,9 +89,16 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await comparisonButton.click();
         await expect(comparisonButton).toHaveAttribute('aria-expanded', 'true');
         await expect(page.locator('#plazaComparison')).toBeVisible();
+        await expect(page.locator('#plazaComparisonHeading')).toBeFocused();
         await expect(page.locator('#plazaComparison thead th')).toHaveCount(3);
         const wheat = page.locator('#plazaComparison tbody tr').filter({ has: page.locator('th', { hasText: /^麦畑$/ }) });
+        await expect(wheat.locator('th .sunset-facility-art')).toHaveCount(1);
         await expect(wheat.locator('td')).toHaveText(['1', '1']);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#plazaComparison')).toBeHidden();
+        await expect(comparisonButton).toBeFocused();
+        await comparisonButton.click();
+        await expect(page.locator('#plazaComparison')).toBeVisible();
         await page.locator('#plazaComparisonClose').click();
         await expect(comparisonButton).toBeFocused();
         await expect(page.locator('#plazaComparison')).toBeHidden();
@@ -99,6 +106,43 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
+
+test('終盤の施設比較は行追加後も縦横の読み位置を維持する', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.goto('/');
+    await page.evaluate(() => {
+        startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
+            type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}`,
+        })));
+        GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: 4 }, () => null));
+        cancelCpuSchedule('plaza-comparison-scroll');
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => { player.cards = CARDS.slice(0, 20).map(card => createCardByName(card.name)); });
+        render();
+        acceptHotseatHandoff();
+    });
+    const toggle = page.locator('[data-field-panel="comparison"]');
+    await toggle.click();
+    const body = page.locator('#plazaComparisonBody');
+    await expect.poll(() => body.evaluate(element => element.scrollHeight - element.clientHeight)).toBeGreaterThan(120);
+    const before = await body.evaluate(element => {
+        element.scrollTop = 120;
+        element.scrollLeft = 36;
+        return { top: element.scrollTop, left: element.scrollLeft };
+    });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards.push(createCardByName('麦畑'));
+        render();
+        acceptHotseatHandoff();
+    });
+    await expect.poll(() => body.evaluate(element => ({ top: element.scrollTop, left: element.scrollLeft })))
+        .toEqual(before);
+    const wheat = body.locator('tbody tr').filter({ has: page.locator('th', { hasText: /^麦畑$/ }) });
+    await expect(wheat.locator('td').first()).toHaveText('2');
+});
 
 test('広場のその他メニューから施設とランドマークへ移動できる', async ({ page }) => {
     await page.setViewportSize({ width: 1363, height: 936 });

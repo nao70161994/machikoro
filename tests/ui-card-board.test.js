@@ -18,11 +18,13 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     assert.ok(html.includes('所有 ×2'));
     assert.ok(html.includes('休業 1枚 / 稼働 1枚'));
     assert.ok(html.includes('cardboard-card-blue'));
-    assert.ok(html.includes('発動する出目 5'));
+    assert.ok(html.includes('aria-label="森林。青、工業。青：全員の手番に発動。出目 5。所有 2枚。休業 1枚、稼働 1枚。詳しい効果を表示"'));
     assert.ok(html.includes('青 · 工業'));
     assert.ok(html.includes('class="visually-hidden">工業。青：全員の手番に発動。詳しい効果を開く。'));
     assert.ok(html.includes('data-action="showLandmarkDetail" data-landmark-name="駅"'));
     assert.ok(html.includes('建設済'));
+    assert.ok(html.includes('aria-label="駅、建設済。詳細を表示"'));
+    assert.match(html, /class="cardboard-landmark-copy"><span class="cardboard-name">[^<]+<\/span><span class="cardboard-landmark-status">/);
     assert.ok(html.includes('未建設'));
     assert.ok(!html.includes('data-landmark-name="役所"'));
     assert.ok(html.includes('目標 1/2'));
@@ -49,6 +51,7 @@ runTest('確認できた施設発動だけを一致した所有者へ示し0を�
     const html = UiCardBoard.buildPlayerHtml(player, { ...options, events });
     assert.ok(html.includes('data-cardboard-activation-net="3"'));
     assert.ok(html.includes('data-cardboard-activation-count="2"'));
+    assert.ok(html.includes('今回、確認できた純収支 +3コイン、発動 2回'));
     assert.ok(html.includes('data-short-label="+3 · 2回"'));
     assert.ok(html.includes('data-short-label="休1 稼1"'));
     assert.ok(!UiCardBoard.buildPlayerHtml(player, options).includes('cardboard-activation'));
@@ -62,9 +65,12 @@ runTest('確認できた施設発動だけを一致した所有者へ示し0を�
 runTest('席・名前の同一性と選択/現在/自分を分離し10席に制限する', () => {
     const players = Array.from({ length: 12 }, () => ({ ...player }));
     const html = UiCardBoard.buildRosterHtml(players, { ...options, selectedIndex: 2 });
-    assert.strictEqual((html.match(/class="cardboard-roster-seat/g) || []).length, 10);
+    assert.ok(html.includes('aria-label="表示するプレイヤー。選ぶと街のカードを大きく表示"'));
+    assert.strictEqual((html.match(/class="cardboard-roster-seat(?:\s|")/g) || []).length, 10);
     assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1);
     assert.strictEqual((html.match(/aria-current="true"/g) || []).length, 1);
+    assert.strictEqual((html.match(/class="cardboard-roster-badge cardboard-roster-turn-badge">手番<\/span>/g) || []).length, 1);
+    assert.strictEqual((html.match(/class="cardboard-roster-badge cardboard-roster-self-badge">あなた<\/span>/g) || []).length, 1);
     assert.ok(html.includes('席10・&lt;街の主&gt;'));
     assert.ok(!html.includes('席11'));
     assert.strictEqual((html.match(/class="cardboard-color-count cardboard-color-count-blue"/g) || []).length, 10);
@@ -72,6 +78,28 @@ runTest('席・名前の同一性と選択/現在/自分を分離し10席に制�
     assert.ok(html.includes('cardboard-color-count-green">緑 0</span>'));
     assert.ok(html.includes('cardboard-color-count-red">赤 0</span>'));
     assert.ok(html.includes('cardboard-color-count-purple">紫 0</span>'));
+});
+runTest('ロスターが人/CPUアイコンを共有しスクリーンリーダーへ種別を伝える', () => {
+    const html = UiCardBoard.buildRosterHtml([
+        { ...player, name: '自分の街' }, { ...player, name: 'CPUの街' },
+    ], { ...options, playerSettings: [{ type: 'human' }, { type: 'cpu', difficulty: 'strong' }],
+        renderPlayerKindIcon: setting => `<svg data-kind="${setting.type}"></svg>`,
+        playerKindAccessibleLabel: setting => setting.type === 'cpu' ? 'CPU（強）' : '人間',
+    });
+    assert.ok(html.includes('<span class="cardboard-roster-kind" aria-hidden="true"><svg data-kind="human"></svg></span>'));
+    assert.ok(html.includes('<span class="cardboard-roster-kind" aria-hidden="true"><svg data-kind="cpu"></svg></span>'));
+    assert.ok(html.includes('自分の街、現在の手番、人間、9コイン'));
+    assert.ok(html.includes('CPUの街、あなた、CPU（強）、9コイン'));
+});
+runTest('選択した街の見出しにも所有者の人/CPU種別を示す', () => {
+    const html = UiCardBoard.buildPlayerHtml(player, { ...options, index: 1,
+        playerSettings: [null, { type: 'cpu', difficulty: 'expert' }],
+        renderPlayerKindIcon: () => '<svg data-owner-kind="cpu"></svg>',
+        playerKindAccessibleLabel: () => 'CPU（最強）',
+    });
+    assert.ok(html.includes('<h2 class="cardboard-player-heading"'));
+    assert.ok(html.includes('<span class="cardboard-player-kind" aria-hidden="true"><svg data-owner-kind="cpu"></svg></span>'));
+    assert.ok(html.includes('<span class="visually-hidden">CPU（最強）。</span>'));
 });
 runTest('2〜4人は全員、5〜10人は役割を優先し重複時も必ず3人を比較できる', () => {
     for (let count = 2; count <= 4; count++) {
@@ -128,4 +156,8 @@ runTest('同じ赤施設を双方が持っていても支払側施設を誤発�
     assert.ok(receiver.includes('確認済み：+1コイン'));
     const bankPayment = { activations: [{ facility: true, subject: 'カフェ', from: 0, to: null, amount: 2, count: 1 }] };
     assert.ok(UiCardBoard.buildPlayerHtml(players[0], { ...options, index: 0, events: bankPayment }).includes('確認済み：-2コイン'));
+    const majorIncome = { activations: [{ facility: true, subject: 'カフェ', from: null, to: 0, amount: 5, count: 1 }] };
+    const majorIncomeHtml = UiCardBoard.buildPlayerHtml(players[0], { ...options, index: 0, events: majorIncome });
+    assert.ok(majorIncomeHtml.includes('cardboard-card-major-income'));
+    assert.ok(!UiCardBoard.buildPlayerHtml(players[0], { ...options, index: 0, events: bankPayment }).includes('cardboard-card-major-income'));
 });

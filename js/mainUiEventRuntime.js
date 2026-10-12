@@ -190,6 +190,7 @@ const MainUiEventRuntime = (() => {
             ]), {
                 showLandmarkDetail: (...args) => invoke('showCardDetail', ...args),
                 setCardFilter: color => invoke('setCardFilter', color, button),
+                expandMarket: () => invoke('expandMarket'),
             }));
         }
         function handlePlayerClick(event) {

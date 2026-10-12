@@ -55,7 +55,9 @@ function loadMainRuntime(options = {}) {
         onlineCreateSubmitButton: makeElement(),
         onlineJoinSubmitButton: makeElement(),
         titleScreen: makeElement(),
-        gameScreen: makeElement(),
+        // The real title starts with the match surface explicitly hidden. Keep
+        // PWA banner tests aligned with that initial DOM state.
+        gameScreen: makeElement({ style: { display: 'none' } }),
     };
 
     const sentActions = [];
@@ -2784,7 +2786,7 @@ runTest('ローカル保存の再開導線は新しいゲーム設定より先�
     const actionsRule = css.match(/\.local-resume-actions\s*{([\s\S]*?)}/);
     const resumeButtonRule = css.match(/\.resume-btn\s*{([\s\S]*?)}/);
     assert.ok(actionsRule);
-    assert.ok(actionsRule[1].includes('display: flex;'));
+    assert.ok(actionsRule[1].includes('display: grid;'));
     assert.ok(actionsRule[1].includes('min-width: 0;'));
     assert.ok(resumeButtonRule);
     assert.ok(resumeButtonRule[1].includes('min-width: 0;'));
@@ -2792,7 +2794,7 @@ runTest('ローカル保存の再開導線は新しいゲーム設定より先�
 
 runTest('ゲーム内容設定は作成画面に限定し現在の選択概要を示す', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const header = html.slice(html.indexOf('<div class="title-header">'), html.indexOf('<div id="onlineResumeSection"'));
+    const header = html.slice(html.indexOf('<div class="title-header">'), html.indexOf('<section id="onlineResumeSection"'));
     const onlineCreate = html.slice(html.indexOf('<div id="onlineCreate"'), html.indexOf('<div id="onlineJoin"'));
     assert.ok(!header.includes('showCardSelect'));
     assert.strictEqual((html.match(/data-ui-action="showCardSelect"/g) || []).length, 2);

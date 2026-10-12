@@ -18,7 +18,7 @@ const ONLINE_HOSTLESS_RESTORE_STATUS_MESSAGES = Object.freeze({
     'unsupported-client': '旧バージョンの参加者が含まれるため、元のホストによる復元を待ちます。',
     'original-host': '元のホストによる通常復元を続けます。',
     'host-restored': '元のホストが復元しました。再接続します。',
-    'generation-mismatch': '復元候補の世代が一致しません。保存データを残して再試行してください。',
+    'generation-mismatch': '参加者の保存時点が一致しません。保存データを残したまま、全員が同じ対局データを選んで再接続してください。',
     'insufficient-candidates': '一致確認に必要な参加者が足りません。保存データを残して再試行してください。',
     'candidate-mismatch': '参加者間の復元候補が一致しません。多数決では復元しません。',
     'completed-game': 'この対局は完了済みのため復元しません。',
