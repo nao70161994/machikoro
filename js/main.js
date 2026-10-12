@@ -1,4 +1,4 @@
-/* global UiTurnPrivacy, cancelPendingLocalResume */
+/* global UiTurnPrivacy, cancelPendingLocalResume, CardBoardField */
 /** @type {Record<string, number>} */
 const SHOP_STOCK = {};
 
