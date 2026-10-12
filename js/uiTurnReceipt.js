@@ -51,7 +51,7 @@ const UiTurnReceipt = (() => {
         const featured = visibleActivations.slice(0, 3).map(summary => ({
             ...summary.event, count: summary.repeats, typedActivation: summary.typed,
         }));
-        const featuredHtml = featured.length || facilityActivationCount ? `<p class="plaza-receipt-featured">${facilityActivationCount
+        const featuredHtml = receipt.turnContextKnown !== false && (featured.length || facilityActivationCount) ? `<p class="plaza-receipt-featured">${facilityActivationCount
             ? `<span class="plaza-receipt-activation-count">施設発動${escape(facilityActivationCount)}回</span>` : ''}${featured.map(event => {
             const route = `${shortName(event.from)} → ${shortName(event.to)}`;
             const owner = Number.isInteger(event.owner) ? `${shortName(event.owner)}・` : '';

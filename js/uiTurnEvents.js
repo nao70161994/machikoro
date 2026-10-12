@@ -162,7 +162,8 @@ const UiTurnEvents = (() => {
         important.sort((a, b) => b.priority - a.priority || b.index - a.index);
         const activationLimit = Number.isInteger(options.maxActivations)
             ? Math.max(12, Math.min(1000, options.maxActivations)) : 12;
-        return { actorIndex, actorName, participantNames, dice, activations: [...groups.values()].slice(0, activationLimit),
+        return { actorIndex, actorName, participantNames, dice, turnContextKnown: actorIndex !== null,
+            activations: [...groups.values()].slice(0, activationLimit),
             omittedActivations: Math.max(0, groups.size - activationLimit), balances: balances.filter(balance => balance.income || balance.payment),
             unparsed: unparsed.slice(-3), unparsedCount: unparsed.length,
             incomplete: unparsed.length > 0, important: important.slice(0, 4) };

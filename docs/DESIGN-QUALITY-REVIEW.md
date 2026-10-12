@@ -1098,3 +1098,7 @@ headless Chromiumの実ブラウザ操作で出目3を確定し、パン屋の�
 ## Round 202: PR静的ゲートのDOM型を整合
 
 PRの静的ゲートは、DOM型を絞った後にESLintで`HTMLElement`/`HTMLDetailsElement`を宣言する必要も検出した。市場ダイアログを`HTMLDialogElement`として扱い、フォーカス可能な要素を`HTMLElement`へ限定し、詳細メニューは`HTMLDetailsElement`判定後に開く。カード卓で使う`UiPlayerDisplay`の型付きブラウザglobal宣言も追加した。`npm run test:types`はcomposition root 4系統を含め成功。ESLint global宣言の追加確認とPR CI再確認は継続中。
+
+## Round 203: 手番境界がない収益ログを今回の演出から除外
+
+PR unit gateで、helperを宣言前に使うテストfixtureのTDZエラーと、手番index/手番境界のない古い収益ログが「今回の収支」短縮欄へ出るケースを検出した。fixtureの共通helperを先に定義する。収益の詳細ログは事実として残し、現在の手番が特定できたときだけ常時表示の短縮イベント欄へ集約する`turnContextKnown`を追加した。`tests/ui-plaza-events.test.js`の対象スイート全件が成功。最新PRでの一括unit/browser再確認は継続中。

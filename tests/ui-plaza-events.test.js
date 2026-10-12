@@ -5,6 +5,16 @@ const UiLogDisplay = require('../js/uiLogDisplay');
 const UiPlazaEvents = require('../js/uiPlazaEvents');
 const UiTurnEvents = require('../js/uiTurnEvents');
 const UiTurnReceipt = require('../js/uiTurnReceipt');
+const types = Object.freeze({ DICE: 'dice', GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', SYSTEM: 'system', ERROR: 'error' });
+const display = UiLogDisplay.makeLogTypeDisplay(types);
+const players = [
+    { name: 'あなたの街', cards: [{ name: '森林' }, { name: 'パン屋' }] },
+    { name: 'CPU', cards: [{ name: '寿司屋' }] },
+];
+const entry = (type, message) => ({ type, message });
+const project = (logs, extra = {}) => UiPlazaEvents.project(logs, { players, turnPlayerIndex: 0,
+    display, logDisplay: UiLogDisplay, landmarkNames: ['駅', '港'], ...extra });
+const escape = value => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 runTest('両ビューと互換APIは同じ投影・receipt実装を共有する', () => {
     assert.strictEqual(UiPlazaEvents.project, UiTurnEvents.project);
     assert.strictEqual(UiPlazaEvents.buildReceiptHtml, UiTurnReceipt.buildHtml);
@@ -37,17 +47,6 @@ runTest('共通投影は構造化された出目を表示文言に依存せず�
     assert.deepStrictEqual(receipt.dice, { values: [5, 1], base: 6, effective: 6, rerolled: true, harbor: false });
     assert.match(UiTurnReceipt.buildHtml(receipt, String), /出目 5\+1=6（振り直し）/u);
 });
-const types = Object.freeze({ DICE: 'dice', GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', SYSTEM: 'system', ERROR: 'error' });
-const display = UiLogDisplay.makeLogTypeDisplay(types);
-const players = [
-    { name: 'あなたの街', cards: [{ name: '森林' }, { name: 'パン屋' }] },
-    { name: 'CPU', cards: [{ name: '寿司屋' }] },
-];
-const entry = (type, message) => ({ type, message });
-const project = (logs, extra = {}) => UiPlazaEvents.project(logs, { players, turnPlayerIndex: 0,
-    display, logDisplay: UiLogDisplay, landmarkNames: ['駅', '港'], ...extra });
-const escape = value => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
-
 runTest('同じ配列長のUndo後も最新のターン境界を再計算する', () => {
     const logs = [entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 1 が出ました'),
         entry('system', '👤 CPUのターン'), entry('build', '🏗️ パン屋を建設！')];
@@ -164,6 +163,7 @@ runTest('手番プレイヤーが特定できない収入は短縮行で送金�
         players, display, logDisplay: UiLogDisplay,
     });
     const html = UiPlazaEvents.buildReceiptHtml(receipt, escape);
+    assert.strictEqual(receipt.turnContextKnown, false);
     assert.doesNotMatch(html, /plaza-receipt-featured/u);
     assert.ok(html.includes('銀行 → あなたの街：森林 +3コイン'));
 });
