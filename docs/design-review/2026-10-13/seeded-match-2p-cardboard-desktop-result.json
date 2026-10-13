@@ -1,0 +1,3812 @@
+{
+  "seed": 1296122696,
+  "playerCount": 2,
+  "design": "cardboard",
+  "presentation": {
+    "rolls": 170,
+    "activations": 278,
+    "transfers": 75,
+    "landmarkCelebrations": 22,
+    "receipts": 0
+  },
+  "winner": "CPU（弱）・2",
+  "turns": 79,
+  "phase": "build",
+  "state": {
+    "playerCoins": [
+      7,
+      0
+    ],
+    "playerCardNames": [
+      [
+        "麦畑",
+        "パン屋",
+        "パン屋",
+        "貸金業",
+        "バーガーショップ",
+        "麦畑",
+        "貸金業",
+        "貸金業",
+        "マグロ漁船",
+        "寿司屋",
+        "バーガーショップ",
+        "牧場",
+        "ITベンチャー",
+        "フラワーショップ",
+        "貸金業",
+        "ピザ屋",
+        "貸金業",
+        "雑貨屋",
+        "ピザ屋",
+        "雑貨屋",
+        "フラワーショップ",
+        "コーン畑",
+        "リンゴ園",
+        "フラワーショップ",
+        "バーガーショップ",
+        "鉱山",
+        "サンマ漁船",
+        "ピザ屋",
+        "フラワーショップ",
+        "麦畑",
+        "公園",
+        "リンゴ園",
+        "引越し屋",
+        "サンマ漁船",
+        "貸金業",
+        "改装屋",
+        "カフェ",
+        "会員制BAR",
+        "雑貨屋",
+        "寿司屋"
+      ],
+      [
+        "麦畑",
+        "パン屋",
+        "引越し屋",
+        "バーガーショップ",
+        "フラワーショップ",
+        "ピザ屋",
+        "フラワーショップ",
+        "花畑",
+        "パン屋",
+        "出版社",
+        "花畑",
+        "花畑",
+        "寿司屋",
+        "牧場",
+        "公園",
+        "サンマ漁船",
+        "チーズ工場",
+        "引越し屋",
+        "麦畑",
+        "ワイナリー",
+        "麦畑",
+        "牧場",
+        "花畑",
+        "税務署",
+        "ITベンチャー",
+        "パン屋",
+        "雑貨屋",
+        "家具工場",
+        "サンマ漁船",
+        "ワイナリー",
+        "ビジネスセンター",
+        "マグロ漁船",
+        "ファミレス",
+        "寿司屋",
+        "鉱山",
+        "雑貨屋"
+      ]
+    ],
+    "playerDormantIndices": [
+      [],
+      [
+        19,
+        29
+      ]
+    ],
+    "playerLandmarks": [
+      {
+        "駅": true,
+        "ショッピングモール": true,
+        "遊園地": true,
+        "電波塔": false,
+        "港": true,
+        "空港": false
+      },
+      {
+        "駅": true,
+        "ショッピングモール": true,
+        "遊園地": true,
+        "電波塔": true,
+        "港": true,
+        "空港": true
+      }
+    ],
+    "playerItVenture": [
+      0,
+      0
+    ],
+    "playerHasYakusho": [
+      true,
+      true
+    ],
+    "hadAmusementParkAtRoll": true,
+    "shopStock": {
+      "麦畑": 2,
+      "牧場": 3,
+      "森林": 6,
+      "鉱山": 4,
+      "リンゴ園": 4,
+      "パン屋": 3,
+      "コンビニ": 6,
+      "チーズ工場": 5,
+      "家具工場": 5,
+      "青果市場": 6,
+      "カフェ": 5,
+      "ファミレス": 5,
+      "スタジアム": 2,
+      "テレビ局": 2,
+      "ビジネスセンター": 1,
+      "花畑": 2,
+      "サンマ漁船": 2,
+      "マグロ漁船": 4,
+      "フラワーショップ": 0,
+      "食品倉庫": 6,
+      "寿司屋": 2,
+      "ピザ屋": 2,
+      "バーガーショップ": 2,
+      "出版社": 1,
+      "税務署": 1,
+      "コーン畑": 5,
+      "ブドウ園": 6,
+      "雑貨屋": 1,
+      "改装屋": 5,
+      "貸金業": 0,
+      "ワイナリー": 4,
+      "引越し屋": 3,
+      "ドリンク工場": 6,
+      "高級フレンチ": 6,
+      "会員制BAR": 5,
+      "清掃業": 2,
+      "ITベンチャー": 0,
+      "公園": 0
+    },
+    "builtThisTurn": true,
+    "log": [
+      {
+        "type": "system",
+        "message": "👤 CPU（弱）・2のターン"
+      },
+      {
+        "type": "dice",
+        "message": "🚉 駅：1個か2個か選んでください"
+      },
+      {
+        "type": "dice",
+        "message": "🎲 6+2=8",
+        "diceResolution": {
+          "dice1": 6,
+          "dice2": 2,
+          "result": 8,
+          "rerolled": false,
+          "turn": 79,
+          "actor": 1
+        }
+      },
+      {
+        "type": "lose",
+        "message": "💸 CPU（弱）・1のバーガーショップ発動 → 2コイン獲得"
+      },
+      {
+        "type": "lose",
+        "message": "💸 CPU（弱）・1のバーガーショップ発動 → 2コイン獲得"
+      },
+      {
+        "type": "lose",
+        "message": "💸 CPU（弱）・1のバーガーショップ発動 → 2コイン獲得"
+      },
+      {
+        "type": "gain",
+        "message": "🐟 CPU（弱）・1のサンマ漁船発動 → +3コイン"
+      },
+      {
+        "type": "gain",
+        "message": "🐟 CPU（弱）・1のサンマ漁船発動 → +3コイン"
+      },
+      {
+        "type": "gain",
+        "message": "🐟 CPU（弱）・2のサンマ漁船発動 → +3コイン"
+      },
+      {
+        "type": "gain",
+        "message": "🐟 CPU（弱）・2のサンマ漁船発動 → +3コイン"
+      },
+      {
+        "type": "gain",
+        "message": "💰 家具工場発動 → +3コイン"
+      },
+      {
+        "type": "special",
+        "message": "🏛️ CPU（弱）・1から6コイン",
+        "coinResolution": {
+          "owner": 1,
+          "subject": "税務署",
+          "activation": 23,
+          "transfers": [
+            {
+              "from": 0,
+              "to": 1,
+              "amount": 6
+            }
+          ]
+        }
+      },
+      {
+        "type": "special",
+        "message": "🏛️ 税務署発動 → 合計+6コイン",
+        "coinResolution": {
+          "owner": 1,
+          "subject": "税務署",
+          "activation": 23,
+          "transfers": [
+            {
+              "from": 0,
+              "to": 1,
+              "amount": 6
+            }
+          ]
+        }
+      },
+      {
+        "type": "build",
+        "message": "🏆 空港を建設！"
+      }
+    ],
+    "reviewSummary": {
+      "complete": true,
+      "totalsComplete": true,
+      "counts": {
+        "dice": 172,
+        "gain": 170,
+        "lose": 32,
+        "build": 90,
+        "special": 104,
+        "system": 83,
+        "error": 0
+      },
+      "totals": {
+        "gain": 355,
+        "lose": 354
+      }
+    }
+  },
+  "history": [
+    {
+      "at": 1791872498160,
+      "turns": 0,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        3
+      ],
+      "landmarks": [
+        0,
+        0
+      ],
+      "logLength": 3
+    },
+    {
+      "at": 1791872499375,
+      "turns": 1,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        3
+      ],
+      "landmarks": [
+        1,
+        0
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872500062,
+      "turns": 1,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        2
+      ],
+      "landmarks": [
+        1,
+        0
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872501253,
+      "turns": 2,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        2
+      ],
+      "landmarks": [
+        1,
+        0
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872502216,
+      "turns": 3,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        2
+      ],
+      "landmarks": [
+        1,
+        0
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872503134,
+      "turns": 4,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        2,
+        3
+      ],
+      "landmarks": [
+        1,
+        0
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872504102,
+      "turns": 5,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        8,
+        4
+      ],
+      "landmarks": [
+        1,
+        0
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872505128,
+      "turns": 6,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        8,
+        0
+      ],
+      "landmarks": [
+        1,
+        1
+      ],
+      "logLength": 3
+    },
+    {
+      "at": 1791872506111,
+      "turns": 7,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        6,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872507642,
+      "turns": 7,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        6,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872508247,
+      "turns": 8,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872509178,
+      "turns": 8,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        8,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872510471,
+      "turns": 9,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872511455,
+      "turns": 9,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        1
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872512139,
+      "turns": 9,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872513102,
+      "turns": 10,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872514725,
+      "turns": 10,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872515296,
+      "turns": 11,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        0
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872516171,
+      "turns": 11,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        1
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872517334,
+      "turns": 12,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        6
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872518206,
+      "turns": 12,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        6
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872519301,
+      "turns": 13,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        11,
+        6
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872520703,
+      "turns": 13,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        11,
+        6
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872521920,
+      "turns": 13,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        11,
+        10
+      ],
+      "landmarks": [
+        2,
+        1
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872523395,
+      "turns": 14,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        11,
+        8
+      ],
+      "landmarks": [
+        2,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872524346,
+      "turns": 14,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        13,
+        8
+      ],
+      "landmarks": [
+        2,
+        2
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872525587,
+      "turns": 15,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        3,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872526398,
+      "turns": 15,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        3,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 3
+    },
+    {
+      "at": 1791872527296,
+      "turns": 15,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        3,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872528327,
+      "turns": 16,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        3,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872529164,
+      "turns": 16,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        5,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872530591,
+      "turns": 17,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872530923,
+      "turns": 17,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872532129,
+      "turns": 17,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872533229,
+      "turns": 18,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872534820,
+      "turns": 18,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872536246,
+      "turns": 19,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872537436,
+      "turns": 19,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872538854,
+      "turns": 19,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872539734,
+      "turns": 20,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872540081,
+      "turns": 20,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872541505,
+      "turns": 20,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872542201,
+      "turns": 21,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872543430,
+      "turns": 21,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872544278,
+      "turns": 22,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872545650,
+      "turns": 22,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872546350,
+      "turns": 23,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        8
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872547315,
+      "turns": 23,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        10
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872548588,
+      "turns": 24,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872549006,
+      "turns": 24,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872550191,
+      "turns": 24,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        5
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872551320,
+      "turns": 24,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872552462,
+      "turns": 25,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872553233,
+      "turns": 25,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872554173,
+      "turns": 25,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872555259,
+      "turns": 26,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872556817,
+      "turns": 26,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872557345,
+      "turns": 26,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872558397,
+      "turns": 27,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872559634,
+      "turns": 27,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        4
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872560374,
+      "turns": 28,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        4
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872561455,
+      "turns": 28,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872562371,
+      "turns": 28,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872563983,
+      "turns": 29,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        6,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872565095,
+      "turns": 29,
+      "phase": "harborChoice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        6,
+        7
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872566253,
+      "turns": 29,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        6,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872567331,
+      "turns": 30,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872569036,
+      "turns": 30,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        9,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872570422,
+      "turns": 30,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        9,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872571364,
+      "turns": 31,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        9,
+        6
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872572771,
+      "turns": 31,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        11
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872573876,
+      "turns": 31,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        10
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872575069,
+      "turns": 32,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        10
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872577364,
+      "turns": 32,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        10
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872578033,
+      "turns": 32,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        10
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872579217,
+      "turns": 33,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        6,
+        10
+      ],
+      "landmarks": [
+        3,
+        2
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872581007,
+      "turns": 33,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        6,
+        0
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872582148,
+      "turns": 34,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        0
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872583763,
+      "turns": 34,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        5,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872584340,
+      "turns": 34,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        5,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872585386,
+      "turns": 35,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        5,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872586166,
+      "turns": 35,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        6,
+        7
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872587549,
+      "turns": 36,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872587973,
+      "turns": 36,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872589682,
+      "turns": 36,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872590271,
+      "turns": 36,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872591219,
+      "turns": 37,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872592253,
+      "turns": 37,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 3
+    },
+    {
+      "at": 1791872593924,
+      "turns": 38,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872595796,
+      "turns": 38,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872596365,
+      "turns": 38,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872597494,
+      "turns": 39,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872598248,
+      "turns": 39,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872600456,
+      "turns": 39,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        0
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872601738,
+      "turns": 39,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872602574,
+      "turns": 39,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872603338,
+      "turns": 40,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872604406,
+      "turns": 40,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872605157,
+      "turns": 40,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872606391,
+      "turns": 41,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872607358,
+      "turns": 41,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        2
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 3
+    },
+    {
+      "at": 1791872608704,
+      "turns": 42,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872609113,
+      "turns": 42,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872610665,
+      "turns": 42,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872611247,
+      "turns": 42,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872612395,
+      "turns": 43,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872613132,
+      "turns": 43,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872614671,
+      "turns": 44,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872615037,
+      "turns": 44,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872616497,
+      "turns": 44,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        2,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872617038,
+      "turns": 44,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        2,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872618152,
+      "turns": 45,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        2,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872619731,
+      "turns": 45,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        8,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872620480,
+      "turns": 46,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        8,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872621613,
+      "turns": 46,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        8,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872622370,
+      "turns": 46,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        5,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872623644,
+      "turns": 47,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        5,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872624054,
+      "turns": 47,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        5,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872625608,
+      "turns": 47,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        5,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872626417,
+      "turns": 48,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        5,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872627628,
+      "turns": 48,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872628485,
+      "turns": 48,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872629082,
+      "turns": 48,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872630252,
+      "turns": 49,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872631840,
+      "turns": 49,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872632568,
+      "turns": 49,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872633010,
+      "turns": 49,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872634598,
+      "turns": 49,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        10,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 10
+    },
+    {
+      "at": 1791872636024,
+      "turns": 50,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        10,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872637627,
+      "turns": 50,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        15,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872638341,
+      "turns": 50,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        14,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872639660,
+      "turns": 51,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        14,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872640090,
+      "turns": 51,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        14,
+        1
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872641394,
+      "turns": 51,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        14,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872642490,
+      "turns": 52,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        14,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872643291,
+      "turns": 52,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        7,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872644560,
+      "turns": 52,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872645310,
+      "turns": 53,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872646429,
+      "turns": 53,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872647211,
+      "turns": 53,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        3
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872648563,
+      "turns": 54,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        3
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872649684,
+      "turns": 54,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        2,
+        7
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872650499,
+      "turns": 54,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 10
+    },
+    {
+      "at": 1791872651078,
+      "turns": 54,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 11
+    },
+    {
+      "at": 1791872652180,
+      "turns": 55,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872653679,
+      "turns": 55,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872654193,
+      "turns": 55,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872655361,
+      "turns": 56,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        4
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872656877,
+      "turns": 56,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        8
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872658260,
+      "turns": 57,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        8
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872659299,
+      "turns": 57,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872660604,
+      "turns": 57,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872661381,
+      "turns": 58,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872662102,
+      "turns": 58,
+      "phase": "harborChoice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872663608,
+      "turns": 58,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872664215,
+      "turns": 58,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872665324,
+      "turns": 59,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        6
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872666847,
+      "turns": 59,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872667464,
+      "turns": 59,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872668241,
+      "turns": 60,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872669463,
+      "turns": 60,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872670335,
+      "turns": 60,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 10
+    },
+    {
+      "at": 1791872671636,
+      "turns": 61,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872672817,
+      "turns": 61,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        9
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872673814,
+      "turns": 61,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        7
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872674531,
+      "turns": 61,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872675088,
+      "turns": 61,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872676135,
+      "turns": 62,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872677510,
+      "turns": 62,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872678080,
+      "turns": 62,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872679258,
+      "turns": 63,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872680748,
+      "turns": 63,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        9,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 11
+    },
+    {
+      "at": 1791872681442,
+      "turns": 63,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        9,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 12
+    },
+    {
+      "at": 1791872682187,
+      "turns": 64,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        9,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872683209,
+      "turns": 64,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        3,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872684474,
+      "turns": 64,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 10
+    },
+    {
+      "at": 1791872685204,
+      "turns": 65,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        0,
+        5
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872686321,
+      "turns": 65,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        10
+      ],
+      "landmarks": [
+        3,
+        3
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872687621,
+      "turns": 65,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        0
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 11
+    },
+    {
+      "at": 1791872688359,
+      "turns": 66,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        0
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872689511,
+      "turns": 66,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        3,
+        4
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 10
+    },
+    {
+      "at": 1791872690336,
+      "turns": 66,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        4
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 11
+    },
+    {
+      "at": 1791872691641,
+      "turns": 67,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        4
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872692144,
+      "turns": 67,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        4
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872693696,
+      "turns": 67,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        2,
+        9
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 10
+    },
+    {
+      "at": 1791872694288,
+      "turns": 67,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        2,
+        9
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 11
+    },
+    {
+      "at": 1791872695183,
+      "turns": 67,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        2,
+        9
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872696838,
+      "turns": 67,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        2,
+        7
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872697469,
+      "turns": 67,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        2,
+        7
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872698243,
+      "turns": 68,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        2,
+        7
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872699330,
+      "turns": 68,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        6,
+        7
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 5
+    },
+    {
+      "at": 1791872700330,
+      "turns": 68,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        7
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872701623,
+      "turns": 69,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        7
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872702012,
+      "turns": 69,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        7
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872703638,
+      "turns": 69,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        18
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 14
+    },
+    {
+      "at": 1791872704513,
+      "turns": 69,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        22
+      ],
+      "landmarks": [
+        3,
+        4
+      ],
+      "logLength": 15
+    },
+    {
+      "at": 1791872705310,
+      "turns": 69,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 16
+    },
+    {
+      "at": 1791872706653,
+      "turns": 70,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872707104,
+      "turns": 70,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872708634,
+      "turns": 70,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        9,
+        0
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872709299,
+      "turns": 70,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        9,
+        0
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872711294,
+      "turns": 71,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        9,
+        0
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872713023,
+      "turns": 71,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        10,
+        8
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872714514,
+      "turns": 71,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        10,
+        3
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 11
+    },
+    {
+      "at": 1791872715321,
+      "turns": 72,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        10,
+        3
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872716249,
+      "turns": 72,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        10,
+        7
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872717871,
+      "turns": 72,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        3,
+        7
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 10
+    },
+    {
+      "at": 1791872719516,
+      "turns": 73,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        3,
+        7
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872720470,
+      "turns": 73,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        3,
+        7
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 3
+    },
+    {
+      "at": 1791872721253,
+      "turns": 73,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        3,
+        4
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872722466,
+      "turns": 74,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        3,
+        4
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872723281,
+      "turns": 74,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        8,
+        6
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872724545,
+      "turns": 74,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        6
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872725337,
+      "turns": 75,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        6
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872726086,
+      "turns": 75,
+      "phase": "rerollConfirm",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        6
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 3
+    },
+    {
+      "at": 1791872727280,
+      "turns": 75,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        10
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872728162,
+      "turns": 75,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        9
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872729441,
+      "turns": 76,
+      "phase": "roll",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        9
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872730309,
+      "turns": 76,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        8,
+        9
+      ],
+      "landmarks": [
+        3,
+        5
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872731904,
+      "turns": 76,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        9
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872733081,
+      "turns": 77,
+      "phase": "selectDice",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        9
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872734812,
+      "turns": 77,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        19
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872735704,
+      "turns": 77,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        19
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 7
+    },
+    {
+      "at": 1791872736512,
+      "turns": 77,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        19
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 8
+    },
+    {
+      "at": 1791872737121,
+      "turns": 77,
+      "phase": "pending",
+      "currentPlayerIndex": 1,
+      "coins": [
+        4,
+        19
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 9
+    },
+    {
+      "at": 1791872738289,
+      "turns": 78,
+      "phase": "selectDice",
+      "currentPlayerIndex": 0,
+      "coins": [
+        4,
+        19
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 2
+    },
+    {
+      "at": 1791872739208,
+      "turns": 78,
+      "phase": "build",
+      "currentPlayerIndex": 0,
+      "coins": [
+        2,
+        21
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 4
+    },
+    {
+      "at": 1791872740553,
+      "turns": 78,
+      "phase": "pending",
+      "currentPlayerIndex": 0,
+      "coins": [
+        1,
+        21
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 6
+    },
+    {
+      "at": 1791872741323,
+      "turns": 79,
+      "phase": "roll",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        21
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 1
+    },
+    {
+      "at": 1791872742161,
+      "turns": 79,
+      "phase": "rerollConfirm",
+      "currentPlayerIndex": 1,
+      "coins": [
+        1,
+        21
+      ],
+      "landmarks": [
+        4,
+        5
+      ],
+      "logLength": 3
+    },
+    {
+      "at": 1791872743531,
+      "turns": 79,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        4,
+        6
+      ],
+      "logLength": 14
+    },
+    {
+      "at": 1791872743919,
+      "turns": 79,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        4,
+        6
+      ],
+      "logLength": 14
+    },
+    {
+      "at": 1791872744908,
+      "turns": 79,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        4,
+        6
+      ],
+      "logLength": 14
+    },
+    {
+      "at": 1791872745920,
+      "turns": 79,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        4,
+        6
+      ],
+      "logLength": 14
+    },
+    {
+      "at": 1791872746907,
+      "turns": 79,
+      "phase": "build",
+      "currentPlayerIndex": 1,
+      "coins": [
+        7,
+        0
+      ],
+      "landmarks": [
+        4,
+        6
+      ],
+      "logLength": 14
+    }
+  ]
+}

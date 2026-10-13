@@ -127,11 +127,15 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
     const deadline = Date.now() + MAX_MATCH_MS;
     let previousTurn = await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.turnCount);
     let lastProgressAt = Date.now();
+    const capturedStages = new Set();
     while (Date.now() < deadline && !(await page.locator('.winner-screen').isVisible())) {
         await page.waitForTimeout(5000);
         const status = await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
-            return { turnCount: game.turnCount, phase: game.phase, winner: game.winner || null };
+            const landmarks = [...getEnabledLandmarkSelection()];
+            const built = Math.max(...game.players.map(player => landmarks.filter(name => player.landmarks[name]).length));
+            return { turnCount: game.turnCount, phase: game.phase, winner: game.checkWinner()?.name || null,
+                leaderProgress: landmarks.length ? built / landmarks.length : 0 };
         });
         if (status.turnCount > previousTurn) {
             previousTurn = status.turnCount;
@@ -139,6 +143,20 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
         }
         expect(Date.now() - lastProgressAt, `対局が45秒停止: ${JSON.stringify(status)}`).toBeLessThan(45000);
         expect(pageErrors, 'ブラウザ例外').toEqual([]);
+        const stage = status.leaderProgress >= 2 / 3 ? 'late' : status.leaderProgress >= 1 / 3 ? 'mid' : null;
+        if (stage && !status.winner && !capturedStages.has(stage)) {
+            capturedStages.add(stage);
+            const filename = `seeded-match-${MATCH_PLAYER_COUNT}p-${MATCH_DESIGN}-${MATCH_VIEWPORT.name}-${stage}`;
+            const screenshot = await page.screenshot({ fullPage: false });
+            await testInfo.attach(`${filename}.png`, { body: screenshot, contentType: 'image/png' });
+            await testInfo.attach(`${filename}.json`, { body: JSON.stringify(status), contentType: 'application/json' });
+            if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
+                const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
+                await fs.mkdir(artifactDir, { recursive: true });
+                await fs.writeFile(path.join(artifactDir, `${filename}.png`), screenshot);
+                await fs.writeFile(path.join(artifactDir, `${filename}.json`), JSON.stringify(status, null, 2));
+            }
+        }
     }
 
     await expect(page.locator('.winner-screen')).toBeVisible({ timeout: 1000 });
