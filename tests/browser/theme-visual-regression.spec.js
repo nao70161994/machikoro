@@ -1,7 +1,11 @@
 const { test, expect } = require('@playwright/test');
 
 const THEMES = ['classic', 'sunset', 'plaza', 'cardboard'];
-test.use({ serviceWorkers: 'block' });
+test.use({
+    serviceWorkers: 'block',
+    video: 'off',
+    trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true },
+});
 const VIEWPORTS = [
     { width: 320, height: 844, name: 'phone-320' },
     { width: 390, height: 844, name: 'phone-390' },

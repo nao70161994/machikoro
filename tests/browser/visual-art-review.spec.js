@@ -1,6 +1,13 @@
 const { test, expect } = require('@playwright/test');
 const { verifyWinnerNotices } = require('./helpers/winner-notices');
 
+// Explicit review PNGs, failure DOM context, and API/source traces retain
+// evidence without serializing the full SVG board at every interaction.
+test.use({
+    video: 'off',
+    trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true },
+});
+
 async function stubAds(page) {
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({
         status: 200,

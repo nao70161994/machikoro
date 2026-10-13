@@ -1,0 +1,19 @@
+{
+  "head": "f037d182b6816ffc779bfb6bf2abed89ee20f6ed",
+  "run": "https://github.com/nao70161994/machikoro/actions/runs/38411623403",
+  "browser": "Chromium",
+  "matches": [
+    {
+      "playerCount": 2,
+      "design": "cardboard",
+      "winner": "CPU（弱）・2",
+      "turns": 83
+    },
+    {
+      "playerCount": 4,
+      "design": "plaza",
+      "winner": "CPU（弱）・1",
+      "turns": 104
+    }
+  ]
+}

@@ -9410,8 +9410,14 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
    separate blurred SVG surface for every district on the camera's world.
    The SVG scenes retain their own shadows; event highlights are on the lot. */
 html[data-design="plaza"] #plazaWorld #players .town-street[data-town-layout="districts"] > .town-building .sunset-facility-art,
-html[data-design="plaza"] #plazaWorld #players .town-skyline-lights {
+html[data-design="plaza"] #plazaWorld #players .town-skyline-lights,
+html[data-design="plaza"] #plazaWorld #buildMenu .card-btn .sunset-facility-art,
+html[data-design="plaza"] #plazaComparison .sunset-facility-art {
     filter: none;
+}
+html[data-design="plaza"] #plazaWorld #buildMenu .card-filter-bar {
+    backdrop-filter: none;
+    background: #16363f;
 }
 
 /* State-derived town growth: bounded scenery beneath the owned facility lots. */
