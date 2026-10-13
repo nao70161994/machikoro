@@ -107,6 +107,19 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     await expect(page.locator('#plazaPlayerHud')).toContainText('街1');
                     await expect(page.locator('#plazaPlayerHud')).toContainText('街4');
                 }
+                if (theme === 'cardboard') {
+                    const unavailable = page.locator('#cardboardMarket .compact-market-buy:disabled').first();
+                    await expect(unavailable).toHaveCSS('opacity', '1');
+                    await expect(unavailable).toHaveCSS('filter', 'none');
+                    const scenery = page.locator('#cardboardSeats .cardboard-town-vignette');
+                    if (viewport.name === 'desktop-1440') {
+                        await expect(scenery).toBeVisible();
+                        await expect(scenery.locator('.town-building')).toHaveCount(2);
+                        await expect(scenery.locator('.town-growth-scenery')).toBeHidden();
+                    } else {
+                        await expect(scenery).toHaveCount(0);
+                    }
+                }
                 if (['classic', 'sunset'].includes(theme) && viewport.name === 'landscape-844') {
                     await expect(page.locator('#players details.player-box-compact')).toHaveCount(3);
                 }
