@@ -11109,7 +11109,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast .compact-market-i
         gap: 6px;
     }
     html[data-design="cardboard"] .compact-market-item.compact-market-roll-match .compact-market-dice::after {
-        content: "今回";
+        content: "出目一致";
         flex: 0 0 auto;
         padding: 2px 5px;
         border-radius: 999px;
@@ -11396,7 +11396,8 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] #cardboardActionSlot .buttons { flex-wrap: nowrap; }
     html[data-design="cardboard"] #cardboardActionSlot .game-action-panel { padding: 0; }
     html[data-design="cardboard"] #cardboardActionSlot .buttons button { flex-basis: 0; min-width: 0; font-size: 10px; line-height: 1.2; padding: 3px; }
-    html[data-design="cardboard"] #cardboardActionSlot #btnBuildShortcut { display: none !important; }
+    html[data-design="cardboard"] #cardboardActionSlot:has(#btnSkip:not(:disabled)) #btnRoll:disabled { display: none; }
+    html[data-design="cardboard"] #cardboardActionSlot #btnBuildShortcut:not(:disabled) { min-height: 44px; font-size: 12px; }
     html[data-design="cardboard"] #cardboardControls .game-action-toolbar > details > summary {
         justify-content: center;
         min-width: 44px;

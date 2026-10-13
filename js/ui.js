@@ -1661,6 +1661,11 @@ function hasPendingBuildChoice(currentGame) {
 
 function renderBuildShortcut(forceHidden = false) {
     const button = document.getElementById('btnBuildShortcut');
+    if (button) {
+        const compact = document.documentElement?.dataset?.design === 'cardboard';
+        button.setAttribute('aria-controls', compact ? 'cardboardMarketDialog' : 'buildMenu');
+        button.setAttribute('aria-haspopup', compact ? 'dialog' : 'false');
+    }
     const currentGame = uiGameRuntimeSnapshot().game;
     const onlineState = uiOnlineRuntimeSnapshot();
     const view = !forceHidden && currentGame
@@ -1679,6 +1684,8 @@ function renderBuildShortcut(forceHidden = false) {
 }
 
 function focusBuildMenu() {
+    if (document.documentElement?.dataset?.design === 'cardboard' &&
+            typeof CardBoardField !== 'undefined' && CardBoardField.openMarket()) return true;
     return UiBuildMenu.focusAndScrollToBuildMenu(document.getElementById(
         document.documentElement?.dataset?.design === 'cardboard' ? 'cardboardMarket' : 'buildMenu'));
 }

@@ -752,6 +752,27 @@ test('専用市場との高速往復は正本とランドマーク操作のフ�
     expect(await state(page)).toEqual(before);
 });
 
+test('横持ちの建設操作は拡大市場を開き購入後は見える操作へフォーカスを戻す', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 });
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD;
+        render();
+    });
+    const shortcut = page.locator('#btnBuildShortcut');
+    await expect(shortcut).toBeVisible();
+    await expect(shortcut).toHaveAttribute('aria-controls', 'cardboardMarketDialog');
+    await expect(shortcut).toHaveAttribute('aria-haspopup', 'dialog');
+    await expect(page.locator('#btnRoll')).toBeHidden();
+    await shortcut.click();
+    const dialog = page.locator('#cardboardMarketDialog');
+    await expect(dialog).toBeVisible();
+    await dialog.locator('[data-action="buildCard"][data-card-name="麦畑"]').click();
+    await expect(page.locator('.cardboard-player-selected [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×5');
+    await expect(shortcut).toBeHidden();
+    await page.locator('#cardboardMarketClose').click();
+    await expect(page.locator('#cardboardMarket .compact-market-expand')).toBeFocused();
+});
+
 test('中央市場を拡大してカードを比較し、閉じると起動操作へ戻る', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 }, 2);
     const before = await state(page);

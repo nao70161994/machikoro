@@ -241,7 +241,8 @@ const CardBoardField = (() => {
     function finishMarketClose() {
         restoreMarketNode();
         setMarketExpanded(false);
-        const launcher = marketLauncher?.isConnected ? marketLauncher : node('cardboardMarket')?.querySelector('.compact-market-expand');
+        const launcher = marketLauncher?.isConnected && marketLauncher.getClientRects().length
+            ? marketLauncher : node('cardboardMarket')?.querySelector('.compact-market-expand');
         marketLauncher = null;
         if (restoreMarketFocus && enabled() && node('gameScreen')?.style.display !== 'none') {
             launcher?.focus({ preventScroll: true });

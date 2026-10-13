@@ -61,6 +61,7 @@ runTest('建設段階は今回の出目に反応する候補だけを強調し�
     }));
     assert.ok(html.includes('compact-market-item compact-market-green compact-market-roll-match'));
     assert.ok(html.includes('今回の出目3に一致'));
+    assert.ok(html.includes('今建設しても、この出目では発動しません'));
     assert.ok(html.includes('compact-market-item compact-market-red compact-market-unavailable compact-market-roll-match'));
     assert.ok(!html.includes('compact-market-item compact-market-blue compact-market-roll-match'));
     assert.ok(!UiCompactMarket.buildFacilitiesHtml(fixture()).includes('compact-market-roll-match'));

@@ -1,0 +1,47 @@
+[
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "purchased": {
+      "name": "プレイヤー1",
+      "wheat": 2
+    },
+    "restored": {
+      "wheat": 2,
+      "overflow": false
+    },
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "purchased": {
+      "name": "プレイヤー1",
+      "wheat": 2
+    },
+    "restored": {
+      "wheat": 2,
+      "overflow": false
+    },
+    "errors": []
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "purchased": {
+      "name": "プレイヤー1",
+      "wheat": 2
+    },
+    "restored": {
+      "wheat": 2,
+      "overflow": false
+    },
+    "errors": []
+  }
+]
