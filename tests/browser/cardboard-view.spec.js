@@ -63,8 +63,15 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         for (const theme of ['plaza', 'sunset', 'classic', 'cardboard']) {
             await selectTheme(page, theme);
             expect(await state(page)).toEqual(before);
-            const unavailableAction = page.locator('#gameScreen :is(#buildMenu, #cardboardMarket) button:disabled').first();
-            await expect(unavailableAction).toHaveCSS('opacity', '0.8');
+            const unavailableAction = theme === 'cardboard'
+                ? page.locator('#cardboardMarket .compact-market-buy:disabled').first()
+                : page.locator('#gameScreen #buildMenu button:disabled').first();
+            await expect(unavailableAction).toHaveCSS('opacity', theme === 'cardboard' ? '1' : '0.8');
+            if (theme === 'cardboard') {
+                await expect(unavailableAction).toHaveCSS('filter', 'none');
+                await expect(unavailableAction.locator('.compact-market-name')).toHaveCSS('color', viewport.width === 844 ? 'rgb(24, 52, 71)' : 'rgb(255, 255, 255)');
+                await expect(unavailableAction.locator('..')).toHaveClass(/compact-market-unavailable/);
+            }
         }
         await expect(page.locator('#cardboardMoreMenu > summary')).toBeVisible();
         await page.locator('#cardboardMoreMenu > summary').click();
@@ -75,6 +82,18 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await designSummary.click();
         await page.locator('#cardboardMoreMenu > summary').click();
         await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(1);
+        const scenery = page.locator('#cardboardSeats .cardboard-town-vignette');
+        if (viewport.width >= 1000 && viewport.height >= 760) {
+            await expect(scenery).toBeVisible();
+            await expect(scenery).toHaveAttribute('aria-hidden', 'true');
+            expect(await scenery.locator('.town-building').count()).toBeLessThanOrEqual(4);
+            await expect(scenery.locator('button, a, [tabindex]')).toHaveCount(0);
+            await expect(scenery.locator('.town-backdrop')).toBeHidden();
+            await expect(scenery.locator('.town-growth-scenery')).toBeHidden();
+        } else {
+            await expect(scenery).toHaveCount(0);
+        }
+
         await expect(page.locator('#cardboardMarket #buildMenu')).toHaveCount(0);
         await expect(page.locator('#buildMenu')).toHaveCount(1);
         await expect(page.locator('#cardboardCompareToggle')).toHaveAttribute('aria-haspopup', 'dialog');

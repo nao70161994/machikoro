@@ -59,6 +59,33 @@ runTest('建設通知は施設枚数・目標進捗・詳細操作を安全に�
     assert.strictEqual(JSON.stringify(fixture), before);
 });
 
+runTest('PC景観は注入された少数施設だけを描き密集時と未注入時は生成しない', () => {
+    const before = JSON.stringify(player);
+    const calls = [];
+    const sceneryOptions = { ...options, renderTownScenery: (owned, enabled) => {
+        calls.push({ owned, enabled: [...enabled] });
+        return '<svg data-test-town="true"></svg>';
+    } };
+    const sparse = UiCardBoard.buildPlayerHtml(player, sceneryOptions);
+    assert.ok(sparse.includes('class="cardboard-town-vignette" aria-hidden="true"'));
+    assert.ok(sparse.includes('<svg data-test-town="true"></svg>'));
+    assert.strictEqual(calls.length, 1);
+    assert.strictEqual(calls[0].owned, player);
+    assert.deepStrictEqual(calls[0].enabled, ['駅', '港']);
+    const crowded = [
+        { ...player, cards: ['森林', '麦畑', 'パン屋'].map(createCardByName) },
+        { ...player, cards: Array.from({ length: 5 }, () => createCardByName('森林')) },
+    ];
+    for (const fixture of crowded) {
+        const original = JSON.stringify(fixture);
+        assert.ok(!UiCardBoard.buildPlayerHtml(fixture, sceneryOptions).includes('cardboard-town-vignette'));
+        assert.strictEqual(JSON.stringify(fixture), original);
+    }
+    assert.ok(!UiCardBoard.buildPlayerHtml(player, options).includes('cardboard-town-vignette'));
+    assert.strictEqual(calls.length, 1, '密集時・renderer未注入時は景観を生成しない');
+    assert.strictEqual(JSON.stringify(player), before);
+});
+
 runTest('共通効果の表示文をカードと読み上げへ安全に渡し状態を変えない', () => {
     const before = JSON.stringify(player);
     const html = UiCardBoard.buildPlayerHtml(player, {

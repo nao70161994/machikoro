@@ -191,8 +191,27 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.locator('.setup-quick-play').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
+        // This case measures the opening layout, not a randomly shuffled CPU turn.
+        // Real CPU progression is covered by the seeded full-match browser tests.
+        await page.evaluate(() => {
+            cancelCpuSchedule('plaza-opening-layout');
+            window.scheduleCPU = () => false;
+            const state = GameRuntimeState.runtime.snapshot();
+            state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+            state.game.phase = GAME_PHASES.ROLL;
+            state.game.lastDiceResult = null;
+            state.game.lastDice1 = 0;
+            state.game.lastDice2 = 0;
+            state.game.log = [];
+            render();
+            acceptHotseatHandoff();
+        });
         await page.locator('[data-field-target="all"]').click();
         await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
+        // WebKit may clear the class before publishing the final transformed bounds.
+        // Keep the same size requirement and wait for the rendered destination.
+        await expect.poll(() => page.locator('#plazaWorld .player-box-self').evaluate(
+            element => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(150);
         const layout = await page.evaluate(() => {
             const bounds = item => {
                 // offsetLeft may be relative to a nested offset parent; the inline

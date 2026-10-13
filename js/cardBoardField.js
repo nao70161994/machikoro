@@ -30,6 +30,7 @@ const CardBoardField = (() => {
     const renderedHtml = new WeakMap();
     let facts = null;
     let initialized = false;
+    let desktopSceneryQuery = null;
     let mounted = false;
     let actionOrigin = null;
     let toolbarOrigin = null;
@@ -330,6 +331,10 @@ const CardBoardField = (() => {
     function initialize() {
         if (initialized || !node('cardboardBoard')) return;
         initialized = true;
+        desktopSceneryQuery = window.matchMedia?.('(min-width: 1000px) and (min-height: 760px)') || null;
+        const updateDesktopScenery = () => { if (enabled()) { draw(); updatePlayerOverflow(); } };
+        if (typeof desktopSceneryQuery?.addEventListener === 'function') desktopSceneryQuery.addEventListener('change', updateDesktopScenery);
+        else desktopSceneryQuery?.addListener?.(updateDesktopScenery);
         window.addEventListener('resize', () => {
             updateRosterOverflow();
             updatePlayerOverflow();
@@ -657,6 +662,7 @@ const CardBoardField = (() => {
                 renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
                 playerKindAccessibleLabel: UiPlayerDisplay.playerKindAccessibleLabel,
                 renderFacilityArt: UiBuildMenu.renderFacilityArt,
+                renderTownScenery: desktopSceneryQuery?.matches ? UiBuildMenu.renderTownHtml : null,
                 getEffectText,
             }));
             for (const landmark of newlyBuiltLandmarks) {

@@ -10890,6 +10890,57 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-pl
     background-size: 180px 132px;
     background-position: center;
 }
+/* Static scenery only for a sparse selected city on a roomy desktop.
+   The renderer supplies actual owned facilities (at most four), never filler copies. */
+html[data-design="cardboard"] .cardboard-town-vignette { display: none; }
+@media (min-width: 1000px) and (min-height: 760px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards > .cardboard-town-vignette {
+        display: block;
+        grid-column: 1 / -1;
+        min-width: 0;
+        margin-top: 4px;
+        padding: 6px 12px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #e9efdd88, #dce8cfbb);
+        pointer-events: none;
+    }
+    html[data-design="cardboard"] .cardboard-town-vignette-caption { display: block; color: #53684f; font-size: 11px; font-weight: 700; }
+    html[data-design="cardboard"] .cardboard-town-vignette .sunset-town { display: block; width: 100%; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+    html[data-design="cardboard"] .cardboard-town-vignette .town-summary { display: none; }
+    html[data-design="cardboard"] .cardboard-town-vignette .town-street {
+        display: block;
+        position: relative;
+        width: min(100%, 400px);
+        height: 160px;
+        min-height: 0;
+        max-height: none;
+        margin: 0 auto;
+        padding: 0;
+        overflow: hidden;
+        border: 0;
+        background: transparent;
+    }
+    html[data-design="cardboard"] .cardboard-town-vignette .town-street > .town-building {
+        position: absolute;
+        left: var(--town-x);
+        top: var(--town-y);
+        width: var(--town-width);
+        min-width: 0;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        transform: none;
+        z-index: 2;
+    }
+    html[data-design="cardboard"] .cardboard-town-vignette .town-building .sunset-facility-art { display: block; width: 100%; height: auto; max-height: none; }
+    html[data-design="cardboard"] .cardboard-town-vignette .town-street > .town-district-roads { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+    html[data-design="cardboard"] .cardboard-town-vignette .town-backdrop { display: none; }
+    html[data-design="cardboard"] .cardboard-town-vignette :is(.town-growth-scenery, .town-skyline-lights, .town-backdrop-neighborhood, .town-backdrop-city, .town-backdrop-lamps) { display: none; }
+    html[data-design="cardboard"] .cardboard-town-vignette,
+    html[data-design="cardboard"] .cardboard-town-vignette * { animation: none !important; transition: none !important; }
+    html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-player-selected .cardboard-cards > .cardboard-town-vignette { display: none; }
+}
+
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
     border: 2px solid #fff;
     background: #000;
@@ -11165,7 +11216,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast .compact-market-i
     }
 }
 html[data-design="cardboard"] .compact-market-buy { display: flex; flex-direction: column; width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 0 0 3px; border: 0; border-radius: 0; background: transparent; color: var(--cardboard-ink); text-align: left; font: inherit; }
-html[data-design="cardboard"] .compact-market-buy:disabled { opacity: 1; color: #485965; filter: saturate(.55); }
+html[data-design="cardboard"] .compact-market-buy:disabled { opacity: 1; color: var(--cardboard-ink); filter: none; cursor: not-allowed; }
 html[data-design="cardboard"] .compact-market-buy.can-afford:hover { background: #ffffff55; }
 html[data-design="cardboard"] .compact-market-dice { padding: 2px 4px; color: #fff; background: var(--market-color); font-size: 16px; line-height: 1.2; font-weight: 900; }
 html[data-design="cardboard"] .compact-market-kind { padding: 1px 4px; font-size: 9px; line-height: 1.2; }
@@ -12986,7 +13037,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #gameConnectivity
 /* Disabled actions remain readable while their unavailable state stays clear. */
 html body:not(.accessibility-high-contrast) :is(
     .game-action-panel, #buildMenu, #cardboardMarket, .pending-box, .modal-content
-) button:disabled {
+) button:disabled:not(.compact-market-buy) {
     opacity: .8;
     filter: saturate(.55);
     box-shadow: none;

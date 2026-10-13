@@ -2414,6 +2414,13 @@ for (const size of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
         await page.locator('.game-guide-settings > summary').click();
         await page.locator('[data-field-target="market"]').click();
         await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
+        // Observe the final painted bounds, not only the camera's timer class.
+        await expect.poll(() => page.evaluate(() => {
+            const market = document.getElementById('buildMenu').getBoundingClientRect();
+            const field = document.getElementById('plazaViewport').getBoundingClientRect();
+            return market.left >= -1 && market.right <= innerWidth + 1 &&
+                market.top >= field.top - 1 && market.bottom <= field.bottom + 1;
+        })).toBe(true);
         const market = await page.locator('#buildMenu').boundingBox();
         expect(market.x).toBeGreaterThanOrEqual(-1);
         expect(market.x + market.width).toBeLessThanOrEqual(size.width + 1);
