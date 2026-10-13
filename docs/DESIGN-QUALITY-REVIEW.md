@@ -1787,3 +1787,9 @@ head145c9a9eのCIはCPU smoke成功、Release gate内PWA testが失敗。原因�
 [通知390](design-review/2026-10-13/construction-receipt-390.png) / [横844](design-review/2026-10-13/construction-receipt-844.png) / [PC1440](design-review/2026-10-13/construction-receipt-1440.png) / [実操作結果](design-review/2026-10-13/construction-first-play-results.json)。独立画像レビューで全幅のアート・施設名・枚数と収支配色を確認。詳細操作を発見しやすくする矢印をレビュー後に追加し、画像は矢印追加前である。
 
 カード盤面/テーマの関連単体、型検査4構成ルート、編集JS構文が成功。施設/ランドマーク通知のescape・所有枚数・未所有非表示・状態不変を1単体ケースで追加検査。16画面比較は引き続き差分があり、最新CI全体の完了と画像比較レビューを待って次のPushをまとめる。
+
+### WebKitのPWA通知fixture整合
+
+head145c9a9eのMobile WebKitはにぎわい844pxのinstall通知検査1件で失敗。直接style/classを書き換えるfixtureが、同時表示され得るSW更新通知を考慮せず余白classの消失を要求していた。同時表示が実際の失敗原因であるかはartifactの確認待ち。更新通知中にclassを維持するのは正しい仕様。公開setPwaBannerVisibleで更新通知を閉じてinstall単独表示を設定し、ゲーム中のinstall CSS非表示と余白classなしの両方を厳密に検査する形へ整合した。製品の通知処理は変更していない。
+
+Plaza CIは16画面比較と一部操作レビューが失敗し、盤面検査がまだ実行中。終端とartifactを確認して追加の製品退行を分類する。今回のinstall fixture限定再確認は単一Chromiumで成功（10.7秒）。WebKit成功とは扱わない。

@@ -119,9 +119,12 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
                 expect(await control.evaluate(element => getComputedStyle(element, '::after').content)).toContain(label);
             }
             await page.evaluate(() => {
-                document.getElementById('pwaInstallBanner').style.display = 'block';
-                document.body.classList.add('pwa-banner-open');
+                // Exercise the install-only controller path. An unrelated SW
+                // update notice may legitimately keep pwa-banner-open true.
+                setPwaBannerVisible('pwaUpdateBanner', false);
+                setPwaBannerVisible('pwaInstallBanner', true);
             });
+            await expect(page.locator('#pwaInstallBanner')).toHaveCSS('display', 'none');
             await expect.poll(() => page.locator('body').evaluate(element => element.classList.contains('pwa-banner-open'))).toBe(false);
             expect((await page.locator('#cardboardBoard').boundingBox()).height).toBeGreaterThanOrEqual(320);
             expect((await page.locator('#cardboardBoard .cardboard-player-selected').boundingBox()).width).toBeGreaterThan(260);
