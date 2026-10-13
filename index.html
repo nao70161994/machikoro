@@ -372,12 +372,12 @@
 
         <div id="cardboardBoard" hidden role="region" aria-label="にぎわい広場のカード盤面">
             <button type="button" id="cardboardChoiceJump" hidden aria-controls="diceChoose">選択へ戻る</button>
-            <div id="cardboardControls"><button type="button" data-ui-action="restartGame">終了</button><button type="button" id="cardboardLogToggle" data-ui-action="toggleLog" aria-controls="gameLogContainer" aria-expanded="false">ログ</button><button type="button" id="cardboardCompareToggle" aria-controls="plazaComparison" aria-haspopup="dialog" aria-label="全員の施設カードを比較" aria-expanded="false">施設比較</button><p>出目と所有枚数を見比べて、施設を選びましょう。</p></div>
+            <div id="cardboardControls"><button type="button" data-ui-action="restartGame">終了</button><button type="button" id="cardboardLogToggle" data-ui-action="toggleLog" aria-controls="gameLogContainer" aria-expanded="false">ログ</button><button type="button" id="cardboardCompareToggle" aria-controls="plazaComparison" aria-haspopup="dialog" aria-label="全員の施設カードを比較" aria-expanded="false">施設比較</button><details id="cardboardMoreMenu"><summary>その他</summary><div id="cardboardMoreMenuContent"></div></details><p>出目と所有枚数を見比べて、施設を選びましょう。</p></div>
             <div id="cardboardRoster"></div>
             <div id="cardboardSeats">
                 <div id="cardboardCenter">
                     <div id="cardboardActionSlot"></div>
-                    <div id="cardboardDiceReceipt" role="region" aria-label="出目と発動結果" aria-live="off"></div>
+                    <div id="cardboardDiceReceipt" role="region" aria-label="出目と発動結果" aria-live="off" tabindex="0"></div>
                     <div id="cardboardMarket" role="region" aria-label="共有市場" tabindex="-1"></div>
                 </div>
             </div>
@@ -424,6 +424,7 @@
         </section>
         <section id="plazaEvents" aria-label="直近の出来事"><h2>広場の出来事</h2><div id="plazaBuildReceipt" aria-live="polite"></div><div id="plazaDiceReceipt"></div><details class="plaza-recent-history"><summary>直近の履歴</summary><div id="plazaRecentEvents"></div></details></section>
         <div id="turnStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="buildStatusAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="coinChangeAnnouncer" class="screen-reader-only" role="status" aria-live="polite" aria-atomic="true"></div>
         <section class="player-area" aria-label="プレイヤー盤面">
             <nav id="playerNavigation" class="player-navigation" aria-label="プレイヤー・ログ・建設へ移動（横にスクロールできます）" style="display:none"></nav>
@@ -507,19 +508,18 @@
                 <button data-ui-action="closeRules" aria-label="ルール説明を閉じる">✕</button>
             </div>
             <div class="modal-body">
-                <div class="rules-section">
+                <div class="rules-section rules-start-flow">
+                    <h3><span class="modal-heading-emoji" aria-hidden="true">🎲</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#dice"></use></svg> まずはこの3ステップ</h3>
+                    <ol class="rules-turn-flow">
+                        <li><strong>振る</strong><span>基本は1個。駅を建設済みなら、1個か2個か選べます。</span></li>
+                        <li><strong>施設が発動</strong><span>出目に合う施設から、コインの獲得や支払いが起こります。相手の街も確認しましょう。</span></li>
+                        <li><strong>街を広げる</strong><span>コインで施設かランドマークを1つ建設できます。見送ってもかまいません。</span></li>
+                    </ol>
+                    <p class="rules-start-note">紫色の大施設は、同じプレイヤーが1枚だけ所有できます。</p>
+                </div>
+                <div class="rules-section rules-victory-condition">
                     <h3><span class="modal-heading-emoji" aria-hidden="true">🎯</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#target"></use></svg> 勝利条件</h3>
                     <p>今回の対戦で有効になっているランドマークをすべて建設したプレイヤーの勝利です。</p>
-                </div>
-                <div class="rules-section">
-                    <h3><span class="modal-heading-emoji" aria-hidden="true">🎲</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#dice"></use></svg> 基本ルール</h3>
-                    <ul>
-                        <li>自分のターンにサイコロを1個振る</li>
-                        <li>出た目に応じて施設カードが発動しコインを獲得</li>
-                        <li>建設フェーズで施設またはランドマークを1つ建設できる</li>
-                        <li>建設はしなくてもよい</li>
-                        <li>紫カード（大施設）は1枚しか持てない</li>
-                    </ul>
                 </div>
                 <div class="rules-section">
                     <h3><span class="modal-heading-emoji" aria-hidden="true">🏪</span><svg class="modal-heading-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式オプション：10種類市場</h3>

@@ -128,7 +128,7 @@ function loadOnlineRuntime(options = {}) {
         window: {},
         document: {
             getElementById(id) {
-                if (!elements[id]) elements[id] = { style: {}, textContent: '', innerHTML: '' };
+                if (!elements[id]) elements[id] = { style: {}, textContent: '', innerHTML: '', focus(options) { this.focused = true; this.focusOptions = options; } };
                 return elements[id];
             },
         },
@@ -1665,6 +1665,8 @@ runTest('待機室退出は確認後にsocketと資格情報を片付けroom ID�
     assert.strictEqual(rt.getOnlineState().socket, null);
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
     assert.strictEqual(rt.document.getElementById('roomIdInput').value, 'ROOM01');
+    assert.strictEqual(rt.document.getElementById('roomIdInput').focused, true);
+    assert.deepStrictEqual(rt.document.getElementById('roomIdInput').focusOptions, { preventScroll: true });
     assert.match(rt.elements.onlineStatus.textContent, /再参加する場合は参加ボタン/);
 });
 

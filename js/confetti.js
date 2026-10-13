@@ -2,6 +2,35 @@
 let confettiInterval = null;
 let confettiTimeout = null;
 let confettiPieces = [];
+let confettiResizeHandler = null;
+let confettiVisibilityHandler = null;
+let confettiMotionQuery = null;
+let confettiMotionHandler = null;
+let confettiMotionObserver = null;
+let confettiViewportWidth = 0;
+let confettiViewportHeight = 0;
+
+function resizeConfettiCanvas(canvas, ctx) {
+    const width = Math.max(1, window.innerWidth);
+    const height = Math.max(1, window.innerHeight);
+    const ratioX = confettiViewportWidth > 0 ? width / confettiViewportWidth : 1;
+    const ratioY = confettiViewportHeight > 0 ? height / confettiViewportHeight : 1;
+    const devicePixelRatio = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const pixelBudgetRatio = Math.sqrt(8_000_000 / (width * height));
+    const pixelRatio = Math.min(devicePixelRatio, pixelBudgetRatio);
+    for (const piece of confettiPieces) {
+        piece.x *= ratioX;
+        piece.y *= ratioY;
+        piece.launchY *= ratioY;
+    }
+    confettiViewportWidth = width;
+    confettiViewportHeight = height;
+    canvas.width = Math.round(width * pixelRatio);
+    canvas.height = Math.round(height * pixelRatio);
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ctx.setTransform?.(pixelRatio, 0, 0, pixelRatio, 0, 0);
+}
 
 function prefersReducedMotion() {
     try {
@@ -18,47 +47,83 @@ function startConfetti() {
     const canvas = /** @type {HTMLCanvasElement|null} */ (document.getElementById('confettiCanvas'));
     if (!canvas) return;
     if (prefersReducedMotion()) {
+        stopConfetti();
         canvas.style.display = 'none';
         return;
     }
+    if (confettiInterval || confettiTimeout || confettiResizeHandler ||
+            confettiVisibilityHandler || confettiMotionQuery || confettiMotionObserver) stopConfetti();
     canvas.style.display = 'block';
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        canvas.style.display = 'none';
+        return;
+    }
+    if (confettiResizeHandler) window.removeEventListener?.('resize', confettiResizeHandler);
+    confettiPieces = [];
+    confettiViewportWidth = 0;
+    confettiViewportHeight = 0;
+    resizeConfettiCanvas(canvas, ctx);
     const colors = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
         ? ['#ffe1a6', '#f5c86e', '#fff1d4', '#d98a6e', '#83a49b']
         : ['#f0c040','#e94560','#3b82f6','#22c55e','#a855f7','#ffffff'];
-    confettiPieces = Array.from({ length: 32 }, () => {
+    confettiPieces = Array.from({ length: 42 }, () => {
         const launchY = -Math.random() * 96;
         return {
-            x: Math.random() * canvas.width,
+            x: Math.random() * confettiViewportWidth,
             y: launchY,
             launchY,
             r: Math.random() * 2 + 2.5,
+            width: Math.random() * 3 + 3,
+            height: Math.random() * 8 + 5,
             color: colors[Math.floor(Math.random() * colors.length)],
             speed: Math.random() * 2 + 2.5,
-            opacity: 0.25 + Math.random() * 0.15,
+            drift: (Math.random() - 0.5) * 0.8,
+            gravity: 0.025 + Math.random() * 0.02,
+            opacity: 0.28 + Math.random() * 0.12,
             angle: Math.random() * Math.PI * 2,
             spin: (Math.random() - 0.5) * 0.15,
         };
     });
-    if (confettiInterval) clearInterval(confettiInterval);
-    if (confettiTimeout) clearTimeout(confettiTimeout);
     confettiInterval = setInterval(() => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, confettiViewportWidth, confettiViewportHeight);
         for (const p of confettiPieces) {
+            p.x += p.drift;
             p.y += p.speed;
+            p.speed += p.gravity;
             p.angle += p.spin;
-            if (p.y > canvas.height) continue;
+            if (p.y > confettiViewportHeight) continue;
             ctx.save();
             ctx.globalAlpha = p.opacity;
             ctx.translate(p.x, p.y);
             ctx.rotate(p.angle);
             ctx.fillStyle = p.color;
-            ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 1.8);
+            ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
             ctx.restore();
         }
     }, 16);
+    confettiResizeHandler = () => resizeConfettiCanvas(canvas, ctx);
+    window.addEventListener?.('resize', confettiResizeHandler, { passive: true });
+    confettiVisibilityHandler = () => {
+        if (document.hidden) stopConfetti();
+    };
+    document.addEventListener?.('visibilitychange', confettiVisibilityHandler);
+    confettiMotionQuery = typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    confettiMotionHandler = event => {
+        if (event.matches) stopConfetti();
+    };
+    if (typeof confettiMotionQuery?.addEventListener === 'function') {
+        confettiMotionQuery.addEventListener('change', confettiMotionHandler);
+    } else if (typeof confettiMotionQuery?.addListener === 'function') {
+        confettiMotionQuery.addListener(confettiMotionHandler);
+    }
+    if (typeof MutationObserver === 'function' && document.body) {
+        confettiMotionObserver = new MutationObserver(() => {
+            if (prefersReducedMotion()) stopConfetti();
+        });
+        confettiMotionObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
     confettiTimeout = setTimeout(stopConfetti, 3600);
 }
 
@@ -71,10 +136,32 @@ function stopConfetti() {
         clearTimeout(confettiTimeout);
         confettiTimeout = null;
     }
+    if (confettiResizeHandler) {
+        window.removeEventListener?.('resize', confettiResizeHandler);
+        confettiResizeHandler = null;
+    }
+    if (confettiVisibilityHandler) {
+        document.removeEventListener?.('visibilitychange', confettiVisibilityHandler);
+        confettiVisibilityHandler = null;
+    }
+    if (confettiMotionQuery && confettiMotionHandler) {
+        if (typeof confettiMotionQuery.removeEventListener === 'function') {
+            confettiMotionQuery.removeEventListener('change', confettiMotionHandler);
+        } else if (typeof confettiMotionQuery.removeListener === 'function') {
+            confettiMotionQuery.removeListener(confettiMotionHandler);
+        }
+    }
+    confettiMotionQuery = null;
+    confettiMotionHandler = null;
+    confettiMotionObserver?.disconnect();
+    confettiMotionObserver = null;
     const canvas = /** @type {HTMLCanvasElement|null} */ (document.getElementById('confettiCanvas'));
     if (canvas) {
-        const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const ctx = canvas.getContext('2d');
+        ctx?.setTransform?.(1, 0, 0, 1, 0, 0);
+        ctx?.clearRect(0, 0, canvas.width, canvas.height);
         canvas.style.display = 'none';
     }
+    confettiViewportWidth = 0;
+    confettiViewportHeight = 0;
 }

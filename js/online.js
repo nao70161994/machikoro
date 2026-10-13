@@ -119,6 +119,7 @@ function leaveOnlineLobby() {
             onlineDomEffects.setStatusText(`ルーム ${roomId} から退出しました。再参加する場合は参加ボタンを押してください。`);
             if (typeof switchTab === 'function') switchTab('online');
             if (typeof switchOnlineTab === 'function') switchOnlineTab('join');
+            onlineDomEffects.focus(OnlineDomEffects.ids.roomId);
             onlineClientEffects.updateResumeButton();
         };
         if (!session.socket) {

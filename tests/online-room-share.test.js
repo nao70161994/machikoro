@@ -239,7 +239,8 @@ runTest('online waiting uses one seat roster and preserves interleaved CPU/reser
             { index: 2, name: 'Bob', connected: false, reservedUntil: 61000, ready: true }],
     });
     assert.strictEqual((html.match(/class="room-seat"/g) || []).length, 4);
-    assert.strictEqual((html.match(/Bob（再接続待ち/g) || []).length, 2); // Seat and remove accessible name.
+    assert.ok(html.includes('title="Bob（再接続待ち・残り60秒）"'));
+    assert.ok(html.includes('aria-label="Bob（再接続待ち）を待機室から外す"'));
     assert.ok(html.includes('data-seat-state="cpu"'));
     assert.ok(html.includes('data-seat-state="reconnecting"'));
     assert.ok(html.includes('data-seat-state="empty"'));
@@ -257,6 +258,7 @@ runTest('待機テーブルは2〜10席を両側へ正確に分け空席と通�
         const html = OnlineRoomShare.buildWaitingHtml('ABC123', names, options);
         assert.strictEqual((html.match(/class="room-seat"/g) || []).length, count);
         assert.ok(html.includes(`data-seat-count="${count}"`));
+        assert.strictEqual(html.includes('room-table-layout-roster'), count > 4);
         assert.ok(html.includes(`着席 1/${count}席 · 空席 ${count - 1}`));
         assert.strictEqual((html.match(/data-seat-self="true"/g) || []).length, 1);
         assert.ok(html.includes('着席したら「準備完了にする」を押してください'));

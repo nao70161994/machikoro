@@ -178,7 +178,7 @@ const html = UiPlayerDisplay.buildPlayersHtml(players, {
     loanEffect: 'loan',
 });
 assert(html.includes('<span class="player-icon">👤</span>'));
-assert(html.includes('<span class="player-name">&lt;Alice&gt;</span>'));
+assert(html.includes('<span class="player-name" title="&lt;Alice&gt;">&lt;Alice&gt;</span>'));
 assert(html.includes('<span class="landmark-badge built" aria-label="駅、建設済み">🚉 駅</span>'));
 assert(!html.includes('未建設'));
 assert(!html.includes('空港'));
@@ -188,7 +188,7 @@ assert(html.includes('<span class="loan-badge" aria-label="貸金業ローン 1�
 assert(html.includes('<div id="playerBox0" class="player-box" role="listitem" aria-label="&lt;Alice&gt;、待機中、人間">'));
 assert(html.includes('<div id="playerBox1" class="player-box active" role="listitem" aria-label="CPU、現在の手番、CPU（強）">'));
 assert(html.includes('<span class="player-icon">🤖強</span>'));
-assert(html.includes('<span class="player-name">▶ CPU</span>'));
+assert(html.includes('<span class="player-name" title="CPU">▶ CPU</span>'));
 
 const sunsetPlayer = UiPlayerDisplay.buildPlayerHtml(players[0], 0, {
     settings: [{ type: 'human' }],

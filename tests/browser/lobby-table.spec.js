@@ -23,6 +23,13 @@ for (const width of [320, 390, 844, 1440]) {
             }, count);
             const seats = page.locator('#onlineWaitingPanel .room-seat');
             await expect(seats).toHaveCount(count);
+            const tableLayout = page.locator('#onlineWaitingPanel .room-table-layout');
+            if (count > 4) await expect(tableLayout).toHaveClass(/room-table-layout-roster/);
+            else await expect(tableLayout).not.toHaveClass(/room-table-layout-roster/);
+            if (width === 320) {
+                expect(await page.locator('.room-seat-list').evaluate(list =>
+                    getComputedStyle(list).gridTemplateColumns.trim().split(/\s+/).length)).toBe(1);
+            }
             expect(await seats.evaluateAll(items => items.map(item => Number(item.dataset.seatIndex))))
                 .toEqual(Array.from({ length: count }, (_, index) => index));
             await expect(page.locator('.room-seat[data-seat-self="true"] .room-seat-roles')).toHaveText('ホストあなた');
@@ -60,3 +67,48 @@ for (const width of [320, 390, 844, 1440]) {
         await expect(page.locator('#crashScreen')).toBeHidden();
     });
 }
+
+test('にぎわい広場の320×568待機室ではルーム操作と参加席を早めに見せる', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
+    await page.goto('/');
+    await page.locator('#tabOnline').click();
+    await page.evaluate(() => {
+        const players = ['街A', '街B', '街C', '街D'];
+        const participants = players.map((name, index) => ({ index, name, connected: true, ready: index !== 0 }));
+        document.getElementById('onlineWaitingPanel').innerHTML = OnlineRoomShare.buildWaitingHtml('ABC123', players, {
+            isHost: true, myPlayerIndex: 0, hostPlayerIndex: 0, participants,
+        });
+    });
+
+    const idRow = page.locator('#onlineWaitingPanel .room-share-row');
+    await expect(page.locator('#onlineWaitingPanel .room-id-copy-btn')).toBeVisible();
+    await expect(page.locator('#onlineWaitingPanel .room-seat')).toHaveCount(4);
+    expect(await idRow.evaluate(element => getComputedStyle(element).flexDirection)).toBe('row');
+    expect((await page.locator('#onlineWaitingPanel .room-seat').first().boundingBox()).y).toBeLessThan(480);
+    expect((await page.locator('#onlineWaitingPanel .room-game-table-art').boundingBox()).width).toBeLessThanOrEqual(128);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+    await page.screenshot({ path: testInfo.outputPath('cardboard-lobby-320x568.png'), fullPage: false });
+});
+
+test('にぎわい広場待機室は高コントラストで席状態と操作を識別できる', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await page.locator('#tabOnline').click();
+    await page.evaluate(() => {
+        document.documentElement.dataset.design = 'cardboard';
+        document.body.classList.add('accessibility-high-contrast');
+        document.getElementById('onlineWaitingPanel').innerHTML = OnlineRoomShare.buildWaitingHtml('ABC123', [
+            '街A', '待機中...'], { isHost: true, myPlayerIndex: 0, hostPlayerIndex: 0,
+                participants: [{ index: 0, name: '街A', connected: true, ready: true }] });
+    });
+    const ready = page.locator('#onlineWaitingPanel .room-ready-btn');
+    const role = page.locator('#onlineWaitingPanel .room-seat-roles > span').first();
+    const state = page.locator('#onlineWaitingPanel .room-seat[data-seat-state="ready"] .room-seat-state');
+    await expect(ready).toBeVisible();
+    await expect.poll(() => ready.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(0, 0, 0)');
+    await expect.poll(() => role.evaluate(element => getComputedStyle(element).color)).toBe('rgb(255, 230, 109)');
+    await expect.poll(() => state.evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(0, 0, 0)');
+    await expect(page.locator('#onlineWaitingPanel .room-game-table-art')).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});

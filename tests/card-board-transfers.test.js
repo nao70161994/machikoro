@@ -10,10 +10,18 @@ const events = { participantNames: ['街A', '街B', '街C'], activations: [
     { from: null, to: 0, amount: 4 }, { from: 1, to: 2, amount: 0 },
 ] };
 function fixture() {
-    let timer = null, cancelled = 0;
+    let timer = null, cancelled = 0, appReducedMotion = false, observerCallback = null;
     const animated = [];
-    const documentRef = { defaultView: { matchMedia: () => ({ matches: false }),
+    const motion = { matches: false, addEventListener(type, callback) { this.callback = callback; },
+        removeEventListener() { this.callback = null; } };
+    const documentRef = { defaultView: { matchMedia: () => motion,
+        MutationObserver: class {
+            constructor(callback) { observerCallback = callback; }
+            observe() {}
+            disconnect() { observerCallback = null; }
+        },
         setTimeout: callback => { timer = callback; return 1; }, clearTimeout: () => { timer = null; } },
+        body: { classList: { contains: name => name === 'accessibility-reduced-motion' && appReducedMotion } },
         createElement: () => new Element() };
     class Element {
         constructor() { this.children = []; this.style = {}; this.dataset = {}; this.attributes = {}; this.isConnected = true; this.ownerDocument = documentRef; }
@@ -27,7 +35,9 @@ function fixture() {
             return { getBoundingClientRect: () => ({ left: selector.includes('"1"') ? 400 : 20, top: 20, width: 100, height: 40 }) };
         }
     }
-    return { container: new Element(), animated, timer: () => timer, cancelled: () => cancelled };
+    return { container: new Element(), animated, timer: () => timer, cancelled: () => cancelled,
+        setAppReducedMotion(value) { appReducedMotion = value; },
+        notifyPreferenceChanged() { observerCallback?.(); }, motion };
 }
 
 runTest('確定した送金だけを送受信者ごとに集約し銀行と0額を正確に示す', () => {
@@ -43,6 +53,48 @@ runTest('確定した送金だけを送受信者ごとに集約し銀行と0額�
     ] }), []);
 });
 
+runTest('同じ送受信者間でも発動施設ごとに送金元を識別する', () => {
+    assert.deepStrictEqual(CardBoardTransfers.project({
+        participantNames: ['街A', '街B'],
+        activations: [
+            { from: 0, to: 1, amount: 2, subject: '麦畑', facility: true },
+            { from: 0, to: 1, amount: 3, subject: 'パン屋', facility: true },
+            { from: 0, to: 1, amount: 1, subject: '麦畑', facility: true },
+        ],
+    }), [
+        { from: 0, to: 1, subject: '麦畑', amount: 3, text: '麦畑：街A → 街B：3コイン' },
+        { from: 0, to: 1, subject: 'パン屋', amount: 3, text: 'パン屋：街A → 街B：3コイン' },
+    ]);
+});
+
+runTest('移動中のコイン表示にも発動施設を示す', () => {
+    const { container } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events: { participantNames: ['街A', '街B'], activations: [
+        { from: 0, to: 1, amount: 5, subject: 'パン屋', facility: true },
+    ] } });
+    const movingCoin = container.children[0].children[1];
+    assert.strictEqual(movingCoin.textContent, '5コイン · パン屋：街A → 街B');
+    assert.strictEqual(movingCoin.title, 'パン屋：街A → 街B：5コイン');
+    assert.strictEqual(movingCoin.attributes['aria-hidden'], 'true');
+    controller.clear();
+});
+
+runTest('銀行と分配プールの受取・支払いをコイン移動色と大収益演出へ正しく対応させる', () => {
+    const { container } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events: { participantNames: ['街A'], activations: [
+        { from: 'pool', to: 0, amount: 5, subject: '共同基金' },
+        { from: 0, to: 'pool', amount: 6, subject: '共同基金' },
+    ] } });
+    const [incoming, outgoing] = container.children[0].children.slice(1);
+    assert.strictEqual(incoming.dataset.flow, 'incoming');
+    assert.strictEqual(incoming.dataset.large, 'true');
+    assert.strictEqual(outgoing.dataset.flow, 'outgoing');
+    assert.strictEqual(outgoing.dataset.large, undefined);
+    controller.clear();
+});
+
 runTest('表示中HUDへ向かう演出と文字summaryは同じ確定収支を使いclearで全解除する', () => {
     const { container, animated, timer, cancelled } = fixture();
     const controller = CardBoardTransfers.create();
@@ -52,13 +104,28 @@ runTest('表示中HUDへ向かう演出と文字summaryは同じ確定収支を�
     assert.ok(animated[0].frames.at(-1).transform.includes('380px'));
     const summary = container.children[0].children[0];
     assert.ok(!summary.textContent.includes('街B → 街C：0コイン'));
-    assert.strictEqual(summary.attributes['aria-label'], '街A → 街B：5コイン。銀行 → 街A：4コイン');
+    assert.ok(summary.textContent.startsWith('5コイン · 街A → 街B\n4コイン · 銀行 → 街A'));
+    assert.strictEqual(summary.attributes['aria-label'], '5コイン。街A → 街B。4コイン。銀行 → 街A');
     assert.strictEqual(typeof timer(), 'function');
     controller.clear();
     assert.strictEqual(container.children.length, 0);
     assert.strictEqual(cancelled(), 2);
     assert.strictEqual(timer(), null);
     controller.clear();
+});
+
+runTest('経路summaryを盤面外のイベント欄へ置いてもclearで両方を解除する', () => {
+    const { container, animated } = fixture();
+    const receipt = new (container.constructor)();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, summaryContainer: receipt, events });
+    assert.strictEqual(receipt.children.length, 1);
+    assert.ok(receipt.children[0].textContent.includes('街A → 街B：5コイン'));
+    assert.ok(container.children[0].children.every(child => child.className !== 'cardboard-transfer-summary'));
+    assert.strictEqual(animated.length, 2);
+    controller.clear();
+    assert.strictEqual(receipt.children.length, 0);
+    assert.strictEqual(container.children.length, 0);
 });
 
 runTest('演出しない送金は後続アニメーションの開始を遅らせない', () => {
@@ -159,4 +226,20 @@ runTest('アプリ内の動きを減らす設定でもWAAPIの送金を止め文
     assert.strictEqual(animated.length, 0);
     assert.ok(container.children[0].children[0].textContent.includes('街A → 街B：5コイン'));
     controller.clear();
+});
+
+runTest('コイン移動中に動きを減らす設定へ切り替えると飛行を止め、収支summaryを残す', () => {
+    const { container, animated, cancelled, setAppReducedMotion, notifyPreferenceChanged } = fixture();
+    const receipt = new (container.constructor)();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, summaryContainer: receipt, events });
+    assert.strictEqual(animated.length, 2);
+
+    setAppReducedMotion(true);
+    notifyPreferenceChanged();
+    assert.strictEqual(cancelled(), 2);
+    assert.strictEqual(container.children.length, 0, '動きのレイヤーだけを片付ける');
+    assert.ok(receipt.children[0].textContent.includes('街A → 街B：5コイン'));
+    controller.clear();
+    assert.strictEqual(receipt.children.length, 0);
 });

@@ -88,16 +88,18 @@ const OnlinePlayerSettings = (() => {
 
     function buildSettingsHtml(settings, playerCount, models = []) {
         const rows = settings.map((setting, index) => `
-        <div class="player-setting">
-            <span class="player-setting-name">プレイヤー${index + 1}</span>
-            <select data-ui-change="onlinePlayerType" data-player-index="${index}" class="player-setting-select" aria-label="プレイヤー${index + 1}の種類">
-                <option value="human" ${setting.type === 'human' ? 'selected' : ''}>人間</option>
-                <option value="weak"  ${setting.type === 'cpu' && setting.difficulty === 'weak' ? 'selected' : ''}>CPU（弱）</option>
-                <option value="normal" ${setting.type === 'cpu' && setting.difficulty === 'normal' ? 'selected' : ''}>CPU（普通）</option>
-                <option value="strong" ${setting.type === 'cpu' && setting.difficulty === 'strong' ? 'selected' : ''}>CPU（強）</option>
-                <option value="expert" ${setting.type === 'cpu' && setting.difficulty === 'expert' ? 'selected' : ''}>CPU（最強）</option>
-                <option value="rl" ${setting.type === 'cpu' && setting.difficulty === 'rl' ? 'selected' : ''}>AI（深層学習・ランダム）</option>
-            </select>
+        <div class="player-setting" data-player-index="${index}">
+            <div class="player-setting-row">
+                <span class="player-setting-identity"><b class="player-setting-seat" aria-hidden="true">席 ${index + 1}</b><span class="player-setting-name">プレイヤー${index + 1}</span></span>
+                <select data-ui-change="onlinePlayerType" data-player-index="${index}" class="player-setting-select" aria-label="プレイヤー${index + 1}の種類">
+                    <option value="human" ${setting.type === 'human' ? 'selected' : ''}>人間</option>
+                    <option value="weak"  ${setting.type === 'cpu' && setting.difficulty === 'weak' ? 'selected' : ''}>CPU（弱）</option>
+                    <option value="normal" ${setting.type === 'cpu' && setting.difficulty === 'normal' ? 'selected' : ''}>CPU（普通）</option>
+                    <option value="strong" ${setting.type === 'cpu' && setting.difficulty === 'strong' ? 'selected' : ''}>CPU（強）</option>
+                    <option value="expert" ${setting.type === 'cpu' && setting.difficulty === 'expert' ? 'selected' : ''}>CPU（最強）</option>
+                    <option value="rl" ${setting.type === 'cpu' && setting.difficulty === 'rl' ? 'selected' : ''}>AI（深層学習・ランダム）</option>
+                </select>
+            </div>
             ${buildModelSelectHtml(setting, index, models)}
         </div>
     `).join('');

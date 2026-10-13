@@ -174,7 +174,7 @@ runTest('確認できない収入は原文で保持し空港効果は施設収�
     assert.strictEqual(receipt.balances[0].facilityNet, 0);
     assert.strictEqual(receipt.balances[0].otherLogNet, 10);
     assert.strictEqual(receipt.unparsed.length, 2);
-    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('ログ確認分'));
+    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('受け取り'));
 });
 
 runTest('HTMLは名前施設原文をescapeし10人と集約件数のDOM上限を保つ', () => {
@@ -245,7 +245,7 @@ runTest('特殊な個別送金と合計ログを二重集計せず原文注記�
     assert.strictEqual(receipt.unparsedCount, 2);
     assert.strictEqual(receipt.balances[0].income, 3);
     assert.strictEqual(receipt.balances[0].facilityNet, 3);
-    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('確認済み施設差引+3'));
+    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('施設効果 +3'));
 });
 
 runTest('残高不足で0コインの赤発動でも支払元と先を表示する', () => {

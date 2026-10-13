@@ -345,6 +345,8 @@ function buildActiveGameView(facts) {
         : [];
     return Object.freeze({
         statusText: buildTurnStatusText(facts.current, facts.designTheme, facts.isHumanTurn),
+        turnPlayerName: facts.current?.name || '',
+        turnPlayerCoins: facts.current?.coins,
         rollButton: buildRollButtonView(facts.canRoll),
         skipButton: buildSkipButtonView({
             canNextTurn: facts.canNextTurn,

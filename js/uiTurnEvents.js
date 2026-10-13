@@ -162,8 +162,15 @@ const UiTurnEvents = (() => {
         important.sort((a, b) => b.priority - a.priority || b.index - a.index);
         const activationLimit = Number.isInteger(options.maxActivations)
             ? Math.max(12, Math.min(1000, options.maxActivations)) : 12;
+        const activationOrders = new Map();
+        let nextActivationOrder = 0;
+        const activations = [...groups.values()].slice(0, activationLimit).map(event => {
+            const identity = event.activation || Symbol();
+            if (!activationOrders.has(identity)) activationOrders.set(identity, ++nextActivationOrder);
+            return { ...event, order: activationOrders.get(identity) };
+        });
         return { actorIndex, actorName, participantNames, dice, turnContextKnown: actorIndex !== null,
-            activations: [...groups.values()].slice(0, activationLimit),
+            activations,
             omittedActivations: Math.max(0, groups.size - activationLimit), balances: balances.filter(balance => balance.income || balance.payment),
             unparsed: unparsed.slice(-3), unparsedCount: unparsed.length,
             incomplete: unparsed.length > 0, important: important.slice(0, 4) };

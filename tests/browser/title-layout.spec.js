@@ -5,6 +5,7 @@ const path = require('path');
 test.use({ serviceWorkers: 'block' });
 
 const VIEWPORTS = [
+    { width: 320, height: 568, name: 'short-phone-320' },
     { width: 320, height: 844, name: 'phone-320' },
     { width: 390, height: 844, name: 'phone-390' },
     { width: 844, height: 390, name: 'landscape-844' },
@@ -38,7 +39,7 @@ for (const viewport of VIEWPORTS) {
         await expect(page.locator('#btnResume')).toHaveAttribute('aria-describedby', 'localResumeMarketDetails');
         await expect(page.locator('#localSaveGenerationLabel')).toBeVisible();
         await expect(page.locator('#localSaveGenerationLabel')).toContainText('再開する保存データを選択');
-        await expect(page.locator('#localSaveGeneration')).toHaveText([
+        expect(await page.locator('#localSaveGeneration option').allTextContents()).toEqual([
             '最新の保存データ', '1回前の保存データ',
         ]);
         const layout = await page.evaluate(() => {
@@ -64,9 +65,12 @@ for (const viewport of VIEWPORTS) {
                 return hit === button || button.contains(hit);
             };
             return {
+                design: document.documentElement.dataset.design,
                 documentWidth: document.documentElement.scrollWidth,
                 body: rect(body), bodyMaxWidth: getComputedStyle(body).maxWidth,
                 title: rect(title), titleHeader: rect(titleHeader), titleHeading: rect(titleHeading),
+                heroDisplay: getComputedStyle(title.querySelector('.sunset-hero')).display,
+                canvasDisplay: getComputedStyle(canvas).display,
                 canvas: rect(canvas), canvasCssWidth: getComputedStyle(canvas).width,
                 canvasBufferWidth: canvas.width,
                 resume: rect(resumeButton), remove: rect(removeButton),
@@ -90,9 +94,9 @@ for (const viewport of VIEWPORTS) {
         expect(Math.abs(layout.title.width - viewport.width)).toBeLessThanOrEqual(1);
         expect(layout.titleHeader.top, JSON.stringify(layout)).toBeGreaterThanOrEqual(0);
         expect(layout.titleHeading.top, JSON.stringify(layout)).toBeGreaterThanOrEqual(0);
-        expect(layout.canvas.left).toBe(0);
-        expect(Math.abs(layout.canvas.width - viewport.width)).toBeLessThanOrEqual(1);
-        expect(Math.abs(parseFloat(layout.canvasCssWidth) - viewport.width)).toBeLessThanOrEqual(1);
+        if (viewport.name === 'short-phone-320') expect(layout.heroDisplay).toBe('none');
+        expect(layout.design).toBe('cardboard');
+        expect(layout.canvasDisplay).toBe('none');
         expect(layout.canvasBufferWidth).toBe(Math.min(1920, viewport.width));
         expect(layout.resume.width, JSON.stringify(layout)).toBeGreaterThanOrEqual(100);
         expect(layout.resume.height).toBeGreaterThanOrEqual(44);
@@ -102,7 +106,7 @@ for (const viewport of VIEWPORTS) {
         expect(layout.generationLabel.bottom).toBeLessThanOrEqual(layout.resume.top);
         expect(layout.removeWhiteSpace).toBe('nowrap');
         expect(layout.generationSelectStyle).toEqual({
-            background: 'rgb(24, 45, 63)', color: 'rgb(255, 244, 223)', colorScheme: 'dark',
+            background: 'rgb(255, 253, 245)', color: 'rgb(24, 52, 71)', colorScheme: 'light',
         });
         expect(layout.resumeTextFits).toBe(true);
         expect(layout.resumeHit).toBe(true);
@@ -257,7 +261,8 @@ test('CPU再準備中の再開ボタンは状態を伝えReduced Motionで回転
     await expect(button).toBeDisabled();
     await expect(button).toHaveAttribute('aria-busy', 'true');
     await expect(button).toContainText('対戦相手を準備中…');
-    await expect(button).toHaveCSS('display', 'inline-flex');
+    await expect(button).toHaveCSS('align-items', 'center');
+    await expect(button).toHaveCSS('justify-content', 'center');
     const standardAnimation = await button.evaluate(element => getComputedStyle(element, '::after').animationName);
     expect(standardAnimation).toBe('resumeStatusSpin');
     await page.emulateMedia({ reducedMotion: 'reduce' });

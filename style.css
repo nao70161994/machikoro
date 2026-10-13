@@ -787,6 +787,7 @@ body.modal-open #gameScreen {
 }
 
 .player-setting {
+    --player-setting-accent: #6095bd;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -794,7 +795,18 @@ body.modal-open #gameScreen {
     border-radius: 10px;
     background: rgba(255,255,255,0.04);
     border: 1px solid #2a2a4a;
+    border-inline-start: 4px solid var(--player-setting-accent);
 }
+.player-setting[data-player-index="0"] { --player-setting-accent: #4386b7; }
+.player-setting[data-player-index="1"] { --player-setting-accent: #ce6268; }
+.player-setting[data-player-index="2"] { --player-setting-accent: #5f9a69; }
+.player-setting[data-player-index="3"] { --player-setting-accent: #9876b3; }
+.player-setting[data-player-index="4"] { --player-setting-accent: #c0843d; }
+.player-setting[data-player-index="5"] { --player-setting-accent: #438f87; }
+.player-setting[data-player-index="6"] { --player-setting-accent: #b4618d; }
+.player-setting[data-player-index="7"] { --player-setting-accent: #627fb4; }
+.player-setting[data-player-index="8"] { --player-setting-accent: #929743; }
+.player-setting[data-player-index="9"] { --player-setting-accent: #aa6e4e; }
 
 .player-setting + .player-setting {
     margin-top: 8px;
@@ -810,6 +822,26 @@ body.modal-open #gameScreen {
     flex: 0 0 auto;
     color: #fffffe;
     font-size: 14px;
+}
+.player-setting-identity {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+}
+.player-setting-seat {
+    display: inline-grid;
+    flex: 0 0 auto;
+    min-width: 34px;
+    min-height: 24px;
+    place-items: center;
+    padding: 2px 5px;
+    border: 1px solid var(--player-setting-accent);
+    border-radius: 6px;
+    color: var(--player-setting-accent);
+    font-size: 11px;
+    line-height: 1;
 }
 
 .player-setting-select {
@@ -1411,6 +1443,54 @@ html:is([data-design="sunset"], [data-design="plaza"]) .design-switcher select o
     color: #f0c040;
     font-size: 15px;
     margin-bottom: 10px;
+}
+.rules-turn-flow {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: rules-turn-step;
+}
+.rules-turn-flow li {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    align-content: start;
+    align-items: center;
+    gap: 4px 7px;
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid rgba(240, 192, 64, 0.26);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.045);
+    counter-increment: rules-turn-step;
+}
+.rules-turn-flow li::before {
+    content: counter(rules-turn-step);
+    display: grid;
+    grid-row: span 2;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid #c69a43;
+    border-radius: 50%;
+    color: #f4ce7b;
+    font-size: 13px;
+    font-weight: 900;
+}
+.rules-turn-flow li strong { color: #fff0cc; font-size: 13px; }
+.rules-turn-flow li span { grid-column: 2; color: #c5c7d4; font-size: 12px; line-height: 1.55; }
+.rules-start-note { margin: 9px 0 0 !important; font-size: 12px !important; }
+.rules-victory-condition { border: 1px solid #c99e48; background: linear-gradient(115deg, #302b22, #191f26); }
+.accessibility-high-contrast .rules-turn-flow li,
+.accessibility-high-contrast .rules-victory-condition { border: 2px solid #fff; background: #000; }
+.accessibility-high-contrast .rules-turn-flow li::before { border-color: #fff; color: #ffe66d; }
+.accessibility-high-contrast .rules-turn-flow li :is(strong, span),
+.accessibility-high-contrast .rules-start-note { color: #fff; }
+@media (max-width: 559px) {
+    .rules-turn-flow { grid-template-columns: minmax(0, 1fr); }
+    .rules-turn-flow li { grid-template-columns: 30px minmax(0, 1fr); }
 }
 
 .modal-heading-icon,
@@ -2371,6 +2451,8 @@ body.accessibility-high-contrast #pwaInstallBanner .pwa-banner-dismiss {
 .accessibility-high-contrast .local-game-setup-copy small { color: #fff; }
 .accessibility-high-contrast .local-game-setup > summary::after { border-color: #fff; color: #ffe66d; }
 .accessibility-high-contrast .local-game-setup[open] > summary { border-bottom-color: #fff; }
+.accessibility-high-contrast .player-setting { border: 2px solid #fff; border-inline-start: 5px solid #fff; background: #000; }
+.accessibility-high-contrast .player-setting-seat { border-color: #fff; color: #ffe66d; }
 .accessibility-high-contrast button:focus-visible,
 .accessibility-high-contrast input:focus-visible,
 .accessibility-high-contrast select:focus-visible { outline: 4px solid #ffe66d !important; }
@@ -2599,10 +2681,15 @@ html:is([data-design="sunset"], [data-design="plaza"]) .player-self-badge {
 }
 
 .player-name {
+    display: -webkit-box;
+    max-height: 2.4em;
     min-width: 0;
     font-weight: bold;
     font-size: 16px;
+    overflow: hidden;
     overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .player-name-row {
@@ -3424,6 +3511,44 @@ html:is([data-design="sunset"], [data-design="plaza"]) body.accessibility-high-c
     overflow-wrap: anywhere;
 }
 
+.pending-box button.pending-player-choice {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 60px;
+    padding: 7px 10px;
+    text-align: left;
+}
+.pending-player-avatar {
+    display: grid;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 900;
+}
+.pending-player-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 3px;
+}
+.pending-player-name { font-size: 14px; font-weight: 800; overflow-wrap: anywhere; }
+.pending-player-detail { font-size: 12px; line-height: 1.3; opacity: 0.82; }
+.accessibility-high-contrast .pending-box button.pending-player-choice {
+    min-height: 60px;
+    border: 2px solid #fff !important;
+    background: #000 !important;
+    color: #fff !important;
+}
+.accessibility-high-contrast .pending-player-avatar { border: 2px solid #fff; background: #000; color: #fff; }
+.accessibility-high-contrast .pending-player-copy { color: #fff; }
+
 .pending-box button:last-child {
     margin-bottom: 0;
 }
@@ -4120,9 +4245,55 @@ html:is([data-design="sunset"], [data-design="plaza"]) .turn-announcer-kind-icon
 }
 
 .card-detail-row span:last-child {
+    min-width: 0;
     color: #fffffe;
     font-weight: bold;
+    text-align: right;
+    overflow-wrap: anywhere;
 }
+.card-detail-dice-values {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    vertical-align: middle;
+}
+.card-detail-dice-value {
+    display: inline-grid;
+    min-width: 26px;
+    height: 26px;
+    place-items: center;
+    padding: 0 4px;
+    border: 1px solid #b29258;
+    border-radius: 7px;
+    background: linear-gradient(145deg, #fff6dc, #e9d5aa);
+    color: #31475a !important;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 900;
+    line-height: 1;
+}
+.card-detail-classification {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+}
+.card-detail-category { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 5px; min-width: 0; }
+.card-detail-trigger-rule { color: #c5c7d4; font-size: 11px; font-weight: 600; line-height: 1.4; text-align: right; }
+html[data-design="cardboard"] #cardDetailModal .card-detail-dice-value {
+    border-color: #bca15e;
+    background: linear-gradient(145deg, #fffdf5, #f4e6bd);
+    color: #294b39 !important;
+}
+html[data-design="cardboard"] #cardDetailModal .card-detail-trigger-rule { color: #526357; }
+.accessibility-high-contrast .card-detail-dice-value {
+    border: 2px solid #fff;
+    background: #000;
+    color: #ffe66d !important;
+}
+.accessibility-high-contrast .card-detail-trigger-rule { color: #fff; }
 
 html:is([data-design="sunset"], [data-design="plaza"]) .card-detail-mark {
     width: 16px;
@@ -4272,6 +4443,23 @@ html[data-design="cardboard"] body:not(.accessibility-high-contrast) :is(#rulesM
 html[data-design="cardboard"] body:not(.accessibility-high-contrast) :is(#rulesModal, #cardSelectModal) .rules-section p {
     color: #43545a;
 }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #rulesModal .rules-turn-flow li {
+    border-color: #c6cbb8;
+    background: #fffdf5;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #rulesModal .rules-turn-flow li::before {
+    border-color: #8ca17e;
+    background: #e7eedc;
+    color: #28654b;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #rulesModal .rules-turn-flow li strong { color: #365a40; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #rulesModal .rules-turn-flow li span { color: #43545a; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #rulesModal .rules-start-note { color: #52645d; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #rulesModal .rules-victory-condition {
+    border-color: #c7a95f;
+    background: linear-gradient(115deg, #f6edcf, #fffaf0);
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #rulesModal .rules-victory-condition h3 { color: #75560f; }
 html[data-design="cardboard"] body:not(.accessibility-high-contrast) :is(#rulesModal, #cardSelectModal) .modal-body > p {
     color: #43545a !important;
 }
@@ -4350,6 +4538,85 @@ html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-bo
     background: #fffdf5;
     color: #263d38;
 }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-box button.pending-player-choice {
+    border-color: #b7a36d;
+    background: linear-gradient(135deg, #fffdf5, #f3ebd5);
+    color: #263d38;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-player-avatar {
+    border-color: #78916f;
+    background: #e2ebd6;
+    color: #365a40;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-player-detail { color: #526357; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-box > .pending-heading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-wrap: balance;
+}
+html[data-design="cardboard"] .pending-heading .pending-facility-mark {
+    width: 40px;
+    height: 20px;
+    flex: 0 0 auto;
+    padding: 2px;
+    box-sizing: content-box;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-heading .pending-facility-mark {
+    border: 1px solid #c5a85e;
+    border-radius: 6px;
+    background: #f6ebca;
+    color: #365a40;
+}
+html[data-design="cardboard"] .pending-coin-mark {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    vertical-align: -3px;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-box .pending-facility-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    width: min(100%, 340px);
+    min-height: 82px;
+    padding: 8px;
+    border-radius: 12px;
+    text-align: left;
+    box-shadow: 0 2px 0 rgba(62, 78, 57, 0.12);
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-choice-art {
+    display: block;
+    flex: 0 0 108px;
+    overflow: hidden;
+    border: 1px solid #d4c59c;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #f2e6c5, #d9dfbf);
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-choice-art .sunset-facility-art {
+    display: block;
+    width: 100%;
+    height: 64px;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-choice-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-choice-name {
+    color: #263d38;
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-choice-detail {
+    color: #526357;
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
 html[data-design="cardboard"] body:not(.accessibility-high-contrast) #crashScreen {
     background: radial-gradient(ellipse at 50% 34%, #315947 0, #173b32 58%, #102922 100%);
 }
@@ -4411,6 +4678,81 @@ html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip.se
     background: #f8e7ba !important;
     color: #43320e !important;
 }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-modal-inner .bc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 70px;
+    padding: 7px 9px !important;
+    border-radius: 12px !important;
+    text-align: left;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-modal-inner .bc-chip-blue { border-left: 5px solid #5489ad !important; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-modal-inner .bc-chip-green { border-left: 5px solid #5b9361 !important; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-modal-inner .bc-chip-red { border-left: 5px solid #bc6657 !important; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-modal-inner .bc-chip-purple { border-left: 5px solid #8a70a8 !important; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-art {
+    display: grid;
+    flex: 0 0 68px;
+    width: 68px;
+    height: 48px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid #d4c59c;
+    border-radius: 7px;
+    background: linear-gradient(180deg, #f2e6c5, #d9dfbf);
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-art .sunset-facility-art {
+    width: 66px;
+    height: 44px;
+    margin: 0;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-name {
+    color: #263d38;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-category {
+    color: #657364;
+    font-size: 10px;
+    line-height: 1.2;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .pending-modal-inner :is(.pending-facility-choice, .bc-chip) {
+    min-height: 56px;
+    border: 2px solid #fff !important;
+    background: #000 !important;
+    color: #fff !important;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .pending-facility-mark {
+    border: 1px solid #fff;
+    background: #000;
+    color: #fff;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .pending-coin-mark { color: #fff; }
+html[data-design="cardboard"] body.accessibility-high-contrast .pending-box button.pending-player-choice,
+html[data-design="cardboard"] body.accessibility-high-contrast .pending-player-avatar {
+    border: 2px solid #fff;
+    background: #000;
+    color: #fff;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .pending-player-copy { color: #fff; }
+html[data-design="cardboard"] body.accessibility-high-contrast .pending-choice-art,
+html[data-design="cardboard"] body.accessibility-high-contrast .bc-chip-art {
+    border: 1px solid #fff;
+    background: #000;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .pending-choice-copy :is(.pending-choice-name, .pending-choice-detail),
+html[data-design="cardboard"] body.accessibility-high-contrast .bc-chip-copy :is(.bc-chip-name, .bc-chip-category) {
+    color: #fff;
+}
 html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal .modal-content,
 html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal :is(.modal-header, .card-detail-section, .card-detail-effect) {
     border: 2px solid #fff;
@@ -4434,6 +4776,12 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal 
     background: #000;
     color: #fff;
 }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal .card-detail-dice-value {
+    border: 2px solid #fff;
+    background: #000;
+    color: #ffe66d !important;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal .card-detail-trigger-rule { color: #fff; }
 
 /* ===== 建設可能カードのハイライト ===== */
 @keyframes affordGlow {
@@ -4512,6 +4860,15 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal 
     gap: 6px;
 }
 
+.local-resume-actions > :is(#btnResume, #btnDeleteSave),
+.online-resume-actions > button {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--touch-target-standard);
+    writing-mode: horizontal-tb;
+    white-space: nowrap;
+}
+
 .local-save-generation-label {
     grid-column: 1 / -1;
     display: flex;
@@ -4572,7 +4929,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal 
 
 @media (max-width: 389px) {
     .local-resume-notice { padding: 10px; }
-    .local-resume-actions { grid-template-columns: minmax(0, 1fr) 60px; gap: 5px; }
+    .local-resume-actions { grid-template-columns: minmax(0, 1fr) 64px; gap: 6px; }
 }
 
 @media (max-width: 480px) {
@@ -8013,7 +8370,7 @@ html:is([data-design="sunset"], [data-design="plaza"]) body:not(.accessibility-h
 }
 .room-seat-number { flex: 0 0 28px; text-align: center; font-variant-numeric: tabular-nums; }
 .room-seat-info { flex: 1; min-width: 0; }
-.room-seat-name { display: block; overflow-wrap: anywhere; }
+.room-seat-name { display: -webkit-box; max-height: 2.8em; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .room-seat-roles { display: flex; gap: 5px; margin-top: 4px; font-size: 11px; }
 .room-seat-state { flex: 0 0 auto; font-size: 12px; }
 .room-seat-remove { width: auto; min-width: 44px; min-height: 44px; }
@@ -8654,7 +9011,7 @@ html[data-design="plaza"] #players .player-name-row { min-width: 0; gap: 3px; fl
 html[data-design="plaza"] #players .player-icon { width: 22px; height: 22px; padding: 0; }
 html[data-design="plaza"] #players .player-kind-icon { width: 22px; height: 22px; }
 html[data-design="plaza"] #players .player-kind-level { display: none; }
-html[data-design="plaza"] #players .player-name { font-size: 12px; overflow-wrap: anywhere; white-space: normal; overflow: visible; text-overflow: clip; }
+html[data-design="plaza"] #players .player-name { max-height: 2.4em; font-size: 12px; overflow-wrap: anywhere; white-space: normal; overflow: hidden; text-overflow: clip; -webkit-line-clamp: 2; }
 html[data-design="plaza"] #players .player-coins { font-size: 17px; }
 html[data-design="plaza"] #players .player-asset-summary { padding: 0; gap: 3px; }
 html[data-design="plaza"] #players .player-color-chip { min-width: 0; padding: 2px 3px; font-size: 10px; }
@@ -9224,6 +9581,11 @@ html[data-design="plaza"] body.game-finished.pwa-notices-docked #gameScreen[styl
     background: rgba(78, 111, 102, .15);
     box-shadow: 0 3px 8px #0002;
 }
+@container (max-width: 420px) {
+    .room-table-layout .room-seat-list { grid-template-columns: minmax(0, 1fr); }
+    .room-table-layout .room-seat-list .room-seat { padding: 10px 12px; }
+    .room-table-layout .room-game-table { margin-bottom: 12px; }
+}
 .room-seat-chair { grid-column: 1; width: 28px; height: 28px; color: #b8a47a; }
 .room-table-layout .room-seat-number { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; font-size: 11px; }
 .room-table-layout .room-seat-info { grid-column: 1 / -1; padding-right: 10px; }
@@ -9252,6 +9614,28 @@ html[data-design="plaza"] body.game-finished.pwa-notices-docked #gameScreen[styl
     .room-table-layout .room-seat-list .room-seat { width: 100%; max-width: 180px; justify-self: center; }
     .room-table-layout .room-seat[data-seat-side="near"] { grid-row: 1; }
     .room-table-layout .room-seat[data-seat-side="far"] { grid-row: 3; }
+}
+
+/* 大人数ロビーは席を小さく並べず、卓の案内と読みやすい名簿に分ける。 */
+@container (min-width: 640px) {
+    .room-table-layout-roster {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 16px;
+        width: min(680px, 100%);
+    }
+    .room-table-layout-roster .room-game-table {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        width: min(240px, 100%);
+        margin: 0 auto 8px;
+    }
+    .room-table-layout-roster .room-seat-list { display: contents; }
+    .room-table-layout-roster .room-seat-list .room-seat {
+        grid-row: auto;
+        width: 100%;
+        max-width: none;
+        min-height: 92px;
+    }
 }
 
 /* Keep seat identity readable when viewing every town at once. */
@@ -9371,7 +9755,12 @@ html[data-design="plaza"] body.game-finished #plazaPlayerInsights { display: non
    visible. Full transfers and history are explicit, independently scrollable. */
 html[data-design="plaza"] .plaza-event-receipt p { margin: 0; }
 html[data-design="plaza"] .plaza-receipt-dice { font-size: 17px; font-weight: 800; color: #ffe6a4; }
-html[data-design="plaza"] .plaza-receipt-totals { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: #f7edd2; }
+html[data-design="plaza"] .plaza-receipt-totals { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 9px; font-size: 12px; color: #f7edd2; }
+html[data-design="plaza"] .plaza-receipt-totals-label { color: #e8d19a; font-size: 10px; font-weight: 800; letter-spacing: .04em; }
+html[data-design="plaza"] .plaza-receipt-player-net[data-outcome="gain"] { color: #aaf0bc; }
+html[data-design="plaza"] .plaza-receipt-player-net[data-outcome="loss"] { color: #ffc0ae; }
+html[data-design="plaza"] body.accessibility-high-contrast .plaza-receipt-totals-label { color: #ffe66d; }
+html[data-design="plaza"] body.accessibility-high-contrast .plaza-receipt-player-net { color: #fff; }
 html[data-design="plaza"] .plaza-important-event { font-size: 13px; font-weight: 700; color: #ffe6a4; overflow-wrap: anywhere; }
 html[data-design="plaza"] .plaza-important-landmark { color: #ffd779; }
 html[data-design="plaza"] .plaza-receipt-details > summary,
@@ -9419,7 +9808,10 @@ html:is([data-design="plaza"], [data-design="cardboard"]) .plaza-receipt-feature
 html:is([data-design="plaza"], [data-design="cardboard"]) .plaza-receipt-activation-count { display: inline-block; margin-right: 5px; font-weight: 900; white-space: nowrap; }
 html[data-design="cardboard"] .plaza-receipt-activation-count { padding: 0 4px; border-radius: 4px; background: #fff0bd; color: #674d14; }
 html:is([data-design="plaza"], [data-design="cardboard"]) .plaza-receipt-transfer { display: inline-flex; align-items: center; gap: 3px; max-width: 100%; margin-right: 5px; padding: 1px 4px; border: 1px solid #e2b96f55; border-radius: 6px; background: #102c3580; vertical-align: middle; }
+html:is([data-design="plaza"], [data-design="cardboard"]) .plaza-receipt-order { display: inline-grid; flex: 0 0 auto; min-width: 16px; height: 16px; place-items: center; padding: 0 3px; border-radius: 999px; background: #f0cf79; color: #263b35; font-size: 9px; font-weight: 900; line-height: 1; }
 html:is([data-design="plaza"], [data-design="cardboard"]) .plaza-receipt-transfer > :is(strong, b) { color: #fff1cb; }
+html[data-design="cardboard"] .plaza-receipt-transfer .plaza-receipt-order { background: #f5df9d; color: #394f3d; }
+html:is([data-design="plaza"], [data-design="cardboard"]) body.accessibility-high-contrast .plaza-receipt-order { border: 1px solid #fff; background: #000; color: #ffe66d; }
 html:is([data-design="plaza"], [data-design="cardboard"]) .plaza-receipt-transfer > strong { font-weight: 700; }
 html:is([data-design="plaza"], [data-design="cardboard"]) .plaza-receipt-transfer > b { font-variant-numeric: tabular-nums; white-space: nowrap; }
 html:is([data-design="plaza"], [data-design="cardboard"]) .plaza-receipt-transfer::before { flex: 0 0 auto; font-size: 13px; font-weight: 900; line-height: 1; }
@@ -9710,6 +10102,33 @@ html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScree
     color: #365247;
 }
 html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScreen .room-readiness li strong { color: #28654b; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScreen .room-seat-state { padding: 2px 7px; border: 1px solid #9fa88e; border-radius: 999px; background: #f1f0e5; color: #52645d; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScreen .room-seat[data-seat-state="ready"] .room-seat-state { border-color: #6b9877; background: #dceee0; color: #1e5838; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScreen .room-seat[data-seat-state="preparing"] .room-seat-state,
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScreen .room-seat[data-seat-state="reconnecting"] .room-seat-state { border-color: #b88b34; background: #fff0c8; color: #634600; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScreen .room-seat[data-seat-state="empty"] .room-seat-state { border-color: #b7b7a8; background: #f2f0e8; color: #62675e; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScreen .room-seat[data-seat-state="cpu"] .room-seat-state { border-color: #7b8da5; background: #e1e9f1; color: #304c67; }
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) > .title-content {
+    width: min(calc(100% - 24px), 1040px);
+    max-width: 1040px;
+}
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) .title-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 0;
+    padding: 12px;
+}
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) :is(.sunset-hero, .title-logo-sub, .title-logo-deco) { display: none; }
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) .title-brand-mark { width: 36px; height: 36px; }
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) .title-header h1 { margin: 0; font-size: 22px; }
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) .title-buttons-row { width: auto; margin: 0; }
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) .rules-btn { min-height: 44px; padding: 6px 12px; white-space: nowrap; }
+html[data-design="cardboard"] #tabContentOnline:has(#onlineWaitingPanel .room-share-panel) > :is(
+    .setting-section, .online-tabs, .online-readiness, #onlineCreate, #onlineJoin
+) { display: none !important; }
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) #onlineResumeSection { display: none !important; }
 html[data-design="cardboard"] body:not(.accessibility-high-contrast) #titleScreen .setup-quick-play {
     border-color: #456c50;
     background: linear-gradient(115deg, #28654b, #397957);
@@ -10234,12 +10653,28 @@ html[data-design="cardboard"] #cardboardBoard {
     min-width: 0;
     padding: 8px;
     border-radius: 18px;
-    background: radial-gradient(ellipse at center, #cde2c8, #abcba9);
+    background-color: #abcba9;
+    background-image:
+        radial-gradient(ellipse at 18% 22%, #eaf1dc36 0 1px, transparent 2px),
+        radial-gradient(ellipse at 82% 78%, #567a5420 0 1px, transparent 2px),
+        repeating-linear-gradient(135deg, transparent 0 18px, #ffffff08 19px, transparent 20px 38px),
+        radial-gradient(ellipse at center, #d5e4d0, #abcba9);
+    background-size: 38px 38px, 46px 46px, auto, 100% 100%;
+    background-blend-mode: normal, normal, soft-light, normal;
+    border: 1px solid #8eae91;
     box-shadow: inset 0 0 0 2px #ffffff80, 0 8px 24px #244f3b20;
 }
 html[data-design="cardboard"] #cardboardSeats { display: contents; }
 html[data-design="cardboard"] #cardboardControls { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; min-width: 0; order: -5; }
 html[data-design="cardboard"] #cardboardControls > button { flex: 0 0 auto; width: auto; min-width: 44px; min-height: 44px; margin: 0; padding: 4px 7px; border: 1px solid #769483; border-radius: 7px; background: #fffdf5; color: var(--cardboard-ink); font: inherit; font-size: 11px; }
+html[data-design="cardboard"] #cardboardControls #cardboardMoreMenu { position: relative; flex: 0 0 auto; margin: 0; }
+html[data-design="cardboard"] #cardboardMoreMenu > summary { display: flex; align-items: center; justify-content: center; min-width: 54px; min-height: 44px; padding: 4px 8px; border: 1px solid #769483; border-radius: 7px; background: #fffdf5; color: var(--cardboard-ink); font-size: 11px; cursor: pointer; list-style: none; }
+html[data-design="cardboard"] #cardboardMoreMenu > summary::-webkit-details-marker { display: none; }
+html[data-design="cardboard"] #cardboardMoreMenuContent { position: absolute; top: calc(100% + 5px); right: 0; z-index: 9; width: min(340px, calc(100vw - 20px)); max-height: min(70dvh, 560px); padding: 8px; box-sizing: border-box; overflow: auto; border: 1px solid #769483; border-radius: 9px; background: #fffdf5; color: var(--cardboard-ink); box-shadow: 0 6px 22px #18344744; }
+html[data-design="cardboard"] #cardboardMoreMenu:not([open]) #cardboardMoreMenuContent { display: none; }
+html[data-design="cardboard"] #cardboardMoreMenuContent .game-action-toolbar { display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
+html[data-design="cardboard"] #cardboardMoreMenuContent .game-action-toolbar > details[open] { width: 100%; }
+html[data-design="cardboard"] #cardboardMoreMenuContent .game-action-toolbar > details[open] .panel-tools { position: static; inset: auto; width: 100%; max-height: none; margin: 0; box-sizing: border-box; overflow: visible; box-shadow: none; }
 html[data-design="cardboard"] #cardboardControls #tutorialBox { position: relative; flex: 0 0 44px; width: 44px; height: 44px; margin: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--cardboard-ink); }
 html[data-design="cardboard"] #cardboardControls .plaza-guide-disclosure > summary { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; min-height: 44px; padding: 0; color: var(--cardboard-ink); background: #fffdf5; border: 1px solid #769483; border-radius: 6px; font-size: 0; cursor: pointer; }
 html[data-design="cardboard"] #cardboardControls .plaza-guide-disclosure > summary::before { content: "ガイド"; font-size: 11px; }
@@ -10256,6 +10691,7 @@ html[data-design="cardboard"] #cardboardRoster::before {
     font-weight: 700;
     line-height: 1.25;
 }
+html[data-design="cardboard"] #cardboardRoster[data-roster-overflow="true"]::before { content: "他の席を見るには横へ →"; }
 html[data-design="cardboard"] .cardboard-roster { display: flex; gap: 5px; overflow-x: auto; max-width: 100%; padding: 2px 2px 5px; overscroll-behavior-inline: contain; }
 html[data-design="cardboard"] :is(#cardboardSeats .cardboard-player[data-player-index="0"], #cardboardRoster .cardboard-roster-seat[data-cardboard-player-index="0"]) { --cardboard-seat-accent: #1766bd; }
 html[data-design="cardboard"] :is(#cardboardSeats .cardboard-player[data-player-index="1"], #cardboardRoster .cardboard-roster-seat[data-cardboard-player-index="1"]) { --cardboard-seat-accent: #bc3043; }
@@ -10282,6 +10718,9 @@ html[data-design="cardboard"] .cardboard-roster-seat[aria-current="true"][aria-p
     box-shadow: inset 0 -3px var(--cardboard-seat-accent, #1766bd), inset 0 0 0 1px #e6b849;
 }
 html[data-design="cardboard"] .cardboard-roster-seat > strong { display: flex; align-items: center; gap: 4px; min-width: 0; max-width: 100%; font-size: 11px; line-height: 1.2; }
+html[data-design="cardboard"] .cardboard-roster-summary { display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; }
+html[data-design="cardboard"] .cardboard-roster-summary-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-design="cardboard"] .cardboard-roster-detail-indicator { flex: 0 0 auto; padding: 2px 4px; border-radius: 4px; background: #d7e9f5; color: #254f67; font-size: 9px; line-height: 1.1; white-space: nowrap; }
 html[data-design="cardboard"] .cardboard-roster-seat-number { flex: 0 0 auto; padding: 1px 3px; border: 1px solid var(--cardboard-seat-accent, #769483); border-radius: 4px; color: var(--cardboard-ink); background: #fffdf5; line-height: 1.1; white-space: nowrap; }
 html[data-design="cardboard"] .cardboard-roster-kind { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 2px; min-width: 23px; height: 21px; padding: 1px 3px; border: 1px solid var(--cardboard-seat-accent, #9aa991); border-radius: 5px; background: #eef1e6; }
 html[data-design="cardboard"] .cardboard-roster-kind .player-kind-icon { display: block; width: 16px; height: 16px; }
@@ -10305,8 +10744,13 @@ html[data-design="cardboard"] .cardboard-player { display: flex; flex-direction:
 html[data-design="cardboard"] .cardboard-player-self { order: -3; }
 html[data-design="cardboard"] .cardboard-player-self { outline: 2px solid var(--cardboard-seat-accent, #1766bd); outline-offset: -2px; }
 html[data-design="cardboard"] .cardboard-player-current { box-shadow: inset 0 3px #d69d20, 0 3px 10px #284b3520; }
+html[data-design="cardboard"] body:not(.game-finished) #status { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 5px; box-sizing: border-box; min-height: 44px; padding: 6px 8px; text-align: left; }
+html[data-design="cardboard"] .cardboard-turn-status-name { display: block; flex: 1 1 110px; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; white-space: nowrap; }
+html[data-design="cardboard"] .cardboard-turn-status-coins { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 26px; padding: 2px 7px; border: 1px solid #d4ba72; border-radius: 999px; background: #fffdf4; color: #5b4820; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html[data-design="cardboard"] .cardboard-phase-indicator { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 28px; margin-inline-start: 0; padding: 3px 5px; border: 1px solid #a98428; border-radius: 999px; background: #ffebad; color: #57400d; font-size: 10px; font-weight: 900; line-height: 1.2; }
 html[data-design="cardboard"] .cardboard-header { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; min-width: 0; margin-bottom: 5px; }
 html[data-design="cardboard"] .cardboard-header h2 { min-width: 0; max-width: 100%; margin: 0; color: var(--cardboard-ink); font-size: 14px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-header { position: sticky; top: 0; z-index: 3; margin: -2px -2px 8px; padding: 6px 4px; border-bottom: 1px solid #c9c0a2; background: #fffdf5f2; }
 html[data-design="cardboard"] .cardboard-player-heading { display: flex; align-items: center; gap: 7px; }
 html[data-design="cardboard"] .cardboard-player-heading-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-design="cardboard"] .cardboard-player-kind { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 25px; height: 25px; border: 1px solid var(--cardboard-seat-accent, #9aa991); border-radius: 6px; background: #eef1e6; }
@@ -10316,6 +10760,13 @@ html[data-design="cardboard"] .cardboard-player-hud { display: flex; flex-wrap: 
 html[data-design="cardboard"] .cardboard-player-coins b { font-size: 17px; font-variant-numeric: tabular-nums; }
 html[data-design="cardboard"] .cardboard-turn-marker { padding: 2px 5px; border-radius: 4px; background: #ffdf80; color: #604300; font-size: 10px; font-weight: 800; }
 html[data-design="cardboard"] .cardboard-player > h3 { margin: 5px 0 2px; font-size: 11px; }
+html[data-design="cardboard"] .cardboard-player > .cardboard-facility-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+html[data-design="cardboard"] .cardboard-facility-heading small { display: flex; align-items: center; gap: 8px; color: #60735e; font-size: 10px; font-weight: 700; white-space: nowrap; }
+html[data-design="cardboard"] .cardboard-facility-scroll-hint { display: none; color: #536f59; font-size: 10px; }
+html[data-design="cardboard"] .cardboard-facility-scroll-hint:not([hidden]) { display: inline; }
+html[data-design="cardboard"] .cardboard-player > .cardboard-landmark-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+html[data-design="cardboard"] .cardboard-landmark-scroll-hint { color: #60735e; font-size: 9px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+html[data-design="cardboard"] .cardboard-landmark-scroll-hint[hidden] { display: none; }
 html[data-design="cardboard"] .cardboard-events-incomplete { margin: 0 0 3px; color: #5b4930; font-size: 10px; }
 html[data-design="cardboard"] .cardboard-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); grid-auto-rows: max-content; align-content: start; align-items: start; gap: 5px; min-width: 0; min-height: 0; max-height: 240px; padding: 2px; overflow: auto; overscroll-behavior: contain; scroll-snap-type: x proximity; scroll-padding-inline: 2px; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards { scrollbar-color: #728c78 #e3eadf; scrollbar-width: thin; }
@@ -10380,8 +10831,55 @@ html[data-design="cardboard"] .cardboard-card-activated.cardboard-card-major-inc
 }
 html[data-design="cardboard"] .cardboard-card-major-income .cardboard-activation { background: #f8df83; color: #4c3500; }
 html[data-design="cardboard"] .cardboard-activation { display: block; padding: 2px 4px; background: #fff0ac; color: #563a00; font-size: 10px; font-weight: 800; }
-html[data-design="cardboard"] .cardboard-landmarks { display: flex; flex: 0 0 auto; gap: 4px; min-width: 0; margin: 0; padding: 0 2px; overflow-x: auto; overscroll-behavior-inline: contain; }
-html[data-design="cardboard"] .cardboard-landmark { display: flex; flex: 0 0 86px; flex-direction: row; align-items: center; justify-content: flex-start; gap: 4px; box-sizing: border-box; min-width: 0; min-height: 44px; margin: 0; padding: 3px; border: 1px dashed #b99b56; border-radius: 6px; background: #fff6da; color: #5a481b; font: inherit; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
+    border: 1px solid #d7d2bb;
+    border-radius: 10px;
+    background-color: #f6f2e3;
+    background-image:
+        linear-gradient(90deg, transparent 47%, #e6ead9 47% 53%, transparent 53%),
+        linear-gradient(0deg, transparent 44%, #e6ead9 44% 56%, transparent 56%);
+    background-size: 180px 132px;
+    background-position: center;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
+    border: 2px solid #fff;
+    background: #000;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-header {
+    border-bottom-color: #fff;
+    background: #000;
+    color: #fff;
+}
+@media (min-width: 761px) {
+    html[data-design="cardboard"] .cardboard-card-activated[data-cardboard-activation-order]::after {
+        content: "発動 " attr(data-cardboard-activation-order);
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        z-index: 2;
+        padding: 2px 6px;
+        border: 1px solid #9e741b;
+        border-radius: 999px;
+        background: #fff1b9;
+        color: #573b05;
+        box-shadow: 0 1px 4px #30251655;
+        font-size: 10px;
+        font-weight: 900;
+        line-height: 1.2;
+        pointer-events: none;
+    }
+    html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-card-activated[data-cardboard-activation-order]::after {
+        border: 2px solid #fff;
+        background: #000;
+        color: #ffe66d;
+        box-shadow: none;
+    }
+}
+html[data-design="cardboard"] .cardboard-landmarks { display: flex; flex: 0 0 auto; gap: 4px; min-width: 0; margin: 0; padding: 2px 2px 5px; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: inline proximity; scrollbar-color: #9a895c #efe6c7; scrollbar-width: thin; }
+html[data-design="cardboard"] .cardboard-landmarks::-webkit-scrollbar { display: block; height: 5px; }
+html[data-design="cardboard"] .cardboard-landmarks::-webkit-scrollbar-track { border-radius: 4px; background: #efe6c7; }
+html[data-design="cardboard"] .cardboard-landmarks::-webkit-scrollbar-thumb { border: 1px solid #efe6c7; border-radius: 4px; background: #9a895c; }
+html[data-design="cardboard"] .cardboard-landmark { display: flex; flex: 0 0 86px; flex-direction: row; align-items: center; justify-content: flex-start; gap: 4px; box-sizing: border-box; min-width: 0; min-height: 44px; margin: 0; padding: 3px; border: 1px dashed #b99b56; border-radius: 6px; background: #fff6da; color: #5a481b; font: inherit; scroll-snap-align: start; }
 html[data-design="cardboard"] .cardboard-landmark .cardboard-art { display: block; flex: 0 0 28px; width: 28px; height: 28px; border-radius: 4px; }
 html[data-design="cardboard"] .cardboard-landmark-copy { display: flex; flex: 1 1 auto; flex-direction: column; justify-content: center; min-width: 0; }
 html[data-design="cardboard"] .cardboard-landmark .cardboard-name { display: -webkit-box; max-height: 2.1em; padding: 0 2px; font-size: 11px; line-height: 1.05; overflow: hidden; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -10399,6 +10897,27 @@ html[data-design="cardboard"] #cardboardCenter { display: flex; flex-direction: 
 html[data-design="cardboard"] #cardboardMarket { min-width: 0; min-height: 0; }
 html[data-design="cardboard"] #cardboardMarket #buildMenu { position: static; width: 100%; max-width: none; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; color: var(--cardboard-ink); }
 html[data-design="cardboard"] #cardboardDiceReceipt { min-width: 0; padding: 3px 6px; border-radius: 6px; background: #fffaf0; color: var(--cardboard-ink); font-size: 11px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt {
+    max-height: clamp(82px, 16dvh, 144px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: #9a895c #efe6c7;
+    scrollbar-width: thin;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt:focus-visible {
+    outline: 3px solid #265a42;
+    outline-offset: 1px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt:has(details[open]) {
+    max-height: min(45dvh, 360px);
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt::-webkit-scrollbar { width: 5px; height: 4px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt::-webkit-scrollbar-track { border-radius: 4px; background: #efe6c7; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt::-webkit-scrollbar-thumb { border-radius: 4px; background: #9a895c; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt { scrollbar-color: #fff #000; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt:focus-visible { outline-color: #ffe66d; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt::-webkit-scrollbar-track { background: #000; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt::-webkit-scrollbar-thumb { background: #fff; }
 html[data-design="cardboard"] #cardboardDiceReceipt:empty { display: none; }
 html[data-design="cardboard"] #cardboardDiceReceipt p { margin: 2px 0; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { margin: 0; font-size: 19px; font-weight: 900; color: #24527a; }
@@ -10479,16 +10998,32 @@ html[data-design="cardboard"] #cardboardMarketDialog::backdrop { background: #07
 html[data-design="cardboard"] .cardboard-market-dialog-header { position: sticky; top: -10px; z-index: 3; display: flex; align-items: center; gap: 8px; min-height: 48px; margin: -10px -10px 8px; padding: 6px 10px; border-bottom: 1px solid #b7a36d; background: #fffdf5; }
 html[data-design="cardboard"] .cardboard-market-dialog-header h2 { flex: 1; margin: 0; font-size: 18px; }
 html[data-design="cardboard"] #cardboardMarketClose { width: auto; min-width: 110px; min-height: 44px; margin: 0; padding: 6px 10px; border: 1px solid #7c6c43; background: #fff8df; color: var(--cardboard-ink); }
-html[data-design="cardboard"] #cardboardMarketDialog .compact-market { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+html[data-design="cardboard"] #cardboardMarketDialog .compact-market { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%; min-height: 0; }
 html[data-design="cardboard"] #cardboardMarketDialog .compact-market-header { position: static; display: flex; width: auto; height: auto; align-items: center; gap: 8px; overflow: visible; clip-path: none; }
 html[data-design="cardboard"] #cardboardMarketDialog .compact-market-header h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 html[data-design="cardboard"] #cardboardMarketDialog .compact-market-expand { display: none; }
-html[data-design="cardboard"] #cardboardMarketDialog .compact-market-facilities { grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr)); grid-auto-rows: auto; max-height: min(56dvh, 560px); overflow: auto; padding: 4px; }
-html[data-design="cardboard"] #cardboardMarketDialog .compact-market-landmarks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); overflow: visible; }
+html[data-design="cardboard"] #cardboardMarketDialog .compact-market-facilities { align-self: stretch; width: 100%; grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr)); grid-auto-rows: auto; max-height: min(56dvh, 560px); overflow: auto; padding: 4px; }
+html[data-design="cardboard"] #cardboardMarketDialog .compact-market-landmarks { display: grid; width: 100%; grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr)); overflow: visible; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-buy { display: flex; flex-direction: column; grid-template-columns: none; grid-template-rows: none; align-items: stretch; height: auto; min-height: 0; padding: 0 0 3px; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-art { flex: 0 0 auto; width: 100%; height: clamp(72px, 18dvh, 128px); min-height: 72px; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-item:not(.compact-market-landmark) > .compact-market-detail { top: 40px; right: 4px; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-dice { font-size: 19px; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-kind { font-size: 11px; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-name { padding: 5px 6px; font-size: 15px; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-landmark .compact-market-art { flex: 0 0 auto; width: 100%; height: 72px; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-landmark .compact-market-name { padding: 4px 2px; font-size: 13px; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-price { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; line-height: 1.2; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-buy.can-afford .compact-market-price::after { content: "建設可"; flex: 0 0 auto; padding: 3px 6px; border: 1px solid #3d7353; border-radius: 999px; background: #e0f0d9; color: #204d33; font-size: 10px; line-height: 1.1; }
+html[data-design="cardboard"] #cardboardMarketDialog #cardboardMarket .compact-market-item:has(:is(.compact-market-buy, .compact-market-detail):focus-visible) { z-index: 4; outline: 3px solid #123c67; outline-offset: 1px; }
+html[data-design="cardboard"] #cardboardMarketDialog :is(.compact-market-buy, .compact-market-detail):focus-visible { z-index: 2; outline: 3px solid #123c67; outline-offset: 2px; box-shadow: 0 0 0 4px #fffdf5; }
 html[data-design="cardboard"] #cardboardMarketDialog :is(.compact-market-filter-disclosure, .compact-market-goal-disclosure)[open] { position: static; width: auto; max-height: none; padding: 0; transform: none; overflow: visible; border: 0; background: transparent; box-shadow: none; }
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMarketDialog { border-color: #fff; background: #000; color: #fff; box-shadow: none; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMoreMenuContent { border: 2px solid #fff; background: #000; color: #fff; }
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-market-dialog-header { border-color: #fff; background: #000; }
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMarketClose { border: 2px solid #fff; background: #000; color: #fff; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMarketDialog #cardboardMarket .compact-market-buy.can-afford .compact-market-price::after { border-color: #fff; background: #000; color: #ffe66d; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMarketDialog #cardboardMarket .compact-market-item:has(:is(.compact-market-buy, .compact-market-detail):focus-visible) { outline-color: #ffe66d; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMarketDialog :is(.compact-market-buy, .compact-market-detail):focus-visible { outline-color: #ffe66d; box-shadow: 0 0 0 4px #000; }
 html[data-design="cardboard"] .compact-market { min-width: 0; color: var(--cardboard-ink); }
 html[data-design="cardboard"] :is(.compact-market-filter-disclosure, .compact-market-goal-disclosure) > summary { display: flex; align-items: center; min-height: 44px; padding: 4px 7px; border: 1px solid #b7a36d; border-radius: 6px; background: #fffdf5; color: var(--cardboard-ink); font-size: 12px; cursor: pointer; }
 html[data-design="cardboard"] .compact-market-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
@@ -10519,6 +11054,37 @@ html[data-design="cardboard"] .compact-market-purple { --market-color: var(--car
 html[data-design="cardboard"] .compact-market-item.compact-market-unavailable {
     border: 2px dashed #667780;
 }
+html[data-design="cardboard"] .compact-market-item.compact-market-roll-match {
+    box-shadow: 0 0 0 2px #f0c24d, 0 0 12px #d99a2470;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .compact-market-item.compact-market-roll-match {
+    outline: 3px solid #ffe66d;
+    outline-offset: -3px;
+    box-shadow: none;
+}
+@media (min-width: 761px) {
+    html[data-design="cardboard"] .compact-market-item.compact-market-roll-match .compact-market-dice {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+    }
+    html[data-design="cardboard"] .compact-market-item.compact-market-roll-match .compact-market-dice::after {
+        content: "今回";
+        flex: 0 0 auto;
+        padding: 2px 5px;
+        border-radius: 999px;
+        background: #ffe08a;
+        color: #513b07;
+        font-size: 10px;
+        line-height: 1.1;
+    }
+    html[data-design="cardboard"] body.accessibility-high-contrast .compact-market-item.compact-market-roll-match .compact-market-dice::after {
+        border: 1px solid #000;
+        background: #ffeb3b;
+        color: #000;
+    }
+}
 html[data-design="cardboard"] .compact-market-buy { display: flex; flex-direction: column; width: 100%; min-width: 0; min-height: 44px; margin: 0; padding: 0 0 3px; border: 0; border-radius: 0; background: transparent; color: var(--cardboard-ink); text-align: left; font: inherit; }
 html[data-design="cardboard"] .compact-market-buy:disabled { opacity: 1; color: #485965; filter: saturate(.55); }
 html[data-design="cardboard"] .compact-market-buy.can-afford:hover { background: #ffffff55; }
@@ -10545,14 +11111,15 @@ html[data-design="cardboard"] .compact-market-built { background: #f8df83; }
 html[data-design="cardboard"] .compact-market-refilled { outline: 2px solid #d59924; }
 html[data-design="cardboard"] #cardboardChoiceJump { position: fixed; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 6; min-height: 44px; margin: 0; padding: 6px 11px; border: 2px solid #fffdf5; border-radius: 9px; background: #1766bd; color: #fff; box-shadow: 0 3px 12px #18344740; }
 html[data-design="cardboard"] body.pwa-banner-open #cardboardChoiceJump { top: 8px; bottom: auto; }
-html[data-design="cardboard"] .cardboard-new-roll .plaza-receipt-dice { animation: cardboard-roll-reveal 900ms ease-out both; color: #103f7a; text-shadow: 0 1px #fff; }
-html[data-design="cardboard"] #diceResult.dice-result-arrival .dice-face:not(.rolling) {
+html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) .plaza-receipt-dice { animation: cardboard-roll-reveal 900ms ease-out both; color: #103f7a; text-shadow: 0 1px #fff; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) #diceResult.dice-result-arrival .dice-face:not(.rolling) {
     animation: cardboard-dice-land 520ms cubic-bezier(.18, .78, .25, 1) both;
 }
-html[data-design="cardboard"] #diceResult.dice-result-arrival .dice-face:nth-child(2) { animation-delay: 75ms; }
-html[data-design="cardboard"] .cardboard-new-roll .cardboard-card-activated { animation: cardboard-card-activate 760ms cubic-bezier(.2, .8, .25, 1) both; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) #diceResult.dice-result-arrival .dice-face:nth-child(2) { animation-delay: 75ms; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) .cardboard-card-activated { animation: cardboard-card-activate 760ms cubic-bezier(.2, .8, .25, 1) both; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) :is(.cardboard-activation-step-1, .cardboard-activation-step-2, .cardboard-activation-step-3, .cardboard-activation-step-4) { animation-delay: var(--cardboard-activation-delay, 0ms); }
 html[data-design="cardboard"] .cardboard-transfers { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
-html[data-design="cardboard"] .cardboard-transfer { position: absolute; max-width: 260px; padding: 4px 8px; border: 1px solid #a57919; border-radius: 16px; background: #ffeb9d; color: #563a00; box-shadow: 0 3px 9px #5e420033; font-size: 14px; font-weight: 900; white-space: nowrap; }
+html[data-design="cardboard"] .cardboard-transfer { position: absolute; max-width: min(260px, calc(100vw - 24px)); overflow: hidden; padding: 4px 8px; border: 1px solid #a57919; border-radius: 16px; background: #ffeb9d; color: #563a00; box-shadow: 0 3px 9px #5e420033; font-size: 14px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
 html[data-design="cardboard"] .cardboard-transfer[data-flow="incoming"] { border-color: #287a50; background: #d7f4df; color: #155634; }
 html[data-design="cardboard"] .cardboard-transfer[data-flow="outgoing"] { border-color: #aa493c; background: #ffe1d7; color: #76281e; }
 html[data-design="cardboard"] .cardboard-transfer[data-large="true"] {
@@ -10564,7 +11131,8 @@ html[data-design="cardboard"] .cardboard-transfer[data-large="true"] {
 }
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-transfer { border: 2px solid #fff; background: #000; color: #ffeb3b; }
 html[data-design="cardboard"] .cardboard-transfer-static { left: 50%; top: 45%; max-width: calc(100% - 24px); transform: translate(-50%, -50%); white-space: normal; text-align: center; }
-html[data-design="cardboard"] .cardboard-transfer-summary { position: absolute; left: 50%; bottom: 8px; max-width: calc(100% - 24px); max-height: 3.75em; overflow: hidden; transform: translateX(-50%); padding: 4px 8px; border-radius: 6px; background: #fff9e8ee; color: #563a00; font-size: 12px; line-height: 1.25; text-align: center; }
+html[data-design="cardboard"] .cardboard-transfer-summary { position: absolute; left: 50%; bottom: 8px; max-width: calc(100% - 24px); max-height: 3.75em; overflow: hidden; transform: translateX(-50%); padding: 4px 8px; border-radius: 6px; background: #fff9e8ee; color: #563a00; font-size: 12px; line-height: 1.25; text-align: left; white-space: pre-line; }
+html[data-design="cardboard"] #cardboardDiceReceipt > .cardboard-transfer-summary { position: static; left: auto; bottom: auto; width: 100%; max-width: none; max-height: 3.75em; margin: 2px 0 0; transform: none; overflow: auto; border: 1px solid #c6a85e; text-align: left; }
 @keyframes cardboard-roll-reveal { from { transform: scale(1.08); background: #ffe89c; } to { transform: scale(1); background: transparent; } }
 @keyframes cardboard-card-activate {
     0% { box-shadow: 0 0 0 4px #fff2b580; }
@@ -10656,18 +11224,61 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] body.pwa-banner-open #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) { height: calc(100dvh - 242px - env(safe-area-inset-bottom, 0px)); min-height: 276px; }
 }
 @media (max-width: 760px) {
-    html[data-design="cardboard"] #cardboardControls { flex-wrap: wrap; }
+    html[data-design="cardboard"] #cardboardControls { flex-wrap: nowrap; }
     html[data-design="cardboard"] #cardboardBoard { border-radius: 12px; padding: 6px; }
     html[data-design="cardboard"] .cardboard-cards { max-height: 190px; }
     html[data-design="cardboard"] .cardboard-player-self .cardboard-cards { display: grid; grid-auto-flow: column; grid-auto-columns: 86px; grid-template-columns: none; max-height: 150px; }
     html[data-design="cardboard"] .compact-market-facilities { max-height: 250px; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] {
+        overscroll-behavior-y: contain;
+        scrollbar-color: #728c78 #e3eadf;
+        scrollbar-width: thin;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar { width: 5px; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar-track { border-radius: 4px; background: #e3eadf; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar-thumb { border: 1px solid #e3eadf; border-radius: 4px; background: #728c78; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] .cardboard-landmark-heading::after {
+        content: "街を上下にスクロール ↓";
+        flex: 0 0 auto;
+        color: #526b55;
+        font-size: 10px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] { scrollbar-color: #fff #000; }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar-track { background: #000; }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar-thumb { border-color: #000; background: #fff; }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] .cardboard-landmark-heading::after { color: #fff; }
 }
 @media (orientation: landscape) and (max-height: 480px) and (min-width: 761px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] {
+        overscroll-behavior-y: contain;
+        scrollbar-color: #728c78 #e3eadf;
+        scrollbar-width: thin;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar { width: 6px; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar-track { border-radius: 4px; background: #e3eadf; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar-thumb { border: 1px solid #e3eadf; border-radius: 4px; background: #728c78; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] .cardboard-landmark-heading::after {
+        content: "縦にスクロール ↓";
+        flex: 0 0 auto;
+        color: #526b55;
+        font-size: 9px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] {
+        scrollbar-color: #fff #000;
+    }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar-track { background: #000; }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"]::-webkit-scrollbar-thumb { border-color: #000; background: #fff; }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] .cardboard-landmark-heading::after { color: #fff; }
     html[data-design="cardboard"] .cardboard-card .cardboard-dice { position: relative; }
     html[data-design="cardboard"] .cardboard-card .cardboard-dice::after { content: attr(data-category-label); position: absolute; right: 1px; bottom: 1px; padding: 0 1px; border-radius: 2px; background: #fffdf5; color: #18313d; font-size: 11px; line-height: 12px; font-weight: 800; }
     html[data-design="cardboard"] #cardboardBoard { grid-template-rows: 79px minmax(150px, 1fr) 79px; min-height: 332px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view { grid-template-rows: 88px minmax(130px, 1fr) 88px; }
     html[data-design="cardboard"] #cardboardBoard:not(.cardboard-focus-view):not(:has(.cardboard-player[data-seat-position="top"])) { grid-template-rows: minmax(150px, 1fr) 79px; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards { grid-auto-columns: 100px; }
     html[data-design="cardboard"] .cardboard-player { padding: 4px; }
     html[data-design="cardboard"] .cardboard-header h2 { font-size: 12px; }
     html[data-design="cardboard"] .cardboard-header p { font-size: 11px; }
@@ -10691,11 +11302,11 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card { min-height: 0; height: 100%; padding-bottom: 2px; }
     /* Keep the facility artwork visible on compact landscape cards, including
        cards carrying activation or dormancy details. */
-    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card { display: grid; grid-template-columns: 24px minmax(0, 1fr); grid-template-rows: 14px minmax(24px, 1fr) 14px 14px; padding: 0; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card { display: grid; grid-template-columns: 30px minmax(0, 1fr); grid-template-rows: 14px minmax(24px, 1fr) 14px 14px; padding: 0; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card:not(:has(.cardboard-dormant, .cardboard-activation)) { grid-template-rows: 14px minmax(28px, 1fr); }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card:has(.cardboard-dormant, .cardboard-activation) { grid-template-rows: 14px minmax(24px, 1fr) 14px 14px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card .cardboard-dice { grid-column: 1; grid-row: 1 / 5; display: flex; align-items: center; justify-content: center; padding: 0 0 17px; box-sizing: border-box; line-height: 13px; }
-    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card .cardboard-name { grid-column: 2; grid-row: 1; min-width: 0; padding: 1px 3px; font-size: 11px; line-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card .cardboard-name { grid-column: 2; grid-row: 1; min-width: 0; padding: 1px 3px; font-size: 12px; line-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card .cardboard-art { display: block; grid-column: 2; grid-row: 2; width: 100%; height: 100%; min-height: 0; max-height: 42px; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card:has(.cardboard-dormant, .cardboard-activation) .cardboard-art { display: block; }
     html[data-design="cardboard"] .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-card .cardboard-count { position: absolute; top: 16px; right: 1px; z-index: 1; margin: 0; padding: 1px 3px; border-radius: 4px; background: #fffdf0eF; font-size: 10px; line-height: 12px; }
@@ -10709,9 +11320,27 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] .cardboard-landmark .cardboard-name { max-width: 100%; font-size: 10px; line-height: 1; }
     html[data-design="cardboard"] .cardboard-landmark { flex-basis: 84px; }
     html[data-design="cardboard"] #cardboardDiceReceipt { height: 44px; max-height: 44px; padding: 0 3px; overflow: visible; }
+    html[data-design="cardboard"] #cardboardDiceReceipt:has(> .cardboard-transfer-summary) { height: 76px; max-height: 76px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt:has(> .cardboard-transfer-summary) > .cardboard-transfer-summary { max-height: 27px; margin-top: 1px; padding: 2px 5px; font-size: 10px; line-height: 1.2; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; grid-template-rows: 44px; height: 44px; min-width: 0; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { grid-column: 1; grid-row: 1; align-self: center; margin: 0; font-size: 13px; line-height: 1.2; }
-    html[data-design="cardboard"] #cardboardDiceReceipt :is(.plaza-receipt-featured, .plaza-event-receipt > .plaza-important-event) { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; white-space: nowrap; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt > .plaza-important-event { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-inline: contain;
+        scrollbar-color: #9a895c #efe6c7;
+        scrollbar-width: thin;
+        text-overflow: clip;
+    }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured > .plaza-receipt-transfer { flex: 0 0 auto; max-width: none; white-space: nowrap; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured > .plaza-receipt-activation-count { flex: 0 0 auto; white-space: nowrap; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured::-webkit-scrollbar { display: block; height: 3px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured::-webkit-scrollbar-thumb { border-radius: 3px; background: #9a895c; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt:has(> .plaza-important-event) > .plaza-receipt-featured { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-totals { display: none; }
     html[data-design="cardboard"] #cardboardDiceReceipt details { grid-column: 3; grid-row: 1; align-self: center; }
@@ -10840,7 +11469,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] #cardboardBoard #cardboardMarket .market-refill-history[open] > summary { width: 100%; font-size: 12px; }
     html[data-design="cardboard"] #cardboardBoard #cardboardMarket .market-refill-history[open] > summary::before { display: none; }
     html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market::before {
-        content: "中央市場";
+        content: "中央市場 · 横送り ↔";
         display: flex;
         grid-column: 3;
         grid-row: 1;
@@ -10886,19 +11515,14 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         padding: 2px;
     }
     html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-facilities {
+        display: grid;
         grid-column: 1 / -1;
         grid-row: 2;
-        width: 100%;
-        height: 154px;
-        max-height: 154px;
-    }
-    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-facilities {
-        display: grid;
         flex: 0 0 auto;
         grid-auto-flow: column;
         grid-auto-columns: 210px;
         grid-template-columns: none;
-        grid-template-rows: repeat(2, minmax(0, 1fr));
+        grid-template-rows: minmax(0, 1fr);
         grid-auto-rows: minmax(0, 1fr);
         align-items: stretch;
         width: 100%;
@@ -10916,8 +11540,63 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     }
     html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item {
         min-width: 0;
-        height: 74px;
+        height: 154px;
         scroll-snap-align: start;
+    }
+    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-buy {
+        display: flex;
+        flex-direction: column;
+        height: 152px;
+        padding: 0 0 2px;
+    }
+    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-dice {
+        flex: 0 0 22px;
+        padding: 2px 6px;
+        font-size: 14px;
+    }
+    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-kind {
+        position: static;
+        flex: 0 0 13px;
+        width: auto;
+        height: auto;
+        padding: 1px 5px;
+        overflow: visible;
+        clip-path: none;
+        font-size: 10px;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-art {
+        flex: 1 1 auto;
+        width: 100%;
+        height: 68px;
+        min-height: 60px;
+    }
+    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-name {
+        flex: 0 0 auto;
+        padding: 3px 5px;
+        font-size: 14px;
+        line-height: 1.15;
+    }
+    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-price {
+        flex: 0 0 auto;
+        padding: 2px 5px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-stock {
+        position: static;
+        flex: 0 0 13px;
+        margin-top: auto;
+        padding: 0 5px 2px;
+        font-size: 10px;
+    }
+    html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-detail {
+        top: 24px;
+        right: 2px;
+        width: 40px;
+        height: 40px;
+        min-height: 40px;
     }
     html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-facilities::-webkit-scrollbar { display: block; height: 4px; }
     html[data-design="cardboard"] #cardboardBoard #cardboardMarket .compact-market-facilities::-webkit-scrollbar-thumb { border-radius: 4px; background: #718574; }
@@ -10963,6 +11642,274 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         height: 42px;
     }
 }
+
+/* The online lobby uses the same warm tabletop language as the card board. */
+html[data-design="cardboard"] #titleScreen:has(#onlineWaitingPanel .room-share-panel) {
+    --title-content-max: 1040px;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-share-panel {
+    gap: 12px;
+    padding: clamp(12px, 2vw, 22px);
+    border: 1px solid #c9ad62;
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(255, 251, 235, .98), rgba(239, 232, 198, .98));
+    box-shadow: 0 12px 30px rgba(34, 57, 43, .18), inset 0 1px #fff;
+    color: #263d35;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-share-state {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #28664c;
+    color: #fff8df;
+    font-size: 15px;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-share-label,
+html[data-design="cardboard"] #onlineWaitingPanel .room-share-help { color: #53675a; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-id-display {
+    border: 1px solid #c6ad6b;
+    background: #fffdf4;
+    color: #8b5817;
+    box-shadow: inset 0 1px 3px rgba(70, 53, 25, .1);
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-share-panel :is(
+    .room-qr-toggle, .room-id-copy-btn, .room-ready-btn, .room-host-start-btn, .room-leave-btn
+) {
+    min-height: 46px;
+    border: 1px solid #527b5b;
+    border-radius: 10px;
+    background: #28664c;
+    color: #fff8df;
+    font-weight: 700;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-share-panel :is(
+    button, summary, .room-id-display
+):focus-visible {
+    outline: 3px solid #ad7111;
+    outline-offset: 3px;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-seats {
+    padding: clamp(10px, 1.5vw, 18px);
+    border: 1px solid #cfb96f;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .52);
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-table-status,
+html[data-design="cardboard"] #onlineWaitingPanel .room-table-next-step,
+html[data-design="cardboard"] #onlineWaitingPanel .room-ready-help { color: #53675a; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-game-table {
+    padding: 10px;
+    border: 1px solid #a3b99d;
+    border-radius: 14px;
+    background: radial-gradient(ellipse at center, #f5f0d8 0 44%, #dce8d2 45% 100%);
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-game-table > span {
+    color: #385548;
+    font-weight: 700;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-table-layout .room-seat-list .room-seat {
+    min-height: 104px;
+    padding: 12px;
+    border: 1px solid #bdcdb4;
+    border-radius: 12px;
+    background: #fffdf4;
+    box-shadow: 0 3px 8px rgba(49, 72, 54, .12);
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat[data-seat-self="true"] {
+    border-color: #c59a28;
+    background: #fff5d1;
+    box-shadow: inset 0 0 0 2px #e2bd58, 0 4px 10px rgba(74, 62, 30, .15);
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat[data-seat-state="ready"] .room-seat-state { color: #1f7049; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat[data-seat-state="preparing"] .room-seat-state { color: #9a6410; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat[data-seat-state="reconnecting"] .room-seat-state { color: #a53e32; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat[data-seat-state="empty"] { background: #f2f0e5; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat[data-seat-state="empty"] .room-seat-name,
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat[data-seat-state="empty"] .room-seat-state { color: #737b70; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat-number {
+    border-radius: 8px;
+    background: #416e59;
+    color: #fff8df;
+    font-weight: 800;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat-roles > span {
+    padding: 2px 7px;
+    border: 1px solid #d0bd7f;
+    border-radius: 999px;
+    background: #f8edc3;
+    color: #614d1b;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-seat-remove {
+    border: 1px solid #b66a5d;
+    border-radius: 8px;
+    background: #fff4ed;
+    color: #8d3024;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-market-rule,
+html[data-design="cardboard"] #onlineWaitingPanel .room-setup-summary,
+html[data-design="cardboard"] #onlineWaitingPanel .room-host-controls {
+    border-color: #cabb8d;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .48);
+    color: #344b40;
+}
+html[data-design="cardboard"] #onlineWaitingPanel .room-market-rule strong { color: #76500e; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-market-rule span,
+html[data-design="cardboard"] #onlineWaitingPanel .room-setup-summary dt { color: #53675a; }
+html[data-design="cardboard"] #onlineWaitingPanel .room-setup-summary dd { color: #263d35; }
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-share-panel,
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-share-panel :is(
+    .room-seats, .room-game-table, .room-table-layout .room-seat-list .room-seat, .room-market-rule,
+    .room-setup-summary, .room-host-controls
+) {
+    border: 2px solid #fff;
+    background: #000;
+    color: #fff;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-game-table-art { display: none; }
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-game-table > span { color: #fff; }
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-share-panel :is(
+    .room-share-label, .room-share-help, .room-table-status, .room-table-next-step,
+    .room-ready-help, .room-seat-name, .room-seat-state, .room-setup-summary dt, .room-setup-summary dd
+) { color: #fff; }
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-share-panel :is(
+    button, .room-id-display
+) {
+    border: 2px solid #fff;
+    background: #000;
+    color: #fff;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-share-state,
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-seat-roles > span,
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-seat-number,
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-market-rule strong {
+    border: 1px solid #fff;
+    background: #000;
+    color: #ffe66d;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-seat[data-seat-state="ready"] .room-seat-state,
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-seat[data-seat-state="preparing"] .room-seat-state,
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-seat[data-seat-state="reconnecting"] .room-seat-state,
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-seat[data-seat-state="empty"] .room-seat-state {
+    border: 1px solid #fff;
+    background: #000;
+    color: #ffe66d;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPanel .room-share-panel :is(
+    button, summary, .room-id-display
+):focus-visible {
+    outline-color: #ffe66d;
+}
+@media (max-width: 480px) {
+    html[data-design="cardboard"] #onlineWaitingPanel .room-share-panel { border-radius: 14px; }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-table-layout .room-seat-list .room-seat {
+        min-height: 86px;
+        padding: 10px;
+    }
+}
+@media (orientation: portrait) and (max-width: 380px) {
+    html[data-design="cardboard"] #onlineWaitingPanel .room-share-panel { gap: 8px; }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-share-row { flex-direction: row; gap: 6px; }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-id-display {
+        min-width: 0;
+        padding: 8px 5px;
+        font-size: 24px;
+        letter-spacing: 4px;
+        line-height: 1.2;
+    }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-id-copy-btn {
+        width: auto;
+        min-width: 88px;
+        min-height: 46px;
+        flex: 0 0 92px;
+        padding: 6px;
+        font-size: 12px;
+    }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-table-layout { margin: 8px auto; }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-game-table {
+        gap: 4px;
+        margin: 4px auto 8px;
+        padding: 6px;
+    }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-game-table-art { width: min(128px, 60%); }
+}
+
+/* Keep saved-game actions in the first view on short phones without shrinking
+   their touch targets. The title and the longer setup content remain scrollable. */
+@media (max-width: 380px) and (max-height: 640px) {
+    html[data-design="cardboard"] #titleScreen > .title-content { gap: 8px; padding: 8px 12px; }
+    html[data-design="cardboard"] #titleScreen .title-header { padding: 10px 10px 8px; }
+    html[data-design="cardboard"] #titleScreen .title-brand-mark { width: 42px; height: 42px; }
+    html[data-design="cardboard"] #titleScreen .sunset-hero { width: min(100%, 340px); margin-top: 8px; }
+    html[data-design="cardboard"] #titleScreen .sunset-hero img { height: 64px; }
+    html[data-design="cardboard"] #titleScreen .title-logo-deco { display: none; }
+    html[data-design="cardboard"] #titleScreen .title-buttons-row .rules-btn { min-height: 36px; }
+    html[data-design="cardboard"] #titleScreen #resumeSection .local-resume-notice { padding: 8px; }
+    html[data-design="cardboard"] #titleScreen #resumeSection .local-resume-copy > p:first-of-type { display: none; }
+    html[data-design="cardboard"] #titleScreen #resumeSection .local-resume-copy .local-resume-market-details {
+        display: -webkit-box;
+        max-height: 2.8em;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+    html[data-design="cardboard"] #titleScreen:has(#resumeSection[style*="display: flex"]) .title-header .sunset-hero {
+        display: none;
+    }
+}
+
+/* A short landscape title uses the branding as a compact rail and gives the
+   active mode the wide column, so resume and reconnect actions stay visible. */
+@media (orientation: landscape) and (min-width: 761px) and (max-height: 600px) {
+    html[data-design="cardboard"] body:has(> #titleScreen:not([style*="display: none"])) #titleScreen > .title-content {
+        display: grid;
+        grid-template-columns: minmax(220px, .72fr) minmax(0, 1.28fr);
+        grid-template-rows: auto auto auto auto auto auto;
+        grid-template-areas: "hero tabs" "hero content" "online online" "about about" "ad ad" "legal legal";
+        align-content: start;
+        align-items: start;
+        width: min(calc(100% - 24px), 1120px);
+        max-width: 1120px;
+        min-height: 0;
+        margin: 0 auto;
+        padding: 8px 0;
+        gap: 6px 16px;
+    }
+    html[data-design="cardboard"] #titleScreen .title-header {
+        grid-area: hero;
+        align-self: start;
+        padding: 10px;
+    }
+    html[data-design="cardboard"] #titleScreen .title-brand-mark { width: 42px; height: 42px; }
+    html[data-design="cardboard"] #titleScreen .title-header h1 { margin: 0; font-size: 24px; letter-spacing: 1px; }
+    html[data-design="cardboard"] #titleScreen .title-logo-sub,
+    html[data-design="cardboard"] #titleScreen .title-logo-deco,
+    html[data-design="cardboard"] #titleScreen .title-header .sunset-hero { display: none; }
+    html[data-design="cardboard"] #titleScreen .title-buttons-row { margin: 4px 0 0; }
+    html[data-design="cardboard"] #titleScreen .title-buttons-row .rules-btn { min-height: 36px; }
+    html[data-design="cardboard"] #titleScreen .tab-bar { grid-area: tabs; align-self: start; min-height: 40px; margin: 0; }
+    html[data-design="cardboard"] #titleScreen #tabContentLocal,
+    html[data-design="cardboard"] #titleScreen #tabContentOnline,
+    html[data-design="cardboard"] #titleScreen #tabContentStats,
+    html[data-design="cardboard"] #titleScreen #tabContentTournament { grid-area: content; min-width: 0; margin: 0; }
+    html[data-design="cardboard"] #titleScreen #onlineResumeSection { grid-area: online; }
+    html[data-design="cardboard"] #titleScreen #resumeSection[style*="display: flex"] {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr);
+        align-items: stretch;
+        gap: 6px;
+    }
+    html[data-design="cardboard"] #titleScreen #resumeSection.local-resume-notice { padding: 8px; }
+    html[data-design="cardboard"] #titleScreen #resumeSection .local-resume-copy > p:first-of-type { display: none; }
+    html[data-design="cardboard"] #titleScreen #resumeSection .local-resume-copy .local-resume-market-details {
+        display: -webkit-box;
+        max-height: 3em;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+    html[data-design="cardboard"] #titleScreen #resumeSection .local-resume-actions { grid-template-columns: minmax(0, 1fr) 64px; gap: 6px; }
+    html[data-design="cardboard"] #titleScreen .local-save-generation-label { gap: 2px; font-size: 11px; }
+}
 /* On compact tables, focus one player's illustrated town at a time.
    A seat rail keeps every balance and turn visible without shrinking all towns. */
 @media (orientation: landscape) and (min-width: 761px) and (max-height: 600px) {
@@ -10974,7 +11921,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         overflow: hidden;
     }
     html[data-design="cardboard"] body:not(.game-finished) #gameScreen > #status:not(.game-winner) {
-        padding-right: calc(100% - 230px);
+        padding-right: clamp(270px, 34vw, 320px);
         overflow: hidden;
         text-align: left;
         text-overflow: ellipsis;
@@ -11010,7 +11957,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
 
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view {
         display: grid;
-        grid-template-columns: minmax(0, .95fr) minmax(320px, 1.05fr);
+        grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
         grid-template-rows: 48px minmax(0, 1fr);
         grid-template-areas: "roster roster" "focus center";
         height: calc(100dvh - 58px);
@@ -11093,7 +12040,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         grid-auto-flow: row;
         grid-auto-rows: max-content;
         grid-auto-columns: auto;
@@ -11107,7 +12054,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         grid-template-columns: none;
         grid-template-rows: none;
         flex-direction: column;
-        min-height: 132px;
+        min-height: 152px;
         height: auto;
         padding: 0;
         overflow: hidden;
@@ -11124,14 +12071,14 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         display: block;
         grid-column: auto;
         grid-row: auto;
-        font-size: 10px;
+        font-size: 11px;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-art {
         grid-column: auto;
         grid-row: auto;
         width: 100%;
-        height: 64px;
-        min-height: 64px;
+        height: 76px;
+        min-height: 76px;
         max-height: none;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card .cardboard-name {
@@ -11139,7 +12086,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         grid-column: auto;
         grid-row: auto;
         padding: 3px 4px;
-        font-size: 12px;
+        font-size: 13px;
         line-height: 1.2;
         white-space: normal;
     }
@@ -11152,7 +12099,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card :is(.cardboard-dormant, .cardboard-activation) {
         grid-column: auto;
         grid-row: auto;
-        font-size: 10px;
+        font-size: 11px;
         line-height: 1.3;
         white-space: normal;
     }
@@ -11167,23 +12114,136 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     }
 }
 @media (orientation: portrait) and (max-width: 760px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected {
+        overscroll-behavior-y: contain;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view:has(#cardboardActionSlot:has(.buttons > button:not(:disabled), #diceChoose button:not(:disabled))) .cardboard-player-selected {
+        padding-bottom: calc(min(38dvh, 240px) + 24px + env(safe-area-inset-bottom, 0px));
+        scroll-padding-block-end: calc(min(38dvh, 240px) + 24px + env(safe-area-inset-bottom, 0px));
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
+        flex: 0 0 auto;
+        min-height: 0;
+        max-height: none;
+        padding-bottom: 0;
+        overflow: visible;
+        scroll-snap-type: none;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardActionSlot:has(.buttons > button:not(:disabled), #diceChoose button:not(:disabled)) {
+        position: fixed;
+        left: max(8px, env(safe-area-inset-left, 0px));
+        right: max(8px, env(safe-area-inset-right, 0px));
+        bottom: max(8px, env(safe-area-inset-bottom, 0px));
+        z-index: 20;
+        width: auto;
+        max-width: 640px;
+        max-height: min(38dvh, 240px);
+        margin: 0 auto;
+        padding: 5px;
+        overflow: auto;
+        border: 1px solid #9a895c;
+        border-radius: 11px;
+        background: #f8f1dff2;
+        box-shadow: 0 4px 18px #18344755;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardActionSlot .buttons > button:not(:disabled) {
+        min-height: 48px;
+        font-size: 14px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardActionSlot #diceChoose .dice-choose button:not(:disabled) {
+        min-height: 48px;
+        font-size: 13px;
+        line-height: 1.25;
+    }
+    html[data-design="cardboard"] body.pwa-banner-open #cardboardBoard.cardboard-focus-view #cardboardActionSlot:has(.buttons > button:not(:disabled), #diceChoose button:not(:disabled)) {
+        bottom: calc(128px + env(safe-area-inset-bottom, 0px));
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardActionSlot:not(:has(.buttons > button:not(:disabled), #diceChoose button:not(:disabled))) {
+        position: static;
+        max-height: none;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards,
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardMarket .compact-market-facilities {
+        padding-bottom: 64px;
+        scroll-padding-block-end: 64px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards { padding-bottom: 0; }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view #cardboardActionSlot:has(.buttons > button:not(:disabled), #diceChoose button:not(:disabled)) {
+        border: 2px solid #fff;
+        background: #000;
+        box-shadow: none;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark {
+        flex-basis: 122px;
+        min-height: 56px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark .cardboard-art {
+        flex-basis: 32px;
+        width: 32px;
+        height: 32px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark .cardboard-name {
+        font-size: 11px;
+        line-height: 1.15;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+    html[data-design="cardboard"] #cardboardMoreMenu[open] > #cardboardMoreMenuContent {
+        position: fixed;
+        top: max(124px, calc(env(safe-area-inset-top, 0px) + 124px));
+        left: 50%;
+        right: auto;
+        width: min(340px, calc(100vw - 20px));
+        max-height: min(70dvh, 560px, calc(100dvh - 132px - env(safe-area-inset-bottom, 0px)));
+        transform: translateX(-50%);
+        z-index: 30;
+    }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster {
         display: flex;
-        flex-wrap: wrap;
-        height: auto;
-        gap: 4px;
-        overflow: visible;
+        flex-wrap: nowrap;
+        height: 68px;
+        gap: 5px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x proximity;
+        scrollbar-color: #728c78 #dce7d8;
+        scrollbar-width: thin;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster-seat {
-        flex: 1 1 calc(50% - 4px);
-        width: auto;
-        min-width: 0;
-        max-width: none;
-        min-height: 50px;
+        flex: 0 0 clamp(148px, 45vw, 176px);
+        width: clamp(148px, 45vw, 176px);
+        min-width: 148px;
+        max-width: 176px;
+        height: 64px;
+        min-height: 64px;
+        align-content: center;
+        scroll-snap-align: start;
     }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster-seat > strong {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 4px;
+        width: 100%;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster-name {
+        flex: 0 1 100%;
+        order: 2;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster-badge { order: 1; }
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster {
         flex-wrap: nowrap;
-        height: 60px;
+        height: 68px;
         overflow-x: auto;
         overflow-y: hidden;
         overscroll-behavior-x: contain;
@@ -11194,13 +12254,12 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster::-webkit-scrollbar { display: block; height: 4px; }
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster::-webkit-scrollbar-thumb { border-radius: 4px; background: #728c78; }
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster-seat {
-        flex: 0 0 168px;
-        width: 168px;
-        height: 56px;
-        min-height: 56px;
+        flex: 0 0 clamp(148px, 45vw, 176px);
+        width: clamp(148px, 45vw, 176px);
+        height: 64px;
+        min-height: 64px;
         scroll-snap-align: start;
     }
-    html[data-design="cardboard"] #cardboardBoard[data-player-count="3"] .cardboard-roster-seat:last-child { flex-basis: 100%; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardCenter { order: 0; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player:not(.cardboard-player-selected) { display: none; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected {
@@ -11208,10 +12267,10 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         display: flex;
         flex-direction: column;
         width: 100%;
-        height: min(44dvh, 360px);
-        max-height: min(44dvh, 360px);
-        min-height: 180px;
-        overflow: hidden;
+        height: auto;
+        max-height: none;
+        min-height: 0;
+        overflow: visible;
         outline: 2px solid #d0a42f;
         outline-offset: -2px;
         animation: cardboard-focus-arrive 160ms ease-out both;
@@ -11226,25 +12285,33 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-        grid-auto-flow: row;
+        grid-template-columns: none;
+        grid-auto-columns: minmax(176px, min(58vw, 260px));
+        grid-auto-flow: column;
         grid-auto-rows: max-content;
-        grid-auto-columns: auto;
         align-content: start;
-        flex: 1 1 auto;
-        min-height: 0;
+        justify-content: start;
+        flex: 0 0 184px;
+        height: 184px;
+        min-height: 184px;
         max-height: none;
-        overflow: auto;
+        overflow-x: auto;
+        overflow-y: hidden;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x proximity;
+        scrollbar-color: #718574 #e3eadb;
+        scrollbar-width: thin;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card {
         display: flex;
         grid-template-columns: none;
         grid-template-rows: none;
         flex-direction: column;
-        min-height: 132px;
+        min-height: 184px;
         height: auto;
         padding: 0;
         overflow: hidden;
+        scroll-snap-align: start;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card .cardboard-dice {
         position: static;
@@ -11258,8 +12325,8 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         grid-column: auto;
         grid-row: auto;
         width: 100%;
-        height: 64px;
-        min-height: 64px;
+        height: 96px;
+        min-height: 96px;
         max-height: none;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card .cardboard-name {
@@ -11267,7 +12334,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
         grid-column: auto;
         grid-row: auto;
         padding: 3px 4px;
-        font-size: 12px;
+        font-size: 13px;
         line-height: 1.2;
         white-space: normal;
     }
@@ -11280,7 +12347,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card :is(.cardboard-dormant, .cardboard-activation) {
         grid-column: auto;
         grid-row: auto;
-        font-size: 10px;
+        font-size: 11px;
         line-height: 1.3;
         white-space: normal;
     }
@@ -11356,6 +12423,16 @@ html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard 
 @media (orientation: landscape) and (max-height: 600px) {
     html[data-design="cardboard"] #cardboardRoster::before { display: none; }
 }
+@media (orientation: landscape) and (min-width: 761px) and (max-height: 600px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
+        flex: 0 0 154px;
+        height: 154px;
+        min-height: 154px;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+}
 @media (min-width: 1000px) and (min-height: 601px) {
     html[data-design="plaza"] #plazaPlayerHud button { padding: 8px 10px; font-size: 14px; line-height: 1.25; }
     html[data-design="plaza"] #plazaPlayerHud strong { font-size: 15px; }
@@ -11377,6 +12454,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #gameScreen > #st
     background: #000;
     color: #fff;
 }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-phase-indicator { border: 2px solid #fff; background: #000; color: #ffeb3b; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-turn-status-coins { border: 2px solid #fff; background: #000; color: #fff; }
 html[data-design="cardboard"] body.accessibility-high-contrast :is(
     #cardboardCenter, .cardboard-player, .cardboard-roster-seat,
     .compact-market-item, .cardboard-landmark
@@ -11389,12 +12468,19 @@ html[data-design="cardboard"] body.accessibility-high-contrast :is(
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-player-current {
     box-shadow: inset 0 4px #ffe66d !important;
 }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-landmark-scroll-hint { color: #ffe66d; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-facility-heading small { color: #ffe66d; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-facility-scroll-hint { color: #ffe66d; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-landmarks { scrollbar-color: #fff #000; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-landmarks::-webkit-scrollbar-track { background: #000; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-landmarks::-webkit-scrollbar-thumb { border-color: #000; background: #fff; }
 html[data-design="cardboard"] body.accessibility-high-contrast :is(.cardboard-card, .cardboard-landmark):focus-visible {
     outline-color: #ffe66d;
 }
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-roster-seat[aria-pressed="true"] {
     box-shadow: inset 0 -3px #ffe66d !important;
 }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-roster-detail-indicator { border: 1px solid #fff; background: #000; color: #ffe66d; }
 html[data-design="cardboard"] body.accessibility-high-contrast :is(.cardboard-roster-kind, .cardboard-player-kind) { border: 1px solid #fff; background: #000; }
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-roster-kind .player-kind-level { color: #ffeb3b; }
 html[data-design="cardboard"] body.accessibility-high-contrast :is(
@@ -11412,7 +12498,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast :is(
 }
 html[data-design="cardboard"] body.accessibility-high-contrast .plaza-receipt-transfer::before { color: #ffe66d !important; }
 html[data-design="cardboard"] body.accessibility-high-contrast :is(
-    #cardboardControls > button, #cardboardActionSlot .buttons button,
+    #cardboardControls > button, #cardboardMoreMenu > summary, #cardboardActionSlot .buttons button,
     .compact-market-filters button, .compact-market-header button,
     .compact-market-buy, .compact-market-detail, #cardboardChoiceJump,
     #diceChoose .dice-choose button, #cardboardDiceReceipt details > summary,
@@ -11422,6 +12508,11 @@ html[data-design="cardboard"] body.accessibility-high-contrast :is(
     border: 2px solid #fff;
     background: #000;
     color: #fff;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardActionSlot #btnSkip:not(:disabled) {
+    border: 2px solid #fff;
+    background: #000 !important;
+    color: #fff !important;
 }
 html[data-design="cardboard"] body.accessibility-high-contrast :is(
     .cardboard-player-hud, .cardboard-events-incomplete, .cardboard-empty,
@@ -11435,7 +12526,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast .compact-market-i
     outline: 2px solid #ffe66d;
     outline-offset: 1px;
 }
-html[data-design="cardboard"] body.accessibility-high-contrast .compact-market-item:has(.compact-market-buy:disabled) {
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardMarket .compact-market-item:has(.compact-market-buy:disabled) {
     border-style: dashed !important;
 }
 html[data-design="cardboard"] body.accessibility-high-contrast .compact-market-price[data-build-status="unavailable"] {
@@ -11602,12 +12693,14 @@ html[data-design="cardboard"] body.accessibility-high-contrast #status .winner-s
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-player-coins b { font-size: 22px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected > h3 { margin: 8px 0 4px; font-size: 13px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
-        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(300px, 360px));
         grid-auto-flow: row;
         grid-auto-rows: max-content;
         flex: 1 1 auto;
         min-height: 0;
         max-height: none;
+        justify-content: center;
+        align-content: safe center;
         gap: 8px;
         overflow: auto;
     }
@@ -11616,7 +12709,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #status .winner-s
         grid-template-columns: none;
         grid-template-rows: none;
         flex-direction: column;
-        min-height: 190px;
+        min-height: clamp(260px, 30vh, 320px);
         height: auto;
         padding: 0;
         overflow: hidden;
@@ -11633,23 +12726,23 @@ html[data-design="cardboard"] body.accessibility-high-contrast #status .winner-s
         display: block;
         grid-column: auto;
         grid-row: auto;
-        font-size: 11px;
+        font-size: 12px;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card .cardboard-art {
         grid-column: auto;
         grid-row: auto;
         width: 100%;
-        height: 88px;
-        min-height: 88px;
+        height: clamp(136px, 17vh, 168px);
+        min-height: clamp(136px, 17vh, 168px);
         max-height: none;
     }
-    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card .cardboard-dice { font-size: 17px; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card .cardboard-dice { font-size: 18px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-card .cardboard-name {
         display: block;
         grid-column: auto;
         grid-row: auto;
         padding: 4px 6px;
-        font-size: 14px;
+        font-size: 15px;
         line-height: 1.25;
         overflow: visible;
         text-overflow: clip;
@@ -11679,19 +12772,29 @@ html[data-design="cardboard"] body.accessibility-high-contrast #status .winner-s
         overflow-x: auto;
         overflow-y: hidden;
     }
-    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark { flex-basis: 132px; min-height: 56px; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark {
+        flex-basis: clamp(132px, 10vw, 148px);
+        min-height: clamp(56px, 6vh, 58px);
+        gap: clamp(4px, .55vw, 8px);
+        padding: clamp(3px, .35vw, 5px);
+        border-radius: clamp(6px, .62vw, 9px);
+    }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark .cardboard-art {
-        flex-basis: 32px;
-        width: 32px;
-        height: 32px;
-        min-height: 32px;
-        max-height: 32px;
+        flex-basis: clamp(32px, 2.92vw, 42px);
+        width: clamp(32px, 2.92vw, 42px);
+        height: clamp(32px, 4.5vh, 42px);
+        min-height: clamp(32px, 4.5vh, 42px);
+        max-height: clamp(32px, 4.5vh, 42px);
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark .cardboard-name {
-        font-size: 11px;
-        line-height: 1.15;
+        font-size: clamp(11px, .84vw, 12px);
+        line-height: 1.2;
         white-space: normal;
         overflow-wrap: anywhere;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark-status {
+        font-size: clamp(10px, .77vw, 11px);
+        font-weight: 800;
     }
     html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view .cardboard-player-selected { outline-color: #ffe66d; }
 }
@@ -11856,14 +12959,62 @@ html body:not(.accessibility-high-contrast) :is(
 
 @media (min-width: 1200px) and (min-height: 481px) {
     html[data-design="cardboard"] #cardboardMarket .compact-market-facilities {
-        grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
     }
 
     html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-buy {
-        grid-template-columns: 24px 58px minmax(0, 1fr);
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        height: auto;
+        padding: 0 0 3px;
     }
 
     html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-art {
-        width: 58px;
+        flex: 0 0 auto;
+        width: 100%;
+        height: 84px;
     }
+
+    html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-dice { font-size: 18px; }
+    html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-name { padding: 4px 6px; font-size: 14px; }
+    html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-price { font-size: 12px; }
+    html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-stock { font-size: 10px; }
+    html[data-design="cardboard"] #cardboardMarket .compact-market-item:not(.compact-market-landmark) > .compact-market-detail { top: 40px; right: 4px; }
+}
+
+/* Spacious desktop seats can show long names without stealing the town area. */
+@media (min-width: 1200px) and (min-height: 760px) {
+    html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]).cardboard-focus-view {
+        grid-template-rows: 112px minmax(0, 1fr);
+    }
+    html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster {
+        height: 92px;
+    }
+    html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster-seat {
+        height: 80px;
+        min-height: 80px;
+        align-content: center;
+    }
+    html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster-trend { display: none; }
+    html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster-seat > strong {
+        display: flex;
+        flex: 0 0 100%;
+        flex-wrap: wrap;
+        gap: 2px 4px;
+        width: 100%;
+    }
+    html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster-name {
+        flex: 0 1 100%;
+        order: 2;
+        display: -webkit-box;
+        line-height: 1.15;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        text-overflow: clip;
+        white-space: normal;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
+    html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster-badge { order: 1; }
 }

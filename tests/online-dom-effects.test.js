@@ -88,6 +88,89 @@ runTest('online DOM effectsは待機操作をlive region外へ描画して同じ
     assert.deepStrictEqual(focusCalls, [['changeOnlineLobbySlots', { preventScroll: true }]]);
 });
 
+runTest('online待機室の再描画は開いた設定と見出しフォーカスを保つ', () => {
+    const focusCalls = [];
+    const oldSummary = { getAttribute: name => name === 'data-waiting-focus' ? 'setup' : null };
+    const newSummary = {
+        getAttribute: name => name === 'data-waiting-focus' ? 'setup' : null,
+        focus: options => focusCalls.push(options),
+    };
+    const oldDetails = { open: true, getAttribute: name => name === 'data-waiting-details' ? 'setup' : null };
+    const newDetails = { open: false, getAttribute: name => name === 'data-waiting-details' ? 'setup' : null };
+    const panel = {
+        innerHTML: '',
+        contains: target => target === oldSummary,
+        querySelectorAll(selector) {
+            return selector === '[data-waiting-details]' ? [this.innerHTML ? newDetails : oldDetails] : [newSummary];
+        },
+    };
+    const status = { textContent: '' };
+    const runtime = OnlineDomEffects.createRuntime({
+        getDocument: () => ({
+            activeElement: oldSummary,
+            getElementById(id) {
+                return { onlineWaitingPanel: panel, onlineStatus: status, onlineGameStatus: { textContent: '', style: {} } }[id] || null;
+            },
+        }),
+    });
+
+    runtime.renderWaitingLobby('参加者が増えました', '<details><summary>設定</summary></details>');
+    assert.strictEqual(newDetails.open, true);
+    assert.deepStrictEqual(focusCalls, [{ preventScroll: true }]);
+});
+
+runTest('online待機室の更新中は同一ルームのQRを表示したままにする', () => {
+    const svg = { cloneNode: () => ({ cloned: true }) };
+    let currentButton, currentQr;
+    const makeButton = roomId => ({
+        textContent: 'QRを表示',
+        attributes: { 'data-room-id': roomId },
+        getAttribute(name) { return this.attributes[name] ?? null; },
+        setAttribute(name, value) { this.attributes[name] = value; },
+    });
+    const makeQr = visible => ({
+        childNodes: visible ? [svg] : [],
+        classList: {
+            contains: name => name === 'is-visible' && visible,
+            toggle(name, value) { if (name === 'is-visible') visible = value; },
+        },
+        replaceChildren(...children) { this.childNodes = children; },
+    });
+    currentButton = makeButton('ROOM01');
+    currentQr = makeQr(true);
+    const panel = {
+        innerHTML: '',
+        contains: () => false,
+        querySelector: selector => selector === '.room-qr-toggle' ? currentButton : currentQr,
+        querySelectorAll: () => [],
+        set innerHTML(value) {
+            this._innerHTML = value;
+            currentButton = makeButton(value.includes('ROOM02') ? 'ROOM02' : 'ROOM01');
+            currentQr = makeQr(false);
+        },
+        get innerHTML() { return this._innerHTML || ''; },
+    };
+    const runtime = OnlineDomEffects.createRuntime({
+        getDocument: () => ({
+            activeElement: null,
+            getElementById(id) {
+                return { onlineWaitingPanel: panel, onlineStatus: { textContent: '' }, onlineGameStatus: { textContent: '', style: {} } }[id] || null;
+            },
+        }),
+    });
+
+    runtime.renderWaitingLobby('参加者が増えました', 'ROOM01');
+    assert.deepStrictEqual(currentQr.childNodes, [{ cloned: true }]);
+    assert.strictEqual(currentButton.getAttribute('aria-expanded'), 'true');
+    assert.strictEqual(currentButton.textContent, 'QRを隠す');
+
+    currentButton = makeButton('ROOM01');
+    currentQr = makeQr(true);
+    runtime.renderWaitingLobby('別ルームへ移動しました', 'ROOM02');
+    assert.deepStrictEqual(currentQr.childNodes, []);
+    assert.strictEqual(currentButton.getAttribute('aria-expanded'), null);
+});
+
 runTest('online DOM effectsは除外済み操作のfocusを安全なhost操作へ戻す', () => {
     const focusCalls = [];
     const oldRemove = {

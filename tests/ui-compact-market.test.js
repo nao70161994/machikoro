@@ -53,6 +53,19 @@ runTest('市場の購入ボタン名に色・分類・出目・可否・在庫�
     assert.ok(html.includes('compact-market-purple compact-market-unavailable'));
 });
 
+runTest('建設段階は今回の出目に反応する候補だけを強調し読み上げる', () => {
+    const html = UiCompactMarket.buildFacilitiesHtml(fixture({
+        activeDiceValue: 3,
+        cards: fixture().cards.map(card => card.name === 'カフェ' ? { ...card, cost: 4 } : card),
+        shopStock: { '<麦畑>': 2, 'パン屋': 3, 'テレビ局': 4, 'カフェ': 1 },
+    }));
+    assert.ok(html.includes('compact-market-item compact-market-green compact-market-roll-match'));
+    assert.ok(html.includes('今回の出目3に一致'));
+    assert.ok(html.includes('compact-market-item compact-market-red compact-market-unavailable compact-market-roll-match'));
+    assert.ok(!html.includes('compact-market-item compact-market-blue compact-market-roll-match'));
+    assert.ok(!UiCompactMarket.buildFacilitiesHtml(fixture()).includes('compact-market-roll-match'));
+});
+
 runTest('紫の所持・休業込み重複、コイン不足、action gateを共有する', () => {
     const options = fixture({ current: { coins: 30, countCardIncludingDormant: name => name === 'テレビ局' ? 1 : 0 } });
     const html = UiCompactMarket.buildFacilitiesHtml(options);

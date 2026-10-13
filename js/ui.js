@@ -702,7 +702,32 @@ function renderActiveGameState(current) {
     });
     UiGameStatusEffects.execute(view, {
         setStatusText(text) {
-            document.getElementById("status").textContent = text;
+            const status = document.getElementById("status");
+            if (!status) return;
+            if (document.documentElement?.dataset?.design !== 'cardboard' || status.classList.contains('game-winner')) {
+                status.textContent = text;
+                return;
+            }
+            status.replaceChildren();
+            const turnLabel = document.createElement('span');
+            turnLabel.className = 'cardboard-turn-status-name';
+            turnLabel.textContent = `👤 ${view.turnPlayerName || 'プレイヤー'}のターン`;
+            turnLabel.title = turnLabel.textContent;
+            turnLabel.setAttribute('aria-label', `${view.turnPlayerName || 'プレイヤー'}のターン`);
+            status.appendChild(turnLabel);
+            const balance = document.createElement('span');
+            balance.className = 'cardboard-turn-status-coins';
+            balance.textContent = `🪙 ${view.turnPlayerCoins ?? 0}コイン`;
+            balance.setAttribute('aria-label', `${view.turnPlayerCoins ?? 0}コイン`);
+            status.appendChild(balance);
+            const currentStep = view.turnTimeline?.stages?.find(stage => stage.state === 'current');
+            if (!currentStep) return;
+            const phase = document.createElement('span');
+            phase.className = 'cardboard-phase-indicator';
+            phase.textContent = `今：${currentStep.label}`;
+            phase.setAttribute('aria-label', `現在の段階：${currentStep.label}${currentStep.detail ? `、${currentStep.detail}` : ''}`);
+            if (currentStep.detail) phase.title = currentStep.detail;
+            status.appendChild(phase);
         },
         renderTurnTimeline(timeline) {
             const container = document.getElementById('turnTimeline');
@@ -995,11 +1020,13 @@ function pendingInspectHintHtml() {
 
 function buildPendingTvHtml(game) {
     return UiPendingMenu.buildPendingTvHtml(game, escapeHtml, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design));
 }
 
 function buildBusinessCardChipHtml(player, card, index, inputId, isSelected) {
-    return UiPendingMenu.buildBusinessCardChipHtml(player, card, index, inputId, isSelected, escapeHtml);
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessCardChipHtml(player, card, index, inputId, isSelected, escapeHtml,
+        illustrated, UiBuildMenu.renderFacilityArt);
 }
 
 function businessCardOptionsForPlayer(player) {
@@ -1007,36 +1034,44 @@ function businessCardOptionsForPlayer(player) {
 }
 
 function buildBusinessCardChipGroupHtml(player, cards, inputId) {
-    return UiPendingMenu.buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml);
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml,
+        undefined, illustrated, UiBuildMenu.renderFacilityArt);
 }
 
 function buildBusinessTargetExchangeHtml(player, playerIndex) {
-    return UiPendingMenu.buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml);
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml,
+        undefined, illustrated, UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingBusinessHtml(game) {
     return UiPendingMenu.buildPendingBusinessHtml(game, escapeHtml, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingCleaningHtml(game) {
     return UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingMoverHtml(game) {
     return UiPendingMenu.buildPendingMoverHtml(game, escapeHtml, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingRenovationHtml(game) {
     return UiPendingMenu.buildPendingRenovationHtml(game, escapeHtml, LANDMARK_NAMES, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingItHtml(game) {
     return UiPendingMenu.buildPendingItHtml(game, undefined, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design));
 }
 
 function pendingMenuRendererSpecs() {
@@ -1055,7 +1090,7 @@ function buildPendingMenuHtml(game, allowedActions, nextPending) {
         escapeHtml,
         landmarkNames: LANDMARK_NAMES,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
-        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        useSunsetIcons: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
     });
 }
 
@@ -1585,6 +1620,8 @@ function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction,
     if (compact) return UiCompactMarket.buildHtml({
         cards: CARDS, cardFilter: buildMenuFilterController.get(), enabledCards: getEnabledCardSelection(),
         shopStock: SHOP_STOCK, current, canBuildCardAction, canBuildLandmarkAction,
+        activeDiceValue: currentGame?.phase === GAME_PHASES.BUILD && currentGame.builtThisTurn !== true
+            ? currentGame.lastDiceResult : null,
         compareCardsForDisplay, getShopStockCount, highlightedCardNames,
         landmarks: current.landmarks, enabledLandmarks: getEnabledLandmarkSelection(),
         currentCoins: current.coins, landmarkCost: Player.landmarkCost,
@@ -1695,7 +1732,8 @@ function renderBuildMenu() {
     UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
         findIdentity(identity) {
             if (!identity || typeof buildMenu.querySelectorAll !== 'function') return null;
-            const elements = [buildMenu].flatMap(container => Array.from(
+            const market = document.getElementById('cardboardMarket');
+            const elements = Array.from(new Set([buildMenu, market].filter(Boolean))).flatMap(container => Array.from(
                 /** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll(`[data-action="${identity.action}"]`))
             ));
             return Array.from(elements)
@@ -1705,6 +1743,14 @@ function renderBuildMenu() {
         },
         focusIdentity: focusBuildActionElement,
         focusFallback() {
+            const marketDialog = /** @type {HTMLDialogElement | null} */ (document.getElementById('cardboardMarketDialog'));
+            if (marketDialog?.open) {
+                const marketAction = /** @type {HTMLElement | null} */ (
+                    document.querySelector('#cardboardMarket .compact-market-buy:not(:disabled), #cardboardMarket .compact-market-detail') ||
+                    document.getElementById('cardboardMarketClose')
+                );
+                if (focusBuildActionElement(marketAction)) return true;
+            }
             const btnSkip = /** @type {HTMLButtonElement} */ (document.getElementById('btnSkip'));
             return focusBuildActionElement(btnSkip) || UiScreenFocus.focusGame(document);
         },
@@ -1727,6 +1773,7 @@ function focusBuildActionElement(element) {
             return false;
         }
     }
+    element.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
     return true;
 }
 

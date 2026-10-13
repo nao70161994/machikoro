@@ -126,13 +126,14 @@ const OnlineDomEffects = (() => {
             }
             const attributeNames = [
                 'data-ui-action', 'data-player-index', 'data-delta', 'data-room-id',
+                'data-room-id-value', 'data-waiting-focus', 'id',
             ];
             const attributes = {};
             for (const name of attributeNames) {
                 const value = typeof active.getAttribute === 'function' ? active.getAttribute(name) : null;
                 if (value !== null) attributes[name] = value;
             }
-            return attributes['data-ui-action'] ? attributes : null;
+            return Object.keys(attributes).length > 0 ? attributes : null;
         }
 
         function focusWithoutScroll(target) {
@@ -147,7 +148,9 @@ const OnlineDomEffects = (() => {
 
         function restoreWaitingControlFocus(container, identity, status) {
             if (!identity || !container || typeof container.querySelectorAll !== 'function') return false;
-            const controls = Array.from(container.querySelectorAll('[data-ui-action]'));
+            const controls = Array.from(container.querySelectorAll(
+                '[data-ui-action], [data-room-id-value], [data-waiting-focus], [id]'
+            ));
             const exact = controls.find(control => Object.entries(identity).every(([name, value]) =>
                 typeof control.getAttribute === 'function' && control.getAttribute(name) === value));
             if (focusWithoutScroll(exact)) return true;
@@ -165,10 +168,32 @@ const OnlineDomEffects = (() => {
             const status = element(ids.status);
             if (!panel || !status) return false;
             const identity = focusedControlIdentity(panel, documentRef);
+            const disclosureStates = new Map(Array.from(panel.querySelectorAll?.('[data-waiting-details]') || [])
+                .map(details => [details.getAttribute('data-waiting-details'), details.open === true]));
+            const oldQrButton = panel.querySelector?.('.room-qr-toggle');
+            const oldQrContainer = panel.querySelector?.('[data-room-qr-container]');
+            const oldQrRoomId = oldQrButton?.getAttribute?.('data-room-id');
+            const oldQrWasVisible = oldQrContainer?.classList?.contains?.('is-visible') === true;
+            const oldQrNodes = oldQrWasVisible
+                ? Array.from(oldQrContainer.childNodes || []).map(child => child.cloneNode?.(true)).filter(Boolean)
+                : [];
             status.textContent = String(statusText || '');
             setStatusKind(status, statusText);
             setGameStatusText('');
             panel.innerHTML = String(html || '');
+            for (const details of panel.querySelectorAll?.('[data-waiting-details]') || []) {
+                const key = details.getAttribute('data-waiting-details');
+                if (disclosureStates.has(key)) details.open = disclosureStates.get(key);
+            }
+            const nextQrButton = panel.querySelector?.('.room-qr-toggle');
+            const nextQrContainer = panel.querySelector?.('[data-room-qr-container]');
+            if (oldQrWasVisible && oldQrNodes.length && nextQrButton && nextQrContainer &&
+                    nextQrButton.getAttribute('data-room-id') === oldQrRoomId) {
+                nextQrContainer.replaceChildren(...oldQrNodes);
+                nextQrContainer.classList.toggle('is-visible', true);
+                nextQrButton.setAttribute('aria-expanded', 'true');
+                nextQrButton.textContent = 'QRを隠す';
+            }
             scheduleWaitingReservationCountdown();
             restoreWaitingControlFocus(panel, identity, status);
             return true;
@@ -193,6 +218,10 @@ const OnlineDomEffects = (() => {
             return true;
         }
 
+        function focus(id) {
+            return focusWithoutScroll(element(id));
+        }
+
         function applyButtonView(id, view = {}) {
             const target = element(id);
             if (!target) return false;
@@ -211,6 +240,7 @@ const OnlineDomEffects = (() => {
         return Object.freeze({
             applyButtonView,
             element,
+            focus,
             inputValue,
             isStatusWaiting: () => text(ids.status).startsWith('⏳'),
             refreshWaitingReservationCountdowns,

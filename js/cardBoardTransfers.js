@@ -4,6 +4,10 @@
 // including income confirmed after a reroll or harbor choice;
 // do not replay it after restore, Undo, theme changes, or a later build action.
 const CardBoardTransfers = (() => {
+    function participantName(events, index) {
+        return index === 'pool' ? '分配プール' : index === null ? '銀行'
+            : String(events.participantNames?.[index] || `席${index + 1}`);
+    }
     function project(events) {
         const groups = new Map();
         const activations = Array.isArray(events?.activations) ? events.activations : [];
@@ -13,31 +17,74 @@ const CardBoardTransfers = (() => {
                 (!Array.isArray(events.participantNames) || index < events.participantNames.length);
             if (!validIndex(event.from) || !validIndex(event.to) || event.from === event.to ||
                 !Number.isSafeInteger(event.amount) || event.amount < 0) continue;
-            const key = JSON.stringify([event.from, event.to]);
+            const subject = typeof event.subject === 'string' ? event.subject.trim() : '';
+            const key = JSON.stringify([event.from, event.to, subject]);
             const old = groups.get(key);
             const amount = (old?.amount || 0) + event.amount;
             if (!Number.isSafeInteger(amount)) continue;
-            groups.set(key, { from: event.from, to: event.to, amount });
+            groups.set(key, { from: event.from, to: event.to, subject, amount });
         }
-        const name = index => index === 'pool' ? '分配プール' : index === null ? '銀行'
-            : String(events.participantNames?.[index] || `席${index + 1}`);
-        return [...groups.values()].map(route => ({ ...route,
-            text: `${name(route.from)} → ${name(route.to)}：${route.amount}コイン`,
+        return [...groups.values()].map(route => {
+            const projected = { from: route.from, to: route.to, amount: route.amount };
+            if (route.subject) projected.subject = route.subject;
+            return { ...projected,
+                text: `${route.subject ? `${route.subject}：` : ''}${participantName(events, route.from)} → ${participantName(events, route.to)}：${route.amount}コイン`,
+            };
+        });
+    }
+
+    function projectVisualFlows(routes, events) {
+        const groups = new Map();
+        for (const route of routes) {
+            const key = JSON.stringify([route.from, route.to]);
+            let flow = groups.get(key);
+            if (!flow) {
+                flow = { from: route.from, to: route.to, amount: 0, subjects: new Set() };
+                groups.set(key, flow);
+            }
+            const amount = flow.amount + route.amount;
+            if (!Number.isSafeInteger(amount)) continue;
+            flow.amount = amount;
+            if (route.subject) flow.subjects.add(route.subject);
+        }
+        return [...groups.values()].map(flow => ({
+            ...flow,
+            fromName: participantName(events, flow.from),
+            toName: participantName(events, flow.to),
+            subjects: [...flow.subjects],
+            title: `${[...flow.subjects].join('・') ? `${[...flow.subjects].join('・')}：` : ''}${participantName(events, flow.from)} → ${participantName(events, flow.to)}：${flow.amount}コイン`,
         }));
     }
 
     function create() {
         let layer = null;
+        let summaryNode = null;
         let timeout = null;
         let view = null;
         let animations = [];
-        function clear() {
-            if (timeout !== null) view?.clearTimeout(timeout);
-            timeout = null;
+        let motionQuery = null;
+        let motionHandler = null;
+        let motionObserver = null;
+        function stopMotion() {
             for (const animation of animations) animation.cancel();
             animations = [];
             layer?.remove();
             layer = null;
+        }
+        function clear() {
+            if (timeout !== null) view?.clearTimeout(timeout);
+            timeout = null;
+            stopMotion();
+            summaryNode?.remove();
+            summaryNode = null;
+            if (motionQuery && motionHandler) {
+                if (typeof motionQuery.removeEventListener === 'function') motionQuery.removeEventListener('change', motionHandler);
+                else motionQuery.removeListener?.(motionHandler);
+            }
+            motionObserver?.disconnect();
+            motionQuery = null;
+            motionHandler = null;
+            motionObserver = null;
             view = null;
         }
         function play(options) {
@@ -75,29 +122,50 @@ const CardBoardTransfers = (() => {
             };
             layer = documentRef.createElement('div');
             layer.className = 'cardboard-transfers';
-            const summary = documentRef.createElement('p');
-            summary.className = 'cardboard-transfer-summary';
-            summary.setAttribute('role', 'status');
-            summary.setAttribute('aria-live', 'polite');
-            summary.setAttribute('aria-label', routes.map(route => route.text).join('。') +
-                (events.incomplete ? '。未集計の特殊効果は出目の内訳で確認' : ''));
-            summary.textContent = routes.slice(0, 3).map(route => route.text).join(' / ') +
-                (routes.length > 3 ? ` / ほか${routes.length - 3}件（出目の内訳で確認）` : '') +
-                (events.incomplete ? ' / 未集計の特殊効果は出目の内訳で確認' : '');
-            layer.appendChild(summary);
+            summaryNode = documentRef.createElement('p');
+            summaryNode.className = 'cardboard-transfer-summary';
+            summaryNode.textContent = routes.slice(0, 3).map(route =>
+                route.text.replace(/^(.*?)：(\d+)コイン$/, '$2コイン · $1')
+            ).concat(routes.length > 3 ? [`ほか${routes.length - 3}件（発動・支払いの内訳で確認）`] : [])
+                .concat(events.incomplete ? ['未集計の記録は発動・支払いの内訳で確認'] : []).join('\n');
+            summaryNode.setAttribute('role', 'status');
+            summaryNode.setAttribute('aria-live', 'polite');
+            summaryNode.setAttribute('aria-label', routes.slice(0, 8).map(route =>
+                route.text.replace(/^(.*?)：(\d+)コイン$/, '$2コイン。$1')
+            ).concat(routes.length > 8 ? [`ほか${routes.length - 8}件は発動・支払いの内訳で確認`] : [])
+                .concat(events.incomplete ? ['未集計の記録は発動・支払いの内訳で確認'] : []).join('。'));
+            (options.summaryContainer?.isConnected ? options.summaryContainer : layer).appendChild(summaryNode);
             // Read endpoints first, then animate without touching game state.
-            const displayed = routes.slice(0, 8).map(route => ({ route, from: location(route.from), to: location(route.to) }));
+            const displayed = projectVisualFlows(routes, events)
+                .sort((left, right) => right.amount - left.amount)
+                .slice(0, 8)
+                .map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);
+            if (!reducedMotion) {
+                motionQuery = view?.matchMedia?.('(prefers-reduced-motion: reduce)') || null;
+                motionHandler = event => { if (event.matches) stopMotion(); };
+                if (typeof motionQuery?.addEventListener === 'function') motionQuery.addEventListener('change', motionHandler);
+                else motionQuery?.addListener?.(motionHandler);
+                const Observer = view?.MutationObserver;
+                if (typeof Observer === 'function' && documentRef.body) {
+                    motionObserver = new Observer(() => {
+                        if (documentRef.body.classList?.contains('accessibility-reduced-motion')) stopMotion();
+                    });
+                    motionObserver.observe(documentRef.body, { attributes: true, attributeFilter: ['class'] });
+                }
+            }
             let animationIndex = 0;
             for (const { route, from, to } of displayed) {
                 if (reducedMotion || route.amount === 0 || !from || !to) continue;
                 const coin = documentRef.createElement('span');
                 coin.className = 'cardboard-transfer';
-                coin.dataset.flow = route.from === null ? 'incoming' : route.to === null ? 'outgoing' : 'between';
-                if (route.to !== null && route.amount >= 5) coin.dataset.large = 'true';
+                const sourceIsBank = route.from === null || route.from === 'pool';
+                const targetIsBank = route.to === null || route.to === 'pool';
+                coin.dataset.flow = sourceIsBank ? 'incoming' : targetIsBank ? 'outgoing' : 'between';
+                if (!targetIsBank && route.amount >= 5) coin.dataset.large = 'true';
                 coin.setAttribute('aria-hidden', 'true');
-                const direction = route.from === null ? '+' : route.to === null ? '−' : '→';
-                coin.textContent = `${direction} ${route.amount}コイン`;
+                coin.textContent = `${route.amount}コイン · ${route.fromName} → ${route.toName}`;
+                coin.title = route.title;
                 coin.style.left = `${from.x}px`;
                 coin.style.top = `${from.y}px`;
                 layer.appendChild(coin);
@@ -113,7 +181,9 @@ const CardBoardTransfers = (() => {
                     animations.push(animation);
                 } else coin.remove();
             }
-            timeout = view?.setTimeout(clear, 1600) ?? null;
+            // Flights finish within 1.4s; keep the route summary visible long
+            // enough to read after the motion has ended.
+            timeout = view?.setTimeout(clear, 3200) ?? null;
             return true;
         }
         return Object.freeze({ play, clear });

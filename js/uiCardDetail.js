@@ -3,6 +3,12 @@
 const UiCardDetail = (() => {
     const COLOR_NAMES = Object.freeze({ blue: '青', green: '緑', red: '赤', purple: '紫' });
     const COLOR_BADGES = Object.freeze({ blue: 'blue-badge', green: 'green-badge', red: 'red-badge', purple: 'purple-badge' });
+    const COLOR_TRIGGER_RULES = Object.freeze({
+        blue: '誰の手番でも発動・銀行から収入',
+        green: '自分の手番だけ発動・銀行から収入',
+        red: '他人の手番に発動・振った人から持ち主へ',
+        purple: '自分の手番だけ発動・特殊効果',
+    });
 
     function cardEffectText(card, effectDescriptions) {
         const formatter = effectDescriptions && effectDescriptions[card.effect];
@@ -52,8 +58,11 @@ const UiCardDetail = (() => {
         const { card, escapeHtml, getEffectText, safeCardColorName, useSunsetIcons = false,
             showFacilityArt = useSunsetIcons, renderFacilityArt } = options;
         const safeColor = safeCardColorName(card.color);
+        const triggerRule = COLOR_TRIGGER_RULES[safeColor] || '発動条件はカードの効果を確認';
         const coin = useSunsetIcons ? renderDetailMark('coin') : '💰';
         const dice = useSunsetIcons ? renderDetailMark('dice') : '🎲';
+        const diceNums = Array.isArray(card.diceNums) ? card.diceNums.filter(Number.isSafeInteger) : [];
+        const diceValues = `<span class="card-detail-dice-values">${diceNums.map(value => `<span class="card-detail-dice-value">${value}</span>`).join('')}</span>`;
         const art = detailArt({
             name: card.name,
             landmark: false,
@@ -65,7 +74,7 @@ const UiCardDetail = (() => {
         });
         return {
             title: card.name,
-            html: art + `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>${coin} ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>${dice} [${card.diceNums.join(', ')}]</span></div><div class="card-detail-row"><span>種別</span><span><span class="color-badge ${COLOR_BADGES[safeColor]}">${COLOR_NAMES[safeColor]}</span> ${escapeHtml(card.category)}</span></div></div><div class="card-detail-effect">${escapeHtml(getEffectText(card))}</div>`,
+            html: art + `<div class="card-detail-section"><div class="card-detail-row"><span>コスト</span><span>${coin} ${card.cost}</span></div><div class="card-detail-row"><span>ダイス</span><span>${dice} ${diceValues}</span></div><div class="card-detail-row"><span>種別</span><span class="card-detail-classification"><span class="card-detail-category"><span class="color-badge ${COLOR_BADGES[safeColor]}">${COLOR_NAMES[safeColor]}</span> ${escapeHtml(card.category)}</span><small class="card-detail-trigger-rule">${triggerRule}</small></span></div></div><div class="card-detail-effect">${escapeHtml(getEffectText(card))}</div>`,
         };
     }
 

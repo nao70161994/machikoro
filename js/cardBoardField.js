@@ -1,6 +1,8 @@
 'use strict';
 /* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
 
+const CARDBOARD_ROLL_FEEDBACK_MS = 1400;
+
 // Presentation state only: no game actions, storage, random calls or rule updates.
 const CardBoardField = (() => {
     function createScrollMemory() {
@@ -37,6 +39,8 @@ const CardBoardField = (() => {
     let session = null;
     let receiptSession = null;
     let resultAnnouncement = '';
+    let buildAnnouncement = '';
+    let revealDiceCandidateAfterMarketUpdate = false;
     let feedbackTimer = null;
     let buildCueTimer = null;
     let buildCueCard = null;
@@ -62,6 +66,46 @@ const CardBoardField = (() => {
     /** @param {string} id @returns {HTMLElement | null} */
     function node(id) { return document.getElementById(id); }
     const enabled = () => document.documentElement.dataset.design === 'cardboard';
+
+    function updateRosterOverflow() {
+        const container = node('cardboardRoster');
+        const roster = container?.querySelector('.cardboard-roster');
+        if (!container || !roster) return;
+        container.dataset.rosterOverflow = String(roster.scrollWidth > roster.clientWidth + 1);
+    }
+
+    function updatePlayerOverflow() {
+        node('cardboardSeats')?.querySelectorAll('.cardboard-player-selected').forEach(panel => {
+            const cards = panel.querySelector('.cardboard-cards');
+            const cardHint = panel.querySelector('.cardboard-facility-scroll-hint');
+            if (cards && cardHint) {
+                const horizontal = cards.scrollWidth > cards.clientWidth + 1;
+                const vertical = cards.scrollHeight > cards.clientHeight + 1;
+                cardHint.hidden = !horizontal && !vertical;
+                cardHint.dataset.direction = vertical ? 'vertical' : 'horizontal';
+                cardHint.textContent = vertical ? '縦にスクロール ↓' : '横に送る →';
+            }
+            const landmarks = panel.querySelector('.cardboard-landmarks');
+            const landmarkHint = panel.querySelector('.cardboard-landmark-scroll-hint');
+            if (landmarks && landmarkHint) {
+                landmarkHint.hidden = landmarks.scrollWidth <= landmarks.clientWidth + 1;
+            }
+            const overflows = panel.scrollHeight > panel.clientHeight + 1;
+            panel.dataset.verticalOverflow = String(overflows);
+            if (overflows) {
+                const heading = panel.querySelector('.cardboard-player-heading-name')?.textContent?.trim() || '選択中の街';
+                panel.tabIndex = 0;
+                panel.setAttribute('role', 'region');
+                panel.setAttribute('aria-label', `${heading}。上下にスクロールできます`);
+            } else if (document.activeElement !== panel) {
+                panel.removeAttribute('tabindex');
+                panel.removeAttribute('role');
+                panel.removeAttribute('aria-label');
+            } else {
+                panel.setAttribute('aria-label', `${panel.querySelector('.cardboard-player-heading-name')?.textContent?.trim() || '選択中の街'}の詳細`);
+            }
+        });
+    }
 
     function turnEventsFor(game, display) {
         const log = Array.isArray(game.log) ? game.log : [];
@@ -165,11 +209,14 @@ const CardBoardField = (() => {
         const announcer = node('turnStatusAnnouncer');
         if (resultAnnouncement && announcer?.textContent === resultAnnouncement) announcer.textContent = '';
         resultAnnouncement = '';
+        const buildAnnouncer = node('buildStatusAnnouncer');
+        if (buildAnnouncement && buildAnnouncer?.textContent === buildAnnouncement) buildAnnouncer.textContent = '';
+        buildAnnouncement = '';
         if (feedbackTimer !== null) clearTimeout(feedbackTimer);
         feedbackTimer = null;
         clearBuildCue();
         clearLandmarkCues();
-        node('cardboardBoard')?.classList.remove('cardboard-new-roll');
+        node('cardboardBoard')?.classList.remove('cardboard-new-roll', 'cardboard-roll-reviewed');
         node('cardboardBoard')?.querySelectorAll('.cardboard-card-newly-built').forEach(card => card.classList.remove('cardboard-card-newly-built'));
     }
 
@@ -226,6 +273,7 @@ const CardBoardField = (() => {
 
     function detach() {
         closeMarket(false);
+        revealDiceCandidateAfterMarketUpdate = false;
         previousChoice = null;
         choiceInitialized = false;
         clearFeedback();
@@ -260,11 +308,22 @@ const CardBoardField = (() => {
         replaceHtml(node('cardboardMarket'), html);
         setMarketExpanded(/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open === true);
         scrollMemory.restore('market', node('cardboardMarket'));
+        if (revealDiceCandidateAfterMarketUpdate) {
+            revealDiceCandidateAfterMarketUpdate = false;
+            const market = node('cardboardMarket');
+            const shelf = market?.querySelector('.compact-market-facilities');
+            const matchingCard = shelf?.querySelector('.compact-market-roll-match');
+            if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
+        }
     }
 
     function initialize() {
         if (initialized || !node('cardboardBoard')) return;
         initialized = true;
+        window.addEventListener('resize', () => {
+            updateRosterOverflow();
+            updatePlayerOverflow();
+        }, { passive: true });
         node('cardboardMarket')?.addEventListener('keydown', event => {
             if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
             const source = /** @type {HTMLElement} */ (event.target);
@@ -303,14 +362,49 @@ const CardBoardField = (() => {
             if (event.target === event.currentTarget) closeMarket();
         });
         node('cardboardCompareToggle')?.addEventListener('click', () => PlazaField.toggleComparison());
+        const moreMenu = /** @type {HTMLDetailsElement | null} */ (node('cardboardMoreMenu'));
+        const closeMoreMenu = restoreFocus => {
+            if (!moreMenu?.open) return;
+            moreMenu.open = false;
+            if (restoreFocus) moreMenu.querySelector('summary')?.focus({ preventScroll: true });
+        };
+        moreMenu?.addEventListener('keydown', event => {
+            if (event.key !== 'Escape' || !moreMenu.open) return;
+            event.preventDefault();
+            closeMoreMenu(true);
+        });
+        moreMenu?.addEventListener('click', event => {
+            const action = /** @type {HTMLElement} */ (event.target).closest?.('button[data-ui-action]');
+            if (action) closeMoreMenu(false);
+        });
+        document.addEventListener('pointerdown', event => {
+            if (moreMenu?.open && !moreMenu.contains(/** @type {Node} */ (event.target))) closeMoreMenu(false);
+        });
         document.addEventListener('visibilitychange', clearHiddenFeedback);
         new MutationObserver(clearHiddenFeedback).observe(node('gameScreen'), { attributes: true, attributeFilter: ['style'] });
         node('cardboardRoster').addEventListener('click', event => {
             const button = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cardboard-player-index]'));
             if (!button) return;
             selectedIndex = Number(button.dataset.cardboardPlayerIndex);
+            scrollMemory.capture('roster', node('cardboardRoster'));
             draw();
-            node('cardboardSeats').querySelector(`[data-player-index="${selectedIndex}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            node('cardboardSeats').querySelector(`[data-player-index="${selectedIndex}"]`)
+                ?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
+        });
+        node('cardboardRoster').addEventListener('keydown', event => {
+            const key = event.key;
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key) || event.altKey || event.ctrlKey || event.metaKey) return;
+            const source = /** @type {HTMLElement} */ (event.target).closest?.('.cardboard-roster-seat');
+            if (!source) return;
+            const seats = Array.from(node('cardboardRoster').querySelectorAll('.cardboard-roster-seat'));
+            const index = seats.indexOf(source);
+            if (index < 0 || seats.length < 2) return;
+            const nextIndex = key === 'Home' ? 0 : key === 'End' ? seats.length - 1
+                : (index + (key === 'ArrowRight' ? 1 : -1) + seats.length) % seats.length;
+            event.preventDefault();
+            const nextSeat = /** @type {HTMLButtonElement | undefined} */ (seats[nextIndex]);
+            nextSeat?.focus({ preventScroll: true });
+            nextSeat?.click();
         });
         const captureThemeFocus = () => {
             const active = /** @type {HTMLElement | null} */ (document.activeElement);
@@ -331,6 +425,7 @@ const CardBoardField = (() => {
             }
         });
         document.addEventListener('design-theme-change', () => {
+            closeMoreMenu(false);
             const { active, marketFocus } = themeFocus || captureThemeFocus();
             themeFocus = null;
             if (!enabled()) detach();
@@ -372,7 +467,8 @@ const CardBoardField = (() => {
         const summaryFocused = focused?.tagName === 'SUMMARY';
         const disclosureClass = summaryFocused ? focused.parentElement?.className : null;
         const scrollTop = element.scrollTop;
-        const childScroll = ['.cardboard-cards', '.cardboard-landmarks', '.compact-market-facilities'].map(selector => ({
+        const scrollLeft = element.scrollLeft;
+        const childScroll = ['.cardboard-cards', '.cardboard-landmarks', '.compact-market-facilities', '.cardboard-roster'].map(selector => ({
             selector, top: element.querySelector(selector)?.scrollTop || 0,
             left: element.querySelector(selector)?.scrollLeft || 0,
         }));
@@ -385,6 +481,7 @@ const CardBoardField = (() => {
             if (child && disclosure.open !== undefined) child.open = disclosure.open;
         }
         element.scrollTop = scrollTop;
+        element.scrollLeft = scrollLeft;
         for (const position of childScroll) {
             const child = element.querySelector(position.selector);
             if (child) { child.scrollTop = position.top; child.scrollLeft = position.left; }
@@ -419,7 +516,20 @@ const CardBoardField = (() => {
             ...newlyBuiltCards.map(build => ({ playerIndex: build.playerIndex, name: build.name, landmark: false })),
             ...newlyBuiltLandmarks.map(build => ({ playerIndex: build.index, name: build.name, landmark: true })),
         ];
-        if (buildMilestones.length) facts.onBuildMilestones?.(buildMilestones);
+        if (buildMilestones.length) {
+            facts.onBuildMilestones?.(buildMilestones);
+            const announcer = node('buildStatusAnnouncer');
+            if (announcer) {
+                const announcements = buildMilestones.map(build => {
+                    const playerName = game.players[build.playerIndex]?.name || `席${build.playerIndex + 1}`;
+                    return build.landmark
+                        ? `${playerName}がランドマーク「${build.name}」を完成させました`
+                        : `${playerName}が施設「${build.name}」を建設しました`;
+                });
+                buildAnnouncement = announcements.join('。');
+                announcer.textContent = buildAnnouncement;
+            }
+        }
         if (!mounted) {
             const actions = document.querySelector('#gameScreen .game-action-panel');
             if (actions) {
@@ -430,7 +540,7 @@ const CardBoardField = (() => {
                 if (toolbar) {
                     toolbarOrigin = document.createComment('cardboard toolbar origin');
                     toolbar.parentNode.insertBefore(toolbarOrigin, toolbar);
-                    node('cardboardControls').appendChild(toolbar);
+                    node('cardboardMoreMenuContent').appendChild(toolbar);
                 }
             }
             const guide = node('tutorialBox');
@@ -452,7 +562,23 @@ const CardBoardField = (() => {
         }
         if (!validIndex(selectedIndex)) selectedIndex = selfIndex;
         const newRoll = feedback?.refresh(facts) === true;
+        const events = turnEventsFor(game, facts.display);
+        const freshResultLogs = feedback?.takeResultLogs() || [];
+        const freshEvents = freshResultLogs.length ? UiTurnEvents.project(freshResultLogs, {
+            players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
+            cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
+        }) : null;
+        const eventFocusSeatIndex = UiCardBoard.eventFocusSeatIndex(
+            game.players.length,
+            buildMilestones,
+            (newRoll || freshResultLogs.length > 0) && !facts.replaying
+                ? freshEvents?.activations || events.activations : [],
+        );
+        if (validIndex(eventFocusSeatIndex)) selectedIndex = eventFocusSeatIndex;
         if (facts.replaying || feedback?.wasInvalidated()) clearFeedback();
+        else if (!newRoll && node('cardboardBoard')?.classList.contains('cardboard-new-roll')) {
+            node('cardboardBoard')?.classList.add('cardboard-roll-reviewed');
+        }
         const choice = [GAME_PHASES.SELECT_DICE, GAME_PHASES.REROLL_CONFIRM, GAME_PHASES.HARBOR_CHOICE].includes(game.phase)
             && currentIndex === selfIndex ? `${game.turnCount}:${currentIndex}:${game.phase}` : null;
         if (choiceInitialized && choice && choice !== previousChoice && !facts.replaying) {
@@ -466,20 +592,24 @@ const CardBoardField = (() => {
         previousChoice = choice;
         choiceInitialized = true;
         if (node('cardboardChoiceJump')) node('cardboardChoiceJump').hidden = !choice;
-        const events = turnEventsFor(game, facts.display);
         replaceHtml(node('cardboardRoster'), UiCardBoard.buildRosterHtml(game.players, {
-            selfIndex, currentIndex, selectedIndex, escapeHtml, enabledLandmarks, events,
+            selfIndex, currentIndex, selectedIndex, focusMode: game.players.length > 4, escapeHtml, enabledLandmarks, events,
             playerSettings: facts.playerSettings,
             renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
             playerKindAccessibleLabel: UiPlayerDisplay.playerKindAccessibleLabel,
         }));
         scrollMemory.restore('roster', node('cardboardRoster'));
+        updateRosterOverflow();
+        if (validIndex(eventFocusSeatIndex)) {
+            node('cardboardRoster')?.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${eventFocusSeatIndex}"]`)
+                ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
+        }
         const seats = node('cardboardSeats');
         seats.dataset.playerCount = String(game.players.length);
         const board = node('cardboardBoard');
         board.dataset.playerCount = String(game.players.length);
         board.classList.toggle('cardboard-focus-view', game.players.length >= 2 && game.players.length <= 10);
-        if (turnChanged && board.classList.contains('cardboard-focus-view')) {
+        if (turnChanged && !validIndex(eventFocusSeatIndex) && board.classList.contains('cardboard-focus-view')) {
             const currentSeat = node('cardboardRoster')?.querySelector('.cardboard-roster-seat[aria-current="true"]');
             currentSeat?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
         }
@@ -520,7 +650,8 @@ const CardBoardField = (() => {
             }
             scrollMemory.restore(`player:${index}`, panel);
             const newBuild = newlyBuiltCards.find(build => build.playerIndex === index);
-            const activatedCard = newRoll ? panel.querySelector('.cardboard-card-activated') : null;
+            const activatedCard = newRoll || freshResultLogs.length > 0
+                ? panel.querySelector('.cardboard-card-activated') : null;
             const builtCard = newBuild
                 ? Array.from(/** @type {NodeListOf<HTMLElement>} */ (panel.querySelectorAll('.cardboard-card'))).find(item => item.dataset.cardName === newBuild.name)
                 : null;
@@ -535,18 +666,15 @@ const CardBoardField = (() => {
         const disclosure = receipt.querySelector('details');
         const open = disclosure?.open;
         const previousDice = receipt.dataset.dice;
+        const previousReceiptScroll = receipt.scrollTop;
         const dice = JSON.stringify([game.turnCount, currentIndex, events.dice]);
         replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml));
         const nextDisclosure = receipt.querySelector('details');
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
+        receipt.scrollTop = freshResultLogs.length || previousDice !== dice ? 0 : previousReceiptScroll;
         receipt.dataset.dice = dice;
         receiptSession = session;
-        const freshResultLogs = feedback?.takeResultLogs() || [];
         if (freshResultLogs.length) {
-            const freshEvents = UiTurnEvents.project(freshResultLogs, {
-                players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
-                cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
-            });
             const announceResult = node('turnStatusAnnouncer');
             if (announceResult) {
                 const participantName = index => Number.isInteger(index)
@@ -573,31 +701,41 @@ const CardBoardField = (() => {
                     Number.isSafeInteger(total + activation.repeats) ? total + activation.repeats : total, 0);
                 const facilityNames = confirmedActivations.slice(0, 3).map(({ event }) =>
                     `${Number.isInteger(event.owner) ? `${participantName(event.owner)}の` : ''}${event.subject}`);
-                const routes = freshEvents.activations.filter(event => event.facility && event.amount > 0).slice(0, 2).map(event => {
-                    const facility = `${Number.isInteger(event.owner) ? `${participantName(event.owner)}の` : ''}${event.subject}`;
-                    return `${facility}、${participantName(event.from)}から${participantName(event.to)}へ${event.amount}コイン`;
-                });
+                const transferRoutes = (typeof CardBoardTransfers !== 'undefined'
+                    ? CardBoardTransfers.project(freshEvents) : []).filter(route => route.amount > 0);
+                const routes = transferRoutes.slice(0, 3).map(route => route.text);
                 announceResult.textContent = [
                     freshEvents.actorName ? `${freshEvents.actorName}の結果` : '',
                     diceText,
                     facilityCount ? `施設発動${facilityCount}回${facilityNames.length ? `：${facilityNames.join('、')}` : ''}`
                         : legacyFacilityRecords.length ? `施設の発動記録${legacyFacilityRecords.length}件` : '施設発動なし',
                     ...routes,
+                    transferRoutes.length > routes.length ? `ほか${transferRoutes.length - routes.length}件のコイン移動は画面の収支欄で確認` : '',
                     freshEvents.omittedActivations ? `ほか${freshEvents.omittedActivations}件は内訳で確認` : '',
                     freshEvents.incomplete ? '未集計の効果があります。内訳を確認してください' : '',
                 ].filter(Boolean).join('。');
                 resultAnnouncement = announceResult.textContent;
             }
-            transfers?.play({ container: node('cardboardBoard'), events: freshEvents });
+            transfers?.play({ container: node('cardboardBoard'), summaryContainer: receipt, events: freshEvents });
         }
         if (newRoll) {
             if (feedbackTimer !== null) clearTimeout(feedbackTimer);
-            node('cardboardBoard').classList.add('cardboard-new-roll');
+            const board = node('cardboardBoard');
+            board.classList.remove('cardboard-roll-reviewed');
+            board.classList.add('cardboard-new-roll');
 
             feedbackTimer = setTimeout(() => {
                 feedbackTimer = null;
-                node('cardboardBoard')?.classList.remove('cardboard-new-roll');
-            }, 900);
+                node('cardboardBoard')?.classList.remove('cardboard-new-roll', 'cardboard-roll-reviewed');
+            // The eighth activation can start 560ms after the first and runs
+            // for 760ms. Keep the roll state through the final highlight.
+            }, CARDBOARD_ROLL_FEEDBACK_MS);
+        }
+        if ((newRoll || freshResultLogs.length > 0) && !facts.replaying &&
+                currentIndex === selfIndex && game.phase === GAME_PHASES.BUILD && game.builtThisTurn !== true) {
+            // The enclosing UI refreshes the board before rebuilding market
+            // markup. Defer the reveal to updateMarket so it targets this roll.
+            revealDiceCandidateAfterMarketUpdate = true;
         }
     }
 
@@ -617,6 +755,7 @@ const CardBoardField = (() => {
         }
         facts = nextFacts;
         draw();
+        updatePlayerOverflow();
     }
     return Object.freeze({ render, updateMarket, detach, closeDisclosures, openMarket, closeMarket, createScrollMemory });
 })();

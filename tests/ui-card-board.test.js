@@ -28,8 +28,30 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     assert.ok(html.includes('未建設'));
     assert.ok(!html.includes('data-landmark-name="役所"'));
     assert.ok(html.includes('目標 1/2'));
+    assert.ok(html.includes('class="cardboard-landmark-scroll-hint" aria-hidden="true">横にスクロール →</span>'));
     assert.ok(html.includes('&lt;街の主&gt;'));
     assert.strictEqual(JSON.stringify(player), before);
+});
+runTest('施設棚は出目の昇順で並び元のゲームカード配列は変更しない', () => {
+    const cards = ['森林', '麦畑', 'パン屋', '牧場'].map(createCardByName);
+    const before = cards.map(card => card.name);
+    const html = UiCardBoard.buildPlayerHtml({ ...player, cards }, options);
+    const displayedNames = [...html.matchAll(/data-card-name="([^"]+)"/g)].map(match => match[1]);
+    assert.deepStrictEqual(displayedNames, ['麦畑', '牧場', 'パン屋', '森林']);
+    assert.deepStrictEqual(cards.map(card => card.name), before);
+});
+runTest('出目順の表示でも発動アニメーションは実際の解決順を保つ', () => {
+    const cards = ['森林', '麦畑'].map(createCardByName);
+    const events = { activations: [
+        { facility: true, subject: '森林', owner: 1, from: null, to: 1, amount: 1, count: 1 },
+        { facility: true, subject: '麦畑', owner: 1, from: null, to: 1, amount: 1, count: 1 },
+    ] };
+    const html = UiCardBoard.buildPlayerHtml({ ...player, cards }, { ...options, events });
+    const wheatIndex = html.indexOf('data-card-name="麦畑"');
+    const forestIndex = html.indexOf('data-card-name="森林"');
+    assert.ok(wheatIndex >= 0 && forestIndex > wheatIndex, 'カードは出目の昇順で並ぶ');
+    assert.ok(html.indexOf('style="--cardboard-activation-delay:80ms"', wheatIndex) > wheatIndex);
+    assert.ok(html.indexOf('style="--cardboard-activation-delay:0ms"', forestIndex) > forestIndex);
 });
 runTest('全色・複数出目と全休業でも施設詳細を使える', () => {
     const cards = ['麦畑', 'パン屋', 'カフェ', 'スタジアム', 'マグロ漁船'].map(createCardByName);
@@ -51,8 +73,8 @@ runTest('確認できた施設発動だけを一致した所有者へ示し0を�
     const html = UiCardBoard.buildPlayerHtml(player, { ...options, events });
     assert.ok(html.includes('data-cardboard-activation-net="3"'));
     assert.ok(html.includes('data-cardboard-activation-count="2"'));
-    assert.ok(html.includes('今回、確認できた純収支 +3コイン、発動 2回'));
-    assert.ok(html.includes('data-short-label="+3 · 2回"'));
+    assert.ok(html.includes('今回、施設連鎖の1番目、確認できた純収支 +3コイン、発動 2回'));
+    assert.ok(html.includes('data-short-label="#1 +3·2"'));
     assert.ok(html.includes('data-short-label="休1 稼1"'));
     assert.ok(!UiCardBoard.buildPlayerHtml(player, options).includes('cardboard-activation'));
     const zero = UiCardBoard.buildPlayerHtml(player, { ...options, events: { activations: [
@@ -62,10 +84,20 @@ runTest('確認できた施設発動だけを一致した所有者へ示し0を�
     assert.ok(zero.includes('確認できた分のみ'));
     assert.strictEqual(JSON.stringify(events), before);
 });
+runTest('カード連鎖の強調順は最初の該当ログ位置に対応する', () => {
+    const events = { activations: [
+        { facility: true, subject: 'パン屋', from: null, to: 1, amount: 1, count: 1 },
+        { facility: true, subject: '森林', from: null, to: 1, amount: 1, count: 1 },
+        { facility: true, subject: '森林', from: null, to: 1, amount: 2, count: 1 },
+    ] };
+    const html = UiCardBoard.buildPlayerHtml(player, { ...options, events });
+    assert.ok(html.includes('cardboard-card-activated cardboard-activation-step-1'));
+    assert.ok(html.includes('data-cardboard-activation-order="2"'));
+});
 runTest('席・名前の同一性と選択/現在/自分を分離し10席に制限する', () => {
     const players = Array.from({ length: 12 }, () => ({ ...player }));
     const html = UiCardBoard.buildRosterHtml(players, { ...options, selectedIndex: 2 });
-    assert.ok(html.includes('aria-label="表示するプレイヤー。選ぶと街のカードを大きく表示"'));
+    assert.ok(html.includes('aria-label="表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。選ぶと街のカードを大きく表示"'));
     assert.strictEqual((html.match(/class="cardboard-roster-seat(?:\s|")/g) || []).length, 10);
     assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1);
     assert.strictEqual((html.match(/aria-current="true"/g) || []).length, 1);
@@ -126,6 +158,16 @@ runTest('2〜4人は全員、5〜10人は役割を優先し重複時も必ず3�
             }
         }
     }
+});
+runTest('2〜4人戦でも発動・建設した街へ詳細表示を自動フォーカスする', () => {
+    for (const count of [2, 4]) {
+        assert.strictEqual(UiCardBoard.eventFocusSeatIndex(count, [], [
+            { facility: true, owner: count - 1, from: 0, to: 1 },
+        ]), count - 1);
+        assert.strictEqual(UiCardBoard.eventFocusSeatIndex(count, [{ playerIndex: 1 }], []), 1);
+        assert.strictEqual(UiCardBoard.eventFocusSeatIndex(count, [], []), null);
+    }
+    assert.strictEqual(UiCardBoard.eventFocusSeatIndex(0, [], [{ facility: true, owner: 0 }]), null);
 });
 runTest('不正な席は詳細表示へ持ち込まず入力を変更しない', () => {
     const roles = { selfIndex: 9, currentIndex: -1, selectedIndex: '1' };
