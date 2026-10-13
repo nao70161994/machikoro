@@ -1897,3 +1897,11 @@ PC1000×760以上に限り、1〜2施設種類/合計4枚以下の選択街へ�
 共有の市民アイコンを固定10色の服と4種の髪型/帽子/眼鏡、CPUは形/アンテナ/口の違いを持つオリジナルSVGへ発展。UiPlayerDisplayとUiCardBoardが表示上の席indexだけ渡し、同じ席の見た目を安定させる。夕暮れの街/広場/にぎわいで同じ描画を共有し、クラシックの既存文字アイコンは保つ。外部画像/既存作品のキャラクターは使用せず、表示サイズ・ルール・保存形式を変更しない。10席の区別/再描画安定性/不正index/入力不変性を単体で確認。ui-player-displayとui-card-boardの単体、型4root、編集JS構文は成功。独立コードレビューで具体的不具合なし。実表示の小サイズ識別性と商用品質はまだ画像確認前なので達成と記さない。SW cacheはv333。
 
 人間1席+CPU弱をタイトル設定から開始し、助言だけCPU.choose系を使い、実行はDOMボタンへ対応付ける任意UI対局specを別担当が準備。乱数/出目/初期資産/在庫/正本は書き換えず、助言前後の状態不変性を確認する。通常CIへ長時間対局を追加せず、明示指定時だけ実行。人間が実際に判断したプレイ評価とは呼ばない。
+
+### 人間席をDOM操作して開始から勝利まで完走
+
+RUN_UI_PLAYTHROUGH=1の任意specをChromium/390×844、1 workerで実行して成功（約9.2分）。初期設定から人間1席/CPU弱1席を画面操作で選び、既定CPU速度/演出のまま、人間席199操作・248クリック・市場閉じるEscape35回でプレイヤー1が勝利。内部turnCount64/表示65ターン、pageerror0。出目/乱数/初期資産/在庫/正本への書換なし、助言前後の正本+市場不変性も毎操作で確認した。CPU待ち合計181124ms、全体545878ms。自動操作・助言計算・Playwright待機も含むため、全体を製品の強制待ち時間とは断定しない。[操作と時間の記録](design-review/2026-10-14/ui-playthrough-summary.json)。
+
+[開始](design-review/2026-10-14/ui-playthrough-start.png) / [初回ロール](design-review/2026-10-14/ui-playthrough-first-roll.png) / [初回建設](design-review/2026-10-14/ui-playthrough-first-build.png) / [中盤](design-review/2026-10-14/ui-playthrough-midgame.png) / [特殊効果](design-review/2026-10-14/ui-playthrough-special-effect.png) / [終盤](design-review/2026-10-14/ui-playthrough-late-game.png) / [勝利](design-review/2026-10-14/ui-playthrough-winner.png)。これは固定資産fixtureやCPUだけの完走ではなく、人間席の実UI経路を通した自動検証。人間の主観的な楽しさを計測したものでも物理スマホ実機検証でもない。
+
+新しい市民アイコンは開始/中盤/終盤の独立画像レビューでも、人間の顔とCPUロボットが390pxで識別可能、名簿と街の対応も自然と確認。重大な見切れなし。中盤の手番通知がカード中央を覆う点は、コードの表示1300ms/退出400msとpointer-events:noneを確認し、クリック遮断ではないと分類。実測表示時間や全端末でのテンポの保証とは区別する。
