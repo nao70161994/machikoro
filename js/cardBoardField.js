@@ -95,6 +95,11 @@ const CardBoardField = (() => {
             const overflows = panel.scrollHeight > panel.clientHeight + 1;
             panel.dataset.verticalOverflow = String(overflows);
             if (overflows) {
+                if (cardHint?.hidden) {
+                    cardHint.hidden = false;
+                    cardHint.dataset.direction = 'panel';
+                    cardHint.textContent = '街を縦にスクロール ↓';
+                }
                 const heading = panel.querySelector('.cardboard-player-heading-name')?.textContent?.trim() || '選択中の街';
                 panel.tabIndex = 0;
                 panel.setAttribute('role', 'region');
@@ -694,7 +699,7 @@ const CardBoardField = (() => {
         }) : '';
         // This enhances the current-turn receipt, without replaying a transient
         // construction event on redraw, Undo, restore, or theme changes.
-        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml }));
+        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml, emphasizeIncome: true }));
         const nextDisclosure = receipt.querySelector('details');
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
         receipt.scrollTop = freshResultLogs.length || previousDice !== dice ? 0 : previousReceiptScroll;

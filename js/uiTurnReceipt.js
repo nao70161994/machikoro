@@ -31,6 +31,12 @@ const UiTurnReceipt = (() => {
             ? options.headlineHtml
             : receipt.important[0]
                 ? `<p class="plaza-important-event plaza-important-${receipt.important[0].kind}">${escape(receipt.important[0].message)}</p>` : '';
+        const incomeBalance = options.emphasizeIncome === true && !headline && !receipt.incomplete &&
+                receipt.turnContextKnown !== false
+            ? receipt.balances.find(balance => balance.index === receipt.actorIndex &&
+                Number.isSafeInteger(balance.facilityNet) && balance.facilityNet >= 5) : null;
+        const incomeSpotlight = incomeBalance
+            ? `<div class="cardboard-income-spotlight" role="group" aria-label="${escape(`${incomeBalance.name}、施設の収支プラス${incomeBalance.facilityNet}コイン`)}"><svg class="cardboard-income-coin" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#coin"></use></svg><span class="cardboard-income-caption"><strong>${escape(incomeBalance.name)}</strong><span>施設の収支</span></span><strong class="cardboard-income-amount">+${escape(incomeBalance.facilityNet)}<span>コイン</span></strong></div>` : '';
         const shortBalances = receipt.balances.map(balance => {
             const net = balance.income - balance.payment;
             const outcome = net > 0 ? 'gain' : net < 0 ? 'loss' : 'even';
@@ -78,7 +84,7 @@ const UiTurnReceipt = (() => {
             return `<span class="plaza-receipt-transfer" data-flow="${flow}"${order === null ? '' : ` data-activation-order="${order}"`}${largeReceipt} aria-label="${escape(`${orderLabel}${description}、${event.amount}コイン`)}" title="${escape(description)}">${order === null ? '' : `<span class="plaza-receipt-order" aria-hidden="true">${order}</span>`}<strong>${escape(owner + event.subject)}</strong> ${escape(route)} <b>${sign}${escape(event.amount)}コイン</b>${repeat}</span>`;
         }).join(' / ')}</p>` : '';
         const hasDetails = receipt.important.length || receipt.activations.length || receipt.unparsed.length;
-        return `<section class="plaza-event-receipt" aria-label="今回の出目と確認できた収支">${headline}${dice}${featuredHtml}<p class="plaza-receipt-totals"><span class="plaza-receipt-totals-label">今回の収支${receipt.incomplete ? '（確認分）' : ''}</span>${shortBalances}${receipt.incomplete ? '<span>一部の効果は内訳を開いて確認</span>' : ''}</p>${hasDetails ? `<details class="plaza-receipt-details"><summary>発動・支払いの内訳${receipt.incomplete ? '（一部未集計）' : ''}</summary>${incomplete}<ul class="plaza-important-events">${important}</ul><ul class="plaza-receipt-balances">${balances}</ul><ul class="plaza-receipt-activations">${activations}${omitted}${fallback}</ul></details>` : ''}</section>`;
+        return `<section class="plaza-event-receipt" aria-label="今回の出目と確認できた収支">${headline}${dice}${incomeSpotlight}${featuredHtml}<p class="plaza-receipt-totals"><span class="plaza-receipt-totals-label">今回の収支${receipt.incomplete ? '（確認分）' : ''}</span>${shortBalances}${receipt.incomplete ? '<span>一部の効果は内訳を開いて確認</span>' : ''}</p>${hasDetails ? `<details class="plaza-receipt-details"><summary>発動・支払いの内訳${receipt.incomplete ? '（一部未集計）' : ''}</summary>${incomplete}<ul class="plaza-important-events">${important}</ul><ul class="plaza-receipt-balances">${balances}</ul><ul class="plaza-receipt-activations">${activations}${omitted}${fallback}</ul></details>` : ''}</section>`;
     }
     return Object.freeze({ buildHtml: buildReceiptHtml });
 })();

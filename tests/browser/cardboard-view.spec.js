@@ -1145,3 +1145,57 @@ test('PC上席の多種類カードも出目・絵・名前・枚数を潰さず
     await panel.locator('.cardboard-cards').evaluate(element => { element.scrollLeft = 200; });
     expect(await panel.locator('.cardboard-cards').evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
 });
+
+test('確定した大収益を縦横PCで読めて再描画では演出を増やさない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayer().cards = Array.from({ length: 6 }, () => createCardByName('森林'));
+        game.phase = GAME_PHASES.ROLL;
+        game.log = [];
+        const crypto = window.crypto;
+        const original = crypto.getRandomValues.bind(crypto);
+        let nextRoll = true;
+        Object.defineProperty(crypto, 'getRandomValues', { configurable: true, value(buffer) {
+            if (nextRoll) { buffer[0] = 4; nextRoll = false; return buffer; }
+            return original(buffer);
+        } });
+        render();
+        acceptHotseatHandoff();
+    });
+    await page.locator('#btnRoll').click();
+    const income = page.locator('#cardboardDiceReceipt .cardboard-income-spotlight');
+    await expect(income).toHaveCount(1);
+    await expect(income.locator('.cardboard-income-amount')).toHaveText('+6コイン');
+    await expect(income).toHaveAttribute('aria-label', '街1、施設の収支プラス6コイン');
+    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
+        await page.setViewportSize(viewport);
+        await expect.poll(() => income.evaluate(element => {
+            const rect = element.getBoundingClientRect();
+            const amount = element.querySelector('.cardboard-income-amount').getBoundingClientRect();
+            return rect.width > 0 && amount.left >= rect.left && amount.right <= rect.right &&
+                amount.top >= rect.top && amount.bottom <= rect.bottom && rect.left >= 0 && rect.right <= innerWidth;
+        })).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`cardboard-income-${viewport.width}.png`) });
+        if (viewport.width === 844) {
+            const town = page.locator('#cardboardSeats .cardboard-player-selected');
+            await expect(town.locator('.cardboard-facility-scroll-hint')).toBeVisible();
+            await town.locator('.cardboard-card .cardboard-effect').first().scrollIntoViewIfNeeded();
+            expect(await town.evaluate(panel => {
+                const bounds = panel.getBoundingClientRect();
+                const effect = panel.querySelector('.cardboard-card .cardboard-effect').getBoundingClientRect();
+                return effect.top >= bounds.top && effect.bottom <= bounds.bottom;
+            })).toBe(true);
+            await page.screenshot({ path: testInfo.outputPath('cardboard-income-844-scrolled.png') });
+        }
+    }
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.evaluate(() => render());
+    await expect(income).toHaveCount(1);
+    await expect(income).toHaveCSS('animation-name', 'none');
+    await selectTheme(page, 'classic');
+    await selectTheme(page, 'cardboard');
+    await expect(income).toHaveCount(1);
+    await expect(income.locator('.cardboard-income-amount')).toHaveText('+6コイン');
+    await expect(page.locator('.cardboard-transfers')).toHaveCount(0);
+});

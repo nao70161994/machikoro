@@ -10974,6 +10974,15 @@ html[data-design="cardboard"] .cardboard-build-receipt-player { flex-basis: 100%
 html[data-design="cardboard"] .cardboard-build-receipt-more { flex: 0 0 16px; font-size: 24px; font-weight: 800; line-height: 1; text-align: center; }
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardDiceReceipt .cardboard-build-receipt { border-color: #fff; background: #000; color: #fff; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { margin: 0; font-size: 19px; font-weight: 900; color: #24527a; }
+html[data-design="cardboard"] .cardboard-income-spotlight { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 4px 0; padding: 7px 10px; border: 2px solid #c99a26; border-radius: 9px; background: linear-gradient(120deg, #fff8da, #ffe59a); color: #513b0a; }
+html[data-design="cardboard"] .cardboard-income-coin { width: 36px; height: 36px; color: #a8770b; }
+html[data-design="cardboard"] .cardboard-income-caption { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: 11px; }
+html[data-design="cardboard"] .cardboard-income-caption > strong { overflow-wrap: anywhere; font-size: 13px; }
+html[data-design="cardboard"] .cardboard-income-amount { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html[data-design="cardboard"] .cardboard-income-amount > span { margin-left: 4px; font-size: 12px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt:has(.cardboard-income-spotlight) { max-height: clamp(112px, 22dvh, 200px); }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-income-spotlight { border-color: #ffe66d; background: #000; color: #fff; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-income-coin { color: #ffe66d; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured { color: #263d4b; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-transfer { border-color: #91a5af; background: #e6edf1; color: #263d4b; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-transfer > :is(strong, b) { color: inherit; }
@@ -11391,6 +11400,13 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { grid-column: 1; grid-row: 1; align-self: center; margin: 0; font-size: 13px; line-height: 1.2; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; white-space: nowrap; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt > .plaza-important-event { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-income-spotlight { grid-column: 2; grid-row: 1; grid-template-columns: 26px minmax(0, 1fr) auto; height: 44px; min-width: 0; gap: 4px; margin: 0; padding: 2px 5px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-income-coin { width: 26px; height: 26px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-income-caption { font-size: 9px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-income-caption > strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-income-amount { font-size: 26px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-income-amount > span { font-size: 10px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt:has(> .cardboard-income-spotlight) > .plaza-receipt-featured { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt > .cardboard-build-receipt { gap: 6px; height: 44px; min-height: 44px; padding: 2px 5px; line-height: 1.15; white-space: normal; }
     html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-build-receipt-art { flex-basis: 36px; width: 36px; height: 36px; }
     html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-build-receipt-player { display: none; }
@@ -12204,6 +12220,9 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] .cardboard-facility-scroll-hint::after {
         content: "横送り ↔ · 街は縦送り ↕";
         font-size: 10px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] .cardboard-facility-scroll-hint[data-direction="panel"]::after {
+        content: "街を縦にスクロール ↓";
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark { flex-basis: 110px; min-width: 110px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark .cardboard-name {

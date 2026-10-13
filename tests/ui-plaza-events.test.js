@@ -346,3 +346,26 @@ runTest('確定送金identityは端末ローカル通知数やsnapshot復元の�
     game._processPurple(game.players[0], 0, 6);
     assert.strictEqual(game.log.at(-1).coinResolution.activation, 0, '所有カードordinalを使用する');
 });
+
+runTest('大収益の強調は確定した手番プレイヤーの施設純増だけを示す', () => {
+    const receipt = {
+        actorIndex: 0, turnContextKnown: true, important: [], dice: { values: [5], base: 5 },
+        activations: [], balances: [{ index: 0, name: '街<&>', income: 10, payment: 4, facilityNet: 6 }],
+        participantNames: ['街<&>'], unparsed: [], incomplete: false, omittedActivations: 0,
+    };
+    const before = JSON.stringify(receipt);
+    const html = UiTurnReceipt.buildHtml(receipt, escape, { emphasizeIncome: true });
+    assert.ok(html.includes('cardboard-income-spotlight'));
+    assert.ok(html.includes('施設の収支プラス6コイン'));
+    assert.ok(html.includes('街&lt;&amp;&gt;'));
+    assert.ok(html.includes('>+6<span>コイン</span>'));
+    assert.ok(!html.includes('>+10<span>'));
+    assert.strictEqual(UiTurnReceipt.buildHtml(receipt, escape, { emphasizeIncome: true }), html);
+    assert.strictEqual(JSON.stringify(receipt), before);
+    for (const changed of [
+        { incomplete: true }, { turnContextKnown: false }, { actorIndex: 1 },
+        { balances: [{ ...receipt.balances[0], facilityNet: 4 }] },
+        { balances: [{ ...receipt.balances[0], facilityNet: -6 }] },
+    ]) assert.ok(!UiTurnReceipt.buildHtml({ ...receipt, ...changed }, escape, { emphasizeIncome: true }).includes('cardboard-income-spotlight'));
+    assert.ok(!UiTurnReceipt.buildHtml(receipt, escape).includes('cardboard-income-spotlight'));
+});
