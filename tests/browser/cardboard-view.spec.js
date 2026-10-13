@@ -46,6 +46,20 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         }
         const before = await state(page);
         await expect(page.locator('#cardboardChoiceJump')).toBeHidden();
+        if (viewport.width <= 390) {
+            const rosterLayout = await page.locator('#cardboardRoster .cardboard-roster').evaluate(roster => {
+                const bounds = roster.getBoundingClientRect();
+                const seats = [...roster.querySelectorAll('button')].map(button => {
+                    const rect = button.getBoundingClientRect();
+                    return { top: rect.top, bottom: rect.bottom };
+                });
+                return { fits: roster.scrollHeight <= roster.clientHeight && seats.every(rect =>
+                    rect.top >= bounds.top && rect.bottom <= bounds.bottom),
+                    top: bounds.top, bottom: bounds.bottom, scrollHeight: roster.scrollHeight,
+                    clientHeight: roster.clientHeight, seats };
+            });
+            expect(rosterLayout, JSON.stringify(rosterLayout)).toMatchObject({ fits: true });
+        }
         for (const theme of ['plaza', 'sunset', 'classic', 'cardboard']) {
             await selectTheme(page, theme);
             expect(await state(page)).toEqual(before);

@@ -12316,7 +12316,9 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster {
         display: flex;
         flex-wrap: nowrap;
-        height: 88px;
+        height: auto;
+        min-height: 96px;
+        align-items: stretch;
         gap: 5px;
         overflow-x: auto;
         overflow-y: hidden;
@@ -12330,9 +12332,9 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
         width: clamp(148px, 45vw, 176px);
         min-width: 148px;
         max-width: 176px;
-        height: 84px;
+        height: auto;
         min-height: 84px;
-        align-content: center;
+        align-content: start;
         scroll-snap-align: start;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster-seat > strong {
@@ -12348,7 +12350,9 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster-badge { order: 1; }
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster {
         flex-wrap: nowrap;
-        height: 88px;
+        height: auto;
+        min-height: 96px;
+        align-items: stretch;
         overflow-x: auto;
         overflow-y: hidden;
         overscroll-behavior-x: contain;
@@ -12361,7 +12365,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster-seat {
         flex: 0 0 clamp(148px, 45vw, 176px);
         width: clamp(148px, 45vw, 176px);
-        height: 84px;
+        height: auto;
         min-height: 84px;
         scroll-snap-align: start;
     }

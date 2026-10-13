@@ -80,11 +80,12 @@ const CardBoardField = (() => {
             const cards = panel.querySelector('.cardboard-cards');
             const cardHint = /** @type {HTMLElement | null} */ (panel.querySelector('.cardboard-facility-scroll-hint'));
             if (cards && cardHint) {
-                const horizontal = cards.scrollWidth > cards.clientWidth + 1;
-                const vertical = cards.scrollHeight > cards.clientHeight + 1;
+                const overflow = window.getComputedStyle?.(cards);
+                const horizontal = !['hidden', 'clip'].includes(overflow?.overflowX || 'auto') && cards.scrollWidth > cards.clientWidth + 1;
+                const vertical = !['hidden', 'clip'].includes(overflow?.overflowY || 'auto') && cards.scrollHeight > cards.clientHeight + 1;
                 cardHint.hidden = !horizontal && !vertical;
-                cardHint.dataset.direction = vertical ? 'vertical' : 'horizontal';
-                cardHint.textContent = vertical ? '縦にスクロール ↓' : '横に送る →';
+                cardHint.dataset.direction = horizontal && vertical ? 'both' : vertical ? 'vertical' : 'horizontal';
+                cardHint.textContent = horizontal && vertical ? '横・縦にスクロール ↔ ↕' : vertical ? '縦にスクロール ↓' : '横に送る →';
             }
             const landmarks = panel.querySelector('.cardboard-landmarks');
             const landmarkHint = /** @type {HTMLElement | null} */ (panel.querySelector('.cardboard-landmark-scroll-hint'));
