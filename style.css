@@ -4703,6 +4703,7 @@ html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-ar
     background: linear-gradient(180deg, #f2e6c5, #d9dfbf);
 }
 html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-art .sunset-facility-art {
+    display: block;
     width: 66px;
     height: 44px;
     margin: 0;
@@ -4712,6 +4713,28 @@ html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-co
     min-width: 0;
     flex-direction: column;
     gap: 3px;
+}
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-step-title { color: #244c39; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-step-help { color: #4a5d50 !important; }
+html[data-design="cardboard"] body:not(.accessibility-high-contrast) .pending-facility-choice .sunset-facility-art { display: block; }
+@media (max-width: 520px) {
+    html[data-design="cardboard"] .pending-modal-inner .bc-chip-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+    html[data-design="cardboard"] .pending-modal-inner .bc-chip {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+        padding: 6px !important;
+    }
+    html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-art {
+        flex: 0 0 auto;
+        width: 100%;
+    }
 }
 html[data-design="cardboard"] body:not(.accessibility-high-contrast) .bc-chip-name {
     color: #263d38;

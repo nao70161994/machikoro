@@ -1,5 +1,5 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player, getEffectText */
+/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
 
 const CARDBOARD_ROLL_FEEDBACK_MS = 1400;
 
@@ -75,9 +75,10 @@ const CardBoardField = (() => {
     }
 
     function updatePlayerOverflow() {
-        node('cardboardSeats')?.querySelectorAll('.cardboard-player-selected').forEach(panel => {
+        node('cardboardSeats')?.querySelectorAll('.cardboard-player-selected').forEach(element => {
+            const panel = /** @type {HTMLElement} */ (element);
             const cards = panel.querySelector('.cardboard-cards');
-            const cardHint = panel.querySelector('.cardboard-facility-scroll-hint');
+            const cardHint = /** @type {HTMLElement | null} */ (panel.querySelector('.cardboard-facility-scroll-hint'));
             if (cards && cardHint) {
                 const horizontal = cards.scrollWidth > cards.clientWidth + 1;
                 const vertical = cards.scrollHeight > cards.clientHeight + 1;
@@ -86,7 +87,7 @@ const CardBoardField = (() => {
                 cardHint.textContent = vertical ? '縦にスクロール ↓' : '横に送る →';
             }
             const landmarks = panel.querySelector('.cardboard-landmarks');
-            const landmarkHint = panel.querySelector('.cardboard-landmark-scroll-hint');
+            const landmarkHint = /** @type {HTMLElement | null} */ (panel.querySelector('.cardboard-landmark-scroll-hint'));
             if (landmarks && landmarkHint) {
                 landmarkHint.hidden = landmarks.scrollWidth <= landmarks.clientWidth + 1;
             }
@@ -147,7 +148,9 @@ const CardBoardField = (() => {
         const targetBounds = target.getBoundingClientRect();
         const scrollBounds = scrollport.getBoundingClientRect();
         if (targetBounds.left < scrollBounds.left) scrollport.scrollLeft += targetBounds.left - scrollBounds.left;
-        else if (targetBounds.right > scrollBounds.right) scrollport.scrollLeft += targetBounds.right - scrollBounds.right;
+        // Align to the card's start: a small nearest-edge scroll can snap back
+        // to the preceding card and leave the purchased facility clipped.
+        else if (targetBounds.right > scrollBounds.right) scrollport.scrollLeft += targetBounds.left - scrollBounds.left;
         if (targetBounds.top < scrollBounds.top) scrollport.scrollTop += targetBounds.top - scrollBounds.top;
         else if (targetBounds.bottom > scrollBounds.bottom) scrollport.scrollTop += targetBounds.bottom - scrollBounds.bottom;
     }
@@ -503,7 +506,7 @@ const CardBoardField = (() => {
 
     function draw() {
         if (!facts || !node('cardboardBoard')) return;
-        const { game, escapeHtml, enabledLandmarks } = facts;
+        const { game, escapeHtml, enabledLandmarks, getEffectText } = facts;
         if (!game?.players?.length) return;
         const builtLandmarks = game.players.map(player => Object.keys(player.landmarks || {}).filter(name => player.landmarks[name] === true));
         const newlyBuiltLandmarks = !facts.replaying && previousBuiltLandmarks

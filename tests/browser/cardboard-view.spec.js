@@ -354,6 +354,27 @@ test('1440pxのカード盤面は選択した街と全席ロスターを主役�
     expect(await state(page)).toEqual(before);
 });
 
+test('320pxの施設交換は手順を読めて施設アートを2列で選べる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 320, height: 844 });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.phase = GAME_PHASES.PENDING;
+        game.pendingBusiness = 1;
+        game.pendingActionQueue = [{ action: 'resolveBusiness', field: 'pendingBusiness' }];
+        game.players[0].cards = ['麦畑', 'パン屋', 'カフェ', 'コンビニ'].map(createCardByName);
+        render();
+    });
+    const help = page.locator('#pendingModal .bc-step-help').first();
+    await expect(help).toHaveCSS('color', 'rgb(74, 93, 80)');
+    const choices = page.locator('#pendingModal .bc-chip-group').first();
+    await expect(choices.locator('.bc-chip')).toHaveCount(4);
+    await expect(choices.locator('.sunset-facility-art').first()).toBeVisible();
+    const cards = await choices.locator('.bc-chip').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().toJSON()));
+    expect(Math.abs(cards[0].top - cards[1].top)).toBeLessThanOrEqual(1);
+    expect(cards[1].left).toBeGreaterThan(cards[0].left);
+    await page.screenshot({ path: testInfo.outputPath('business-320.png'), animations: 'disabled' });
+});
+
 test('844pxの終盤カード棚は24種類を一列で横送りできる', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 4, false);
     await page.evaluate(() => {
@@ -781,7 +802,13 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await prepare(page, { width: 390, height: 844 }, 4, false);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
-        game.players[0].cards = CARDS.filter(card => card.name !== '麦畑').map(card => createCardByName(card.name));
+        const enabled = getEnabledCardSelection();
+        game.players[0].cards = CARDS.filter(card => card.name !== '麦畑' && enabled.has(card.name)).map(card => createCardByName(card.name));
+        // Endgame fixture: facilities beyond the free initial bakery must
+        // consume market stock, just as real purchases do, to remain resumable.
+        for (const card of game.players[0].cards) {
+            if (card.name !== 'パン屋') SHOP_STOCK[card.name]--;
+        }
         game.players[0].coins = 30;
         game.phase = GAME_PHASES.BUILD;
         render();
@@ -790,14 +817,25 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     const before = await state(page);
     await page.locator('#cardboardMarket .compact-market-expand').click();
     const marketDialog = page.locator('#cardboardMarketDialog');
+    await page.evaluate(() => {
+        window.__observedBuildCue = null;
+        const observer = new MutationObserver(() => {
+            const card = document.querySelector('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"].cardboard-card-newly-built');
+            if (card) window.__observedBuildCue = {
+                animation: getComputedStyle(card).animationName,
+                outline: getComputedStyle(card).outlineColor,
+            };
+        });
+        observer.observe(document.getElementById('cardboardSeats'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+    });
     await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
     await expect(marketDialog).toBeVisible();
     expect(await page.evaluate(() => document.getElementById('cardboardMarketDialog').contains(document.activeElement))).toBe(true);
     const newCard = page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]');
     await expect(newCard.locator('.cardboard-count')).toHaveText('所有 ×1');
-    await expect(newCard).toHaveClass(/cardboard-card-newly-built/);
+    await expect.poll(() => page.evaluate(() => window.__observedBuildCue?.animation)).toBe('cardboard-card-arrival');
     expect(await newCard.evaluate(card => card.closest('.cardboard-cards').scrollLeft)).toBeGreaterThan(0);
-    expect(await newCard.evaluate(card => {
+    await expect.poll(() => newCard.evaluate(card => {
         const list = card.closest('.cardboard-cards').getBoundingClientRect();
         const bounds = card.getBoundingClientRect();
         return bounds.left >= list.left - 1 && bounds.right <= list.right + 1;
@@ -815,16 +853,22 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]')).toHaveCount(0);
     expect(await state(page)).toEqual(before);
     await page.evaluate(() => document.body.classList.add('accessibility-reduced-motion'));
+    await page.evaluate(() => { window.__observedBuildCue = null; });
     await page.locator('#cardboardMarket .compact-market-expand').click();
     await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
-    await expect(newCard).toHaveClass(/cardboard-card-newly-built/);
-    await expect(newCard).toHaveCSS('animation-name', 'none');
-    await expect(newCard).toHaveCSS('outline-color', 'rgb(23, 102, 189)');
+    await expect.poll(() => page.evaluate(() => window.__observedBuildCue)).toEqual({
+        animation: 'none', outline: 'rgb(23, 102, 189)',
+    });
     await page.locator('#cardboardMarketClose').click();
     await page.locator('#cardboardMarket .undo-btn').click();
     await page.locator('#confirmOkBtn').click();
     expect(await state(page)).toEqual(before);
-    await page.evaluate(() => saveGameState());
+    const saved = await page.evaluate(() => {
+        saveGameState();
+        const decoded = getLocalSaveRepository().read(isValidSavedGameState, 0);
+        return { ok: decoded.ok, reason: decoded.reason };
+    });
+    expect(saved, JSON.stringify(saved)).toEqual({ ok: true, reason: undefined });
     await selectTheme(page, 'sunset');
     await page.reload();
     await page.locator('#btnResume').click();

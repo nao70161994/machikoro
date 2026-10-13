@@ -1,0 +1,588 @@
+[
+  {
+    "key": "pendingTV-320",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 844,
+      "top": 0,
+      "right": 320,
+      "bottom": 844,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "2プレイヤー2のにぎやかな街 所持 30コイン",
+        "width": 252,
+        "height": 60
+      },
+      {
+        "text": "3プレイヤー1のにぎやかな街 所持 30コイン",
+        "width": 252,
+        "height": 60
+      },
+      {
+        "text": "4プレイヤー4のにぎやかな街 所持 30コイン",
+        "width": 252,
+        "height": 60
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingTV-844",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 844,
+      "height": 390,
+      "top": 0,
+      "right": 844,
+      "bottom": 390,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "2プレイヤー2のにぎやかな街 所持 30コイン",
+        "width": 396,
+        "height": 60
+      },
+      {
+        "text": "3プレイヤー1のにぎやかな街 所持 30コイン",
+        "width": 396,
+        "height": 60
+      },
+      {
+        "text": "4プレイヤー4のにぎやかな街 所持 30コイン",
+        "width": 396,
+        "height": 60
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingBusiness-320",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 844,
+      "top": 0,
+      "right": 320,
+      "bottom": 844,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "麦畑農園",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "麦畑農園",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "⇄ プレイヤー3のにぎやかな街と交換",
+        "width": 226,
+        "height": 68
+      },
+      {
+        "text": "麦畑農園",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "⇄ プレイヤー2のにぎやかな街と交換",
+        "width": 226,
+        "height": 68
+      },
+      {
+        "text": "麦畑農園",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 110,
+        "height": 102
+      },
+      {
+        "text": "⇄ プレイヤー4のにぎやかな街と交換",
+        "width": 226,
+        "height": 68
+      },
+      {
+        "text": "使用しない",
+        "width": 252,
+        "height": 54
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingBusiness-844",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 844,
+      "height": 390,
+      "top": 0,
+      "right": 844,
+      "bottom": 390,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "麦畑農園",
+        "width": 124.015625,
+        "height": 70
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 136.609375,
+        "height": 70
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 136.015625,
+        "height": 70
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 148.015625,
+        "height": 70
+      },
+      {
+        "text": "麦畑農園",
+        "width": 124.015625,
+        "height": 70
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 136.609375,
+        "height": 70
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 136.015625,
+        "height": 70
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 148.015625,
+        "height": 70
+      },
+      {
+        "text": "⇄ プレイヤー2のにぎやかな街と交換",
+        "width": 370,
+        "height": 47
+      },
+      {
+        "text": "麦畑農園",
+        "width": 124.015625,
+        "height": 70
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 136.609375,
+        "height": 70
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 136.015625,
+        "height": 70
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 148.015625,
+        "height": 70
+      },
+      {
+        "text": "⇄ プレイヤー4のにぎやかな街と交換",
+        "width": 370,
+        "height": 47
+      },
+      {
+        "text": "麦畑農園",
+        "width": 124.015625,
+        "height": 70
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 136.609375,
+        "height": 70
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 136.015625,
+        "height": 70
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 148.015625,
+        "height": 70
+      },
+      {
+        "text": "⇄ プレイヤー3のにぎやかな街と交換",
+        "width": 370,
+        "height": 47
+      },
+      {
+        "text": "使用しない",
+        "width": 396,
+        "height": 54
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingCleaning-320",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 844,
+      "top": 0,
+      "right": 320,
+      "bottom": 844,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "麦畑稼働中 4枚",
+        "width": 252,
+        "height": 84
+      },
+      {
+        "text": "パン屋稼働中 4枚",
+        "width": 252,
+        "height": 84
+      },
+      {
+        "text": "カフェ稼働中 4枚",
+        "width": 252,
+        "height": 84
+      },
+      {
+        "text": "コンビニ稼働中 4枚",
+        "width": 252,
+        "height": 84
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingCleaning-844",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 844,
+      "height": 390,
+      "top": 0,
+      "right": 844,
+      "bottom": 390,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "麦畑稼働中 4枚",
+        "width": 340,
+        "height": 84
+      },
+      {
+        "text": "パン屋稼働中 4枚",
+        "width": 340,
+        "height": 84
+      },
+      {
+        "text": "カフェ稼働中 4枚",
+        "width": 340,
+        "height": 84
+      },
+      {
+        "text": "コンビニ稼働中 4枚",
+        "width": 340,
+        "height": 84
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingMover-320",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 844,
+      "top": 0,
+      "right": 320,
+      "bottom": 844,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "麦畑農園",
+        "width": 123,
+        "height": 102
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 123,
+        "height": 102
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 123,
+        "height": 102
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 123,
+        "height": 102
+      },
+      {
+        "text": "2プレイヤー3のにぎやかな街選択した施設をこの街へ渡します",
+        "width": 252,
+        "height": 60
+      },
+      {
+        "text": "3プレイヤー2のにぎやかな街選択した施設をこの街へ渡します",
+        "width": 252,
+        "height": 60
+      },
+      {
+        "text": "4プレイヤー1のにぎやかな街選択した施設をこの街へ渡します",
+        "width": 252,
+        "height": 60
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingMover-844",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 844,
+      "height": 390,
+      "top": 0,
+      "right": 844,
+      "bottom": 390,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "麦畑農園",
+        "width": 124.015625,
+        "height": 70
+      },
+      {
+        "text": "パン屋飲食店",
+        "width": 136.609375,
+        "height": 70
+      },
+      {
+        "text": "カフェ飲食店",
+        "width": 136.015625,
+        "height": 70
+      },
+      {
+        "text": "コンビニ商店",
+        "width": 148.015625,
+        "height": 70
+      },
+      {
+        "text": "2プレイヤー3のにぎやかな街選択した施設をこの街へ渡します",
+        "width": 396,
+        "height": 60
+      },
+      {
+        "text": "3プレイヤー2のにぎやかな街選択した施設をこの街へ渡します",
+        "width": 396,
+        "height": 60
+      },
+      {
+        "text": "4プレイヤー1のにぎやかな街選択した施設をこの街へ渡します",
+        "width": 396,
+        "height": 60
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingRenovation-320",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 844,
+      "top": 0,
+      "right": 320,
+      "bottom": 844,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "駅取り壊して +8コイン",
+        "width": 252,
+        "height": 84
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingRenovation-844",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 844,
+      "height": 390,
+      "top": 0,
+      "right": 844,
+      "bottom": 390,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "駅取り壊して +8コイン",
+        "width": 340,
+        "height": 84
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": 0,
+    "errors": []
+  },
+  {
+    "key": "pendingIT-320",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 844,
+      "top": 0,
+      "right": 320,
+      "bottom": 844,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "積立する（→積立1コイン）",
+        "width": 252,
+        "height": 54
+      },
+      {
+        "text": "スキップ",
+        "width": 252,
+        "height": 54
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": false,
+    "errors": []
+  },
+  {
+    "key": "pendingIT-844",
+    "bounds": {
+      "x": 0,
+      "y": 0,
+      "width": 844,
+      "height": 390,
+      "top": 0,
+      "right": 844,
+      "bottom": 390,
+      "left": 0
+    },
+    "contentOverflow": [
+      {
+        "text": "積立する（→積立1コイン）",
+        "width": 396,
+        "height": 54
+      },
+      {
+        "text": "スキップ",
+        "width": 396,
+        "height": 54
+      }
+    ],
+    "pageOverflow": false,
+    "remaining": false,
+    "errors": []
+  }
+]

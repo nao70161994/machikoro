@@ -1487,6 +1487,7 @@ function renderPlayers() {
         playerSettings: settings,
         selfIndex: primaryPlayerIndex,
         escapeHtml,
+        getEffectText,
         enabledLandmarks: getEnabledLandmarkSelection(),
         session: townSession,
         replaying: uiOnlineRuntimeSnapshot().isReplaying === true,
