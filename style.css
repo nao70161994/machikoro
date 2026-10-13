@@ -12155,6 +12155,9 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
         line-height: 1.25;
         overflow-wrap: anywhere;
     }
+    html[data-design="cardboard"] #cardboardActionSlot:has(#btnSkip:not(:disabled)) #btnRoll:disabled {
+        display: none;
+    }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardActionSlot #diceChoose .dice-choose button:not(:disabled) {
         min-height: 48px;
         font-size: 13px;
@@ -12291,8 +12294,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
         grid-auto-rows: max-content;
         align-content: start;
         justify-content: start;
-        flex: 0 0 184px;
-        height: 184px;
+        flex: 0 0 auto;
+        height: auto;
         min-height: 184px;
         max-height: none;
         overflow-x: auto;

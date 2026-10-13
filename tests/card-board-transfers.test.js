@@ -67,14 +67,14 @@ runTest('同じ送受信者間でも発動施設ごとに送金元を識別す�
     ]);
 });
 
-runTest('移動中のコイン表示にも発動施設を示す', () => {
+runTest('移動中は金額を短く示し、詳細には施設と移動元・移動先を保持する', () => {
     const { container } = fixture();
     const controller = CardBoardTransfers.create();
     controller.play({ container, events: { participantNames: ['街A', '街B'], activations: [
         { from: 0, to: 1, amount: 5, subject: 'パン屋', facility: true },
     ] } });
     const movingCoin = container.children[0].children[1];
-    assert.strictEqual(movingCoin.textContent, '5コイン · パン屋：街A → 街B');
+    assert.strictEqual(movingCoin.textContent, '5コイン');
     assert.strictEqual(movingCoin.title, 'パン屋：街A → 街B：5コイン');
     assert.strictEqual(movingCoin.attributes['aria-hidden'], 'true');
     controller.clear();
@@ -87,7 +87,7 @@ runTest('銀行と分配プールの受取・支払いをコイン移動色と�
         { from: 'pool', to: 0, amount: 5, subject: '共同基金' },
         { from: 0, to: 'pool', amount: 6, subject: '共同基金' },
     ] } });
-    const [incoming, outgoing] = container.children[0].children.slice(1);
+    const [outgoing, incoming] = container.children[0].children.slice(1);
     assert.strictEqual(incoming.dataset.flow, 'incoming');
     assert.strictEqual(incoming.dataset.large, 'true');
     assert.strictEqual(outgoing.dataset.flow, 'outgoing');
@@ -120,7 +120,7 @@ runTest('経路summaryを盤面外のイベント欄へ置いてもclearで両�
     const controller = CardBoardTransfers.create();
     controller.play({ container, summaryContainer: receipt, events });
     assert.strictEqual(receipt.children.length, 1);
-    assert.ok(receipt.children[0].textContent.includes('街A → 街B：5コイン'));
+    assert.ok(receipt.children[0].textContent.includes('5コイン · 街A → 街B'));
     assert.ok(container.children[0].children.every(child => child.className !== 'cardboard-transfer-summary'));
     assert.strictEqual(animated.length, 2);
     controller.clear();
@@ -181,8 +181,8 @@ runTest('Reduced Motionでも誰から誰への金額を静止表示し未集計
     controller.play({ container, events: { ...events, incomplete: true }, reducedMotion: true });
     assert.strictEqual(animated.length, 0);
     const text = container.children[0].children[0].textContent;
-    assert.ok(text.includes('街A → 街B：5コイン'));
-    assert.ok(text.includes('未集計の特殊効果'));
+    assert.ok(text.includes('5コイン · 街A → 街B'));
+    assert.ok(text.includes('未集計の記録は発動・支払いの内訳で確認'));
     controller.clear();
     assert.strictEqual(controller.play({ container, events: {} }), false);
 });
@@ -224,7 +224,7 @@ runTest('アプリ内の動きを減らす設定でもWAAPIの送金を止め文
     const controller = CardBoardTransfers.create();
     controller.play({ container, events, reducedMotion: false });
     assert.strictEqual(animated.length, 0);
-    assert.ok(container.children[0].children[0].textContent.includes('街A → 街B：5コイン'));
+    assert.ok(container.children[0].children[0].textContent.includes('5コイン · 街A → 街B'));
     controller.clear();
 });
 
@@ -239,7 +239,7 @@ runTest('コイン移動中に動きを減らす設定へ切り替えると飛�
     notifyPreferenceChanged();
     assert.strictEqual(cancelled(), 2);
     assert.strictEqual(container.children.length, 0, '動きのレイヤーだけを片付ける');
-    assert.ok(receipt.children[0].textContent.includes('街A → 街B：5コイン'));
+    assert.ok(receipt.children[0].textContent.includes('5コイン · 街A → 街B'));
     controller.clear();
     assert.strictEqual(receipt.children.length, 0);
 });

@@ -490,7 +490,7 @@ test('10人のカード盤面は自分・手番・選択相手を読める大き
     await expect(focusedCard).toHaveCSS('outline-width', '3px');
     await expect(page.locator('#cardboardRoster .cardboard-roster-self .cardboard-roster-self-badge')).toHaveText('あなた');
     await expect(page.locator('#cardboardRoster .cardboard-roster').first()).toHaveAttribute('aria-label',
-        '表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。選ぶと街のカードを大きく表示');
+        '表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。キーボードでは左右矢印、Home、Endで席を移動できます。選ぶと街のカードを大きく表示');
     const chips = page.locator('#cardboardRoster button').first().locator('.cardboard-color-count');
     await expect(chips).toHaveCount(4);
     await page.locator('#cardboardRoster [data-cardboard-player-index="9"]').click();

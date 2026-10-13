@@ -164,7 +164,7 @@ const CardBoardTransfers = (() => {
                 coin.dataset.flow = sourceIsBank ? 'incoming' : targetIsBank ? 'outgoing' : 'between';
                 if (!targetIsBank && route.amount >= 5) coin.dataset.large = 'true';
                 coin.setAttribute('aria-hidden', 'true');
-                coin.textContent = `${route.amount}コイン · ${route.fromName} → ${route.toName}`;
+                coin.textContent = `${route.amount}コイン`;
                 coin.title = route.title;
                 coin.style.left = `${from.x}px`;
                 coin.style.top = `${from.y}px`;
