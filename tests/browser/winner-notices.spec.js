@@ -58,7 +58,7 @@ for (const sample of [
                 maximumOpacity: Math.max(...confettiPieces.map(piece => piece.opacity)),
                 allEnterFromTop: confettiPieces.every(piece => piece.launchY <= 0 && piece.launchY >= -96),
             }));
-            expect(confettiReview.count).toBe(32);
+            expect(confettiReview.count).toBe(42);
             expect(confettiReview.maximumOpacity).toBeLessThanOrEqual(0.4);
             expect(confettiReview.allEnterFromTop).toBe(true);
             await page.waitForTimeout(500);

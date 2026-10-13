@@ -1,3 +1,4 @@
+/* global MutationObserver */
 // 紙吹雪
 let confettiInterval = null;
 let confettiTimeout = null;
