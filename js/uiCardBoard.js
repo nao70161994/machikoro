@@ -92,7 +92,7 @@ const UiCardBoard = (() => {
         const setting = options.playerSettings?.[index];
         if (!setting) return { html: '', label: '' };
         return {
-            html: typeof options.renderPlayerKindIcon === 'function' ? options.renderPlayerKindIcon(setting) : '',
+            html: typeof options.renderPlayerKindIcon === 'function' ? options.renderPlayerKindIcon(setting, index) : '',
             label: typeof options.playerKindAccessibleLabel === 'function' ? options.playerKindAccessibleLabel(setting) : '',
         };
     }
