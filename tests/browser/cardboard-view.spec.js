@@ -59,7 +59,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#cardboardMoreMenuContent #gameDesignThemeSelect')).toBeVisible();
         await designSummary.click();
         await page.locator('#cardboardMoreMenu > summary').click();
-        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(1);
         await expect(page.locator('#cardboardMarket #buildMenu')).toHaveCount(0);
         await expect(page.locator('#buildMenu')).toHaveCount(1);
         await expect(page.locator('#cardboardCompareToggle')).toHaveAttribute('aria-haspopup', 'dialog');
@@ -68,7 +68,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×4');
         await expect(page.locator('#cardboardSeats .cardboard-player-selected > .cardboard-landmark-heading .cardboard-landmark-scroll-hint'))
             .toHaveText('横にスクロール →');
-        const seatAccents = await page.locator('#cardboardSeats .cardboard-player').evaluateAll(players =>
+        const seatAccents = await page.locator('#cardboardRoster .cardboard-roster-seat').evaluateAll(players =>
             players.map(player => getComputedStyle(player).borderInlineStartColor));
         expect(new Set(seatAccents).size).toBe(4);
         const rosterAccents = await page.locator('#cardboardRoster .cardboard-roster-seat').evaluateAll(seats =>
@@ -523,7 +523,7 @@ test('10人のカード盤面は自分・手番・選択相手を読める大き
     await expect(page.locator('#cardboardRoster button')).toHaveCount(10);
     expect(await page.locator('#cardboardRoster').evaluate(element => getComputedStyle(element, '::before').content))
         .toBe('"他の席を見るには横へ →"');
-    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(3);
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(1);
     await expect(page.locator('#cardboardSeats .cardboard-player-selected')).toBeVisible();
     await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toHaveCSS('outline-color', 'rgb(208, 164, 47)');
     await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toHaveCSS('border-inline-start-color', 'rgb(23, 102, 189)');
@@ -544,7 +544,7 @@ test('10人のカード盤面は自分・手番・選択相手を読める大き
     await expect(chips).toHaveCount(4);
     await page.locator('#cardboardRoster [data-cardboard-player-index="9"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="9"]')).toBeVisible();
-    expect(await page.locator('#cardboardSeats > .cardboard-player').count()).toBeLessThanOrEqual(3);
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(1);
     await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toBeHidden();
     await page.locator('#cardboardRoster [data-cardboard-player-index="0"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toBeVisible();
@@ -991,6 +991,34 @@ test('同じ出目の内訳更新は開閉とフォーカスを保ち、次手�
         acceptHotseatHandoff();
     });
     await expect(page.locator('#cardboardDiceReceipt details[open]')).toHaveCount(0);
+});
+
+test('席の往復は1街だけを描画して棚位置を復元し、消えるカードのフォーカスを移す', async ({ page }) => {
+    await prepare(page, { width: 390, height: 844 });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = CARDS.slice(0, 16).map(card => createCardByName(card.name));
+        render();
+    });
+    const before = await state(page);
+    const shelf = page.locator('.cardboard-player-selected .cardboard-cards');
+    await shelf.evaluate(element => { element.scrollLeft = 800; });
+    await expect.poll(() => shelf.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+    const offset = await shelf.evaluate(element => element.scrollLeft);
+    await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+    await expect(page.locator('#cardboardSeats .cardboard-player')).toHaveCount(1);
+    await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toHaveCount(0);
+    await page.locator('#cardboardRoster [data-cardboard-player-index="0"]').click();
+    await expect.poll(async () => Math.abs(await shelf.evaluate(element => element.scrollLeft) - offset)).toBeLessThanOrEqual(1);
+    await shelf.locator('.cardboard-card').first().focus();
+    await page.evaluate(() => {
+        // Programmatic activation retains the card focus until the panel is
+        // removed, unlike a pointer click which first focuses the roster.
+        document.querySelector('#cardboardRoster [data-cardboard-player-index="1"]').click();
+    });
+    await expect(page.locator('#cardboardRoster [data-cardboard-player-index="1"]')).toBeFocused();
+    await page.locator('#cardboardRoster [data-cardboard-player-index="0"]').click();
+    expect(await state(page)).toEqual(before);
 });
 
 test('所有施設と市場のスクロール位置は収支更新と4ビュー往復でも保つ', async ({ page }) => {

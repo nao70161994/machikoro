@@ -28,7 +28,7 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     assert.ok(html.includes('未建設'));
     assert.ok(!html.includes('data-landmark-name="役所"'));
     assert.ok(html.includes('目標 1/2'));
-    assert.ok(html.includes('class="cardboard-landmark-scroll-hint" aria-hidden="true">横にスクロール →</span>'));
+    assert.ok(html.includes('class="cardboard-landmark-scroll-hint" aria-hidden="true" hidden>横にスクロール →</span>'));
     assert.ok(html.includes('&lt;街の主&gt;'));
     assert.strictEqual(JSON.stringify(player), before);
 });
@@ -107,7 +107,7 @@ runTest('カード連鎖の強調順は最初の該当ログ位置に対応す�
 runTest('席・名前の同一性と選択/現在/自分を分離し10席に制限する', () => {
     const players = Array.from({ length: 12 }, () => ({ ...player }));
     const html = UiCardBoard.buildRosterHtml(players, { ...options, selectedIndex: 2 });
-    assert.ok(html.includes('aria-label="表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。選ぶと街のカードを大きく表示"'));
+    assert.ok(html.includes('aria-label="表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。キーボードでは左右矢印、Home、Endで席を移動できます。選ぶと街のカードを大きく表示"'));
     assert.strictEqual((html.match(/class="cardboard-roster-seat(?:\s|")/g) || []).length, 10);
     assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1);
     assert.strictEqual((html.match(/aria-current="true"/g) || []).length, 1);
@@ -142,6 +142,17 @@ runTest('選択した街の見出しにも所有者の人/CPU種別を示す', (
     assert.ok(html.includes('<h2 class="cardboard-player-heading"'));
     assert.ok(html.includes('<span class="cardboard-player-kind" aria-hidden="true"><svg data-owner-kind="cpu"></svg></span>'));
     assert.ok(html.includes('<span class="visually-hidden">CPU（最強）。</span>'));
+});
+runTest('街フォーカスでは選択した1席だけを描画し不正な席は自分へ戻す', () => {
+    for (let count = 2; count <= 10; count++) {
+        assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, {
+            focusOnly: true, selfIndex: 0, currentIndex: 1, selectedIndex: count - 1,
+        }), [count - 1]);
+        assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, {
+            focusOnly: true, selfIndex: 0, selectedIndex: -1,
+        }), [0]);
+    }
+    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(0, { focusOnly: true }), []);
 });
 runTest('2〜4人は全員、5〜10人は役割を優先し重複時も必ず3人を比較できる', () => {
     for (let count = 2; count <= 4; count++) {

@@ -10,6 +10,11 @@ const UiCardBoard = (() => {
     function selectDetailIndices(playerCount, options = {}) {
         const count = Number.isInteger(playerCount) ? Math.max(0, Math.min(10, playerCount)) : 0;
         const all = Array.from({ length: count }, (_, index) => index);
+        if (options.focusOnly === true && count > 0) {
+            const selected = [options.selectedIndex, options.selfIndex, options.currentIndex, 0]
+                .find(index => Number.isInteger(index) && index >= 0 && index < count);
+            return [selected];
+        }
         if (count <= 4) return all;
         const selected = new Set();
         for (const index of [options.selfIndex, options.currentIndex, options.selectedIndex, ...all]) {

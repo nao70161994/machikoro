@@ -616,11 +616,17 @@ const CardBoardField = (() => {
             const currentSeat = node('cardboardRoster')?.querySelector('.cardboard-roster-seat[aria-current="true"]');
             currentSeat?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
         }
-        const indices = UiCardBoard.selectDetailIndices(game.players.length, { selfIndex, currentIndex, selectedIndex });
+        const indices = UiCardBoard.selectDetailIndices(game.players.length, { selfIndex, currentIndex, selectedIndex, focusOnly: true });
         const animateNewCards = newlyBuiltCards.length > 0 && !reducedMotionEnabled();
         const others = indices.filter(index => index !== selfIndex);
+        let removedFocusedPanel = false;
         seats.querySelectorAll('.cardboard-player').forEach(element => {
-            if (!indices.includes(Number(/** @type {HTMLElement} */ (element).dataset.playerIndex))) element.remove();
+            const index = Number(/** @type {HTMLElement} */ (element).dataset.playerIndex);
+            if (!indices.includes(index)) {
+                scrollMemory.capture(`player:${index}`, element);
+                if (element.contains(document.activeElement)) removedFocusedPanel = true;
+                element.remove();
+            }
         });
         for (const index of indices) {
             let panel = seats.querySelector(`.cardboard-player[data-player-index="${index}"]`);
@@ -665,6 +671,10 @@ const CardBoardField = (() => {
                 revealInScrollport(card, cardList);
                 if (builtCard === card) showBuildCue(card, animateNewCards);
             }
+        }
+        if (removedFocusedPanel) {
+            (/** @type {HTMLElement | null} */ (node('cardboardRoster')?.querySelector(`[data-cardboard-player-index="${selectedIndex}"]`)))
+                ?.focus({ preventScroll: true });
         }
         const receipt = node('cardboardDiceReceipt');
         const disclosure = receipt.querySelector('details');
