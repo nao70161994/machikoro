@@ -2299,7 +2299,7 @@ for (const width of [320, 390, 844, 1440]) {
         await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-target="all"]').click();
         await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
-        const dragPoint = await page.locator('#plazaViewport').evaluate(field => {
+        const findDragPoint = () => page.locator('#plazaViewport').evaluate(field => {
             const rect = field.getBoundingClientRect();
             for (const y of [0.3, 0.5, 0.7]) for (const x of [0.1, 0.5, 0.9]) {
                 const point = { x: rect.left + rect.width * x, y: rect.top + rect.height * y };
@@ -2308,6 +2308,11 @@ for (const width of [320, 390, 844, 1440]) {
             }
             return null;
         });
+        // WebKit can commit the last camera frame after the transition class
+        // clears. Require an actual reachable pan surface before interacting.
+        await expect(page.locator('#plazaWorld')).toHaveClass(/plaza-field-overview/);
+        await expect.poll(findDragPoint).not.toBeNull();
+        const dragPoint = await findDragPoint();
         expect(dragPoint).not.toBeNull();
         const beforePan = await page.locator('#plazaWorld').getAttribute('style');
         await page.mouse.move(dragPoint.x, dragPoint.y);

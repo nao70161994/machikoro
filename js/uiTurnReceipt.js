@@ -4,6 +4,10 @@
 const UiTurnReceipt = (() => {
     function buildReceiptHtml(receipt, escapeHtml, options = {}) {
         if (!receipt || typeof escapeHtml !== 'function') return '';
+        // Before the first result there is no receipt to read. An empty totals
+        // label would otherwise reserve the event panel's height on phones.
+        if (!receipt.dice && !receipt.important.length && !receipt.activations.length &&
+                !receipt.balances.length && !receipt.unparsed.length && !receipt.incomplete) return '';
         const escape = value => escapeHtml(String(value));
         const name = index => index === 'pool' ? '分配プール' : index === null ? '銀行'
             : receipt.participantNames?.[index] || receipt.balances.find(balance => balance.index === index)?.name ||

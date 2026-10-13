@@ -9,7 +9,9 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.setViewportSize(viewport);
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-        await page.goto('/');
+        // Browser-global game scripts finish before DOMContentLoaded. Let the
+        // existing UI assertions wait for game readiness, not unrelated load assets.
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.locator('.setup-quick-play').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
         for (const phase of ['ROLL', 'BUILD']) {
@@ -114,7 +116,7 @@ test('終盤の施設比較は行追加後も縦横の読み位置を維持す�
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
             type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}`,
@@ -152,7 +154,7 @@ test('広場のその他メニューから施設とランドマークへ移動�
     await page.setViewportSize({ width: 1363, height: 936 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
         const state = GameRuntimeState.runtime.snapshot();
@@ -182,7 +184,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.setViewportSize(viewport);
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-        await page.goto('/');
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.locator('.setup-quick-play').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
         await page.locator('[data-field-target="all"]').click();
@@ -243,7 +245,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.setViewportSize(viewport);
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-        await page.goto('/');
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.evaluate(() => {
             startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
                 type: 'human', name: `街${index + 1}`,
@@ -305,7 +307,7 @@ for (const scenario of [
         await page.setViewportSize({ width: scenario.width, height: scenario.height });
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-        await page.goto('/');
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.evaluate(({ playerCount, cardCount }) => {
             startGameNow(playerCount, Array.from({ length: playerCount }, (_, index) => ({
                 type: 'human', name: `街${index + 1}`,
@@ -361,7 +363,7 @@ test('広場の最近の出来事から関連する街へ安全に移動でき�
     await page.setViewportSize({ width: 844, height: 390 });
     await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
     await page.evaluate(() => {
@@ -390,7 +392,7 @@ for (const playerCount of [2, 4, 10]) {
         await page.setViewportSize({ width: 1363, height: 936 });
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-        await page.goto('/');
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         const fixtureState = await page.evaluate(count => {
             startGameNow(count, Array.from({ length: count }, (_, index) => ({
                 type: index === 0 ? 'human' : 'cpu', difficulty: 'normal', name: `街${index + 1}`,
@@ -484,7 +486,7 @@ for (const playerCount of [2, 4, 10]) {
         await expect.poll(fits).toEqual([]);
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         await expect(page.locator('#buildMenu h3')).toContainText('施設一覧');
-        const marketLayout = await page.evaluate(() => {
+        const readMarketLayout = async () => page.evaluate(() => {
             const panel = document.getElementById('buildMenu').getBoundingClientRect();
             const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
             return {
@@ -493,6 +495,13 @@ for (const playerCount of [2, 4, 10]) {
                 columns: getComputedStyle(document.querySelector('#buildMenu .card-grid')).gridTemplateColumns.split(' ').length,
             };
         });
+        await expect.poll(async () => {
+            const { panel, viewport } = await readMarketLayout();
+            return panel.left >= viewport.left && panel.right <= viewport.right &&
+                panel.top >= viewport.top && panel.bottom <= viewport.bottom &&
+                panel.width >= Math.min(viewport.width - 16, 570) - 1;
+        }).toBe(true);
+        const marketLayout = await readMarketLayout();
         expect(marketLayout.panel.left).toBeGreaterThanOrEqual(marketLayout.viewport.left);
         expect(marketLayout.panel.right).toBeLessThanOrEqual(marketLayout.viewport.right);
         expect(marketLayout.panel.top).toBeGreaterThanOrEqual(marketLayout.viewport.top);
@@ -582,7 +591,7 @@ for (const width of [320, 390]) {
         await page.setViewportSize({ width, height: 844 });
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
-        await page.goto('/');
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
         await page.evaluate(() => {
             startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
                 type: index === 0 ? 'human' : 'cpu', difficulty: 'normal', name: `街${index + 1}`,
@@ -603,9 +612,10 @@ for (const width of [320, 390]) {
         for (const action of ['self', 'market', 'all']) {
             await expect(page.locator(`#plazaCameraTools [data-field-target="${action}"]`)).toBeVisible();
         }
-        for (const panel of ['log', 'events', 'comparison']) {
+        for (const panel of ['log', 'comparison']) {
             await expect(page.locator(`#plazaCameraTools [data-field-panel="${panel}"]`)).toBeVisible();
         }
+        await expect(page.locator('#plazaCameraTools [data-field-panel="events"]')).toBeHidden();
         await expect(page.locator('#plazaCameraTools > details > summary')).toBeVisible();
         await expect.poll(() => page.evaluate(() => {
             const hud = document.getElementById('plazaPlayerHud').getBoundingClientRect();
@@ -617,7 +627,7 @@ for (const width of [320, 390]) {
             const opponents = document.querySelector('#plazaPlayerHud .plaza-hud-opponents');
             const opponentBounds = opponents.getBoundingClientRect();
             const opponentButtons = Array.from(opponents.querySelectorAll('button'));
-            return tools.height <= 60 && controls.length === 7 && controls.every(control => {
+            return tools.height <= 60 && controls.length === 6 && controls.every(control => {
                 const rect = control.getBoundingClientRect();
                 return rect.width >= 44 && rect.height >= 44 && rect.left >= 0 && rect.right <= innerWidth;
             }) && opponentBounds.bottom <= hud.bottom &&

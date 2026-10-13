@@ -1,0 +1,30 @@
+[
+  {
+    "viewport": {
+      "width": 320,
+      "height": 844
+    },
+    "geometry": {
+      "top": 239,
+      "bottom": 605,
+      "height": 366,
+      "scrollHeight": 364,
+      "clientHeight": 364
+    },
+    "reachableButtons": 2
+  },
+  {
+    "viewport": {
+      "width": 844,
+      "height": 390
+    },
+    "geometry": {
+      "top": 24,
+      "bottom": 366,
+      "height": 342,
+      "scrollHeight": 364,
+      "clientHeight": 340
+    },
+    "reachableButtons": 2
+  }
+]

@@ -5116,6 +5116,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal 
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow-y: auto;
     padding: max(24px, env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
 }
 
@@ -5126,6 +5127,9 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardDetailModal 
     padding: 28px 24px;
     max-width: 400px;
     width: 100%;
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top, 0px)) - max(24px, env(safe-area-inset-bottom, 0px)));
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
     text-align: center;
 }
 

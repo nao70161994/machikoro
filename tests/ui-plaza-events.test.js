@@ -18,6 +18,7 @@ const escape = value => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', 
 runTest('両ビューと互換APIは同じ投影・receipt実装を共有する', () => {
     assert.strictEqual(UiPlazaEvents.project, UiTurnEvents.project);
     assert.strictEqual(UiPlazaEvents.buildReceiptHtml, UiTurnReceipt.buildHtml);
+    assert.strictEqual(UiTurnReceipt.buildHtml(project([]), escape), '');
 });
 runTest('復元ログに参加者名がなくても施設収支の送受信者を席番号で示す', () => {
     const html = UiTurnReceipt.buildHtml({
