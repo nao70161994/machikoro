@@ -32,6 +32,16 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     assert.ok(html.includes('&lt;街の主&gt;'));
     assert.strictEqual(JSON.stringify(player), before);
 });
+runTest('共通効果の表示文をカードと読み上げへ安全に渡し状態を変えない', () => {
+    const before = JSON.stringify(player);
+    const html = UiCardBoard.buildPlayerHtml(player, {
+        ...options, getEffectText: () => '工場 <2> ごとに3コイン',
+    });
+    assert.ok(html.includes('class="cardboard-effect" title="工場 &lt;2&gt; ごとに3コイン"'));
+    assert.ok(html.includes('所有 2枚。工場 &lt;2&gt; ごとに3コイン。休業'));
+    assert.ok(!html.includes('工場 <2>'));
+    assert.strictEqual(JSON.stringify(player), before);
+});
 runTest('施設棚は出目の昇順で並び元のゲームカード配列は変更しない', () => {
     const cards = ['森林', '麦畑', 'パン屋', '牧場'].map(createCardByName);
     const before = cards.map(card => card.name);

@@ -354,6 +354,34 @@ test('1440pxのカード盤面は選択した街と全席ロスターを主役�
     expect(await state(page)).toEqual(before);
 });
 
+test('844pxの終盤カード棚は24種類を一列で横送りできる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = CARDS.slice(0, 24).map(card => createCardByName(card.name));
+        render();
+    });
+    const before = await state(page);
+    const shelf = page.locator('#cardboardSeats .cardboard-player-selected .cardboard-cards');
+    await expect(shelf.locator('.cardboard-card')).toHaveCount(24);
+    const geometry = await shelf.evaluate(element => ({
+        scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
+        scrollHeight: element.scrollHeight, clientHeight: element.clientHeight,
+        overflowX: getComputedStyle(element).overflowX,
+    }));
+    expect(geometry.overflowX).toBe('auto');
+    expect(geometry.scrollWidth).toBeGreaterThan(geometry.clientWidth);
+    expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.clientHeight + 1);
+    await shelf.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+    await expect.poll(() => shelf.evaluate(element => {
+        const shelfBounds = element.getBoundingClientRect();
+        const lastBounds = element.lastElementChild.getBoundingClientRect();
+        return lastBounds.left >= shelfBounds.left - 1 && lastBounds.right <= shelfBounds.right + 1;
+    })).toBe(true);
+    expect(await state(page)).toEqual(before);
+    await page.screenshot({ path: testInfo.outputPath('late-844-last-card.png'), animations: 'disabled' });
+});
+
 test('1440pxの終盤カード棚は先頭カードからスクロールできる', async ({ page }) => {
     await prepare(page, { width: 1440, height: 900 }, 2, false);
     await page.evaluate(() => {

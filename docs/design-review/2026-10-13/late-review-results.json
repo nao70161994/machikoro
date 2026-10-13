@@ -1,0 +1,146 @@
+[
+  {
+    "key": "4p-late-320",
+    "overflow": false,
+    "cards": 24,
+    "diceHeight": 25.59375,
+    "firstCardHeight": 201.03125,
+    "shelf": {
+      "clientHeight": 218,
+      "scrollHeight": 218,
+      "clientWidth": 273,
+      "scrollWidth": 4343
+    },
+    "detailVisible": true,
+    "marketVisible": true,
+    "selectedIndex": "3",
+    "stateUnchanged": true,
+    "errors": []
+  },
+  {
+    "key": "4p-late-390",
+    "overflow": false,
+    "cards": 24,
+    "diceHeight": 25.59375,
+    "firstCardHeight": 201.03125,
+    "shelf": {
+      "clientHeight": 218,
+      "scrollHeight": 218,
+      "clientWidth": 343,
+      "scrollWidth": 4343
+    },
+    "detailVisible": true,
+    "marketVisible": true,
+    "selectedIndex": "3",
+    "stateUnchanged": true,
+    "errors": []
+  },
+  {
+    "key": "4p-late-844",
+    "overflow": false,
+    "cards": 24,
+    "diceHeight": 17,
+    "firstCardHeight": 168.28125,
+    "shelf": {
+      "clientHeight": 172,
+      "scrollHeight": 172,
+      "clientWidth": 452,
+      "scrollWidth": 4416
+    },
+    "detailVisible": true,
+    "marketVisible": true,
+    "selectedIndex": "3",
+    "stateUnchanged": true,
+    "errors": []
+  },
+  {
+    "key": "4p-late-1440",
+    "overflow": false,
+    "cards": 24,
+    "diceHeight": 27.59375,
+    "firstCardHeight": 271.578125,
+    "shelf": {
+      "clientHeight": 609,
+      "scrollHeight": 3351,
+      "clientWidth": 599,
+      "scrollWidth": 599
+    },
+    "detailVisible": true,
+    "marketVisible": true,
+    "selectedIndex": "3",
+    "stateUnchanged": true,
+    "errors": []
+  },
+  {
+    "key": "10p-late-320",
+    "overflow": false,
+    "cards": 24,
+    "diceHeight": 25.59375,
+    "firstCardHeight": 201.03125,
+    "shelf": {
+      "clientHeight": 218,
+      "scrollHeight": 218,
+      "clientWidth": 273,
+      "scrollWidth": 4343
+    },
+    "detailVisible": true,
+    "marketVisible": true,
+    "selectedIndex": "9",
+    "stateUnchanged": true,
+    "errors": []
+  },
+  {
+    "key": "10p-late-390",
+    "overflow": false,
+    "cards": 24,
+    "diceHeight": 25.59375,
+    "firstCardHeight": 201.03125,
+    "shelf": {
+      "clientHeight": 218,
+      "scrollHeight": 218,
+      "clientWidth": 343,
+      "scrollWidth": 4343
+    },
+    "detailVisible": true,
+    "marketVisible": true,
+    "selectedIndex": "9",
+    "stateUnchanged": true,
+    "errors": []
+  },
+  {
+    "key": "10p-late-844",
+    "overflow": false,
+    "cards": 24,
+    "diceHeight": 17,
+    "firstCardHeight": 168.28125,
+    "shelf": {
+      "clientHeight": 172,
+      "scrollHeight": 172,
+      "clientWidth": 452,
+      "scrollWidth": 4416
+    },
+    "detailVisible": true,
+    "marketVisible": true,
+    "selectedIndex": "9",
+    "stateUnchanged": true,
+    "errors": []
+  },
+  {
+    "key": "10p-late-1440",
+    "overflow": false,
+    "cards": 24,
+    "diceHeight": 27.59375,
+    "firstCardHeight": 271.578125,
+    "shelf": {
+      "clientHeight": 561,
+      "scrollHeight": 3351,
+      "clientWidth": 599,
+      "scrollWidth": 599
+    },
+    "detailVisible": true,
+    "marketVisible": true,
+    "selectedIndex": "9",
+    "stateUnchanged": true,
+    "errors": []
+  }
+]

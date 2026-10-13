@@ -1,5 +1,5 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player, getEffectText */
 
 const CARDBOARD_ROLL_FEEDBACK_MS = 1400;
 
@@ -641,6 +641,7 @@ const CardBoardField = (() => {
                 renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
                 playerKindAccessibleLabel: UiPlayerDisplay.playerKindAccessibleLabel,
                 renderFacilityArt: UiBuildMenu.renderFacilityArt,
+                getEffectText,
             }));
             for (const landmark of newlyBuiltLandmarks) {
                 if (landmark.index !== index) continue;

@@ -10821,6 +10821,22 @@ html[data-design="cardboard"] .cardboard-card .sunset-facility-art { display: bl
 html[data-design="cardboard"] .cardboard-name { display: block; padding: 3px 4px; font-size: 12px; font-weight: 800; line-height: 1.2; overflow-wrap: anywhere; }
 html[data-design="cardboard"] .cardboard-card .cardboard-name { color: #fff; background: var(--cardboard-card-color); }
 html[data-design="cardboard"] .cardboard-count { display: block; padding: 2px 4px 0; font-size: 12px; font-weight: 900; font-variant-numeric: tabular-nums; }
+html[data-design="cardboard"] .cardboard-effect { display: none; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-effect {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    flex: 0 0 auto;
+    padding: 3px 4px;
+    color: #183447;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: normal;
+    text-align: left;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard .cardboard-effect { color: #fff; }
 html[data-design="cardboard"] .cardboard-dormant { display: block; margin: 2px 4px 0; padding: 2px; background: #f1e5d5; border-radius: 3px; color: #693b20; font-size: 10px; }
 html[data-design="cardboard"] .cardboard-card-dormant { border-style: dashed; }
 html[data-design="cardboard"] .cardboard-card-activated { outline: 2px solid #f4bc20; outline-offset: 1px; box-shadow: 0 0 0 4px #fff2b580; }
@@ -12112,6 +12128,37 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
         overflow-x: auto;
         overflow-y: hidden;
     }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmarks {
+        order: 2;
+        position: static;
+        min-height: 44px;
+        background: #fffdf5;
+        border-top: 1px solid #b99b56;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected > .cardboard-landmark-heading {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected > .cardboard-facility-heading { order: 3; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected > .cardboard-cards { order: 4; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] .cardboard-facility-scroll-hint { font-size: 0; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected[data-vertical-overflow="true"] .cardboard-facility-scroll-hint::after {
+        content: "横送り ↔ · 街は縦送り ↕";
+        font-size: 10px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark { flex-basis: 110px; min-width: 110px; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-landmark .cardboard-name {
+        overflow: visible;
+        white-space: normal;
+        text-overflow: clip;
+        font-size: 11px;
+        line-height: 1.2;
+    }
+    html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard .cardboard-player-selected .cardboard-landmarks { background: #000; border-color: #fff; }
 }
 @media (orientation: portrait) and (max-width: 760px) {
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view {
@@ -12214,7 +12261,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster {
         display: flex;
         flex-wrap: nowrap;
-        height: 68px;
+        height: 88px;
         gap: 5px;
         overflow-x: auto;
         overflow-y: hidden;
@@ -12228,8 +12275,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
         width: clamp(148px, 45vw, 176px);
         min-width: 148px;
         max-width: 176px;
-        height: 64px;
-        min-height: 64px;
+        height: 84px;
+        min-height: 84px;
         align-content: center;
         scroll-snap-align: start;
     }
@@ -12246,7 +12293,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-roster-badge { order: 1; }
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster {
         flex-wrap: nowrap;
-        height: 68px;
+        height: 88px;
         overflow-x: auto;
         overflow-y: hidden;
         overscroll-behavior-x: contain;
@@ -12259,8 +12306,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
     html[data-design="cardboard"] #cardboardBoard:is([data-player-count="5"], [data-player-count="6"], [data-player-count="7"], [data-player-count="8"], [data-player-count="9"], [data-player-count="10"]) .cardboard-roster-seat {
         flex: 0 0 clamp(148px, 45vw, 176px);
         width: clamp(148px, 45vw, 176px);
-        height: 64px;
-        min-height: 64px;
+        height: 84px;
+        min-height: 84px;
         scroll-snap-align: start;
     }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardCenter { order: 0; }
@@ -12428,8 +12475,12 @@ html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard 
 }
 @media (orientation: landscape) and (min-width: 761px) and (max-height: 600px) {
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
-        flex: 0 0 154px;
-        height: 154px;
+        grid-template-columns: none;
+        grid-auto-flow: column;
+        grid-auto-columns: clamp(144px, 22vw, 180px);
+        grid-auto-rows: max-content;
+        flex: 0 0 auto;
+        height: auto;
         min-height: 154px;
         max-height: none;
         overflow-x: auto;
@@ -12696,7 +12747,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #status .winner-s
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-player-coins b { font-size: 22px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected > h3 { margin: 8px 0 4px; font-size: 13px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-player-selected .cardboard-cards {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 360px));
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         grid-auto-flow: row;
         grid-auto-rows: max-content;
         flex: 1 1 auto;
