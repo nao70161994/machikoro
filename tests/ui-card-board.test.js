@@ -32,6 +32,33 @@ runTest('所有を種類で集約し出目・色分類・休業・正しい詳�
     assert.ok(html.includes('&lt;街の主&gt;'));
     assert.strictEqual(JSON.stringify(player), before);
 });
+runTest('建設通知は施設枚数・目標進捗・詳細操作を安全に示し未所有を表示しない', () => {
+    const name = '<施設"名>';
+    const landmarkName = '<目標"名>';
+    const fixture = { ...player, cards: [{ name, category: '工業' }, { name, category: '工業' }],
+        landmarks: { [landmarkName]: true, '港': false } };
+    const before = JSON.stringify(fixture);
+    const presentation = { ...options, name,
+        enabledLandmarks: new Set([landmarkName, '港']), landmarkNames: [landmarkName, '港'] };
+    const facility = UiCardBoard.buildConstructionReceiptHtml(fixture, presentation);
+    assert.ok(facility.includes('plaza-important-event plaza-important-build'));
+    assert.ok(facility.includes('data-kind="facility" data-action="showCardDetail" data-card-name="&lt;施設&quot;名&gt;"'));
+    assert.ok(facility.includes('data-test-art="facility"'));
+    assert.ok(facility.includes('class="cardboard-build-receipt-name">&lt;施設&quot;名&gt;</strong>'));
+    assert.ok(facility.includes('&lt;街の主&gt;の街に'));
+    assert.ok(facility.includes('建設完了 · 現在の所有 ×2'));
+    assert.ok(!facility.includes(name));
+    const landmark = UiCardBoard.buildConstructionReceiptHtml(fixture, { ...presentation, name: landmarkName, landmark: true });
+    assert.ok(landmark.includes('plaza-important-event plaza-important-landmark'));
+    assert.ok(landmark.includes('data-kind="landmark" data-action="showLandmarkDetail" data-landmark-name="&lt;目標&quot;名&gt;"'));
+    assert.ok(landmark.includes('data-test-art="landmark"'));
+    assert.ok(landmark.includes('ランドマーク完成 · 目標 1/2'));
+    assert.ok(!landmark.includes(landmarkName));
+    assert.strictEqual(UiCardBoard.buildConstructionReceiptHtml(fixture, { ...presentation, name: '森林' }), '');
+    assert.strictEqual(UiCardBoard.buildConstructionReceiptHtml(fixture, { ...presentation, name: '港', landmark: true }), '');
+    assert.strictEqual(JSON.stringify(fixture), before);
+});
+
 runTest('共通効果の表示文をカードと読み上げへ安全に渡し状態を変えない', () => {
     const before = JSON.stringify(player);
     const html = UiCardBoard.buildPlayerHtml(player, {

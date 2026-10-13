@@ -10959,7 +10959,24 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.c
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-focus-view #cardboardDiceReceipt::-webkit-scrollbar-thumb { background: #fff; }
 html[data-design="cardboard"] #cardboardDiceReceipt:empty { display: none; }
 html[data-design="cardboard"] #cardboardDiceReceipt p { margin: 2px 0; }
+html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-build-receipt { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; margin: 0 0 4px; padding: 5px 8px; border: 1px solid #8cae98; border-radius: 8px; background: #e8f5e8; color: #254735; font: inherit; text-align: left; white-space: normal; }
+html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-build-receipt[data-kind="landmark"] { border-color: #b18a2e; background: #fff0bd; color: #513b0a; }
+html[data-design="cardboard"] .cardboard-build-receipt-art { display: block; flex: 0 0 52px; width: 52px; height: 44px; }
+html[data-design="cardboard"] .cardboard-build-receipt-art svg { display: block; width: 100%; height: 100%; }
+html[data-design="cardboard"] .cardboard-build-receipt-copy { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; }
+html[data-design="cardboard"] .cardboard-build-receipt-name { font-size: 15px; font-weight: 900; overflow-wrap: anywhere; }
+html[data-design="cardboard"] :is(.cardboard-build-receipt-detail, .cardboard-build-receipt-player) { font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+html[data-design="cardboard"] .cardboard-build-receipt-player { flex-basis: 100%; }
+html[data-design="cardboard"] .cardboard-build-receipt-more { flex: 0 0 16px; font-size: 24px; font-weight: 800; line-height: 1; text-align: center; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardDiceReceipt .cardboard-build-receipt { border-color: #fff; background: #000; color: #fff; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { margin: 0; font-size: 19px; font-weight: 900; color: #24527a; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured { color: #263d4b; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-transfer { border-color: #91a5af; background: #e6edf1; color: #263d4b; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-transfer > :is(strong, b) { color: inherit; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-transfer[data-flow="incoming"] { border-color: #74a58b; background: #e0f1e6; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-transfer[data-flow="outgoing"] { border-color: #c58a7b; background: #fae6df; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-transfer::before { color: #365647; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-transfer[data-large="true"] { border-color: #a57a1c; background: #ffecb0; color: #513b0a; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-totals { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12px; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-player-net { padding: 3px 7px; border: 1px solid #b7c9ad; border-radius: 6px; background: #f5faed; font-weight: 800; overflow-wrap: anywhere; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-player-net[data-outcome="loss"] { border-color: #d4a99d; background: #fff0e9; }
@@ -11370,6 +11387,11 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { grid-column: 1; grid-row: 1; align-self: center; margin: 0; font-size: 13px; line-height: 1.2; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; white-space: nowrap; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt > .plaza-important-event { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; font-size: 11px; line-height: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt > .cardboard-build-receipt { gap: 6px; height: 44px; min-height: 44px; padding: 2px 5px; line-height: 1.15; white-space: normal; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-build-receipt-art { flex-basis: 36px; width: 36px; height: 36px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-build-receipt-player { display: none; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-build-receipt-name { font-size: 12px; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .cardboard-build-receipt-detail { font-size: 10px; }
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-featured {
         display: flex;
         align-items: center;
@@ -12788,7 +12810,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #status .winner-s
         min-height: 0;
         max-height: none;
         justify-content: center;
-        align-content: safe center;
+        align-content: start;
         gap: 8px;
         overflow: auto;
     }

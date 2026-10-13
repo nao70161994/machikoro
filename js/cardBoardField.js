@@ -683,7 +683,17 @@ const CardBoardField = (() => {
         const previousDice = receipt.dataset.dice;
         const previousReceiptScroll = receipt.scrollTop;
         const dice = JSON.stringify([game.turnCount, currentIndex, events.dice]);
-        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml));
+        const construction = events.important[0];
+        const constructionMatch = ['build', 'landmark'].includes(construction?.kind)
+            ? construction.message.match(/^(?:🏗️|🏆)\s+(.+)を建設！$/u) : null;
+        const constructionPlayer = constructionMatch && game.players[construction.actorIndex];
+        const headlineHtml = constructionPlayer ? UiCardBoard.buildConstructionReceiptHtml(constructionPlayer, {
+            name: constructionMatch[1], landmark: construction.kind === 'landmark',
+            enabledLandmarks, escapeHtml, renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        }) : '';
+        // This enhances the current-turn receipt, without replaying a transient
+        // construction event on redraw, Undo, restore, or theme changes.
+        replaceHtml(receipt, UiTurnReceipt.buildHtml(events, escapeHtml, { headlineHtml }));
         const nextDisclosure = receipt.querySelector('details');
         if (nextDisclosure) nextDisclosure.open = Boolean(open && receiptSession === session && previousDice === dice);
         receipt.scrollTop = freshResultLogs.length || previousDice !== dice ? 0 : previousReceiptScroll;

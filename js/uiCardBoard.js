@@ -44,6 +44,22 @@ const UiCardBoard = (() => {
             art: options.renderFacilityArt || (typeof UiBuildMenu !== 'undefined' ? UiBuildMenu.renderFacilityArt : () => ''),
         };
     }
+    function buildConstructionReceiptHtml(player, options = {}) {
+        if (!player || typeof options.name !== 'string' || !options.name) return '';
+        const { escape, art } = helpers(options);
+        const name = options.name;
+        const landmark = options.landmark === true;
+        const card = !landmark && (player.cards || []).find(candidate => candidate.name === name);
+        if (landmark ? player.landmarks?.[name] !== true : !card) return '';
+        const count = landmark ? null : player.cards.filter(candidate => candidate.name === name).length;
+        const names = landmarkNames(player, options);
+        const built = names.filter(candidate => player.landmarks?.[candidate] === true).length;
+        const detail = landmark ? `ランドマーク完成 · 目標 ${built}/${names.length}` : `建設完了 · 現在の所有 ×${count}`;
+        const action = landmark ? 'showLandmarkDetail' : 'showCardDetail';
+        const subjectAttribute = landmark ? 'data-landmark-name' : 'data-card-name';
+        return `<button type="button" class="cardboard-build-receipt plaza-important-event plaza-important-${landmark ? 'landmark' : 'build'}" data-kind="${landmark ? 'landmark' : 'facility'}" data-action="${action}" ${subjectAttribute}="${escape(name)}" aria-label="${escape(`${player.name}の${name}。${detail}。詳しい効果を表示`)}"><span class="cardboard-build-receipt-art" aria-hidden="true">${art(name, landmark, card?.category || '')}</span><span class="cardboard-build-receipt-copy"><span class="cardboard-build-receipt-player">${escape(player.name)}の街に</span><strong class="cardboard-build-receipt-name">${escape(name)}</strong><span class="cardboard-build-receipt-detail">${escape(detail)}</span></span><span class="cardboard-build-receipt-more" aria-hidden="true">›</span></button>`;
+    }
+
     function landmarkNames(player, options) {
         const known = options.landmarkNames || (typeof Player !== 'undefined' ? Player.landmarkNames() : Object.keys(player.landmarks || {}));
         const enabled = options.enabledLandmarks || known;
@@ -183,7 +199,7 @@ const UiCardBoard = (() => {
             return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}${activationCount ? ' cardboard-roster-activated' : ''}" data-cardboard-player-index="${index}" tabindex="${index === rovingIndex ? '0' : '-1'}" title="席${index + 1}・${escape(player.name)}" aria-pressed="${index === options.selectedIndex}" aria-label="席${index + 1}・${escape(player.name)}${roleLabels}${showingDetails ? '、街の詳細を表示中' : ''}${kindLabel ? `、${escape(kindLabel)}` : ''}、${escape(player.coins)}コイン、目標 ${built}/${names.length}${activationCount ? `、今回施設発動 ${activationCount}回` : ''}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong><span class="cardboard-roster-seat-number">席${index + 1}</span>${kindIcon}<span class="cardboard-roster-name">${escape(player.name)}</span>${roles}${activationBadge}</strong><span class="cardboard-roster-summary"><span class="cardboard-roster-summary-text">${escape(player.coins)}コイン · 目標 ${built}/${names.length}</span>${showingDetails ? '<b class="cardboard-roster-detail-indicator" aria-hidden="true">詳細表示中</b>' : ''}</span><small class="cardboard-roster-trend">${trend}</small></button>`;
         }).join('')}</nav>`;
     }
-    return Object.freeze({ buildPlayerHtml, buildRosterHtml, selectDetailIndices, eventFocusSeatIndex });
+    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, selectDetailIndices, eventFocusSeatIndex });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = UiCardBoard;
 if (typeof window !== 'undefined') window.UiCardBoard = UiCardBoard;

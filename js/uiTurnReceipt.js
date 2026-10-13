@@ -2,7 +2,7 @@
 
 // Shared receipt renderer. Existing plaza classes remain the visual compatibility contract.
 const UiTurnReceipt = (() => {
-    function buildReceiptHtml(receipt, escapeHtml) {
+    function buildReceiptHtml(receipt, escapeHtml, options = {}) {
         if (!receipt || typeof escapeHtml !== 'function') return '';
         const escape = value => escapeHtml(String(value));
         const name = index => index === 'pool' ? '分配プール' : index === null ? '銀行'
@@ -23,8 +23,10 @@ const UiTurnReceipt = (() => {
             ? `<p class="plaza-receipt-incomplete">未集計の記録${escape(receipt.unparsedCount)}件。以下の収支は確認できた分のみです。</p>` : '';
         const omitted = receipt.omittedActivations ? `<li>ほか${escape(receipt.omittedActivations)}件（履歴で確認）</li>` : '';
         const fallback = receipt.unparsed.map(message => `<li class="plaza-receipt-fallback">${escape(message)}</li>`).join('');
-        const headline = receipt.important[0]
-            ? `<p class="plaza-important-event plaza-important-${receipt.important[0].kind}">${escape(receipt.important[0].message)}</p>` : '';
+        const headline = typeof options.headlineHtml === 'string' && options.headlineHtml
+            ? options.headlineHtml
+            : receipt.important[0]
+                ? `<p class="plaza-important-event plaza-important-${receipt.important[0].kind}">${escape(receipt.important[0].message)}</p>` : '';
         const shortBalances = receipt.balances.map(balance => {
             const net = balance.income - balance.payment;
             const outcome = net > 0 ? 'gain' : net < 0 ? 'loss' : 'even';
