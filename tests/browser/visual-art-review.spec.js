@@ -2350,7 +2350,9 @@ for (const width of [320, 390, 844, 1440]) {
         expect(controls.height).toBeLessThan(180);
         const updateDismiss = page.locator('#pwaUpdateBanner [data-ui-action="hidePwaUpdateBanner"]');
         if (await updateDismiss.isVisible()) await updateDismiss.click();
-        await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: true });
+        // The plaza is a fixed camera viewport. Full-page capture resizes its
+        // viewport in WebKit and can trigger a new camera layout during capture.
+        await page.screenshot({ path: testInfo.outputPath(`plaza-table-${width}.png`), fullPage: false });
     });
 }
 

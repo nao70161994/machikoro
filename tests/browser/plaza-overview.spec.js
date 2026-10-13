@@ -673,3 +673,56 @@ for (const width of [320, 390]) {
         await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
     });
 }
+
+test('街の成長とCPU手番に視点が追従し手動移動後は視点を保つ', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+    await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => {
+        startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
+            type: 'cpu', difficulty: 'weak', name: `CPU街${index + 1}`,
+        })));
+        GameRuntimeState.runtime.setCpuPlayers([]);
+        cancelCpuSchedule('camera-growth');
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayerIndex = 0;
+        game.phase = GAME_PHASES.ROLL;
+        render();
+        acceptHotseatHandoff();
+        PlazaField.focusTarget('self');
+    });
+    await page.evaluate(() => {
+        // Display stress fixture; no purchase, save, or replay is fabricated.
+        const game = GameRuntimeState.runtime.snapshot().game;
+        for (const player of game.players) {
+            player.cards = CARDS.slice(0, 20).map(card => createCardByName(card.name));
+            for (const name of [...getEnabledLandmarkSelection()].slice(0, 4)) player.landmarks[name] = true;
+        }
+        game.currentPlayerIndex = 2;
+        render();
+        acceptHotseatHandoff();
+    });
+    await expect.poll(() => page.evaluate(() => {
+        const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
+        const self = document.querySelector('#plazaPlayerHud .self').dataset.playerIndex;
+        const town = document.querySelector(`#playerBox${self} .town-street`).getBoundingClientRect();
+        return self === '2' && Math.min(town.right, viewport.right) - Math.max(town.left, viewport.left) > 100 &&
+            Math.min(town.bottom, viewport.bottom) - Math.max(town.top, viewport.top) > 40;
+    })).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('plaza-camera-growth-844.png') });
+    const before = await page.locator('#plazaWorld').evaluate(world => world.style.transform);
+    const viewport = await page.locator('#plazaViewport').boundingBox();
+    await page.mouse.move(viewport.x + 25, viewport.y + 30);
+    await page.mouse.down();
+    await page.mouse.move(viewport.x + 85, viewport.y + 60, { steps: 8 });
+    await page.mouse.up();
+    const manual = await page.locator('#plazaWorld').evaluate(world => world.style.transform);
+    expect(manual).not.toBe(before);
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.players[2].cards.push(createCardByName('麦畑'));
+        render();
+    });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    expect(await page.locator('#plazaWorld').evaluate(world => world.style.transform)).toBe(manual);
+});

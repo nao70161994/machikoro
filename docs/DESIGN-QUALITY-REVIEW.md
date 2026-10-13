@@ -1821,3 +1821,13 @@ head145c9a9eのWebKit actualと保存基準画像を主担当で比較した。�
 このレビューは主担当の目視判断。独立再レビューの代替とは扱わず、最新9差分の承認/基準画像更新もまだ行わない。head132791d4はRelease gate/CPU smoke成功、Mobile WebKitとPlazaの実行中ゲートを確認した。Plaza視覚操作レビューにはまだ失敗があり、終端後のログ/画像で原因を調査する。
 
 head132791d4のRelease pseudo E2E run38391067116は全体成功。release-test・mobile-webkit・cpu-difficulty-smokeの3ジョブすべて成功をAPIで確認した。install単独fixtureもWebKitゲートで通過した。Plaza専用run38391067043は引き続き実行中/画像差分ありで、全CI成功とは扱わない。ローカルb3cb79f9の名簿/案内修正はまだこのCIに含まれない。
+
+### 最新完走画像から発見した広場カメラの成長追従
+
+head132791d4のRelease成果物を取得し、2人にぎわいは内部turnCount91、4人plaza横持ちは93で勝利まで完走したことを確認した。画面上のターン番号は内部値+1。[CI記録](design-review/2026-10-13/ci-132791d4-match-summary.json)。CPU対局は同ジョブ内のChromiumであり、物理端末やWebKitでの完走ではない。[2人終盤](design-review/2026-10-13/ci-132791d4-seeded-match-2p-cardboard-desktop-late.png)と[勝利](design-review/2026-10-13/ci-132791d4-seeded-match-2p-cardboard-desktop-winner.png)では、アート/建設通知/収支/完成街を確認。
+
+一方、[4人終盤の修正前画像](design-review/2026-10-13/ci-132791d4-seeded-match-4p-plaza-plaza-landscape-late.png)では、対局が完走しても街が画面外へずれていた。成長で町の配置が変わり、CPU全員の観戦ではselfIndexも手番で変わるが、カメラが旧座標を保持していた。選択した街/市場/全体の位置・サイズ・viewportが変わったときだけ、静かに追従するよう修正。手動ドラッグ/ピンチ/ホイール/ズーム/キーボードで移した視点は再描画で取り戻さず、再び街/市場を選んだときに追従を再開する。端末ローカルのカメラだけの変更で、ゲーム状態/送信/保存は変更しない。
+
+4人の育った街とCPU手番変更を準備した短い表示fixtureで、現手番の町が横464px/縦222px見えること、手動pan後のrenderでtransformが保持されることを確認した。[修正後844](design-review/2026-10-13/plaza-camera-growth-844.png) / [測定](design-review/2026-10-13/plaza-camera-growth-results.json)。新たなCPU完走は重複実行せず、既存市場/320・844panとこの成長回帰の4ケースをまとめ、全成功（33.8秒）。型検査4構成ルートも成功。
+
+Plaza専用CI132791d4は7画像差分・視覚レビュー2タイムアウト・overview3タイムアウト。以前のpan nullや市場/portrait境界失敗は通過したが、全体は失敗。固定カメラ画面の最後の撮影がfullPage=trueでWebKitのviewport変更を誘発し得るため、見える盤面の撮影へ整合。タイムアウトや閾値は拡大しない。次に失敗した場合の原因追跡のため、既存の失敗trace.zipもCI成果物へ残す。基準画像は未更新。SW cacheはv329。

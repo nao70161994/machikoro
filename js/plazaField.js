@@ -97,6 +97,8 @@ const PlazaField = (() => {
     let worldHeight = 1380;
     let pendingFocus = null;
     let focusedTarget = 'self';
+    let cameraAnchored = true;
+    let anchoredGeometry = '';
     const pointers = new Map();
     let gesture = null;
     let dragged = false;
@@ -133,6 +135,16 @@ const PlazaField = (() => {
         const bannerHeight = height(node('pwaUpdateBanner'));
         document.body.style.setProperty('--plaza-banner', `${bannerHeight}px`);
         document.body.classList.toggle('plaza-update-visible', bannerHeight > 0);
+        if (cameraAnchored && !pointers.size && focusGeometry() !== anchoredGeometry) {
+            focusTarget(focusedTarget, false);
+        }
+    }
+    function focusGeometry() {
+        const viewport = node('plazaViewport');
+        const item = focusedTarget === 'market' ? node('buildMenu')
+            : focusedTarget === 'all' ? null : node(`playerBox${Number.isInteger(focusedTarget) ? focusedTarget : selfIndex}`);
+        return JSON.stringify([focusedTarget, selfIndex, viewport.clientWidth, viewport.clientHeight,
+            worldWidth, worldHeight, item?.style.left, item?.style.top, item?.offsetWidth, item?.offsetHeight]);
     }
     function node(id) { return document.getElementById(id); }
     function arrangeTowns() {
@@ -268,14 +280,16 @@ const PlazaField = (() => {
         if (node('plazaZoomLabel').textContent !== label) node('plazaZoomLabel').textContent = label;
     }
     function zoom(scale, x, y) {
+        cameraAnchored = false;
         const next = Math.max(0.12, Math.min(1.8, scale));
         const ratio = next / camera.scale;
         camera = { scale: next, x: x - (x - camera.x) * ratio, y: y - (y - camera.y) * ratio };
         paint();
     }
-    function focusTarget(target) {
+    function focusTarget(target, animate = true) {
         focusedTarget = target;
-        animateCameraTransition();
+        cameraAnchored = true;
+        if (animate) animateCameraTransition();
         node('plazaWorld').classList.toggle('plaza-field-market', target === 'market');
         node('plazaWorld').classList.toggle('plaza-field-overview', target === 'all');
         const viewport = node('plazaViewport');
@@ -327,6 +341,7 @@ const PlazaField = (() => {
         camera.x = viewport.clientWidth / 2 - x * camera.scale;
         camera.y = viewport.clientHeight / 2 - y * camera.scale;
         paint();
+        anchoredGeometry = focusGeometry();
     }
     function begin() {
         const points = [...pointers.values()], a = points[0], b = points[1] || a;
@@ -355,8 +370,11 @@ const PlazaField = (() => {
             rect = target.getBoundingClientRect();
         }
         const shift = (start, end, min, max) => start < min ? min - start : end > max ? max - end : 0;
-        camera.x += shift(rect.left, rect.right, bounds.left + 8, bounds.right - 8);
-        camera.y += shift(rect.top, rect.bottom, bounds.top + 8, bounds.bottom - 8);
+        const dx = shift(rect.left, rect.right, bounds.left + 8, bounds.right - 8);
+        const dy = shift(rect.top, rect.bottom, bounds.top + 8, bounds.bottom - 8);
+        if (dx || dy) cameraAnchored = false;
+        camera.x += dx;
+        camera.y += dy;
         paint();
     }
     function initialize() {
@@ -397,6 +415,7 @@ const PlazaField = (() => {
             }
             dragged = true; viewport.setPointerCapture(event.pointerId);
             if (gesture.mode === 'scroll') { node('buildMenu').scrollTop = gesture.scrollTop - (y - gesture.y) / camera.scale; return; }
+            cameraAnchored = false;
             const ratio = points.length > 1 && gesture.distance > 0 ? Math.hypot(a.x - b.x, a.y - b.y) / gesture.distance : 1;
             const scale = Math.max(0.12, Math.min(1.8, gesture.camera.scale * ratio));
             camera = { scale, x: x - (gesture.x - gesture.camera.x) * scale / gesture.camera.scale, y: y - (gesture.y - gesture.camera.y) * scale / gesture.camera.scale };
@@ -604,7 +623,7 @@ const PlazaField = (() => {
                 focusTarget(pendingFocus);
             } else if (lastWidth && lastHeight) {
                 const width = viewport.clientWidth, height = viewport.clientHeight;
-                if (width !== lastWidth || height !== lastHeight) focusTarget(focusedTarget);
+                if (cameraAnchored && (width !== lastWidth || height !== lastHeight)) focusTarget(focusedTarget);
             }
             lastWidth = viewport.clientWidth; lastHeight = viewport.clientHeight;
             revealFocus();
