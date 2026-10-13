@@ -51,6 +51,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         }
         await page.locator('[data-field-target="market"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         await expect(page.locator('#buildMenu h3')).toContainText(/施設一覧|市場から施設を選んでください/);
         const marketFocus = await page.evaluate(() => {
@@ -85,13 +86,15 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             path: marketScreenshot, contentType: 'image/png',
         });
         await page.locator('[data-field-target="self"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         const comparisonButton = page.locator('[data-field-panel="comparison"]');
         await comparisonButton.click();
         await expect(comparisonButton).toHaveAttribute('aria-expanded', 'true');
         await expect(page.locator('#plazaComparison')).toBeVisible();
         await expect(page.locator('#plazaComparisonHeading')).toBeFocused();
         await expect(page.locator('#plazaComparison thead th')).toHaveCount(3);
-        const wheat = page.locator('#plazaComparison tbody tr').filter({ has: page.locator('th', { hasText: /^麦畑$/ }) });
+        const wheat = page.locator('#plazaComparison tbody tr').filter({ has: page.locator('th[scope="row"] > span:not(.plaza-comparison-facility-art)', { hasText: /^麦畑$/ }) });
+        await expect(wheat).toHaveCount(1);
         await expect(wheat.locator('th .sunset-facility-art')).toHaveCount(1);
         await expect(wheat.locator('td')).toHaveText(['1', '1']);
         await page.keyboard.press('Escape');
@@ -140,7 +143,8 @@ test('終盤の施設比較は行追加後も縦横の読み位置を維持す�
     });
     await expect.poll(() => body.evaluate(element => ({ top: element.scrollTop, left: element.scrollLeft })))
         .toEqual(before);
-    const wheat = body.locator('tbody tr').filter({ has: page.locator('th', { hasText: /^麦畑$/ }) });
+    const wheat = body.locator('tbody tr').filter({ has: page.locator('th[scope="row"] > span:not(.plaza-comparison-facility-art)', { hasText: /^麦畑$/ }) });
+    await expect(wheat).toHaveCount(1);
     await expect(wheat.locator('td').first()).toHaveText('2');
 });
 
@@ -182,6 +186,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('.setup-quick-play').click();
         await expect(page.locator('#gameScreen')).toBeVisible();
         await page.locator('[data-field-target="all"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         const layout = await page.evaluate(() => {
             const bounds = item => {
                 // offsetLeft may be relative to a nested offset parent; the inline
@@ -426,6 +431,7 @@ for (const playerCount of [2, 4, 10]) {
         await expect(page.locator('#plazaWorld .plaza-town-seat-flag').first()).toHaveCSS('display', 'none');
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'hidden');
         await page.locator('[data-field-target="all"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         await expect.poll(fits).toEqual([]);
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         await expect(page.locator('#plazaWorld .plaza-town-seat-flag')).toHaveCount(playerCount);
@@ -474,6 +480,7 @@ for (const playerCount of [2, 4, 10]) {
         expect(await fits()).toEqual([]);
         await expect.poll(fits).toEqual([]);
         await page.locator('[data-field-target="market"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         await expect.poll(fits).toEqual([]);
         await expect(page.locator('#plazaWorld #buildMenu')).toHaveCSS('visibility', 'visible');
         await expect(page.locator('#buildMenu h3')).toContainText('施設一覧');
@@ -535,7 +542,7 @@ for (const playerCount of [2, 4, 10]) {
                         cost.top >= viewport.top && cost.bottom <= viewport.bottom,
                 };
             });
-            await expect.poll(resizedMarketLayout).toMatchObject({ viewport: { width: 844 }, panelInside: true });
+            await expect.poll(resizedMarketLayout).toMatchObject({ viewport: { width: 844 }, panelInside: true, cardInfoInside: true });
             const mobileHudScreenshot = testInfo.outputPath('plaza-endgame-market-focus-10p-844x390.png');
             await page.screenshot({ path: mobileHudScreenshot, fullPage: false, animations: 'disabled' });
             await testInfo.attach('plaza-endgame-market-focus-10p-844x390.png', {
@@ -593,6 +600,13 @@ for (const width of [320, 390]) {
         await expect(page.locator('#plazaPlayerHud .plaza-hud-self button')).toHaveClass(/self/);
         const selfIndex = await page.locator('#plazaPlayerHud .plaza-hud-self button').getAttribute('data-player-index');
         await expect(page.locator('#plazaPlayerHud .plaza-hud-opponents button')).toHaveCount(3);
+        for (const action of ['self', 'market', 'all']) {
+            await expect(page.locator(`#plazaCameraTools [data-field-target="${action}"]`)).toBeVisible();
+        }
+        for (const panel of ['log', 'events', 'comparison']) {
+            await expect(page.locator(`#plazaCameraTools [data-field-panel="${panel}"]`)).toBeVisible();
+        }
+        await expect(page.locator('#plazaCameraTools > details > summary')).toBeVisible();
         await expect.poll(() => page.evaluate(() => {
             const hud = document.getElementById('plazaPlayerHud').getBoundingClientRect();
             const field = document.getElementById('plazaViewport').getBoundingClientRect();
@@ -603,7 +617,7 @@ for (const width of [320, 390]) {
             const opponents = document.querySelector('#plazaPlayerHud .plaza-hud-opponents');
             const opponentBounds = opponents.getBoundingClientRect();
             const opponentButtons = Array.from(opponents.querySelectorAll('button'));
-            return tools.height <= 60 && controls.length === 6 && controls.every(control => {
+            return tools.height <= 60 && controls.length === 7 && controls.every(control => {
                 const rect = control.getBoundingClientRect();
                 return rect.width >= 44 && rect.height >= 44 && rect.left >= 0 && rect.right <= innerWidth;
             }) && opponentBounds.bottom <= hud.bottom &&

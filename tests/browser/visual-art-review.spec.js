@@ -2264,6 +2264,7 @@ for (const width of [320, 390, 844, 1440]) {
                 return { count: game.currentPlayer().cards.length, turn: game.turnCount };
             });
             await page.locator('[data-field-target="market"]').click();
+            await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
             await page.locator('#buildMenu [data-action="buildCard"][data-card-name="麦畑"]').click();
             await expect.poll(() => page.evaluate(() =>
                 GameRuntimeState.runtime.snapshot().game.currentPlayer().cards.length
@@ -2280,13 +2281,16 @@ for (const width of [320, 390, 844, 1440]) {
         }
         if (width === 844) {
             await page.locator('[data-field-target="all"]').click();
+            await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         }
         if (await page.locator('.plaza-camera-menu').evaluate(menu => menu.open)) {
             await page.locator('.plaza-camera-menu > summary').click();
         }
         await page.locator('[data-field-target="self"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         const initialCamera = await page.locator('#plazaWorld').getAttribute('style');
         await page.locator('[data-field-target="market"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         expect(await page.locator('#plazaWorld').getAttribute('style')).not.toBe(initialCamera);
         const marketZoom = parseInt(await page.locator('#plazaZoomLabel').textContent(), 10);
         await page.locator('.plaza-camera-menu > summary').click();
@@ -2294,6 +2298,7 @@ for (const width of [320, 390, 844, 1440]) {
         expect(parseInt(await page.locator('#plazaZoomLabel').textContent(), 10)).toBeGreaterThan(marketZoom);
         await page.locator('.plaza-camera-menu > summary').click();
         await page.locator('[data-field-target="all"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         const dragPoint = await page.locator('#plazaViewport').evaluate(field => {
             const rect = field.getBoundingClientRect();
             for (const y of [0.3, 0.5, 0.7]) for (const x of [0.1, 0.5, 0.9]) {
@@ -2331,8 +2336,10 @@ for (const width of [320, 390, 844, 1440]) {
         expect(pinch.after).toBeGreaterThan(pinch.before);
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         await page.locator('[data-field-target="all"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         await page.screenshot({ path: testInfo.outputPath(`plaza-field-all-${width}.png`), fullPage: false });
         await page.locator('[data-field-target="self"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         const controls = await page.locator('.game-action-panel').boundingBox();
         expect(controls.y + controls.height).toBeLessThanOrEqual(height + 1);
         expect(controls.height).toBeLessThan(180);
@@ -2392,6 +2399,7 @@ for (const size of [{ width: 320, height: 844 }, { width: 844, height: 390 }]) {
         await page.locator('#btnTutorialToggle').click();
         await page.locator('.game-guide-settings > summary').click();
         await page.locator('[data-field-target="market"]').click();
+        await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
         const market = await page.locator('#buildMenu').boundingBox();
         expect(market.x).toBeGreaterThanOrEqual(-1);
         expect(market.x + market.width).toBeLessThanOrEqual(size.width + 1);

@@ -45,6 +45,7 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             });
         }
         const before = await state(page);
+        await expect(page.locator('#cardboardChoiceJump')).toBeHidden();
         for (const theme of ['plaza', 'sunset', 'classic', 'cardboard']) {
             await selectTheme(page, theme);
             expect(await state(page)).toEqual(before);

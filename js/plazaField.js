@@ -313,7 +313,16 @@ const PlazaField = (() => {
             }
             if (item && target === 'market') item.style.height = `${Math.max(100, Math.min(470, (viewport.clientHeight - 16) / camera.scale))}px`;
             arrangeTowns();
-            if (item) { x = item.offsetLeft + item.offsetWidth / 2; y = item.offsetTop + item.offsetHeight / 2; }
+            if (item) {
+                // arrangeTowns writes the destination in inline styles. During
+                // the camera's CSS transition offsetLeft/Top still describe an
+                // interpolated position, which would permanently miscenter the
+                // market after its width changes on a narrow viewport.
+                const destinationLeft = Number.parseFloat(item.style.left);
+                const destinationTop = Number.parseFloat(item.style.top);
+                x = (Number.isFinite(destinationLeft) ? destinationLeft : item.offsetLeft) + item.offsetWidth / 2;
+                y = (Number.isFinite(destinationTop) ? destinationTop : item.offsetTop) + item.offsetHeight / 2;
+            }
         }
         camera.x = viewport.clientWidth / 2 - x * camera.scale;
         camera.y = viewport.clientHeight / 2 - y * camera.scale;

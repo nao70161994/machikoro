@@ -287,6 +287,9 @@ runTest('確定紫収支は実額とownerを保持し複数payerでもカード�
         assert.strictEqual(events.reduce((sum, event) => sum + event.amount, 0), game.players[0].coins - before[0]);
         const html = UiCardBoard.buildPlayerHtml(game.players[0], { index: 0, events: receipt });
         assert.ok(html.includes('data-cardboard-activation-count="1"'), name);
+        const receiptHtml = UiTurnReceipt.buildHtml(receipt, escape);
+        assert.ok(receiptHtml.includes('<span class="plaza-receipt-activation-count">施設発動1回</span>'), name);
+        assert.strictEqual((receiptHtml.match(/class="plaza-receipt-activation-count"/g) || []).length, 1, name);
         assert.strictEqual(UiTurnEvents.project([...game.log, ...game.log.slice(-1)], { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES }).activations.filter(event => event.subject === name).length, 2);
     }
 });

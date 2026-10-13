@@ -80,12 +80,12 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         }
         const receipt = page.locator('#plazaDiceReceipt');
         await expect(receipt.locator('.plaza-receipt-dice')).toHaveText('出目 5');
-        await expect(receipt.locator('.plaza-receipt-featured')).toContainText('森林 銀行 → 席1 +6コイン（6回）');
-        await expect(receipt.locator('.plaza-receipt-activation-count')).toHaveText('施設発動6回');
+        await expect(receipt.locator('.plaza-receipt-featured')).toContainText('森林 銀行 → 席1 +6コイン（6件）');
+        // Legacy logs prove six records, not typed facility identities.
+        await expect(receipt.locator('.plaza-receipt-activation-count')).toHaveCount(0);
         await expect(receipt.locator('.plaza-receipt-transfer').first()).toHaveAttribute('data-flow', 'incoming');
         await expect(receipt.locator('.plaza-receipt-transfer').first()).toHaveAttribute('aria-label', /銀行から街1へ受け取り、6コイン/);
-        await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街1 +6');
-        await expect(receipt.locator('.plaza-receipt-totals')).toContainText('街4 +2');
+        await expect(receipt.locator('.plaza-receipt-player-net')).toHaveText(['街1 +6', '街2 +2', '街3 +2', '街4 +2']);
         await expect(page.locator('#gameLogContainer')).not.toHaveClass(/plaza-panel-open/);
         if (viewport.width === 844) await page.locator('[data-field-panel="events"]').click();
         await receipt.locator('summary').click();

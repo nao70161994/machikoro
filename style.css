@@ -9506,7 +9506,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardActionS
 }
 
 @media (orientation: landscape) and (max-height: 600px) and (min-width: 601px) {
-    html[data-design="plaza"] #plazaWorld #buildMenu { padding: 8px; }
+    html[data-design="plaza"] #plazaWorld #buildMenu { padding: 4px; }
     html[data-design="plaza"] body:not(.accessibility-high-contrast) #plazaWorld #buildMenu .build-card-section { padding: 0 6px 6px; }
     html[data-design="plaza"] #plazaWorld #buildMenu .card-filter-bar { gap: 4px; margin-bottom: 2px; padding-block: 2px; }
     html[data-design="plaza"] #plazaWorld #buildMenu .card-btn .sunset-facility-art {
@@ -10960,6 +10960,10 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.c
 html[data-design="cardboard"] #cardboardDiceReceipt:empty { display: none; }
 html[data-design="cardboard"] #cardboardDiceReceipt p { margin: 2px 0; }
 html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-dice { margin: 0; font-size: 19px; font-weight: 900; color: #24527a; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-totals { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12px; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-player-net { padding: 3px 7px; border: 1px solid #b7c9ad; border-radius: 6px; background: #f5faed; font-weight: 800; overflow-wrap: anywhere; }
+html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-player-net[data-outcome="loss"] { border-color: #d4a99d; background: #fff0e9; }
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardDiceReceipt .plaza-receipt-player-net { border-color: #fff; background: #000; color: #fff; }
 html[data-design="cardboard"] #cardboardDiceReceipt details > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; }
 html[data-design="cardboard"] #cardboardActionSlot .game-action-panel { position: static; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 3px 6px; width: 100%; max-width: none; min-width: 0; margin: 0; padding: 3px; border: 0; border-radius: 7px; background: transparent; color: var(--cardboard-ink); box-shadow: none; }
 html[data-design="cardboard"] #cardboardActionSlot #diceResult { grid-column: 1; grid-row: 1; }
@@ -11149,6 +11153,7 @@ html[data-design="cardboard"] .compact-market-landmark .compact-market-detail { 
 html[data-design="cardboard"] .compact-market-built { background: #f8df83; }
 html[data-design="cardboard"] .compact-market-refilled { outline: 2px solid #d59924; }
 html[data-design="cardboard"] #cardboardChoiceJump { position: fixed; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 6; min-height: 44px; margin: 0; padding: 6px 11px; border: 2px solid #fffdf5; border-radius: 9px; background: #1766bd; color: #fff; box-shadow: 0 3px 12px #18344740; }
+html[data-design="cardboard"] #cardboardChoiceJump[hidden] { display: none; }
 html[data-design="cardboard"] body.pwa-banner-open #cardboardChoiceJump { top: 8px; bottom: auto; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) .plaza-receipt-dice { animation: cardboard-roll-reveal 900ms ease-out both; color: #103f7a; text-shadow: 0 1px #fff; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) #diceResult.dice-result-arrival .dice-face:not(.rolling) {
@@ -12738,6 +12743,11 @@ html[data-design="cardboard"] body.accessibility-high-contrast #status .winner-s
         max-width: 230px;
         scroll-snap-align: start;
     }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view:is([data-player-count="2"], [data-player-count="3"], [data-player-count="4"]) .cardboard-roster-seat {
+        flex: 1 0 240px;
+        width: auto;
+        max-width: 340px;
+    }
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view #cardboardControls {
         position: absolute;
         top: -48px;
@@ -12985,9 +12995,9 @@ html body:not(.accessibility-high-contrast) :is(
     html[data-design="cardboard"] body.accessibility-high-contrast.game-finished #status .winner-screen :is(.winner-primary-action, .winner-secondary-action) { min-height: 44px; padding: 5px 8px; font-size: 12px; }
 }
 
-/* Short landscape boards keep the turn HUD above the city and action columns. */
+/* Sunset uses document-grid columns; plaza owns a fixed camera/HUD layout. */
 @media (orientation: landscape) and (min-width: 760px) and (max-height: 500px) {
-    html:is([data-design="sunset"], [data-design="plaza"]) #gameScreen[style*="display: block"] {
+    html[data-design="sunset"] #gameScreen[style*="display: block"] {
         grid-template-columns: minmax(0, 1fr) minmax(280px, 0.95fr);
         grid-template-areas:
             "status status"
@@ -13002,26 +13012,26 @@ html body:not(.accessibility-high-contrast) :is(
         gap: 6px 12px;
     }
 
-    html:is([data-design="sunset"], [data-design="plaza"]) #gameScreen[style*="display: block"] > .player-area,
-    html:is([data-design="sunset"], [data-design="plaza"]) #gameScreen[style*="display: block"] > .player-area:has(> #playerNavigation) {
+    html[data-design="sunset"] #gameScreen[style*="display: block"] > .player-area,
+    html[data-design="sunset"] #gameScreen[style*="display: block"] > .player-area:has(> #playerNavigation) {
         position: sticky;
         top: 8px;
-        grid-column: auto;
-        grid-row: auto;
+        grid-area: players;
         max-height: calc(100dvh - 126px);
         overflow-y: auto;
         border-left: 1px solid rgba(215, 184, 123, 0.16);
         padding-left: 10px;
     }
 
-    html:is([data-design="sunset"], [data-design="plaza"]) #gameScreen[style*="display: block"] > .game-action-panel {
+    html[data-design="sunset"] #gameScreen[style*="display: block"] > .game-action-panel {
+        grid-area: actions;
         position: static;
         min-width: 0;
         padding: 6px;
     }
 
-    html:is([data-design="sunset"], [data-design="plaza"]) #gameScreen[style*="display: block"] > #gameConnectivityPanel,
-    html:is([data-design="sunset"], [data-design="plaza"]) #gameScreen[style*="display: block"] > #turnTimeline {
+    html[data-design="sunset"] #gameScreen[style*="display: block"] > #gameConnectivityPanel,
+    html[data-design="sunset"] #gameScreen[style*="display: block"] > #turnTimeline {
         align-self: center;
         min-width: 0;
         height: auto;
@@ -13030,7 +13040,7 @@ html body:not(.accessibility-high-contrast) :is(
         padding-block: 4px;
     }
 
-    html:is([data-design="sunset"], [data-design="plaza"]) #gameScreen[style*="display: block"] > #turnTimeline .turn-timeline h2 {
+    html[data-design="sunset"] #gameScreen[style*="display: block"] > #turnTimeline .turn-timeline h2 {
         display: none;
     }
 }
