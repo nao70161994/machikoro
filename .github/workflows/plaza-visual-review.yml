@@ -77,4 +77,6 @@ jobs:
                   path: |
                       test-results/**/*.png
                       test-results/**/error-context.md
+                      test-results/plaza-overview/**/trace.zip
+                      test-results/plaza-visual/**/trace.zip
                   if-no-files-found: warn
