@@ -67,14 +67,15 @@ runTest('領収投影は施設の複数発動と支払元先を集約しrawロ�
     assert.deepStrictEqual(receipt.dice.values, [5]);
     assert.strictEqual(receipt.activations[0].amount, 6);
     assert.strictEqual(receipt.activations[0].count, 2);
-    assert.deepStrictEqual(receipt.activations[1], { from: 0, to: 1, subject: '寿司屋', facility: true, amount: 2, count: 1 });
+    assert.strictEqual(receipt.activations[0].order, 1);
+    assert.deepStrictEqual(receipt.activations[1], { from: 0, to: 1, subject: '寿司屋', facility: true, amount: 2, count: 1, order: 2 });
     assert.strictEqual(receipt.balances[0].facilityNet, 4);
     assert.strictEqual(receipt.balances[1].facilityNet, 2);
     assert.strictEqual(JSON.stringify(logs), original);
     assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('あなたの街 → CPU'));
     assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('席1 → 席2'));
     assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('銀行 → 席1'));
-    assert.match(UiPlazaEvents.buildReceiptHtml(receipt, escape), /data-flow="incoming" data-large="true"/u);
+    assert.match(UiPlazaEvents.buildReceiptHtml(receipt, escape), /data-flow="incoming" data-activation-order="1" data-large="true"/u);
 });
 
 runTest('港選択は出目だけ更新しマグロ内部ダイスとpendingは新区間にしない', () => {
@@ -318,7 +319,7 @@ runTest('公園は実deltaだけを分配プール経由で示し他人の利益
     assert.ok(html.includes('data-cardboard-activation-net="-21"'));
     assert.ok(html.includes('data-cardboard-activation-count="1"'));
     assert.ok(UiTurnReceipt.buildHtml(receipt, escape).includes('分配プール'));
-    assert.ok(require('../js/cardBoardTransfers').project(receipt).some(route => route.text === '銀行 → 分配プール：1コイン'));
+    assert.ok(require('../js/cardBoardTransfers').project(receipt).some(route => route.text === '公園：銀行 → 分配プール：1コイン'));
 });
 runTest('確定送金identityは端末ローカル通知数やsnapshot復元のログ切詰めで変わらない', () => {
     const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();

@@ -1666,7 +1666,7 @@ runTest('待機室退出は確認後にsocketと資格情報を片付けroom ID�
     assert.strictEqual(rt.localStorage.getItem('onlineSession'), null);
     assert.strictEqual(rt.document.getElementById('roomIdInput').value, 'ROOM01');
     assert.strictEqual(rt.document.getElementById('roomIdInput').focused, true);
-    assert.deepStrictEqual(rt.document.getElementById('roomIdInput').focusOptions, { preventScroll: true });
+    assert.deepStrictEqual({ ...rt.document.getElementById('roomIdInput').focusOptions }, { preventScroll: true });
     assert.match(rt.elements.onlineStatus.textContent, /再参加する場合は参加ボタン/);
 });
 

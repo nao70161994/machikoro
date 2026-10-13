@@ -58,6 +58,32 @@ function loadIntegrationRuntime(options = {}) {
         playerNameInput: makeElement({ value: 'Alice' }),
         roomIdInput: makeElement({ id: 'roomIdInput', value: 'ROOM01' }),
     };
+    // Model the navigation's actual parent/anchor relationships so the UI's
+    // roster promotion performs a DOM move rather than a no-op stub.
+    elements.playerNavigation = makeElement();
+    elements.gameLogContainer = makeElement();
+    elements.playerArea = makeElement();
+    for (const parent of [elements.gameScreen, elements.playerArea]) {
+        parent.children = [];
+        parent.insertBefore = function(child, anchor) {
+            if (anchor !== null && !this.children.includes(anchor)) throw new Error('Navigation anchor is not a child');
+            const previous = child.parentElement;
+            if (previous) {
+                previous.children.splice(previous.children.indexOf(child), 1);
+                previous.children.forEach((node, index) => { node.nextElementSibling = previous.children[index + 1] || null; });
+            }
+            const index = anchor === null ? this.children.length : this.children.indexOf(anchor);
+            this.children.splice(index, 0, child);
+            child.parentElement = this;
+            child.parentNode = this;
+            this.children.forEach((node, position) => { node.nextElementSibling = this.children[position + 1] || null; });
+            return child;
+        };
+    }
+    elements.gameScreen.insertBefore(elements.playerArea, null);
+    elements.gameScreen.insertBefore(elements.gameLogContainer, null);
+    elements.playerArea.insertBefore(elements.playerNavigation, null);
+    elements.playerArea.insertBefore(elements.players, null);
     const timeouts = [];
     const intervals = [];
     const eventHandlers = {};
@@ -89,6 +115,7 @@ function loadIntegrationRuntime(options = {}) {
             },
             querySelector(selector) {
                 if (selector === '.winner-title') return elements.winnerTitle;
+                if (selector === '.player-area') return elements.playerArea;
                 return null;
             },
             querySelectorAll() { return []; },

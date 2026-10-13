@@ -1998,7 +1998,8 @@ runTest('buildCardDetailContent は施設カード詳細HTMLを生成する', ()
 
     assert.strictEqual(content.title, '麦畑');
     assert.ok(content.html.includes('コスト'));
-    assert.ok(content.html.includes('🎲 [1]'));
+    assert.ok(content.html.includes('🎲 <span class="card-detail-dice-values"><span class="card-detail-dice-value">1</span></span>'));
+    assert.strictEqual((content.html.match(/class="card-detail-dice-value"/g) || []).length, 1);
     assert.ok(content.html.includes('color-badge blue-badge'));
     assert.ok(content.html.includes('card-detail-effect'));
 });

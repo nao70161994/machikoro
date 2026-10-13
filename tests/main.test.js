@@ -3213,12 +3213,20 @@ runTest('UI interactability registry は描画されるaction child selectorと�
         buildLandmark: 'buildLandmark',
         undoBuild: 'undoBuild',
     };
+    const pendingMenu = require('../js/uiPendingMenu');
+    const player = { name: '街A', coins: 3, cards: [{ name: '麦畑' }],
+        getMinorCards() { return this.cards; }, isDormant() { return false; } };
+    const game = { players: [player, { ...player, name: '街B' }], currentPlayerIndex: 0,
+        currentPlayer() { return this.players[this.currentPlayerIndex]; } };
+    const dynamicPendingHtml = pendingMenu.buildPendingTvHtml(game, String, {}, {}, false) +
+        pendingMenu.buildPendingMoverHtml(game, String, {}, {}, false);
     const actionContract = require('../js/actionContract');
     for (const [registryAction, renderedAction] of Object.entries(childActions)) {
         const selector = actionContract.uiChildSelectors[registryAction];
         assert.ok(selector, registryAction + ' child selector registry missing');
         assert.ok(selector.selector.includes('data-action="' + renderedAction + '"'), renderedAction + ' selector missing from registry');
-        assert.ok(uiSources.includes('data-action="' + renderedAction + '"'), renderedAction + ' is not rendered by UI sources');
+        const renderedSources = ['resolveTV', 'resolveMover'].includes(renderedAction) ? dynamicPendingHtml : uiSources;
+        assert.ok(renderedSources.includes('data-action="' + renderedAction + '"'), renderedAction + ' is not rendered by UI sources');
     }
 });
 
