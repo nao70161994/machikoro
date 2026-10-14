@@ -946,13 +946,33 @@ test('ランドマーク完成は新しい建設だけを短く祝う', async ({
     await expect(station.locator('.cardboard-art')).toBeVisible();
     expect(await station.locator('.cardboard-art').evaluate(element => element.getBoundingClientRect().width)).toBeGreaterThan(0);
     await page.locator('#cardboardMarket .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
+    // Observe the real DOM mutation before the click. A slow host may return
+    // from click after the short animation has already ended.
+    await page.evaluate(() => {
+        window.landmarkCueObserved = false;
+        const observer = new MutationObserver(records => {
+            if (records.some(record => record.target.matches?.('[data-landmark-name="駅"].cardboard-landmark-newly-built') ||
+                record.type === 'childList' && Array.from(record.addedNodes).some(node =>
+                    node.matches?.('[data-landmark-name="駅"].cardboard-landmark-newly-built') ||
+                    node.querySelector?.('[data-landmark-name="駅"].cardboard-landmark-newly-built')))) {
+                window.landmarkCueObserved = true;
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.getElementById('cardboardSeats'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    });
     await page.locator('#cardboardMarket [data-action="buildLandmark"][data-landmark-name="駅"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).toHaveClass(/cardboard-landmark-built/);
+    await expect.poll(() => page.evaluate(() => window.landmarkCueObserved)).toBe(true);
     const receipt = page.locator('#cardboardDiceReceipt .cardboard-build-receipt[data-kind="landmark"]');
     await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('1/6');
     expect(await receipt.evaluate(element => element.getBoundingClientRect().height)).toBe(44);
+    expect(await receipt.evaluate(element => {
+        const build = element.getBoundingClientRect();
+        const details = document.querySelector('#cardboardDiceReceipt .plaza-receipt-details > summary').getBoundingClientRect();
+        return build.right <= details.left;
+    })).toBe(true);
 
-    await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).toHaveClass(/cardboard-landmark-newly-built/);
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).not.toHaveClass(/cardboard-landmark-newly-built/, { timeout: 1800 });
     await selectTheme(page, 'plaza');
     await selectTheme(page, 'cardboard');

@@ -11562,7 +11562,7 @@ html[data-design="cardboard"] body.pwa-banner-open #gameScreen[style*="display: 
     html[data-design="cardboard"] #cardboardDiceReceipt .plaza-receipt-details[open] > summary { width: 100%; }
     html[data-design="cardboard"] #cardboardCenter { gap: 2px; padding: 4px; }
     html[data-design="cardboard"] #cardboardDiceReceipt:not(:has(.plaza-receipt-dice, .cardboard-build-receipt)) { display: none; }
-    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt:not(:has(.plaza-receipt-dice)) > .cardboard-build-receipt { grid-column: 1 / -1; }
+    html[data-design="cardboard"] #cardboardDiceReceipt .plaza-event-receipt:not(:has(.plaza-receipt-dice)) > .cardboard-build-receipt { grid-column: 1 / 3; }
     html[data-design="cardboard"] #cardboardActionSlot .buttons { flex-wrap: nowrap; }
     html[data-design="cardboard"] #cardboardActionSlot .game-action-panel { padding: 0; }
     html[data-design="cardboard"] #cardboardActionSlot .buttons button { flex-basis: 0; min-width: 0; font-size: 10px; line-height: 1.2; padding: 3px; }

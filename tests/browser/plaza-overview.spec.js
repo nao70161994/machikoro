@@ -93,6 +93,30 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         });
         await page.locator('[data-field-target="self"]').click();
         await expect(page.locator('#plazaWorld')).not.toHaveClass(/plaza-camera-moving/);
+        await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
+        await expect(page.locator('#crashScreen')).toBeHidden();
+    });
+
+    // Keep market geometry/screenshots and the comparison interaction independent.
+    // Each retains the ordinary 45s deadline; slow WebKit drawing must not consume
+    // the focus checks' entire budget after an unrelated market capture.
+    test(`広場の施設比較をEscapeと閉じるボタンで終了しフォーカスを戻せる ${viewport.width}x${viewport.height}`, async ({ page }) => {
+        await page.setViewportSize(viewport);
+        await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'plaza'));
+        await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        await page.locator('.setup-quick-play').click();
+        await expect(page.locator('#gameScreen')).toBeVisible();
+        await page.evaluate(() => {
+            cancelCpuSchedule('plaza-comparison-focus');
+            window.scheduleCPU = () => false;
+            const state = GameRuntimeState.runtime.snapshot();
+            state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+            state.game.phase = GAME_PHASES.BUILD;
+            state.game.currentPlayer().coins = 30;
+            render();
+            acceptHotseatHandoff();
+        });
         const comparisonButton = page.locator('[data-field-panel="comparison"]');
         await comparisonButton.click();
         await expect(comparisonButton).toHaveAttribute('aria-expanded', 'true');
