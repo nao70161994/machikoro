@@ -13581,3 +13581,11 @@ html[data-design="cardboard"] #cardboardDetailSelect { min-width: 0; max-width: 
     html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view:has(#cardboardOverview) { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
     html[data-design="cardboard"] :is(#cardboardDetails, #cardboardEventDetails) > summary { scroll-margin-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 }
+/* A visible update notice owns the bottom edge; scroll the plaza above it. */
+html[data-design="cardboard"] body.pwa-banner-open:not(.game-finished) #gameScreen[style*="display: block"]:has(#cardboardOverview) {
+    height: calc(100dvh - 128px - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 128px - env(safe-area-inset-bottom, 0px));
+    min-height: 0;
+    overflow-y: auto;
+    scroll-padding-block: 8px;
+}

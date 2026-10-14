@@ -147,3 +147,21 @@ test('10人の縦持ちでも全員の街と市場を把握できる', async ({p
     }
     await page.screenshot({path:testInfo.outputPath('overview-10-portrait.png')});
 });
+
+for (const viewport of [{width:320,height:844},{width:844,height:390},{width:1440,height:936}]) {
+    test(`更新通知が出ていても補助表示を開閉できる ${viewport.width}`, async ({page}) => {
+        await prepare(page, viewport, 4);
+        const before = await page.evaluate(() => GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+        await page.evaluate(() => setPwaBannerVisible('pwaUpdateBanner', true));
+        await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
+        await expect(page.locator('body')).toHaveClass(/pwa-banner-open/);
+        await page.locator('#cardboardDetails > summary').click();
+        await page.locator('#cardboardDetailSelect').selectOption('2');
+        await expect(page.locator('#cardboardSeats .cardboard-player-selected')).toHaveAttribute('data-player-index','2');
+        await page.locator('#cardboardDetails > summary').click();
+        await page.locator('#cardboardEventDetails > summary').click();
+        await expect(page.locator('#cardboardEventDetails')).toHaveAttribute('open','');
+        await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
+        expect(await page.evaluate(() => GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER))).toEqual(before);
+    });
+}
