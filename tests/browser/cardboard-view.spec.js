@@ -1291,6 +1291,14 @@ test('育てた街は必要なときだけ開き状態を変えず盤面へ戻�
         const before = await state(page);
         const content = page.locator('#cardboardTownContent');
         await expect(content).toBeEmpty();
+        if (width === 844) {
+            expect(await page.locator('.cardboard-player-selected').evaluate(panel => {
+                const shelf = panel.querySelector('.cardboard-cards').getBoundingClientRect();
+                const name = panel.querySelector('.cardboard-name').getBoundingClientRect();
+                return name.top >= shelf.top && name.bottom <= shelf.bottom;
+            })).toBe(true);
+        }
+        await page.screenshot({ path: testInfo.outputPath(`town-board-${width}.png`) });
         const open = page.locator('.cardboard-player-selected [data-cardboard-town]');
         await open.click();
         const dialog = page.locator('#cardboardTownDialog');
