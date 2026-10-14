@@ -369,3 +369,14 @@ runTest('大収益の強調は確定した手番プレイヤーの施設純増�
     ]) assert.ok(!UiTurnReceipt.buildHtml({ ...receipt, ...changed }, escape, { emphasizeIncome: true }).includes('cardboard-income-spotlight'));
     assert.ok(!UiTurnReceipt.buildHtml(receipt, escape).includes('cardboard-income-spotlight'));
 });
+
+
+runTest('建設だけの通知は空の収支ラベルを追加しない', () => {
+    const receipt = { ...project([]), important: [{ kind: 'landmark', message: '駅が完成' }] };
+    const before = JSON.stringify(receipt);
+    const html = UiTurnReceipt.buildHtml(receipt, escape);
+    assert.ok(html.includes('駅が完成'));
+    assert.ok(!html.includes('plaza-receipt-totals'));
+    assert.ok(html.includes('<summary>今回の出来事</summary>'));
+    assert.strictEqual(JSON.stringify(receipt), before);
+});

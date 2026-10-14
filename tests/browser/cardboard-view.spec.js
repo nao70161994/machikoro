@@ -948,6 +948,10 @@ test('ランドマーク完成は新しい建設だけを短く祝う', async ({
     await page.locator('#cardboardMarket .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
     await page.locator('#cardboardMarket [data-action="buildLandmark"][data-landmark-name="駅"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).toHaveClass(/cardboard-landmark-built/);
+    const receipt = page.locator('#cardboardDiceReceipt .cardboard-build-receipt[data-kind="landmark"]');
+    await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('1/6');
+    expect(await receipt.evaluate(element => element.getBoundingClientRect().height)).toBe(44);
+
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).toHaveClass(/cardboard-landmark-newly-built/);
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).not.toHaveClass(/cardboard-landmark-newly-built/, { timeout: 1800 });
     await selectTheme(page, 'plaza');
@@ -1217,4 +1221,41 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
     await expect(income).toHaveCount(1);
     await expect(income.locator('.cardboard-income-amount')).toHaveText('+6コイン');
     await expect(page.locator('.cardboard-transfers')).toHaveCount(0);
+});
+
+
+test('完成したランドマークの絵と目標を狭幅でも一緒に確認できる', async ({ page }, testInfo) => {
+    for (const width of [320, 390, 1440]) {
+        await prepare(page, { width, height: width === 1440 ? 936 : 844 }, 2, false);
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            game.phase = GAME_PHASES.BUILD;
+            for (const name of getEnabledLandmarkSelection()) {
+                game.currentPlayer().landmarks[name] = ![LANDMARK_NAMES.SHOPPING_MALL, LANDMARK_NAMES.AIRPORT].includes(name);
+            }
+            render();
+        });
+        await page.locator('#cardboardMarket .compact-market-expand').click();
+        await page.locator('#cardboardMarketDialog .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
+        await page.locator('#cardboardMarketDialog [data-action="buildLandmark"][data-landmark-name="ショッピングモール"]').click();
+        await page.keyboard.press('Escape');
+        const receipt = page.locator('#cardboardDiceReceipt .cardboard-build-receipt[data-kind="landmark"]');
+        await expect(receipt).toBeVisible();
+        await expect(receipt.locator('.cardboard-build-receipt-name')).toHaveText('ショッピングモール');
+        await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('5/6');
+        await receipt.scrollIntoViewIfNeeded();
+        expect(await receipt.evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            const names = element.querySelector('.cardboard-build-receipt-name').getBoundingClientRect();
+            const progress = element.querySelector('.cardboard-build-receipt-progress').getBoundingClientRect();
+            return [names, progress].every(box => box.left >= bounds.left && box.right <= bounds.right &&
+                box.top >= bounds.top && box.bottom <= bounds.bottom) && bounds.left >= 0 && bounds.right <= innerWidth;
+        })).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`landmark-progress-${width}.png`) });
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.locator('#cardboardSeats .cardboard-card').first().click();
+        await expect(page.locator('#cardDetailModal')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('5/6');
+    }
 });

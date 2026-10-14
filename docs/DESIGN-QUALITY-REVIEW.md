@@ -1905,3 +1905,12 @@ RUN_UI_PLAYTHROUGH=1の任意specをChromium/390×844、1 workerで実行して�
 [開始](design-review/2026-10-14/ui-playthrough-start.png) / [初回ロール](design-review/2026-10-14/ui-playthrough-first-roll.png) / [初回建設](design-review/2026-10-14/ui-playthrough-first-build.png) / [中盤](design-review/2026-10-14/ui-playthrough-midgame.png) / [特殊効果](design-review/2026-10-14/ui-playthrough-special-effect.png) / [終盤](design-review/2026-10-14/ui-playthrough-late-game.png) / [勝利](design-review/2026-10-14/ui-playthrough-winner.png)。これは固定資産fixtureやCPUだけの完走ではなく、人間席の実UI経路を通した自動検証。人間の主観的な楽しさを計測したものでも物理スマホ実機検証でもない。
 
 新しい市民アイコンは開始/中盤/終盤の独立画像レビューでも、人間の顔とCPUロボットが390pxで識別可能、名簿と街の対応も自然と確認。重大な見切れなし。中盤の手番通知がカード中央を覆う点は、コードの表示1300ms/退出400msとpointer-events:noneを確認し、クリック遮断ではないと分類。実測表示時間や全端末でのテンポの保証とは区別する。
+
+
+### 2026-10-14：情報階層・街並み・完成通知をまとめて改善
+
+独立比較の3指摘をまとめて実装。スマホの選択街を「あなたの街」とし、完全な名前と席情報はアクセシブル名に保持。余白を整理し390pxで施設アートを約50px早く表示。PCの序盤景観は別タイルの境界を除き、実所有施設を大きく表示。ランドマーク完成通知は施設名・アートに大きな進捗を添え、手番トーストも紙色と緑・金へ統一。横画面で出目なしの建設通知が非表示になる原因を修正した。空の収支見出しを除去し、建設のみの詳細は「今回の出来事」とする。ルール・保存状態は変更しない。
+
+関連ブラウザ最初の7件中5幅の切替と新規3幅建設は成功、844通知高さ0の失敗から上記非表示条件を特定。修正後2件成功（22.6秒）、関連ユニット成功。独立再レビューで320/390/1440の通知・街並みを確認、重大な重なり・欠落なし。ラベル指摘も修正。画像は[320px](design-review/2026-10-14/landmark-progress-320.png)、[390px](design-review/2026-10-14/landmark-progress-390.png)、[PC](design-review/2026-10-14/landmark-progress-1440.png)。最後の詳細ラベル変更前の撮影。物理端末の確認とは異なる。
+
+直前Push cfbfa158のRelease/WebKit/CPUは成功、Plazaはoverview横画面のみタイムアウト。最新表示改善の通常CI・基準画像の再評価は未完了。商用品質への到達をこれらの局所成功だけで認定しない。

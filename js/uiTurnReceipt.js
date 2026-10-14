@@ -43,6 +43,7 @@ const UiTurnReceipt = (() => {
             const spokenNet = net > 0 ? `プラス${net}` : net < 0 ? `マイナス${Math.abs(net)}` : '差引なし';
             return `<span class="plaza-receipt-player-net" data-outcome="${outcome}" aria-label="${escape(`${balance.name}、今回の収支 ${spokenNet}コイン`)}">${escape(balance.name)} ${net >= 0 ? '+' : ''}${escape(net)}</span>`;
         }).join('');
+        const totalsHtml = shortBalances || receipt.incomplete ? `<p class="plaza-receipt-totals"><span class="plaza-receipt-totals-label">今回の収支${receipt.incomplete ? '（確認分）' : ''}</span>${shortBalances}${receipt.incomplete ? '<span>一部の効果は内訳を開いて確認</span>' : ''}</p>` : '';
         // Give the compact, always-visible line a sample of the whole chain.
         // Filtering to the active player hid opponent-owned red/blue facilities.
         const activationSummaries = new Map();
@@ -84,7 +85,9 @@ const UiTurnReceipt = (() => {
             return `<span class="plaza-receipt-transfer" data-flow="${flow}"${order === null ? '' : ` data-activation-order="${order}"`}${largeReceipt} aria-label="${escape(`${orderLabel}${description}、${event.amount}コイン`)}" title="${escape(description)}">${order === null ? '' : `<span class="plaza-receipt-order" aria-hidden="true">${order}</span>`}<strong>${escape(owner + event.subject)}</strong> ${escape(route)} <b>${sign}${escape(event.amount)}コイン</b>${repeat}</span>`;
         }).join(' / ')}</p>` : '';
         const hasDetails = receipt.important.length || receipt.activations.length || receipt.unparsed.length;
-        return `<section class="plaza-event-receipt" aria-label="今回の出目と確認できた収支">${headline}${dice}${incomeSpotlight}${featuredHtml}<p class="plaza-receipt-totals"><span class="plaza-receipt-totals-label">今回の収支${receipt.incomplete ? '（確認分）' : ''}</span>${shortBalances}${receipt.incomplete ? '<span>一部の効果は内訳を開いて確認</span>' : ''}</p>${hasDetails ? `<details class="plaza-receipt-details"><summary>発動・支払いの内訳${receipt.incomplete ? '（一部未集計）' : ''}</summary>${incomplete}<ul class="plaza-important-events">${important}</ul><ul class="plaza-receipt-balances">${balances}</ul><ul class="plaza-receipt-activations">${activations}${omitted}${fallback}</ul></details>` : ''}</section>`;
+        const detailsLabel = receipt.activations.length ? '発動・支払いの内訳'
+            : receipt.unparsed.length || receipt.incomplete ? '今回の記録' : '今回の出来事';
+        return `<section class="plaza-event-receipt" aria-label="今回の出目と確認できた収支">${headline}${dice}${incomeSpotlight}${featuredHtml}${totalsHtml}${hasDetails ? `<details class="plaza-receipt-details"><summary>${detailsLabel}${receipt.incomplete ? '（一部未集計）' : ''}</summary>${incomplete}<ul class="plaza-important-events">${important}</ul><ul class="plaza-receipt-balances">${balances}</ul><ul class="plaza-receipt-activations">${activations}${omitted}${fallback}</ul></details>` : ''}</section>`;
     }
     return Object.freeze({ buildHtml: buildReceiptHtml });
 })();

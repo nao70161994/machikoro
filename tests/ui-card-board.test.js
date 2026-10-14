@@ -53,6 +53,8 @@ runTest('建設通知は施設枚数・目標進捗・詳細操作を安全に�
     assert.ok(landmark.includes('data-kind="landmark" data-action="showLandmarkDetail" data-landmark-name="&lt;目標&quot;名&gt;"'));
     assert.ok(landmark.includes('data-test-art="landmark"'));
     assert.ok(landmark.includes('ランドマーク完成 · 目標 1/2'));
+    assert.ok(landmark.includes('<span class="cardboard-build-receipt-detail">ランドマーク完成</span>'));
+    assert.ok(landmark.includes('<span class="cardboard-build-receipt-progress"><span>目標</span><strong>1/2</strong></span>'));
     assert.ok(!landmark.includes(landmarkName));
     assert.strictEqual(UiCardBoard.buildConstructionReceiptHtml(fixture, { ...presentation, name: '森林' }), '');
     assert.strictEqual(UiCardBoard.buildConstructionReceiptHtml(fixture, { ...presentation, name: '港', landmark: true }), '');
