@@ -803,10 +803,13 @@ test('横持ちの建設操作は拡大市場を開き購入後は見える操�
     await shortcut.click();
     const dialog = page.locator('#cardboardMarketDialog');
     await expect(dialog).toBeVisible();
+    await dialog.locator('.compact-market-goal-disclosure > summary').click();
+    await expect(dialog.locator('.compact-market-goal-disclosure')).toHaveAttribute('open', '');
     await dialog.locator('[data-action="buildCard"][data-card-name="麦畑"]').click();
     await expect(page.locator('.cardboard-player-selected [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×5');
     await expect(shortcut).toBeHidden();
     await page.locator('#cardboardMarketClose').click();
+    await expect(page.locator('#cardboardMarket details[open]')).toHaveCount(0);
     await expect(page.locator('#cardboardMarket .compact-market-expand')).toBeFocused();
 });
 
@@ -1278,4 +1281,59 @@ test('完成したランドマークの絵と目標を狭幅でも一緒に確�
         await page.keyboard.press('Escape');
         await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('5/6');
     }
+});
+
+
+test('育てた街は必要なときだけ開き状態を変えず盤面へ戻れる', async ({ page }, testInfo) => {
+    for (const width of [320, 844, 1440]) {
+        await prepare(page, { width, height: width === 844 ? 390 : 900 }, 4);
+        await selectTheme(page, 'cardboard');
+        const before = await state(page);
+        const content = page.locator('#cardboardTownContent');
+        await expect(content).toBeEmpty();
+        const open = page.locator('.cardboard-player-selected [data-cardboard-town]');
+        await open.click();
+        const dialog = page.locator('#cardboardTownDialog');
+        await expect(dialog).toBeVisible();
+        await expect(page.locator('#cardboardTownClose')).toBeFocused();
+        await expect(content.locator('.town-street')).toBeVisible();
+        await expect(content.locator('.town-summary > span')).toHaveCSS('color', 'rgb(37, 71, 53)');
+        expect(await content.locator('.sunset-facility-art').count()).toBeGreaterThan(0);
+        const bounds = await dialog.boundingBox();
+        expect(bounds.x).toBeGreaterThanOrEqual(0);
+        expect(await page.locator('#cardboardTownHeading').evaluate(element => element.getBoundingClientRect().width)).toBeGreaterThan(60);
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+        expect(Math.abs(bounds.x - (width - bounds.x - bounds.width))).toBeLessThan(2);
+        expect(await content.locator('.town-street').evaluate(element => element.getBoundingClientRect().bottom <= innerHeight - 12)).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`town-preview-${width}.png`) });
+        expect(await state(page)).toEqual(before);
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden();
+        await expect(content).toBeEmpty();
+        await expect(open).toBeFocused();
+        expect(await state(page)).toEqual(before);
+        await open.click();
+        await page.locator('#cardboardTownClose').click();
+        await expect(open).toBeFocused();
+        await open.click();
+        await selectTheme(page, 'classic');
+        await expect(dialog).toBeHidden();
+        await expect(content).toBeEmpty();
+        expect(await state(page)).toEqual(before);
+    }
+});
+
+
+test('街を眺めている間に相手が勝利しても結果を覆わない', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 }, 2);
+    await page.locator('.cardboard-player-selected [data-cardboard-town]').click();
+    await expect(page.locator('#cardboardTownDialog')).toBeVisible();
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        for (const name of getEnabledLandmarkSelection()) game.players[1].landmarks[name] = true;
+        render();
+    });
+    await expect(page.locator('.winner-screen')).toBeVisible();
+    await expect(page.locator('#cardboardTownDialog')).toBeHidden();
+    await expect(page.locator('#cardboardTownContent')).toBeEmpty();
 });

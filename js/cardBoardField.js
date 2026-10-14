@@ -50,6 +50,9 @@ const CardBoardField = (() => {
     let previousChoice = null;
     let previousBuiltLandmarks = null;
     let previousBuildLog = null;
+    let townIndex = null;
+    let townLauncher = null;
+    let restoreTownFocus = true;
     let marketHome = null;
     let marketLauncher = null;
     let restoreMarketFocus = true;
@@ -234,6 +237,11 @@ const CardBoardField = (() => {
         const market = node('cardboardMarket');
         const home = marketHome;
         if (market && home?.parent?.isConnected) {
+            // Expanded-dialog lists become floating popovers on the compact
+            // landscape board. Do not carry them over and cover turn controls.
+            market.querySelectorAll('.compact-market-filter-disclosure, .compact-market-goal-disclosure').forEach(details => {
+                /** @type {HTMLDetailsElement} */ (details).open = false;
+            });
             const before = home.nextSibling?.parentNode === home.parent ? home.nextSibling : null;
             home.parent.insertBefore(market, before);
         }
@@ -282,7 +290,55 @@ const CardBoardField = (() => {
         return true;
     }
 
+    function updateTown() {
+        const dialog = /** @type {HTMLDialogElement | null} */ (node('cardboardTownDialog'));
+        if (!dialog?.open) return;
+        const player = facts?.game?.players?.[townIndex];
+        if (!enabled() || !player) { closeTown(false); return; }
+        node('cardboardTownHeading').textContent = `${player.name}の街`;
+        replaceHtml(node('cardboardTownContent'), UiBuildMenu.renderTownHtml(player, facts.enabledLandmarks));
+        const owned = new Map();
+        for (const card of player.cards || []) owned.set(card.name, (owned.get(card.name) || 0) + 1);
+        const landmarks = Object.keys(player.landmarks || {}).filter(name => player.landmarks[name] === true && facts.enabledLandmarks.has(name));
+        node('cardboardTownDescription').textContent = [
+            [...owned].map(([name, count]) => `${name}${count}枚`).join('、') || '所有施設なし',
+            `完成ランドマーク：${landmarks.join('、') || 'なし'}`,
+        ].join('。');
+    }
+
+    function finishTownClose() {
+        const launcher = townLauncher?.isConnected ? townLauncher
+            : node('cardboardSeats')?.querySelector('.cardboard-player-selected [data-cardboard-town]')
+                || node('cardboardRoster')?.querySelector('.cardboard-roster-seat[aria-current="true"]');
+        townLauncher = null;
+        townIndex = null;
+        node('cardboardTownContent')?.replaceChildren();
+        if (node('cardboardTownDescription')) node('cardboardTownDescription').textContent = '';
+        if (restoreTownFocus && enabled() && node('gameScreen')?.style.display !== 'none') launcher?.focus({ preventScroll: true });
+        restoreTownFocus = true;
+    }
+
+    function closeTown(restoreFocus = true) {
+        const dialog = /** @type {HTMLDialogElement | null} */ (node('cardboardTownDialog'));
+        restoreTownFocus = restoreFocus;
+        if (dialog?.open) dialog.close();
+        else finishTownClose();
+    }
+
+    function openTown(launcher) {
+        const dialog = /** @type {HTMLDialogElement | null} */ (node('cardboardTownDialog'));
+        const index = Number(launcher.dataset.cardboardTown);
+        if (!enabled() || !facts?.game?.players?.[index] || !dialog || typeof dialog.showModal !== 'function') return;
+        townIndex = index;
+        townLauncher = launcher;
+        restoreTownFocus = true;
+        dialog.showModal();
+        updateTown();
+        node('cardboardTownClose')?.focus({ preventScroll: true });
+    }
+
     function detach() {
+        closeTown(false);
         closeMarket(false);
         revealDiceCandidateAfterMarketUpdate = false;
         previousChoice = null;
@@ -359,6 +415,7 @@ const CardBoardField = (() => {
         }, true);
         const clearHiddenFeedback = () => {
             if (document.hidden || node('gameScreen')?.style.display === 'none') {
+                closeTown(false);
                 closeMarket(false);
                 previousChoice = null;
                 choiceInitialized = false;
@@ -370,6 +427,15 @@ const CardBoardField = (() => {
             node('diceChoose')?.scrollIntoView({ block: 'nearest', behavior: 'auto' });
             const button = /** @type {HTMLButtonElement | null} */ (node('diceChoose')?.querySelector('button:not(:disabled)'));
             button?.focus({ preventScroll: true });
+        });
+        node('cardboardSeats')?.addEventListener('click', event => {
+            const launcher = /** @type {HTMLElement} */ (event.target).closest?.('[data-cardboard-town]');
+            if (launcher) openTown(launcher);
+        });
+        node('cardboardTownClose')?.addEventListener('click', () => closeTown());
+        node('cardboardTownDialog')?.addEventListener('close', finishTownClose);
+        node('cardboardTownDialog')?.addEventListener('click', event => {
+            if (event.target === event.currentTarget) closeTown();
         });
         node('cardboardMarketClose')?.addEventListener('click', () => closeMarket());
         node('cardboardMarketDialog')?.addEventListener('close', finishMarketClose);
@@ -430,6 +496,7 @@ const CardBoardField = (() => {
             return { active, marketFocus };
         };
         document.addEventListener('design-theme-will-change', () => {
+            closeTown(false);
             themeFocus = captureThemeFocus();
             // Capture before the outgoing theme's CSS hides its scroll boxes.
             if (enabled() && mounted) {
@@ -689,6 +756,7 @@ const CardBoardField = (() => {
             (/** @type {HTMLElement | null} */ (node('cardboardRoster')?.querySelector(`[data-cardboard-player-index="${selectedIndex}"]`)))
                 ?.focus({ preventScroll: true });
         }
+        updateTown();
         const receipt = node('cardboardDiceReceipt');
         const disclosure = receipt.querySelector('details');
         const open = disclosure?.open;
@@ -794,7 +862,7 @@ const CardBoardField = (() => {
         draw();
         updatePlayerOverflow();
     }
-    return Object.freeze({ render, updateMarket, detach, closeDisclosures, openMarket, closeMarket, createScrollMemory });
+    return Object.freeze({ render, updateMarket, detach, closeDisclosures, openMarket, closeMarket, closeTown, createScrollMemory });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

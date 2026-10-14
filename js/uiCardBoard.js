@@ -157,7 +157,7 @@ const UiCardBoard = (() => {
         const townScenery = grouped.size > 0 && grouped.size <= 2 && ownedCardCount <= 4 &&
             typeof options.renderTownScenery === 'function'
             ? `<div class="cardboard-town-vignette" aria-hidden="true"><span class="cardboard-town-vignette-caption">街の風景</span>${options.renderTownScenery(player, new Set(names))}</div>` : '';
-        const facilityHeading = `<h3 class="cardboard-facility-heading"><span>施設</span><small><span>${grouped.size}種類 · ${ownedCardCount}枚</span><span class="cardboard-facility-scroll-hint" aria-hidden="true"></span></small></h3>`;
+        const facilityHeading = `<h3 class="cardboard-facility-heading"><span>施設</span><small><span>${grouped.size}種類 · ${ownedCardCount}枚</span><button type="button" class="cardboard-town-open" data-cardboard-town="${index}" aria-haspopup="dialog" aria-controls="cardboardTownDialog" aria-label="${escape(player.name)}の育てた街を見る">街を見る</button><span class="cardboard-facility-scroll-hint" aria-hidden="true"></span></small></h3>`;
         const kind = playerKind(options, index);
         const kindBadge = kind.html ? `<span class="cardboard-player-kind" aria-hidden="true">${kind.html}</span>` : '';
         const kindDescription = kind.label ? `<span class="visually-hidden">${escape(kind.label)}。</span>` : '';

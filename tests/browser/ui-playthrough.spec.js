@@ -15,9 +15,11 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     test.setTimeout(25 * 60 * 1000);
     const stopAfter = Number(process.env.UI_PLAYTHROUGH_STOP_AFTER) || 0;
     if (!Number.isInteger(stopAfter) || stopAfter < 0) throw new Error('Invalid partial action limit');
+    const viewport = process.env.UI_PLAYTHROUGH_LANDSCAPE === '1'
+        ? { width: 844, height: 390 } : { width: 390, height: 844 };
     const started = Date.now();
     const report = { mode: stopAfter ? 'partial-ui-smoke' : 'automated-human-seat-ui',
-        completed: false, humanActions: 0, clicks: 0, keyboardActions: 0, cpuWaitMs: 0, actions: [], screenshots: [], pageErrors: [] };
+        viewport, completed: false, humanActions: 0, clicks: 0, keyboardActions: 0, cpuWaitMs: 0, actions: [], screenshots: [], pageErrors: [] };
     const stages = new Set();
     page.on('pageerror', error => report.pageErrors.push(error.message));
     const capture = async stage => {
@@ -83,6 +85,12 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         const pending = (name, attributes = '') => page.locator(`#pendingModal [data-action=${attribute(name)}]${attributes}:visible`);
         if (action === 'buildCard' || action === 'buildLandmark') {
             await click(page.locator('#cardboardMarket .compact-market-expand'), '市場を開く');
+            if (action === 'buildLandmark') {
+                const goals = page.locator('#cardboardMarketDialog .compact-market-goal-disclosure');
+                if (!(await goals.evaluate(element => element.open))) {
+                    await click(goals.locator(':scope > summary'), 'ランドマーク一覧を開く');
+                }
+            }
             const key = action === 'buildCard' ? 'data-card-name' : 'data-landmark-name';
             const value = action === 'buildCard' ? data.cardName : data.name;
             await click(page.locator(`#cardboardMarketDialog [data-action=${attribute(action)}][${key}=${attribute(value)}]`), `建設 ${value}`);
@@ -90,6 +98,7 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
                 await page.keyboard.press('Escape');
                 report.keyboardActions++;
                 await expect(page.locator('#cardboardMarketDialog')).toBeHidden();
+                await expect(page.locator('#cardboardMarket details[open]')).toHaveCount(0);
             }
         } else if (action === 'rollDice' || action === 'nextTurn') {
             await click(page.locator(action === 'rollDice' ? '#btnRoll' : '#btnSkip'), action);
@@ -124,7 +133,7 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     };
     let lastState = null;
     try {
-        await page.setViewportSize({ width: 390, height: 844 });
+        await page.setViewportSize(viewport);
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('/', { waitUntil: 'domcontentloaded' });
         // All setup changes go through visible controls and their real handlers.

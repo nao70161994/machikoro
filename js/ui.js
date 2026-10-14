@@ -471,7 +471,10 @@ function clearOnlineSessionAfterWin() {
 function renderWinnerState(winner) {
     plazaFeedback?.reset();
     if (typeof PlazaField !== 'undefined') PlazaField.toggleComparison(false);
-    if (typeof CardBoardField !== 'undefined') CardBoardField.closeMarket(false);
+    if (typeof CardBoardField !== 'undefined') {
+        CardBoardField.closeTown(false);
+        CardBoardField.closeMarket(false);
+    }
     if (document.body && document.body.classList) document.body.classList.add('game-finished');
     const gameState = uiGameRuntimeSnapshot();
     const currentGame = gameState.game;
