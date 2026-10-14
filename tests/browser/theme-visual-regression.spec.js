@@ -111,6 +111,16 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     const unavailable = page.locator('#cardboardMarket .compact-market-buy:disabled').first();
                     await expect(unavailable).toHaveCSS('opacity', '1');
                     await expect(unavailable).toHaveCSS('filter', 'none');
+                    if (viewport.name === 'landscape-844') {
+                        await expect.poll(() => page.locator('.cardboard-player-selected').evaluate(panel => {
+                            const button = panel.querySelector('.cardboard-town-open');
+                            const bounds = button.getBoundingClientRect();
+                            const town = panel.getBoundingClientRect();
+                            const landmarks = panel.querySelector('.cardboard-landmarks').getBoundingClientRect();
+                            return bounds.top >= town.top && bounds.bottom <= landmarks.top && bounds.right <= town.right &&
+                                button.contains(document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2));
+                        })).toBe(true);
+                    }
                     const scenery = page.locator('#cardboardSeats .cardboard-town-vignette');
                     if (viewport.name === 'desktop-1440') {
                         await expect(scenery).toBeVisible();
