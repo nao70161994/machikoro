@@ -1345,3 +1345,30 @@ test('街を眺めている間に相手が勝利しても結果を覆わない',
     await expect(page.locator('#cardboardTownDialog')).toBeHidden();
     await expect(page.locator('#cardboardTownContent')).toBeEmpty();
 });
+
+
+test('ロール中のサイコロは大きく見え操作を遮らず確定後に戻る', async ({ page }) => {
+    for (const width of [320, 844, 1440]) {
+        const height = width === 844 ? 390 : 900;
+        await prepare(page, { width, height }, 2);
+        await selectTheme(page, 'cardboard');
+        const before = await state(page);
+        await page.evaluate(() => updateDiceDisplay([], true));
+        const stage = page.locator('#diceResult');
+        await expect(stage).toHaveCSS('opacity', '1');
+        await expect(stage).toHaveCSS('pointer-events', 'none');
+        const box = await stage.boundingBox();
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.y + box.height).toBeLessThan(height - 70);
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await expect(stage.locator('.rolling')).toHaveCSS('animation-name', 'none');
+        expect(await stage.locator('.dice-face').evaluate(element => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(60);
+        await page.evaluate(() => updateDiceDisplay([5]));
+        await expect(stage.locator('.rolling')).toHaveCount(0);
+        expect(await stage.locator('.dice-face').evaluate(element => element.getBoundingClientRect().width)).toBeLessThan(60);
+        expect(await state(page)).toEqual(before);
+        await page.emulateMedia({ reducedMotion: 'no-preference' });
+    }
+});

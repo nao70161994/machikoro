@@ -1,0 +1,111 @@
+{
+  "kind": "controlled-390px-visual-sequence",
+  "audioRecorded": false,
+  "frames": [
+    {
+      "file": "frame-000-34ms.png",
+      "atMs": 34,
+      "browserTimestamp": 1791966688.160154
+    },
+    {
+      "file": "frame-001-340ms.png",
+      "atMs": 340,
+      "browserTimestamp": 1791966688.472482
+    },
+    {
+      "file": "frame-002-444ms.png",
+      "atMs": 444,
+      "browserTimestamp": 1791966688.575884
+    },
+    {
+      "file": "frame-003-546ms.png",
+      "atMs": 546,
+      "browserTimestamp": 1791966688.677737
+    },
+    {
+      "file": "frame-004-662ms.png",
+      "atMs": 662,
+      "browserTimestamp": 1791966688.793787
+    },
+    {
+      "file": "frame-005-787ms.png",
+      "atMs": 787,
+      "browserTimestamp": 1791966688.908959
+    },
+    {
+      "file": "frame-006-901ms.png",
+      "atMs": 901,
+      "browserTimestamp": 1791966689.03386
+    },
+    {
+      "file": "frame-007-1385ms.png",
+      "atMs": 1385,
+      "browserTimestamp": 1791966689.517779
+    },
+    {
+      "file": "frame-008-1491ms.png",
+      "atMs": 1491,
+      "browserTimestamp": 1791966689.582984
+    },
+    {
+      "file": "frame-009-1603ms.png",
+      "atMs": 1603,
+      "browserTimestamp": 1791966689.727762
+    },
+    {
+      "file": "frame-010-1713ms.png",
+      "atMs": 1713,
+      "browserTimestamp": 1791966689.842282
+    },
+    {
+      "file": "frame-011-1820ms.png",
+      "atMs": 1820,
+      "browserTimestamp": 1791966689.942974
+    },
+    {
+      "file": "frame-012-1960ms.png",
+      "atMs": 1960,
+      "browserTimestamp": 1791966690.037209
+    },
+    {
+      "file": "frame-013-2073ms.png",
+      "atMs": 2073,
+      "browserTimestamp": 1791966690.150595
+    },
+    {
+      "file": "frame-014-2179ms.png",
+      "atMs": 2179,
+      "browserTimestamp": 1791966690.311023
+    },
+    {
+      "file": "frame-015-2294ms.png",
+      "atMs": 2294,
+      "browserTimestamp": 1791966690.425779
+    },
+    {
+      "file": "frame-016-2558ms.png",
+      "atMs": 2558,
+      "browserTimestamp": 1791966690.685377
+    },
+    {
+      "file": "frame-017-2664ms.png",
+      "atMs": 2664,
+      "browserTimestamp": 1791966690.791673
+    },
+    {
+      "file": "frame-018-2793ms.png",
+      "atMs": 2793,
+      "browserTimestamp": 1791966690.924377
+    },
+    {
+      "file": "frame-019-2894ms.png",
+      "atMs": 2894,
+      "browserTimestamp": 1791966691.023746
+    }
+  ],
+  "final": {
+    "phase": "build",
+    "receipt": "出目 5\n\n港の街\n施設の収支\n+6コイン\n\n1\n森林\n銀行 → 席1\n+6コイン\n（6件）\n\n今回の収支\n港の街 +6\n\n発動・支払いの内訳\n\n6コイン · 森林：銀行 → 港の街",
+    "wallet": 9
+  }
+}

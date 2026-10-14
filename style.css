@@ -11307,6 +11307,56 @@ html[data-design="cardboard"] .compact-market-refilled { outline: 2px solid #d59
 html[data-design="cardboard"] #cardboardChoiceJump { position: fixed; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 6; min-height: 44px; margin: 0; padding: 6px 11px; border: 2px solid #fffdf5; border-radius: 9px; background: #1766bd; color: #fff; box-shadow: 0 3px 12px #18344740; }
 html[data-design="cardboard"] #cardboardChoiceJump[hidden] { display: none; }
 html[data-design="cardboard"] body.pwa-banner-open #cardboardChoiceJump { top: 8px; bottom: auto; }
+/* Only the existing rolling interval raises the die into a visual stage.
+   The stage ignores pointers and stays above the bottom operation controls. */
+html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) {
+    position: fixed;
+    left: 50%;
+    top: clamp(96px, 42dvh, calc(100dvh - 180px - env(safe-area-inset-bottom, 0px)));
+    z-index: 7;
+    transform: translate(-50%, -50%);
+    width: min(220px, calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+    box-sizing: border-box;
+    margin: 0;
+    padding: 14px 12px 10px;
+    border: 2px solid #b9902b;
+    border-radius: 14px;
+    background: #fff7dc;
+    color: #344f3d;
+    box-shadow: 0 6px 22px #29463255;
+    pointer-events: none;
+    text-align: center;
+}
+html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling)::after {
+    content: "サイコロを振っています";
+    display: block;
+    margin-top: 9px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.3;
+}
+html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) .dice-display { margin: 0; }
+html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) .dice-face {
+    width: 72px;
+    height: 72px;
+    padding: 10px;
+    border-radius: 12px;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardActionSlot #diceResult:has(.rolling) {
+    border-color: #ffe66d;
+    background: #000;
+    color: #fff;
+    box-shadow: none;
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardActionSlot #diceResult .rolling { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardActionSlot #diceResult .rolling { animation: none; }
+}
+@media (orientation: landscape) and (max-height: 600px) {
+    html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) { width: 180px; padding: 10px 8px 8px; }
+    html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) .dice-face { width: 60px; height: 60px; padding: 8px; }
+    html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling)::after { margin-top: 6px; font-size: 11px; }
+}
 html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) .plaza-receipt-dice { animation: cardboard-roll-reveal 900ms ease-out both; color: #103f7a; text-shadow: 0 1px #fff; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) #diceResult.dice-result-arrival .dice-face:not(.rolling) {
     animation: cardboard-dice-land 520ms cubic-bezier(.18, .78, .25, 1) both;
@@ -11331,9 +11381,9 @@ html[data-design="cardboard"] .cardboard-transfer-summary { position: absolute; 
 html[data-design="cardboard"] #cardboardDiceReceipt > .cardboard-transfer-summary { position: static; left: auto; bottom: auto; width: 100%; max-width: none; max-height: 3.75em; margin: 2px 0 0; transform: none; overflow: auto; border: 1px solid #c6a85e; text-align: left; }
 @keyframes cardboard-roll-reveal { from { transform: scale(1.08); background: #ffe89c; } to { transform: scale(1); background: transparent; } }
 @keyframes cardboard-card-activate {
-    0% { box-shadow: 0 0 0 4px #fff2b580; }
-    34% { box-shadow: 0 0 0 8px #f4bc20, 0 0 24px #f4bc2099; }
-    100% { box-shadow: 0 0 0 4px #f4bc20, 0 0 18px #f4bc2066; }
+    0% { transform: translateY(0); box-shadow: 0 0 0 4px #fff2b580; }
+    34% { transform: translateY(-3px); box-shadow: 0 0 0 8px #f4bc20, 0 0 24px #f4bc2099; }
+    100% { transform: translateY(0); box-shadow: 0 0 0 4px #f4bc20, 0 0 18px #f4bc2066; }
 }
 @keyframes cardboard-card-arrival {
     0% { opacity: .62; transform: translateY(8px) scale(.94); box-shadow: 0 0 0 0 #d89e1d00; }

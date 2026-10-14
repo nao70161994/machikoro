@@ -29,7 +29,8 @@ function buildDiceDisplayView(values, rolling = false) {
             html: `<div class="dice-display">
             ${rollingFace}
         </div>`,
-            opacity: null,
+            // Rolling must replace the faded empty placeholder on the first turn.
+            opacity: '1',
         });
     }
     if (!Array.isArray(values) || values.length === 0) {
