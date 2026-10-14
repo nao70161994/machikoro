@@ -2,23 +2,49 @@
 
 // Layout receives measured sizes only; camera and DOM ownership stay in PlazaField.
 const PlazaTownLayout = (() => {
-    function calculate({ towns, marketWidth, marketHeight }) {
+    function calculate({ towns, marketWidth, marketHeight, orientation = 'landscape' }) {
         const positions = {};
         const gap = 40, padding = 70;
-        if (towns.length <= 4) {
-            const cardinal = [[580, 970], [70, 470], [580, 0], [1150, 470]];
-            for (const town of towns) {
-                const [left, top] = cardinal[town.seat];
-                positions[town.seat] = { left, top };
+        if (towns.length === 2) {
+            const compactGap = 32, compactPadding = 40;
+            const self = towns.find(town => town.seat === 0);
+            const opponent = towns.find(town => town.seat === 1);
+            if (!self || !opponent) throw new Error('Two-player layout requires seats 0 and 1');
+            if (orientation === 'landscape') {
+                const contentHeight = Math.max(self.height, opponent.height, marketHeight);
+                const marketLeft = compactPadding + opponent.width + compactGap;
+                const selfLeft = marketLeft + marketWidth + compactGap;
+                positions[1] = { left: compactPadding, top: compactPadding + (contentHeight - opponent.height) / 2 };
+                positions[0] = { left: selfLeft, top: compactPadding + (contentHeight - self.height) / 2 };
+                return { positions, marketLeft, marketTop: compactPadding + (contentHeight - marketHeight) / 2,
+                    width: selfLeft + self.width + compactPadding, height: contentHeight + compactPadding * 2 };
             }
+            const contentWidth = Math.max(self.width, opponent.width, marketWidth);
+            const left = compactPadding + (contentWidth - marketWidth) / 2;
+            const townLeft = town => compactPadding + (contentWidth - town.width) / 2;
+            positions[1] = { left: townLeft(opponent), top: compactPadding };
+            const marketTop = compactPadding + opponent.height + compactGap;
+            positions[0] = { left: townLeft(self), top: marketTop + marketHeight + compactGap };
+            return { positions, marketLeft: left, marketTop,
+                width: contentWidth + compactPadding * 2,
+                height: positions[0].top + self.height + compactPadding };
+        }
+        if (towns.length <= 4) {
+            const compactGap = 32, compactPadding = 40;
             const north = towns.find(town => town.seat === 2);
-            const marketTop = Math.max(420, north ? north.height + 32 : 420);
-            if (positions[0]) positions[0].top = Math.max(970, marketTop + marketHeight + 32);
-            return { positions, marketLeft: 580, marketTop,
-                width: Math.max(1680, 580 + marketWidth + gap,
-                    ...towns.map(town => positions[town.seat].left + town.width + gap)),
-                height: Math.max(1380, marketTop + marketHeight + gap,
-                    ...towns.map(town => positions[town.seat].top + town.height + gap)) };
+            const west = towns.find(town => town.seat === 1);
+            const marketLeft = compactPadding + (west ? west.width + compactGap : 0);
+            const marketTop = Math.max(compactPadding + (north?.height || 0) + compactGap, 320);
+            const centerTown = town => marketLeft + (marketWidth - town.width) / 2;
+            for (const town of towns) {
+                if (town.seat === 0) positions[town.seat] = { left: centerTown(town), top: marketTop + marketHeight + compactGap };
+                else if (town.seat === 1) positions[town.seat] = { left: compactPadding, top: marketTop };
+                else if (town.seat === 2) positions[town.seat] = { left: centerTown(town), top: compactPadding };
+                else positions[town.seat] = { left: marketLeft + marketWidth + compactGap, top: marketTop };
+            }
+            return { positions, marketLeft, marketTop,
+                width: Math.max(marketLeft + marketWidth, ...towns.map(town => positions[town.seat].left + town.width)) + compactPadding,
+                height: Math.max(marketTop + marketHeight, ...towns.map(town => positions[town.seat].top + town.height)) + compactPadding };
         }
         const columns = towns.length <= 8 ? 3 : 4;
         const cells = new Map([[0, [1, 2]], [1, [0, 1]], [2, [1, 0]], [3, [2, 1]]]);

@@ -11,6 +11,18 @@ assert.ok(UiPlayerDisplay.renderPlayerKindIcon({ type: 'cpu', difficulty: 'stron
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('expert'), 'expert');
 assert.strictEqual(UiPlayerDisplay.normalizeCpuDifficulty('unknown'), 'normal');
 assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'human' }), '人間');
+for (const type of ['human', 'cpu']) {
+    const setting = { type, difficulty: 'normal', name: '<script>unsafe</script>' };
+    const before = JSON.stringify(setting);
+    const portraits = Array.from({ length: 10 }, (_, index) => UiPlayerDisplay.renderPlayerKindIcon(setting, index));
+    assert.strictEqual(new Set(portraits).size, 10, '10席の服色と形を区別する');
+    assert.strictEqual(UiPlayerDisplay.renderPlayerKindIcon(setting, 3), portraits[3]);
+    assert.strictEqual(UiPlayerDisplay.renderPlayerKindIcon(setting, -1), portraits[0]);
+    assert.strictEqual(UiPlayerDisplay.renderPlayerKindIcon(setting, NaN), portraits[0]);
+    assert.ok(portraits.every(html => html.includes('aria-hidden="true"') && !html.includes('<script>')));
+    assert.strictEqual(JSON.stringify(setting), before);
+}
+
 assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'cpu', difficulty: 'weak' }), 'CPU（弱）');
 assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'cpu', difficulty: 'normal' }), 'CPU（普通）');
 assert.strictEqual(UiPlayerDisplay.playerKindAccessibleLabel({ type: 'cpu', difficulty: 'strong' }), 'CPU（強）');
@@ -178,7 +190,7 @@ const html = UiPlayerDisplay.buildPlayersHtml(players, {
     loanEffect: 'loan',
 });
 assert(html.includes('<span class="player-icon">👤</span>'));
-assert(html.includes('<span class="player-name">&lt;Alice&gt;</span>'));
+assert(html.includes('<span class="player-name" title="&lt;Alice&gt;">&lt;Alice&gt;</span>'));
 assert(html.includes('<span class="landmark-badge built" aria-label="駅、建設済み">🚉 駅</span>'));
 assert(!html.includes('未建設'));
 assert(!html.includes('空港'));
@@ -188,7 +200,7 @@ assert(html.includes('<span class="loan-badge" aria-label="貸金業ローン 1�
 assert(html.includes('<div id="playerBox0" class="player-box" role="listitem" aria-label="&lt;Alice&gt;、待機中、人間">'));
 assert(html.includes('<div id="playerBox1" class="player-box active" role="listitem" aria-label="CPU、現在の手番、CPU（強）">'));
 assert(html.includes('<span class="player-icon">🤖強</span>'));
-assert(html.includes('<span class="player-name">▶ CPU</span>'));
+assert(html.includes('<span class="player-name" title="CPU">▶ CPU</span>'));
 
 const sunsetPlayer = UiPlayerDisplay.buildPlayerHtml(players[0], 0, {
     settings: [{ type: 'human' }],

@@ -1,0 +1,90 @@
+[
+    {
+        "condition": "4p-late-320",
+        "nodesBefore": 2124,
+        "nodesAfter": 1065,
+        "artsBefore": 96,
+        "artsAfter": 24,
+        "stateUnchanged": true,
+        "detailVisible": true,
+        "marketVisible": true,
+        "errors": []
+    },
+    {
+        "condition": "4p-late-390",
+        "nodesBefore": 2124,
+        "nodesAfter": 1065,
+        "artsBefore": 96,
+        "artsAfter": 24,
+        "stateUnchanged": true,
+        "detailVisible": true,
+        "marketVisible": true,
+        "errors": []
+    },
+    {
+        "condition": "4p-late-844",
+        "nodesBefore": 2124,
+        "nodesAfter": 1065,
+        "artsBefore": 96,
+        "artsAfter": 24,
+        "stateUnchanged": true,
+        "detailVisible": true,
+        "marketVisible": true,
+        "errors": []
+    },
+    {
+        "condition": "4p-late-1440",
+        "nodesBefore": 2124,
+        "nodesAfter": 1065,
+        "artsBefore": 96,
+        "artsAfter": 24,
+        "stateUnchanged": true,
+        "detailVisible": true,
+        "marketVisible": true,
+        "errors": []
+    },
+    {
+        "condition": "10p-late-320",
+        "nodesBefore": 1771,
+        "nodesAfter": 1065,
+        "artsBefore": 72,
+        "artsAfter": 24,
+        "stateUnchanged": true,
+        "detailVisible": true,
+        "marketVisible": true,
+        "errors": []
+    },
+    {
+        "condition": "10p-late-390",
+        "nodesBefore": 1771,
+        "nodesAfter": 1065,
+        "artsBefore": 72,
+        "artsAfter": 24,
+        "stateUnchanged": true,
+        "detailVisible": true,
+        "marketVisible": true,
+        "errors": []
+    },
+    {
+        "condition": "10p-late-844",
+        "nodesBefore": 1771,
+        "nodesAfter": 1065,
+        "artsBefore": 72,
+        "artsAfter": 24,
+        "stateUnchanged": true,
+        "detailVisible": true,
+        "marketVisible": true,
+        "errors": []
+    },
+    {
+        "condition": "10p-late-1440",
+        "nodesBefore": 1771,
+        "nodesAfter": 1065,
+        "artsBefore": 72,
+        "artsAfter": 24,
+        "stateUnchanged": true,
+        "detailVisible": true,
+        "marketVisible": true,
+        "errors": []
+    }
+]

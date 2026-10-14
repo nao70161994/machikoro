@@ -11,8 +11,11 @@ on:
             - 'js/plaza*.js'
             - 'js/plazaField.js'
             - 'tests/browser/visual-art-review.spec.js'
+            - 'tests/browser/title-layout.spec.js'
+            - 'tests/browser/plaza-event-receipts.spec.js'
             - 'tests/browser/theme-visual-regression.spec.js'
             - 'tests/browser/plaza-online.spec.js'
+            - 'tests/browser/plaza-overview.spec.js'
             - 'playwright.config.js'
             - 'package.json'
             - '.github/workflows/plaza-visual-review.yml'
@@ -30,7 +33,7 @@ permissions:
 jobs:
     plaza-webkit:
         runs-on: ubuntu-latest
-        timeout-minutes: 15
+        timeout-minutes: 45
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
             - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
@@ -38,13 +41,19 @@ jobs:
                   node-version: '20'
                   cache: npm
             - run: npm ci
-            - run: npx playwright install --with-deps webkit
+            - run: npx playwright install --with-deps webkit chromium
             - name: Compare theme baselines at target viewports
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
-              run: npm run test:browser-visual -- --retries=0 --workers=1
+              run: npm run test:browser-visual -- --output=test-results/theme-baseline --retries=0 --workers=1
+            - name: Title and saved-game responsive interaction review
+              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
+              run: npx playwright test title-layout.spec.js --project=mobile-webkit --output=test-results/title-layout --retries=0 --workers=1
+            - name: Plaza dice and earnings receipt review
+              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
+              run: npx playwright test plaza-event-receipts.spec.js --grep 'ログを閉じたまま出目|施設とランドマーク' --project=mobile-webkit --output=test-results/plaza-event-receipts --retries=0 --workers=1
             - name: Generate candidate theme baselines
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
-              run: npm run test:browser-visual -- --update-snapshots --retries=0 --workers=1
+              run: npm run test:browser-visual -- --output=test-results/theme-baseline --update-snapshots=all --grep 'cardboard ' --retries=0 --workers=1
             - name: Upload generated baseline candidates
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -53,11 +62,21 @@ jobs:
                   path: tests/browser/theme-visual-regression.spec.js-snapshots/
                   if-no-files-found: error
             - name: Plaza visual and online review
-              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
-              run: npx playwright test visual-art-review.spec.js plaza-online.spec.js --grep '広場テーマは共通アート|広場の4人オンライン|広場の終盤と補助操作' --retries=0 --workers=1
+              if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true) }}
+              run: npx playwright test visual-art-review.spec.js --grep '広場テーマは共通アート|広場の終盤と補助操作' --project=mobile-webkit --output=test-results/plaza-visual --retries=0 --workers=1
+            - name: Plaza four-player online sync review
+              if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true) }}
+              run: npx playwright test plaza-online.spec.js --project=chromium-desktop --output=test-results/plaza-online --retries=0 --workers=1
+            - name: Plaza field viewport, focus, and market review
+              if: ${{ !cancelled() && (github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true) }}
+              run: npx playwright test plaza-overview.spec.js --project=mobile-webkit --output=test-results/plaza-overview --retries=0 --workers=1
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
                   name: theme-and-plaza-visual-review
-                  path: test-results/
+                  path: |
+                      test-results/**/*.png
+                      test-results/**/error-context.md
+                      test-results/plaza-overview/**/trace.zip
+                      test-results/plaza-visual/**/trace.zip
                   if-no-files-found: warn

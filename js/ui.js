@@ -1,5 +1,5 @@
 /* global UiMarketTarget */
-/* global UiCompactMarket, CardBoardField, Element, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
+/* global UiCompactMarket, CardBoardField, Element, HTMLElement, HTMLDetailsElement, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
 const pendingModalUpdateController = UiPendingEffects.createUpdateController();
@@ -7,8 +7,24 @@ const pendingModalFocusController = UiPendingEffects.createFocusController();
 const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
+let cardDetailFocusOrigin = null;
 const turnCoinBalanceCache = new WeakMap();
 const plazaReceiptRenderCache = new WeakMap();
+const plazaTurnEventsCache = new WeakMap();
+
+function plazaTurnEventsFor(game, maxActivations = 12) {
+    if (!game || typeof game !== 'object') return null;
+    const key = `${game.turnCount}:${game.currentPlayerIndex}:${game.log?.length || 0}:${maxActivations}`;
+    const cached = plazaTurnEventsCache.get(game);
+    if (cached?.key === key) return cached.events;
+    const events = UiTurnEvents.project(game.log || [], {
+        players: game.players, turnPlayerIndex: game.currentPlayerIndex,
+        display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
+        landmarkNames: Player.landmarkNames(), maxActivations,
+    });
+    plazaTurnEventsCache.set(game, { key, events });
+    return events;
+}
 const plazaIncomePreviewPanel = typeof UiIncomePreviewPanel !== 'undefined' ? UiIncomePreviewPanel.create({
     document,
     getGame: () => uiGameRuntimeSnapshot().game,
@@ -51,8 +67,10 @@ const plazaFeedback = typeof UiPlazaFeedback !== 'undefined' ? UiPlazaFeedback.c
     onMilestones: events => {
         const target = document.getElementById('plazaBuildReceipt');
         if (!target) return;
-        target.innerHTML = events.filter(event => !event.winner).map(event =>
-            `<p class="plaza-build-result${event.landmark ? ' plaza-build-landmark' : ''}">${escapeHtml(event.message)}${event.landmark ? `：${escapeHtml(getLandmarkEffectText(event.name))}` : ''}<button type="button" data-built-town-index="${event.playerIndex}">建設した街を見る</button></p>`).join('');
+        target.innerHTML = events.filter(event => !event.winner).map(event => {
+            const category = event.landmark ? '' : CARDS.find(card => card.name === event.name)?.category || '';
+            return `<article class="plaza-build-result${event.landmark ? ' plaza-build-landmark' : ''}"><div class="plaza-build-result-art">${UiBuildMenu.renderFacilityArt(event.name, event.landmark, category)}</div><div class="plaza-build-result-copy"><p>${escapeHtml(event.message)}${event.landmark ? `：${escapeHtml(getLandmarkEffectText(event.name))}` : ''}</p><button type="button" data-built-town-index="${event.playerIndex}">建設した街を見る</button></div></article>`;
+        }).join('');
     },
 }) : null;
 if (plazaFeedback) document.getElementById('plazaBuildReceipt').addEventListener('click', event => {
@@ -189,11 +207,7 @@ function renderLog() {
     summaryEl.innerHTML = UiLogDisplay.buildLogSummaryHtml(cur, LOG_TYPE_DISPLAY, escapeHtml, logDisplayOptions);
     const receipt = document.getElementById('plazaDiceReceipt');
     if (receipt && typeof UiTurnEvents !== 'undefined') {
-        const projected = UiTurnEvents.project(cur, {
-            players: currentGame.players, turnPlayerIndex: currentGame.currentPlayerIndex,
-            display: LOG_TYPE_DISPLAY, cardNames: CARDS.map(card => card.name),
-            landmarkNames: Player.landmarkNames(),
-        });
+        const projected = plazaTurnEventsFor(currentGame);
         const html = UiTurnReceipt.buildHtml(projected, escapeHtml);
         const diceKey = JSON.stringify(projected.dice);
         const session = uiGameRuntimeSnapshot().cpuPlayers;
@@ -302,6 +316,8 @@ function renderTutorial() {
         design: document.documentElement?.dataset?.design,
         portrait: typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
             window.matchMedia('(orientation: portrait)').matches,
+        landscapeShort: typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+            window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches,
         level: tutorial.tutorialLevel, turnCount: currentGame.turnCount,
     });
     if (Array.isArray(session)) tutorialDisclosureState.set(session, { box });
@@ -454,6 +470,11 @@ function clearOnlineSessionAfterWin() {
 
 function renderWinnerState(winner) {
     plazaFeedback?.reset();
+    if (typeof PlazaField !== 'undefined') PlazaField.toggleComparison(false);
+    if (typeof CardBoardField !== 'undefined') {
+        CardBoardField.closeTown(false);
+        CardBoardField.closeMarket(false);
+    }
     if (document.body && document.body.classList) document.body.classList.add('game-finished');
     const gameState = uiGameRuntimeSnapshot();
     const currentGame = gameState.game;
@@ -684,7 +705,32 @@ function renderActiveGameState(current) {
     });
     UiGameStatusEffects.execute(view, {
         setStatusText(text) {
-            document.getElementById("status").textContent = text;
+            const status = document.getElementById("status");
+            if (!status) return;
+            if (document.documentElement?.dataset?.design !== 'cardboard' || status.classList.contains('game-winner')) {
+                status.textContent = text;
+                return;
+            }
+            status.replaceChildren();
+            const turnLabel = document.createElement('span');
+            turnLabel.className = 'cardboard-turn-status-name';
+            turnLabel.textContent = `👤 ${view.turnPlayerName || 'プレイヤー'}のターン`;
+            turnLabel.title = turnLabel.textContent;
+            turnLabel.setAttribute('aria-label', `${view.turnPlayerName || 'プレイヤー'}のターン`);
+            status.appendChild(turnLabel);
+            const balance = document.createElement('span');
+            balance.className = 'cardboard-turn-status-coins';
+            balance.textContent = `🪙 ${view.turnPlayerCoins ?? 0}コイン`;
+            balance.setAttribute('aria-label', `${view.turnPlayerCoins ?? 0}コイン`);
+            status.appendChild(balance);
+            const currentStep = view.turnTimeline?.stages?.find(stage => stage.state === 'current');
+            if (!currentStep) return;
+            const phase = document.createElement('span');
+            phase.className = 'cardboard-phase-indicator';
+            phase.textContent = `今：${currentStep.label}`;
+            phase.setAttribute('aria-label', `現在の段階：${currentStep.label}${currentStep.detail ? `、${currentStep.detail}` : ''}`);
+            if (currentStep.detail) phase.title = currentStep.detail;
+            status.appendChild(phase);
         },
         renderTurnTimeline(timeline) {
             const container = document.getElementById('turnTimeline');
@@ -977,11 +1023,13 @@ function pendingInspectHintHtml() {
 
 function buildPendingTvHtml(game) {
     return UiPendingMenu.buildPendingTvHtml(game, escapeHtml, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design));
 }
 
 function buildBusinessCardChipHtml(player, card, index, inputId, isSelected) {
-    return UiPendingMenu.buildBusinessCardChipHtml(player, card, index, inputId, isSelected, escapeHtml);
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessCardChipHtml(player, card, index, inputId, isSelected, escapeHtml,
+        illustrated, UiBuildMenu.renderFacilityArt);
 }
 
 function businessCardOptionsForPlayer(player) {
@@ -989,36 +1037,44 @@ function businessCardOptionsForPlayer(player) {
 }
 
 function buildBusinessCardChipGroupHtml(player, cards, inputId) {
-    return UiPendingMenu.buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml);
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessCardChipGroupHtml(player, cards, inputId, escapeHtml,
+        undefined, illustrated, UiBuildMenu.renderFacilityArt);
 }
 
 function buildBusinessTargetExchangeHtml(player, playerIndex) {
-    return UiPendingMenu.buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml);
+    const illustrated = ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design);
+    return UiPendingMenu.buildBusinessTargetExchangeHtml(player, playerIndex, escapeHtml,
+        undefined, illustrated, UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingBusinessHtml(game) {
     return UiPendingMenu.buildPendingBusinessHtml(game, escapeHtml, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingCleaningHtml(game) {
     return UiPendingMenu.buildPendingCleaningHtml(game, escapeHtml, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingMoverHtml(game) {
     return UiPendingMenu.buildPendingMoverHtml(game, escapeHtml, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingRenovationHtml(game) {
     return UiPendingMenu.buildPendingRenovationHtml(game, escapeHtml, LANDMARK_NAMES, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
+        UiBuildMenu.renderFacilityArt);
 }
 
 function buildPendingItHtml(game) {
     return UiPendingMenu.buildPendingItHtml(game, undefined, undefined, undefined,
-        ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design));
+        ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design));
 }
 
 function pendingMenuRendererSpecs() {
@@ -1037,7 +1093,7 @@ function buildPendingMenuHtml(game, allowedActions, nextPending) {
         escapeHtml,
         landmarkNames: LANDMARK_NAMES,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
-        useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        useSunsetIcons: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
     });
 }
 
@@ -1283,17 +1339,20 @@ function renderPlayers() {
     const settings = currentGame.players.map((player, index) => getPlayerSettingForRender(index, player));
     const onlineMyPlayerIndex = onlineState.isOnlineGame ? onlineState.myPlayerIndex : -1;
     const localCpuGame = !onlineState.isOnlineGame && settings.some(setting => setting.type === 'cpu');
+    const plazaDesign = document.documentElement?.dataset?.design === 'plaza';
     const primaryPlayerIndex = onlineState.isOnlineGame
         ? onlineMyPlayerIndex
         : (localCpuGame ? settings.findIndex(setting => setting.type === 'human') : currentGame.currentPlayerIndex);
     const html = UiPlayerDisplay.buildPlayersHtml(currentGame.players, {
-        buildTownHtml: player => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection()),
+        buildTownHtml: (player, index) => UiBuildMenu.renderTownHtml(player, getEnabledLandmarkSelection(),
+            plazaDesign ? { playerIndex: index, events: plazaTurnEventsFor(currentGame, 1000) } : undefined),
         settings,
         currentPlayerIndex: currentGame.currentPlayerIndex,
-        plaza: document.documentElement?.dataset?.design === 'plaza',
+        plaza: plazaDesign,
         compactInactive: document.documentElement?.dataset?.design === 'plaza' || currentGame.players.length >= 5 ||
             (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
-                window.matchMedia('(max-width: 480px)').matches),
+                (window.matchMedia('(max-width: 480px)').matches ||
+                    window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches)),
         myPlayerIndex: primaryPlayerIndex,
         compactCurrentPlayer: document.documentElement?.dataset?.design === 'plaza' || primaryPlayerIndex >= 0 &&
             currentGame.currentPlayerIndex !== primaryPlayerIndex &&
@@ -1421,8 +1480,33 @@ function renderPlayers() {
             townBuildingCounts,
         });
     }
-    if (typeof PlazaField !== 'undefined') PlazaField.render(currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml, getEnabledLandmarkSelection(), townSession, currentGame.phase);
-    if (typeof CardBoardField !== 'undefined') CardBoardField.render({ game: currentGame, selfIndex: primaryPlayerIndex, escapeHtml, enabledLandmarks: getEnabledLandmarkSelection(), session: townSession, replaying: uiOnlineRuntimeSnapshot().isReplaying === true, display: LOG_TYPE_DISPLAY, refreshMarket: renderBuildMenu, closeLog: () => setLogCollapsed(true) });
+    if (typeof PlazaField !== 'undefined') PlazaField.render(
+        currentGame.players, primaryPlayerIndex, currentGame.currentPlayerIndex, escapeHtml,
+        getEnabledLandmarkSelection(), townSession, currentGame.phase, CARDS, UiBuildMenu.renderFacilityArt,
+        getEnabledCardSelection(),
+    );
+    if (typeof CardBoardField !== 'undefined') CardBoardField.render({
+        game: currentGame,
+        playerSettings: settings,
+        selfIndex: primaryPlayerIndex,
+        escapeHtml,
+        getEffectText,
+        enabledLandmarks: getEnabledLandmarkSelection(),
+        session: townSession,
+        replaying: uiOnlineRuntimeSnapshot().isReplaying === true,
+        display: LOG_TYPE_DISPLAY,
+        refreshMarket: renderBuildMenu,
+        closeLog: () => setLogCollapsed(true),
+        onBuildMilestones: milestones => {
+            if (currentGame.checkWinner()) return;
+            const online = uiOnlineRuntimeSnapshot();
+            const remoteOrCpuBuild = milestones.some(build =>
+                currentCpuPlayerAt(build.playerIndex) ||
+                (online.isOnlineGame && online.myPlayerIndex !== build.playerIndex)
+            );
+            if (remoteOrCpuBuild) playSound('build');
+        },
+    });
     plazaIncomePreviewPanel?.refresh(currentGame);
     if (['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)) {
         animateTownCoinEvents(container, currentGame, townSession, onlineState.isReplaying === true);
@@ -1540,6 +1624,8 @@ function buildBuildMenuHtml(current, canBuildCardAction, canBuildLandmarkAction,
     if (compact) return UiCompactMarket.buildHtml({
         cards: CARDS, cardFilter: buildMenuFilterController.get(), enabledCards: getEnabledCardSelection(),
         shopStock: SHOP_STOCK, current, canBuildCardAction, canBuildLandmarkAction,
+        activeDiceValue: currentGame?.phase === GAME_PHASES.BUILD && currentGame.builtThisTurn !== true
+            ? currentGame.lastDiceResult : null,
         compareCardsForDisplay, getShopStockCount, highlightedCardNames,
         landmarks: current.landmarks, enabledLandmarks: getEnabledLandmarkSelection(),
         currentCoins: current.coins, landmarkCost: Player.landmarkCost,
@@ -1578,6 +1664,11 @@ function hasPendingBuildChoice(currentGame) {
 
 function renderBuildShortcut(forceHidden = false) {
     const button = document.getElementById('btnBuildShortcut');
+    if (button) {
+        const compact = document.documentElement?.dataset?.design === 'cardboard';
+        button.setAttribute('aria-controls', compact ? 'cardboardMarketDialog' : 'buildMenu');
+        button.setAttribute('aria-haspopup', compact ? 'dialog' : 'false');
+    }
     const currentGame = uiGameRuntimeSnapshot().game;
     const onlineState = uiOnlineRuntimeSnapshot();
     const view = !forceHidden && currentGame
@@ -1596,6 +1687,8 @@ function renderBuildShortcut(forceHidden = false) {
 }
 
 function focusBuildMenu() {
+    if (document.documentElement?.dataset?.design === 'cardboard' &&
+            typeof CardBoardField !== 'undefined' && CardBoardField.openMarket()) return true;
     return UiBuildMenu.focusAndScrollToBuildMenu(document.getElementById(
         document.documentElement?.dataset?.design === 'cardboard' ? 'cardboardMarket' : 'buildMenu'));
 }
@@ -1650,7 +1743,8 @@ function renderBuildMenu() {
     UiBuildMenu.applyBuildActionFocusPlan(focusPlan, {
         findIdentity(identity) {
             if (!identity || typeof buildMenu.querySelectorAll !== 'function') return null;
-            const elements = [buildMenu].flatMap(container => Array.from(
+            const market = document.getElementById('cardboardMarket');
+            const elements = Array.from(new Set([buildMenu, market].filter(Boolean))).flatMap(container => Array.from(
                 /** @type {NodeListOf<HTMLElement>} */ (container.querySelectorAll(`[data-action="${identity.action}"]`))
             ));
             return Array.from(elements)
@@ -1660,6 +1754,14 @@ function renderBuildMenu() {
         },
         focusIdentity: focusBuildActionElement,
         focusFallback() {
+            const marketDialog = /** @type {HTMLDialogElement | null} */ (document.getElementById('cardboardMarketDialog'));
+            if (marketDialog?.open) {
+                const marketAction = /** @type {HTMLElement | null} */ (
+                    document.querySelector('#cardboardMarket .compact-market-buy:not(:disabled), #cardboardMarket .compact-market-detail') ||
+                    document.getElementById('cardboardMarketClose')
+                );
+                if (focusBuildActionElement(marketAction)) return true;
+            }
             const btnSkip = /** @type {HTMLButtonElement} */ (document.getElementById('btnSkip'));
             return focusBuildActionElement(btnSkip) || UiScreenFocus.focusGame(document);
         },
@@ -1682,6 +1784,7 @@ function focusBuildActionElement(element) {
             return false;
         }
     }
+    element.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
     return true;
 }
 
@@ -2388,6 +2491,7 @@ function buildLandmarkDetailContent(name) {
         escapeHtml,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
         useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        showFacilityArt: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
     });
 }
 
@@ -2399,6 +2503,7 @@ function buildCardDetailContent(card) {
         safeCardColorName,
         renderFacilityArt: UiBuildMenu.renderFacilityArt,
         useSunsetIcons: ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design),
+        showFacilityArt: ['sunset', 'plaza', 'cardboard'].includes(document.documentElement?.dataset?.design),
     });
 }
 
@@ -2418,11 +2523,30 @@ function showCardDetail(name, isLandmark = false) {
     if (!canOpenBlockingModal('cardDetailModal')) return false;
     title.textContent = content.title;
     body.innerHTML = content.html;
-    return openAccessibleModal('cardDetailModal');
+    const target = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const opened = openAccessibleModal('cardDetailModal');
+    cardDetailFocusOrigin = opened && target
+        ? { target, action: target.dataset?.action, cardName: target.dataset?.cardName,
+            landmarkName: target.dataset?.landmarkName }
+        : null;
+    return opened;
 }
 
 function closeCardDetail() {
     closeAccessibleModal('cardDetailModal');
+    const origin = cardDetailFocusOrigin;
+    cardDetailFocusOrigin = null;
+    if (document.getElementById('cardDetailModal')?.style.display !== 'none') return;
+    if (!origin || origin.target?.isConnected) return;
+    const replacement = Array.from(/** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('button[data-action]'))).find(element =>
+        element.dataset.action === origin.action && element.dataset.cardName === origin.cardName &&
+        element.dataset.landmarkName === origin.landmarkName && !element.disabled &&
+        element.getClientRects().length > 0);
+    if (!replacement) return;
+    for (let parent = replacement.parentElement; parent; parent = parent.parentElement) {
+        if (parent instanceof HTMLDetailsElement) parent.open = true;
+    }
+    replacement.focus({ preventScroll: true });
 }
 
 function escapeHtml(str) {

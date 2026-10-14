@@ -24,6 +24,11 @@ runTest('sunsetのカード詳細は共通施設アートを名称と効果よ�
     assert.ok(sunset.html.includes('card-detail-coin'));
     assert.ok(sunset.html.includes('card-detail-dice'));
 
+    const cardboard = UiCardDetail.buildCardDetailContent({ ...options, showFacilityArt: true });
+    assert.ok(cardboard.html.includes('card-detail-art card-color-blue'));
+    assert.ok(cardboard.html.includes('💰'));
+    assert.ok(cardboard.html.includes('🎲'));
+
     const classic = UiCardDetail.buildCardDetailContent(options);
     assert.ok(!classic.html.includes('card-detail-art'));
     assert.ok(classic.html.includes('💰'));
@@ -48,6 +53,9 @@ runTest('sunsetのランドマーク詳細もカード一覧と同じアート�
     assert.strictEqual(classic.title, '🚉 駅');
     assert.ok(!classic.html.includes('card-detail-art'));
     assert.ok(classic.html.includes('💰'));
+    const cardboard = UiCardDetail.buildLandmarkDetailContent({ ...options, showFacilityArt: true });
+    assert.ok(cardboard.html.includes('card-detail-art card-color-landmark'));
+    assert.ok(cardboard.html.includes('💰'));
 });
 
 runTest('UI card detailはランドマーク説明とemoji fallbackをpureに投影する', () => {

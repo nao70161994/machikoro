@@ -1,7 +1,11 @@
 const { test, expect } = require('@playwright/test');
 
 const THEMES = ['classic', 'sunset', 'plaza', 'cardboard'];
-test.use({ serviceWorkers: 'block' });
+test.use({
+    serviceWorkers: 'block',
+    video: 'off',
+    trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true },
+});
 const VIEWPORTS = [
     { width: 320, height: 844, name: 'phone-320' },
     { width: 390, height: 844, name: 'phone-390' },
@@ -92,12 +96,45 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     const select = document.getElementById('gameDesignThemeSelect');
                     select.value = themeName;
                     select.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Theme changes in a live match preserve game state but must
+                    // rebuild theme-specific presentation such as the plaza HUD.
+                    render();
                     document.documentElement.classList.add('visual-regression-capture');
                 }, theme);
                 await expect(page.locator('html')).toHaveAttribute('data-design', theme);
+                if (theme === 'plaza') {
+                    await expect(page.locator('#plazaPlayerHud button[data-player-index]')).toHaveCount(4);
+                    await expect(page.locator('#plazaPlayerHud')).toContainText('街1');
+                    await expect(page.locator('#plazaPlayerHud')).toContainText('街4');
+                }
+                if (theme === 'cardboard') {
+                    const unavailable = page.locator('#cardboardMarket .compact-market-buy:disabled').first();
+                    await expect(unavailable).toHaveCSS('opacity', '1');
+                    await expect(unavailable).toHaveCSS('filter', 'none');
+                    if (viewport.name === 'landscape-844') {
+                        await expect.poll(() => page.locator('.cardboard-player-selected').evaluate(panel => {
+                            const button = panel.querySelector('.cardboard-town-open');
+                            const bounds = button.getBoundingClientRect();
+                            const town = panel.getBoundingClientRect();
+                            const landmarks = panel.querySelector('.cardboard-landmarks').getBoundingClientRect();
+                            return bounds.top >= town.top && bounds.bottom <= landmarks.top && bounds.right <= town.right &&
+                                button.contains(document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2));
+                        })).toBe(true);
+                    }
+                    const scenery = page.locator('#cardboardSeats .cardboard-town-vignette');
+                    if (viewport.name === 'desktop-1440') {
+                        await expect(scenery).toBeVisible();
+                        await expect(scenery.locator('.town-building')).toHaveCount(2);
+                        await expect(scenery.locator('.town-growth-scenery')).toBeHidden();
+                    } else {
+                        await expect(scenery).toHaveCount(0);
+                    }
+                }
+                if (['classic', 'sunset'].includes(theme) && viewport.name === 'landscape-844') {
+                    await expect(page.locator('#players details.player-box-compact')).toHaveCount(3);
+                }
                 await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
                 await expect(page.locator('#gameScreen')).toBeVisible();
-
                 const layout = await page.evaluate(() => {
                     const visible = element => {
                         const rect = element.getBoundingClientRect();

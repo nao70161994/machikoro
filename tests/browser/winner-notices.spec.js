@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('fs/promises');
+const path = require('path');
 const { verifyWinnerNotices } = require('./helpers/winner-notices');
 
 async function stubAds(page) {
@@ -28,8 +30,9 @@ for (const sample of [
     { theme: 'sunset', width: 390, height: 844 },
     { theme: 'classic', width: 390, height: 844 },
     { theme: 'classic', width: 1440, height: 900 },
+    { theme: 'plaza', width: 844, height: 390 },
 ]) {
-    test(`勝利の通知は完成した結果の後から操作できる ${sample.theme} ${sample.width}px`, async ({ page }) => {
+    test(`勝利の通知は完成した結果の後から操作できる ${sample.theme} ${sample.width}px`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width: sample.width, height: sample.height });
         await stubAds(page);
         await page.goto('/');
@@ -48,6 +51,53 @@ for (const sample of [
             document.body.classList.add('pwa-banner-open');
         });
         await expect(page.locator('.winner-screen')).toBeVisible();
+        if (sample.theme === 'plaza' && sample.width === 844) {
+            await expect(page.locator('#confettiCanvas')).toHaveCSS('display', 'block');
+            const confettiReview = await page.evaluate(() => ({
+                count: confettiPieces.length,
+                maximumOpacity: Math.max(...confettiPieces.map(piece => piece.opacity)),
+                allEnterFromTop: confettiPieces.every(piece => piece.launchY <= 0 && piece.launchY >= -96),
+            }));
+            expect(confettiReview.count).toBe(42);
+            expect(confettiReview.maximumOpacity).toBeLessThanOrEqual(0.4);
+            expect(confettiReview.allEnterFromTop).toBe(true);
+            await page.waitForTimeout(500);
+            const celebrationPath = testInfo.outputPath('plaza-winner-celebration-844x390.png');
+            await page.screenshot({ path: celebrationPath, fullPage: false, animations: 'disabled' });
+            await testInfo.attach('plaza-winner-celebration-844x390.png', {
+                path: celebrationPath,
+                contentType: 'image/png',
+            });
+            if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
+                const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
+                await fs.mkdir(artifactDir, { recursive: true });
+                await fs.writeFile(path.join(artifactDir, 'plaza-winner-celebration-844x390.png'), await fs.readFile(celebrationPath));
+            }
+            const resultLayout = await page.evaluate(() => {
+                const bounds = selector => {
+                    const rect = document.querySelector(selector).getBoundingClientRect();
+                    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+                };
+                return {
+                    viewport: { width: innerWidth, height: innerHeight },
+                    title: bounds('.winner-title'),
+                    town: bounds('.winner-screen .sunset-town'),
+                    townArt: bounds('.winner-screen .sunset-town .town-street[data-town-layout="districts"]'),
+                    stats: bounds('.winner-stats'),
+                    rematch: bounds('#winnerRematchButton'),
+                    share: bounds('.winner-share-actions'),
+                    restart: bounds('#winnerRestartButton'),
+                };
+            });
+            for (const [name, rect] of Object.entries(resultLayout).filter(([name]) => name !== 'viewport')) {
+                expect(rect.left, `${name} stays inside the left edge`).toBeGreaterThanOrEqual(0);
+                expect(rect.right, `${name} stays inside the right edge`).toBeLessThanOrEqual(resultLayout.viewport.width);
+                expect(rect.top, `${name} stays inside the top edge`).toBeGreaterThanOrEqual(0);
+                expect(rect.bottom, `${name} stays inside the first landscape viewport`).toBeLessThanOrEqual(resultLayout.viewport.height);
+            }
+            expect(resultLayout.town.left, 'the town sits beside the winner details').toBeGreaterThan(resultLayout.title.left);
+            expect(resultLayout.townArt.bottom - resultLayout.townArt.top, 'the town art uses the landscape space for readable buildings').toBeGreaterThanOrEqual(160);
+        }
         await verifyWinnerNotices(page);
         await page.locator('#winnerRestartButton').click();
         await page.locator('#confirmOkBtn').click();

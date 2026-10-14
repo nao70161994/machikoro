@@ -1998,7 +1998,8 @@ runTest('buildCardDetailContent は施設カード詳細HTMLを生成する', ()
 
     assert.strictEqual(content.title, '麦畑');
     assert.ok(content.html.includes('コスト'));
-    assert.ok(content.html.includes('🎲 [1]'));
+    assert.ok(content.html.includes('🎲 <span class="card-detail-dice-values"><span class="card-detail-dice-value">1</span></span>'));
+    assert.strictEqual((content.html.match(/class="card-detail-dice-value"/g) || []).length, 1);
     assert.ok(content.html.includes('color-badge blue-badge'));
     assert.ok(content.html.includes('card-detail-effect'));
 });
@@ -2891,6 +2892,21 @@ runTest('街景は購入した施設の種類と有効な完成ランドマー�
     assert.deepStrictEqual(player, { cards, landmarks: { 駅: false, 港: false, 空港: false } }, '描画は正本を変更しない');
 });
 
+runTest('にぎわい広場の街は今の手番に発動した施設と確認済み収支を示す', () => {
+    const townMenu = require('../js/uiBuildMenu');
+    const field = { cards: [{ name: '麦畑', category: '農園' }], landmarks: {} };
+    const events = { activations: [
+        { facility: true, subject: '麦畑', owner: 1, from: null, to: 1, amount: 3, count: 2, activation: 'roll-a' },
+        { facility: true, subject: '麦畑', owner: 0, from: null, to: 0, amount: 9, count: 1, activation: 'roll-b' },
+    ] };
+    const html = townMenu.renderTownHtml(field, new Set(), { playerIndex: 1, events });
+    assert.match(html, /plaza-town-building-activated/);
+    assert.match(html, /data-town-activation-count="2" data-town-activation-net="3"/);
+    assert.match(html, /発動2回 · \+3/);
+    assert.doesNotMatch(townMenu.renderTownHtml(field, new Set(), { playerIndex: 2, events }), /plaza-town-building-activated/);
+    assert.strictEqual(field.cards.length, 1, '発動表示はゲーム状態を変更しない');
+});
+
 runTest('各ランドマークの完成は固有の街景を残す', () => {
     const townMenu = require('../js/uiBuildMenu');
     for (const [name, feature] of [['駅', 'railway'], ['ショッピングモール', 'shopping-street'], ['遊園地', 'fairground'], ['電波塔', 'beacon'], ['港', 'waterfront'], ['空港', 'air-route']]) {
@@ -2899,15 +2915,12 @@ runTest('各ランドマークの完成は固有の街景を残す', () => {
     }
 });
 
-runTest('街の区画は購入後も既存位置を保ち単独施設の枚数表示を省き余剰種類を景色外に置く', () => {
+runTest('街の区画は単独施設の枚数表示を省き余剰種類を景色外に置く', () => {
     const menu = require('../js/uiBuildMenu');
     const wheat = { name: '麦畑', category: '農園' };
     const bakery = { name: 'パン屋', category: '飲食店' };
     const before = menu.renderTownHtml({ cards: [wheat, bakery], landmarks: {} });
     const after = menu.renderTownHtml({ cards: [wheat, bakery, wheat, { name: '牧場', category: '牧場' }], landmarks: {} });
-    const lot = html => html.match(/data-town-slot-facility="0"[^>]+/)[0]
-        .replace(/ data-town-(?:owned|visible)="\d+"/g, '');
-    assert.strictEqual(lot(before), lot(after), '新しい種類の建設で既存施設の区画を動かさない');
     assert.doesNotMatch(before, /town-building-count/);
     assert.doesNotMatch(after, /town-building-count/);
     assert.strictEqual((after.match(/data-town-building="card:麦畑"/g) || []).length, 2);

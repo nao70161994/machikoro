@@ -5,18 +5,6 @@ const UiLogDisplay = require('../js/uiLogDisplay');
 const UiPlazaEvents = require('../js/uiPlazaEvents');
 const UiTurnEvents = require('../js/uiTurnEvents');
 const UiTurnReceipt = require('../js/uiTurnReceipt');
-runTest('両ビューと互換APIは同じ投影・receipt実装を共有する', () => {
-    assert.strictEqual(UiPlazaEvents.project, UiTurnEvents.project);
-    assert.strictEqual(UiPlazaEvents.buildReceiptHtml, UiTurnReceipt.buildHtml);
-});
-runTest('共通投影は構造化された出目を表示文言に依存せず扱う', () => {
-    const receipt = UiTurnEvents.project([{ type: 'dice', message: 'Localized roll result',
-        diceResolution: { dice1: 5, dice2: 1, result: 6, turn: 1, actor: 0, rerolled: true } }], {
-        players: [{ name: 'A', cards: [] }], logTypes: { DICE: 'dice' },
-    });
-    assert.deepStrictEqual(receipt.dice, { values: [5, 1], base: 6, effective: 6, rerolled: true, harbor: false });
-    assert.match(UiTurnReceipt.buildHtml(receipt, String), /出目 5\+1=6（振り直し）/u);
-});
 const types = Object.freeze({ DICE: 'dice', GAIN: 'gain', LOSE: 'lose', BUILD: 'build', SPECIAL: 'special', SYSTEM: 'system', ERROR: 'error' });
 const display = UiLogDisplay.makeLogTypeDisplay(types);
 const players = [
@@ -27,6 +15,48 @@ const entry = (type, message) => ({ type, message });
 const project = (logs, extra = {}) => UiPlazaEvents.project(logs, { players, turnPlayerIndex: 0,
     display, logDisplay: UiLogDisplay, landmarkNames: ['駅', '港'], ...extra });
 const escape = value => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+runTest('両ビューと互換APIは同じ投影・receipt実装を共有する', () => {
+    assert.strictEqual(UiPlazaEvents.project, UiTurnEvents.project);
+    assert.strictEqual(UiPlazaEvents.buildReceiptHtml, UiTurnReceipt.buildHtml);
+    assert.strictEqual(UiTurnReceipt.buildHtml(project([]), escape), '');
+});
+runTest('復元ログに参加者名がなくても施設収支の送受信者を席番号で示す', () => {
+    const html = UiTurnReceipt.buildHtml({
+        important: [], dice: null, balances: [], participantNames: [], unparsed: [],
+        activations: [{ from: 0, to: 1, subject: '施設', amount: 2, count: 1, facility: true, activation: 'a', owner: 0 }],
+        omittedActivations: 0, incomplete: false, unparsedCount: 0,
+    }, String);
+    assert.ok(html.includes('席1 → 席2'));
+});
+runTest('不完全なプレイヤー表示名は共通投影で席番号へ正規化する', () => {
+    const receipt = UiTurnEvents.project([], { players: [{ name: ' ' }, { name: '街B' }], turnPlayerIndex: 0 });
+    assert.strictEqual(receipt.actorName, '席1');
+    assert.deepStrictEqual(receipt.participantNames, ['席1', '街B']);
+});
+runTest('重複プレイヤー名のログは現在のゲーム状態から手番席を保つ', () => {
+    const receipt = UiTurnEvents.project([entry('system', '👤 CPUのターン')], {
+        players: [{ name: 'CPU' }, { name: 'CPU' }], turnPlayerIndex: 1,
+    });
+    assert.strictEqual(receipt.actorIndex, 1);
+    assert.strictEqual(receipt.actorName, 'CPU');
+});
+runTest('共通投影は構造化された出目を表示文言に依存せず扱う', () => {
+    const receipt = UiTurnEvents.project([{ type: 'dice', message: 'Localized roll result',
+        diceResolution: { dice1: 5, dice2: 1, result: 6, turn: 1, actor: 0, rerolled: true } }], {
+        players: [{ name: 'A', cards: [] }], logTypes: { DICE: 'dice' },
+    });
+    assert.deepStrictEqual(receipt.dice, { values: [5, 1], base: 6, effective: 6, rerolled: true, harbor: false });
+    assert.match(UiTurnReceipt.buildHtml(receipt, String), /出目 5\+1=6（振り直し）/u);
+});
+runTest('同じ配列長のUndo後も最新のターン境界を再計算する', () => {
+    const logs = [entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 1 が出ました'),
+        entry('system', '👤 CPUのターン'), entry('build', '🏗️ パン屋を建設！')];
+    assert.strictEqual(project(logs).dice, null);
+    // Undo may rewrite entries in place while retaining the log array and its
+    // length. The last turn marker disappears, so the earlier die is current.
+    logs[2].message = '取り消された手番';
+    assert.deepStrictEqual(project(logs).dice.values, [1]);
+});
 
 runTest('領収投影は施設の複数発動と支払元先を集約しrawログを変更しない', () => {
     const logs = [entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 5 が出ました'),
@@ -38,11 +68,15 @@ runTest('領収投影は施設の複数発動と支払元先を集約しrawロ�
     assert.deepStrictEqual(receipt.dice.values, [5]);
     assert.strictEqual(receipt.activations[0].amount, 6);
     assert.strictEqual(receipt.activations[0].count, 2);
-    assert.deepStrictEqual(receipt.activations[1], { from: 0, to: 1, subject: '寿司屋', facility: true, amount: 2, count: 1 });
+    assert.strictEqual(receipt.activations[0].order, 1);
+    assert.deepStrictEqual(receipt.activations[1], { from: 0, to: 1, subject: '寿司屋', facility: true, amount: 2, count: 1, order: 2 });
     assert.strictEqual(receipt.balances[0].facilityNet, 4);
     assert.strictEqual(receipt.balances[1].facilityNet, 2);
     assert.strictEqual(JSON.stringify(logs), original);
     assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('あなたの街 → CPU'));
+    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('席1 → 席2'));
+    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('銀行 → 席1'));
+    assert.match(UiPlazaEvents.buildReceiptHtml(receipt, escape), /data-flow="incoming" data-activation-order="1" data-large="true"/u);
 });
 
 runTest('港選択は出目だけ更新しマグロ内部ダイスとpendingは新区間にしない', () => {
@@ -74,6 +108,37 @@ runTest('新しい手番では前手番の出目収支と重要建設を持ち�
     assert.deepStrictEqual(receipt.important, []);
 });
 
+runTest('長い過去ログでも領収は最新手番だけ分類する', () => {
+    let classified = 0;
+    const countingLogDisplay = { ...UiLogDisplay, classifyLogEntry(entry, types) {
+        classified++;
+        return UiLogDisplay.classifyLogEntry(entry, types);
+    } };
+    const logs = Array.from({ length: 250 }, (_, index) => [
+        entry('system', `👤 過去${index}のターン`), entry('dice', '🎲 2 が出ました'),
+        entry('gain', '🌾 あなたの街の森林発動 → +1コイン'),
+    ]).flat();
+    logs.push(entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 5 が出ました'),
+        entry('gain', '🌾 あなたの街の森林発動 → +3コイン'));
+    const receipt = UiPlazaEvents.project(logs, { players, turnPlayerIndex: 0,
+        display, logDisplay: countingLogDisplay });
+    assert.strictEqual(receipt.dice.base, 5);
+    assert.strictEqual(receipt.balances[0].income, 3);
+    assert.ok(classified < 12, `only the latest turn should be classified, got ${classified}`);
+    const previousClassified = classified;
+    logs.push(entry('gain', '🌾 あなたの街の森林発動 → +2コイン'));
+    const updated = UiPlazaEvents.project(logs, { players, turnPlayerIndex: 0,
+        display, logDisplay: countingLogDisplay });
+    assert.strictEqual(updated.balances[0].income, 5);
+    assert.ok(classified - previousClassified < 12,
+        `appended log updates should only classify the current turn, got ${classified - previousClassified}`);
+    logs.push(entry('system', '👤 CPUのターン'));
+    const nextTurn = UiPlazaEvents.project(logs, { players, turnPlayerIndex: 1,
+        display, logDisplay: countingLogDisplay });
+    assert.strictEqual(nextTurn.dice, null);
+    assert.deepStrictEqual(nextTurn.balances, []);
+});
+
 runTest('重要ランドマークと追加手番は通常末尾4件から押し流されない', () => {
     const receipt = project([entry('system', '👤 あなたの街のターン'), entry('dice', '🎲 5 が出ました'),
         entry('build', '🏆 駅を建設！'), entry('system', '🎡 遊園地効果！ゾロ目でもう一度ターン'),
@@ -95,13 +160,23 @@ runTest('重複名は断定せず原文へ戻し「の」を含む前方一致�
     assert.strictEqual(precise.activations[0].subject, '森林');
 });
 
+runTest('手番プレイヤーが特定できない収入は短縮行で送金方向を推測しない', () => {
+    const receipt = UiPlazaEvents.project([entry('gain', '🌾 あなたの街の森林発動 → +3コイン')], {
+        players, display, logDisplay: UiLogDisplay,
+    });
+    const html = UiPlazaEvents.buildReceiptHtml(receipt, escape);
+    assert.strictEqual(receipt.turnContextKnown, false);
+    assert.doesNotMatch(html, /plaza-receipt-featured/u);
+    assert.ok(html.includes('銀行 → あなたの街：森林 +3コイン'));
+});
+
 runTest('確認できない収入は原文で保持し空港効果は施設収支に含めない', () => {
     const receipt = project([entry('gain', '✈️ 空港効果！建設なしで+10コイン'),
         entry('gain', '意味不明 +3コイン'), entry('gain', '🌾 unknownの森林発動 → +4コイン')]);
     assert.strictEqual(receipt.balances[0].facilityNet, 0);
     assert.strictEqual(receipt.balances[0].otherLogNet, 10);
     assert.strictEqual(receipt.unparsed.length, 2);
-    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('ログ確認分'));
+    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('受け取り'));
 });
 
 runTest('HTMLは名前施設原文をescapeし10人と集約件数のDOM上限を保つ', () => {
@@ -172,7 +247,7 @@ runTest('特殊な個別送金と合計ログを二重集計せず原文注記�
     assert.strictEqual(receipt.unparsedCount, 2);
     assert.strictEqual(receipt.balances[0].income, 3);
     assert.strictEqual(receipt.balances[0].facilityNet, 3);
-    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('確認済み施設差引+3'));
+    assert.ok(UiPlazaEvents.buildReceiptHtml(receipt, escape).includes('施設効果 +3'));
 });
 
 runTest('残高不足で0コインの赤発動でも支払元と先を表示する', () => {
@@ -213,6 +288,9 @@ runTest('確定紫収支は実額とownerを保持し複数payerでもカード�
         assert.strictEqual(events.reduce((sum, event) => sum + event.amount, 0), game.players[0].coins - before[0]);
         const html = UiCardBoard.buildPlayerHtml(game.players[0], { index: 0, events: receipt });
         assert.ok(html.includes('data-cardboard-activation-count="1"'), name);
+        const receiptHtml = UiTurnReceipt.buildHtml(receipt, escape);
+        assert.ok(receiptHtml.includes('<span class="plaza-receipt-activation-count">施設発動1回</span>'), name);
+        assert.strictEqual((receiptHtml.match(/class="plaza-receipt-activation-count"/g) || []).length, 1, name);
         assert.strictEqual(UiTurnEvents.project([...game.log, ...game.log.slice(-1)], { players: game.players, turnPlayerIndex: 0, logTypes: LOG_TYPES }).activations.filter(event => event.subject === name).length, 2);
     }
 });
@@ -245,7 +323,7 @@ runTest('公園は実deltaだけを分配プール経由で示し他人の利益
     assert.ok(html.includes('data-cardboard-activation-net="-21"'));
     assert.ok(html.includes('data-cardboard-activation-count="1"'));
     assert.ok(UiTurnReceipt.buildHtml(receipt, escape).includes('分配プール'));
-    assert.ok(require('../js/cardBoardTransfers').project(receipt).some(route => route.text === '銀行 → 分配プール：1コイン'));
+    assert.ok(require('../js/cardBoardTransfers').project(receipt).some(route => route.text === '公園：銀行 → 分配プール：1コイン'));
 });
 runTest('確定送金identityは端末ローカル通知数やsnapshot復元のログ切詰めで変わらない', () => {
     const { GameManager, createCardByName, LOG_TYPES } = require('./helpers/runtime-loaders').loadGameRuntime();
@@ -267,4 +345,38 @@ runTest('確定送金identityは端末ローカル通知数やsnapshot復元の�
     game.log = Array.from({ length: 9 }, () => ({ type: LOG_TYPES.SYSTEM, message: '通知' }));
     game._processPurple(game.players[0], 0, 6);
     assert.strictEqual(game.log.at(-1).coinResolution.activation, 0, '所有カードordinalを使用する');
+});
+
+runTest('大収益の強調は確定した手番プレイヤーの施設純増だけを示す', () => {
+    const receipt = {
+        actorIndex: 0, turnContextKnown: true, important: [], dice: { values: [5], base: 5 },
+        activations: [], balances: [{ index: 0, name: '街<&>', income: 10, payment: 4, facilityNet: 6 }],
+        participantNames: ['街<&>'], unparsed: [], incomplete: false, omittedActivations: 0,
+    };
+    const before = JSON.stringify(receipt);
+    const html = UiTurnReceipt.buildHtml(receipt, escape, { emphasizeIncome: true });
+    assert.ok(html.includes('cardboard-income-spotlight'));
+    assert.ok(html.includes('施設の収支プラス6コイン'));
+    assert.ok(html.includes('街&lt;&amp;&gt;'));
+    assert.ok(html.includes('>+6<span>コイン</span>'));
+    assert.ok(!html.includes('>+10<span>'));
+    assert.strictEqual(UiTurnReceipt.buildHtml(receipt, escape, { emphasizeIncome: true }), html);
+    assert.strictEqual(JSON.stringify(receipt), before);
+    for (const changed of [
+        { incomplete: true }, { turnContextKnown: false }, { actorIndex: 1 },
+        { balances: [{ ...receipt.balances[0], facilityNet: 4 }] },
+        { balances: [{ ...receipt.balances[0], facilityNet: -6 }] },
+    ]) assert.ok(!UiTurnReceipt.buildHtml({ ...receipt, ...changed }, escape, { emphasizeIncome: true }).includes('cardboard-income-spotlight'));
+    assert.ok(!UiTurnReceipt.buildHtml(receipt, escape).includes('cardboard-income-spotlight'));
+});
+
+
+runTest('建設だけの通知は空の収支ラベルを追加しない', () => {
+    const receipt = { ...project([]), important: [{ kind: 'landmark', message: '駅が完成' }] };
+    const before = JSON.stringify(receipt);
+    const html = UiTurnReceipt.buildHtml(receipt, escape);
+    assert.ok(html.includes('駅が完成'));
+    assert.ok(!html.includes('plaza-receipt-totals'));
+    assert.ok(html.includes('<summary>今回の出来事</summary>'));
+    assert.strictEqual(JSON.stringify(receipt), before);
 });

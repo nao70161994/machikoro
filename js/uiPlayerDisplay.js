@@ -25,11 +25,33 @@ const UiPlayerDisplay = (() => {
         return 'CPU（普通）';
     }
 
-    function renderPlayerKindIcon(setting = {}) {
+    // Seat-local artwork uses only a fixed palette and shapes, never game state.
+    const CITIZEN_COATS = Object.freeze(['#477ca6', '#b56854', '#4c8c73', '#8c70a7', '#bd8b37',
+        '#4e9098', '#a56c8b', '#75894b', '#6669a5', '#a7805a']);
+    const CITIZEN_HAIR = Object.freeze(['#4d3a32', '#84563a', '#343d47', '#aa7646']);
+
+    function renderPlayerKindIcon(setting = {}, seatIndex = 0) {
+        const seat = Number.isInteger(seatIndex) && seatIndex >= 0 ? seatIndex % CITIZEN_COATS.length : 0;
+        const coat = CITIZEN_COATS[seat];
+        const variant = seat % 4;
+        const svgStart = `<svg class="player-kind-icon" data-citizen-seat="${seat}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">`;
         if (setting.type === 'cpu') {
-            return `<svg class="player-kind-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3V6M9 3H15" fill="none" stroke="#f0c77b" stroke-width="1.6" stroke-linecap="round"/><rect x="4" y="6" width="16" height="14" rx="4" fill="#7897a2" stroke="#304b59" stroke-width="1.5"/><circle cx="9" cy="12" r="1.4" fill="#fff0d1"/><circle cx="15" cy="12" r="1.4" fill="#fff0d1"/><path d="M9 16H15" stroke="#304b59" stroke-width="1.5" stroke-linecap="round"/></svg><span class="player-kind-level">${difficultyLabel(setting.difficulty)}</span>`;
+            const antenna = variant % 2 === 0
+                ? '<path d="M12 3V6M9 3H15" fill="none" stroke="#9b732c" stroke-width="1.6" stroke-linecap="round"/>'
+                : '<path d="M8 6L6 3M16 6L18 3" fill="none" stroke="#9b732c" stroke-width="1.6" stroke-linecap="round"/><circle cx="6" cy="3" r="1.3" fill="#f0c77b"/><circle cx="18" cy="3" r="1.3" fill="#f0c77b"/>';
+            const mouth = variant < 2 ? '<path d="M9 16Q12 19 15 16" fill="none" stroke="#304b59" stroke-width="1.5" stroke-linecap="round"/>'
+                : '<rect x="9" y="16" width="6" height="2" rx="1" fill="#304b59"/>';
+            return `${svgStart}${antenna}<rect x="3" y="6" width="18" height="15" rx="${variant < 2 ? 5 : 3}" fill="${coat}" stroke="#304b59" stroke-width="1.5"/><rect x="6" y="9" width="12" height="6" rx="2" fill="#233c47"/><circle cx="9" cy="12" r="1.4" fill="#fff0d1"/><circle cx="15" cy="12" r="1.4" fill="#fff0d1"/>${mouth}</svg><span class="player-kind-level">${difficultyLabel(setting.difficulty)}</span>`;
         }
-        return '<svg class="player-kind-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="4" fill="#e8c58f" stroke="#654e3d" stroke-width="1.4"/><path d="M4 21C4.5 16.5 7.2 14 12 14S19.5 16.5 20 21Z" fill="#7896a0" stroke="#304b59" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+        const hair = CITIZEN_HAIR[variant];
+        const hairstyles = [
+            `<path d="M7 8Q5 2 12 2Q19 2 17 8L14 5L10 6Z" fill="${hair}"/>`,
+            `<path d="M6 11V6Q6 1 12 1Q19 1 18 7V11L16 9V5L8 6V10Z" fill="${hair}"/>`,
+            `<path d="M6 7Q6 2 12 2Q18 2 18 7Z" fill="${coat}" stroke="#304b59" stroke-width="1"/><path d="M6 7H20" stroke="#304b59" stroke-width="1.5" stroke-linecap="round"/>`,
+            `<path d="M7 7Q5 1 10 2Q13 0 15 3Q20 3 17 8L14 5L10 6Z" fill="${hair}"/>`,
+        ];
+        const glasses = variant === 3 ? '<path d="M8 9H11V11H8ZM13 9H16V11H13ZM11 10H13" fill="none" stroke="#304b59" stroke-width=".9"/>' : '<circle cx="10" cy="9.5" r=".65" fill="#4d3a32"/><circle cx="14" cy="9.5" r=".65" fill="#4d3a32"/>';
+        return `${svgStart}<path d="M3 22Q4 15 12 15Q20 15 21 22" fill="${coat}" stroke="#304b59" stroke-width="1.4"/><path d="M9 16L12 20L15 16" fill="#fff0d1"/><circle cx="12" cy="8.5" r="5.2" fill="#e8c58f" stroke="#654e3d" stroke-width="1.2"/>${hairstyles[variant]}${glasses}<path d="M10.5 12Q12 13 13.5 12" fill="none" stroke="#84563a" stroke-width="1" stroke-linecap="round"/></svg>`;
     }
 
     function resolvePlayerSetting(options = {}) {
@@ -108,7 +130,7 @@ const UiPlayerDisplay = (() => {
         const setting = options.settings[index];
         const cpuLabel = setting.type === 'cpu' ? `🤖${difficultyLabel(setting.difficulty)}` : '👤';
         const playerIcon = typeof options.renderPlayerKindIcon === 'function'
-            ? options.renderPlayerKindIcon(setting)
+            ? options.renderPlayerKindIcon(setting, index)
             : cpuLabel;
         const playerSummary = options.escapeHtml(
             `${player.name}、${isActive ? '現在の手番' : '待機中'}、${playerKindAccessibleLabel(setting)}`
@@ -156,10 +178,10 @@ const UiPlayerDisplay = (() => {
         const coinMark = hasCustomCoinMark ? options.getCoinMark() : '🪙';
         const coinAccessibleLabel = hasCustomCoinMark ? '<span class="screen-reader-only">コイン</span>' : '';
         const selfBadge = isSelf ? '<span class="player-self-badge">あなた</span>' : '';
-        const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player) : '';
+        const town = typeof options.buildTownHtml === 'function' ? options.buildTownHtml(player, index) : '';
         const miniTown = options.plaza && !isSelf
             ? `<div class="plaza-opponent-town">${town}</div><div class="plaza-owned-cards">${cardHtml || '施設なし'}</div>` : '';
-        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${options.plaza ? assetSummary : ''}${miniTown}`;
+        const header = `<div class="player-header"><div class="player-name-row"><span class="player-icon">${playerIcon}</span><span class="player-name" title="${options.escapeHtml(player.name)}">${isActive ? '▶ ' : ''}${options.escapeHtml(player.name)}</span>${selfBadge}</div><div class="player-coin-row"><span class="player-coins">${coinMark} ${player.coins}${coinAccessibleLabel}</span>${itCoins}${loanBadge}</div></div>${options.plaza ? assetSummary : ''}${miniTown}`;
         const detail = `<div class="player-detail">${town}<div class="player-landmarks">${landmarks}</div><div class="player-cards">${cardHtml}</div></div>`;
         const playerClasses = `player-box${isActive ? ' active' : ''}${isSelf ? ' player-box-self' : ''}`;
         if (compact) {

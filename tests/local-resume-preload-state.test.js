@@ -51,9 +51,9 @@ runTest('local resume preload runtimeはstate遷移を表示へ反映し古い�
     assert.strictEqual(runtime.finish(second), true);
     assert.deepStrictEqual(runtime.snapshot(), { pending: false, generation: second });
     assert.deepStrictEqual(calls, [
-        { disabled: true, textContent: 'モデル読み込み中' },
-        { disabled: true, textContent: 'モデル読み込み中' },
-        { disabled: false, textContent: '続きから再開' },
+        { disabled: true, textContent: '対戦相手を準備中…', ariaBusy: true },
+        { disabled: true, textContent: '対戦相手を準備中…', ariaBusy: true },
+        { disabled: false, textContent: '続きから再開', ariaBusy: false },
     ]);
 });
 
@@ -83,5 +83,5 @@ runTest('local resume取消はボタン待機表示も解除する', () => {
     runtime.cancel();
     assert.strictEqual(runtime.snapshot().pending, false);
     assert.strictEqual(runtime.finish(generation), false);
-    assert.deepStrictEqual(calls.at(-1), { disabled: false, textContent: '続きから再開' });
+    assert.deepStrictEqual(calls.at(-1), { disabled: false, textContent: '続きから再開', ariaBusy: false });
 });

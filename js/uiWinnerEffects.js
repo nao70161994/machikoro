@@ -51,7 +51,7 @@ const UiWinnerEffects = (() => {
         effects.markOnlineFinished();
         effects.refreshPwaUpdateState();
         effects.updateResumeButton();
-        effects.startConfetti();
+        if (plan.firstPresentation === true) effects.startConfetti();
         effects.applyTerminalControls(TERMINAL_CONTROLS);
         effects.renderTutorial();
         effects.renderLog();

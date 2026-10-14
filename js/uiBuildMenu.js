@@ -354,7 +354,26 @@ const UiBuildMenu = (() => {
         return previousCount >= visibleCount ? copy === 0 : copy >= previousCount;
     }
 
-    function renderTownHtml(player, enabledLandmarks = new Set()) {
+    function townFacilityLotPosition(index, totalCount) {
+        const columns = 4;
+        const row = Math.floor(index / columns);
+        const rowStart = row * columns;
+        const rowCount = Math.min(columns, totalCount - rowStart);
+        const lotWidth = rowCount === 1 ? 48 : rowCount === 2 ? 38 : rowCount === 3 ? 30 : 23;
+        const columnStride = lotWidth + (rowCount === 4 ? 1 : 3);
+        const rowWidth = lotWidth + Math.max(0, rowCount - 1) * columnStride;
+        const rowTotal = Math.ceil(totalCount / columns);
+        const lastRowCount = Math.min(columns, totalCount - (rowTotal - 1) * columns);
+        const lastRowWidth = lastRowCount === 1 ? 48 : lastRowCount === 2 ? 38 : lastRowCount === 3 ? 30 : 23;
+        const rowStackHeight = (rowTotal - 1) * 17 + lastRowWidth / 2;
+        return {
+            x: (100 - rowWidth) / 2 + (index - rowStart) * columnStride,
+            y: Math.max(25, (100 - rowStackHeight) / 2) + row * 17,
+            width: lotWidth,
+        };
+    }
+
+    function renderTownHtml(player, enabledLandmarks = new Set(), options = {}) {
         const cards = Array.isArray(player.cards) ? player.cards : [];
         const grouped = new Map();
         for (const card of cards) {
@@ -383,16 +402,33 @@ const UiBuildMenu = (() => {
             }
         }
         const visibleCopies = new Map();
+        const townRows = Math.ceil(lots.length / 4);
+        const townAspect = townRows === 1 ? (640 / 340).toFixed(4) : townRows === 2 ? '1.6' : (640 / 480).toFixed(4);
         for (const lot of lots) visibleCopies.set(lot.card.name, (visibleCopies.get(lot.card.name) || 0) + 1);
         const facilities = lots.map(({ card, count, copy }, index) => {
-            const row = Math.floor(index / 4);
-            const x = (index % 4) * 24 + 2;
-            const y = 30 + row * 17;
+            const position = townFacilityLotPosition(index, lots.length);
             const shown = visibleCopies.get(card.name);
             const remainingCopies = count - shown;
+            const activationEvents = Number.isInteger(options.playerIndex) ? (options.events?.activations || []).filter(event => event.facility === true &&
+                event.subject === card.name && (Number.isInteger(event.owner) ? event.owner === options.playerIndex
+                    : event.to !== null ? event.to === options.playerIndex : event.from === options.playerIndex) &&
+                Number.isSafeInteger(event.amount)) : [];
+            const activationIds = new Set();
+            let activationNet = 0;
+            let activationCount = 0;
+            for (const event of activationEvents) {
+                activationNet += (event.to === options.playerIndex ? event.amount : 0) -
+                    (event.from === options.playerIndex ? event.amount : 0);
+                if (event.activation && activationIds.has(event.activation)) continue;
+                if (event.activation) activationIds.add(event.activation);
+                activationCount += Number.isSafeInteger(event.count) && event.count > 0 ? event.count : 1;
+            }
+            const activated = Number.isSafeInteger(activationNet) && activationCount > 0;
+            const activationBadge = activated
+                ? `<span class="town-activation-mark" aria-hidden="true">発動${activationCount}回${activationNet ? ` · ${activationNet > 0 ? '+' : ''}${activationNet}` : ''}</span>` : '';
             const countBadge = copy === 0 && remainingCopies > 0
                 ? `<span class="town-building-count" title="所有${count}枚・絵${shown}枚・省略${remainingCopies}枚">+${remainingCopies}枚</span>` : '';
-            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" data-town-owned="${count}" data-town-visible="${shown}" style="--town-x:${x}%;--town-y:${y}%;--town-width:23%">${renderFacilityArt(card.name, false, card.category)}${countBadge}</span>`;
+            return `<span class="town-building${copy > 0 ? ' town-building-copy' : ''}${activated ? ' plaza-town-building-activated' : ''}" data-town-slot-facility="${index}" data-town-copy="${copy}" data-town-building="card:${escapeText(card.name)}" data-town-owned="${count}" data-town-visible="${shown}"${activated ? ` data-town-activation-count="${activationCount}" data-town-activation-net="${activationNet}" title="${activationCount}回発動・収支${activationNet > 0 ? '+' : ''}${activationNet}コイン"` : ''} style="--town-x:${position.x}%;--town-y:${position.y}%;--town-width:${position.width}%">${renderFacilityArt(card.name, false, card.category)}${activationBadge}${countBadge}</span>`;
         }).join('');
         // Landmark lots are keyed to definition order, not acquisition order.
         const landmarkSlots = Object.keys(LANDMARK_ART);
@@ -402,7 +438,7 @@ const UiBuildMenu = (() => {
         }).join('');
         const remaining = grouped.size > 8 ? `<span class="town-overflow">ほか${grouped.size - 8}種</span>` : '';
         const roads = '<svg class="town-district-roads" viewBox="0 0 640 300" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#465e65" stroke-width="17"/><path d="M0 192Q160 172 320 192T640 192M0 274Q160 254 320 274T640 274M308 103Q296 192 319 300" fill="none" stroke="#c2b18b" stroke-width="2" stroke-dasharray="9 11" opacity=".55"/></svg>';
-        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個${remaining}</span></p><div class="town-street" data-town-layout="districts" data-town-stage="${stage}" aria-hidden="true">${renderTownBackdrop(cards, built)}${roads}${renderTownGrowth(cards, built)}<span class="town-skyline-lights"></span>${landmarks}${facilities}</div></div>`;
+        return `<div class="sunset-town"><p class="town-summary">育てた街<span>施設 ${cards.length}枚 · ランドマーク ${built.length}個${remaining}</span></p><div class="town-street" data-town-layout="districts" data-town-stage="${stage}" data-town-rows="${townRows}" style="--town-aspect:${townAspect}" aria-hidden="true">${renderTownBackdrop(cards, built)}${roads}${renderTownGrowth(cards, built)}<span class="town-skyline-lights"></span>${landmarks}${facilities}</div></div>`;
     }
 
     function renderBuildCardButton(options) {

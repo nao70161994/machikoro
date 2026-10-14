@@ -110,7 +110,9 @@ runTest('広場テーマは夕暮れのアート・操作・アクセシビリ�
     assert.ok(css.includes(`${scope} body.accessibility-high-contrast`));
     assert.ok(css.includes(`${scope} .game-action-panel`));
     assert.ok(css.includes(`${scope} .town-street`));
-    assert.ok(!css.includes('html[data-design="sunset"]'));
+    // The camera board owns its layout; document-grid placement is sunset-only.
+    assert.ok(css.includes('html[data-design="sunset"] #gameScreen[style*="display: block"] > .game-action-panel {\n        grid-area: actions;'));
+    assert.ok(css.includes('html[data-design="plaza"] #plazaWorld'));
 });
 
 runTest('カード盤面のテーマも端末設定として保存できる', () => {

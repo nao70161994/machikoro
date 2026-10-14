@@ -7,6 +7,7 @@ const LocalResumeEffects = (() => {
      *   innerHTML?: string,
      *   value?: string,
      *   textContent?: string | null,
+     *   setAttribute?: (name: string, value: string) => void,
      *   style?: { display: string },
      * }} ResumeElement
      */
@@ -24,7 +25,7 @@ const LocalResumeEffects = (() => {
         }
 
         /**
-         * @param {{ disabled: boolean, textContent: string }} view
+         * @param {{ disabled: boolean, textContent: string, ariaBusy?: boolean }} view
          * @returns {boolean}
          */
         function applyPendingButton(view) {
@@ -32,6 +33,7 @@ const LocalResumeEffects = (() => {
             if (!button) return false;
             button.disabled = view.disabled;
             button.textContent = view.textContent;
+            button.setAttribute?.('aria-busy', String(view.ariaBusy === true));
             return true;
         }
 

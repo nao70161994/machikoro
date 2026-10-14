@@ -1,0 +1,23 @@
+{
+  "head": "132791d4c438d33d8f0f2cbb84097944fb12bf51",
+  "run": "https://github.com/nao70161994/machikoro/actions/runs/38391067116",
+  "browser": "Chromium (chromium-desktop project within mobile-webkit job)",
+  "matches": [
+    {
+      "seed": 1296122696,
+      "playerCount": 2,
+      "design": "cardboard",
+      "winner": "CPU（弱）・2",
+      "turns": 91,
+      "phase": "build"
+    },
+    {
+      "seed": 1296122696,
+      "playerCount": 4,
+      "design": "plaza",
+      "winner": "CPU（弱）・2",
+      "turns": 93,
+      "phase": "build"
+    }
+  ]
+}

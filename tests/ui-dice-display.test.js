@@ -20,7 +20,7 @@ runTest('dice display viewはrolling・empty・複数出目のexact HTML契約�
     assert.ok(rolling.html.includes('dice-face rolling'));
     assert.strictEqual((rolling.html.match(/class="dot "/g) || []).length, 5);
     assert.ok(!rolling.html.includes('サイコロの出目'));
-    assert.strictEqual(rolling.opacity, null);
+    assert.strictEqual(rolling.opacity, '1');
 
     const empty = UiDiceDisplay.buildView([]);
     assert.strictEqual(empty.html, `<div class="dice-display">${UiDiceDisplay.buildFaceHtml(1, { decorative: true })}</div>`);

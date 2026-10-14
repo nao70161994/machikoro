@@ -55,7 +55,9 @@ function loadMainRuntime(options = {}) {
         onlineCreateSubmitButton: makeElement(),
         onlineJoinSubmitButton: makeElement(),
         titleScreen: makeElement(),
-        gameScreen: makeElement(),
+        // The real title starts with the match surface explicitly hidden. Keep
+        // PWA banner tests aligned with that initial DOM state.
+        gameScreen: makeElement({ style: { display: 'none' } }),
     };
 
     const sentActions = [];
@@ -2439,6 +2441,39 @@ runTest('markClientFlowCheckpoint はsnapshot生成失敗を外へ伝播しな�
     assert.strictEqual(checkpoint.snapshotFailed, true);
 });
 
+runTest('CPU処理checkpointは通常と遅延記録でDOMを省き、エラー時と人間手番では詳細DOMを残す', () => {
+    const rt = loadMainRuntime();
+    const game = { currentPlayerIndex: 0 };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([{ difficulty: 'weak' }]);
+    vm.runInContext(`
+        var checkpointSnapshotCalls = [];
+        buildClientRuntimeSnapshot = (event, options) => {
+            checkpointSnapshotCalls.push({ event, includeDom: options.includeDom });
+            return { event, includeDom: options.includeDom };
+        };
+    `, rt);
+
+    const progress = rt.markClientFlowCheckpoint('scheduleCPU-step-run');
+    const slow = rt.markClientFlowCheckpoint('scheduleCPU-step-slow');
+    const error = rt.markClientFlowCheckpoint('scheduleCPU-step-error');
+    const deliveryFailure = rt.markClientFlowCheckpoint('client-error-fetch-failed');
+    assert.strictEqual(progress.snapshot.includeDom, false);
+    assert.strictEqual(slow.snapshot.includeDom, false);
+    assert.strictEqual(error.snapshot.includeDom, true);
+    assert.strictEqual(deliveryFailure.snapshot.includeDom, false);
+    assert.deepStrictEqual(Array.from(rt.checkpointSnapshotCalls, item => ({ ...item })), [
+        { event: 'scheduleCPU-step-run', includeDom: false },
+        { event: 'scheduleCPU-step-slow', includeDom: false },
+        { event: 'scheduleCPU-step-error', includeDom: true },
+        { event: 'client-error-fetch-failed', includeDom: false },
+    ]);
+
+    rt.__test.setCpuPlayers([null]);
+    const humanTurn = rt.markClientFlowCheckpoint('scheduleCPU-step-run');
+    assert.strictEqual(humanTurn.snapshot.includeDom, true);
+});
+
 runTest('appShell crashResume はクラッシュ画面を閉じて resumeGame を呼ぶ', () => {
     const rt = loadMainRuntime();
     rt.showCrashScreen(new Error('boom'));
@@ -2751,7 +2786,7 @@ runTest('ローカル保存の再開導線は新しいゲーム設定より先�
     const actionsRule = css.match(/\.local-resume-actions\s*{([\s\S]*?)}/);
     const resumeButtonRule = css.match(/\.resume-btn\s*{([\s\S]*?)}/);
     assert.ok(actionsRule);
-    assert.ok(actionsRule[1].includes('display: flex;'));
+    assert.ok(actionsRule[1].includes('display: grid;'));
     assert.ok(actionsRule[1].includes('min-width: 0;'));
     assert.ok(resumeButtonRule);
     assert.ok(resumeButtonRule[1].includes('min-width: 0;'));
@@ -2759,7 +2794,7 @@ runTest('ローカル保存の再開導線は新しいゲーム設定より先�
 
 runTest('ゲーム内容設定は作成画面に限定し現在の選択概要を示す', () => {
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-    const header = html.slice(html.indexOf('<div class="title-header">'), html.indexOf('<div id="onlineResumeSection"'));
+    const header = html.slice(html.indexOf('<div class="title-header">'), html.indexOf('<section id="onlineResumeSection"'));
     const onlineCreate = html.slice(html.indexOf('<div id="onlineCreate"'), html.indexOf('<div id="onlineJoin"'));
     assert.ok(!header.includes('showCardSelect'));
     assert.strictEqual((html.match(/data-ui-action="showCardSelect"/g) || []).length, 2);
@@ -2775,6 +2810,9 @@ runTest('主要画面とPWA install案内は重複告知しないlandmarkを持�
     const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
     const css = readSunsetStyles();
     assert.ok(html.includes('id="titleScreen" role="main" aria-labelledby="titleHeading"'));
+    const titleScreenRule = css.match(/#titleScreen\s*{([^}]*)}/);
+    assert.ok(titleScreenRule);
+    assert.match(titleScreenRule[1], /width: 100%;[\s\S]*box-sizing: border-box;[\s\S]*min-height: 100svh;[\s\S]*min-height: 100dvh;/);
     assert.ok(html.includes('id="gameScreen" role="main" aria-label="ゲーム画面"'));
     assert.ok(html.includes('id="pwaInstallBanner" class="pwa-banner" role="region" aria-labelledby="pwaInstallMessage"'));
     assert.ok(html.includes('id="pwaInstallMessage" aria-live="polite" aria-atomic="true"'));
@@ -3021,8 +3059,11 @@ runTest('夕暮れタイトルはクラシック夜景canvasを重ねず背景�
     assert.ok(css.includes('html[data-design="sunset"] #cityCanvas { display: none; }'));
     const sunsetTitle = css.match(/html\[data-design="sunset"\] body:not\(\.accessibility-high-contrast\) #titleScreen\s*{([^}]*)}/);
     assert.ok(sunsetTitle);
-    assert.ok(sunsetTitle[1].includes('#172a38 100%'));
-    assert.ok(!sunsetTitle[1].includes('#30273b'));
+    assert.ok(sunsetTitle[1].includes('background: transparent;'));
+    const sunsetViewport = css.match(/html\[data-design="sunset"\]:has\(body > #titleScreen:not\(\[style\*="display: none"\]\)\):not\(:has\(body\.accessibility-high-contrast\)\)\s*{([^}]*)}/);
+    assert.ok(sunsetViewport);
+    assert.ok(sunsetViewport[1].includes('#172a38 100%'));
+    assert.ok(!sunsetViewport[1].includes('#30273b'));
 });
 
 runTest('スマートフォンの夕暮れタイトルは主役の街景を設定カードの横幅まで広げる', () => {
@@ -3172,12 +3213,20 @@ runTest('UI interactability registry は描画されるaction child selectorと�
         buildLandmark: 'buildLandmark',
         undoBuild: 'undoBuild',
     };
+    const pendingMenu = require('../js/uiPendingMenu');
+    const player = { name: '街A', coins: 3, cards: [{ name: '麦畑' }],
+        getMinorCards() { return this.cards; }, isDormant() { return false; } };
+    const game = { players: [player, { ...player, name: '街B' }], currentPlayerIndex: 0,
+        currentPlayer() { return this.players[this.currentPlayerIndex]; } };
+    const dynamicPendingHtml = pendingMenu.buildPendingTvHtml(game, String, {}, {}, false) +
+        pendingMenu.buildPendingMoverHtml(game, String, {}, {}, false);
     const actionContract = require('../js/actionContract');
     for (const [registryAction, renderedAction] of Object.entries(childActions)) {
         const selector = actionContract.uiChildSelectors[registryAction];
         assert.ok(selector, registryAction + ' child selector registry missing');
         assert.ok(selector.selector.includes('data-action="' + renderedAction + '"'), renderedAction + ' selector missing from registry');
-        assert.ok(uiSources.includes('data-action="' + renderedAction + '"'), renderedAction + ' is not rendered by UI sources');
+        const renderedSources = ['resolveTV', 'resolveMover'].includes(renderedAction) ? dynamicPendingHtml : uiSources;
+        assert.ok(renderedSources.includes('data-action="' + renderedAction + '"'), renderedAction + ' is not rendered by UI sources');
     }
 });
 

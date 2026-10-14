@@ -10,9 +10,24 @@ const UiTurnEvents = (() => {
             : typeof require === 'function' ? require('./uiLogDisplay') : null);
         const display = options.display || (options.logTypes ? helper.makeLogTypeDisplay(options.logTypes) : {});
         const players = (options.players || []).slice(0, 10);
-        const history = (Array.isArray(entries) ? entries : []).filter(entry => entry && typeof entry.message === 'string');
+        const participantNames = players.map((player, index) =>
+            typeof player?.name === 'string' && player.name.trim() ? player.name.trim() : `席${index + 1}`);
+        const sourceHistory = Array.isArray(entries) ? entries : [];
+        // Logs can be truncated or replaced by Undo, replay, and save restore.
+        // Re-scan for the current turn boundary
+        // instead of trusting an array-length cache that can survive mutation.
+        let scanStart = 0;
+        for (let index = sourceHistory.length - 1; index >= 0; index--) {
+            const message = sourceHistory[index]?.message;
+            if (typeof message !== 'string' || !message.startsWith('👤 ') || !message.endsWith('のターン')) continue;
+            scanStart = index > 0 && sourceHistory[index - 1]?.message === '🎡 遊園地効果！ゾロ目でもう一度ターン'
+                ? index - 1 : index;
+            break;
+        }
+        const history = sourceHistory.slice(scanStart).filter(entry => entry && typeof entry.message === 'string');
         const uniqueIndex = name => {
-            const indices = players.map((player, index) => player.name === name ? index : -1).filter(index => index >= 0);
+            const indices = participantNames.map((participantName, index) => participantName === name ? index : -1)
+                .filter(index => index >= 0);
             return indices.length === 1 ? indices[0] : null;
         };
         const currentIndex = Number.isInteger(options.turnPlayerIndex) && options.turnPlayerIndex >= 0 &&
@@ -27,7 +42,7 @@ const UiTurnEvents = (() => {
             const cls = helper.classifyLogEntry(entry, display).cls;
             const marker = entry.message.match(/^👤\s+(.+)のターン$/u);
             if (marker) {
-                actorIndex = uniqueIndex(marker[1]); boundary = index; dice = null;
+                actorIndex = uniqueIndex(marker[1]) ?? currentIndex; boundary = index; dice = null;
                 turnBoundary = index > 0 && history[index - 1].message === '🎡 遊園地効果！ゾロ目でもう一度ターン'
                     ? index - 1 : index;
             }
@@ -64,10 +79,10 @@ const UiTurnEvents = (() => {
                 if (dice && (harbor || unchanged)) dice = { ...dice, effective: Number((harbor || unchanged)[1]), harbor: !!harbor };
             }
         }
-        const actorName = actorIndex === null ? '' : players[actorIndex].name;
+        const actorName = actorIndex === null ? '' : participantNames[actorIndex];
         const cards = new Set(options.cardNames || players.flatMap(player => (player.cards || []).map(card => card.name)));
         const groups = new Map();
-        const balances = players.map((player, index) => ({ index, name: player.name, income: 0, payment: 0, facilityNet: 0, otherLogNet: 0 }));
+        const balances = players.map((player, index) => ({ index, name: participantNames[index], income: 0, payment: 0, facilityNet: 0, otherLogNet: 0 }));
         const unparsed = [];
         const seenResolutions = new Set();
         for (const entry of history.slice(boundary)) {
@@ -147,7 +162,15 @@ const UiTurnEvents = (() => {
         important.sort((a, b) => b.priority - a.priority || b.index - a.index);
         const activationLimit = Number.isInteger(options.maxActivations)
             ? Math.max(12, Math.min(1000, options.maxActivations)) : 12;
-        return { actorIndex, actorName, participantNames: players.map(player => player.name), dice, activations: [...groups.values()].slice(0, activationLimit),
+        const activationOrders = new Map();
+        let nextActivationOrder = 0;
+        const activations = [...groups.values()].slice(0, activationLimit).map(event => {
+            const identity = event.activation || Symbol();
+            if (!activationOrders.has(identity)) activationOrders.set(identity, ++nextActivationOrder);
+            return { ...event, order: activationOrders.get(identity) };
+        });
+        return { actorIndex, actorName, participantNames, dice, turnContextKnown: actorIndex !== null,
+            activations,
             omittedActivations: Math.max(0, groups.size - activationLimit), balances: balances.filter(balance => balance.income || balance.payment),
             unparsed: unparsed.slice(-3), unparsedCount: unparsed.length,
             incomplete: unparsed.length > 0, important: important.slice(0, 4) };

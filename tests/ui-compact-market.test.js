@@ -46,10 +46,32 @@ runTest('小型市場は既存市場と同じ在庫・有効カード・並び�
     }
 });
 
+runTest('市場の購入ボタン名に色・分類・出目・可否・在庫・効果を含める', () => {
+    const html = UiCompactMarket.buildFacilitiesHtml(fixture());
+    assert.ok(html.includes('aria-label="パン屋。緑、飲食店。出目2・3。2コインで建設可能。残り3枚。+1 &lt;コイン&gt;"'));
+    assert.ok(html.includes('aria-label="テレビ局。紫、大施設。出目6。コイン不足、7コイン必要。残り4枚。+1 &lt;コイン&gt;"'));
+    assert.ok(html.includes('compact-market-purple compact-market-unavailable'));
+});
+
+runTest('建設段階は今回の出目に反応する候補だけを強調し読み上げる', () => {
+    const html = UiCompactMarket.buildFacilitiesHtml(fixture({
+        activeDiceValue: 3,
+        cards: fixture().cards.map(card => card.name === 'カフェ' ? { ...card, cost: 4 } : card),
+        shopStock: { '<麦畑>': 2, 'パン屋': 3, 'テレビ局': 4, 'カフェ': 1 },
+    }));
+    assert.ok(html.includes('compact-market-item compact-market-green compact-market-roll-match'));
+    assert.ok(html.includes('今回の出目3に一致'));
+    assert.ok(html.includes('今建設しても、この出目では発動しません'));
+    assert.ok(html.includes('compact-market-item compact-market-red compact-market-unavailable compact-market-roll-match'));
+    assert.ok(!html.includes('compact-market-item compact-market-blue compact-market-roll-match'));
+    assert.ok(!UiCompactMarket.buildFacilitiesHtml(fixture()).includes('compact-market-roll-match'));
+});
+
 runTest('紫の所持・休業込み重複、コイン不足、action gateを共有する', () => {
     const options = fixture({ current: { coins: 30, countCardIncludingDormant: name => name === 'テレビ局' ? 1 : 0 } });
     const html = UiCompactMarket.buildFacilitiesHtml(options);
     assert.ok(html.includes('data-action="buildCard" data-card-name="テレビ局" disabled'));
+    assert.ok(html.includes('紫施設はすでに所有済みのため建設できません'));
     assert.ok(html.includes('data-action="showCardDetail" data-card-name="テレビ局"'));
     assert.ok(!html.includes('data-card-name="カフェ"'));
     assert.ok(html.includes('&lt;麦畑&gt;'));
@@ -60,12 +82,15 @@ runTest('ランドマークの建設と詳細を同じ定義・設定・価格�
     const options = fixture({ currentCoins: 4 });
     const html = UiCompactMarket.buildLandmarksHtml(options);
     assert.ok(html.includes('data-action="buildLandmark" data-landmark-name="駅" aria-label'));
+    assert.ok(html.includes('aria-label="駅、4コインで建設可能。ランドマークの効果"'));
+    assert.ok(html.includes('class="compact-market-art" aria-hidden="true"><svg aria-label="駅"></svg>'));
     assert.ok(html.includes('data-action="buildLandmark" data-landmark-name="電波塔" disabled'));
     assert.ok(html.includes('建設済'));
     assert.ok(html.includes('data-action="showLandmarkDetail" data-landmark-name="電波塔"'));
     assert.ok(!html.includes('data-landmark-name="港"'));
-    assert.ok(UiCompactMarket.buildLandmarksHtml({ ...options, canBuildLandmarkAction: false })
-        .includes('data-action="buildLandmark" data-landmark-name="駅" disabled'));
+    const blocked = UiCompactMarket.buildLandmarksHtml({ ...options, canBuildLandmarkAction: false });
+    assert.ok(blocked.includes('data-action="buildLandmark" data-landmark-name="駅" disabled'));
+    assert.ok(blocked.includes('aria-label="駅、現在は建設できません。ランドマークの効果"'));
 });
 
 runTest('小型市場は状態を変更せず既存filter・Undo・補充状態を表示する', () => {
@@ -75,6 +100,7 @@ runTest('小型市場は状態を変更せず既存filter・Undo・補充状態�
     assert.strictEqual(JSON.stringify(options), before);
     assert.ok(html.includes('data-action="setCardFilter"'));
     assert.ok(html.includes('data-action="undoBuild"'));
+    assert.ok(html.includes('class="compact-market-expand" data-action="expandMarket" aria-controls="cardboardMarketDialog" aria-haspopup="dialog" aria-expanded="false" aria-label="中央市場を大きく表示"'));
     assert.ok(html.includes('山札3枚'));
     assert.ok(html.includes('compact-market-refilled'));
     assert.ok(html.includes('残り3枚 · 補充'));

@@ -33,20 +33,29 @@ function createCanvas() {
     };
 }
 
-runTest('city skylineはviewportを480pxで制限して既存canvas寸法を設定する', () => {
+runTest('city skylineは全幅描画用にcanvasを1920pxまで広げる', () => {
     const { canvas, calls } = createCanvas();
     let randomCalls = 0;
     CitySkyline.draw(canvas, 720, () => { randomCalls++; return 0; });
 
-    assert.strictEqual(canvas.width, 480);
+    assert.strictEqual(canvas.width, 720);
     assert.strictEqual(canvas.height, 220);
-    assert.strictEqual(canvas.style.width, '100%');
+    assert.strictEqual(canvas.style.width, '100vw');
     assert.strictEqual(canvas.style.height, '220px');
     assert.deepStrictEqual(calls[0], ['getContext', '2d']);
-    assert.ok(calls.some(call => call[0] === 'clearRect' && call[3] === 480 && call[4] === 220));
+    assert.ok(calls.some(call => call[0] === 'clearRect' && call[3] === 720 && call[4] === 220));
     assert.ok(calls.some(call => call[0] === 'arc'));
     assert.ok(calls.some(call => call[0] === 'fillRect'));
     assert.ok(randomCalls > 160);
+});
+
+runTest('city skylineは広いdesktopでもcanvas memoryを1920pxで制限する', () => {
+    const { canvas, calls } = createCanvas();
+    CitySkyline.draw(canvas, 3840, () => 0);
+
+    assert.strictEqual(canvas.width, 1920);
+    assert.strictEqual(canvas.style.width, '100vw');
+    assert.ok(calls.some(call => call[0] === 'clearRect' && call[3] === 1920 && call[4] === 220));
 });
 
 runTest('city skylineは小さいviewportと注入乱数をそのまま描画へ使う', () => {

@@ -6,7 +6,10 @@ const { runTest } = require('./helpers/test-utils');
 
 function createElements() {
     return {
-        btnResume: { disabled: false, textContent: '続きから再開' },
+        btnResume: {
+            disabled: false, textContent: '続きから再開', attributes: {},
+            setAttribute(name, value) { this.attributes[name] = value; },
+        },
         resumeSection: { style: { display: '' } },
         localResumeMarketDetails: { textContent: '' },
         onlineResumeSection: { style: { display: '' } },
@@ -24,12 +27,14 @@ runTest('local resume effectsは既存selectorへpreload表示を反映する', 
 
     assert.strictEqual(effects.applyPendingButton({
         disabled: true,
-        textContent: 'モデル読み込み中',
+        textContent: '対戦相手を準備中…',
+        ariaBusy: true,
     }), true);
-    assert.deepStrictEqual(elements.btnResume, {
-        disabled: true,
-        textContent: 'モデル読み込み中',
-    });
+    assert.strictEqual(elements.btnResume.disabled, true);
+    assert.strictEqual(elements.btnResume.textContent, '対戦相手を準備中…');
+    assert.strictEqual(elements.btnResume.attributes['aria-busy'], 'true');
+    effects.applyPendingButton({ disabled: false, textContent: '続きから再開', ariaBusy: false });
+    assert.strictEqual(elements.btnResume.attributes['aria-busy'], 'false');
 });
 
 runTest('local resume effectsは複数世代だけ選択UIを表示する', () => {
@@ -38,13 +43,13 @@ runTest('local resume effectsは複数世代だけ選択UIを表示する', () =
         getElementById: id => elements[id] || null,
     });
     assert.strictEqual(effects.applyGenerationOptions([
-        { value: 0, label: '最新の保存' },
-        { value: 1, label: '1つ前の保存' },
+        { value: 0, label: '最新の保存データ' },
+        { value: 1, label: '1回前の保存データ' },
     ]), true);
     assert.ok(elements.localSaveGeneration.innerHTML.includes('value="1"'));
     assert.strictEqual(elements.localSaveGenerationLabel.style.display, 'flex');
 
-    effects.applyGenerationOptions([{ value: 0, label: '最新の保存' }]);
+    effects.applyGenerationOptions([{ value: 0, label: '最新の保存データ' }]);
     assert.strictEqual(elements.localSaveGenerationLabel.style.display, 'none');
 });
 
@@ -83,7 +88,7 @@ runTest('local resume effectsはlocalとonlineの表示を同じ順序で反映�
 runTest('local resume effectsは旧世代しかない場合も番号を表示して選択する', () => {
     const elements = createElements();
     const effects = LocalResumeEffects.create({ getElementById: id => elements[id] || null });
-    effects.applyGenerationOptions([{ value: 2, label: '2つ前の保存' }]);
+    effects.applyGenerationOptions([{ value: 2, label: '2回前の保存データ' }]);
     assert.strictEqual(elements.localSaveGeneration.value, '2');
     assert.strictEqual(elements.localSaveGenerationLabel.style.display, 'flex');
     effects.applyGenerationOptions([]);

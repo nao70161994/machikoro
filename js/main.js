@@ -1,4 +1,4 @@
-/* global UiTurnPrivacy, cancelPendingLocalResume */
+/* global UiTurnPrivacy, cancelPendingLocalResume, CardBoardField */
 /** @type {Record<string, number>} */
 const SHOP_STOCK = {};
 
@@ -1297,6 +1297,7 @@ function resolveMainUiEffect(name) {
         buildCard: 'onBuildCard',
         buildLandmark: 'onBuildLandmark',
         undoBuild: 'doUndo',
+        expandMarket: 'openCardboardMarket',
     };
     const root = typeof globalThis !== 'undefined' ? globalThis : window;
     if (name === 'selectBusinessCard') {
@@ -1304,6 +1305,10 @@ function resolveMainUiEffect(name) {
     }
     const effect = root[aliases[name] || name];
     return typeof effect === 'function' ? effect : (name === 'location' ? root.location : null);
+}
+
+function openCardboardMarket() {
+    return typeof CardBoardField !== 'undefined' && CardBoardField.openMarket();
 }
 
 const mainUiEventRuntime = MainUiEventRuntime.createRuntime({

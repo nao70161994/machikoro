@@ -330,7 +330,7 @@ runTest('storage 保存世代変更は選択した市場ルールと進行情報
     assert.strictEqual(rt.onChangeLocalSaveGeneration(1), true);
     assert.strictEqual(
         rt.elements.localResumeMarketDetails.textContent,
-        `🏪 公式10種類市場・5ターン・補充2回・山札${marketSupply.deck.length}枚${marketSupply.deck.length <= 10 ? '・残りわずか' : ''}`
+        `🏪 公式10種類市場・2人対戦・参加者 P1 / P2・5ターン・P1の手番（3コイン・施設2枚・目標0/2）・補充2回・山札${marketSupply.deck.length}枚${marketSupply.deck.length <= 10 ? '・残りわずか' : ''}`
     );
     assert.strictEqual(rt.onChangeLocalSaveGeneration(2), false);
     assert.strictEqual(
@@ -662,7 +662,7 @@ runTest('storage resumeGame は最新が壊れていても有効な旧世代を�
         assert.strictEqual(rt.elements.localSaveGenerationLabel.style.display, 'flex');
         assert.ok(!rt.elements.localSaveGeneration.innerHTML.includes('value="0"'));
         assert.ok(!rt.elements.localSaveGeneration.innerHTML.includes('value="1"'));
-        assert.strictEqual(rt.elements.localResumeMarketDetails.textContent, '🏪 通常市場・7ターン');
+        assert.strictEqual(rt.elements.localResumeMarketDetails.textContent, '🏪 通常市場・2人対戦・参加者 P1 / P2・7ターン・P1の手番（3コイン・施設0枚・目標0/2）');
         assert.strictEqual(rt.resumeGame(), true);
         assert.strictEqual(rt.__test.getGame().turnCount, 7);
     }

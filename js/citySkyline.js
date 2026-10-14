@@ -9,11 +9,11 @@ const CitySkyline = (() => {
      */
     function draw(canvas, viewportWidth, random = Math.random) {
         const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
-        const W = viewportWidth > 480 ? 480 : viewportWidth;
+        const W = Math.max(1, Math.min(1920, Math.ceil(viewportWidth)));
         const H = 220;
         canvas.width = W;
         canvas.height = H;
-        canvas.style.width = "100%";
+        canvas.style.width = "100vw";
         canvas.style.height = H + "px";
 
         ctx.clearRect(0, 0, W, H);

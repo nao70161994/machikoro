@@ -81,6 +81,15 @@ const UiWatchdogRecoveryRuntime = (() => {
         }
 
         function syncUiInteractabilityAfterRender(reason = 'render-sync') {
+            // CPU turns have no player-operated controls to recover. Avoid a full
+            // DOM snapshot (including per-control computed styles and geometry)
+            // on every automated action; the next human turn still receives the
+            // normal validation pass.
+            const gameState = appShellGameRuntimeSnapshot();
+            const game = gameState && gameState.game;
+            if (game && Array.isArray(gameState.cpuPlayers) && gameState.cpuPlayers[game.currentPlayerIndex]) {
+                return false;
+            }
             const before = buildClientRuntimeSnapshot(reason);
             const planInput = {
                 activeBlockingModal: hasActiveBlockingModal(before),

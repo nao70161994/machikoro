@@ -7,6 +7,7 @@ declare var UiTurnEvents: typeof import("../js/uiTurnEvents");
 declare var UiTurnReceipt: typeof import("../js/uiTurnReceipt");
 declare var CardBoardFeedback: typeof import("../js/cardBoardFeedback");
 declare var UiBuildMenu: typeof import("../js/uiBuildMenu");
+declare var UiPlayerDisplay: typeof import("../js/uiPlayerDisplay");
 declare var UiCardBoard: typeof import("../js/uiCardBoard");
 declare var CardBoardField: typeof import("../js/cardBoardField");
 declare var UiLogDisplay: typeof import("../js/uiLogDisplay");

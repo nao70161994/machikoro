@@ -339,6 +339,8 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
         lastDiceResult: 6,
     });
     assert.strictEqual(view.statusText, '👤 Aliceのターン　🪙 7コイン');
+    assert.strictEqual(view.turnPlayerName, 'Alice');
+    assert.strictEqual(view.turnPlayerCoins, 7);
     assert.strictEqual(UiGameStatusView.buildTurnStatusText(players[0], 'sunset'), 'Aliceのターン');
     const sunsetSelfView = UiGameStatusView.buildActiveGameView({
         current: players[0],

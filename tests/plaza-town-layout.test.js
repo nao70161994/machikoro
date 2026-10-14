@@ -3,8 +3,9 @@ const assert = require('assert');
 const { runTest } = require('./helpers/test-utils');
 const PlazaTownLayout = require('../js/plazaTownLayout');
 
-function verify(towns, marketHeight) {
+function verify(towns, marketHeight, orientation) {
     const input = { towns, marketWidth: 520, marketHeight };
+    if (orientation) input.orientation = orientation;
     const before = JSON.stringify(input);
     const result = PlazaTownLayout.calculate(input);
     assert.strictEqual(JSON.stringify(input), before, 'measured inputs remain unchanged');
@@ -23,6 +24,21 @@ function verify(towns, marketHeight) {
     return result;
 }
 
+runTest('2人の盤面は縦持ちで縦積み、横持ちで横並びになる', () => {
+    const towns = [{ seat: 0, width: 450, height: 320 }, { seat: 1, width: 450, height: 320 }];
+    const portrait = verify(towns, 470, 'portrait');
+    assert.ok(portrait.positions[1].top + 320 < portrait.marketTop);
+    assert.ok(portrait.positions[0].top > portrait.marketTop + 470);
+    assert.strictEqual(portrait.positions[0].left, portrait.positions[1].left);
+    assert.strictEqual(portrait.width, 600);
+    const landscape = verify(towns, 470, 'landscape');
+    assert.ok(landscape.positions[1].left + 450 < landscape.marketLeft);
+    assert.ok(landscape.positions[0].left > landscape.marketLeft + 520);
+    assert.strictEqual(landscape.positions[0].top, landscape.positions[1].top);
+    assert.strictEqual(landscape.height, 550);
+    assert.notDeepStrictEqual(landscape, portrait);
+});
+
 for (let count = 2; count <= 10; count++) {
     runTest(`${count}人の通常/成熟/詳細展開サイズで市場と全街を境界内に分離する`, () => {
         for (const heights of [Array(count).fill(260), Array(count).fill(620),
@@ -33,13 +49,17 @@ for (let count = 2; count <= 10; count++) {
         }
     });
 }
-runTest('2〜4人は既存cardinal位置と北/市場/selfのoverflow移動を維持する', () => {
+runTest('2〜4人は盤面を詰めて配置し北/市場/selfのoverflowを避ける', () => {
+    const compact = verify(Array.from({ length: 4 }, (_, seat) => ({ seat, width: 450, height: 260 })), 420);
+    assert.ok(compact.width < 1680, '4人盤面の横方向の空白を減らす');
+    assert.ok(compact.height < 1380, '4人盤面の縦方向の空白を減らす');
+
     const result = verify(Array.from({ length: 4 }, (_, seat) => ({ seat, width: 450, height: seat === 2 ? 900 : 260 })), 800);
-    assert.deepStrictEqual(result.positions[1], { left: 70, top: 470 });
-    assert.deepStrictEqual(result.positions[2], { left: 580, top: 0 });
-    assert.deepStrictEqual(result.positions[3], { left: 1150, top: 470 });
-    assert.strictEqual(result.marketTop, 932);
-    assert.deepStrictEqual(result.positions[0], { left: 580, top: 1764 });
+    assert.deepStrictEqual(result.positions[1], { left: 40, top: 972 });
+    assert.deepStrictEqual(result.positions[2], { left: 557, top: 40 });
+    assert.deepStrictEqual(result.positions[3], { left: 1074, top: 972 });
+    assert.strictEqual(result.marketTop, 972);
+    assert.deepStrictEqual(result.positions[0], { left: 557, top: 1804 });
 });
 runTest('5〜10人は先頭4席を市場の下左上右に維持しextraを番号順に配置する', () => {
     for (let count = 5; count <= 10; count++) {

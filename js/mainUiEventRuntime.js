@@ -190,6 +190,7 @@ const MainUiEventRuntime = (() => {
             ]), {
                 showLandmarkDetail: (...args) => invoke('showCardDetail', ...args),
                 setCardFilter: color => invoke('setCardFilter', color, button),
+                expandMarket: () => invoke('expandMarket'),
             }));
         }
         function handlePlayerClick(event) {
@@ -216,6 +217,7 @@ const MainUiEventRuntime = (() => {
                 ['buildMenu', handleBuildClick], ['players', handlePlayerClick],
                 ['plazaPlayerInsightsBody', handlePlayerClick],
                 ['cardboardSeats', handlePlayerClick], ['cardboardMarket', handleBuildClick],
+                ['cardboardDiceReceipt', handlePlayerClick],
             ];
             for (const [id, handler] of bindings) {
                 const element = dependencies.document.getElementById(id);

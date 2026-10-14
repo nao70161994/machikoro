@@ -96,10 +96,19 @@ const UiPendingMenu = (() => {
             : '🪙';
     }
 
+    function pendingPlayerChoiceHtml(player, index, action, actionLabel, detailHtml, escapeHtml, illustrated, fallbackSuffix = actionLabel) {
+        const name = escapeHtml(player.name);
+        if (!illustrated) return `<button data-action="${action}" data-target-index="${index}">${name}${escapeHtml(fallbackSuffix)}</button>`;
+        return `<button class="pending-player-choice" data-action="${action}" data-target-index="${index}" aria-label="${name}、${escapeHtml(actionLabel)}"><span class="pending-player-avatar" aria-hidden="true">${index + 1}</span><span class="pending-player-copy"><span class="pending-player-name">${name}</span><span class="pending-player-detail">${detailHtml}</span></span></button>`;
+    }
+
     function buildPendingTvHtml(game, escapeHtml, _landmarkNames, _businessSelections, useSunsetIcons) {
         const others = game.players.map((p, i) => ({ p, i })).filter(({ i }) => i !== game.currentPlayerIndex);
         const coinMark = pendingCoinMarkHtml(useSunsetIcons);
-        return `<div class="pending-box">${pendingHeadingHtml('tv-station', '📺', 'テレビ局：コインを奪う相手を選んでください', useSunsetIcons)}${pendingInspectHintHtml()}${others.map(({ p, i }) => `<button data-action="resolveTV" data-target-index="${i}">${escapeHtml(p.name)}（${coinMark}${p.coins}）</button>`).join("")}</div>`;
+        return `<div class="pending-box">${pendingHeadingHtml('tv-station', '📺', 'テレビ局：コインを奪う相手を選んでください', useSunsetIcons)}${pendingInspectHintHtml()}${others.map(({ p, i }) => {
+            const coins = Number.isSafeInteger(p.coins) && p.coins >= 0 ? p.coins : 0;
+            return pendingPlayerChoiceHtml(p, i, 'resolveTV', `コインを奪う相手・所持${coins}コイン`, `${coinMark} 所持 ${coins}コイン`, escapeHtml, useSunsetIcons, `（${coinMark}${coins}）`);
+        }).join("")}</div>`;
     }
 
     function buildBusinessCardChipHtml(player, card, index, inputId, isSelected, escapeHtml, useSunsetIcons = false, renderFacilityArt) {
@@ -173,7 +182,7 @@ const UiPendingMenu = (() => {
             ? `<h3 id="moverGiveHeading" class="bc-step-title">1. 渡す施設</h3><div class="bc-chip-group" role="group" aria-labelledby="moverGiveHeading">${buildBusinessCardChipGroupHtml(current, myCards, 'moverCardSelect', escapeHtml, selectedIndex, true, renderFacilityArt)}</div>`
             : '<p><label for="moverCardSelect">渡す施設：</label></p>';
         const recipientHeading = illustrated ? '<h3 class="bc-step-title">2. 受け取る相手</h3>' : '';
-        return `<div class="pending-box">${pendingHeadingHtml('mover', '🚚', '引越し屋：渡す施設と相手を選んでください', useSunsetIcons)}${choices}<select id="moverCardSelect"${illustrated ? ' hidden aria-hidden="true" tabindex="-1"' : ''}>${myCards.map(({ card, index }) => `<option value="${index}"${illustrated && index === selectedIndex ? ' selected' : ''}>${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${recipientHeading}${others.map(({ p, i }) => `<button data-action="resolveMover" data-target-index="${i}">${escapeHtml(p.name)}に渡す</button>`).join("")}</div>`;
+        return `<div class="pending-box">${pendingHeadingHtml('mover', '🚚', '引越し屋：渡す施設と相手を選んでください', useSunsetIcons)}${choices}<select id="moverCardSelect"${illustrated ? ' hidden aria-hidden="true" tabindex="-1"' : ''}>${myCards.map(({ card, index }) => `<option value="${index}"${illustrated && index === selectedIndex ? ' selected' : ''}>${escapeHtml(card.name)}${current.isDormant(card) ? '（休業中）' : ''}</option>`).join("")}</select>${recipientHeading}${others.map(({ p, i }) => pendingPlayerChoiceHtml(p, i, 'resolveMover', '施設を渡す相手', '選択した施設をこの街へ渡します', escapeHtml, illustrated, 'に渡す')).join("")}</div>`;
     }
 
     function buildPendingRenovationHtml(game, escapeHtml, landmarkNames, _businessSelections, useSunsetIcons, renderFacilityArt) {

@@ -42,7 +42,7 @@ runTest('winner effectsは初回のruntime/DOM副作用を既存順で一度実�
     assert.ok(Object.isFrozen(UiWinnerEffects.TERMINAL_CONTROLS));
 });
 
-runTest('winner effectsは再描画時に一度限りの通知と統計だけを省略する', () => {
+runTest('winner effectsは再描画時に通知・統計・紙吹雪・フォーカス移動を再実行しない', () => {
     const calls = [];
     UiWinnerEffects.execute({ statusHtml: '<winner>', firstPresentation: false }, makeEffects(calls));
     assert.deepStrictEqual(calls.map(call => call[0]), [
@@ -52,13 +52,13 @@ runTest('winner effectsは再描画時に一度限りの通知と統計だけを
         'markOnlineFinished',
         'refreshPwaUpdateState',
         'updateResumeButton',
-        'startConfetti',
         'applyTerminalControls',
         'renderTutorial',
         'renderLog',
         'renderPlayers',
     ]);
     assert.strictEqual(calls.some(call => call[0] === 'focusWinnerAction'), false);
+    assert.strictEqual(calls.some(call => call[0] === 'startConfetti'), false);
 });
 
 runTest('winner effectsは不完全なeffect配線をDOM変更前に拒否する', () => {

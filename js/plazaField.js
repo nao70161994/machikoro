@@ -4,6 +4,7 @@
 // Device-local camera: never saved or transmitted as a game action.
 const PlazaField = (() => {
     let mounted = false;
+    let comparisonWasOpenDuringThemeChange = false;
     let initialized = false;
     let selfIndex = 0;
     let playerCount = 0;
@@ -13,6 +14,23 @@ const PlazaField = (() => {
     let insightsListener = null;
     let insightsSession = null;
     let insightsFacts = null;
+    let comparisonSignature = null;
+    let cameraTransitionTimer = null;
+
+    function clearCameraTransition() {
+        if (cameraTransitionTimer !== null) clearTimeout(cameraTransitionTimer);
+        cameraTransitionTimer = null;
+        node('plazaWorld')?.classList.remove('plaza-camera-moving');
+    }
+
+    function animateCameraTransition() {
+        clearCameraTransition();
+        if (document.hidden || document.body.classList.contains('accessibility-reduced-motion') ||
+                window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true) return;
+        const world = node('plazaWorld');
+        world?.classList.add('plaza-camera-moving');
+        cameraTransitionTimer = setTimeout(clearCameraTransition, 300);
+    }
 
     function closePlayerInsights(restoreFocus = false) {
         const index = insightsIndex;
@@ -36,9 +54,15 @@ const PlazaField = (() => {
         const html = UiPlayerInsights.buildHtml(player, insightsFacts.escapeHtml, {
             enabledLandmarks: insightsFacts.enabledLandmarks,
             landmarkNames: Player._LANDMARK_DEFS.map(landmark => landmark.name),
+            cardDefinitions: insightsFacts.cardDefinitions,
+            renderFacilityArt: insightsFacts.renderFacilityArt,
         });
         if (body.innerHTML !== html) {
+            const scrollTop = body.scrollTop;
+            const scrollLeft = body.scrollLeft;
             body.innerHTML = html;
+            body.scrollTop = scrollTop;
+            body.scrollLeft = scrollLeft;
             if (focusedCard) {
                 const button = Array.from(/** @type {NodeListOf<HTMLButtonElement>} */ (body.querySelectorAll('button[data-card-name], button[data-landmark-name]'))).find(item => item.getAttribute(focusAttribute) === focusedCard);
                 (button || node('plazaPlayerInsightsClose')).focus({ preventScroll: true });
@@ -72,6 +96,9 @@ const PlazaField = (() => {
     let worldWidth = 1680;
     let worldHeight = 1380;
     let pendingFocus = null;
+    let focusedTarget = 'self';
+    let cameraAnchored = true;
+    let anchoredGeometry = '';
     const pointers = new Map();
     let gesture = null;
     let dragged = false;
@@ -91,7 +118,6 @@ const PlazaField = (() => {
         arrangeTowns();
         const screen = node('gameScreen');
         const actions = /** @type {HTMLElement} */ (screen.querySelector('.game-action-panel'));
-        const sideHud = window.matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
         const height = element => Math.ceil(element.getBoundingClientRect().height);
         const statusHeight = height(node('status'));
         const hudHeight = height(node('plazaPlayerHud'));
@@ -103,12 +129,22 @@ const PlazaField = (() => {
         const eventsHeight = `${height(node('plazaEvents'))}px`;
         screen.style.setProperty('--plaza-events', eventsHeight);
         document.body.style.setProperty('--plaza-events', eventsHeight);
-        screen.style.setProperty('--plaza-top', `${statusHeight + toolsHeight + (sideHud ? 0 : hudHeight)}px`);
+        screen.style.setProperty('--plaza-top', `${statusHeight + toolsHeight + hudHeight}px`);
         screen.style.setProperty('--plaza-actions', `${height(actions)}px`);
         document.body.style.setProperty('--plaza-actions', `${height(actions)}px`);
         const bannerHeight = height(node('pwaUpdateBanner'));
         document.body.style.setProperty('--plaza-banner', `${bannerHeight}px`);
         document.body.classList.toggle('plaza-update-visible', bannerHeight > 0);
+        if (cameraAnchored && !pointers.size && focusGeometry() !== anchoredGeometry) {
+            focusTarget(focusedTarget, false);
+        }
+    }
+    function focusGeometry() {
+        const viewport = node('plazaViewport');
+        const item = focusedTarget === 'market' ? node('buildMenu')
+            : focusedTarget === 'all' ? null : node(`playerBox${Number.isInteger(focusedTarget) ? focusedTarget : selfIndex}`);
+        return JSON.stringify([focusedTarget, selfIndex, viewport.clientWidth, viewport.clientHeight,
+            worldWidth, worldHeight, item?.style.left, item?.style.top, item?.offsetWidth, item?.offsetHeight]);
     }
     function node(id) { return document.getElementById(id); }
     function arrangeTowns() {
@@ -120,8 +156,14 @@ const PlazaField = (() => {
             width: entry.item.offsetWidth, height: entry.item.offsetHeight,
         }));
         const market = node('buildMenu');
+        const viewport = node('plazaViewport');
+        const horizontal = viewport.clientWidth >= viewport.clientHeight;
+        const world = node('plazaWorld');
+        world.classList.toggle('plaza-two-player-horizontal', playerCount === 2 && horizontal);
+        world.classList.toggle('plaza-two-player-vertical', playerCount === 2 && !horizontal);
         const measured = PlazaTownLayout.calculate({ towns,
-            marketWidth: market.offsetWidth, marketHeight: market.offsetHeight });
+            marketWidth: market.offsetWidth, marketHeight: market.offsetHeight,
+            orientation: horizontal ? 'landscape' : 'portrait' });
         const setPixels = (item, property, value) => {
             const pixels = `${value}px`;
             if (item.style[property] !== pixels) item.style[property] = pixels;
@@ -141,18 +183,75 @@ const PlazaField = (() => {
 
     function setComparisonOpen(open) {
         node('plazaComparison').hidden = !open;
+        document.body.classList.toggle('plaza-comparison-open', open);
         node('plazaCameraTools').querySelector('[data-field-panel="comparison"]').setAttribute('aria-expanded', String(open));
+        node('cardboardCompareToggle')?.setAttribute('aria-expanded', String(open));
     }
-    function renderComparison(players, enabledLandmarks, escapeHtml) {
-        const names = [...new Set(players.flatMap(player => player.cards.map(card => card.name)))];
-        const heads = players.map((player, index) => `<th scope="col"><span class="plaza-seat-mark" style="--plaza-seat-color:${seatColors[index % seatColors.length]}">席${index + 1}</span>${escapeHtml(player.name)}</th>`).join('');
-        const rows = names.map(name => `<tr><th scope="row">${escapeHtml(name)}</th>${players.map(player => {
-            const cards = player.cards.filter(card => card.name === name);
-            const dormant = cards.filter(card => player.isDormant(card)).length;
-            return `<td>${cards.length}${dormant ? `（休${dormant}）` : ''}</td>`;
-        }).join('')}</tr>`).join('');
-        const landmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name)).map(name => `<tr><th scope="row">${escapeHtml(name)}</th>${players.map(player => `<td>${player.landmarks[name] ? '建設済' : '未建設'}</td>`).join('')}</tr>`).join('');
-        node('plazaComparisonBody').innerHTML = `<table><caption>施設の所有枚数とランドマーク</caption><thead><tr><th scope="col">施設</th>${heads}</tr></thead><tbody>${rows}${landmarks}<tr><th scope="row">役所</th>${players.map(player => `<td>${player.hasYakusho ? 'あり' : 'なし'}</td>`).join('')}</tr></tbody></table>`;
+    function toggleComparison(open = null) {
+        const nextOpen = typeof open === 'boolean' ? open : node('plazaComparison').hidden;
+        setEventsOpen(false);
+        setLogPanelOpen(false);
+        setComparisonOpen(nextOpen);
+        if (nextOpen) node('plazaComparisonHeading').focus({ preventScroll: true });
+        return nextOpen;
+    }
+    function focusComparisonToggle() {
+        const cardboardToggle = node('cardboardCompareToggle');
+        const plazaToggle = /** @type {HTMLElement | null} */ (node('plazaCameraTools').querySelector('[data-field-panel="comparison"]'));
+        const design = document.documentElement.dataset.design;
+        const preferred = design === 'cardboard' ? cardboardToggle : design === 'plaza' ? plazaToggle : null;
+        const target = preferred?.getClientRects().length
+            ? preferred : /** @type {HTMLElement | null} */ (node('gameDesignThemeSelect')?.closest('details')?.querySelector('summary'));
+        target?.focus({ preventScroll: true });
+    }
+    function renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, selectedIndex) {
+        const landmarkNames = [...enabledLandmarks];
+        const enabledNames = enabledCards instanceof Set ? enabledCards : new Set(Array.isArray(enabledCards) ? enabledCards : []);
+        const signature = JSON.stringify(players.map(player => [
+            player.name,
+            player.cards.map(card => [card.name, player.isDormant(card)]),
+            landmarkNames.map(name => [name, player.landmarks[name] === true]),
+            player.hasYakusho === true,
+        ]).concat([[...enabledNames].sort(), currentIndex, selectedIndex]));
+        if (signature === comparisonSignature) return;
+        comparisonSignature = signature;
+        const definitions = new Map((Array.isArray(cardDefinitions) ? cardDefinitions : []).map(card => [card.name, card]));
+        const renderArt = typeof renderFacilityArt === 'function' ? renderFacilityArt : () => '';
+        const ownedNames = new Set(players.flatMap(player => player.cards.map(card => card.name)));
+        const names = [...new Set([
+            ...(enabledNames.size ? [...enabledNames] : [...ownedNames]),
+            ...ownedNames,
+        ])].filter(name => definitions.has(name)).sort((left, right) => {
+            const leftRoll = Number.isFinite(definitions.get(left)?.diceNums?.[0]) ? definitions.get(left).diceNums[0] : Number.POSITIVE_INFINITY;
+            const rightRoll = Number.isFinite(definitions.get(right)?.diceNums?.[0]) ? definitions.get(right).diceNums[0] : Number.POSITIVE_INFINITY;
+            return leftRoll - rightRoll || left.localeCompare(right, 'ja');
+        });
+        const heads = players.map((player, index) => {
+            const isSelected = index === selectedIndex;
+            const isCurrent = index === currentIndex;
+            const classes = [isSelected ? 'is-self' : '', isCurrent ? 'is-turn' : ''].filter(Boolean).join(' ');
+            return `<th scope="col"${classes ? ` class="${classes}"` : ''}${isCurrent ? ' aria-current="true"' : ''}><span class="plaza-seat-mark" style="--plaza-seat-color:${seatColors[index % seatColors.length]}">席${index + 1}</span><span class="plaza-comparison-player-name" title="${escapeHtml(player.name)}">${escapeHtml(player.name)}</span>${isSelected ? '<small>あなた</small>' : ''}${isCurrent ? '<small>手番</small>' : ''}</th>`;
+        }).join('');
+        const rows = names.map(name => {
+            const definition = definitions.get(name);
+            const color = ['blue', 'green', 'red', 'purple'].includes(definition?.color) ? definition.color : 'blue';
+            const dice = Array.isArray(definition?.diceNums) && definition.diceNums.length
+                ? definition.diceNums.join('・') : '—';
+            return `<tr class="plaza-comparison-card plaza-comparison-${color}"><th scope="row"><span class="plaza-comparison-facility-art">${renderArt(name, false, definition?.category || '')}</span><span>${escapeHtml(name)}</span><small class="plaza-comparison-dice">出目 ${escapeHtml(dice)}</small></th>${players.map(player => {
+                const cards = player.cards.filter(card => card.name === name);
+                const dormant = cards.filter(card => player.isDormant(card)).length;
+                const classes = [player === players[selectedIndex] ? 'is-self' : '', player === players[currentIndex] ? 'is-turn' : ''].filter(Boolean).join(' ');
+                const label = `${player.name}、${name}、所有${cards.length}枚${dormant ? `、休業${dormant}枚` : ''}`;
+                return `<td${classes ? ` class="${classes}"` : ''} aria-label="${escapeHtml(label)}">${cards.length}${dormant ? `（休${dormant}）` : ''}</td>`;
+            }).join('')}</tr>`;
+        }).join('');
+        const landmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name)).map(name => `<tr class="plaza-comparison-landmark"><th scope="row"><span class="plaza-comparison-facility-art">${renderArt(name, true)}</span><span>${escapeHtml(name)}</span></th>${players.map(player => `<td>${player.landmarks[name] ? '建設済' : '未建設'}</td>`).join('')}</tr>`).join('');
+        const body = node('plazaComparisonBody');
+        const scrollTop = body.scrollTop;
+        const scrollLeft = body.scrollLeft;
+        body.innerHTML = `<table><caption>施設の所有枚数とランドマーク</caption><thead><tr><th scope="col">施設</th>${heads}</tr></thead><tbody>${rows}${landmarks}<tr><th scope="row">役所</th>${players.map(player => `<td>${player.hasYakusho ? 'あり' : 'なし'}</td>`).join('')}</tr></tbody></table>`;
+        body.scrollTop = scrollTop;
+        body.scrollLeft = scrollLeft;
     }
     function setLogPanelOpen(open) {
         node('gameLogContainer').classList.toggle('plaza-panel-open', open);
@@ -181,34 +280,68 @@ const PlazaField = (() => {
         if (node('plazaZoomLabel').textContent !== label) node('plazaZoomLabel').textContent = label;
     }
     function zoom(scale, x, y) {
+        cameraAnchored = false;
         const next = Math.max(0.12, Math.min(1.8, scale));
         const ratio = next / camera.scale;
         camera = { scale: next, x: x - (x - camera.x) * ratio, y: y - (y - camera.y) * ratio };
         paint();
     }
-    function focusTarget(target) {
+    function focusTarget(target, animate = true) {
+        focusedTarget = target;
+        cameraAnchored = true;
+        if (animate) animateCameraTransition();
+        node('plazaWorld').classList.toggle('plaza-field-market', target === 'market');
+        node('plazaWorld').classList.toggle('plaza-field-overview', target === 'all');
         const viewport = node('plazaViewport');
         if (!viewport.clientWidth || !viewport.clientHeight) {
             pendingFocus = target;
             return;
         }
         pendingFocus = null;
-        node('buildMenu').classList.toggle('plaza-market-exploring', target === 'market');
+        const market = node('buildMenu');
+        market.classList.toggle('plaza-market-exploring', target === 'market');
+        if (target === 'market') {
+            market.style.width = `${Math.min(570, Math.max(200, viewport.clientWidth - 16))}px`;
+        } else {
+            market.style.removeProperty('width');
+            market.style.removeProperty('height');
+        }
         arrangeTowns();
         let x = worldWidth / 2, y = worldHeight / 2;
         if (target === 'all') camera.scale = Math.max(0.12, Math.min(viewport.clientWidth / worldWidth, viewport.clientHeight / worldHeight));
         else {
-            camera.scale = Math.max(0.12, target === 'market'
-                ? Math.min(1, (viewport.clientWidth - 16) / 570)
-                : Math.min(0.85, (viewport.clientWidth - 16) / 450));
-            const item = node(target === 'market' ? 'buildMenu' : `playerBox${Number.isInteger(target) ? target : selfIndex}`);
+            const item = target === 'market' ? market : node(`playerBox${Number.isInteger(target) ? target : selfIndex}`);
+            if (target === 'market') {
+                camera.scale = Math.max(0.12, Math.min(1, (viewport.clientWidth - 16) / market.offsetWidth));
+            } else {
+                const preferredTownScale = 1.55;
+                const widthScale = (viewport.clientWidth - 16) / Math.max(1, item?.offsetWidth || 450);
+                // On tall and desktop viewports, fit the focused town vertically
+                // instead of leaving the old fixed 110% cap. A short landscape
+                // viewport keeps the previous close-up so the board stays legible;
+                // players can pan/zoom there to inspect the whole town.
+                const heightScale = viewport.clientHeight >= 320 && item?.offsetHeight
+                    ? (viewport.clientHeight - 16) / item.offsetHeight
+                    : 1.1;
+                camera.scale = Math.max(0.12, Math.min(preferredTownScale, widthScale, heightScale));
+            }
             if (item && target === 'market') item.style.height = `${Math.max(100, Math.min(470, (viewport.clientHeight - 16) / camera.scale))}px`;
             arrangeTowns();
-            if (item) { x = item.offsetLeft + item.offsetWidth / 2; y = item.offsetTop + item.offsetHeight / 2; }
+            if (item) {
+                // arrangeTowns writes the destination in inline styles. During
+                // the camera's CSS transition offsetLeft/Top still describe an
+                // interpolated position, which would permanently miscenter the
+                // market after its width changes on a narrow viewport.
+                const destinationLeft = Number.parseFloat(item.style.left);
+                const destinationTop = Number.parseFloat(item.style.top);
+                x = (Number.isFinite(destinationLeft) ? destinationLeft : item.offsetLeft) + item.offsetWidth / 2;
+                y = (Number.isFinite(destinationTop) ? destinationTop : item.offsetTop) + item.offsetHeight / 2;
+            }
         }
         camera.x = viewport.clientWidth / 2 - x * camera.scale;
         camera.y = viewport.clientHeight / 2 - y * camera.scale;
         paint();
+        anchoredGeometry = focusGeometry();
     }
     function begin() {
         const points = [...pointers.values()], a = points[0], b = points[1] || a;
@@ -237,8 +370,11 @@ const PlazaField = (() => {
             rect = target.getBoundingClientRect();
         }
         const shift = (start, end, min, max) => start < min ? min - start : end > max ? max - end : 0;
-        camera.x += shift(rect.left, rect.right, bounds.left + 8, bounds.right - 8);
-        camera.y += shift(rect.top, rect.bottom, bounds.top + 8, bounds.bottom - 8);
+        const dx = shift(rect.left, rect.right, bounds.left + 8, bounds.right - 8);
+        const dy = shift(rect.top, rect.bottom, bounds.top + 8, bounds.bottom - 8);
+        if (dx || dy) cameraAnchored = false;
+        camera.x += dx;
+        camera.y += dy;
         paint();
     }
     function initialize() {
@@ -253,6 +389,7 @@ const PlazaField = (() => {
         };
         viewport.addEventListener('pointerdown', event => {
             if (!mounted || event.button !== 0) return;
+            clearCameraTransition();
             pointers.set(event.pointerId, point(event)); dragged = false; begin();
         });
         viewport.addEventListener('pointermove', event => {
@@ -278,6 +415,7 @@ const PlazaField = (() => {
             }
             dragged = true; viewport.setPointerCapture(event.pointerId);
             if (gesture.mode === 'scroll') { node('buildMenu').scrollTop = gesture.scrollTop - (y - gesture.y) / camera.scale; return; }
+            cameraAnchored = false;
             const ratio = points.length > 1 && gesture.distance > 0 ? Math.hypot(a.x - b.x, a.y - b.y) / gesture.distance : 1;
             const scale = Math.max(0.12, Math.min(1.8, gesture.camera.scale * ratio));
             camera = { scale, x: x - (gesture.x - gesture.camera.x) * scale / gesture.camera.scale, y: y - (gesture.y - gesture.camera.y) * scale / gesture.camera.scale };
@@ -296,6 +434,9 @@ const PlazaField = (() => {
             if (event.target === viewport) end(event);
         });
         window.addEventListener('blur', clearGesture);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) clearCameraTransition();
+        });
         viewport.addEventListener('focusin', event => revealFocus(/** @type {Element} */ (event.target)));
         viewport.addEventListener('click', event => { if (dragged) { event.preventDefault(); event.stopPropagation(); dragged = false; } }, true);
         viewport.addEventListener('wheel', event => {
@@ -305,6 +446,7 @@ const PlazaField = (() => {
         node('plazaCameraTools').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
             if (!button) return;
+            let focusAfterDisclosureClose = null;
             if (button.dataset.fieldPanel || button.dataset.fieldSection || button.dataset.fieldTarget) closePlayerInsights();
             if (button.dataset.fieldPanel) {
                 if (button.dataset.fieldPanel === 'events') {
@@ -315,8 +457,7 @@ const PlazaField = (() => {
                 }
                 setEventsOpen(false);
                 if (button.dataset.fieldPanel === 'comparison') {
-                    setLogPanelOpen(false);
-                    setComparisonOpen(node('plazaComparison').hidden);
+                    toggleComparison();
                 } else {
                     setComparisonOpen(false);
                     setLogPanelOpen(!node('gameLogContainer').classList.contains('plaza-panel-open'));
@@ -336,12 +477,19 @@ const PlazaField = (() => {
                 if (heading) {
                     market.scrollTop += (heading.getBoundingClientRect().top - market.getBoundingClientRect().top) / camera.scale - 12;
                     heading.setAttribute('tabindex', '-1');
-                    heading.focus({ preventScroll: true });
+                    focusAfterDisclosureClose = heading;
                 }
             } else if (button.dataset.fieldTarget) focusTarget(button.dataset.fieldTarget);
             else if (button.dataset.fieldZoom) zoom(camera.scale * (button.dataset.fieldZoom === 'in' ? 1.2 : 1 / 1.2), viewport.clientWidth / 2, viewport.clientHeight / 2);
             const menu = button.closest('details');
             if (menu && !button.dataset.fieldZoom) menu.open = false;
+            if (focusAfterDisclosureClose) {
+                // A closed details element can clear focus moved during the same
+                // click dispatch. Focus the market heading after that transition.
+                requestAnimationFrame(() => {
+                    if (focusAfterDisclosureClose.isConnected) focusAfterDisclosureClose.focus({ preventScroll: true });
+                });
+            }
         });
         node('plazaEvents').addEventListener('keydown', event => {
             if (event.key === 'Escape' && node('plazaEvents').classList.contains('plaza-events-expanded')) {
@@ -350,13 +498,55 @@ const PlazaField = (() => {
                 (/** @type {HTMLElement | null} */ (node('plazaCameraTools').querySelector('[data-field-panel="events"]')))?.focus({ preventScroll: true });
             }
         });
+        node('plazaComparison').addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !node('plazaComparison').hidden) {
+                event.preventDefault();
+                setComparisonOpen(false);
+                focusComparisonToggle();
+                return;
+            }
+            if (event.key === 'Tab' && !node('plazaComparison').hidden) {
+                const focusable = Array.from(node('plazaComparison').querySelectorAll('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])'),
+                    element => /** @type {HTMLElement} */ (element))
+                    .filter(element => element.getClientRects().length);
+                if (!focusable.length) {
+                    event.preventDefault();
+                    node('plazaComparisonHeading').focus({ preventScroll: true });
+                    return;
+                }
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                const active = document.activeElement;
+                if (event.shiftKey && (active === first || active === node('plazaComparisonHeading'))) {
+                    event.preventDefault();
+                    last.focus({ preventScroll: true });
+                } else if (!event.shiftKey && (active === last || active === node('plazaComparisonHeading'))) {
+                    event.preventDefault();
+                    first.focus({ preventScroll: true });
+                }
+            }
+        });
+        node('plazaComparison').addEventListener('click', event => {
+            if (event.target !== node('plazaComparison') || node('plazaComparison').hidden) return;
+            setComparisonOpen(false);
+            focusComparisonToggle();
+        });
         node('plazaLogClose').addEventListener('click', () => {
             setLogPanelOpen(false);
             (/** @type {HTMLElement} */ (node('plazaCameraTools').querySelector('[data-field-panel="log"]'))).focus({ preventScroll: true });
         });
         node('plazaComparisonClose').addEventListener('click', () => {
             setComparisonOpen(false);
-            (/** @type {HTMLElement} */ (node('plazaCameraTools').querySelector('[data-field-panel="comparison"]'))).focus({ preventScroll: true });
+            focusComparisonToggle();
+        });
+        document.addEventListener('design-theme-will-change', () => {
+            comparisonWasOpenDuringThemeChange = !node('plazaComparison').hidden;
+            if (comparisonWasOpenDuringThemeChange) setComparisonOpen(false);
+        });
+        document.addEventListener('design-theme-change', () => {
+            if (!comparisonWasOpenDuringThemeChange) return;
+            comparisonWasOpenDuringThemeChange = false;
+            requestAnimationFrame(focusComparisonToggle);
         });
         node('plazaPlayerHud').addEventListener('click', event => {
             const button = (/** @type {HTMLElement} */ (event.target)).closest('button');
@@ -372,6 +562,27 @@ const PlazaField = (() => {
                 event.preventDefault();
                 event.stopPropagation();
                 closePlayerInsights(true);
+                return;
+            }
+            if (event.key === 'Tab') {
+                const panel = node('plazaPlayerInsights');
+                const focusable = Array.from(panel.querySelectorAll('button:not([disabled]), a[href], summary, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+                    element => /** @type {HTMLElement} */ (element))
+                    .filter(element => element.getClientRects().length > 0);
+                if (!focusable.length) {
+                    event.preventDefault();
+                    panel.focus();
+                    return;
+                }
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+                    event.preventDefault();
+                    last.focus();
+                } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+                    event.preventDefault();
+                    first.focus();
+                }
             }
         });
         // Apply dependent sizes in the next frame, outside ResizeObserver delivery.
@@ -411,9 +622,8 @@ const PlazaField = (() => {
             if (pendingFocus !== null) {
                 focusTarget(pendingFocus);
             } else if (lastWidth && lastHeight) {
-                camera.x += (viewport.clientWidth - lastWidth) / 2;
-                camera.y += (viewport.clientHeight - lastHeight) / 2;
-                paint();
+                const width = viewport.clientWidth, height = viewport.clientHeight;
+                if (cameraAnchored && (width !== lastWidth || height !== lastHeight)) focusTarget(focusedTarget);
             }
             lastWidth = viewport.clientWidth; lastHeight = viewport.clientHeight;
             revealFocus();
@@ -436,6 +646,7 @@ const PlazaField = (() => {
     function detach() {
         if (!mounted) return;
         const screen = node('gameScreen'), world = node('plazaWorld');
+        clearCameraTransition();
         clearGesture();
         townObserver.disconnect();
         closePlayerInsights();
@@ -450,9 +661,12 @@ const PlazaField = (() => {
             item.querySelector('.plaza-seat-mark')?.remove();
             item.querySelector('.plaza-town-seat-flag')?.remove();
         });
+        world.classList.remove('plaza-field-market', 'plaza-field-overview',
+            'plaza-two-player-horizontal', 'plaza-two-player-vertical');
         screen.insertBefore(world.querySelector('.player-area'), screen.querySelector('.game-action-panel'));
         SharedMarketMount.release('plaza');
         node('buildMenu').style.removeProperty('height');
+        node('buildMenu').style.removeProperty('width');
         node('buildMenu').style.removeProperty('top');
         node('buildMenu').style.removeProperty('left');
         node('buildMenu').classList.remove('plaza-market-secondary', 'plaza-market-exploring');
@@ -463,7 +677,7 @@ const PlazaField = (() => {
         hudCurrentIndex = null;
         DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
     }
-    function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set(), sessionToken, phase) {
+    function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set(), sessionToken, phase, cardDefinitions, renderFacilityArt, enabledCards) {
         sync(); if (!mounted) return;
         const choosing = [GAME_PHASES.SELECT_DICE, GAME_PHASES.REROLL_CONFIRM,
             GAME_PHASES.HARBOR_CHOICE, GAME_PHASES.PENDING].includes(phase);
@@ -478,7 +692,7 @@ const PlazaField = (() => {
         }
         if (insightsIndex !== null && !players[insightsIndex]) closePlayerInsights();
         if (sessionToken !== undefined) insightsSession = sessionToken;
-        insightsFacts = { players, escapeHtml, enabledLandmarks };
+        insightsFacts = { players, escapeHtml, enabledLandmarks, cardDefinitions, renderFacilityArt };
 
         selfIndex = primaryIndex >= 0 ? primaryIndex : currentIndex;
         playerCount = players.length;
@@ -515,7 +729,7 @@ const PlazaField = (() => {
             const goalLandmarks = [...enabledLandmarks].filter(name => Player.isKnownLandmark(name));
             const built = goalLandmarks.filter(name => player.landmarks[name] === true).length;
             const kindIcon = node(`playerBox${index}`)?.querySelector('.player-icon')?.innerHTML || '';
-            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-controls="plazaPlayerInsights" aria-expanded="${index === insightsIndex}" aria-label="席${index + 1}、${escapeHtml(player.name)}の街と施設詳細を見る${index === selfIndex ? '、あなた' : ''}、${player.coins}コイン、目標${built}/${goalLandmarks.length}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">席${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span></strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${goalLandmarks.length}</small></button>`;
+            return `<button type="button" data-player-index="${index}" style="--plaza-seat-color:${seatColors[index % seatColors.length]}" class="${index === currentIndex ? 'active' : ''}${index === selfIndex ? ' self' : ''}" aria-controls="plazaPlayerInsights" aria-expanded="${index === insightsIndex}" aria-label="席${index + 1}、${escapeHtml(player.name)}の街と施設詳細を見る${index === selfIndex ? '、あなた' : ''}${index === currentIndex ? '、手番' : ''}、${player.coins}コイン、目標${built}/${goalLandmarks.length}、${escapeHtml(Object.entries(counts).map(([color, count]) => `${{ blue: '青', green: '緑', red: '赤', purple: '紫' }[color]}${count}`).join('、'))}"${index === currentIndex ? ' aria-current="true"' : ''}><strong><span class="plaza-seat-mark">席${index + 1}</span><span class="plaza-kind-mark" aria-hidden="true">${kindIcon}</span><span class="plaza-player-name">${escapeHtml(player.name)}</span><span class="plaza-turn-mark">手番</span></strong><span class="plaza-player-coins">${player.coins}コイン${index === selfIndex ? '・自分' : ''}</span><span class="plaza-player-facilities">${chips}</span><small>目標 ${built}/${goalLandmarks.length}</small></button>`;
         });
         node('plazaPlayerHud').innerHTML = `<div class="plaza-hud-self">${hudButtons[selfIndex]}</div><div class="plaza-hud-opponents" aria-label="相手の状況">${hudButtons.filter((button, index) => index !== selfIndex).join('')}</div>`;
         if (focused !== undefined && focused !== null) (/** @type {HTMLElement} */ (node('plazaPlayerHud').querySelector(`button[data-player-index="${focused}"]`)))?.focus({ preventScroll: true });
@@ -532,11 +746,11 @@ const PlazaField = (() => {
             }
         }
         hudCurrentIndex = currentIndex;
-        renderComparison(players, enabledLandmarks, escapeHtml);
+        renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, selfIndex);
         renderPlayerInsights();
         layout();
     }
-    return Object.freeze({ render, sync, focusTarget, selectedPlayerIndex: () => insightsIndex, setInsightsListener: listener => { insightsListener = listener; } });
+    return Object.freeze({ render, sync, focusTarget, toggleComparison, selectedPlayerIndex: () => insightsIndex, setInsightsListener: listener => { insightsListener = listener; } });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = PlazaField;

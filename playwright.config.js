@@ -25,7 +25,7 @@ module.exports = defineConfig({
         },
         {
             name: 'chromium-desktop',
-            testMatch: /seeded-browser-match\.spec\.js/,
+            testMatch: /(?:seeded-browser-match|plaza-online)\.spec\.js/,
             use: {
                 ...devices['Desktop Chrome'],
                 browserName: 'chromium',
