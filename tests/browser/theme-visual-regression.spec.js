@@ -111,23 +111,15 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     const unavailable = page.locator('#cardboardMarket .compact-market-buy:disabled').first();
                     await expect(unavailable).toHaveCSS('opacity', '1');
                     await expect(unavailable).toHaveCSS('filter', 'none');
-                    if (viewport.name === 'landscape-844') {
-                        await expect.poll(() => page.locator('.cardboard-player-selected').evaluate(panel => {
-                            const button = panel.querySelector('.cardboard-town-open');
+                    await expect(page.locator('#cardboardOverview .cardboard-overview-city')).toHaveCount(4);
+                    await expect(page.locator('#cardboardDetails')).not.toHaveAttribute('open', '');
+                    for (const city of await page.locator('#cardboardOverview .cardboard-overview-city').all()) {
+                        await expect(city.locator('.town-street')).toBeVisible();
+                        await expect(city.locator('.town-building').first()).toBeVisible();
+                        await expect.poll(() => city.locator('.cardboard-overview-town-button').evaluate(button => {
                             const bounds = button.getBoundingClientRect();
-                            const town = panel.getBoundingClientRect();
-                            const landmarks = panel.querySelector('.cardboard-landmarks').getBoundingClientRect();
-                            return bounds.top >= town.top && bounds.bottom <= landmarks.top && bounds.right <= town.right &&
-                                button.contains(document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2));
+                            return button.contains(document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2));
                         })).toBe(true);
-                    }
-                    const scenery = page.locator('#cardboardSeats .cardboard-town-vignette');
-                    if (viewport.name === 'desktop-1440') {
-                        await expect(scenery).toBeVisible();
-                        await expect(scenery.locator('.town-building')).toHaveCount(2);
-                        await expect(scenery.locator('.town-growth-scenery')).toBeHidden();
-                    } else {
-                        await expect(scenery).toHaveCount(0);
                     }
                 }
                 if (['classic', 'sunset'].includes(theme) && viewport.name === 'landscape-844') {

@@ -105,7 +105,8 @@ const CardBoardTransfers = (() => {
             const center = { x: bounds.width / 2, y: bounds.height / 2 };
             const location = index => {
                 if (index === null || index === 'pool') return center;
-                const header = container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
+                const header = container.querySelector(`.cardboard-overview-city[data-player-index="${index}"] .cardboard-overview-heading`) ||
+                    container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
                 let rect = header?.getBoundingClientRect();
                 if (!rect?.width || !rect.height) {
                     const seat = container.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${index}"]`);
