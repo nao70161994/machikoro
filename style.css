@@ -14039,9 +14039,9 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     grid-auto-flow: row;
     grid-auto-rows: max-content;
     width: 100%;
-    height: 352px;
+    height: 384px;
     min-height: 0;
-    max-height: 352px;
+    max-height: 384px;
     padding: 2px;
     gap: 8px;
     overflow: auto;

@@ -107,7 +107,27 @@ const UiCardBoard = (() => {
             const owner = `席${group.owner + 1}・${players[group.owner].name || 'プレイヤー'}`;
             const label = `${owner}の${group.name}。施設収支${signed}コイン、発動${activation.count}回`;
             const category = known.get(group.name).category || '';
-            previews.push(`<span class="cardboard-event-preview-card" style="--cardboard-preview-delay:${previews.length * 700}ms" role="group" data-player-index="${group.owner}" data-card-name="${escape(group.name)}" title="${escape(label)}" aria-label="${escape(label)}"><span class="cardboard-event-preview-art" aria-hidden="true">${art(group.name, false, category)}</span><span class="cardboard-event-preview-name">${groups.size > 1 ? `<span class="cardboard-preview-progress" aria-hidden="true">${previews.length + 1}/${groups.size} </span>` : ''}${escape(group.name)}</span><span class="cardboard-event-preview-owner">${escape(owner)} · ${escape(signed)}コイン</span></span>`);
+            const routes = new Map();
+            let completeRoutes = true;
+            let transferred = false;
+            const endpoint = index => index === null ? '銀行'
+                : Number.isInteger(index) && index >= 0 && index < players.length ? `席${index + 1}` : null;
+            for (const event of validEvents) {
+                if (event.owner !== group.owner || event.subject !== group.name) continue;
+                if (event.amount > 0) transferred = true;
+                const from = endpoint(event.from), to = endpoint(event.to);
+                if (!from || !to || from === to) { completeRoutes = false; continue; }
+                routes.set(JSON.stringify([from, to]), { from, to });
+            }
+            const paths = completeRoutes && transferred ? [...routes.values()] : [];
+            let route = '';
+            if (paths.length === 1) route = `${paths[0].from}→${paths[0].to}`;
+            else if (paths.length > 1 && paths.every(path => path.to === paths[0].to)) {
+                route = `${paths[0].from}ほか${paths.length - 1}→${paths[0].to}`;
+            } else if (paths.length > 1) route = `席${group.owner + 1}・経路${paths.length}件`;
+            const caption = transferred ? `${signed}コイン · ${route || owner}` : '0コイン · 移動なし';
+            const accessibleLabel = route ? `${label}。確定した送金経路：${paths.map(path => `${path.from}から${path.to}`).join('、')}` : label;
+            previews.push(`<span class="cardboard-event-preview-card" style="--cardboard-preview-delay:${previews.length * 700}ms" role="group" data-player-index="${group.owner}" data-card-name="${escape(group.name)}" title="${escape(accessibleLabel)}" aria-label="${escape(accessibleLabel)}"><span class="cardboard-event-preview-art" aria-hidden="true">${art(group.name, false, category)}</span><span class="cardboard-event-preview-name">${groups.size > 1 ? `<span class="cardboard-preview-progress" aria-hidden="true">${previews.length + 1}/${groups.size} </span>` : ''}${escape(group.name)}</span><span class="cardboard-event-preview-owner">${escape(caption)}</span></span>`);
             if (previews.length === limit) break;
         }
         return previews.join('');

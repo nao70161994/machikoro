@@ -942,7 +942,7 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
     await expect(resultSummary).toContainText('+6');
     await expect(resultSummary).toContainText('施設6回');
     await expect(resultSummary.locator('.cardboard-event-preview-name').first()).toHaveText('森林');
-    await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('街1');
+    await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('銀行→席1');
     await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('+6コイン');
     await expect(resultSummary.locator('.cardboard-event-preview-art svg').first()).toBeVisible();
     await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.add('rolling'));
@@ -1166,6 +1166,7 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await expect(caption).toHaveClass(/cardboard-preview-playing/);
     const cards = caption.locator('.cardboard-event-preview-card');
     await expect(cards).toHaveCount(4);
+    await expect(cards.first().locator('.cardboard-event-preview-owner')).toHaveText(/^\+1コイン · 銀行→席[1-4]$/);
     expect(await page.evaluate(() => {
         window.captionAnimations = [...document.querySelectorAll('.cardboard-event-preview-card')].map(card => card.getAnimations()[0]);
         window.captionAnimations.forEach(animation => animation?.pause());
@@ -1191,4 +1192,23 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await selectTheme(page, 'cardboard');
     await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
     expect(await state(page)).toEqual(before);
+});
+
+test('中央市場の長い施設名をカード枠内で省略せず読める', async ({ page }, testInfo) => {
+    await prepare(page, { width: 1440, height: 936 });
+    const names = page.locator('#cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-name');
+    expect(await names.count()).toBeGreaterThanOrEqual(16);
+    await expect(names.filter({hasText:'フラワーショップ'})).toHaveCount(1);
+    const overflow = await names.evaluateAll(elements => elements.filter(element => {
+        const bounds = element.getBoundingClientRect();
+        const parent = element.closest('.compact-market-buy').getBoundingClientRect();
+        return bounds.left < parent.left - 1 || bounds.right > parent.right + 1 || element.scrollWidth > element.clientWidth + 1;
+    }).map(element => ({name:element.textContent, width:element.getBoundingClientRect().width, parent:element.closest('.compact-market-buy').getBoundingClientRect().width, scroll:element.scrollWidth, client:element.clientWidth})));
+    expect(overflow).toEqual([]);
+    expect(await page.locator('#cardboardMarket .compact-market-facilities').evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        return [...element.querySelectorAll('.compact-market-item')].slice(0,16).every(card => card.getBoundingClientRect().bottom <= bounds.bottom + 1);
+    }), '先頭2段のカード下端まで市場内に収まる').toBe(true);
+    await camera(page, 'market');
+    await page.screenshot({ path: testInfo.outputPath('market-full-facility-names.png') });
 });
