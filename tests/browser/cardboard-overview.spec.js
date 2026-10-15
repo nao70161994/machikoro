@@ -188,6 +188,17 @@ for (const count of [2,3,5,10]) {
         await page.locator('[data-cardboard-camera="overview"]').click();
         await expectWholeTable(page,count);
         expect(await snapshot(page)).toEqual(before);
+        if (count === 2) {
+            await page.evaluate(() => {
+                const game = GameRuntimeState.runtime.snapshot().game;
+                game.players.forEach(player => { player.cards = CARDS.slice(0,18).map(card=>createCardByName(card.name)); });
+                render();
+            });
+            await expectWholeTable(page,2);
+            await expectOwnedCards(page);
+            expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards=>Math.min(...cards.map(card=>card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(24);
+            await page.screenshot({path:testInfo.outputPath('card-table-2-grown.png')});
+        }
     });
 }
 

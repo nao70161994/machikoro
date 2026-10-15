@@ -2585,3 +2585,12 @@ function showConfirm(message, onOk, onCancel) {
     };
     return true;
 }
+
+// Upgrade only art references when the shared local symbol definitions arrive.
+// This never reruns actions, receipts, focus transitions or game scheduling.
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function' && typeof UiBuildMenu !== 'undefined') {
+    document.addEventListener(UiBuildMenu.FACILITY_ART_READY_EVENT, () => {
+        UiBuildMenu.refreshFacilityArtReferences(document);
+    });
+    UiBuildMenu.refreshFacilityArtReferences(document);
+}

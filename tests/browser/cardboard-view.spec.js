@@ -63,6 +63,8 @@ async function intrinsicCards(page, index) {
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1024, height: 768 }, { width: 1440, height: 936 }]) {
     test(`カード盤面は4ビュー切替でも同一状態と共有市場を保つ ${viewport.width}`, async ({ page }, testInfo) => {
         await prepare(page, viewport);
+        await expect(page.locator('svg[data-local-facility-art="ready"]')).toHaveCount(1);
+        await expect.poll(() => page.locator('#cardboardSeats .cardboard-card .cardboard-art use').evaluateAll(nodes => nodes.length > 0 && nodes.every(node => node.getAttribute('href').startsWith('#facility-local-')))).toBe(true);
         const before = await state(page);
         for (const theme of ['plaza', 'sunset', 'classic', 'cardboard']) {
             await selectTheme(page, theme);
@@ -98,7 +100,16 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
         await page.locator('body').evaluate(body => body.classList.remove('accessibility-high-contrast'));
         await page.keyboard.press('Escape');
         expect(await state(page)).toEqual(before);
-        await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.rollDice(3); render(); acceptHotseatHandoff(); });
+        const artRetained = await page.evaluate(() => {
+            const owned = document.querySelector('#cardboardSeats [data-player-index="1"] .cardboard-card .cardboard-art svg');
+            const market = document.querySelector('#cardboardMarket [data-card-name="麦畑"] .compact-market-art svg');
+            GameRuntimeState.runtime.snapshot().game.rollDice(3);
+            render(); acceptHotseatHandoff();
+            return Boolean(owned && market) &&
+                owned === document.querySelector('#cardboardSeats [data-player-index="1"] .cardboard-card .cardboard-art svg') &&
+                market === document.querySelector('#cardboardMarket [data-card-name="麦畑"] .compact-market-art svg');
+        });
+        expect(artRetained).toBe(true);
         await expect(page.locator('#cardboardDiceReceipt')).toContainText('出目 3');
         await expect(page.locator('#cardboardDiceReceipt > .cardboard-transfer-summary')).toBeVisible();
         await expect(page.locator('#turnStatusAnnouncer')).toContainText('出目');
