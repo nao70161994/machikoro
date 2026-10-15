@@ -1143,3 +1143,52 @@ test('建設可の絞り込みでもサイコロ前と購入後は市場を見�
     expect(await cards.count()).toBeGreaterThan(0);
     expect(await cards.evaluateAll(nodes => nodes.every(node => node.disabled))).toBe(true);
 });
+
+test('新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => { player.cards = [createCardByName('森林')]; });
+        game.phase = GAME_PHASES.ROLL;
+        game.log = [];
+        const original = crypto.getRandomValues.bind(crypto);
+        let first = true;
+        Object.defineProperty(crypto, 'getRandomValues', { configurable: true, value(buffer) {
+            if (first) { first = false; buffer[0] = 4; return buffer; }
+            return original(buffer);
+        } });
+        render();
+        acceptHotseatHandoff();
+        document.getElementById('cardboardEventDetails').open = false;
+        document.getElementById('btnRoll').click();
+    });
+    const caption = page.locator('#cardboardEventDetails');
+    await expect(caption).toHaveClass(/cardboard-preview-playing/);
+    const cards = caption.locator('.cardboard-event-preview-card');
+    await expect(cards).toHaveCount(4);
+    expect(await page.evaluate(() => {
+        window.captionAnimations = [...document.querySelectorAll('.cardboard-event-preview-card')].map(card => card.getAnimations()[0]);
+        window.captionAnimations.forEach(animation => animation?.pause());
+        return window.captionAnimations.filter(Boolean).length;
+    })).toBe(4);
+    const before = await state(page);
+    for (let index = 0; index < 4; index++) {
+        const visible = await page.evaluate(index => {
+            window.captionAnimations.forEach(animation => { animation.currentTime = index * 700 + 100; });
+            return [...document.querySelectorAll('.cardboard-event-preview-card')].filter(card => Number(getComputedStyle(card).opacity) > 0.9).map(card => card.dataset.playerIndex);
+        }, index);
+        expect(visible).toEqual([await cards.nth(index).getAttribute('data-player-index')]);
+        if (index === 2) await page.screenshot({ path: testInfo.outputPath('facility-chain-third-owner.png') });
+    }
+    expect(await page.evaluate(() => {
+        render();
+        return [...document.querySelectorAll('.cardboard-event-preview-card')].every((card,index) => card.getAnimations()[0] === window.captionAnimations[index]);
+    })).toBe(true);
+    expect(await state(page)).toEqual(before);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await cards.evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
+    await selectTheme(page, 'plaza');
+    await selectTheme(page, 'cardboard');
+    await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
+    expect(await state(page)).toEqual(before);
+});

@@ -352,6 +352,7 @@ const CardBoardField = (() => {
 
     function clearFeedback() {
         clearAdditionalActivationCues();
+        node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
         pendingBuildCues = [];
         if (transferFrame !== null) globalThis.cancelAnimationFrame(transferFrame);
         transferFrame = null;
@@ -888,7 +889,7 @@ const CardBoardField = (() => {
             summary.replaceChildren(heading, detail);
         }
         const preview = constructionName ? '' : UiCardBoard.buildActivationPreviewHtml(events, game.players, {
-            cards: CARDS, escapeHtml: facts.escapeHtml, renderFacilityArt: UiBuildMenu.renderFacilityArt,
+            cards: CARDS, escapeHtml: facts.escapeHtml, renderFacilityArt: UiBuildMenu.renderFacilityArt, limit: 8,
         });
         details.dataset.activationPreview = String(Boolean(preview));
         heading.textContent = preview ? `${headingText} · 施設${count}回` : headingText;
@@ -979,7 +980,10 @@ const CardBoardField = (() => {
                 if (!additionalActivations.has(key)) additionalActivations.set(key, additionalActivations.size);
             }
         }
-        if (newRoll || freshResultLogs.length) clearAdditionalActivationCues();
+        if (newRoll || freshResultLogs.length) {
+            clearAdditionalActivationCues();
+            node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
+        }
         const eventFocusSeatIndex = UiCardBoard.eventFocusSeatIndex(
             game.players.length,
             buildMilestones,
@@ -1177,6 +1181,11 @@ const CardBoardField = (() => {
             // pulse afresh, including a quick reroll of the same facilities.
             if (!reducedMotionEnabled()) void board.offsetWidth;
             board.classList.add('cardboard-new-roll');
+            const preview = node('cardboardEventDetails');
+            if (!facts.replaying && !reducedMotionEnabled() && !document.hidden &&
+                    preview?.querySelectorAll('.cardboard-event-preview-card').length > 1) {
+                preview.classList.add('cardboard-preview-playing');
+            }
 
             feedbackTimer = setTimeout(() => {
                 feedbackTimer = null;

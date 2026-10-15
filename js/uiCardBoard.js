@@ -98,6 +98,7 @@ const UiCardBoard = (() => {
             const key = JSON.stringify([owner, event.subject]);
             if (!groups.has(key)) groups.set(key, { owner, name: event.subject });
         }
+        const limit = Number.isInteger(options.limit) ? Math.max(1, Math.min(options.limit, 8)) : 2;
         const previews = [];
         for (const group of groups.values()) {
             const activation = activationFor({ activations: validEvents }, group.name, group.owner);
@@ -106,8 +107,8 @@ const UiCardBoard = (() => {
             const owner = `席${group.owner + 1}・${players[group.owner].name || 'プレイヤー'}`;
             const label = `${owner}の${group.name}。施設収支${signed}コイン、発動${activation.count}回`;
             const category = known.get(group.name).category || '';
-            previews.push(`<span class="cardboard-event-preview-card" role="group" data-player-index="${group.owner}" data-card-name="${escape(group.name)}" title="${escape(label)}" aria-label="${escape(label)}"><span class="cardboard-event-preview-art" aria-hidden="true">${art(group.name, false, category)}</span><span class="cardboard-event-preview-name">${escape(group.name)}</span><span class="cardboard-event-preview-owner">${escape(owner)} · ${escape(signed)}コイン</span></span>`);
-            if (previews.length === 2) break;
+            previews.push(`<span class="cardboard-event-preview-card" style="--cardboard-preview-delay:${previews.length * 700}ms" role="group" data-player-index="${group.owner}" data-card-name="${escape(group.name)}" title="${escape(label)}" aria-label="${escape(label)}"><span class="cardboard-event-preview-art" aria-hidden="true">${art(group.name, false, category)}</span><span class="cardboard-event-preview-name">${groups.size > 1 ? `<span class="cardboard-preview-progress" aria-hidden="true">${previews.length + 1}/${groups.size} </span>` : ''}${escape(group.name)}</span><span class="cardboard-event-preview-owner">${escape(owner)} · ${escape(signed)}コイン</span></span>`);
+            if (previews.length === limit) break;
         }
         return previews.join('');
     }

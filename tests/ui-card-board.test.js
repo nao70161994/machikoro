@@ -278,6 +278,10 @@ runTest('発動カード帯は絵と所有者と収支を最大2施設へ集約�
     assert.ok(html.includes('森林。施設収支+6コイン、発動6回'));
     assert.ok(html.includes('&lt;街2&gt;'));
     assert.ok(!html.includes('リンゴ園'));
+    const chain = UiCardBoard.buildActivationPreviewHtml(events, players, {cards:[stadium,forest,apple],limit:8});
+    assert.strictEqual((chain.match(/role="group"/g)||[]).length,3);
+    assert.ok(chain.includes('--cardboard-preview-delay:1400ms'));
+    assert.ok(chain.includes('リンゴ園'));
     assert.strictEqual(JSON.stringify({events,players}),before);
     assert.strictEqual(UiCardBoard.buildActivationPreviewHtml({activations:[{facility:true,owner:99,subject:'森林',from:null,to:1,amount:3}]},players), '');
 });

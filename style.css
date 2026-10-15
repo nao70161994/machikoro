@@ -14776,3 +14776,44 @@ html[data-design="cardboard"] #cardboardBoard:has(#diceResult .rolling) #cardboa
     align-items: center;
     justify-content: center;
 }
+
+/* Resolve the new roll's facility chain in the reserved caption; no input delay. */
+html[data-design="cardboard"] #cardboardEventDetails.cardboard-preview-playing .cardboard-result-detail {
+    position: relative;
+}
+html[data-design="cardboard"] #cardboardEventDetails.cardboard-preview-playing .cardboard-event-preview-card {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    opacity: 0;
+    animation: cardboard-preview-step 700ms linear forwards;
+    animation-delay: var(--cardboard-preview-delay, 0ms);
+}
+html[data-design="cardboard"] #cardboardEventDetails.cardboard-preview-playing .cardboard-event-preview-card:last-child {
+    animation-name: cardboard-preview-last;
+}
+@keyframes cardboard-preview-step {
+    0%, 85% { opacity: 1; }
+    100% { opacity: 0; }
+}
+@keyframes cardboard-preview-last {
+    0%, 100% { opacity: 1; }
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardEventDetails.cardboard-preview-playing .cardboard-event-preview-card {
+    position: static;
+    opacity: 1;
+    animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardEventDetails.cardboard-preview-playing .cardboard-event-preview-card {
+        position: static;
+        opacity: 1;
+        animation: none;
+    }
+    html[data-design="cardboard"] #cardboardEventDetails.cardboard-preview-playing .cardboard-event-preview-card:nth-child(n+2) { display: none; }
+}
+
+html[data-design="cardboard"] #cardboardEventDetails:not(.cardboard-preview-playing) .cardboard-event-preview-card:nth-child(n+3),
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardEventDetails.cardboard-preview-playing .cardboard-event-preview-card:nth-child(n+2) { display: none; }
+
+html[data-design="cardboard"] .cardboard-preview-progress { font-variant-numeric: tabular-nums; font-weight: 700; }
