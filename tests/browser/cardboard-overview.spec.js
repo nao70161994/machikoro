@@ -40,12 +40,36 @@ async function expectWholeTable(page, count) {
     await expect.poll(() => page.locator('#cardboardTableViewport').evaluate(viewport => {
         const clip = viewport.getBoundingClientRect();
         const nodes = [...viewport.querySelectorAll('.cardboard-player, #cardboardCenter')];
-        return nodes.length > 1 && nodes.every(node => {
-            const bounds = node.getBoundingClientRect();
-            return bounds.width > 0 && bounds.height > 0 && bounds.left >= clip.left - 2 && bounds.top >= clip.top - 2 &&
-                bounds.right <= clip.right + 2 && bounds.bottom <= clip.bottom + 2;
-        });
-    })).toBe(true);
+        const failures = [];
+        const tolerance = 2;
+        const contained = (bounds, outer) => bounds.width > 0 && bounds.height > 0 &&
+            bounds.left >= outer.left - tolerance && bounds.top >= outer.top - tolerance &&
+            bounds.right <= outer.right + tolerance && bounds.bottom <= outer.bottom + tolerance;
+        if (clip.height < Math.min(180, innerHeight / 2)) failures.push('table viewport collapsed');
+        if (nodes.length < 2) failures.push('table groups missing');
+        const groups = nodes.map(node => ({
+            node, bounds: node.getBoundingClientRect(),
+            name: node.id || `player ${node.dataset.playerIndex}`,
+        }));
+        for (const group of groups) {
+            if (!contained(group.bounds, clip)) failures.push(`${group.name} outside viewport`);
+            for (const card of group.node.querySelectorAll('.cardboard-card')) {
+                const bounds = card.getBoundingClientRect();
+                if (!contained(bounds, group.bounds)) failures.push(`${group.name}/${card.dataset.cardName} outside owner`);
+                if (!contained(bounds, clip)) failures.push(`${group.name}/${card.dataset.cardName} outside viewport`);
+            }
+        }
+        for (let first = 0; first < groups.length; first++) {
+            for (let second = first + 1; second < groups.length; second++) {
+                const a = groups[first].bounds;
+                const b = groups[second].bounds;
+                const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+                const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+                if (width > tolerance && height > tolerance) failures.push(`${groups[first].name} overlaps ${groups[second].name}`);
+            }
+        }
+        return failures.slice(0, 8);
+    })).toEqual([]);
 }
 
 async function expectOwnedCards(page) {
