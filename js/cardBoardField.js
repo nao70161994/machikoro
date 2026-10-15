@@ -1,5 +1,5 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, MutationObserver, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, LOG_TYPES, MutationObserver, CardTableCamera, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
 
 const CARDBOARD_ROLL_FEEDBACK_MS = 1400;
 
@@ -30,9 +30,10 @@ const CardBoardField = (() => {
     const renderedHtml = new WeakMap();
     let facts = null;
     let initialized = false;
-    let desktopSceneryQuery = null;
+    let tableCamera = null;
     let mounted = false;
     let actionOrigin = null;
+    let statusOrigin = null;
     let toolbarOrigin = null;
     let guideOrigin = null;
     let selectedIndex = null;
@@ -43,10 +44,14 @@ const CardBoardField = (() => {
     let buildAnnouncement = '';
     let revealDiceCandidateAfterMarketUpdate = false;
     let feedbackTimer = null;
+    let transferFrame = null;
+    let transferSequence = 0;
     let buildCueTimer = null;
     let buildCueCard = null;
     let buildCueListener = null;
     const landmarkCues = new Map();
+    const additionalActivationCues = new Map();
+    let pendingBuildCues = [];
     let previousChoice = null;
     let previousBuiltLandmarks = null;
     let previousBuildLog = null;
@@ -60,7 +65,7 @@ const CardBoardField = (() => {
     let themeFocus = null;
     const transfers = typeof CardBoardTransfers !== 'undefined' ? CardBoardTransfers.create() : null;
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
-    const disclosureSelector = '.compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
+    const disclosureSelector = '#cardboardEventDetails, .compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
     function closeDisclosures(except = null) {
         node('cardboardBoard')?.querySelectorAll(disclosureSelector).forEach(element => {
             const details = /** @type {HTMLDetailsElement} */ (element);
@@ -71,87 +76,73 @@ const CardBoardField = (() => {
     function node(id) { return document.getElementById(id); }
     const enabled = () => document.documentElement.dataset.design === 'cardboard';
 
-    function ensureOverview() {
-        let overview = node('cardboardOverview');
-        if (!overview) {
-            const seats = node('cardboardSeats');
-            if (!seats) return null;
-            overview = document.createElement('section');
-            overview.id = 'cardboardOverview';
-            overview.className = 'cardboard-overview-towns';
-            overview.setAttribute('aria-label', '全員の街と成長');
-            seats.parentNode.insertBefore(overview, seats);
-        }
-        if (!node('cardboardDetails')) {
-            const seats = node('cardboardSeats');
-            if (seats) {
-                const details = document.createElement('details');
-                details.id = 'cardboardDetails';
-                const summary = document.createElement('summary');
-                summary.textContent = '施設カードを詳しく見る';
-                details.appendChild(summary);
-                const label = document.createElement('label');
-                label.className = 'cardboard-detail-select-label';
-                label.htmlFor = 'cardboardDetailSelect';
-                label.textContent = '詳しく見る街';
-                const select = document.createElement('select');
-                select.id = 'cardboardDetailSelect';
-                label.appendChild(select);
-                details.appendChild(label);
-                seats.parentNode.insertBefore(details, seats);
-                details.appendChild(seats);
+    function arrangeCompactStatus() {
+        const status = node('status');
+        const actions = node('cardboardActionSlot')?.querySelector('.game-action-panel');
+        const compact = mounted && globalThis.matchMedia('(min-width: 601px) and (max-height: 500px)').matches && !status?.classList.contains('game-winner');
+        if (compact && status && actions) {
+            if (!statusOrigin) {
+                statusOrigin = document.createComment('cardboard-status-origin');
+                status.parentNode.insertBefore(statusOrigin, status);
             }
+            if (status.parentNode !== actions) actions.prepend(status);
+            status.classList.add('cardboard-docked-status');
+        } else if (statusOrigin) {
+            statusOrigin.parentNode?.insertBefore(status, statusOrigin);
+            statusOrigin.remove();
+            statusOrigin = null;
+            status?.classList.remove('cardboard-docked-status');
         }
-        if (!node('cardboardEventDetails')) {
-            const receipt = node('cardboardDiceReceipt');
-            const cardDetails = node('cardboardDetails');
-            if (receipt && cardDetails) {
-                const details = document.createElement('details');
-                details.id = 'cardboardEventDetails';
-                const summary = document.createElement('summary');
-                summary.textContent = '今回の出目・収支と建設';
-                details.appendChild(summary);
-                details.appendChild(receipt);
-                cardDetails.parentNode.insertBefore(details, cardDetails);
-            }
-        }
-        return overview;
     }
 
-    function drawOverview(game, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events) {
-        const overview = ensureOverview();
-        if (!overview) return;
-        overview.dataset.playerCount = String(game.players.length);
-        const eventSummary = node('cardboardEventDetails')?.querySelector('summary');
-        if (eventSummary) eventSummary.textContent = events?.dice
-            ? `出目 ${events.dice.values?.join('＋') || events.dice.effective || events.dice.base} · 今回の収支と建設`
-            : '今回の出目・収支と建設';
-        overview.querySelectorAll('.cardboard-overview-city').forEach(element => {
-            if (Number(/** @type {HTMLElement} */ (element).dataset.playerIndex) >= game.players.length) element.remove();
-        });
-        game.players.forEach((player, index) => {
-            let city = /** @type {HTMLElement | null} */ (overview.querySelector(`[data-player-index="${index}"]`));
-            if (!city) {
-                city = document.createElement('section');
-                city.className = 'cardboard-overview-city';
-                city.dataset.playerIndex = String(index);
-                city.innerHTML = '<header class="cardboard-overview-heading"></header><p class="cardboard-overview-progress"></p><div class="cardboard-overview-scenery"></div>';
-                overview.appendChild(city);
-            }
-            city.classList.toggle('cardboard-overview-current', index === currentIndex);
-            city.classList.toggle('cardboard-overview-self', index === selfIndex);
-            city.dataset.current = String(index === currentIndex);
-            city.dataset.self = String(index === selfIndex);
-            const facilityCount = Array.isArray(player.cards) ? player.cards.length : 0;
-            const landmarkCount = Object.entries(player.landmarks || {}).filter(([name, built]) => built === true && enabledLandmarks.has(name)).length;
-            const name = escapeHtml(player.name);
-            const status = `${index === selfIndex ? '<span class="cardboard-overview-self-label">あなた</span>' : ''}${index === currentIndex ? '<span class="cardboard-overview-turn">手番</span>' : ''}`;
-            replaceHtml(city.querySelector('.cardboard-overview-heading'), `<button type="button" class="cardboard-overview-town-button" data-cardboard-town="${index}" aria-haspopup="dialog" aria-label="${name}の街を詳しく見る"${index === currentIndex ? ' aria-current="true"' : ''}><span class="cardboard-overview-name">${name}</span>${status}</button><span class="cardboard-overview-coins">${escapeHtml(String(player.coins))}<span>コイン</span></span>`);
-            replaceHtml(city.querySelector('.cardboard-overview-progress'), `<span>施設 <strong>${facilityCount}</strong>枚</span><span>ランドマーク <strong>${landmarkCount}/${enabledLandmarks.size}</strong></span>`);
-            replaceHtml(city.querySelector('.cardboard-overview-scenery'), UiBuildMenu.renderTownHtml(player, enabledLandmarks, { playerIndex: index, events }));
-        });
+    function ensureTable() {
+        const board = node('cardboardBoard');
+        const seats = node('cardboardSeats');
+        if (!board || !seats) return;
+        let viewport = node('cardboardTableViewport');
+        if (!viewport) {
+            viewport = document.createElement('div');
+            viewport.id = 'cardboardTableViewport';
+            viewport.setAttribute('role', 'region');
+            viewport.setAttribute('aria-label', '全員の施設カードと中央市場。ドラッグまたはスクロールで移動、ボタンで拡大縮小');
+            viewport.tabIndex = 0;
+            const canvas = document.createElement('div');
+            canvas.id = 'cardboardTableCanvas';
+            seats.parentNode.insertBefore(viewport, seats);
+            viewport.appendChild(canvas);
+            canvas.appendChild(seats);
+        }
         const center = node('cardboardCenter');
-        if (center && center.parentNode !== overview) overview.appendChild(center);
+        if (center && center.parentNode !== seats) seats.appendChild(center);
+        const actions = node('cardboardActionSlot');
+        if (actions && actions.parentNode !== board) board.appendChild(actions);
+        if (!node('cardboardCameraTools')) {
+            const tools = document.createElement('nav');
+            tools.id = 'cardboardCameraTools';
+            tools.setAttribute('aria-label', 'カード卓の移動と拡大縮小');
+            tools.innerHTML = '<button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button>';
+            board.appendChild(tools);
+        }
+        if (!node('cardboardCurrentResult')) {
+            const result = document.createElement('p');
+            result.id = 'cardboardCurrentResult';
+            result.setAttribute('aria-label', '現在の手番の結果');
+            result.hidden = true;
+            board.appendChild(result);
+        }
+        const receipt = node('cardboardDiceReceipt');
+        if (receipt && !node('cardboardEventDetails')) {
+            const details = document.createElement('details');
+            details.id = 'cardboardEventDetails';
+            const summary = document.createElement('summary');
+            summary.textContent = '出目・収支';
+            details.appendChild(summary);
+            details.appendChild(receipt);
+            node('cardboardCameraTools').appendChild(details);
+        }
+        if (!tableCamera && typeof CardTableCamera !== 'undefined') {
+            tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats });
+        }
     }
 
     function updateRosterOverflow() {
@@ -162,7 +153,7 @@ const CardBoardField = (() => {
     }
 
     function updatePlayerOverflow() {
-        node('cardboardSeats')?.querySelectorAll('.cardboard-player-selected').forEach(element => {
+        node('cardboardSeats')?.querySelectorAll('.cardboard-player').forEach(element => {
             const panel = /** @type {HTMLElement} */ (element);
             const cards = panel.querySelector('.cardboard-cards');
             const cardHint = /** @type {HTMLElement | null} */ (panel.querySelector('.cardboard-facility-scroll-hint'));
@@ -300,7 +291,73 @@ const CardBoardField = (() => {
         landmarkCues.set(landmark, { timer, listener });
     }
 
+    function clearAdditionalActivationCue(card) {
+        const cue = additionalActivationCues.get(card);
+        if (!cue) return;
+        clearTimeout(cue.timer);
+        card.removeEventListener('animationend', cue.listener);
+        card.classList.remove('cardboard-card-additional-activation');
+        card.style.removeProperty('--cardboard-additional-activation-delay');
+        additionalActivationCues.delete(card);
+    }
+
+    function clearAdditionalActivationCues() {
+        for (const card of additionalActivationCues.keys()) clearAdditionalActivationCue(card);
+    }
+
+    function showAdditionalActivationCue(card, order) {
+        clearAdditionalActivationCue(card);
+        card.style.setProperty('--cardboard-additional-activation-delay', `${Math.min(order, 7) * 80}ms`);
+        card.classList.add('cardboard-card-additional-activation');
+        const listener = event => {
+            if (event.target === card && event.animationName === 'cardboard-card-activate') clearAdditionalActivationCue(card);
+        };
+        const timer = setTimeout(() => clearAdditionalActivationCue(card), 1400);
+        card.addEventListener('animationend', listener);
+        additionalActivationCues.set(card, { timer, listener });
+    }
+
+    function presentBuildCue(button, playerIndex, name, landmark) {
+        if (/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open) {
+            const game = facts?.game;
+            const marker = `${landmark ? '🏆' : '🏗️'} ${name}を建設！`;
+            const entry = game?.log?.findLast(item => item.message === marker);
+            if (entry) pendingBuildCues.push({ session, turn: game.turnCount, actor: game.currentPlayerIndex, playerIndex, name, landmark, entry });
+            return;
+        }
+        if (landmark) showLandmarkCue(button, !reducedMotionEnabled());
+        else showBuildCue(button, !reducedMotionEnabled());
+    }
+
+    function presentPendingBuildCues() {
+        const pending = pendingBuildCues;
+        pendingBuildCues = [];
+        const game = facts?.game;
+        if (!game || !mounted || !enabled() || facts.replaying || document.hidden || node('gameScreen')?.style.display === 'none') return;
+        for (const cue of pending) {
+            if (cue.session !== session || cue.turn !== game.turnCount || cue.actor !== game.currentPlayerIndex || !game.log.includes(cue.entry)) continue;
+            const panel = node('cardboardSeats')?.querySelector(`[data-player-index="${cue.playerIndex}"]`);
+            const selector = cue.landmark ? '.cardboard-landmark' : '.cardboard-card';
+            const button = Array.from(panel?.querySelectorAll(selector) || []).find(element =>
+                element.getAttribute(cue.landmark ? 'data-landmark-name' : 'data-card-name') === cue.name);
+            if (!button) continue;
+            if (cue.landmark && game.players[cue.playerIndex]?.landmarks[cue.name] !== true) continue;
+            // Closing a successful purchase reveals the actual new card,
+            // including later rows that a seat-header focus cannot expose.
+            tableCamera?.focusCard(button);
+            if (cue.landmark) showLandmarkCue(button, !reducedMotionEnabled());
+            else showBuildCue(button, !reducedMotionEnabled());
+        }
+    }
+
     function clearFeedback() {
+        clearAdditionalActivationCues();
+        node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
+        node('cardboardDiceConfirmation')?.remove();
+        pendingBuildCues = [];
+        if (transferFrame !== null) globalThis.cancelAnimationFrame(transferFrame);
+        transferFrame = null;
+        transferSequence++;
         transfers?.clear();
         const announcer = node('turnStatusAnnouncer');
         if (resultAnnouncement && announcer?.textContent === resultAnnouncement) announcer.textContent = '';
@@ -346,11 +403,13 @@ const CardBoardField = (() => {
             launcher?.focus({ preventScroll: true });
         }
         restoreMarketFocus = true;
+        presentPendingBuildCues();
     }
 
     function closeMarket(restoreFocus = true) {
         const dialog = /** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'));
         restoreMarketFocus = restoreFocus;
+        if (!restoreFocus) pendingBuildCues = [];
         setMarketExpanded(false);
         const wasOpen = dialog?.open === true;
         if (wasOpen) dialog.close();
@@ -391,8 +450,7 @@ const CardBoardField = (() => {
 
     function finishTownClose() {
         const launcher = townLauncher?.isConnected ? townLauncher
-            : node('cardboardOverview')?.querySelector(`[data-cardboard-town="${townIndex}"]`)
-                || node('cardboardSeats')?.querySelector('.cardboard-player-selected [data-cardboard-town]')
+            : node('cardboardSeats')?.querySelector('.cardboard-player-selected [data-cardboard-town]')
                 || node('cardboardRoster')?.querySelector('.cardboard-roster-seat[aria-current="true"]');
         townLauncher = null;
         townIndex = null;
@@ -429,7 +487,12 @@ const CardBoardField = (() => {
         choiceInitialized = false;
         clearFeedback();
         feedback?.reset();
-        if (!mounted) return;
+        const wasMounted = mounted;
+        mounted = false;
+        arrangeCompactStatus();
+        tableCamera?.destroy();
+        tableCamera = null;
+        if (!wasMounted) return;
         const guide = node('tutorialBox');
         if (guide && guideOrigin?.parentNode) guideOrigin.parentNode.insertBefore(guide, guideOrigin);
         guideOrigin?.remove();
@@ -447,14 +510,14 @@ const CardBoardField = (() => {
         node('cardboardLogToggle')?.setAttribute('aria-expanded', 'false');
         node('cardboardMarket')?.replaceChildren();
         node('cardboardSeats').querySelectorAll('.cardboard-player').forEach(element => element.remove());
-        node('cardboardOverview')?.querySelectorAll('.cardboard-overview-city').forEach(element => element.remove());
-        const details = /** @type {HTMLDetailsElement | null} */ (node('cardboardDetails'));
-        if (details) details.open = false;
-        const eventDetails = /** @type {HTMLDetailsElement | null} */ (node('cardboardEventDetails'));
-        if (eventDetails) eventDetails.open = false;
         node('cardboardDiceReceipt').replaceChildren();
+        const currentResult = node('cardboardCurrentResult');
+        if (currentResult) { currentResult.textContent = ''; currentResult.hidden = true; }
         receiptSession = null;
         node('cardboardRoster').replaceChildren();
+        const eventDetails = /** @type {HTMLDetailsElement | null} */ (node('cardboardEventDetails'));
+        if (eventDetails) eventDetails.open = false;
+        node('cardboardBoard').classList.remove('cardboard-card-table');
         node('cardboardBoard').hidden = true;
         mounted = false;
     }
@@ -464,6 +527,11 @@ const CardBoardField = (() => {
         replaceHtml(node('cardboardMarket'), html);
         setMarketExpanded(/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open === true);
         scrollMemory.restore('market', node('cardboardMarket'));
+        const game = facts?.game;
+        if (game?.players?.length) {
+            const validSelf = Number.isInteger(facts.selfIndex) && facts.selfIndex >= 0 && facts.selfIndex < game.players.length;
+            tableCamera?.refresh({ selfIndex: validSelf ? facts.selfIndex : game.currentPlayerIndex, currentIndex: game.currentPlayerIndex, session });
+        }
         if (revealDiceCandidateAfterMarketUpdate) {
             revealDiceCandidateAfterMarketUpdate = false;
             const market = node('cardboardMarket');
@@ -476,25 +544,18 @@ const CardBoardField = (() => {
     function initialize() {
         if (initialized || !node('cardboardBoard')) return;
         initialized = true;
-        ensureOverview()?.addEventListener('click', event => {
-            const launcher = /** @type {HTMLElement} */ (event.target).closest?.('[data-cardboard-town]');
-            if (launcher) openTown(launcher);
+        globalThis.matchMedia('(min-width: 601px) and (max-height: 500px)').addEventListener('change', arrangeCompactStatus);
+        ensureTable();
+        node('cardboardCameraTools')?.addEventListener('click', event => {
+            const button = /** @type {HTMLElement} */ (event.target).closest?.('[data-cardboard-camera]');
+            if (!button || !tableCamera) return;
+            const command = button.getAttribute('data-cardboard-camera');
+            if (command === 'overview') tableCamera.fit();
+            else if (command === 'market') tableCamera.focusMarket();
+            else if (command === 'self') tableCamera.focusSeat(facts?.selfIndex ?? facts?.game?.currentPlayerIndex ?? 0);
+            else if (command === 'readable') tableCamera.readable();
+            else tableCamera.zoomBy(command === 'in' ? 1.25 : 0.8);
         });
-        node('cardboardDetailSelect')?.addEventListener('change', event => {
-            const select = /** @type {HTMLSelectElement} */ (event.target);
-            const index = Number(select.value);
-            if (!Number.isInteger(index) || !facts?.game?.players?.[index]) return;
-            selectedIndex = index;
-            draw();
-            updatePlayerOverflow();
-        });
-        node('cardboardDetails')?.addEventListener('toggle', event => {
-            if (/** @type {HTMLDetailsElement} */ (event.currentTarget).open) updatePlayerOverflow();
-        });
-        desktopSceneryQuery = window.matchMedia?.('(min-width: 1000px) and (min-height: 760px)') || null;
-        const updateDesktopScenery = () => { if (enabled()) { draw(); updatePlayerOverflow(); } };
-        if (typeof desktopSceneryQuery?.addEventListener === 'function') desktopSceneryQuery.addEventListener('change', updateDesktopScenery);
-        else desktopSceneryQuery?.addListener?.(updateDesktopScenery);
         window.addEventListener('resize', () => {
             updateRosterOverflow();
             updatePlayerOverflow();
@@ -566,6 +627,14 @@ const CardBoardField = (() => {
             if (moreMenu?.open && !moreMenu.contains(/** @type {Node} */ (event.target))) closeMoreMenu(false);
         });
         document.addEventListener('visibilitychange', clearHiddenFeedback);
+        let wasReducedMotion = reducedMotionEnabled();
+        const updateMotionFeedback = () => {
+            const reduced = reducedMotionEnabled();
+            if (reduced && !wasReducedMotion) clearFeedback();
+            wasReducedMotion = reduced;
+        };
+        window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', updateMotionFeedback);
+        new MutationObserver(updateMotionFeedback).observe(document.body, { attributes: true, attributeFilter: ['class'] });
         new MutationObserver(clearHiddenFeedback).observe(node('gameScreen'), { attributes: true, attributeFilter: ['style'] });
         node('cardboardRoster').addEventListener('click', event => {
             const button = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cardboard-player-index]'));
@@ -573,8 +642,7 @@ const CardBoardField = (() => {
             selectedIndex = Number(button.dataset.cardboardPlayerIndex);
             scrollMemory.capture('roster', node('cardboardRoster'));
             draw();
-            node('cardboardSeats').querySelector(`[data-player-index="${selectedIndex}"]`)
-                ?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
+            tableCamera?.focusSeat(selectedIndex);
         });
         node('cardboardRoster').addEventListener('keydown', event => {
             const key = event.key;
@@ -637,6 +705,81 @@ const CardBoardField = (() => {
         target.focus({ preventScroll: true });
     }
 
+    function replacePlayerHtml(panel, html) {
+        if (renderedHtml.get(panel) === html && panel.childNodes.length) return;
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        const next = Array.from(template.content.children);
+        const current = Array.from(panel.children);
+        if (current.length !== next.length || current.some((part, index) =>
+            part.tagName !== next[index].tagName || part.className !== next[index].className)) {
+            replaceHtml(panel, html);
+            for (const part of Array.from(panel.children)) renderedHtml.set(part, part.innerHTML);
+            return;
+        }
+        // A balance/header refresh must not rebuild unchanged card SVGs. Keep
+        // their loaded external artwork, focus, and in-flight presentation.
+        renderedHtml.set(panel, html);
+        current.forEach((part, index) => {
+            const label = next[index].getAttribute('aria-label');
+            if (label !== null) part.setAttribute('aria-label', label);
+            replaceHtml(part, next[index].innerHTML);
+        });
+    }
+
+    function presentationNodeKey(node) {
+        if (node.nodeType !== 1) return null;
+        const element = /** @type {Element} */ (node);
+        if (element.id) return `id:${element.id}`;
+        const card = element.matches('.compact-market-item')
+            ? element.querySelector('[data-card-name], [data-landmark-name]') : element;
+        for (const attribute of ['data-card-name', 'data-landmark-name', 'data-player-index', 'data-cardboard-player-index']) {
+            if (card?.hasAttribute(attribute)) return JSON.stringify([element.tagName, attribute,
+                card.getAttribute(attribute), card.getAttribute('data-action')]);
+        }
+        return null;
+    }
+
+    function patchPresentationChildren(parent, nextParent) {
+        let cursor = parent.firstChild;
+        for (const next of Array.from(nextParent.childNodes)) {
+            const key = presentationNodeKey(next);
+            let current = cursor;
+            if (key && presentationNodeKey(current || nextParent) !== key) {
+                current = null;
+                for (let candidate = cursor; candidate; candidate = candidate.nextSibling) {
+                    if (presentationNodeKey(candidate) === key) { current = candidate; break; }
+                }
+            }
+            const compatible = current && current.nodeType === next.nodeType && current.nodeName === next.nodeName &&
+                presentationNodeKey(current) === key;
+            if (!compatible) {
+                parent.insertBefore(next.cloneNode(true), cursor);
+                continue;
+            }
+            if (current !== cursor) parent.insertBefore(current, cursor);
+            if (current.nodeType === 1) {
+                const target = /** @type {Element} */ (current);
+                const source = /** @type {Element} */ (next);
+                if (target.outerHTML !== source.outerHTML) {
+                    for (const attribute of Array.from(target.attributes)) {
+                        if (!source.hasAttribute(attribute.name)) target.removeAttribute(attribute.name);
+                    }
+                    for (const attribute of Array.from(source.attributes)) {
+                        if (target.getAttribute(attribute.name) !== attribute.value) target.setAttribute(attribute.name, attribute.value);
+                    }
+                    patchPresentationChildren(target, source);
+                }
+            } else if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+            cursor = current.nextSibling;
+        }
+        while (cursor) {
+            const obsolete = cursor;
+            cursor = cursor.nextSibling;
+            parent.removeChild(obsolete);
+        }
+    }
+
     function replaceHtml(element, html) {
         // Native details.open and normalized HTML entities change innerHTML
         // without changing the requested content. Do not replace a focused
@@ -662,7 +805,11 @@ const CardBoardField = (() => {
         const disclosures = ['.compact-market-filter-disclosure', '.compact-market-goal-disclosure'].map(selector => ({
             selector, open: (/** @type {HTMLDetailsElement | null} */ (element.querySelector(selector)))?.open,
         }));
-        element.innerHTML = html;
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        // Preserve unchanged external SVG nodes even when activation, balance,
+        // stock, filters or purchase buttons change around them.
+        patchPresentationChildren(element, template.content);
         for (const disclosure of disclosures) {
             const child = /** @type {HTMLDetailsElement | null} */ (element.querySelector(disclosure.selector));
             if (child && disclosure.open !== undefined) child.open = disclosure.open;
@@ -687,6 +834,82 @@ const CardBoardField = (() => {
                 (/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open ? node('cardboardMarketClose') : null);
         }
         focusVisible(target);
+    }
+
+    function updateCurrentResult(events, game, selfIndex) {
+        const result = node('cardboardCurrentResult');
+        if (!result) return;
+        const construction = events.important?.find(event => ['build', 'landmark'].includes(event.kind));
+        const constructionName = construction?.message?.match(/^(?:🏗️|🏆)\s+(.+)を建設！$/u)?.[1];
+        const facilities = new Map();
+        for (const activation of events.activations || []) {
+            if (!activation.facility || !activation.subject) continue;
+            const owner = Number.isInteger(activation.owner) ? activation.owner
+                : activation.to !== null ? activation.to : activation.from;
+            const key = activation.activation || `${owner}:${activation.subject}`;
+            const previous = facilities.get(key);
+            facilities.set(key, {
+                name: activation.subject,
+                count: Math.max(previous?.count || 0, Number.isSafeInteger(activation.count) ? activation.count : 1),
+            });
+        }
+        const names = [...new Set([...facilities.values()].map(facility => facility.name))];
+        const count = [...facilities.values()].reduce((sum, facility) => sum + facility.count, 0);
+        const balanceIndex = Number.isInteger(selfIndex) ? selfIndex : game.currentPlayerIndex;
+        const balance = events.balances?.find(entry => entry.index === balanceIndex);
+        const net = Number.isSafeInteger(balance?.facilityNet) ? balance.facilityNet : 0;
+        const parts = [];
+        if (events.dice) parts.push(`出目 ${events.dice.harbor ? `${events.dice.base}→${events.dice.effective}（港+2）` : events.dice.effective ?? events.dice.base}${events.dice.rerolled ? '（振り直し）' : ''}`);
+        if (count) parts.push(`施設${count}回：${names.slice(0, 3).join('・')}${names.length > 3 ? `ほか${names.length - 3}種類` : ''}`);
+        if (events.dice) parts.push(`${balanceIndex === selfIndex ? 'あなた' : game.players[balanceIndex]?.name || '手番'}の${events.incomplete ? '確認できた施設収支' : '施設収支'} ${net > 0 ? '+' : ''}${net}コイン`);
+        if (constructionName) parts.push(`${game.players[construction.actorIndex]?.name || 'プレイヤー'}が${constructionName}${construction.kind === 'landmark' ? 'を完成' : 'を建設'}`);
+        if (events.incomplete) parts.push('一部の収支は内訳で確認');
+        result.textContent = parts.join(' · ');
+        result.hidden = !events.dice && !constructionName;
+        result.dataset.kind = constructionName ? 'build' : events.dice ? 'roll' : 'idle';
+        result.dataset.net = String(net);
+        result.dataset.largeIncome = String(net >= 5);
+        const details = node('cardboardEventDetails');
+        const summary = details?.querySelector('summary');
+        if (!details || !summary) return;
+        const hasResult = Boolean(events.dice || constructionName);
+        if (!hasResult || constructionName) {
+            details.classList.remove('cardboard-preview-playing');
+            node('cardboardDiceConfirmation')?.remove();
+        }
+        details.dataset.hasResult = String(hasResult);
+        details.dataset.largeIncome = String(net >= 5);
+        summary.dataset.net = String(net);
+        summary.dataset.largeIncome = String(net >= 5);
+        if (!hasResult) {
+            details.dataset.activationPreview = 'false';
+            summary.textContent = '出目・収支';
+            summary.removeAttribute('aria-label');
+            summary.removeAttribute('title');
+            return;
+        }
+        const headingText = constructionName
+            ? construction.kind === 'landmark' ? '目標完成' : '建設完了'
+            : `${events.dice.harbor ? `港${events.dice.base}→${events.dice.effective}` : `出目${events.dice.effective ?? events.dice.base}`} · ${net > 0 ? '+' : ''}${net}`;
+        const detailText = constructionName || `施設${count}回・${events.incomplete ? '確認分' : '収支'}`;
+        let heading = summary.querySelector('.cardboard-result-heading');
+        let detail = summary.querySelector('.cardboard-result-detail');
+        if (!heading || !detail) {
+            heading = document.createElement('span');
+            heading.className = 'cardboard-result-heading';
+            detail = document.createElement('span');
+            detail.className = 'cardboard-result-detail';
+            summary.replaceChildren(heading, detail);
+        }
+        const preview = constructionName ? '' : UiCardBoard.buildActivationPreviewHtml(events, game.players, {
+            cards: CARDS, escapeHtml: facts.escapeHtml, renderFacilityArt: UiBuildMenu.renderFacilityArt, limit: 8,
+        });
+        details.dataset.activationPreview = String(Boolean(preview));
+        heading.textContent = preview ? `${headingText} · 施設${count}回` : headingText;
+        if (preview) replaceHtml(detail, preview);
+        else detail.textContent = detailText;
+        summary.setAttribute('aria-label', `${result.textContent}。出目と収支を確認`);
+        summary.title = result.textContent;
     }
 
     function draw() {
@@ -737,9 +960,11 @@ const CardBoardField = (() => {
                 guide.parentNode.insertBefore(guideOrigin, guide);
                 node('cardboardControls').appendChild(guide);
             }
+            node('cardboardBoard').classList.add('cardboard-card-table');
             node('cardboardBoard').hidden = false;
             mounted = true;
         }
+        ensureTable();
         const validIndex = index => Number.isInteger(index) && index >= 0 && index < game.players.length;
         const currentIndex = validIndex(game.currentPlayerIndex) ? game.currentPlayerIndex : 0;
         const selfIndex = validIndex(facts.selfIndex) ? facts.selfIndex : currentIndex;
@@ -751,11 +976,28 @@ const CardBoardField = (() => {
         if (!validIndex(selectedIndex)) selectedIndex = selfIndex;
         const newRoll = feedback?.refresh(facts) === true;
         const events = turnEventsFor(game, facts.display);
+        updateCurrentResult(events, game, selfIndex);
         const freshResultLogs = feedback?.takeResultLogs() || [];
         const freshEvents = freshResultLogs.length ? UiTurnEvents.project(freshResultLogs, {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
             cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
         }) : null;
+        // Feedback consumes only newly appended consequences after a pending
+        // choice. Never pulse the older facilities retained in the turn receipt.
+        const additionalActivations = new Map();
+        if (!newRoll && freshEvents && !facts.replaying && !feedback?.wasInvalidated()) {
+            for (const event of freshEvents.activations) {
+                const owner = Number.isInteger(event.owner) ? event.owner : event.to !== null ? event.to : event.from;
+                if (!event.facility || !Number.isInteger(owner) || !event.subject) continue;
+                const key = JSON.stringify([owner, event.subject]);
+                if (!additionalActivations.has(key)) additionalActivations.set(key, additionalActivations.size);
+            }
+        }
+        if (newRoll || freshResultLogs.length) {
+            node('cardboardDiceConfirmation')?.remove();
+            clearAdditionalActivationCues();
+            node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
+        }
         const eventFocusSeatIndex = UiCardBoard.eventFocusSeatIndex(
             game.players.length,
             buildMilestones,
@@ -781,7 +1023,7 @@ const CardBoardField = (() => {
         choiceInitialized = true;
         if (node('cardboardChoiceJump')) node('cardboardChoiceJump').hidden = !choice;
         replaceHtml(node('cardboardRoster'), UiCardBoard.buildRosterHtml(game.players, {
-            selfIndex, currentIndex, selectedIndex, focusMode: game.players.length > 4, escapeHtml, enabledLandmarks, events,
+            selfIndex, currentIndex, selectedIndex, focusMode: false, escapeHtml, enabledLandmarks, events,
             playerSettings: facts.playerSettings,
             renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
             playerKindAccessibleLabel: UiPlayerDisplay.playerKindAccessibleLabel,
@@ -793,26 +1035,11 @@ const CardBoardField = (() => {
                 ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
         }
         const seats = node('cardboardSeats');
-        drawOverview(game, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events);
-        const detailSelect = /** @type {HTMLSelectElement | null} */ (node('cardboardDetailSelect'));
-        if (detailSelect) {
-            const options = game.players.map((player, index) => `<option value="${index}">${escapeHtml(player.name)}</option>`).join('');
-            if (renderedHtml.get(detailSelect) !== options) {
-                detailSelect.innerHTML = options;
-                renderedHtml.set(detailSelect, options);
-            }
-            detailSelect.value = String(selectedIndex);
-        }
         seats.dataset.playerCount = String(game.players.length);
         const board = node('cardboardBoard');
         board.dataset.playerCount = String(game.players.length);
-        board.classList.toggle('cardboard-focus-view', game.players.length >= 2 && game.players.length <= 10);
-        if (turnChanged && !validIndex(eventFocusSeatIndex) && board.classList.contains('cardboard-focus-view')) {
-            const currentSeat = node('cardboardRoster')?.querySelector('.cardboard-roster-seat[aria-current="true"]');
-            currentSeat?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
-        }
-        const indices = UiCardBoard.selectDetailIndices(game.players.length, { selfIndex, currentIndex, selectedIndex, focusOnly: true });
-        const animateNewCards = newlyBuiltCards.length > 0 && !reducedMotionEnabled();
+        board.classList.remove('cardboard-focus-view');
+        const indices = UiCardBoard.selectTableIndices(game.players.length);
         const others = indices.filter(index => index !== selfIndex);
         let removedFocusedPanel = false;
         seats.querySelectorAll('.cardboard-player').forEach(element => {
@@ -839,20 +1066,24 @@ const CardBoardField = (() => {
             panel.classList.toggle('cardboard-player-current', index === currentIndex);
             panel.classList.toggle('cardboard-player-selected', index === selectedIndex);
             /** @type {HTMLElement} */ (panel).dataset.seatPosition = position;
-            replaceHtml(panel, UiCardBoard.buildPlayerHtml(game.players[index], {
+            replacePlayerHtml(panel, UiCardBoard.buildPlayerHtml(game.players[index], {
                 index, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events, contentOnly: true,
                 playerSettings: facts.playerSettings,
                 renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
                 playerKindAccessibleLabel: UiPlayerDisplay.playerKindAccessibleLabel,
                 renderFacilityArt: UiBuildMenu.renderFacilityArt,
-                renderTownScenery: desktopSceneryQuery?.matches ? UiBuildMenu.renderTownHtml : null,
+                renderTownScenery: null,
                 getEffectText,
             }));
             for (const landmark of newlyBuiltLandmarks) {
                 if (landmark.index !== index) continue;
                 const button = Array.from(/** @type {NodeListOf<HTMLElement>} */ (panel.querySelectorAll('.cardboard-landmark'))).find(item => item.dataset.landmarkName === landmark.name);
                 if (!button) continue;
-                showLandmarkCue(button, !reducedMotionEnabled());
+                presentBuildCue(button, index, landmark.name, true);
+            }
+            for (const button of Array.from(panel.querySelectorAll('.cardboard-card'))) {
+                const key = JSON.stringify([index, button.getAttribute('data-card-name')]);
+                if (additionalActivations.has(key)) showAdditionalActivationCue(button, additionalActivations.get(key));
             }
             scrollMemory.restore(`player:${index}`, panel);
             const newBuild = newlyBuiltCards.find(build => build.playerIndex === index);
@@ -865,13 +1096,15 @@ const CardBoardField = (() => {
             const cardList = card?.closest('.cardboard-cards');
             if (card && cardList) {
                 revealInScrollport(card, cardList);
-                if (builtCard === card) showBuildCue(card, animateNewCards);
+                if (builtCard === card) presentBuildCue(card, index, newBuild.name, false);
             }
         }
         if (removedFocusedPanel) {
-            (/** @type {HTMLElement | null} */ (node('cardboardOverview')?.querySelector(`[data-cardboard-town="${selectedIndex}"]`)))
+            (/** @type {HTMLElement | null} */ (node('cardboardRoster')?.querySelector(`[data-cardboard-player-index="${selectedIndex}"]`)))
                 ?.focus({ preventScroll: true });
         }
+        arrangeCompactStatus();
+        tableCamera?.refresh({ selfIndex, currentIndex, session });
         updateTown();
         const receipt = node('cardboardDiceReceipt');
         const disclosure = receipt.querySelector('details');
@@ -937,13 +1170,47 @@ const CardBoardField = (() => {
                 ].filter(Boolean).join('。');
                 resultAnnouncement = announceResult.textContent;
             }
-            transfers?.play({ container: node('cardboardBoard'), summaryContainer: receipt, events: freshEvents });
+            // Camera layout is queued earlier in this draw. Read the flight
+            // endpoints after that layout, without replaying the result on redraw.
+            if (transferFrame !== null) globalThis.cancelAnimationFrame(transferFrame);
+            const sequence = ++transferSequence;
+            const capturedSession = session;
+            const capturedTurn = game.turnCount;
+            const capturedActor = currentIndex;
+            const capturedReroll = game.usedReroll === true;
+            transferFrame = globalThis.requestAnimationFrame(() => {
+                transferFrame = null;
+                if (sequence !== transferSequence || !mounted || !enabled() || document.hidden ||
+                        facts?.replaying || session !== capturedSession || facts?.game?.turnCount !== capturedTurn ||
+                        facts?.game?.currentPlayerIndex !== capturedActor || (facts?.game?.usedReroll === true) !== capturedReroll ||
+                        node('gameScreen')?.style.display === 'none') return;
+                const freshDiceResolution = freshResultLogs.some(entry => entry.type === LOG_TYPES.DICE && entry.diceResolution);
+                if (newRoll && freshDiceResolution && freshEvents?.dice?.values?.length) {
+                    node('cardboardDiceConfirmation')?.remove();
+                    const dice = freshEvents.dice.values;
+                    const confirmation = document.createElement('span');
+                    confirmation.id = 'cardboardDiceConfirmation';
+                    confirmation.className = 'cardboard-dice-confirmation';
+                    confirmation.setAttribute('aria-hidden', 'true');
+                    confirmation.textContent = dice.length === 1 ? `出目 ${dice[0]}` : `${dice.join(' + ')} = ${freshEvents.dice.base}`;
+                    node('cardboardBoard').appendChild(confirmation);
+                }
+                transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'), events: freshEvents });
+            });
         }
         if (newRoll) {
             if (feedbackTimer !== null) clearTimeout(feedbackTimer);
             const board = node('cardboardBoard');
-            board.classList.remove('cardboard-roll-reviewed');
+            board.classList.remove('cardboard-new-roll', 'cardboard-roll-reviewed');
+            // Reuse the loaded card artwork while starting this actual roll's
+            // pulse afresh, including a quick reroll of the same facilities.
+            if (!reducedMotionEnabled()) void board.offsetWidth;
             board.classList.add('cardboard-new-roll');
+            const preview = node('cardboardEventDetails');
+            if (!facts.replaying && !reducedMotionEnabled() && !document.hidden &&
+                    preview?.querySelectorAll('.cardboard-event-preview-card').length > 1) {
+                preview.classList.add('cardboard-preview-playing');
+            }
 
             feedbackTimer = setTimeout(() => {
                 feedbackTimer = null;

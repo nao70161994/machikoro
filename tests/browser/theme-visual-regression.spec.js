@@ -111,16 +111,32 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     const unavailable = page.locator('#cardboardMarket .compact-market-buy:disabled').first();
                     await expect(unavailable).toHaveCSS('opacity', '1');
                     await expect(unavailable).toHaveCSS('filter', 'none');
-                    await expect(page.locator('#cardboardOverview .cardboard-overview-city')).toHaveCount(4);
-                    await expect(page.locator('#cardboardDetails')).not.toHaveAttribute('open', '');
-                    for (const city of await page.locator('#cardboardOverview .cardboard-overview-city').all()) {
-                        await expect(city.locator('.town-street')).toBeVisible();
-                        await expect(city.locator('.town-building').first()).toBeVisible();
-                        await expect.poll(() => city.locator('.cardboard-overview-town-button').evaluate(button => {
-                            const bounds = button.getBoundingClientRect();
-                            return button.contains(document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2));
-                        })).toBe(true);
-                    }
+                    await expect(page.locator('#cardboardTableCanvas > #cardboardSeats .cardboard-player')).toHaveCount(4);
+                    await expect(page.locator('#cardboardSeats #cardboardCenter #cardboardMarket')).toHaveCount(1);
+                    await expect(page.locator('#cardboardOverview, #cardboardDetails')).toHaveCount(0);
+                    await expect.poll(() => page.locator('#cardboardTableViewport').evaluate(viewport => {
+                        const clip = viewport.getBoundingClientRect();
+                        const panels = [...viewport.querySelectorAll('.cardboard-player, #cardboardCenter')];
+                        return panels.length === 5 && panels.every(panel => {
+                            const bounds = panel.getBoundingClientRect();
+                            return bounds.width > 0 && bounds.height > 0 && bounds.left >= clip.left - 2 &&
+                                bounds.top >= clip.top - 2 && bounds.right <= clip.right + 2 && bounds.bottom <= clip.bottom + 2;
+                        });
+                    })).toBe(true);
+                    const owned = await page.locator('#cardboardSeats .cardboard-player').evaluateAll(panels => panels.map(panel => ({
+                        index: Number(panel.dataset.playerIndex),
+                        cards: [...panel.querySelectorAll('.cardboard-card')].map(card => ({
+                            name: card.dataset.cardName,
+                            count: card.querySelector('.cardboard-count')?.textContent,
+                            dice: card.querySelector('.cardboard-dice')?.textContent,
+                            artCount: card.querySelectorAll('.cardboard-art svg').length,
+                        })).sort((left, right) => left.name.localeCompare(right.name)),
+                    })).sort((left, right) => left.index - right.index));
+                    const expectedCards = [
+                        { name: '麦畑', count: '所有 ×1', dice: '1', artCount: 1 },
+                        { name: 'パン屋', count: '所有 ×1', dice: '2・3', artCount: 1 },
+                    ].sort((left, right) => left.name.localeCompare(right.name));
+                    expect(owned).toEqual(Array.from({ length: 4 }, (_, index) => ({ index, cards: expectedCards })));
                 }
                 if (['classic', 'sunset'].includes(theme) && viewport.name === 'landscape-844') {
                     await expect(page.locator('#players details.player-box-compact')).toHaveCount(3);

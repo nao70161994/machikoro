@@ -20,13 +20,15 @@ async function prepare(page, viewport, count = 4, controlledCards = true) {
             if (controlledCards) player.cards = Array.from({ length: index ? 2 : 4 }, () => createCardByName(index ? 'カフェ' : '麦畑'));
             player.coins = 30;
         });
+        // Keep the turn context consistent with the controlled seat order.
+        state.game.log = [];
+        state.game.addLog(LOG_TYPES.SYSTEM, `👤 ${state.game.currentPlayer().name}のターン`);
         setTutorialEnabled(false);
         render();
         acceptHotseatHandoff();
     }, { count, controlledCards });
-    // These regression cases exercise the optional card panel. The dedicated
-    // overview suite verifies the normal, closed-panel board.
-    await page.locator('#cardboardDetails > summary').click();
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(count);
+    await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-scale', /[0-9]/);
     if (!await page.locator('#cardboardEventDetails').evaluate(element => element.open)) await page.locator('#cardboardEventDetails > summary').click();
 }
 const state = page => page.evaluate(() => GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
@@ -37,230 +39,81 @@ async function selectTheme(page, theme) {
         select.dispatchEvent(new Event('change', { bubbles: true }));
     }, theme);
     await expect(page.locator('html')).toHaveAttribute('data-design', theme);
-    if (theme === 'cardboard' && !await page.locator('#cardboardDetails').evaluate(element => element.open)) {
-        await page.locator('#cardboardDetails > summary').click();
-        if (!await page.locator('#cardboardEventDetails').evaluate(element => element.open)) await page.locator('#cardboardEventDetails > summary').click();
+    if (theme === 'cardboard' && !await page.locator('#cardboardEventDetails').evaluate(element => element.open)) {
+        await page.locator('#cardboardEventDetails > summary').click();
     }
 }
 
+async function camera(page, command) {
+    await page.locator(`[data-cardboard-camera="${command}"]`).click();
+}
+async function focusSeat(page, index) {
+    await page.locator(`#cardboardRoster [data-cardboard-player-index="${index}"]`).click();
+}
+async function intrinsicCards(page, index) {
+    return page.locator(`#cardboardSeats [data-player-index="${index}"] .cardboard-card`).evaluateAll(cards => cards.map(card => ({
+        width: card.offsetWidth, height: card.offsetHeight,
+        artHeight: card.querySelector('.cardboard-art').offsetHeight,
+        name: card.querySelector('.cardboard-name').textContent,
+        dice: card.querySelector('.cardboard-dice').textContent,
+        count: card.querySelector('.cardboard-count').textContent,
+        clipped: card.scrollHeight > card.clientHeight + 1,
+    })));
+}
 for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1024, height: 768 }, { width: 1440, height: 936 }]) {
     test(`カード盤面は4ビュー切替でも同一状態と共有市場を保つ ${viewport.width}`, async ({ page }, testInfo) => {
         await prepare(page, viewport);
-        if (viewport.width <= 390 && viewport.height > 480) {
-            await page.evaluate(() => {
-                GameRuntimeState.runtime.snapshot().game.players[0].cards.push(createCardByName('パン屋'));
-                render();
-            });
-        }
+        await expect(page.locator('svg[data-local-facility-art="ready"]')).toHaveCount(1);
+        await expect.poll(() => page.locator('#cardboardSeats .cardboard-card .cardboard-art use').evaluateAll(nodes => nodes.length > 0 && nodes.every(node => node.getAttribute('href').startsWith('#facility-local-')))).toBe(true);
         const before = await state(page);
-        await expect(page.locator('#cardboardChoiceJump')).toBeHidden();
-        await expect(page.locator('#cardboardOverview .cardboard-overview-city')).toHaveCount(4);
         for (const theme of ['plaza', 'sunset', 'classic', 'cardboard']) {
             await selectTheme(page, theme);
             expect(await state(page)).toEqual(before);
-            const unavailableAction = theme === 'cardboard'
-                ? page.locator('#cardboardMarket .compact-market-buy:disabled').first()
-                : page.locator('#gameScreen #buildMenu button:disabled').first();
-            await expect(unavailableAction).toHaveCSS('opacity', theme === 'cardboard' ? '1' : '0.8');
-            if (theme === 'cardboard') {
-                await expect(unavailableAction).toHaveCSS('filter', 'none');
-                await expect(unavailableAction.locator('.compact-market-name')).toHaveCSS('color', viewport.width === 844 ? 'rgb(24, 52, 71)' : 'rgb(255, 255, 255)');
-                await expect(unavailableAction.locator('..')).toHaveClass(/compact-market-unavailable/);
-            }
+            await expect(page.locator('#buildMenu')).toHaveCount(1);
         }
-        await expect(page.locator('#cardboardMoreMenu > summary')).toBeVisible();
-        await page.locator('#cardboardMoreMenu > summary').click();
-        const designSummary = page.locator('#cardboardMoreMenuContent .game-design-switcher > summary');
-        await expect(designSummary).toBeVisible();
-        await designSummary.click();
-        await expect(page.locator('#cardboardMoreMenuContent #gameDesignThemeSelect')).toBeVisible();
-        await designSummary.click();
-        await page.locator('#cardboardMoreMenu > summary').click();
-        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(1);
-        const scenery = page.locator('#cardboardSeats .cardboard-town-vignette');
-        if (viewport.width >= 1000 && viewport.height >= 760) {
-            await expect(scenery).toBeVisible();
-            await expect(scenery).toHaveAttribute('aria-hidden', 'true');
-            expect(await scenery.locator('.town-building').count()).toBeLessThanOrEqual(4);
-            await expect(scenery.locator('button, a, [tabindex]')).toHaveCount(0);
-            await expect(scenery.locator('.town-backdrop')).toBeHidden();
-            await expect(scenery.locator('.town-growth-scenery')).toBeHidden();
-        } else {
-            await expect(scenery).toHaveCount(0);
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
+        await expect(page.locator('#cardboardSeats > #cardboardCenter')).toHaveCount(1);
+        await expect(page.locator('#cardboardSeats .cardboard-town-vignette')).toHaveCount(0);
+        for (let index = 0; index < 4; index++) {
+            const cards = await intrinsicCards(page, index);
+            expect(cards.length).toBeGreaterThan(0);
+            expect(cards.every(card => card.width >= 96 && card.artHeight >= 54 && card.name && card.dice && card.count && !card.clipped)).toBe(true);
         }
-
-        await expect(page.locator('#cardboardMarket #buildMenu')).toHaveCount(0);
-        await expect(page.locator('#buildMenu')).toHaveCount(1);
-        await expect(page.locator('#cardboardCompareToggle')).toHaveAttribute('aria-haspopup', 'dialog');
-        await expect(page.locator('#cardboardCompareToggle')).toHaveAttribute('aria-label', '全員の施設カードを比較');
-        await expect(page.locator('#cardboardMarket [data-action="buildLandmark"]')).not.toHaveCount(0);
+        const accents = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(players => players.map(player => getComputedStyle(player).borderTopColor));
+        expect(new Set(accents).size, JSON.stringify(accents)).toBe(4);
         await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×4');
-        await expect(page.locator('#cardboardSeats .cardboard-player-selected > .cardboard-landmark-heading .cardboard-landmark-scroll-hint'))
-            .toHaveText('横にスクロール →');
-        const seatAccents = await page.locator('#cardboardRoster .cardboard-roster-seat').evaluateAll(players =>
-            players.map(player => getComputedStyle(player).borderInlineStartColor));
-        expect(new Set(seatAccents).size).toBe(4);
-        const rosterAccents = await page.locator('#cardboardRoster .cardboard-roster-seat').evaluateAll(seats =>
-            Object.fromEntries(seats.map(seat => [seat.dataset.cardboardPlayerIndex,
-                getComputedStyle(seat).borderInlineStartColor])));
-        for (const [index, accent] of await page.locator('#cardboardSeats .cardboard-player').evaluateAll(players =>
-            players.map(player => [player.dataset.playerIndex, getComputedStyle(player).borderInlineStartColor]))) {
-            expect(rosterAccents[index]).toBe(accent);
-        }
-        const landmarkDisclosure = page.locator('#cardboardMarket .compact-market-goal-disclosure');
-        await landmarkDisclosure.evaluate(element => { element.open = true; });
-        const marketLandmarkArt = page.locator('#cardboardMarket .compact-market-landmark .compact-market-art').first();
-        await expect(marketLandmarkArt).toBeVisible();
-        expect((await marketLandmarkArt.boundingBox()).height).toBeGreaterThanOrEqual(34);
-        await landmarkDisclosure.evaluate(element => { element.open = false; });
-        const marketFacility = page.locator('#cardboardMarket .compact-market-item:not(.compact-market-landmark)').first();
-        const marketArt = await marketFacility.locator('.compact-market-art').boundingBox();
-        const marketWidth = await marketFacility.evaluate(element => element.getBoundingClientRect().width);
-        expect(marketWidth).toBeGreaterThanOrEqual(96);
-        expect(marketArt.height).toBeGreaterThanOrEqual(54);
-        if (viewport.width === 844) {
-            const marketHeading = await page.locator('#cardboardMarket .compact-market').evaluate(element => ({
-                pseudoContent: getComputedStyle(element, '::before').content,
-                pseudoDisplay: getComputedStyle(element, '::before').display,
-                headingBounds: (() => {
-                    const heading = element.querySelector('.compact-market-header h2');
-                    return { width: heading.getBoundingClientRect().width, height: heading.getBoundingClientRect().height };
-                })(),
-            }));
-            expect(marketHeading.pseudoDisplay).toBe('none');
-            expect(marketHeading.headingBounds.width).toBeGreaterThan(40);
-            await expect(page.locator('#cardboardMarket .compact-market-header h2')).toHaveText('中央市場');
-            const landscapeMarketCard = page.locator('#cardboardMarket .compact-market-item:not(.compact-market-landmark)').first();
-            expect((await landscapeMarketCard.boundingBox()).height).toBeGreaterThanOrEqual(150);
-            expect((await landscapeMarketCard.locator('.compact-market-art').boundingBox()).height).toBeGreaterThanOrEqual(60);
-            expect(await landscapeMarketCard.locator('.compact-market-price').evaluate(element =>
-                parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(11);
-            await expect(landscapeMarketCard.locator('.compact-market-kind')).toBeVisible();
-            await expect(landscapeMarketCard.locator('.compact-market-stock')).toBeVisible();
-            for (const [selector, label, accessibleName] of [
-                ['.game-design-switcher > summary', '画面', '表示テーマを変更'],
-                ['.game-guide-settings > summary', 'ヒント', 'チュートリアルの表示と詳しさを設定'],
-                ['.game-support-settings > summary', 'データ', '対局データと問題報告の操作'],
-            ]) {
-                const control = page.locator(`#cardboardControls ${selector}`);
-                await expect(control).toHaveAttribute('aria-label', accessibleName);
-                expect(await control.evaluate(element => getComputedStyle(element, '::after').content)).toContain(label);
-            }
-            await page.evaluate(() => {
-                // Exercise the install-only controller path. An unrelated SW
-                // update notice may legitimately keep pwa-banner-open true.
-                setPwaBannerVisible('pwaUpdateBanner', false);
-                setPwaBannerVisible('pwaInstallBanner', true);
+        await camera(page, 'overview');
+        expect(await page.locator('#cardboardTableViewport').evaluate(viewport => {
+            const bounds = viewport.getBoundingClientRect();
+            return [...viewport.querySelectorAll('.cardboard-player, #cardboardCenter')].every(element => {
+                const box = element.getBoundingClientRect();
+                return box.left >= bounds.left - 2 && box.right <= bounds.right + 2 && box.top >= bounds.top - 2 && box.bottom <= bounds.bottom + 2;
             });
-            await expect(page.locator('#pwaInstallBanner')).toHaveCSS('display', 'none');
-            await expect.poll(() => page.locator('body').evaluate(element => element.classList.contains('pwa-banner-open'))).toBe(false);
-            expect((await page.locator('#cardboardBoard').boundingBox()).height).toBeGreaterThanOrEqual(320);
-            expect((await page.locator('#cardboardBoard .cardboard-player-selected').boundingBox()).width).toBeGreaterThan(260);
-            const turnMarker = page.locator('#cardboardSeats .cardboard-player-current:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-turn-marker');
-            await expect(turnMarker).toBeVisible();
-            expect(await turnMarker.evaluate(element => getComputedStyle(element, '::before').content)).toContain('手番');
-            expect((await turnMarker.boundingBox()).width).toBeGreaterThanOrEqual(20);
-            const expandMarket = page.locator('#cardboardMarket .compact-market-expand');
-            await expect(expandMarket).toBeVisible();
-            const expandBounds = await expandMarket.boundingBox();
-            expect(expandBounds.width).toBeGreaterThanOrEqual(44);
-            expect(expandBounds.height).toBeGreaterThanOrEqual(44);
-        }
-        if (viewport.width >= 1200) {
-            const marketHeading = await page.locator('#cardboardMarket .compact-market').evaluate(element => {
-                const heading = element.querySelector('.compact-market-header h2');
-                const textRange = document.createRange();
-                textRange.selectNodeContents(heading);
-                const textBounds = textRange.getBoundingClientRect();
-                const expandBounds = element.querySelector('.compact-market-expand').getBoundingClientRect();
-                return { lines: textRange.getClientRects().length, textRight: textBounds.right,
-                    expandLeft: expandBounds.left, expandWidth: expandBounds.width };
-            });
-            expect(marketHeading.lines).toBe(1);
-            expect(marketHeading.textRight).toBeLessThanOrEqual(marketHeading.expandLeft);
-            expect(marketHeading.expandWidth).toBeLessThan(120);
-        }
-        if (viewport.height > 480) {
-            const ownedArt = await page.locator('#cardboardSeats .cardboard-player-self .cardboard-card .cardboard-art').first().boundingBox();
-            expect(ownedArt.height).toBeGreaterThanOrEqual(54);
-        }
-        if (viewport.width <= 390 && viewport.height > 480) {
-            await expect(page.locator('#cardboardDetailSelect option')).toHaveCount(4);
-            const portraitCard = await page.locator('#cardboardSeats .cardboard-player-self .cardboard-card').first().evaluate(card => {
-                const bounds = card.getBoundingClientRect();
-                const cards = card.parentElement;
-                return { width: bounds.width, artHeight: card.querySelector('.cardboard-art').getBoundingClientRect().height,
-                    scrolls: cards.scrollWidth > cards.clientWidth || cards.scrollHeight > cards.clientHeight };
-            });
-            expect(portraitCard.width).toBeGreaterThanOrEqual(176);
-            expect(portraitCard.artHeight).toBeGreaterThanOrEqual(96);
-            expect(portraitCard.scrolls).toBe(true);
-        }
-        await page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]').click();
+        })).toBe(true);
+        await focusSeat(page, 0);
+        await page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]').click();
         await expect(page.locator('#cardDetailModal')).toBeVisible();
-        await expect(page.locator('#cardDetailModal')).toContainText('駅');
+        await expect(page.locator('#cardDetailModal')).toContainText('麦畑');
         await expect(page.locator('#cardDetailModal .card-detail-art .sunset-facility-art')).toBeVisible();
         await page.locator('body').evaluate(body => body.classList.add('accessibility-high-contrast'));
         await expect(page.locator('#cardDetailModal .modal-content')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
         await page.locator('body').evaluate(body => body.classList.remove('accessibility-high-contrast'));
         await page.keyboard.press('Escape');
-        await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.rollDice(3); render(); acceptHotseatHandoff(); });
+        expect(await state(page)).toEqual(before);
+        const artRetained = await page.evaluate(() => {
+            const owned = document.querySelector('#cardboardSeats [data-player-index="1"] .cardboard-card .cardboard-art svg');
+            const market = document.querySelector('#cardboardMarket [data-card-name="麦畑"] .compact-market-art svg');
+            GameRuntimeState.runtime.snapshot().game.rollDice(3);
+            render(); acceptHotseatHandoff();
+            return Boolean(owned && market) &&
+                owned === document.querySelector('#cardboardSeats [data-player-index="1"] .cardboard-card .cardboard-art svg') &&
+                market === document.querySelector('#cardboardMarket [data-card-name="麦畑"] .compact-market-art svg');
+        });
+        expect(artRetained).toBe(true);
         await expect(page.locator('#cardboardDiceReceipt')).toContainText('出目 3');
-        if (viewport.width === 844) {
-            await expect(page.locator('#cardboardDiceReceipt .plaza-receipt-featured')).toBeVisible();
-            await expect(page.locator('#cardboardDiceReceipt .plaza-receipt-featured')).toHaveCSS('overflow-x', 'auto');
-        }
         await expect(page.locator('#cardboardDiceReceipt > .cardboard-transfer-summary')).toBeVisible();
-        await expect(page.locator('#cardboardDiceReceipt > .cardboard-transfer-summary')).toHaveCSS('position', 'static');
         await expect(page.locator('#turnStatusAnnouncer')).toContainText('出目');
-        await expect(page.locator('#gameLogContainer')).not.toHaveClass(/plaza-panel-open/);
-        if (viewport.width === 844) {
-            await expect(page.locator('#cardboardDiceReceipt .plaza-receipt-details')).toBeVisible();
-            const receiptSummary = await page.locator('#cardboardDiceReceipt .plaza-receipt-details > summary').boundingBox();
-            expect(receiptSummary.width).toBeGreaterThanOrEqual(44);
-            expect(receiptSummary.height).toBeGreaterThanOrEqual(44);
-            const marketViewport = await page.locator('#cardboardMarket .compact-market-facilities').boundingBox();
-            expect(marketViewport.height).toBeGreaterThanOrEqual(62);
-            const marketShelf = await page.locator('#cardboardMarket .compact-market-facilities').evaluate(element => ({
-                scrollWidth: element.scrollWidth,
-                clientWidth: element.clientWidth,
-                overflowX: getComputedStyle(element).overflowX,
-                overflowY: getComputedStyle(element).overflowY,
-                itemCount: element.querySelectorAll('.compact-market-item:not(.compact-market-landmark)').length,
-            }));
-            expect(marketShelf.scrollWidth).toBeGreaterThan(marketShelf.clientWidth);
-            expect(marketShelf.overflowX).toBe('auto');
-            expect(marketShelf.overflowY).toBe('hidden');
-            expect(marketShelf.itemCount).toBeGreaterThan(10);
-            const landscapeCardArt = await page.locator('#cardboardSeats .cardboard-player-selected')
-                .evaluateAll(panels => panels.flatMap(panel => [...panel.querySelectorAll('.cardboard-card')].map(card => {
-                    const art = card.querySelector('.cardboard-art');
-                    return { visible: getComputedStyle(art).display !== 'none', height: art.getBoundingClientRect().height,
-                        nameFontSize: parseFloat(getComputedStyle(card.querySelector('.cardboard-name')).fontSize),
-                        hasEvent: Boolean(card.querySelector('.cardboard-dormant, .cardboard-activation')) };
-                })));
-            expect(landscapeCardArt.length).toBeGreaterThan(0);
-            expect(landscapeCardArt.every(card => card.visible)).toBe(true);
-            expect(landscapeCardArt.every(card => card.nameFontSize >= 11)).toBe(true);
-            expect(landscapeCardArt.some(card => card.height >= 28)).toBe(true);
-            expect(landscapeCardArt.filter(card => card.hasEvent).every(card => card.height >= 24), JSON.stringify(landscapeCardArt)).toBe(true);
-            if (viewport.width === 844 && viewport.height === 390) {
-                const selectedCard = page.locator('#cardboardSeats .cardboard-player-selected .cardboard-card').first();
-                expect((await selectedCard.locator('.cardboard-art').boundingBox()).height).toBeGreaterThanOrEqual(76);
-                expect(await selectedCard.locator('.cardboard-name').evaluate(element =>
-                    parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(13);
-            }
-            const sideCardArt = await page.locator('#cardboardSeats .cardboard-player-selected .cardboard-art').first().boundingBox();
-            expect(sideCardArt.height).toBeGreaterThanOrEqual(28);
-            const sideCardNameSize = await page.locator('#cardboardSeats .cardboard-player-selected .cardboard-name').first().evaluate(element => parseFloat(getComputedStyle(element).fontSize));
-            expect(sideCardNameSize).toBeGreaterThanOrEqual(12);
-            const visibleMarketArt = await page.locator('#cardboardMarket .compact-market-art').first().evaluate(art => {
-                const center = document.getElementById('cardboardCenter').getBoundingClientRect();
-                const bounds = art.getBoundingClientRect();
-                return Math.max(0, Math.min(center.bottom, bounds.bottom) - Math.max(center.top, bounds.top));
-            });
-            expect(visibleMarketArt).toBeGreaterThanOrEqual(20);
-        }
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
         const screenshot = testInfo.outputPath(`cardboard-${viewport.width}.png`);
         await page.screenshot({ path: screenshot });
@@ -301,26 +154,18 @@ test('844×390の手番HUDは長いプレイヤー名を省略せず表示する
     await expect(page.locator('#status .cardboard-turn-status-coins')).toHaveText('🪙 30コイン');
 });
 
-test('844×390で街の末尾が隠れると縦スクロールをランドマーク位置で案内する', async ({ page }) => {
+test('844×390のカード卓は自分の施設とランドマークへ移動できる', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 2, false);
-    await page.evaluate(() => {
-        GameRuntimeState.runtime.snapshot().game.players[0].cards = ['麦畑', 'パン屋'].map(createCardByName);
-        render();
-    });
-    const selected = page.locator('#cardboardSeats .cardboard-player-selected');
-    await expect(selected).toHaveAttribute('data-vertical-overflow', 'true');
-    await expect(selected).toHaveAttribute('role', 'region');
-    await expect(selected).toHaveAttribute('aria-label', /上下にスクロールできます/);
-    const hint = await selected.locator('.cardboard-landmark-heading').evaluate(element =>
-        getComputedStyle(element, '::after').content);
-    expect(hint).toBe('"縦にスクロール ↓"');
-    await selected.evaluate(element => { element.scrollTop = element.scrollHeight; });
-    const landmarkVisibility = await selected.evaluate(element => {
-        const panel = element.getBoundingClientRect();
-        const landmarks = element.querySelector('.cardboard-landmarks').getBoundingClientRect();
-        return { panelBottom: panel.bottom, landmarksBottom: landmarks.bottom };
-    });
-    expect(landmarkVisibility.landmarksBottom).toBeLessThanOrEqual(landmarkVisibility.panelBottom + 1);
+    const before = await state(page);
+    await camera(page, 'self');
+    const viewport = page.locator('#cardboardTableViewport');
+    await expect(viewport).toHaveCSS('overflow-x', 'auto');
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(2);
+    const card = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card').first();
+    await card.click();
+    await expect(page.locator('#cardDetailModal')).toBeVisible();
+    await page.keyboard.press('Escape');
+    expect(await state(page)).toEqual(before);
 });
 
 test('短い縦画面でも盤面のその他メニューを画面内でスクロールできる', async ({ page }) => {
@@ -343,44 +188,22 @@ test('その他メニューはEscapeと盤面操作で閉じ、Escape時にフ�
     await expect(summary).toBeFocused();
 
     await summary.click();
-    await page.locator('#cardboardDetailSelect').selectOption({ index: 3 });
+    await camera(page, 'self');
     await expect(menu).not.toHaveAttribute('open', '');
 });
 
-test('1440pxの全体盤面は補助パネルで選択した街を詳しく読める', async ({ page }) => {
-    await prepare(page, { width: 1440, height: 900 }, 2, true);
-    await page.evaluate(() => {
-        const game = GameRuntimeState.runtime.snapshot().game;
-        game.players[0].cards = [createCardByName('麦畑'), createCardByName('パン屋')];
-        render();
-    });
-    await selectTheme(page, 'cardboard');
-    await expect(page.locator('#cardboardBoard')).toHaveClass(/cardboard-focus-view/);
-    const onlineGeometry = await page.evaluate(() => {
-        const panel = document.getElementById('gameConnectivityPanel');
-        const hiddenDisplay = getComputedStyle(panel).display;
-        panel.style.display = 'grid';
-        const activity = document.getElementById('gameActivityStatus');
-        activity.style.display = 'flex';
-        document.getElementById('gameActivityStatusLabel').textContent = '対局を同期中';
-        const bounds = element => { const rect = element.getBoundingClientRect(); return { top: rect.top, bottom: rect.bottom }; };
-        return { hiddenDisplay, panel: bounds(panel), board: bounds(document.getElementById('cardboardBoard')) };
-    });
-    expect(onlineGeometry.hiddenDisplay).toBe('none');
-    expect(onlineGeometry.board.top).toBeGreaterThanOrEqual(onlineGeometry.panel.bottom - 1);
-    expect((await page.locator('#cardboardOverview').boundingBox()).width).toBeGreaterThan(0);
-    await expect(page.locator('#cardboardOverview')).toBeVisible();
-    await expect(page.locator('#cardboardRoster .cardboard-roster-seat')).toHaveCount(2);
-    const selected = page.locator('#cardboardSeats .cardboard-player-selected');
-    await expect(selected).toHaveAttribute('data-player-index', '0');
-    expect((await selected.locator('.cardboard-card .cardboard-art').first().boundingBox()).height).toBeGreaterThanOrEqual(110);
-    await expect(selected.locator('.cardboard-facility-scroll-hint')).toBeVisible();
-    expect(await selected.locator('.cardboard-facility-scroll-hint').evaluate(element =>
-        getComputedStyle(element, '::after').content
-    )).toBe('"縦にスクロール ↓"');
+test('1440pxの共通カード卓は全席を保持して選んだ施設へ移動できる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 1440, height: 900 }, 2);
     const before = await state(page);
-    await page.locator('#cardboardDetailSelect').selectOption('1');
+    await expect(page.locator('#cardboardRoster .cardboard-roster-seat')).toHaveCount(2);
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(2);
+    await focusSeat(page, 1);
     await expect(page.locator('#cardboardSeats .cardboard-player-selected')).toHaveAttribute('data-player-index', '1');
+    const card = page.locator('#cardboardSeats [data-player-index="1"] .cardboard-card').first();
+    await card.click();
+    await expect(page.locator('#cardDetailModal')).toContainText('カフェ');
+    await page.keyboard.press('Escape');
+    await expect(card).toBeFocused();
     expect(await state(page)).toEqual(before);
 });
 
@@ -405,87 +228,55 @@ test('320pxの施設交換は手順を読めて施設アートを2列で選べ�
     await page.screenshot({ path: testInfo.outputPath('business-320.png'), animations: 'disabled' });
 });
 
-test('844pxの終盤カード棚は24種類を一列で横送りできる', async ({ page }, testInfo) => {
+test('844pxの終盤24種類は盤面上へ全て配置され末尾へ移動できる', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 4, false);
-    await page.evaluate(() => {
-        const game = GameRuntimeState.runtime.snapshot().game;
-        game.players[0].cards = CARDS.slice(0, 24).map(card => createCardByName(card.name));
-        render();
-    });
+    await page.evaluate(n => { GameRuntimeState.runtime.snapshot().game.players[0].cards = CARDS.slice(0, n).map(card => createCardByName(card.name)); render(); }, 24);
     const before = await state(page);
-    const shelf = page.locator('#cardboardSeats .cardboard-player-selected .cardboard-cards');
-    await expect(shelf.locator('.cardboard-card')).toHaveCount(24);
-    const geometry = await shelf.evaluate(element => ({
-        scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
-        scrollHeight: element.scrollHeight, clientHeight: element.clientHeight,
-        overflowX: getComputedStyle(element).overflowX,
-    }));
-    expect(geometry.overflowX).toBe('auto');
-    expect(geometry.scrollWidth).toBeGreaterThan(geometry.clientWidth);
-    expect(geometry.scrollHeight).toBeLessThanOrEqual(geometry.clientHeight + 1);
-    await shelf.evaluate(element => { element.scrollLeft = element.scrollWidth; });
-    await expect.poll(() => shelf.evaluate(element => {
-        const shelfBounds = element.getBoundingClientRect();
-        const lastBounds = element.lastElementChild.getBoundingClientRect();
-        return lastBounds.left >= shelfBounds.left - 1 && lastBounds.right <= shelfBounds.right + 1;
-    })).toBe(true);
+    const cards = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card');
+    await expect(cards).toHaveCount(24);
+    const intrinsic = await intrinsicCards(page, 0);
+    expect(intrinsic.every(card => card.width >= 96 && card.artHeight >= 54 && !card.clipped)).toBe(true);
+    await focusSeat(page, 0);
+    await cards.first().click();
+    await expect(page.locator('#cardDetailModal')).toContainText(intrinsic[0].name);
+    await page.keyboard.press('Escape');
+    await cards.last().click();
+    await expect(page.locator('#cardDetailModal')).toContainText(intrinsic[intrinsic.length - 1].name);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
     expect(await state(page)).toEqual(before);
     await page.screenshot({ path: testInfo.outputPath('late-844-last-card.png'), animations: 'disabled' });
 });
 
-test('1440pxの終盤カード棚は先頭カードからスクロールできる', async ({ page }) => {
+test('1440pxの終盤12種類は一覧を保ち先頭から末尾へ移動できる', async ({ page }, testInfo) => {
     await prepare(page, { width: 1440, height: 900 }, 2, false);
-    await page.evaluate(() => {
-        const game = GameRuntimeState.runtime.snapshot().game;
-        game.players[0].cards = CARDS.slice(0, 12).map(card => createCardByName(card.name));
-        render();
-    });
-    const shelf = page.locator('#cardboardSeats .cardboard-player[data-player-index="0"] .cardboard-cards');
-    await expect(shelf.locator('.cardboard-card')).toHaveCount(12);
-    const geometry = await shelf.evaluate(element => {
-        const shelfBounds = element.getBoundingClientRect();
-        const firstCardBounds = element.querySelector('.cardboard-card').getBoundingClientRect();
-        return {
-            shelfTop: shelfBounds.top,
-            shelfBottom: shelfBounds.bottom,
-            firstTop: firstCardBounds.top,
-            firstBottom: firstCardBounds.bottom,
-            clientHeight: element.clientHeight,
-            scrollHeight: element.scrollHeight,
-            scrollTop: element.scrollTop,
-        };
-    });
-    expect(geometry.firstTop).toBeGreaterThanOrEqual(geometry.shelfTop);
-    expect(geometry.firstTop - geometry.shelfTop).toBeLessThanOrEqual(4);
-    expect(geometry.firstBottom).toBeLessThanOrEqual(geometry.shelfBottom);
-    expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight);
-    expect(geometry.scrollTop).toBe(0);
-    expect(geometry.firstBottom - geometry.firstTop).toBeGreaterThanOrEqual(260);
-    const art = await shelf.locator('.cardboard-card .cardboard-art').first().boundingBox();
-    expect(art.height).toBeGreaterThanOrEqual(150);
+    await page.evaluate(n => { GameRuntimeState.runtime.snapshot().game.players[0].cards = CARDS.slice(0, n).map(card => createCardByName(card.name)); render(); }, 12);
+    const before = await state(page);
+    const cards = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card');
+    await expect(cards).toHaveCount(12);
+    const intrinsic = await intrinsicCards(page, 0);
+    expect(intrinsic.every(card => card.width >= 96 && card.artHeight >= 54 && !card.clipped)).toBe(true);
+    await focusSeat(page, 0);
+    await cards.first().click();
+    await expect(page.locator('#cardDetailModal')).toContainText(intrinsic[0].name);
+    await page.keyboard.press('Escape');
+    await cards.last().click();
+    await expect(page.locator('#cardDetailModal')).toContainText(intrinsic[intrinsic.length - 1].name);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(2);
+    expect(await state(page)).toEqual(before);
+    await page.screenshot({ path: testInfo.outputPath('late-1440-last-card.png'), animations: 'disabled' });
 });
 
-test('1440pxの少数施設棚はカード群を街の中央へ見せる', async ({ page }) => {
+test('1440pxの少数施設も多人数卓でカードとして識別できる', async ({ page }, testInfo) => {
     await prepare(page, { width: 1440, height: 936 }, 10, false);
-    await page.evaluate(() => {
-        const game = GameRuntimeState.runtime.snapshot().game;
-        game.players[0].cards = ['麦畑', 'パン屋'].map(createCardByName);
-        render();
-    });
-    const shelf = page.locator('#cardboardSeats .cardboard-player-selected .cardboard-cards');
-    const cards = shelf.locator('.cardboard-card');
-    await expect(cards).toHaveCount(2);
-    const alignment = await shelf.evaluate(element => {
-        const shelfBounds = element.getBoundingClientRect();
-        const first = element.querySelector('.cardboard-card').getBoundingClientRect();
-        const last = element.querySelector('.cardboard-card:last-child').getBoundingClientRect();
-        const cardsCenter = (first.top + last.bottom) / 2;
-        const shelfCenter = (shelfBounds.top + shelfBounds.bottom) / 2;
-        return { delta: Math.abs(cardsCenter - shelfCenter), shelfHeight: element.clientHeight,
-            cardsHeight: last.bottom - first.top };
-    });
-    expect(alignment.shelfHeight).toBeGreaterThan(alignment.cardsHeight + 48);
-    expect(alignment.delta).toBeLessThanOrEqual(12);
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[0].cards = ['麦畑', 'パン屋'].map(createCardByName); render(); });
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(10);
+    const cards = await intrinsicCards(page, 0);
+    expect(cards.map(card => card.name)).toEqual(expect.arrayContaining(['麦畑', 'パン屋']));
+    await focusSeat(page, 0);
+    await page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="パン屋"]').click();
+    await expect(page.locator('#cardDetailModal')).toContainText('パン屋');
 });
 
 test('12の出目では建設候補を市場内の見える位置へ送る', async ({ page }) => {
@@ -511,52 +302,53 @@ test('12の出目では建設候補を市場内の見える位置へ送る', asy
     expect(geometry.cardBottom).toBeLessThanOrEqual(geometry.shelfBottom);
 });
 
-test('4人戦の施設発動は全体盤面と補助カード詳細の同じ街で確認できる', async ({ page }) => {
+test('4人戦の施設発動は全体盤面と補助カード詳細の同じ街で確認できる', async ({ page }, testInfo) => {
     await prepare(page, { width: 320, height: 844 }, 4, false);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         game.players.forEach(player => { player.cards = []; });
         game.players[3].cards = [createCardByName('カフェ')];
+        render();
+        window.rolledFacilityArt = document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg');
         game.rollDice(3);
         render();
         acceptHotseatHandoff();
     });
-    const selected = page.locator('#cardboardSeats .cardboard-player-selected');
-    await expect(selected).toHaveAttribute('data-player-index', '3');
-    await expect(selected.locator('.cardboard-card-activated')).toHaveCount(1);
-    const activated = page.locator('#cardboardOverview [data-player-index="3"] .plaza-town-building-activated');
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
+    const activated = page.locator('#cardboardSeats [data-player-index="3"] .cardboard-card-activated');
     await expect(activated).toHaveCount(1);
-    await expect(page.locator('#cardboardDetailSelect')).toHaveValue('3');
+    expect(await page.evaluate(() => window.rolledFacilityArt === document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg'))).toBe(true);
+    await page.locator('#cardboardEventDetails').evaluate(element => { element.open = false; });
+    await focusSeat(page, 3);
+    await page.screenshot({path:testInfo.outputPath('art-stable-roll.png')});
+    await expect(page.locator('#cardboardSeats [data-player-index="3"]')).toContainText('カフェ');
     await page.evaluate(() => {
+        window.unchangedFacilityArt = document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg');
         GameRuntimeState.runtime.snapshot().game.players[3].coins += 1;
         render();
     });
+    expect(await page.evaluate(() => window.unchangedFacilityArt === document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg'))).toBe(true);
     await expect(activated).toHaveCount(1);
-    await expect(page.locator('#cardboardDetailSelect')).toHaveValue('3');
+    await expect(page.locator('#cardboardSeats [data-player-index="3"]')).toContainText('カフェ');
 });
 
-test('10人の全体盤面を保ちながら補助パネルで全席を切り替えられる', async ({ page }) => {
+test('10人の所有カードを保持して全席へカメラを移動できる', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 }, 10);
-    await expect(page.locator('#cardboardOverview .cardboard-overview-city')).toHaveCount(10);
-    await expect(page.locator('#cardboardOverview .cardboard-overview-turn')).toHaveText('手番');
-    await expect(page.locator('#cardboardOverview .cardboard-overview-self-label')).toHaveText('あなた');
-    await expect(page.locator('#cardboardDetailSelect option')).toHaveCount(10);
     const before = await state(page);
     for (const index of [9, 0, 9]) {
-        await page.locator('#cardboardDetailSelect').selectOption(String(index));
-        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(1);
+        await focusSeat(page, index);
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(10);
         await expect(page.locator('#cardboardSeats .cardboard-player-selected')).toHaveAttribute('data-player-index', String(index));
-        await expect(page.locator('#cardboardOverview .cardboard-overview-city')).toHaveCount(10);
+        await expect(page.locator(`#cardboardSeats [data-player-index="${index}"] .cardboard-card`)).toHaveCount(1);
     }
-    const focusedCard = page.locator('#cardboardSeats .cardboard-card').first();
+    const focusedCard = page.locator('#cardboardSeats [data-player-index="9"] .cardboard-card').first();
     await focusedCard.focus();
     await page.keyboard.press('Tab');
     await page.keyboard.press('Shift+Tab');
     await expect(focusedCard).toBeFocused();
     await expect(focusedCard).toHaveCSS('outline-style', 'solid');
-    await expect(focusedCard).toHaveCSS('outline-width', '3px');
     await page.setViewportSize({ width: 844, height: 390 });
-    await expect(page.locator('#cardboardOverview .cardboard-overview-city')).toHaveCount(10);
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(10);
     await page.setViewportSize({ width: 390, height: 844 });
     expect(await state(page)).toEqual(before);
 });
@@ -570,11 +362,11 @@ for (const width of [1024, 1440]) {
             });
             render();
         });
-        await expect(page.locator('#cardboardOverview .cardboard-overview-city')).toHaveCount(10);
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(10);
         for (let index = 0; index < 10; index++) {
-            const city = page.locator(`#cardboardOverview [data-player-index="${index}"]`);
-            await expect(city.locator('.cardboard-overview-name')).toHaveText(`参加者プレイヤーの長い街の名前${index + 1}`);
-            await expect(city.locator('[data-cardboard-town]')).toHaveAttribute('aria-label', `参加者プレイヤーの長い街の名前${index + 1}の街を詳しく見る`);
+            const city = page.locator(`#cardboardSeats [data-player-index="${index}"]`);
+            await expect(page.locator(`#cardboardRoster [data-cardboard-player-index="${index}"] .cardboard-roster-name`)).toHaveText(`参加者プレイヤーの長い街の名前${index + 1}`);
+            await expect(city.locator('.cardboard-player-heading')).toHaveAttribute('title', `席${index + 1}・参加者プレイヤーの長い街の名前${index + 1}`);
             expect((await city.boundingBox()).width).toBeGreaterThan(0);
         }
     });
@@ -649,9 +441,8 @@ for (const width of [320, 390, 1440]) {
         await expect(cards).toHaveCount(4);
         const backgrounds = await cards.evaluateAll(elements => elements.map(element => getComputedStyle(element).backgroundColor));
         expect(new Set(backgrounds).size).toBe(4);
-        const chips = page.locator('#cardboardRoster button').first().locator('.cardboard-color-count');
-        await expect(chips).toHaveText(['青 1', '緑 1', '赤 1', '紫 1']);
-        expect(await chips.evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1))).toBe(true);
+        await expect(page.locator('#cardboardRoster button').first()).toContainText('目標');
+        expect(await cards.evaluateAll(elements => elements.every(element => element.querySelector('.cardboard-count').textContent.includes('×1')))).toBe(true);
         expect(await cards.evaluateAll(elements => elements.every(element => element.textContent.includes('手番')))).toBe(true);
         await page.locator('#cardboardSeats [data-player-index="0"]').scrollIntoViewIfNeeded();
         const screenshot = testInfo.outputPath(`category-colors-${width}.png`);
@@ -749,7 +540,27 @@ test('横持ちの建設操作は拡大市場を開き購入後は見える操�
     await dialog.locator('[data-action="buildCard"][data-card-name="麦畑"]').click();
     await expect(page.locator('.cardboard-player-selected [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×5');
     await expect(shortcut).toBeHidden();
+    // A purchase cue must remain pending while the native market covers it.
+    await page.waitForTimeout(1400);
+    await expect(page.locator('#cardboardSeats .cardboard-card-newly-built')).toHaveCount(0);
+    await page.evaluate(() => {
+        window.buildCueAfterMarketClose = false;
+        const observer = new MutationObserver(() => {
+            if (document.querySelector('#cardboardSeats [data-card-name="麦畑"].cardboard-card-newly-built')) {
+                window.buildCueAfterMarketClose = true;
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.getElementById('cardboardSeats'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    });
     await page.locator('#cardboardMarketClose').click();
+    await expect.poll(() => page.evaluate(() => window.buildCueAfterMarketClose)).toBe(true);
+    await expect.poll(() => page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]').evaluate(card => {
+        const bounds = card.getBoundingClientRect();
+        const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        return bounds.width >= 96 && bounds.left >= viewport.left && bounds.right <= viewport.right &&
+            bounds.top >= viewport.top && bounds.bottom <= viewport.bottom;
+    })).toBe(true);
     await expect(page.locator('#cardboardMarket details[open]')).toHaveCount(0);
     await expect(page.locator('#cardboardMarket .compact-market-expand')).toBeFocused();
 });
@@ -757,6 +568,7 @@ test('横持ちの建設操作は拡大市場を開き購入後は見える操�
 test('中央市場を拡大してカードを比較し、閉じると起動操作へ戻る', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 }, 2);
     const before = await state(page);
+    await camera(page, 'market');
     const open = page.locator('#cardboardMarket .compact-market-expand');
     await open.click();
     const dialog = page.locator('#cardboardMarketDialog');
@@ -817,6 +629,7 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
         acceptHotseatHandoff();
     });
     const before = await state(page);
+    await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-expand').click();
     const marketDialog = page.locator('#cardboardMarketDialog');
     await page.evaluate(() => {
@@ -836,7 +649,7 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     const newCard = page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]');
     await expect(newCard.locator('.cardboard-count')).toHaveText('所有 ×1');
     await expect.poll(() => page.evaluate(() => window.__observedBuildCue?.animation)).toBe('cardboard-card-arrival');
-    expect(await newCard.evaluate(card => card.closest('.cardboard-cards').scrollLeft)).toBeGreaterThan(0);
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
     await expect.poll(() => newCard.evaluate(card => {
         const list = card.closest('.cardboard-cards').getBoundingClientRect();
         const bounds = card.getBoundingClientRect();
@@ -856,6 +669,7 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     expect(await state(page)).toEqual(before);
     await page.evaluate(() => document.body.classList.add('accessibility-reduced-motion'));
     await page.evaluate(() => { window.__observedBuildCue = null; });
+    await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-expand').click();
     await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
     await expect.poll(() => page.evaluate(() => window.__observedBuildCue)).toEqual({
@@ -887,8 +701,8 @@ test('ランドマーク完成は新しい建設だけを短く祝う', async ({
     await selectTheme(page, 'cardboard');
     const station = page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]');
     await expect(station).toHaveClass(/cardboard-landmark-unbuilt/);
-    await expect(station.locator('.cardboard-art')).toBeVisible();
-    expect(await station.locator('.cardboard-art').evaluate(element => element.getBoundingClientRect().width)).toBeGreaterThan(0);
+    await expect(station).toBeHidden();
+    await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
     // Observe the real DOM mutation before the click. A slow host may return
     // from click after the short animation has already ended.
@@ -907,6 +721,7 @@ test('ランドマーク完成は新しい建設だけを短く祝う', async ({
     });
     await page.locator('#cardboardMarket [data-action="buildLandmark"][data-landmark-name="駅"]').click();
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]')).toHaveClass(/cardboard-landmark-built/);
+    await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"] .cardboard-art')).toBeVisible();
     await expect.poll(() => page.evaluate(() => window.landmarkCueObserved)).toBe(true);
     const receipt = page.locator('#cardboardDiceReceipt .cardboard-build-receipt[data-kind="landmark"]');
     await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('1/6');
@@ -928,12 +743,23 @@ test('OSの動き低減中もランドマーク完成を静的に強調する', 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); });
     await selectTheme(page, 'cardboard');
+    await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
+    await page.evaluate(() => {
+        window.reducedLandmarkCue = null;
+        const observer = new MutationObserver(() => {
+            const target = document.querySelector('#cardboardSeats [data-landmark-name="駅"].cardboard-landmark-newly-built');
+            if (!target) return;
+            const style = getComputedStyle(target);
+            window.reducedLandmarkCue = { animation: style.animationName, outline: style.outlineColor };
+            observer.disconnect();
+        });
+        observer.observe(document.getElementById('cardboardSeats'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    });
     await page.locator('#cardboardMarket [data-action="buildLandmark"][data-landmark-name="駅"]').click();
     const station = page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]');
-    await expect(station).toHaveClass(/cardboard-landmark-newly-built/);
-    await expect(station).toHaveCSS('animation-name', 'none');
-    await expect(station).toHaveCSS('outline-color', 'rgb(180, 122, 9)');
+    await expect(station).toHaveClass(/cardboard-landmark-built/);
+    await expect.poll(() => page.evaluate(() => window.reducedLandmarkCue)).toEqual({ animation: 'none', outline: 'rgb(180, 122, 9)' });
 });
 
 test('にぎわい広場の勝利画面はPC幅で街と結果を中央に読める大きさで表示する', async ({ page }) => {
@@ -1019,74 +845,37 @@ test('同じ出目の内訳更新は開閉とフォーカスを保ち、次手�
     await expect(page.locator('#cardboardDiceReceipt details[open]')).toHaveCount(0);
 });
 
-test('席の往復は1街だけを描画して棚位置を復元し、消えるカードのフォーカスを移す', async ({ page }) => {
+test('席の往復は全員のカードを保持してカメラだけを動かす', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 });
-    await page.evaluate(() => {
-        const game = GameRuntimeState.runtime.snapshot().game;
-        game.players[0].cards = CARDS.slice(0, 16).map(card => createCardByName(card.name));
-        render();
-    });
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[0].cards = CARDS.slice(0, 16).map(card => createCardByName(card.name)); render(); });
     const before = await state(page);
-    const shelf = page.locator('.cardboard-player-selected .cardboard-cards');
-    await shelf.evaluate(element => { element.scrollLeft = 800; });
-    await expect.poll(() => shelf.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
-    const offset = await shelf.evaluate(element => element.scrollLeft);
-    await page.locator('#cardboardDetailSelect').selectOption('1');
-    await expect(page.locator('#cardboardSeats .cardboard-player')).toHaveCount(1);
-    await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toHaveCount(0);
-    await page.locator('#cardboardDetailSelect').selectOption('0');
-    await expect.poll(async () => Math.abs(await shelf.evaluate(element => element.scrollLeft) - offset)).toBeLessThanOrEqual(1);
-    await shelf.locator('.cardboard-card').first().focus();
-    await page.evaluate(() => {
-        // Programmatic activation retains the card focus until the panel is
-        // removed, unlike a pointer click which first focuses the roster.
-        const select = document.getElementById('cardboardDetailSelect');
-        select.value = '1';
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-    await expect(page.locator('#cardboardOverview [data-cardboard-town="1"]')).toBeFocused();
-    await page.locator('#cardboardDetailSelect').selectOption('0');
+    const counts = () => page.locator('#cardboardSeats > .cardboard-player').evaluateAll(players => players.map(player => player.querySelectorAll('.cardboard-card').length));
+    const original = await counts();
+    for (const index of [1, 0, 1, 0]) {
+        await focusSeat(page, index);
+        expect(await counts()).toEqual(original);
+        await expect(page.locator('#cardboardSeats .cardboard-player-selected')).toHaveAttribute('data-player-index', String(index));
+    }
     expect(await state(page)).toEqual(before);
 });
 
-test('所有施設と市場のスクロール位置は収支更新と4ビュー往復でも保つ', async ({ page }) => {
+test('盤面のパン位置は収支更新で保ち4ビュー往復でも正本を維持する', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 });
-    await page.evaluate(() => {
-        const game = GameRuntimeState.runtime.snapshot().game;
-        game.players[0].cards = CARDS.map(card => createCardByName(card.name));
-        render();
-        const cards = document.querySelector('#cardboardSeats [data-player-index="0"] .cardboard-cards');
-        cards.scrollLeft = 200;
-        document.querySelector('#cardboardMarket .compact-market-facilities').scrollTop = 120;
-    });
-    const focusedShelf = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-cards');
-    await expect(page.locator('#cardboardSeats [data-player-index="0"] .cardboard-facility-scroll-hint')).toBeVisible();
-    expect(await focusedShelf.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true);
-    expect(await focusedShelf.evaluate(element => element.firstElementChild.getBoundingClientRect().width)).toBeGreaterThanOrEqual(176);
-    expect((await focusedShelf.locator('.cardboard-art').first().boundingBox()).height).toBeGreaterThanOrEqual(96);
-    const scroll = () => page.locator('#cardboardSeats [data-player-index="0"] .cardboard-cards').evaluate(element => element.scrollLeft);
-    const before = await scroll();
-    expect(before).toBeGreaterThan(0);
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[0].cards = CARDS.map(card => createCardByName(card.name)); render(); });
+    await camera(page, 'readable');
+    const viewport = page.locator('#cardboardTableViewport');
+    await viewport.evaluate(element => { element.scrollLeft = 200; element.scrollTop = 120; });
+    const position = () => viewport.evaluate(element => ({ left: element.scrollLeft, top: element.scrollTop, scale: element.dataset.tableScale }));
+    const beforePosition = await position();
+    expect(beforePosition.left + beforePosition.top).toBeGreaterThan(0);
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[0].coins++; render(); });
-    expect(await scroll()).toBe(before);
-    const marketScroll = () => page.locator('#cardboardMarket .compact-market-facilities').evaluate(element => element.scrollTop);
-    const beforeMarket = await marketScroll();
-    expect(beforeMarket).toBeGreaterThan(0);
-    const snapshot = () => page.evaluate(() => GameSnapshot.serializeGameState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, {
-        pendingActionsFor: GameManager.serializedPendingActionsFor, logLimit: Number.MAX_SAFE_INTEGER,
-    }));
-    const beforeSwitch = await snapshot();
+    await expect.poll(position).toEqual(beforePosition);
+    const before = await state(page);
     for (const other of ['plaza', 'classic', 'sunset']) {
-        for (const theme of [other, 'cardboard']) {
-            await page.evaluate(value => {
-                const select = document.getElementById('gameDesignThemeSelect');
-                select.value = value;
-                select.dispatchEvent(new Event('change', { bubbles: true }));
-            }, theme);
-        }
-        expect(await scroll()).toBe(before);
-        expect(await marketScroll()).toBe(beforeMarket);
-        expect(await snapshot()).toEqual(beforeSwitch);
+        await selectTheme(page, other);
+        await selectTheme(page, 'cardboard');
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
+        expect(await state(page)).toEqual(before);
     }
 });
 
@@ -1116,23 +905,15 @@ test('新しい出目だけを強調し表示切替で過去の演出を再生�
     await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
 });
 
-test('PC上席の多種類カードも出目・絵・名前・枚数を潰さずスクロールできる', async ({ page }) => {
+test('PC上席の多種類カードも出目・絵・名前・枚数を保持して末尾を操作できる', async ({ page }, testInfo) => {
     await prepare(page, { width: 1440, height: 936 });
-    await page.evaluate(() => {
-        const index = Number(document.querySelector('#cardboardSeats [data-seat-position="top"]').dataset.playerIndex);
-        GameRuntimeState.runtime.snapshot().game.players[index].cards = CARDS.map(card => createCardByName(card.name));
-        render();
-    });
-    const panel = page.locator('#cardboardSeats [data-seat-position="top"]');
-    expect(await panel.locator('.cardboard-card').count()).toBeGreaterThan(6);
-    expect(await panel.locator('.cardboard-card').evaluateAll(cards => cards.every(card =>
-        card.clientHeight >= 90 && card.scrollHeight <= card.clientHeight + 1 &&
-        card.querySelector('.cardboard-dice').scrollWidth <= card.querySelector('.cardboard-dice').clientWidth + 1
-    ))).toBe(true);
-    expect(await panel.locator('.cardboard-cards').evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true);
-    await expect(panel.locator('.cardboard-cards')).toHaveCSS('scroll-snap-type', 'x proximity');
-    await panel.locator('.cardboard-cards').evaluate(element => { element.scrollLeft = 200; });
-    expect(await panel.locator('.cardboard-cards').evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.players[1].cards = CARDS.map(card => createCardByName(card.name)); render(); });
+    const cards = await intrinsicCards(page, 1);
+    expect(cards.length).toBeGreaterThan(6);
+    expect(cards.every(card => card.width >= 96 && card.artHeight >= 54 && card.dice && card.name && card.count && !card.clipped)).toBe(true);
+    await focusSeat(page, 1);
+    await page.locator('#cardboardSeats [data-player-index="1"] .cardboard-card').last().click();
+    await expect(page.locator('#cardDetailModal')).toContainText(cards[cards.length - 1].name);
 });
 
 test('確定した大収益を縦横PCで読めて再描画では演出を増やさない', async ({ page }, testInfo) => {
@@ -1157,6 +938,18 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
     await expect(income).toHaveCount(1);
     await expect(income.locator('.cardboard-income-amount')).toHaveText('+6コイン');
     await expect(income).toHaveAttribute('aria-label', '街1、施設の収支プラス6コイン');
+    const resultSummary = page.locator('#cardboardEventDetails > summary');
+    await expect(resultSummary).toContainText('+6');
+    await expect(resultSummary).toContainText('施設6回');
+    await expect(resultSummary.locator('.cardboard-event-preview-name').first()).toHaveText('森林');
+    await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('銀行→席1');
+    await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('+6コイン');
+    await expect(resultSummary.locator('.cardboard-event-preview-art svg').first()).toBeVisible();
+    await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.add('rolling'));
+    await expect(resultSummary.locator('.cardboard-result-detail')).toHaveCSS('visibility', 'hidden');
+    await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.remove('rolling'));
+    await expect(resultSummary.locator('.cardboard-result-detail')).toHaveCSS('visibility', 'visible');
+    await expect(page.locator('#cardboardCurrentResult')).toHaveCSS('pointer-events', 'none');
     for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
         await page.setViewportSize(viewport);
         await expect.poll(() => income.evaluate(element => {
@@ -1165,17 +958,19 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
             return rect.width > 0 && amount.left >= rect.left && amount.right <= rect.right &&
                 amount.top >= rect.top && amount.bottom <= rect.bottom && rect.left >= 0 && rect.right <= innerWidth;
         })).toBe(true);
+        expect(await resultSummary.evaluate(summary => {
+            const bounds = summary.getBoundingClientRect();
+            const table = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+            return bounds.left >= 0 && bounds.right <= innerWidth && bounds.bottom <= table.top + 1;
+        }), '収益表示は固定HUD内に収まり所有カードを覆わない').toBe(true);
         await page.screenshot({ path: testInfo.outputPath(`cardboard-income-${viewport.width}.png`) });
+        await page.locator('#cardboardEventDetails').evaluate(element => { element.open = false; });
+        await page.screenshot({ path: testInfo.outputPath(`activation-preview-${viewport.width}.png`) });
+        await page.locator('#cardboardEventDetails').evaluate(element => { element.open = true; });
         if (viewport.width === 844) {
-            const town = page.locator('#cardboardSeats .cardboard-player-selected');
-            await expect(town.locator('.cardboard-facility-scroll-hint')).toBeVisible();
-            await town.locator('.cardboard-card .cardboard-effect').first().scrollIntoViewIfNeeded();
-            expect(await town.evaluate(panel => {
-                const bounds = panel.getBoundingClientRect();
-                const effect = panel.querySelector('.cardboard-card .cardboard-effect').getBoundingClientRect();
-                return effect.top >= bounds.top && effect.bottom <= bounds.bottom;
-            })).toBe(true);
-            await page.screenshot({ path: testInfo.outputPath('cardboard-income-844-scrolled.png') });
+            await camera(page, 'self');
+            await expect(page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card-activated')).toHaveCount(1);
+            await page.screenshot({ path: testInfo.outputPath('cardboard-income-844-focused.png') });
         }
     }
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -1201,7 +996,8 @@ test('完成したランドマークの絵と目標を狭幅でも一緒に確�
             }
             render();
         });
-        await page.locator('#cardboardMarket .compact-market-expand').click();
+        await camera(page, 'market');
+    await page.locator('#cardboardMarket .compact-market-expand').click();
         await page.locator('#cardboardMarketDialog .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
         await page.locator('#cardboardMarketDialog [data-action="buildLandmark"][data-landmark-name="ショッピングモール"]').click();
         await page.keyboard.press('Escape');
@@ -1227,68 +1023,41 @@ test('完成したランドマークの絵と目標を狭幅でも一緒に確�
 });
 
 
-test('育てた街は必要なときだけ開き状態を変えず盤面へ戻れる', async ({ page }, testInfo) => {
+test('施設カードの拡大縮小と全体復帰は正本を変えず全席を保つ', async ({ page }, testInfo) => {
     for (const width of [320, 844, 1440]) {
         await prepare(page, { width, height: width === 844 ? 390 : 900 }, 4);
-        await selectTheme(page, 'cardboard');
         const before = await state(page);
-        const content = page.locator('#cardboardTownContent');
-        await expect(content).toBeEmpty();
-        if (width === 844) {
-            expect(await page.locator('.cardboard-player-selected').evaluate(panel => {
-                const shelf = panel.querySelector('.cardboard-cards').getBoundingClientRect();
-                const name = panel.querySelector('.cardboard-name').getBoundingClientRect();
-                return name.top >= shelf.top && name.bottom <= shelf.bottom;
-            })).toBe(true);
-        }
-        await page.screenshot({ path: testInfo.outputPath(`town-board-${width}.png`) });
-        const open = page.locator('.cardboard-player-selected [data-cardboard-town]');
-        await open.click();
-        const dialog = page.locator('#cardboardTownDialog');
-        await expect(dialog).toBeVisible();
-        await expect(page.locator('#cardboardTownClose')).toBeFocused();
-        await expect(content.locator('.town-street')).toBeVisible();
-        await expect(content.locator('.town-summary > span')).toHaveCSS('color', 'rgb(37, 71, 53)');
-        expect(await content.locator('.sunset-facility-art').count()).toBeGreaterThan(0);
-        const bounds = await dialog.boundingBox();
-        expect(bounds.x).toBeGreaterThanOrEqual(0);
-        expect(await page.locator('#cardboardTownHeading').evaluate(element => element.getBoundingClientRect().width)).toBeGreaterThan(60);
-        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
-        expect(Math.abs(bounds.x - (width - bounds.x - bounds.width))).toBeLessThan(2);
-        expect(await content.locator('.town-street').evaluate(element => element.getBoundingClientRect().bottom <= innerHeight - 12)).toBe(true);
-        await page.screenshot({ path: testInfo.outputPath(`town-preview-${width}.png`) });
+        const viewport = page.locator('#cardboardTableViewport');
+        await camera(page, 'overview');
+        const fitScale = Number(await viewport.getAttribute('data-table-scale'));
+        await camera(page, 'readable');
+        expect(Number(await viewport.getAttribute('data-table-scale'))).toBeCloseTo(0.95, 2);
+        await camera(page, 'in');
+        expect(Number(await viewport.getAttribute('data-table-scale'))).toBeGreaterThan(0.95);
+        await camera(page, 'out');
+        await camera(page, 'market');
+        await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
+        await camera(page, 'overview');
+        expect(Number(await viewport.getAttribute('data-table-scale'))).toBeCloseTo(fitScale, 2);
         expect(await state(page)).toEqual(before);
-        await page.keyboard.press('Escape');
-        await expect(dialog).toBeHidden();
-        await expect(content).toBeEmpty();
-        await expect(open).toBeFocused();
-        expect(await state(page)).toEqual(before);
-        await open.click();
-        await page.locator('#cardboardTownClose').click();
-        await expect(open).toBeFocused();
-        await open.click();
-        await selectTheme(page, 'classic');
-        await expect(dialog).toBeHidden();
-        await expect(content).toBeEmpty();
-        expect(await state(page)).toEqual(before);
+        await page.screenshot({ path: testInfo.outputPath(`facility-table-${width}.png`) });
     }
 });
 
-
-test('街を眺めている間に相手が勝利しても結果を覆わない', async ({ page }) => {
+test('拡大市場を見ている間に相手が勝利しても結果を覆わない', async ({ page }, testInfo) => {
     await prepare(page, { width: 844, height: 390 }, 2);
-    await page.locator('.cardboard-player-selected [data-cardboard-town]').click();
-    await expect(page.locator('#cardboardTownDialog')).toBeVisible();
+    await camera(page, 'market');
+    await camera(page, 'market');
+    await page.locator('#cardboardMarket .compact-market-expand').click();
+    await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         for (const name of getEnabledLandmarkSelection()) game.players[1].landmarks[name] = true;
         render();
     });
     await expect(page.locator('.winner-screen')).toBeVisible();
-    await expect(page.locator('#cardboardTownDialog')).toBeHidden();
-    await expect(page.locator('#cardboardTownContent')).toBeEmpty();
+    await expect(page.locator('#cardboardMarketDialog')).toBeHidden();
 });
-
 
 test('ロール中のサイコロは大きく見え操作を遮らず確定後に戻る', async ({ page }) => {
     for (const width of [320, 844, 1440]) {
@@ -1296,7 +1065,8 @@ test('ロール中のサイコロは大きく見え操作を遮らず確定後�
         await prepare(page, { width, height }, 2);
         await selectTheme(page, 'cardboard');
         const before = await state(page);
-        await page.evaluate(() => updateDiceDisplay([], true));
+        await page.evaluate(() => { showTurnAnnouncer('ダイス確認', false, 0); updateDiceDisplay([], true); });
+        await expect(page.locator('#turnAnnouncer')).toBeHidden();
         const stage = page.locator('#diceResult');
         await expect(stage).toHaveCSS('opacity', '1');
         await expect(stage).toHaveCSS('pointer-events', 'none');
@@ -1311,7 +1081,172 @@ test('ロール中のサイコロは大きく見え操作を遮らず確定後�
         await page.evaluate(() => updateDiceDisplay([5]));
         await expect(stage.locator('.rolling')).toHaveCount(0);
         expect(await stage.locator('.dice-face').evaluate(element => element.getBoundingClientRect().width)).toBeLessThan(60);
+        await page.evaluate(() => updateDiceDisplay([5, 6]));
+        expect(await stage.locator('.dice-face').evaluateAll(elements => elements.every(element => {
+            const rect = element.getBoundingClientRect();
+            return rect.width >= 30 && rect.height >= 30 && Math.abs(rect.width - rect.height) <= 2;
+        })), '確定した2個のサイコロを正方形で表示する').toBe(true);
         expect(await state(page)).toEqual(before);
         await page.emulateMedia({ reducedMotion: 'no-preference' });
     }
+});
+
+test('振り直し確認後に確定した施設だけを新しく強調する', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => { player.cards = []; });
+        game.players[0].cards = [createCardByName('麦畑')];
+        game.players[0].landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+        game.rollDice(1);
+        render();
+    });
+    await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase === GAME_PHASES.REROLL_CONFIRM)).toBe(true);
+    await expect(page.locator('#cardboardSeats .cardboard-card-activated')).toHaveCount(0);
+    await page.evaluate(() => {
+        window.lateActivationObserved = false;
+        const observer = new MutationObserver(() => {
+            if (document.querySelector('#cardboardSeats [data-card-name="麦畑"].cardboard-card-additional-activation')) {
+                window.lateActivationObserved = true;
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.getElementById('cardboardSeats'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+        GameRuntimeState.runtime.snapshot().game.skipReroll();
+        render();
+    });
+    await expect.poll(() => page.evaluate(() => window.lateActivationObserved)).toBe(true);
+    await expect(page.locator('#cardboardSeats .cardboard-card-activated')).toHaveCount(1);
+    await page.evaluate(() => render());
+    await expect(page.locator('#cardboardSeats .cardboard-card-additional-activation')).toHaveCount(0);
+});
+
+test('建設可の絞り込みでもサイコロ前と購入後は市場を見渡せる', async ({ page }) => {
+    await prepare(page, {width:844,height:390}, 2);
+    await camera(page, 'market');
+    await page.locator('#cardboardMarket .compact-market-filter-disclosure').evaluate(element => { element.open = true; });
+    await page.locator('#cardboardMarket [data-card-filter="affordable"]').click();
+    const cards = page.locator('#cardboardMarket [data-action="buildCard"]');
+    await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toBeVisible();
+    expect(await cards.count()).toBeGreaterThan(0);
+    expect(await cards.evaluateAll(nodes => nodes.every(node => node.disabled))).toBe(true);
+    await page.evaluate(() => {
+        window.marketFacilityArt = document.querySelector('#cardboardMarket [data-action="buildCard"][data-card-name="麦畑"] svg');
+        GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render();
+    });
+    expect(await page.evaluate(() => window.marketFacilityArt === document.querySelector('#cardboardMarket [data-action="buildCard"][data-card-name="麦畑"] svg'))).toBe(true);
+    await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toHaveCount(0);
+    expect(await cards.count()).toBeGreaterThan(0);
+    expect(await cards.evaluateAll(nodes => nodes.every(node => !node.disabled))).toBe(true);
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.builtThisTurn = true; render(); });
+    await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toBeVisible();
+    expect(await cards.count()).toBeGreaterThan(0);
+    expect(await cards.evaluateAll(nodes => nodes.every(node => node.disabled))).toBe(true);
+});
+
+test('新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 });
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => { player.cards = [createCardByName('森林')]; });
+        game.phase = GAME_PHASES.ROLL;
+        game.log = [];
+        const original = crypto.getRandomValues.bind(crypto);
+        let first = true;
+        Object.defineProperty(crypto, 'getRandomValues', { configurable: true, value(buffer) {
+            if (first) { first = false; buffer[0] = 4; return buffer; }
+            return original(buffer);
+        } });
+        render();
+        acceptHotseatHandoff();
+        document.getElementById('cardboardEventDetails').open = false;
+        document.getElementById('btnRoll').click();
+    });
+    const caption = page.locator('#cardboardEventDetails');
+    await expect(caption).toHaveClass(/cardboard-preview-playing/);
+    const cards = caption.locator('.cardboard-event-preview-card');
+    await expect(cards).toHaveCount(4);
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveText('出目 5');
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('pointer-events', 'none');
+    await page.locator('#cardboardDiceConfirmation').evaluate(element => {
+        window.confirmationElement = element;
+        element.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 100; });
+    });
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '1');
+    await page.screenshot({ path: testInfo.outputPath('dice-final-confirmation.png') });
+    await page.locator('#cardboardDiceConfirmation').evaluate(element => element.getAnimations().forEach(animation => { animation.currentTime = 500; }));
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');
+    await expect(cards.first().locator('.cardboard-event-preview-owner')).toHaveText(/^\+1コイン · 銀行→席[1-4]$/);
+    expect(await page.evaluate(() => {
+        window.captionAnimations = [...document.querySelectorAll('.cardboard-event-preview-card')].map(card => card.getAnimations()[0]);
+        window.captionAnimations.forEach(animation => animation?.pause());
+        return window.captionAnimations.filter(Boolean).length;
+    })).toBe(4);
+    expect(await cards.evaluateAll(elements => elements.map(element => {
+        const owner = document.querySelector(`#cardboardSeats .cardboard-player[data-player-index="${element.dataset.playerIndex}"]`);
+        const card = owner.querySelector('.cardboard-card[data-card-name="森林"]');
+        return { delay: parseFloat(getComputedStyle(card).animationDelay), name: getComputedStyle(card).animationName };
+    }))).toEqual([0,0.7,1.4,2.1].map(delay => ({delay,name:'cardboard-card-activate'})));
+    await page.evaluate(() => {
+        window.captionCardAnimations = [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].map(card => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate'));
+    });
+    const before = await state(page);
+    for (let index = 0; index < 4; index++) {
+        const visible = await page.evaluate(index => {
+            window.captionAnimations.forEach(animation => { animation.currentTime = index * 700 + 100; });
+            return [...document.querySelectorAll('.cardboard-event-preview-card')].filter(card => Number(getComputedStyle(card).opacity) > 0.9).map(card => card.dataset.playerIndex);
+        }, index);
+        expect(visible).toEqual([await cards.nth(index).getAttribute('data-player-index')]);
+        if (index === 2) await page.screenshot({ path: testInfo.outputPath('facility-chain-third-owner.png') });
+    }
+    expect(await page.evaluate(() => {
+        render();
+        return [...document.querySelectorAll('.cardboard-event-preview-card')].every((card,index) => card.getAnimations()[0] === window.captionAnimations[index]);
+    })).toBe(true);
+    expect(await page.evaluate(() => document.getElementById('cardboardDiceConfirmation') === window.confirmationElement)).toBe(true);
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');
+    expect(await page.evaluate(() => [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].every((card,index) => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate') === window.captionCardAnimations[index]))).toBe(true);
+    expect(await state(page)).toEqual(before);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await page.locator('#cardboardSeats .cardboard-card-activated').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
+    expect(await cards.evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
+    await selectTheme(page, 'plaza');
+    await selectTheme(page, 'cardboard');
+    await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
+    expect(await state(page)).toEqual(before);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayer().landmarks[LANDMARK_NAMES.HARBOR] = true;
+        game.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+        game.phase = GAME_PHASES.SELECT_DICE;
+        game.selectDiceCount(true, 5, 5);
+        render();
+    });
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveText('5 + 5 = 10');
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.resolveHarbor(true); render(); });
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
+    await expect(caption.locator('.cardboard-result-heading')).toContainText('港10→12');
+});
+
+test('中央市場の長い施設名をカード枠内で省略せず読める', async ({ page }, testInfo) => {
+    await prepare(page, { width: 1440, height: 936 });
+    const names = page.locator('#cardboardMarket .compact-market-item:not(.compact-market-landmark) .compact-market-name');
+    expect(await names.count()).toBeGreaterThanOrEqual(16);
+    await expect(names.filter({hasText:'フラワーショップ'})).toHaveCount(1);
+    const overflow = await names.evaluateAll(elements => elements.filter(element => {
+        const bounds = element.getBoundingClientRect();
+        const parent = element.closest('.compact-market-buy').getBoundingClientRect();
+        return bounds.left < parent.left - 1 || bounds.right > parent.right + 1 || element.scrollWidth > element.clientWidth + 1;
+    }).map(element => ({name:element.textContent, width:element.getBoundingClientRect().width, parent:element.closest('.compact-market-buy').getBoundingClientRect().width, scroll:element.scrollWidth, client:element.clientWidth})));
+    expect(overflow).toEqual([]);
+    expect(await page.locator('#cardboardMarket .compact-market-facilities').evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        return [...element.querySelectorAll('.compact-market-item')].slice(0,16).every(card => card.getBoundingClientRect().bottom <= bounds.bottom + 1);
+    }), '先頭2段のカード下端まで市場内に収まる').toBe(true);
+    await camera(page, 'market');
+    await page.screenshot({ path: testInfo.outputPath('market-full-facility-names.png') });
 });

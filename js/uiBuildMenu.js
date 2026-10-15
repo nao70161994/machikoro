@@ -188,6 +188,88 @@ const UiBuildMenu = (() => {
         '鉱山': '0 0 160 80',
     });
 
+    let localFacilityArtPromise = null;
+    let localFacilityArtPrefix = null;
+    let localFacilityArtIds = new Set();
+    const FACILITY_ART_READY_EVENT = 'facility-art-ready';
+
+    function prepareLocalFacilityArt() {
+        if (localFacilityArtPromise) return localFacilityArtPromise;
+        if (typeof window === 'undefined' || typeof document === 'undefined' || !document.body ||
+                typeof globalThis.fetch !== 'function' || typeof globalThis.DOMParser !== 'function') return null;
+        // One trusted, same-origin source remains the art's only maintained copy.
+        // Loading never blocks drawing: external references work until ready.
+        localFacilityArtPromise = globalThis.fetch('icons/facility-art.svg', { credentials: 'same-origin' })
+            .then(response => { if (!response.ok) throw new Error('Facility art unavailable'); return response.text(); })
+            .then(source => {
+                const parsed = new globalThis.DOMParser().parseFromString(source, 'image/svg+xml');
+                const svg = parsed.documentElement;
+                if (svg.localName !== 'svg' || parsed.querySelector('parsererror')) throw new Error('Invalid facility art');
+                const allowed = new Set(['svg', 'defs', 'symbol', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'linearGradient', 'radialGradient', 'stop', 'use', 'title', 'desc', 'clipPath', 'mask']);
+                const elements = [svg, ...Array.from(svg.querySelectorAll('*'))];
+                const ids = new Set();
+                for (const element of elements) {
+                    if (!allowed.has(element.localName)) throw new Error('Unsupported facility art element');
+                    const id = element.getAttribute('id');
+                    if (id) {
+                        if (!/^[A-Za-z][\w.-]*$/u.test(id) || ids.has(id)) throw new Error('Invalid facility art id');
+                        ids.add(id);
+                    }
+                    for (const attribute of Array.from(element.attributes)) {
+                        if (/^on/iu.test(attribute.name) || attribute.name === 'style') throw new Error('Unsupported facility art attribute');
+                    }
+                }
+                let suffix = 0;
+                let prefix = 'facility-local-';
+                while ([...ids].some(id => document.getElementById(`${prefix}${id}`))) prefix = `facility-local-${++suffix}-`;
+                for (const element of elements) {
+                    for (const attribute of Array.from(element.attributes)) {
+                        let value = attribute.value;
+                        if (attribute.name === 'id') value = `${prefix}${value}`;
+                        else if (attribute.localName === 'href') {
+                            if (!value.startsWith('#') || !ids.has(value.slice(1))) throw new Error('External facility art reference');
+                            value = `#${prefix}${value.slice(1)}`;
+                        } else if (/url\(/iu.test(value)) {
+                            value = value.replace(/url\(\s*['"]?#([\w.-]+)['"]?\s*\)/gu, (match, id) => {
+                                if (!ids.has(id)) throw new Error('Missing facility art reference');
+                                return `url(#${prefix}${id})`;
+                            });
+                            if (/url\(\s*['"]?(?!#)/iu.test(value)) throw new Error('External facility art paint');
+                        }
+                        if (value !== attribute.value) element.setAttributeNS(attribute.namespaceURI, attribute.name, value);
+                    }
+                }
+                const mount = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                mount.setAttribute('aria-hidden', 'true');
+                mount.setAttribute('focusable', 'false');
+                mount.setAttribute('width', '0');
+                mount.setAttribute('height', '0');
+                mount.setAttribute('data-local-facility-art', 'ready');
+                mount.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none;';
+                for (const child of Array.from(svg.childNodes)) mount.appendChild(document.importNode(child, true));
+                document.body.prepend(mount);
+                localFacilityArtIds = ids;
+                localFacilityArtPrefix = prefix;
+                document.dispatchEvent(new window.CustomEvent(FACILITY_ART_READY_EVENT));
+                return true;
+            }).catch(() => false);
+        return localFacilityArtPromise;
+    }
+
+    function facilityArtReference(motif) {
+        prepareLocalFacilityArt();
+        return localFacilityArtPrefix && localFacilityArtIds.has(motif)
+            ? `#${localFacilityArtPrefix}${motif}` : `icons/facility-art.svg#${motif}`;
+    }
+
+    function refreshFacilityArtReferences(root) {
+        if (!localFacilityArtPrefix || !root?.querySelectorAll) return;
+        for (const use of Array.from(root.querySelectorAll('use[href^="icons/facility-art.svg#"]'))) {
+            const motif = use.getAttribute('href').slice('icons/facility-art.svg#'.length);
+            if (localFacilityArtIds.has(motif)) use.setAttribute('href', `#${localFacilityArtPrefix}${motif}`);
+        }
+    }
+
     function renderFacilityArt(name, landmark = false, category = '') {
         const named = Object.prototype.hasOwnProperty.call(FACILITY_ART, name) ? FACILITY_ART[name] : null;
         const grouped = Object.prototype.hasOwnProperty.call(CATEGORY_ART, category) ? CATEGORY_ART[category] : null;
@@ -195,12 +277,12 @@ const UiBuildMenu = (() => {
         const motif = landmark ? landmarkMotif : (named || grouped || 'shop');
         const scene = landmark ? 'landmark' : (CATEGORY_SCENE[category] || 'street');
         const viewBox = FACILITY_ART_FRAMING[name] || '0 0 160 80';
-        return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="${viewBox}" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#${motif}"></use></svg>`;
+        return `<svg class="sunset-facility-art facility-scene-${scene}" viewBox="${viewBox}" aria-hidden="true" focusable="false"><use href="${facilityArtReference(motif)}"></use></svg>`;
     }
 
     function renderLandmarkBadgeIcon(name) {
         const motif = Object.prototype.hasOwnProperty.call(LANDMARK_ART, name) ? LANDMARK_ART[name] : 'landmark';
-        return `<svg class="landmark-badge-icon" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="icons/facility-art.svg#${motif}"></use></svg>`;
+        return `<svg class="landmark-badge-icon" viewBox="0 0 160 80" aria-hidden="true" focusable="false"><use href="${facilityArtReference(motif)}"></use></svg>`;
     }
 
     function townDevelopmentStage(facilityCount, landmarkCount) {
@@ -633,7 +715,7 @@ const UiBuildMenu = (() => {
         return `<section class="market-rule-status${warningClass}" aria-label="公式10種類市場の状態"><div><span class="market-status-emoji" aria-hidden="true">🏪</span><svg class="market-status-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="icons/interface-ui.svg#market"></use></svg> 公式10種類市場：公開${visibleTypes}種類・山札${deckCount}枚 ${warning}</div>${gaugeHtml}${historyHtml}</section>`;
     }
 
-    return Object.freeze({ renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
+    return Object.freeze({ prepareLocalFacilityArt, refreshFacilityArtReferences, FACILITY_ART_READY_EVENT, renderTownHtml, shouldAnimateTownLot, townDevelopmentStage, renderFacilityArt, renderLandmarkBadgeIcon, renderCoinMark, cardFilterTransition, createFilterController, safeCardColorName, isBuildGateOpen, buildActionState, buildShortcutView, applyBuildShortcutView, focusAndScrollToBuildMenu, undoBuildActionState, buildUndoBuildButtonHtml, renderBuildCardButton, renderLandmarkBuildButton, cardFilterButtonView, buildCardFilterBarHtml, cardFilterFocusPlan, canRestoreCardFilterFocus, buildActionIdentity, buildActionFocusPlan, createActionFocusController, applyBuildActionFocusPlan, canBuildCard, cardMatchesFilter, buildCardEmptyStateHtml, buildVisibleCardButtonsHtml, buildLandmarkButtonsHtml, buildBuildMenuHtml, buildMarketStatusHtml });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UiBuildMenu;

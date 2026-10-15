@@ -7,21 +7,9 @@ const UiCardBoard = (() => {
     const colorNames = Object.freeze({ blue: '青', green: '緑', red: '赤', purple: '紫' });
     const colorLabels = Object.freeze({ blue: '青：全員の手番に発動', green: '緑：自分の手番に発動',
         red: '赤：相手の手番に相手から支払い', purple: '紫：自分の手番の特殊効果' });
-    function selectDetailIndices(playerCount, options = {}) {
+    function selectTableIndices(playerCount) {
         const count = Number.isInteger(playerCount) ? Math.max(0, Math.min(10, playerCount)) : 0;
-        const all = Array.from({ length: count }, (_, index) => index);
-        if (options.focusOnly === true && count > 0) {
-            const selected = [options.selectedIndex, options.selfIndex, options.currentIndex, 0]
-                .find(index => Number.isInteger(index) && index >= 0 && index < count);
-            return [selected];
-        }
-        if (count <= 4) return all;
-        const selected = new Set();
-        for (const index of [options.selfIndex, options.currentIndex, options.selectedIndex, ...all]) {
-            if (Number.isInteger(index) && index >= 0 && index < count) selected.add(index);
-            if (selected.size === 3) break;
-        }
-        return [...selected];
+        return Array.from({ length: count }, (_, index) => index);
     }
     function eventFocusSeatIndex(playerCount, milestones = [], activations = []) {
         const count = Number.isInteger(playerCount) ? Math.max(0, Math.min(10, playerCount)) : 0;
@@ -84,13 +72,71 @@ const UiCardBoard = (() => {
         if (!Number.isSafeInteger(net) || !Number.isSafeInteger(count)) return null;
         const firstLogIndex = Math.max(0, events.activations.indexOf(matching[0]));
         const precedingActivations = new Set();
+        const precedingGroups = new Set();
         for (let index = 0; index < firstLogIndex; index++) {
             const prior = events.activations[index];
             if (prior?.facility !== true) continue;
             precedingActivations.add(prior.activation || `legacy:${index}`);
+            const owner = Number.isInteger(prior.owner) ? prior.owner : prior.to !== null ? prior.to : prior.from;
+            if (Number.isInteger(owner) && owner >= 0 && owner < 10 && prior.subject &&
+                    Number.isSafeInteger(prior.amount) && prior.amount >= 0) precedingGroups.add(JSON.stringify([owner, prior.subject]));
         }
-        return { net, count, order: precedingActivations.size, logOrder: firstLogIndex };
+        return { net, count, order: precedingActivations.size, logOrder: firstLogIndex, groupOrder: precedingGroups.size };
     }
+    function buildActivationPreviewHtml(events, players, options = {}) {
+        if (!Array.isArray(players) || !Array.isArray(events?.activations)) return '';
+        const { escape, art } = helpers(options);
+        const definitions = Array.isArray(options.cards) ? options.cards : players.flatMap(player => player?.cards || []);
+        const known = new Map(definitions.filter(card => card && typeof card.name === 'string').map(card => [card.name, card]));
+        const groups = new Map();
+        const validEvents = [];
+        for (const event of events.activations) {
+            if (event?.facility !== true || !known.has(event.subject) || !Number.isSafeInteger(event.amount) || event.amount < 0) continue;
+            // Match activationFor's historical recipient/bank-payment inference,
+            // while a supplied typed owner must be a valid player seat.
+            const typedOwner = event.owner !== undefined && event.owner !== null;
+            const owner = typedOwner ? event.owner : event.to !== null ? event.to : event.from;
+            if (!Number.isInteger(owner) || owner < 0 || owner >= players.length || !players[owner]) continue;
+            const projected = { ...event, owner };
+            validEvents.push(projected);
+            const key = JSON.stringify([owner, event.subject]);
+            if (!groups.has(key)) groups.set(key, { owner, name: event.subject });
+        }
+        const limit = Number.isInteger(options.limit) ? Math.max(1, Math.min(options.limit, 8)) : 2;
+        const previews = [];
+        for (const group of groups.values()) {
+            const activation = activationFor({ activations: validEvents }, group.name, group.owner);
+            if (!activation) continue;
+            const signed = `${activation.net > 0 ? '+' : ''}${activation.net}`;
+            const owner = `席${group.owner + 1}・${players[group.owner].name || 'プレイヤー'}`;
+            const label = `${owner}の${group.name}。施設収支${signed}コイン、発動${activation.count}回`;
+            const category = known.get(group.name).category || '';
+            const routes = new Map();
+            let completeRoutes = true;
+            let transferred = false;
+            const endpoint = index => index === null ? '銀行'
+                : Number.isInteger(index) && index >= 0 && index < players.length ? `席${index + 1}` : null;
+            for (const event of validEvents) {
+                if (event.owner !== group.owner || event.subject !== group.name) continue;
+                if (event.amount > 0) transferred = true;
+                const from = endpoint(event.from), to = endpoint(event.to);
+                if (!from || !to || from === to) { completeRoutes = false; continue; }
+                routes.set(JSON.stringify([from, to]), { from, to });
+            }
+            const paths = completeRoutes && transferred ? [...routes.values()] : [];
+            let route = '';
+            if (paths.length === 1) route = `${paths[0].from}→${paths[0].to}`;
+            else if (paths.length > 1 && paths.every(path => path.to === paths[0].to)) {
+                route = `${paths[0].from}ほか${paths.length - 1}→${paths[0].to}`;
+            } else if (paths.length > 1) route = `席${group.owner + 1}・経路${paths.length}件`;
+            const caption = transferred ? `${signed}コイン · ${route || owner}` : '0コイン · 移動なし';
+            const accessibleLabel = route ? `${label}。確定した送金経路：${paths.map(path => `${path.from}から${path.to}`).join('、')}` : label;
+            previews.push(`<span class="cardboard-event-preview-card" style="--cardboard-preview-delay:${previews.length * 700}ms" role="group" data-player-index="${group.owner}" data-card-name="${escape(group.name)}" title="${escape(accessibleLabel)}" aria-label="${escape(accessibleLabel)}"><span class="cardboard-event-preview-art" aria-hidden="true">${art(group.name, false, category)}</span><span class="cardboard-event-preview-name">${groups.size > 1 ? `<span class="cardboard-preview-progress" aria-hidden="true">${previews.length + 1}/${groups.size} </span>` : ''}${escape(group.name)}</span><span class="cardboard-event-preview-owner">${escape(caption)}</span></span>`);
+            if (previews.length === limit) break;
+        }
+        return previews.join('');
+    }
+
     function playerKind(options, index) {
         const setting = options.playerSettings?.[index];
         if (!setting) return { html: '', label: '' };
@@ -127,7 +173,7 @@ const UiCardBoard = (() => {
                 const color = colors.has(card.color) ? card.color : 'unknown';
                 const event = activationFor(options.events, card.name, index);
                 const eventAttrs = event ? ` data-cardboard-activation-count="${event.count}" data-cardboard-activation-net="${event.net}"` : '';
-                const activationStyle = event ? ` style="--cardboard-activation-delay:${Math.min(Math.max(event.logOrder, 0), 7) * 80}ms"` : '';
+                const activationStyle = event ? ` style="--cardboard-activation-delay:${Math.min(Math.max(event.logOrder, 0), 7) * 80}ms;--cardboard-chain-delay:${event.groupOrder * 700}ms;--cardboard-chain-animation:${event.groupOrder < 8 ? 'cardboard-card-activate' : 'none'}"` : '';
                 const majorIncomeClass = event?.net >= 5 ? ' cardboard-card-major-income' : '';
                 const effectText = typeof options.getEffectText === 'function' ? options.getEffectText(card) : '';
                 const effectHtml = effectText ? `<span class="cardboard-effect" title="${escape(effectText)}">${escape(effectText)}</span>` : '';
@@ -157,11 +203,11 @@ const UiCardBoard = (() => {
         const townScenery = grouped.size > 0 && grouped.size <= 2 && ownedCardCount <= 4 &&
             typeof options.renderTownScenery === 'function'
             ? `<div class="cardboard-town-vignette" aria-hidden="true"><span class="cardboard-town-vignette-caption">街の風景</span>${options.renderTownScenery(player, new Set(names))}</div>` : '';
-        const facilityHeading = `<h3 class="cardboard-facility-heading"><span>施設</span><small><span>${grouped.size}種類 · ${ownedCardCount}枚</span><button type="button" class="cardboard-town-open" data-cardboard-town="${index}" aria-haspopup="dialog" aria-controls="cardboardTownDialog" aria-label="${escape(player.name)}の育てた街を見る">街を見る</button><span class="cardboard-facility-scroll-hint" aria-hidden="true"></span></small></h3>`;
+        const facilityHeading = `<h3 class="cardboard-facility-heading"><span>所有施設</span><small><span>${grouped.size}種類 · ${ownedCardCount}枚</span><span class="cardboard-facility-scroll-hint" aria-hidden="true"></span></small></h3>`;
         const kind = playerKind(options, index);
         const kindBadge = kind.html ? `<span class="cardboard-player-kind" aria-hidden="true">${kind.html}</span>` : '';
         const kindDescription = kind.label ? `<span class="visually-hidden">${escape(kind.label)}。</span>` : '';
-        const heading = index === options.selfIndex ? 'あなたの街' : `席${index + 1}・${player.name}`;
+        const heading = index === options.selfIndex ? 'あなたの施設' : `席${index + 1}・${player.name}`;
         const headingContext = index === options.selfIndex
             ? `<span class="visually-hidden">席${index + 1}・${escape(player.name)}（自分）</span>` : '';
 
@@ -185,8 +231,8 @@ const UiCardBoard = (() => {
         const keyboardHint = players.length > 1
             ? 'キーボードでは左右矢印、Home、Endで席を移動できます。' : '';
         const rosterLabel = players.length > 4
-            ? `表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。${keyboardHint}選ぶと街のカードを大きく表示`
-            : `表示するプレイヤー。${keyboardHint}選ぶと街のカードを大きく表示`;
+            ? `表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。${keyboardHint}選ぶと所有施設カードを大きく表示`
+            : `表示するプレイヤー。${keyboardHint}選ぶと所有施設カードを大きく表示`;
         const rovingIndex = Number.isInteger(options.selectedIndex) && options.selectedIndex >= 0 && options.selectedIndex < players.length
             ? options.selectedIndex
             : Number.isInteger(options.currentIndex) && options.currentIndex >= 0 && options.currentIndex < players.length
@@ -206,10 +252,10 @@ const UiCardBoard = (() => {
             const activationBadge = activationCount ? `<span class="cardboard-roster-badge cardboard-roster-activation-badge">施設 ${activationCount}回</span>` : '';
             const roleLabels = `${index === options.selfIndex ? '、あなた' : ''}${index === options.currentIndex ? '、現在の手番' : ''}`;
             const showingDetails = options.focusMode === true && index === options.selectedIndex;
-            return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}${activationCount ? ' cardboard-roster-activated' : ''}" data-cardboard-player-index="${index}" tabindex="${index === rovingIndex ? '0' : '-1'}" title="席${index + 1}・${escape(player.name)}" aria-pressed="${index === options.selectedIndex}" aria-label="席${index + 1}・${escape(player.name)}${roleLabels}${showingDetails ? '、街の詳細を表示中' : ''}${kindLabel ? `、${escape(kindLabel)}` : ''}、${escape(player.coins)}コイン、目標 ${built}/${names.length}${activationCount ? `、今回施設発動 ${activationCount}回` : ''}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong><span class="cardboard-roster-seat-number">席${index + 1}</span>${kindIcon}<span class="cardboard-roster-name">${escape(player.name)}</span>${roles}${activationBadge}</strong><span class="cardboard-roster-summary"><span class="cardboard-roster-summary-text">${escape(player.coins)}コイン · 目標 ${built}/${names.length}</span>${showingDetails ? '<b class="cardboard-roster-detail-indicator" aria-hidden="true">詳細表示中</b>' : ''}</span><small class="cardboard-roster-trend">${trend}</small></button>`;
+            return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}${activationCount ? ' cardboard-roster-activated' : ''}" data-cardboard-player-index="${index}" tabindex="${index === rovingIndex ? '0' : '-1'}" title="席${index + 1}・${escape(player.name)}" aria-pressed="${index === options.selectedIndex}" aria-label="席${index + 1}・${escape(player.name)}${roleLabels}${showingDetails ? '、施設カードを選択中' : ''}${kindLabel ? `、${escape(kindLabel)}` : ''}、${escape(player.coins)}コイン、目標 ${built}/${names.length}${activationCount ? `、今回施設発動 ${activationCount}回` : ''}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong><span class="cardboard-roster-seat-number">席${index + 1}</span>${kindIcon}<span class="cardboard-roster-name">${escape(player.name)}</span>${roles}${activationBadge}</strong><span class="cardboard-roster-summary"><span class="cardboard-roster-summary-text"><b class="cardboard-roster-coins">${escape(player.coins)}<span>コイン</span></b><span class="cardboard-roster-progress"><span> · 目標 </span><b>${built}/${names.length}</b></span></span></span><small class="cardboard-roster-trend">${trend}</small></button>`;
         }).join('')}</nav>`;
     }
-    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, selectDetailIndices, eventFocusSeatIndex });
+    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, buildActivationPreviewHtml, selectTableIndices, eventFocusSeatIndex });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = UiCardBoard;
 if (typeof window !== 'undefined') window.UiCardBoard = UiCardBoard;

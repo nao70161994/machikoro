@@ -8,6 +8,7 @@ on:
             - 'js/ui*.js'
             - 'js/designTheme.js'
             - 'js/cardBoard*.js'
+            - 'js/cardTableCamera.js'
             - 'js/plaza*.js'
             - 'js/plazaField.js'
             - 'tests/browser/visual-art-review.spec.js'
@@ -26,12 +27,23 @@ on:
                 required: true
                 default: false
                 type: boolean
+            ui_playthrough_only:
+                description: Run only the full UI games; visual and compatibility gates remain required on pull requests
+                required: true
+                default: false
+                type: boolean
+            run_ui_playthrough:
+                description: Play a complete unseeded game through actual UI in portrait and landscape
+                required: true
+                default: false
+                type: boolean
 
 permissions:
     contents: read
 
 jobs:
     plaza-webkit:
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.ui_playthrough_only != true }}
         runs-on: ubuntu-latest
         timeout-minutes: 45
         steps:
@@ -79,4 +91,32 @@ jobs:
                       test-results/**/error-context.md
                       test-results/plaza-overview/**/trace.zip
                       test-results/plaza-visual/**/trace.zip
+                  if-no-files-found: warn
+
+    card-table-ui-playthrough:
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_ui_playthrough == true }}
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        strategy:
+            fail-fast: false
+            matrix:
+                landscape: ['0', '1']
+        steps:
+            - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+            - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+              with:
+                  node-version: '20'
+                  cache: npm
+            - run: npm ci
+            - run: npx playwright install --with-deps webkit
+            - name: Complete a game with UI actions and CPU advice only
+              run: npx playwright test ui-playthrough.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/ui-playthrough
+              env:
+                  RUN_UI_PLAYTHROUGH: '1'
+                  UI_PLAYTHROUGH_LANDSCAPE: ${{ matrix.landscape }}
+            - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              if: always()
+              with:
+                  name: card-table-ui-playthrough-${{ matrix.landscape }}
+                  path: test-results/ui-playthrough/
                   if-no-files-found: warn

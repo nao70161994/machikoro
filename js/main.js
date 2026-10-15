@@ -1352,6 +1352,13 @@ function renderDiceFace(num) {
 const diceArrivalController = UiDiceDisplay.createArrivalController();
 
 function updateDiceDisplay(nums, rolling = false) {
+    // The turn announcement yields to the dice as soon as play begins.
+    const turnAnnouncer = document.getElementById('turnAnnouncer');
+    if (rolling && turnAnnouncer) {
+        turnAnnouncer.style.display = 'none';
+        turnAnnouncer.classList.remove('hiding');
+    }
+    if (rolling) document.getElementById('cardboardDiceConfirmation')?.remove();
     const el = document.getElementById("diceResult");
     const view = UiDiceDisplay.buildView(nums, rolling);
     const shouldAnimateArrival = diceArrivalController.transition(nums, rolling);
