@@ -259,3 +259,25 @@ runTest('同じ赤施設を双方が持っていても支払側施設を誤発�
     assert.ok(majorIncomeHtml.includes('cardboard-card-major-income'));
     assert.ok(!UiCardBoard.buildPlayerHtml(players[0], { ...options, index: 0, events: bankPayment }).includes('cardboard-card-major-income'));
 });
+
+runTest('発動カード帯は絵と所有者と収支を最大2施設へ集約し状態を変えない', () => {
+    const stadium = createCardByName('スタジアム');
+    const forest = createCardByName('森林');
+    const apple = createCardByName('リンゴ園');
+    const players = [{name:'街1',cards:[stadium]}, {name:'<街2>',cards:[forest]}, {name:'街3',cards:[apple]}];
+    const events = {activations:[
+        {facility:true,owner:0,subject:'スタジアム',activation:'stadium:1',from:1,to:0,amount:2,count:1},
+        {facility:true,owner:0,subject:'スタジアム',activation:'stadium:1',from:2,to:0,amount:3,count:1},
+        {facility:true,subject:'森林',from:null,to:1,amount:6,count:6},
+        {facility:true,owner:2,subject:'リンゴ園',from:null,to:2,amount:3,count:1},
+    ]};
+    const before = JSON.stringify({events,players});
+    const html = UiCardBoard.buildActivationPreviewHtml(events,players,{cards:[stadium,forest,apple]});
+    assert.strictEqual((html.match(/role="group"/g)||[]).length,2);
+    assert.ok(html.includes('スタジアム。施設収支+5コイン、発動1回'));
+    assert.ok(html.includes('森林。施設収支+6コイン、発動6回'));
+    assert.ok(html.includes('&lt;街2&gt;'));
+    assert.ok(!html.includes('リンゴ園'));
+    assert.strictEqual(JSON.stringify({events,players}),before);
+    assert.strictEqual(UiCardBoard.buildActivationPreviewHtml({activations:[{facility:true,owner:99,subject:'森林',from:null,to:1,amount:3}]},players), '');
+});

@@ -79,6 +79,39 @@ const UiCardBoard = (() => {
         }
         return { net, count, order: precedingActivations.size, logOrder: firstLogIndex };
     }
+    function buildActivationPreviewHtml(events, players, options = {}) {
+        if (!Array.isArray(players) || !Array.isArray(events?.activations)) return '';
+        const { escape, art } = helpers(options);
+        const definitions = Array.isArray(options.cards) ? options.cards : players.flatMap(player => player?.cards || []);
+        const known = new Map(definitions.filter(card => card && typeof card.name === 'string').map(card => [card.name, card]));
+        const groups = new Map();
+        const validEvents = [];
+        for (const event of events.activations) {
+            if (event?.facility !== true || !known.has(event.subject) || !Number.isSafeInteger(event.amount) || event.amount < 0) continue;
+            // Match activationFor's historical recipient/bank-payment inference,
+            // while a supplied typed owner must be a valid player seat.
+            const typedOwner = event.owner !== undefined && event.owner !== null;
+            const owner = typedOwner ? event.owner : event.to !== null ? event.to : event.from;
+            if (!Number.isInteger(owner) || owner < 0 || owner >= players.length || !players[owner]) continue;
+            const projected = { ...event, owner };
+            validEvents.push(projected);
+            const key = JSON.stringify([owner, event.subject]);
+            if (!groups.has(key)) groups.set(key, { owner, name: event.subject });
+        }
+        const previews = [];
+        for (const group of groups.values()) {
+            const activation = activationFor({ activations: validEvents }, group.name, group.owner);
+            if (!activation) continue;
+            const signed = `${activation.net > 0 ? '+' : ''}${activation.net}`;
+            const owner = `席${group.owner + 1}・${players[group.owner].name || 'プレイヤー'}`;
+            const label = `${owner}の${group.name}。施設収支${signed}コイン、発動${activation.count}回`;
+            const category = known.get(group.name).category || '';
+            previews.push(`<span class="cardboard-event-preview-card" role="group" data-player-index="${group.owner}" data-card-name="${escape(group.name)}" title="${escape(label)}" aria-label="${escape(label)}"><span class="cardboard-event-preview-art" aria-hidden="true">${art(group.name, false, category)}</span><span class="cardboard-event-preview-name">${escape(group.name)}</span><span class="cardboard-event-preview-owner">${escape(owner)} · ${escape(signed)}コイン</span></span>`);
+            if (previews.length === 2) break;
+        }
+        return previews.join('');
+    }
+
     function playerKind(options, index) {
         const setting = options.playerSettings?.[index];
         if (!setting) return { html: '', label: '' };
@@ -197,7 +230,7 @@ const UiCardBoard = (() => {
             return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}${activationCount ? ' cardboard-roster-activated' : ''}" data-cardboard-player-index="${index}" tabindex="${index === rovingIndex ? '0' : '-1'}" title="席${index + 1}・${escape(player.name)}" aria-pressed="${index === options.selectedIndex}" aria-label="席${index + 1}・${escape(player.name)}${roleLabels}${showingDetails ? '、施設カードを選択中' : ''}${kindLabel ? `、${escape(kindLabel)}` : ''}、${escape(player.coins)}コイン、目標 ${built}/${names.length}${activationCount ? `、今回施設発動 ${activationCount}回` : ''}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong><span class="cardboard-roster-seat-number">席${index + 1}</span>${kindIcon}<span class="cardboard-roster-name">${escape(player.name)}</span>${roles}${activationBadge}</strong><span class="cardboard-roster-summary"><span class="cardboard-roster-summary-text"><b class="cardboard-roster-coins">${escape(player.coins)}<span>コイン</span></b><span class="cardboard-roster-progress"><span> · 目標 </span><b>${built}/${names.length}</b></span></span></span><small class="cardboard-roster-trend">${trend}</small></button>`;
         }).join('')}</nav>`;
     }
-    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, selectTableIndices, eventFocusSeatIndex });
+    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, buildActivationPreviewHtml, selectTableIndices, eventFocusSeatIndex });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = UiCardBoard;
 if (typeof window !== 'undefined') window.UiCardBoard = UiCardBoard;

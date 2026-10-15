@@ -834,7 +834,9 @@ const CardBoardField = (() => {
         const facilities = new Map();
         for (const activation of events.activations || []) {
             if (!activation.facility || !activation.subject) continue;
-            const key = activation.activation || `${activation.owner}:${activation.subject}`;
+            const owner = Number.isInteger(activation.owner) ? activation.owner
+                : activation.to !== null ? activation.to : activation.from;
+            const key = activation.activation || `${owner}:${activation.subject}`;
             const previous = facilities.get(key);
             facilities.set(key, {
                 name: activation.subject,
@@ -866,6 +868,7 @@ const CardBoardField = (() => {
         summary.dataset.net = String(net);
         summary.dataset.largeIncome = String(net >= 5);
         if (!hasResult) {
+            details.dataset.activationPreview = 'false';
             summary.textContent = '出目・収支';
             summary.removeAttribute('aria-label');
             summary.removeAttribute('title');
@@ -884,8 +887,13 @@ const CardBoardField = (() => {
             detail.className = 'cardboard-result-detail';
             summary.replaceChildren(heading, detail);
         }
-        heading.textContent = headingText;
-        detail.textContent = detailText;
+        const preview = constructionName ? '' : UiCardBoard.buildActivationPreviewHtml(events, game.players, {
+            cards: CARDS, escapeHtml: facts.escapeHtml, renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        });
+        details.dataset.activationPreview = String(Boolean(preview));
+        heading.textContent = preview ? `${headingText} · 施設${count}回` : headingText;
+        if (preview) replaceHtml(detail, preview);
+        else detail.textContent = detailText;
         summary.setAttribute('aria-label', `${result.textContent}。出目と収支を確認`);
         summary.title = result.textContent;
     }

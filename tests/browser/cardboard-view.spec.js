@@ -941,6 +941,14 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
     const resultSummary = page.locator('#cardboardEventDetails > summary');
     await expect(resultSummary).toContainText('+6');
     await expect(resultSummary).toContainText('施設6回');
+    await expect(resultSummary.locator('.cardboard-event-preview-name').first()).toHaveText('森林');
+    await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('街1');
+    await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('+6コイン');
+    await expect(resultSummary.locator('.cardboard-event-preview-art svg').first()).toBeVisible();
+    await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.add('rolling'));
+    await expect(resultSummary.locator('.cardboard-result-detail')).toHaveCSS('visibility', 'hidden');
+    await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.remove('rolling'));
+    await expect(resultSummary.locator('.cardboard-result-detail')).toHaveCSS('visibility', 'visible');
     await expect(page.locator('#cardboardCurrentResult')).toHaveCSS('pointer-events', 'none');
     for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
         await page.setViewportSize(viewport);
@@ -956,6 +964,9 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
             return bounds.left >= 0 && bounds.right <= innerWidth && bounds.bottom <= table.top + 1;
         }), '収益表示は固定HUD内に収まり所有カードを覆わない').toBe(true);
         await page.screenshot({ path: testInfo.outputPath(`cardboard-income-${viewport.width}.png`) });
+        await page.locator('#cardboardEventDetails').evaluate(element => { element.open = false; });
+        await page.screenshot({ path: testInfo.outputPath(`activation-preview-${viewport.width}.png`) });
+        await page.locator('#cardboardEventDetails').evaluate(element => { element.open = true; });
         if (viewport.width === 844) {
             await camera(page, 'self');
             await expect(page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card-activated')).toHaveCount(1);
@@ -1070,6 +1081,11 @@ test('ロール中のサイコロは大きく見え操作を遮らず確定後�
         await page.evaluate(() => updateDiceDisplay([5]));
         await expect(stage.locator('.rolling')).toHaveCount(0);
         expect(await stage.locator('.dice-face').evaluate(element => element.getBoundingClientRect().width)).toBeLessThan(60);
+        await page.evaluate(() => updateDiceDisplay([5, 6]));
+        expect(await stage.locator('.dice-face').evaluateAll(elements => elements.every(element => {
+            const rect = element.getBoundingClientRect();
+            return rect.width >= 30 && rect.height >= 30 && Math.abs(rect.width - rect.height) <= 2;
+        })), '確定した2個のサイコロを正方形で表示する').toBe(true);
         expect(await state(page)).toEqual(before);
         await page.emulateMedia({ reducedMotion: 'no-preference' });
     }
