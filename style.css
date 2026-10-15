@@ -14631,3 +14631,17 @@ html[data-design="cardboard"] body.pwa-banner-open #cardboardBoard.cardboard-car
         grid-row: 1 / 3;
     }
 }
+
+/* Only newly confirmed income pulses after a reroll or special choice. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-card-additional-activation {
+    animation: cardboard-card-activate 760ms cubic-bezier(.2, .8, .25, 1) both;
+    animation-delay: var(--cardboard-additional-activation-delay, 0ms);
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-card-table .cardboard-card-additional-activation {
+    animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-card-additional-activation {
+        animation: none;
+    }
+}

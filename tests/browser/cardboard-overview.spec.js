@@ -1,5 +1,9 @@
 const { test, expect } = require('@playwright/test');
 
+// Keep layout fixtures independent of asynchronous SW update prompts.
+// Explicit banner cases below and the PWA suite retain update coverage.
+test.use({ serviceWorkers: 'block' });
+
 async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.setViewportSize(viewport);
     await page.addInitScript(() => { if (!localStorage.getItem('machikoroDesignTheme')) localStorage.setItem('machikoroDesignTheme', 'cardboard'); });

@@ -521,7 +521,21 @@ test('横持ちの建設操作は拡大市場を開き購入後は見える操�
     await dialog.locator('[data-action="buildCard"][data-card-name="麦畑"]').click();
     await expect(page.locator('.cardboard-player-selected [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×5');
     await expect(shortcut).toBeHidden();
+    // A purchase cue must remain pending while the native market covers it.
+    await page.waitForTimeout(1400);
+    await expect(page.locator('#cardboardSeats .cardboard-card-newly-built')).toHaveCount(0);
+    await page.evaluate(() => {
+        window.buildCueAfterMarketClose = false;
+        const observer = new MutationObserver(() => {
+            if (document.querySelector('#cardboardSeats [data-card-name="麦畑"].cardboard-card-newly-built')) {
+                window.buildCueAfterMarketClose = true;
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.getElementById('cardboardSeats'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    });
     await page.locator('#cardboardMarketClose').click();
+    await expect.poll(() => page.evaluate(() => window.buildCueAfterMarketClose)).toBe(true);
     await expect(page.locator('#cardboardMarket details[open]')).toHaveCount(0);
     await expect(page.locator('#cardboardMarket .compact-market-expand')).toBeFocused();
 });
@@ -1024,4 +1038,34 @@ test('ロール中のサイコロは大きく見え操作を遮らず確定後�
         expect(await state(page)).toEqual(before);
         await page.emulateMedia({ reducedMotion: 'no-preference' });
     }
+});
+
+test('振り直し確認後に確定した施設だけを新しく強調する', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => { player.cards = []; });
+        game.players[0].cards = [createCardByName('麦畑')];
+        game.players[0].landmarks[LANDMARK_NAMES.RADIO_TOWER] = true;
+        game.rollDice(1);
+        render();
+    });
+    await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase === GAME_PHASES.REROLL_CONFIRM)).toBe(true);
+    await expect(page.locator('#cardboardSeats .cardboard-card-activated')).toHaveCount(0);
+    await page.evaluate(() => {
+        window.lateActivationObserved = false;
+        const observer = new MutationObserver(() => {
+            if (document.querySelector('#cardboardSeats [data-card-name="麦畑"].cardboard-card-additional-activation')) {
+                window.lateActivationObserved = true;
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.getElementById('cardboardSeats'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+        GameRuntimeState.runtime.snapshot().game.skipReroll();
+        render();
+    });
+    await expect.poll(() => page.evaluate(() => window.lateActivationObserved)).toBe(true);
+    await expect(page.locator('#cardboardSeats .cardboard-card-activated')).toHaveCount(1);
+    await page.evaluate(() => render());
+    await expect(page.locator('#cardboardSeats .cardboard-card-additional-activation')).toHaveCount(0);
 });

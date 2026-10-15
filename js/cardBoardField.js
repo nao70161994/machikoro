@@ -50,6 +50,8 @@ const CardBoardField = (() => {
     let buildCueCard = null;
     let buildCueListener = null;
     const landmarkCues = new Map();
+    const additionalActivationCues = new Map();
+    let pendingBuildCues = [];
     let previousChoice = null;
     let previousBuiltLandmarks = null;
     let previousBuildLog = null;
@@ -289,7 +291,65 @@ const CardBoardField = (() => {
         landmarkCues.set(landmark, { timer, listener });
     }
 
+    function clearAdditionalActivationCue(card) {
+        const cue = additionalActivationCues.get(card);
+        if (!cue) return;
+        clearTimeout(cue.timer);
+        card.removeEventListener('animationend', cue.listener);
+        card.classList.remove('cardboard-card-additional-activation');
+        card.style.removeProperty('--cardboard-additional-activation-delay');
+        additionalActivationCues.delete(card);
+    }
+
+    function clearAdditionalActivationCues() {
+        for (const card of additionalActivationCues.keys()) clearAdditionalActivationCue(card);
+    }
+
+    function showAdditionalActivationCue(card, order) {
+        clearAdditionalActivationCue(card);
+        card.style.setProperty('--cardboard-additional-activation-delay', `${Math.min(order, 7) * 80}ms`);
+        card.classList.add('cardboard-card-additional-activation');
+        const listener = event => {
+            if (event.target === card && event.animationName === 'cardboard-card-activate') clearAdditionalActivationCue(card);
+        };
+        const timer = setTimeout(() => clearAdditionalActivationCue(card), 1400);
+        card.addEventListener('animationend', listener);
+        additionalActivationCues.set(card, { timer, listener });
+    }
+
+    function presentBuildCue(button, playerIndex, name, landmark) {
+        if (/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open) {
+            const game = facts?.game;
+            const marker = `${landmark ? '🏆' : '🏗️'} ${name}を建設！`;
+            const entry = game?.log?.findLast(item => item.message === marker);
+            if (entry) pendingBuildCues.push({ session, turn: game.turnCount, actor: game.currentPlayerIndex, playerIndex, name, landmark, entry });
+            return;
+        }
+        if (landmark) showLandmarkCue(button, !reducedMotionEnabled());
+        else showBuildCue(button, !reducedMotionEnabled());
+    }
+
+    function presentPendingBuildCues() {
+        const pending = pendingBuildCues;
+        pendingBuildCues = [];
+        const game = facts?.game;
+        if (!game || !mounted || !enabled() || facts.replaying || document.hidden || node('gameScreen')?.style.display === 'none') return;
+        for (const cue of pending) {
+            if (cue.session !== session || cue.turn !== game.turnCount || cue.actor !== game.currentPlayerIndex || !game.log.includes(cue.entry)) continue;
+            const panel = node('cardboardSeats')?.querySelector(`[data-player-index="${cue.playerIndex}"]`);
+            const selector = cue.landmark ? '.cardboard-landmark' : '.cardboard-card';
+            const button = [...(panel?.querySelectorAll(selector) || [])].find(element =>
+                element.getAttribute(cue.landmark ? 'data-landmark-name' : 'data-card-name') === cue.name);
+            if (!button) continue;
+            if (cue.landmark && game.players[cue.playerIndex]?.landmarks[cue.name] !== true) continue;
+            if (cue.landmark) showLandmarkCue(button, !reducedMotionEnabled());
+            else showBuildCue(button, !reducedMotionEnabled());
+        }
+    }
+
     function clearFeedback() {
+        clearAdditionalActivationCues();
+        pendingBuildCues = [];
         if (transferFrame !== null) globalThis.cancelAnimationFrame(transferFrame);
         transferFrame = null;
         transferSequence++;
@@ -338,11 +398,13 @@ const CardBoardField = (() => {
             launcher?.focus({ preventScroll: true });
         }
         restoreMarketFocus = true;
+        presentPendingBuildCues();
     }
 
     function closeMarket(restoreFocus = true) {
         const dialog = /** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'));
         restoreMarketFocus = restoreFocus;
+        if (!restoreFocus) pendingBuildCues = [];
         setMarketExpanded(false);
         const wasOpen = dialog?.open === true;
         if (wasOpen) dialog.close();
@@ -816,6 +878,18 @@ const CardBoardField = (() => {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
             cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
         }) : null;
+        // Feedback consumes only newly appended consequences after a pending
+        // choice. Never pulse the older facilities retained in the turn receipt.
+        const additionalActivations = new Map();
+        if (!newRoll && freshEvents && !facts.replaying && !feedback?.wasInvalidated()) {
+            for (const event of freshEvents.activations) {
+                const owner = Number.isInteger(event.owner) ? event.owner : event.to !== null ? event.to : event.from;
+                if (!event.facility || !Number.isInteger(owner) || !event.subject) continue;
+                const key = JSON.stringify([owner, event.subject]);
+                if (!additionalActivations.has(key)) additionalActivations.set(key, additionalActivations.size);
+            }
+        }
+        if (newRoll || freshResultLogs.length) clearAdditionalActivationCues();
         const eventFocusSeatIndex = UiCardBoard.eventFocusSeatIndex(
             game.players.length,
             buildMilestones,
@@ -858,7 +932,6 @@ const CardBoardField = (() => {
         board.dataset.playerCount = String(game.players.length);
         board.classList.remove('cardboard-focus-view');
         const indices = UiCardBoard.selectTableIndices(game.players.length);
-        const animateNewCards = newlyBuiltCards.length > 0 && !reducedMotionEnabled();
         const others = indices.filter(index => index !== selfIndex);
         let removedFocusedPanel = false;
         seats.querySelectorAll('.cardboard-player').forEach(element => {
@@ -898,7 +971,11 @@ const CardBoardField = (() => {
                 if (landmark.index !== index) continue;
                 const button = Array.from(/** @type {NodeListOf<HTMLElement>} */ (panel.querySelectorAll('.cardboard-landmark'))).find(item => item.dataset.landmarkName === landmark.name);
                 if (!button) continue;
-                showLandmarkCue(button, !reducedMotionEnabled());
+                presentBuildCue(button, index, landmark.name, true);
+            }
+            for (const button of panel.querySelectorAll('.cardboard-card')) {
+                const key = JSON.stringify([index, button.getAttribute('data-card-name')]);
+                if (additionalActivations.has(key)) showAdditionalActivationCue(button, additionalActivations.get(key));
             }
             scrollMemory.restore(`player:${index}`, panel);
             const newBuild = newlyBuiltCards.find(build => build.playerIndex === index);
@@ -911,7 +988,7 @@ const CardBoardField = (() => {
             const cardList = card?.closest('.cardboard-cards');
             if (card && cardList) {
                 revealInScrollport(card, cardList);
-                if (builtCard === card) showBuildCue(card, animateNewCards);
+                if (builtCard === card) presentBuildCue(card, index, newBuild.name, false);
             }
         }
         if (removedFocusedPanel) {
