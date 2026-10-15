@@ -103,14 +103,21 @@ const CardBoardTransfers = (() => {
             const bounds = container.getBoundingClientRect();
             if (!bounds.width || !bounds.height) return false;
             const center = { x: bounds.width / 2, y: bounds.height / 2 };
+            const viewport = container.querySelector('#cardboardTableViewport');
+            const viewportBounds = viewport?.getBoundingClientRect();
+            const intersects = (rect, clip) => rect?.width > 0 && rect.height > 0 && clip?.width > 0 && clip.height > 0 &&
+                rect.left < clip.left + clip.width && rect.left + rect.width > clip.left &&
+                rect.top < clip.top + clip.height && rect.top + rect.height > clip.top;
             const location = index => {
                 if (index === null || index === 'pool') return center;
-                const header = container.querySelector(`.cardboard-overview-city[data-player-index="${index}"] .cardboard-overview-heading`) ||
-                    container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
+                const header = container.querySelector(`[data-player-index="${index}"] .cardboard-header`);
                 let rect = header?.getBoundingClientRect();
-                if (!rect?.width || !rect.height) {
+                // Panning can leave an otherwise measurable header outside the
+                // visible table. Route those flights to the persistent HUD.
+                if (!rect?.width || !rect.height || viewport && !intersects(rect, viewportBounds)) {
                     const seat = container.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${index}"]`);
                     rect = seat?.getBoundingClientRect();
+                    if (viewport && !intersects(rect, bounds)) return null;
                 }
                 if (!rect?.width || !rect.height) return null;
                 const inset = 8;

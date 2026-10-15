@@ -7,21 +7,9 @@ const UiCardBoard = (() => {
     const colorNames = Object.freeze({ blue: '青', green: '緑', red: '赤', purple: '紫' });
     const colorLabels = Object.freeze({ blue: '青：全員の手番に発動', green: '緑：自分の手番に発動',
         red: '赤：相手の手番に相手から支払い', purple: '紫：自分の手番の特殊効果' });
-    function selectDetailIndices(playerCount, options = {}) {
+    function selectTableIndices(playerCount) {
         const count = Number.isInteger(playerCount) ? Math.max(0, Math.min(10, playerCount)) : 0;
-        const all = Array.from({ length: count }, (_, index) => index);
-        if (options.focusOnly === true && count > 0) {
-            const selected = [options.selectedIndex, options.selfIndex, options.currentIndex, 0]
-                .find(index => Number.isInteger(index) && index >= 0 && index < count);
-            return [selected];
-        }
-        if (count <= 4) return all;
-        const selected = new Set();
-        for (const index of [options.selfIndex, options.currentIndex, options.selectedIndex, ...all]) {
-            if (Number.isInteger(index) && index >= 0 && index < count) selected.add(index);
-            if (selected.size === 3) break;
-        }
-        return [...selected];
+        return Array.from({ length: count }, (_, index) => index);
     }
     function eventFocusSeatIndex(playerCount, milestones = [], activations = []) {
         const count = Number.isInteger(playerCount) ? Math.max(0, Math.min(10, playerCount)) : 0;
@@ -157,11 +145,11 @@ const UiCardBoard = (() => {
         const townScenery = grouped.size > 0 && grouped.size <= 2 && ownedCardCount <= 4 &&
             typeof options.renderTownScenery === 'function'
             ? `<div class="cardboard-town-vignette" aria-hidden="true"><span class="cardboard-town-vignette-caption">街の風景</span>${options.renderTownScenery(player, new Set(names))}</div>` : '';
-        const facilityHeading = `<h3 class="cardboard-facility-heading"><span>施設</span><small><span>${grouped.size}種類 · ${ownedCardCount}枚</span><button type="button" class="cardboard-town-open" data-cardboard-town="${index}" aria-haspopup="dialog" aria-controls="cardboardTownDialog" aria-label="${escape(player.name)}の育てた街を見る">街を見る</button><span class="cardboard-facility-scroll-hint" aria-hidden="true"></span></small></h3>`;
+        const facilityHeading = `<h3 class="cardboard-facility-heading"><span>所有施設</span><small><span>${grouped.size}種類 · ${ownedCardCount}枚</span><span class="cardboard-facility-scroll-hint" aria-hidden="true"></span></small></h3>`;
         const kind = playerKind(options, index);
         const kindBadge = kind.html ? `<span class="cardboard-player-kind" aria-hidden="true">${kind.html}</span>` : '';
         const kindDescription = kind.label ? `<span class="visually-hidden">${escape(kind.label)}。</span>` : '';
-        const heading = index === options.selfIndex ? 'あなたの街' : `席${index + 1}・${player.name}`;
+        const heading = index === options.selfIndex ? 'あなたの施設' : `席${index + 1}・${player.name}`;
         const headingContext = index === options.selfIndex
             ? `<span class="visually-hidden">席${index + 1}・${escape(player.name)}（自分）</span>` : '';
 
@@ -185,8 +173,8 @@ const UiCardBoard = (() => {
         const keyboardHint = players.length > 1
             ? 'キーボードでは左右矢印、Home、Endで席を移動できます。' : '';
         const rosterLabel = players.length > 4
-            ? `表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。${keyboardHint}選ぶと街のカードを大きく表示`
-            : `表示するプレイヤー。${keyboardHint}選ぶと街のカードを大きく表示`;
+            ? `表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。${keyboardHint}選ぶと所有施設カードを大きく表示`
+            : `表示するプレイヤー。${keyboardHint}選ぶと所有施設カードを大きく表示`;
         const rovingIndex = Number.isInteger(options.selectedIndex) && options.selectedIndex >= 0 && options.selectedIndex < players.length
             ? options.selectedIndex
             : Number.isInteger(options.currentIndex) && options.currentIndex >= 0 && options.currentIndex < players.length
@@ -206,10 +194,10 @@ const UiCardBoard = (() => {
             const activationBadge = activationCount ? `<span class="cardboard-roster-badge cardboard-roster-activation-badge">施設 ${activationCount}回</span>` : '';
             const roleLabels = `${index === options.selfIndex ? '、あなた' : ''}${index === options.currentIndex ? '、現在の手番' : ''}`;
             const showingDetails = options.focusMode === true && index === options.selectedIndex;
-            return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}${activationCount ? ' cardboard-roster-activated' : ''}" data-cardboard-player-index="${index}" tabindex="${index === rovingIndex ? '0' : '-1'}" title="席${index + 1}・${escape(player.name)}" aria-pressed="${index === options.selectedIndex}" aria-label="席${index + 1}・${escape(player.name)}${roleLabels}${showingDetails ? '、街の詳細を表示中' : ''}${kindLabel ? `、${escape(kindLabel)}` : ''}、${escape(player.coins)}コイン、目標 ${built}/${names.length}${activationCount ? `、今回施設発動 ${activationCount}回` : ''}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong><span class="cardboard-roster-seat-number">席${index + 1}</span>${kindIcon}<span class="cardboard-roster-name">${escape(player.name)}</span>${roles}${activationBadge}</strong><span class="cardboard-roster-summary"><span class="cardboard-roster-summary-text">${escape(player.coins)}コイン · 目標 ${built}/${names.length}</span>${showingDetails ? '<b class="cardboard-roster-detail-indicator" aria-hidden="true">詳細表示中</b>' : ''}</span><small class="cardboard-roster-trend">${trend}</small></button>`;
+            return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}${activationCount ? ' cardboard-roster-activated' : ''}" data-cardboard-player-index="${index}" tabindex="${index === rovingIndex ? '0' : '-1'}" title="席${index + 1}・${escape(player.name)}" aria-pressed="${index === options.selectedIndex}" aria-label="席${index + 1}・${escape(player.name)}${roleLabels}${showingDetails ? '、施設カードを選択中' : ''}${kindLabel ? `、${escape(kindLabel)}` : ''}、${escape(player.coins)}コイン、目標 ${built}/${names.length}${activationCount ? `、今回施設発動 ${activationCount}回` : ''}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong><span class="cardboard-roster-seat-number">席${index + 1}</span>${kindIcon}<span class="cardboard-roster-name">${escape(player.name)}</span>${roles}${activationBadge}</strong><span class="cardboard-roster-summary"><span class="cardboard-roster-summary-text"><b class="cardboard-roster-coins">${escape(player.coins)}<span>コイン</span></b><span class="cardboard-roster-progress"><span> · 目標 </span><b>${built}/${names.length}</b></span></span></span><small class="cardboard-roster-trend">${trend}</small></button>`;
         }).join('')}</nav>`;
     }
-    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, selectDetailIndices, eventFocusSeatIndex });
+    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, selectTableIndices, eventFocusSeatIndex });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = UiCardBoard;
 if (typeof window !== 'undefined') window.UiCardBoard = UiCardBoard;

@@ -163,7 +163,7 @@ runTest('カード連鎖の強調順は最初の該当ログ位置に対応す�
 runTest('席・名前の同一性と選択/現在/自分を分離し10席に制限する', () => {
     const players = Array.from({ length: 12 }, () => ({ ...player }));
     const html = UiCardBoard.buildRosterHtml(players, { ...options, selectedIndex: 2 });
-    assert.ok(html.includes('aria-label="表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。キーボードでは左右矢印、Home、Endで席を移動できます。選ぶと街のカードを大きく表示"'));
+    assert.ok(html.includes('aria-label="表示するプレイヤー。席が隠れている場合は横にスクロールして選べます。キーボードでは左右矢印、Home、Endで席を移動できます。選ぶと所有施設カードを大きく表示"'));
     assert.strictEqual((html.match(/class="cardboard-roster-seat(?:\s|")/g) || []).length, 10);
     assert.strictEqual((html.match(/aria-pressed="true"/g) || []).length, 1);
     assert.strictEqual((html.match(/aria-current="true"/g) || []).length, 1);
@@ -199,42 +199,27 @@ runTest('選択した街の見出しにも所有者の人/CPU種別を示す', (
     assert.ok(html.includes('<span class="cardboard-player-kind" aria-hidden="true"><svg data-owner-kind="cpu"></svg></span>'));
     assert.ok(html.includes('<span class="visually-hidden">CPU（最強）。</span>'));
 });
-runTest('街フォーカスでは選択した1席だけを描画し不正な席は自分へ戻す', () => {
+runTest('共通カード卓は2〜10人の全席を順番どおり描画する', () => {
     for (let count = 2; count <= 10; count++) {
-        assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, {
-            focusOnly: true, selfIndex: 0, currentIndex: 1, selectedIndex: count - 1,
-        }), [count - 1]);
-        assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, {
-            focusOnly: true, selfIndex: 0, selectedIndex: -1,
-        }), [0]);
+        const indices = UiCardBoard.selectTableIndices(count);
+        assert.deepStrictEqual(indices, Array.from({ length: count }, (_, index) => index));
+        assert.strictEqual(new Set(indices).size, count);
     }
-    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(0, { focusOnly: true }), []);
 });
-runTest('2〜4人は全員、5〜10人は役割を優先し重複時も必ず3人を比較できる', () => {
-    for (let count = 2; count <= 4; count++) {
-        assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, { selfIndex: 1, currentIndex: 1, selectedIndex: 1 }),
-            Array.from({ length: count }, (_, index) => index));
+runTest('不正な人数を拒否し人数上限を超えても10席へ制限する', () => {
+    for (const count of [undefined, null, NaN, Infinity, -Infinity, '4', {}, [], -1, 0, 2.5]) {
+        assert.deepStrictEqual(UiCardBoard.selectTableIndices(count), []);
     }
-    for (let count = 5; count <= 10; count++) {
-        for (let self = 0; self < count; self++) {
-            for (let current = 0; current < count; current++) {
-                for (let selected = 0; selected < count; selected++) {
-                    const roles = { selfIndex: self, currentIndex: current, selectedIndex: selected };
-                    const indices = UiCardBoard.selectDetailIndices(count, roles);
-                    assert.strictEqual(indices.length, 3);
-                    assert.strictEqual(new Set(indices).size, 3);
-                    assert.strictEqual(indices[0], self);
-                    assert.ok(indices.includes(current));
-                    assert.ok(indices.includes(selected));
-                    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(count, roles), indices);
-                    if (self === current && self === selected) {
-                        assert.deepStrictEqual(indices.slice(1), Array.from({ length: count }, (_, index) => index)
-                            .filter(index => index !== self).slice(0, 2));
-                    }
-                }
-            }
-        }
-    }
+    assert.deepStrictEqual(UiCardBoard.selectTableIndices(11), Array.from({ length: 10 }, (_, index) => index));
+    assert.deepStrictEqual(UiCardBoard.selectTableIndices(Number.MAX_SAFE_INTEGER), Array.from({ length: 10 }, (_, index) => index));
+});
+runTest('全席の選択は入力ゲーム状態と過去に返した配列を変更しない', () => {
+    const game = Object.freeze({ players: Object.freeze(Array.from({ length: 6 }, (_, index) => Object.freeze({ name: `席${index + 1}` }))) });
+    const before = JSON.stringify(game);
+    const indices = UiCardBoard.selectTableIndices(game.players.length);
+    indices.pop();
+    assert.deepStrictEqual(UiCardBoard.selectTableIndices(game.players.length), [0, 1, 2, 3, 4, 5]);
+    assert.strictEqual(JSON.stringify(game), before);
 });
 runTest('2〜4人戦でも発動・建設した街へ詳細表示を自動フォーカスする', () => {
     for (const count of [2, 4]) {
@@ -245,12 +230,6 @@ runTest('2〜4人戦でも発動・建設した街へ詳細表示を自動フォ
         assert.strictEqual(UiCardBoard.eventFocusSeatIndex(count, [], []), null);
     }
     assert.strictEqual(UiCardBoard.eventFocusSeatIndex(0, [], [{ facility: true, owner: 0 }]), null);
-});
-runTest('不正な席は詳細表示へ持ち込まず入力を変更しない', () => {
-    const roles = { selfIndex: 9, currentIndex: -1, selectedIndex: '1' };
-    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(5, roles), [0, 1, 2]);
-    assert.deepStrictEqual(roles, { selfIndex: 9, currentIndex: -1, selectedIndex: '1' });
-    assert.deepStrictEqual(UiCardBoard.selectDetailIndices(0, roles), []);
 });
 runTest('空状態と任意アダプタ不在でも安全なHTMLを返す', () => {
     const html = UiCardBoard.buildPlayerHtml({ name: '"<script>', coins: 0, cards: [], landmarks: {} });

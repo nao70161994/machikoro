@@ -175,6 +175,44 @@ runTest('詳細盤面に出ていない相手へもロスター端から送金�
     controller.clear();
 });
 
+for (const scenario of [
+    { name: 'パンで画面外へ移動した見出しの代わりに表示中のHUDへ送金する',
+        header: { left: 20, top: 600, width: 100, height: 40 },
+        roster: { left: 100, top: 8, width: 100, height: 44 },
+        flights: 1, targetX: -150, targetY: -170 },
+    { name: 'カード卓内の見出しが見えている間はその施設所有者へ送金する',
+        header: { left: 20, top: 120, width: 100, height: 40 },
+        roster: { left: 100, top: 8, width: 100, height: 44 },
+        flights: 1, targetX: -230, targetY: -60 },
+    { name: 'カード卓の見出しもHUDも画面外なら誤った端への飛行を表示しない',
+        header: { left: 20, top: 600, width: 100, height: 40 },
+        roster: { left: 900, top: 8, width: 100, height: 44 },
+        flights: 0 },
+]) {
+    runTest(scenario.name, () => {
+        const { container, animated } = fixture();
+        container.querySelector = selector => {
+            const rect = selector === '#cardboardTableViewport'
+                ? { left: 0, top: 100, width: 600, height: 300 }
+                : selector === '[data-player-index="0"] .cardboard-header' ? scenario.header
+                    : selector === '.cardboard-roster-seat[data-cardboard-player-index="0"]' ? scenario.roster : null;
+            return rect ? { getBoundingClientRect: () => rect } : null;
+        };
+        const controller = CardBoardTransfers.create();
+        controller.play({ container, events: { participantNames: ['街A'], activations: [
+            { from: null, to: 0, amount: 4 },
+        ] } });
+        assert.strictEqual(animated.length, scenario.flights);
+        if (scenario.flights) {
+            const arrival = animated[0].frames.at(-1).transform;
+            assert.ok(arrival.includes(`${scenario.targetX}px`), arrival);
+            assert.ok(arrival.includes(`${scenario.targetY}px`), arrival);
+        }
+        assert.ok(container.children[0].children[0].textContent.includes('4コイン · 銀行 → 街A'));
+        controller.clear();
+    });
+}
+
 runTest('Reduced Motionでも誰から誰への金額を静止表示し未集計を断定しない', () => {
     const { container, animated } = fixture();
     const controller = CardBoardTransfers.create();
