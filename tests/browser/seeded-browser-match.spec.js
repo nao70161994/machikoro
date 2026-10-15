@@ -147,14 +147,28 @@ test(`${MATCH_PLAYER_COUNT}人固定seedの${MATCH_DESIGN_LABEL}CPU対局は完�
         if (stage && !status.winner && !capturedStages.has(stage)) {
             capturedStages.add(stage);
             const filename = `seeded-match-${MATCH_PLAYER_COUNT}p-${MATCH_DESIGN}-${MATCH_VIEWPORT.name}-${stage}`;
+            // Capture rendering evidence alongside real progression; a DOM
+            // card count alone cannot show whether its external SVG painted.
+            const artEvidence = await page.locator('#cardboardSeats .cardboard-card .cardboard-art svg').evaluateAll(nodes => nodes.map(svg => {
+                const bounds = svg.getBoundingClientRect();
+                const use = svg.querySelector('use');
+                let artwork = { width: 0, height: 0 };
+                try { artwork = use.getBBox(); } catch { /* Record unready SVGs. */ }
+                return { player: svg.closest('.cardboard-player')?.getAttribute('data-player-index'),
+                    name: svg.closest('.cardboard-card')?.getAttribute('data-card-name'),
+                    width: bounds.width, height: bounds.height,
+                    artWidth: artwork.width, artHeight: artwork.height,
+                    display: getComputedStyle(svg).display, href: use?.getAttribute('href') };
+            }));
+            const capturedStatus = { ...status, artEvidence };
             const screenshot = await page.screenshot({ fullPage: false });
             await testInfo.attach(`${filename}.png`, { body: screenshot, contentType: 'image/png' });
-            await testInfo.attach(`${filename}.json`, { body: JSON.stringify(status), contentType: 'application/json' });
+            await testInfo.attach(`${filename}.json`, { body: JSON.stringify(capturedStatus), contentType: 'application/json' });
             if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
                 const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
                 await fs.mkdir(artifactDir, { recursive: true });
                 await fs.writeFile(path.join(artifactDir, `${filename}.png`), screenshot);
-                await fs.writeFile(path.join(artifactDir, `${filename}.json`), JSON.stringify(status, null, 2));
+                await fs.writeFile(path.join(artifactDir, `${filename}.json`), JSON.stringify(capturedStatus, null, 2));
             }
         }
     }

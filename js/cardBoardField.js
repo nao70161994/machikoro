@@ -338,7 +338,7 @@ const CardBoardField = (() => {
             if (cue.session !== session || cue.turn !== game.turnCount || cue.actor !== game.currentPlayerIndex || !game.log.includes(cue.entry)) continue;
             const panel = node('cardboardSeats')?.querySelector(`[data-player-index="${cue.playerIndex}"]`);
             const selector = cue.landmark ? '.cardboard-landmark' : '.cardboard-card';
-            const button = [...(panel?.querySelectorAll(selector) || [])].find(element =>
+            const button = Array.from(panel?.querySelectorAll(selector) || []).find(element =>
                 element.getAttribute(cue.landmark ? 'data-landmark-name' : 'data-card-name') === cue.name);
             if (!button) continue;
             if (cue.landmark && game.players[cue.playerIndex]?.landmarks[cue.name] !== true) continue;
@@ -973,7 +973,7 @@ const CardBoardField = (() => {
                 if (!button) continue;
                 presentBuildCue(button, index, landmark.name, true);
             }
-            for (const button of panel.querySelectorAll('.cardboard-card')) {
+            for (const button of Array.from(panel.querySelectorAll('.cardboard-card'))) {
                 const key = JSON.stringify([index, button.getAttribute('data-card-name')]);
                 if (additionalActivations.has(key)) showAdditionalActivationCue(button, additionalActivations.get(key));
             }
