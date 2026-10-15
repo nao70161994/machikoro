@@ -1172,6 +1172,14 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         window.captionAnimations.forEach(animation => animation?.pause());
         return window.captionAnimations.filter(Boolean).length;
     })).toBe(4);
+    expect(await cards.evaluateAll(elements => elements.map(element => {
+        const owner = document.querySelector(`#cardboardSeats .cardboard-player[data-player-index="${element.dataset.playerIndex}"]`);
+        const card = owner.querySelector('.cardboard-card[data-card-name="森林"]');
+        return { delay: parseFloat(getComputedStyle(card).animationDelay), name: getComputedStyle(card).animationName };
+    }))).toEqual([0,0.7,1.4,2.1].map(delay => ({delay,name:'cardboard-card-activate'})));
+    await page.evaluate(() => {
+        window.captionCardAnimations = [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].map(card => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate'));
+    });
     const before = await state(page);
     for (let index = 0; index < 4; index++) {
         const visible = await page.evaluate(index => {
@@ -1185,8 +1193,10 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         render();
         return [...document.querySelectorAll('.cardboard-event-preview-card')].every((card,index) => card.getAnimations()[0] === window.captionAnimations[index]);
     })).toBe(true);
+    expect(await page.evaluate(() => [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].every((card,index) => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate') === window.captionCardAnimations[index]))).toBe(true);
     expect(await state(page)).toEqual(before);
     await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await page.locator('#cardboardSeats .cardboard-card-activated').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
     expect(await cards.evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
     await selectTheme(page, 'plaza');
     await selectTheme(page, 'cardboard');

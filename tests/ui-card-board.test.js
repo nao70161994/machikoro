@@ -116,8 +116,8 @@ runTest('出目順の表示でも発動アニメーションは実際の解決�
     const wheatIndex = html.indexOf('data-card-name="麦畑"');
     const forestIndex = html.indexOf('data-card-name="森林"');
     assert.ok(wheatIndex >= 0 && forestIndex > wheatIndex, 'カードは出目の昇順で並ぶ');
-    assert.ok(html.indexOf('style="--cardboard-activation-delay:80ms"', wheatIndex) > wheatIndex);
-    assert.ok(html.indexOf('style="--cardboard-activation-delay:0ms"', forestIndex) > forestIndex);
+    assert.ok(html.indexOf('style="--cardboard-activation-delay:80ms;', wheatIndex) > wheatIndex);
+    assert.ok(html.indexOf('style="--cardboard-activation-delay:0ms;', forestIndex) > forestIndex);
 });
 runTest('全色・複数出目と全休業でも施設詳細を使える', () => {
     const cards = ['麦畑', 'パン屋', 'カフェ', 'スタジアム', 'マグロ漁船'].map(createCardByName);
@@ -285,6 +285,9 @@ runTest('発動カード帯は絵と所有者と収支を最大2施設へ集約�
     assert.strictEqual((chain.match(/role="group"/g)||[]).length,3);
     assert.ok(chain.includes('--cardboard-preview-delay:1400ms'));
     assert.ok(chain.includes('リンゴ園'));
+    const forestCard = UiCardBoard.buildPlayerHtml(players[1], {index:1,events});
+    assert.ok(forestCard.includes('--cardboard-chain-delay:700ms'));
+    assert.ok(forestCard.includes('--cardboard-chain-animation:cardboard-card-activate'));
     assert.strictEqual(JSON.stringify({events,players}),before);
     const outgoing = UiCardBoard.buildActivationPreviewHtml({activations:[{facility:true,owner:1,subject:'森林',from:1,to:null,amount:3}]},players);
     assert.ok(outgoing.includes('-3コイン · 席2→銀行'));

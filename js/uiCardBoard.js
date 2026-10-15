@@ -72,12 +72,16 @@ const UiCardBoard = (() => {
         if (!Number.isSafeInteger(net) || !Number.isSafeInteger(count)) return null;
         const firstLogIndex = Math.max(0, events.activations.indexOf(matching[0]));
         const precedingActivations = new Set();
+        const precedingGroups = new Set();
         for (let index = 0; index < firstLogIndex; index++) {
             const prior = events.activations[index];
             if (prior?.facility !== true) continue;
             precedingActivations.add(prior.activation || `legacy:${index}`);
+            const owner = Number.isInteger(prior.owner) ? prior.owner : prior.to !== null ? prior.to : prior.from;
+            if (Number.isInteger(owner) && owner >= 0 && owner < 10 && prior.subject &&
+                    Number.isSafeInteger(prior.amount) && prior.amount >= 0) precedingGroups.add(JSON.stringify([owner, prior.subject]));
         }
-        return { net, count, order: precedingActivations.size, logOrder: firstLogIndex };
+        return { net, count, order: precedingActivations.size, logOrder: firstLogIndex, groupOrder: precedingGroups.size };
     }
     function buildActivationPreviewHtml(events, players, options = {}) {
         if (!Array.isArray(players) || !Array.isArray(events?.activations)) return '';
@@ -169,7 +173,7 @@ const UiCardBoard = (() => {
                 const color = colors.has(card.color) ? card.color : 'unknown';
                 const event = activationFor(options.events, card.name, index);
                 const eventAttrs = event ? ` data-cardboard-activation-count="${event.count}" data-cardboard-activation-net="${event.net}"` : '';
-                const activationStyle = event ? ` style="--cardboard-activation-delay:${Math.min(Math.max(event.logOrder, 0), 7) * 80}ms"` : '';
+                const activationStyle = event ? ` style="--cardboard-activation-delay:${Math.min(Math.max(event.logOrder, 0), 7) * 80}ms;--cardboard-chain-delay:${event.groupOrder * 700}ms;--cardboard-chain-animation:${event.groupOrder < 8 ? 'cardboard-card-activate' : 'none'}"` : '';
                 const majorIncomeClass = event?.net >= 5 ? ' cardboard-card-major-income' : '';
                 const effectText = typeof options.getEffectText === 'function' ? options.getEffectText(card) : '';
                 const effectHtml = effectText ? `<span class="cardboard-effect" title="${escape(effectText)}">${escape(effectText)}</span>` : '';

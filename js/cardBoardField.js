@@ -864,6 +864,7 @@ const CardBoardField = (() => {
         const summary = details?.querySelector('summary');
         if (!details || !summary) return;
         const hasResult = Boolean(events.dice || constructionName);
+        if (!hasResult || constructionName) details.classList.remove('cardboard-preview-playing');
         details.dataset.hasResult = String(hasResult);
         details.dataset.largeIncome = String(net >= 5);
         summary.dataset.net = String(net);

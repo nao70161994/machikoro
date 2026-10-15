@@ -14817,3 +14817,17 @@ html[data-design="cardboard"] #cardboardEventDetails:not(.cardboard-preview-play
 html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardEventDetails.cardboard-preview-playing .cardboard-event-preview-card:nth-child(n+2) { display: none; }
 
 html[data-design="cardboard"] .cardboard-preview-progress { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* Match the real card's pulse to the facility currently introduced in the HUD. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table:has(#cardboardEventDetails.cardboard-preview-playing) .cardboard-card-activated {
+    animation: var(--cardboard-chain-animation, none) 650ms cubic-bezier(.2, .8, .25, 1) both;
+    animation-delay: var(--cardboard-chain-delay, 0ms);
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-card-table:has(#cardboardEventDetails.cardboard-preview-playing) .cardboard-card-activated {
+    animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table:has(#cardboardEventDetails.cardboard-preview-playing) .cardboard-card-activated {
+        animation: none;
+    }
+}
