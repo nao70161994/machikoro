@@ -717,6 +717,59 @@ const CardBoardField = (() => {
         });
     }
 
+    function presentationNodeKey(node) {
+        if (node.nodeType !== 1) return null;
+        const element = /** @type {Element} */ (node);
+        if (element.id) return `id:${element.id}`;
+        const card = element.matches('.compact-market-item')
+            ? element.querySelector('[data-card-name], [data-landmark-name]') : element;
+        for (const attribute of ['data-card-name', 'data-landmark-name', 'data-player-index', 'data-cardboard-player-index']) {
+            if (card?.hasAttribute(attribute)) return JSON.stringify([element.tagName, attribute,
+                card.getAttribute(attribute), card.getAttribute('data-action')]);
+        }
+        return null;
+    }
+
+    function patchPresentationChildren(parent, nextParent) {
+        let cursor = parent.firstChild;
+        for (const next of Array.from(nextParent.childNodes)) {
+            const key = presentationNodeKey(next);
+            let current = cursor;
+            if (key && presentationNodeKey(current || nextParent) !== key) {
+                current = null;
+                for (let candidate = cursor; candidate; candidate = candidate.nextSibling) {
+                    if (presentationNodeKey(candidate) === key) { current = candidate; break; }
+                }
+            }
+            const compatible = current && current.nodeType === next.nodeType && current.nodeName === next.nodeName &&
+                presentationNodeKey(current) === key;
+            if (!compatible) {
+                parent.insertBefore(next.cloneNode(true), cursor);
+                continue;
+            }
+            if (current !== cursor) parent.insertBefore(current, cursor);
+            if (current.nodeType === 1) {
+                const target = /** @type {Element} */ (current);
+                const source = /** @type {Element} */ (next);
+                if (target.outerHTML !== source.outerHTML) {
+                    for (const attribute of Array.from(target.attributes)) {
+                        if (!source.hasAttribute(attribute.name)) target.removeAttribute(attribute.name);
+                    }
+                    for (const attribute of Array.from(source.attributes)) {
+                        if (target.getAttribute(attribute.name) !== attribute.value) target.setAttribute(attribute.name, attribute.value);
+                    }
+                    patchPresentationChildren(target, source);
+                }
+            } else if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+            cursor = current.nextSibling;
+        }
+        while (cursor) {
+            const obsolete = cursor;
+            cursor = cursor.nextSibling;
+            parent.removeChild(obsolete);
+        }
+    }
+
     function replaceHtml(element, html) {
         // Native details.open and normalized HTML entities change innerHTML
         // without changing the requested content. Do not replace a focused
@@ -742,7 +795,11 @@ const CardBoardField = (() => {
         const disclosures = ['.compact-market-filter-disclosure', '.compact-market-goal-disclosure'].map(selector => ({
             selector, open: (/** @type {HTMLDetailsElement | null} */ (element.querySelector(selector)))?.open,
         }));
-        element.innerHTML = html;
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        // Preserve unchanged external SVG nodes even when activation, balance,
+        // stock, filters or purchase buttons change around them.
+        patchPresentationChildren(element, template.content);
         for (const disclosure of disclosures) {
             const child = /** @type {HTMLDetailsElement | null} */ (element.querySelector(disclosure.selector));
             if (child && disclosure.open !== undefined) child.open = disclosure.open;
@@ -1107,7 +1164,10 @@ const CardBoardField = (() => {
         if (newRoll) {
             if (feedbackTimer !== null) clearTimeout(feedbackTimer);
             const board = node('cardboardBoard');
-            board.classList.remove('cardboard-roll-reviewed');
+            board.classList.remove('cardboard-new-roll', 'cardboard-roll-reviewed');
+            // Reuse the loaded card artwork while starting this actual roll's
+            // pulse afresh, including a quick reroll of the same facilities.
+            if (!reducedMotionEnabled()) void board.offsetWidth;
             board.classList.add('cardboard-new-roll');
 
             feedbackTimer = setTimeout(() => {

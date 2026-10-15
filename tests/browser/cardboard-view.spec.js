@@ -291,12 +291,14 @@ test('12の出目では建設候補を市場内の見える位置へ送る', asy
     expect(geometry.cardBottom).toBeLessThanOrEqual(geometry.shelfBottom);
 });
 
-test('4人戦の施設発動は全体盤面と補助カード詳細の同じ街で確認できる', async ({ page }) => {
+test('4人戦の施設発動は全体盤面と補助カード詳細の同じ街で確認できる', async ({ page }, testInfo) => {
     await prepare(page, { width: 320, height: 844 }, 4, false);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         game.players.forEach(player => { player.cards = []; });
         game.players[3].cards = [createCardByName('カフェ')];
+        render();
+        window.rolledFacilityArt = document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg');
         game.rollDice(3);
         render();
         acceptHotseatHandoff();
@@ -304,6 +306,10 @@ test('4人戦の施設発動は全体盤面と補助カード詳細の同じ街�
     await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
     const activated = page.locator('#cardboardSeats [data-player-index="3"] .cardboard-card-activated');
     await expect(activated).toHaveCount(1);
+    expect(await page.evaluate(() => window.rolledFacilityArt === document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg'))).toBe(true);
+    await page.locator('#cardboardEventDetails').evaluate(element => { element.open = false; });
+    await focusSeat(page, 3);
+    await page.screenshot({path:testInfo.outputPath('art-stable-roll.png')});
     await expect(page.locator('#cardboardSeats [data-player-index="3"]')).toContainText('カフェ');
     await page.evaluate(() => {
         window.unchangedFacilityArt = document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg');
@@ -1097,7 +1103,11 @@ test('建設可の絞り込みでもサイコロ前と購入後は市場を見�
     await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toBeVisible();
     expect(await cards.count()).toBeGreaterThan(0);
     expect(await cards.evaluateAll(nodes => nodes.every(node => node.disabled))).toBe(true);
-    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); });
+    await page.evaluate(() => {
+        window.marketFacilityArt = document.querySelector('#cardboardMarket [data-action="buildCard"][data-card-name="麦畑"] svg');
+        GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render();
+    });
+    expect(await page.evaluate(() => window.marketFacilityArt === document.querySelector('#cardboardMarket [data-action="buildCard"][data-card-name="麦畑"] svg'))).toBe(true);
     await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toHaveCount(0);
     expect(await cards.count()).toBeGreaterThan(0);
     expect(await cards.evaluateAll(nodes => nodes.every(node => !node.disabled))).toBe(true);
