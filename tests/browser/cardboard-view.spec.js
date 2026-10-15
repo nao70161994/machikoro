@@ -1166,6 +1166,17 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await expect(caption).toHaveClass(/cardboard-preview-playing/);
     const cards = caption.locator('.cardboard-event-preview-card');
     await expect(cards).toHaveCount(4);
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveText('出目 5');
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveAttribute('aria-hidden', 'true');
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('pointer-events', 'none');
+    await page.locator('#cardboardDiceConfirmation').evaluate(element => {
+        window.confirmationElement = element;
+        element.getAnimations().forEach(animation => { animation.pause(); animation.currentTime = 100; });
+    });
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '1');
+    await page.screenshot({ path: testInfo.outputPath('dice-final-confirmation.png') });
+    await page.locator('#cardboardDiceConfirmation').evaluate(element => element.getAnimations().forEach(animation => { animation.currentTime = 500; }));
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');
     await expect(cards.first().locator('.cardboard-event-preview-owner')).toHaveText(/^\+1コイン · 銀行→席[1-4]$/);
     expect(await page.evaluate(() => {
         window.captionAnimations = [...document.querySelectorAll('.cardboard-event-preview-card')].map(card => card.getAnimations()[0]);
@@ -1193,15 +1204,32 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         render();
         return [...document.querySelectorAll('.cardboard-event-preview-card')].every((card,index) => card.getAnimations()[0] === window.captionAnimations[index]);
     })).toBe(true);
+    expect(await page.evaluate(() => document.getElementById('cardboardDiceConfirmation') === window.confirmationElement)).toBe(true);
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');
     expect(await page.evaluate(() => [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].every((card,index) => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate') === window.captionCardAnimations[index]))).toBe(true);
     expect(await state(page)).toEqual(before);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await page.locator('#cardboardSeats .cardboard-card-activated').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
     expect(await cards.evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
     await selectTheme(page, 'plaza');
     await selectTheme(page, 'cardboard');
     await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
     expect(await state(page)).toEqual(before);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.currentPlayer().landmarks[LANDMARK_NAMES.HARBOR] = true;
+        game.currentPlayer().landmarks[LANDMARK_NAMES.STATION] = true;
+        game.phase = GAME_PHASES.SELECT_DICE;
+        game.selectDiceCount(true, 5, 5);
+        render();
+    });
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveText('5 + 5 = 10');
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.resolveHarbor(true); render(); });
+    await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
+    await expect(caption.locator('.cardboard-result-heading')).toContainText('港10→12');
 });
 
 test('中央市場の長い施設名をカード枠内で省略せず読める', async ({ page }, testInfo) => {

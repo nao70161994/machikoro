@@ -14831,3 +14831,45 @@ html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.
         animation: none;
     }
 }
+
+.cardboard-dice-confirmation { display: none; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardDiceConfirmation.cardboard-dice-confirmation {
+    display: block;
+    position: fixed;
+    left: 50%;
+    top: clamp(96px, 42dvh, calc(100dvh - 180px - env(safe-area-inset-bottom, 0px)));
+    z-index: 7;
+    transform: translate(-50%, -50%);
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    margin: 0;
+    padding: 12px 24px;
+    border: 2px solid #b9902b;
+    border-radius: 14px;
+    background: #fff7dc;
+    color: #234c47;
+    box-shadow: 0 6px 22px #29463255;
+    pointer-events: none;
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 900;
+    line-height: 1.2;
+    white-space: nowrap;
+    animation: cardboard-dice-confirmation 500ms linear forwards;
+}
+@keyframes cardboard-dice-confirmation {
+    0%, 85% { opacity: 1; }
+    100% { opacity: 0; }
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-card-table #cardboardDiceConfirmation.cardboard-dice-confirmation {
+    background: #000;
+    color: #fff;
+    border-color: #ffe66d;
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-card-table #cardboardDiceConfirmation.cardboard-dice-confirmation {
+    animation-timing-function: step-end;
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardDiceConfirmation.cardboard-dice-confirmation {
+        animation-timing-function: step-end;
+    }
+}

@@ -1,5 +1,5 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, MutationObserver, CardTableCamera, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, LOG_TYPES, MutationObserver, CardTableCamera, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
 
 const CARDBOARD_ROLL_FEEDBACK_MS = 1400;
 
@@ -353,6 +353,7 @@ const CardBoardField = (() => {
     function clearFeedback() {
         clearAdditionalActivationCues();
         node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
+        node('cardboardDiceConfirmation')?.remove();
         pendingBuildCues = [];
         if (transferFrame !== null) globalThis.cancelAnimationFrame(transferFrame);
         transferFrame = null;
@@ -626,6 +627,14 @@ const CardBoardField = (() => {
             if (moreMenu?.open && !moreMenu.contains(/** @type {Node} */ (event.target))) closeMoreMenu(false);
         });
         document.addEventListener('visibilitychange', clearHiddenFeedback);
+        let wasReducedMotion = reducedMotionEnabled();
+        const updateMotionFeedback = () => {
+            const reduced = reducedMotionEnabled();
+            if (reduced && !wasReducedMotion) clearFeedback();
+            wasReducedMotion = reduced;
+        };
+        window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', updateMotionFeedback);
+        new MutationObserver(updateMotionFeedback).observe(document.body, { attributes: true, attributeFilter: ['class'] });
         new MutationObserver(clearHiddenFeedback).observe(node('gameScreen'), { attributes: true, attributeFilter: ['style'] });
         node('cardboardRoster').addEventListener('click', event => {
             const button = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cardboard-player-index]'));
@@ -850,7 +859,7 @@ const CardBoardField = (() => {
         const balance = events.balances?.find(entry => entry.index === balanceIndex);
         const net = Number.isSafeInteger(balance?.facilityNet) ? balance.facilityNet : 0;
         const parts = [];
-        if (events.dice) parts.push(`出目 ${events.dice.effective ?? events.dice.base}${events.dice.rerolled ? '（振り直し）' : ''}`);
+        if (events.dice) parts.push(`出目 ${events.dice.harbor ? `${events.dice.base}→${events.dice.effective}（港+2）` : events.dice.effective ?? events.dice.base}${events.dice.rerolled ? '（振り直し）' : ''}`);
         if (count) parts.push(`施設${count}回：${names.slice(0, 3).join('・')}${names.length > 3 ? `ほか${names.length - 3}種類` : ''}`);
         if (events.dice) parts.push(`${balanceIndex === selfIndex ? 'あなた' : game.players[balanceIndex]?.name || '手番'}の${events.incomplete ? '確認できた施設収支' : '施設収支'} ${net > 0 ? '+' : ''}${net}コイン`);
         if (constructionName) parts.push(`${game.players[construction.actorIndex]?.name || 'プレイヤー'}が${constructionName}${construction.kind === 'landmark' ? 'を完成' : 'を建設'}`);
@@ -864,7 +873,10 @@ const CardBoardField = (() => {
         const summary = details?.querySelector('summary');
         if (!details || !summary) return;
         const hasResult = Boolean(events.dice || constructionName);
-        if (!hasResult || constructionName) details.classList.remove('cardboard-preview-playing');
+        if (!hasResult || constructionName) {
+            details.classList.remove('cardboard-preview-playing');
+            node('cardboardDiceConfirmation')?.remove();
+        }
         details.dataset.hasResult = String(hasResult);
         details.dataset.largeIncome = String(net >= 5);
         summary.dataset.net = String(net);
@@ -878,7 +890,7 @@ const CardBoardField = (() => {
         }
         const headingText = constructionName
             ? construction.kind === 'landmark' ? '目標完成' : '建設完了'
-            : `出目${events.dice.effective ?? events.dice.base} · ${net > 0 ? '+' : ''}${net}`;
+            : `${events.dice.harbor ? `港${events.dice.base}→${events.dice.effective}` : `出目${events.dice.effective ?? events.dice.base}`} · ${net > 0 ? '+' : ''}${net}`;
         const detailText = constructionName || `施設${count}回・${events.incomplete ? '確認分' : '収支'}`;
         let heading = summary.querySelector('.cardboard-result-heading');
         let detail = summary.querySelector('.cardboard-result-detail');
@@ -982,6 +994,7 @@ const CardBoardField = (() => {
             }
         }
         if (newRoll || freshResultLogs.length) {
+            node('cardboardDiceConfirmation')?.remove();
             clearAdditionalActivationCues();
             node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
         }
@@ -1171,6 +1184,17 @@ const CardBoardField = (() => {
                         facts?.replaying || session !== capturedSession || facts?.game?.turnCount !== capturedTurn ||
                         facts?.game?.currentPlayerIndex !== capturedActor || (facts?.game?.usedReroll === true) !== capturedReroll ||
                         node('gameScreen')?.style.display === 'none') return;
+                const freshDiceResolution = freshResultLogs.some(entry => entry.type === LOG_TYPES.DICE && entry.diceResolution);
+                if (newRoll && freshDiceResolution && freshEvents?.dice?.values?.length) {
+                    node('cardboardDiceConfirmation')?.remove();
+                    const dice = freshEvents.dice.values;
+                    const confirmation = document.createElement('span');
+                    confirmation.id = 'cardboardDiceConfirmation';
+                    confirmation.className = 'cardboard-dice-confirmation';
+                    confirmation.setAttribute('aria-hidden', 'true');
+                    confirmation.textContent = dice.length === 1 ? `出目 ${dice[0]}` : `${dice.join(' + ')} = ${freshEvents.dice.base}`;
+                    node('cardboardBoard').appendChild(confirmation);
+                }
                 transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'), events: freshEvents });
             });
         }

@@ -300,3 +300,17 @@ caption再生classに連動するため、旧roll専用1400msタイマーが終�
 実ロール4所有者のcaption/実カードが0/700/1400/2100msで同期すること、通常renderのAnimation保持、Reduced Motionとテーマ復帰で再生しないこと、振り直しの追加確定だけ強調することをbrowser2件で確認。多routeの前施設を一つと数えて次施設のdelay700msにするunitも確認。
 
 補強した最終browserはcaption/実カードのAnimation同一性とReduced Motionの両方を確認して成功。型検査4root/ESLintも成功。既存CIのbrowser grepへこの新しい連鎖確認1件だけを追加し、UI専用テストを大量に増やさず継続回帰する。
+
+### 出目確定を一視線で読めるようにする
+
+主観比較の最後に、回転中の中央表示から下の小さい確定ダイスへすぐ移るため、参考作品より確定瞬間の視線主導が弱いと指摘された。新しい確定結果だけを中央の同じ位置へ500ms表示し、1個なら『出目5』、2個なら『5 + 6 = 11』とする。独立したaria-hidden/pointerevents-noneのspanで、元のdockdice・SR通知・ゲーム進行は維持。JS待機タイマーは追加しない。
+
+generic arrivalControllerは復元初回もchangedとするため、新演出の許可には使わない。CardBoardFieldの新rollと既存RAFのsession/turn/actor/reroll/replay/hiddenガード通過時だけ追加する。次roll/新結果/建設/idle/clearFeedbackで消し、普通の再描画では既存node/Animationを保持して再生しない。Reduced Motionは位置/大きさを動かさず500ms後に即消去。設定をON→OFFした時に古いCSS紹介が再開始しないよう、ONになった時に既存feedbackを解除する。
+
+実ロールの確定表示、500ms後opacity0、再描画で同じnode/非再生、テーマ復帰で削除、Reduced Motion切替後も旧紹介が再生しないことを既存browserで確認。最終画像844-dice-confirmation.pngは検査時だけAnimationを100msへseekして撮影したもの。型検査4root/構文/ESLint成功。独立コードレビューに重大問題なし。
+
+港の生の合計と効果後出目の違いは正当なものなので、中央表示をeffectiveへ無条件置換しない。閉じたcaptionも『港10→12』、完全な説明は『10→12（港+2）』として理由を示す。ルール/値/選択の挙動は変更しない。
+
+港追加検証の初版は合計8を使っていたが、正本GameDicePolicyは合計10以上で港選択を要求するため、resolveHarborがfalseになるfixture誤りだった。駅/港を持つ状態で実際のselectDiceCount(true,5,5)→resolveHarbor(true)へ修正し、中央『5 + 5 = 10』→新しい港選択結果で中央span削除→caption『港10→12』を確認して成功。製品ルール/期待を緩和していない。中央再生はfreshDiceResolutionを含む新rollだけに限定し、港補正のみの結果更新や保存復元から開始しない。
+
+9b798f2fのrelease38737607457とstrict38737607433は全job成功。最後の出目確定仕上げは次headでCIを確認する。

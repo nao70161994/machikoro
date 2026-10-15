@@ -1358,6 +1358,7 @@ function updateDiceDisplay(nums, rolling = false) {
         turnAnnouncer.style.display = 'none';
         turnAnnouncer.classList.remove('hiding');
     }
+    if (rolling) document.getElementById('cardboardDiceConfirmation')?.remove();
     const el = document.getElementById("diceResult");
     const view = UiDiceDisplay.buildView(nums, rolling);
     const shouldAnimateArrival = diceArrivalController.transition(nums, rolling);
