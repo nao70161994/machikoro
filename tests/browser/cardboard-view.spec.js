@@ -306,9 +306,11 @@ test('4人戦の施設発動は全体盤面と補助カード詳細の同じ街�
     await expect(activated).toHaveCount(1);
     await expect(page.locator('#cardboardSeats [data-player-index="3"]')).toContainText('カフェ');
     await page.evaluate(() => {
+        window.unchangedFacilityArt = document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg');
         GameRuntimeState.runtime.snapshot().game.players[3].coins += 1;
         render();
     });
+    expect(await page.evaluate(() => window.unchangedFacilityArt === document.querySelector('#cardboardSeats [data-player-index="3"] .cardboard-card .cardboard-art svg'))).toBe(true);
     await expect(activated).toHaveCount(1);
     await expect(page.locator('#cardboardSeats [data-player-index="3"]')).toContainText('カフェ');
 });
@@ -726,11 +728,21 @@ test('OSの動き低減中もランドマーク完成を静的に強調する', 
     await selectTheme(page, 'cardboard');
     await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
+    await page.evaluate(() => {
+        window.reducedLandmarkCue = null;
+        const observer = new MutationObserver(() => {
+            const target = document.querySelector('#cardboardSeats [data-landmark-name="駅"].cardboard-landmark-newly-built');
+            if (!target) return;
+            const style = getComputedStyle(target);
+            window.reducedLandmarkCue = { animation: style.animationName, outline: style.outlineColor };
+            observer.disconnect();
+        });
+        observer.observe(document.getElementById('cardboardSeats'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    });
     await page.locator('#cardboardMarket [data-action="buildLandmark"][data-landmark-name="駅"]').click();
     const station = page.locator('#cardboardSeats [data-player-index="0"] [data-landmark-name="駅"]');
-    await expect(station).toHaveClass(/cardboard-landmark-newly-built/);
-    await expect(station).toHaveCSS('animation-name', 'none');
-    await expect(station).toHaveCSS('outline-color', 'rgb(180, 122, 9)');
+    await expect(station).toHaveClass(/cardboard-landmark-built/);
+    await expect.poll(() => page.evaluate(() => window.reducedLandmarkCue)).toEqual({ animation: 'none', outline: 'rgb(180, 122, 9)' });
 });
 
 test('にぎわい広場の勝利画面はPC幅で街と結果を中央に読める大きさで表示する', async ({ page }) => {

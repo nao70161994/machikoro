@@ -695,6 +695,28 @@ const CardBoardField = (() => {
         target.focus({ preventScroll: true });
     }
 
+    function replacePlayerHtml(panel, html) {
+        if (renderedHtml.get(panel) === html && panel.childNodes.length) return;
+        const template = document.createElement('template');
+        template.innerHTML = html;
+        const next = Array.from(template.content.children);
+        const current = Array.from(panel.children);
+        if (current.length !== next.length || current.some((part, index) =>
+            part.tagName !== next[index].tagName || part.className !== next[index].className)) {
+            replaceHtml(panel, html);
+            for (const part of Array.from(panel.children)) renderedHtml.set(part, part.innerHTML);
+            return;
+        }
+        // A balance/header refresh must not rebuild unchanged card SVGs. Keep
+        // their loaded external artwork, focus, and in-flight presentation.
+        renderedHtml.set(panel, html);
+        current.forEach((part, index) => {
+            const label = next[index].getAttribute('aria-label');
+            if (label !== null) part.setAttribute('aria-label', label);
+            replaceHtml(part, next[index].innerHTML);
+        });
+    }
+
     function replaceHtml(element, html) {
         // Native details.open and normalized HTML entities change innerHTML
         // without changing the requested content. Do not replace a focused
@@ -961,7 +983,7 @@ const CardBoardField = (() => {
             panel.classList.toggle('cardboard-player-current', index === currentIndex);
             panel.classList.toggle('cardboard-player-selected', index === selectedIndex);
             /** @type {HTMLElement} */ (panel).dataset.seatPosition = position;
-            replaceHtml(panel, UiCardBoard.buildPlayerHtml(game.players[index], {
+            replacePlayerHtml(panel, UiCardBoard.buildPlayerHtml(game.players[index], {
                 index, selfIndex, currentIndex, enabledLandmarks, escapeHtml, events, contentOnly: true,
                 playerSettings: facts.playerSettings,
                 renderPlayerKindIcon: UiPlayerDisplay.renderPlayerKindIcon,
