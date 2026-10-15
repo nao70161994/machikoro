@@ -4,6 +4,7 @@
 const CardTableCamera = (() => {
     function create({ viewport, canvas, world }) {
         let scale = 0.85;
+        let overviewMode = true;
         let offsetX = 0;
         let offsetY = 0;
         let state = { selfIndex: 0, currentIndex: 0, session: null };
@@ -43,6 +44,7 @@ const CardTableCamera = (() => {
             world.style.left = `${offsetX}px`;
             world.style.top = `${offsetY}px`;
             viewport.dataset.tableScale = scale.toFixed(3);
+            viewport.dataset.tableMode = overviewMode ? 'overview' : 'free';
         }
         function scroll(left, top) {
             viewport.scrollTo({ left: Math.max(0, left), top: Math.max(0, top), behavior: 'instant' });
@@ -55,6 +57,7 @@ const CardTableCamera = (() => {
             if (destroyed) return;
             const player = seat(index);
             if (!player) return;
+            overviewMode = false;
             const headerBefore = player.querySelector('.cardboard-header') || player;
             const firstBefore = player.querySelector('.cardboard-cards button');
             const rowHeight = firstBefore
@@ -93,6 +96,7 @@ const CardTableCamera = (() => {
         function focusMarket() {
             const market = world.querySelector('#cardboardCenter');
             if (destroyed || !market) return;
+            overviewMode = false;
             scale = clamp(Math.max(scale, 0.75));
             paint();
             market.querySelector('.compact-market-facilities')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -109,6 +113,7 @@ const CardTableCamera = (() => {
         }
         function fit() {
             if (destroyed) return;
+            overviewMode = true;
             const size = measure();
             scale = clamp(Math.min(viewport.clientWidth / size.width, viewport.clientHeight / size.height));
             paint();
@@ -116,12 +121,14 @@ const CardTableCamera = (() => {
         }
         function readable() {
             if (destroyed) return;
+            overviewMode = false;
             scale = 0.95;
             paint();
             focusSeat(state.selfIndex, true);
         }
         function zoomBy(factor) {
             if (destroyed || !Number.isFinite(factor) || factor <= 0) return;
+            overviewMode = false;
             const center = {
                 x: (viewport.scrollLeft + viewport.clientWidth / 2 - offsetX) / scale,
                 y: (viewport.scrollTop + viewport.clientHeight / 2 - offsetY) / scale
@@ -140,7 +147,7 @@ const CardTableCamera = (() => {
             lastHeight = viewport.clientHeight;
             session = state.session;
             mounted = true;
-            if (changedSession || changedViewport) {
+            if (changedSession || changedViewport || overviewMode) {
                 fit();
             } else {
                 paint();
@@ -152,7 +159,15 @@ const CardTableCamera = (() => {
             if (!frame) frame = globalThis.requestAnimationFrame(layout);
         }
         function wheel(event) {
-            if (!event.ctrlKey && !event.metaKey) return;
+            if (!event.ctrlKey && !event.metaKey) {
+                const canPan = event.deltaX !== 0 && viewport.scrollWidth > viewport.clientWidth + 1 ||
+                    event.deltaY !== 0 && viewport.scrollHeight > viewport.clientHeight + 1;
+                if (canPan && !(event.target.closest('.compact-market-facilities'))) {
+                    overviewMode = false;
+                    viewport.dataset.tableMode = 'free';
+                }
+                return;
+            }
             event.preventDefault();
             zoomBy(Math.exp(-Math.max(-100, Math.min(100, event.deltaY)) * 0.006));
         }
@@ -161,6 +176,8 @@ const CardTableCamera = (() => {
             const step = event.shiftKey ? 240 : 80;
             const offsets = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
             if (offsets[event.key]) {
+                overviewMode = false;
+                viewport.dataset.tableMode = 'free';
                 event.preventDefault();
                 scroll(viewport.scrollLeft + offsets[event.key][0], viewport.scrollTop + offsets[event.key][1]);
             } else if (event.key === '+' || event.key === '=') {
@@ -186,6 +203,8 @@ const CardTableCamera = (() => {
             const dy = event.clientY - drag.y;
             if (!drag.active && Math.hypot(dx, dy) < 8) return;
             if (!drag.active) {
+                overviewMode = false;
+                viewport.dataset.tableMode = 'free';
                 drag.active = true;
                 viewport.setPointerCapture(event.pointerId);
                 viewport.classList.add('is-table-panning');
@@ -230,6 +249,7 @@ const CardTableCamera = (() => {
             drag = null;
             viewport.classList.remove('is-table-panning');
             delete viewport.dataset.tableScale;
+            delete viewport.dataset.tableMode;
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }

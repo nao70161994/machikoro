@@ -144,6 +144,8 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             });
             render();
         });
+        await expectWholeTable(page,4);
+        await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-mode','overview');
         await page.locator('[data-cardboard-camera="overview"]').click();
         await expectWholeTable(page,4);
         await expectOwnedCards(page);
@@ -224,6 +226,12 @@ for(const viewport of [{width:320,height:844},{width:844,height:390},{width:1440
         await page.locator('#cardboardEventDetails > summary').click();
         await expect(page.locator('#cardboardEventDetails')).toHaveAttribute('open','');
         await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
+        expect(await page.evaluate(() => {
+            const banner = document.getElementById('pwaUpdateBanner').getBoundingClientRect();
+            const actions = document.getElementById('cardboardActionSlot').getBoundingClientRect();
+            const receipt = document.getElementById('cardboardDiceReceipt').getBoundingClientRect();
+            return actions.bottom <= banner.top + 1 && receipt.bottom <= banner.top + 1;
+        }), '更新通知は操作と開いた収支欄を覆わない').toBe(true);
         expect(await snapshot(page)).toEqual(before);
     });
 }

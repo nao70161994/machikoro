@@ -14196,6 +14196,18 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-la
     display: none;
 }
 
+/* Long edges hold a continuous row of cards, with every owner facing the viewer. */
+
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) {
+    width: 820px;
+    justify-self: center;
+}
+
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards {
+    grid-template-columns: repeat(6, 126px);
+}
+
+
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="5"],[data-player-count="6"],[data-player-count="7"],[data-player-count="8"],[data-player-count="9"],[data-player-count="10"]) {
     grid-template-columns: repeat(4, 552px);
     grid-template-rows: none;
@@ -14254,8 +14266,8 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 }
 
 html[data-design="cardboard"] body.pwa-banner-open:not(.game-finished) #gameScreen[style*="display: block"]:has(.cardboard-card-table) {
-    height: calc(100dvh - 128px - env(safe-area-inset-bottom, 0px));
-    max-height: calc(100dvh - 128px - env(safe-area-inset-bottom, 0px));
+    height: calc(100dvh - var(--cardboard-update-space, 128px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - var(--cardboard-update-space, 128px) - env(safe-area-inset-bottom, 0px));
     min-height: 0;
     overflow-y: auto;
 }
@@ -14317,17 +14329,6 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-progress > span {
         display: none;
     }
-}
-
-/* Long edges hold a continuous row of cards, with every owner facing the viewer. */
-
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) {
-    width: 820px;
-    justify-self: center;
-}
-
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player:is([data-seat-position="top"], [data-seat-position="bottom"]) .cardboard-cards {
-    grid-template-columns: repeat(6, 126px);
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="5"],[data-player-count="6"],[data-player-count="7"],[data-player-count="8"],[data-player-count="9"],[data-player-count="10"]) > .cardboard-player .cardboard-cards {
@@ -14403,44 +14404,82 @@ html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-stat
     line-height: 16px;
 }
 
-/* The last resolved event stays readable while the shared table is panned. */
-
-/* Persistent result feedback. */
+/* Keep the full result available to assistive technology without covering cards. */
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardCurrentResult {
-    grid-area: table;
-    align-self: end;
-    justify-self: center;
-    position: relative;
-    z-index: 8;
-    width: max-content;
-    max-width: min(640px, calc(100% - 32px));
-    max-height: 60px;
-    margin: 0 0 10px;
-    padding: 6px 12px;
-    overflow: auto;
-    box-sizing: border-box;
-    border: 1px solid #c4b17c;
-    border-radius: 9px;
-    background: #fffaf0f2;
-    color: #234c47;
-    box-shadow: 0 3px 12px #082e4855;
-    font: 700 13px/1.4 system-ui, sans-serif;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    max-width: 1px;
+    min-height: 0;
+    max-height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+    pointer-events: none;
 }
 
 html[data-design="cardboard"] #cardboardCurrentResult[hidden] {
     display: none;
 }
 
-html[data-design="cardboard"] #cardboardCurrentResult[data-large-income="true"] {
-    border-color: #efc858;
+/* An active result uses the existing toolbar, leaving the felt unobstructed. */
+html[data-design="cardboard"] #cardboardCameraTools:has(#cardboardEventDetails[data-has-result="true"]) > [data-cardboard-camera="overview"] {
+    order: -4;
+}
+
+html[data-design="cardboard"] #cardboardCameraTools:has(#cardboardEventDetails[data-has-result="true"]) > [data-cardboard-camera="in"] {
+    order: -3;
+}
+
+html[data-design="cardboard"] #cardboardCameraTools:has(#cardboardEventDetails[data-has-result="true"]) > [data-cardboard-camera="out"] {
+    order: -2;
+}
+
+html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"] {
+    order: -1;
+}
+
+html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"] > summary {
+    flex-direction: column;
+    width: 92px;
+    min-width: 92px;
+    min-height: 44px;
+    padding: 3px 5px;
+    overflow: hidden;
+}
+
+html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"] .cardboard-result-heading {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 17px;
+}
+
+html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"] .cardboard-result-detail {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10px;
+    line-height: 15px;
+}
+
+html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"][data-large-income="true"] > summary {
+    border-color: #b28c24;
     background: #fff0bc;
+    color: #513b0a;
 }
 
-html[data-design="cardboard"] #cardboardCurrentResult[data-kind="build"] {
-    border-color: #efc858;
-}
-
-html[data-design="cardboard"] body.accessibility-high-contrast #cardboardCurrentResult {
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardEventDetails[data-has-result="true"] > summary {
     background: #000;
     color: #fff;
     border-color: #fff;
@@ -14541,5 +14580,54 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="5"],[data-player-count="6"],[data-player-count="7"],[data-player-count="8"],[data-player-count="9"],[data-player-count="10"]) > .cardboard-player .cardboard-cards {
         grid-template-columns: repeat(2, 126px);
+    }
+}
+
+html[data-design="cardboard"] body.pwa-banner-open #cardboardBoard.cardboard-card-table #cardboardEventDetails #cardboardDiceReceipt {
+    bottom: calc(var(--cardboard-update-space, 128px) + 72px + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 601px) and (max-height: 500px) {
+    html[data-design="cardboard"] body { --cardboard-update-space: 72px; }
+}
+
+/* Short landscape keeps four owners beside the market to use the screen width. */
+@media (min-width: 601px) and (max-height: 500px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"] {
+        grid-template-columns: 820px 1072px 820px;
+        grid-template-rows: repeat(2, minmax(260px, max-content));
+    }
+
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"] > .cardboard-player {
+        width: 820px;
+        justify-self: stretch;
+    }
+
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"] > .cardboard-player .cardboard-cards {
+        grid-template-columns: repeat(6, 126px);
+    }
+
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"] > [data-seat-position="top"] {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"] > [data-seat-position="left"] {
+        grid-column: 1;
+        grid-row: 2;
+    }
+
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"] > [data-seat-position="right"] {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"] > [data-seat-position="bottom"] {
+        grid-column: 3;
+        grid-row: 2;
+    }
+
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"] #cardboardCenter {
+        grid-column: 2;
+        grid-row: 1 / 3;
     }
 }

@@ -77,8 +77,8 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
             expect(cards.length).toBeGreaterThan(0);
             expect(cards.every(card => card.width >= 96 && card.artHeight >= 54 && card.name && card.dice && card.count && !card.clipped)).toBe(true);
         }
-        const accents = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(players => players.map(player => getComputedStyle(player).borderInlineStartColor));
-        expect(new Set(accents).size).toBe(4);
+        const accents = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(players => players.map(player => getComputedStyle(player).borderTopColor));
+        expect(new Set(accents).size, JSON.stringify(accents)).toBe(4);
         await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"] .cardboard-count')).toHaveText('所有 ×4');
         await camera(page, 'overview');
         expect(await page.locator('#cardboardTableViewport').evaluate(viewport => {
@@ -889,6 +889,10 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
     await expect(income).toHaveCount(1);
     await expect(income.locator('.cardboard-income-amount')).toHaveText('+6コイン');
     await expect(income).toHaveAttribute('aria-label', '街1、施設の収支プラス6コイン');
+    const resultSummary = page.locator('#cardboardEventDetails > summary');
+    await expect(resultSummary).toContainText('+6');
+    await expect(resultSummary).toContainText('施設6回');
+    await expect(page.locator('#cardboardCurrentResult')).toHaveCSS('pointer-events', 'none');
     for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
         await page.setViewportSize(viewport);
         await expect.poll(() => income.evaluate(element => {
@@ -897,6 +901,11 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
             return rect.width > 0 && amount.left >= rect.left && amount.right <= rect.right &&
                 amount.top >= rect.top && amount.bottom <= rect.bottom && rect.left >= 0 && rect.right <= innerWidth;
         })).toBe(true);
+        expect(await resultSummary.evaluate(summary => {
+            const bounds = summary.getBoundingClientRect();
+            const table = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+            return bounds.left >= 0 && bounds.right <= innerWidth && bounds.bottom <= table.top + 1;
+        }), '収益表示は固定HUD内に収まり所有カードを覆わない').toBe(true);
         await page.screenshot({ path: testInfo.outputPath(`cardboard-income-${viewport.width}.png`) });
         if (viewport.width === 844) {
             await camera(page, 'self');
@@ -996,7 +1005,8 @@ test('ロール中のサイコロは大きく見え操作を遮らず確定後�
         await prepare(page, { width, height }, 2);
         await selectTheme(page, 'cardboard');
         const before = await state(page);
-        await page.evaluate(() => updateDiceDisplay([], true));
+        await page.evaluate(() => { showTurnAnnouncer('ダイス確認', false, 0); updateDiceDisplay([], true); });
+        await expect(page.locator('#turnAnnouncer')).toBeHidden();
         const stage = page.locator('#diceResult');
         await expect(stage).toHaveCSS('opacity', '1');
         await expect(stage).toHaveCSS('pointer-events', 'none');

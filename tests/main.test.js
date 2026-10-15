@@ -3747,7 +3747,17 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     assert.ok(workflow.includes('run: npm run test:online'));
     assert.ok(workflow.includes('mobile-webkit:'));
     assert.ok(workflow.includes('npx playwright install --with-deps webkit chromium'));
-    assert.ok(workflow.includes('run: npm run test:browser-pr'));
+    assert.ok(workflow.includes('run: ${{ matrix.command }}'));
+    const matrixStart = workflow.indexOf('  mobile-webkit:');
+    const matrixEnd = workflow.indexOf('    steps:', matrixStart);
+    const matrix = workflow.slice(matrixStart, matrixEnd);
+    const commands = [...matrix.matchAll(/^\s+command:\s*>-\s*\n\s+([^\r\n]+)/gm)]
+        .flatMap(match => match[1].split('&&').map(command => command.trim().replace(/\bnpx playwright\b/g, 'playwright')));
+    assert.deepStrictEqual(commands, packageConfig.scripts['test:browser-pr'].split('&&').map(command => command.trim()));
+    const shards = [...matrix.matchAll(/^\s+- shard:\s*(\S+)/gm)].map(match => match[1]);
+    assert.strictEqual(shards.length, 5);
+    assert.strictEqual(new Set(shards).size, shards.length);
+    assert.ok(workflow.includes('name: release-mobile-webkit-review-${{ matrix.shard }}'));
     assert.ok(packageConfig.scripts['test:browser-pr'].includes('cardboard-online-compat.spec.js'));
     assert.ok(packageConfig.scripts['test:browser-pr'].includes('seeded-browser-match.spec.js'));
     assert.ok(packageConfig.scripts['test:browser-pr'].includes('--project=mobile-webkit'));

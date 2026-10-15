@@ -713,6 +713,37 @@ const CardBoardField = (() => {
         result.dataset.kind = constructionName ? 'build' : events.dice ? 'roll' : 'idle';
         result.dataset.net = String(net);
         result.dataset.largeIncome = String(net >= 5);
+        const details = node('cardboardEventDetails');
+        const summary = details?.querySelector('summary');
+        if (!details || !summary) return;
+        const hasResult = Boolean(events.dice || constructionName);
+        details.dataset.hasResult = String(hasResult);
+        details.dataset.largeIncome = String(net >= 5);
+        summary.dataset.net = String(net);
+        summary.dataset.largeIncome = String(net >= 5);
+        if (!hasResult) {
+            summary.textContent = '出目・収支';
+            summary.removeAttribute('aria-label');
+            summary.removeAttribute('title');
+            return;
+        }
+        const headingText = constructionName
+            ? construction.kind === 'landmark' ? '目標完成' : '建設完了'
+            : `出目${events.dice.effective ?? events.dice.base} · ${net > 0 ? '+' : ''}${net}`;
+        const detailText = constructionName || `施設${count}回・${events.incomplete ? '確認分' : '収支'}`;
+        let heading = summary.querySelector('.cardboard-result-heading');
+        let detail = summary.querySelector('.cardboard-result-detail');
+        if (!heading || !detail) {
+            heading = document.createElement('span');
+            heading.className = 'cardboard-result-heading';
+            detail = document.createElement('span');
+            detail.className = 'cardboard-result-detail';
+            summary.replaceChildren(heading, detail);
+        }
+        heading.textContent = headingText;
+        detail.textContent = detailText;
+        summary.setAttribute('aria-label', `${result.textContent}。出目と収支を確認`);
+        summary.title = result.textContent;
     }
 
     function draw() {
@@ -780,9 +811,6 @@ const CardBoardField = (() => {
         const newRoll = feedback?.refresh(facts) === true;
         const events = turnEventsFor(game, facts.display);
         updateCurrentResult(events, game, selfIndex);
-        const eventSummary = node('cardboardEventDetails')?.querySelector('summary');
-        if (eventSummary) eventSummary.textContent = events.dice
-            ? `出目${events.dice.effective ?? events.dice.base}・収支` : '出目・収支';
         const freshResultLogs = feedback?.takeResultLogs() || [];
         const freshEvents = freshResultLogs.length ? UiTurnEvents.project(freshResultLogs, {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
