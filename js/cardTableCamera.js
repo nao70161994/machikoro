@@ -93,6 +93,20 @@ const CardTableCamera = (() => {
                 : top - origin.top + height / 2 - viewport.clientHeight / 2;
             scroll(offsetX + (left + right) / 2 - origin.left - viewport.clientWidth / 2, offsetY + targetTop);
         }
+        function focusCard(card) {
+            if (destroyed || !card?.isConnected || !world.contains(card)) return;
+            const before = card.getBoundingClientRect();
+            if (!before.width || !before.height) return;
+            overviewMode = false;
+            const fitted = Math.min((viewport.clientWidth - 24) / (before.width / scale),
+                (viewport.clientHeight - 24) / (before.height / scale));
+            scale = clamp(Math.min(Math.max(scale, 0.85), fitted));
+            paint();
+            const bounds = card.getBoundingClientRect();
+            const origin = world.getBoundingClientRect();
+            scroll(offsetX + bounds.left + bounds.width / 2 - origin.left - viewport.clientWidth / 2,
+                offsetY + bounds.top + bounds.height / 2 - origin.top - viewport.clientHeight / 2);
+        }
         function focusMarket() {
             const market = world.querySelector('#cardboardCenter');
             if (destroyed || !market) return;
@@ -253,7 +267,7 @@ const CardTableCamera = (() => {
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }
-        return Object.freeze({ refresh, focusSeat, focusMarket, fit, readable, zoomBy, destroy });
+        return Object.freeze({ refresh, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, destroy });
     }
     return Object.freeze({ create });
 })();

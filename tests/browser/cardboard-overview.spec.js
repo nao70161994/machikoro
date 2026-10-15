@@ -142,7 +142,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         await page.evaluate(()=>{
             const game=GameRuntimeState.runtime.snapshot().game;
             game.players.forEach((player,index)=>{
-                const names=['麦畑','パン屋','牧場','カフェ','森林','コンビニ'];
+                const names=innerWidth >= 1000 ? CARDS.slice(0,18).map(card=>card.name) : ['麦畑','パン屋','牧場','カフェ','森林','コンビニ'];
                 player.cards=Array.from({length:12+index*6},(_,n)=>createCardByName(names[n%names.length]));
                 Object.keys(player.landmarks).slice(0,index).forEach(name=>{player.landmarks[name]=true;});
             });

@@ -342,6 +342,9 @@ const CardBoardField = (() => {
                 element.getAttribute(cue.landmark ? 'data-landmark-name' : 'data-card-name') === cue.name);
             if (!button) continue;
             if (cue.landmark && game.players[cue.playerIndex]?.landmarks[cue.name] !== true) continue;
+            // Closing a successful purchase reveals the actual new card,
+            // including later rows that a seat-header focus cannot expose.
+            tableCamera?.focusCard(button);
             if (cue.landmark) showLandmarkCue(button, !reducedMotionEnabled());
             else showBuildCue(button, !reducedMotionEnabled());
         }

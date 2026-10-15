@@ -536,6 +536,12 @@ test('横持ちの建設操作は拡大市場を開き購入後は見える操�
     });
     await page.locator('#cardboardMarketClose').click();
     await expect.poll(() => page.evaluate(() => window.buildCueAfterMarketClose)).toBe(true);
+    await expect.poll(() => page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]').evaluate(card => {
+        const bounds = card.getBoundingClientRect();
+        const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        return bounds.width >= 96 && bounds.left >= viewport.left && bounds.right <= viewport.right &&
+            bounds.top >= viewport.top && bounds.bottom <= viewport.bottom;
+    })).toBe(true);
     await expect(page.locator('#cardboardMarket details[open]')).toHaveCount(0);
     await expect(page.locator('#cardboardMarket .compact-market-expand')).toBeFocused();
 });
