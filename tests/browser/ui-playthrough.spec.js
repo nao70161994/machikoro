@@ -84,6 +84,11 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         const choice = (name, attributes = '') => page.locator(`#gameScreen [data-action=${attribute(name)}]${attributes}:visible`);
         const pending = (name, attributes = '') => page.locator(`#pendingModal [data-action=${attribute(name)}]${attributes}:visible`);
         if (action === 'buildCard' || action === 'buildLandmark') {
+            // Move the shared table through its visible camera control before
+            // opening the market; the canvas may currently show another seat.
+            const beforeCamera = await read();
+            await click(page.locator('[data-cardboard-camera="market"]'), '中央市場へ移動');
+            expect((await read()).key, '盤面の移動は対局状態を変えない').toBe(beforeCamera.key);
             await click(page.locator('#cardboardMarket .compact-market-expand'), '市場を開く');
             if (action === 'buildLandmark') {
                 const goals = page.locator('#cardboardMarketDialog .compact-market-goal-disclosure');
@@ -99,6 +104,11 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
                 report.keyboardActions++;
                 await expect(page.locator('#cardboardMarketDialog')).toBeHidden();
                 await expect(page.locator('#cardboardMarket details[open]')).toHaveCount(0);
+            }
+            // Return to the common table after the actual purchase, while a
+            // completed game keeps its result screen as the primary display.
+            if (!(await read()).winner) {
+                await click(page.locator('[data-cardboard-camera="overview"]'), '全員の施設カードへ戻る');
             }
         } else if (action === 'rollDice' || action === 'nextTurn') {
             await click(page.locator(action === 'rollDice' ? '#btnRoll' : '#btnSkip'), action);
@@ -132,6 +142,7 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         } else throw new Error(`No DOM adapter for ${action}`);
     };
     let lastState = null;
+    let capturedDiceMotion = false;
     try {
         await page.setViewportSize(viewport);
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
@@ -177,6 +188,22 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
             const at = Date.now();
             if (before.phase === 'pending') await capture('special-effect');
             await execute(proposal);
+            if (!capturedDiceMotion && ['rollDice', 'selectDiceCount'].includes(proposal.action)) {
+                const rolling = await page.locator('#diceResult .rolling').count();
+                // A station can make rollDice open the dice-count choice. In
+                // that case capture the first actual roll after choosing it.
+                if (rolling) {
+                    capturedDiceMotion = true;
+                    const motionStart = Date.now();
+                    report.diceMotion = [];
+                    for (const [index, targetMs] of [0, 180, 450, 800, 1200].entries()) {
+                        const remaining = targetMs - (Date.now() - motionStart);
+                        if (remaining > 0) await page.waitForTimeout(remaining);
+                        await capture(`dice-motion-${index}`);
+                        report.diceMotion.push({ index, targetMs, elapsedMs: Date.now() - motionStart });
+                    }
+                }
+            }
             await expect.poll(async () => (await read()).key, { timeout: 15000, intervals: [100, 250] }).not.toBe(before.key);
             report.humanActions++;
             report.actions.push({ action: proposal.action, turn: before.turn, phase: before.phase, elapsedMs: Date.now() - at });
