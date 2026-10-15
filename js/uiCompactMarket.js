@@ -55,11 +55,14 @@ const UiCompactMarket = (() => {
     }
 
     function buildFacilitiesHtml(options) {
-        return buildMenu.buildVisibleCardButtonsHtml({
+        const browseAll = options.cardFilter === 'affordable' && !options.canBuildCardAction;
+        const note = browseAll ? '<p class="compact-market-browse-note">今は全施設を表示 · 建設時に購入可能な施設へ絞ります</p>' : '';
+        return note + (buildMenu.buildVisibleCardButtonsHtml({
             ...options,
+            cardFilter: browseAll ? '' : options.cardFilter,
             renderBuildCardButton: (card, stock, canBuildThis, highlighted) =>
                 renderFacility(card, stock, canBuildThis, highlighted, options),
-        }) || buildMenu.buildCardEmptyStateHtml(options.cardFilter);
+        }) || buildMenu.buildCardEmptyStateHtml(options.cardFilter));
     }
 
     function buildLandmarksHtml(options) {

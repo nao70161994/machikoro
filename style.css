@@ -14665,3 +14665,14 @@ html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(7)) > [data-seat-position="bottom"] { grid-column: 3; grid-row: 2; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(7)) #cardboardCenter { grid-column: 2; grid-row: 1 / 3; align-self: center; }
 }
+
+html[data-design="cardboard"] .compact-market-browse-note {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #f2ead0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .compact-market-browse-note {
+    color: #fff;
+}

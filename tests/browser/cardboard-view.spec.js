@@ -1087,3 +1087,22 @@ test('振り直し確認後に確定した施設だけを新しく強調する',
     await page.evaluate(() => render());
     await expect(page.locator('#cardboardSeats .cardboard-card-additional-activation')).toHaveCount(0);
 });
+
+test('建設可の絞り込みでもサイコロ前と購入後は市場を見渡せる', async ({ page }) => {
+    await prepare(page, {width:844,height:390}, 2);
+    await camera(page, 'market');
+    await page.locator('#cardboardMarket .compact-market-filter-disclosure').evaluate(element => { element.open = true; });
+    await page.locator('#cardboardMarket [data-card-filter="affordable"]').click();
+    const cards = page.locator('#cardboardMarket [data-action="buildCard"]');
+    await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toBeVisible();
+    expect(await cards.count()).toBeGreaterThan(0);
+    expect(await cards.evaluateAll(nodes => nodes.every(node => node.disabled))).toBe(true);
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); });
+    await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toHaveCount(0);
+    expect(await cards.count()).toBeGreaterThan(0);
+    expect(await cards.evaluateAll(nodes => nodes.every(node => !node.disabled))).toBe(true);
+    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.builtThisTurn = true; render(); });
+    await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toBeVisible();
+    expect(await cards.count()).toBeGreaterThan(0);
+    expect(await cards.evaluateAll(nodes => nodes.every(node => node.disabled))).toBe(true);
+});

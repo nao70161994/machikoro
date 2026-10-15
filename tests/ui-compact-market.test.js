@@ -29,6 +29,7 @@ runTest('小型市場は既存市場と同じ在庫・有効カード・並び�
             const options = fixture({ cardFilter, canBuildCardAction });
             const expected = [];
             UiBuildMenu.buildVisibleCardButtonsHtml({ ...options,
+                cardFilter: cardFilter === 'affordable' && !canBuildCardAction ? '' : cardFilter,
                 renderBuildCardButton(card, stock, canBuildThis, highlighted) {
                     expected.push({ name: card.name, stock, canBuildThis, highlighted }); return '';
                 } });
@@ -115,4 +116,12 @@ runTest('市場の絞込disclosureは現在の正本filterを短いラベルで�
         assert.ok(UiCompactMarket.buildHtml(fixture({ cardFilter })).includes(`<summary>絞込：${label}</summary>`));
     }
     assert.ok(!UiCompactMarket.buildHtml(fixture()).includes('compact-market-goal-disclosure" open'));
+});
+
+runTest('建設できない間も建設可フィルタで市場一覧と無効な購入操作を保つ', () => {
+    const html = UiCompactMarket.buildFacilitiesHtml(fixture({cardFilter: 'affordable', canBuildCardAction: false}));
+    assert.strictEqual((html.match(/data-action="buildCard"/g) || []).length, 3);
+    assert.strictEqual((html.match(/data-card-name="[^"]+" disabled/g) || []).length, 3);
+    assert.ok(html.includes('今は全施設を表示'));
+    assert.ok(!html.includes('現在建設できる施設はありません'));
 });
