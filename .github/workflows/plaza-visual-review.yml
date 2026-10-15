@@ -27,6 +27,11 @@ on:
                 required: true
                 default: false
                 type: boolean
+            ui_playthrough_only:
+                description: Run only the full UI games; visual and compatibility gates remain required on pull requests
+                required: true
+                default: false
+                type: boolean
             run_ui_playthrough:
                 description: Play a complete unseeded game through actual UI in portrait and landscape
                 required: true
@@ -38,6 +43,7 @@ permissions:
 
 jobs:
     plaza-webkit:
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.ui_playthrough_only != true }}
         runs-on: ubuntu-latest
         timeout-minutes: 45
         steps:

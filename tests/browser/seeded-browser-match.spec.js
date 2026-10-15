@@ -6,7 +6,7 @@ const MATCH_SEED = 0x4d414348;
 const requestedPlayerCount = Number(process.env.CARDBOARD_MATCH_PLAYER_COUNT);
 const MATCH_PLAYER_COUNT = requestedPlayerCount === 4 ? 4 : 2;
 const MATCH_DESIGN = process.env.CARDBOARD_MATCH_DESIGN === 'plaza' ? 'plaza' : 'cardboard';
-const MATCH_DESIGN_LABEL = MATCH_DESIGN === 'plaza' ? 'にぎわい広場' : 'カード卓';
+const MATCH_DESIGN_LABEL = MATCH_DESIGN === 'plaza' ? '夕暮れの広場' : 'にぎわい広場';
 const MATCH_VIEWPORT = process.env.CARDBOARD_MATCH_VIEWPORT === 'plaza-landscape'
     ? { width: 844, height: 390, name: 'plaza-landscape' }
     : { width: 1440, height: 900, name: 'desktop' };

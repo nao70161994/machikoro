@@ -47,13 +47,13 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         const humanIndex = runtime.cpuPlayers.findIndex(cpu => !cpu);
         const goalNames = [...getEnabledLandmarkSelection()];
         const goals = game.players.map(player => goalNames.filter(name => player.landmarks[name] === true).length);
-        return { key: JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, 0)),
+        return { key: JSON.stringify(GameSnapshot.serializeGameState(game, SHOP_STOCK, { pendingActionsFor: GameManager.serializedPendingActionsFor, logLimit: 0 })),
             humanIndex, actor: game.currentPlayerIndex, turn: game.turnCount, phase: game.phase,
             winner: winner ? winner.name : null, goals, goalCount: goalNames.length };
     });
     const advise = () => page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
-        const before = JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, 0));
+        const before = JSON.stringify(GameSnapshot.serializeGameState(game, SHOP_STOCK, { pendingActionsFor: GameManager.serializedPendingActionsFor, logLimit: 0 }));
         // This separate adviser chooses only. Never call doTurn/execute/apply.
         const adviser = new CPU('strong');
         let proposal;
@@ -67,7 +67,7 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
             proposal = proposal || { action: 'nextTurn', data: {} }; break;
         default: throw new Error(`Unsupported human phase: ${game.phase}`);
         }
-        if (before !== JSON.stringify(GameSnapshot.serializeUndoState(game, SHOP_STOCK, 0))) {
+        if (before !== JSON.stringify(GameSnapshot.serializeGameState(game, SHOP_STOCK, { pendingActionsFor: GameManager.serializedPendingActionsFor, logLimit: 0 }))) {
             throw new Error('The adviser mutated canonical game state');
         }
         if (!proposal) throw new Error('No safe UI proposal for pending effect');
