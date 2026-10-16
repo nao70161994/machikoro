@@ -124,6 +124,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             const progress = seat.querySelector('.cardboard-roster-progress b').getBoundingClientRect();
             return progress.left >= bounds.left && progress.right <= bounds.right;
         })), '固定HUDの目標進捗を切らない').toBe(true);
+        await expect(page.locator('#cardboardMarket .compact-market-price').first()).toContainText('建設');
         await page.screenshot({path:testInfo.outputPath('card-table-overview.png')});
         const before = await snapshot(page);
         const camera = page.locator('#cardboardTableViewport');
