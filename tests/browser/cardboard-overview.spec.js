@@ -181,6 +181,40 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         }
         await expectWholeTable(page,4);
         await expectOwnedCards(page);
+
+        // Explicit late presentation fixture, distinct from a natural match:
+        // eighteen facility types and five landmarks per owner, without a win.
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            game.players.forEach(player => {
+                player.cards = CARDS.slice(0, 18).map(card => createCardByName(card.name));
+                Object.keys(player.landmarks).forEach((name, index) => { player.landmarks[name] = index < 5; });
+            });
+            render();
+        });
+        await page.locator('[data-cardboard-camera="overview"]').click();
+        await expectWholeTable(page, 4);
+        await expectOwnedCards(page);
+        await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(20);
+        const late = await snapshot(page);
+        await page.screenshot({ path: testInfo.outputPath('card-table-late.png') });
+        await page.locator('[data-cardboard-camera="self"]').click();
+        await expect(camera).toHaveAttribute('data-table-mode', 'free');
+        await expect.poll(() => camera.evaluate(viewport => {
+            const clip = viewport.getBoundingClientRect();
+            const owner = viewport.querySelector('.cardboard-player[data-player-index="0"]');
+            return [...owner.querySelectorAll('.cardboard-card')].filter(card => {
+                const bounds = card.getBoundingClientRect();
+                return bounds.width >= 68 && bounds.left >= clip.left && bounds.right <= clip.right &&
+                    bounds.top >= clip.top && bounds.bottom <= clip.bottom &&
+                    ['.cardboard-name', '.cardboard-dice', '.cardboard-count'].every(selector =>
+                        card.querySelector(selector)?.textContent.trim());
+            }).length;
+        })).toBeGreaterThan(0);
+        await page.screenshot({ path: testInfo.outputPath('card-table-late-readable.png') });
+        await page.locator('[data-cardboard-camera="back"]').click();
+        await expectWholeTable(page, 4);
+        expect(await snapshot(page)).toEqual(late);
     });
 }
 
@@ -210,6 +244,20 @@ for (const count of [2,3,5,10]) {
         }
     });
 }
+
+test('共通カード卓は6〜9人の各人数でも市場と全所有者を保つ', async ({ page }, testInfo) => {
+    for (const count of [6, 7, 8, 9]) {
+        await prepare(page, { width: 844, height: 390 }, count);
+        await expectWholeTable(page, count);
+        await expectOwnedCards(page);
+        const before = await snapshot(page);
+        await page.locator('[data-cardboard-camera="market"]').click();
+        await page.locator('[data-cardboard-camera="back"]').click();
+        await expectWholeTable(page, count);
+        expect(await snapshot(page)).toEqual(before);
+        await page.screenshot({ path: testInfo.outputPath(`card-table-${count}.png`) });
+    }
+});
 
 test('10人の320px縦持ちでも全員の所有カードと市場を俯瞰できる',async({page},testInfo)=>{
     await prepare(page,{width:320,height:844},10);

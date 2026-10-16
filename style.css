@@ -14834,7 +14834,9 @@ html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.
 
 .cardboard-dice-confirmation { display: none; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardDiceConfirmation.cardboard-dice-confirmation {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 18px;
     position: fixed;
     left: 50%;
     top: clamp(96px, 42dvh, calc(100dvh - 180px - env(safe-area-inset-bottom, 0px)));
@@ -14855,6 +14857,29 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardDic
     line-height: 1.2;
     white-space: nowrap;
     animation: cardboard-dice-confirmation 500ms linear forwards;
+}
+html[data-design="cardboard"] .cardboard-confirmation-faces {
+    display: flex;
+    gap: 12px;
+}
+html[data-design="cardboard"] .cardboard-confirmation-faces .dice-face {
+    box-sizing: border-box;
+    width: 60px;
+    height: 60px;
+    padding: 9px;
+    gap: 4px;
+    border: 1px solid #fff;
+    border-bottom: 5px solid #c3cfcd;
+    transform: rotate(-8deg);
+    box-shadow: 4px 6px 0 #7d9692, 5px 9px 12px #244a4755, inset 0 2px 3px #fff;
+}
+html[data-design="cardboard"] .cardboard-confirmation-faces .dice-face:nth-child(2) { transform: rotate(8deg); }
+@media (max-width: 600px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardDiceConfirmation.cardboard-dice-confirmation {
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 18px;
+    }
 }
 @keyframes cardboard-dice-confirmation {
     0%, 85% { opacity: 1; }

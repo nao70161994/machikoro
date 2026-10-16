@@ -1187,6 +1187,11 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     const cards = caption.locator('.cardboard-event-preview-card');
     await expect(cards).toHaveCount(4);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveText('出目 5');
+    const centralFaces = page.locator('#cardboardDiceConfirmation .cardboard-confirmation-faces .dice-face');
+    await expect(centralFaces).toHaveCount(1);
+    await expect(centralFaces.first()).toBeVisible();
+    await expect(centralFaces.first().locator('.dot:not(.hidden)')).toHaveCount(5);
+    await expect(centralFaces.first().locator('.dot.hidden')).toHaveCount(4);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveAttribute('aria-hidden', 'true');
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('pointer-events', 'none');
     await page.locator('#cardboardDiceConfirmation').evaluate(element => {
@@ -1244,6 +1249,12 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         render();
     });
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveText('5 + 5 = 10');
+    await expect(centralFaces).toHaveCount(2);
+    for (let index = 0; index < 2; index++) {
+        await expect(centralFaces.nth(index)).toBeVisible();
+        await expect(centralFaces.nth(index).locator('.dot:not(.hidden)')).toHaveCount(5);
+        await expect(centralFaces.nth(index).locator('.dot.hidden')).toHaveCount(4);
+    }
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.resolveHarbor(true); render(); });
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
     await expect(caption.locator('.cardboard-result-heading')).toContainText('港10→12');

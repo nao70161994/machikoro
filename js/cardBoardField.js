@@ -1,5 +1,5 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, LOG_TYPES, MutationObserver, CardTableCamera, CardBoardTransfers, CardBoardActivationTags, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, LOG_TYPES, MutationObserver, CardTableCamera, CardBoardTransfers, CardBoardActivationTags, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, UiDiceDisplay, PlazaField, DesignTheme, CARDS, Player */
 
 const CARDBOARD_ROLL_FEEDBACK_MS = 1400;
 
@@ -1209,7 +1209,16 @@ const CardBoardField = (() => {
                     confirmation.id = 'cardboardDiceConfirmation';
                     confirmation.className = 'cardboard-dice-confirmation';
                     confirmation.setAttribute('aria-hidden', 'true');
-                    confirmation.textContent = dice.length === 1 ? `出目 ${dice[0]}` : `${dice.join(' + ')} = ${freshEvents.dice.base}`;
+                    const total = document.createElement('span');
+                    total.className = 'cardboard-confirmation-total';
+                    total.textContent = dice.length === 1 ? `出目 ${dice[0]}` : `${dice.join(' + ')} = ${freshEvents.dice.base}`;
+                    if (typeof UiDiceDisplay !== 'undefined') {
+                        const faces = document.createElement('span');
+                        faces.className = 'cardboard-confirmation-faces';
+                        faces.innerHTML = dice.map(value => UiDiceDisplay.buildFaceHtml(value, { decorative: true })).join('');
+                        confirmation.appendChild(faces);
+                    }
+                    confirmation.appendChild(total);
                     node('cardboardBoard').appendChild(confirmation);
                 }
                 if (!activationTags && typeof CardBoardActivationTags !== 'undefined') {
