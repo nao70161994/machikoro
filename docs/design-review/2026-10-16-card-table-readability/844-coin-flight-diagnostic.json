@@ -1,0 +1,14 @@
+{
+  "productCommit": "fe668754",
+  "kind": "diagnostic: actual unseeded roll; flight paused at 700ms, captured after dice confirmation fade; not timing evidence",
+  "rolls": 2,
+  "routes": [
+    {
+      "text": "1コイン",
+      "title": "パン屋：銀行 → 確認1：1コイン",
+      "flow": "incoming"
+    }
+  ],
+  "visibleFlights": 1,
+  "stateUnchangedByCapture": true
+}

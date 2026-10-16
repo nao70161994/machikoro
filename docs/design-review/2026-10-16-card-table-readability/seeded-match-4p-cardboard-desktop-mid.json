@@ -1,0 +1,188 @@
+{
+  "turnCount": 18,
+  "phase": "selectDice",
+  "winner": null,
+  "leaderProgress": 0.3333333333333333,
+  "artEvidence": [
+    {
+      "player": "0",
+      "name": "麦畑",
+      "width": 62.40633773803711,
+      "height": 39.8990478515625,
+      "artWidth": 171,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-field"
+    },
+    {
+      "player": "0",
+      "name": "牧場",
+      "width": 62.406341552734375,
+      "height": 39.8990478515625,
+      "artWidth": 160,
+      "artHeight": 66,
+      "display": "block",
+      "href": "#facility-local-ranch"
+    },
+    {
+      "player": "0",
+      "name": "パン屋",
+      "width": 62.406341552734375,
+      "height": 39.8990478515625,
+      "artWidth": 144,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-bakery"
+    },
+    {
+      "player": "0",
+      "name": "引越し屋",
+      "width": 62.40635681152344,
+      "height": 39.8990478515625,
+      "artWidth": 160,
+      "artHeight": 71,
+      "display": "block",
+      "href": "#facility-local-mover"
+    },
+    {
+      "player": "1",
+      "name": "麦畑",
+      "width": 62.40633773803711,
+      "height": 39.89910888671875,
+      "artWidth": 171,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-field"
+    },
+    {
+      "player": "1",
+      "name": "牧場",
+      "width": 62.406341552734375,
+      "height": 39.89910888671875,
+      "artWidth": 160,
+      "artHeight": 66,
+      "display": "block",
+      "href": "#facility-local-ranch"
+    },
+    {
+      "player": "1",
+      "name": "パン屋",
+      "width": 62.406341552734375,
+      "height": 39.89910888671875,
+      "artWidth": 144,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-bakery"
+    },
+    {
+      "player": "1",
+      "name": "改装屋",
+      "width": 62.40635681152344,
+      "height": 39.89910888671875,
+      "artWidth": 140,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-remodel"
+    },
+    {
+      "player": "1",
+      "name": "チーズ工場",
+      "width": 62.406341552734375,
+      "height": 39.89910888671875,
+      "artWidth": 135,
+      "artHeight": 60,
+      "display": "block",
+      "href": "#facility-local-cheese"
+    },
+    {
+      "player": "1",
+      "name": "ピザ屋",
+      "width": 62.406341552734375,
+      "height": 39.89910888671875,
+      "artWidth": 130,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-pizzeria"
+    },
+    {
+      "player": "2",
+      "name": "麦畑",
+      "width": 62.40631103515625,
+      "height": 39.8990478515625,
+      "artWidth": 171,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-field"
+    },
+    {
+      "player": "2",
+      "name": "パン屋",
+      "width": 62.4063720703125,
+      "height": 39.8990478515625,
+      "artWidth": 144,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-bakery"
+    },
+    {
+      "player": "2",
+      "name": "ピザ屋",
+      "width": 62.4063720703125,
+      "height": 39.8990478515625,
+      "artWidth": 130,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-pizzeria"
+    },
+    {
+      "player": "2",
+      "name": "税務署",
+      "width": 62.4063720703125,
+      "height": 39.8990478515625,
+      "artWidth": 139,
+      "artHeight": 73,
+      "display": "block",
+      "href": "#facility-local-tax-office"
+    },
+    {
+      "player": "3",
+      "name": "麦畑",
+      "width": 62.40631103515625,
+      "height": 39.899139404296875,
+      "artWidth": 171,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-field"
+    },
+    {
+      "player": "3",
+      "name": "パン屋",
+      "width": 62.4063720703125,
+      "height": 39.899139404296875,
+      "artWidth": 144,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-bakery"
+    },
+    {
+      "player": "3",
+      "name": "改装屋",
+      "width": 62.4063720703125,
+      "height": 39.899139404296875,
+      "artWidth": 140,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-remodel"
+    },
+    {
+      "player": "3",
+      "name": "ワイナリー",
+      "width": 62.4063720703125,
+      "height": 39.899139404296875,
+      "artWidth": 133,
+      "artHeight": 67,
+      "display": "block",
+      "href": "#facility-local-winery"
+    }
+  ]
+}

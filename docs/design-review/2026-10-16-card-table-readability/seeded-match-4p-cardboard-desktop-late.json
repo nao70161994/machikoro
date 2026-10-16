@@ -1,0 +1,628 @@
+{
+  "turnCount": 87,
+  "phase": "build",
+  "winner": null,
+  "leaderProgress": 0.6666666666666666,
+  "artEvidence": [
+    {
+      "player": "0",
+      "name": "麦畑",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 171,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-field"
+    },
+    {
+      "player": "0",
+      "name": "寿司屋",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 152,
+      "artHeight": 69,
+      "display": "block",
+      "href": "#facility-local-sushi"
+    },
+    {
+      "player": "0",
+      "name": "牧場",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 66,
+      "display": "block",
+      "href": "#facility-local-ranch"
+    },
+    {
+      "player": "0",
+      "name": "雑貨屋",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 146,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-general-store"
+    },
+    {
+      "player": "0",
+      "name": "パン屋",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 144,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-bakery"
+    },
+    {
+      "player": "0",
+      "name": "花畑",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 168,
+      "artHeight": 65.5,
+      "display": "block",
+      "href": "#facility-local-flower"
+    },
+    {
+      "player": "0",
+      "name": "改装屋",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 140,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-remodel"
+    },
+    {
+      "player": "0",
+      "name": "高級フレンチ",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 128,
+      "artHeight": 67,
+      "display": "block",
+      "href": "#facility-local-bistro"
+    },
+    {
+      "player": "0",
+      "name": "貸金業",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 134,
+      "artHeight": 69,
+      "display": "block",
+      "href": "#facility-local-lender"
+    },
+    {
+      "player": "0",
+      "name": "ビジネスセンター",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 129.2857208251953,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-business-center"
+    },
+    {
+      "player": "0",
+      "name": "出版社",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 128,
+      "artHeight": 64,
+      "display": "block",
+      "href": "#facility-local-publisher"
+    },
+    {
+      "player": "0",
+      "name": "ブドウ園",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 168,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-vineyard"
+    },
+    {
+      "player": "0",
+      "name": "バーガーショップ",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 138,
+      "artHeight": 64,
+      "display": "block",
+      "href": "#facility-local-burger"
+    },
+    {
+      "player": "0",
+      "name": "ワイナリー",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 133,
+      "artHeight": 67,
+      "display": "block",
+      "href": "#facility-local-winery"
+    },
+    {
+      "player": "0",
+      "name": "引越し屋",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 71,
+      "display": "block",
+      "href": "#facility-local-mover"
+    },
+    {
+      "player": "0",
+      "name": "リンゴ園",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 168,
+      "artHeight": 73.23076629638672,
+      "display": "block",
+      "href": "#facility-local-orchard"
+    },
+    {
+      "player": "0",
+      "name": "食品倉庫",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 136,
+      "artHeight": 73,
+      "display": "block",
+      "href": "#facility-local-warehouse"
+    },
+    {
+      "player": "1",
+      "name": "麦畑",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 171,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-field"
+    },
+    {
+      "player": "1",
+      "name": "寿司屋",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 152,
+      "artHeight": 69,
+      "display": "block",
+      "href": "#facility-local-sushi"
+    },
+    {
+      "player": "1",
+      "name": "牧場",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 66,
+      "display": "block",
+      "href": "#facility-local-ranch"
+    },
+    {
+      "player": "1",
+      "name": "雑貨屋",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 146,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-general-store"
+    },
+    {
+      "player": "1",
+      "name": "パン屋",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 144,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-bakery"
+    },
+    {
+      "player": "1",
+      "name": "カフェ",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 148.1999969482422,
+      "artHeight": 64,
+      "display": "block",
+      "href": "#facility-local-cafe"
+    },
+    {
+      "player": "1",
+      "name": "コーン畑",
+      "width": 52.49005126953125,
+      "height": 33.55918884277344,
+      "artWidth": 168,
+      "artHeight": 77,
+      "display": "block",
+      "href": "#facility-local-corn"
+    },
+    {
+      "player": "1",
+      "name": "改装屋",
+      "width": 52.49005126953125,
+      "height": 33.55918884277344,
+      "artWidth": 140,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-remodel"
+    },
+    {
+      "player": "1",
+      "name": "貸金業",
+      "width": 52.490020751953125,
+      "height": 33.55918884277344,
+      "artWidth": 134,
+      "artHeight": 69,
+      "display": "block",
+      "href": "#facility-local-lender"
+    },
+    {
+      "player": "1",
+      "name": "フラワーショップ",
+      "width": 52.490020751953125,
+      "height": 33.55918884277344,
+      "artWidth": 132,
+      "artHeight": 65,
+      "display": "block",
+      "href": "#facility-local-florist"
+    },
+    {
+      "player": "1",
+      "name": "チーズ工場",
+      "width": 52.49005126953125,
+      "height": 33.55918884277344,
+      "artWidth": 135,
+      "artHeight": 60,
+      "display": "block",
+      "href": "#facility-local-cheese"
+    },
+    {
+      "player": "1",
+      "name": "ピザ屋",
+      "width": 52.489990234375,
+      "height": 33.55918884277344,
+      "artWidth": 130,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-pizzeria"
+    },
+    {
+      "player": "1",
+      "name": "ブドウ園",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 168,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-vineyard"
+    },
+    {
+      "player": "1",
+      "name": "引越し屋",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 71,
+      "display": "block",
+      "href": "#facility-local-mover"
+    },
+    {
+      "player": "1",
+      "name": "公園",
+      "width": 52.490020751953125,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 71,
+      "display": "block",
+      "href": "#facility-local-park-ground"
+    },
+    {
+      "player": "2",
+      "name": "麦畑",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 171,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-field"
+    },
+    {
+      "player": "2",
+      "name": "牧場",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 66,
+      "display": "block",
+      "href": "#facility-local-ranch"
+    },
+    {
+      "player": "2",
+      "name": "雑貨屋",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 146,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-general-store"
+    },
+    {
+      "player": "2",
+      "name": "パン屋",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 144,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-bakery"
+    },
+    {
+      "player": "2",
+      "name": "フラワーショップ",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 132,
+      "artHeight": 65,
+      "display": "block",
+      "href": "#facility-local-florist"
+    },
+    {
+      "player": "2",
+      "name": "ピザ屋",
+      "width": 52.4901123046875,
+      "height": 33.5592041015625,
+      "artWidth": 130,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-pizzeria"
+    },
+    {
+      "player": "2",
+      "name": "出版社",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 128,
+      "artHeight": 64,
+      "display": "block",
+      "href": "#facility-local-publisher"
+    },
+    {
+      "player": "2",
+      "name": "ブドウ園",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 168,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-vineyard"
+    },
+    {
+      "player": "2",
+      "name": "家具工場",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 155,
+      "artHeight": 72,
+      "display": "block",
+      "href": "#facility-local-furniture"
+    },
+    {
+      "player": "2",
+      "name": "税務署",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 139,
+      "artHeight": 73,
+      "display": "block",
+      "href": "#facility-local-tax-office"
+    },
+    {
+      "player": "2",
+      "name": "ワイナリー",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 133,
+      "artHeight": 67,
+      "display": "block",
+      "href": "#facility-local-winery"
+    },
+    {
+      "player": "2",
+      "name": "引越し屋",
+      "width": 52.4901123046875,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 71,
+      "display": "block",
+      "href": "#facility-local-mover"
+    },
+    {
+      "player": "2",
+      "name": "青果市場",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 136,
+      "artHeight": 64,
+      "display": "block",
+      "href": "#facility-local-produce"
+    },
+    {
+      "player": "2",
+      "name": "公園",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 71,
+      "display": "block",
+      "href": "#facility-local-park-ground"
+    },
+    {
+      "player": "3",
+      "name": "麦畑",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 171,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-field"
+    },
+    {
+      "player": "3",
+      "name": "雑貨屋",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 146,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-general-store"
+    },
+    {
+      "player": "3",
+      "name": "牧場",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 66,
+      "display": "block",
+      "href": "#facility-local-ranch"
+    },
+    {
+      "player": "3",
+      "name": "パン屋",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 144,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-bakery"
+    },
+    {
+      "player": "3",
+      "name": "改装屋",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 140,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-remodel"
+    },
+    {
+      "player": "3",
+      "name": "コンビニ",
+      "width": 52.4901123046875,
+      "height": 33.5592041015625,
+      "artWidth": 142,
+      "artHeight": 63,
+      "display": "block",
+      "href": "#facility-local-convenience"
+    },
+    {
+      "player": "3",
+      "name": "花畑",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 168,
+      "artHeight": 65.5,
+      "display": "block",
+      "href": "#facility-local-flower"
+    },
+    {
+      "player": "3",
+      "name": "貸金業",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 134,
+      "artHeight": 69,
+      "display": "block",
+      "href": "#facility-local-lender"
+    },
+    {
+      "player": "3",
+      "name": "フラワーショップ",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 132,
+      "artHeight": 65,
+      "display": "block",
+      "href": "#facility-local-florist"
+    },
+    {
+      "player": "3",
+      "name": "ブドウ園",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 168,
+      "artHeight": 70,
+      "display": "block",
+      "href": "#facility-local-vineyard"
+    },
+    {
+      "player": "3",
+      "name": "ピザ屋",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 130,
+      "artHeight": 74,
+      "display": "block",
+      "href": "#facility-local-pizzeria"
+    },
+    {
+      "player": "3",
+      "name": "バーガーショップ",
+      "width": 52.4901123046875,
+      "height": 33.5592041015625,
+      "artWidth": 138,
+      "artHeight": 64,
+      "display": "block",
+      "href": "#facility-local-burger"
+    },
+    {
+      "player": "3",
+      "name": "サンマ漁船",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 160,
+      "artHeight": 69,
+      "display": "block",
+      "href": "#facility-local-fishery"
+    },
+    {
+      "player": "3",
+      "name": "ワイナリー",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 133,
+      "artHeight": 67,
+      "display": "block",
+      "href": "#facility-local-winery"
+    },
+    {
+      "player": "3",
+      "name": "ITベンチャー",
+      "width": 52.49005126953125,
+      "height": 33.5592041015625,
+      "artWidth": 136,
+      "artHeight": 69,
+      "display": "block",
+      "href": "#facility-local-startup"
+    },
+    {
+      "player": "3",
+      "name": "リンゴ園",
+      "width": 52.489990234375,
+      "height": 33.5592041015625,
+      "artWidth": 168,
+      "artHeight": 73.23076629638672,
+      "display": "block",
+      "href": "#facility-local-orchard"
+    }
+  ]
+}
