@@ -171,7 +171,7 @@ const UiCardBoard = (() => {
         })).sort((left, right) => compareDiceSequences(left.dice, right.dice))
             .map(({ card, count, dormant, dice }) => {
                 const color = colors.has(card.color) ? card.color : 'unknown';
-                const event = activationFor(options.events, card.name, index);
+                const event = options.winnerCollection === true ? null : activationFor(options.events, card.name, index);
                 const eventAttrs = event ? ` data-cardboard-activation-count="${event.count}" data-cardboard-activation-net="${event.net}"` : '';
                 const activationStyle = event ? ` style="--cardboard-activation-delay:${Math.min(Math.max(event.logOrder, 0), 7) * 80}ms;--cardboard-chain-delay:${event.groupOrder * 700}ms;--cardboard-chain-animation:${event.groupOrder < 8 ? 'cardboard-card-activate' : 'none'}"` : '';
                 const majorIncomeClass = event?.net >= 5 ? ' cardboard-card-major-income' : '';
@@ -193,7 +193,7 @@ const UiCardBoard = (() => {
                 return `<button type="button" class="cardboard-card cardboard-card-${color}${dormant === count ? ' cardboard-card-dormant' : ''}${event ? ` cardboard-card-activated${activationStepClass}` : ''}${majorIncomeClass}" data-action="showCardDetail" data-card-name="${escape(card.name)}"${event ? ` data-cardboard-activation-order="${event.order + 1}"` : ''} title="${escape(cardTitle)}" aria-label="${escape(accessibleLabel)}"${eventAttrs}${activationStyle}><span class="cardboard-dice" data-category-label="${escape(colorNames[color] || '不明')}" aria-hidden="true">${escape(dice.join('・') || '—')}</span><span class="cardboard-category"><span aria-hidden="true"><span class="card-family-mark" data-category="${escape(card.category)}"></span>${escape(colorNames[color] || '不明')} · ${escape(card.category)}</span><span class="visually-hidden">${escape(card.category)}。${escape(colorLabels[color] || '分類不明')}。詳しい効果を開く。</span></span><span class="cardboard-art" aria-hidden="true">${art(card.name, false, card.category)}</span><span class="cardboard-name">${escape(card.name)}</span><span class="cardboard-count">所有 ×${count}</span>${effectHtml}${dormant ? `<span class="cardboard-dormant" data-short-label="休${dormant} 稼${count - dormant}">休業 ${dormant}枚 / 稼働 ${count - dormant}枚</span>` : ''}${eventHtml}</button>`;
         }).join('');
         const names = landmarkNames(player, options);
-        const landmarks = names.map(name => {
+        const landmarks = names.filter(name => options.winnerCollection !== true || player.landmarks?.[name] === true).map(name => {
             const built = player.landmarks?.[name] === true;
             return `<button type="button" class="cardboard-landmark ${built ? 'cardboard-landmark-built' : 'cardboard-landmark-unbuilt'}" data-action="showLandmarkDetail" data-landmark-name="${escape(name)}" aria-label="${escape(name)}、${built ? '建設済' : '未建設'}。詳細を表示" title="${escape(name)}：${built ? '建設済' : '未建設'}"><span class="cardboard-art" aria-hidden="true">${art(name, true)}</span><span class="cardboard-landmark-copy"><span class="cardboard-name">${escape(name)}</span><span class="cardboard-landmark-status">${built ? '建設済' : '未建設'}</span></span></button>`;
         }).join('');
@@ -207,11 +207,17 @@ const UiCardBoard = (() => {
         const kind = playerKind(options, index);
         const kindBadge = kind.html ? `<span class="cardboard-player-kind" aria-hidden="true">${kind.html}</span>` : '';
         const kindDescription = kind.label ? `<span class="visually-hidden">${escape(kind.label)}。</span>` : '';
-        const heading = index === options.selfIndex ? 'あなたの施設' : `席${index + 1}・${player.name}`;
+        const heading = options.winnerCollection === true ? '勝利を支えたカード'
+            : index === options.selfIndex ? 'あなたの施設' : `席${index + 1}・${player.name}`;
         const headingContext = index === options.selfIndex
             ? `<span class="visually-hidden">席${index + 1}・${escape(player.name)}（自分）</span>` : '';
 
         const content = `<header class="cardboard-header"><h2 class="cardboard-player-heading" title="席${index + 1}・${escape(player.name)}"><span class="cardboard-player-heading-name">${escape(heading)}</span>${kindBadge}${headingContext}${kindDescription}</h2><p class="cardboard-player-hud"><span class="cardboard-player-coins"><b>${escape(player.coins)}</b>コイン</span><span class="cardboard-player-progress">目標 ${builtCount}/${names.length}</span>${index === options.currentIndex ? '<span class="cardboard-turn-marker">手番</span>' : ''}</p></header>${options.events?.incomplete ? '<p class="cardboard-events-incomplete">収支はログから確認できた分のみです。</p>' : ''}${facilityHeading}<div class="cardboard-cards" role="group" aria-label="${escape(facilityShelfLabel)}">${cards || '<p class="cardboard-empty">所有施設なし</p>'}${townScenery}</div><h3 class="cardboard-landmark-heading"><span>ランドマーク</span><span class="cardboard-landmark-scroll-hint" aria-hidden="true" hidden>横にスクロール →</span></h3><div class="cardboard-landmarks">${landmarks || '<p class="cardboard-empty">対象ランドマークなし</p>'}</div>`;
+        if (options.winnerCollection === true) {
+            // A static final collection: never carry activation events or scenery
+            // into a result presentation. Cards keep their shared detail actions.
+            return `<section class="cardboard-winner-collection" aria-label="${escape(player.name)}の最終所有カード"><h2>${escape(heading)}</h2>${facilityHeading}<div class="cardboard-cards" role="group" aria-label="${escape(facilityShelfLabel)}">${cards || '<p class="cardboard-empty">所有施設なし</p>'}</div><h3 class="cardboard-landmark-heading">完成ランドマーク <span>${builtCount}/${names.length}</span></h3><div class="cardboard-landmarks">${landmarks || '<p class="cardboard-empty">対象ランドマークなし</p>'}</div></section>`;
+        }
         if (options.contentOnly === true) return content;
         return `<section class="cardboard-player${index === options.selfIndex ? ' cardboard-player-self' : ''}${index === options.currentIndex ? ' cardboard-player-current' : ''}" data-cardboard-player-index="${index}">${content}</section>`;
     }

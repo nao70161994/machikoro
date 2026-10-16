@@ -389,3 +389,13 @@ runTest('結果の詳細記録は夕景テーマ・狭幅・広幅で操作の�
     assert.strictEqual(UiWinner.shouldCompactReview('classic', 760), true);
     assert.strictEqual(UiWinner.shouldCompactReview('classic', 1024), true);
 });
+
+runTest('にぎわい勝利は再戦をコレクションより先に配置し他テーマの順序は保つ', () => {
+    const winner = { name: '勝者', coins: 20, cards: [], landmarks: {} };
+    const options = { winner, players: [winner], escapeHtml, turnCount: 10, canRematch: true,
+        townHtml: '<section id="finalCollection">所有カード</section>' };
+    const cardboard = UiWinner.buildWinnerScreenHtml({ ...options, designTheme: 'cardboard' });
+    const plaza = UiWinner.buildWinnerScreenHtml({ ...options, designTheme: 'plaza' });
+    assert.ok(cardboard.indexOf('id="winnerRematchButton"') < cardboard.indexOf('id="finalCollection"'));
+    assert.ok(plaza.indexOf('id="finalCollection"') < plaza.indexOf('id="winnerRematchButton"'));
+});

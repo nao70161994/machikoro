@@ -1,4 +1,4 @@
-/* global UiMarketTarget */
+/* global UiMarketTarget, UiCardBoard */
 /* global UiCompactMarket, CardBoardField, Element, HTMLElement, HTMLDetailsElement, MutationObserver, UiTurnEvents, UiTurnReceipt, UiIncomePreview, UiIncomePreviewPanel, UiPlazaFeedback */
 const LOG_TYPE_DISPLAY = UiLogDisplay.makeLogTypeDisplay(LOG_TYPES);
 const uiClientStorageFacade = ClientStorage.createFacade();
@@ -500,11 +500,17 @@ function renderWinnerState(winner) {
         designTheme: document.documentElement?.dataset?.design,
         renderCoinMark: UiBuildMenu.renderCoinMark,
         isCpuPlayer: index => !!currentCpuPlayerAt(index),
-        compactReview: UiWinner.shouldCompactReview(
+        compactReview: document.documentElement?.dataset?.design === 'cardboard' || UiWinner.shouldCompactReview(
             document.documentElement?.dataset?.design,
             typeof window !== 'undefined' ? window.innerWidth : Infinity
         ),
-        townHtml: UiBuildMenu.renderTownHtml(winner, getEnabledLandmarkSelection()),
+        townHtml: document.documentElement?.dataset?.design === 'cardboard'
+            ? UiCardBoard.buildPlayerHtml(winner, {
+                winnerCollection: true, index: winnerIdx,
+                enabledLandmarks: getEnabledLandmarkSelection(),
+                renderFacilityArt: UiBuildMenu.renderFacilityArt, escapeHtml, getEffectText,
+            })
+            : UiBuildMenu.renderTownHtml(winner, getEnabledLandmarkSelection()),
         winner,
         players: currentGame.players,
         isCpuWinner: isCPUWinner,

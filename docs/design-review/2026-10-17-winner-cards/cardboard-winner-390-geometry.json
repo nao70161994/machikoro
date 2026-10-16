@@ -1,0 +1,43 @@
+{
+  "screen": {
+    "x": 15,
+    "y": 13,
+    "width": 360,
+    "css": {
+      "width": "360px",
+      "maxWidth": "1200px",
+      "margin": "0px",
+      "alignSelf": "auto"
+    }
+  },
+  "title": {
+    "x": 117.21875,
+    "y": 142,
+    "width": 155.5625
+  },
+  "status": {
+    "x": 6,
+    "y": 6,
+    "width": 378,
+    "height": 2778.484375,
+    "scrollTop": 0,
+    "overflowY": "visible"
+  },
+  "game": {
+    "x": 0,
+    "y": 0,
+    "width": 390,
+    "height": 2798.484375,
+    "scrollTop": 0,
+    "overflowY": "visible"
+  },
+  "body": {
+    "x": 0,
+    "y": 0,
+    "width": 390,
+    "height": 2798.484375
+  },
+  "scrollY": 0,
+  "scrollWidth": 390,
+  "viewportWidth": 390
+}

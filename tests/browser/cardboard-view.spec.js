@@ -764,12 +764,14 @@ test('OSの動き低減中もランドマーク完成を静的に強調する', 
     await expect.poll(() => page.evaluate(() => window.reducedLandmarkCue)).toEqual({ animation: 'none', outline: 'rgb(180, 122, 9)' });
 });
 
-test('にぎわい広場の勝利画面はPC幅で街と結果を中央に読める大きさで表示する', async ({ page }) => {
-    await prepare(page, { width: 1440, height: 900 }, 2, false);
+for (const viewport of [{ width: 320, height: 720 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+test(`にぎわい広場の勝利カードコレクション ${viewport.width}px`, async ({ page }) => {
+    await prepare(page, viewport, 2, false);
     await page.evaluate(() => {
         const state = GameRuntimeState.runtime.snapshot();
         cancelCpuSchedule('cardboard-winner-layout');
         state.game.currentPlayerIndex = 0;
+        state.game.players[0].cards = CARDS.slice(0, 18).flatMap(card => [card, card]);
         for (const name of getEnabledLandmarkSelection()) state.game.players[0].landmarks[name] = true;
         render();
     });
@@ -791,26 +793,39 @@ test('にぎわい広場の勝利画面はPC幅で街と結果を中央に読め
             body: rect(body), scrollY,
             scrollWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth };
     });
-    expect(geometry.screen.width, JSON.stringify(geometry)).toBeGreaterThanOrEqual(400);
+    expect(geometry.screen.width, JSON.stringify(geometry)).toBeGreaterThanOrEqual(Math.min(400, viewport.width - 48));
     expect(geometry.title.x).toBeGreaterThanOrEqual(0);
     expect(geometry.title.x + geometry.title.width).toBeLessThanOrEqual(geometry.viewportWidth + 1);
     expect(geometry.title.y, JSON.stringify(geometry)).toBeGreaterThanOrEqual(0);
     await expect(page.locator('.winner-title')).toBeFocused();
+    const rematchBottom = await page.locator('#winnerRematchButton').evaluate(element => element.getBoundingClientRect().bottom);
+    expect(rematchBottom).toBeLessThan(viewport.height);
+    await expect(page.locator('.cardboard-winner-collection')).toBeVisible();
+    await expect(page.locator('.cardboard-winner-collection .cardboard-card')).toHaveCount(18);
+    await expect(page.locator('.cardboard-winner-collection .cardboard-landmark-built')).toHaveCount(6);
+    await expect(page.locator('.cardboard-winner-collection .town-street')).toHaveCount(0);
+    const owned = page.locator('.cardboard-winner-collection [data-card-name="麦畑"]');
+    await owned.click();
+    await expect(page.locator('#cardDetailModal')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(owned).toBeFocused();
     expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     const screenshot = await page.screenshot({ fullPage: true, animations: 'disabled' });
     if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
         const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
         await fs.mkdir(artifactDir, { recursive: true });
-        await fs.writeFile(path.join(artifactDir, 'cardboard-winner-desktop.png'), screenshot);
-        await fs.writeFile(path.join(artifactDir, 'cardboard-winner-geometry.json'), JSON.stringify(geometry, null, 2));
+        await fs.writeFile(path.join(artifactDir, `cardboard-winner-${viewport.width}.png`), screenshot);
+        await fs.writeFile(path.join(artifactDir, `cardboard-winner-${viewport.width}-geometry.json`), JSON.stringify(geometry, null, 2));
     }
     await page.evaluate(() => document.body.classList.add('accessibility-high-contrast'));
     await expect(page.locator('.winner-screen')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
     await expect(page.locator('.winner-screen')).toHaveCSS('border-top-color', 'rgb(255, 255, 255)');
     await expect(page.locator('.winner-title')).toHaveCSS('color', 'rgb(255, 230, 109)');
-    await expect(page.locator('.winner-stats-row').first()).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await expect(page.locator('.winner-stats-row.highlight')).toHaveCSS('color', 'rgb(255, 230, 109)');
+    await expect(page.locator('.winner-stats-row:not(.highlight)').first()).toHaveCSS('color', 'rgb(255, 255, 255)');
 });
+}
 
 test('10人CPU対局で自分の席が未確定でも現在手番のカード盤面を表示する', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 }, 10);

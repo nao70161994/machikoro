@@ -15202,3 +15202,116 @@ html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-activa
         grid-template-columns: repeat(auto-fit, 82px);
     }
 }
+
+/* Results retain the same real cards as the shared table. The page owns the
+   vertical scroll; avoid an inner collection viewport that hides later cards. */
+html[data-design="cardboard"] #status .cardboard-winner-collection {
+    grid-area: town;
+    align-self: start;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    min-width: 0;
+    padding: clamp(12px, 2vw, 22px);
+    background: linear-gradient(145deg, #195f61, #123f49);
+    border: 2px solid #c8ad67;
+    border-radius: 18px;
+    color: #fff8de;
+    text-align: left;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection h2 {
+    margin: 0 0 12px;
+    color: inherit;
+    font-size: clamp(18px, 2vw, 24px);
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection h3 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin: 12px 0 8px;
+    color: inherit;
+    font-size: 14px;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection h3 small {
+    color: #fff1c3;
+    font-size: 12px;
+    white-space: normal;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-cards {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    max-height: none;
+    padding: 3px;
+    gap: 10px;
+    overflow: visible;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-card {
+    min-height: 176px;
+    box-shadow: 0 4px 9px #001b2855;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-art { height: 78px; }
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-name {
+    font-size: 13px;
+    line-height: 1.3;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-landmarks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    overflow: visible;
+    gap: 8px;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-landmark {
+    flex-direction: column;
+    padding: 6px;
+    min-height: 112px;
+    text-align: center;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-landmark .cardboard-art {
+    flex: none;
+    width: 100%;
+    height: 64px;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-landmark .cardboard-name {
+    display: block;
+    max-height: none;
+    overflow: visible;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #status .cardboard-winner-collection {
+    border-color: #fff;
+    background: #000;
+    color: #fff;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #status .cardboard-winner-collection h3 small { color: #fff; }
+
+/* A single summary column prevents a tall collection from stretching the
+   empty rows between victory, balance and rematch controls. */
+html[data-design="cardboard"] #status .winner-card-summary {
+    grid-area: summary;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    align-self: start;
+    min-width: 0;
+    gap: 8px;
+}
+html[data-design="cardboard"] #status .winner-card-summary > :is(.winner-title, .winner-sub, .win-streak, .winner-stats) { margin: 0; }
+html[data-design="cardboard"] #status .winner-card-summary > :is(.winner-stats, .winner-primary-action, .winner-rematch-actions, .winner-share-actions, #winnerRestartButton) { width: 100%; }
+html[data-design="cardboard"] #status .winner-card-summary > .winner-trophy-art { margin: 0 0 8px; }
+html[data-design="cardboard"] #status .winner-card-summary > .winner-stats { margin: 12px 0; }
+html[data-design="cardboard"] #status .winner-card-summary > :is(.winner-title, .winner-sub) { max-width: 100%; }
+html[data-design="cardboard"] #status .winner-screen > .cardboard-winner-collection { margin-top: 14px; }
+@media (min-width: 1100px) and (min-height: 700px), (orientation: landscape) and (min-width: 761px) and (max-height: 600px) {
+    html[data-design="cardboard"] body.game-finished #status .winner-screen:has(> .winner-card-summary) {
+        grid-template-areas: "summary town" "review review";
+        align-items: start;
+    }
+    html[data-design="cardboard"] #status .winner-screen > .cardboard-winner-collection { margin-top: 0; }
+}
+@media (orientation: landscape) and (min-width: 761px) and (max-height: 600px) {
+    html[data-design="cardboard"] #status .winner-card-summary { gap: 5px; }
+    html[data-design="cardboard"] body.game-finished #status .winner-card-summary > .winner-trophy-art { width: 48px; height: 48px; padding: 4px; margin: 0; }
+    html[data-design="cardboard"] body.game-finished #status .winner-card-summary > .winner-title { font-size: clamp(21px, 3.6vw, 30px); }
+    html[data-design="cardboard"] #status .winner-card-summary > .winner-sub { gap: 3px; font-size: 11px; }
+    html[data-design="cardboard"] #status .winner-card-summary > .winner-stats { margin: 5px 0; }
+}
