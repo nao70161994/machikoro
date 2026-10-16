@@ -118,10 +118,13 @@ const CardTableCamera = (() => {
             // make the complete player region much taller than the viewport.
             const top = headerBounds.top;
             const height = bottom - top;
-            const targetTop = height + 16 > viewport.clientHeight
+            const targetTop = player.getBoundingClientRect().height + 16 > viewport.clientHeight
                 ? top - origin.top - 8
                 : top - origin.top + height / 2 - viewport.clientHeight / 2;
-            scroll(offsetX + (left + right) / 2 - origin.left - viewport.clientWidth / 2, offsetY + targetTop);
+            const targetLeft = right - left + 16 > viewport.clientWidth
+                ? offsetX + left - origin.left - 8
+                : offsetX + (left + right) / 2 - origin.left - viewport.clientWidth / 2;
+            scroll(targetLeft, offsetY + targetTop);
         }
         function focusCard(card) {
             if (destroyed || !card?.isConnected || !world.contains(card)) return;

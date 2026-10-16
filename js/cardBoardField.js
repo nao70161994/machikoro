@@ -203,6 +203,19 @@ const CardBoardField = (() => {
                 panel.setAttribute('aria-label', `${panel.querySelector('.cardboard-player-heading-name')?.textContent?.trim() || '選択中の街'}の詳細`);
             }
         });
+        updateMarketOverflow();
+    }
+
+    function updateMarketOverflow() {
+        const market = node('cardboardMarket');
+        const shelf = market?.querySelector('.compact-market-facilities');
+        const heading = /** @type {HTMLElement | null} */ (market?.querySelector('.compact-market-header h2'));
+        if (!shelf || !heading) return;
+        const overflowing = shelf.scrollHeight > shelf.clientHeight + 1;
+        const hint = !overflowing ? '' : shelf.scrollTop + shelf.clientHeight < shelf.scrollHeight - 2 ? '↓ 下に施設' : '↑ 上に施設';
+        if (heading.dataset.scrollHint !== hint) heading.dataset.scrollHint = hint;
+        const label = overflowing ? '中央市場の施設一覧。上下にスクロールできます' : '中央市場の施設一覧';
+        if (shelf.getAttribute('aria-label') !== label) shelf.setAttribute('aria-label', label);
     }
 
     function turnEventsFor(game, display) {
@@ -553,6 +566,7 @@ const CardBoardField = (() => {
             const matchingCard = shelf?.querySelector('.compact-market-roll-match');
             if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
         }
+        updateMarketOverflow();
     }
 
     function initialize() {
@@ -560,6 +574,10 @@ const CardBoardField = (() => {
         initialized = true;
         globalThis.matchMedia('(min-width: 601px) and (max-height: 500px)').addEventListener('change', arrangeCompactStatus);
         ensureTable();
+        node('cardboardBoard').addEventListener('scroll', event => {
+            if (/** @type {HTMLElement} */ (event.target).classList?.contains('compact-market-facilities')) updateMarketOverflow();
+        }, true);
+        node('cardboardMarketDialog')?.addEventListener('scroll', updateMarketOverflow, true);
         node('cardboardBoard')?.addEventListener('click', event => {
             const button = /** @type {HTMLElement} */ (event.target).closest?.('[data-cardboard-camera]');
             if (!button || !tableCamera) return;

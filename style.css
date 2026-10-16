@@ -14329,6 +14329,25 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-progress > span {
         display: none;
     }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-coins > span { display: none; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-coins::before {
+        content: "";
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        margin-right: 3px;
+        border: 1px solid #b58b20;
+        border-radius: 50%;
+        background: #f7d45c;
+    }
+}
+
+html[data-design="cardboard"] #cardboardMarket .compact-market-header h2::after {
+    content: attr(data-scroll-hint);
+    margin-left: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #e9edc9;
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="5"],[data-player-count="6"],[data-player-count="7"],[data-player-count="8"],[data-player-count="9"],[data-player-count="10"]) > .cardboard-player .cardboard-cards {
@@ -15144,5 +15163,42 @@ html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-activa
         grid-template-columns: repeat(4, 126px);
         height: 768px;
         max-height: 768px;
+    }
+}
+
+/* Dense portrait collections use more columns before overview fitting.
+   Keeping nine facility rows per owner made the table a narrow vertical strip. */
+@media (max-width: 600px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(7)) {
+        --cardboard-portrait-owner-width: 410px;
+        --cardboard-portrait-owner-columns: 3;
+        grid-template-columns: repeat(2, var(--cardboard-portrait-owner-width));
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(13)) {
+        --cardboard-portrait-owner-width: 544px;
+        --cardboard-portrait-owner-columns: 4;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(7)) > .cardboard-player {
+        width: var(--cardboard-portrait-owner-width);
+        justify-self: center;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(7)) > .cardboard-player .cardboard-cards {
+        grid-template-columns: repeat(var(--cardboard-portrait-owner-columns), 126px);
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="2"], [data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(7)) #cardboardCenter {
+        justify-self: center;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(13)) {
+        grid-template-columns: 394px 394px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(13)) > .cardboard-player {
+        width: 812px;
+        justify-self: center;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(13)) > .cardboard-player .cardboard-cards {
+        grid-template-columns: repeat(6, 126px);
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="2"], [data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(7)) .cardboard-landmarks {
+        grid-template-columns: repeat(auto-fit, 82px);
     }
 }

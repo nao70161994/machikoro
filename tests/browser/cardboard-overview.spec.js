@@ -118,6 +118,12 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         await prepare(page, viewport, 4);
         await expectWholeTable(page,4);
         await expectOwnedCards(page);
+        await expect.poll(() => page.locator('#cardboardMarket .compact-market-header h2').getAttribute('data-scroll-hint')).toBe('↓ 下に施設');
+        expect(await page.locator('.cardboard-roster-seat').evaluateAll(seats => seats.every(seat => {
+            const bounds = seat.getBoundingClientRect();
+            const progress = seat.querySelector('.cardboard-roster-progress b').getBoundingClientRect();
+            return progress.left >= bounds.left && progress.right <= bounds.right;
+        })), '固定HUDの目標進捗を切らない').toBe(true);
         await page.screenshot({path:testInfo.outputPath('card-table-overview.png')});
         const before = await snapshot(page);
         const camera = page.locator('#cardboardTableViewport');
@@ -333,7 +339,7 @@ test('市場確認から直前の倍率と位置へ戻れる', async ({ page }) 
     expect(await snapshot(page)).toEqual(before);
 });
 
-test('2指ピンチは卓を拡大しゲーム状態を変えない', async ({ page }) => {
+test('2指ピンチは卓を拡大しゲーム状態を変えない', async ({ page, browserName }, testInfo) => {
     await prepare(page, { width: 390, height: 844 }, 4);
     const camera = page.locator('#cardboardTableViewport');
     await expectWholeTable(page, 4);
@@ -342,6 +348,32 @@ test('2指ピンチは卓を拡大しゲーム状態を変えない', async ({ p
     const bounds = await camera.boundingBox();
     const x = bounds.x + bounds.width / 2;
     const y = bounds.y + bounds.height / 2;
+    if (browserName !== 'chromium') {
+        // Playwright exposes native multi-touch through CDP only. This branch
+        // checks WebKit's DOM handlers, not native iOS gesture arbitration.
+        testInfo.annotations.push({ type: 'input', description: 'Synthetic DOM touch; native multi-touch is covered by Chromium CDP only.' });
+        const prevented = await camera.evaluate((viewport, point) => {
+            const dispatch = (type, distance) => {
+                const event = new Event(type, { bubbles: true, cancelable: true });
+                Object.defineProperty(event, 'touches', { value: distance === null ? [] : [
+                    { clientX: point.x - distance, clientY: point.y },
+                    { clientX: point.x + distance, clientY: point.y },
+                ] });
+                viewport.dispatchEvent(event);
+                return event.defaultPrevented;
+            };
+            dispatch('touchstart', 40);
+            const moves = [50, 65, 80].map(distance => dispatch('touchmove', distance));
+            dispatch('touchend', null);
+            return moves;
+        }, { x, y });
+        expect(prevented).toEqual([true, true, true]);
+        await expect.poll(async () => Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(scale * 1.5);
+        await expect(camera).toHaveAttribute('data-table-mode', 'free');
+        expect(await page.evaluate(() => visualViewport.scale)).toBe(1);
+        expect(await snapshot(page)).toEqual(before);
+        return;
+    }
     const client = await page.context().newCDPSession(page);
     await client.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
     let touching = false;
