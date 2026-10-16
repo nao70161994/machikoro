@@ -45,7 +45,9 @@ async function selectTheme(page, theme) {
 }
 
 async function camera(page, command) {
-    await page.locator(`[data-cardboard-camera="${command}"]`).click();
+    const button = page.locator(`[data-cardboard-camera="${command}"]`);
+    if (!await button.isVisible()) await page.locator('#cardboardMoreMenu > summary').click();
+    await button.click();
 }
 async function focusSeat(page, index) {
     await page.locator(`#cardboardRoster [data-cardboard-player-index="${index}"]`).click();
@@ -944,11 +946,11 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
     await expect(resultSummary.locator('.cardboard-event-preview-name').first()).toHaveText('森林');
     await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('銀行→席1');
     await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('+6コイン');
-    await expect(resultSummary.locator('.cardboard-event-preview-art svg').first()).toBeVisible();
+    await expect(resultSummary.locator('.cardboard-event-preview-art svg').first()).toBeHidden();
     await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.add('rolling'));
     await expect(resultSummary.locator('.cardboard-result-detail')).toHaveCSS('visibility', 'hidden');
     await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.remove('rolling'));
-    await expect(resultSummary.locator('.cardboard-result-detail')).toHaveCSS('visibility', 'visible');
+    await expect(resultSummary.locator('.cardboard-result-detail')).toBeHidden();
     await expect(page.locator('#cardboardCurrentResult')).toHaveCSS('pointer-events', 'none');
     for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
         await page.setViewportSize(viewport);
@@ -1160,8 +1162,26 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         render();
         acceptHotseatHandoff();
         document.getElementById('cardboardEventDetails').open = false;
+        window.boardTagRecords = [];
+        window.boardTagObserver = new MutationObserver(records => {
+            for (const record of records) for (const node of record.addedNodes) {
+                if (node.nodeType !== Node.ELEMENT_NODE || !node.classList.contains('cardboard-activation-tag')) continue;
+                const rect = node.getBoundingClientRect();
+                const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+                window.boardTagRecords.push({ text: node.textContent, pointerEvents: getComputedStyle(node).pointerEvents,
+                    contained: rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1 &&
+                        rect.top >= viewport.top - 1 && rect.bottom <= viewport.bottom + 1 });
+            }
+        });
+        window.boardTagObserver.observe(document.getElementById('cardboardBoard'), { childList: true });
         document.getElementById('btnRoll').click();
     });
+    // Capture the live 600ms caption before inspecting later chain steps.
+    // No clock or production lifetime is changed: this is a real-time frame.
+    const liveTag = page.locator('.cardboard-activation-tag');
+    await expect(liveTag).toBeVisible();
+    await expect(liveTag).toContainText('森林');
+    await page.screenshot({ path: testInfo.outputPath('facility-chain-live-activation-tag.png') });
     const caption = page.locator('#cardboardEventDetails');
     await expect(caption).toHaveClass(/cardboard-preview-playing/);
     const cards = caption.locator('.cardboard-event-preview-card');
@@ -1178,11 +1198,7 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await page.locator('#cardboardDiceConfirmation').evaluate(element => element.getAnimations().forEach(animation => { animation.currentTime = 500; }));
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');
     await expect(cards.first().locator('.cardboard-event-preview-owner')).toHaveText(/^\+1コイン · 銀行→席[1-4]$/);
-    expect(await page.evaluate(() => {
-        window.captionAnimations = [...document.querySelectorAll('.cardboard-event-preview-card')].map(card => card.getAnimations()[0]);
-        window.captionAnimations.forEach(animation => animation?.pause());
-        return window.captionAnimations.filter(Boolean).length;
-    })).toBe(4);
+    await expect(cards.first()).toBeHidden();
     expect(await cards.evaluateAll(elements => elements.map(element => {
         const owner = document.querySelector(`#cardboardSeats .cardboard-player[data-player-index="${element.dataset.playerIndex}"]`);
         const card = owner.querySelector('.cardboard-card[data-card-name="森林"]');
@@ -1192,31 +1208,32 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         window.captionCardAnimations = [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].map(card => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate'));
     });
     const before = await state(page);
-    for (let index = 0; index < 4; index++) {
-        const visible = await page.evaluate(index => {
-            window.captionAnimations.forEach(animation => { animation.currentTime = index * 700 + 100; });
-            return [...document.querySelectorAll('.cardboard-event-preview-card')].filter(card => Number(getComputedStyle(card).opacity) > 0.9).map(card => card.dataset.playerIndex);
-        }, index);
-        expect(visible).toEqual([await cards.nth(index).getAttribute('data-player-index')]);
-        if (index === 2) await page.screenshot({ path: testInfo.outputPath('facility-chain-third-owner.png') });
-    }
-    expect(await page.evaluate(() => {
-        render();
-        return [...document.querySelectorAll('.cardboard-event-preview-card')].every((card,index) => card.getAnimations()[0] === window.captionAnimations[index]);
-    })).toBe(true);
+    await expect.poll(() => page.evaluate(() => window.boardTagRecords.length)).toBe(4);
+    const tagRecords = await page.evaluate(() => window.boardTagRecords);
+    const owners = await cards.evaluateAll(elements => elements.map(element => Number(element.dataset.playerIndex) + 1));
+    expect(tagRecords.map(record => record.text)).toEqual(owners.map(owner => `森林席${owner} · +1コイン`));
+    expect(tagRecords.every(record => record.contained && record.pointerEvents === 'none')).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });
+    await page.evaluate(() => render());
+    await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+    expect(await page.evaluate(() => window.boardTagRecords.length)).toBe(4);
     expect(await page.evaluate(() => document.getElementById('cardboardDiceConfirmation') === window.confirmationElement)).toBe(true);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');
     expect(await page.evaluate(() => [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].every((card,index) => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate') === window.captionCardAnimations[index]))).toBe(true);
     expect(await state(page)).toEqual(before);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await page.locator('#cardboardSeats .cardboard-card-activated').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
-    expect(await cards.evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
+    await expect(cards.first()).toBeHidden();
+    await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
     await selectTheme(page, 'plaza');
     await selectTheme(page, 'cardboard');
     await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
+    await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+    expect(await page.evaluate(() => window.boardTagRecords.length)).toBe(4);
+    await page.evaluate(() => window.boardTagObserver.disconnect());
     expect(await state(page)).toEqual(before);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;

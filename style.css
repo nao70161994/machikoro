@@ -13424,9 +13424,9 @@ html[data-design="cardboard"] #gameScreen:has(.cardboard-card-table) > #status:n
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "roster roster" "camera controls" "table table" "actions actions";
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "roster camera controls" "table table table" "actions actions actions";
     flex: 1 1 0;
     width: 100%;
     height: auto;
@@ -13478,7 +13478,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardRos
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster {
     display: flex;
     width: 100%;
-    height: 52px;
+    height: 44px;
     gap: 4px;
     overflow-x: auto;
     overflow-y: hidden;
@@ -13487,11 +13487,11 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-ro
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-seat {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 24px 20px;
+    grid-template-rows: 20px 18px;
     flex: 1 0 100px;
     min-width: 0;
     min-height: 44px;
-    height: 52px;
+    height: 44px;
     margin: 0;
     padding: 3px 6px;
     gap: 0 4px;
@@ -14229,9 +14229,9 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 
 @media (max-width: 600px) {
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table {
-        grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-        grid-template-areas: "controls" "roster" "camera" "table" "actions";
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        grid-template-areas: "roster roster" "camera controls" "table table" "actions actions";
     }
 
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardControls {
@@ -14335,7 +14335,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     grid-template-columns: repeat(4, 126px);
 }
 
-@media (min-width: 601px) and (max-height: 500px) {
+@media (min-width: 601px) {
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardActionSlot .game-action-panel:has(.cardboard-docked-status) {
         display: grid;
         grid-template-columns: 170px max-content minmax(0, 1fr);
@@ -14871,5 +14871,253 @@ html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.
 @media (prefers-reduced-motion: reduce) {
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardDiceConfirmation.cardboard-dice-confirmation {
         animation-timing-function: step-end;
+    }
+}
+
+/* Keep the table controls within a single touchable row. */
+html[data-design="cardboard"] #cardboardControls { min-width: 0; }
+html[data-design="cardboard"] #cardboardMoreMenuContent { max-height: 70dvh; overflow: auto; }
+html[data-design="cardboard"] #cardboardCameraSettings { display: flex; flex-wrap: wrap; gap: 4px; }
+html[data-design="cardboard"] #cardboardCameraSettings > button { min-height: 44px; min-width: 44px; }
+@media (max-width: 999px) {
+    html[data-design="cardboard"] #cardboardEventDetails > summary,
+    html[data-design="cardboard"] #cardboardEventDetails[data-activation-preview="true"] > summary { width: 44px; min-width: 44px; padding: 4px; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardEventDetails > summary > span { display: none; }
+    html[data-design="cardboard"] #cardboardEventDetails > summary::before { content: "収支"; }
+}
+@media (max-width: 600px) {
+    html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); padding: 0; margin: -1px; }
+}
+
+/* Card-table density follows occupied card columns on desktop and landscape. */
+@media (min-width: 1000px) and (min-height: 501px), (min-width: 601px) and (max-height: 500px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:not(:has(.cardboard-cards > .cardboard-card:nth-child(2))) .cardboard-header h2 {
+        font-size: 15px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"] {
+        --cardboard-desktop-owner-width: 142px;
+        --cardboard-desktop-owner-columns: 1;
+        grid-template-columns: var(--cardboard-desktop-owner-width) 1072px var(--cardboard-desktop-owner-width);
+        grid-template-rows: minmax(480px, max-content);
+        padding: 20px;
+        gap: 20px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(2)) {
+        --cardboard-desktop-owner-width: 276px;
+        --cardboard-desktop-owner-columns: 2;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(3)) {
+        --cardboard-desktop-owner-width: 410px;
+        --cardboard-desktop-owner-columns: 3;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(4)) {
+        --cardboard-desktop-owner-width: 544px;
+        --cardboard-desktop-owner-columns: 4;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(5)) {
+        --cardboard-desktop-owner-width: 678px;
+        --cardboard-desktop-owner-columns: 5;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(6)) {
+        --cardboard-desktop-owner-width: 812px;
+        --cardboard-desktop-owner-columns: 6;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"] > .cardboard-player {
+        width: var(--cardboard-desktop-owner-width);
+        justify-self: stretch;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"] > .cardboard-player .cardboard-cards {
+        grid-template-columns: repeat(var(--cardboard-desktop-owner-columns), 126px);
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"] > [data-seat-position="top"] { grid-column: 1; grid-row: 1; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"] > [data-seat-position="bottom"] { grid-column: 3; grid-row: 1; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"] #cardboardCenter { grid-column: 2; grid-row: 1; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"] {
+        --cardboard-desktop-owner-width: 142px;
+        --cardboard-desktop-owner-columns: 1;
+        grid-template-columns: var(--cardboard-desktop-owner-width) 1072px var(--cardboard-desktop-owner-width);
+        grid-template-rows: repeat(2, minmax(260px, max-content));
+        padding: 20px;
+        gap: 20px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"]:has(.cardboard-cards > .cardboard-card:nth-child(2)) {
+        --cardboard-desktop-owner-width: 276px;
+        --cardboard-desktop-owner-columns: 2;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"]:has(.cardboard-cards > .cardboard-card:nth-child(3)) {
+        --cardboard-desktop-owner-width: 410px;
+        --cardboard-desktop-owner-columns: 3;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"]:has(.cardboard-cards > .cardboard-card:nth-child(4)) {
+        --cardboard-desktop-owner-width: 544px;
+        --cardboard-desktop-owner-columns: 4;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"]:has(.cardboard-cards > .cardboard-card:nth-child(5)) {
+        --cardboard-desktop-owner-width: 678px;
+        --cardboard-desktop-owner-columns: 5;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"]:has(.cardboard-cards > .cardboard-card:nth-child(6)) {
+        --cardboard-desktop-owner-width: 812px;
+        --cardboard-desktop-owner-columns: 6;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"] > .cardboard-player {
+        width: var(--cardboard-desktop-owner-width);
+        justify-self: stretch;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"] > .cardboard-player .cardboard-cards {
+        grid-template-columns: repeat(var(--cardboard-desktop-owner-columns), 126px);
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"] > [data-seat-position="left"] { grid-column: 1; grid-row: 1; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"] > [data-seat-position="bottom"] { grid-column: 1; grid-row: 2; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"] > [data-seat-position="right"] { grid-column: 3; grid-row: 1 / 3; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="3"] #cardboardCenter { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(n)) {
+        --cardboard-desktop-owner-width: 142px;
+        --cardboard-desktop-owner-columns: 1;
+        grid-template-columns: var(--cardboard-desktop-owner-width) 1072px var(--cardboard-desktop-owner-width);
+        grid-template-rows: repeat(2, minmax(260px, max-content));
+        padding: 20px;
+        gap: 20px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(2)) {
+        --cardboard-desktop-owner-width: 276px;
+        --cardboard-desktop-owner-columns: 2;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(3)) {
+        --cardboard-desktop-owner-width: 410px;
+        --cardboard-desktop-owner-columns: 3;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(4)) {
+        --cardboard-desktop-owner-width: 544px;
+        --cardboard-desktop-owner-columns: 4;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(5)) {
+        --cardboard-desktop-owner-width: 678px;
+        --cardboard-desktop-owner-columns: 5;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(6)) {
+        --cardboard-desktop-owner-width: 812px;
+        --cardboard-desktop-owner-columns: 6;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(n)) > .cardboard-player {
+        width: var(--cardboard-desktop-owner-width);
+        justify-self: stretch;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(n)) > .cardboard-player .cardboard-cards {
+        grid-template-columns: repeat(var(--cardboard-desktop-owner-columns), 126px);
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(n)) > [data-seat-position="top"] { grid-column: 1; grid-row: 1; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(n)) > [data-seat-position="left"] { grid-column: 1; grid-row: 2; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(n)) > [data-seat-position="right"] { grid-column: 3; grid-row: 1; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(n)) > [data-seat-position="bottom"] { grid-column: 3; grid-row: 2; align-self: center; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="4"]:has(.cardboard-cards > .cardboard-card:nth-child(n)) #cardboardCenter { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+}
+
+/* Two-player landscape can spend its spare height on a second owner row.
+   Expanding both owners to one long row made the market and all cards shrink. */
+@media (min-width: 601px) and (max-height: 500px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(2)) {
+        --cardboard-desktop-owner-width: 276px;
+        --cardboard-desktop-owner-columns: 2;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(5)) {
+        --cardboard-desktop-owner-width: 410px;
+        --cardboard-desktop-owner-columns: 3;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(7)) {
+        --cardboard-desktop-owner-width: 544px;
+        --cardboard-desktop-owner-columns: 4;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"]:has(.cardboard-cards > .cardboard-card:nth-child(13)) {
+        --cardboard-desktop-owner-width: 812px;
+        --cardboard-desktop-owner-columns: 6;
+    }
+}
+
+/* Screen-space facility captions stay readable while the common table zooms. */
+html[data-design="cardboard"] .cardboard-activation-tag {
+    position: fixed;
+    z-index: 6;
+    display: grid;
+    gap: 2px;
+    width: max-content;
+    max-width: min(200px, calc(100vw - 16px));
+    margin: 0;
+    padding: 5px 9px;
+    border: 2px solid #d3a331;
+    border-left-width: 6px;
+    border-radius: 8px;
+    background: #fff7dc;
+    color: #193d38;
+    box-shadow: 0 3px 10px #172d3455;
+    font-size: 14px;
+    line-height: 1.2;
+    pointer-events: none;
+}
+html[data-design="cardboard"] .cardboard-activation-tag strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+html[data-design="cardboard"] .cardboard-activation-tag span {
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+html[data-design="cardboard"] .cardboard-activation-tag[data-category="blue"] { border-left-color: #247dca; }
+html[data-design="cardboard"] .cardboard-activation-tag[data-category="green"] { border-left-color: #26884c; }
+html[data-design="cardboard"] .cardboard-activation-tag[data-category="red"] { border-left-color: #bd4540; }
+html[data-design="cardboard"] .cardboard-activation-tag[data-category="purple"] { border-left-color: #8155b5; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-activation-tag {
+    border-color: #ffe66d;
+    background: #000;
+    color: #fff;
+}
+@media (max-width: 600px) {
+    html[data-design="cardboard"] .cardboard-activation-tag { max-width: min(160px, calc(100vw - 16px)); }
+}
+@media (max-width: 999px) {
+    html[data-design="cardboard"] #cardboardEventDetails > summary { font-size: 0; }
+    html[data-design="cardboard"] #cardboardEventDetails > summary::before { font-size: 12px; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-badge { display: none; }
+}
+
+/* On a short screen every unused vertical gap makes all cards smaller in fit.
+   Keep real card dimensions; remove empty owner headings and fixed row minima. */
+@media (min-width: 601px) and (max-height: 500px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="2"], [data-player-count="3"], [data-player-count="4"]):has(.cardboard-card) {
+        padding: 12px;
+        gap: 12px;
+        grid-template-rows: max-content;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="3"], [data-player-count="4"]):has(.cardboard-card) {
+        grid-template-rows: repeat(2, max-content);
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="2"], [data-player-count="3"], [data-player-count="4"]) > .cardboard-player {
+        padding-block: 4px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="2"], [data-player-count="3"], [data-player-count="4"]) .cardboard-header {
+        min-height: 24px;
+        margin-bottom: 2px;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="2"], [data-player-count="3"], [data-player-count="4"]) .cardboard-player:not(:has(.cardboard-landmark-built)) .cardboard-landmark-heading {
+        display: none;
+    }
+}
+
+/* A mature collection is tall already. Turn the market into four columns so
+   its cards occupy the otherwise empty middle rather than widening the world. */
+@media (min-width: 1000px) and (min-height: 501px), (min-width: 601px) and (max-height: 500px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(7)) {
+        grid-template-columns: var(--cardboard-desktop-owner-width) 536px var(--cardboard-desktop-owner-width);
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(7)) #cardboardCenter {
+        width: 536px;
+        max-height: none;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats:is([data-player-count="3"], [data-player-count="4"]):has(.cardboard-cards > .cardboard-card:nth-child(7)) #cardboardMarket .compact-market-facilities {
+        grid-template-columns: repeat(4, 126px);
+        height: 768px;
+        max-height: 768px;
     }
 }

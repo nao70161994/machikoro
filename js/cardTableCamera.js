@@ -2,7 +2,7 @@
 
 // The camera changes presentation only; native scrolling remains the pan mechanism.
 const CardTableCamera = (() => {
-    function create({ viewport, canvas, world }) {
+    function create({ viewport, canvas, world, onViewChange = () => {} }) {
         let scale = 0.85;
         let overviewMode = true;
         let offsetX = 0;
@@ -18,6 +18,11 @@ const CardTableCamera = (() => {
         let lastHeight = 0;
         let drag = null;
         let suppressClick = false;
+        let returnView = null;
+        let pinch = null;
+        let paintedView = '';
+        const previousTouchAction = viewport.style.touchAction;
+        viewport.style.touchAction = 'pan-x pan-y';
         const previousTabIndex = viewport.getAttribute('tabindex');
         viewport.tabIndex = 0;
         world.style.transformOrigin = '0 0';
@@ -39,6 +44,9 @@ const CardTableCamera = (() => {
             const height = Math.max(viewport.clientHeight, Math.ceil(size.height * scale));
             offsetX = Math.max(0, (width - size.width * scale) / 2);
             offsetY = Math.max(0, (height - size.height * scale) / 2);
+            const nextView = `${scale}:${width}:${height}:${offsetX}:${offsetY}`;
+            if (paintedView && paintedView !== nextView) onViewChange();
+            paintedView = nextView;
             canvas.style.width = `${width}px`;
             canvas.style.height = `${height}px`;
             world.style.left = `${offsetX}px`;
@@ -53,10 +61,32 @@ const CardTableCamera = (() => {
             return [...world.querySelectorAll('.cardboard-player[data-player-index]')]
                 .find(element => Number(element.dataset.playerIndex) === Number(index));
         }
+        function captureView() {
+            return { scale, overviewMode, x: (viewport.scrollLeft + viewport.clientWidth / 2 - offsetX) / scale,
+                y: (viewport.scrollTop + viewport.clientHeight / 2 - offsetY) / scale };
+        }
+        function rememberView() {
+            returnView = captureView();
+        }
+        function restoreView() {
+            if (destroyed || !returnView) return false;
+            const previous = returnView;
+            returnView = null;
+            if (previous.overviewMode) fit();
+            else {
+                overviewMode = false;
+                scale = previous.scale;
+                paint();
+                scroll(offsetX + previous.x * scale - viewport.clientWidth / 2,
+                    offsetY + previous.y * scale - viewport.clientHeight / 2);
+            }
+            return true;
+        }
         function focusSeat(index, preserveReadable = false) {
             if (destroyed) return;
             const player = seat(index);
             if (!player) return;
+            if (!preserveReadable) rememberView();
             overviewMode = false;
             const headerBefore = player.querySelector('.cardboard-header') || player;
             const firstBefore = player.querySelector('.cardboard-cards button');
@@ -97,6 +127,7 @@ const CardTableCamera = (() => {
             if (destroyed || !card?.isConnected || !world.contains(card)) return;
             const before = card.getBoundingClientRect();
             if (!before.width || !before.height) return;
+            rememberView();
             overviewMode = false;
             const fitted = Math.min((viewport.clientWidth - 24) / (before.width / scale),
                 (viewport.clientHeight - 24) / (before.height / scale));
@@ -110,6 +141,7 @@ const CardTableCamera = (() => {
         function focusMarket() {
             const market = world.querySelector('#cardboardCenter');
             if (destroyed || !market) return;
+            rememberView();
             overviewMode = false;
             scale = clamp(Math.max(scale, 0.75));
             paint();
@@ -128,6 +160,7 @@ const CardTableCamera = (() => {
         function fit() {
             if (destroyed) return;
             overviewMode = true;
+            returnView = null;
             const size = measure();
             scale = clamp(Math.min(viewport.clientWidth / size.width, viewport.clientHeight / size.height));
             paint();
@@ -135,21 +168,23 @@ const CardTableCamera = (() => {
         }
         function readable() {
             if (destroyed) return;
+            rememberView();
             overviewMode = false;
-            scale = 0.95;
+            scale = clamp(Math.max(0.95, scale * 1.15));
             paint();
             focusSeat(state.selfIndex, true);
         }
-        function zoomBy(factor) {
+        function zoomBy(factor, anchor = null) {
             if (destroyed || !Number.isFinite(factor) || factor <= 0) return;
             overviewMode = false;
+            const point = anchor || { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 };
             const center = {
-                x: (viewport.scrollLeft + viewport.clientWidth / 2 - offsetX) / scale,
-                y: (viewport.scrollTop + viewport.clientHeight / 2 - offsetY) / scale
+                x: (viewport.scrollLeft + point.x - offsetX) / scale,
+                y: (viewport.scrollTop + point.y - offsetY) / scale
             };
             scale = clamp(scale * factor);
             paint();
-            scroll(offsetX + center.x * scale - viewport.clientWidth / 2, offsetY + center.y * scale - viewport.clientHeight / 2);
+            scroll(offsetX + center.x * scale - point.x, offsetY + center.y * scale - point.y);
         }
         function layout() {
             frame = 0;
@@ -157,14 +192,22 @@ const CardTableCamera = (() => {
             const changedSession = !mounted || session !== state.session;
             const changedViewport = lastWidth !== viewport.clientWidth || lastHeight !== viewport.clientHeight;
             if (!viewport.clientWidth || !viewport.clientHeight) return;
+            const retainedCenter = mounted && !overviewMode ? {
+                x: (viewport.scrollLeft + lastWidth / 2 - offsetX) / scale,
+                y: (viewport.scrollTop + lastHeight / 2 - offsetY) / scale
+            } : null;
             lastWidth = viewport.clientWidth;
             lastHeight = viewport.clientHeight;
             session = state.session;
             mounted = true;
-            if (changedSession || changedViewport || overviewMode) {
+            if (changedSession || overviewMode) {
                 fit();
             } else {
                 paint();
+                if (changedViewport && retainedCenter) {
+                    scroll(offsetX + retainedCenter.x * scale - viewport.clientWidth / 2,
+                        offsetY + retainedCenter.y * scale - viewport.clientHeight / 2);
+                }
             }
         }
         function refresh(nextState = {}) {
@@ -183,7 +226,11 @@ const CardTableCamera = (() => {
                 return;
             }
             event.preventDefault();
-            zoomBy(Math.exp(-Math.max(-100, Math.min(100, event.deltaY)) * 0.006));
+            const bounds = viewport.getBoundingClientRect();
+            zoomBy(Math.exp(-Math.max(-100, Math.min(100, event.deltaY)) * 0.006), {
+                x: event.clientX - bounds.left - viewport.clientLeft,
+                y: event.clientY - bounds.top - viewport.clientTop
+            });
         }
         function keydown(event) {
             if (event.target !== viewport) return;
@@ -208,7 +255,7 @@ const CardTableCamera = (() => {
         function pointerdown(event) {
             suppressClick = false;
             if (event.pointerType !== 'mouse' || event.button !== 0) return;
-            if (event.target.closest('button, a, input, select, textarea, summary, [role="button"], .cardboard-player, #cardboardCenter')) return;
+            if (event.target.closest('button, a, input, select, textarea, summary, [role="button"], #cardboardCenter')) return;
             drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: viewport.scrollLeft, top: viewport.scrollTop, active: false };
         }
         function pointermove(event) {
@@ -233,6 +280,44 @@ const CardTableCamera = (() => {
             viewport.classList.remove('is-table-panning');
             if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
         }
+        function touchGeometry(touches) {
+            if (touches.length !== 2) return null;
+            const bounds = viewport.getBoundingClientRect();
+            return {
+                distance: Math.max(1, Math.hypot(touches[1].clientX - touches[0].clientX,
+                    touches[1].clientY - touches[0].clientY)),
+                x: (touches[0].clientX + touches[1].clientX) / 2 - bounds.left - viewport.clientLeft,
+                y: (touches[0].clientY + touches[1].clientY) / 2 - bounds.top - viewport.clientTop
+            };
+        }
+        function touchstart(event) {
+            const point = touchGeometry(event.touches);
+            if (!point) {
+                pinch = null;
+                // A new one-finger gesture is intentional input. A pinch may
+                // produce no synthetic click, so do not swallow its next tap.
+                if (event.touches.length === 1) suppressClick = false;
+                return;
+            }
+            pinch = {
+                distance: point.distance, scale,
+                x: (viewport.scrollLeft + point.x - offsetX) / scale,
+                y: (viewport.scrollTop + point.y - offsetY) / scale
+            };
+        }
+        function touchmove(event) {
+            const point = touchGeometry(event.touches);
+            if (!pinch || !point) return;
+            if (event.cancelable) event.preventDefault();
+            overviewMode = false;
+            suppressClick = true;
+            scale = clamp(pinch.scale * point.distance / pinch.distance);
+            paint();
+            scroll(offsetX + pinch.x * scale - point.x, offsetY + pinch.y * scale - point.y);
+        }
+        function touchend(event) {
+            if (event.touches.length !== 2) pinch = null;
+        }
         function click(event) {
             if (!suppressClick) return;
             suppressClick = false;
@@ -241,6 +326,8 @@ const CardTableCamera = (() => {
         }
         const listeners = [
             ['wheel', wheel, { passive: false }], ['keydown', keydown, false],
+            ['touchstart', touchstart, { passive: true }], ['touchmove', touchmove, { passive: false }],
+            ['touchend', touchend, { passive: true }], ['touchcancel', touchend, { passive: true }],
             ['pointerdown', pointerdown, false], ['pointermove', pointermove, false],
             ['pointerup', pointerend, false], ['pointercancel', pointerend, false],
             ['lostpointercapture', pointerend, false], ['click', click, true]
@@ -262,12 +349,15 @@ const CardTableCamera = (() => {
             if (drag && viewport.hasPointerCapture(drag.id)) viewport.releasePointerCapture(drag.id);
             drag = null;
             viewport.classList.remove('is-table-panning');
+            returnView = null;
+            pinch = null;
+            viewport.style.touchAction = previousTouchAction;
             delete viewport.dataset.tableScale;
             delete viewport.dataset.tableMode;
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }
-        return Object.freeze({ refresh, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, destroy });
+        return Object.freeze({ refresh, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
     }
     return Object.freeze({ create });
 })();
