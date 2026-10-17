@@ -301,3 +301,19 @@ runTest('発動カード帯は絵と所有者と収支を最大2施設へ集約�
     assert.ok(!exchanged.includes('移動なし'));
     assert.strictEqual(UiCardBoard.buildActivationPreviewHtml({activations:[{facility:true,owner:99,subject:'森林',from:null,to:1,amount:3}]},players), '');
 });
+
+runTest('勝利コレクションは実所有を全種類集約し過去の発動を再演しない', () => {
+    const before = JSON.stringify(player);
+    const html = UiCardBoard.buildPlayerHtml(player, { ...options, winnerCollection: true,
+        events: { activations: [{ facility: true, owner: 1, to: 1, from: null, subject: '森林', amount: 9, count: 2 }] },
+        renderTownScenery: () => '<i>景観</i>' });
+    assert.ok(html.includes('勝利を支えたカード'));
+    assert.ok(html.includes('2種類') === false);
+    assert.ok(html.includes('1種類 · 2枚'));
+    assert.ok(html.includes('所有 ×2'));
+    assert.ok(html.includes('完成ランドマーク <span>1/2</span>'));
+    assert.ok(!html.includes('cardboard-card-activated'));
+    assert.ok(!html.includes('景観'));
+    assert.ok(!html.includes('あなたの施設'));
+    assert.strictEqual(JSON.stringify(player), before);
+});

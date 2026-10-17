@@ -9,6 +9,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiIncomePreview.js',
     'js/uiIncomePreviewPanel.js',
     'js/cardBoardTransfers.js',
+    'js/cardBoardActivationTags.js',
     'js/uiMarketTarget.js',
     'js/uiCompactMarket.js',
     'js/uiCardBoard.js',

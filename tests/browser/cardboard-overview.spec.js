@@ -107,25 +107,41 @@ async function expectOwnedCards(page) {
     expect(result.actual).toEqual(result.expected);
 }
 
+async function cameraCommand(page, command) {
+    const button = page.locator(`[data-cardboard-camera="${command}"]`);
+    if (!await button.isVisible()) await page.locator('#cardboardMoreMenu > summary').click();
+    await button.click();
+}
+
 for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844,height:390},{width:1440,height:936}]) {
     test(`共通カード卓で全員の施設と中央市場を見渡せる ${viewport.width}`, async ({page}, testInfo) => {
         await prepare(page, viewport, 4);
         await expectWholeTable(page,4);
         await expectOwnedCards(page);
+        await expect.poll(() => page.locator('#cardboardMarket .compact-market-header h2').getAttribute('data-scroll-hint')).toBe('↓ 下に施設');
+        expect(await page.locator('.cardboard-roster-seat').evaluateAll(seats => seats.every(seat => {
+            const bounds = seat.getBoundingClientRect();
+            const progress = seat.querySelector('.cardboard-roster-progress b').getBoundingClientRect();
+            return progress.left >= bounds.left && progress.right <= bounds.right;
+        })), '固定HUDの目標進捗を切らない').toBe(true);
+        await expect(page.locator('#cardboardMarket .compact-market-price').first()).toContainText('建設');
         await page.screenshot({path:testInfo.outputPath('card-table-overview.png')});
         const before = await snapshot(page);
         const camera = page.locator('#cardboardTableViewport');
         const fittedScale = Number(await camera.getAttribute('data-table-scale'));
-        await page.locator('[data-cardboard-camera="readable"]').click();
+        await cameraCommand(page, 'readable');
         await expect.poll(async()=>Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(fittedScale);
         const readableScale = Number(await camera.getAttribute('data-table-scale'));
-        await page.locator('[data-cardboard-camera="in"]').click();
+        await cameraCommand(page, 'in');
         await expect.poll(async()=>Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(readableScale);
         // Keyboard pan exercises the native viewport, rather than changing its
         // scroll coordinates through evaluate.
         await camera.focus();
         await camera.press('Home');
-        await page.locator('[data-cardboard-camera="readable"]').click();
+        await cameraCommand(page, 'readable');
+        for (let step = 0; step < 5 && !await camera.evaluate(viewport => viewport.scrollHeight > viewport.clientHeight + 1); step++) {
+            await cameraCommand(page, 'in');
+        }
         await camera.focus();
         await camera.press('ArrowLeft');
         const panBefore = await camera.evaluate(viewport=>viewport.scrollTop);
@@ -172,6 +188,40 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         }
         await expectWholeTable(page,4);
         await expectOwnedCards(page);
+
+        // Explicit late presentation fixture, distinct from a natural match:
+        // eighteen facility types and five landmarks per owner, without a win.
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            game.players.forEach(player => {
+                player.cards = CARDS.slice(0, 18).map(card => createCardByName(card.name));
+                Object.keys(player.landmarks).forEach((name, index) => { player.landmarks[name] = index < 5; });
+            });
+            render();
+        });
+        await page.locator('[data-cardboard-camera="overview"]').click();
+        await expectWholeTable(page, 4);
+        await expectOwnedCards(page);
+        await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(20);
+        const late = await snapshot(page);
+        await page.screenshot({ path: testInfo.outputPath('card-table-late.png') });
+        await page.locator('[data-cardboard-camera="self"]').click();
+        await expect(camera).toHaveAttribute('data-table-mode', 'free');
+        await expect.poll(() => camera.evaluate(viewport => {
+            const clip = viewport.getBoundingClientRect();
+            const owner = viewport.querySelector('.cardboard-player[data-player-index="0"]');
+            return [...owner.querySelectorAll('.cardboard-card')].filter(card => {
+                const bounds = card.getBoundingClientRect();
+                return bounds.width >= 68 && bounds.left >= clip.left && bounds.right <= clip.right &&
+                    bounds.top >= clip.top && bounds.bottom <= clip.bottom &&
+                    ['.cardboard-name', '.cardboard-dice', '.cardboard-count'].every(selector =>
+                        card.querySelector(selector)?.textContent.trim());
+            }).length;
+        })).toBeGreaterThan(0);
+        await page.screenshot({ path: testInfo.outputPath('card-table-late-readable.png') });
+        await page.locator('[data-cardboard-camera="back"]').click();
+        await expectWholeTable(page, 4);
+        expect(await snapshot(page)).toEqual(late);
     });
 }
 
@@ -201,6 +251,20 @@ for (const count of [2,3,5,10]) {
         }
     });
 }
+
+test('共通カード卓は6〜9人の各人数でも市場と全所有者を保つ', async ({ page }, testInfo) => {
+    for (const count of [6, 7, 8, 9]) {
+        await prepare(page, { width: 844, height: 390 }, count);
+        await expectWholeTable(page, count);
+        await expectOwnedCards(page);
+        const before = await snapshot(page);
+        await page.locator('[data-cardboard-camera="market"]').click();
+        await page.locator('[data-cardboard-camera="back"]').click();
+        await expectWholeTable(page, count);
+        expect(await snapshot(page)).toEqual(before);
+        await page.screenshot({ path: testInfo.outputPath(`card-table-${count}.png`) });
+    }
+});
 
 test('10人の320px縦持ちでも全員の所有カードと市場を俯瞰できる',async({page},testInfo)=>{
     await prepare(page,{width:320,height:844},10);
@@ -250,3 +314,88 @@ for(const viewport of [{width:320,height:844},{width:844,height:390},{width:1440
         expect(await snapshot(page)).toEqual(before);
     });
 }
+
+// Back restores the view immediately before inspection, including a manually
+// panned readable view; it does not merely reset the whole table.
+test('市場確認から直前の倍率と位置へ戻れる', async ({ page }) => {
+    await prepare(page, { width: 390, height: 844 }, 4);
+    const camera = page.locator('#cardboardTableViewport');
+    const readView = () => camera.evaluate(viewport => ({
+        scale: Number(viewport.dataset.tableScale),
+        left: viewport.scrollLeft, top: viewport.scrollTop,
+        mode: viewport.dataset.tableMode,
+    }));
+    const before = await snapshot(page);
+    await page.locator('[data-cardboard-camera="market"]').click();
+    await page.locator('[data-cardboard-camera="back"]').click();
+    await expectWholeTable(page, 4);
+    await cameraCommand(page, 'readable');
+    await camera.focus();
+    await camera.press('ArrowRight');
+    await camera.press('ArrowUp');
+    const previous = await readView();
+    await page.locator('[data-cardboard-camera="market"]').click();
+    await page.locator('[data-cardboard-camera="back"]').click();
+    await expect.poll(readView).toEqual(previous);
+    expect(await snapshot(page)).toEqual(before);
+});
+
+test('2指ピンチは卓を拡大しゲーム状態を変えない', async ({ page, browserName }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4);
+    const camera = page.locator('#cardboardTableViewport');
+    await expectWholeTable(page, 4);
+    const before = await snapshot(page);
+    const scale = Number(await camera.getAttribute('data-table-scale'));
+    const bounds = await camera.boundingBox();
+    const x = bounds.x + bounds.width / 2;
+    const y = bounds.y + bounds.height / 2;
+    if (browserName !== 'chromium') {
+        // Playwright exposes native multi-touch through CDP only. This branch
+        // checks WebKit's DOM handlers, not native iOS gesture arbitration.
+        testInfo.annotations.push({ type: 'input', description: 'Synthetic DOM touch; native multi-touch is covered by Chromium CDP only.' });
+        const prevented = await camera.evaluate((viewport, point) => {
+            const dispatch = (type, distance) => {
+                const event = new Event(type, { bubbles: true, cancelable: true });
+                Object.defineProperty(event, 'touches', { value: distance === null ? [] : [
+                    { clientX: point.x - distance, clientY: point.y },
+                    { clientX: point.x + distance, clientY: point.y },
+                ] });
+                viewport.dispatchEvent(event);
+                return event.defaultPrevented;
+            };
+            dispatch('touchstart', 40);
+            const moves = [50, 65, 80].map(distance => dispatch('touchmove', distance));
+            dispatch('touchend', null);
+            return moves;
+        }, { x, y });
+        expect(prevented).toEqual([true, true, true]);
+        await expect.poll(async () => Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(scale * 1.5);
+        await expect(camera).toHaveAttribute('data-table-mode', 'free');
+        expect(await page.evaluate(() => visualViewport.scale)).toBe(1);
+        expect(await snapshot(page)).toEqual(before);
+        return;
+    }
+    const client = await page.context().newCDPSession(page);
+    await client.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+    let touching = false;
+    try {
+        await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [
+            { x: x - 40, y, id: 0 }, { x: x + 40, y, id: 1 },
+        ] });
+        touching = true;
+        for (const distance of [50, 65, 80]) {
+            await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [
+                { x: x - distance, y, id: 0 }, { x: x + distance, y, id: 1 },
+            ] });
+        }
+        await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        touching = false;
+        await expect.poll(async () => Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(scale * 1.5);
+        await expect(camera).toHaveAttribute('data-table-mode', 'free');
+        expect(await page.evaluate(() => visualViewport.scale)).toBe(1);
+        expect(await snapshot(page)).toEqual(before);
+    } finally {
+        if (touching) await client.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+        await client.detach();
+    }
+});

@@ -9,7 +9,7 @@ const { makeElement, runTest } = require('./helpers/test-utils');
 function createHarness() {
     const calls = [];
     const handlers = {};
-    const elements = Object.fromEntries(['diceChoose', 'pendingMenu', 'buildMenu', 'players', 'plazaPlayerInsightsBody', 'speedLabel', 'onlineSpeedLabel', 'pwaUpdateBanner', 'pwaInstallBanner', 'roomIdInput', 'onlineJoinSubmitButton'].map(id => [id, makeElement({ id, addEventListener: (name, fn) => { handlers[id + ':' + name] = fn; } })]));
+    const elements = Object.fromEntries(['diceChoose', 'pendingMenu', 'buildMenu', 'players', 'status', 'plazaPlayerInsightsBody', 'speedLabel', 'onlineSpeedLabel', 'pwaUpdateBanner', 'pwaInstallBanner', 'roomIdInput', 'onlineJoinSubmitButton'].map(id => [id, makeElement({ id, addEventListener: (name, fn) => { handlers[id + ':' + name] = fn; } })]));
     elements.pwaUpdateBanner.contains = element => element && element.parentElement === elements.pwaUpdateBanner;
     const document = {
         activeElement: null,
@@ -231,7 +231,7 @@ runTest('main UI event runtimeはstatic/delegated listenerを一度だけ所有�
     assert.deepStrictEqual(Object.keys(h.handlers).sort(), [
         'buildMenu:click', 'diceChoose:click', 'document:change', 'document:click',
         'document:input', 'document:keydown', 'pendingMenu:click', 'players:click',
-        'plazaPlayerInsightsBody:click',
+        'plazaPlayerInsightsBody:click', 'status:click',
     ]);
 });
 
@@ -317,4 +317,14 @@ runTest('HUDランドマーク詳細はlandmark属性とtrueを既存モーダ�
     h.runtime.bindDelegated();
     h.handlers['plazaPlayerInsightsBody:click'](h.event({ action: 'showLandmarkDetail', landmarkName: '駅' }));
     assert.deepStrictEqual(h.calls, [['preventDefault'], ['showCardDetail', '駅', true]]);
+});
+
+runTest('勝利画面のカード詳細は購入操作を実行せず既存詳細へ渡す', () => {
+    const h = createHarness();
+    h.runtime.bindDelegated();
+    h.handlers['status:click'](h.event({ action: 'showCardDetail', cardName: '森林' }));
+    h.handlers['status:click'](h.event({ action: 'showLandmarkDetail', landmarkName: '駅' }));
+    h.handlers['status:click'](h.event({ action: 'buildCard', cardName: '森林' }));
+    assert.deepStrictEqual(h.calls, [['preventDefault'], ['showCardDetail', '森林'],
+        ['preventDefault'], ['showCardDetail', '駅', true], ['preventDefault']]);
 });

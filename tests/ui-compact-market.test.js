@@ -125,3 +125,18 @@ runTest('建設できない間も建設可フィルタで市場一覧と無効�
     assert.ok(html.includes('今は全施設を表示'));
     assert.ok(!html.includes('現在建設できる施設はありません'));
 });
+
+runTest('市場の金額は収益ではなく建設価格と視覚的にも明示する', () => {
+    const html = UiCompactMarket.buildFacilitiesHtml(fixture());
+    assert.ok(html.includes('class="compact-market-price-full">建設2コイン'));
+    assert.ok(html.includes('建設7コイン'));
+    assert.ok(!html.includes('class="compact-market-price-full">2コイン'));
+    assert.ok(html.includes('<span>不足4コ</span><span>建設7コ</span>'));
+    const owned = UiCompactMarket.buildFacilitiesHtml(fixture({ current: {
+        coins: 30, countCardIncludingDormant: () => 1 } }));
+    assert.ok(owned.includes('所有済み・建設7コイン'));
+    const landmarks = UiCompactMarket.buildLandmarksHtml(fixture());
+    assert.ok(landmarks.includes('不足1コイン・建設4コイン'));
+    assert.ok(landmarks.includes('class="compact-market-price-full">建設済'));
+    assert.ok(UiCompactMarket.buildLandmarksHtml(fixture({ currentCoins: 4 })).includes('class="compact-market-price-full">建設4コイン'));
+});

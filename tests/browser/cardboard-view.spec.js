@@ -45,7 +45,9 @@ async function selectTheme(page, theme) {
 }
 
 async function camera(page, command) {
-    await page.locator(`[data-cardboard-camera="${command}"]`).click();
+    const button = page.locator(`[data-cardboard-camera="${command}"]`);
+    if (!await button.isVisible()) await page.locator('#cardboardMoreMenu > summary').click();
+    await button.click();
 }
 async function focusSeat(page, index) {
     await page.locator(`#cardboardRoster [data-cardboard-player-index="${index}"]`).click();
@@ -762,12 +764,14 @@ test('OSの動き低減中もランドマーク完成を静的に強調する', 
     await expect.poll(() => page.evaluate(() => window.reducedLandmarkCue)).toEqual({ animation: 'none', outline: 'rgb(180, 122, 9)' });
 });
 
-test('にぎわい広場の勝利画面はPC幅で街と結果を中央に読める大きさで表示する', async ({ page }) => {
-    await prepare(page, { width: 1440, height: 900 }, 2, false);
+for (const viewport of [{ width: 320, height: 720 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+test(`にぎわい広場の勝利カードコレクション ${viewport.width}px`, async ({ page }) => {
+    await prepare(page, viewport, 2, false);
     await page.evaluate(() => {
         const state = GameRuntimeState.runtime.snapshot();
         cancelCpuSchedule('cardboard-winner-layout');
         state.game.currentPlayerIndex = 0;
+        state.game.players[0].cards = CARDS.slice(0, 18).flatMap(card => [card, card]);
         for (const name of getEnabledLandmarkSelection()) state.game.players[0].landmarks[name] = true;
         render();
     });
@@ -789,26 +793,39 @@ test('にぎわい広場の勝利画面はPC幅で街と結果を中央に読め
             body: rect(body), scrollY,
             scrollWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth };
     });
-    expect(geometry.screen.width, JSON.stringify(geometry)).toBeGreaterThanOrEqual(400);
+    expect(geometry.screen.width, JSON.stringify(geometry)).toBeGreaterThanOrEqual(Math.min(400, viewport.width - 48));
     expect(geometry.title.x).toBeGreaterThanOrEqual(0);
     expect(geometry.title.x + geometry.title.width).toBeLessThanOrEqual(geometry.viewportWidth + 1);
     expect(geometry.title.y, JSON.stringify(geometry)).toBeGreaterThanOrEqual(0);
     await expect(page.locator('.winner-title')).toBeFocused();
+    const rematchBottom = await page.locator('#winnerRematchButton').evaluate(element => element.getBoundingClientRect().bottom);
+    expect(rematchBottom).toBeLessThan(viewport.height);
+    await expect(page.locator('.cardboard-winner-collection')).toBeVisible();
+    await expect(page.locator('.cardboard-winner-collection .cardboard-card')).toHaveCount(18);
+    await expect(page.locator('.cardboard-winner-collection .cardboard-landmark-built')).toHaveCount(6);
+    await expect(page.locator('.cardboard-winner-collection .town-street')).toHaveCount(0);
+    const owned = page.locator('.cardboard-winner-collection [data-card-name="麦畑"]');
+    await owned.click();
+    await expect(page.locator('#cardDetailModal')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(owned).toBeFocused();
     expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.viewportWidth + 1);
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     const screenshot = await page.screenshot({ fullPage: true, animations: 'disabled' });
     if (process.env.CARDBOARD_REVIEW_ARTIFACT_DIR) {
         const artifactDir = path.resolve(process.env.CARDBOARD_REVIEW_ARTIFACT_DIR);
         await fs.mkdir(artifactDir, { recursive: true });
-        await fs.writeFile(path.join(artifactDir, 'cardboard-winner-desktop.png'), screenshot);
-        await fs.writeFile(path.join(artifactDir, 'cardboard-winner-geometry.json'), JSON.stringify(geometry, null, 2));
+        await fs.writeFile(path.join(artifactDir, `cardboard-winner-${viewport.width}.png`), screenshot);
+        await fs.writeFile(path.join(artifactDir, `cardboard-winner-${viewport.width}-geometry.json`), JSON.stringify(geometry, null, 2));
     }
     await page.evaluate(() => document.body.classList.add('accessibility-high-contrast'));
     await expect(page.locator('.winner-screen')).toHaveCSS('background-color', 'rgb(0, 0, 0)');
     await expect(page.locator('.winner-screen')).toHaveCSS('border-top-color', 'rgb(255, 255, 255)');
     await expect(page.locator('.winner-title')).toHaveCSS('color', 'rgb(255, 230, 109)');
-    await expect(page.locator('.winner-stats-row').first()).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await expect(page.locator('.winner-stats-row.highlight')).toHaveCSS('color', 'rgb(255, 230, 109)');
+    await expect(page.locator('.winner-stats-row:not(.highlight)').first()).toHaveCSS('color', 'rgb(255, 255, 255)');
 });
+}
 
 test('10人CPU対局で自分の席が未確定でも現在手番のカード盤面を表示する', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 }, 10);
@@ -944,11 +961,11 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
     await expect(resultSummary.locator('.cardboard-event-preview-name').first()).toHaveText('森林');
     await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('銀行→席1');
     await expect(resultSummary.locator('.cardboard-event-preview-owner').first()).toContainText('+6コイン');
-    await expect(resultSummary.locator('.cardboard-event-preview-art svg').first()).toBeVisible();
+    await expect(resultSummary.locator('.cardboard-event-preview-art svg').first()).toBeHidden();
     await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.add('rolling'));
     await expect(resultSummary.locator('.cardboard-result-detail')).toHaveCSS('visibility', 'hidden');
     await page.locator('#diceResult .dice-face').first().evaluate(element => element.classList.remove('rolling'));
-    await expect(resultSummary.locator('.cardboard-result-detail')).toHaveCSS('visibility', 'visible');
+    await expect(resultSummary.locator('.cardboard-result-detail')).toBeHidden();
     await expect(page.locator('#cardboardCurrentResult')).toHaveCSS('pointer-events', 'none');
     for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 936 }]) {
         await page.setViewportSize(viewport);
@@ -1160,13 +1177,36 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         render();
         acceptHotseatHandoff();
         document.getElementById('cardboardEventDetails').open = false;
+        window.boardTagRecords = [];
+        window.boardTagObserver = new MutationObserver(records => {
+            for (const record of records) for (const node of record.addedNodes) {
+                if (node.nodeType !== Node.ELEMENT_NODE || !node.classList.contains('cardboard-activation-tag')) continue;
+                const rect = node.getBoundingClientRect();
+                const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+                window.boardTagRecords.push({ text: node.textContent, pointerEvents: getComputedStyle(node).pointerEvents,
+                    contained: rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1 &&
+                        rect.top >= viewport.top - 1 && rect.bottom <= viewport.bottom + 1 });
+            }
+        });
+        window.boardTagObserver.observe(document.getElementById('cardboardBoard'), { childList: true });
         document.getElementById('btnRoll').click();
     });
+    // Capture the live 600ms caption before inspecting later chain steps.
+    // No clock or production lifetime is changed: this is a real-time frame.
+    const liveTag = page.locator('.cardboard-activation-tag');
+    await expect(liveTag).toBeVisible();
+    await expect(liveTag).toContainText('森林');
+    await page.screenshot({ path: testInfo.outputPath('facility-chain-live-activation-tag.png') });
     const caption = page.locator('#cardboardEventDetails');
     await expect(caption).toHaveClass(/cardboard-preview-playing/);
     const cards = caption.locator('.cardboard-event-preview-card');
     await expect(cards).toHaveCount(4);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveText('出目 5');
+    const centralFaces = page.locator('#cardboardDiceConfirmation .cardboard-confirmation-faces .dice-face');
+    await expect(centralFaces).toHaveCount(1);
+    await expect(centralFaces.first()).toBeVisible();
+    await expect(centralFaces.first().locator('.dot:not(.hidden)')).toHaveCount(5);
+    await expect(centralFaces.first().locator('.dot.hidden')).toHaveCount(4);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveAttribute('aria-hidden', 'true');
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('pointer-events', 'none');
     await page.locator('#cardboardDiceConfirmation').evaluate(element => {
@@ -1178,11 +1218,7 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await page.locator('#cardboardDiceConfirmation').evaluate(element => element.getAnimations().forEach(animation => { animation.currentTime = 500; }));
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');
     await expect(cards.first().locator('.cardboard-event-preview-owner')).toHaveText(/^\+1コイン · 銀行→席[1-4]$/);
-    expect(await page.evaluate(() => {
-        window.captionAnimations = [...document.querySelectorAll('.cardboard-event-preview-card')].map(card => card.getAnimations()[0]);
-        window.captionAnimations.forEach(animation => animation?.pause());
-        return window.captionAnimations.filter(Boolean).length;
-    })).toBe(4);
+    await expect(cards.first()).toBeHidden();
     expect(await cards.evaluateAll(elements => elements.map(element => {
         const owner = document.querySelector(`#cardboardSeats .cardboard-player[data-player-index="${element.dataset.playerIndex}"]`);
         const card = owner.querySelector('.cardboard-card[data-card-name="森林"]');
@@ -1192,31 +1228,32 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         window.captionCardAnimations = [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].map(card => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate'));
     });
     const before = await state(page);
-    for (let index = 0; index < 4; index++) {
-        const visible = await page.evaluate(index => {
-            window.captionAnimations.forEach(animation => { animation.currentTime = index * 700 + 100; });
-            return [...document.querySelectorAll('.cardboard-event-preview-card')].filter(card => Number(getComputedStyle(card).opacity) > 0.9).map(card => card.dataset.playerIndex);
-        }, index);
-        expect(visible).toEqual([await cards.nth(index).getAttribute('data-player-index')]);
-        if (index === 2) await page.screenshot({ path: testInfo.outputPath('facility-chain-third-owner.png') });
-    }
-    expect(await page.evaluate(() => {
-        render();
-        return [...document.querySelectorAll('.cardboard-event-preview-card')].every((card,index) => card.getAnimations()[0] === window.captionAnimations[index]);
-    })).toBe(true);
+    await expect.poll(() => page.evaluate(() => window.boardTagRecords.length)).toBe(4);
+    const tagRecords = await page.evaluate(() => window.boardTagRecords);
+    const owners = await cards.evaluateAll(elements => elements.map(element => Number(element.dataset.playerIndex) + 1));
+    expect(tagRecords.map(record => record.text)).toEqual(owners.map(owner => `森林席${owner} · +1コイン`));
+    expect(tagRecords.every(record => record.contained && record.pointerEvents === 'none')).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });
+    await page.evaluate(() => render());
+    await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+    expect(await page.evaluate(() => window.boardTagRecords.length)).toBe(4);
     expect(await page.evaluate(() => document.getElementById('cardboardDiceConfirmation') === window.confirmationElement)).toBe(true);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');
     expect(await page.evaluate(() => [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].every((card,index) => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate') === window.captionCardAnimations[index]))).toBe(true);
     expect(await state(page)).toEqual(before);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     expect(await page.locator('#cardboardSeats .cardboard-card-activated').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
-    expect(await cards.evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
+    await expect(cards.first()).toBeHidden();
+    await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
     await selectTheme(page, 'plaza');
     await selectTheme(page, 'cardboard');
     await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
+    await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+    expect(await page.evaluate(() => window.boardTagRecords.length)).toBe(4);
+    await page.evaluate(() => window.boardTagObserver.disconnect());
     expect(await state(page)).toEqual(before);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
@@ -1227,6 +1264,12 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         render();
     });
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveText('5 + 5 = 10');
+    await expect(centralFaces).toHaveCount(2);
+    for (let index = 0; index < 2; index++) {
+        await expect(centralFaces.nth(index)).toBeVisible();
+        await expect(centralFaces.nth(index).locator('.dot:not(.hidden)')).toHaveCount(5);
+        await expect(centralFaces.nth(index).locator('.dot.hidden')).toHaveCount(4);
+    }
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.resolveHarbor(true); render(); });
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
     await expect(caption.locator('.cardboard-result-heading')).toContainText('港10→12');

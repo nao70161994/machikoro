@@ -1,5 +1,5 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, LOG_TYPES, MutationObserver, CardTableCamera, CardBoardTransfers, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, PlazaField, DesignTheme, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, LOG_TYPES, MutationObserver, CardTableCamera, CardBoardTransfers, CardBoardActivationTags, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, UiDiceDisplay, PlazaField, DesignTheme, CARDS, Player */
 
 const CARDBOARD_ROLL_FEEDBACK_MS = 1400;
 
@@ -64,6 +64,7 @@ const CardBoardField = (() => {
     let choiceInitialized = false;
     let themeFocus = null;
     const transfers = typeof CardBoardTransfers !== 'undefined' ? CardBoardTransfers.create() : null;
+    let activationTags = null;
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
     const disclosureSelector = '#cardboardEventDetails, .compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
     function closeDisclosures(except = null) {
@@ -79,7 +80,7 @@ const CardBoardField = (() => {
     function arrangeCompactStatus() {
         const status = node('status');
         const actions = node('cardboardActionSlot')?.querySelector('.game-action-panel');
-        const compact = mounted && globalThis.matchMedia('(min-width: 601px) and (max-height: 500px)').matches && !status?.classList.contains('game-winner');
+        const compact = mounted && !status?.classList.contains('game-winner');
         if (compact && status && actions) {
             if (!statusOrigin) {
                 statusOrigin = document.createComment('cardboard-status-origin');
@@ -104,7 +105,7 @@ const CardBoardField = (() => {
             viewport = document.createElement('div');
             viewport.id = 'cardboardTableViewport';
             viewport.setAttribute('role', 'region');
-            viewport.setAttribute('aria-label', '全員の施設カードと中央市場。ドラッグまたはスクロールで移動、ボタンで拡大縮小');
+            viewport.setAttribute('aria-label', '全員の施設カードと中央市場。1本指で移動、2本指で拡大縮小、ボタンでも操作できます');
             viewport.tabIndex = 0;
             const canvas = document.createElement('div');
             canvas.id = 'cardboardTableCanvas';
@@ -120,8 +121,19 @@ const CardBoardField = (() => {
             const tools = document.createElement('nav');
             tools.id = 'cardboardCameraTools';
             tools.setAttribute('aria-label', 'カード卓の移動と拡大縮小');
-            tools.innerHTML = '<button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button>';
+            tools.innerHTML = '<button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="back" aria-label="カード確認前の表示へ戻る">戻る</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button>';
             board.appendChild(tools);
+        }
+        if (!node('cardboardCameraSettings')) {
+            const settings = document.createElement('div');
+            settings.id = 'cardboardCameraSettings';
+            settings.setAttribute('role', 'group');
+            settings.setAttribute('aria-label', 'カード卓の倍率');
+            for (const command of ['readable', 'out', 'in']) {
+                const button = node('cardboardCameraTools').querySelector(`[data-cardboard-camera="${command}"]`);
+                if (button) settings.appendChild(button);
+            }
+            node('cardboardMoreMenuContent').appendChild(settings);
         }
         if (!node('cardboardCurrentResult')) {
             const result = document.createElement('p');
@@ -141,7 +153,8 @@ const CardBoardField = (() => {
             node('cardboardCameraTools').appendChild(details);
         }
         if (!tableCamera && typeof CardTableCamera !== 'undefined') {
-            tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats });
+            tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats,
+                onViewChange: () => activationTags?.clear() });
         }
     }
 
@@ -190,6 +203,19 @@ const CardBoardField = (() => {
                 panel.setAttribute('aria-label', `${panel.querySelector('.cardboard-player-heading-name')?.textContent?.trim() || '選択中の街'}の詳細`);
             }
         });
+        updateMarketOverflow();
+    }
+
+    function updateMarketOverflow() {
+        const market = node('cardboardMarket');
+        const shelf = market?.querySelector('.compact-market-facilities');
+        const heading = /** @type {HTMLElement | null} */ (market?.querySelector('.compact-market-header h2'));
+        if (!shelf || !heading) return;
+        const overflowing = shelf.scrollHeight > shelf.clientHeight + 1;
+        const hint = !overflowing ? '' : shelf.scrollTop + shelf.clientHeight < shelf.scrollHeight - 2 ? '↓ 下に施設' : '↑ 上に施設';
+        if (heading.dataset.scrollHint !== hint) heading.dataset.scrollHint = hint;
+        const label = overflowing ? '中央市場の施設一覧。上下にスクロールできます' : '中央市場の施設一覧';
+        if (shelf.getAttribute('aria-label') !== label) shelf.setAttribute('aria-label', label);
     }
 
     function turnEventsFor(game, display) {
@@ -352,6 +378,7 @@ const CardBoardField = (() => {
 
     function clearFeedback() {
         clearAdditionalActivationCues();
+        activationTags?.clear();
         node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
         node('cardboardDiceConfirmation')?.remove();
         pendingBuildCues = [];
@@ -539,6 +566,7 @@ const CardBoardField = (() => {
             const matchingCard = shelf?.querySelector('.compact-market-roll-match');
             if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
         }
+        updateMarketOverflow();
     }
 
     function initialize() {
@@ -546,15 +574,21 @@ const CardBoardField = (() => {
         initialized = true;
         globalThis.matchMedia('(min-width: 601px) and (max-height: 500px)').addEventListener('change', arrangeCompactStatus);
         ensureTable();
-        node('cardboardCameraTools')?.addEventListener('click', event => {
+        node('cardboardBoard').addEventListener('scroll', event => {
+            if (/** @type {HTMLElement} */ (event.target).classList?.contains('compact-market-facilities')) updateMarketOverflow();
+        }, true);
+        node('cardboardMarketDialog')?.addEventListener('scroll', updateMarketOverflow, true);
+        node('cardboardBoard')?.addEventListener('click', event => {
             const button = /** @type {HTMLElement} */ (event.target).closest?.('[data-cardboard-camera]');
             if (!button || !tableCamera) return;
             const command = button.getAttribute('data-cardboard-camera');
             if (command === 'overview') tableCamera.fit();
+            else if (command === 'back') { if (!tableCamera.restoreView()) tableCamera.fit(); }
             else if (command === 'market') tableCamera.focusMarket();
             else if (command === 'self') tableCamera.focusSeat(facts?.selfIndex ?? facts?.game?.currentPlayerIndex ?? 0);
             else if (command === 'readable') tableCamera.readable();
             else tableCamera.zoomBy(command === 'in' ? 1.25 : 0.8);
+            if (button.closest('#cardboardMoreMenu')) closeMoreMenu(true);
         });
         window.addEventListener('resize', () => {
             updateRosterOverflow();
@@ -995,6 +1029,7 @@ const CardBoardField = (() => {
         }
         if (newRoll || freshResultLogs.length) {
             node('cardboardDiceConfirmation')?.remove();
+            activationTags?.clear();
             clearAdditionalActivationCues();
             node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
         }
@@ -1192,9 +1227,25 @@ const CardBoardField = (() => {
                     confirmation.id = 'cardboardDiceConfirmation';
                     confirmation.className = 'cardboard-dice-confirmation';
                     confirmation.setAttribute('aria-hidden', 'true');
-                    confirmation.textContent = dice.length === 1 ? `出目 ${dice[0]}` : `${dice.join(' + ')} = ${freshEvents.dice.base}`;
+                    const total = document.createElement('span');
+                    total.className = 'cardboard-confirmation-total';
+                    total.textContent = dice.length === 1 ? `出目 ${dice[0]}` : `${dice.join(' + ')} = ${freshEvents.dice.base}`;
+                    if (typeof UiDiceDisplay !== 'undefined') {
+                        const faces = document.createElement('span');
+                        faces.className = 'cardboard-confirmation-faces';
+                        faces.innerHTML = dice.map(value => UiDiceDisplay.buildFaceHtml(value, { decorative: true })).join('');
+                        confirmation.appendChild(faces);
+                    }
+                    confirmation.appendChild(total);
                     node('cardboardBoard').appendChild(confirmation);
                 }
+                if (!activationTags && typeof CardBoardActivationTags !== 'undefined') {
+                    activationTags = CardBoardActivationTags.create({ container: node('cardboardBoard'), viewport: node('cardboardTableViewport') });
+                }
+                activationTags?.play({ events: freshEvents, players: game.players, reducedMotion: reducedMotionEnabled(), isCurrent: () =>
+                    sequence === transferSequence && mounted && enabled() && !document.hidden && !facts?.replaying &&
+                    session === capturedSession && facts?.game?.turnCount === capturedTurn &&
+                    facts?.game?.currentPlayerIndex === capturedActor && (facts?.game?.usedReroll === true) === capturedReroll });
                 transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'), events: freshEvents });
             });
         }
