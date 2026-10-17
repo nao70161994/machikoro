@@ -1257,6 +1257,11 @@ const CardBoardField = (() => {
                         facts?.game?.currentPlayerIndex !== capturedActor || (facts?.game?.usedReroll === true) !== capturedReroll ||
                         node('gameScreen')?.style.display === 'none') return;
                 const freshDiceResolution = freshResultLogs.some(entry => entry.type === LOG_TYPES.DICE && entry.diceResolution);
+                if (freshDiceResolution) {
+                    // The turn greeting has served its purpose once the dice
+                    // resolve. Give the result and real facilities the stage.
+                    facts.onDiceResult?.();
+                }
                 if (newRoll && freshDiceResolution && freshEvents?.dice?.values?.length) {
                     node('cardboardDiceConfirmation')?.remove();
                     const dice = freshEvents.dice.values;
@@ -1279,11 +1284,13 @@ const CardBoardField = (() => {
                 if (!activationTags && typeof CardBoardActivationTags !== 'undefined') {
                     activationTags = CardBoardActivationTags.create({ container: node('cardboardBoard'), viewport: node('cardboardTableViewport') });
                 }
-                activationTags?.play({ events: freshEvents, players: game.players, reducedMotion: reducedMotionEnabled(), isCurrent: () =>
+                activationTags?.play({ events: freshEvents, players: game.players, reducedMotion: reducedMotionEnabled(),
+                    delayMs: newRoll && freshDiceResolution ? 500 : 0, isCurrent: () =>
                     sequence === transferSequence && mounted && enabled() && !document.hidden && !facts?.replaying &&
                     session === capturedSession && facts?.game?.turnCount === capturedTurn &&
                     facts?.game?.currentPlayerIndex === capturedActor && (facts?.game?.usedReroll === true) === capturedReroll });
-                transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'), events: freshEvents });
+                transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'),
+                    events: freshEvents, delayMs: newRoll && freshDiceResolution ? 500 : 0 });
             });
         }
         if (newRoll) {
