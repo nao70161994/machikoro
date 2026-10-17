@@ -72,6 +72,26 @@ async function expectWholeTable(page, count) {
                 if (width > tolerance && height > tolerance) failures.push(`${groups[first].name} overlaps ${groups[second].name}`);
             }
         }
+        const market = viewport.querySelector('#cardboardMarket');
+        const controls = [...market.querySelectorAll('.compact-market-header h2, .compact-market-header button, .compact-market-filter-disclosure > summary, .compact-market-goal-disclosure > summary')]
+            .map(node => ({ node, bounds: node.getBoundingClientRect() }));
+        for (let first = 0; first < controls.length; first++) {
+            for (let second = first + 1; second < controls.length; second++) {
+                const a = controls[first].bounds;
+                const b = controls[second].bounds;
+                if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 &&
+                    Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) failures.push('market heading/control overlap');
+            }
+        }
+        const title = market.querySelector('.compact-market-header h2');
+        const titleRange = document.createRange();
+        titleRange.selectNodeContents(title);
+        const titleText = titleRange.getBoundingClientRect();
+        for (const control of controls.filter(control => control.node !== title)) {
+            const b = control.bounds;
+            if (Math.min(titleText.right, b.right) - Math.max(titleText.left, b.left) > 1 &&
+                Math.min(titleText.bottom, b.bottom) - Math.max(titleText.top, b.top) > 1) failures.push('market title text overlaps control');
+        }
         return failures.slice(0, 8);
     })).toEqual([]);
 }

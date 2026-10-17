@@ -57,6 +57,7 @@ const CardTableLayout = (() => {
             // A tall screen needs a narrower centre, otherwise its width
             // determines the fit scale and leaves most of the height unused.
             const columns = wide ? 6 : 2;
+            if (market.dataset.marketColumns !== String(columns)) market.dataset.marketColumns = String(columns);
             setStyle(market, '--table-market-columns', String(columns));
             setStyle(market, '--table-market-rows', oppositeOnly && shallow ? '1' : '2');
             setStyle(market, 'width', `${columns * 160 + (columns - 1) * 8 + 16}px`);
