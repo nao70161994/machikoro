@@ -53,7 +53,7 @@ const CardBoardActivationTags = (() => {
             const currentGeneration = generation;
             const reduced = reducedMotion || container.ownerDocument.body?.classList.contains('accessibility-reduced-motion') ||
                 view.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-            function show(group) {
+            function show(group, step = 0) {
                 removeTag();
                 if (currentGeneration !== generation || !isCurrent() || container.ownerDocument.hidden ||
                     !container.isConnected || !viewport.isConnected) { clear(); return; }
@@ -77,8 +77,14 @@ const CardBoardActivationTags = (() => {
                 const name = documentRef.createElement('strong');
                 name.textContent = group.name;
                 const income = documentRef.createElement('span');
-                income.textContent = `席${group.owner + 1} · ${group.net > 0 ? '+' : ''}${group.net}コイン`;
+                const ownerName = players[group.owner].name || `席${group.owner + 1}`;
+                income.textContent = `${ownerName} · ${group.net > 0 ? '+' : ''}${group.net}コイン`;
                 tag.append(name, income);
+                if (entries.length > 1 && !reduced) {
+                    const progress = documentRef.createElement('small');
+                    progress.textContent = `施設発動 ${step + 1} / ${entries.length}`;
+                    tag.appendChild(progress);
+                }
                 container.appendChild(tag);
                 const size = tag.getBoundingClientRect();
                 const inset = 4;
@@ -99,7 +105,7 @@ const CardBoardActivationTags = (() => {
             listening = true;
             // Reduced motion keeps one static caption rather than cycling cards.
             if (reduced) show(entries[0]);
-            else entries.forEach((group, index) => schedule(() => show(group), index * 700));
+            else entries.forEach((group, index) => schedule(() => show(group, index), index * 700));
             return true;
         }
         return Object.freeze({ play, clear });

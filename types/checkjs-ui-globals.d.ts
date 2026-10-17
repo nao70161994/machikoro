@@ -1,3 +1,4 @@
+declare var CardTableLayout: typeof import("../js/cardTableLayout");
 declare var CardBoardActivationTags: typeof import("../js/cardBoardActivationTags");
 declare var CardBoardTransfers: typeof import("../js/cardBoardTransfers");
 declare var UiMarketTarget: typeof import("../js/uiMarketTarget");

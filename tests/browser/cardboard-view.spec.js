@@ -1230,8 +1230,12 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     const before = await state(page);
     await expect.poll(() => page.evaluate(() => window.boardTagRecords.length)).toBe(4);
     const tagRecords = await page.evaluate(() => window.boardTagRecords);
-    const owners = await cards.evaluateAll(elements => elements.map(element => Number(element.dataset.playerIndex) + 1));
-    expect(tagRecords.map(record => record.text)).toEqual(owners.map(owner => `森林席${owner} · +1コイン`));
+    const owners = await cards.evaluateAll(elements => elements.map(element => {
+        const index = Number(element.dataset.playerIndex);
+        return GameRuntimeState.runtime.snapshot().game.players[index].name || `席${index + 1}`;
+    }));
+    expect(tagRecords.map(record => record.text)).toEqual(owners.map((owner, index) =>
+        `森林${owner} · +1コイン施設発動 ${index + 1} / ${owners.length}`));
     expect(tagRecords.every(record => record.contained && record.pointerEvents === 'none')).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });
     await page.evaluate(() => render());

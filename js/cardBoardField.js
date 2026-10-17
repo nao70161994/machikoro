@@ -1,5 +1,5 @@
 'use strict';
-/* global queueMicrotask, GAME_PHASES, LOG_TYPES, MutationObserver, CardTableCamera, CardBoardTransfers, CardBoardActivationTags, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, UiDiceDisplay, PlazaField, DesignTheme, CARDS, Player */
+/* global queueMicrotask, GAME_PHASES, LOG_TYPES, MutationObserver, CardTableCamera, CardTableLayout, CardBoardTransfers, CardBoardActivationTags, CardBoardFeedback, UiCardBoard, UiTurnEvents, UiTurnReceipt, UiBuildMenu, UiPlayerDisplay, UiDiceDisplay, PlazaField, DesignTheme, CARDS, Player */
 
 const CARDBOARD_ROLL_FEEDBACK_MS = 1400;
 
@@ -31,6 +31,7 @@ const CardBoardField = (() => {
     let facts = null;
     let initialized = false;
     let tableCamera = null;
+    let tableLayout = null;
     let mounted = false;
     let actionOrigin = null;
     let statusOrigin = null;
@@ -152,9 +153,19 @@ const CardBoardField = (() => {
             details.appendChild(receipt);
             node('cardboardCameraTools').appendChild(details);
         }
+        if (!tableLayout && typeof CardTableLayout !== 'undefined') {
+            tableLayout = CardTableLayout.create({ viewport, world: seats, market: center,
+                onLayout: () => tableCamera?.refresh() });
+        }
         if (!tableCamera && typeof CardTableCamera !== 'undefined') {
             tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats,
-                onViewChange: () => activationTags?.clear() });
+                onViewChange: () => {
+                    activationTags?.clear();
+                    // Clear effects anchored to the old geometry, but preserve
+                    // a fresh result queued after layout. Its frame reads the
+                    // new bounds and still checks session/turn/replay guards.
+                    transfers?.clear();
+                } });
         }
     }
 
@@ -356,6 +367,7 @@ const CardBoardField = (() => {
     }
 
     function presentPendingBuildCues() {
+        if (/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open) return;
         const pending = pendingBuildCues;
         pendingBuildCues = [];
         const game = facts?.game;
@@ -430,7 +442,9 @@ const CardBoardField = (() => {
             launcher?.focus({ preventScroll: true });
         }
         restoreMarketFocus = true;
-        presentPendingBuildCues();
+        tableLayout?.refresh();
+        if (tableLayout) globalThis.requestAnimationFrame(presentPendingBuildCues);
+        else presentPendingBuildCues();
     }
 
     function closeMarket(restoreFocus = true) {
@@ -517,6 +531,8 @@ const CardBoardField = (() => {
         const wasMounted = mounted;
         mounted = false;
         arrangeCompactStatus();
+        tableLayout?.destroy();
+        tableLayout = null;
         tableCamera?.destroy();
         tableCamera = null;
         if (!wasMounted) return;
@@ -557,7 +573,8 @@ const CardBoardField = (() => {
         const game = facts?.game;
         if (game?.players?.length) {
             const validSelf = Number.isInteger(facts.selfIndex) && facts.selfIndex >= 0 && facts.selfIndex < game.players.length;
-            tableCamera?.refresh({ selfIndex: validSelf ? facts.selfIndex : game.currentPlayerIndex, currentIndex: game.currentPlayerIndex, session });
+            tableLayout?.refresh({ selfIndex: validSelf ? facts.selfIndex : 0, playerCount: game.players.length, session });
+            tableCamera?.refresh({ selfIndex: validSelf ? facts.selfIndex : 0, currentIndex: game.currentPlayerIndex, session });
         }
         if (revealDiceCandidateAfterMarketUpdate) {
             revealDiceCandidateAfterMarketUpdate = false;
@@ -585,7 +602,11 @@ const CardBoardField = (() => {
             if (command === 'overview') tableCamera.fit();
             else if (command === 'back') { if (!tableCamera.restoreView()) tableCamera.fit(); }
             else if (command === 'market') tableCamera.focusMarket();
-            else if (command === 'self') tableCamera.focusSeat(facts?.selfIndex ?? facts?.game?.currentPlayerIndex ?? 0);
+            else if (command === 'self') {
+                const ownIndex = facts?.selfIndex;
+                tableCamera.focusSeat(Number.isInteger(ownIndex) && ownIndex >= 0 && ownIndex < (facts?.game?.players?.length || 0)
+                    ? ownIndex : facts?.game?.currentPlayerIndex ?? 0);
+            }
             else if (command === 'readable') tableCamera.readable();
             else tableCamera.zoomBy(command === 'in' ? 1.25 : 0.8);
             if (button.closest('#cardboardMoreMenu')) closeMoreMenu(true);
@@ -1001,13 +1022,13 @@ const CardBoardField = (() => {
         ensureTable();
         const validIndex = index => Number.isInteger(index) && index >= 0 && index < game.players.length;
         const currentIndex = validIndex(game.currentPlayerIndex) ? game.currentPlayerIndex : 0;
-        const selfIndex = validIndex(facts.selfIndex) ? facts.selfIndex : currentIndex;
+        const selfIndex = validIndex(facts.selfIndex) ? facts.selfIndex : null;
         const turnChanged = focusTurnIndex !== currentIndex;
         if (turnChanged) {
             selectedIndex = currentIndex;
             focusTurnIndex = currentIndex;
         }
-        if (!validIndex(selectedIndex)) selectedIndex = selfIndex;
+        if (!validIndex(selectedIndex)) selectedIndex = selfIndex ?? currentIndex;
         const newRoll = feedback?.refresh(facts) === true;
         const events = turnEventsFor(game, facts.display);
         updateCurrentResult(events, game, selfIndex);
@@ -1139,7 +1160,8 @@ const CardBoardField = (() => {
                 ?.focus({ preventScroll: true });
         }
         arrangeCompactStatus();
-        tableCamera?.refresh({ selfIndex, currentIndex, session });
+        tableLayout?.refresh({ selfIndex: selfIndex ?? 0, playerCount: game.players.length, session });
+        tableCamera?.refresh({ selfIndex: selfIndex ?? currentIndex, currentIndex, session });
         updateTown();
         const receipt = node('cardboardDiceReceipt');
         const disclosure = receipt.querySelector('details');

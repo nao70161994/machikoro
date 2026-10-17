@@ -36,6 +36,7 @@ runTest('productionと主要runtimeは抽出moduleをconsumerより先に読み�
             ['js/dicePresentation.js', 'js/cardBoardFeedback.js', 'js/savedGameValidation.js', 'js/storage.js'],
             ['js/sharedMarketMount.js', 'js/plazaField.js'],
             ['js/cardBoardTransfers.js', 'js/cardBoardField.js'],
+            ['js/cardTableLayout.js', 'js/cardTableCamera.js', 'js/cardBoardField.js'],
             ['js/cardBoardActivationTags.js', 'js/uiDiceDisplay.js', 'js/cardBoardField.js'],
             ['js/actionContract.js', 'js/cardBoardFeedback.js'],
             ['js/uiMarketTarget.js', 'js/ui.js'],

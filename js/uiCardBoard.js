@@ -216,7 +216,7 @@ const UiCardBoard = (() => {
         if (options.winnerCollection === true) {
             // A static final collection: never carry activation events or scenery
             // into a result presentation. Cards keep their shared detail actions.
-            return `<section class="cardboard-winner-collection" aria-label="${escape(player.name)}の最終所有カード"><h2>${escape(heading)}</h2>${facilityHeading}<div class="cardboard-cards" role="group" aria-label="${escape(facilityShelfLabel)}">${cards || '<p class="cardboard-empty">所有施設なし</p>'}</div><h3 class="cardboard-landmark-heading">完成ランドマーク <span>${builtCount}/${names.length}</span></h3><div class="cardboard-landmarks">${landmarks || '<p class="cardboard-empty">対象ランドマークなし</p>'}</div></section>`;
+            return `<section class="cardboard-winner-collection" tabindex="0" aria-label="${escape(player.name)}の最終所有カード"><h2>${escape(heading)}</h2><p class="cardboard-winner-scroll-help">上下にスクロールして全カードを確認 · カードを選ぶと詳細</p><h3 class="cardboard-landmark-heading">完成ランドマーク <span>${builtCount}/${names.length}</span></h3><div class="cardboard-landmarks">${landmarks || '<p class="cardboard-empty">対象ランドマークなし</p>'}</div>${facilityHeading}<div class="cardboard-cards" role="group" aria-label="${escape(facilityShelfLabel)}">${cards || '<p class="cardboard-empty">所有施設なし</p>'}</div></section>`;
         }
         if (options.contentOnly === true) return content;
         return `<section class="cardboard-player${index === options.selfIndex ? ' cardboard-player-self' : ''}${index === options.currentIndex ? ' cardboard-player-current' : ''}" data-cardboard-player-index="${index}">${content}</section>`;

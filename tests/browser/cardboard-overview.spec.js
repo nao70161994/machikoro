@@ -129,6 +129,29 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         const before = await snapshot(page);
         const camera = page.locator('#cardboardTableViewport');
         const fittedScale = Number(await camera.getAttribute('data-table-scale'));
+        const seats = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(nodes => nodes.map(node => ({
+            index: Number(node.dataset.playerIndex), side: node.dataset.seatPosition, angle: Number(node.dataset.tableAngle),
+        })));
+        expect(seats.map(seat => seat.angle).sort((a, b) => a - b)).toEqual([0, 90, 180, 270]);
+        for (const side of ['top', 'left', 'right']) {
+            const owner = seats.find(seat => seat.side === side);
+            await page.locator(`#cardboardRoster [data-cardboard-player-index="${owner.index}"]`).click();
+            await expect(camera).toHaveAttribute('data-table-angle', String((360 - owner.angle) % 360));
+            const facing = await page.locator(`#cardboardSeats > [data-player-index="${owner.index}"]`).evaluate(node => {
+                const matrix = new DOMMatrix(getComputedStyle(node.parentElement).transform)
+                    .multiply(new DOMMatrix(getComputedStyle(node).transform));
+                return { a: matrix.a, b: matrix.b, c: matrix.c, d: matrix.d };
+            });
+            expect(facing.a).toBeGreaterThan(0);
+            expect(facing.d).toBeGreaterThan(0);
+            expect(Math.abs(facing.b) + Math.abs(facing.c)).toBeLessThan(0.00001);
+            if (side === 'left') await page.screenshot({ path: testInfo.outputPath('card-table-left-readable.png') });
+            await cameraCommand(page, 'back');
+            await expect(camera).toHaveAttribute('data-table-angle', '0');
+            await expect(camera).toHaveAttribute('data-table-scale', fittedScale.toFixed(3));
+            await expectWholeTable(page, 4);
+        }
+
         await cameraCommand(page, 'readable');
         await expect.poll(async()=>Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(fittedScale);
         const readableScale = Number(await camera.getAttribute('data-table-scale'));
@@ -398,4 +421,27 @@ test('2指ピンチは卓を拡大しゲーム状態を変えない', async ({ p
         if (touching) await client.send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
         await client.detach();
     }
+});
+
+test('回転した所有カードは一度の選択で正面と詳細を開き直前の俯瞰へ戻れる', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 }, 4);
+    const viewport = page.locator('#cardboardTableViewport');
+    const before = await viewport.evaluate(element => ({ scale: element.dataset.tableScale,
+        left: element.scrollLeft, top: element.scrollTop }));
+    const stateBefore = await snapshot(page);
+    const card = page.locator('#cardboardSeats > [data-seat-position="left"] .cardboard-card').first();
+    const name = await card.getAttribute('data-card-name');
+    await card.click();
+    await expect(viewport).toHaveAttribute('data-table-angle', '270');
+    await expect(page.locator('#cardDetailModal')).toBeVisible();
+    await expect(page.locator('#cardDetailModal')).toContainText(name);
+    await page.keyboard.press('Escape');
+    await expect(card).toBeFocused();
+    await cameraCommand(page, 'back');
+    await expect(viewport).toHaveAttribute('data-table-angle', '0');
+    expect(await viewport.getAttribute('data-table-scale')).toBe(before.scale);
+    const restored = await viewport.evaluate(element => ({ left: element.scrollLeft, top: element.scrollTop }));
+    expect(Math.abs(restored.left - before.left)).toBeLessThanOrEqual(1);
+    expect(Math.abs(restored.top - before.top)).toBeLessThanOrEqual(1);
+    expect(await snapshot(page)).toEqual(stateBefore);
 });
