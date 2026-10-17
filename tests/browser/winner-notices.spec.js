@@ -43,6 +43,7 @@ for (const sample of [
             const state = GameRuntimeState.runtime.snapshot();
             state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
             cancelCpuSchedule('winner-notices-review');
+            showTurnAnnouncer(state.game.currentPlayer().name, false, state.game.currentPlayerIndex);
             for (const name of getEnabledLandmarkSelection()) {
                 if (Player.isKnownLandmark(name)) state.game.currentPlayer().landmarks[name] = true;
             }
@@ -51,6 +52,8 @@ for (const sample of [
             document.body.classList.add('pwa-banner-open');
         });
         await expect(page.locator('.winner-screen')).toBeVisible();
+        await expect(page.locator('#turnAnnouncer')).toBeHidden();
+        expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached)).toBe(false);
         if (sample.theme === 'plaza' && sample.width === 844) {
             await expect(page.locator('#confettiCanvas')).toHaveCSS('display', 'block');
             const confettiReview = await page.evaluate(() => ({

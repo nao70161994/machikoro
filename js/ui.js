@@ -469,6 +469,12 @@ function clearOnlineSessionAfterWin() {
 }
 
 function renderWinnerState(winner) {
+    turnAnnouncerTimerController.clear();
+    const turnAnnouncer = document.getElementById('turnAnnouncer');
+    if (turnAnnouncer) {
+        turnAnnouncer.style.display = 'none';
+        turnAnnouncer.classList.remove('hiding');
+    }
     plazaFeedback?.reset();
     if (typeof PlazaField !== 'undefined') PlazaField.toggleComparison(false);
     if (typeof CardBoardField !== 'undefined') {

@@ -773,9 +773,12 @@ test(`にぎわい広場の勝利カードコレクション ${viewport.width}px
         state.game.currentPlayerIndex = 0;
         state.game.players[0].cards = CARDS.slice(0, 18).flatMap(card => [card, card]);
         for (const name of getEnabledLandmarkSelection()) state.game.players[0].landmarks[name] = true;
+        showTurnAnnouncer(state.game.players[0].name, false, 0);
         render();
     });
     await expect(page.locator('.winner-screen')).toBeVisible();
+    await expect(page.locator('#turnAnnouncer')).toBeHidden();
+    expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached)).toBe(false);
     const geometry = await page.evaluate(() => {
         const screen = document.querySelector('.winner-screen').getBoundingClientRect();
         const screenElement = document.querySelector('.winner-screen');
