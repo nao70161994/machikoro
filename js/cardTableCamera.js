@@ -5,8 +5,8 @@ const CardTableCamera = (() => {
     function create({ viewport, canvas, world, onViewChange = () => {} }) {
         let scale = 0.85;
         let overviewMode = true;
-        let offsetX = 0;
-        let offsetY = 0;
+        let angle = 0;
+        let matrix = { a: scale, b: 0, c: 0, d: scale, e: 0, f: 0 };
         let state = { selfIndex: 0, currentIndex: 0, session: null };
         let session;
         let mounted = false;
@@ -37,21 +37,59 @@ const CardTableCamera = (() => {
         function measure() {
             return { width: Math.max(1, world.offsetWidth), height: Math.max(1, world.offsetHeight) };
         }
+        function normalizeAngle(value) {
+            const quarter = Math.round((Number(value) || 0) / 90);
+            return ((quarter % 4) + 4) % 4 * 90;
+        }
+        function rotation() {
+            return [{ cosine: 1, sine: 0 }, { cosine: 0, sine: 1 },
+                { cosine: -1, sine: 0 }, { cosine: 0, sine: -1 }][normalizeAngle(angle) / 90];
+        }
+        function worldToCanvas(point) {
+            return { x: matrix.a * point.x + matrix.c * point.y + matrix.e,
+                y: matrix.b * point.x + matrix.d * point.y + matrix.f };
+        }
+        function canvasToWorld(point) {
+            const determinant = matrix.a * matrix.d - matrix.b * matrix.c;
+            const x = point.x - matrix.e;
+            const y = point.y - matrix.f;
+            return { x: (matrix.d * x - matrix.c * y) / determinant,
+                y: (-matrix.b * x + matrix.a * y) / determinant };
+        }
+        function clientToWorld(x, y) {
+            const bounds = viewport.getBoundingClientRect();
+            return canvasToWorld({ x: x - bounds.left - viewport.clientLeft + viewport.scrollLeft,
+                y: y - bounds.top - viewport.clientTop + viewport.scrollTop });
+        }
+        function alignPoint(point, anchor) {
+            const position = worldToCanvas(point);
+            scroll(position.x - anchor.x, position.y - anchor.y);
+        }
         function paint() {
             const size = measure();
-            world.style.transform = `scale(${scale})`;
-            const width = Math.max(viewport.clientWidth, Math.ceil(size.width * scale));
-            const height = Math.max(viewport.clientHeight, Math.ceil(size.height * scale));
-            offsetX = Math.max(0, (width - size.width * scale) / 2);
-            offsetY = Math.max(0, (height - size.height * scale) / 2);
-            const nextView = `${scale}:${width}:${height}:${offsetX}:${offsetY}`;
+            const { cosine, sine } = rotation();
+            const corners = [[0, 0], [size.width, 0], [0, size.height], [size.width, size.height]]
+                .map(([x, y]) => ({ x: cosine * x - sine * y, y: sine * x + cosine * y }));
+            const minX = Math.min(...corners.map(point => point.x));
+            const minY = Math.min(...corners.map(point => point.y));
+            const extentX = Math.max(...corners.map(point => point.x)) - minX;
+            const extentY = Math.max(...corners.map(point => point.y)) - minY;
+            const width = Math.max(viewport.clientWidth, Math.ceil(extentX * scale));
+            const height = Math.max(viewport.clientHeight, Math.ceil(extentY * scale));
+            const offsetX = Math.max(0, (width - extentX * scale) / 2);
+            const offsetY = Math.max(0, (height - extentY * scale) / 2);
+            matrix = { a: scale * cosine, b: scale * sine, c: -scale * sine, d: scale * cosine,
+                e: offsetX - minX * scale, f: offsetY - minY * scale };
+            const nextView = `${scale}:${angle}:${width}:${height}:${matrix.e}:${matrix.f}`;
             if (paintedView && paintedView !== nextView) onViewChange();
             paintedView = nextView;
             canvas.style.width = `${width}px`;
             canvas.style.height = `${height}px`;
-            world.style.left = `${offsetX}px`;
-            world.style.top = `${offsetY}px`;
+            world.style.left = '0';
+            world.style.top = '0';
+            world.style.transform = `matrix(${matrix.a},${matrix.b},${matrix.c},${matrix.d},${matrix.e},${matrix.f})`;
             viewport.dataset.tableScale = scale.toFixed(3);
+            viewport.dataset.tableAngle = String(normalizeAngle(angle));
             viewport.dataset.tableMode = overviewMode ? 'overview' : 'free';
         }
         function scroll(left, top) {
@@ -61,24 +99,35 @@ const CardTableCamera = (() => {
             return [...world.querySelectorAll('.cardboard-player[data-player-index]')]
                 .find(element => Number(element.dataset.playerIndex) === Number(index));
         }
+        function facePlayer(player) {
+            angle = normalizeAngle(-Number(player?.dataset.tableAngle || 0));
+        }
         function captureView() {
-            return { scale, overviewMode, x: (viewport.scrollLeft + viewport.clientWidth / 2 - offsetX) / scale,
-                y: (viewport.scrollTop + viewport.clientHeight / 2 - offsetY) / scale };
+            const center = canvasToWorld({ x: viewport.scrollLeft + viewport.clientWidth / 2,
+                y: viewport.scrollTop + viewport.clientHeight / 2 });
+            const size = measure();
+            return { scale, angle, overviewMode, x: center.x, y: center.y,
+                left: viewport.scrollLeft, top: viewport.scrollTop,
+                viewportWidth: viewport.clientWidth, viewportHeight: viewport.clientHeight,
+                worldWidth: size.width, worldHeight: size.height };
         }
-        function rememberView() {
-            returnView = captureView();
-        }
+        function rememberView() { returnView = captureView(); }
         function restoreView() {
             if (destroyed || !returnView) return false;
             const previous = returnView;
             returnView = null;
-            if (previous.overviewMode) fit();
-            else {
-                overviewMode = false;
-                scale = previous.scale;
-                paint();
-                scroll(offsetX + previous.x * scale - viewport.clientWidth / 2,
-                    offsetY + previous.y * scale - viewport.clientHeight / 2);
+            overviewMode = previous.overviewMode;
+            scale = previous.scale;
+            angle = previous.angle;
+            paint();
+            const size = measure();
+            if (previous.viewportWidth === viewport.clientWidth && previous.viewportHeight === viewport.clientHeight &&
+                    previous.worldWidth === size.width && previous.worldHeight === size.height) {
+                // Avoid inverse/forward floating-point roundoff: WebKit floors
+                // fractional scroll coordinates and otherwise drifts by 1px.
+                scroll(previous.left, previous.top);
+            } else {
+                alignPoint(previous, { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
             }
             return true;
         }
@@ -88,20 +137,21 @@ const CardTableCamera = (() => {
             if (!player) return;
             if (!preserveReadable) rememberView();
             overviewMode = false;
-            const headerBefore = player.querySelector('.cardboard-header') || player;
-            const firstBefore = player.querySelector('.cardboard-cards button');
-            const rowHeight = firstBefore
-                ? (firstBefore.getBoundingClientRect().bottom - headerBefore.getBoundingClientRect().top) / scale
-                : headerBefore.getBoundingClientRect().height / scale;
-            const fittedScale = Math.min(0.85, Math.max(0.55, (viewport.clientHeight - 16) / Math.max(1, rowHeight)));
-            scale = preserveReadable ? scale : clamp(fittedScale < 0.85 ? fittedScale : Math.max(scale, 0.85));
+            facePlayer(player);
+            // Rotate first: an upside-down seat's screen bottom/top cannot be
+            // used as intrinsic row measurements until its content faces us.
             paint();
             const header = player.querySelector('.cardboard-header') || player;
             const cards = player.querySelector('.cardboard-cards');
             const first = cards?.querySelector('button');
+            const rowHeight = first
+                ? (first.getBoundingClientRect().bottom - header.getBoundingClientRect().top) / scale
+                : header.getBoundingClientRect().height / scale;
+            const fittedScale = Math.min(0.85, Math.max(0.55, (viewport.clientHeight - 16) / Math.max(1, rowHeight)));
+            if (!preserveReadable) scale = clamp(fittedScale < 0.85 ? fittedScale : Math.max(scale, 0.85));
+            paint();
             const headerBounds = header.getBoundingClientRect();
             const firstBounds = first?.getBoundingClientRect();
-            const origin = world.getBoundingClientRect();
             let left = firstBounds?.left ?? headerBounds.left;
             let right = firstBounds?.right ?? headerBounds.right;
             let bottom = firstBounds?.bottom ?? headerBounds.bottom;
@@ -114,56 +164,50 @@ const CardTableCamera = (() => {
                     bottom = Math.max(bottom, bounds.bottom);
                 }
             }
-            // Keep the owner and first facility row together, even when later rows
-            // make the complete player region much taller than the viewport.
-            const top = headerBounds.top;
-            const height = bottom - top;
-            const targetTop = player.getBoundingClientRect().height + 16 > viewport.clientHeight
-                ? top - origin.top - 8
-                : top - origin.top + height / 2 - viewport.clientHeight / 2;
-            const targetLeft = right - left + 16 > viewport.clientWidth
-                ? offsetX + left - origin.left - 8
-                : offsetX + (left + right) / 2 - origin.left - viewport.clientWidth / 2;
-            scroll(targetLeft, offsetY + targetTop);
+            const wide = right - left + 16 > viewport.clientWidth;
+            const tall = player.getBoundingClientRect().height + 16 > viewport.clientHeight;
+            const point = clientToWorld(wide ? left : (left + right) / 2,
+                tall ? headerBounds.top : (headerBounds.top + bottom) / 2);
+            alignPoint(point, { x: wide ? 8 : viewport.clientWidth / 2, y: tall ? 8 : viewport.clientHeight / 2 });
         }
         function focusCard(card) {
             if (destroyed || !card?.isConnected || !world.contains(card)) return;
-            const before = card.getBoundingClientRect();
-            if (!before.width || !before.height) return;
+            const initial = card.getBoundingClientRect();
+            if (!initial.width || !initial.height) return;
             rememberView();
             overviewMode = false;
+            facePlayer(card.closest('.cardboard-player'));
+            paint();
+            const before = card.getBoundingClientRect();
             const fitted = Math.min((viewport.clientWidth - 24) / (before.width / scale),
                 (viewport.clientHeight - 24) / (before.height / scale));
             scale = clamp(Math.min(Math.max(scale, 0.85), fitted));
             paint();
             const bounds = card.getBoundingClientRect();
-            const origin = world.getBoundingClientRect();
-            scroll(offsetX + bounds.left + bounds.width / 2 - origin.left - viewport.clientWidth / 2,
-                offsetY + bounds.top + bounds.height / 2 - origin.top - viewport.clientHeight / 2);
+            alignPoint(clientToWorld(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
+                { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
         }
         function focusMarket() {
             const market = world.querySelector('#cardboardCenter');
             if (destroyed || !market) return;
             rememberView();
             overviewMode = false;
+            angle = 0;
             scale = clamp(Math.max(scale, 0.75));
             paint();
             market.querySelector('.compact-market-facilities')?.scrollTo({ top: 0, left: 0, behavior: 'instant' });
             const heading = market.querySelector('.compact-market-header') || market;
             const bounds = heading.getBoundingClientRect();
             const marketBounds = market.getBoundingClientRect();
-            const origin = world.getBoundingClientRect();
-            // Open the market at its heading and first row, rather than halfway
-            // down the inventory on a short landscape screen.
-            const left = marketBounds.width > viewport.clientWidth
-                ? marketBounds.left - origin.left + offsetX - 8
-                : marketBounds.left + marketBounds.width / 2 - origin.left + offsetX - viewport.clientWidth / 2;
-            scroll(left, bounds.top - origin.top + offsetY - 8);
+            const wide = marketBounds.width > viewport.clientWidth;
+            alignPoint(clientToWorld(wide ? marketBounds.left : marketBounds.left + marketBounds.width / 2, bounds.top),
+                { x: wide ? 8 : viewport.clientWidth / 2, y: 8 });
         }
         function fit() {
             if (destroyed) return;
             overviewMode = true;
             returnView = null;
+            angle = 0;
             const size = measure();
             scale = clamp(Math.min(viewport.clientWidth / size.width, viewport.clientHeight / size.height));
             paint();
@@ -174,20 +218,16 @@ const CardTableCamera = (() => {
             rememberView();
             overviewMode = false;
             scale = clamp(Math.max(0.95, scale * 1.15));
-            paint();
             focusSeat(state.selfIndex, true);
         }
         function zoomBy(factor, anchor = null) {
             if (destroyed || !Number.isFinite(factor) || factor <= 0) return;
             overviewMode = false;
             const point = anchor || { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 };
-            const center = {
-                x: (viewport.scrollLeft + point.x - offsetX) / scale,
-                y: (viewport.scrollTop + point.y - offsetY) / scale
-            };
+            const center = canvasToWorld({ x: viewport.scrollLeft + point.x, y: viewport.scrollTop + point.y });
             scale = clamp(scale * factor);
             paint();
-            scroll(offsetX + center.x * scale - point.x, offsetY + center.y * scale - point.y);
+            alignPoint(center, point);
         }
         function layout() {
             frame = 0;
@@ -195,22 +235,18 @@ const CardTableCamera = (() => {
             const changedSession = !mounted || session !== state.session;
             const changedViewport = lastWidth !== viewport.clientWidth || lastHeight !== viewport.clientHeight;
             if (!viewport.clientWidth || !viewport.clientHeight) return;
-            const retainedCenter = mounted && !overviewMode ? {
-                x: (viewport.scrollLeft + lastWidth / 2 - offsetX) / scale,
-                y: (viewport.scrollTop + lastHeight / 2 - offsetY) / scale
-            } : null;
+            const retainedCenter = mounted && !overviewMode ? canvasToWorld({
+                x: viewport.scrollLeft + lastWidth / 2, y: viewport.scrollTop + lastHeight / 2
+            }) : null;
             lastWidth = viewport.clientWidth;
             lastHeight = viewport.clientHeight;
             session = state.session;
             mounted = true;
-            if (changedSession || overviewMode) {
-                fit();
-            } else {
+            if (changedSession || overviewMode) fit();
+            else {
                 paint();
-                if (changedViewport && retainedCenter) {
-                    scroll(offsetX + retainedCenter.x * scale - viewport.clientWidth / 2,
-                        offsetY + retainedCenter.y * scale - viewport.clientHeight / 2);
-                }
+                if (changedViewport && retainedCenter) alignPoint(retainedCenter,
+                    { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
             }
         }
         function refresh(nextState = {}) {
@@ -302,11 +338,8 @@ const CardTableCamera = (() => {
                 if (event.touches.length === 1) suppressClick = false;
                 return;
             }
-            pinch = {
-                distance: point.distance, scale,
-                x: (viewport.scrollLeft + point.x - offsetX) / scale,
-                y: (viewport.scrollTop + point.y - offsetY) / scale
-            };
+            const center = canvasToWorld({ x: viewport.scrollLeft + point.x, y: viewport.scrollTop + point.y });
+            pinch = { distance: point.distance, scale, x: center.x, y: center.y };
         }
         function touchmove(event) {
             const point = touchGeometry(event.touches);
@@ -316,18 +349,28 @@ const CardTableCamera = (() => {
             suppressClick = true;
             scale = clamp(pinch.scale * point.distance / pinch.distance);
             paint();
-            scroll(offsetX + pinch.x * scale - point.x, offsetY + pinch.y * scale - point.y);
+            alignPoint(pinch, point);
         }
         function touchend(event) {
             if (event.touches.length !== 2) pinch = null;
         }
         function click(event) {
-            if (!suppressClick) return;
-            suppressClick = false;
-            event.preventDefault();
-            event.stopPropagation();
+            if (suppressClick) {
+                suppressClick = false;
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+            if (event.defaultPrevented) return;
+            const card = event.target.closest?.('.cardboard-card, .cardboard-landmark');
+            const player = card?.closest('.cardboard-player');
+            if (!card || !player || !world.contains(card)) return;
+            const facing = normalizeAngle(angle + Number(player.dataset.tableAngle || 0));
+            if (facing !== 0 || scale < 0.85) focusCard(card);
+            // Keep the same click bubbling to the existing card-detail handler.
         }
         const listeners = [
+            ['scroll', () => onViewChange(), { passive: true }],
             ['wheel', wheel, { passive: false }], ['keydown', keydown, false],
             ['touchstart', touchstart, { passive: true }], ['touchmove', touchmove, { passive: false }],
             ['touchend', touchend, { passive: true }], ['touchcancel', touchend, { passive: true }],
@@ -356,6 +399,7 @@ const CardTableCamera = (() => {
             pinch = null;
             viewport.style.touchAction = previousTouchAction;
             delete viewport.dataset.tableScale;
+            delete viewport.dataset.tableAngle;
             delete viewport.dataset.tableMode;
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);

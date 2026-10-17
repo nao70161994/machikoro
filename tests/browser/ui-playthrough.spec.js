@@ -17,14 +17,34 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     if (!Number.isInteger(stopAfter) || stopAfter < 0) throw new Error('Invalid partial action limit');
     const viewport = process.env.UI_PLAYTHROUGH_LANDSCAPE === '1'
         ? { width: 844, height: 390 } : { width: 390, height: 844 };
+    const cpuSpeedMs = Number(process.env.UI_PLAYTHROUGH_CPU_SPEED || 1500);
+    if (!Number.isInteger(cpuSpeedMs) || cpuSpeedMs < 100 || cpuSpeedMs > 3000 || cpuSpeedMs % 100 !== 0) {
+        throw new Error('Invalid CPU speed');
+    }
     const started = Date.now();
     const report = { mode: stopAfter ? 'partial-ui-smoke' : 'automated-human-seat-ui',
-        viewport, completed: false, humanActions: 0, clicks: 0, keyboardActions: 0, cpuWaitMs: 0, actions: [], screenshots: [], pageErrors: [] };
+        viewport, cpuSpeedMs, completed: false, humanActions: 0, clicks: 0, keyboardActions: 0, cpuWaitMs: 0, actions: [], screenshots: [], pageErrors: [] };
     const stages = new Set();
     page.on('pageerror', error => report.pageErrors.push(error.message));
     const capture = async stage => {
         if (stages.has(stage)) return;
         stages.add(stage);
+        const hud = await page.evaluate(() => {
+            if (document.querySelector('.winner-screen')) return { overviewVisible: true, activityOverlapsRoster: false };
+            const overview = document.querySelector('[data-cardboard-camera="overview"]').getBoundingClientRect();
+            const tools = document.getElementById('cardboardCameraTools').getBoundingClientRect();
+            const roster = document.getElementById('cardboardRoster').getBoundingClientRect();
+            const activity = document.getElementById('gameConnectivityPanel').getBoundingClientRect();
+            return {
+                overviewVisible: overview.width > 0 && overview.left >= Math.max(0, tools.left) - 1 &&
+                    overview.right <= Math.min(innerWidth, tools.right) + 1,
+                activityOverlapsRoster: activity.width > 0 && activity.height > 0 &&
+                    Math.min(activity.right, roster.right) - Math.max(activity.left, roster.left) > 1 &&
+                    Math.min(activity.bottom, roster.bottom) - Math.max(activity.top, roster.top) > 1,
+            };
+        });
+        expect(hud.overviewVisible, `${stage}: 全体への入口を隠さない`).toBe(true);
+        expect(hud.activityOverlapsRoster, `${stage}: 処理通知で所有者を覆わない`).toBe(false);
         const file = testInfo.outputPath(`ui-playthrough-${stage}.png`);
         await page.screenshot({ path: file, fullPage: false });
         await testInfo.attach(stage, { path: file, contentType: 'image/png' });
@@ -155,9 +175,24 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         await click(page.locator('#customGameSetup > summary'), '対局設定');
         await page.locator('[data-ui-change="localPlayerType"][data-player-index="0"]').selectOption('human');
         await page.locator('[data-ui-change="localPlayerType"][data-player-index="1"]').selectOption('weak');
+        if (cpuSpeedMs !== 1500) {
+            const flow = page.locator('#customGameSetup .play-flow-settings > summary');
+            await click(flow, 'CPU速度の設定');
+            const speed = page.locator('#cpuSpeed');
+            await speed.focus();
+            await speed.press('Home');
+            report.keyboardActions++;
+            for (let value = 100; value < cpuSpeedMs; value += 100) {
+                await speed.press('ArrowRight');
+                report.keyboardActions++;
+            }
+            await expect(speed).toHaveValue(String(cpuSpeedMs));
+            await click(flow, 'CPU速度の設定を閉じる');
+        }
         await click(page.locator('#btnStart'), '開始設定を確認');
         await click(page.locator('#confirmOkBtn'), '対局開始');
         await expect(page.locator('#gameScreen')).toBeVisible();
+        expect(await page.evaluate(() => GameSetupState.runtime.snapshot().cpuSpeed)).toBe(cpuSpeedMs);
         lastState = await read();
         expect(lastState.humanIndex).toBeGreaterThanOrEqual(0);
         const lineup = await page.evaluate(() => GameRuntimeState.runtime.snapshot().cpuPlayers.map(cpu => cpu ? cpu.difficulty : 'human'));

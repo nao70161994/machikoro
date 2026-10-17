@@ -15,6 +15,7 @@ const browserMaintenanceFiles = Object.freeze([
     'js/uiCardBoard.js',
     'js/cardBoardFeedback.js',
     'js/cardBoardField.js',
+    'js/cardTableLayout.js',
     'js/cardTableCamera.js',
     'js/uiPlayerInsights.js',
     'js/dicePresentation.js',
