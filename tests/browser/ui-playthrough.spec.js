@@ -29,6 +29,22 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     const capture = async stage => {
         if (stages.has(stage)) return;
         stages.add(stage);
+        const hud = await page.evaluate(() => {
+            if (document.querySelector('.winner-screen')) return { overviewVisible: true, activityOverlapsRoster: false };
+            const overview = document.querySelector('[data-cardboard-camera="overview"]').getBoundingClientRect();
+            const tools = document.getElementById('cardboardCameraTools').getBoundingClientRect();
+            const roster = document.getElementById('cardboardRoster').getBoundingClientRect();
+            const activity = document.getElementById('gameConnectivityPanel').getBoundingClientRect();
+            return {
+                overviewVisible: overview.width > 0 && overview.left >= Math.max(0, tools.left) - 1 &&
+                    overview.right <= Math.min(innerWidth, tools.right) + 1,
+                activityOverlapsRoster: activity.width > 0 && activity.height > 0 &&
+                    Math.min(activity.right, roster.right) - Math.max(activity.left, roster.left) > 1 &&
+                    Math.min(activity.bottom, roster.bottom) - Math.max(activity.top, roster.top) > 1,
+            };
+        });
+        expect(hud.overviewVisible, `${stage}: 全体への入口を隠さない`).toBe(true);
+        expect(hud.activityOverlapsRoster, `${stage}: 処理通知で所有者を覆わない`).toBe(false);
         const file = testInfo.outputPath(`ui-playthrough-${stage}.png`);
         await page.screenshot({ path: file, fullPage: false });
         await testInfo.attach(stage, { path: file, contentType: 'image/png' });

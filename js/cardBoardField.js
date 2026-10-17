@@ -35,6 +35,7 @@ const CardBoardField = (() => {
     let mounted = false;
     let actionOrigin = null;
     let statusOrigin = null;
+    let connectivityOrigin = null;
     let toolbarOrigin = null;
     let guideOrigin = null;
     let selectedIndex = null;
@@ -82,6 +83,20 @@ const CardBoardField = (() => {
         const status = node('status');
         const actions = node('cardboardActionSlot')?.querySelector('.game-action-panel');
         const compact = mounted && !status?.classList.contains('game-winner');
+        const connectivity = node('gameConnectivityPanel');
+        if (compact && connectivity && actions) {
+            if (!connectivityOrigin) {
+                connectivityOrigin = document.createComment('cardboard-connectivity-origin');
+                connectivity.parentNode.insertBefore(connectivityOrigin, connectivity);
+            }
+            if (connectivity.parentNode !== actions) actions.appendChild(connectivity);
+            connectivity.classList.add('cardboard-docked-connectivity');
+        } else if (connectivityOrigin) {
+            if (connectivity) connectivityOrigin.parentNode?.insertBefore(connectivity, connectivityOrigin);
+            connectivityOrigin.remove();
+            connectivityOrigin = null;
+            connectivity?.classList.remove('cardboard-docked-connectivity');
+        }
         if (compact && status && actions) {
             if (!statusOrigin) {
                 statusOrigin = document.createComment('cardboard-status-origin');

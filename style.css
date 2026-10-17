@@ -13545,6 +13545,10 @@ html[data-design="cardboard"] #cardboardCameraTools {
     flex-wrap: nowrap;
     min-width: 0;
     gap: 3px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-padding-inline: 2px;
 }
 
 html[data-design="cardboard"] #cardboardCameraTools > button,
@@ -14045,9 +14049,9 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     grid-auto-flow: row;
     grid-auto-rows: 132px;
     width: 100%;
-    height: 276px;
+    height: calc(var(--table-market-rows, 2) * 140px - 4px);
     min-height: 0;
-    max-height: 276px;
+    max-height: calc(var(--table-market-rows, 2) * 140px - 4px);
     padding: 2px 0;
     box-sizing: border-box;
     gap: 8px;
@@ -14419,23 +14423,7 @@ html[data-design="cardboard"] #cardboardCurrentResult[hidden] {
     display: none;
 }
 
-/* An active result uses the existing toolbar, leaving the felt unobstructed. */
-html[data-design="cardboard"] #cardboardCameraTools:has(#cardboardEventDetails[data-has-result="true"]) > [data-cardboard-camera="overview"] {
-    order: -4;
-}
-
-html[data-design="cardboard"] #cardboardCameraTools:has(#cardboardEventDetails[data-has-result="true"]) > [data-cardboard-camera="in"] {
-    order: -3;
-}
-
-html[data-design="cardboard"] #cardboardCameraTools:has(#cardboardEventDetails[data-has-result="true"]) > [data-cardboard-camera="out"] {
-    order: -2;
-}
-
-html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"] {
-    order: -1;
-}
-
+/* Result content changes without reordering the scrollable camera toolbar. */
 html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"] > summary {
     flex-direction: column;
     width: 92px;
@@ -15009,4 +14997,36 @@ html[data-design="cardboard"] body.accessibility-high-contrast #status .winner-c
     color: #fff;
     background: #000;
     border-color: #fff;
+}
+
+/* Activity belongs to the action dock, never over a player identity. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardActionSlot #gameConnectivityPanel.cardboard-docked-connectivity {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    position: static;
+    inset: auto;
+    transform: none;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    min-height: 0;
+    max-height: 64px;
+    margin: 0;
+    padding: 2px 4px;
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr) auto;
+    overflow: auto;
+    gap: 3px;
+}
+html[data-design="cardboard"] #cardboardActionSlot #gameConnectivityPanel.cardboard-docked-connectivity .game-activity-status {
+    min-height: 22px;
+    margin: 0;
+    padding: 2px 4px;
+    font-size: 11px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardCameraTools > [data-cardboard-camera="overview"] {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    flex-shrink: 0;
 }

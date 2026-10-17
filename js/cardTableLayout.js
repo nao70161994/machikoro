@@ -53,10 +53,12 @@ const CardTableLayout = (() => {
             panels.forEach(observe);
             const wide = viewport.clientWidth > viewport.clientHeight;
             const shallow = viewport.clientWidth / viewport.clientHeight > 2.2;
+            const oppositeOnly = panels.length === 2;
             // A tall screen needs a narrower centre, otherwise its width
             // determines the fit scale and leaves most of the height unused.
             const columns = wide ? 6 : 2;
             setStyle(market, '--table-market-columns', String(columns));
+            setStyle(market, '--table-market-rows', oppositeOnly && shallow ? '1' : '2');
             setStyle(market, 'width', `${columns * 160 + (columns - 1) * 8 + 16}px`);
             setStyle(market, 'position', 'absolute');
             const marketAtHome = !!market.querySelector('#cardboardMarket');
@@ -73,9 +75,10 @@ const CardTableLayout = (() => {
                     // Side cards rotate into vertical strips. Give those strips
                     // fewer native columns on a wide screen, and reverse the
                     // balance when the viewport itself is tall.
-                    const maximumColumns = wide
-                        ? lateral ? shallow ? 2 : 4 : count >= 13 ? 8 : 6
-                        : lateral ? 6 : count >= 13 ? 3 : 2;
+                    let maximumColumns;
+                    if (lateral) maximumColumns = wide ? shallow ? 2 : 4 : 6;
+                    else if (oppositeOnly) maximumColumns = wide ? shallow ? 12 : 8 : count >= 13 ? 4 : 3;
+                    else maximumColumns = wide ? count >= 13 ? 8 : 6 : count >= 13 ? 3 : 2;
                     const ownerColumns = Math.min(maximumColumns, Math.max(1, count));
                     setStyle(panel, '--table-owner-columns', String(ownerColumns));
                     setStyle(panel, 'width', `${ownerColumns * 160 + (ownerColumns - 1) * 8 + 16}px`);

@@ -269,8 +269,24 @@ for (const count of [2,3,5,10]) {
             });
             await expectWholeTable(page,2);
             await expectOwnedCards(page);
-            expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards=>Math.min(...cards.map(card=>card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(24);
+            expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards=>Math.min(...cards.map(card=>card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(44);
             await page.screenshot({path:testInfo.outputPath('card-table-2-grown.png')});
+            await page.evaluate(() => {
+                GameSetupState.runtime.setCpuSpeed(3000);
+                document.getElementById('cpuSpeed').value = '3000';
+                startGameNow(2, Array.from({ length: 2 }, (_, index) => ({
+                    type: 'cpu', difficulty: 'weak', name: `CPU${index + 1}`,
+                })));
+            });
+            await expect(page.locator('#cardboardActionSlot #gameConnectivityPanel')).toBeVisible();
+            await expect(page.locator('#gameActivityStatus')).toContainText('CPU');
+            await expectWholeTable(page, 2);
+            expect(await page.evaluate(() => {
+                const roster = document.getElementById('cardboardRoster').getBoundingClientRect();
+                const activity = document.getElementById('gameConnectivityPanel').getBoundingClientRect();
+                return activity.top >= roster.bottom && activity.bottom <= innerHeight;
+            }), 'CPU通知は所有者HUDを覆わず操作欄へ収まる').toBe(true);
+            await page.screenshot({path:testInfo.outputPath('card-table-2-cpu-dock.png')});
         }
     });
 }
