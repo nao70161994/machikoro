@@ -54,3 +54,11 @@
 npm testは既定unitグループ364ファイルを一括実行しexit0。追加勝利順変更後のui-card-board targeted unitも成功。新layout→camera→fieldのscript順assertをruntime-dependenciesへ追加し成功。最終4幅の画像をfinal-*で保存（全suite終了前、個別ケースは通過）。rootが320grownと1440grownを目視し、旧版の大きな上下空白とPCスポークが改善したことを確認した。
 
 最終列調整後の独立目視は320grown/late/late-readable、390grown、1440grownを評価。portraitは卓高さの約85%を使い、PCカード幅は旧約50pxから約75pxへ改善。正面精読は約135pxでアート/出目/枚数/名称を確認。重なりや所有者欠落の新majorなし、採用支持。市場2列×2行初期表示とPC席間の空間、多人数終盤の倍率は残る制約として報告する。
+
+## Push・CIで見つかった復帰誤差
+
+製品de359909を一括PushしDraft PR16を作成した。Release CI39016404730でルール/PWAと2人/4人CPU（両広場）は成功。card-table jobは18件中17成功、既存『市場確認から直前の倍率と位置へ戻れる』がWebKitだけleft270→269の1px差で再試行も失敗した。期待値を緩和せず製品側を修正：captureに元scroll/viewport/world寸法を保存し、同寸法なら逆変換の浮動小数往復を避け元scrollを直接復元。画面/盤面寸法が変わった場合は従来のmodel中心復元を保持する。
+
+基準候補39016419217は成功。独立担当が4枚すべて目視し欠落/重なり/アート抜けなし、席方向一致と判断。序盤画像の回帰基準として採用を承認（商用同等/portrait余白最適化の保証ではない）。にぎわい4枚のみ更新、他12枚はbyte一致を確認。初回visual CIの4差分を隠すためではなく、実構造変更と独立目視を根拠とする。
+
+勝利4幅の精密操作もRelease card-table shardの末尾へ追加し、同一runnerの1workerでまとめて確認する。発動連鎖順のsmall文字色は高コントラストでも親の文字色を継承するよう修正。最終版の完走はこの追加版のCI/自然UIで確認し、旧de359909の成功をそのまま移し替えない。

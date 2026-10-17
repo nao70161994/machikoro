@@ -105,7 +105,11 @@ const CardTableCamera = (() => {
         function captureView() {
             const center = canvasToWorld({ x: viewport.scrollLeft + viewport.clientWidth / 2,
                 y: viewport.scrollTop + viewport.clientHeight / 2 });
-            return { scale, angle, overviewMode, x: center.x, y: center.y };
+            const size = measure();
+            return { scale, angle, overviewMode, x: center.x, y: center.y,
+                left: viewport.scrollLeft, top: viewport.scrollTop,
+                viewportWidth: viewport.clientWidth, viewportHeight: viewport.clientHeight,
+                worldWidth: size.width, worldHeight: size.height };
         }
         function rememberView() { returnView = captureView(); }
         function restoreView() {
@@ -116,7 +120,15 @@ const CardTableCamera = (() => {
             scale = previous.scale;
             angle = previous.angle;
             paint();
-            alignPoint(previous, { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
+            const size = measure();
+            if (previous.viewportWidth === viewport.clientWidth && previous.viewportHeight === viewport.clientHeight &&
+                    previous.worldWidth === size.width && previous.worldHeight === size.height) {
+                // Avoid inverse/forward floating-point roundoff: WebKit floors
+                // fractional scroll coordinates and otherwise drifts by 1px.
+                scroll(previous.left, previous.top);
+            } else {
+                alignPoint(previous, { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
+            }
             return true;
         }
         function focusSeat(index, preserveReadable = false) {

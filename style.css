@@ -14757,7 +14757,7 @@ html[data-design="cardboard"] .cardboard-activation-tag span {
 }
 html[data-design="cardboard"] .cardboard-activation-tag small {
     font-size: 10px;
-    color: #44605a;
+    color: inherit;
 }
 html[data-design="cardboard"] .cardboard-activation-tag[data-category="blue"] { border-left-color: #247dca; }
 html[data-design="cardboard"] .cardboard-activation-tag[data-category="green"] { border-left-color: #26884c; }

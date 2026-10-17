@@ -83,7 +83,7 @@ jobs:
         include:
           - shard: card-table
             command: >-
-              npx playwright test cardboard-overview.spec.js --project=mobile-webkit --workers=1
+              npx playwright test cardboard-overview.spec.js --project=mobile-webkit --workers=1 && npx playwright test cardboard-view.spec.js --grep '勝利カードコレクション' --project=mobile-webkit --workers=1
           - shard: browser
             command: >-
               npx playwright test title-layout.spec.js --project=mobile-webkit --workers=1 && npx playwright test cardboard-online-compat.spec.js --project=mobile-webkit --workers=1 && npx playwright test winner-notices.spec.js --project=mobile-webkit --workers=1 && npx playwright test plaza-event-receipts.spec.js --grep 'ログを閉じたまま出目|施設とランドマーク' --project=mobile-webkit --workers=1 && npx playwright test cardboard-view.spec.js --grep 'カード盤面は4ビュー切替でも同一状態と共有市場を保つ (844|1440)|新しいロールの発動帯' --project=mobile-webkit --workers=1
