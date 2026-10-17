@@ -802,6 +802,12 @@ test(`にぎわい広場の勝利カードコレクション ${viewport.width}px
     expect(rematchBottom).toBeLessThan(viewport.height);
     await expect(page.locator('.cardboard-winner-collection')).toBeVisible();
     await expect(page.locator('.cardboard-winner-collection .cardboard-card')).toHaveCount(18);
+    if (viewport.width <= 390) {
+        const firstRow = await page.locator('.cardboard-winner-collection .cardboard-card').evaluateAll(cards =>
+            cards.slice(0, 2).map(card => ({ x: card.getBoundingClientRect().x, y: card.getBoundingClientRect().y })));
+        expect(firstRow[1].x).toBeGreaterThan(firstRow[0].x);
+        expect(Math.abs(firstRow[1].y - firstRow[0].y)).toBeLessThanOrEqual(1);
+    }
     await expect(page.locator('.cardboard-winner-collection .cardboard-landmark-built')).toHaveCount(6);
     await expect(page.locator('.cardboard-winner-collection .town-street')).toHaveCount(0);
     const owned = page.locator('.cardboard-winner-collection [data-card-name="麦畑"]');

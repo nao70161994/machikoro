@@ -1,6 +1,6 @@
-# 実卓向きカード卓の評価（進行中）
+# 実卓向きカード卓の比較評価
 
-基準main:205be605。実装/検証の正確な版と状態は[進捗記録](ORIENTED-CARD-TABLE-PROGRESS.md)。この文書は現時点の評価であり完成宣言ではない。
+基準main:205be605。実装/検証の正確な版と状態は[進捗記録](ORIENTED-CARD-TABLE-PROGRESS.md)。公式と同等以上という断定ではなく、改善と検証限界の記録である。最終CI/同版実対局の結果は[PR16のChecksと本文](https://github.com/nao70161994/machikoro/pull/16)を参照。
 
 ## 公式との比較
 
