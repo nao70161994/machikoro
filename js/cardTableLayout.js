@@ -1,7 +1,31 @@
 'use strict';
 
 // Presentation geometry only. Player order and game state remain untouched.
+/** @typedef {{width: number, height: number}} CardTableFootprint */
+/** @typedef {{market: number, rows: number, side: number | null, end: number | null, packing?: string}} CardTablePlan */
 const CardTableLayout = (() => {
+    /** @param {{top: CardTableFootprint, right: CardTableFootprint, bottom: CardTableFootprint, left: CardTableFootprint, market: CardTableFootprint, gap?: number, padding?: number}} options */
+    function computePinwheelGeometry({ top, right, bottom, left, market, gap = 24, padding = 24 }) {
+        const holeWidth = Math.max(market.width, ((bottom.width - gap - right.width) + (top.width - gap - left.width)) / 2);
+        const holeHeight = Math.max(market.height, ((left.height - gap - bottom.height) + (right.height - gap - top.height)) / 2);
+        const rects = {
+            top: { ...top, x: holeWidth - top.width, y: -gap - top.height },
+            right: { ...right, x: holeWidth + gap, y: holeHeight - right.height },
+            bottom: { ...bottom, x: 0, y: holeHeight + gap },
+            left: { ...left, x: -gap - left.width, y: 0 },
+            market: { ...market, x: (holeWidth - market.width) / 2, y: (holeHeight - market.height) / 2 },
+        };
+        const values = Object.values(rects);
+        const minX = Math.min(...values.map(rect => rect.x));
+        const minY = Math.min(...values.map(rect => rect.y));
+        const maxX = Math.max(...values.map(rect => rect.x + rect.width));
+        const maxY = Math.max(...values.map(rect => rect.y + rect.height));
+        return { width: maxX - minX + padding * 2, height: maxY - minY + padding * 2,
+            hole: { width: holeWidth, height: holeHeight },
+            rects: Object.fromEntries(Object.entries(rects).map(([name, rect]) => [name,
+                { ...rect, x: rect.x - minX + padding, y: rect.y - minY + padding }])) };
+    }
+
     function create({ world, viewport, market, onLayout = () => {} }) {
         let state = { selfIndex: 0, playerCount: 0, session: null };
         let frame = 0;
@@ -10,6 +34,7 @@ const CardTableLayout = (() => {
         const observed = new Set();
         const ownerMeasurements = new WeakMap();
         let marketMeasurements = null;
+        /** @type {CardTablePlan | null} */
         let lastSelection = null;
         const view = world.ownerDocument.defaultView;
         const setStyle = (element, name, value) => {
@@ -92,8 +117,7 @@ const CardTableLayout = (() => {
                 }
                 return cache.sizes.get(columns);
             }
-            function marketSize(columns) {
-                const rows = rowsFor(columns);
+            function marketSize(columns, rows = rowsFor(columns)) {
                 const key = [viewport.clientWidth, viewport.clientHeight,
                     market.querySelector('.compact-market-header')?.textContent,
                     market.querySelector('.market-rule-status')?.textContent,
@@ -134,15 +158,17 @@ const CardTableLayout = (() => {
                 else maximum = wide ? count >= 13 ? 8 : 6 : count >= 13 ? 3 : 2;
                 return Math.min(maximum, Math.max(1, count));
             };
+            /** @type {CardTablePlan} */
             let chosen = !marketAtHome && lastSelection ? lastSelection
                 : { market: wide ? 6 : 2, rows: rowsFor(wide ? 6 : 2), side: null, end: null };
+            const denseFour = wide && panels.length === 4 && panels.some(panel => countFor(panel) >= 13);
             // Evaluate only a small, shared set of edge shapes for 2–4 owners.
             // Measuring native boxes includes header and landmark wrapping, so
             // the score reflects the actual rotated footprint rather than rows
             // of cards alone. Multi-player seating keeps its established shape.
             if (panels.length <= 4 && marketAtHome) {
-                const sideCandidates = wide ? shallow ? [1, 2, 3] : [2, 3, 4, 6] : [3, 4, 6];
-                const endCandidates = wide ? [4, 6, 8, 12] : [1, 2, 3, 4];
+                const sideCandidates = denseFour ? [1, 2, 3, 4, 6, 8] : wide ? shallow ? [1, 2, 3] : [2, 3, 4, 6] : [3, 4, 6];
+                const endCandidates = denseFour ? [4, 6, 8, 12, 18] : wide ? [4, 6, 8, 12] : [1, 2, 3, 4];
                 const marketCandidates = wide ? [6, 4] : [2, 3, 1];
                 let bestScore = -1;
                 const marketPlans = new Map();
@@ -189,6 +215,46 @@ const CardTableLayout = (() => {
                     chosen = preferred.plan;
                 }
             }
+            if (denseFour && marketAtHome) {
+                let pinwheel = null;
+                const crossMarket = marketSize(chosen.market, chosen.rows);
+                const crossStrips = {};
+                for (const [side, owners] of Object.entries(sides)) {
+                    const lateral = side === 'left' || side === 'right';
+                    const panel = owners[0];
+                    const columns = Math.min(lateral ? chosen.side : chosen.end, Math.max(1, countFor(panel)));
+                    const box = ownerSize(panel, columns);
+                    crossStrips[side] = { width: lateral ? box.nativeHeight : box.nativeWidth,
+                        height: lateral ? box.nativeWidth : box.nativeHeight };
+                }
+                const crossWidth = padding * 2 + Math.max(crossMarket.width, crossStrips.top.width, crossStrips.bottom.width) +
+                    crossStrips.left.width + crossStrips.right.width + gap * 2;
+                const crossHeight = padding * 2 + Math.max(crossMarket.height, crossStrips.left.height, crossStrips.right.height) +
+                    crossStrips.top.height + crossStrips.bottom.height + gap * 2;
+                const crossScore = Math.min(viewport.clientWidth / crossWidth, viewport.clientHeight / crossHeight);
+                for (const marketColumns of [6, 4]) {
+                    const rows = rowsFor(marketColumns);
+                    const marketBox = marketSize(marketColumns, rows);
+                    for (const sideColumns of [1, 2, 3, 4, 6, 8]) for (const endColumns of [4, 6, 8, 12, 18]) {
+                        /** @type {Record<string, CardTableFootprint>} */
+                        const dimensions = {};
+                        for (const [side, owners] of Object.entries(sides)) {
+                            const lateral = side === 'left' || side === 'right';
+                            const panel = owners[0];
+                            const columns = Math.min(lateral ? sideColumns : endColumns, Math.max(1, countFor(panel)));
+                            const box = ownerSize(panel, columns);
+                            dimensions[side] = { width: lateral ? box.nativeHeight : box.nativeWidth,
+                                height: lateral ? box.nativeWidth : box.nativeHeight };
+                        }
+                        const geometry = computePinwheelGeometry({ top: dimensions.top, right: dimensions.right, bottom: dimensions.bottom,
+                            left: dimensions.left, market: marketBox, gap, padding });
+                        const score = Math.min(viewport.clientWidth / geometry.width, viewport.clientHeight / geometry.height);
+                        if (!pinwheel || score > pinwheel.score + 0.0001) pinwheel = { score,
+                            plan: { packing: 'pinwheel', market: marketColumns, rows, side: sideColumns, end: endColumns } };
+                    }
+                }
+                if (pinwheel && pinwheel.score >= crossScore * 1.08) chosen = pinwheel.plan;
+            }
             if (marketAtHome) lastSelection = chosen;
             if (market.dataset.marketColumns !== String(chosen.market)) market.dataset.marketColumns = String(chosen.market);
             setStyle(market, '--table-market-columns', String(chosen.market));
@@ -228,22 +294,33 @@ const CardTableLayout = (() => {
             const bottomSpace = bottom.depth ? bottom.depth + gap : 0;
             const width = padding * 2 + leftSpace + middleWidth + rightSpace;
             const height = padding * 2 + topSpace + middleHeight + bottomSpace;
-            setStyle(world, 'width', `${width}px`);
-            setStyle(world, 'height', `${height}px`);
+            const pinGeometry = chosen.packing === 'pinwheel' ? computePinwheelGeometry({
+                top: sizes.get(sides.top[0]), right: sizes.get(sides.right[0]),
+                bottom: sizes.get(sides.bottom[0]), left: sizes.get(sides.left[0]),
+                market: { width: marketWidth, height: marketHeight }, gap, padding,
+            }) : null;
+            setStyle(world, 'width', `${pinGeometry?.width ?? width}px`);
+            setStyle(world, 'height', `${pinGeometry?.height ?? height}px`);
             const centerLeft = padding + leftSpace;
             const centerTop = padding + topSpace;
-            setStyle(market, 'left', `${centerLeft + (middleWidth - marketWidth) / 2}px`);
-            setStyle(market, 'top', `${centerTop + (middleHeight - marketHeight) / 2}px`);
+            const marketX = pinGeometry?.rects.market.x ?? centerLeft + (middleWidth - marketWidth) / 2;
+            const marketY = pinGeometry?.rects.market.y ?? centerTop + (middleHeight - marketHeight) / 2;
+            setStyle(market, 'left', `${marketX}px`);
+            setStyle(market, 'top', `${marketY}px`);
+            const ownerGeometry = [];
             for (const [side, owners] of Object.entries(sides)) {
                 const vertical = side === 'left' || side === 'right';
                 const strip = { left, right, top, bottom }[side];
                 let offset = (vertical ? middleHeight : middleWidth) / 2 - strip.along / 2;
                 for (const panel of owners) {
                     const size = sizes.get(panel);
-                    const x = vertical ? side === 'left' ? padding + left.depth - size.width : centerLeft + middleWidth + gap
+                    const crossX = vertical ? side === 'left' ? padding + left.depth - size.width : centerLeft + middleWidth + gap
                         : centerLeft + offset;
-                    const y = vertical ? centerTop + offset
+                    const crossY = vertical ? centerTop + offset
                         : side === 'top' ? padding + top.depth - size.height : centerTop + middleHeight + gap;
+                    const x = pinGeometry?.rects[side].x ?? crossX;
+                    const y = pinGeometry?.rects[side].y ?? crossY;
+                    ownerGeometry.push([Number(panel.dataset.playerIndex), x, y, size.nativeWidth, size.nativeHeight, angles[side], panel.style.getPropertyValue('--table-owner-columns')]);
                     const translations = { bottom: [0, 0], left: [size.nativeHeight, 0],
                         top: [size.nativeWidth, size.nativeHeight], right: [0, size.nativeWidth] };
                     const [tx, ty] = translations[side];
@@ -253,6 +330,10 @@ const CardTableLayout = (() => {
                     offset += (vertical ? size.height : size.width) + gap;
                 }
             }
+            const packing = chosen.packing || 'cross';
+            if (world.dataset.tablePacking !== packing) world.dataset.tablePacking = packing;
+            const geometryKey = JSON.stringify([packing, chosen.market, chosen.rows, marketX, marketY, marketWidth, marketHeight, ownerGeometry]);
+            if (world.dataset.tableLayoutKey !== geometryKey) world.dataset.tableLayoutKey = geometryKey;
             onLayout();
         }
         function refresh(nextState = {}) {
@@ -278,7 +359,7 @@ const CardTableLayout = (() => {
         observe(market);
         return Object.freeze({ refresh, destroy });
     }
-    return Object.freeze({ create });
+    return Object.freeze({ create, computePinwheelGeometry });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardTableLayout;

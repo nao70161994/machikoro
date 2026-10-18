@@ -1,0 +1,81 @@
+{
+  "fixture": "controlled-4p-18types-5landmarks",
+  "results": [
+    {
+      "version": "before",
+      "viewport": {
+        "width": 824,
+        "height": 250
+      },
+      "screenshot": "dense-844-before.png",
+      "world": {
+        "width": 4038,
+        "height": 1486
+      },
+      "scale": 0.168,
+      "minimumCardLongEdge": 26.917892456054688,
+      "facilityCount": 72,
+      "marketColumns": 6,
+      "marketRows": 2,
+      "packing": "cross",
+      "groupsContained": true
+    },
+    {
+      "version": "after",
+      "viewport": {
+        "width": 824,
+        "height": 250
+      },
+      "screenshot": "dense-844-after.png",
+      "world": {
+        "width": 3931,
+        "height": 1061
+      },
+      "scale": 0.21,
+      "minimumCardLongEdge": 33.53851318359375,
+      "facilityCount": 72,
+      "marketColumns": 6,
+      "marketRows": 2,
+      "packing": "pinwheel",
+      "groupsContained": true
+    },
+    {
+      "version": "before",
+      "viewport": {
+        "width": 1420,
+        "height": 796
+      },
+      "screenshot": "dense-1440-before.png",
+      "world": {
+        "width": 3030,
+        "height": 1750
+      },
+      "scale": 0.455,
+      "minimumCardLongEdge": 72.777099609375,
+      "facilityCount": 72,
+      "marketColumns": 6,
+      "marketRows": 2,
+      "packing": "cross",
+      "groupsContained": true
+    },
+    {
+      "version": "after",
+      "viewport": {
+        "width": 1420,
+        "height": 796
+      },
+      "screenshot": "dense-1440-after.png",
+      "world": {
+        "width": 2659,
+        "height": 1529
+      },
+      "scale": 0.521,
+      "minimumCardLongEdge": 83.29620361328125,
+      "facilityCount": 72,
+      "marketColumns": 6,
+      "marketRows": 2,
+      "packing": "pinwheel",
+      "groupsContained": true
+    }
+  ]
+}

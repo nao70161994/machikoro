@@ -681,3 +681,64 @@ test('正面の全38施設はカードと原画を縮めず経済効果を表示
     await expect(owner.locator('.cardboard-effect').first()).toBeHidden();
     expect(await snapshot(page)).toEqual(before);
 });
+
+
+test('高密度4人の再配置は閲覧中カードと倍率を保ち戻ると新しい卓を一望できる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => {
+            player.cards = CARDS.slice(0, 12).map(card => createCardByName(card.name));
+            Object.keys(player.landmarks).forEach((name, index) => { player.landmarks[name] = index < 5; });
+        });
+        render();
+    });
+    await expectWholeTable(page, 4);
+    const world = page.locator('#cardboardSeats');
+    await expect(world).toHaveAttribute('data-table-packing', 'cross');
+    await cameraCommand(page, 'self');
+    const viewport = page.locator('#cardboardTableViewport');
+    const anchor = await page.locator('#cardboardSeats > [data-player-index="0"]').evaluate(owner => {
+        const viewport = document.getElementById('cardboardTableViewport'), clip = viewport.getBoundingClientRect();
+        const x = clip.left + viewport.clientLeft + viewport.clientWidth / 2;
+        const y = clip.top + viewport.clientTop + viewport.clientHeight / 2;
+        const cards = Array.from(owner.querySelectorAll('.cardboard-card')).map(card => ({ card, rect: card.getBoundingClientRect() }))
+            .filter(({ rect }) => rect.right > clip.left && rect.left < clip.right && rect.bottom > clip.top && rect.top < clip.bottom)
+            .sort((a, b) => (a.rect.left + a.rect.width / 2 - x) ** 2 + (a.rect.top + a.rect.height / 2 - y) ** 2 -
+                ((b.rect.left + b.rect.width / 2 - x) ** 2 + (b.rect.top + b.rect.height / 2 - y) ** 2));
+        return { name: cards[0].card.dataset.cardName, scale: viewport.dataset.tableScale, angle: viewport.dataset.tableAngle };
+    });
+    const key = await world.getAttribute('data-table-layout-key');
+    // Presentation growth fixture: only this explicit edit changes game state.
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => { player.cards = CARDS.slice(0, 18).map(card => createCardByName(card.name)); });
+        render();
+    });
+    const grown = await snapshot(page);
+    await expect(world).toHaveAttribute('data-table-packing', 'pinwheel');
+    expect(await world.getAttribute('data-table-layout-key')).not.toBe(key);
+    await expect(viewport).toHaveAttribute('data-table-focus-player', '0');
+    await expect(viewport).toHaveAttribute('data-table-scale', anchor.scale);
+    await expect(viewport).toHaveAttribute('data-table-angle', anchor.angle);
+    await expect.poll(() => page.locator('#cardboardSeats > [data-player-index="0"]').evaluate((owner, name) => {
+        const viewport = document.getElementById('cardboardTableViewport'), clip = viewport.getBoundingClientRect();
+        const rect = Array.from(owner.querySelectorAll('.cardboard-card')).find(card => card.dataset.cardName === name).getBoundingClientRect();
+        return Math.abs(rect.left + rect.width / 2 - (clip.left + viewport.clientLeft + viewport.clientWidth / 2)) < 2 &&
+            Math.abs(rect.top + rect.height / 2 - (clip.top + viewport.clientTop + viewport.clientHeight / 2)) < 2;
+    }, anchor.name)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('pinwheel-growth-reading.png') });
+    await cameraCommand(page, 'back');
+    await expectWholeTable(page, 4);
+    await expect(viewport).toHaveAttribute('data-table-mode', 'overview');
+    await expectOwnedCards(page);
+    const minimumWidth = await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
+        Math.min(...cards.map(card => {
+            const rect = card.getBoundingClientRect();
+            // Measure the same 160px card edge at every seat rotation.
+            return Math.max(rect.width, rect.height);
+        })));
+    expect(minimumWidth).toBeGreaterThanOrEqual(31);
+    expect(await snapshot(page)).toEqual(grown);
+    await page.screenshot({ path: testInfo.outputPath('pinwheel-growth-overview.png') });
+});

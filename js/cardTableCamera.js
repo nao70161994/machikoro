@@ -22,6 +22,7 @@ const CardTableCamera = (() => {
         let resizeTimer = 0;
         let lastWidth = 0;
         let lastHeight = 0;
+        let lastLayoutKey = world.dataset.tableLayoutKey || '';
         let drag = null;
         let suppressClick = false;
         let returnView = null;
@@ -121,10 +122,13 @@ const CardTableCamera = (() => {
         function viewportChanged() {
             return lastWidth !== viewport.clientWidth || lastHeight !== viewport.clientHeight;
         }
+        function geometryChanged() {
+            return viewportChanged() || lastLayoutKey !== (world.dataset.tableLayoutKey || '');
+        }
         function cacheInspectionAnchor() {
-            // Reflow and native scroll clamping can happen before our resize
+            // Reflow and native scroll clamping can happen before our layout
             // RAF. They must not replace the last genuinely visible card.
-            if (focusPlayer === null || viewportChanged() || resizeAnchorFrame) return;
+            if (focusPlayer === null || geometryChanged() || resizeAnchorFrame) return;
             const player = seat(focusPlayer);
             if (!player) return;
             const clip = viewport.getBoundingClientRect();
@@ -191,7 +195,7 @@ const CardTableCamera = (() => {
             const clip = { left: viewportBounds.left + viewport.clientLeft, top: viewportBounds.top + viewport.clientTop,
                 right: viewportBounds.left + viewport.clientLeft + viewport.clientWidth,
                 bottom: viewportBounds.top + viewport.clientTop + viewport.clientHeight };
-            if (clearIfOutside && !viewportChanged() && !resizeAnchorFrame && (bounds.right <= clip.left || bounds.left >= clip.right ||
+            if (clearIfOutside && !geometryChanged() && !resizeAnchorFrame && (bounds.right <= clip.left || bounds.left >= clip.right ||
                     bounds.bottom <= clip.top || bounds.top >= clip.bottom)) { clearFocus(); return; }
             markReadingSeat(focusPlayer);
             const heading = player.querySelector('.cardboard-player-heading');
@@ -210,6 +214,21 @@ const CardTableCamera = (() => {
         function facePlayer(player) {
             angle = normalizeAngle(-Number(player?.dataset.tableAngle || 0));
         }
+        function collectionGeometryKey() {
+            const collections = [];
+            world.querySelectorAll('.cardboard-player[data-player-index]').forEach(player => {
+                const names = [];
+                player.querySelectorAll('.cardboard-card, .cardboard-landmark-built').forEach(card => {
+                    names.push(card.getAttribute('data-card-name') || card.getAttribute('data-landmark-name'));
+                });
+                collections.push([player.dataset.playerIndex, names]);
+            });
+            const market = [];
+            world.querySelectorAll('.compact-market-item').forEach(card => {
+                market.push(card.getAttribute('data-card-name') || card.getAttribute('data-landmark-name'));
+            });
+            return JSON.stringify([collections, market]);
+        }
         function captureView() {
             const center = canvasToWorld({ x: viewport.scrollLeft + viewport.clientWidth / 2,
                 y: viewport.scrollTop + viewport.clientHeight / 2 });
@@ -217,7 +236,8 @@ const CardTableCamera = (() => {
             return { scale, angle, overviewMode, inspectionPadding, focusPlayer, x: center.x, y: center.y,
                 left: viewport.scrollLeft, top: viewport.scrollTop,
                 viewportWidth: viewport.clientWidth, viewportHeight: viewport.clientHeight,
-                worldWidth: size.width, worldHeight: size.height };
+                worldWidth: size.width, worldHeight: size.height,
+                packing: world.dataset.tablePacking || 'cross', collectionKey: collectionGeometryKey() };
         }
         function rememberView() { returnView = captureView(); }
         function restoreView() {
@@ -225,6 +245,17 @@ const CardTableCamera = (() => {
             cancelResizeAnchor();
             const previous = returnView;
             returnView = null;
+            const currentSize = measure();
+            const changedExtent = previous.worldWidth !== currentSize.width || previous.worldHeight !== currentSize.height;
+            const changedCollection = previous.packing !== (world.dataset.tablePacking || 'cross') ||
+                previous.collectionKey !== collectionGeometryKey();
+            if (previous.overviewMode && changedExtent && changedCollection) {
+                // Real growth or packing changes need today's complete table.
+                // Measurement-only differences during inspection must not
+                // replace the exact captured scale with a slightly new fit.
+                fit();
+                return true;
+            }
             overviewMode = previous.overviewMode;
             scale = previous.scale;
             angle = previous.angle;
@@ -352,22 +383,25 @@ const CardTableCamera = (() => {
             frame = 0;
             if (destroyed) return;
             const changedSession = !mounted || session !== state.session;
-            const changedViewport = lastWidth !== viewport.clientWidth || lastHeight !== viewport.clientHeight;
+            const changedViewport = viewportChanged();
+            const layoutKey = world.dataset.tableLayoutKey || '';
+            const changedLayout = lastLayoutKey !== layoutKey;
             if (!viewport.clientWidth || !viewport.clientHeight) return;
-            const retainedCard = changedViewport && focusPlayer !== null && inspectionAnchor?.playerIndex === focusPlayer
+            const retainedCard = (changedViewport || changedLayout) && focusPlayer !== null && inspectionAnchor?.playerIndex === focusPlayer
                 ? { ...inspectionAnchor } : null;
             const retainedCenter = mounted && !overviewMode ? canvasToWorld({
                 x: viewport.scrollLeft + lastWidth / 2, y: viewport.scrollTop + lastHeight / 2
             }) : null;
             lastWidth = viewport.clientWidth;
             lastHeight = viewport.clientHeight;
+            lastLayoutKey = layoutKey;
             session = state.session;
             mounted = true;
             if (changedSession || overviewMode) fit();
             else {
                 paint();
                 if (retainedCard) retainInspectionOnResize(retainedCard);
-                else if (changedViewport && retainedCenter) alignPoint(retainedCenter,
+                else if ((changedViewport || changedLayout) && retainedCenter) alignPoint(retainedCenter,
                     { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
                 if (!resizeAnchorFrame) cacheInspectionAnchor();
             }
