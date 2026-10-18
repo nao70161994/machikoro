@@ -778,6 +778,8 @@ test(`にぎわい広場の勝利カードコレクション ${viewport.width}px
     });
     await expect(page.locator('.winner-screen')).toBeVisible();
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
+    await expect(page.locator('.winner-stats-row').first()).toHaveClass(/highlight/);
+    await expect(page.locator('.winner-stats-row').first().locator('.winner-result-progress')).toContainText('施設 36枚');
     expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached)).toBe(false);
     const geometry = await page.evaluate(() => {
         const screen = document.querySelector('.winner-screen').getBoundingClientRect();

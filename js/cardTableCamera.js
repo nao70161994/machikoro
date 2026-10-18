@@ -2,11 +2,13 @@
 
 // The camera changes presentation only; native scrolling remains the pan mechanism.
 const CardTableCamera = (() => {
-    function create({ viewport, canvas, world, onViewChange = () => {} }) {
+    function create({ viewport, canvas, world, onViewChange = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}) }) {
         let scale = 0.85;
         let overviewMode = true;
         let angle = 0;
         let inspectionPadding = false;
+        let focusPlayer = null;
+        let previousContext = '';
         let matrix = { a: scale, b: 0, c: 0, d: scale, e: 0, f: 0 };
         let state = { selfIndex: 0, currentIndex: 0, session: null };
         let session;
@@ -96,13 +98,52 @@ const CardTableCamera = (() => {
             viewport.dataset.tableScale = scale.toFixed(3);
             viewport.dataset.tableAngle = String(normalizeAngle(angle));
             viewport.dataset.tableMode = overviewMode ? 'overview' : 'free';
+            updateFocus();
         }
         function scroll(left, top) {
             viewport.scrollTo({ left: Math.max(0, left), top: Math.max(0, top), behavior: 'instant' });
+            updateFocus();
         }
         function seat(index) {
             return [...world.querySelectorAll('.cardboard-player[data-player-index]')]
                 .find(element => Number(element.dataset.playerIndex) === Number(index));
+        }
+        function notifyContext(label, pan, playerIndex) {
+            const key = JSON.stringify([label, pan, playerIndex, Boolean(returnView)]);
+            if (key === previousContext || destroyed) return;
+            previousContext = key;
+            onContextChange({ label, pan, playerIndex, canReturn: Boolean(returnView) });
+        }
+        function clearFocus() {
+            focusPlayer = null;
+            for (const attribute of ['tableFocusPlayer', 'tableFocusName', 'tableFocusLabel', 'tableFocusPan', 'tablePanHint']) {
+                delete viewport.dataset[attribute];
+            }
+            notifyContext('カード卓', 'none', null);
+        }
+        function updateFocus(clearIfOutside = false) {
+            if (focusPlayer === null) { clearFocus(); return; }
+            const player = seat(focusPlayer);
+            if (!player) { clearFocus(); return; }
+            const bounds = player.getBoundingClientRect();
+            const viewportBounds = viewport.getBoundingClientRect();
+            const clip = { left: viewportBounds.left + viewport.clientLeft, top: viewportBounds.top + viewport.clientTop,
+                right: viewportBounds.left + viewport.clientLeft + viewport.clientWidth,
+                bottom: viewportBounds.top + viewport.clientTop + viewport.clientHeight };
+            if (clearIfOutside && (bounds.right <= clip.left || bounds.left >= clip.right ||
+                    bounds.bottom <= clip.top || bounds.top >= clip.bottom)) { clearFocus(); return; }
+            const heading = player.querySelector('.cardboard-player-heading');
+            const fullLabel = heading?.getAttribute('title') || `席${focusPlayer + 1}`;
+            const name = fullLabel.replace(/^席\d+・/u, '');
+            const horizontal = bounds.left < clip.left - 2 || bounds.right > clip.right + 2;
+            const vertical = bounds.top < clip.top - 2 || bounds.bottom > clip.bottom + 2;
+            viewport.dataset.tableFocusPlayer = String(focusPlayer);
+            viewport.dataset.tableFocusName = name;
+            viewport.dataset.tableFocusLabel = fullLabel;
+            viewport.dataset.tableFocusPan = horizontal ? vertical ? 'both' : 'x' : vertical ? 'y' : 'none';
+            viewport.dataset.tablePanHint = horizontal ? vertical ? '上下左右に移動して確認' : '左右に移動して確認'
+                : vertical ? '上下に移動して確認' : '';
+            notifyContext(fullLabel, viewport.dataset.tableFocusPan, focusPlayer);
         }
         function facePlayer(player) {
             angle = normalizeAngle(-Number(player?.dataset.tableAngle || 0));
@@ -111,7 +152,7 @@ const CardTableCamera = (() => {
             const center = canvasToWorld({ x: viewport.scrollLeft + viewport.clientWidth / 2,
                 y: viewport.scrollTop + viewport.clientHeight / 2 });
             const size = measure();
-            return { scale, angle, overviewMode, inspectionPadding, x: center.x, y: center.y,
+            return { scale, angle, overviewMode, inspectionPadding, focusPlayer, x: center.x, y: center.y,
                 left: viewport.scrollLeft, top: viewport.scrollTop,
                 viewportWidth: viewport.clientWidth, viewportHeight: viewport.clientHeight,
                 worldWidth: size.width, worldHeight: size.height };
@@ -125,6 +166,7 @@ const CardTableCamera = (() => {
             scale = previous.scale;
             angle = previous.angle;
             inspectionPadding = previous.inspectionPadding;
+            focusPlayer = previous.focusPlayer;
             paint();
             const size = measure();
             if (previous.viewportWidth === viewport.clientWidth && previous.viewportHeight === viewport.clientHeight &&
@@ -142,6 +184,7 @@ const CardTableCamera = (() => {
             const player = seat(index);
             if (!player) return;
             if (!preserveReadable) rememberView();
+            focusPlayer = Number(player.dataset.playerIndex);
             overviewMode = false;
             inspectionPadding = true;
             facePlayer(player);
@@ -177,9 +220,11 @@ const CardTableCamera = (() => {
             const initial = card.getBoundingClientRect();
             if (!initial.width || !initial.height) return;
             rememberView();
+            const player = card.closest('.cardboard-player');
+            focusPlayer = player ? Number(player.dataset.playerIndex) : null;
             overviewMode = false;
             inspectionPadding = true;
-            facePlayer(card.closest('.cardboard-player'));
+            facePlayer(player);
             paint();
             const before = card.getBoundingClientRect();
             const fitted = Math.min((viewport.clientWidth - 24) / (before.width / scale),
@@ -195,6 +240,7 @@ const CardTableCamera = (() => {
             if (destroyed || !market) return;
             rememberView();
             overviewMode = false;
+            clearFocus();
             inspectionPadding = true;
             angle = 0;
             scale = clamp(Math.max(scale, 0.75));
@@ -210,6 +256,7 @@ const CardTableCamera = (() => {
         function fit() {
             if (destroyed) return;
             overviewMode = true;
+            clearFocus();
             inspectionPadding = false;
             returnView = null;
             angle = 0;
@@ -377,7 +424,7 @@ const CardTableCamera = (() => {
             // Keep the same click bubbling to the existing card-detail handler.
         }
         const listeners = [
-            ['scroll', () => onViewChange(), { passive: true }],
+            ['scroll', () => { updateFocus(true); onViewChange(); }, { passive: true }],
             ['wheel', wheel, { passive: false }], ['keydown', keydown, false],
             ['touchstart', touchstart, { passive: true }], ['touchmove', touchmove, { passive: false }],
             ['touchend', touchend, { passive: true }], ['touchcancel', touchend, { passive: true }],
@@ -404,6 +451,7 @@ const CardTableCamera = (() => {
             viewport.classList.remove('is-table-panning');
             returnView = null;
             pinch = null;
+            clearFocus();
             viewport.style.touchAction = previousTouchAction;
             delete viewport.dataset.tableScale;
             delete viewport.dataset.tableAngle;

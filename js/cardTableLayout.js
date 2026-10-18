@@ -62,8 +62,14 @@ const CardTableLayout = (() => {
             const sides = assignSeats(panels, state.selfIndex);
             const marketAtHome = !!market.querySelector('#cardboardMarket');
             const marketRows = oppositeOnly && shallow ? 1 : 2;
-            const visibleMarketCards = (wide ? 6 : 2) * marketRows;
-            const rowsFor = columns => Math.ceil(visibleMarketCards / columns);
+            const defaultVisibleMarketCards = (wide ? 6 : 2) * marketRows;
+            const displayedMarketCards = market.querySelectorAll('.compact-market-facilities .compact-market-item').length;
+            // Filtering changes the shelf's presentation, never market stock.
+            // Keep one row for an empty-result explanation, and retain the
+            // established multi-player geometry beyond four owners.
+            const visibleMarketCards = panels.length <= 4
+                ? Math.max(1, Math.min(defaultVisibleMarketCards, displayedMarketCards)) : defaultVisibleMarketCards;
+            const rowsFor = columns => Math.max(1, Math.ceil(visibleMarketCards / columns));
             const angles = { bottom: 0, left: 90, top: 180, right: 270 };
             const nativeWidthFor = columns => columns * 160 + (columns - 1) * 8 + 16;
             function ownerSize(panel, columns) {
@@ -87,7 +93,11 @@ const CardTableLayout = (() => {
                 const rows = rowsFor(columns);
                 const key = [viewport.clientWidth, viewport.clientHeight,
                     market.querySelector('.compact-market-header')?.textContent,
-                    market.querySelector('.market-rule-status')?.textContent].join(':');
+                    market.querySelector('.market-rule-status')?.textContent,
+                    displayedMarketCards,
+                    market.querySelector('.compact-market-filter-disclosure > summary')?.textContent,
+                    [...market.querySelectorAll('details')].map(details => [details.className, details.open,
+                        details.querySelector('summary')?.textContent, details.open ? details.textContent : ''].join('|')).join(';')].join(':');
                 if (!marketMeasurements || marketMeasurements.key !== key) marketMeasurements = { key, sizes: new Map() };
                 const shapeKey = `${columns}:${rows}`;
                 if (!marketMeasurements.sizes.has(shapeKey)) {
@@ -121,7 +131,7 @@ const CardTableLayout = (() => {
                 return Math.min(maximum, Math.max(1, count));
             };
             let chosen = !marketAtHome && lastSelection ? lastSelection
-                : { market: wide ? 6 : 2, rows: marketRows, side: null, end: null };
+                : { market: wide ? 6 : 2, rows: rowsFor(wide ? 6 : 2), side: null, end: null };
             // Evaluate only a small, shared set of edge shapes for 2–4 owners.
             // Measuring native boxes includes header and landmark wrapping, so
             // the score reflects the actual rotated footprint rather than rows
