@@ -51,6 +51,11 @@ const CardBoardField = (() => {
     let buildCueTimer = null;
     let buildNoticeTimer = null;
     let buildNoticeContext = null;
+    let purchaseOrigin = null;
+    let buildFlight = null;
+    let buildFlightAnimation = null;
+    let buildFlightFrame = null;
+    let buildFlightGeneration = 0;
     let buildCueCard = null;
     let buildCueListener = null;
     const landmarkCues = new Map();
@@ -208,6 +213,7 @@ const CardBoardField = (() => {
                     if (hint.title !== title) hint.title = title;
                 },
                 onViewChange: () => {
+                    if (buildFlight) clearBuildFlight();
                     activationTags?.clear();
                     // Clear effects anchored to the old geometry, but preserve
                     // a fresh result queued after layout. Its frame reads the
@@ -324,6 +330,93 @@ const CardBoardField = (() => {
         else if (targetBounds.bottom > scrollBounds.bottom) scrollport.scrollTop += targetBounds.bottom - scrollBounds.bottom;
     }
 
+    function clearBuildFlight() {
+        buildFlightGeneration++;
+        if (buildFlightFrame !== null) globalThis.cancelAnimationFrame(buildFlightFrame);
+        buildFlightFrame = null;
+        buildFlightAnimation?.cancel();
+        buildFlightAnimation = null;
+        buildFlight?.remove();
+        buildFlight = null;
+    }
+
+    function visibleMarketOrigin(name) {
+        const market = node('cardboardMarket');
+        const card = Array.from(market?.querySelectorAll('.compact-market-item') || []).find(element =>
+            element.querySelector('[data-action="buildCard"]')?.getAttribute('data-card-name') === name);
+        if (!card) return null;
+        const bounds = card.getBoundingClientRect();
+        const screen = globalThis.visualViewport;
+        const clip = { left: screen?.offsetLeft || 0, top: screen?.offsetTop || 0,
+            right: (screen?.offsetLeft || 0) + (screen?.width || innerWidth),
+            bottom: (screen?.offsetTop || 0) + (screen?.height || innerHeight) };
+        const shelf = card.closest('.compact-market-facilities')?.getBoundingClientRect();
+        if (shelf) {
+            clip.left = Math.max(clip.left, shelf.left); clip.right = Math.min(clip.right, shelf.right);
+            clip.top = Math.max(clip.top, shelf.top); clip.bottom = Math.min(clip.bottom, shelf.bottom);
+        }
+        if (!bounds.width || !bounds.height || bounds.left < clip.left - 1 || bounds.right > clip.right + 1 ||
+                bounds.top < clip.top - 1 || bounds.bottom > clip.bottom + 1) return null;
+        return { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height };
+    }
+
+    function refreshPendingBuildOrigins() {
+        const game = facts?.game;
+        for (const cue of pendingBuildCues) {
+            cue.origin = !cue.landmark && cue.session === session && cue.turn === game?.turnCount &&
+                cue.actor === game?.currentPlayerIndex && game.log.includes(cue.entry)
+                ? visibleMarketOrigin(cue.name) : null;
+        }
+    }
+
+    function startBuildFlight(card, origin, entry) {
+        clearBuildFlight();
+        if (!origin || !entry || reducedMotionEnabled()) return;
+        const generation = buildFlightGeneration;
+        const context = { session, turn: facts?.game?.turnCount, actor: facts?.game?.currentPlayerIndex };
+        const current = () => generation === buildFlightGeneration && enabled() && mounted && !facts?.replaying &&
+            !document.hidden && node('gameScreen')?.style.display !== 'none' && card.isConnected &&
+            session === context.session && facts.game.turnCount === context.turn &&
+            facts.game.currentPlayerIndex === context.actor && facts.game.log.includes(entry) && !reducedMotionEnabled();
+        // The existing focus operation may update scroll and world geometry.
+        // Two frames read its settled target without delaying any game action.
+        buildFlightFrame = globalThis.requestAnimationFrame(() => {
+            buildFlightFrame = globalThis.requestAnimationFrame(() => {
+                buildFlightFrame = null;
+                if (!current()) return;
+                const viewport = node('cardboardTableViewport');
+                const clip = viewport?.getBoundingClientRect();
+                const target = card.getBoundingClientRect();
+                const angle = (Number(viewport?.dataset.tableAngle || 0) +
+                    Number(card.closest('.cardboard-player')?.dataset.tableAngle || 0)) % 360;
+                // Rotated inline seats retain their real-card cue. Do not land
+                // an upright ghost on an edge whose reading direction differs.
+                if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
+                        target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return;
+                const ghost = card.cloneNode(true);
+                ghost.id = 'cardboardBuildFlight';
+                ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
+                ghost.setAttribute('aria-hidden', 'true');
+                ghost.setAttribute('tabindex', '-1');
+                ghost.removeAttribute('data-action');
+                ghost.dataset.cardName = card.dataset.cardName;
+                ghost.dataset.session = String(context.session);
+                ghost.dataset.turn = String(context.turn);
+                ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
+                ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
+                node('cardboardBoard').appendChild(ghost);
+                buildFlight = ghost;
+                if (typeof ghost.animate !== 'function') { clearBuildFlight(); return; }
+                const animation = ghost.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
+                    { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
+                ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
+                buildFlightAnimation = animation;
+                animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
+            });
+        });
+    }
+
     function clearBuildNotice() {
         if (buildNoticeTimer !== null) clearTimeout(buildNoticeTimer);
         buildNoticeTimer = null;
@@ -370,13 +463,14 @@ const CardBoardField = (() => {
         buildCueCard = null;
     }
 
-    function showBuildCue(card, animate) {
+    function showBuildCue(card, animate, origin = null, entry = null) {
         clearBuildCue();
         card.classList.remove('cardboard-card-newly-built');
         if (animate) void card.offsetWidth;
         card.classList.add('cardboard-card-newly-built');
         buildCueCard = card;
         showBuildNotice(card);
+        startBuildFlight(card, origin, entry);
         const clearArrival = event => {
             if (event.target !== card || event.animationName !== 'cardboard-card-arrival') return;
             clearBuildCue();
@@ -443,15 +537,19 @@ const CardBoardField = (() => {
     }
 
     function presentBuildCue(button, playerIndex, name, landmark) {
+        const game = facts?.game;
+        const marker = `${landmark ? '🏆' : '🏗️'} ${name}を建設！`;
+        const entry = game?.log?.findLast(item => item.message === marker);
+        const captured = purchaseOrigin;
+        purchaseOrigin = null;
+        const origin = !landmark && captured?.session === session && captured?.turn === game?.turnCount &&
+            captured?.actor === game?.currentPlayerIndex && captured?.name === name ? captured.rect : null;
         if (/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open) {
-            const game = facts?.game;
-            const marker = `${landmark ? '🏆' : '🏗️'} ${name}を建設！`;
-            const entry = game?.log?.findLast(item => item.message === marker);
-            if (entry) pendingBuildCues.push({ session, turn: game.turnCount, actor: game.currentPlayerIndex, playerIndex, name, landmark, entry });
+            if (entry) pendingBuildCues.push({ session, turn: game.turnCount, actor: game.currentPlayerIndex, playerIndex, name, landmark, entry, origin: null });
             return;
         }
         if (landmark) showLandmarkCue(button, !reducedMotionEnabled());
-        else showBuildCue(button, !reducedMotionEnabled());
+        else showBuildCue(button, !reducedMotionEnabled(), origin, entry);
     }
 
     function presentPendingBuildCues() {
@@ -472,11 +570,13 @@ const CardBoardField = (() => {
             // including later rows that a seat-header focus cannot expose.
             tableCamera?.focusCard(button);
             if (cue.landmark) showLandmarkCue(button, !reducedMotionEnabled());
-            else showBuildCue(button, !reducedMotionEnabled());
+            else showBuildCue(button, !reducedMotionEnabled(), cue.origin, cue.entry);
         }
     }
 
     function clearFeedback() {
+        clearBuildFlight();
+        purchaseOrigin = null;
         clearBuildNotice();
         clearAdditionalActivationCues();
         activationTags?.clear();
@@ -543,6 +643,7 @@ const CardBoardField = (() => {
         if (!restoreFocus) pendingBuildCues = [];
         setMarketExpanded(false);
         const wasOpen = dialog?.open === true;
+        if (wasOpen && restoreFocus) refreshPendingBuildOrigins();
         if (wasOpen) dialog.close();
         restoreMarketNode();
         if (!wasOpen) finishMarketClose();
@@ -688,6 +789,16 @@ const CardBoardField = (() => {
             if (/** @type {HTMLElement} */ (event.target).classList?.contains('compact-market-facilities')) updateMarketOverflow();
         }, true);
         node('cardboardMarketDialog')?.addEventListener('scroll', updateMarketOverflow, true);
+        node('cardboardMarket')?.addEventListener('click', event => {
+            const button = /** @type {HTMLButtonElement | null} */ (/** @type {HTMLElement} */ (event.target).closest?.('[data-action="buildCard"]'));
+            if (!enabled() || !button || button.disabled || !facts?.game) return;
+            purchaseOrigin = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex,
+                name: button.dataset.cardName, rect: visibleMarketOrigin(button.dataset.cardName) };
+        }, true);
+        node('cardboardTableViewport')?.addEventListener('scroll', () => { if (buildFlight) clearBuildFlight(); }, { passive: true });
+        node('cardboardTableViewport')?.addEventListener('pointerdown', clearBuildFlight, { passive: true });
+        node('cardboardTableViewport')?.addEventListener('wheel', clearBuildFlight, { passive: true });
+        window.addEventListener('resize', clearBuildFlight, { passive: true });
         node('cardboardBoard')?.addEventListener('click', event => {
             if (event.defaultPrevented) return;
             const source = /** @type {HTMLElement} */ (event.target);
@@ -774,6 +885,7 @@ const CardBoardField = (() => {
             if (event.target === event.currentTarget) closeTown();
         });
         node('cardboardMarketClose')?.addEventListener('click', () => closeMarket());
+        node('cardboardMarketDialog')?.addEventListener('cancel', refreshPendingBuildOrigins);
         node('cardboardMarketDialog')?.addEventListener('close', finishMarketClose);
         node('cardboardMarketDialog')?.addEventListener('click', event => {
             if (event.target === event.currentTarget) closeMarket();
@@ -1140,7 +1252,11 @@ const CardBoardField = (() => {
         const validIndex = index => Number.isInteger(index) && index >= 0 && index < game.players.length;
         const currentIndex = validIndex(game.currentPlayerIndex) ? game.currentPlayerIndex : 0;
         if (buildNoticeContext && (buildNoticeContext.session !== session || buildNoticeContext.turn !== game.turnCount ||
-                buildNoticeContext.actor !== currentIndex || facts.replaying || game.phase !== GAME_PHASES.BUILD)) clearBuildNotice();
+                buildNoticeContext.actor !== currentIndex || facts.replaying || game.phase !== GAME_PHASES.BUILD)) {
+            clearBuildNotice();
+            clearBuildFlight();
+            purchaseOrigin = null;
+        }
         const selfIndex = validIndex(facts.selfIndex) ? facts.selfIndex : null;
         const turnChanged = focusTurnIndex !== currentIndex;
         if (turnChanged) {
