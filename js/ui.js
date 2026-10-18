@@ -1510,14 +1510,8 @@ function renderPlayers() {
         display: LOG_TYPE_DISPLAY,
         refreshMarket: renderBuildMenu,
         closeLog: () => setLogCollapsed(true),
-        onDiceResult: () => {
-            turnAnnouncerTimerController.clear();
-            const greeting = document.getElementById('turnAnnouncer');
-            if (greeting) {
-                greeting.style.display = 'none';
-                greeting.classList.remove('hiding');
-            }
-        },
+        onDiceResult: dismissTurnGreeting,
+        onUserInspection: dismissTurnGreeting,
         onBuildMilestones: milestones => {
             if (currentGame.checkWinner()) return;
             const online = uiOnlineRuntimeSnapshot();
@@ -1897,6 +1891,15 @@ function bcSelectCard(btn, inputId) {
         selectedButton: btn,
         findInput: () => document.getElementById(inputId),
     });
+}
+
+function dismissTurnGreeting() {
+    turnAnnouncerTimerController.clear();
+    const greeting = document.getElementById('turnAnnouncer');
+    if (greeting) {
+        greeting.style.display = 'none';
+        greeting.classList.remove('hiding');
+    }
 }
 
 function showTurnAnnouncer(name, isCPU, playerIndex) {

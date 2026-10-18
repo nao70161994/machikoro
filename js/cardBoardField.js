@@ -646,9 +646,16 @@ const CardBoardField = (() => {
         }, true);
         node('cardboardMarketDialog')?.addEventListener('scroll', updateMarketOverflow, true);
         node('cardboardBoard')?.addEventListener('click', event => {
-            const button = /** @type {HTMLElement} */ (event.target).closest?.('[data-cardboard-camera]');
+            if (event.defaultPrevented) return;
+            const source = /** @type {HTMLElement} */ (event.target);
+            const detail = source.closest?.('.cardboard-card[data-action="showCardDetail"], .cardboard-landmark[data-action="showLandmarkDetail"]');
+            // Camera capture suppresses drag/pinch clicks before this handler.
+            // Readable cards still count as inspection without a camera change.
+            if (detail?.closest('.cardboard-player') && node('cardboardSeats')?.contains(detail)) facts?.onUserInspection?.();
+            const button = source.closest?.('[data-cardboard-camera]');
             if (!button || !tableCamera) return;
             const command = button.getAttribute('data-cardboard-camera');
+            if (command === 'self' || command === 'readable') facts?.onUserInspection?.();
             if (command === 'overview') tableCamera.fit();
             else if (command === 'back') { if (!tableCamera.restoreView()) tableCamera.fit(); }
             else if (command === 'market') tableCamera.focusMarket();
@@ -759,6 +766,7 @@ const CardBoardField = (() => {
         node('cardboardRoster').addEventListener('click', event => {
             const button = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cardboard-player-index]'));
             if (!button) return;
+            facts?.onUserInspection?.();
             selectedIndex = Number(button.dataset.cardboardPlayerIndex);
             scrollMemory.capture('roster', node('cardboardRoster'));
             draw();

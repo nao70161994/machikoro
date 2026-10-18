@@ -97,6 +97,7 @@ const CardTableLayout = (() => {
                 const key = [viewport.clientWidth, viewport.clientHeight,
                     market.querySelector('.compact-market-header')?.textContent,
                     market.querySelector('.market-rule-status')?.textContent,
+                    market.querySelector('.compact-market-browse-note')?.textContent || '',
                     displayedMarketCards,
                     market.querySelector('.compact-market-filter-disclosure > summary')?.textContent,
                     [...market.querySelectorAll('details')].map(details => [details.className, details.open,

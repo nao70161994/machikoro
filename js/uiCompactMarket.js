@@ -56,8 +56,7 @@ const UiCompactMarket = (() => {
 
     function buildFacilitiesHtml(options) {
         const browseAll = options.cardFilter === 'affordable' && !options.canBuildCardAction;
-        const note = browseAll ? '<p class="compact-market-browse-note">今は全施設を表示 · 建設時に購入可能な施設へ絞ります</p>' : '';
-        return note + (buildMenu.buildVisibleCardButtonsHtml({
+        return (buildMenu.buildVisibleCardButtonsHtml({
             ...options,
             cardFilter: browseAll ? '' : options.cardFilter,
             renderBuildCardButton: (card, stock, canBuildThis, highlighted) =>
@@ -75,8 +74,10 @@ const UiCompactMarket = (() => {
 
     function buildHtml(options) {
         const filter = options.filterBtnsHtml ?? buildMenu.buildCardFilterBarHtml(options.cardFilter);
+        const note = options.cardFilter === 'affordable' && !options.canBuildCardAction
+            ? '<p class="compact-market-browse-note">今は全施設を表示 · 建設時に購入可能な施設へ絞ります</p>' : '';
         const filterLabel = { blue: '青', green: '緑', red: '赤', purple: '紫', affordable: '建設可' }[options.cardFilter] || '全て';
-        return `<section class="compact-market" aria-label="中央市場"><header class="compact-market-header"><h2>中央市場</h2><button type="button" class="compact-market-expand" data-action="expandMarket" aria-controls="cardboardMarketDialog" aria-haspopup="dialog" aria-expanded="false" aria-label="中央市場を大きく表示">拡大</button>${options.undoBtn || ''}</header>${options.marketStatusHtml || ''}<details class="compact-market-filter-disclosure"><summary>絞込：${options.escapeHtml(filterLabel)}</summary><nav class="compact-market-filters" aria-label="施設の絞り込み">${filter}</nav></details><div class="compact-market-facilities" role="region" aria-label="中央市場の施設一覧" tabindex="0">${buildFacilitiesHtml(options)}</div><details class="compact-market-goal-disclosure"><summary>目標</summary><section class="compact-market-goals" aria-label="自分のランドマーク建設"><h3>ランドマーク</h3><div class="compact-market-landmarks">${buildLandmarksHtml(options)}</div></section></details></section>`;
+        return `<section class="compact-market" aria-label="中央市場"><header class="compact-market-header"><h2>中央市場</h2><button type="button" class="compact-market-expand" data-action="expandMarket" aria-controls="cardboardMarketDialog" aria-haspopup="dialog" aria-expanded="false" aria-label="中央市場を大きく表示">拡大</button>${options.undoBtn || ''}</header>${options.marketStatusHtml || ''}<details class="compact-market-filter-disclosure"><summary>絞込：${options.escapeHtml(filterLabel)}</summary><nav class="compact-market-filters" aria-label="施設の絞り込み">${filter}</nav></details><div class="compact-market-browse-guidance"${note ? '' : ' hidden'}>${note}</div><div class="compact-market-facilities" role="region" aria-label="中央市場の施設一覧" tabindex="0">${buildFacilitiesHtml(options)}</div><details class="compact-market-goal-disclosure"><summary>目標</summary><section class="compact-market-goals" aria-label="自分のランドマーク建設"><h3>ランドマーク</h3><div class="compact-market-landmarks">${buildLandmarksHtml(options)}</div></section></details></section>`;
     }
     return Object.freeze({ buildHtml, buildFacilitiesHtml, buildLandmarksHtml });
 })();

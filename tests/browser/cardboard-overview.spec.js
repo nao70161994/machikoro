@@ -524,3 +524,47 @@ test(`市場の絞り込みはカード数に応じて棚高を縮め全体復�
     expect(await snapshot(page)).toEqual(before);
 });
 }
+
+// Only a deliberate inspection dismisses the brief greeting. Automatic layout
+// and camera refreshes retain it, and the persistent turn HUD stays available.
+test('明示的な正面閲覧だけが手番挨拶を閉じて手番と対局状態を維持する', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 }, 4);
+    await page.evaluate(() => {
+        // The table displays completed landmarks; make an actual built station
+        // available before recording the immutable inspection baseline.
+        GameRuntimeState.runtime.snapshot().game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
+        render();
+    });
+    const before = await snapshot(page);
+    const greeting = page.locator('#turnAnnouncer');
+    for (const action of ['roster', 'self', 'readable', 'card', 'landmark']) {
+        if (action === 'card' || action === 'landmark') await cameraCommand(page, 'self');
+        const status = await page.evaluate(async () => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            // render queues the same automatic geometry work as a normal UI
+            // refresh. It must not be interpreted as deliberate inspection.
+            render();
+            showTurnAnnouncer(game.currentPlayer().name, false, game.currentPlayerIndex);
+            for (let frame = 0; frame < 3; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
+            return { display: document.getElementById('turnAnnouncer').style.display,
+                status: document.getElementById('turnStatusAnnouncer').textContent,
+                current: document.querySelector('#cardboardRoster [aria-current="true"]').textContent };
+        });
+        expect(status.display, `${action}: 自動配置で挨拶を消さない`).toBe('flex');
+        if (action === 'roster') await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+        else if (action === 'self' || action === 'readable') await cameraCommand(page, action);
+        else {
+            const owner = page.locator('#cardboardSeats > [data-player-index="0"]');
+            await owner.locator(action === 'card' ? '.cardboard-card' : '.cardboard-landmark-built').first().click();
+            await expect(page.locator('#cardDetailModal')).toBeVisible();
+        }
+        await expect(greeting).toBeHidden();
+        expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached)).toBe(false);
+        await expect(page.locator('#turnStatusAnnouncer')).toHaveText(status.status);
+        const turnSeat = page.locator('#cardboardRoster [aria-current="true"]');
+        await expect(turnSeat).toBeVisible();
+        await expect(turnSeat).toHaveText(status.current);
+        expect(await snapshot(page)).toEqual(before);
+        if (action === 'card' || action === 'landmark') await page.keyboard.press('Escape');
+    }
+});

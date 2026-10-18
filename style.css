@@ -14155,6 +14155,43 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     overflow-wrap: anywhere;
 }
 
+/* Browsing guidance is a text row, never a 132px facility-card grid row. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market:has(> .compact-market-browse-guidance:not([hidden])) {
+    grid-template-rows: 44px auto minmax(0, 1fr) auto;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market > .compact-market-browse-guidance {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: start;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market:has(> .compact-market-browse-guidance:not([hidden])) > .compact-market-facilities {
+    grid-row: 3;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market:has(> .compact-market-browse-guidance:not([hidden])) > .market-rule-status {
+    grid-column: 1 / -1;
+    grid-row: 4;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market:has(> .compact-market-browse-guidance:not([hidden])) {
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market > .compact-market-browse-guidance {
+    grid-row: 3;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market:has(> .compact-market-browse-guidance:not([hidden])) > .compact-market-facilities {
+    grid-row: 4;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market:has(> .compact-market-browse-guidance:not([hidden])) > .market-rule-status {
+    grid-row: 5;
+}
+html[data-design="cardboard"] #cardboardMarketDialog .compact-market-browse-note {
+    flex: 0 0 auto;
+    color: var(--cardboard-ink);
+}
+
+html[data-design="cardboard"] .compact-market-browse-guidance[hidden] {
+    display: none;
+}
+
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-item {
     flex: none;
     width: 160px;

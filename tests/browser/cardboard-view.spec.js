@@ -1149,13 +1149,45 @@ test('振り直し確認後に確定した施設だけを新しく強調する',
     await expect(page.locator('#cardboardSeats .cardboard-card-additional-activation')).toHaveCount(0);
 });
 
-test('建設可の絞り込みでもサイコロ前と購入後は市場を見渡せる', async ({ page }) => {
+test('建設可の絞り込みでもサイコロ前と購入後は市場を見渡せる', async ({ page }, testInfo) => {
+    const expectBrowseShelf = async () => {
+        await expect.poll(() => page.locator('#cardboardMarket').evaluate(market => {
+            const note = market.querySelector('.compact-market-browse-note');
+            const shelf = market.querySelector('.compact-market-facilities');
+            const cards = [...shelf.querySelectorAll('.compact-market-item')];
+            const failures = [];
+            if (!note || shelf.contains(note)) failures.push('browse guidance occupies a card slot');
+            if (!cards.length) failures.push('facility cards missing');
+            if (!note || !cards.length) return failures;
+            const clip = shelf.getBoundingClientRect();
+            const first = cards[0].getBoundingClientRect();
+            const scale = clip.width / shelf.offsetWidth;
+            if ((first.top - clip.top) / scale > 4) failures.push('blank row precedes facility cards');
+            if (note.offsetHeight >= cards[0].offsetHeight) failures.push('guidance retains a facility-sized row');
+            const style = getComputedStyle(shelf);
+            const columns = (style.gridTemplateColumns.match(/[\d.]+px/g) || []).length;
+            const rows = Number(style.getPropertyValue('--table-market-rows')) || 2;
+            const expected = Math.min(cards.length, columns * rows);
+            const visible = cards.filter(card => {
+                const bounds = card.getBoundingClientRect();
+                return bounds.top >= clip.top - 1 && bounds.bottom <= clip.bottom + 1;
+            }).length;
+            if (visible < expected) failures.push(`only ${visible}/${expected} configured facility slots visible`);
+            return failures;
+        })).toEqual([]);
+    };
     await prepare(page, {width:844,height:390}, 2);
     await camera(page, 'market');
-    await page.locator('#cardboardMarket .compact-market-filter-disclosure').evaluate(element => { element.open = true; });
+    await page.locator('#cardboardMarket .compact-market-filter-disclosure > summary').click();
+    await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
     await page.locator('#cardboardMarket [data-card-filter="affordable"]').click();
+    await expect(page.locator('#cardboardMarketDialog .compact-market-browse-note')).toBeVisible();
+    await page.locator('#cardboardMarketClose').click();
+    await expect(page.locator('#cardboardMarketDialog')).toBeHidden();
+    await expect(page.locator('#cardboardMarket .compact-market-filter-disclosure')).not.toHaveAttribute('open');
     const cards = page.locator('#cardboardMarket [data-action="buildCard"]');
     await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toBeVisible();
+    await expectBrowseShelf();
     expect(await cards.count()).toBeGreaterThan(0);
     expect(await cards.evaluateAll(nodes => nodes.every(node => node.disabled))).toBe(true);
     await page.evaluate(() => {
@@ -1168,8 +1200,19 @@ test('建設可の絞り込みでもサイコロ前と購入後は市場を見�
     expect(await cards.evaluateAll(nodes => nodes.every(node => !node.disabled))).toBe(true);
     await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.builtThisTurn = true; render(); });
     await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toBeVisible();
+    await expectBrowseShelf();
     expect(await cards.count()).toBeGreaterThan(0);
     expect(await cards.evaluateAll(nodes => nodes.every(node => node.disabled))).toBe(true);
+    const canonical = await state(page);
+    for (const viewport of [{width:320,height:720}, {width:390,height:844},
+        {width:844,height:390}, {width:1440,height:900}]) {
+        await page.setViewportSize(viewport);
+        await camera(page, 'overview');
+        await expect(page.locator('#cardboardMarket .compact-market-browse-note')).toBeVisible();
+        await expectBrowseShelf();
+        expect(await state(page)).toEqual(canonical);
+        await page.screenshot({ path: testInfo.outputPath(`browse-note-${viewport.width}.png`) });
+    }
 });
 
 test('新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない', async ({ page }, testInfo) => {
