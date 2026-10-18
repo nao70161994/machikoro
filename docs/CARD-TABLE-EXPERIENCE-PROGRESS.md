@@ -216,3 +216,10 @@ checkJs全構成とJS構文成功。既存購入Undo/保存/4テーマ/RMと4幅
 1f2f4bc8の16画面/混在オンライン39131020684、縦横UI39131025693は成功。Release39131020679は2件失敗:前述Lintと、新規選択したWebKit購入caseの短時間notice観測。後者traceではnoticeが41827.043ms時点に存在し、flight観測後にnoticeを探した43994.071msまで2167.028msが経過していた。製品寿命1200msは既に過ぎている。通知を長くせず、flight/cueと同じbrowser MutationObserver内でnoticeの表示・文面・SVG・pointer-events・ReducedMotionを採取する測定に修正。4幅の実paint/位置/終了後画像検証は維持する。traceの簡潔な時刻証拠JSONを同folderへ保存。
 
 この迅速購入guard/測定修正/静的変数参照修正をまとめ、checkJs全5構成、既存Lint全対象、編集JS構文は成功。対象購入/Undo/保存caseも1/1成功27秒。旧CIの失敗を成功として書き換えず、修正後HEADをCIで再確認する。
+
+
+## 97b8a8c0 のCIコマンド整合性
+
+前Goalターンはprogress:迅速購入の競合を抑止し、通知traceと通常速度部分プレイを保存、静的参照と一時通知の観測を修正して97b8a8c0をPush。最新runのstatic gateは成功。Release39146528684のunit gateは『CIの全コマンドとpackage.jsonのtest:browser-prを厳密一致させる』既存テストが失敗した。workflowへ購入/Undo/保存caseを追加した一方、共通scriptへ同じgrepを追加し忘れたことが原因。テスト期待値を緩めず、package.jsonの共通コマンドにも追加分を反映した。既存コマンド/5shard/1worker/厳密一致の検証はすべて維持。
+
+node tests/main.test.js全体が成功し、該当『PR release workflowはオンライン同期と再接続E2Eを必須gateにする』も成功。製品source/演出時間/基準画像/差分閾値は変更しない。97b8版のブラウザ・自然UI等は同じrunを継続して監視し、unit gateの失敗とは区別する。
