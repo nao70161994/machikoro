@@ -89,7 +89,11 @@ const CardBoardActivationTags = (() => {
                 name.textContent = group.name;
                 const income = documentRef.createElement('span');
                 const ownerName = players[group.owner].name || `席${group.owner + 1}`;
-                income.textContent = `${ownerName} · ${group.net > 0 ? '+' : ''}${group.net}コイン`;
+                income.textContent = `${ownerName} · `;
+                const amount = documentRef.createElement('span');
+                amount.className = 'cardboard-activation-amount';
+                amount.textContent = `${group.net > 0 ? '+' : ''}${group.net}コイン`;
+                income.appendChild(amount);
                 tag.append(name, income);
                 if (group.routes.size) {
                     const route = documentRef.createElement('small');

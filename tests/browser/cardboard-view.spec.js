@@ -1210,6 +1210,7 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await expect(liveTag).toBeVisible();
     await expect(liveTag).toContainText('森林');
     await expect(liveTag.locator('.cardboard-activation-route')).toContainText('銀行 →');
+    await expect(liveTag.locator('.cardboard-activation-amount')).toHaveCSS('white-space', 'nowrap');
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
     await page.screenshot({ path: testInfo.outputPath('facility-chain-live-activation-tag.png') });
     const caption = page.locator('#cardboardEventDetails');
