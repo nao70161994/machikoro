@@ -11,3 +11,10 @@
 比較元は前段階のcard-table-experience画像と公式PV。施設カードの構成・ルール・操作経路を変えず、成長比較と因果の読み取りを補う。
 
 飛行中のstep4はbrowser内requestAnimationFrameで開始後180ms以降を観測してから撮影。sample.jsonの観測値は183.28ms/opacity1/銀行→街4で、スクリーンショットそのものの正確な撮影時刻ではない。画像で実際の1コイン・経路・右席施設の対応を確認した。
+
+
+## CI候補と自然対局
+
+CI39124580958（製品79d2c0d3）の基準候補4枚を別担当が旧画像と比較し採用可。baseline-hud-diff.jsonは変更pixel範囲がHUDのみである記録。他12枚はbyte-identical。
+
+ui-portrait/landscapeの画像とsummaryは同版の無seed実UI対局。人間席の行動はCPU助言で選択するが、状態へ直接適用せず実ボタン/キーボードで操作した。速度100msは実設定UIで選択。物理スマホ・初見人間ではない。勝利画像はfull-pageで、viewport内全カード同時表示の証拠ではない。

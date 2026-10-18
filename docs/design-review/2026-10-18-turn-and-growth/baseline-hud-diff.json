@@ -1,0 +1,50 @@
+[
+  {
+    "file": "cardboard-desktop-1440-mobile-webkit-linux.png",
+    "width": 1440,
+    "height": 936,
+    "pixels": 2110,
+    "bbox": [
+      17,
+      32,
+      987,
+      47
+    ]
+  },
+  {
+    "file": "cardboard-landscape-844-mobile-webkit-linux.png",
+    "width": 844,
+    "height": 390,
+    "pixels": 2468,
+    "bbox": [
+      16,
+      33,
+      506,
+      47
+    ]
+  },
+  {
+    "file": "cardboard-phone-320-mobile-webkit-linux.png",
+    "width": 320,
+    "height": 844,
+    "pixels": 372,
+    "bbox": [
+      58,
+      15,
+      307,
+      25
+    ]
+  },
+  {
+    "file": "cardboard-phone-390-mobile-webkit-linux.png",
+    "width": 390,
+    "height": 844,
+    "pixels": 386,
+    "bbox": [
+      75,
+      15,
+      377,
+      25
+    ]
+  }
+]

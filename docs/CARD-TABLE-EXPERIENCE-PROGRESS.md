@@ -152,3 +152,13 @@ fa9a307cの視覚/混在オンライン39108195633は成功。Release39108195553
 関連Node42件・編集JS構文が成功。型検査では新しい内部visual投影で既存projectのoptional subject型が推論されない問題を検出し、既存optional出力へJSDoc型を追加して修正。base/main/ui/storage/online全成功。GameManager/CPU/online/storage/serverはmain差分なし、Card.jsは前段の表示formatterのみ。remote mainもea5c2189のままと再確認した。新HUDは4にぎわい基準画像の意図した変更になるため、CI生成候補を独立目視してから当該4枚だけ採用する。他12枚/許容値は維持する。
 
 独立4step目視は施設紹介が席1→2→3→4へ移り、所有者/経路/発光元が対応すると評価。ただし最初の4枚では飛行中コインが写らず、同期を画像だけでは認定しなかった。追加の初回probeはNode側poll→別evaluateの間に600msへ到達し撮影窓を逃した。製品時間を延長せず、最後のstepをbrowser内RAFで直接観測してから撮影するよう測定を修正。上限500ms/opacity>0.5は維持し、対象1/1成功19.6秒。観測183.28ms/opacity1、最終画像では1コイン/銀行→街4の飛行と右席の森林強調を確認した。sampleは撮影直前の観測であり、PNG撮影時刻そのものとは区別する。最後の飛行画像はroot目視、先行4stepの独立レビューと混同しない。
+
+## 79d2c0d3 のCI・基準候補レビュー
+
+製品79d2c0d3をPush。最初の手動dispatch39124462626はPush完了前のfa9a307cを参照したことをheadShaで確認して停止し、remote79d2を確認後に39124580958へdispatchし直した。古いrunを新製品の証拠に使わない。
+
+79d2の視覚/混在オンライン39124471151、候補生成/縦横UI39124580958は成功。Release39124471249はstatic/unit/PWA/online等のrelease-testと他5job成功、browser jobの新しい飛行中撮影probeのみ失敗。WebKitでは先行する3枚撮影の間に最後の600ms飛行も終了し、観測elapsed600msとなった。製品の飛行時間や上限500ms/opacity>0.5を緩めず、先行の連続撮影をやめ、まだ始まっていない4番目の飛行をbrowser内RAFで直接待つ測定へ変更。測定修正後のローカル対象1/1成功39.1秒。初回の追加撮影も省いて観測前の負荷を減らし、最終CIでWebKitを確認する。製品sourceは79d2から変更しない。
+
+候補4枚は別担当が旧画像と直接比較して採用可。差分pixelbboxは1440 y32〜46、844 y33〜46、320/390 y15〜24だけでHUD内。卓/カード/市場/操作位置のpixel変化なし。他12枚はbyte-identicalで、差分許容値も維持する。にぎわい4枚だけを採用、baseline-hud-diff.jsonを記録する。
+
+79d2の自然UIは縦49turn/106操作/177click/25市場open/233493ms、横60turn/148操作/238click/31市場open/294173msで双方プレイヤー1勝利。pageErrorsなし、正面往復2clickで縦.514→.900→.514、横.285→.900→.285、角度/正本を保持。画像とsummaryをturn-and-growth/ui-*へ保存。基準/テスト/文書だけの最終commitとは製品source同一として照合し、同一commitの再完走とは言わない。
