@@ -49,6 +49,8 @@ const CardBoardField = (() => {
     let transferFrame = null;
     let transferSequence = 0;
     let buildCueTimer = null;
+    let buildNoticeTimer = null;
+    let buildNoticeContext = null;
     let buildCueCard = null;
     let buildCueListener = null;
     const landmarkCues = new Map();
@@ -322,6 +324,43 @@ const CardBoardField = (() => {
         else if (targetBounds.bottom > scrollBounds.bottom) scrollport.scrollTop += targetBounds.bottom - scrollBounds.bottom;
     }
 
+    function clearBuildNotice() {
+        if (buildNoticeTimer !== null) clearTimeout(buildNoticeTimer);
+        buildNoticeTimer = null;
+        buildNoticeContext = null;
+        node('cardboardBuildNotice')?.remove();
+    }
+
+    function showBuildNotice(card) {
+        clearBuildNotice();
+        const board = node('cardboardBoard');
+        if (!enabled() || facts?.replaying || document.hidden ||
+                board?.classList.contains('cardboard-new-roll') ||
+                [...(board?.querySelectorAll('#diceResult .rolling, #cardboardDiceConfirmation, .cardboard-preview-playing, .cardboard-activation-tag') || [])]
+                    .some(element => element.getClientRects().length > 0 && globalThis.getComputedStyle(element).visibility !== 'hidden')) return;
+        const owner = Number(card.closest('.cardboard-player')?.dataset.playerIndex);
+        const player = facts?.game?.players?.[owner];
+        const html = UiCardBoard.buildFacilityConstructionNoticeHtml(player, {
+            name: card.dataset.cardName, escapeHtml: facts.escapeHtml, renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        });
+        const viewport = node('cardboardTableViewport');
+        if (!html || !viewport) return;
+        // The completed purchase returns attention to the real card. Keep
+        // the receipt data available without stacking two result panels.
+        const receiptDetails = /** @type {HTMLDetailsElement | null} */ (node('cardboardEventDetails'));
+        if (receiptDetails) receiptDetails.open = false;
+        const notice = document.createElement('div');
+        notice.id = 'cardboardBuildNotice';
+        notice.setAttribute('aria-hidden', 'true');
+        notice.innerHTML = html;
+        board.appendChild(notice);
+        const bounds = viewport.getBoundingClientRect();
+        notice.style.left = `${Math.max(bounds.left + 8, bounds.right - notice.offsetWidth - 8)}px`;
+        notice.style.top = `${Math.max(bounds.top + 8, bounds.bottom - notice.offsetHeight - 8)}px`;
+        buildNoticeContext = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
+        buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
+    }
+
     function clearBuildCue() {
         if (buildCueTimer !== null) clearTimeout(buildCueTimer);
         buildCueTimer = null;
@@ -337,6 +376,7 @@ const CardBoardField = (() => {
         if (animate) void card.offsetWidth;
         card.classList.add('cardboard-card-newly-built');
         buildCueCard = card;
+        showBuildNotice(card);
         const clearArrival = event => {
             if (event.target !== card || event.animationName !== 'cardboard-card-arrival') return;
             clearBuildCue();
@@ -435,6 +475,7 @@ const CardBoardField = (() => {
     }
 
     function clearFeedback() {
+        clearBuildNotice();
         clearAdditionalActivationCues();
         activationTags?.clear();
         node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
@@ -669,6 +710,7 @@ const CardBoardField = (() => {
             if (button.closest('#cardboardMoreMenu')) closeMoreMenu(true);
         });
         window.addEventListener('resize', () => {
+            clearBuildNotice();
             updateRosterOverflow();
             updatePlayerOverflow();
         }, { passive: true });
@@ -1095,6 +1137,8 @@ const CardBoardField = (() => {
         ensureTable();
         const validIndex = index => Number.isInteger(index) && index >= 0 && index < game.players.length;
         const currentIndex = validIndex(game.currentPlayerIndex) ? game.currentPlayerIndex : 0;
+        if (buildNoticeContext && (buildNoticeContext.session !== session || buildNoticeContext.turn !== game.turnCount ||
+                buildNoticeContext.actor !== currentIndex || facts.replaying || game.phase !== GAME_PHASES.BUILD)) clearBuildNotice();
         const selfIndex = validIndex(facts.selfIndex) ? facts.selfIndex : null;
         const turnChanged = focusTurnIndex !== currentIndex;
         if (turnChanged) {

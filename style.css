@@ -13933,6 +13933,46 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     display: none;
 }
 
+/* A face-on collection uses the spare name/bottom band for economic meaning.
+   Card and illustration dimensions stay fixed; the event strip keeps its row. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-card .cardboard-name {
+    flex-basis: 20px;
+    min-height: 20px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-effect {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 16px;
+    margin: 0;
+    padding: 0 3px;
+    box-sizing: border-box;
+    overflow: hidden;
+    color: #17394a;
+    font-size: 0;
+    line-height: normal;
+    white-space: nowrap;
+    text-align: left;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-effect::before {
+    content: attr(data-effect-short);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 14px;
+}
+/* The actual resolved amount takes priority over a base-effect definition. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-card-activated .cardboard-effect {
+    display: none;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-effect {
+    color: #fff;
+    background: #000;
+}
+
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats :is(.cardboard-dormant, .cardboard-activation) {
     display: block;
     position: absolute;
@@ -15193,3 +15233,38 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardCam
     z-index: 2;
     flex-shrink: 0;
 }
+
+/* A fresh purchase briefly acknowledges the real card without taking input. */
+html[data-design="cardboard"] #cardboardBoard #cardboardBuildNotice {
+    position: fixed;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    width: min(290px, calc(100vw - 32px));
+    min-height: 76px;
+    padding: 7px 10px;
+    box-sizing: border-box;
+    gap: 10px;
+    pointer-events: none;
+    border: 2px solid #c4a650;
+    border-radius: 12px;
+    background: #fff9e9f5;
+    color: #244c42;
+    box-shadow: 0 4px 16px #082e4866;
+    animation: cardboard-construction-notice-in 180ms ease-out;
+}
+html[data-design="cardboard"] .cardboard-build-notice-art { flex: 0 0 76px; height: 60px; }
+html[data-design="cardboard"] .cardboard-build-notice-art svg { display: block; width: 100%; height: 100%; }
+html[data-design="cardboard"] .cardboard-build-notice-copy { display: flex; flex-direction: column; min-width: 0; gap: 3px; }
+html[data-design="cardboard"] .cardboard-build-notice-copy > strong { font-size: 17px; line-height: 1.15; overflow-wrap: anywhere; }
+html[data-design="cardboard"] .cardboard-build-notice-owner { font-size: 11px; overflow-wrap: anywhere; }
+html[data-design="cardboard"] .cardboard-build-notice-price { font-size: 12px; font-weight: 700; }
+@keyframes cardboard-construction-notice-in {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard #cardboardBuildNotice { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardBoard #cardboardBuildNotice { animation: none; }
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard #cardboardBuildNotice { color: #fff; background: #000; border-color: #fff; }

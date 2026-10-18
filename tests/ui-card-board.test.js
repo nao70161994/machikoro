@@ -317,3 +317,26 @@ runTest('勝利コレクションは実所有を全種類集約し過去の発�
     assert.ok(!html.includes('あなたの施設'));
     assert.strictEqual(JSON.stringify(player), before);
 });
+
+runTest('短い経済効果は完全な説明と分離しescapeして描画する', () => {
+    const before = JSON.stringify(player);
+    const html = UiCardBoard.buildPlayerHtml(player, {
+        ...options, getEffectText: (_card, compact) => compact === true ? '牧場×<3>' : '牧場1軒につき+3コイン',
+    });
+    assert.ok(html.includes('data-effect-short="牧場×&lt;3&gt;"'));
+    assert.ok(html.includes('title="牧場1軒につき+3コイン"'));
+    assert.ok(html.includes('所有 2枚。牧場1軒につき+3コイン。休業'));
+    assert.strictEqual(JSON.stringify(player), before);
+});
+
+runTest('通常施設の建設イベントは所有者・アート・名前・実定義の建設費を安全に示す', () => {
+    const fixture = { name: '<主>', cards: [{ name: '<施設>', category: '工業', cost: 3 }] };
+    const before = JSON.stringify(fixture);
+    const html = UiCardBoard.buildFacilityConstructionNoticeHtml(fixture, { ...options, name: '<施設>' });
+    assert.ok(html.includes('data-test-art="facility"'));
+    assert.ok(html.includes('&lt;主&gt;が建設'));
+    assert.ok(html.includes('&lt;施設&gt;'));
+    assert.ok(html.includes('建設費 3コイン'));
+    assert.strictEqual(UiCardBoard.buildFacilityConstructionNoticeHtml(fixture, { name: '未所有' }), '');
+    assert.strictEqual(JSON.stringify(fixture), before);
+});

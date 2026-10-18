@@ -79,3 +79,33 @@ runTest('UI card detailはランドマーク説明とemoji fallbackをpureに投
         { name: '役所', effect: '補助', emoji: 'X' },
     ]);
 });
+
+runTest('卓の短い効果は共通説明から条件・倍率・負担を保持して正本を変えない', () => {
+    const { loadGameRuntime } = require('./helpers/runtime-loaders');
+    const runtime = loadGameRuntime();
+    const before = JSON.stringify(runtime.CARDS);
+    const examples = {
+        '麦畑': '+1コイン',
+        'チーズ工場': '牧場×+3コイン',
+        '高級フレンチ': '相手ランドマーク2軒〜：5徴収',
+        '会員制BAR': '相手ランドマーク3軒〜：全額',
+        '貸金業': '建設時+5／出目5・6で−2',
+        'ワイナリー': 'ブドウ園×6・自身休業',
+        'マグロ漁船': '港あり：ダイス2個分',
+        '清掃業': '1種休業→銀行から休業数',
+        '出版社': '相手の飲食店・商店×1徴収',
+        'ドリンク工場': '全員のカップ施設×+1(銀行)',
+    };
+    for (const card of runtime.CARDS) {
+        const full = UiCardDetail.cardEffectText(card, runtime.CARD_EFFECT_DESCRIPTIONS);
+        const short = UiCardDetail.cardEffectText(card, runtime.CARD_EFFECT_DESCRIPTIONS, true);
+        assert.ok(full && short, card.name);
+        assert.ok(short.length <= 16, `短い卓表示: ${card.name}: ${short}`);
+        // A map index or arbitrary truthy value must not opt into short labels.
+        assert.strictEqual(UiCardDetail.cardEffectText(card, runtime.CARD_EFFECT_DESCRIPTIONS, 1), full);
+        if (examples[card.name]) assert.strictEqual(short, examples[card.name]);
+    }
+    assert.strictEqual(UiCardDetail.cardEffectText(runtime.createCardByName('貸金業'), runtime.CARD_EFFECT_DESCRIPTIONS),
+        '建設時+5コイン・5か6が出たら-2コイン');
+    assert.strictEqual(JSON.stringify(runtime.CARDS), before);
+});

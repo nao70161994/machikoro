@@ -51,6 +51,13 @@ const UiCardBoard = (() => {
         return `<button type="button" class="cardboard-build-receipt plaza-important-event plaza-important-${landmark ? 'landmark' : 'build'}" data-kind="${landmark ? 'landmark' : 'facility'}" data-action="${action}" ${subjectAttribute}="${escape(name)}" aria-label="${escape(`${player.name}の${name}。${detail}。詳しい効果を表示`)}"><span class="cardboard-build-receipt-art" aria-hidden="true">${art(name, landmark, card?.category || '')}</span><span class="cardboard-build-receipt-copy"><span class="cardboard-build-receipt-player">${escape(player.name)}の街に</span><strong class="cardboard-build-receipt-name">${escape(name)}</strong>${detailHtml}</span><span class="cardboard-build-receipt-more" aria-hidden="true">›</span></button>`;
     }
 
+    function buildFacilityConstructionNoticeHtml(player, options = {}) {
+        const card = (player?.cards || []).find(candidate => candidate.name === options.name);
+        if (!card || !Number.isSafeInteger(card.cost) || card.cost < 0) return '';
+        const { escape, art } = helpers(options);
+        return `<span class="cardboard-build-notice-art">${art(card.name, false, card.category)}</span><span class="cardboard-build-notice-copy"><span class="cardboard-build-notice-owner">${escape(player.name)}が建設</span><strong>${escape(card.name)}</strong><span class="cardboard-build-notice-price">建設費 ${card.cost}コイン</span></span>`;
+    }
+
     function landmarkNames(player, options) {
         const known = options.landmarkNames || (typeof Player !== 'undefined' ? Player.landmarkNames() : Object.keys(player.landmarks || {}));
         const enabled = options.enabledLandmarks || known;
@@ -176,10 +183,11 @@ const UiCardBoard = (() => {
                 const activationStyle = event ? ` style="--cardboard-activation-delay:${Math.min(Math.max(event.logOrder, 0), 7) * 80}ms;--cardboard-chain-delay:${event.groupOrder * 700}ms;--cardboard-chain-animation:${event.groupOrder < 8 ? 'cardboard-card-activate' : 'none'}"` : '';
                 const majorIncomeClass = event?.net >= 5 ? ' cardboard-card-major-income' : '';
                 const effectText = typeof options.getEffectText === 'function' ? options.getEffectText(card) : '';
-                const effectHtml = effectText ? `<span class="cardboard-effect" title="${escape(effectText)}">${escape(effectText)}</span>` : '';
+                const effectSummary = effectText ? options.getEffectText(card, true) : '';
+                const effectHtml = effectText ? `<span class="cardboard-effect" title="${escape(effectText)}" data-effect-short="${escape(effectSummary)}">${escape(effectText)}</span>` : '';
                 const activationStepClass = event ? ` cardboard-activation-step-${Math.min(event.order, 4)}` : '';
                 const eventHtml = event ? `<span class="cardboard-activation" data-short-label="#${event.order + 1} ${event.net > 0 ? '+' : ''}${event.net}·${event.count}">発動${event.order + 1}番目 · 確認済み：${event.net > 0 ? '+' : ''}${event.net}コイン · 発動${event.count}回</span>` : '';
-                const cardTitle = `${card.name} · ${colorNames[color] || '不明'} ${card.category} · 出目 ${dice.join('・') || '—'} · 所有 ×${count}${dormant ? ` · 休業 ${dormant}枚` : ''}${event ? ` · 今回 ${event.net > 0 ? '+' : ''}${event.net}コイン、${event.count}回発動` : ''}`;
+                const cardTitle = `${card.name} · ${colorNames[color] || '不明'} ${card.category} · 出目 ${dice.join('・') || '—'} · 所有 ×${count}${effectText ? ` · ${effectText}` : ''}${dormant ? ` · 休業 ${dormant}枚` : ''}${event ? ` · 今回 ${event.net > 0 ? '+' : ''}${event.net}コイン、${event.count}回発動` : ''}`;
                 const accessibleLabel = [
                     card.name,
                     `${colorNames[color] || '不明'}、${card.category}。${colorLabels[color] || '分類不明'}`,
@@ -261,7 +269,7 @@ const UiCardBoard = (() => {
             return `<button type="button" class="cardboard-roster-seat${index === options.selfIndex ? ' cardboard-roster-self' : ''}${activationCount ? ' cardboard-roster-activated' : ''}" data-cardboard-player-index="${index}" tabindex="${index === rovingIndex ? '0' : '-1'}" title="席${index + 1}・${escape(player.name)}" aria-pressed="${index === options.selectedIndex}" aria-label="席${index + 1}・${escape(player.name)}${roleLabels}${showingDetails ? '、施設カードを選択中' : ''}${kindLabel ? `、${escape(kindLabel)}` : ''}、${escape(player.coins)}コイン、目標 ${built}/${names.length}${activationCount ? `、今回施設発動 ${activationCount}回` : ''}"${index === options.currentIndex ? ' aria-current="true"' : ''}><strong><span class="cardboard-roster-seat-number">席${index + 1}</span>${kindIcon}<span class="cardboard-roster-name">${escape(player.name)}</span>${roles}${activationBadge}</strong><span class="cardboard-roster-summary"><span class="cardboard-roster-summary-text"><b class="cardboard-roster-coins">${escape(player.coins)}<span>コイン</span></b><span class="cardboard-roster-progress"><span> · 目標 </span><b>${built}/${names.length}</b></span></span></span><small class="cardboard-roster-trend">${trend}</small></button>`;
         }).join('')}</nav>`;
     }
-    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, buildActivationPreviewHtml, selectTableIndices, eventFocusSeatIndex });
+    return Object.freeze({ buildPlayerHtml, buildRosterHtml, buildConstructionReceiptHtml, buildFacilityConstructionNoticeHtml, buildActivationPreviewHtml, selectTableIndices, eventFocusSeatIndex });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = UiCardBoard;
 if (typeof window !== 'undefined') window.UiCardBoard = UiCardBoard;

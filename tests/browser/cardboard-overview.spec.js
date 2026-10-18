@@ -568,3 +568,93 @@ test('明示的な正面閲覧だけが手番挨拶を閉じて手番と対局�
         if (action === 'card' || action === 'landmark') await page.keyboard.press('Escape');
     }
 });
+
+
+test('正面の全38施設はカードと原画を縮めず経済効果を表示し戻ると俯瞰へ戻る', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = CARDS.map(card => createCardByName(card.name));
+        game.players[0].dormantCards = [game.players[0].cards[0]];
+        render();
+    });
+    const before = await snapshot(page);
+    const owner = page.locator('#cardboardSeats > [data-player-index="0"]');
+    await expect(owner.locator('.cardboard-dormant')).toHaveCount(1);
+    const native = await owner.locator('.cardboard-card').evaluateAll(cards => cards.map(card => ({
+        width: card.offsetWidth, height: card.offsetHeight, art: card.querySelector('.cardboard-art').offsetHeight,
+    })));
+    await page.locator('#cardboardRoster [data-cardboard-player-index="0"]').click();
+    await expect(owner).toHaveClass(/cardboard-player-reading/);
+    const tableViewport = page.locator('#cardboardTableViewport');
+    // Initial seat inspection starts at the owner's real first row.
+    await expect.poll(() => owner.locator('.cardboard-card').first().evaluate(card => {
+        const bounds = card.getBoundingClientRect();
+        const clip = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        return bounds.left >= clip.left && bounds.right <= clip.right && bounds.top >= clip.top && bounds.bottom <= clip.bottom;
+    })).toBe(true);
+    const inspect = async () => owner.locator('.cardboard-card').evaluateAll(cards => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        return cards.map(card => {
+            const effect = card.querySelector('.cardboard-effect');
+            const style = getComputedStyle(effect);
+            const text = getComputedStyle(effect, '::before');
+            context.font = `${text.fontWeight} ${text.fontSize} ${text.fontFamily}`;
+            const available = effect.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+            const name = card.querySelector('.cardboard-name');
+            const badge = card.querySelector('.cardboard-dormant, .cardboard-activation');
+            return { name: card.dataset.cardName, width: card.offsetWidth, height: card.offsetHeight,
+                art: card.querySelector('.cardboard-art').offsetHeight,
+                effect: effect.dataset.effectShort, display: style.display,
+                measured: context.measureText(effect.dataset.effectShort).width, available,
+                fits: context.measureText(effect.dataset.effectShort).width <= available + 0.5,
+                nameFits: name.scrollHeight <= name.clientHeight + 1,
+                badgeSeparate: !badge || effect.offsetTop + effect.offsetHeight <= badge.offsetTop ||
+                    effect.offsetTop >= badge.offsetTop + badge.offsetHeight,
+                effectFits: effect.scrollHeight <= effect.clientHeight + 1,
+            };
+        });
+    });
+    for (const viewport of [{ width: 320, height: 720 }, { width: 390, height: 844 },
+        { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+        const anchor = await owner.evaluate(player => {
+            const viewport = document.getElementById('cardboardTableViewport');
+            const clip = viewport.getBoundingClientRect();
+            const x = clip.left + viewport.clientLeft + viewport.clientWidth / 2;
+            const y = clip.top + viewport.clientTop + viewport.clientHeight / 2;
+            const cards = Array.from(player.querySelectorAll('.cardboard-card')).map(card => {
+                const bounds = card.getBoundingClientRect();
+                return { name: card.dataset.cardName, bounds,
+                    distance: (bounds.left + bounds.width / 2 - x) ** 2 + (bounds.top + bounds.height / 2 - y) ** 2 };
+            }).filter(card => card.bounds.right > clip.left && card.bounds.left < clip.right &&
+                card.bounds.bottom > clip.top && card.bounds.top < clip.bottom).sort((a, b) => a.distance - b.distance);
+            return { name: cards[0].name, scale: viewport.dataset.tableScale, angle: viewport.dataset.tableAngle };
+        });
+        const oldWidth = await page.evaluate(() => innerWidth);
+        await page.setViewportSize(viewport);
+        if (oldWidth !== viewport.width) {
+            await expect.poll(() => owner.evaluate((player, name) => {
+                const viewport = document.getElementById('cardboardTableViewport');
+                const clip = viewport.getBoundingClientRect();
+                const card = Array.from(player.querySelectorAll('.cardboard-card')).find(card => card.dataset.cardName === name);
+                const bounds = card.getBoundingClientRect();
+                return Math.abs(bounds.left + bounds.width / 2 - (clip.left + viewport.clientLeft + viewport.clientWidth / 2)) < 2 &&
+                    Math.abs(bounds.top + bounds.height / 2 - (clip.top + viewport.clientTop + viewport.clientHeight / 2)) < 2;
+            }, anchor.name)).toBe(true);
+        }
+        await expect(tableViewport).toHaveAttribute('data-table-scale', anchor.scale);
+        await expect(tableViewport).toHaveAttribute('data-table-angle', anchor.angle);
+        await expect(tableViewport).toHaveAttribute('data-table-focus-player', '0');
+        const result = await inspect();
+        expect(result).toHaveLength(38);
+        expect(result.map(({ width, height, art }) => ({ width, height, art }))).toEqual(native);
+        expect(result.filter(card => !card.effect || card.display === 'none' || !card.fits || !card.nameFits || !card.badgeSeparate || !card.effectFits)).toEqual([]);
+        expect(await snapshot(page)).toEqual(before);
+        await page.screenshot({ path: testInfo.outputPath(`economy-reading-${viewport.width}.png`) });
+    }
+    await page.locator('[data-cardboard-camera="overview"]').click();
+    await expect(owner).not.toHaveClass(/cardboard-player-reading/);
+    await expect(owner.locator('.cardboard-effect').first()).toBeHidden();
+    expect(await snapshot(page)).toEqual(before);
+});

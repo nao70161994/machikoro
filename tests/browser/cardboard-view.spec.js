@@ -650,7 +650,6 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     expect(await page.evaluate(() => document.getElementById('cardboardMarketDialog').contains(document.activeElement))).toBe(true);
     const newCard = page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]');
     await expect(newCard.locator('.cardboard-count')).toHaveText('所有 ×1');
-    await expect.poll(() => page.evaluate(() => window.__observedBuildCue?.animation)).toBe('cardboard-card-arrival');
     await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
     await expect.poll(() => newCard.evaluate(card => {
         const list = card.closest('.cardboard-cards').getBoundingClientRect();
@@ -660,13 +659,23 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     const built = await state(page);
     await page.locator('#cardboardMarketClose').click();
     await expect(marketDialog).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.__observedBuildCue?.animation)).toBe('cardboard-card-arrival');
+    const buildNotice = page.locator('#cardboardBuildNotice');
+    await expect(buildNotice).toBeVisible();
+    await expect(buildNotice).toContainText('街1が建設');
+    await expect(buildNotice).toContainText('麦畑');
+    await expect(buildNotice).toContainText('建設費 1コイン');
+    await expect(buildNotice.locator('svg')).toHaveCount(1);
+    await expect(buildNotice).toHaveCSS('pointer-events', 'none');
     await selectTheme(page, 'plaza');
+    await expect(buildNotice).toHaveCount(0);
     await expect(page.locator('#gameDesignThemeSelect')).toBeFocused();
     expect(await state(page)).toEqual(built);
     await selectTheme(page, 'cardboard');
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]')).not.toHaveClass(/cardboard-card-newly-built/);
     await page.locator('#cardboardMarket .undo-btn').click();
     await page.locator('#confirmOkBtn').click();
+    await expect(buildNotice).toHaveCount(0);
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]')).toHaveCount(0);
     expect(await state(page)).toEqual(before);
     await page.evaluate(() => document.body.classList.add('accessibility-reduced-motion'));
@@ -674,12 +683,15 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-expand').click();
     await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
+    await page.locator('#cardboardMarketClose').click();
     await expect.poll(() => page.evaluate(() => window.__observedBuildCue)).toEqual({
         animation: 'none', outline: 'rgb(23, 102, 189)',
     });
-    await page.locator('#cardboardMarketClose').click();
+    await expect(buildNotice).toBeVisible();
+    await expect(buildNotice).toHaveCSS('animation-name', 'none');
     await page.locator('#cardboardMarket .undo-btn').click();
     await page.locator('#confirmOkBtn').click();
+    await expect(buildNotice).toHaveCount(0);
     expect(await state(page)).toEqual(before);
     const saved = await page.evaluate(() => {
         saveGameState();
@@ -1357,4 +1369,80 @@ test('中央市場の長い施設名をカード枠内で省略せず読める',
     }), '先頭2段のカード下端まで市場内に収まる').toBe(true);
     await camera(page, 'market');
     await page.screenshot({ path: testInfo.outputPath('market-full-facility-names.png') });
+});
+
+
+test('実ロール後の新規建設通知は4画面で読めて正本を変更しない', async ({ page }, testInfo) => {
+    test.setTimeout(120000);
+    for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844,height:390},{width:1440,height:936}]) {
+        await prepare(page, viewport, 2, false);
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            game.players[0].cards = ['麦畑','牧場','パン屋','森林','花畑','フラワーショップ'].map(createCardByName);
+            game.players[0].coins = 30;
+            render();
+        });
+        await page.locator('#btnRoll').click();
+        await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase)).toBe('build');
+        await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
+        await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+        // A hidden stale caption is a presentation fixture, not an active
+        // animation. It must not suppress a fresh construction acknowledgment.
+        await page.evaluate(() => {
+            const stale = document.createElement('div');
+            stale.className = 'cardboard-activation-tag';
+            stale.hidden = true;
+            stale.style.display = 'none';
+            document.getElementById('cardboardBoard').appendChild(stale);
+        });
+        await camera(page, 'market');
+        await page.locator('#cardboardMarket .compact-market-expand').click();
+        await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
+        const purchased = await state(page);
+        await page.locator('#cardboardMarketClose').click();
+        await page.locator('#cardboardBuildNotice').waitFor({state:'visible'});
+        const notice = await page.locator('#cardboardBuildNotice').evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            const table = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+            const receiptClosed = !document.getElementById('cardboardEventDetails').open;
+            const svg = element.querySelector('svg');
+            const svgBounds = svg.getBoundingClientRect();
+            const artVisible = getComputedStyle(svg).display !== 'none' && svgBounds.width > 0 && svgBounds.height > 0;
+            const screen = visualViewport;
+            const pointerEvents = getComputedStyle(element).pointerEvents;
+            const previousPointerEvents = element.style.pointerEvents;
+            let paintedAboveExistingPanels;
+            try {
+                // Include this non-interactive layer in hit testing without
+                // changing its stacking position or clicking through a panel.
+                element.style.pointerEvents = 'auto';
+                paintedAboveExistingPanels = ['strong', '.cardboard-build-notice-art'].every(selector => {
+                    const target = element.querySelector(selector).getBoundingClientRect();
+                    const top = document.elementsFromPoint(target.left + target.width / 2, target.top + target.height / 2)[0];
+                    return top === element || element.contains(top);
+                });
+            } finally {
+                element.style.pointerEvents = previousPointerEvents;
+            }
+            return { text:element.textContent, art:element.querySelectorAll('svg').length,
+                pointerEvents, paintedAboveExistingPanels, receiptClosed, artVisible,
+                insideTable:bounds.left>=table.left && bounds.top>=table.top && bounds.right<=table.right && bounds.bottom<=table.bottom,
+                insideScreen:bounds.left>=(screen?.offsetLeft || 0) && bounds.top>=(screen?.offsetTop || 0) &&
+                    bounds.right<=(screen?.offsetLeft || 0)+(screen?.width || innerWidth) &&
+                    bounds.bottom<=(screen?.offsetTop || 0)+(screen?.height || innerHeight) };
+        });
+        await page.screenshot({path:testInfo.outputPath(`facility-construction-${viewport.width}.png`)});
+        expect(notice.text).toContain('街1が建設');
+        expect(notice.text).toContain('麦畑');
+        expect(notice.text).toContain('建設費 1コイン');
+        expect(notice.art).toBe(1);
+        expect(notice.artVisible).toBe(true);
+        expect(notice.pointerEvents).toBe('none');
+        expect(notice.paintedAboveExistingPanels).toBe(true);
+        expect(notice.receiptClosed).toBe(true);
+        expect(notice.insideTable).toBe(true);
+        expect(notice.insideScreen).toBe(true);
+        expect(await state(page)).toEqual(purchased);
+        await page.locator('.cardboard-activation-tag[hidden]').evaluateAll(elements => elements.forEach(element => element.remove()));
+    }
 });

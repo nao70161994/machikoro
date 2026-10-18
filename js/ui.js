@@ -1528,8 +1528,8 @@ function renderPlayers() {
     } else clearTownCoinEffects();
 }
 
-function getEffectText(card) {
-    return UiCardDetail.cardEffectText(card, CARD_EFFECT_DESCRIPTIONS);
+function getEffectText(card, compact = false) {
+    return UiCardDetail.cardEffectText(card, CARD_EFFECT_DESCRIPTIONS, compact === true);
 }
 
 function landmarkPresentation(name) {
