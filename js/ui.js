@@ -510,6 +510,7 @@ function renderWinnerState(winner) {
             document.documentElement?.dataset?.design,
             typeof window !== 'undefined' ? window.innerWidth : Infinity
         ),
+        enabledLandmarks: getEnabledLandmarkSelection(),
         townHtml: document.documentElement?.dataset?.design === 'cardboard'
             ? UiCardBoard.buildPlayerHtml(winner, {
                 winnerCollection: true, index: winnerIdx,
@@ -1509,6 +1510,8 @@ function renderPlayers() {
         display: LOG_TYPE_DISPLAY,
         refreshMarket: renderBuildMenu,
         closeLog: () => setLogCollapsed(true),
+        onDiceResult: dismissTurnGreeting,
+        onUserInspection: dismissTurnGreeting,
         onBuildMilestones: milestones => {
             if (currentGame.checkWinner()) return;
             const online = uiOnlineRuntimeSnapshot();
@@ -1525,8 +1528,8 @@ function renderPlayers() {
     } else clearTownCoinEffects();
 }
 
-function getEffectText(card) {
-    return UiCardDetail.cardEffectText(card, CARD_EFFECT_DESCRIPTIONS);
+function getEffectText(card, compact = false) {
+    return UiCardDetail.cardEffectText(card, CARD_EFFECT_DESCRIPTIONS, compact === true);
 }
 
 function landmarkPresentation(name) {
@@ -1888,6 +1891,15 @@ function bcSelectCard(btn, inputId) {
         selectedButton: btn,
         findInput: () => document.getElementById(inputId),
     });
+}
+
+function dismissTurnGreeting() {
+    turnAnnouncerTimerController.clear();
+    const greeting = document.getElementById('turnAnnouncer');
+    if (greeting) {
+        greeting.style.display = 'none';
+        greeting.classList.remove('hiding');
+    }
 }
 
 function showTurnAnnouncer(name, isCPU, playerIndex) {

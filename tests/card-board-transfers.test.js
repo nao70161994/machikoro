@@ -10,7 +10,7 @@ const events = { participantNames: ['街A', '街B', '街C'], activations: [
     { from: null, to: 0, amount: 4 }, { from: 1, to: 2, amount: 0 },
 ] };
 function fixture() {
-    let timer = null, cancelled = 0, appReducedMotion = false, observerCallback = null;
+    let timer = null, timerDelay = null, cancelled = 0, appReducedMotion = false, observerCallback = null;
     const animated = [];
     const motion = { matches: false, addEventListener(type, callback) { this.callback = callback; },
         removeEventListener() { this.callback = null; } };
@@ -20,7 +20,7 @@ function fixture() {
             observe() {}
             disconnect() { observerCallback = null; }
         },
-        setTimeout: callback => { timer = callback; return 1; }, clearTimeout: () => { timer = null; } },
+        setTimeout: (callback, delay) => { timer = callback; timerDelay = delay; return 1; }, clearTimeout: () => { timer = null; } },
         body: { classList: { contains: name => name === 'accessibility-reduced-motion' && appReducedMotion } },
         createElement: () => new Element() };
     class Element {
@@ -35,7 +35,7 @@ function fixture() {
             return { getBoundingClientRect: () => ({ left: selector.includes('"1"') ? 400 : 20, top: 20, width: 100, height: 40 }) };
         }
     }
-    return { container: new Element(), animated, timer: () => timer, cancelled: () => cancelled,
+    return { container: new Element(), animated, timer: () => timer, timerDelay: () => timerDelay, cancelled: () => cancelled,
         setAppReducedMotion(value) { appReducedMotion = value; },
         notifyPreferenceChanged() { observerCallback?.(); }, motion };
 }
@@ -68,13 +68,15 @@ runTest('同じ送受信者間でも発動施設ごとに送金元を識別す�
 });
 
 runTest('移動中は金額を短く示し、詳細には施設と移動元・移動先を保持する', () => {
-    const { container } = fixture();
+    const { container, animated } = fixture();
     const controller = CardBoardTransfers.create();
-    controller.play({ container, events: { participantNames: ['街A', '街B'], activations: [
+    controller.play({ container, delayMs: 500, events: { participantNames: ['街A', '街B'], activations: [
         { from: 0, to: 1, amount: 5, subject: 'パン屋', facility: true },
     ] } });
     const movingCoin = container.children[0].children[1];
     assert.strictEqual(movingCoin.textContent, '5コイン');
+    assert.strictEqual(movingCoin.dataset.route, '街A → 街B');
+    assert.strictEqual(animated[0].options.delay, 500, '出目確定が終わってから送金を示す');
     assert.strictEqual(movingCoin.title, 'パン屋：街A → 街B：5コイン');
     assert.strictEqual(movingCoin.attributes['aria-hidden'], 'true');
     controller.clear();
@@ -280,4 +282,46 @@ runTest('コイン移動中に動きを減らす設定へ切り替えると飛�
     assert.ok(receipt.children[0].textContent.includes('5コイン · 街A → 街B'));
     controller.clear();
     assert.strictEqual(receipt.children.length, 0);
+});
+
+runTest('施設の初出順とowner fallbackを字幕と同じ700ms刻みで送金へ対応させる', () => {
+    const { container, animated, timerDelay } = fixture();
+    const ordered = { participantNames: ['街A', '街B'], activations: [
+        { facility: true, subject: '麦畑', from: null, to: 0, amount: 1 },
+        { facility: true, subject: '森林', owner: 0, from: null, to: 0, amount: 8 },
+        { facility: true, subject: 'カフェ', owner: 1, from: 0, to: 1, amount: 2 },
+        { facility: true, subject: 'パン屋', owner: 0, from: null, to: 0, amount: 3 },
+    ] };
+    const before = JSON.stringify(ordered);
+    assert.deepStrictEqual(CardBoardTransfers.projectFacilityTimeline(ordered), [
+        { owner: 0, name: '麦畑', net: 1, step: 0 },
+        { owner: 0, name: '森林', net: 8, step: 1 },
+        { owner: 1, name: 'カフェ', net: 2, step: 2 },
+        { owner: 0, name: 'パン屋', net: 3, step: 3 },
+    ]);
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, events: ordered, delayMs: 500 });
+    assert.deepStrictEqual(animated.map(item => item.options.delay), [500, 1200, 1900, 2600]);
+    assert.ok(animated.every(item => item.options.duration === 600));
+    const flights = container.children[0].children.filter(child => child.className === 'cardboard-transfer');
+    assert.deepStrictEqual(flights.map(coin => [coin.dataset.facility, coin.dataset.owner, coin.dataset.step]), [
+        ['麦畑', '0', '0'], ['森林', '0', '1'], ['カフェ', '1', '2'], ['パン屋', '0', '3'],
+    ]);
+    assert.strictEqual(timerDelay(), 3300);
+    assert.strictEqual(JSON.stringify(ordered), before);
+    controller.clear();
+});
+
+runTest('同じ施設からの複数経路は同じ紹介ステップ内に収め0円施設も順番へ残す', () => {
+    const { container, animated } = fixture();
+    const controller = CardBoardTransfers.create();
+    controller.play({ container, delayMs: 500, events: { participantNames: ['街A', '街B'], activations: [
+        { facility: true, subject: '麦畑', owner: 0, from: null, to: 0, amount: 0 },
+        { facility: true, subject: '共同施設', owner: 1, from: null, to: 1, amount: 3 },
+        { facility: true, subject: '共同施設', owner: 1, from: 0, to: 1, amount: 2 },
+    ] } });
+    assert.deepStrictEqual(animated.map(item => item.options.delay), [1200, 1220]);
+    assert.ok(animated.every(item => item.options.delay + item.options.duration < 1900));
+    assert.strictEqual(container.children[0].children.filter(child => child.className === 'cardboard-transfer').length, 2);
+    controller.clear();
 });

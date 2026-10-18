@@ -104,12 +104,12 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         const choice = (name, attributes = '') => page.locator(`#gameScreen [data-action=${attribute(name)}]${attributes}:visible`);
         const pending = (name, attributes = '') => page.locator(`#pendingModal [data-action=${attribute(name)}]${attributes}:visible`);
         if (action === 'buildCard' || action === 'buildLandmark') {
-            // Move the shared table through its visible camera control before
-            // opening the market; the canvas may currently show another seat.
-            const beforeCamera = await read();
-            await click(page.locator('[data-cardboard-camera="market"]'), '中央市場へ移動');
-            expect((await read()).key, '盤面の移動は対局状態を変えない').toBe(beforeCamera.key);
-            await click(page.locator('#cardboardMarket .compact-market-expand'), '市場を開く');
+            // Use the existing direct construction shortcut. Camera inspection
+            // is exercised separately, rather than adding two moves per buy.
+            const beforeMarket = await read();
+            await click(page.locator('#btnBuildShortcut'), '建設候補を見る');
+            expect((await read()).key, '市場を開いても対局状態を変えない').toBe(beforeMarket.key);
+            report.marketOpens = (report.marketOpens || 0) + 1;
             if (action === 'buildLandmark') {
                 const goals = page.locator('#cardboardMarketDialog .compact-market-goal-disclosure');
                 if (!(await goals.evaluate(element => element.open))) {
@@ -208,6 +208,60 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
                 report.winner = lastState.winner;
                 await capture('winner');
                 break;
+            }
+            if (!report.cameraReview && lastState.turn >= 12 &&
+                    lastState.actor === lastState.humanIndex && lastState.phase === 'roll') {
+                // Inspect a real opponent collection without moving the game
+                // forward. Record these two UI clicks separately from turns.
+                const viewportNode = page.locator('#cardboardTableViewport');
+                // Canonical turn changes precede the presentation's layout
+                // and camera RAFs. Compare settled views, not the previous
+                // turn's transient fit scale captured between those frames.
+                const settledView = await viewportNode.evaluate(async viewport => {
+                    const frames = [];
+                    let repeated = 0;
+                    let previous = '';
+                    for (let frame = 0; frame < 120; frame++) {
+                        await new Promise(resolve => requestAnimationFrame(resolve));
+                        const world = viewport.querySelector('#cardboardSeats');
+                        const sample = { scale: viewport.getAttribute('data-table-scale'),
+                            angle: viewport.getAttribute('data-table-angle'),
+                            mode: viewport.getAttribute('data-table-mode'),
+                            width: viewport.clientWidth, height: viewport.clientHeight,
+                            worldWidth: world.offsetWidth, worldHeight: world.offsetHeight };
+                        frames.push(sample);
+                        const key = JSON.stringify(sample);
+                        repeated = key === previous ? repeated + 1 : 0;
+                        previous = key;
+                        const expectedFit = Math.min(sample.width / sample.worldWidth, sample.height / sample.worldHeight);
+                        const fitCurrent = sample.mode !== 'overview' || Math.abs(Number(sample.scale) - expectedFit) <= 0.0006;
+                        if (repeated >= 3 && fitCurrent) return { ...sample, frames };
+                    }
+                    throw new Error(`Card table did not settle: ${JSON.stringify(frames.slice(-8))}`);
+                });
+                const initialScale = settledView.scale;
+                const initialAngle = settledView.angle;
+                const targetIndex = (lastState.humanIndex + 1) % lineup.length;
+                const cameraStarted = Date.now();
+                report.cameraReview = { turn: lastState.turn, targetIndex, initialScale, initialAngle,
+                    settledView, restored: false, stateUnchanged: false };
+                await click(page.locator(`#cardboardRoster [data-cardboard-player-index="${targetIndex}"]`), '相手の所有施設を正面で確認');
+                await expect(viewportNode).toHaveAttribute('data-table-focus-player', String(targetIndex));
+                const readableScale = await viewportNode.getAttribute('data-table-scale');
+                await capture('midgame-opponent-upright');
+                await click(page.locator('[data-cardboard-camera="back"]'), '確認前の卓へ戻る');
+                report.cameraReview.restoredView = await viewportNode.evaluate(viewport => {
+                    const world = viewport.querySelector('#cardboardSeats');
+                    return { scale: viewport.getAttribute('data-table-scale'), angle: viewport.getAttribute('data-table-angle'),
+                        width: viewport.clientWidth, height: viewport.clientHeight,
+                        worldWidth: world.offsetWidth, worldHeight: world.offsetHeight };
+                });
+                await expect(viewportNode).toHaveAttribute('data-table-scale', initialScale);
+                await expect(viewportNode).toHaveAttribute('data-table-angle', initialAngle);
+                expect((await read()).key, '正面閲覧と復帰で対局を変更しない').toBe(lastState.key);
+                report.cameraReview = { ...report.cameraReview, turn: lastState.turn, targetIndex, clicks: 2,
+                    initialScale, readableScale, initialAngle, settledView, restored: true,
+                    stateUnchanged: true, elapsedMs: Date.now() - cameraStarted };
             }
             if (lastState.turn >= 20) await capture('midgame');
             if (Math.max(...lastState.goals) >= lastState.goalCount - 1) await capture('late-game');

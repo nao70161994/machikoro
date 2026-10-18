@@ -122,7 +122,19 @@ runTest('建設できない間も建設可フィルタで市場一覧と無効�
     const html = UiCompactMarket.buildFacilitiesHtml(fixture({cardFilter: 'affordable', canBuildCardAction: false}));
     assert.strictEqual((html.match(/data-action="buildCard"/g) || []).length, 3);
     assert.strictEqual((html.match(/data-card-name="[^"]+" disabled/g) || []).length, 3);
-    assert.ok(html.includes('今は全施設を表示'));
+    assert.ok(!html.includes('compact-market-browse-note'));
+    const market = UiCompactMarket.buildHtml(fixture({cardFilter: 'affordable', canBuildCardAction: false}));
+    const noteStart = market.indexOf('<p class="compact-market-browse-note">');
+    const shelfStart = market.indexOf('<div class="compact-market-facilities"');
+    assert.ok(noteStart >= 0 && noteStart < shelfStart);
+    assert.ok(market.slice(noteStart, shelfStart).includes('今は全施設を表示'));
+    assert.ok(!market.slice(shelfStart, market.indexOf('</div>', shelfStart)).includes('compact-market-browse-note'));
+    assert.ok(!UiCompactMarket.buildHtml(fixture()).includes('compact-market-browse-note'));
+    assert.ok(market.includes('<div class="compact-market-browse-guidance"><p class="compact-market-browse-note">'));
+    const withoutNote = UiCompactMarket.buildHtml(fixture());
+    assert.ok(withoutNote.includes('<div class="compact-market-browse-guidance" hidden></div>'));
+    const siblingOrder = value => [...value.matchAll(/(?:<header class="compact-market-header"|<div class="compact-market-browse-guidance"|<div class="compact-market-facilities")/g)].map(match => match[0]);
+    assert.deepStrictEqual(siblingOrder(market), siblingOrder(withoutNote));
     assert.ok(!html.includes('現在建設できる施設はありません'));
 });
 

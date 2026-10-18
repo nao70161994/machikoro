@@ -399,3 +399,21 @@ runTest('にぎわい勝利は再戦をコレクションより先に配置し�
     assert.ok(cardboard.indexOf('id="winnerRematchButton"') < cardboard.indexOf('id="finalCollection"'));
     assert.ok(plaza.indexOf('id="finalCollection"') < plaza.indexOf('id="winnerRematchButton"'));
 });
+
+runTest('にぎわいの結果は勝者を先に示し有効な目標進捗と施設枚数で比較できる', () => {
+    const winner = { name: '<勝者>', coins: 0, cards: [{ name: '麦畑' }, { name: '麦畑' }], landmarks: { '駅': true, '港': true, '空港': false } };
+    const opponent = { name: '相手', coins: 50, cards: [], landmarks: { '駅': true, '港': false, '空港': true } };
+    const players = [opponent, winner];
+    const before = JSON.stringify(players);
+    const html = UiWinner.buildWinnerStatsRows(players, winner, escapeHtml, {
+        designTheme: 'cardboard', enabledLandmarks: new Set(['駅', '港']),
+    });
+    assert(html.indexOf('&lt;勝者&gt;') < html.indexOf('相手'));
+    assert(html.includes('目標 2/2 · 施設 2枚'));
+    assert(html.includes('目標 1/2 · 施設 0枚'));
+    assert(!html.includes('目標 2/3'));
+    assert.strictEqual(JSON.stringify(players), before);
+    const classic = UiWinner.buildWinnerStatsRows(players, winner, escapeHtml, { designTheme: 'classic' });
+    assert(classic.indexOf('相手') < classic.indexOf('&lt;勝者&gt;'));
+    assert(!classic.includes('winner-result-progress'));
+});

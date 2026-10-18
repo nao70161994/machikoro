@@ -49,6 +49,13 @@ const CardBoardField = (() => {
     let transferFrame = null;
     let transferSequence = 0;
     let buildCueTimer = null;
+    let buildNoticeTimer = null;
+    let buildNoticeContext = null;
+    let purchaseOrigin = null;
+    let buildFlight = null;
+    let buildFlightAnimation = null;
+    let buildFlightFrame = null;
+    let buildFlightGeneration = 0;
     let buildCueCard = null;
     let buildCueListener = null;
     const landmarkCues = new Map();
@@ -62,6 +69,7 @@ const CardBoardField = (() => {
     let restoreTownFocus = true;
     let marketHome = null;
     let marketLauncher = null;
+    let marketLauncherSelector = null;
     let restoreMarketFocus = true;
     let choiceInitialized = false;
     let themeFocus = null;
@@ -140,6 +148,20 @@ const CardBoardField = (() => {
             tools.innerHTML = '<button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="back" aria-label="カード確認前の表示へ戻る">戻る</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button>';
             board.appendChild(tools);
         }
+        if (!node('cardboardViewHint')) {
+            const hint = document.createElement('p');
+            hint.id = 'cardboardViewHint';
+            const label = document.createElement('strong');
+            label.textContent = 'カード卓';
+            label.setAttribute('aria-live', 'polite');
+            label.setAttribute('aria-atomic', 'true');
+            const explanation = document.createElement('span');
+            explanation.textContent = '名前で正面へ · 全体で俯瞰';
+            hint.appendChild(label);
+            hint.appendChild(explanation);
+            hint.title = `${label.textContent} · ${explanation.textContent}`;
+            board.appendChild(hint);
+        }
         if (!node('cardboardCameraSettings')) {
             const settings = document.createElement('div');
             settings.id = 'cardboardCameraSettings';
@@ -174,7 +196,24 @@ const CardBoardField = (() => {
         }
         if (!tableCamera && typeof CardTableCamera !== 'undefined') {
             tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats,
+                onContextChange: ({ label, pan, playerIndex, canReturn }) => {
+                    const back = /** @type {HTMLButtonElement | null} */ (node('cardboardCameraTools')?.querySelector('[data-cardboard-camera="back"]'));
+                    if (back) back.disabled = !canReturn;
+                    const hint = node('cardboardViewHint');
+                    if (!hint) return;
+                    const heading = hint.querySelector('strong');
+                    const explanation = hint.querySelector('span');
+                    const direction = pan === 'both' ? '上下左右に移動' : pan === 'x' ? '左右に移動'
+                        : pan === 'y' ? '上下に移動' : '施設カードを確認';
+                    const text = playerIndex === null ? '名前で正面へ · 全体で俯瞰'
+                        : `${direction} · 戻るで元の卓`;
+                    if (heading && heading.textContent !== label) heading.textContent = label;
+                    if (explanation && explanation.textContent !== text) explanation.textContent = text;
+                    const title = `${label} · ${text}`;
+                    if (hint.title !== title) hint.title = title;
+                },
                 onViewChange: () => {
+                    if (buildFlight) clearBuildFlight();
                     activationTags?.clear();
                     // Clear effects anchored to the old geometry, but preserve
                     // a fresh result queued after layout. Its frame reads the
@@ -291,6 +330,131 @@ const CardBoardField = (() => {
         else if (targetBounds.bottom > scrollBounds.bottom) scrollport.scrollTop += targetBounds.bottom - scrollBounds.bottom;
     }
 
+    function clearBuildFlight() {
+        buildFlightGeneration++;
+        if (buildFlightFrame !== null) globalThis.cancelAnimationFrame(buildFlightFrame);
+        buildFlightFrame = null;
+        buildFlightAnimation?.cancel();
+        buildFlightAnimation = null;
+        buildFlight?.remove();
+        buildFlight = null;
+    }
+
+    function visibleMarketOrigin(name) {
+        const market = node('cardboardMarket');
+        const card = Array.from(market?.querySelectorAll('.compact-market-item') || []).find(element =>
+            element.querySelector('[data-action="buildCard"]')?.getAttribute('data-card-name') === name);
+        if (!card) return null;
+        const bounds = card.getBoundingClientRect();
+        const screen = globalThis.visualViewport;
+        const clip = { left: screen?.offsetLeft || 0, top: screen?.offsetTop || 0,
+            right: (screen?.offsetLeft || 0) + (screen?.width || globalThis.innerWidth),
+            bottom: (screen?.offsetTop || 0) + (screen?.height || globalThis.innerHeight) };
+        const shelf = card.closest('.compact-market-facilities')?.getBoundingClientRect();
+        if (shelf) {
+            clip.left = Math.max(clip.left, shelf.left); clip.right = Math.min(clip.right, shelf.right);
+            clip.top = Math.max(clip.top, shelf.top); clip.bottom = Math.min(clip.bottom, shelf.bottom);
+        }
+        if (!bounds.width || !bounds.height || bounds.left < clip.left - 1 || bounds.right > clip.right + 1 ||
+                bounds.top < clip.top - 1 || bounds.bottom > clip.bottom + 1) return null;
+        return { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height };
+    }
+
+    function refreshPendingBuildOrigins() {
+        const game = facts?.game;
+        for (const cue of pendingBuildCues) {
+            cue.origin = !cue.landmark && cue.session === session && cue.turn === game?.turnCount &&
+                cue.actor === game?.currentPlayerIndex && game.log.includes(cue.entry)
+                ? visibleMarketOrigin(cue.name) : null;
+        }
+    }
+
+    function startBuildFlight(card, origin, entry) {
+        clearBuildFlight();
+        if (!origin || !entry || reducedMotionEnabled()) return;
+        const generation = buildFlightGeneration;
+        const context = { session, turn: facts?.game?.turnCount, actor: facts?.game?.currentPlayerIndex };
+        const current = () => generation === buildFlightGeneration && enabled() && mounted && !facts?.replaying &&
+            !document.hidden && node('gameScreen')?.style.display !== 'none' && card.isConnected &&
+            session === context.session && facts.game.turnCount === context.turn &&
+            facts.game.currentPlayerIndex === context.actor && facts.game.log.includes(entry) && !reducedMotionEnabled();
+        // The existing focus operation may update scroll and world geometry.
+        // Two frames read its settled target without delaying any game action.
+        buildFlightFrame = globalThis.requestAnimationFrame(() => {
+            buildFlightFrame = globalThis.requestAnimationFrame(() => {
+                buildFlightFrame = null;
+                if (!current()) return;
+                const viewport = node('cardboardTableViewport');
+                const clip = viewport?.getBoundingClientRect();
+                const target = card.getBoundingClientRect();
+                const angle = (Number(viewport?.dataset.tableAngle || 0) +
+                    Number(card.closest('.cardboard-player')?.dataset.tableAngle || 0)) % 360;
+                // Rotated inline seats retain their real-card cue. Do not land
+                // an upright ghost on an edge whose reading direction differs.
+                if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
+                        target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return;
+                const ghost = card.cloneNode(true);
+                ghost.id = 'cardboardBuildFlight';
+                ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
+                ghost.setAttribute('aria-hidden', 'true');
+                ghost.setAttribute('tabindex', '-1');
+                ghost.removeAttribute('data-action');
+                ghost.dataset.cardName = card.dataset.cardName;
+                ghost.dataset.session = String(context.session);
+                ghost.dataset.turn = String(context.turn);
+                ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
+                ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
+                node('cardboardBoard').appendChild(ghost);
+                buildFlight = ghost;
+                if (typeof ghost.animate !== 'function') { clearBuildFlight(); return; }
+                const animation = ghost.animate([
+                    { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
+                    { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
+                ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
+                buildFlightAnimation = animation;
+                animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
+            });
+        });
+    }
+
+    function clearBuildNotice() {
+        if (buildNoticeTimer !== null) clearTimeout(buildNoticeTimer);
+        buildNoticeTimer = null;
+        buildNoticeContext = null;
+        node('cardboardBuildNotice')?.remove();
+    }
+
+    function showBuildNotice(card) {
+        clearBuildNotice();
+        const board = node('cardboardBoard');
+        if (!enabled() || facts?.replaying || document.hidden ||
+                board?.classList.contains('cardboard-new-roll') ||
+                Array.from(board?.querySelectorAll('#diceResult .rolling, #cardboardDiceConfirmation, .cardboard-preview-playing, .cardboard-activation-tag') || [])
+                    .some(element => element.getClientRects().length > 0 && globalThis.getComputedStyle(element).visibility !== 'hidden')) return false;
+        const owner = Number(card.closest('.cardboard-player')?.dataset.playerIndex);
+        const player = facts?.game?.players?.[owner];
+        const html = UiCardBoard.buildFacilityConstructionNoticeHtml(player, {
+            name: card.dataset.cardName, escapeHtml: facts.escapeHtml, renderFacilityArt: UiBuildMenu.renderFacilityArt,
+        });
+        const viewport = node('cardboardTableViewport');
+        if (!html || !viewport) return false;
+        // The completed purchase returns attention to the real card. Keep
+        // the receipt data available without stacking two result panels.
+        const receiptDetails = /** @type {HTMLDetailsElement | null} */ (node('cardboardEventDetails'));
+        if (receiptDetails) receiptDetails.open = false;
+        const notice = document.createElement('div');
+        notice.id = 'cardboardBuildNotice';
+        notice.setAttribute('aria-hidden', 'true');
+        notice.innerHTML = html;
+        board.appendChild(notice);
+        const bounds = viewport.getBoundingClientRect();
+        notice.style.left = `${Math.max(bounds.left + 8, bounds.right - notice.offsetWidth - 8)}px`;
+        notice.style.top = `${Math.max(bounds.top + 8, bounds.bottom - notice.offsetHeight - 8)}px`;
+        buildNoticeContext = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
+        buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
+        return true;
+    }
+
     function clearBuildCue() {
         if (buildCueTimer !== null) clearTimeout(buildCueTimer);
         buildCueTimer = null;
@@ -300,12 +464,14 @@ const CardBoardField = (() => {
         buildCueCard = null;
     }
 
-    function showBuildCue(card, animate) {
+    function showBuildCue(card, animate, origin = null, entry = null) {
         clearBuildCue();
         card.classList.remove('cardboard-card-newly-built');
         if (animate) void card.offsetWidth;
         card.classList.add('cardboard-card-newly-built');
         buildCueCard = card;
+        if (showBuildNotice(card)) startBuildFlight(card, origin, entry);
+        else clearBuildFlight();
         const clearArrival = event => {
             if (event.target !== card || event.animationName !== 'cardboard-card-arrival') return;
             clearBuildCue();
@@ -359,26 +525,32 @@ const CardBoardField = (() => {
 
     function showAdditionalActivationCue(card, order) {
         clearAdditionalActivationCue(card);
-        card.style.setProperty('--cardboard-additional-activation-delay', `${Math.min(order, 7) * 80}ms`);
+        if (!Number.isInteger(order) || order < 0 || order >= 8) return;
+        const delay = order * 700;
+        card.style.setProperty('--cardboard-additional-activation-delay', `${delay}ms`);
         card.classList.add('cardboard-card-additional-activation');
         const listener = event => {
             if (event.target === card && event.animationName === 'cardboard-card-activate') clearAdditionalActivationCue(card);
         };
-        const timer = setTimeout(() => clearAdditionalActivationCue(card), 1400);
+        const timer = setTimeout(() => clearAdditionalActivationCue(card), delay + 800);
         card.addEventListener('animationend', listener);
         additionalActivationCues.set(card, { timer, listener });
     }
 
     function presentBuildCue(button, playerIndex, name, landmark) {
+        const game = facts?.game;
+        const marker = `${landmark ? '🏆' : '🏗️'} ${name}を建設！`;
+        const entry = game?.log?.findLast(item => item.message === marker);
+        const captured = purchaseOrigin;
+        purchaseOrigin = null;
+        const origin = !landmark && captured?.session === session && captured?.turn === game?.turnCount &&
+            captured?.actor === game?.currentPlayerIndex && captured?.name === name ? captured.rect : null;
         if (/** @type {HTMLDialogElement | null} */ (node('cardboardMarketDialog'))?.open) {
-            const game = facts?.game;
-            const marker = `${landmark ? '🏆' : '🏗️'} ${name}を建設！`;
-            const entry = game?.log?.findLast(item => item.message === marker);
-            if (entry) pendingBuildCues.push({ session, turn: game.turnCount, actor: game.currentPlayerIndex, playerIndex, name, landmark, entry });
+            if (entry) pendingBuildCues.push({ session, turn: game.turnCount, actor: game.currentPlayerIndex, playerIndex, name, landmark, entry, origin: null });
             return;
         }
         if (landmark) showLandmarkCue(button, !reducedMotionEnabled());
-        else showBuildCue(button, !reducedMotionEnabled());
+        else showBuildCue(button, !reducedMotionEnabled(), origin, entry);
     }
 
     function presentPendingBuildCues() {
@@ -399,11 +571,14 @@ const CardBoardField = (() => {
             // including later rows that a seat-header focus cannot expose.
             tableCamera?.focusCard(button);
             if (cue.landmark) showLandmarkCue(button, !reducedMotionEnabled());
-            else showBuildCue(button, !reducedMotionEnabled());
+            else showBuildCue(button, !reducedMotionEnabled(), cue.origin, cue.entry);
         }
     }
 
     function clearFeedback() {
+        clearBuildFlight();
+        purchaseOrigin = null;
+        clearBuildNotice();
         clearAdditionalActivationCues();
         activationTags?.clear();
         node('cardboardEventDetails')?.classList.remove('cardboard-preview-playing');
@@ -451,8 +626,9 @@ const CardBoardField = (() => {
         restoreMarketNode();
         setMarketExpanded(false);
         const launcher = marketLauncher?.isConnected && marketLauncher.getClientRects().length
-            ? marketLauncher : node('cardboardMarket')?.querySelector('.compact-market-expand');
+            ? marketLauncher : node('cardboardMarket')?.querySelector(marketLauncherSelector || '.compact-market-expand');
         marketLauncher = null;
+        marketLauncherSelector = null;
         if (restoreMarketFocus && enabled() && node('gameScreen')?.style.display !== 'none') {
             launcher?.focus({ preventScroll: true });
         }
@@ -468,6 +644,7 @@ const CardBoardField = (() => {
         if (!restoreFocus) pendingBuildCues = [];
         setMarketExpanded(false);
         const wasOpen = dialog?.open === true;
+        if (wasOpen && restoreFocus) refreshPendingBuildOrigins();
         if (wasOpen) dialog.close();
         restoreMarketNode();
         if (!wasOpen) finishMarketClose();
@@ -480,6 +657,9 @@ const CardBoardField = (() => {
         if (!enabled() || !dialog || !market || !slot || typeof dialog.showModal !== 'function') return false;
         if (dialog.open) return true;
         marketLauncher = document.activeElement;
+        marketLauncherSelector = marketLauncher?.closest?.('.compact-market-filter-disclosure')
+            ? '.compact-market-filter-disclosure > summary'
+            : marketLauncher?.closest?.('.compact-market-goal-disclosure') ? '.compact-market-goal-disclosure > summary' : null;
         marketHome = { parent: market.parentNode, nextSibling: market.nextSibling };
         slot.appendChild(market);
         dialog.showModal();
@@ -610,10 +790,27 @@ const CardBoardField = (() => {
             if (/** @type {HTMLElement} */ (event.target).classList?.contains('compact-market-facilities')) updateMarketOverflow();
         }, true);
         node('cardboardMarketDialog')?.addEventListener('scroll', updateMarketOverflow, true);
+        node('cardboardMarket')?.addEventListener('click', event => {
+            const button = /** @type {HTMLButtonElement | null} */ (/** @type {HTMLElement} */ (event.target).closest?.('[data-action="buildCard"]'));
+            if (!enabled() || !button || button.disabled || !facts?.game) return;
+            purchaseOrigin = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex,
+                name: button.dataset.cardName, rect: visibleMarketOrigin(button.dataset.cardName) };
+        }, true);
+        node('cardboardTableViewport')?.addEventListener('scroll', () => { if (buildFlight) clearBuildFlight(); }, { passive: true });
+        node('cardboardTableViewport')?.addEventListener('pointerdown', clearBuildFlight, { passive: true });
+        node('cardboardTableViewport')?.addEventListener('wheel', clearBuildFlight, { passive: true });
+        window.addEventListener('resize', clearBuildFlight, { passive: true });
         node('cardboardBoard')?.addEventListener('click', event => {
-            const button = /** @type {HTMLElement} */ (event.target).closest?.('[data-cardboard-camera]');
+            if (event.defaultPrevented) return;
+            const source = /** @type {HTMLElement} */ (event.target);
+            const detail = source.closest?.('.cardboard-card[data-action="showCardDetail"], .cardboard-landmark[data-action="showLandmarkDetail"]');
+            // Camera capture suppresses drag/pinch clicks before this handler.
+            // Readable cards still count as inspection without a camera change.
+            if (detail?.closest('.cardboard-player') && node('cardboardSeats')?.contains(detail)) facts?.onUserInspection?.();
+            const button = source.closest?.('[data-cardboard-camera]');
             if (!button || !tableCamera) return;
             const command = button.getAttribute('data-cardboard-camera');
+            if (command === 'self' || command === 'readable') facts?.onUserInspection?.();
             if (command === 'overview') tableCamera.fit();
             else if (command === 'back') { if (!tableCamera.restoreView()) tableCamera.fit(); }
             else if (command === 'market') tableCamera.focusMarket();
@@ -627,9 +824,25 @@ const CardBoardField = (() => {
             if (button.closest('#cardboardMoreMenu')) closeMoreMenu(true);
         });
         window.addEventListener('resize', () => {
+            clearBuildNotice();
             updateRosterOverflow();
             updatePlayerOverflow();
         }, { passive: true });
+        node('cardboardMarket')?.addEventListener('click', event => {
+            const summary = /** @type {HTMLElement} */ (event.target).closest?.('summary');
+            const details = /** @type {HTMLDetailsElement | null} */ (summary?.parentElement);
+            if (!details?.matches('.compact-market-filter-disclosure, .compact-market-goal-disclosure') ||
+                    !node('cardboardSeats')?.contains(details)) return;
+            // A fixed popup inside a transformed table does not use screen
+            // coordinates. Inspect its real controls in the existing dialog.
+            event.preventDefault();
+            details.open = false;
+            if (!openMarket()) return;
+            closeDisclosures(details);
+            details.open = true;
+            const target = /** @type {HTMLElement | null} */ (details.querySelector('button[aria-pressed="true"]') || details.querySelector('button:not(:disabled)') || summary);
+            target?.focus({ preventScroll: true });
+        });
         node('cardboardMarket')?.addEventListener('keydown', event => {
             if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
             const source = /** @type {HTMLElement} */ (event.target);
@@ -673,6 +886,7 @@ const CardBoardField = (() => {
             if (event.target === event.currentTarget) closeTown();
         });
         node('cardboardMarketClose')?.addEventListener('click', () => closeMarket());
+        node('cardboardMarketDialog')?.addEventListener('cancel', refreshPendingBuildOrigins);
         node('cardboardMarketDialog')?.addEventListener('close', finishMarketClose);
         node('cardboardMarketDialog')?.addEventListener('click', event => {
             if (event.target === event.currentTarget) closeMarket();
@@ -709,6 +923,7 @@ const CardBoardField = (() => {
         node('cardboardRoster').addEventListener('click', event => {
             const button = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cardboard-player-index]'));
             if (!button) return;
+            facts?.onUserInspection?.();
             selectedIndex = Number(button.dataset.cardboardPlayerIndex);
             scrollMemory.capture('roster', node('cardboardRoster'));
             draw();
@@ -1037,6 +1252,12 @@ const CardBoardField = (() => {
         ensureTable();
         const validIndex = index => Number.isInteger(index) && index >= 0 && index < game.players.length;
         const currentIndex = validIndex(game.currentPlayerIndex) ? game.currentPlayerIndex : 0;
+        if (buildNoticeContext && (buildNoticeContext.session !== session || buildNoticeContext.turn !== game.turnCount ||
+                buildNoticeContext.actor !== currentIndex || facts.replaying || game.phase !== GAME_PHASES.BUILD)) {
+            clearBuildNotice();
+            clearBuildFlight();
+            purchaseOrigin = null;
+        }
         const selfIndex = validIndex(facts.selfIndex) ? facts.selfIndex : null;
         const turnChanged = focusTurnIndex !== currentIndex;
         if (turnChanged) {
@@ -1052,6 +1273,8 @@ const CardBoardField = (() => {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
             cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
         }) : null;
+        const freshDiceResolution = freshResultLogs.some(entry => entry.type === LOG_TYPES.DICE && entry.diceResolution);
+        if (newRoll) node('cardboardBoard')?.style.setProperty('--cardboard-event-lead', freshDiceResolution ? '500ms' : '0ms');
         // Feedback consumes only newly appended consequences after a pending
         // choice. Never pulse the older facilities retained in the turn receipt.
         const additionalActivations = new Map();
@@ -1256,7 +1479,11 @@ const CardBoardField = (() => {
                         facts?.replaying || session !== capturedSession || facts?.game?.turnCount !== capturedTurn ||
                         facts?.game?.currentPlayerIndex !== capturedActor || (facts?.game?.usedReroll === true) !== capturedReroll ||
                         node('gameScreen')?.style.display === 'none') return;
-                const freshDiceResolution = freshResultLogs.some(entry => entry.type === LOG_TYPES.DICE && entry.diceResolution);
+                if (freshDiceResolution) {
+                    // The turn greeting has served its purpose once the dice
+                    // resolve. Give the result and real facilities the stage.
+                    facts.onDiceResult?.();
+                }
                 if (newRoll && freshDiceResolution && freshEvents?.dice?.values?.length) {
                     node('cardboardDiceConfirmation')?.remove();
                     const dice = freshEvents.dice.values;
@@ -1279,11 +1506,13 @@ const CardBoardField = (() => {
                 if (!activationTags && typeof CardBoardActivationTags !== 'undefined') {
                     activationTags = CardBoardActivationTags.create({ container: node('cardboardBoard'), viewport: node('cardboardTableViewport') });
                 }
-                activationTags?.play({ events: freshEvents, players: game.players, reducedMotion: reducedMotionEnabled(), isCurrent: () =>
+                activationTags?.play({ events: freshEvents, players: game.players, reducedMotion: reducedMotionEnabled(),
+                    delayMs: newRoll && freshDiceResolution ? 500 : 0, isCurrent: () =>
                     sequence === transferSequence && mounted && enabled() && !document.hidden && !facts?.replaying &&
                     session === capturedSession && facts?.game?.turnCount === capturedTurn &&
                     facts?.game?.currentPlayerIndex === capturedActor && (facts?.game?.usedReroll === true) === capturedReroll });
-                transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'), events: freshEvents });
+                transfers?.play({ container: node('cardboardBoard'), summaryContainer: node('cardboardDiceReceipt'),
+                    events: freshEvents, delayMs: newRoll && freshDiceResolution ? 500 : 0 });
             });
         }
         if (newRoll) {

@@ -25,6 +25,7 @@ const CardBoardTransfers = (() => {
             groups.set(key, { from: event.from, to: event.to, subject, amount });
         }
         return [...groups.values()].map(route => {
+            /** @type {{ from: number | 'pool' | null, to: number | 'pool' | null, amount: number, subject?: string }} */
             const projected = { from: route.from, to: route.to, amount: route.amount };
             if (route.subject) projected.subject = route.subject;
             return { ...projected,
@@ -33,13 +34,37 @@ const CardBoardTransfers = (() => {
         });
     }
 
-    function projectVisualFlows(routes, events) {
+    function projectFacilityTimeline(events) {
         const groups = new Map();
-        for (const route of routes) {
-            const key = JSON.stringify([route.from, route.to]);
+        const count = Array.isArray(events?.participantNames) ? events.participantNames.length : Infinity;
+        for (const event of Array.isArray(events?.activations) ? events.activations : []) {
+            if (event?.facility !== true || typeof event.subject !== 'string' ||
+                    !Number.isSafeInteger(event.amount) || event.amount < 0) continue;
+            const owner = event.owner !== undefined && event.owner !== null ? event.owner
+                : event.to !== null ? event.to : event.from;
+            if (!Number.isInteger(owner) || owner < 0 || owner >= count) continue;
+            const key = JSON.stringify([owner, event.subject]);
+            if (!groups.has(key)) groups.set(key, { owner, name: event.subject, net: 0 });
+            groups.get(key).net += (event.to === owner ? event.amount : 0) - (event.from === owner ? event.amount : 0);
+        }
+        return [...groups.values()].filter(group => Number.isSafeInteger(group.net)).slice(0, 8)
+            .map((group, step) => ({ ...group, step }));
+    }
+
+    function projectVisualFlows(events) {
+        const timeline = new Map(projectFacilityTimeline(events).map(group => [JSON.stringify([group.owner, group.name]), group]));
+        const groups = new Map();
+        for (const event of Array.isArray(events?.activations) ? events.activations : []) {
+            const route = project({ ...events, activations: [event] })[0];
+            if (!route || route.amount <= 0) continue;
+            const owner = event.owner !== undefined && event.owner !== null ? event.owner
+                : event.to !== null ? event.to : event.from;
+            const facility = event.facility === true ? timeline.get(JSON.stringify([owner, event.subject])) : null;
+            if (event.facility === true && !facility) continue;
+            const key = JSON.stringify([facility?.owner ?? null, facility?.name ?? null, route.from, route.to]);
             let flow = groups.get(key);
             if (!flow) {
-                flow = { from: route.from, to: route.to, amount: 0, subjects: new Set() };
+                flow = { from: route.from, to: route.to, amount: 0, subjects: new Set(), facility };
                 groups.set(key, flow);
             }
             const amount = flow.amount + route.amount;
@@ -53,7 +78,8 @@ const CardBoardTransfers = (() => {
             toName: participantName(events, flow.to),
             subjects: [...flow.subjects],
             title: `${[...flow.subjects].join('・') ? `${[...flow.subjects].join('・')}：` : ''}${participantName(events, flow.from)} → ${participantName(events, flow.to)}：${flow.amount}コイン`,
-        }));
+        })).sort((left, right) => left.facility && right.facility ? left.facility.step - right.facility.step
+            : left.facility ? -1 : right.facility ? 1 : right.amount - left.amount);
     }
 
     function create() {
@@ -144,8 +170,7 @@ const CardBoardTransfers = (() => {
                 .concat(events.incomplete ? ['未集計の記録は発動・支払いの内訳で確認'] : []).join('。'));
             (options.summaryContainer?.isConnected ? options.summaryContainer : layer).appendChild(summaryNode);
             // Read endpoints first, then animate without touching game state.
-            const displayed = projectVisualFlows(routes, events)
-                .sort((left, right) => right.amount - left.amount)
+            const displayed = projectVisualFlows(events)
                 .slice(0, 8)
                 .map(route => ({ route, from: location(route.from), to: location(route.to) }));
             container.appendChild(layer);
@@ -163,6 +188,8 @@ const CardBoardTransfers = (() => {
                 }
             }
             let animationIndex = 0;
+            let lastFlightEnd = 0;
+            const stepRoutes = new Map();
             for (const { route, from, to } of displayed) {
                 if (reducedMotion || route.amount === 0 || !from || !to) continue;
                 const coin = documentRef.createElement('span');
@@ -171,31 +198,42 @@ const CardBoardTransfers = (() => {
                 const targetIsBank = route.to === null || route.to === 'pool';
                 coin.dataset.flow = sourceIsBank ? 'incoming' : targetIsBank ? 'outgoing' : 'between';
                 if (!targetIsBank && route.amount >= 5) coin.dataset.large = 'true';
+                if (route.facility) {
+                    coin.dataset.facility = route.facility.name;
+                    coin.dataset.owner = String(route.facility.owner);
+                    coin.dataset.step = String(route.facility.step);
+                }
                 coin.setAttribute('aria-hidden', 'true');
                 coin.textContent = `${route.amount}コイン`;
+                coin.dataset.route = `${route.fromName} → ${route.toName}`;
                 coin.title = route.title;
                 coin.style.left = `${from.x}px`;
                 coin.style.top = `${from.y}px`;
                 layer.appendChild(coin);
                 if (typeof coin.animate === 'function') {
+                    const baseDelay = Math.max(0, Math.min(500, Number(options.delayMs) || 0));
+                    const sameStep = route.facility ? stepRoutes.get(route.facility.step) || 0 : animationIndex;
+                    const delay = baseDelay + (route.facility ? route.facility.step * 700 + Math.min(80, sameStep * 20) : sameStep * 70);
+                    const duration = route.facility ? 600 : 900;
+                    if (route.facility) stepRoutes.set(route.facility.step, sameStep + 1);
                     const animation = coin.animate([
                         { transform: 'translate(-50%, -50%) scale(.8)', opacity: 0 },
                         { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: .15 },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(1)`, opacity: 1, offset: .85 },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(.8)`, opacity: 0 },
-                    ], { duration: 900, delay: animationIndex * 70, easing: 'ease-in-out', fill: 'both' });
-                    animationIndex++;
+                    ], { duration, delay, easing: 'ease-in-out', fill: 'both' });
+                    if (!route.facility) animationIndex++;
+                    lastFlightEnd = Math.max(lastFlightEnd, delay + duration);
                     animation.finished?.catch(() => {});
                     animations.push(animation);
                 } else coin.remove();
             }
-            // Flights finish within 1.4s; keep the route summary visible long
-            // enough to read after the motion has ended.
-            timeout = view?.setTimeout(clear, 3200) ?? null;
+            // Facility steps share the caption timeline; no timer advances play.
+            timeout = view?.setTimeout(clear, Math.max(3200, lastFlightEnd + 100)) ?? null;
             return true;
         }
         return Object.freeze({ play, clear });
     }
-    return Object.freeze({ project, create });
+    return Object.freeze({ project, projectFacilityTimeline, create });
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardTransfers;

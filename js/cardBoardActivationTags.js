@@ -6,10 +6,13 @@ const CardBoardActivationTags = (() => {
     function create({ container, viewport }) {
         const timers = new Set();
         let tag = null;
+        let highlighted = [];
         let generation = 0;
         let listening = false;
         const view = container?.ownerDocument?.defaultView;
         function removeTag() {
+            for (const element of highlighted) element.classList.remove('cardboard-resolving');
+            highlighted = [];
             tag?.remove();
             tag = null;
         }
@@ -31,7 +34,7 @@ const CardBoardActivationTags = (() => {
             }, delay);
             timers.add(timer);
         }
-        function play({ events, players, isCurrent, reducedMotion = false }) {
+        function play({ events, players, isCurrent, reducedMotion = false, delayMs = 0 }) {
             clear();
             if (!container?.isConnected || !viewport?.isConnected || !view ||
                 !Array.isArray(players) || !Array.isArray(events?.activations) ||
@@ -44,8 +47,16 @@ const CardBoardActivationTags = (() => {
                     : event.to !== null ? event.to : event.from;
                 if (!Number.isInteger(owner) || owner < 0 || owner >= players.length || !players[owner]) continue;
                 const key = JSON.stringify([owner, event.subject]);
-                if (!groups.has(key)) groups.set(key, { owner, name: event.subject, net: 0 });
+                if (!groups.has(key)) groups.set(key, { owner, name: event.subject, net: 0, routes: new Set() });
                 const group = groups.get(key);
+                const participant = index => index === null ? '銀行' : index === 'pool' ? '分配プール'
+                    : players[index]?.name || `席${Number(index) + 1}`;
+                const validParticipant = index => index === null || index === 'pool' ||
+                    Number.isInteger(index) && index >= 0 && index < players.length;
+                if (event.amount > 0 && event.from !== event.to &&
+                        validParticipant(event.from) && validParticipant(event.to)) {
+                    group.routes.add(`${participant(event.from)} → ${participant(event.to)}`);
+                }
                 group.net += (event.to === owner ? event.amount : 0) - (event.from === owner ? event.amount : 0);
             }
             const entries = [...groups.values()].filter(group => Number.isSafeInteger(group.net)).slice(0, 8);
@@ -78,8 +89,23 @@ const CardBoardActivationTags = (() => {
                 name.textContent = group.name;
                 const income = documentRef.createElement('span');
                 const ownerName = players[group.owner].name || `席${group.owner + 1}`;
-                income.textContent = `${ownerName} · ${group.net > 0 ? '+' : ''}${group.net}コイン`;
+                income.textContent = `${ownerName} · `;
+                const amount = documentRef.createElement('span');
+                amount.className = 'cardboard-activation-amount';
+                amount.textContent = `${group.net > 0 ? '+' : ''}${group.net}コイン`;
+                income.appendChild(amount);
                 tag.append(name, income);
+                if (group.routes.size) {
+                    const route = documentRef.createElement('small');
+                    route.className = 'cardboard-activation-route';
+                    route.textContent = [...group.routes].join(' / ');
+                    tag.appendChild(route);
+                }
+                // Keep the actual card and its owner identifiable even when
+                // the table is zoomed out. These are presentation-only marks.
+                const roster = container.querySelector(`.cardboard-roster-seat[data-cardboard-player-index="${group.owner}"]`);
+                highlighted = [card, seat?.querySelector('.cardboard-header'), roster].filter(Boolean);
+                for (const element of highlighted) element.classList.add('cardboard-resolving');
                 if (entries.length > 1 && !reduced) {
                     const progress = documentRef.createElement('small');
                     progress.textContent = `施設発動 ${step + 1} / ${entries.length}`;
@@ -105,7 +131,8 @@ const CardBoardActivationTags = (() => {
             listening = true;
             // Reduced motion keeps one static caption rather than cycling cards.
             if (reduced) show(entries[0]);
-            else entries.forEach((group, index) => schedule(() => show(group, index), index * 700));
+            else entries.forEach((group, index) => schedule(() => show(group, index),
+                Math.max(0, Math.min(500, Number(delayMs) || 0)) + index * 700));
             return true;
         }
         return Object.freeze({ play, clear });

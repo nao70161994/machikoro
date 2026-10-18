@@ -10,9 +10,9 @@ const UiCardDetail = (() => {
         purple: '自分の手番だけ発動・特殊効果',
     });
 
-    function cardEffectText(card, effectDescriptions) {
+    function cardEffectText(card, effectDescriptions, compact = false) {
         const formatter = effectDescriptions && effectDescriptions[card.effect];
-        if (typeof formatter === 'function') return formatter(card.income);
+        if (typeof formatter === 'function') return formatter(card.income, compact === true);
         if (card.color === 'red') return '相手から' + card.income + 'コイン奪う';
         return '+' + card.income + 'コイン';
     }

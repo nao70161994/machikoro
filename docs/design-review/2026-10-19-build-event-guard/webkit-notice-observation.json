@@ -1,0 +1,11 @@
+{
+  "commit": "1f2f4bc8f84bca17864791076025e6d779ff05ce",
+  "run": 39131020679,
+  "test": "購入とUndo・保存再開はカード盤面と既存ビューで共通の状態を使う",
+  "noticeFirstSnapshotMs": 41827.043,
+  "flightSnapshotMs": 43909.962,
+  "noticeLateAssertionMs": 43994.071,
+  "noticeLifetimeMs": 1200,
+  "elapsedAfterNoticeSnapshotMs": 2167.028,
+  "conclusion": "The trace contains the live notice before flight observation. Its 1200ms lifetime has elapsed before the late visibility assertion. Observe transient layers in the same browser microtask; do not extend product duration."
+}

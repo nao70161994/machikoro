@@ -70,8 +70,11 @@ function currentStreakGlobals(root) {
 function buildWinnerStatsRows(players, winner, escapeHtml, options = {}) {
     if (!Array.isArray(players) || typeof escapeHtml !== 'function') return '';
     const sunset = options.designTheme === 'sunset' || options.designTheme === 'plaza';
+    const cardTable = options.designTheme === 'cardboard';
     return players.map((player, index) => ({ player, index }))
-        .sort((left, right) => right.player.coins - left.player.coins).map(({ player, index }) => {
+        .sort((left, right) => cardTable
+            ? Number(right.player === winner) - Number(left.player === winner) || left.index - right.index
+            : right.player.coins - left.player.coins).map(({ player, index }) => {
         const isWinner = player === winner;
         const safeName = escapeHtml(player.name);
         const playerKind = isWinner ? '勝者' : 'プレイヤー';
@@ -89,7 +92,15 @@ function buildWinnerStatsRows(players, winner, escapeHtml, options = {}) {
                 ? '<rect x="4" y="6" width="16" height="14" rx="4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><path d="M9 16h6M12 3v3"/>'
                 : '<circle cx="12" cy="8" r="4"/><path d="M4 21c.5-4.5 3.2-7 8-7s7.5 2.5 8 7Z"/>'}</svg>`
             : '';
-        return `<div class="winner-stats-row ${isWinner ? 'highlight' : ''}" role="listitem" aria-label="${playerKind}、${safeName}、${player.coins}コイン"><span>${award}${kindIcon}${safeName}</span><span>${coin}${player.coins}</span></div>`;
+        const landmarkNames = Array.isArray(options.enabledLandmarks) || options.enabledLandmarks instanceof Set
+            ? Array.from(options.enabledLandmarks) : Object.keys(player.landmarks || {});
+        const built = landmarkNames.filter(name => player.landmarks?.[name] === true).length;
+        const facilityCount = Array.isArray(player.cards) ? player.cards.length : 0;
+        const progress = cardTable ? `${landmarkNames.length ? `目標 ${built}/${landmarkNames.length} · ` : ''}施設 ${facilityCount}枚` : '';
+        const label = cardTable
+            ? `<span class="winner-result-name">${award}${kindIcon}${safeName}</span><small class="winner-result-progress">${escapeHtml(progress)}</small>`
+            : `${award}${kindIcon}${safeName}`;
+        return `<div class="winner-stats-row ${isWinner ? 'highlight' : ''}" role="listitem" aria-label="${playerKind}、${safeName}、${player.coins}コイン${cardTable ? `、${escapeHtml(progress)}` : ''}"><span>${label}</span><span>${coin}${player.coins}</span></div>`;
     }).join('');
 }
 
@@ -555,12 +566,14 @@ function buildWinnerScreenHtml(options = {}) {
             ? '<button id="winnerRematchButton" class="winner-primary-action" data-ui-action="rematchLocalGame">同じ設定でもう一度</button>'
             : '');
     const collectionAfterActions = options.designTheme === 'cardboard';
+    const primaryBeforeResults = collectionAfterActions ? rematchButton : '';
+    const primaryAfterResults = collectionAfterActions ? '' : rematchButton;
     const ownedCards = Array.isArray(winner.cards) ? winner.cards : [];
     const ownedKinds = new Set(ownedCards.map(card => card.name)).size;
     const completionHtml = collectionAfterActions
         ? `<p class="winner-card-achievement"><strong>${ownedCards.length}<span>枚の施設</span></strong><strong>${ownedKinds}<span>種類のカード</span></strong><span class="winner-card-achievement-caption">積み重ねた一枚が、勝利につながりました。</span></p>` : '';
     const townHtml = options.townHtml || '';
-    return `<div class="winner-screen">${collectionAfterActions ? '<div class="winner-card-summary">' : ''}<svg class="winner-trophy-art" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><defs><linearGradient id="winnerGold" x1="18" y1="8" x2="46" y2="58" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe6a3"/><stop offset=".52" stop-color="#f1bd54"/><stop offset="1" stop-color="#c88732"/></linearGradient></defs><path d="M17 13H47V26C47 36 40.5 42 32 42S17 36 17 26V13Z" fill="url(#winnerGold)" stroke="#8b5a2d" stroke-width="2"/><path d="M17 18H10V24C10 31 14.5 35 21 35M47 18H54V24C54 31 49.5 35 43 35" fill="none" stroke="#d89b42" stroke-width="4" stroke-linecap="round"/><path d="M25 42V49H39V42M21 55H43L40 49H24L21 55Z" fill="url(#winnerGold)" stroke="#8b5a2d" stroke-width="2" stroke-linejoin="round"/><path d="M32 18L34.3 23.1L40 23.8L35.8 27.7L36.9 33.3L32 30.4L27.1 33.3L28.2 27.7L24 23.8L29.7 23.1L32 18Z" fill="#fff4d3"/><path d="M10 10L11.5 13.5L15 15L11.5 16.5L10 20L8.5 16.5L5 15L8.5 13.5L10 10ZM53 40L54.3 43.2L57.5 44.5L54.3 45.8L53 49L51.7 45.8L48.5 44.5L51.7 43.2L53 40Z" fill="#f2c86e"/></svg><div class="winner-title" role="heading" aria-level="1" tabindex="-1"><span class="winner-title-name">${escapeHtml(winner.name)}</span><span class="winner-title-outcome">の勝利！</span></div><div class="winner-sub"><span class="winner-sub-type">${winnerType}プレイヤーが勝ちました</span><span class="winner-sub-turn">${options.turnCount}ターン</span></div>${streakHtml}${completionHtml}${collectionAfterActions ? '' : townHtml}<div class="winner-stats" role="list" aria-label="最終コイン">${scoreRows}</div>${reviewBeforeActions}${rematchButton}<div class="winner-share-actions"><button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">画像を保存・共有</button></div><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${collectionAfterActions ? `</div>${townHtml}` : ''}${reviewAfterActions}${resultAdSlot}</div>`;
+    return `<div class="winner-screen">${collectionAfterActions ? '<div class="winner-card-summary">' : ''}<svg class="winner-trophy-art" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><defs><linearGradient id="winnerGold" x1="18" y1="8" x2="46" y2="58" gradientUnits="userSpaceOnUse"><stop stop-color="#ffe6a3"/><stop offset=".52" stop-color="#f1bd54"/><stop offset="1" stop-color="#c88732"/></linearGradient></defs><path d="M17 13H47V26C47 36 40.5 42 32 42S17 36 17 26V13Z" fill="url(#winnerGold)" stroke="#8b5a2d" stroke-width="2"/><path d="M17 18H10V24C10 31 14.5 35 21 35M47 18H54V24C54 31 49.5 35 43 35" fill="none" stroke="#d89b42" stroke-width="4" stroke-linecap="round"/><path d="M25 42V49H39V42M21 55H43L40 49H24L21 55Z" fill="url(#winnerGold)" stroke="#8b5a2d" stroke-width="2" stroke-linejoin="round"/><path d="M32 18L34.3 23.1L40 23.8L35.8 27.7L36.9 33.3L32 30.4L27.1 33.3L28.2 27.7L24 23.8L29.7 23.1L32 18Z" fill="#fff4d3"/><path d="M10 10L11.5 13.5L15 15L11.5 16.5L10 20L8.5 16.5L5 15L8.5 13.5L10 10ZM53 40L54.3 43.2L57.5 44.5L54.3 45.8L53 49L51.7 45.8L48.5 44.5L51.7 43.2L53 40Z" fill="#f2c86e"/></svg><div class="winner-title" role="heading" aria-level="1" tabindex="-1"><span class="winner-title-name">${escapeHtml(winner.name)}</span><span class="winner-title-outcome">の勝利！</span></div><div class="winner-sub"><span class="winner-sub-type">${winnerType}プレイヤーが勝ちました</span><span class="winner-sub-turn">${options.turnCount}ターン</span></div>${streakHtml}${completionHtml}${collectionAfterActions ? '' : townHtml}${primaryBeforeResults}<div class="winner-stats"${collectionAfterActions ? ' tabindex="0"' : ''} role="list" aria-label="${collectionAfterActions ? '対戦結果・勝者と各席の最終状態' : '最終コイン'}">${scoreRows}</div>${reviewBeforeActions}${primaryAfterResults}<div class="winner-share-actions"><button class="winner-secondary-action" data-ui-action="shareGameResult">結果を共有</button><button class="winner-secondary-action" data-ui-action="shareGameResultImage">画像を保存・共有</button></div><button id="winnerRestartButton" class="winner-secondary-action" data-ui-action="restartGame">タイトルへ戻る</button>${collectionAfterActions ? `</div>${townHtml}` : ''}${reviewAfterActions}${resultAdSlot}</div>`;
 }
 
 const streakRoot = typeof globalThis !== 'undefined' ? globalThis : null;

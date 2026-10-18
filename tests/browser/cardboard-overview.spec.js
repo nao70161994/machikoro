@@ -125,6 +125,29 @@ async function expectOwnedCards(page) {
         return {expected,actual};
     });
     expect(result.actual).toEqual(result.expected);
+    const roster = await page.evaluate(() => {
+        const players = GameRuntimeState.runtime.snapshot().game.players;
+        return Array.from(document.querySelectorAll('#cardboardRoster .cardboard-roster-seat')).map(seat => {
+            const player = players[Number(seat.dataset.cardboardPlayerIndex)];
+            const total = seat.querySelector('.cardboard-roster-facilities');
+            const parts = ['.cardboard-roster-coins', '.cardboard-roster-facilities', '.cardboard-roster-progress']
+                .map(selector => seat.querySelector(selector).getBoundingClientRect());
+            const bounds = seat.getBoundingClientRect();
+            const name = seat.querySelector('.cardboard-roster-name').getBoundingClientRect();
+            const disjoint = (a, b) => a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1;
+            const summary = seat.querySelector('.cardboard-roster-summary-text');
+            return { count: Number(total.querySelector('b').textContent), expected: player.cards.length,
+                aria: seat.getAttribute('aria-label').includes(`施設 ${player.cards.length}枚`),
+                fixedHeight: Math.abs(bounds.height - 44) <= 1,
+                fits: summary.scrollWidth <= summary.clientWidth + 1 && parts.every(part =>
+                    part.width > 0 && part.left >= bounds.left && part.right <= bounds.right &&
+                    part.top >= bounds.top && part.bottom <= bounds.bottom),
+                separate: parts.every((part, index) => parts.slice(index + 1).every(other => disjoint(part, other))) && disjoint(parts[1], name),
+                geometry: { bounds: bounds.toJSON(), parts: parts.map(part => part.toJSON()), summary: [summary.scrollWidth, summary.clientWidth] } };
+        });
+    });
+    expect(roster.filter(seat => seat.count !== seat.expected || !seat.aria || !seat.fixedHeight || !seat.fits || !seat.separate),
+        '所有総数は正本に一致し固定高の残高・枚数・目標を重ねない').toEqual([]);
 }
 
 async function cameraCommand(page, command) {
@@ -157,6 +180,9 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             const owner = seats.find(seat => seat.side === side);
             await page.locator(`#cardboardRoster [data-cardboard-player-index="${owner.index}"]`).click();
             await expect(camera).toHaveAttribute('data-table-angle', String((360 - owner.angle) % 360));
+            await expect(camera).toHaveAttribute('data-table-focus-player', String(owner.index));
+            await expect(page.locator('#cardboardViewHint strong')).toContainText(`街${owner.index + 1}`);
+            await expect(page.locator('[data-cardboard-camera="back"]')).toBeEnabled();
             const facing = await page.locator(`#cardboardSeats > [data-player-index="${owner.index}"]`).evaluate(node => {
                 const matrix = new DOMMatrix(getComputedStyle(node.parentElement).transform)
                     .multiply(new DOMMatrix(getComputedStyle(node).transform));
@@ -168,6 +194,8 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             if (side === 'left') await page.screenshot({ path: testInfo.outputPath('card-table-left-readable.png') });
             await cameraCommand(page, 'back');
             await expect(camera).toHaveAttribute('data-table-angle', '0');
+            await expect(page.locator('[data-cardboard-camera="back"]')).toBeDisabled();
+            await expect(page.locator('#cardboardViewHint strong')).toHaveText('カード卓');
             await expect(camera).toHaveAttribute('data-table-scale', fittedScale.toFixed(3));
             await expectWholeTable(page, 4);
         }
@@ -480,4 +508,237 @@ test('回転した所有カードは一度の選択で正面と詳細を開き�
     expect(Math.abs(restored.left - before.left)).toBeLessThanOrEqual(1);
     expect(Math.abs(restored.top - before.top)).toBeLessThanOrEqual(1);
     expect(await snapshot(page)).toEqual(stateBefore);
+});
+
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+test(`市場の絞り込みはカード数に応じて棚高を縮め全体復帰で状態を変えない ${viewport.width}`, async ({ page }) => {
+    await prepare(page, viewport, 4);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.phase = GAME_PHASES.BUILD;
+        game.builtThisTurn = false;
+        game.players[0].coins = 0;
+        setCardFilter('');
+        render();
+    });
+    const before = await snapshot(page);
+    await page.locator('[data-cardboard-camera="market"]').click();
+    const market = page.locator('#cardboardCenter');
+    const oldRows = Number(await market.evaluate(node => node.style.getPropertyValue('--table-market-rows')));
+    const oldHeight = await page.locator('#cardboardMarket .compact-market-facilities').evaluate(node => node.offsetHeight);
+    const filterSummary = page.locator('#cardboardMarket .compact-market-filter-disclosure > summary');
+    if (viewport.width === 390) { await filterSummary.focus(); await filterSummary.press('Enter'); }
+    else await filterSummary.click();
+    await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
+    await page.locator('#cardboardMarket [data-card-filter="affordable"]').click({ timeout: 10000 });
+    await page.locator('#cardboardMarketClose').click();
+    await expect(page.locator('#cardboardMarket .compact-market-filter-disclosure > summary')).toBeFocused();
+    await expect.poll(() => market.evaluate((node, previousHeight) => {
+        const cards = node.querySelectorAll('.compact-market-facilities .compact-market-item').length;
+        const columns = Number(node.style.getPropertyValue('--table-market-columns'));
+        const rows = Number(node.style.getPropertyValue('--table-market-rows'));
+        return rows === Math.max(1, Math.ceil(cards / columns)) &&
+            node.querySelector('.compact-market-facilities').offsetHeight < previousHeight;
+    }, oldHeight)).toBe(true);
+    expect(oldRows).toBeGreaterThan(1);
+    await page.locator('[data-cardboard-camera="overview"]').click();
+    await expectWholeTable(page, 4);
+    expect(await snapshot(page)).toEqual(before);
+});
+}
+
+// Only a deliberate inspection dismisses the brief greeting. Automatic layout
+// and camera refreshes retain it, and the persistent turn HUD stays available.
+test('明示的な正面閲覧だけが手番挨拶を閉じて手番と対局状態を維持する', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 }, 4);
+    await page.evaluate(() => {
+        // The table displays completed landmarks; make an actual built station
+        // available before recording the immutable inspection baseline.
+        GameRuntimeState.runtime.snapshot().game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
+        render();
+    });
+    const before = await snapshot(page);
+    const greeting = page.locator('#turnAnnouncer');
+    for (const action of ['roster', 'self', 'readable', 'card', 'landmark']) {
+        if (action === 'card' || action === 'landmark') await cameraCommand(page, 'self');
+        const status = await page.evaluate(async () => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            // render queues the same automatic geometry work as a normal UI
+            // refresh. It must not be interpreted as deliberate inspection.
+            render();
+            showTurnAnnouncer(game.currentPlayer().name, false, game.currentPlayerIndex);
+            for (let frame = 0; frame < 3; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
+            return { display: document.getElementById('turnAnnouncer').style.display,
+                status: document.getElementById('turnStatusAnnouncer').textContent,
+                current: document.querySelector('#cardboardRoster [aria-current="true"]').textContent };
+        });
+        expect(status.display, `${action}: 自動配置で挨拶を消さない`).toBe('flex');
+        if (action === 'roster') await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
+        else if (action === 'self' || action === 'readable') await cameraCommand(page, action);
+        else {
+            const owner = page.locator('#cardboardSeats > [data-player-index="0"]');
+            await owner.locator(action === 'card' ? '.cardboard-card' : '.cardboard-landmark-built').first().click();
+            await expect(page.locator('#cardDetailModal')).toBeVisible();
+        }
+        await expect(greeting).toBeHidden();
+        expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached)).toBe(false);
+        await expect(page.locator('#turnStatusAnnouncer')).toHaveText(status.status);
+        const turnSeat = page.locator('#cardboardRoster [aria-current="true"]');
+        await expect(turnSeat).toBeVisible();
+        await expect(turnSeat).toHaveText(status.current);
+        expect(await snapshot(page)).toEqual(before);
+        if (action === 'card' || action === 'landmark') await page.keyboard.press('Escape');
+    }
+});
+
+
+test('正面の全38施設はカードと原画を縮めず経済効果を表示し戻ると俯瞰へ戻る', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 4);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = CARDS.map(card => createCardByName(card.name));
+        game.players[0].dormantCards = [game.players[0].cards[0]];
+        render();
+    });
+    const before = await snapshot(page);
+    const owner = page.locator('#cardboardSeats > [data-player-index="0"]');
+    await expect(owner.locator('.cardboard-dormant')).toHaveCount(1);
+    const native = await owner.locator('.cardboard-card').evaluateAll(cards => cards.map(card => ({
+        width: card.offsetWidth, height: card.offsetHeight, art: card.querySelector('.cardboard-art').offsetHeight,
+    })));
+    await page.locator('#cardboardRoster [data-cardboard-player-index="0"]').click();
+    await expect(owner).toHaveClass(/cardboard-player-reading/);
+    const tableViewport = page.locator('#cardboardTableViewport');
+    // Initial seat inspection starts at the owner's real first row.
+    await expect.poll(() => owner.locator('.cardboard-card').first().evaluate(card => {
+        const bounds = card.getBoundingClientRect();
+        const clip = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        return bounds.left >= clip.left && bounds.right <= clip.right && bounds.top >= clip.top && bounds.bottom <= clip.bottom;
+    })).toBe(true);
+    const inspect = async () => owner.locator('.cardboard-card').evaluateAll(cards => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        return cards.map(card => {
+            const effect = card.querySelector('.cardboard-effect');
+            const style = getComputedStyle(effect);
+            const text = getComputedStyle(effect, '::before');
+            context.font = `${text.fontWeight} ${text.fontSize} ${text.fontFamily}`;
+            const available = effect.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+            const name = card.querySelector('.cardboard-name');
+            const badge = card.querySelector('.cardboard-dormant, .cardboard-activation');
+            return { name: card.dataset.cardName, width: card.offsetWidth, height: card.offsetHeight,
+                art: card.querySelector('.cardboard-art').offsetHeight,
+                effect: effect.dataset.effectShort, display: style.display,
+                measured: context.measureText(effect.dataset.effectShort).width, available,
+                fits: context.measureText(effect.dataset.effectShort).width <= available + 0.5,
+                nameFits: name.scrollHeight <= name.clientHeight + 1,
+                badgeSeparate: !badge || effect.offsetTop + effect.offsetHeight <= badge.offsetTop ||
+                    effect.offsetTop >= badge.offsetTop + badge.offsetHeight,
+                effectFits: effect.scrollHeight <= effect.clientHeight + 1,
+            };
+        });
+    });
+    for (const viewport of [{ width: 320, height: 720 }, { width: 390, height: 844 },
+        { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+        const anchor = await owner.evaluate(player => {
+            const viewport = document.getElementById('cardboardTableViewport');
+            const clip = viewport.getBoundingClientRect();
+            const x = clip.left + viewport.clientLeft + viewport.clientWidth / 2;
+            const y = clip.top + viewport.clientTop + viewport.clientHeight / 2;
+            const cards = Array.from(player.querySelectorAll('.cardboard-card')).map(card => {
+                const bounds = card.getBoundingClientRect();
+                return { name: card.dataset.cardName, bounds,
+                    distance: (bounds.left + bounds.width / 2 - x) ** 2 + (bounds.top + bounds.height / 2 - y) ** 2 };
+            }).filter(card => card.bounds.right > clip.left && card.bounds.left < clip.right &&
+                card.bounds.bottom > clip.top && card.bounds.top < clip.bottom).sort((a, b) => a.distance - b.distance);
+            return { name: cards[0].name, scale: viewport.dataset.tableScale, angle: viewport.dataset.tableAngle };
+        });
+        const oldWidth = await page.evaluate(() => innerWidth);
+        await page.setViewportSize(viewport);
+        if (oldWidth !== viewport.width) {
+            await expect.poll(() => owner.evaluate((player, name) => {
+                const viewport = document.getElementById('cardboardTableViewport');
+                const clip = viewport.getBoundingClientRect();
+                const card = Array.from(player.querySelectorAll('.cardboard-card')).find(card => card.dataset.cardName === name);
+                const bounds = card.getBoundingClientRect();
+                return Math.abs(bounds.left + bounds.width / 2 - (clip.left + viewport.clientLeft + viewport.clientWidth / 2)) < 2 &&
+                    Math.abs(bounds.top + bounds.height / 2 - (clip.top + viewport.clientTop + viewport.clientHeight / 2)) < 2;
+            }, anchor.name)).toBe(true);
+        }
+        await expect(tableViewport).toHaveAttribute('data-table-scale', anchor.scale);
+        await expect(tableViewport).toHaveAttribute('data-table-angle', anchor.angle);
+        await expect(tableViewport).toHaveAttribute('data-table-focus-player', '0');
+        const result = await inspect();
+        expect(result).toHaveLength(38);
+        expect(result.map(({ width, height, art }) => ({ width, height, art }))).toEqual(native);
+        expect(result.filter(card => !card.effect || card.display === 'none' || !card.fits || !card.nameFits || !card.badgeSeparate || !card.effectFits)).toEqual([]);
+        expect(await snapshot(page)).toEqual(before);
+        await page.screenshot({ path: testInfo.outputPath(`economy-reading-${viewport.width}.png`) });
+    }
+    await page.locator('[data-cardboard-camera="overview"]').click();
+    await expect(owner).not.toHaveClass(/cardboard-player-reading/);
+    await expect(owner.locator('.cardboard-effect').first()).toBeHidden();
+    expect(await snapshot(page)).toEqual(before);
+});
+
+
+test('高密度4人の再配置は閲覧中カードと倍率を保ち戻ると新しい卓を一望できる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => {
+            player.cards = CARDS.slice(0, 12).map(card => createCardByName(card.name));
+            Object.keys(player.landmarks).forEach((name, index) => { player.landmarks[name] = index < 5; });
+        });
+        render();
+    });
+    await expectWholeTable(page, 4);
+    const world = page.locator('#cardboardSeats');
+    await expect(world).toHaveAttribute('data-table-packing', 'cross');
+    await cameraCommand(page, 'self');
+    const viewport = page.locator('#cardboardTableViewport');
+    const anchor = await page.locator('#cardboardSeats > [data-player-index="0"]').evaluate(owner => {
+        const viewport = document.getElementById('cardboardTableViewport'), clip = viewport.getBoundingClientRect();
+        const x = clip.left + viewport.clientLeft + viewport.clientWidth / 2;
+        const y = clip.top + viewport.clientTop + viewport.clientHeight / 2;
+        const cards = Array.from(owner.querySelectorAll('.cardboard-card')).map(card => ({ card, rect: card.getBoundingClientRect() }))
+            .filter(({ rect }) => rect.right > clip.left && rect.left < clip.right && rect.bottom > clip.top && rect.top < clip.bottom)
+            .sort((a, b) => (a.rect.left + a.rect.width / 2 - x) ** 2 + (a.rect.top + a.rect.height / 2 - y) ** 2 -
+                ((b.rect.left + b.rect.width / 2 - x) ** 2 + (b.rect.top + b.rect.height / 2 - y) ** 2));
+        return { name: cards[0].card.dataset.cardName, scale: viewport.dataset.tableScale, angle: viewport.dataset.tableAngle };
+    });
+    const key = await world.getAttribute('data-table-layout-key');
+    // Presentation growth fixture: only this explicit edit changes game state.
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach(player => { player.cards = CARDS.slice(0, 18).map(card => createCardByName(card.name)); });
+        render();
+    });
+    const grown = await snapshot(page);
+    await expect(world).toHaveAttribute('data-table-packing', 'pinwheel');
+    expect(await world.getAttribute('data-table-layout-key')).not.toBe(key);
+    await expect(viewport).toHaveAttribute('data-table-focus-player', '0');
+    await expect(viewport).toHaveAttribute('data-table-scale', anchor.scale);
+    await expect(viewport).toHaveAttribute('data-table-angle', anchor.angle);
+    await expect.poll(() => page.locator('#cardboardSeats > [data-player-index="0"]').evaluate((owner, name) => {
+        const viewport = document.getElementById('cardboardTableViewport'), clip = viewport.getBoundingClientRect();
+        const rect = Array.from(owner.querySelectorAll('.cardboard-card')).find(card => card.dataset.cardName === name).getBoundingClientRect();
+        return Math.abs(rect.left + rect.width / 2 - (clip.left + viewport.clientLeft + viewport.clientWidth / 2)) < 2 &&
+            Math.abs(rect.top + rect.height / 2 - (clip.top + viewport.clientTop + viewport.clientHeight / 2)) < 2;
+    }, anchor.name)).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('pinwheel-growth-reading.png') });
+    await cameraCommand(page, 'back');
+    await expectWholeTable(page, 4);
+    await expect(viewport).toHaveAttribute('data-table-mode', 'overview');
+    await expectOwnedCards(page);
+    const minimumWidth = await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
+        Math.min(...cards.map(card => {
+            const rect = card.getBoundingClientRect();
+            // Measure the same 160px card edge at every seat rotation.
+            return Math.max(rect.width, rect.height);
+        })));
+    expect(minimumWidth).toBeGreaterThanOrEqual(31);
+    expect(await snapshot(page)).toEqual(grown);
+    await page.screenshot({ path: testInfo.outputPath('pinwheel-growth-overview.png') });
 });

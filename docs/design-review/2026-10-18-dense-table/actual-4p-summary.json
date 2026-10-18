@@ -1,0 +1,55 @@
+{
+  "seed": 1296122696,
+  "playerCount": 4,
+  "design": "cardboard",
+  "winner": "CPU（弱）・3",
+  "turns": 130,
+  "phase": "build",
+  "commit": "4e50b400b993f5c1c87b6ab1179bcb47967b2551",
+  "facilityTotals": [
+    29,
+    31,
+    28,
+    25
+  ],
+  "facilityTypes": [
+    17,
+    21,
+    18,
+    19
+  ],
+  "landmarks": [
+    {
+      "駅": false,
+      "ショッピングモール": false,
+      "遊園地": false,
+      "電波塔": false,
+      "港": false,
+      "空港": false
+    },
+    {
+      "駅": false,
+      "ショッピングモール": false,
+      "遊園地": true,
+      "電波塔": true,
+      "港": true,
+      "空港": false
+    },
+    {
+      "駅": true,
+      "ショッピングモール": true,
+      "遊園地": true,
+      "電波塔": true,
+      "港": true,
+      "空港": true
+    },
+    {
+      "駅": true,
+      "ショッピングモール": true,
+      "遊園地": false,
+      "電波塔": true,
+      "港": true,
+      "空港": false
+    }
+  ]
+}
