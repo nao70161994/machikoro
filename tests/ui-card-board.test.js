@@ -172,6 +172,9 @@ runTest('席・名前の同一性と選択/現在/自分を分離し10席に制�
     assert.ok(html.includes('席10・&lt;街の主&gt;'));
     assert.ok(!html.includes('席11'));
     assert.strictEqual((html.match(/class="cardboard-color-count cardboard-color-count-blue"/g) || []).length, 10);
+    assert.strictEqual((html.match(/class="cardboard-roster-facilities"/g) || []).length, 10);
+    assert.ok(html.includes(`<span class="cardboard-roster-facilities"><span>施設</span><b>${player.cards.length}</b>枚</span>`));
+    assert.ok(html.includes(`施設 ${player.cards.length}枚、目標`));
     assert.ok(html.includes('cardboard-color-count-blue">青 2</span>'));
     assert.ok(html.includes('cardboard-color-count-green">緑 0</span>'));
     assert.ok(html.includes('cardboard-color-count-red">赤 0</span>'));

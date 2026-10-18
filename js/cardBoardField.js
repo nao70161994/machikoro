@@ -336,7 +336,7 @@ const CardBoardField = (() => {
         const board = node('cardboardBoard');
         if (!enabled() || facts?.replaying || document.hidden ||
                 board?.classList.contains('cardboard-new-roll') ||
-                [...(board?.querySelectorAll('#diceResult .rolling, #cardboardDiceConfirmation, .cardboard-preview-playing, .cardboard-activation-tag') || [])]
+                Array.from(board?.querySelectorAll('#diceResult .rolling, #cardboardDiceConfirmation, .cardboard-preview-playing, .cardboard-activation-tag') || [])
                     .some(element => element.getClientRects().length > 0 && globalThis.getComputedStyle(element).visibility !== 'hidden')) return;
         const owner = Number(card.closest('.cardboard-player')?.dataset.playerIndex);
         const player = facts?.game?.players?.[owner];
@@ -430,12 +430,14 @@ const CardBoardField = (() => {
 
     function showAdditionalActivationCue(card, order) {
         clearAdditionalActivationCue(card);
-        card.style.setProperty('--cardboard-additional-activation-delay', `${Math.min(order, 7) * 80}ms`);
+        if (!Number.isInteger(order) || order < 0 || order >= 8) return;
+        const delay = order * 700;
+        card.style.setProperty('--cardboard-additional-activation-delay', `${delay}ms`);
         card.classList.add('cardboard-card-additional-activation');
         const listener = event => {
             if (event.target === card && event.animationName === 'cardboard-card-activate') clearAdditionalActivationCue(card);
         };
-        const timer = setTimeout(() => clearAdditionalActivationCue(card), 1400);
+        const timer = setTimeout(() => clearAdditionalActivationCue(card), delay + 800);
         card.addEventListener('animationend', listener);
         additionalActivationCues.set(card, { timer, listener });
     }
@@ -1154,6 +1156,8 @@ const CardBoardField = (() => {
             players: game.players, turnPlayerIndex: currentIndex, display: facts.display,
             cardNames: CARDS.map(card => card.name), landmarkNames: Player.landmarkNames(), maxActivations: 1000,
         }) : null;
+        const freshDiceResolution = freshResultLogs.some(entry => entry.type === LOG_TYPES.DICE && entry.diceResolution);
+        if (newRoll) node('cardboardBoard')?.style.setProperty('--cardboard-event-lead', freshDiceResolution ? '500ms' : '0ms');
         // Feedback consumes only newly appended consequences after a pending
         // choice. Never pulse the older facilities retained in the turn receipt.
         const additionalActivations = new Map();
@@ -1358,7 +1362,6 @@ const CardBoardField = (() => {
                         facts?.replaying || session !== capturedSession || facts?.game?.turnCount !== capturedTurn ||
                         facts?.game?.currentPlayerIndex !== capturedActor || (facts?.game?.usedReroll === true) !== capturedReroll ||
                         node('gameScreen')?.style.display === 'none') return;
-                const freshDiceResolution = freshResultLogs.some(entry => entry.type === LOG_TYPES.DICE && entry.diceResolution);
                 if (freshDiceResolution) {
                     // The turn greeting has served its purpose once the dice
                     // resolve. Give the result and real facilities the stage.

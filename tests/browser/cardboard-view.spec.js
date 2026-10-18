@@ -1266,8 +1266,33 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await expect(liveTag).toContainText('森林');
     await expect(liveTag.locator('.cardboard-activation-route')).toContainText('銀行 →');
     await expect(liveTag.locator('.cardboard-activation-amount')).toHaveCSS('white-space', 'nowrap');
+    const flights = page.locator('.cardboard-transfer[data-facility="森林"]');
+    await expect(flights).toHaveCount(4);
+    expect(await flights.evaluateAll(elements => elements.map(element => {
+        const timing = element.getAnimations()[0].effect.getTiming();
+        return { step: Number(element.dataset.step), delay: timing.delay, duration: timing.duration };
+    }))).toEqual([0, 1, 2, 3].map(step => ({ step, delay: 500 + step * 700, duration: 600 })));
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
     await page.screenshot({ path: testInfo.outputPath('facility-chain-live-activation-tag.png') });
+    for (let step = 1; step < 4; step++) {
+        await expect(liveTag).toContainText(`施設発動 ${step + 1} / 4`);
+        if (step === 3) {
+            const sample = await flights.nth(step).evaluate(element => new Promise(resolve => {
+                const measure = () => {
+                    const animation = element.getAnimations()[0];
+                    const elapsedMs = Number(animation.currentTime) - Number(animation.effect.getTiming().delay);
+                    if (elapsedMs < 180) { requestAnimationFrame(measure); return; }
+                    resolve({ elapsedMs, opacity: Number(getComputedStyle(element).opacity),
+                        route: element.dataset.route, bounds: element.getBoundingClientRect().toJSON() });
+                };
+                measure();
+            }));
+            expect(sample.elapsedMs).toBeLessThan(500);
+            expect(sample.opacity).toBeGreaterThan(0.5);
+            require('fs').writeFileSync(testInfo.outputPath('facility-chain-flight-sample.json'), JSON.stringify(sample, null, 2));
+        }
+        await page.screenshot({ path: testInfo.outputPath(`facility-chain-live-step-${step + 1}.png`) });
+    }
     const caption = page.locator('#cardboardEventDetails');
     await expect(caption).toHaveClass(/cardboard-preview-playing/);
     const cards = caption.locator('.cardboard-event-preview-card');
@@ -1294,7 +1319,7 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         const owner = document.querySelector(`#cardboardSeats .cardboard-player[data-player-index="${element.dataset.playerIndex}"]`);
         const card = owner.querySelector('.cardboard-card[data-card-name="森林"]');
         return { delay: parseFloat(getComputedStyle(card).animationDelay), name: getComputedStyle(card).animationName };
-    }))).toEqual([0,0.7,1.4,2.1].map(delay => ({delay,name:'cardboard-card-activate'})));
+    }))).toEqual([0.5,1.2,1.9,2.6].map(delay => ({delay,name:'cardboard-card-activate'})));
     await page.evaluate(() => {
         window.captionCardAnimations = [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].map(card => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate'));
     });

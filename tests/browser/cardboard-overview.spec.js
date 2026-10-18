@@ -125,6 +125,29 @@ async function expectOwnedCards(page) {
         return {expected,actual};
     });
     expect(result.actual).toEqual(result.expected);
+    const roster = await page.evaluate(() => {
+        const players = GameRuntimeState.runtime.snapshot().game.players;
+        return Array.from(document.querySelectorAll('#cardboardRoster .cardboard-roster-seat')).map(seat => {
+            const player = players[Number(seat.dataset.cardboardPlayerIndex)];
+            const total = seat.querySelector('.cardboard-roster-facilities');
+            const parts = ['.cardboard-roster-coins', '.cardboard-roster-facilities', '.cardboard-roster-progress']
+                .map(selector => seat.querySelector(selector).getBoundingClientRect());
+            const bounds = seat.getBoundingClientRect();
+            const name = seat.querySelector('.cardboard-roster-name').getBoundingClientRect();
+            const disjoint = (a, b) => a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1;
+            const summary = seat.querySelector('.cardboard-roster-summary-text');
+            return { count: Number(total.querySelector('b').textContent), expected: player.cards.length,
+                aria: seat.getAttribute('aria-label').includes(`施設 ${player.cards.length}枚`),
+                fixedHeight: Math.abs(bounds.height - 44) <= 1,
+                fits: summary.scrollWidth <= summary.clientWidth + 1 && parts.every(part =>
+                    part.width > 0 && part.left >= bounds.left && part.right <= bounds.right &&
+                    part.top >= bounds.top && part.bottom <= bounds.bottom),
+                separate: parts.every((part, index) => parts.slice(index + 1).every(other => disjoint(part, other))) && disjoint(parts[1], name),
+                geometry: { bounds: bounds.toJSON(), parts: parts.map(part => part.toJSON()), summary: [summary.scrollWidth, summary.clientWidth] } };
+        });
+    });
+    expect(roster.filter(seat => seat.count !== seat.expected || !seat.aria || !seat.fixedHeight || !seat.fits || !seat.separate),
+        '所有総数は正本に一致し固定高の残高・枚数・目標を重ねない').toEqual([]);
 }
 
 async function cameraCommand(page, command) {

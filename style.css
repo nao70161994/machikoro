@@ -11380,7 +11380,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-
     animation: cardboard-dice-land 520ms cubic-bezier(.18, .78, .25, 1) both;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) #diceResult.dice-result-arrival .dice-face:nth-child(2) { animation-delay: 75ms; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) .cardboard-card-activated { animation: cardboard-card-activate 760ms cubic-bezier(.2, .8, .25, 1) both; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) .cardboard-card-activated { animation: cardboard-card-activate 760ms cubic-bezier(.2, .8, .25, 1) both; animation-delay: var(--cardboard-event-lead, 0ms); }
 html[data-design="cardboard"] #cardboardBoard.cardboard-new-roll:not(.cardboard-roll-reviewed) :is(.cardboard-activation-step-1, .cardboard-activation-step-2, .cardboard-activation-step-3, .cardboard-activation-step-4) { animation-delay: var(--cardboard-activation-delay, 0ms); }
 html[data-design="cardboard"] .cardboard-transfers { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
 html[data-design="cardboard"] .cardboard-transfer { position: absolute; max-width: min(260px, calc(100vw - 24px)); overflow: hidden; padding: 4px 8px; border: 1px solid #a57919; border-radius: 16px; background: #ffeb9d; color: #563a00; box-shadow: 0 3px 9px #5e420033; font-size: 14px; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
@@ -13506,6 +13506,8 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-ro
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 20px 18px;
+    container: cardboard-seat / inline-size;
+    position: relative;
     flex: 1 0 100px;
     min-width: 0;
     min-height: 44px;
@@ -14457,12 +14459,38 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-ro
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-coins {
     font-size: 16px;
+    line-height: 18px;
+}
+
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-facilities {
+    flex: 0 0 auto;
+    margin-inline: 2px;
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-facilities > span {
+    margin-right: 2px;
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-coins > span {
     margin-left: 2px;
     font-size: 10px;
     font-weight: 400;
+}
+
+@container cardboard-seat (max-width: 160px) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table :is(.cardboard-roster-coins, .cardboard-roster-facilities, .cardboard-roster-progress) > span { display: none; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-coins::before {
+        content: "";
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        margin-right: 3px;
+        border: 1px solid #b58b20;
+        border-radius: 50%;
+        background: #f7d45c;
+    }
 }
 
 @media (max-width: 600px) {
@@ -14474,20 +14502,16 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-ro
         font-size: 10px;
     }
 
-    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-progress > span {
-        display: none;
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-facilities {
+        position: absolute;
+        top: 5px;
+        right: 6px;
+        margin: 0;
+        font-size: 9px;
     }
-    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-coins > span { display: none; }
-    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-coins::before {
-        content: "";
-        display: inline-block;
-        width: 9px;
-        height: 9px;
-        margin-right: 3px;
-        border: 1px solid #b58b20;
-        border-radius: 50%;
-        background: #f7d45c;
-    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-facilities > span { display: none; }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-roster-seat > strong { padding-right: 28px; box-sizing: border-box; }
+
 }
 
 html[data-design="cardboard"] #cardboardMarket .compact-market-header h2::after {
@@ -14648,15 +14672,15 @@ html[data-design="cardboard"] body.pwa-banner-open #cardboardBoard.cardboard-car
 
 /* Short landscape keeps four owners beside the market to use the screen width. */
 /* Only newly confirmed income pulses after a reroll or special choice. */
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-card-additional-activation {
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-card.cardboard-card-additional-activation {
     animation: cardboard-card-activate 760ms cubic-bezier(.2, .8, .25, 1) both;
     animation-delay: var(--cardboard-additional-activation-delay, 0ms);
 }
-html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-card-table .cardboard-card-additional-activation {
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-card-table .cardboard-card.cardboard-card-additional-activation {
     animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
-    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-card-additional-activation {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-card.cardboard-card-additional-activation {
         animation: none;
     }
 }
@@ -14788,7 +14812,7 @@ html[data-design="cardboard"] .cardboard-preview-progress { font-variant-numeric
 /* Match the real card's pulse to the facility currently introduced in the HUD. */
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table:has(#cardboardEventDetails.cardboard-preview-playing) .cardboard-card-activated {
     animation: var(--cardboard-chain-animation, none) 650ms cubic-bezier(.2, .8, .25, 1) both;
-    animation-delay: var(--cardboard-chain-delay, 0ms);
+    animation-delay: calc(var(--cardboard-event-lead, 0ms) + var(--cardboard-chain-delay, 0ms));
 }
 html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-card-table:has(#cardboardEventDetails.cardboard-preview-playing) .cardboard-card-activated {
     animation: none;
