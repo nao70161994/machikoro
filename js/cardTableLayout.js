@@ -12,8 +12,6 @@ const CardTableLayout = (() => {
         let marketMeasurements = null;
         let lastSelection = null;
         const view = world.ownerDocument.defaultView;
-        const gap = 24;
-        const padding = 24;
         const setStyle = (element, name, value) => {
             if (element.style.getPropertyValue(name) !== value) element.style.setProperty(name, value);
         };
@@ -57,6 +55,11 @@ const CardTableLayout = (() => {
             const wide = viewport.clientWidth > viewport.clientHeight;
             const shallow = viewport.clientWidth / viewport.clientHeight > 2.2;
             const oppositeOnly = panels.length === 2;
+            // Two opposite owners need no corner clearance. Reclaim that
+            // empty rim on shallow screens before shrinking every card.
+            const compactOpponents = oppositeOnly && shallow;
+            const gap = compactOpponents ? 16 : 24;
+            const padding = compactOpponents ? 12 : 24;
             // A tall screen needs a narrower centre, otherwise its width
             // determines the fit scale and leaves most of the height unused.
             const sides = assignSeats(panels, state.selfIndex);
