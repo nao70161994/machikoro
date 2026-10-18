@@ -637,8 +637,16 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await page.evaluate(() => {
         window.__observedBuildCue = null;
         window.__observedBuildFlight = null;
+        window.__observedBuildNotice = null;
         let observedFlight = null;
         const observer = new MutationObserver(() => {
+            const notice = document.getElementById('cardboardBuildNotice');
+            if (notice) window.__observedBuildNotice = {
+                visible: notice.getClientRects().length > 0 && getComputedStyle(notice).visibility !== 'hidden',
+                text: notice.textContent, art: notice.querySelectorAll('svg').length,
+                pointerEvents: getComputedStyle(notice).pointerEvents,
+                animation: getComputedStyle(notice).animationName,
+            };
             const flight = document.getElementById('cardboardBuildFlight');
             const animation = flight?.getAnimations()[0];
             if (flight && animation && flight !== observedFlight) {
@@ -689,12 +697,15 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     expect(flight.keyframes.length).toBeGreaterThanOrEqual(2);
     expect(flight.keyframes[0]).not.toBe(flight.keyframes.at(-1));
     const buildNotice = page.locator('#cardboardBuildNotice');
-    await expect(buildNotice).toBeVisible();
-    await expect(buildNotice).toContainText('街1が建設');
-    await expect(buildNotice).toContainText('麦畑');
-    await expect(buildNotice).toContainText('建設費 1コイン');
-    await expect(buildNotice.locator('svg')).toHaveCount(1);
-    await expect(buildNotice).toHaveCSS('pointer-events', 'none');
+    // Record short-lived layers in the same browser microtask. A slow remote
+    // WebKit can finish later flight assertions after this 1200ms notice ends.
+    const notice = await page.evaluate(() => window.__observedBuildNotice);
+    expect(notice.visible).toBe(true);
+    expect(notice.text).toContain('街1が建設');
+    expect(notice.text).toContain('麦畑');
+    expect(notice.text).toContain('建設費 1コイン');
+    expect(notice.art).toBe(1);
+    expect(notice.pointerEvents).toBe('none');
     await selectTheme(page, 'plaza');
     await expect(buildNotice).toHaveCount(0);
     await expect(page.locator('#gameDesignThemeSelect')).toBeFocused();
@@ -707,7 +718,7 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await expect(page.locator('#cardboardSeats [data-player-index="0"] [data-card-name="麦畑"]')).toHaveCount(0);
     expect(await state(page)).toEqual(before);
     await page.evaluate(() => document.body.classList.add('accessibility-reduced-motion'));
-    await page.evaluate(() => { window.__observedBuildCue = null; window.__observedBuildFlight = null; });
+    await page.evaluate(() => { window.__observedBuildCue = null; window.__observedBuildFlight = null; window.__observedBuildNotice = null; });
     await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-expand').click();
     await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
@@ -715,13 +726,42 @@ test('購入とUndo・保存再開はカード盤面と既存ビューで共通�
     await expect.poll(() => page.evaluate(() => window.__observedBuildCue)).toEqual({
         animation: 'none', outline: 'rgb(23, 102, 189)',
     });
-    await expect(buildNotice).toBeVisible();
-    await expect(buildNotice).toHaveCSS('animation-name', 'none');
+    expect(await page.evaluate(() => window.__observedBuildNotice)).toMatchObject({ visible: true, animation: 'none' });
     expect(await page.evaluate(() => window.__observedBuildFlight)).toBeNull();
     await expect(page.locator('#cardboardBuildFlight')).toHaveCount(0);
     await page.locator('#cardboardMarket .undo-btn').click();
     await page.locator('#confirmOkBtn').click();
     await expect(buildNotice).toHaveCount(0);
+    expect(await state(page)).toEqual(before);
+    // A visible result caption represents an ongoing event layer. A rapid
+    // purchase may update the real card, but must not add another focal layer.
+    await page.evaluate(() => {
+        document.body.classList.remove('accessibility-reduced-motion');
+        window.__observedBuildFlight = null;
+        const caption = document.createElement('div');
+        caption.id = 'activeConstructionGuardFixture';
+        caption.className = 'cardboard-activation-tag';
+        caption.textContent = '発動を確認中';
+        caption.style.cssText = 'position:fixed;left:20px;top:120px;width:160px;height:40px;display:block;visibility:visible';
+        document.getElementById('cardboardBoard').appendChild(caption);
+    });
+    await camera(page, 'market');
+    await page.locator('#cardboardMarket .compact-market-expand').click();
+    await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
+    await page.locator('#cardboardMarketClose').click();
+    await expect(newCard.locator('.cardboard-count')).toHaveText('所有 ×1');
+    await page.evaluate(() => new Promise(resolve => {
+        let frames = 0;
+        const tick = () => ++frames >= 6 ? resolve() : requestAnimationFrame(tick);
+        requestAnimationFrame(tick);
+    }));
+    await expect(page.locator('#activeConstructionGuardFixture')).toBeVisible();
+    await expect(buildNotice).toHaveCount(0);
+    await expect(page.locator('#cardboardBuildFlight')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__observedBuildFlight)).toBeNull();
+    await page.locator('#activeConstructionGuardFixture').evaluate(element => element.remove());
+    await page.locator('#cardboardMarket .undo-btn').click();
+    await page.locator('#confirmOkBtn').click();
     expect(await state(page)).toEqual(before);
     const saved = await page.evaluate(() => {
         saveGameState();

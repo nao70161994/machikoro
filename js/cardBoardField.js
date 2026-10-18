@@ -348,8 +348,8 @@ const CardBoardField = (() => {
         const bounds = card.getBoundingClientRect();
         const screen = globalThis.visualViewport;
         const clip = { left: screen?.offsetLeft || 0, top: screen?.offsetTop || 0,
-            right: (screen?.offsetLeft || 0) + (screen?.width || innerWidth),
-            bottom: (screen?.offsetTop || 0) + (screen?.height || innerHeight) };
+            right: (screen?.offsetLeft || 0) + (screen?.width || globalThis.innerWidth),
+            bottom: (screen?.offsetTop || 0) + (screen?.height || globalThis.innerHeight) };
         const shelf = card.closest('.compact-market-facilities')?.getBoundingClientRect();
         if (shelf) {
             clip.left = Math.max(clip.left, shelf.left); clip.right = Math.min(clip.right, shelf.right);
@@ -430,14 +430,14 @@ const CardBoardField = (() => {
         if (!enabled() || facts?.replaying || document.hidden ||
                 board?.classList.contains('cardboard-new-roll') ||
                 Array.from(board?.querySelectorAll('#diceResult .rolling, #cardboardDiceConfirmation, .cardboard-preview-playing, .cardboard-activation-tag') || [])
-                    .some(element => element.getClientRects().length > 0 && globalThis.getComputedStyle(element).visibility !== 'hidden')) return;
+                    .some(element => element.getClientRects().length > 0 && globalThis.getComputedStyle(element).visibility !== 'hidden')) return false;
         const owner = Number(card.closest('.cardboard-player')?.dataset.playerIndex);
         const player = facts?.game?.players?.[owner];
         const html = UiCardBoard.buildFacilityConstructionNoticeHtml(player, {
             name: card.dataset.cardName, escapeHtml: facts.escapeHtml, renderFacilityArt: UiBuildMenu.renderFacilityArt,
         });
         const viewport = node('cardboardTableViewport');
-        if (!html || !viewport) return;
+        if (!html || !viewport) return false;
         // The completed purchase returns attention to the real card. Keep
         // the receipt data available without stacking two result panels.
         const receiptDetails = /** @type {HTMLDetailsElement | null} */ (node('cardboardEventDetails'));
@@ -452,6 +452,7 @@ const CardBoardField = (() => {
         notice.style.top = `${Math.max(bounds.top + 8, bounds.bottom - notice.offsetHeight - 8)}px`;
         buildNoticeContext = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
         buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
+        return true;
     }
 
     function clearBuildCue() {
@@ -469,8 +470,8 @@ const CardBoardField = (() => {
         if (animate) void card.offsetWidth;
         card.classList.add('cardboard-card-newly-built');
         buildCueCard = card;
-        showBuildNotice(card);
-        startBuildFlight(card, origin, entry);
+        if (showBuildNotice(card)) startBuildFlight(card, origin, entry);
+        else clearBuildFlight();
         const clearArrival = event => {
             if (event.target !== card || event.animationName !== 'cardboard-card-arrival') return;
             clearBuildCue();

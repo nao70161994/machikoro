@@ -198,3 +198,21 @@ checkJs全構成とJS構文成功。既存購入Undo/保存/4テーマ/RMと4幅
 
 
 4e50の縦横自然UI39129994022も成功。縦390は79内部turn/195操作/308click/41市場open/310712ms、横844は82turn/210操作/323click/42市場open/437330msでプレイヤー1勝利。両pageErrorsなし、相手正面→Back2clickで倍率/角度/正本復帰。CPU speed100msの自動UI対局であり、初見の人間操作や物理スマホとは区別する。新flight前の製品に対する結果。mid/late/winner6画像とsummaryをdense-table/ui-*へ保存した。16基準画像・混在オンライン39129988021はこの記録時点で実行中。同じrunの完了を待ち、新しいcommitの証拠と混同しない。
+
+
+## 1f2f4bc8 の完了監査と静的ゲート修正
+
+前Goalターンはprogress: 購入の480ms連続演出、4幅の動中/終了後画像、Escape/Undo/保存/RM検証と独立コード/画像レビューを経て1f2f4bc8をPush。PR17は未マージ。4e50版の16画面・混在オンライン39129988021も最終成功となり、同版のRelease/縦横UIを含む3workflowすべて成功を確認した。
+
+最新版1f2f4bc8のRelease39131020679はstatic gateのno-undefで失敗。画面サイズfallbackに新たに使ったbare innerWidth/innerHeightがESLintの限定globalsにないため、globalThis.innerWidth/innerHeightへ明示した。実ブラウザの値と表示動作は同じで、ESLint規則や期待値は緩めない。編集JS構文と既存lint:maintenance全対象が成功。PWA cacheはv347へ進める。修正前の同runで継続しているbrowser/実対局・別workflowの結果は同じhandleを監視し、失敗したstatic gateの成功とは扱わない。
+
+独立完了監査は、四方向/全所有カードと市場/終盤/4幅・人数/カメラ/HUD/発動・送金/購入/勝利/実対局/反復レビュー/未merge PRに具体的な未達を抽出しなかった。静止画で評価できる画面品質は、独自2D作品として比較に耐える水準と判断。公式の人物や3D光を模倣する追加実装を必須とはしない。一方、音や動きを含めた総合体験の同等以上を今回の画像・自動UIだけで断言せず、最新CIの確認も完了前提とする。必要のない装飾追加を繰り返すより、既知不具合を解消し証拠を揃える。
+
+
+通常速度1500ms・横844の最新部分UIプレイは20操作/37click/5市場open/58382ms、内部turn11まで成功、pageErrorsなし。completed=falseを保持し完走とは扱わない。summaryを2026-10-19-build-event-guardへ保存。
+
+独立ソース監査で、迅速購入はBUILD許可後に可能で、出目/発動表示中のshowBuildNotice抑止と無条件flight開始が食い違う到達条件を確認。通知の生成成功true/抑止falseを返し、同じ成功時だけflightを開始、抑止時は古いflightも解除する最小修正を実施した。実カード強調と操作継続は維持し、待機時間は加えない。既存購入/Undo/保存caseへ可視発動caption下での追加購入を組み込み、所有枚数は増えるがnotice/flightが重ならないことを6RAFとMutationObserverで確認した。
+
+1f2f4bc8の16画面/混在オンライン39131020684、縦横UI39131025693は成功。Release39131020679は2件失敗:前述Lintと、新規選択したWebKit購入caseの短時間notice観測。後者traceではnoticeが41827.043ms時点に存在し、flight観測後にnoticeを探した43994.071msまで2167.028msが経過していた。製品寿命1200msは既に過ぎている。通知を長くせず、flight/cueと同じbrowser MutationObserver内でnoticeの表示・文面・SVG・pointer-events・ReducedMotionを採取する測定に修正。4幅の実paint/位置/終了後画像検証は維持する。traceの簡潔な時刻証拠JSONを同folderへ保存。
+
+この迅速購入guard/測定修正/静的変数参照修正をまとめ、checkJs全5構成、既存Lint全対象、編集JS構文は成功。対象購入/Undo/保存caseも1/1成功27秒。旧CIの失敗を成功として書き換えず、修正後HEADをCIで再確認する。
