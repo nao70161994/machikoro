@@ -157,6 +157,9 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             const owner = seats.find(seat => seat.side === side);
             await page.locator(`#cardboardRoster [data-cardboard-player-index="${owner.index}"]`).click();
             await expect(camera).toHaveAttribute('data-table-angle', String((360 - owner.angle) % 360));
+            await expect(camera).toHaveAttribute('data-table-focus-player', String(owner.index));
+            await expect(page.locator('#cardboardViewHint strong')).toContainText(`街${owner.index + 1}`);
+            await expect(page.locator('[data-cardboard-camera="back"]')).toBeEnabled();
             const facing = await page.locator(`#cardboardSeats > [data-player-index="${owner.index}"]`).evaluate(node => {
                 const matrix = new DOMMatrix(getComputedStyle(node.parentElement).transform)
                     .multiply(new DOMMatrix(getComputedStyle(node).transform));
@@ -168,6 +171,8 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             if (side === 'left') await page.screenshot({ path: testInfo.outputPath('card-table-left-readable.png') });
             await cameraCommand(page, 'back');
             await expect(camera).toHaveAttribute('data-table-angle', '0');
+            await expect(page.locator('[data-cardboard-camera="back"]')).toBeDisabled();
+            await expect(page.locator('#cardboardViewHint strong')).toHaveText('カード卓');
             await expect(camera).toHaveAttribute('data-table-scale', fittedScale.toFixed(3));
             await expectWholeTable(page, 4);
         }
@@ -481,3 +486,41 @@ test('回転した所有カードは一度の選択で正面と詳細を開き�
     expect(Math.abs(restored.top - before.top)).toBeLessThanOrEqual(1);
     expect(await snapshot(page)).toEqual(stateBefore);
 });
+
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+test(`市場の絞り込みはカード数に応じて棚高を縮め全体復帰で状態を変えない ${viewport.width}`, async ({ page }) => {
+    await prepare(page, viewport, 4);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.phase = GAME_PHASES.BUILD;
+        game.builtThisTurn = false;
+        game.players[0].coins = 0;
+        setCardFilter('');
+        render();
+    });
+    const before = await snapshot(page);
+    await page.locator('[data-cardboard-camera="market"]').click();
+    const market = page.locator('#cardboardCenter');
+    const oldRows = Number(await market.evaluate(node => node.style.getPropertyValue('--table-market-rows')));
+    const oldHeight = await page.locator('#cardboardMarket .compact-market-facilities').evaluate(node => node.offsetHeight);
+    const filterSummary = page.locator('#cardboardMarket .compact-market-filter-disclosure > summary');
+    if (viewport.width === 390) { await filterSummary.focus(); await filterSummary.press('Enter'); }
+    else await filterSummary.click();
+    await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
+    await page.locator('#cardboardMarket [data-card-filter="affordable"]').click({ timeout: 10000 });
+    await page.locator('#cardboardMarketClose').click();
+    await expect(page.locator('#cardboardMarket .compact-market-filter-disclosure > summary')).toBeFocused();
+    await expect.poll(() => market.evaluate((node, previousHeight) => {
+        const cards = node.querySelectorAll('.compact-market-facilities .compact-market-item').length;
+        const columns = Number(node.style.getPropertyValue('--table-market-columns'));
+        const rows = Number(node.style.getPropertyValue('--table-market-rows'));
+        return rows === Math.max(1, Math.ceil(cards / columns)) &&
+            node.querySelector('.compact-market-facilities').offsetHeight < previousHeight;
+    }, oldHeight)).toBe(true);
+    expect(oldRows).toBeGreaterThan(1);
+    await page.locator('[data-cardboard-camera="overview"]').click();
+    await expectWholeTable(page, 4);
+    expect(await snapshot(page)).toEqual(before);
+});
+}

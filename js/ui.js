@@ -510,6 +510,7 @@ function renderWinnerState(winner) {
             document.documentElement?.dataset?.design,
             typeof window !== 'undefined' ? window.innerWidth : Infinity
         ),
+        enabledLandmarks: getEnabledLandmarkSelection(),
         townHtml: document.documentElement?.dataset?.design === 'cardboard'
             ? UiCardBoard.buildPlayerHtml(winner, {
                 winnerCollection: true, index: winnerIdx,
@@ -1509,6 +1510,14 @@ function renderPlayers() {
         display: LOG_TYPE_DISPLAY,
         refreshMarket: renderBuildMenu,
         closeLog: () => setLogCollapsed(true),
+        onDiceResult: () => {
+            turnAnnouncerTimerController.clear();
+            const greeting = document.getElementById('turnAnnouncer');
+            if (greeting) {
+                greeting.style.display = 'none';
+                greeting.classList.remove('hiding');
+            }
+        },
         onBuildMilestones: milestones => {
             if (currentGame.checkWinner()) return;
             const online = uiOnlineRuntimeSnapshot();

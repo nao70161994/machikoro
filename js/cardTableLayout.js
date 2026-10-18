@@ -8,9 +8,10 @@ const CardTableLayout = (() => {
         let destroyed = false;
         let retainedMarketHeight = 0;
         const observed = new Set();
+        const ownerMeasurements = new WeakMap();
+        let marketMeasurements = null;
+        let lastSelection = null;
         const view = world.ownerDocument.defaultView;
-        const gap = 24;
-        const padding = 24;
         const setStyle = (element, name, value) => {
             if (element.style.getPropertyValue(name) !== value) element.style.setProperty(name, value);
         };
@@ -54,47 +55,157 @@ const CardTableLayout = (() => {
             const wide = viewport.clientWidth > viewport.clientHeight;
             const shallow = viewport.clientWidth / viewport.clientHeight > 2.2;
             const oppositeOnly = panels.length === 2;
+            // Two opposite owners need no corner clearance. Reclaim that
+            // empty rim on shallow screens before shrinking every card.
+            const compactOpponents = oppositeOnly && shallow;
+            const gap = compactOpponents ? 16 : 24;
+            const padding = compactOpponents ? 12 : 24;
             // A tall screen needs a narrower centre, otherwise its width
             // determines the fit scale and leaves most of the height unused.
-            const columns = wide ? 6 : 2;
-            if (market.dataset.marketColumns !== String(columns)) market.dataset.marketColumns = String(columns);
-            setStyle(market, '--table-market-columns', String(columns));
-            setStyle(market, '--table-market-rows', oppositeOnly && shallow ? '1' : '2');
-            setStyle(market, 'width', `${columns * 160 + (columns - 1) * 8 + 16}px`);
-            setStyle(market, 'position', 'absolute');
-            const marketAtHome = !!market.querySelector('#cardboardMarket');
-            // The shared market moves into a native dialog while inspecting.
-            // Retain its table footprint rather than collapsing the whole table.
-            setStyle(market, 'min-height', marketAtHome ? '0px' : `${retainedMarketHeight}px`);
             const sides = assignSeats(panels, state.selfIndex);
-            const sizes = new Map();
+            const marketAtHome = !!market.querySelector('#cardboardMarket');
+            const marketRows = oppositeOnly && shallow ? 1 : 2;
+            const defaultVisibleMarketCards = (wide ? 6 : 2) * marketRows;
+            const displayedMarketCards = market.querySelectorAll('.compact-market-facilities .compact-market-item').length;
+            // Filtering changes the shelf's presentation, never market stock.
+            // Keep one row for an empty-result explanation, and retain the
+            // established multi-player geometry beyond four owners.
+            const visibleMarketCards = panels.length <= 4
+                ? Math.max(1, Math.min(defaultVisibleMarketCards, displayedMarketCards)) : defaultVisibleMarketCards;
+            const rowsFor = columns => Math.max(1, Math.ceil(visibleMarketCards / columns));
             const angles = { bottom: 0, left: 90, top: 180, right: 270 };
+            const nativeWidthFor = columns => columns * 160 + (columns - 1) * 8 + 16;
+            function ownerSize(panel, columns) {
+                const key = [panel.querySelectorAll('.cardboard-card').length,
+                    panel.querySelectorAll('.cardboard-landmark-built').length,
+                    panel.querySelector('.cardboard-header')?.textContent,
+                    viewport.clientWidth, viewport.clientHeight].join(':');
+                let cache = ownerMeasurements.get(panel);
+                if (!cache || cache.key !== key) {
+                    cache = { key, sizes: new Map() };
+                    ownerMeasurements.set(panel, cache);
+                }
+                if (!cache.sizes.has(columns)) {
+                    setStyle(panel, '--table-owner-columns', String(columns));
+                    setStyle(panel, 'width', `${nativeWidthFor(columns)}px`);
+                    cache.sizes.set(columns, { nativeWidth: panel.offsetWidth, nativeHeight: panel.offsetHeight });
+                }
+                return cache.sizes.get(columns);
+            }
+            function marketSize(columns) {
+                const rows = rowsFor(columns);
+                const key = [viewport.clientWidth, viewport.clientHeight,
+                    market.querySelector('.compact-market-header')?.textContent,
+                    market.querySelector('.market-rule-status')?.textContent,
+                    displayedMarketCards,
+                    market.querySelector('.compact-market-filter-disclosure > summary')?.textContent,
+                    [...market.querySelectorAll('details')].map(details => [details.className, details.open,
+                        details.querySelector('summary')?.textContent, details.open ? details.textContent : ''].join('|')).join(';')].join(':');
+                if (!marketMeasurements || marketMeasurements.key !== key) marketMeasurements = { key, sizes: new Map() };
+                const shapeKey = `${columns}:${rows}`;
+                if (!marketMeasurements.sizes.has(shapeKey)) {
+                    market.dataset.marketColumns = String(columns);
+                    setStyle(market, '--table-market-columns', String(columns));
+                    setStyle(market, '--table-market-rows', String(rows));
+                    setStyle(market, 'width', `${nativeWidthFor(columns)}px`);
+                    setStyle(market, 'min-height', marketAtHome ? '0px' : `${retainedMarketHeight}px`);
+                    marketMeasurements.sizes.set(shapeKey, { width: market.offsetWidth, height: market.offsetHeight });
+                }
+                return marketMeasurements.sizes.get(shapeKey);
+            }
             for (const [side, owners] of Object.entries(sides)) {
                 for (const panel of owners) {
-                    const count = panel.querySelectorAll('.cardboard-card').length;
-                    const lateral = side === 'left' || side === 'right';
-                    // Side cards rotate into vertical strips. Give those strips
-                    // fewer native columns on a wide screen, and reverse the
-                    // balance when the viewport itself is tall.
-                    let maximumColumns;
-                    if (lateral) maximumColumns = wide ? shallow ? 2 : 4 : 6;
-                    else if (oppositeOnly) maximumColumns = wide ? shallow ? 12 : 8 : count >= 13 ? 4 : 3;
-                    else maximumColumns = wide ? count >= 13 ? 8 : 6 : count >= 13 ? 3 : 2;
-                    const ownerColumns = Math.min(maximumColumns, Math.max(1, count));
-                    setStyle(panel, '--table-owner-columns', String(ownerColumns));
-                    setStyle(panel, 'width', `${ownerColumns * 160 + (ownerColumns - 1) * 8 + 16}px`);
                     setStyle(panel, 'position', 'absolute');
                     setStyle(panel, 'display', 'flex');
                     setStyle(panel, 'flex-direction', 'column');
                     setStyle(panel, 'transform-origin', '0 0');
                     panel.dataset.seatPosition = side;
                     panel.dataset.tableAngle = String(angles[side]);
-                    const nativeWidth = panel.offsetWidth;
-                    const nativeHeight = panel.offsetHeight;
-                    const rotated = side === 'left' || side === 'right';
-                    sizes.set(panel, { nativeWidth, nativeHeight,
-                        width: rotated ? nativeHeight : nativeWidth,
-                        height: rotated ? nativeWidth : nativeHeight });
+                }
+            }
+            setStyle(market, 'position', 'absolute');
+            const countFor = panel => panel.querySelectorAll('.cardboard-card').length;
+            const existingColumns = (side, count) => {
+                const lateral = side === 'left' || side === 'right';
+                let maximum;
+                if (lateral) maximum = wide ? shallow ? 2 : 4 : 6;
+                else if (oppositeOnly) maximum = wide ? shallow ? 12 : 8 : count >= 13 ? 4 : 3;
+                else maximum = wide ? count >= 13 ? 8 : 6 : count >= 13 ? 3 : 2;
+                return Math.min(maximum, Math.max(1, count));
+            };
+            let chosen = !marketAtHome && lastSelection ? lastSelection
+                : { market: wide ? 6 : 2, rows: rowsFor(wide ? 6 : 2), side: null, end: null };
+            // Evaluate only a small, shared set of edge shapes for 2–4 owners.
+            // Measuring native boxes includes header and landmark wrapping, so
+            // the score reflects the actual rotated footprint rather than rows
+            // of cards alone. Multi-player seating keeps its established shape.
+            if (panels.length <= 4 && marketAtHome) {
+                const sideCandidates = wide ? shallow ? [1, 2, 3] : [2, 3, 4, 6] : [3, 4, 6];
+                const endCandidates = wide ? [4, 6, 8, 12] : [1, 2, 3, 4];
+                const marketCandidates = wide ? [6, 4] : [2, 3, 1];
+                let bestScore = -1;
+                const marketPlans = new Map();
+                for (const marketColumns of marketCandidates) {
+                    const marketBox = marketSize(marketColumns);
+                    for (const sideColumns of sideCandidates) for (const endColumns of endCandidates) {
+                        const strips = {};
+                        for (const [side, owners] of Object.entries(sides)) {
+                            const lateral = side === 'left' || side === 'right';
+                            let along = 0, depth = 0;
+                            for (const panel of owners) {
+                                const columns = Math.min(lateral ? sideColumns : endColumns, Math.max(1, countFor(panel)));
+                                const box = ownerSize(panel, columns);
+                                along += box.nativeWidth;
+                                depth = Math.max(depth, box.nativeHeight);
+                            }
+                            strips[side] = { along: along + Math.max(0, owners.length - 1) * gap, depth };
+                        }
+                        const width = padding * 2 + Math.max(marketBox.width, strips.top.along, strips.bottom.along) +
+                            (strips.left.depth ? strips.left.depth + gap : 0) + (strips.right.depth ? strips.right.depth + gap : 0);
+                        const height = padding * 2 + Math.max(marketBox.height, strips.left.along, strips.right.along) +
+                            (strips.top.depth ? strips.top.depth + gap : 0) + (strips.bottom.depth ? strips.bottom.depth + gap : 0);
+                        const score = Math.min(viewport.clientWidth / width, viewport.clientHeight / height);
+                        const plan = { market: marketColumns, rows: rowsFor(marketColumns), side: sideColumns, end: endColumns };
+                        const previousPlan = marketPlans.get(marketColumns);
+                        if (!previousPlan || score > previousPlan.score + 0.0001) marketPlans.set(marketColumns, { score, plan });
+                        if (score > bestScore + 0.0001) {
+                            bestScore = score;
+                            chosen = plan;
+                        }
+                    }
+                }
+                // A single market column sacrifices side-by-side comparison.
+                // Adopt it only when cards become materially larger than the
+                // best two-column layout, rather than winning a numerical tie.
+                const twoColumns = marketPlans.get(2);
+                const oneColumn = marketPlans.get(1);
+                if (chosen.market === 1 && twoColumns && oneColumn.score < twoColumns.score * 1.08) {
+                    const alternatives = [...marketPlans].filter(([columns]) => columns !== 1).map(([, candidate]) => candidate);
+                    let preferred = alternatives[0];
+                    for (const candidate of alternatives.slice(1)) {
+                        if (candidate.score > preferred.score + 0.0001) preferred = candidate;
+                    }
+                    chosen = preferred.plan;
+                }
+            }
+            if (marketAtHome) lastSelection = chosen;
+            if (market.dataset.marketColumns !== String(chosen.market)) market.dataset.marketColumns = String(chosen.market);
+            setStyle(market, '--table-market-columns', String(chosen.market));
+            setStyle(market, '--table-market-rows', String(chosen.rows));
+            setStyle(market, 'width', `${nativeWidthFor(chosen.market)}px`);
+            setStyle(market, 'min-height', marketAtHome ? '0px' : `${retainedMarketHeight}px`);
+            const sizes = new Map();
+            for (const [side, owners] of Object.entries(sides)) {
+                for (const panel of owners) {
+                    const lateral = side === 'left' || side === 'right';
+                    const count = countFor(panel);
+                    const columns = chosen.side === null ? existingColumns(side, count)
+                        : Math.min(lateral ? chosen.side : chosen.end, Math.max(1, count));
+                    setStyle(panel, '--table-owner-columns', String(columns));
+                    setStyle(panel, 'width', `${nativeWidthFor(columns)}px`);
+                    const nativeWidth = panel.offsetWidth, nativeHeight = panel.offsetHeight;
+                    sizes.set(panel, { nativeWidth, nativeHeight, width: lateral ? nativeHeight : nativeWidth,
+                        height: lateral ? nativeWidth : nativeHeight });
                 }
             }
             const extent = (owners, vertical) => ({
@@ -145,6 +256,11 @@ const CardTableLayout = (() => {
         }
         function refresh(nextState = {}) {
             if (destroyed) return;
+            if ('session' in nextState && nextState.session !== state.session) {
+                lastSelection = null;
+                marketMeasurements = null;
+                retainedMarketHeight = 0;
+            }
             state = { ...state, ...nextState };
             schedule();
         }

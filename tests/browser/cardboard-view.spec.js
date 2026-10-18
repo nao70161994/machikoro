@@ -778,6 +778,8 @@ test(`にぎわい広場の勝利カードコレクション ${viewport.width}px
     });
     await expect(page.locator('.winner-screen')).toBeVisible();
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
+    await expect(page.locator('.winner-stats-row').first()).toHaveClass(/highlight/);
+    await expect(page.locator('.winner-stats-row').first().locator('.winner-result-progress')).toContainText('施設 36枚');
     expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached)).toBe(false);
     const geometry = await page.evaluate(() => {
         const screen = document.querySelector('.winner-screen').getBoundingClientRect();
@@ -1193,6 +1195,8 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
                 const rect = node.getBoundingClientRect();
                 const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
                 window.boardTagRecords.push({ text: node.textContent, pointerEvents: getComputedStyle(node).pointerEvents,
+                    highlightedCards: document.querySelectorAll('#cardboardSeats .cardboard-card.cardboard-resolving').length,
+                    highlightedOwners: document.querySelectorAll('.cardboard-roster-seat.cardboard-resolving').length,
                     contained: rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1 &&
                         rect.top >= viewport.top - 1 && rect.bottom <= viewport.bottom + 1 });
             }
@@ -1205,6 +1209,9 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     const liveTag = page.locator('.cardboard-activation-tag');
     await expect(liveTag).toBeVisible();
     await expect(liveTag).toContainText('森林');
+    await expect(liveTag.locator('.cardboard-activation-route')).toContainText('銀行 →');
+    await expect(liveTag.locator('.cardboard-activation-amount')).toHaveCSS('white-space', 'nowrap');
+    await expect(page.locator('#turnAnnouncer')).toBeHidden();
     await page.screenshot({ path: testInfo.outputPath('facility-chain-live-activation-tag.png') });
     const caption = page.locator('#cardboardEventDetails');
     await expect(caption).toHaveClass(/cardboard-preview-playing/);
@@ -1244,11 +1251,13 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         return GameRuntimeState.runtime.snapshot().game.players[index].name || `席${index + 1}`;
     }));
     expect(tagRecords.map(record => record.text)).toEqual(owners.map((owner, index) =>
-        `森林${owner} · +1コイン施設発動 ${index + 1} / ${owners.length}`));
+        `森林${owner} · +1コイン銀行 → ${owner}施設発動 ${index + 1} / ${owners.length}`));
     expect(tagRecords.every(record => record.contained && record.pointerEvents === 'none')).toBe(true);
+    expect(tagRecords.every(record => record.highlightedCards === 1 && record.highlightedOwners === 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });
     await page.evaluate(() => render());
     await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+    await expect(page.locator('.cardboard-resolving')).toHaveCount(0);
     expect(await page.evaluate(() => window.boardTagRecords.length)).toBe(4);
     expect(await page.evaluate(() => document.getElementById('cardboardDiceConfirmation') === window.confirmationElement)).toBe(true);
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCSS('opacity', '0');

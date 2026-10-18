@@ -2,10 +2,13 @@
 
 // The camera changes presentation only; native scrolling remains the pan mechanism.
 const CardTableCamera = (() => {
-    function create({ viewport, canvas, world, onViewChange = () => {} }) {
+    function create({ viewport, canvas, world, onViewChange = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}) }) {
         let scale = 0.85;
         let overviewMode = true;
         let angle = 0;
+        let inspectionPadding = false;
+        let focusPlayer = null;
+        let previousContext = '';
         let matrix = { a: scale, b: 0, c: 0, d: scale, e: 0, f: 0 };
         let state = { selfIndex: 0, currentIndex: 0, session: null };
         let session;
@@ -74,8 +77,12 @@ const CardTableCamera = (() => {
             const minY = Math.min(...corners.map(point => point.y));
             const extentX = Math.max(...corners.map(point => point.x)) - minX;
             const extentY = Math.max(...corners.map(point => point.y)) - minY;
-            const width = Math.max(viewport.clientWidth, Math.ceil(extentX * scale));
-            const height = Math.max(viewport.clientHeight, Math.ceil(extentY * scale));
+            // Inspection must be able to center an owner at the table edge.
+            // Native scroll otherwise clamps it against the screen bottom/right.
+            const paddingX = inspectionPadding ? viewport.clientWidth / 2 : 0;
+            const paddingY = inspectionPadding ? viewport.clientHeight / 2 : 0;
+            const width = Math.max(viewport.clientWidth, Math.ceil(extentX * scale + paddingX * 2));
+            const height = Math.max(viewport.clientHeight, Math.ceil(extentY * scale + paddingY * 2));
             const offsetX = Math.max(0, (width - extentX * scale) / 2);
             const offsetY = Math.max(0, (height - extentY * scale) / 2);
             matrix = { a: scale * cosine, b: scale * sine, c: -scale * sine, d: scale * cosine,
@@ -91,13 +98,52 @@ const CardTableCamera = (() => {
             viewport.dataset.tableScale = scale.toFixed(3);
             viewport.dataset.tableAngle = String(normalizeAngle(angle));
             viewport.dataset.tableMode = overviewMode ? 'overview' : 'free';
+            updateFocus();
         }
         function scroll(left, top) {
             viewport.scrollTo({ left: Math.max(0, left), top: Math.max(0, top), behavior: 'instant' });
+            updateFocus();
         }
         function seat(index) {
             return [...world.querySelectorAll('.cardboard-player[data-player-index]')]
                 .find(element => Number(element.dataset.playerIndex) === Number(index));
+        }
+        function notifyContext(label, pan, playerIndex) {
+            const key = JSON.stringify([label, pan, playerIndex, Boolean(returnView)]);
+            if (key === previousContext || destroyed) return;
+            previousContext = key;
+            onContextChange({ label, pan, playerIndex, canReturn: Boolean(returnView) });
+        }
+        function clearFocus() {
+            focusPlayer = null;
+            for (const attribute of ['tableFocusPlayer', 'tableFocusName', 'tableFocusLabel', 'tableFocusPan', 'tablePanHint']) {
+                delete viewport.dataset[attribute];
+            }
+            notifyContext('カード卓', 'none', null);
+        }
+        function updateFocus(clearIfOutside = false) {
+            if (focusPlayer === null) { clearFocus(); return; }
+            const player = seat(focusPlayer);
+            if (!player) { clearFocus(); return; }
+            const bounds = player.getBoundingClientRect();
+            const viewportBounds = viewport.getBoundingClientRect();
+            const clip = { left: viewportBounds.left + viewport.clientLeft, top: viewportBounds.top + viewport.clientTop,
+                right: viewportBounds.left + viewport.clientLeft + viewport.clientWidth,
+                bottom: viewportBounds.top + viewport.clientTop + viewport.clientHeight };
+            if (clearIfOutside && (bounds.right <= clip.left || bounds.left >= clip.right ||
+                    bounds.bottom <= clip.top || bounds.top >= clip.bottom)) { clearFocus(); return; }
+            const heading = player.querySelector('.cardboard-player-heading');
+            const fullLabel = heading?.getAttribute('title') || `席${focusPlayer + 1}`;
+            const name = fullLabel.replace(/^席\d+・/u, '');
+            const horizontal = bounds.left < clip.left - 2 || bounds.right > clip.right + 2;
+            const vertical = bounds.top < clip.top - 2 || bounds.bottom > clip.bottom + 2;
+            viewport.dataset.tableFocusPlayer = String(focusPlayer);
+            viewport.dataset.tableFocusName = name;
+            viewport.dataset.tableFocusLabel = fullLabel;
+            viewport.dataset.tableFocusPan = horizontal ? vertical ? 'both' : 'x' : vertical ? 'y' : 'none';
+            viewport.dataset.tablePanHint = horizontal ? vertical ? '上下左右に移動して確認' : '左右に移動して確認'
+                : vertical ? '上下に移動して確認' : '';
+            notifyContext(fullLabel, viewport.dataset.tableFocusPan, focusPlayer);
         }
         function facePlayer(player) {
             angle = normalizeAngle(-Number(player?.dataset.tableAngle || 0));
@@ -106,7 +152,7 @@ const CardTableCamera = (() => {
             const center = canvasToWorld({ x: viewport.scrollLeft + viewport.clientWidth / 2,
                 y: viewport.scrollTop + viewport.clientHeight / 2 });
             const size = measure();
-            return { scale, angle, overviewMode, x: center.x, y: center.y,
+            return { scale, angle, overviewMode, inspectionPadding, focusPlayer, x: center.x, y: center.y,
                 left: viewport.scrollLeft, top: viewport.scrollTop,
                 viewportWidth: viewport.clientWidth, viewportHeight: viewport.clientHeight,
                 worldWidth: size.width, worldHeight: size.height };
@@ -119,6 +165,8 @@ const CardTableCamera = (() => {
             overviewMode = previous.overviewMode;
             scale = previous.scale;
             angle = previous.angle;
+            inspectionPadding = previous.inspectionPadding;
+            focusPlayer = previous.focusPlayer;
             paint();
             const size = measure();
             if (previous.viewportWidth === viewport.clientWidth && previous.viewportHeight === viewport.clientHeight &&
@@ -136,47 +184,47 @@ const CardTableCamera = (() => {
             const player = seat(index);
             if (!player) return;
             if (!preserveReadable) rememberView();
+            focusPlayer = Number(player.dataset.playerIndex);
             overviewMode = false;
+            inspectionPadding = true;
             facePlayer(player);
-            // Rotate first: an upside-down seat's screen bottom/top cannot be
-            // used as intrinsic row measurements until its content faces us.
+            // Measure the complete owner only after counter-rotating its seat.
+            // Centering just the first row leaves the collection against an edge.
             paint();
-            const header = player.querySelector('.cardboard-header') || player;
-            const cards = player.querySelector('.cardboard-cards');
-            const first = cards?.querySelector('button');
-            const rowHeight = first
-                ? (first.getBoundingClientRect().bottom - header.getBoundingClientRect().top) / scale
-                : header.getBoundingClientRect().height / scale;
-            const fittedScale = Math.min(0.85, Math.max(0.55, (viewport.clientHeight - 16) / Math.max(1, rowHeight)));
-            if (!preserveReadable) scale = clamp(fittedScale < 0.85 ? fittedScale : Math.max(scale, 0.85));
+            const before = player.getBoundingClientRect();
+            const nativeWidth = before.width / scale;
+            const nativeHeight = before.height / scale;
+            const padding = viewport.clientWidth <= 480 ? 12 : 20;
+            const availableWidth = Math.max(1, viewport.clientWidth - padding * 2);
+            const availableHeight = Math.max(1, viewport.clientHeight - padding * 2);
+            const fitWidth = availableWidth / Math.max(1, nativeWidth);
+            const fitHeight = availableHeight / Math.max(1, nativeHeight);
+            const readableFloor = preserveReadable ? Math.max(0.95, Math.min(scale, 1.25)) : 0.9;
+            const wholeOwnerFit = Math.min(fitWidth, fitHeight);
+            // A short collection fills the viewing area. A large collection
+            // keeps readable cards and begins at its real top/left for panning.
+            scale = clamp(wholeOwnerFit >= readableFloor
+                ? Math.min(1.6, wholeOwnerFit)
+                : Math.min(1.6, Math.max(readableFloor, fitWidth)));
             paint();
-            const headerBounds = header.getBoundingClientRect();
-            const firstBounds = first?.getBoundingClientRect();
-            let left = firstBounds?.left ?? headerBounds.left;
-            let right = firstBounds?.right ?? headerBounds.right;
-            let bottom = firstBounds?.bottom ?? headerBounds.bottom;
-            if (firstBounds) {
-                for (const card of cards.querySelectorAll('button')) {
-                    const bounds = card.getBoundingClientRect();
-                    if (Math.abs(bounds.top - firstBounds.top) > 2) continue;
-                    left = Math.min(left, bounds.left);
-                    right = Math.max(right, bounds.right);
-                    bottom = Math.max(bottom, bounds.bottom);
-                }
-            }
-            const wide = right - left + 16 > viewport.clientWidth;
-            const tall = player.getBoundingClientRect().height + 16 > viewport.clientHeight;
-            const point = clientToWorld(wide ? left : (left + right) / 2,
-                tall ? headerBounds.top : (headerBounds.top + bottom) / 2);
-            alignPoint(point, { x: wide ? 8 : viewport.clientWidth / 2, y: tall ? 8 : viewport.clientHeight / 2 });
+            const bounds = player.getBoundingClientRect();
+            const wide = bounds.width > availableWidth;
+            const tall = bounds.height > availableHeight;
+            const point = clientToWorld(wide ? bounds.left : bounds.left + bounds.width / 2,
+                tall ? bounds.top : bounds.top + bounds.height / 2);
+            alignPoint(point, { x: wide ? padding : viewport.clientWidth / 2,
+                y: tall ? padding : viewport.clientHeight / 2 });
         }
         function focusCard(card) {
             if (destroyed || !card?.isConnected || !world.contains(card)) return;
             const initial = card.getBoundingClientRect();
             if (!initial.width || !initial.height) return;
             rememberView();
+            const player = card.closest('.cardboard-player');
+            focusPlayer = player ? Number(player.dataset.playerIndex) : null;
             overviewMode = false;
-            facePlayer(card.closest('.cardboard-player'));
+            inspectionPadding = true;
+            facePlayer(player);
             paint();
             const before = card.getBoundingClientRect();
             const fitted = Math.min((viewport.clientWidth - 24) / (before.width / scale),
@@ -192,6 +240,8 @@ const CardTableCamera = (() => {
             if (destroyed || !market) return;
             rememberView();
             overviewMode = false;
+            clearFocus();
+            inspectionPadding = true;
             angle = 0;
             scale = clamp(Math.max(scale, 0.75));
             paint();
@@ -206,6 +256,8 @@ const CardTableCamera = (() => {
         function fit() {
             if (destroyed) return;
             overviewMode = true;
+            clearFocus();
+            inspectionPadding = false;
             returnView = null;
             angle = 0;
             const size = measure();
@@ -226,6 +278,7 @@ const CardTableCamera = (() => {
             const point = anchor || { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 };
             const center = canvasToWorld({ x: viewport.scrollLeft + point.x, y: viewport.scrollTop + point.y });
             scale = clamp(scale * factor);
+            inspectionPadding = true;
             paint();
             alignPoint(center, point);
         }
@@ -348,6 +401,7 @@ const CardTableCamera = (() => {
             overviewMode = false;
             suppressClick = true;
             scale = clamp(pinch.scale * point.distance / pinch.distance);
+            inspectionPadding = true;
             paint();
             alignPoint(pinch, point);
         }
@@ -370,7 +424,7 @@ const CardTableCamera = (() => {
             // Keep the same click bubbling to the existing card-detail handler.
         }
         const listeners = [
-            ['scroll', () => onViewChange(), { passive: true }],
+            ['scroll', () => { updateFocus(true); onViewChange(); }, { passive: true }],
             ['wheel', wheel, { passive: false }], ['keydown', keydown, false],
             ['touchstart', touchstart, { passive: true }], ['touchmove', touchmove, { passive: false }],
             ['touchend', touchend, { passive: true }], ['touchcancel', touchend, { passive: true }],
@@ -397,6 +451,7 @@ const CardTableCamera = (() => {
             viewport.classList.remove('is-table-panning');
             returnView = null;
             pinch = null;
+            clearFocus();
             viewport.style.touchAction = previousTouchAction;
             delete viewport.dataset.tableScale;
             delete viewport.dataset.tableAngle;

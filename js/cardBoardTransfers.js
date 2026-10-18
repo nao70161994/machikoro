@@ -173,6 +173,7 @@ const CardBoardTransfers = (() => {
                 if (!targetIsBank && route.amount >= 5) coin.dataset.large = 'true';
                 coin.setAttribute('aria-hidden', 'true');
                 coin.textContent = `${route.amount}コイン`;
+                coin.dataset.route = `${route.fromName} → ${route.toName}`;
                 coin.title = route.title;
                 coin.style.left = `${from.x}px`;
                 coin.style.top = `${from.y}px`;
@@ -183,7 +184,7 @@ const CardBoardTransfers = (() => {
                         { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: .15 },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(1)`, opacity: 1, offset: .85 },
                         { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(.8)`, opacity: 0 },
-                    ], { duration: 900, delay: animationIndex * 70, easing: 'ease-in-out', fill: 'both' });
+                    ], { duration: 900, delay: Math.max(0, Math.min(500, Number(options.delayMs) || 0)) + animationIndex * 70, easing: 'ease-in-out', fill: 'both' });
                     animationIndex++;
                     animation.finished?.catch(() => {});
                     animations.push(animation);

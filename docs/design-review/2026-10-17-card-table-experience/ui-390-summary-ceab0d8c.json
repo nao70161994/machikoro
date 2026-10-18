@@ -1,0 +1,1159 @@
+{
+  "mode": "automated-human-seat-ui",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "cpuSpeedMs": 100,
+  "completed": true,
+  "humanActions": 181,
+  "clicks": 286,
+  "keyboardActions": 39,
+  "cpuWaitMs": 35800,
+  "actions": [
+    {
+      "action": "rollDice",
+      "turn": 0,
+      "phase": "roll",
+      "elapsedMs": 2997
+    },
+    {
+      "action": "buildCard",
+      "turn": 0,
+      "phase": "build",
+      "elapsedMs": 2023
+    },
+    {
+      "action": "nextTurn",
+      "turn": 0,
+      "phase": "build",
+      "elapsedMs": 439
+    },
+    {
+      "action": "rollDice",
+      "turn": 2,
+      "phase": "roll",
+      "elapsedMs": 1466
+    },
+    {
+      "action": "buildLandmark",
+      "turn": 2,
+      "phase": "build",
+      "elapsedMs": 2566
+    },
+    {
+      "action": "nextTurn",
+      "turn": 2,
+      "phase": "build",
+      "elapsedMs": 585
+    },
+    {
+      "action": "rollDice",
+      "turn": 4,
+      "phase": "roll",
+      "elapsedMs": 538
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 4,
+      "phase": "selectDice",
+      "elapsedMs": 1057
+    },
+    {
+      "action": "buildCard",
+      "turn": 4,
+      "phase": "build",
+      "elapsedMs": 2020
+    },
+    {
+      "action": "nextTurn",
+      "turn": 4,
+      "phase": "build",
+      "elapsedMs": 586
+    },
+    {
+      "action": "rollDice",
+      "turn": 6,
+      "phase": "roll",
+      "elapsedMs": 543
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 6,
+      "phase": "selectDice",
+      "elapsedMs": 1059
+    },
+    {
+      "action": "buildCard",
+      "turn": 6,
+      "phase": "build",
+      "elapsedMs": 1873
+    },
+    {
+      "action": "nextTurn",
+      "turn": 6,
+      "phase": "build",
+      "elapsedMs": 794
+    },
+    {
+      "action": "rollDice",
+      "turn": 8,
+      "phase": "roll",
+      "elapsedMs": 573
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 8,
+      "phase": "selectDice",
+      "elapsedMs": 1162
+    },
+    {
+      "action": "buildLandmark",
+      "turn": 8,
+      "phase": "build",
+      "elapsedMs": 2816
+    },
+    {
+      "action": "nextTurn",
+      "turn": 8,
+      "phase": "build",
+      "elapsedMs": 841
+    },
+    {
+      "action": "rollDice",
+      "turn": 10,
+      "phase": "roll",
+      "elapsedMs": 1061
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 10,
+      "phase": "selectDice",
+      "elapsedMs": 1081
+    },
+    {
+      "action": "buildCard",
+      "turn": 10,
+      "phase": "build",
+      "elapsedMs": 2041
+    },
+    {
+      "action": "nextTurn",
+      "turn": 10,
+      "phase": "build",
+      "elapsedMs": 717
+    },
+    {
+      "action": "rollDice",
+      "turn": 12,
+      "phase": "roll",
+      "elapsedMs": 483
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 12,
+      "phase": "selectDice",
+      "elapsedMs": 1269
+    },
+    {
+      "action": "buildCard",
+      "turn": 12,
+      "phase": "build",
+      "elapsedMs": 2251
+    },
+    {
+      "action": "nextTurn",
+      "turn": 12,
+      "phase": "build",
+      "elapsedMs": 602
+    },
+    {
+      "action": "rollDice",
+      "turn": 14,
+      "phase": "roll",
+      "elapsedMs": 1160
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 14,
+      "phase": "selectDice",
+      "elapsedMs": 982
+    },
+    {
+      "action": "buildCard",
+      "turn": 14,
+      "phase": "build",
+      "elapsedMs": 2314
+    },
+    {
+      "action": "nextTurn",
+      "turn": 14,
+      "phase": "build",
+      "elapsedMs": 917
+    },
+    {
+      "action": "rollDice",
+      "turn": 16,
+      "phase": "roll",
+      "elapsedMs": 759
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 16,
+      "phase": "selectDice",
+      "elapsedMs": 1032
+    },
+    {
+      "action": "buildCard",
+      "turn": 16,
+      "phase": "build",
+      "elapsedMs": 2321
+    },
+    {
+      "action": "nextTurn",
+      "turn": 16,
+      "phase": "build",
+      "elapsedMs": 630
+    },
+    {
+      "action": "rollDice",
+      "turn": 18,
+      "phase": "roll",
+      "elapsedMs": 1240
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 18,
+      "phase": "selectDice",
+      "elapsedMs": 1015
+    },
+    {
+      "action": "buildCard",
+      "turn": 18,
+      "phase": "build",
+      "elapsedMs": 2300
+    },
+    {
+      "action": "nextTurn",
+      "turn": 18,
+      "phase": "build",
+      "elapsedMs": 662
+    },
+    {
+      "action": "rollDice",
+      "turn": 20,
+      "phase": "roll",
+      "elapsedMs": 902
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 20,
+      "phase": "selectDice",
+      "elapsedMs": 1245
+    },
+    {
+      "action": "buildLandmark",
+      "turn": 20,
+      "phase": "build",
+      "elapsedMs": 2704
+    },
+    {
+      "action": "nextTurn",
+      "turn": 20,
+      "phase": "build",
+      "elapsedMs": 830
+    },
+    {
+      "action": "rollDice",
+      "turn": 22,
+      "phase": "roll",
+      "elapsedMs": 846
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 22,
+      "phase": "selectDice",
+      "elapsedMs": 916
+    },
+    {
+      "action": "resolveHarbor",
+      "turn": 22,
+      "phase": "harborChoice",
+      "elapsedMs": 520
+    },
+    {
+      "action": "buildCard",
+      "turn": 22,
+      "phase": "build",
+      "elapsedMs": 1791
+    },
+    {
+      "action": "nextTurn",
+      "turn": 22,
+      "phase": "build",
+      "elapsedMs": 596
+    },
+    {
+      "action": "rollDice",
+      "turn": 24,
+      "phase": "roll",
+      "elapsedMs": 1288
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 24,
+      "phase": "selectDice",
+      "elapsedMs": 1019
+    },
+    {
+      "action": "buildCard",
+      "turn": 24,
+      "phase": "build",
+      "elapsedMs": 2370
+    },
+    {
+      "action": "nextTurn",
+      "turn": 24,
+      "phase": "build",
+      "elapsedMs": 1006
+    },
+    {
+      "action": "rollDice",
+      "turn": 26,
+      "phase": "roll",
+      "elapsedMs": 1269
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 26,
+      "phase": "selectDice",
+      "elapsedMs": 1072
+    },
+    {
+      "action": "buildCard",
+      "turn": 26,
+      "phase": "build",
+      "elapsedMs": 3253
+    },
+    {
+      "action": "nextTurn",
+      "turn": 26,
+      "phase": "build",
+      "elapsedMs": 601
+    },
+    {
+      "action": "rollDice",
+      "turn": 28,
+      "phase": "roll",
+      "elapsedMs": 1347
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 28,
+      "phase": "selectDice",
+      "elapsedMs": 1150
+    },
+    {
+      "action": "buildCard",
+      "turn": 28,
+      "phase": "build",
+      "elapsedMs": 2514
+    },
+    {
+      "action": "nextTurn",
+      "turn": 28,
+      "phase": "build",
+      "elapsedMs": 568
+    },
+    {
+      "action": "rollDice",
+      "turn": 30,
+      "phase": "roll",
+      "elapsedMs": 1488
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 30,
+      "phase": "selectDice",
+      "elapsedMs": 1302
+    },
+    {
+      "action": "buildCard",
+      "turn": 30,
+      "phase": "build",
+      "elapsedMs": 3085
+    },
+    {
+      "action": "nextTurn",
+      "turn": 30,
+      "phase": "build",
+      "elapsedMs": 509
+    },
+    {
+      "action": "rollDice",
+      "turn": 32,
+      "phase": "roll",
+      "elapsedMs": 1232
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 32,
+      "phase": "selectDice",
+      "elapsedMs": 902
+    },
+    {
+      "action": "resolveHarbor",
+      "turn": 32,
+      "phase": "harborChoice",
+      "elapsedMs": 539
+    },
+    {
+      "action": "buildCard",
+      "turn": 32,
+      "phase": "build",
+      "elapsedMs": 1940
+    },
+    {
+      "action": "nextTurn",
+      "turn": 32,
+      "phase": "build",
+      "elapsedMs": 1056
+    },
+    {
+      "action": "rollDice",
+      "turn": 34,
+      "phase": "roll",
+      "elapsedMs": 1247
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 34,
+      "phase": "selectDice",
+      "elapsedMs": 1090
+    },
+    {
+      "action": "buildCard",
+      "turn": 34,
+      "phase": "build",
+      "elapsedMs": 2456
+    },
+    {
+      "action": "nextTurn",
+      "turn": 34,
+      "phase": "build",
+      "elapsedMs": 592
+    },
+    {
+      "action": "rollDice",
+      "turn": 36,
+      "phase": "roll",
+      "elapsedMs": 1308
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 36,
+      "phase": "selectDice",
+      "elapsedMs": 1020
+    },
+    {
+      "action": "buildCard",
+      "turn": 36,
+      "phase": "build",
+      "elapsedMs": 2433
+    },
+    {
+      "action": "nextTurn",
+      "turn": 36,
+      "phase": "build",
+      "elapsedMs": 641
+    },
+    {
+      "action": "rollDice",
+      "turn": 38,
+      "phase": "roll",
+      "elapsedMs": 1577
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 38,
+      "phase": "selectDice",
+      "elapsedMs": 1124
+    },
+    {
+      "action": "resolveHarbor",
+      "turn": 38,
+      "phase": "harborChoice",
+      "elapsedMs": 482
+    },
+    {
+      "action": "buildCard",
+      "turn": 38,
+      "phase": "build",
+      "elapsedMs": 1961
+    },
+    {
+      "action": "nextTurn",
+      "turn": 38,
+      "phase": "build",
+      "elapsedMs": 582
+    },
+    {
+      "action": "rollDice",
+      "turn": 40,
+      "phase": "roll",
+      "elapsedMs": 1564
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 40,
+      "phase": "selectDice",
+      "elapsedMs": 1315
+    },
+    {
+      "action": "buildCard",
+      "turn": 40,
+      "phase": "build",
+      "elapsedMs": 2803
+    },
+    {
+      "action": "nextTurn",
+      "turn": 40,
+      "phase": "build",
+      "elapsedMs": 576
+    },
+    {
+      "action": "rollDice",
+      "turn": 42,
+      "phase": "roll",
+      "elapsedMs": 1571
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 42,
+      "phase": "selectDice",
+      "elapsedMs": 1289
+    },
+    {
+      "action": "buildCard",
+      "turn": 42,
+      "phase": "build",
+      "elapsedMs": 2798
+    },
+    {
+      "action": "nextTurn",
+      "turn": 42,
+      "phase": "build",
+      "elapsedMs": 581
+    },
+    {
+      "action": "rollDice",
+      "turn": 44,
+      "phase": "roll",
+      "elapsedMs": 1680
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 44,
+      "phase": "selectDice",
+      "elapsedMs": 1310
+    },
+    {
+      "action": "resolveCleaning",
+      "turn": 44,
+      "phase": "pending",
+      "elapsedMs": 1806
+    },
+    {
+      "action": "buildCard",
+      "turn": 44,
+      "phase": "build",
+      "elapsedMs": 2653
+    },
+    {
+      "action": "nextTurn",
+      "turn": 44,
+      "phase": "build",
+      "elapsedMs": 640
+    },
+    {
+      "action": "rollDice",
+      "turn": 46,
+      "phase": "roll",
+      "elapsedMs": 1678
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 46,
+      "phase": "selectDice",
+      "elapsedMs": 1252
+    },
+    {
+      "action": "buildCard",
+      "turn": 46,
+      "phase": "build",
+      "elapsedMs": 2427
+    },
+    {
+      "action": "nextTurn",
+      "turn": 46,
+      "phase": "build",
+      "elapsedMs": 619
+    },
+    {
+      "action": "rollDice",
+      "turn": 48,
+      "phase": "roll",
+      "elapsedMs": 1002
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 48,
+      "phase": "selectDice",
+      "elapsedMs": 999
+    },
+    {
+      "action": "resolveHarbor",
+      "turn": 48,
+      "phase": "harborChoice",
+      "elapsedMs": 507
+    },
+    {
+      "action": "buildCard",
+      "turn": 48,
+      "phase": "build",
+      "elapsedMs": 2051
+    },
+    {
+      "action": "nextTurn",
+      "turn": 48,
+      "phase": "build",
+      "elapsedMs": 720
+    },
+    {
+      "action": "rollDice",
+      "turn": 50,
+      "phase": "roll",
+      "elapsedMs": 1666
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 50,
+      "phase": "selectDice",
+      "elapsedMs": 1285
+    },
+    {
+      "action": "resolveBusiness",
+      "turn": 50,
+      "phase": "pending",
+      "elapsedMs": 2535
+    },
+    {
+      "action": "buildCard",
+      "turn": 50,
+      "phase": "build",
+      "elapsedMs": 2183
+    },
+    {
+      "action": "nextTurn",
+      "turn": 50,
+      "phase": "build",
+      "elapsedMs": 707
+    },
+    {
+      "action": "rollDice",
+      "turn": 52,
+      "phase": "roll",
+      "elapsedMs": 1803
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 52,
+      "phase": "selectDice",
+      "elapsedMs": 1238
+    },
+    {
+      "action": "buildCard",
+      "turn": 52,
+      "phase": "build",
+      "elapsedMs": 2490
+    },
+    {
+      "action": "nextTurn",
+      "turn": 52,
+      "phase": "build",
+      "elapsedMs": 598
+    },
+    {
+      "action": "rollDice",
+      "turn": 54,
+      "phase": "roll",
+      "elapsedMs": 1283
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 54,
+      "phase": "selectDice",
+      "elapsedMs": 1137
+    },
+    {
+      "action": "resolveBusiness",
+      "turn": 54,
+      "phase": "pending",
+      "elapsedMs": 2389
+    },
+    {
+      "action": "buildCard",
+      "turn": 54,
+      "phase": "build",
+      "elapsedMs": 2855
+    },
+    {
+      "action": "nextTurn",
+      "turn": 54,
+      "phase": "build",
+      "elapsedMs": 632
+    },
+    {
+      "action": "rollDice",
+      "turn": 56,
+      "phase": "roll",
+      "elapsedMs": 1590
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 56,
+      "phase": "selectDice",
+      "elapsedMs": 1263
+    },
+    {
+      "action": "buildCard",
+      "turn": 56,
+      "phase": "build",
+      "elapsedMs": 2359
+    },
+    {
+      "action": "nextTurn",
+      "turn": 56,
+      "phase": "build",
+      "elapsedMs": 565
+    },
+    {
+      "action": "rollDice",
+      "turn": 58,
+      "phase": "roll",
+      "elapsedMs": 1578
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 58,
+      "phase": "selectDice",
+      "elapsedMs": 1285
+    },
+    {
+      "action": "buildCard",
+      "turn": 58,
+      "phase": "build",
+      "elapsedMs": 3575
+    },
+    {
+      "action": "nextTurn",
+      "turn": 58,
+      "phase": "build",
+      "elapsedMs": 690
+    },
+    {
+      "action": "resolveIT",
+      "turn": 58,
+      "phase": "pending",
+      "elapsedMs": 753
+    },
+    {
+      "action": "rollDice",
+      "turn": 60,
+      "phase": "roll",
+      "elapsedMs": 1194
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 60,
+      "phase": "selectDice",
+      "elapsedMs": 1149
+    },
+    {
+      "action": "buildCard",
+      "turn": 60,
+      "phase": "build",
+      "elapsedMs": 2492
+    },
+    {
+      "action": "nextTurn",
+      "turn": 60,
+      "phase": "build",
+      "elapsedMs": 680
+    },
+    {
+      "action": "resolveIT",
+      "turn": 60,
+      "phase": "pending",
+      "elapsedMs": 707
+    },
+    {
+      "action": "rollDice",
+      "turn": 62,
+      "phase": "roll",
+      "elapsedMs": 761
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 62,
+      "phase": "selectDice",
+      "elapsedMs": 1139
+    },
+    {
+      "action": "buildCard",
+      "turn": 62,
+      "phase": "build",
+      "elapsedMs": 3543
+    },
+    {
+      "action": "nextTurn",
+      "turn": 62,
+      "phase": "build",
+      "elapsedMs": 756
+    },
+    {
+      "action": "resolveIT",
+      "turn": 62,
+      "phase": "pending",
+      "elapsedMs": 755
+    },
+    {
+      "action": "rollDice",
+      "turn": 64,
+      "phase": "roll",
+      "elapsedMs": 1112
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 64,
+      "phase": "selectDice",
+      "elapsedMs": 900
+    },
+    {
+      "action": "resolveHarbor",
+      "turn": 64,
+      "phase": "harborChoice",
+      "elapsedMs": 586
+    },
+    {
+      "action": "buildCard",
+      "turn": 64,
+      "phase": "build",
+      "elapsedMs": 2830
+    },
+    {
+      "action": "nextTurn",
+      "turn": 64,
+      "phase": "build",
+      "elapsedMs": 807
+    },
+    {
+      "action": "resolveIT",
+      "turn": 64,
+      "phase": "pending",
+      "elapsedMs": 700
+    },
+    {
+      "action": "rollDice",
+      "turn": 66,
+      "phase": "roll",
+      "elapsedMs": 803
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 66,
+      "phase": "selectDice",
+      "elapsedMs": 1163
+    },
+    {
+      "action": "buildCard",
+      "turn": 66,
+      "phase": "build",
+      "elapsedMs": 3267
+    },
+    {
+      "action": "nextTurn",
+      "turn": 66,
+      "phase": "build",
+      "elapsedMs": 774
+    },
+    {
+      "action": "resolveIT",
+      "turn": 66,
+      "phase": "pending",
+      "elapsedMs": 718
+    },
+    {
+      "action": "rollDice",
+      "turn": 68,
+      "phase": "roll",
+      "elapsedMs": 782
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 68,
+      "phase": "selectDice",
+      "elapsedMs": 1165
+    },
+    {
+      "action": "buildCard",
+      "turn": 68,
+      "phase": "build",
+      "elapsedMs": 3774
+    },
+    {
+      "action": "nextTurn",
+      "turn": 68,
+      "phase": "build",
+      "elapsedMs": 698
+    },
+    {
+      "action": "resolveIT",
+      "turn": 68,
+      "phase": "pending",
+      "elapsedMs": 715
+    },
+    {
+      "action": "rollDice",
+      "turn": 70,
+      "phase": "roll",
+      "elapsedMs": 1155
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 70,
+      "phase": "selectDice",
+      "elapsedMs": 904
+    },
+    {
+      "action": "resolveHarbor",
+      "turn": 70,
+      "phase": "harborChoice",
+      "elapsedMs": 627
+    },
+    {
+      "action": "buildLandmark",
+      "turn": 70,
+      "phase": "build",
+      "elapsedMs": 3315
+    },
+    {
+      "action": "nextTurn",
+      "turn": 70,
+      "phase": "build",
+      "elapsedMs": 1009
+    },
+    {
+      "action": "resolveIT",
+      "turn": 70,
+      "phase": "pending",
+      "elapsedMs": 537
+    },
+    {
+      "action": "rollDice",
+      "turn": 72,
+      "phase": "roll",
+      "elapsedMs": 1217
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 72,
+      "phase": "selectDice",
+      "elapsedMs": 1068
+    },
+    {
+      "action": "skipReroll",
+      "turn": 72,
+      "phase": "rerollConfirm",
+      "elapsedMs": 725
+    },
+    {
+      "action": "buildLandmark",
+      "turn": 72,
+      "phase": "build",
+      "elapsedMs": 3289
+    },
+    {
+      "action": "nextTurn",
+      "turn": 72,
+      "phase": "build",
+      "elapsedMs": 1011
+    },
+    {
+      "action": "resolveIT",
+      "turn": 72,
+      "phase": "pending",
+      "elapsedMs": 542
+    },
+    {
+      "action": "rollDice",
+      "turn": 74,
+      "phase": "roll",
+      "elapsedMs": 1271
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 74,
+      "phase": "selectDice",
+      "elapsedMs": 1069
+    },
+    {
+      "action": "skipReroll",
+      "turn": 74,
+      "phase": "rerollConfirm",
+      "elapsedMs": 638
+    },
+    {
+      "action": "resolveBusiness",
+      "turn": 74,
+      "phase": "pending",
+      "elapsedMs": 2073
+    },
+    {
+      "action": "buildCard",
+      "turn": 74,
+      "phase": "build",
+      "elapsedMs": 2708
+    },
+    {
+      "action": "nextTurn",
+      "turn": 74,
+      "phase": "build",
+      "elapsedMs": 711
+    },
+    {
+      "action": "resolveIT",
+      "turn": 74,
+      "phase": "pending",
+      "elapsedMs": 688
+    },
+    {
+      "action": "rollDice",
+      "turn": 76,
+      "phase": "roll",
+      "elapsedMs": 1646
+    },
+    {
+      "action": "selectDiceCount",
+      "turn": 76,
+      "phase": "selectDice",
+      "elapsedMs": 1233
+    },
+    {
+      "action": "skipReroll",
+      "turn": 76,
+      "phase": "rerollConfirm",
+      "elapsedMs": 562
+    },
+    {
+      "action": "resolveMover",
+      "turn": 76,
+      "phase": "pending",
+      "elapsedMs": 1366
+    },
+    {
+      "action": "resolveMover",
+      "turn": 76,
+      "phase": "pending",
+      "elapsedMs": 1432
+    },
+    {
+      "action": "resolveMover",
+      "turn": 76,
+      "phase": "pending",
+      "elapsedMs": 1773
+    },
+    {
+      "action": "resolveMover",
+      "turn": 76,
+      "phase": "pending",
+      "elapsedMs": 1523
+    },
+    {
+      "action": "resolveMover",
+      "turn": 76,
+      "phase": "pending",
+      "elapsedMs": 1391
+    },
+    {
+      "action": "resolveMover",
+      "turn": 76,
+      "phase": "pending",
+      "elapsedMs": 1840
+    },
+    {
+      "action": "buildLandmark",
+      "turn": 76,
+      "phase": "build",
+      "elapsedMs": 2003
+    }
+  ],
+  "screenshots": [
+    "start",
+    "dice-motion-0",
+    "dice-motion-1",
+    "dice-motion-2",
+    "dice-motion-3",
+    "dice-motion-4",
+    "first-roll",
+    "first-build",
+    "midgame-opponent-upright",
+    "midgame",
+    "special-effect",
+    "late-game",
+    "winner"
+  ],
+  "pageErrors": [],
+  "diceMotion": [
+    {
+      "index": 0,
+      "targetMs": 0,
+      "elapsedMs": 350
+    },
+    {
+      "index": 1,
+      "targetMs": 180,
+      "elapsedMs": 842
+    },
+    {
+      "index": 2,
+      "targetMs": 450,
+      "elapsedMs": 1299
+    },
+    {
+      "index": 3,
+      "targetMs": 800,
+      "elapsedMs": 1652
+    },
+    {
+      "index": 4,
+      "targetMs": 1200,
+      "elapsedMs": 1975
+    }
+  ],
+  "marketOpens": 39,
+  "cameraReview": {
+    "turn": 12,
+    "targetIndex": 1,
+    "clicks": 2,
+    "initialScale": "0.504",
+    "readableScale": "0.900",
+    "initialAngle": "0",
+    "restored": true,
+    "stateUnchanged": true,
+    "elapsedMs": 877
+  },
+  "winner": "プレイヤー1",
+  "elapsedMs": 302295,
+  "lastTurn": 76
+}

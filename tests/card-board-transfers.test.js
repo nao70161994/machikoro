@@ -68,13 +68,15 @@ runTest('同じ送受信者間でも発動施設ごとに送金元を識別す�
 });
 
 runTest('移動中は金額を短く示し、詳細には施設と移動元・移動先を保持する', () => {
-    const { container } = fixture();
+    const { container, animated } = fixture();
     const controller = CardBoardTransfers.create();
-    controller.play({ container, events: { participantNames: ['街A', '街B'], activations: [
+    controller.play({ container, delayMs: 500, events: { participantNames: ['街A', '街B'], activations: [
         { from: 0, to: 1, amount: 5, subject: 'パン屋', facility: true },
     ] } });
     const movingCoin = container.children[0].children[1];
     assert.strictEqual(movingCoin.textContent, '5コイン');
+    assert.strictEqual(movingCoin.dataset.route, '街A → 街B');
+    assert.strictEqual(animated[0].options.delay, 500, '出目確定が終わってから送金を示す');
     assert.strictEqual(movingCoin.title, 'パン屋：街A → 街B：5コイン');
     assert.strictEqual(movingCoin.attributes['aria-hidden'], 'true');
     controller.clear();
