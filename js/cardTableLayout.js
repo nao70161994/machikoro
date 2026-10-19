@@ -36,6 +36,8 @@ const CardTableLayout = (() => {
         let marketMeasurements = null;
         /** @type {CardTablePlan | null} */
         let lastSelection = null;
+        /** @type {{playerIndex: number, minScale: number, columns?: number} | null} */
+        let readingSeat = null;
         const view = world.ownerDocument.defaultView;
         const setStyle = (element, name, value) => {
             if (element.style.getPropertyValue(name) !== value) element.style.setProperty(name, value);
@@ -261,13 +263,38 @@ const CardTableLayout = (() => {
             setStyle(market, '--table-market-rows', String(chosen.rows));
             setStyle(market, 'width', `${nativeWidthFor(chosen.market)}px`);
             setStyle(market, 'min-height', marketAtHome ? '0px' : `${retainedMarketHeight}px`);
+            let readingColumns = null;
+            if (readingSeat) {
+                const owner = panels.find(panel => Number(panel.dataset.playerIndex) === readingSeat.playerIndex);
+                if (owner) {
+                    const inset = viewport.clientWidth <= 480 ? 12 : 20;
+                    const availableWidth = Math.max(1, viewport.clientWidth - inset * 2);
+                    const availableHeight = Math.max(1, viewport.clientHeight - inset * 2);
+                    const maximum = Math.min(Math.max(1, countFor(owner)),
+                        Math.max(1, Math.floor((availableWidth / readingSeat.minScale - 8) / 168)));
+                    readingColumns = maximum;
+                    let bestScale = 0;
+                    for (let columns = 1; columns <= maximum; columns++) {
+                        const box = ownerSize(owner, columns);
+                        const fitScale = Math.min(1.6, availableWidth / box.nativeWidth, availableHeight / box.nativeHeight);
+                        if (fitScale >= readingSeat.minScale && fitScale > bestScale + 0.0001) {
+                            bestScale = fitScale;
+                            readingColumns = columns;
+                        }
+                    }
+                    readingSeat.columns = readingColumns;
+                } else readingSeat = null;
+            }
+            if (readingSeat) world.dataset.tableReadingSeat = String(readingSeat.playerIndex);
+            else delete world.dataset.tableReadingSeat;
             const sizes = new Map();
             for (const [side, owners] of Object.entries(sides)) {
                 for (const panel of owners) {
                     const lateral = side === 'left' || side === 'right';
                     const count = countFor(panel);
-                    const columns = chosen.side === null ? existingColumns(side, count)
-                        : Math.min(lateral ? chosen.side : chosen.end, Math.max(1, count));
+                    const columns = readingSeat?.playerIndex === Number(panel.dataset.playerIndex) && readingColumns !== null
+                        ? readingColumns : chosen.side === null ? existingColumns(side, count)
+                            : Math.min(lateral ? chosen.side : chosen.end, Math.max(1, count));
                     setStyle(panel, '--table-owner-columns', String(columns));
                     setStyle(panel, 'width', `${nativeWidthFor(columns)}px`);
                     const nativeWidth = panel.offsetWidth, nativeHeight = panel.offsetHeight;
@@ -336,10 +363,20 @@ const CardTableLayout = (() => {
             if (world.dataset.tableLayoutKey !== geometryKey) world.dataset.tableLayoutKey = geometryKey;
             onLayout();
         }
+        function setReadingSeat(playerIndex, minScale = 0.9) {
+            if (destroyed) return null;
+            readingSeat = Number.isInteger(playerIndex) && playerIndex >= 0
+                ? { playerIndex, minScale: Math.max(0.85, Math.min(1.6, Number(minScale) || 0.9)) } : null;
+            if (frame) view.cancelAnimationFrame(frame);
+            frame = 0;
+            layout();
+            return readingSeat ? { ...readingSeat } : null;
+        }
         function refresh(nextState = {}) {
             if (destroyed) return;
             if ('session' in nextState && nextState.session !== state.session) {
                 lastSelection = null;
+                readingSeat = null;
                 marketMeasurements = null;
                 retainedMarketHeight = 0;
             }
@@ -353,11 +390,13 @@ const CardTableLayout = (() => {
             frame = 0;
             observer?.disconnect();
             observed.clear();
+            readingSeat = null;
+            delete world.dataset.tableReadingSeat;
         }
         observe(world);
         observe(viewport);
         observe(market);
-        return Object.freeze({ refresh, destroy });
+        return Object.freeze({ refresh, setReadingSeat, destroy });
     }
     return Object.freeze({ create, computePinwheelGeometry });
 })();
