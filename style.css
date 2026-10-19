@@ -15393,3 +15393,23 @@ html[data-design="cardboard"] #cardboardBuildFlight.cardboard-card-green > :is(.
 html[data-design="cardboard"] #cardboardBuildFlight.cardboard-card-red > :is(.cardboard-dice, .cardboard-name) { background: #b94d58; }
 html[data-design="cardboard"] #cardboardBuildFlight.cardboard-card-purple > :is(.cardboard-dice, .cardboard-name) { background: #8653a4; }
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard #cardboardBuildFlight { border-color: #fff; background: #000; color: #fff; }
+
+/* Opposite-seat overview: spend the horizontal rim on completed landmarks. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player[data-table-landmark-rail="true"] {
+    display: grid;
+    grid-template-columns: var(--table-facility-width) var(--table-landmark-width);
+    grid-template-rows: auto auto auto;
+    column-gap: 16px;
+    align-content: start;
+    align-items: start;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-header { grid-column: 1 / -1; grid-row: 1; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-facility-heading { grid-column: 1; grid-row: 2; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-cards { grid-column: 1; grid-row: 3; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-landmark-heading { grid-column: 2; grid-row: 2; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-landmarks {
+    grid-column: 2;
+    grid-row: 3;
+    flex-wrap: nowrap;
+    align-self: start;
+}

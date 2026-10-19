@@ -355,6 +355,43 @@ for (const count of [2,3,5,10]) {
             expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards=>Math.min(...cards.map(card=>card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(44);
             await page.screenshot({path:testInfo.outputPath('card-table-2-grown.png')});
             await page.evaluate(() => {
+                GameRuntimeState.runtime.snapshot().game.players.forEach(player => {
+                    Object.keys(player.landmarks).forEach((name, index) => { player.landmarks[name] = index < 5; });
+                });
+                render();
+            });
+            const railOwners = page.locator('#cardboardSeats > [data-table-landmark-rail="true"]');
+            await expect(railOwners).toHaveCount(2);
+            await expectWholeTable(page, 2);
+            await expectOwnedCards(page);
+            await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(10);
+            expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
+                Math.min(...cards.map(card => card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(40);
+            const footprint = () => page.locator('#cardboardSeats').evaluate(world => ({
+                width: world.offsetWidth, height: world.offsetHeight,
+            }));
+            const railFootprint = await footprint();
+            const table = page.locator('#cardboardTableViewport');
+            const railScale = await table.getAttribute('data-table-scale');
+            const railState = await snapshot(page);
+            await page.screenshot({path:testInfo.outputPath('card-table-2-landmarks-beside.png')});
+            await page.locator('[data-cardboard-camera="self"]').click();
+            await expect(railOwners).toHaveCount(0);
+            await page.locator('[data-cardboard-camera="back"]').click();
+            await expect(railOwners).toHaveCount(2);
+            await expect(table).toHaveAttribute('data-table-scale', railScale);
+            expect(await footprint()).toEqual(railFootprint);
+            await page.locator('[data-cardboard-camera="market"]').click();
+            await page.locator('#cardboardMarket .compact-market-filter-disclosure > summary').click();
+            await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
+            await expect(railOwners).toHaveCount(2);
+            expect(await footprint()).toEqual(railFootprint);
+            await page.locator('#cardboardMarketClose').click();
+            await page.locator('[data-cardboard-camera="overview"]').click();
+            await expectWholeTable(page, 2);
+            expect(await snapshot(page)).toEqual(railState);
+
+            await page.evaluate(() => {
                 GameSetupState.runtime.setCpuSpeed(3000);
                 document.getElementById('cpuSpeed').value = '3000';
                 startGameNow(2, Array.from({ length: 2 }, (_, index) => ({
