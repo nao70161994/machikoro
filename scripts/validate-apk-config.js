@@ -34,8 +34,10 @@ function validateWebManifest() {
     assert.deepStrictEqual([...requiredIcons.keys()], [], 'required PWA icons are missing');
 }
 
-function validateTwaManifest() {
-    const twa = createTwaManifest(1);
+function validateTwaManifest(twa = createTwaManifest(1)) {
+    // Android Browser Helper 2.7.4 requires API 24; do not bypass manifest merging.
+    assert.strictEqual(twa.minSdkVersion, '24', 'TWA requires Android 7.0 / API 24 or later');
+    assert.strictEqual(twa.sdkVersion, '36');
     assert.strictEqual(twa.host, PRODUCTION_HOST);
     assert.strictEqual(twa.startUrl, '/');
     assert.strictEqual(twa.display, 'standalone');
@@ -58,8 +60,18 @@ function validateDeliveryFiles() {
     assert.ok(serviceWorker.includes("'/manifest.json'"));
     assert.ok(serviceWorker.includes("'/icons/icon-192.png'"));
     assert.ok(serviceWorker.includes("'/icons/icon-512.png'"));
-    assert.ok(workflow.includes('@bubblewrap/cli@1.24.1'));
+    const installer = fs.readFileSync(path.join(ROOT, 'scripts/install-bubblewrap.sh'), 'utf8');
+    assert.ok(installer.includes('@bubblewrap/cli@1.24.1'));
+    assert.ok(installer.includes('@bubblewrap/core@1.27.0'));
+    assert.ok(workflow.includes('sh scripts/install-bubblewrap.sh'));
     assert.ok(!workflow.includes('--skipPwaValidation'));
+    const emulatorWorkflow = fs.readFileSync(path.join(ROOT, '.github/workflows/twa-emulator-smoke.yml'), 'utf8');
+    const emulatorScript = fs.readFileSync(path.join(ROOT, 'scripts/twa-emulator-smoke.sh'), 'utf8');
+    assert.ok(workflow.includes('node scripts/create-twa-manifest.js'));
+    assert.ok(emulatorScript.includes('node scripts/create-twa-manifest.js'));
+    assert.ok(emulatorWorkflow.includes('npm run test:apk-validation'));
+    assert.ok(emulatorWorkflow.includes('sh scripts/install-bubblewrap.sh'));
+    assert.ok(!emulatorScript.includes('--skipPwaValidation'));
 }
 
 function validateApkConfig() {
