@@ -27,6 +27,9 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
         });
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('/');
+        // Capture the fully loaded shared art, not the transient external-use
+        // fallback while the inline SVG library is still being prepared.
+        expect(await page.evaluate(() => UiBuildMenu.prepareLocalFacilityArt())).toBe(true);
         await page.evaluate(() => {
             localStorage.setItem('machikoroTutorialEnabled', 'false');
             const originalRandom = Math.random;
