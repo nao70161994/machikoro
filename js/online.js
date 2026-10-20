@@ -2596,6 +2596,17 @@ const onlineInboundActionRuntime = OnlineInboundActionRuntime.createRuntime({
         _shouldClearPendingForAcceptedAction(accepted, pending),
 });
 
+// Loading transport is asynchronous; game initialization remains synchronous
+// once it is ready. Callers own cancellation of their pending UI operation.
+function ensureOnlineSocketReady() {
+    if (typeof io === 'function') return true;
+    if (typeof SocketIoDelivery === 'undefined' || typeof document === 'undefined') return false;
+    return SocketIoDelivery.load({
+        document,
+        getIo: () => typeof io === 'function' ? io : undefined,
+    });
+}
+
 // オンライン対戦（Socket.IO）
 function initSocket() {
     if (onlineSessionSnapshot().socket) return true;
@@ -3093,6 +3104,7 @@ function getOnlineLobbyRequestRuntime() {
         hostlessRestoreVersion: OnlinePayload.hostlessRestoreVersion,
         ids: OnlineDomEffects.ids,
         initSocket: () => initSocket(),
+        ensureSocketReady: () => ensureOnlineSocketReady(),
         inputValue: id => onlineDomEffects.inputValue(id),
         joinRoom: payload => onlineSocketEffects.joinRoom(payload),
         playerSettings: OnlinePlayerSettings,

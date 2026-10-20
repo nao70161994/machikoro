@@ -48,6 +48,7 @@ declare var formatCpuSpeedLabel: ((value: string) => string) | undefined;
 declare var getEnabledCardSelection: (() => Set<string>) | undefined;
 declare var getEnabledLandmarkSelection: (() => Set<string>) | undefined;
 declare var initSocket: () => boolean;
+declare var ensureOnlineSocketReady: () => boolean | Promise<boolean>;
 declare var invalidateCpuScheduleChain: () => void;
 declare var isCurrentHumanUiTurn: (() => boolean) | undefined;
 declare var isPlainObject: (value: unknown) => value is Record<string, unknown>;

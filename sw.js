@@ -2,7 +2,7 @@
  * Service Worker - オフラインキャッシュ
  * バージョンを上げるとキャッシュが更新される
  */
-const CACHE_NAME = 'machikoro-v349';
+const CACHE_NAME = 'machikoro-v350';
 
 const STATIC_ASSETS = [
   '/',
@@ -334,6 +334,54 @@ function cacheRuntimeResponse(event, response) {
   return cacheWrite;
 }
 
+// A cached launch must not wait forever for a connected but stalled network.
+// Abort only requests for which a usable fallback exists; uncached requests
+// retain their normal network semantics. Late responses cannot overwrite it.
+const CACHED_NETWORK_DEADLINE_MS = 3000;
+const CACHED_NETWORK_RETRY_COOLDOWN_MS = 30000;
+let cachedNetworkRetryAfter = 0;
+async function networkFirst(event, cacheable) {
+  const cached = await caches.match(event.request);
+  if (cached && Date.now() < cachedNetworkRetryAfter) return cached;
+  const controller = cached && typeof AbortController === 'function' ? new AbortController() : null;
+  let timer = null;
+  let expired = false;
+  const network = fetch(event.request, controller ? { signal: controller.signal } : undefined)
+    .then(async (response) => {
+      // fetch resolves at headers, before a script's body is usable. Keep the
+      // same deadline through body reception when a cached fallback exists.
+      if (cached && response.status === 200) await response.clone().arrayBuffer();
+      if (expired) return cached;
+      if (response.status === 200) {
+        if (cacheable) cacheRuntimeResponse(event, response);
+        return response;
+      }
+      return cached || response;
+    }).catch(async () => {
+      if (cached) return cached;
+      if (event.request.headers.get('accept')?.includes('text/html')) {
+        return (await caches.match('/')) || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      }
+      return Response.error();
+    });
+  if (!cached) return network;
+  const deadline = new Promise((resolve) => {
+    timer = setTimeout(() => {
+      expired = true;
+      // Parser-ordered scripts share this short circuit, so one stalled
+      // connection costs one deadline rather than one per launch asset.
+      cachedNetworkRetryAfter = Date.now() + CACHED_NETWORK_RETRY_COOLDOWN_MS;
+      controller?.abort();
+      resolve(cached);
+    }, CACHED_NETWORK_DEADLINE_MS);
+  });
+  try {
+    return await Promise.race([network, deadline]);
+  } finally {
+    if (timer !== null) clearTimeout(timer);
+  }
+}
+
 // フェッチ戦略:
 //   JS / CSS / HTML → ネットワーク優先（失敗時はキャッシュ）
 //   画像・アイコン  → キャッシュ優先（失敗時はネットワーク）
@@ -348,17 +396,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/socket.io')) return;
 
   if (RL_MODEL_PATH_PATTERN.test(url.pathname)) {
-    event.respondWith(
-      fetch(event.request).then((response) => {
-        if (response.status === 200) {
-          cacheRuntimeResponse(event, response);
-          return response;
-        }
-        return caches.match(event.request).then((cached) => cached || response);
-      }).catch(() => {
-        return caches.match(event.request).then((cached) => cached || Response.error());
-      })
-    );
+    event.respondWith(networkFirst(event, true));
     return;
   }
 
@@ -379,24 +417,6 @@ self.addEventListener('fetch', (event) => {
     );
   } else {
     // ネットワーク優先（JS/CSS/HTMLは常に最新を取得、オフライン時はキャッシュ）
-    event.respondWith(
-      fetch(event.request).then((response) => {
-        if (response.status === 200) {
-          if (isStaticAssetRequest) {
-            cacheRuntimeResponse(event, response);
-          }
-          return response;
-        }
-        return caches.match(event.request).then((cached) => cached || response);
-      }).catch(() => {
-        return caches.match(event.request).then((cached) => {
-          if (cached) return cached;
-          if (event.request.headers.get('accept')?.includes('text/html')) {
-            return caches.match('/').then((shell) => shell || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
-          }
-          return Response.error();
-        });
-      })
-    );
+    event.respondWith(networkFirst(event, isStaticAssetRequest));
   }
 });

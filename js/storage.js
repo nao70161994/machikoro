@@ -250,6 +250,8 @@ function deleteOnlineSession() {
     });
 }
 
+let reconnectTransportGeneration = 0;
+
 function reconnectOnline() {
     const session = readOnlineSession();
     if (!session) {
@@ -260,6 +262,33 @@ function reconnectOnline() {
         }
         return;
     }
+    if (typeof ensureOnlineSocketReady === 'function') {
+        const ready = ensureOnlineSocketReady();
+        if (ready && typeof ready === 'object' && typeof ready.then === 'function') {
+            const generation = ++reconnectTransportGeneration;
+            const identity = JSON.stringify(session);
+            setStorageOnlineReconnectLegacyFlag(true);
+            if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();
+            else cancelPendingLocalResume();
+            const status = document.getElementById('onlineStatus');
+            if (status) status.textContent = 'オンライン機能を読み込んでいます…';
+            Promise.resolve(ready).then(loaded => {
+                if (generation !== reconnectTransportGeneration ||
+                    !storageOnlineRuntimeSnapshot().isReconnectingOnline ||
+                    JSON.stringify(readOnlineSession()) !== identity) return;
+                setStorageOnlineReconnectLegacyFlag(false);
+                if (loaded) reconnectOnline();
+                else initSocket();
+            }).catch(() => {
+                if (generation !== reconnectTransportGeneration ||
+                    !storageOnlineRuntimeSnapshot().isReconnectingOnline) return;
+                setStorageOnlineReconnectLegacyFlag(false);
+                initSocket();
+            });
+            return;
+        }
+    }
+    ++reconnectTransportGeneration;
     try {
         const reconnectPlan = StoredOnlineReconnect.plan(session);
         if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();

@@ -22,6 +22,9 @@ function makeResponse(label, status = 200) {
         clone() {
             return makeResponse(`${label}:clone`, status);
         },
+        arrayBuffer() {
+            return Promise.resolve(new ArrayBuffer(0));
+        },
     };
 }
 
@@ -82,6 +85,10 @@ function loadServiceWorker(options = {}) {
         };
     }
     const context = {
+        setTimeout: options.setTimeout || setTimeout,
+        clearTimeout: options.clearTimeout || clearTimeout,
+        AbortController,
+        Date: options.now ? { now: options.now } : Date,
         URL,
         Response,
         console,
@@ -121,8 +128,9 @@ function loadServiceWorker(options = {}) {
                 return Promise.resolve(undefined);
             },
         },
-        fetch(request) {
+        fetch(request, fetchOptions) {
             fetchCalls.push(request);
+            if (options.onFetch) options.onFetch(request, fetchOptions);
             if (options.fetchReject) return Promise.reject(new Error('network down'));
             if (options.fetchResponse) return Promise.resolve(options.fetchResponse(request));
             return Promise.resolve(makeResponse(request.url || request));
@@ -390,3 +398,112 @@ function dispatchMessage(runtime, data) {
         assert.strictEqual(response, null);
     });
 })();
+
+
+runTest('cached HTML/JS/CSS/model return after stalled-network deadline without late cache overwrite', async () => {
+    for (const pathname of ['/index.html', '/js/main.js', '/style.css', '/models/rl_model/portfolio/example.browser.json']) {
+        const url = 'https://example.test' + pathname;
+        const timers = new Map();
+        let nextTimer = 0;
+        let resolveNetwork;
+        let signal;
+        const cached = makeResponse('cached:' + pathname);
+        const runtime = loadServiceWorker({
+            cacheEntries: [[url, cached]],
+            fetchResponse: () => new Promise(resolve => { resolveNetwork = resolve; }),
+            onFetch: (_request, options) => { signal = options?.signal; },
+            setTimeout(fn, delay) { timers.set(++nextTimer, { fn, delay }); return nextTimer; },
+            clearTimeout(id) { timers.delete(id); },
+        });
+        const pending = dispatchFetch(runtime, makeRequest(url));
+        for (let i = 0; i < 5; i++) await Promise.resolve();
+        const deadline = [...timers.values()][0];
+        assert.ok(deadline, pathname);
+        assert.strictEqual(deadline.delay, 3000);
+        deadline.fn();
+        const result = await pending;
+        assert.strictEqual(result.response, cached);
+        assert.strictEqual(signal.aborted, true);
+        assert.strictEqual(timers.size, 0);
+        resolveNetwork(makeResponse('late-network'));
+        for (let i = 0; i < 5; i++) await Promise.resolve();
+        assert.strictEqual(runtime.putCalls.length, 0);
+    }
+});
+
+runTest('cached network success clears deadline and uncached requests get no deadline', async () => {
+    const url = 'https://example.test/js/main.js';
+    for (const hasCache of [true, false]) {
+        const timers = new Map();
+        let nextTimer = 0;
+        const network = makeResponse('fresh');
+        const runtime = loadServiceWorker({
+            cacheEntries: hasCache ? [[url, makeResponse('old')]] : [],
+            fetchResponse: () => network,
+            setTimeout(fn, delay) { timers.set(++nextTimer, { fn, delay }); return nextTimer; },
+            clearTimeout(id) { timers.delete(id); },
+        });
+        const result = await dispatchFetch(runtime, makeRequest(url));
+        await Promise.all(result.waitUntilPromises);
+        assert.strictEqual(result.response, network);
+        assert.strictEqual(timers.size, 0);
+        assert.strictEqual(nextTimer, hasCache ? 1 : 0);
+        assert.strictEqual(runtime.putCalls.length, 1);
+    }
+});
+
+
+runTest('one stalled deadline short-circuits subsequent cached scripts until retry cooldown ends', async () => {
+    const first = 'https://example.test/index.html';
+    const second = 'https://example.test/js/main.js';
+    let now = 1000;
+    let deadline;
+    let recovered = false;
+    const runtime = loadServiceWorker({
+        now: () => now,
+        cacheEntries: [[first, makeResponse('cached-html')], [second, makeResponse('cached-js')]],
+        fetchResponse: () => recovered ? makeResponse('recovered-network') : new Promise(() => {}),
+        setTimeout(fn) { deadline = fn; return 1; },
+        clearTimeout() {},
+    });
+    const initial = dispatchFetch(runtime, makeRequest(first));
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    deadline();
+    assert.strictEqual((await initial).response.label, 'cached-html');
+    const cached = await dispatchFetch(runtime, makeRequest(second));
+    assert.strictEqual(cached.response.label, 'cached-js');
+    assert.strictEqual(runtime.fetchCalls.length, 1, 'next parser script must not wait another three seconds');
+    now += 30001;
+    recovered = true;
+    const fresh = await dispatchFetch(runtime, makeRequest(second));
+    assert.strictEqual(fresh.response.label, 'recovered-network');
+    await Promise.all(fresh.waitUntilPromises);
+    assert.strictEqual(runtime.fetchCalls.length, 2, 'network retries after the finite cooldown');
+    assert.strictEqual(runtime.putCalls.length, 1);
+});
+
+runTest('cached scripts also fall back when headers arrive but response body stalls', async () => {
+    const url = 'https://example.test/js/main.js';
+    const cached = makeResponse('cached');
+    const timers = new Map();
+    let resolveBody;
+    const body = new Promise(resolve => { resolveBody = resolve; });
+    const network = makeResponse('headers-only');
+    network.clone = () => ({ arrayBuffer: () => body });
+    const runtime = loadServiceWorker({
+        cacheEntries: [[url, cached]],
+        fetchResponse: () => network,
+        setTimeout(fn) { timers.set(1, fn); return 1; },
+        clearTimeout(id) { timers.delete(id); },
+    });
+    let completed = false;
+    const pending = dispatchFetch(runtime, makeRequest(url)).then(value => { completed = true; return value; });
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    assert.strictEqual(completed, false, 'headers alone must not settle the cached request');
+    assert.strictEqual(timers.size, 1);
+    timers.get(1)();
+    assert.strictEqual((await pending).response, cached);
+    resolveBody(new ArrayBuffer(0));
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    assert.strictEqual(runtime.putCalls.length, 0, 'late body must not replace fallback cache');
+});

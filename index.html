@@ -712,8 +712,11 @@
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script src="js/socketIoDelivery.js"></script>
+    <script>
+        // Online transport is optional for local play and must not block boot.
+        SocketIoDelivery.load({ document, getIo: () => typeof io === 'function' ? io : undefined });
+    </script>
     <script src="js/Card.js"></script>
     <script src="js/marketSupply.js"></script>
     <script src="js/Player.js"></script>

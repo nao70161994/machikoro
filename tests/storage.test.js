@@ -1711,3 +1711,49 @@ runTest('storageは保存拒否を一度通知し成功後の再失敗も通知�
     assert.strictEqual(rt.saveGameState().saved, false);
     assert.strictEqual(rt.alerts.length, 2);
 });
+
+
+runTest('saved reconnect waits for transport retry without changing stored identity', async () => {
+    const rt = loadStorageRuntime();
+    const session = { roomId: 'room-1', playerIndex: 1, playerName: 'P2', reconnectToken: 'token-1', isRoomHost: true };
+    const saved = JSON.stringify(session);
+    rt.localStorage.setItem('onlineSession', saved);
+    let resolveLoad;
+    let ready = false;
+    const pending = new Promise(resolve => { resolveLoad = resolve; });
+    const setReconnect = rt.setOnlineReconnectLegacyFlag;
+    rt.setOnlineReconnectLegacyFlag = value => {
+        rt.OnlineRuntimeState.runtime.setReconnecting(value);
+        return setReconnect(value);
+    };
+    rt.ensureOnlineSocketReady = () => ready || pending;
+    rt.reconnectOnline();
+    assert.strictEqual(rt.rejoinRequests.length, 0);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), saved);
+    ready = true;
+    resolveLoad(true);
+    // The browser promise is assimilated by the separate VM realm. Flush
+    // the complete microtask queue before asserting the actual rejoin.
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(rt.rejoinRequests.length, 1);
+    assert.strictEqual(rt.rejoinRequests[0].reconnectToken, 'token-1');
+});
+
+runTest('cancelled saved reconnect ignores late transport completion', async () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('onlineSession', JSON.stringify({ roomId: 'room-1', playerIndex: 1, playerName: 'P2', reconnectToken: 'token-1' }));
+    let resolveLoad;
+    const setReconnect = rt.setOnlineReconnectLegacyFlag;
+    rt.setOnlineReconnectLegacyFlag = value => {
+        rt.OnlineRuntimeState.runtime.setReconnecting(value);
+        return setReconnect(value);
+    };
+    rt.ensureOnlineSocketReady = () => new Promise(resolve => { resolveLoad = resolve; });
+    rt.reconnectOnline();
+    rt.setStorageOnlineReconnectLegacyFlag(false);
+    resolveLoad(true);
+    // The browser promise is assimilated by the separate VM realm. Flush
+    // the complete microtask queue before asserting the actual rejoin.
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(rt.rejoinRequests.length, 0);
+});

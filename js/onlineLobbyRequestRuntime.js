@@ -199,8 +199,36 @@ const OnlineLobbyRequestRuntime = (() => {
             return preload;
         }
 
+        // Use the lobby generation while loading transport, but start the
+        // server-response timer only after the actual request is emitted.
+        function prepareSocket(kind, resume) {
+            if (typeof dependencies.ensureSocketReady !== 'function') return null;
+            const ready = dependencies.ensureSocketReady();
+            if (!ready || typeof ready.then !== 'function') return null;
+            cancelPendingLocalStart();
+            const request = dependencies.controller.begin(kind);
+            if (request.replacedTimer) dependencies.clearTimer(request.replacedTimer);
+            updateReadinessUi();
+            renderJoinPending();
+            dependencies.setStatusText('オンライン機能を読み込んでいます…');
+            Promise.resolve(ready).then(loaded => {
+                if (!dependencies.controller.isCurrent(kind, request.generation)) return;
+                finish(kind);
+                if (loaded) resume();
+                else dependencies.initSocket();
+            }).catch(error => {
+                if (!dependencies.controller.isCurrent(kind, request.generation)) return;
+                finish(kind);
+                dependencies.warn('online-transport-load', error);
+                dependencies.initSocket();
+            });
+            return true;
+        }
+
         function emitCreate(name, playerCount = dependencies.setupRuntime.snapshot().selectedCount,
                 settings = dependencies.setupRuntime.snapshot().playerSettings) {
+            const preparing = prepareSocket('create', () => emitCreate(name, playerCount, settings));
+            if (preparing !== null) return preparing;
             dependencies.setPlayerName(name);
             const setup = dependencies.setupRuntime.setCpuSpeed(
                 parseInt(dependencies.inputValue(dependencies.ids.cpuSpeed))
@@ -307,6 +335,8 @@ const OnlineLobbyRequestRuntime = (() => {
                 dependencies.showNotice(TEXT.ROOM_ID_INVALID);
                 return false;
             }
+            const preparing = prepareSocket('join', () => join());
+            if (preparing !== null) return preparing;
             dependencies.setPlayerName(name);
             dependencies.setHost(false);
             if (!dependencies.initSocket()) return false;
