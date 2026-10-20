@@ -10,12 +10,16 @@ runTest('UI game status viewは手番表示とroll/skip状態を純粋計算す�
         '👤 Aliceのターン　🪙 7コイン'
     );
     assert.strictEqual(
-        UiGameStatusView.buildTurnStatusText({ name: 'Alice' }, 'sunset', true),
-        'あなたのターン'
+        UiGameStatusView.buildTurnStatusText({ name: 'Alice', coins: 7 }, 'sunset', true),
+        'Aliceのターン · 7コイン'
     );
     assert.strictEqual(
-        UiGameStatusView.buildTurnStatusText({ name: 'CPU' }, 'sunset', false),
-        'CPUのターン'
+        UiGameStatusView.buildTurnStatusText({ name: 'CPU', coins: 0 }, 'sunset', false),
+        'CPUのターン · 0コイン'
+    );
+    assert.strictEqual(
+        UiGameStatusView.buildTurnStatusText({ name: 'Alice', coins: 7 }, 'plaza', true),
+        'あなたのターン'
     );
     assert.deepStrictEqual(UiGameStatusView.buildRollButtonView(true), { disabled: false });
     assert.deepStrictEqual(UiGameStatusView.buildRollButtonView(false), { disabled: true });
@@ -341,7 +345,7 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
     assert.strictEqual(view.statusText, '👤 Aliceのターン　🪙 7コイン');
     assert.strictEqual(view.turnPlayerName, 'Alice');
     assert.strictEqual(view.turnPlayerCoins, 7);
-    assert.strictEqual(UiGameStatusView.buildTurnStatusText(players[0], 'sunset'), 'Aliceのターン');
+    assert.strictEqual(UiGameStatusView.buildTurnStatusText(players[0], 'sunset'), 'Aliceのターン · 7コイン');
     const sunsetSelfView = UiGameStatusView.buildActiveGameView({
         current: players[0],
         players,
@@ -366,7 +370,7 @@ runTest('UI active game viewは手番遷移とコイン差分を入力非破壊�
         lastDice2: 4,
         lastDiceResult: 6,
     });
-    assert.strictEqual(sunsetSelfView.statusText, 'あなたのターン');
+    assert.strictEqual(sunsetSelfView.statusText, 'Aliceのターン · 7コイン');
     assert.deepStrictEqual(view.rollButton, { disabled: false });
     assert.deepStrictEqual(view.skipButton, {
         disabled: true,

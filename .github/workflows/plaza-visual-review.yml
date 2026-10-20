@@ -6,13 +6,20 @@ on:
             - 'style.css'
             - 'index.html'
             - 'js/ui*.js'
+            - 'js/main*.js'
+            - 'js/socketIoDelivery.js'
+            - 'js/online*.js'
+            - 'js/storage*.js'
+            - 'sw.js'
             - 'js/designTheme.js'
             - 'js/cardBoard*.js'
-            - 'js/cardTableCamera.js'
+            - 'js/cardTable*.js'
+            - 'icons/**'
             - 'js/plaza*.js'
             - 'js/plazaField.js'
             - 'tests/browser/visual-art-review.spec.js'
             - 'tests/browser/title-layout.spec.js'
+            - 'tests/browser/repository-review.spec.js'
             - 'tests/browser/plaza-event-receipts.spec.js'
             - 'tests/browser/theme-visual-regression.spec.js'
             - 'tests/browser/plaza-online.spec.js'
@@ -60,12 +67,15 @@ jobs:
             - name: Title and saved-game responsive interaction review
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
               run: npx playwright test title-layout.spec.js --project=mobile-webkit --output=test-results/title-layout --retries=0 --workers=1
+            - name: Repository review startup and modal regression
+              if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
+              run: npx playwright test repository-review.spec.js --project=mobile-webkit --output=test-results/repository-review --retries=0 --workers=1
             - name: Plaza dice and earnings receipt review
               if: ${{ github.event_name != 'workflow_dispatch' || inputs.refresh_baselines != true }}
               run: npx playwright test plaza-event-receipts.spec.js --grep 'ログを閉じたまま出目|施設とランドマーク' --project=mobile-webkit --output=test-results/plaza-event-receipts --retries=0 --workers=1
             - name: Generate candidate theme baselines
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
-              run: npm run test:browser-visual -- --output=test-results/theme-baseline --update-snapshots=all --grep 'cardboard ' --retries=0 --workers=1
+              run: npm run test:browser-visual -- --output=test-results/theme-baseline --update-snapshots=all --grep 'cardboard |sunset ' --retries=0 --workers=1
             - name: Upload generated baseline candidates
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_baselines == true }}
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
