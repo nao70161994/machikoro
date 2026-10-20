@@ -1873,6 +1873,7 @@ function markOnlineGameFinished() {
 }
 
 function resetOnlineState() {
+    if (typeof cancelPendingOnlineReconnectTransport === 'function') cancelPendingOnlineReconnectTransport();
     onlineLobbySelectionRuntime.reset();
     const session = onlineSessionSnapshot();
     const plan = OnlineSessionLifecycle.resetPlan(session.myRoomId);
@@ -3087,6 +3088,9 @@ function getOnlineLobbyRequestRuntime() {
     if (onlineLobbyRequestRuntime) return onlineLobbyRequestRuntime;
     onlineLobbyRequestRuntime = OnlineLobbyRequestRuntime.createRuntime({
         applyButtonView: (id, view) => onlineDomEffects.applyButtonView(id, view),
+        cancelPendingReconnect: () => {
+            if (typeof cancelPendingOnlineReconnectTransport === 'function') cancelPendingOnlineReconnectTransport();
+        },
         cancelPendingLocalStart: () => {
             if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();
         },

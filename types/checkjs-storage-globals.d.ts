@@ -83,3 +83,5 @@ interface Document {
 }
 
 declare function cancelPendingLocalGameStart(): void;
+
+declare var finishOnlineLobbyRequest: ((kind?: string) => boolean) | undefined;

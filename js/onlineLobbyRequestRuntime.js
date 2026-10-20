@@ -56,6 +56,12 @@ const OnlineLobbyRequestRuntime = (() => {
             }
         }
 
+        function cancelPendingReconnect() {
+            if (typeof dependencies.cancelPendingReconnect === 'function') {
+                dependencies.cancelPendingReconnect();
+            }
+        }
+
         function canPreloadModels() {
             const portfolio = modelPortfolio();
             return !!portfolio && (typeof portfolio.preloadSelectedModels === 'function' ||
@@ -227,6 +233,7 @@ const OnlineLobbyRequestRuntime = (() => {
 
         function emitCreate(name, playerCount = dependencies.setupRuntime.snapshot().selectedCount,
                 settings = dependencies.setupRuntime.snapshot().playerSettings) {
+            cancelPendingReconnect();
             const preparing = prepareSocket('create', () => emitCreate(name, playerCount, settings));
             if (preparing !== null) return preparing;
             dependencies.setPlayerName(name);
@@ -277,6 +284,7 @@ const OnlineLobbyRequestRuntime = (() => {
                 dependencies.showNotice(TEXT.NAME_REQUIRED);
                 return false;
             }
+            cancelPendingReconnect();
             const setup = dependencies.setupRuntime.snapshot();
             const playerCount = setup.selectedCount;
             const settings = freezeRlSettings(playerCount, dependencies.playerSettings.snapshot(
@@ -335,6 +343,7 @@ const OnlineLobbyRequestRuntime = (() => {
                 dependencies.showNotice(TEXT.ROOM_ID_INVALID);
                 return false;
             }
+            cancelPendingReconnect();
             const preparing = prepareSocket('join', () => join());
             if (preparing !== null) return preparing;
             dependencies.setPlayerName(name);
