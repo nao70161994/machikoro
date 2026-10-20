@@ -3250,7 +3250,62 @@ runTest('詳細中に保留された人間手番の引渡しをnative市場の�
     assert.strictEqual(fixture.context.showCardDetail('麦畑'), true);
     vm.runInContext("hotseatHandoffController.observe({ turnChanged: true, humanPlayerCount: 2, playerIndex: 1, playerName: '次の人' })", fixture.context);
     fixture.context.closeCardDetail();
-    assert.strictEqual(closed, 1);
+    // Detail cleanup and the shared handoff entrance both close auxiliary views.
+    assert.strictEqual(closed, 2);
     assert.strictEqual(resumed, 0);
     assert.strictEqual(fixture.elements.hotseatHandoffOverlay.style.display, 'flex');
+});
+
+runTest('手渡しはnative市場と街dialogを閉じてから表示し前の席へfocusを戻さない', () => {
+    const calls = [];
+    let marketOpen = true;
+    let townOpen = true;
+    const { context, elements } = loadUiRuntime({ globals: {
+        CardBoardField: {
+            closeTown(restoreFocus) { calls.push(['town', restoreFocus]); townOpen = false; },
+            closeMarket(restoreFocus) { calls.push(['market', restoreFocus]); marketOpen = false; },
+        },
+    } });
+    elements.hotseatHandoffButton.focus = () => {
+        assert.strictEqual(marketOpen, false);
+        assert.strictEqual(townOpen, false);
+        context.document.activeElement = elements.hotseatHandoffButton;
+    };
+    assert.strictEqual(context.applyHotseatHandoff({ visible: true, playerName: 'Bob' }), true);
+    assert.deepStrictEqual(calls, [['town', false], ['market', false]]);
+    assert.strictEqual(elements.gameScreen.inert, true);
+    assert.strictEqual(context.document.activeElement, elements.hotseatHandoffButton);
+    context.applyHotseatHandoff({ visible: true, playerName: 'Bob' });
+    assert.strictEqual(calls.length, 2, '表示中の再描画は通常closeを繰り返さない');
+    context.acceptHotseatHandoff();
+    assert.strictEqual(elements.gameScreen.inert, false);
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'none');
+    assert.strictEqual(marketOpen, false, '開始後に前の席の市場を再表示しない');
+});
+
+runTest('詳細のため停止した市場も手渡し待機時に破棄し詳細close後に復帰させない', () => {
+    class FakeElement {}
+    let suspended = false;
+    let resumed = 0;
+    const calls = [];
+    const { context, elements } = loadUiRuntime({ globals: {
+        HTMLElement: FakeElement,
+        CardBoardField: {
+            suspendMarketForDetail() { suspended = true; return true; },
+            resumeMarketAfterDetail() { resumed++; return suspended; },
+            closeTown() {},
+            closeMarket(restoreFocus) { calls.push(restoreFocus); suspended = false; },
+        },
+    } });
+    context.buildCardDetailContent = () => ({ title: '麦畑', html: '' });
+    assert.strictEqual(context.showCardDetail('麦畑'), true);
+    vm.runInContext("hotseatHandoffController.observe({ turnChanged: true, humanPlayerCount: 2, playerIndex: 1, playerName: 'Bob' })", context);
+    assert.strictEqual(context.applyHotseatHandoff({ visible: true, playerName: 'Bob' }), false);
+    assert.strictEqual(suspended, false, '共通詳細が開いていてもnative復帰予約を破棄する');
+    context.closeCardDetail();
+    assert.strictEqual(resumed, 0);
+    assert.ok(calls.every(restoreFocus => restoreFocus === false));
+    assert.strictEqual(elements.hotseatHandoffOverlay.style.display, 'flex');
+    context.acceptHotseatHandoff();
+    assert.strictEqual(elements.gameScreen.inert, false);
 });

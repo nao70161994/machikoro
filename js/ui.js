@@ -156,8 +156,16 @@ function applyHotseatHandoff(view) {
     const overlay = document.getElementById('hotseatHandoffOverlay');
     if (!overlay) return false;
     const wasVisible = overlay.style.display !== 'none' && overlay.style.display !== '';
-    if (view.visible === true && !wasVisible &&
-            !openAccessibleModal('hotseatHandoffOverlay')) return false;
+    if (view.visible === true && !wasVisible) {
+        // Native top-layer dialogs outrank this shared div overlay. Exit the
+        // previous seat's auxiliary views without restoring its focus/cues;
+        // closeMarket also invalidates a market suspended for card details.
+        if (typeof CardBoardField !== 'undefined') {
+            CardBoardField.closeTown?.(false);
+            CardBoardField.closeMarket?.(false);
+        }
+        if (!openAccessibleModal('hotseatHandoffOverlay')) return false;
+    }
     if (view.visible !== true && wasVisible) {
         closeAccessibleModal('hotseatHandoffOverlay', { restoreFocus: false });
     }
