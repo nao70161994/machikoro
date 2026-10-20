@@ -128,3 +128,97 @@ test('市場詳細中のDOM更新は同じランドマークへ戻り手番交�
     await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
     await expect(page.locator('#btnRoll')).toBeEnabled();
 });
+
+test('CPU手番中に開いた市場より次の人間の引渡し画面を優先する', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto('/');
+    const nextHumanName = await page.evaluate(() => {
+        startGameNow(3, [
+            { type: 'human', name: '街1' },
+            { type: 'cpu', difficulty: 'normal', name: 'CPU' },
+            { type: 'human', name: '街3' },
+        ]);
+        cancelCpuSchedule('market-handoff-fixture');
+        setTutorialEnabled(false);
+        acceptHotseatHandoff();
+        const state = GameRuntimeState.runtime.snapshot();
+        const game = state.game;
+        const cpuIndex = state.cpuPlayers.findIndex(player => player !== null);
+        if (cpuIndex < 0) throw new Error('CPU seat missing');
+        // Local matches shuffle seats; use the actual runtime mapping.
+        game.currentPlayerIndex = cpuIndex;
+        game.turnCount++;
+        GameSetupState.runtime.setCpuSpeed(200);
+        render();
+        CardBoardField.openMarket();
+        scheduleCpuTurn('market-handoff-regression');
+        return game.players[(cpuIndex + 1) % game.players.length].name;
+    });
+    await expect(page.locator('#hotseatHandoffOverlay')).toBeVisible();
+    await expect(page.locator('#cardboardMarketDialog')).toBeHidden();
+    await expect(page.locator('#hotseatHandoffName')).toHaveText(nextHumanName);
+    await page.screenshot({ path: testInfo.outputPath('market-cpu-human-handoff.png') });
+    await page.locator('[data-ui-action="acceptHotseatHandoff"]').click();
+    await expect(page.locator('#hotseatHandoffOverlay')).toBeHidden();
+    await expect(page.locator('#btnRoll')).toBeEnabled();
+    expect(await page.locator('#gameScreen').evaluate(element => element.inert)).toBe(false);
+});
+
+for (const order of ['reconnect-create', 'create-reconnect', 'reconnect-join', 'join-reconnect']) {
+    test(`Socket.IO待機中の最後のオンライン操作だけ送信する ${order}`, async ({ page }) => {
+        const held = [];
+        await page.route('**/socket.io/socket.io.js*', route => held.push(route));
+        await page.addInitScript(() => {
+            // A validated stored-session shape; the old room need not exist to
+            // verify which mutually exclusive request reaches the transport.
+            localStorage.setItem('onlineSession', JSON.stringify({
+                roomId: 'ABCDEF', playerIndex: 0, originalPlayerIndex: 0,
+                playerName: '再接続', reconnectToken: 'review-token', isRoomHost: true,
+            }));
+            window.__entryEmits = [];
+            let transport;
+            Object.defineProperty(window, 'io', {
+                configurable: true,
+                get: () => transport,
+                set(factory) {
+                    transport = (...args) => {
+                        const socket = factory(...args);
+                        const emit = socket.emit.bind(socket);
+                        socket.emit = (...message) => {
+                            window.__entryEmits.push(message[0]);
+                            return emit(...message);
+                        };
+                        return socket;
+                    };
+                },
+            });
+        });
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        const choose = async action => {
+            if (action === 'reconnect') {
+                await page.locator('[data-ui-action="reconnectOnline"]').click();
+            } else {
+                await page.locator('#tabOnline').click();
+                await page.locator('#playerNameInput').fill('新規');
+                if (action === 'join') {
+                    await page.locator('#onlineTabJoin').click();
+                    await page.locator('#roomIdInput').fill('UVWXYZ');
+                    await page.locator('#onlineJoinSubmitButton').click();
+                } else await page.locator('#onlineCreateSubmitButton').click();
+            }
+        };
+        for (const action of order.split('-')) await choose(action);
+        await page.unroute('**/socket.io/socket.io.js*');
+        await Promise.all(held.map(route => route.continue().catch(() => {})));
+        const expected = order.endsWith('reconnect') ? 'rejoinRoom' : order.endsWith('join') ? 'joinRoom' : 'createRoom';
+        await expect.poll(() => page.evaluate(() => window.__entryEmits.filter(name =>
+            ['createRoom', 'joinRoom', 'rejoinRoom'].includes(name)))).toEqual([expected]);
+        // Drain shared-loader callbacks before checking for a second request.
+        await page.evaluate(async () => {
+            await SocketIoDelivery.load({ document, getIo: () => typeof io === 'function' ? io : undefined });
+            await new Promise(resolve => setTimeout(resolve, 0));
+        });
+        expect(await page.evaluate(() => window.__entryEmits.filter(name =>
+            ['createRoom', 'joinRoom', 'rejoinRoom'].includes(name)))).toEqual([expected]);
+    });
+}
