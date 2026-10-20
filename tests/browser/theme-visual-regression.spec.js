@@ -186,6 +186,9 @@ test.describe('4テーマのゲーム画面ビジュアル回帰', () => {
                     expect(control.rect.right, `${control.id} right edge`).toBeLessThanOrEqual(viewport.width + 1);
                 }
 
+                // This baseline represents the resting board; turn-event
+                // animation is covered separately, not frozen mid-announcement.
+                await expect(page.locator('#turnAnnouncer')).toBeHidden();
                 await expect(page).toHaveScreenshot(`${theme}-${viewport.name}.png`, {
                     animations: 'disabled',
                     caret: 'hide',
