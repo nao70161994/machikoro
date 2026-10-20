@@ -103,3 +103,11 @@
 - 製品方針としては、`CPU（最強）` を安定運用の基準として維持しつつ、`AI（深層学習）` を別系統の学習CPUとして育てる前提です。
 - checkpoint の品質判断は `vs_random` だけでなく、JS CPU 評価と summary artefact を主に見てください。
 - `normal/strong/expert` 相手の学習は Python heuristic ではなく JS `CPU.js` oracle を優先してください。詳細な報酬設計、相手比率、`js=...` ログの読み方は [scripts/rl/README.md](./scripts/rl/README.md) を参照してください。
+
+## TWA / Android APK
+
+- APK の最低対応は Android 7.0（API 24）。Web / PWA の対応条件とは別です。Android 5 / 6 へこの APK はインストールできません。
+- 共通生成元は `scripts/create-twa-manifest.js`。署名ビルドと emulator smoke の両方で使用し、`npm run test:apk-validation` で SDK 条件も検証します。
+- 根拠: [Android Browser Helper 2.7.4 の公式 build.gradle](https://github.com/GoogleChrome/android-browser-helper/blob/android-browser-helper-2.7.4/androidbrowserhelper/build.gradle) は minSdkVersion 24 を要求します。`tools:overrideLibrary` で下限を回避しないでください。
+- CLI を 1.24.1 に固定しても、[公式 package.json](https://github.com/GoogleChromeLabs/bubblewrap/blob/v1.24.1/packages/cli/package.json) の core 依存は `^1.24.1` のため間接依存まで固定されません。`scripts/install-bubblewrap.sh` で CLI 1.24.1 / core 1.27.0 を明示固定し実解決版を検証・記録します。core 1.27.0 が使用する Helper は 2.7.4 です。将来の SDK 要件変更は静的検証だけで保証できず、APK ビルドと emulator CI でも確認してください。
+- Termux ではメモリ消費の大きい Gradle / emulator を並列起動せず、APK 生成と Android 実行検証は CI を利用してください。

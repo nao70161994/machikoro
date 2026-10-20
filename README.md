@@ -493,7 +493,8 @@ RL スクリプト / モデル:
 - 審査中は `preconnect` / `dns-prefetch` / `preload` / `modulepreload` も外部接続方針変更として扱い、明示的に方針確認するまでは追加しません。
 - AdSense 審査中の公開ページはトップページ、[`privacy.html`](./privacy.html)、[`rules.html`](./rules.html) です。トップページと `rules.html` の説明メタは登録不要のプレイを伝え、`privacy.html` の説明メタはエラー通知・開始終了通知、AdSense審査、広告の説明を伝え、本文は開始終了通知のプライバシーと秘密情報の公開禁止も説明します。`rules.html` は勝利条件、施設とランドマークの建設、遊び方を公開 URL で確認できる前提です。公開ページは `robots` メタを `index,follow` に保ちます。`privacy.html` / `rules.html` は静的説明ページとして維持し、自動遷移や meta refresh を追加しません。審査中の静的ページ CSS は共有 `style.css` に限定し、外部 CSS host を追加しません。shared `style.css` を触る場合は狭いモバイル幅で本文と関連ページリンクのはみ出しも確認します。
 - `/api/version` はクライアント/サーバーのビルド差分検知に使います。
-- Android 向けには `.github/workflows/build-apk.yml` で TWA APK をビルドします。
+- Android 向けには `.github/workflows/build-apk.yml` で TWA APK をビルドします。APK は Android 7.0（API 24）以降に対応し、Android 5 / 6 にはインストールできません（Web / PWA の条件は変更しません）。
+- Android ビルド手順: `npm run test:apk-validation` → CI の署名 APK / TWA emulator smoke。両 workflow は `scripts/create-twa-manifest.js` と `scripts/install-bubblewrap.sh` を共用し、CLI 1.24.1 / core 1.27.0 / Android Browser Helper 2.7.4 に揃えます。Helper の SDK 下限を `tools:overrideLibrary` で回避しないでください。根拠と更新時の注意は [CLAUDE.md の TWA / Android APK](./CLAUDE.md#twa--android-apk) を参照してください。
 
 ## 開発メモ
 

@@ -47,6 +47,7 @@ function createHarness(options = {}) {
             playerName: 'playerName', rlStatus: 'rlStatus', roomId: 'roomId',
         },
         initSocket: () => options.socketReady !== false,
+        ensureSocketReady: options.ensureSocketReady,
         inputValue: id => values[id],
         joinRoom: payload => calls.push(['joinRoom', payload]),
         playerSettings: OnlinePlayerSettings,
@@ -293,3 +294,51 @@ for (const fail of [false, true]) {
         });
     }
 }
+
+
+runTest('create/join wait for transport and emit exactly once after retry succeeds', async () => {
+    for (const action of ['showCreate', 'join']) {
+        let resolveLoad;
+        let ready = false;
+        const pending = new Promise(resolve => { resolveLoad = resolve; });
+        const harness = createHarness({ ensureSocketReady: () => ready || pending });
+        assert.strictEqual(harness.runtime[action](), true);
+        harness.runtime[action]();
+        assert.strictEqual(harness.calls.filter(call => ['createRoom', 'joinRoom'].includes(call[0])).length, 0);
+        assert.strictEqual(harness.timers.length, 0, 'server timer starts after actual send');
+        ready = true;
+        resolveLoad(true);
+        await Promise.resolve();
+        await Promise.resolve();
+        assert.strictEqual(harness.calls.filter(call => ['createRoom', 'joinRoom'].includes(call[0])).length, 1);
+        assert.strictEqual(harness.timers.length, 1);
+    }
+});
+
+runTest('cancelled transport preparation never sends a late lobby request', async () => {
+    let resolveLoad;
+    const pending = new Promise(resolve => { resolveLoad = resolve; });
+    const harness = createHarness({ ensureSocketReady: () => pending });
+    harness.runtime.join();
+    harness.runtime.finish();
+    resolveLoad(true);
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.strictEqual(harness.calls.filter(call => call[0] === 'joinRoom').length, 0);
+});
+
+runTest('failed transport unlocks lobby so next click retries loading', async () => {
+    let attempts = 0;
+    const harness = createHarness({
+        socketReady: false,
+        ensureSocketReady: () => { attempts++; return Promise.resolve(false); },
+    });
+    harness.runtime.join();
+    await Promise.resolve();
+    await Promise.resolve();
+    harness.runtime.join();
+    await Promise.resolve();
+    await Promise.resolve();
+    assert.strictEqual(attempts, 2);
+    assert.strictEqual(harness.calls.filter(call => call[0] === 'joinRoom').length, 0);
+});

@@ -250,6 +250,17 @@ function deleteOnlineSession() {
     });
 }
 
+let reconnectTransportGeneration = 0;
+let reconnectTransportPending = false;
+
+function cancelPendingOnlineReconnectTransport() {
+    if (!reconnectTransportPending) return false;
+    reconnectTransportPending = false;
+    ++reconnectTransportGeneration;
+    setStorageOnlineReconnectLegacyFlag(false);
+    return true;
+}
+
 function reconnectOnline() {
     const session = readOnlineSession();
     if (!session) {
@@ -260,6 +271,39 @@ function reconnectOnline() {
         }
         return;
     }
+    // A saved rejoin replaces any pending create/join (including RL loading).
+    if (typeof finishOnlineLobbyRequest === 'function') finishOnlineLobbyRequest();
+    if (typeof ensureOnlineSocketReady === 'function') {
+        const ready = ensureOnlineSocketReady();
+        if (ready && typeof ready === 'object' && typeof ready.then === 'function') {
+            const generation = ++reconnectTransportGeneration;
+            reconnectTransportPending = true;
+            const identity = JSON.stringify(session);
+            setStorageOnlineReconnectLegacyFlag(true);
+            if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();
+            else cancelPendingLocalResume();
+            const status = document.getElementById('onlineStatus');
+            if (status) status.textContent = 'オンライン機能を読み込んでいます…';
+            Promise.resolve(ready).then(loaded => {
+                if (generation !== reconnectTransportGeneration ||
+                    !storageOnlineRuntimeSnapshot().isReconnectingOnline ||
+                    JSON.stringify(readOnlineSession()) !== identity) return;
+                reconnectTransportPending = false;
+                setStorageOnlineReconnectLegacyFlag(false);
+                if (loaded) reconnectOnline();
+                else initSocket();
+            }).catch(() => {
+                if (generation !== reconnectTransportGeneration ||
+                    !storageOnlineRuntimeSnapshot().isReconnectingOnline) return;
+                reconnectTransportPending = false;
+                setStorageOnlineReconnectLegacyFlag(false);
+                initSocket();
+            });
+            return;
+        }
+    }
+    reconnectTransportPending = false;
+    ++reconnectTransportGeneration;
     try {
         const reconnectPlan = StoredOnlineReconnect.plan(session);
         if (typeof cancelPendingLocalGameStart === 'function') cancelPendingLocalGameStart();

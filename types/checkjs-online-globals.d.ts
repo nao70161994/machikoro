@@ -100,3 +100,7 @@ interface Window {
 }
 
 declare function cancelPendingLocalGameStart(): void;
+
+declare var SocketIoDelivery: typeof import("../js/socketIoDelivery");
+
+declare var cancelPendingOnlineReconnectTransport: (() => boolean) | undefined;

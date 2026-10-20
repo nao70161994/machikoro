@@ -1711,3 +1711,103 @@ runTest('storageは保存拒否を一度通知し成功後の再失敗も通知�
     assert.strictEqual(rt.saveGameState().saved, false);
     assert.strictEqual(rt.alerts.length, 2);
 });
+
+
+runTest('saved reconnect waits for transport retry without changing stored identity', async () => {
+    const rt = loadStorageRuntime();
+    const session = { roomId: 'room-1', playerIndex: 1, playerName: 'P2', reconnectToken: 'token-1', isRoomHost: true };
+    const saved = JSON.stringify(session);
+    rt.localStorage.setItem('onlineSession', saved);
+    let resolveLoad;
+    let ready = false;
+    const pending = new Promise(resolve => { resolveLoad = resolve; });
+    const setReconnect = rt.setOnlineReconnectLegacyFlag;
+    rt.setOnlineReconnectLegacyFlag = value => {
+        rt.OnlineRuntimeState.runtime.setReconnecting(value);
+        return setReconnect(value);
+    };
+    rt.ensureOnlineSocketReady = () => ready || pending;
+    rt.reconnectOnline();
+    assert.strictEqual(rt.rejoinRequests.length, 0);
+    assert.strictEqual(rt.localStorage.getItem('onlineSession'), saved);
+    ready = true;
+    resolveLoad(true);
+    // The browser promise is assimilated by the separate VM realm. Flush
+    // the complete microtask queue before asserting the actual rejoin.
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(rt.rejoinRequests.length, 1);
+    assert.strictEqual(rt.rejoinRequests[0].reconnectToken, 'token-1');
+});
+
+runTest('cancelled saved reconnect ignores late transport completion', async () => {
+    const rt = loadStorageRuntime();
+    rt.localStorage.setItem('onlineSession', JSON.stringify({ roomId: 'room-1', playerIndex: 1, playerName: 'P2', reconnectToken: 'token-1' }));
+    let resolveLoad;
+    const setReconnect = rt.setOnlineReconnectLegacyFlag;
+    rt.setOnlineReconnectLegacyFlag = value => {
+        rt.OnlineRuntimeState.runtime.setReconnecting(value);
+        return setReconnect(value);
+    };
+    rt.ensureOnlineSocketReady = () => new Promise(resolve => { resolveLoad = resolve; });
+    rt.reconnectOnline();
+    rt.setStorageOnlineReconnectLegacyFlag(false);
+    resolveLoad(true);
+    // The browser promise is assimilated by the separate VM realm. Flush
+    // the complete microtask queue before asserting the actual rejoin.
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(rt.rejoinRequests.length, 0);
+});
+
+runTest('saved rejoin and create/join transport waits are mutually cancelled by the last valid entry', async () => {
+    const LobbyRuntime = require('../js/onlineLobbyRequestRuntime');
+    const LobbyState = require('../js/onlineLobbyRequestState');
+    const PlayerSettings = require('../js/onlinePlayerSettings');
+    for (const action of ['showCreate', 'join']) for (const last of ['lobby', 'rejoin']) {
+        const rt = loadStorageRuntime();
+        rt.localStorage.setItem('onlineSession', JSON.stringify({ roomId: 'room-1', playerIndex: 1, playerName: 'P2', reconnectToken: 'token-1' }));
+        let resolveLoad;
+        let ready = false;
+        const pending = new Promise(resolve => { resolveLoad = resolve; });
+        const ensureReady = () => ready || pending;
+        rt.ensureOnlineSocketReady = ensureReady;
+        const setReconnect = rt.setOnlineReconnectLegacyFlag;
+        rt.setOnlineReconnectLegacyFlag = value => {
+            rt.OnlineRuntimeState.runtime.setReconnecting(value);
+            return setReconnect(value);
+        };
+        const sent = [];
+        const settings = [{ type: 'human' }, { type: 'human' }];
+        const ids = { playerName: 'name', roomId: 'room', cpuSpeed: 'speed', createButton: 'create', joinButton: 'join', rlStatus: 'rl' };
+        const setup = { selectedCount: 2, playerSettings: settings, cpuSpeed: 1500 };
+        const lobby = LobbyRuntime.createRuntime({
+            controller: LobbyState.createController(), ids, playerSettings: PlayerSettings,
+            setupRuntime: { snapshot: () => setup, setCpuSpeed: () => setup, replaceSettings() {} },
+            ensureSocketReady: ensureReady,
+            cancelPendingReconnect: () => rt.cancelPendingOnlineReconnectTransport(),
+            initSocket: () => ready,
+            inputValue: id => ({ name: 'Guest', room: 'ABC123', speed: '1500' }[id] || ''),
+            createRoom: () => sent.push('create'), joinRoom: () => sent.push('join'),
+            freezeSettings: values => values.map(value => ({ ...value })),
+            getCapabilities: () => ({}), getClientVersion: () => 'test', getModelPortfolio: () => null,
+            getSelection: () => ({ enabledCards: new Set(['麦畑']), enabledLandmarks: new Set(['駅']), marketRule: 'normal' }),
+            withCapabilities: payload => payload, requestTimeoutMs: 15000,
+            setTimer: () => 1, clearTimer() {}, applyButtonView() {}, schedulePwaRefresh() {},
+            setHost() {}, setPlayerName() {}, setStatusText() {}, setText() {}, showNotice() {}, warn() {},
+        });
+        rt.finishOnlineLobbyRequest = () => lobby.finish();
+        if (last === 'lobby') {
+            rt.reconnectOnline();
+            lobby[action]();
+        } else {
+            lobby[action]();
+            rt.reconnectOnline();
+            rt.reconnectOnline(); // Repeated saved-rejoin clicks still emit once.
+        }
+        assert.strictEqual(sent.length + rt.rejoinRequests.length, 0);
+        ready = true;
+        resolveLoad(true);
+        await new Promise(resolve => setImmediate(resolve));
+        assert.strictEqual(sent.length, last === 'lobby' ? 1 : 0, `${action}/${last}: lobby`);
+        assert.strictEqual(rt.rejoinRequests.length, last === 'rejoin' ? 1 : 0, `${action}/${last}: rejoin`);
+    }
+});

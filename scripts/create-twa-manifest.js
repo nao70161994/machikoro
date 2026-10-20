@@ -13,7 +13,7 @@ function createTwaManifest(versionCode = 1) {
         iconUrl: `https://${PRODUCTION_HOST}/icons/icon-512.png`, maskableIconUrl: `https://${PRODUCTION_HOST}/icons/icon-512.png`,
         monochromeIconUrl: `https://${PRODUCTION_HOST}/icons/icon-512.png`, appVersion: String(numericVersion), appVersionCode: numericVersion,
         signingKey: { path: 'android.keystore', alias: 'android' }, generatorApp: 'bubblewrap-cli',
-        webManifestUrl: `https://${PRODUCTION_HOST}/manifest.json`, sdkVersion: '36', minSdkVersion: '21',
+        webManifestUrl: `https://${PRODUCTION_HOST}/manifest.json`, sdkVersion: '36', minSdkVersion: '24',
         isChromeOSOnly: false, enableNotifications: false, features: {}, alphaDependencies: { enabled: false },
         enableSiteSettingsShortcut: true, metaQuest: { enabled: false }, splashScreenFadeOutDuration: 300,
     };

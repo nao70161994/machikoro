@@ -150,3 +150,14 @@ runTest('テーマ切替は非表示化前に通知し既存change通知は更�
         else global.CustomEvent = original;
     }
 });
+
+runTest('ビジュアルCIはカード卓の配置と共有アートの変更も対象にする', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/plaza-visual-review.yml'), 'utf8');
+    const filters = workflow.split('    workflow_dispatch:')[0];
+    assert.ok(filters.includes("- 'js/cardTable*.js'"));
+    assert.ok(filters.includes("- 'icons/**'"));
+    assert.ok(filters.includes("- 'tests/browser/repository-review.spec.js'"));
+    assert.ok(workflow.includes('playwright test repository-review.spec.js --project=mobile-webkit'));
+});

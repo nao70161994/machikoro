@@ -2,12 +2,14 @@
 
 // The camera changes presentation only; native scrolling remains the pan mechanism.
 const CardTableCamera = (() => {
-    function create({ viewport, canvas, world, onViewChange = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}) }) {
+    function create({ viewport, canvas, world, onViewChange = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}), onReadingChange = /** @type {(index: number | null, minScale: number) => void} */ (() => {}) }) {
         let scale = 0.85;
         let overviewMode = true;
         let angle = 0;
         let inspectionPadding = false;
         let focusPlayer = null;
+        /** @type {{ playerIndex: number, minScale: number } | null} */
+        let readingState = null;
         /** @type {{ playerIndex: number, name: string } | null} */
         let inspectionAnchor = null;
         let resizeAnchorFrame = 0;
@@ -131,7 +133,10 @@ const CardTableCamera = (() => {
             if (focusPlayer === null || geometryChanged() || resizeAnchorFrame) return;
             const player = seat(focusPlayer);
             if (!player) return;
-            const clip = viewport.getBoundingClientRect();
+            const viewportBounds = viewport.getBoundingClientRect();
+            const clip = { left: viewportBounds.left + viewport.clientLeft, top: viewportBounds.top + viewport.clientTop,
+                right: viewportBounds.left + viewport.clientLeft + viewport.clientWidth,
+                bottom: viewportBounds.top + viewport.clientTop + viewport.clientHeight };
             const center = { x: clip.left + viewport.clientWidth / 2, y: clip.top + viewport.clientHeight / 2 };
             let nearest = null;
             let distance = Infinity;
@@ -229,11 +234,24 @@ const CardTableCamera = (() => {
             });
             return JSON.stringify([collections, market]);
         }
+        function applyReading(index, minScale = 0.9) {
+            const next = index === null ? null : { playerIndex: index, minScale };
+            if (readingState?.playerIndex === next?.playerIndex && readingState?.minScale === next?.minScale) return;
+            readingState = next;
+            // This is an explicit inspection transition, never a paint hook.
+            // The layout callback places every owner synchronously before our
+            // matrix/focus measurements; its queued ordinary refresh is safe.
+            onReadingChange(next?.playerIndex ?? null, next?.minScale ?? 0.9);
+            lastLayoutKey = world.dataset.tableLayoutKey || '';
+            lastWidth = viewport.clientWidth;
+            lastHeight = viewport.clientHeight;
+        }
         function captureView() {
             const center = canvasToWorld({ x: viewport.scrollLeft + viewport.clientWidth / 2,
                 y: viewport.scrollTop + viewport.clientHeight / 2 });
             const size = measure();
-            return { scale, angle, overviewMode, inspectionPadding, focusPlayer, x: center.x, y: center.y,
+            return { scale, angle, overviewMode, inspectionPadding, focusPlayer,
+                readingState: readingState ? { ...readingState } : null, x: center.x, y: center.y,
                 left: viewport.scrollLeft, top: viewport.scrollTop,
                 viewportWidth: viewport.clientWidth, viewportHeight: viewport.clientHeight,
                 worldWidth: size.width, worldHeight: size.height,
@@ -245,6 +263,7 @@ const CardTableCamera = (() => {
             cancelResizeAnchor();
             const previous = returnView;
             returnView = null;
+            applyReading(previous.readingState?.playerIndex ?? null, previous.readingState?.minScale ?? 0.9);
             const currentSize = measure();
             const changedExtent = previous.worldWidth !== currentSize.width || previous.worldHeight !== currentSize.height;
             const changedCollection = previous.packing !== (world.dataset.tablePacking || 'cross') ||
@@ -279,6 +298,8 @@ const CardTableCamera = (() => {
             if (!player) return;
             cancelResizeAnchor();
             if (!preserveReadable) rememberView();
+            const readableFloor = preserveReadable ? Math.max(0.95, Math.min(scale, 1.25)) : 0.9;
+            applyReading(Number(player.dataset.playerIndex), readableFloor);
             focusPlayer = Number(player.dataset.playerIndex);
             overviewMode = false;
             inspectionPadding = true;
@@ -294,7 +315,6 @@ const CardTableCamera = (() => {
             const availableHeight = Math.max(1, viewport.clientHeight - padding * 2);
             const fitWidth = availableWidth / Math.max(1, nativeWidth);
             const fitHeight = availableHeight / Math.max(1, nativeHeight);
-            const readableFloor = preserveReadable ? Math.max(0.95, Math.min(scale, 1.25)) : 0.9;
             const wholeOwnerFit = Math.min(fitWidth, fitHeight);
             // A short collection fills the viewing area. A large collection
             // keeps readable cards and begins at its real top/left for panning.
@@ -317,6 +337,7 @@ const CardTableCamera = (() => {
             cancelResizeAnchor();
             rememberView();
             const player = card.closest('.cardboard-player');
+            applyReading(player ? Number(player.dataset.playerIndex) : null, 0.85);
             focusPlayer = player ? Number(player.dataset.playerIndex) : null;
             overviewMode = false;
             inspectionPadding = true;
@@ -335,6 +356,7 @@ const CardTableCamera = (() => {
             const market = world.querySelector('#cardboardCenter');
             if (destroyed || !market) return;
             rememberView();
+            applyReading(null);
             overviewMode = false;
             clearFocus();
             inspectionPadding = true;
@@ -351,6 +373,7 @@ const CardTableCamera = (() => {
         }
         function fit() {
             if (destroyed) return;
+            applyReading(null);
             overviewMode = true;
             clearFocus();
             inspectionPadding = false;

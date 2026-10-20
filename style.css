@@ -10807,6 +10807,29 @@ html[data-design="cardboard"] .cardboard-color-count-blue { background: var(--ca
 html[data-design="cardboard"] .cardboard-color-count-green { background: var(--cardboard-green); }
 html[data-design="cardboard"] .cardboard-color-count-red { background: var(--cardboard-red); }
 html[data-design="cardboard"] .cardboard-color-count-purple { background: var(--cardboard-purple); }
+/* Screen-space owner labels remain upright while the table cards face seats.
+   Field places them only in free space; inspection keeps its original heading. */
+html[data-design="cardboard"] #cardboardOwnerLabels { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
+html[data-design="cardboard"] .cardboard-owner-label {
+    position: absolute;
+    display: block;
+    height: var(--owner-label-height, 22px);
+    box-sizing: border-box;
+    padding: var(--owner-label-padding, 2px) 5px;
+    overflow: hidden;
+    border: 1px solid var(--cardboard-seat-accent, #688768);
+    border-inline-start-width: 4px;
+    border-radius: 5px;
+    background: #fff9e8;
+    color: #254735;
+    font-size: var(--owner-label-font, 12px);
+    font-weight: 800;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+html[data-design="cardboard"] #cardboardSeats .cardboard-owner-labeled .cardboard-player-heading { opacity: 0; }
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-owner-label { border-color: #fff; background: #000; color: #fff; }
 html[data-design="cardboard"] .cardboard-player { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: 7px; border: 1px solid #769483; border-inline-start: 4px solid var(--cardboard-seat-accent, #769483); border-radius: 12px; background: #fffdf5e8; box-shadow: 0 3px 10px #284b3520; color: var(--cardboard-ink); }
 html[data-design="cardboard"] .cardboard-player-self { order: -3; }
 html[data-design="cardboard"] .cardboard-player-self { outline: 2px solid var(--cardboard-seat-accent, #1766bd); outline-offset: -2px; }
@@ -13759,6 +13782,17 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     line-height: 1.3;
 }
 
+/* Selection changes emphasis, never the dimensions of a physical seat. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-kind {
+    width: 25px;
+    height: 25px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-heading .player-kind-icon {
+    width: 18px;
+    height: 18px;
+}
+
+
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-hud {
     display: none;
 }
@@ -15359,3 +15393,23 @@ html[data-design="cardboard"] #cardboardBuildFlight.cardboard-card-green > :is(.
 html[data-design="cardboard"] #cardboardBuildFlight.cardboard-card-red > :is(.cardboard-dice, .cardboard-name) { background: #b94d58; }
 html[data-design="cardboard"] #cardboardBuildFlight.cardboard-card-purple > :is(.cardboard-dice, .cardboard-name) { background: #8653a4; }
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard #cardboardBuildFlight { border-color: #fff; background: #000; color: #fff; }
+
+/* Opposite-seat overview: spend the horizontal rim on completed landmarks. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player[data-table-landmark-rail="true"] {
+    display: grid;
+    grid-template-columns: var(--table-facility-width) var(--table-landmark-width);
+    grid-template-rows: auto auto auto;
+    column-gap: 16px;
+    align-content: start;
+    align-items: start;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-header { grid-column: 1 / -1; grid-row: 1; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-facility-heading { grid-column: 1; grid-row: 2; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-cards { grid-column: 1; grid-row: 3; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-landmark-heading { grid-column: 2; grid-row: 2; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > [data-table-landmark-rail="true"] > .cardboard-landmarks {
+    grid-column: 2;
+    grid-row: 3;
+    flex-wrap: nowrap;
+    align-self: start;
+}

@@ -157,142 +157,177 @@ async function cameraCommand(page, command) {
 }
 
 for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844,height:390},{width:1440,height:936}]) {
-    test(`共通カード卓で全員の施設と中央市場を見渡せる ${viewport.width}`, async ({page}, testInfo) => {
-        await prepare(page, viewport, 4);
-        await expectWholeTable(page,4);
-        await expectOwnedCards(page);
-        await expect.poll(() => page.locator('#cardboardMarket .compact-market-header h2').getAttribute('data-scroll-hint')).toBe('↓ 下に施設');
-        expect(await page.locator('.cardboard-roster-seat').evaluateAll(seats => seats.every(seat => {
-            const bounds = seat.getBoundingClientRect();
-            const progress = seat.querySelector('.cardboard-roster-progress b').getBoundingClientRect();
-            return progress.left >= bounds.left && progress.right <= bounds.right;
-        })), '固定HUDの目標進捗を切らない').toBe(true);
-        await expect(page.locator('#cardboardMarket .compact-market-price').first()).toContainText('建設');
-        await page.screenshot({path:testInfo.outputPath('card-table-overview.png')});
-        const before = await snapshot(page);
-        const camera = page.locator('#cardboardTableViewport');
-        const fittedScale = Number(await camera.getAttribute('data-table-scale'));
-        const seats = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(nodes => nodes.map(node => ({
-            index: Number(node.dataset.playerIndex), side: node.dataset.seatPosition, angle: Number(node.dataset.tableAngle),
-        })));
-        expect(seats.map(seat => seat.angle).sort((a, b) => a - b)).toEqual([0, 90, 180, 270]);
-        for (const side of ['top', 'left', 'right']) {
-            const owner = seats.find(seat => seat.side === side);
-            await page.locator(`#cardboardRoster [data-cardboard-player-index="${owner.index}"]`).click();
-            await expect(camera).toHaveAttribute('data-table-angle', String((360 - owner.angle) % 360));
-            await expect(camera).toHaveAttribute('data-table-focus-player', String(owner.index));
-            await expect(page.locator('#cardboardViewHint strong')).toContainText(`街${owner.index + 1}`);
-            await expect(page.locator('[data-cardboard-camera="back"]')).toBeEnabled();
-            const facing = await page.locator(`#cardboardSeats > [data-player-index="${owner.index}"]`).evaluate(node => {
-                const matrix = new DOMMatrix(getComputedStyle(node.parentElement).transform)
-                    .multiply(new DOMMatrix(getComputedStyle(node).transform));
-                return { a: matrix.a, b: matrix.b, c: matrix.c, d: matrix.d };
-            });
-            expect(facing.a).toBeGreaterThan(0);
-            expect(facing.d).toBeGreaterThan(0);
-            expect(Math.abs(facing.b) + Math.abs(facing.c)).toBeLessThan(0.00001);
-            if (side === 'left') await page.screenshot({ path: testInfo.outputPath('card-table-left-readable.png') });
-            await cameraCommand(page, 'back');
-            await expect(camera).toHaveAttribute('data-table-angle', '0');
-            await expect(page.locator('[data-cardboard-camera="back"]')).toBeDisabled();
-            await expect(page.locator('#cardboardViewHint strong')).toHaveText('カード卓');
-            await expect(camera).toHaveAttribute('data-table-scale', fittedScale.toFixed(3));
-            await expectWholeTable(page, 4);
+    test.describe(() => {
+        // PCサイズはPCの描画密度で検証する。モバイル3サイズは各projectの端末設定を保つ。
+        if (viewport.width === 1440) {
+            test.use({ deviceScaleFactor: 1, isMobile: false, hasTouch: false });
         }
-
-        await cameraCommand(page, 'readable');
-        await expect.poll(async()=>Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(fittedScale);
-        const readableScale = Number(await camera.getAttribute('data-table-scale'));
-        await cameraCommand(page, 'in');
-        await expect.poll(async()=>Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(readableScale);
-        // Keyboard pan exercises the native viewport, rather than changing its
-        // scroll coordinates through evaluate.
-        await camera.focus();
-        await camera.press('Home');
-        await cameraCommand(page, 'readable');
-        for (let step = 0; step < 5 && !await camera.evaluate(viewport => viewport.scrollHeight > viewport.clientHeight + 1); step++) {
-            await cameraCommand(page, 'in');
-        }
-        await camera.focus();
-        await camera.press('ArrowLeft');
-        const panBefore = await camera.evaluate(viewport=>viewport.scrollTop);
-        expect(panBefore).toBeGreaterThan(0);
-        await camera.press('ArrowUp');
-        await expect.poll(()=>camera.evaluate(viewport=>viewport.scrollTop)).toBeLessThan(panBefore);
-        await page.locator('.cardboard-roster-seat[data-cardboard-player-index="2"]').click();
-        await expect(page.locator('.cardboard-player-selected')).toHaveAttribute('data-player-index','2');
-        await page.locator('[data-cardboard-camera="market"]').click();
-        await page.locator('[data-cardboard-camera="overview"]').click();
-        await expectWholeTable(page,4);
-        expect(await snapshot(page)).toEqual(before);
-
-        await page.evaluate(()=>{
-            const game=GameRuntimeState.runtime.snapshot().game;
-            game.players.forEach((player,index)=>{
-                const names=innerWidth >= 1000 ? CARDS.slice(0,18).map(card=>card.name) : ['麦畑','パン屋','牧場','カフェ','森林','コンビニ'];
-                player.cards=Array.from({length:12+index*6},(_,n)=>createCardByName(names[n%names.length]));
-                Object.keys(player.landmarks).slice(0,index).forEach(name=>{player.landmarks[name]=true;});
-            });
-            render();
-        });
-        await expectWholeTable(page,4);
-        await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-mode','overview');
-        await page.locator('[data-cardboard-camera="overview"]').click();
-        await expectWholeTable(page,4);
-        await expectOwnedCards(page);
-        await page.screenshot({path:testInfo.outputPath('card-table-grown.png')});
-        const grown = await snapshot(page);
-        for (const theme of ['classic','sunset','plaza','cardboard']) {
-            await page.evaluate(theme=>{const select=document.getElementById('gameDesignThemeSelect'); select.value=theme; select.dispatchEvent(new Event('change',{bubbles:true}));},theme);
-            expect(await snapshot(page)).toEqual(grown);
-            const actions = page.locator('#gameScreen .game-action-panel');
-            await expect(actions).toHaveCount(1);
-            await expect(actions).toBeVisible();
-            if (theme !== 'cardboard') {
-                await expect(page.locator('#cardboardBoard')).toBeHidden();
-                expect(await actions.evaluate(panel => panel.closest('#cardboardBoard') === null)).toBe(true);
-            } else {
-                await expect(page.locator('#cardboardBoard')).toBeVisible();
-                await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
-                expect(await actions.evaluate(panel => panel.closest('#cardboardActionSlot') !== null)).toBe(true);
+        test(`共通カード卓で全員の施設と中央市場を見渡せる ${viewport.width}`, async ({page}, testInfo) => {
+            await prepare(page, viewport, 4);
+            await expectWholeTable(page,4);
+            await expectOwnedCards(page);
+            await expect.poll(() => page.locator('#cardboardMarket .compact-market-header h2').getAttribute('data-scroll-hint')).toBe('↓ 下に施設');
+            expect(await page.locator('.cardboard-roster-seat').evaluateAll(seats => seats.every(seat => {
+                const bounds = seat.getBoundingClientRect();
+                const progress = seat.querySelector('.cardboard-roster-progress b').getBoundingClientRect();
+                return progress.left >= bounds.left && progress.right <= bounds.right;
+            })), '固定HUDの目標進捗を切らない').toBe(true);
+            await expect(page.locator('#cardboardMarket .compact-market-price').first()).toContainText('建設');
+            await page.screenshot({path:testInfo.outputPath('card-table-overview.png')});
+            const before = await snapshot(page);
+            const camera = page.locator('#cardboardTableViewport');
+            const fittedScale = Number(await camera.getAttribute('data-table-scale'));
+            const seats = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(nodes => nodes.map(node => ({
+                index: Number(node.dataset.playerIndex), side: node.dataset.seatPosition, angle: Number(node.dataset.tableAngle),
+            })));
+            expect(seats.map(seat => seat.angle).sort((a, b) => a - b)).toEqual([0, 90, 180, 270]);
+            for (const side of ['top', 'left', 'right']) {
+                const owner = seats.find(seat => seat.side === side);
+                await page.locator(`#cardboardRoster [data-cardboard-player-index="${owner.index}"]`).click();
+                await expect(camera).toHaveAttribute('data-table-angle', String((360 - owner.angle) % 360));
+                await expect(camera).toHaveAttribute('data-table-focus-player', String(owner.index));
+                await expect(page.locator('#cardboardViewHint strong')).toContainText(`街${owner.index + 1}`);
+                await expect(page.locator('[data-cardboard-camera="back"]')).toBeEnabled();
+                const facing = await page.locator(`#cardboardSeats > [data-player-index="${owner.index}"]`).evaluate(node => {
+                    const matrix = new DOMMatrix(getComputedStyle(node.parentElement).transform)
+                        .multiply(new DOMMatrix(getComputedStyle(node).transform));
+                    return { a: matrix.a, b: matrix.b, c: matrix.c, d: matrix.d };
+                });
+                expect(facing.a).toBeGreaterThan(0);
+                expect(facing.d).toBeGreaterThan(0);
+                expect(Math.abs(facing.b) + Math.abs(facing.c)).toBeLessThan(0.00001);
+                if (side === 'left') await page.screenshot({ path: testInfo.outputPath('card-table-left-readable.png') });
+                await cameraCommand(page, 'back');
+                await expect(camera).toHaveAttribute('data-table-angle', '0');
+                await expect(page.locator('[data-cardboard-camera="back"]')).toBeDisabled();
+                await expect(page.locator('#cardboardViewHint strong')).toHaveText('カード卓');
+                await expect(camera).toHaveAttribute('data-table-scale', fittedScale.toFixed(3));
+                await expectWholeTable(page, 4);
             }
-        }
-        await expectWholeTable(page,4);
-        await expectOwnedCards(page);
 
-        // Explicit late presentation fixture, distinct from a natural match:
-        // eighteen facility types and five landmarks per owner, without a win.
-        await page.evaluate(() => {
-            const game = GameRuntimeState.runtime.snapshot().game;
-            game.players.forEach(player => {
-                player.cards = CARDS.slice(0, 18).map(card => createCardByName(card.name));
-                Object.keys(player.landmarks).forEach((name, index) => { player.landmarks[name] = index < 5; });
+            await cameraCommand(page, 'readable');
+            await expect.poll(async()=>Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(fittedScale);
+            const readableScale = Number(await camera.getAttribute('data-table-scale'));
+            await cameraCommand(page, 'in');
+            await expect.poll(async()=>Number(await camera.getAttribute('data-table-scale'))).toBeGreaterThan(readableScale);
+            // Keyboard pan exercises the native viewport, rather than changing its
+            // scroll coordinates through evaluate.
+            await camera.focus();
+            await camera.press('Home');
+            await cameraCommand(page, 'readable');
+            for (let step = 0; step < 5 && !await camera.evaluate(viewport => viewport.scrollHeight > viewport.clientHeight + 1); step++) {
+                await cameraCommand(page, 'in');
+            }
+            await camera.focus();
+            await camera.press('ArrowLeft');
+            const panBefore = await camera.evaluate(viewport=>viewport.scrollTop);
+            expect(panBefore).toBeGreaterThan(0);
+            await camera.press('ArrowUp');
+            await expect.poll(()=>camera.evaluate(viewport=>viewport.scrollTop)).toBeLessThan(panBefore);
+            await page.locator('.cardboard-roster-seat[data-cardboard-player-index="2"]').click();
+            await expect(page.locator('.cardboard-player-selected')).toHaveAttribute('data-player-index','2');
+            await page.locator('[data-cardboard-camera="market"]').click();
+            await page.locator('[data-cardboard-camera="overview"]').click();
+            await expectWholeTable(page,4);
+            expect(await snapshot(page)).toEqual(before);
+
+            await page.evaluate(()=>{
+                const game=GameRuntimeState.runtime.snapshot().game;
+                game.players.forEach((player,index)=>{
+                    const names=innerWidth >= 1000 ? CARDS.slice(0,18).map(card=>card.name) : ['麦畑','パン屋','牧場','カフェ','森林','コンビニ'];
+                    player.cards=Array.from({length:12+index*6},(_,n)=>createCardByName(names[n%names.length]));
+                    Object.keys(player.landmarks).slice(0,index).forEach(name=>{player.landmarks[name]=true;});
+                });
+                render();
             });
-            render();
+            await expectWholeTable(page,4);
+            await expect(page.locator('#cardboardTableViewport')).toHaveAttribute('data-table-mode','overview');
+            await page.locator('[data-cardboard-camera="overview"]').click();
+            await expectWholeTable(page,4);
+            await expectOwnedCards(page);
+            await page.screenshot({path:testInfo.outputPath('card-table-grown.png')});
+            const grown = await snapshot(page);
+            for (const theme of ['classic','sunset','plaza','cardboard']) {
+                await page.evaluate(theme=>{const select=document.getElementById('gameDesignThemeSelect'); select.value=theme; select.dispatchEvent(new Event('change',{bubbles:true}));},theme);
+                expect(await snapshot(page)).toEqual(grown);
+                const actions = page.locator('#gameScreen .game-action-panel');
+                await expect(actions).toHaveCount(1);
+                await expect(actions).toBeVisible();
+                if (theme !== 'cardboard') {
+                    await expect(page.locator('#cardboardBoard')).toBeHidden();
+                    expect(await actions.evaluate(panel => panel.closest('#cardboardBoard') === null)).toBe(true);
+                } else {
+                    await expect(page.locator('#cardboardBoard')).toBeVisible();
+                    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
+                    expect(await actions.evaluate(panel => panel.closest('#cardboardActionSlot') !== null)).toBe(true);
+                }
+            }
+            await expectWholeTable(page,4);
+            await expectOwnedCards(page);
+
+            // Explicit late presentation fixture, distinct from a natural match:
+            // eighteen facility types and five landmarks per owner, without a win.
+            await page.evaluate(() => {
+                const game = GameRuntimeState.runtime.snapshot().game;
+                game.players.forEach(player => {
+                    player.cards = CARDS.slice(0, 18).map(card => createCardByName(card.name));
+                    Object.keys(player.landmarks).forEach((name, index) => { player.landmarks[name] = index < 5; });
+                });
+                render();
+            });
+            await page.locator('[data-cardboard-camera="overview"]').click();
+            await expectWholeTable(page, 4);
+            await expectOwnedCards(page);
+            await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(20);
+            const late = await snapshot(page);
+            if (viewport.width >= 844) {
+                await expect(page.locator('#cardboardOwnerLabels .cardboard-owner-label')).toHaveCount(4);
+                await expect.poll(() => page.locator('#cardboardOwnerLabels .cardboard-owner-label').evaluateAll(labels => {
+                    const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')]
+                        .map(card => card.getBoundingClientRect());
+                    const viewport = document.getElementById('cardboardTableViewport');
+                    const clip = viewport.getBoundingClientRect();
+                    return labels.every(label => {
+                        const bounds = label.getBoundingClientRect();
+                        return bounds.left >= clip.left + viewport.clientLeft &&
+                            bounds.top >= clip.top + viewport.clientTop &&
+                            bounds.right <= clip.left + viewport.clientLeft + viewport.clientWidth &&
+                            bounds.bottom <= clip.top + viewport.clientTop + viewport.clientHeight && !obstacles.some(rect => Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
+                            Math.min(bounds.bottom, rect.bottom) > Math.max(bounds.top, rect.top));
+                    });
+                })).toBe(true);
+            }
+            await page.screenshot({ path: testInfo.outputPath('card-table-late.png') });
+            const lateGeometry = await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(owners =>
+                owners.map(owner => ({ width: owner.offsetWidth, height: owner.offsetHeight })));
+            await page.locator('[data-cardboard-camera="self"]').click();
+            await expect(camera).toHaveAttribute('data-table-mode', 'free');
+            await expect.poll(() => camera.evaluate(viewport => {
+                const clip = viewport.getBoundingClientRect();
+                const owner = viewport.querySelector('.cardboard-player[data-player-index="0"]');
+                return [...owner.querySelectorAll('.cardboard-card')].filter(card => {
+                    const bounds = card.getBoundingClientRect();
+                    return bounds.width >= 68 && bounds.left >= clip.left && bounds.right <= clip.right &&
+                        bounds.top >= clip.top && bounds.bottom <= clip.bottom &&
+                        ['.cardboard-name', '.cardboard-dice', '.cardboard-count'].every(selector =>
+                            card.querySelector(selector)?.textContent.trim());
+                }).length;
+            })).toBeGreaterThan(0);
+            await expect.poll(() => camera.evaluate(viewport => {
+                const clip = viewport.getBoundingClientRect();
+                const cards = [...viewport.querySelectorAll('.cardboard-player[data-player-index="0"] .cardboard-card')];
+                return cards.every(card => {
+                    const bounds = card.getBoundingClientRect();
+                    return bounds.left >= clip.left - 1 && bounds.right <= clip.right + 1;
+                });
+            }), { message: '終盤の正面閲覧は全列を横移動なしで読める幅に再配置する' }).toBe(true);
+            await page.screenshot({ path: testInfo.outputPath('card-table-late-readable.png') });
+            await page.locator('[data-cardboard-camera="back"]').click();
+            await expectWholeTable(page, 4);
+            expect(await page.locator('#cardboardSeats > .cardboard-player').evaluateAll(owners =>
+                owners.map(owner => ({ width: owner.offsetWidth, height: owner.offsetHeight })))).toEqual(lateGeometry);
+            expect(await snapshot(page)).toEqual(late);
         });
-        await page.locator('[data-cardboard-camera="overview"]').click();
-        await expectWholeTable(page, 4);
-        await expectOwnedCards(page);
-        await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(20);
-        const late = await snapshot(page);
-        await page.screenshot({ path: testInfo.outputPath('card-table-late.png') });
-        await page.locator('[data-cardboard-camera="self"]').click();
-        await expect(camera).toHaveAttribute('data-table-mode', 'free');
-        await expect.poll(() => camera.evaluate(viewport => {
-            const clip = viewport.getBoundingClientRect();
-            const owner = viewport.querySelector('.cardboard-player[data-player-index="0"]');
-            return [...owner.querySelectorAll('.cardboard-card')].filter(card => {
-                const bounds = card.getBoundingClientRect();
-                return bounds.width >= 68 && bounds.left >= clip.left && bounds.right <= clip.right &&
-                    bounds.top >= clip.top && bounds.bottom <= clip.bottom &&
-                    ['.cardboard-name', '.cardboard-dice', '.cardboard-count'].every(selector =>
-                        card.querySelector(selector)?.textContent.trim());
-            }).length;
-        })).toBeGreaterThan(0);
-        await page.screenshot({ path: testInfo.outputPath('card-table-late-readable.png') });
-        await page.locator('[data-cardboard-camera="back"]').click();
-        await expectWholeTable(page, 4);
-        expect(await snapshot(page)).toEqual(late);
     });
 }
 
@@ -319,6 +354,43 @@ for (const count of [2,3,5,10]) {
             await expectOwnedCards(page);
             expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards=>Math.min(...cards.map(card=>card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(44);
             await page.screenshot({path:testInfo.outputPath('card-table-2-grown.png')});
+            await page.evaluate(() => {
+                GameRuntimeState.runtime.snapshot().game.players.forEach(player => {
+                    Object.keys(player.landmarks).forEach((name, index) => { player.landmarks[name] = index < 5; });
+                });
+                render();
+            });
+            const railOwners = page.locator('#cardboardSeats > [data-table-landmark-rail="true"]');
+            await expect(railOwners).toHaveCount(2);
+            await expectWholeTable(page, 2);
+            await expectOwnedCards(page);
+            await expect(page.locator('#cardboardSeats .cardboard-landmark-built')).toHaveCount(10);
+            expect(await page.locator('#cardboardSeats .cardboard-card').evaluateAll(cards =>
+                Math.min(...cards.map(card => card.getBoundingClientRect().width)))).toBeGreaterThanOrEqual(40);
+            const footprint = () => page.locator('#cardboardSeats').evaluate(world => ({
+                width: world.offsetWidth, height: world.offsetHeight,
+            }));
+            const railFootprint = await footprint();
+            const table = page.locator('#cardboardTableViewport');
+            const railScale = await table.getAttribute('data-table-scale');
+            const railState = await snapshot(page);
+            await page.screenshot({path:testInfo.outputPath('card-table-2-landmarks-beside.png')});
+            await page.locator('[data-cardboard-camera="self"]').click();
+            await expect(railOwners).toHaveCount(0);
+            await page.locator('[data-cardboard-camera="back"]').click();
+            await expect(railOwners).toHaveCount(2);
+            await expect(table).toHaveAttribute('data-table-scale', railScale);
+            expect(await footprint()).toEqual(railFootprint);
+            await page.locator('[data-cardboard-camera="market"]').click();
+            await page.locator('#cardboardMarket .compact-market-filter-disclosure > summary').click();
+            await expect(page.locator('#cardboardMarketDialog')).toBeVisible();
+            await expect(railOwners).toHaveCount(2);
+            expect(await footprint()).toEqual(railFootprint);
+            await page.locator('#cardboardMarketClose').click();
+            await page.locator('[data-cardboard-camera="overview"]').click();
+            await expectWholeTable(page, 2);
+            expect(await snapshot(page)).toEqual(railState);
+
             await page.evaluate(() => {
                 GameSetupState.runtime.setCpuSpeed(3000);
                 document.getElementById('cpuSpeed').value = '3000';
