@@ -8,6 +8,7 @@ const diceChoiceFocusController = UiDiceChoice.createFocusController();
 const diceResultAnnouncementController = UiDiceDisplay.createAnnouncementController();
 const buildActionFocusController = UiBuildMenu.createActionFocusController();
 let cardDetailFocusOrigin = null;
+let cardDetailReturnsToMarket = false;
 const turnCoinBalanceCache = new WeakMap();
 const plazaReceiptRenderCache = new WeakMap();
 const plazaTurnEventsCache = new WeakMap();
@@ -2346,6 +2347,7 @@ function runUiModalCloseEffects(id, options, beforeSnapshot,
 
 function closeAccessibleModal(id, options = {}) {
     uiModalRuntime.close(id, options);
+    if (id === 'cardDetailModal') finishCardDetailClose();
     if (id !== 'hotseatHandoffOverlay' && visibleBlockingModalIds().length === 0) {
         const handoff = hotseatHandoffController.snapshot();
         if (handoff.visible) applyHotseatHandoff(handoff);
@@ -2548,7 +2550,13 @@ function showCardDetail(name, isLandmark = false) {
     title.textContent = content.title;
     body.innerHTML = content.html;
     const target = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cardDetailReturnsToMarket = typeof CardBoardField !== 'undefined' &&
+        typeof CardBoardField.suspendMarketForDetail === 'function' && CardBoardField.suspendMarketForDetail();
     const opened = openAccessibleModal('cardDetailModal');
+    if (!opened && cardDetailReturnsToMarket) {
+        CardBoardField.resumeMarketAfterDetail(target);
+        cardDetailReturnsToMarket = false;
+    }
     cardDetailFocusOrigin = opened && target
         ? { target, action: target.dataset?.action, cardName: target.dataset?.cardName,
             landmarkName: target.dataset?.landmarkName }
@@ -2558,9 +2566,23 @@ function showCardDetail(name, isLandmark = false) {
 
 function closeCardDetail() {
     closeAccessibleModal('cardDetailModal');
+}
+
+function finishCardDetailClose() {
     const origin = cardDetailFocusOrigin;
     cardDetailFocusOrigin = null;
     if (document.getElementById('cardDetailModal')?.style.display !== 'none') return;
+    const returnToMarket = cardDetailReturnsToMarket;
+    cardDetailReturnsToMarket = false;
+    if (returnToMarket && typeof CardBoardField !== 'undefined') {
+        // A human handoff queued while reading details takes priority over
+        // restoring a native top-layer market above the handoff overlay.
+        if (hotseatHandoffController.snapshot().visible || visibleBlockingModalIds().length > 0) {
+            CardBoardField.closeMarket(false);
+            return;
+        }
+        if (CardBoardField.resumeMarketAfterDetail(origin?.target)) return;
+    }
     if (!origin || origin.target?.isConnected) return;
     const replacement = Array.from(/** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('button[data-action]'))).find(element =>
         element.dataset.action === origin.action && element.dataset.cardName === origin.cardName &&
