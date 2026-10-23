@@ -72,3 +72,21 @@ runTest('optional UI skip is restricted to the original title project and annota
         else process.env.RUN_UI_PLAYTHROUGH = previous;
     }
 });
+
+runTest('browser workflows share the exact package-matched preinstalled runtime without apt installation', () => {
+    const fs = require('fs');
+    const { EXPECTED_VERSION, EXPECTED_IMAGE, checkContainer } = require('../scripts/check-playwright-container');
+    assert.strictEqual(require('../package.json').devDependencies['@playwright/test'], EXPECTED_VERSION);
+    for (const [file, count] of [['nightly-release-test.yml', 1], ['release-test.yml', 1], ['plaza-visual-review.yml', 2]]) {
+        const source = fs.readFileSync(require('path').join(__dirname, '../.github/workflows', file), 'utf8');
+        assert.strictEqual(source.split('image: ' + EXPECTED_IMAGE).length - 1, count, file);
+        assert.strictEqual(source.split('node scripts/check-playwright-container.js').length - 1, count, file);
+        assert.strictEqual(source.split('options: --ipc=host --init').length - 1, count, file);
+        assert.ok(!source.includes('playwright install --with-deps'), file);
+    }
+    const paths = ['/ms-playwright/chromium/browser', '/ms-playwright/webkit/pw_run.sh'];
+    assert.doesNotThrow(() => checkContainer(EXPECTED_VERSION, paths, () => true));
+    assert.throws(() => checkContainer('0.0.0', paths, () => true), /does not match/);
+    assert.throws(() => checkContainer(EXPECTED_VERSION, paths, () => false), /Missing preinstalled/);
+    assert.throws(() => checkContainer(EXPECTED_VERSION, ['/tmp/chromium', paths[1]], () => true), /Missing preinstalled/);
+});

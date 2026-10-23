@@ -112,6 +112,9 @@ jobs:
     mobile-webkit-e2e:
         needs: browser-inventory
         runs-on: ubuntu-latest
+        container:
+            image: mcr.microsoft.com/playwright:v1.61.1-noble@sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48
+            options: --ipc=host --init
         timeout-minutes: 35
         strategy:
             fail-fast: false
@@ -129,8 +132,8 @@ jobs:
               with:
                   name: nightly-browser-plan
                   path: artifacts
-            - name: Install WebKit and Chromium runtime
-              run: npx playwright install --with-deps webkit chromium
+            - name: Verify pinned preinstalled browser runtime
+              run: node scripts/check-playwright-container.js
             - name: Complete browser E2E shard
               # Keep the same projects, retries and test settings as Release.
               # Native sharding preserves file/serial groups; one worker per runner.

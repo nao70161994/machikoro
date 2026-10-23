@@ -3746,7 +3746,8 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     assert.ok(workflow.includes('name: Online sync and reconnect E2E gate'));
     assert.ok(workflow.includes('run: npm run test:online'));
     assert.ok(workflow.includes('mobile-webkit:'));
-    assert.ok(workflow.includes('npx playwright install --with-deps webkit chromium'));
+    assert.ok(workflow.includes('node scripts/check-playwright-container.js'));
+    assert.ok(!workflow.includes('npx playwright install --with-deps'));
     assert.ok(workflow.includes('run: ${{ matrix.command }}'));
     const matrixStart = workflow.indexOf('  mobile-webkit:');
     const matrixEnd = workflow.indexOf('    steps:', matrixStart);
