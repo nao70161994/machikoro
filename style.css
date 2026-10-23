@@ -12134,6 +12134,20 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
     html[data-design="cardboard"] #onlineWaitingPanel .room-game-table-art { width: min(128px, 60%); }
 }
 
+/* On short phones, the participant list takes priority over the decorative
+   table. Keep the illustration available below the seats without shrinking
+   names, readiness states or touch controls. */
+@media (max-width: 380px) and (max-height: 640px) {
+    html[data-design="cardboard"] #onlineWaitingPanel .room-table-layout {
+        display: flex;
+        flex-direction: column;
+    }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-table-layout .room-seat-list {
+        order: -1;
+        width: 100%;
+    }
+}
+
 /* Keep saved-game actions in the first view on short phones without shrinking
    their touch targets. The title and the longer setup content remain scrollable. */
 @media (max-width: 380px) and (max-height: 640px) {
