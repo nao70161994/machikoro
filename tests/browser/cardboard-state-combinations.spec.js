@@ -142,6 +142,7 @@ for (const scenario of ['SELECT_DICE', 'REROLL_CONFIRM', 'HARBOR_CHOICE']) {
         });
         await expect(page.locator('body')).toHaveClass(/pwa-banner-open/);
         await expect(page.locator('#gameLogContainer')).toBeVisible();
+        await page.locator('#cardboardMoreMenu > summary').click();
         await page.locator('#cardboardLogToggle').click();
         await expect(page.locator('#gameLogContainer')).toBeHidden();
         const action = {

@@ -200,6 +200,13 @@ const PlazaField = (() => {
         const plazaToggle = /** @type {HTMLElement | null} */ (node('plazaCameraTools').querySelector('[data-field-panel="comparison"]'));
         const design = document.documentElement.dataset.design;
         const preferred = design === 'cardboard' ? cardboardToggle : design === 'plaza' ? plazaToggle : null;
+        // A pointer outside the menu closes its details before the overlay
+        // restores focus. Reopen the original control's disclosure first.
+        if (preferred) {
+            for (let parent = preferred.parentElement; parent; parent = parent.parentElement) {
+                if (parent.tagName === 'DETAILS') (/** @type {HTMLDetailsElement} */ (parent)).open = true;
+            }
+        }
         const target = preferred?.getClientRects().length
             ? preferred : /** @type {HTMLElement | null} */ (node('gameDesignThemeSelect')?.closest('details')?.querySelector('summary'));
         target?.focus({ preventScroll: true });
@@ -678,7 +685,12 @@ const PlazaField = (() => {
         DesignTheme.arrangeGameSections(document, document.documentElement.dataset.design);
     }
     function render(players, primaryIndex, currentIndex, escapeHtml, enabledLandmarks = new Set(), sessionToken, phase, cardDefinitions, renderFacilityArt, enabledCards) {
-        sync(); if (!mounted) return;
+        sync();
+        // The ownership comparison is shared with the card table, whose
+        // landscape renderer intentionally never mounts the plaza world.
+        const comparisonSelf = primaryIndex >= 0 ? primaryIndex : currentIndex;
+        renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, comparisonSelf);
+        if (!mounted) return;
         const choosing = [GAME_PHASES.SELECT_DICE, GAME_PHASES.REROLL_CONFIRM,
             GAME_PHASES.HARBOR_CHOICE, GAME_PHASES.PENDING].includes(phase);
         if (phase !== marketPhase) node('buildMenu').classList.remove('plaza-market-exploring');
@@ -746,7 +758,6 @@ const PlazaField = (() => {
             }
         }
         hudCurrentIndex = currentIndex;
-        renderComparison(players, enabledLandmarks, escapeHtml, cardDefinitions, renderFacilityArt, enabledCards, currentIndex, selfIndex);
         renderPlayerInsights();
         layout();
     }

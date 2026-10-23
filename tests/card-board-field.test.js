@@ -38,3 +38,24 @@ runTest('新sessionでは前対局のscroll記録を破棄する', () => {
     memory.capture('missing', null);
     memory.restore('missing', null);
 });
+
+runTest('市場をnative dialogへ移した後も卓と市場の補助disclosureを排他に閉じる', () => {
+    const previous = global.document;
+    const filter = { open: true }, goals = { open: true }, guide = { open: true };
+    const roots = {
+        cardboardBoard: { querySelectorAll: () => [guide] },
+        cardboardMarketDialog: { querySelectorAll: () => [filter, goals] },
+    };
+    global.document = { getElementById: id => roots[id] || null };
+    try {
+        CardBoardField.closeDisclosures(goals);
+        assert.strictEqual(goals.open, true);
+        assert.strictEqual(filter.open, false);
+        assert.strictEqual(guide.open, false);
+        CardBoardField.closeDisclosures();
+        assert.strictEqual(goals.open, false);
+    } finally {
+        if (previous === undefined) delete global.document;
+        else global.document = previous;
+    }
+});

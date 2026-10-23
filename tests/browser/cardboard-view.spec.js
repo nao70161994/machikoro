@@ -8,10 +8,10 @@ async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     await page.evaluate(({ count, controlledCards }) => {
-        startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}` })));
+        startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
         const state = GameRuntimeState.runtime.snapshot();
-        // This fixture replaces the shuffled CPU session with controlled human
-        // seats. Give presentation controllers the new session identity too.
+        // Use actual human settings as well as a controlled human roster;
+        // clearing CPU objects alone leaves shuffled CPU presentation settings.
         GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: count }, () => null));
         cancelCpuSchedule('cardboard-view');
         state.game.currentPlayerIndex = 0;
@@ -281,8 +281,12 @@ test('1440pxの少数施設も多人数卓でカードとして識別できる',
     await expect(page.locator('#cardDetailModal')).toContainText('パン屋');
 });
 
-test('12の出目では建設候補を市場内の見える位置へ送る', async ({ page }) => {
-    await prepare(page, { width: 1440, height: 900 }, 2, false);
+for (const width of [390, 1440]) test(`12の出目では建設候補を市場内の見える位置へ送る ${width}px`, async ({ page }) => {
+    await prepare(page, { width, height: 900 }, 2, false);
+    const initiallyBelow = await page.locator('#cardboardMarket .compact-market-facilities').evaluate(shelf => {
+        const target = [...shelf.querySelectorAll('.compact-market-item')].find(item => item.textContent.includes('マグロ漁船'));
+        return target.getBoundingClientRect().bottom > shelf.getBoundingClientRect().bottom + 1;
+    });
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         game.players[0].cards = [];
@@ -292,16 +296,38 @@ test('12の出目では建設候補を市場内の見える位置へ送る', asy
     const market = page.locator('#cardboardMarket .compact-market-facilities');
     const match = market.locator('.compact-market-roll-match').first();
     await expect(match).toBeVisible();
-    const geometry = await match.evaluate(item => {
+    const readGeometry = () => match.evaluate(item => {
         const element = item.closest('.compact-market-facilities');
         const shelf = element.getBoundingClientRect();
         const card = item.getBoundingClientRect();
-        return { scrollTop: element.scrollTop, shelfTop: shelf.top, shelfBottom: shelf.bottom,
-            cardTop: card.top, cardBottom: card.bottom };
+        const clippedBy = [];
+        for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+            const style = getComputedStyle(ancestor);
+            const bounds = ancestor.getBoundingClientRect();
+            if (/auto|scroll|hidden|clip/.test(style.overflowX) &&
+                (card.left < bounds.left - 1 || card.right > bounds.right + 1)) clippedBy.push(`${ancestor.id || ancestor.className}:x`);
+            if (/auto|scroll|hidden|clip/.test(style.overflowY) &&
+                (card.top < bounds.top - 1 || card.bottom > bounds.bottom + 1)) clippedBy.push(`${ancestor.id || ancestor.className}:y`);
+        }
+        return { scrollTop: element.scrollTop, overflows: element.scrollHeight > element.clientHeight + 1,
+            shelfTop: shelf.top, shelfBottom: shelf.bottom, cardTop: card.top, cardBottom: card.bottom,
+            clippedBy, inViewport: card.left >= 0 && card.right <= innerWidth + 1 && card.top >= 0 && card.bottom <= innerHeight + 1 };
     });
-    expect(geometry.scrollTop).toBeGreaterThan(0);
+    // Market layout and its reveal run on successive animation frames.
+    await expect.poll(async () => {
+        const current = await readGeometry();
+        return current.cardTop >= current.shelfTop - 1 && current.cardBottom <= current.shelfBottom + 1 &&
+            (!initiallyBelow || current.scrollTop > 0);
+    }).toBe(true);
+    const geometry = await readGeometry();
+    // A desktop shelf can already show this card. Overflow alone (including
+    // a highlighted card's outline) does not mean the target needs movement.
+    if (initiallyBelow) expect(geometry.scrollTop).toBeGreaterThan(0);
+    else expect(geometry.scrollTop).toBeGreaterThanOrEqual(0);
     expect(geometry.cardTop).toBeGreaterThanOrEqual(geometry.shelfTop);
     expect(geometry.cardBottom).toBeLessThanOrEqual(geometry.shelfBottom);
+    expect(geometry.clippedBy).toEqual([]);
+    expect(geometry.inViewport).toBe(true);
 });
 
 test('4人戦の施設発動は全体盤面と補助カード詳細の同じ街で確認できる', async ({ page }, testInfo) => {
@@ -383,6 +409,7 @@ test('施設比較は多人数の所有状況を横断して読めてゲーム�
     const before = await state(page);
     const toggle = page.locator('#cardboardCompareToggle');
     const comparison = page.getByRole('dialog', { name: '全員の所有施設' });
+    await page.locator('#cardboardMoreMenu > summary').click();
     await toggle.click();
     await expect(comparison).toBeVisible();
     const overlayBounds = await comparison.boundingBox();
@@ -924,12 +951,22 @@ test('10人CPU対局で自分の席が未確定でも現在手番のカード盤
     await prepare(page, { width: 390, height: 844 }, 10);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.evaluate(() => {
+    const before = await state(page);
+    const owners = await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         CardBoardField.render({ game, selfIndex: -1, escapeHtml, enabledLandmarks: Player.landmarkNames(), session: 'cpu-boundary', display: LOG_TYPE_DISPLAY });
+        return game.players.map(player => [...new Set(player.cards.map(card => card.name))]);
     });
-    await expect(page.locator('#cardboardSeats .cardboard-player-self')).toHaveCount(1);
-    await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toHaveClass(/cardboard-player-self/);
+    // An observer has no personal seat. Keep the real actor selected without
+    // labelling that player as the observer themselves.
+    await expect(page.locator('#cardboardSeats .cardboard-player-self')).toHaveCount(0);
+    await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(10);
+    await expect(page.locator('#cardboardSeats [data-player-index="0"]')).toHaveClass(/cardboard-player-selected/);
+    for (let index = 0; index < owners.length; index++) {
+        const cards = await intrinsicCards(page, index);
+        expect(cards.map(card => card.name).sort()).toEqual(owners[index].sort());
+    }
+    expect(await state(page)).toEqual(before);
     expect(errors).toEqual([]);
 });
 

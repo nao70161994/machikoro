@@ -13877,17 +13877,19 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-card .cardboard-dice {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     position: static;
     width: 100%;
-    height: 20px;
-    min-height: 20px;
+    height: 24px;
+    min-height: 24px;
     padding: 0 5px;
     box-sizing: border-box;
     background: var(--table-card-accent);
     color: #fff;
     font-size: 18px;
-    line-height: 20px;
+    line-height: 24px;
     font-weight: 900;
     text-align: left;
 }
@@ -13900,7 +13902,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     display: block;
     position: absolute;
     left: 3px;
-    top: 21px;
+    top: 25px;
     z-index: 1;
     width: auto;
     min-height: 0;
@@ -14010,7 +14012,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.c
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats :is(.cardboard-dormant, .cardboard-activation) {
-    display: block;
+    display: flex;
+    align-items: center;
     position: absolute;
     left: 0;
     right: 0;
@@ -14018,6 +14021,8 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     height: 12px;
     margin: 0;
     padding: 0 3px;
+    box-sizing: border-box;
+    white-space: nowrap;
     color: #573b0e;
     background: #ffe6a0;
     font-size: 0;
@@ -14026,7 +14031,19 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats :is(.cardboard-dormant, .cardboard-activation)::before {
     content: attr(data-short-label);
+    display: block;
     font-size: 10px;
+    line-height: 12px;
+}
+
+/* Income and closed copies are separate facts, including on rotated seats. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-card:has(.cardboard-activation) .cardboard-dormant {
+    bottom: 12px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-card:has(.cardboard-activation):has(.cardboard-dormant) .cardboard-art {
+    flex-basis: 50px;
+    height: 50px;
+    min-height: 50px;
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-landmarks {
@@ -14282,8 +14299,8 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     position: relative;
     flex-direction: column;
     width: 100%;
-    height: 132px;
-    min-height: 132px;
+    height: 100%;
+    min-height: 0;
     padding: 0;
     box-sizing: border-box;
 }
@@ -14621,6 +14638,8 @@ html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-stat
     width: 100%;
     font-size: 12px;
     line-height: 18px;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-status .cardboard-phase-indicator {
@@ -15150,13 +15169,20 @@ html[data-design="cardboard"] #status .winner-screen > .cardboard-winner-collect
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-header { min-height: 28px; margin-bottom: 6px; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-facility-heading { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player:not(:has(.cardboard-landmark-built)) .cardboard-landmark-heading { display: none; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-dormant { top: 34px; bottom: auto; left: auto; border-radius: 3px; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-dice { flex: 0 0 20px; min-height: 20px; padding: 0 5px; font-size: 18px; line-height: 20px; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-kind { position: absolute; top: 21px; left: 3px; z-index: 1; font-size: 8px; line-height: 1.2; background: #fff9e9c9; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-art { flex: 0 0 54px; height: 54px; min-height: 54px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-dormant { top: auto; border-radius: 3px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-dice { flex: 0 0 24px; min-height: 24px; padding: 0 5px; font-size: 18px; line-height: 24px; white-space: nowrap; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-kind { position: absolute; top: 25px; left: 3px; z-index: 1; font-size: 8px; line-height: 1.2; background: #fff9e9c9; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-art { flex: 0 0 50px; height: 50px; min-height: 50px; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-name { min-height: 24px; padding: 1px 4px; font-size: 13px; line-height: 1.05; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-price { min-height: 14px; font-size: 10px; line-height: 14px; padding: 0 4px; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-stock { font-size: 9px; line-height: 12px; padding: 0 4px; }
+/* Matching status belongs on the art, leaving long dice ranges intact. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-roll-match .compact-market-dice::after {
+    position: absolute;
+    top: 26px;
+    right: 3px;
+    bottom: auto;
+}
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player { color: #fff; border-color: #fff; background: #000; }
 
 /* Victory keeps rematch beside a compact, fully scrollable card collection. */

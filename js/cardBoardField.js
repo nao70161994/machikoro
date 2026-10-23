@@ -82,10 +82,12 @@ const CardBoardField = (() => {
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
     const disclosureSelector = '#cardboardEventDetails, .compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
     function closeDisclosures(except = null) {
-        node('cardboardBoard')?.querySelectorAll(disclosureSelector).forEach(element => {
-            const details = /** @type {HTMLDetailsElement} */ (element);
-            if (details !== except) details.open = false;
-        });
+        for (const root of [node('cardboardBoard'), node('cardboardMarketDialog')]) {
+            root?.querySelectorAll(disclosureSelector).forEach(element => {
+                const details = /** @type {HTMLDetailsElement} */ (element);
+                if (details !== except) details.open = false;
+            });
+        }
     }
     /** @param {string} id @returns {HTMLElement | null} */
     function node(id) { return document.getElementById(id); }
@@ -417,14 +419,26 @@ const CardBoardField = (() => {
 
     function revealInScrollport(target, scrollport) {
         if (!target || !scrollport) return;
-        const targetBounds = target.getBoundingClientRect();
-        const scrollBounds = scrollport.getBoundingClientRect();
-        if (targetBounds.left < scrollBounds.left) scrollport.scrollLeft += targetBounds.left - scrollBounds.left;
-        // Align to the card's start: a small nearest-edge scroll can snap back
-        // to the preceding card and leave the purchased facility clipped.
-        else if (targetBounds.right > scrollBounds.right) scrollport.scrollLeft += targetBounds.left - scrollBounds.left;
-        if (targetBounds.top < scrollBounds.top) scrollport.scrollTop += targetBounds.top - scrollBounds.top;
-        else if (targetBounds.bottom > scrollBounds.bottom) scrollport.scrollTop += targetBounds.bottom - scrollBounds.bottom;
+        // Scroll offsets use layout pixels. Screen rectangles are scaled and
+        // rotated by the table camera, so their deltas cannot be added here.
+        const origin = element => {
+            let left = 0, top = 0;
+            for (let current = element; current; current = current.offsetParent) {
+                left += current.offsetLeft;
+                top += current.offsetTop;
+            }
+            return { left, top };
+        };
+        const start = origin(target), container = origin(scrollport);
+        const left = start.left - container.left - scrollport.clientLeft;
+        const top = start.top - container.top - scrollport.clientTop;
+        if (left < scrollport.scrollLeft || left + target.offsetWidth > scrollport.scrollLeft + scrollport.clientWidth) {
+            scrollport.scrollLeft = left;
+        }
+        if (top < scrollport.scrollTop) scrollport.scrollTop = top;
+        else if (top + target.offsetHeight > scrollport.scrollTop + scrollport.clientHeight) {
+            scrollport.scrollTop = top + target.offsetHeight - scrollport.clientHeight;
+        }
     }
 
     function clearBuildFlight() {
@@ -911,10 +925,16 @@ const CardBoardField = (() => {
         }
         if (revealDiceCandidateAfterMarketUpdate) {
             revealDiceCandidateAfterMarketUpdate = false;
-            const market = node('cardboardMarket');
-            const shelf = market?.querySelector('.compact-market-facilities');
-            const matchingCard = shelf?.querySelector('.compact-market-roll-match');
-            if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
+            const revealSession = session;
+            // Layout chooses the market's column count on the next frame.
+            // Reveal against that final shelf, not its previous dimensions.
+            globalThis.requestAnimationFrame(() => {
+                if (!mounted || session !== revealSession) return;
+                const shelf = node('cardboardMarket')?.querySelector('.compact-market-facilities');
+                const matchingCard = shelf?.querySelector('.compact-market-roll-match');
+                if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
+                updateMarketOverflow();
+            });
         }
         updateMarketOverflow();
     }
@@ -993,12 +1013,15 @@ const CardBoardField = (() => {
             event.preventDefault();
             shelf.scrollBy({ left: direction * step, behavior: /** @type {ScrollBehavior} */ (motion) });
         });
-        node('cardboardBoard').addEventListener('toggle', event => {
+        const onDisclosureToggle = event => {
             const details = /** @type {HTMLDetailsElement} */ (event.target);
             if (!details.matches?.(disclosureSelector) || !details.open) return;
             closeDisclosures(details);
             facts?.closeLog?.();
-        }, true);
+        };
+        for (const root of [node('cardboardBoard'), node('cardboardMarketDialog')]) {
+            root?.addEventListener('toggle', onDisclosureToggle, true);
+        }
         const clearHiddenFeedback = () => {
             if (document.hidden || node('gameScreen')?.style.display === 'none') {
                 closeTown(false);
