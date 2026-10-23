@@ -130,6 +130,14 @@ const CardBoardField = (() => {
         if (ownerLabelFrame !== null) return;
         ownerLabelFrame = window.requestAnimationFrame(() => {
             ownerLabelFrame = null;
+            // The action row changes height with phase, orientation and long
+            // names. Keep an open receipt above its actual hit targets.
+            const actions = node('cardboardActionSlot');
+            const board = node('gameScreen');
+            if (mounted && actions && board) {
+                const top = actions.getBoundingClientRect().top;
+                board.style.setProperty('--cardboard-receipt-bottom', `${Math.max(8, window.innerHeight - top + 8)}px`);
+            }
             updateOwnerLabels();
         });
     }

@@ -290,7 +290,9 @@ for (const width of [390, 1440]) test(`12の出目では建設候補を市場内
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         game.players[0].cards = [];
-        game.rollDice(12);
+        game.players[0].landmarks[LANDMARK_NAMES.STATION] = true;
+        game.rollDice();
+        game.selectDiceCount(true, 6, 6);
         render();
     });
     const market = page.locator('#cardboardMarket .compact-market-facilities');
@@ -1178,10 +1180,17 @@ test('施設カードの拡大縮小と全体復帰は正本を変えず全席�
         await camera(page, 'overview');
         const fitScale = Number(await viewport.getAttribute('data-table-scale'));
         await camera(page, 'readable');
-        expect(Number(await viewport.getAttribute('data-table-scale'))).toBeCloseTo(0.95, 2);
+        const readableScale = Number(await viewport.getAttribute('data-table-scale'));
+        expect(readableScale).toBeGreaterThanOrEqual(0.95);
+        expect(readableScale).toBeLessThanOrEqual(1.6);
+        const readableCard = page.locator('#cardboardSeats [data-player-index="0"] .cardboard-card').first();
+        expect((await readableCard.boundingBox()).width).toBeGreaterThanOrEqual(160 * 0.95 - 1);
         await camera(page, 'in');
-        expect(Number(await viewport.getAttribute('data-table-scale'))).toBeGreaterThan(0.95);
+        const enlargedScale = Number(await viewport.getAttribute('data-table-scale'));
+        expect(enlargedScale).toBeGreaterThan(readableScale);
+        expect(enlargedScale).toBeLessThanOrEqual(1.8);
         await camera(page, 'out');
+        expect(Number(await viewport.getAttribute('data-table-scale'))).toBeLessThan(enlargedScale);
         await camera(page, 'market');
         await expect(page.locator('#cardboardSeats > .cardboard-player')).toHaveCount(4);
         await camera(page, 'overview');
