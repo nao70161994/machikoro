@@ -160,6 +160,8 @@ const CardBoardField = (() => {
         layer.style.transform = `translate(${viewport.scrollLeft}px, ${viewport.scrollTop}px)`;
         const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
             .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+        const cardGroups = panels.map(panel => ({ panel, rects: Array.from(panel.querySelectorAll('.cardboard-card'))
+            .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
         const placed = [];
         const shallow = bounds.height < 340;
         const width = shallow || bounds.width < 500 ? 96 : 124;
@@ -197,13 +199,37 @@ const CardBoardField = (() => {
                     [region.left - width - gap, y], [region.right + gap, y],
                 );
             }
-            const position = candidates.find(([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
+            const ownCards = cardGroups.find(group => group.panel === panel)?.rects || [];
+            if (!ownCards.length) continue;
+            // Panel boxes include empty cells in ragged collections. Anchor to
+            // actual facility edges, so a label cannot float in that empty rim.
+            for (const card of ownCards) {
+                candidates.push([card.left, card.top - height - gap], [card.right - width, card.top - height - gap],
+                    [card.left, card.bottom + gap], [card.right - width, card.bottom + gap],
+                    [card.left - width - gap, card.top], [card.right + gap, card.top]);
+            }
+            const distance = (left, top, rect) => Math.hypot(
+                Math.max(rect.left - left - width, left - rect.right, 0),
+                Math.max(rect.top - top - height, top - rect.bottom, 0));
+            const nearest = (left, top, cards) => cards.length
+                ? Math.min(...cards.map(rect => distance(left, top, rect))) : Infinity;
+            const otherCards = cardGroups.filter(group => group.panel !== panel).flatMap(group => group.rects);
+            const centerX = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.left + rect.width / 2, 0) / ownCards.length : anchor.left;
+            const centerY = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.top + rect.height / 2, 0) / ownCards.length : anchor.top;
+            const available = candidates.filter(([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
                 top >= innerTop + gap && top + height <= innerBottom - gap &&
-                !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)));
+                !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)) &&
+                nearest(left, top, ownCards) <= nearest(left, top, otherCards) + 0.5);
+            const score = ([left, top]) => nearest(left, top, ownCards) +
+                Math.hypot(left + width / 2 - centerX, top + height / 2 - centerY) * 0.002;
+            const ranked = available.map(position => ({ position, score: score(position) }));
+            ranked.sort((a, b) => a.score - b.score);
+            const position = ranked[0]?.position;
             if (!position) continue;
             const [left, top] = position;
             const label = document.createElement('span');
             label.className = 'cardboard-owner-label';
+            label.dataset.playerIndex = String(index);
             label.textContent = `席${index + 1} · ${player.name}`;
             label.title = label.textContent;
             label.style.left = `${left - bounds.left - viewport.clientLeft}px`;

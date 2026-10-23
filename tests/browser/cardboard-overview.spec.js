@@ -289,7 +289,14 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                     const clip = viewport.getBoundingClientRect();
                     return labels.every(label => {
                         const bounds = label.getBoundingClientRect();
-                        return bounds.left >= clip.left + viewport.clientLeft &&
+                        const distance = rect => Math.hypot(Math.max(rect.left - bounds.right, bounds.left - rect.right, 0),
+                            Math.max(rect.top - bounds.bottom, bounds.top - rect.bottom, 0));
+                        const owners = [...document.querySelectorAll('#cardboardSeats > .cardboard-player')];
+                        const groupDistance = owner => Math.min(...[...owner.querySelectorAll('.cardboard-card')].map(card => distance(card.getBoundingClientRect())));
+                        const own = owners.find(owner => owner.dataset.playerIndex === label.dataset.playerIndex);
+                        const ownDistance = own ? groupDistance(own) : Infinity;
+                        const otherDistance = Math.min(...owners.filter(owner => owner !== own).map(groupDistance));
+                        return Number.isFinite(ownDistance) && ownDistance <= otherDistance + 0.5 && bounds.left >= clip.left + viewport.clientLeft &&
                             bounds.top >= clip.top + viewport.clientTop &&
                             bounds.right <= clip.left + viewport.clientLeft + viewport.clientWidth &&
                             bounds.bottom <= clip.top + viewport.clientTop + viewport.clientHeight && !obstacles.some(rect => Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
