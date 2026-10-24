@@ -484,7 +484,7 @@ for (const width of [320, 390, 1440]) {
 
 test('にぎわい広場の高コントラストは市場・所有カード・手番を識別できる', async ({ page }) => {
     await prepare(page, { width: 390, height: 844 });
-    await expect(page.getByRole('region', { name: '出目と発動結果' })).toHaveAttribute('aria-live', 'off');
+    await expect(page.getByRole('region', { name: '出目と発動結果', includeHidden: true })).toHaveAttribute('aria-live', 'off');
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         game.phase = GAME_PHASES.BUILD;
@@ -522,35 +522,56 @@ test('にぎわい広場の高コントラストは市場・所有カード・�
     await expect(page.locator('#cardboardRoster [aria-current="true"] .cardboard-roster-turn-badge')).toHaveText('手番');
 });
 
-test('専用市場との高速往復は正本とランドマーク操作のフォーカスを維持する', async ({ page }) => {
-    await prepare(page, { width: 1440, height: 936 });
-    await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); acceptHotseatHandoff(); });
-    const before = await state(page);
-    const result = await page.evaluate(() => {
-        const market = document.getElementById('buildMenu');
-        document.querySelector('#cardboardMarket .compact-market-goal-disclosure').open = true;
-        const landmark = document.querySelector('#cardboardMarket [data-action="buildLandmark"]');
-        landmark.focus();
-        const checks = [{ singleMarket: true, sameFocus: document.activeElement === landmark,
-            active: document.activeElement.outerHTML.slice(0, 300), initial: true }];
-        for (let index = 0; index < 20; index++) {
-            const select = document.getElementById('gameDesignThemeSelect');
-            select.value = index % 2 ? 'cardboard' : 'plaza';
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            checks.push({
-                singleMarket: document.querySelectorAll('#buildMenu').length === 1 && document.getElementById('buildMenu') === market,
-                sameFocus: document.activeElement?.dataset.action === 'buildLandmark' &&
-                    document.activeElement?.dataset.landmarkName === landmark.dataset.landmarkName,
-                active: document.activeElement.outerHTML.slice(0, 300),
-                connected: document.activeElement.isConnected,
-                disabled: document.activeElement.disabled,
+for (const roundTripBatch of [1, 2]) {
+    test(`専用市場との高速往復は正本とランドマーク操作のフォーカスを維持する (${roundTripBatch}/2)`, async ({ page }) => {
+        await prepare(page, { width: 1440, height: 936 });
+        await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); acceptHotseatHandoff(); });
+        const before = await state(page);
+        await page.evaluate(() => { window.sharedMarketBeforeRoundTrips = document.getElementById('buildMenu'); });
+        let landmarkName;
+        // A compact overview deliberately hides the landmark list. Exercise the
+        // real native market, then verify focus returns to its visible launcher.
+        // Theme detach closes disclosures, so a hidden landmark is not a valid
+        // focus target across that separate presentation transition.
+        for (let index = 0; index < 5; index++) {
+            await camera(page, 'market');
+            const launcher = page.locator('#cardboardMarket .compact-market-expand');
+            await launcher.click();
+            const dialog = page.locator('#cardboardMarketDialog');
+            await expect(dialog).toBeVisible();
+            await dialog.locator('.compact-market-goal-disclosure > summary').click();
+            const landmark = dialog.locator('[data-action="buildLandmark"]:enabled').first();
+            await expect(landmark).toBeVisible();
+            const currentName = await landmark.getAttribute('data-landmark-name');
+            if (index === 0) landmarkName = currentName;
+            expect(currentName).toBe(landmarkName);
+            await landmark.focus();
+            await expect(landmark).toBeFocused();
+            await page.locator('#cardboardMarketClose').click();
+            await expect(dialog).toBeHidden();
+            await expect(launcher).toBeVisible();
+            await expect(launcher).toBeFocused();
+            // Both batches together retain twenty view changes and the shared-node contract.
+            // Do not focus a closed goal disclosure after the mode has detached.
+            const transitions = await page.evaluate(() => {
+                const snapshots = [];
+                const select = document.getElementById('gameDesignThemeSelect');
+                for (const theme of ['plaza', 'cardboard']) {
+                    select.value = theme;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    if (document.querySelectorAll('#buildMenu').length !== 1 ||
+                        document.getElementById('buildMenu') !== window.sharedMarketBeforeRoundTrips) {
+                        throw new Error('view transition replaced or duplicated the shared market');
+                    }
+                    snapshots.push(GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+                }
+                return snapshots;
             });
+            for (const snapshot of transitions) expect(snapshot).toEqual(before);
         }
-        return checks;
+        expect(await state(page)).toEqual(before);
     });
-    expect(result.filter(check => !check.singleMarket || !check.sameFocus)).toEqual([]);
-    expect(await state(page)).toEqual(before);
-});
+}
 
 test('横持ちの建設操作は拡大市場を開き購入後は見える操作へフォーカスを戻す', async ({ page }) => {
     await prepare(page, { width: 844, height: 390 });
@@ -1134,41 +1155,42 @@ test('確定した大収益を縦横PCで読めて再描画では演出を増や
 });
 
 
-test('完成したランドマークの絵と目標を狭幅でも一緒に確認できる', async ({ page }, testInfo) => {
-    for (const width of [320, 390, 1440]) {
-        await prepare(page, { width, height: width === 1440 ? 936 : 844 }, 2, false);
-        await page.evaluate(() => {
-            const game = GameRuntimeState.runtime.snapshot().game;
-            game.phase = GAME_PHASES.BUILD;
-            for (const name of getEnabledLandmarkSelection()) {
-                game.currentPlayer().landmarks[name] = ![LANDMARK_NAMES.SHOPPING_MALL, LANDMARK_NAMES.AIRPORT].includes(name);
-            }
-            render();
-        });
-        await camera(page, 'market');
+for (const width of [320, 390, 1440]) test(`完成したランドマークの絵と目標を狭幅でも一緒に確認できる ${width}px`, async ({ page }, testInfo) => {
+    await prepare(page, { width, height: width === 1440 ? 936 : 844 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.phase = GAME_PHASES.BUILD;
+        for (const name of getEnabledLandmarkSelection()) {
+            game.currentPlayer().landmarks[name] = ![LANDMARK_NAMES.SHOPPING_MALL, LANDMARK_NAMES.AIRPORT].includes(name);
+        }
+        render();
+    });
+    await camera(page, 'market');
     await page.locator('#cardboardMarket .compact-market-expand').click();
-        await page.locator('#cardboardMarketDialog .compact-market-goal-disclosure').evaluate(element => { element.open = true; });
-        await page.locator('#cardboardMarketDialog [data-action="buildLandmark"][data-landmark-name="ショッピングモール"]').click();
-        await page.keyboard.press('Escape');
-        const receipt = page.locator('#cardboardDiceReceipt .cardboard-build-receipt[data-kind="landmark"]');
-        await expect(receipt).toBeVisible();
-        await expect(receipt.locator('.cardboard-build-receipt-name')).toHaveText('ショッピングモール');
-        await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('5/6');
-        await receipt.scrollIntoViewIfNeeded();
-        expect(await receipt.evaluate(element => {
-            const bounds = element.getBoundingClientRect();
-            const names = element.querySelector('.cardboard-build-receipt-name').getBoundingClientRect();
-            const progress = element.querySelector('.cardboard-build-receipt-progress').getBoundingClientRect();
-            return [names, progress].every(box => box.left >= bounds.left && box.right <= bounds.right &&
-                box.top >= bounds.top && box.bottom <= bounds.bottom) && bounds.left >= 0 && bounds.right <= innerWidth;
-        })).toBe(true);
-        await page.screenshot({ path: testInfo.outputPath(`landmark-progress-${width}.png`) });
-        await page.emulateMedia({ reducedMotion: 'reduce' });
-        await page.locator('#cardboardSeats .cardboard-card').first().click();
-        await expect(page.locator('#cardDetailModal')).toBeVisible();
-        await page.keyboard.press('Escape');
-        await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('5/6');
-    }
+    await page.locator('#cardboardMarketDialog .compact-market-goal-disclosure > summary').click();
+    await page.locator('#cardboardMarketDialog [data-action="buildLandmark"][data-landmark-name="ショッピングモール"]').click();
+    await page.keyboard.press('Escape');
+    // Market goals close other auxiliary panels. Reopen the confirmed
+    // result through its live control before inspecting its details.
+    await page.locator('#cardboardEventDetails > summary').click();
+    const receipt = page.locator('#cardboardDiceReceipt .cardboard-build-receipt[data-kind="landmark"]');
+    await expect(receipt).toBeVisible();
+    await expect(receipt.locator('.cardboard-build-receipt-name')).toHaveText('ショッピングモール');
+    await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('5/6');
+    await receipt.scrollIntoViewIfNeeded();
+    expect(await receipt.evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        const names = element.querySelector('.cardboard-build-receipt-name').getBoundingClientRect();
+        const progress = element.querySelector('.cardboard-build-receipt-progress').getBoundingClientRect();
+        return [names, progress].every(box => box.left >= bounds.left && box.right <= bounds.right &&
+            box.top >= bounds.top && box.bottom <= bounds.bottom) && bounds.left >= 0 && bounds.right <= innerWidth;
+    })).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath(`landmark-progress-${width}.png`) });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.locator('#cardboardSeats .cardboard-card').first().click();
+    await expect(page.locator('#cardDetailModal')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(receipt.locator('.cardboard-build-receipt-progress strong')).toHaveText('5/6');
 });
 
 
@@ -1373,6 +1395,26 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
             }
         });
         window.boardTagObserver.observe(document.getElementById('cardboardBoard'), { childList: true });
+        // Arm before rolling: Node assertions/screenshots must not consume
+        // the 600ms flight before its real-frame evidence is measured.
+        window.chainFlightSample = new Promise(resolve => {
+            const deadline = performance.now() + 6500;
+            const measure = () => {
+                const element = document.querySelector('.cardboard-transfer[data-facility="森林"][data-step="3"]');
+                const animation = element?.getAnimations()[0];
+                if (animation) {
+                    const elapsedMs = Number(animation.currentTime) - Number(animation.effect.getTiming().delay);
+                    if (elapsedMs >= 180) {
+                        resolve({ elapsedMs, opacity: Number(getComputedStyle(element).opacity),
+                            route: element.dataset.route, bounds: element.getBoundingClientRect().toJSON() });
+                        return;
+                    }
+                }
+                if (performance.now() >= deadline) resolve({ elapsedMs: Infinity, opacity: 0, error: 'fourth flight never reached a live frame' });
+                else requestAnimationFrame(measure);
+            };
+            requestAnimationFrame(measure);
+        });
         document.getElementById('btnRoll').click();
     });
     // Capture the live 600ms caption before inspecting later chain steps.
@@ -1389,22 +1431,7 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         return { step: Number(element.dataset.step), delay: timing.delay, duration: timing.duration };
     }))).toEqual([0, 1, 2, 3].map(step => ({ step, delay: 500 + step * 700, duration: 600 })));
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
-    // Observe a future flight before taking screenshots. Several
-    // preceding captures can consume an entire 600ms animation on WebKit.
-    const sample = await flights.nth(3).evaluate(element => new Promise(resolve => {
-        const measure = () => {
-            const animation = element.getAnimations()[0];
-            if (!animation) {
-                resolve({ elapsedMs: Infinity, opacity: 0, route: element.dataset.route, bounds: element.getBoundingClientRect().toJSON() });
-                return;
-            }
-            const elapsedMs = Number(animation.currentTime) - Number(animation.effect.getTiming().delay);
-            if (elapsedMs < 180) { requestAnimationFrame(measure); return; }
-            resolve({ elapsedMs, opacity: Number(getComputedStyle(element).opacity),
-                route: element.dataset.route, bounds: element.getBoundingClientRect().toJSON() });
-        };
-        measure();
-    }));
+    const sample = await page.evaluate(() => window.chainFlightSample);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-live-step-4.png') });
     expect(sample.elapsedMs).toBeLessThan(500);
     expect(sample.opacity).toBeGreaterThan(0.5);
@@ -1504,10 +1531,26 @@ test('中央市場の長い施設名をカード枠内で省略せず読める',
         return bounds.left < parent.left - 1 || bounds.right > parent.right + 1 || element.scrollWidth > element.clientWidth + 1;
     }).map(element => ({name:element.textContent, width:element.getBoundingClientRect().width, parent:element.closest('.compact-market-buy').getBoundingClientRect().width, scroll:element.scrollWidth, client:element.clientWidth})));
     expect(overflow).toEqual([]);
-    expect(await page.locator('#cardboardMarket .compact-market-facilities').evaluate(element => {
+    const visibleRows = await page.locator('#cardboardMarket .compact-market-facilities').evaluate(element => {
+        const center = element.closest('#cardboardCenter');
+        const columns = Number(center.dataset.marketColumns);
+        const rows = Number(center.style.getPropertyValue('--table-market-rows'));
         const bounds = element.getBoundingClientRect();
-        return [...element.querySelectorAll('.compact-market-item')].slice(0,16).every(card => card.getBoundingClientRect().bottom <= bounds.bottom + 1);
-    }), '先頭2段のカード下端まで市場内に収まる').toBe(true);
+        const cards = [...element.querySelectorAll('.compact-market-item')];
+        const visible = cards.slice(0, columns * rows);
+        return { columns, rows, count: visible.length,
+            expectedCount: Math.min(cards.length, columns * rows),
+            clipped: visible.filter(card => {
+                const box = card.getBoundingClientRect();
+                return box.left < bounds.left - 1 || box.right > bounds.right + 1 ||
+                    box.top < bounds.top - 1 || box.bottom > bounds.bottom + 1;
+            }).map(card => card.textContent) };
+    });
+    expect(visibleRows.columns).toBeGreaterThan(0);
+    expect(visibleRows.rows).toBeGreaterThan(0);
+    expect(visibleRows.count).toBe(visibleRows.expectedCount);
+    expect(visibleRows.count).toBeGreaterThan(0);
+    expect(visibleRows.clipped, '現在の列数・行数で先頭可視行のカード全体が市場内に収まる').toEqual([]);
     await camera(page, 'market');
     await page.screenshot({ path: testInfo.outputPath('market-full-facility-names.png') });
 });
@@ -1538,62 +1581,117 @@ test('実ロール後の新規建設通知は4画面で読めて正本を変更�
         });
         await camera(page, 'market');
         await page.locator('#cardboardMarket .compact-market-expand').click();
+        // Record both transient layers from before the purchase. Their actual
+        // frame evidence survives slow screenshots without extending lifetimes.
+        await page.evaluate(() => {
+            let closedAt = null;
+            const startedAt = performance.now();
+            window.constructionTrace = { frames: [], mutations: [], beforeClose: null };
+            window.constructionGuardSnapshot = () => {
+                const viewport = document.getElementById('cardboardTableViewport');
+                const card = document.querySelector('#cardboardSeats [data-player-index="0"] .cardboard-card[data-card-name="麦畑"]');
+                const marketCard = document.querySelector('#cardboardMarket [data-action="buildCard"][data-card-name="麦畑"]')?.closest('.compact-market-item');
+                const rect = element => element?.getBoundingClientRect().toJSON();
+                return { at:performance.now()-startedAt, hidden:document.hidden,
+                    reducedMotion:document.body.classList.contains('accessibility-reduced-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches,
+                    phase:GameRuntimeState.runtime.snapshot().game.phase,
+                    viewport:rect(viewport), target:rect(card), origin:rect(marketCard), shelf:rect(marketCard?.closest('.compact-market-facilities')),
+                    cameraAngle:viewport.dataset.tableAngle, ownerAngle:card?.closest('.cardboard-player')?.dataset.tableAngle,
+                    suppressors:[...document.querySelectorAll('#cardboardBoard #diceResult .rolling, #cardboardDiceConfirmation, #cardboardBoard .cardboard-preview-playing, #cardboardBoard .cardboard-activation-tag')].map(element => ({
+                        className:element.className, display:getComputedStyle(element).display, visibility:getComputedStyle(element).visibility,
+                        rects:element.getClientRects().length })),
+                    viewportSize:{width:innerWidth,height:innerHeight},
+                    screen:visualViewport ? {left:visualViewport.offsetLeft,top:visualViewport.offsetTop,width:visualViewport.width,height:visualViewport.height} : null };
+            };
+            window.constructionTraceObserver = new MutationObserver(records => {
+                for (const record of records) for (const [kind, nodes] of [['add',record.addedNodes],['remove',record.removedNodes]]) {
+                    for (const node of nodes) if (node.id === 'cardboardBuildFlight' || node.id === 'cardboardBuildNotice') {
+                        window.constructionTrace.mutations.push({ kind, id:node.id, at:performance.now()-startedAt,
+                            animations:node.getAnimations().map(animation => ({currentTime:animation.currentTime,playState:animation.playState,duration:animation.effect.getTiming().duration})) });
+                    }
+                }
+            });
+            window.constructionTraceObserver.observe(document.getElementById('cardboardBoard'), {childList:true});
+            document.getElementById('cardboardMarketClose').addEventListener('click', () => {
+                closedAt = performance.now();
+                window.constructionTrace.beforeClose = window.constructionGuardSnapshot();
+            }, { once: true, capture: true });
+            const captureNotice = element => {
+                const bounds = element.getBoundingClientRect();
+                const table = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+                const receiptClosed = !document.getElementById('cardboardEventDetails').open;
+                const svg = element.querySelector('svg');
+                const svgBounds = svg.getBoundingClientRect();
+                const artVisible = getComputedStyle(svg).display !== 'none' && svgBounds.width > 0 && svgBounds.height > 0;
+                const screen = visualViewport;
+                const pointerEvents = getComputedStyle(element).pointerEvents;
+                const previousPointerEvents = element.style.pointerEvents;
+                let paintedAboveExistingPanels;
+                try {
+                    // Include this non-interactive layer in hit testing without
+                    // changing its stacking position or clicking through a panel.
+                    element.style.pointerEvents = 'auto';
+                    paintedAboveExistingPanels = ['strong', '.cardboard-build-notice-art'].every(selector => {
+                        const target = element.querySelector(selector).getBoundingClientRect();
+                        const top = document.elementsFromPoint(target.left + target.width / 2, target.top + target.height / 2)[0];
+                        return top === element || element.contains(top);
+                    });
+                } finally {
+                    element.style.pointerEvents = previousPointerEvents;
+                }
+                return { elapsedAfterClose:performance.now() - closedAt, opacity:Number(getComputedStyle(element).opacity),
+                    text:element.textContent, art:element.querySelectorAll('svg').length,
+                    pointerEvents, paintedAboveExistingPanels, receiptClosed, artVisible,
+                    insideTable:bounds.left>=table.left && bounds.top>=table.top && bounds.right<=table.right && bounds.bottom<=table.bottom,
+                    insideScreen:bounds.left>=(screen?.offsetLeft || 0) && bounds.top>=(screen?.offsetTop || 0) &&
+                        bounds.right<=(screen?.offsetLeft || 0)+(screen?.width || innerWidth) &&
+                        bounds.bottom<=(screen?.offsetTop || 0)+(screen?.height || innerHeight) };
+            };
+            window.constructionMovingFrame = new Promise(resolve => {
+                const inspect = () => {
+                    const flight = document.getElementById('cardboardBuildFlight');
+                    const animation = flight?.getAnimations()[0];
+                    const elapsed = Number(animation?.currentTime);
+                    if (closedAt !== null && window.constructionTrace.frames.length < 120) {
+                        window.constructionTrace.frames.push({afterClose:performance.now()-closedAt, flight:!!flight,
+                            animations:flight?.getAnimations().map(value => ({currentTime:value.currentTime,playState:value.playState,duration:value.effect.getTiming().duration})) || []});
+                    }
+                    if (flight && animation && elapsed >= 60 && elapsed < 400) {
+                        const bounds = flight.getBoundingClientRect();
+                        resolve({ name:flight.dataset.cardName, elapsed, duration:animation.effect.getTiming().duration,
+                            pointerEvents:getComputedStyle(flight).pointerEvents,
+                            insideScreen:bounds.left>=0 && bounds.top>=0 && bounds.right<=innerWidth && bounds.bottom<=innerHeight });
+                    } else if (closedAt !== null && performance.now() - closedAt >= 1500) {
+                        resolve({ error: 'fresh purchase flight was not observed while moving' });
+                    } else requestAnimationFrame(inspect);
+                };
+                requestAnimationFrame(inspect);
+            });
+            window.constructionNoticeFrame = new Promise(resolve => {
+                const inspect = () => {
+                    const element = document.getElementById('cardboardBuildNotice');
+                    if (closedAt !== null && element && Number(getComputedStyle(element).opacity) >= 0.9) {
+                        resolve(captureNotice(element));
+                    } else if (closedAt !== null && performance.now() - closedAt >= 2500) {
+                        resolve({ error: 'fresh construction notice never reached a painted frame' });
+                    } else requestAnimationFrame(inspect);
+                };
+                requestAnimationFrame(inspect);
+            });
+        });
         await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
         const purchased = await state(page);
         await page.locator('#cardboardMarketClose').click();
-        const moving = await page.evaluate(() => new Promise((resolve, reject) => {
-            const deadline = performance.now() + 1500;
-            const inspect = () => {
-                const flight = document.getElementById('cardboardBuildFlight');
-                const animation = flight?.getAnimations()[0];
-                const elapsed = Number(animation?.currentTime);
-                if (flight && animation && elapsed >= 60 && elapsed < 400) {
-                    const bounds = flight.getBoundingClientRect();
-                    resolve({ name:flight.dataset.cardName, elapsed, duration:animation.effect.getTiming().duration,
-                        pointerEvents:getComputedStyle(flight).pointerEvents,
-                        insideScreen:bounds.left>=0 && bounds.top>=0 && bounds.right<=innerWidth && bounds.bottom<=innerHeight });
-                } else if (performance.now() >= deadline) reject(new Error('fresh purchase flight was not observed while moving'));
-                else requestAnimationFrame(inspect);
-            };
-            requestAnimationFrame(inspect);
-        }));
-        expect(moving.name).toBe('麦畑');
+        const moving = await page.evaluate(() => window.constructionMovingFrame);
+        const flightDiagnostic = await page.evaluate(() => ({ ...window.constructionTrace, current:window.constructionGuardSnapshot() }));
+        await fs.writeFile(testInfo.outputPath(`facility-flight-diagnostic-${viewport.width}.json`), JSON.stringify({moving,flightDiagnostic}, null, 2));
+        expect(moving.name, JSON.stringify({moving,flightDiagnostic})).toBe('麦畑');
         expect(moving.duration).toBe(480);
         expect(moving.pointerEvents).toBe('none');
         expect(moving.insideScreen).toBe(true);
         await page.screenshot({path:testInfo.outputPath(`facility-flight-${viewport.width}.png`)});
         await expect(page.locator('#cardboardBuildFlight')).toHaveCount(0);
-        await page.locator('#cardboardBuildNotice').waitFor({state:'visible'});
-        const notice = await page.locator('#cardboardBuildNotice').evaluate(element => {
-            const bounds = element.getBoundingClientRect();
-            const table = document.getElementById('cardboardTableViewport').getBoundingClientRect();
-            const receiptClosed = !document.getElementById('cardboardEventDetails').open;
-            const svg = element.querySelector('svg');
-            const svgBounds = svg.getBoundingClientRect();
-            const artVisible = getComputedStyle(svg).display !== 'none' && svgBounds.width > 0 && svgBounds.height > 0;
-            const screen = visualViewport;
-            const pointerEvents = getComputedStyle(element).pointerEvents;
-            const previousPointerEvents = element.style.pointerEvents;
-            let paintedAboveExistingPanels;
-            try {
-                // Include this non-interactive layer in hit testing without
-                // changing its stacking position or clicking through a panel.
-                element.style.pointerEvents = 'auto';
-                paintedAboveExistingPanels = ['strong', '.cardboard-build-notice-art'].every(selector => {
-                    const target = element.querySelector(selector).getBoundingClientRect();
-                    const top = document.elementsFromPoint(target.left + target.width / 2, target.top + target.height / 2)[0];
-                    return top === element || element.contains(top);
-                });
-            } finally {
-                element.style.pointerEvents = previousPointerEvents;
-            }
-            return { text:element.textContent, art:element.querySelectorAll('svg').length,
-                pointerEvents, paintedAboveExistingPanels, receiptClosed, artVisible,
-                insideTable:bounds.left>=table.left && bounds.top>=table.top && bounds.right<=table.right && bounds.bottom<=table.bottom,
-                insideScreen:bounds.left>=(screen?.offsetLeft || 0) && bounds.top>=(screen?.offsetTop || 0) &&
-                    bounds.right<=(screen?.offsetLeft || 0)+(screen?.width || innerWidth) &&
-                    bounds.bottom<=(screen?.offsetTop || 0)+(screen?.height || innerHeight) };
-        });
+        const notice = await page.evaluate(() => window.constructionNoticeFrame);
         await page.screenshot({path:testInfo.outputPath(`facility-construction-${viewport.width}.png`)});
         expect(notice.text).toContain('街1が建設');
         expect(notice.text).toContain('麦畑');
@@ -1605,7 +1703,9 @@ test('実ロール後の新規建設通知は4画面で読めて正本を変更�
         expect(notice.receiptClosed).toBe(true);
         expect(notice.insideTable).toBe(true);
         expect(notice.insideScreen).toBe(true);
+        await fs.writeFile(testInfo.outputPath(`facility-construction-frame-${viewport.width}.json`), JSON.stringify({moving, notice}, null, 2));
         expect(await state(page)).toEqual(purchased);
+        await page.evaluate(() => window.constructionTraceObserver.disconnect());
         await page.locator('.cardboard-activation-tag[hidden]').evaluateAll(elements => elements.forEach(element => element.remove()));
     }
 });

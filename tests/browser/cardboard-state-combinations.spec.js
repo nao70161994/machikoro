@@ -10,7 +10,7 @@ async function prepare(page, scenario) {
     await page.goto('/');
     await page.evaluate(scenario => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
-            type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}`,
+            type: 'human', name: `街${index + 1}`,
         })));
         const runtime = GameRuntimeState.runtime;
         const state = runtime.snapshot();

@@ -10,10 +10,9 @@ async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     await page.evaluate(({ count, controlledCards }) => {
-        startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}` })));
+        startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
         const state = GameRuntimeState.runtime.snapshot();
-        // This fixture replaces the shuffled CPU session with controlled human
-        // seats. Give presentation controllers the new session identity too.
+        // Keep both settings and runtime roster consistent with controlled human seats.
         GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: count }, () => null));
         cancelCpuSchedule('cardboard-view');
         state.game.currentPlayerIndex = 0;

@@ -9,7 +9,7 @@ async function prepare(page, viewport, count = 4) {
     await page.goto('/');
     await page.evaluate(count => {
         startGameNow(count, Array.from({ length: count }, (_, index) => ({
-            type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}`,
+            type: 'human', name: `街${index + 1}`,
         })));
         const state = GameRuntimeState.runtime.snapshot();
         state.cpuPlayers.fill(null);
