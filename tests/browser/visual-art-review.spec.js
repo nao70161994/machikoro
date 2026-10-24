@@ -459,10 +459,10 @@ test('夕暮れの建設と建設後のターン終了は重複確認なしで�
         game.builtThisTurn = false;
         game.currentPlayer().coins = 10;
         render();
-        return { humanIndex, coins: game.currentPlayer().coins, turnCount: game.turnCount };
+        return { humanIndex, name: game.currentPlayer().name, coins: game.currentPlayer().coins, turnCount: game.turnCount };
     });
     expect(starting.humanIndex).toBeGreaterThanOrEqual(0);
-    await expect(page.locator('#status')).toHaveText('あなたのターン');
+    await expect(page.locator('#status')).toHaveText(`${starting.name}のターン · ${starting.coins}コイン`);
 
     const town = page.locator(`#playerBox${starting.humanIndex} .sunset-town`);
     await expect(town.locator('.town-street')).toHaveAttribute('data-town-stage', 'quiet');
@@ -717,13 +717,15 @@ test('CPUの手番でも自分の街を先頭に見せ、極小画面でも街�
             const bounds = element.getBoundingClientRect();
             const street = element.closest('.town-street').getBoundingClientRect();
             return { width: bounds.width, height: bounds.height, streetWidth: street.width,
+                facilities: element.closest('.town-street').querySelectorAll('[data-town-slot-facility]').length,
                 inside: bounds.left >= street.left && bounds.right <= street.right &&
                     bounds.top >= street.top && bounds.bottom <= street.bottom };
         });
-        // District scenes keep four facility lots across the street rather
-        // than stretching the old collection grid's fixed-size tiles.
+        // Two founding facilities use the district renderer's two-lot row;
+        // the 23% size belongs to a full four-lot row.
+        expect(dimensions.facilities).toBe(2);
         expect(dimensions.width).toBeGreaterThanOrEqual(50);
-        expect(Math.abs(dimensions.width - dimensions.streetWidth * 0.23)).toBeLessThan(1);
+        expect(Math.abs(dimensions.width - dimensions.streetWidth * 0.38)).toBeLessThan(1);
         expect(Math.abs(dimensions.height * 2 - dimensions.width)).toBeLessThan(1);
         expect(dimensions.inside).toBe(true);
         const pageWidth = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -1339,8 +1341,18 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
     await page.locator('.setup-quick-play').click();
     await expect(page.locator('#gameScreen')).toBeVisible();
 
-    const town = page.locator('.player-box.active .sunset-town');
-    const firstBuilding = town.locator('.town-street > .town-building').first();
+    const selfIndex = await page.evaluate(() => {
+        cancelCpuSchedule('desktop-town-art-review');
+        window.scheduleCPU = () => false;
+        const state = GameRuntimeState.runtime.snapshot();
+        const index = state.cpuPlayers.findIndex(cpu => !cpu);
+        state.game.currentPlayerIndex = index;
+        render();
+        return index;
+    });
+    expect(selfIndex).toBeGreaterThanOrEqual(0);
+    const town = page.locator(`#playerBox${selfIndex} .sunset-town`);
+    const firstBuilding = town.locator('.town-street > [data-town-slot-facility]').first();
     await expect(firstBuilding).toBeVisible();
     const selfTownScene = await page.locator('#players .player-box-self .sunset-town').evaluate(element => {
         const street = element.querySelector('.town-street');
@@ -1360,11 +1372,13 @@ test('デスクトップでは街の建物アートを広く見せる', async ({
         const art = element.querySelector('.sunset-facility-art').getBoundingClientRect();
         const street = element.closest('.town-street').getBoundingClientRect();
         return { width: card.width, artWidth: art.width, artHeight: art.height, streetWidth: street.width,
+            facilities: element.closest('.town-street').querySelectorAll('[data-town-slot-facility]').length,
             inside: art.left >= street.left && art.right <= street.right &&
                 art.top >= street.top && art.bottom <= street.bottom };
     });
+    expect(bounds.facilities).toBe(2);
     expect(bounds.width).toBeGreaterThanOrEqual(60);
-    expect(Math.abs(bounds.width - bounds.streetWidth * 0.23)).toBeLessThan(1);
+    expect(Math.abs(bounds.width - bounds.streetWidth * 0.38)).toBeLessThan(1);
     expect(Math.abs(bounds.artWidth - bounds.width)).toBeLessThan(1);
     expect(Math.abs(bounds.artHeight * 2 - bounds.width)).toBeLessThan(1);
     expect(bounds.inside).toBe(true);
@@ -2499,7 +2513,7 @@ test('広場をタイトルで選び直しても正の倍率で開始し他テ�
 });
 
 
-test('広場は場外でマウスを離した後にパンを続けず、フォーカスしたカードを表示する', async ({ page }) => {
+test('広場は場外でマウスを離した後にパンを続けず、フォーカスしたカードを表示する', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1440, height: 844 });
     await prepareSunset(page);
     await selectDesignTheme(page, 'plaza');
@@ -2513,7 +2527,7 @@ test('広場は場外でマウスを離した後にパンを続けず、フォ�
         state.game.phase = GAME_PHASES.BUILD;
         state.game.currentPlayer().coins = 30;
         render();
-        PlazaField.focusTarget('self');
+        PlazaField.focusTarget('all');
     });
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const field = await page.locator('#plazaViewport').boundingBox();
@@ -2526,15 +2540,48 @@ test('広場は場外でマウスを離した後にパンを続けず、フォ�
     await page.mouse.move(x - 20, field.y + 82);
     expect(await page.locator('#plazaWorld').evaluate(element => element.style.transform)).toBe(before);
     const card = page.locator('#buildMenu .card-btn').first();
-    await card.focus();
+    await expect(card).toBeVisible();
     const focusedCardFits = () => card.evaluate(element => {
         const cardRect = element.getBoundingClientRect();
         const fieldRect = document.getElementById('plazaViewport').getBoundingClientRect();
-        return document.activeElement === element && cardRect.top >= fieldRect.top - 1 &&
-            cardRect.bottom <= fieldRect.bottom + 1 && cardRect.left >= fieldRect.left - 1 &&
-            cardRect.right <= fieldRect.right + 1;
+        const viewport = document.getElementById('plazaViewport');
+        return { active: document.activeElement === element,
+            fits: cardRect.top >= fieldRect.top - 1 && cardRect.bottom <= fieldRect.bottom + 1 &&
+                cardRect.left >= fieldRect.left - 1 && cardRect.right <= fieldRect.right + 1,
+            card: cardRect.toJSON(), field: fieldRect.toJSON(),
+            scrollLeft: viewport.scrollLeft, scrollTop: viewport.scrollTop,
+            marketScrollTop: document.getElementById('buildMenu').scrollTop,
+            world: document.getElementById('plazaWorld').getBoundingClientRect().toJSON(),
+            market: document.getElementById('buildMenu').getBoundingClientRect().toJSON(),
+            transform: document.getElementById('plazaWorld').style.transform };
     });
-    await expect.poll(focusedCardFits).toBe(true);
+    // Market cards are intentionally hidden in town-only mode. Start from
+    // the visible overview and use real zoom controls to create an off-screen
+    // keyboard target instead of attempting to focus visibility:hidden content.
+    await page.locator('#plazaCameraTools .plaza-camera-menu > summary').click();
+    for (let step = 0; step < 12 && (await focusedCardFits()).fits; step++) {
+        await page.locator('#plazaCameraTools [data-field-zoom="in"]').click();
+    }
+    await page.locator('#plazaCameraTools .plaza-camera-menu > summary').click();
+    if ((await focusedCardFits()).fits) {
+        // Zoom can keep a central market card visible. Pan the enlarged world
+        // through the viewport's background to move that target off screen.
+        const viewport = await page.locator('#plazaViewport').boundingBox();
+        await page.mouse.move(viewport.x + 2, viewport.y + 2);
+        await page.mouse.down();
+        await page.mouse.move(viewport.x + viewport.width - 4, viewport.y + viewport.height - 4, { steps: 8 });
+        await page.mouse.up();
+    }
+    await expect.poll(async () => (await focusedCardFits()).fits).toBe(false);
+    await card.focus();
+    try {
+        await expect.poll(focusedCardFits).toMatchObject({ active: true, fits: true });
+    } catch (error) {
+        await testInfo.attach('plaza-focused-card-geometry', {
+            body: JSON.stringify(await focusedCardFits(), null, 2), contentType: 'application/json',
+        });
+        throw error;
+    }
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect.poll(focusedCardFits).toBe(true);
+    await expect.poll(focusedCardFits).toMatchObject({ active: true, fits: true });
 });

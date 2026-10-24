@@ -358,6 +358,10 @@ const PlazaField = (() => {
         const viewport = node('plazaViewport');
         if (!mounted || pointers.size || !target || !node('plazaWorld').contains(target) ||
                 !viewport.clientWidth || !viewport.clientHeight) return;
+        // Native focus may scroll this transformed viewport. Paint always
+        // resets that scroll, so measure in the same camera-only coordinates.
+        viewport.scrollLeft = 0;
+        viewport.scrollTop = 0;
         let rect = target.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
         const bounds = viewport.getBoundingClientRect();
@@ -444,7 +448,15 @@ const PlazaField = (() => {
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) clearCameraTransition();
         });
-        viewport.addEventListener('focusin', event => revealFocus(/** @type {Element} */ (event.target)));
+        viewport.addEventListener('focusin', event => {
+            const target = /** @type {Element} */ (event.target);
+            revealFocus(target);
+            // Reconcile focus scrolling that the browser performs after the
+            // event, without restoring a target the user has already left.
+            requestAnimationFrame(() => {
+                if (document.activeElement === target) revealFocus(target);
+            });
+        });
         viewport.addEventListener('click', event => { if (dragged) { event.preventDefault(); event.stopPropagation(); dragged = false; } }, true);
         viewport.addEventListener('wheel', event => {
             if ((/** @type {Element} */ (event.target)).closest('#buildMenu')) return;
