@@ -144,3 +144,15 @@ P1/P2評価は320/390縦、844×390横、1440 PC、2〜4人中心・5〜10人適
 - 可視の市場を実zoom/panした後、focusされたカードのbottom864に対し盤面bottom740で124pxはみ出す状態を記録（active:true）。`paint()`はnative scrollを0へ戻すが、`revealFocus()`はその前のスクロールされた矩形を読んでいたため、計測と描画で座標系が異なっていた。
 - `revealFocus()`でもscrollを0へ戻してから計測し、focusイベント後のUAスクロールを同じactiveElementの場合だけ1RAF後に再照合する。ドラッグ中・モード離脱の既存guardは維持する。
 - 実panで画面外になった事前条件、場外release後のパン停止、focus成立、カードの四辺完全包含、390pxへ変更後の包含をすべて維持して再検証成功（`artifacts/nightly-quality-plaza-focus-fixed/`）。単に非表示targetへの旧focusを直しただけで済ませず、追加再現した製品不具合も修正した。
+
+### 7bc15c70のCIと、残り5件の根治
+
+- [通常Release40071307566](https://github.com/nao70161994/machikoro/actions/runs/40071307566)は全job成功（unit/release/CPU smoke、title等、card table、seeded2人/4人plaza/4人cardboard）。
+- [Nightly40071328648](https://github.com/nao70161994/machikoro/actions/runs/40071328648)は全件終了・coverage成功、失敗は25→5件。simulation/online soak/release/pwa/online部分は成功。夜間全体は未達のまま。
+- 建設フライト：WebKitでもclose後84/724/1533msという長いframe間隔を再現。focusCardは同期配置/paint済みなので、以後の余分な1RAFを除去。session/entry/visibility/RM/angle/clip/途中移動取消のguardと、1500ms観測期限・60〜400ms実フレーム・480ms寿命をすべて維持したまま、Chromiumの4幅が成功。独立静的レビューも重大リスクなし。
+- plaza縦スクロール2幅：pointer由来focusinが予約したRAFがpointerup後にカードへ再追従し、ドラッグ量を戻していた。pointer中はfocus RAFを予約せず、新pointerdownで前の予約世代を無効化する。keyboardの即時/次RAF追従は維持。390/1440のscroll量/transform/ログtapすべて成功（ローカルcontextのhasTouchを有効にして実tap）。
+- HUD52で短横盤面が214pxへ縮んだ原因は、共通portrait selectorの特異性がlandscape操作帯の48px/padding0に勝って56pxになっていたこと。selectorを揃えて48pxを有効化し、既存HUD52/タップ44/盤面>220pxを維持。844終盤と10人市場のカード名/建設費の包含も成功。高さexpectを緩めていない。
+- 10人HUDのexact44旧期待は、既存52契約へのexact52として更新。市場の診断JSONを追加し、包含assertは維持。
+- 独立実対局レビューで発見した縦中盤のランドマーク切れは、CPU通知でviewportが縮むROを80ms debounceしていたため、最初の描画に旧fitが残る経路があった。overviewだけRO配信中にfitし、free/readableの既存anchor/debounceは維持する。
+- 新たな通知レイアウト回帰は、製品のactivity表示＋親grid表示をfixtureで再現し、最初の描画で全所有施設・建設済5ランドマーク・全player・市場の四辺包含/正本不変を検査して成功。CPU行動そのもののテストとは区別する。復帰後も全体包含を確認した。初期test fixtureの親表示漏れ・非表示の未建設まで対象にした誤りを解消しており、製品不具合を許容する変更ではない。
+- 4件＋入力2件＋通知1件の最終関連ケースは成功。通常unit全件も再実行成功。変更後の固定WebKitでNightlyを再確認する。CSS操作帯8pxの意図変更があるplaza844基準は、候補再撮影・目視を経て更新する。
