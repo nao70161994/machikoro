@@ -1412,18 +1412,25 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
         // the 600ms flight before its real-frame evidence is measured.
         window.chainFlightSample = new Promise(resolve => {
             const deadline = performance.now() + 6500;
-            const measure = () => {
+            const frames = [];
+            const measure = rafTimestamp => {
                 const element = document.querySelector('.cardboard-transfer[data-facility="森林"][data-step="3"]');
                 const animation = element?.getAnimations()[0];
                 if (animation) {
                     const elapsedMs = Number(animation.currentTime) - Number(animation.effect.getTiming().delay);
+                    const timing = animation.effect.getComputedTiming();
+                    const frame = { rafTimestamp, measuredAt:performance.now(), elapsedMs,
+                        currentTime:animation.currentTime, startTime:animation.startTime, playState:animation.playState,
+                        progress:timing.progress, localTime:timing.localTime, delay:timing.delay, duration:timing.duration,
+                        opacity:Number(getComputedStyle(element).opacity) };
+                    if (frames.length < 120) frames.push(frame);
                     if (elapsedMs >= 180) {
-                        resolve({ elapsedMs, opacity: Number(getComputedStyle(element).opacity),
+                        resolve({ ...frame, frames,
                             route: element.dataset.route, bounds: element.getBoundingClientRect().toJSON() });
                         return;
                     }
                 }
-                if (performance.now() >= deadline) resolve({ elapsedMs: Infinity, opacity: 0, error: 'fourth flight never reached a live frame' });
+                if (performance.now() >= deadline) resolve({ elapsedMs: Infinity, opacity: 0, frames, error: 'fourth flight never reached a live frame' });
                 else requestAnimationFrame(measure);
             };
             requestAnimationFrame(measure);
@@ -1446,9 +1453,9 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
     const sample = await page.evaluate(() => window.chainFlightSample);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-live-step-4.png') });
-    expect(sample.elapsedMs).toBeLessThan(500);
-    expect(sample.opacity).toBeGreaterThan(0.5);
     require('fs').writeFileSync(testInfo.outputPath('facility-chain-flight-sample.json'), JSON.stringify(sample, null, 2));
+    expect(sample.elapsedMs, JSON.stringify(sample)).toBeLessThan(500);
+    expect(sample.opacity, JSON.stringify(sample)).toBeGreaterThan(0.5);
     const caption = page.locator('#cardboardEventDetails');
     await expect(caption).toHaveClass(/cardboard-preview-playing/);
     const cards = caption.locator('.cardboard-event-preview-card');
