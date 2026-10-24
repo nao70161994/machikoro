@@ -16,6 +16,7 @@ const PlazaField = (() => {
     let insightsFacts = null;
     let comparisonSignature = null;
     let cameraTransitionTimer = null;
+    let focusRevealGeneration = 0;
 
     function clearCameraTransition() {
         if (cameraTransitionTimer !== null) clearTimeout(cameraTransitionTimer);
@@ -400,6 +401,7 @@ const PlazaField = (() => {
         };
         viewport.addEventListener('pointerdown', event => {
             if (!mounted || event.button !== 0) return;
+            focusRevealGeneration++;
             clearCameraTransition();
             pointers.set(event.pointerId, point(event)); dragged = false; begin();
         });
@@ -449,12 +451,14 @@ const PlazaField = (() => {
             if (document.hidden) clearCameraTransition();
         });
         viewport.addEventListener('focusin', event => {
+            if (pointers.size) return;
+            const generation = ++focusRevealGeneration;
             const target = /** @type {Element} */ (event.target);
             revealFocus(target);
             // Reconcile focus scrolling that the browser performs after the
             // event, without restoring a target the user has already left.
             requestAnimationFrame(() => {
-                if (document.activeElement === target) revealFocus(target);
+                if (generation === focusRevealGeneration && document.activeElement === target) revealFocus(target);
             });
         });
         viewport.addEventListener('click', event => { if (dragged) { event.preventDefault(); event.stopPropagation(); dragged = false; } }, true);

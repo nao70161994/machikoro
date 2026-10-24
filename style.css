@@ -9400,7 +9400,9 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; align-self: center; font-size: 10px; white-space: nowrap; }
     html[data-design="plaza"] #plazaViewport { right: 0; }
     html[data-design="plaza"] #gameScreen > #plazaEvents { right: 0; height: 28px; max-height: 28px; box-sizing: border-box; padding-block: 2px; }
-    html[data-design="plaza"] #gameScreen > .game-action-panel {
+    /* Match the active-screen rule above so its portrait padding and auto height
+       cannot enlarge this 48px landscape dock and steal space from the field. */
+    html[data-design="plaza"] #gameScreen[style*="display: block"] > .game-action-panel {
         position: absolute; inset: auto 0 0; transform: none; width: 100%; height: calc(48px + env(safe-area-inset-bottom, 0px)); min-height: 44px;
         box-sizing: border-box; align-items: center; margin: 0; padding: 0 8px env(safe-area-inset-bottom, 0px); border-radius: 0;
         grid-template-columns: 80px minmax(0, 1fr); grid-template-rows: minmax(44px, 1fr); gap: 0 4px;
