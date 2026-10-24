@@ -738,6 +738,32 @@ runTest('main 稼働状況は通常の人間手番を省略してCPU処理中だ
     assert.strictEqual(rt.__test.elements.gameActivityStatusElapsed.textContent, '・11秒');
 });
 
+runTest('main 稼働状況は通知DOM更新後にカード卓の寸法を同期する', () => {
+    const rt = loadMainRuntime();
+    const observed = [];
+    rt.CardBoardField = { syncViewport() {
+        observed.push({
+            display: rt.__test.elements.gameConnectivityPanel.style.display,
+            label: rt.__test.elements.gameActivityStatusLabel.textContent,
+        });
+    } };
+    const game = {
+        phase: 'roll', currentPlayerIndex: 0,
+        players: [{ name: 'Alice' }, { name: 'CPU 1' }],
+        currentPlayer() { return this.players[this.currentPlayerIndex]; },
+        checkWinner() { return null; },
+    };
+    rt.__test.setGame(game);
+    rt.__test.setCpuPlayers([null, { difficulty: 'normal' }]);
+    rt.__test.updateGameActivityStatus(1000);
+    game.currentPlayerIndex = 1;
+    rt.__test.updateGameActivityStatus(2000);
+    assert.deepStrictEqual(observed, [
+        { display: 'none', label: '' },
+        { display: 'grid', label: 'CPU 1が処理中' },
+    ]);
+});
+
 runTest('main 稼働状況はオンライン対戦のオフラインと復帰案内をDOMへ反映する', () => {
     const rt = loadMainRuntime();
     rt.__test.setGame({
@@ -3746,7 +3772,8 @@ runTest('PR release workflowはオンライン同期と再接続E2Eを必須gate
     assert.ok(workflow.includes('name: Online sync and reconnect E2E gate'));
     assert.ok(workflow.includes('run: npm run test:online'));
     assert.ok(workflow.includes('mobile-webkit:'));
-    assert.ok(workflow.includes('npx playwright install --with-deps webkit chromium'));
+    assert.ok(workflow.includes('node scripts/check-playwright-container.js'));
+    assert.ok(!workflow.includes('npx playwright install --with-deps'));
     assert.ok(workflow.includes('run: ${{ matrix.command }}'));
     const matrixStart = workflow.indexOf('  mobile-webkit:');
     const matrixEnd = workflow.indexOf('    steps:', matrixStart);

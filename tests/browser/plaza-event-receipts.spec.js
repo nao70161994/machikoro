@@ -9,7 +9,7 @@ async function prepare(page, viewport, count = 4) {
     await page.goto('/');
     await page.evaluate(count => {
         startGameNow(count, Array.from({ length: count }, (_, index) => ({
-            type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}`,
+            type: 'human', name: `街${index + 1}`,
         })));
         const state = GameRuntimeState.runtime.snapshot();
         state.cpuPlayers.fill(null);
@@ -193,10 +193,35 @@ test('支払い・電波塔の振り直し・追加手番をログ外の結果�
         acceptHotseatHandoff();
     });
     await expect(page.locator('.plaza-receipt-totals')).toContainText('街1 -3');
-    await expect(page.locator('.plaza-receipt-transfer').first()).toHaveAttribute('data-flow', 'outgoing');
+    // This shared receipt has no self-seat perspective: seat-to-seat routes
+    // are neutral, while outgoing specifically means a payment to the bank.
+    await expect(page.locator('.plaza-receipt-transfer').first()).toHaveAttribute('data-flow', 'neutral');
     await page.locator('.plaza-receipt-details > summary').click();
-    await expect(page.locator('.plaza-receipt-activations')).toContainText('街1 → 街2');
+    for (const target of ['街2', '街3', '街4']) {
+        await expect(page.locator('.plaza-receipt-activations')).toContainText(`街1 → ${target}`);
+    }
     await page.locator('.plaza-receipt-details > summary').click();
+    const bankPayment = await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = ['麦畑', '貸金業'].map(createCardByName);
+        game.phase = GAME_PHASES.ROLL;
+        game.usedReroll = false;
+        game.log = [];
+        game.addLog(LOG_TYPES.SYSTEM, `👤 ${game.currentPlayer().name}のターン`);
+        const before = game.currentPlayer().coins;
+        game.rollDice(5);
+        game.skipReroll();
+        render();
+        acceptHotseatHandoff();
+        return game.currentPlayer().coins - before;
+    });
+    expect(bankPayment).toBe(-2);
+    await expect(page.locator('.plaza-receipt-totals')).toContainText('街1 -2');
+    const outgoing = page.locator('.plaza-receipt-transfer[data-flow="outgoing"]');
+    await expect(outgoing).toHaveCount(1);
+    await expect(outgoing).toContainText('貸金業');
+    await expect(outgoing).toHaveAttribute('title', /街1から銀行へ支払い/);
+    await expect(outgoing).toContainText('2コイン');
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         game.phase = GAME_PHASES.REROLL_CONFIRM;

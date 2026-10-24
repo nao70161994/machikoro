@@ -10,10 +10,9 @@ async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
     await page.goto('/');
     await page.evaluate(({ count, controlledCards }) => {
-        startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}` })));
+        startGameNow(count, Array.from({ length: count }, (_, index) => ({ type: 'human', name: `街${index + 1}` })));
         const state = GameRuntimeState.runtime.snapshot();
-        // This fixture replaces the shuffled CPU session with controlled human
-        // seats. Give presentation controllers the new session identity too.
+        // Keep both settings and runtime roster consistent with controlled human seats.
         GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: count }, () => null));
         cancelCpuSchedule('cardboard-view');
         state.game.currentPlayerIndex = 0;
@@ -289,7 +288,14 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                     const clip = viewport.getBoundingClientRect();
                     return labels.every(label => {
                         const bounds = label.getBoundingClientRect();
-                        return bounds.left >= clip.left + viewport.clientLeft &&
+                        const distance = rect => Math.hypot(Math.max(rect.left - bounds.right, bounds.left - rect.right, 0),
+                            Math.max(rect.top - bounds.bottom, bounds.top - rect.bottom, 0));
+                        const owners = [...document.querySelectorAll('#cardboardSeats > .cardboard-player')];
+                        const groupDistance = owner => Math.min(...[...owner.querySelectorAll('.cardboard-card')].map(card => distance(card.getBoundingClientRect())));
+                        const own = owners.find(owner => owner.dataset.playerIndex === label.dataset.playerIndex);
+                        const ownDistance = own ? groupDistance(own) : Infinity;
+                        const otherDistance = Math.min(...owners.filter(owner => owner !== own).map(groupDistance));
+                        return Number.isFinite(ownDistance) && ownDistance <= otherDistance + 0.5 && bounds.left >= clip.left + viewport.clientLeft &&
                             bounds.top >= clip.top + viewport.clientTop &&
                             bounds.right <= clip.left + viewport.clientLeft + viewport.clientWidth &&
                             bounds.bottom <= clip.top + viewport.clientTop + viewport.clientHeight && !obstacles.some(rect => Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
@@ -813,4 +819,106 @@ test('高密度4人の再配置は閲覧中カードと倍率を保ち戻ると�
     expect(minimumWidth).toBeGreaterThanOrEqual(31);
     expect(await snapshot(page)).toEqual(grown);
     await page.screenshot({ path: testInfo.outputPath('pinwheel-growth-overview.png') });
+});
+
+test('CPU処理通知で盤面が縮む最初の描画から施設とランドマークを俯瞰できる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const cards = ['麦畑', 'パン屋', 'カフェ', 'コンビニ', '貸金業', '出版社', 'ピザ屋', '家具工場', 'ITベンチャー'];
+        game.players.forEach((player, index) => {
+            player.cards = cards.slice(0, index ? 6 : 9).map(createCardByName);
+            Object.keys(player.landmarks).slice(0, index + 2).forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+        acceptHotseatHandoff();
+    });
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 2);
+    // Stage the real station choice before rendering it, so the next UI
+    // update grows both the choice row and the processing notification.
+    await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.rollDice());
+    const before = await snapshot(page);
+    expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase === GAME_PHASES.SELECT_DICE)).toBe(true);
+    const frames = [];
+    for (const visible of [true]) {
+        const frame = await page.evaluate(visible => new Promise(resolve => {
+            const viewport = document.getElementById('cardboardTableViewport');
+            const previousHeight = viewport.clientHeight;
+            const measure = () => {
+                const clip = viewport.getBoundingClientRect();
+                const items = [...viewport.querySelectorAll('.cardboard-player, #cardboardCenter, .cardboard-card, .cardboard-landmark-built')];
+                return { visible, previousHeight, height:viewport.clientHeight,
+                    count:items.length, builtCount:viewport.querySelectorAll('.cardboard-landmark-built').length, failures:items.flatMap(element => {
+                        const bounds = element.getBoundingClientRect();
+                        return bounds.width <= 0 || bounds.height <= 0 || bounds.left < clip.left - 2 || bounds.top < clip.top - 2 ||
+                            bounds.right > clip.right + 2 || bounds.bottom > clip.bottom + 2
+                            ? [{ name:element.dataset.cardName || element.dataset.landmarkName || element.id,
+                                bounds:bounds.toJSON(), clip:clip.toJSON() }] : [];
+                    }) };
+            };
+            let synchronous;
+            const observer = new ResizeObserver(() => {
+                if (viewport.clientHeight === previousHeight) return;
+                observer.disconnect();
+                // The product observer refits before paint. Inspect the first
+                // frame, rather than polling until a delayed refit masks a clip.
+                requestAnimationFrame(() => resolve({ ...measure(), synchronous }));
+            });
+            observer.observe(viewport);
+            render();
+            UiGameStatusEffects.applyActivityStatus({ visible, kind:'checking', announceLabel:'CPUが処理中', detail:'次の行動を検討しています' }, {
+                container:document.getElementById('gameActivityStatus'), label:document.getElementById('gameActivityStatusLabel'),
+                elapsed:document.getElementById('gameActivityStatusElapsed'), detail:document.getElementById('gameActivityStatusDetail'),
+            });
+            // updateGameActivityStatus applies both the effect and this parent
+            // visibility. Reproduce that presentation change without running CPU actions.
+            document.getElementById('gameConnectivityPanel').style.display = visible ? 'grid' : 'none';
+            const synced = CardBoardField.syncViewport();
+            // Same JavaScript task: RO has not yet delivered this size change.
+            synchronous = { ...measure(), synced };
+        }), visible);
+        expect(frame.synchronous.count).toBeGreaterThan(15);
+        expect(frame.synchronous.builtCount).toBe(5);
+        expect(frame.synchronous.height).not.toBe(frame.synchronous.previousHeight);
+        expect(frame.synchronous.failures, JSON.stringify(frame.synchronous)).toEqual([]);
+        expect(frame.count).toBeGreaterThan(15);
+        expect(frame.builtCount).toBe(5);
+        expect(frame.height).not.toBe(frame.previousHeight);
+        expect(frame.failures, JSON.stringify(frame)).toEqual([]);
+        expect(await snapshot(page)).toEqual(before);
+        frames.push(frame);
+    }
+    await page.evaluate(() => {
+        UiGameStatusEffects.applyActivityStatus({ visible:false }, { container:document.getElementById('gameActivityStatus') });
+        document.getElementById('gameConnectivityPanel').style.display = 'none';
+    });
+    await expectWholeTable(page, 2);
+    await testInfo.attach('cpu-notice-first-frames', { body:JSON.stringify(frames, null, 2), contentType:'application/json' });
+    await page.screenshot({ path:testInfo.outputPath('cpu-notice-overview.png') });
+    await cameraCommand(page, 'readable');
+    const reading = await page.evaluate(() => {
+        const viewport = document.getElementById('cardboardTableViewport');
+        const view = () => ({ mode:viewport.dataset.tableMode, scale:viewport.dataset.tableScale,
+            angle:viewport.dataset.tableAngle, focus:viewport.dataset.tableFocusPlayer,
+            transform:document.getElementById('cardboardSeats').style.transform });
+        const before = view();
+        const previousHeight = viewport.clientHeight;
+        const panel = document.getElementById('gameConnectivityPanel');
+        const activity = document.getElementById('gameActivityStatus');
+        const panelDisplay = panel.style.display, activityDisplay = activity.style.display;
+        activity.style.display = 'flex';
+        panel.style.display = 'grid';
+        const height = viewport.clientHeight;
+        const synced = CardBoardField.syncViewport();
+        const after = view();
+        panel.style.display = panelDisplay;
+        activity.style.display = activityDisplay;
+        return { before, after, previousHeight, height, synced };
+    });
+    expect(reading.before.mode).toBe('free');
+    expect(reading.height).not.toBe(reading.previousHeight);
+    expect(reading.synced).toBe(false);
+    expect(reading.after).toEqual(reading.before);
+    expect(await snapshot(page)).toEqual(before);
 });

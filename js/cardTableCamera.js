@@ -434,6 +434,17 @@ const CardTableCamera = (() => {
             state = { ...state, ...nextState };
             if (!frame) frame = globalThis.requestAnimationFrame(layout);
         }
+        function syncViewport() {
+            if (destroyed || !mounted || !overviewMode || !viewportChanged() ||
+                !viewport.clientWidth || !viewport.clientHeight) return false;
+            // A caller that just changed a status/action row already knows
+            // the viewport changed. Fit in that same task, before RO delivery
+            // or a screenshot can expose the previous viewport's scale.
+            if (frame) globalThis.cancelAnimationFrame(frame);
+            frame = 0;
+            layout();
+            return true;
+        }
         function wheel(event) {
             cancelResizeAnchor();
             if (!event.ctrlKey && !event.metaKey) {
@@ -565,7 +576,19 @@ const CardTableCamera = (() => {
         ];
         for (const [type, handler, options] of listeners) viewport.addEventListener(type, handler, options);
         const observer = typeof globalThis.ResizeObserver === 'function' ? new globalThis.ResizeObserver(() => {
+            if (destroyed) return;
             clearTimeout(resizeTimer);
+            resizeTimer = 0;
+            if (overviewMode) {
+                // CPU activity/status rows can shrink the table without a
+                // game redraw. Refit during resize delivery, before paint;
+                // a trailing debounce leaves edge cards clipped meanwhile.
+                // Painting transforms the world but not its native dimensions.
+                if (frame) globalThis.cancelAnimationFrame(frame);
+                frame = 0;
+                layout();
+                return;
+            }
             resizeTimer = setTimeout(() => { resizeTimer = 0; refresh(); }, 80);
         }) : null;
         observer?.observe(viewport);
@@ -591,7 +614,7 @@ const CardTableCamera = (() => {
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }
-        return Object.freeze({ refresh, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
+        return Object.freeze({ refresh, syncViewport, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
     }
     return Object.freeze({ create });
 })();

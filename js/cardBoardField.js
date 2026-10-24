@@ -82,10 +82,12 @@ const CardBoardField = (() => {
     const feedback = typeof CardBoardFeedback !== 'undefined' ? CardBoardFeedback.create() : null;
     const disclosureSelector = '#cardboardEventDetails, .compact-market-filter-disclosure, .compact-market-goal-disclosure, .plaza-receipt-details, .plaza-guide-disclosure, .game-action-toolbar > details';
     function closeDisclosures(except = null) {
-        node('cardboardBoard')?.querySelectorAll(disclosureSelector).forEach(element => {
-            const details = /** @type {HTMLDetailsElement} */ (element);
-            if (details !== except) details.open = false;
-        });
+        for (const root of [node('cardboardBoard'), node('cardboardMarketDialog')]) {
+            root?.querySelectorAll(disclosureSelector).forEach(element => {
+                const details = /** @type {HTMLDetailsElement} */ (element);
+                if (details !== except && !details.contains?.(except)) details.open = false;
+            });
+        }
     }
     /** @param {string} id @returns {HTMLElement | null} */
     function node(id) { return document.getElementById(id); }
@@ -128,6 +130,16 @@ const CardBoardField = (() => {
         if (ownerLabelFrame !== null) return;
         ownerLabelFrame = window.requestAnimationFrame(() => {
             ownerLabelFrame = null;
+            // The action row changes height with phase, orientation and long
+            // names. Keep an open receipt above its actual hit targets.
+            const actions = node('cardboardActionSlot');
+            const board = node('gameScreen');
+            if (mounted && actions && board) {
+                const actionBounds = actions.getBoundingClientRect();
+                if (actionBounds.height > 0) {
+                    board.style.setProperty('--cardboard-receipt-bottom', `${Math.max(8, window.innerHeight - actionBounds.top + 8)}px`);
+                }
+            }
             updateOwnerLabels();
         });
     }
@@ -150,6 +162,8 @@ const CardBoardField = (() => {
         layer.style.transform = `translate(${viewport.scrollLeft}px, ${viewport.scrollTop}px)`;
         const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
             .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+        const cardGroups = panels.map(panel => ({ panel, rects: Array.from(panel.querySelectorAll('.cardboard-card'))
+            .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
         const placed = [];
         const shallow = bounds.height < 340;
         const width = shallow || bounds.width < 500 ? 96 : 124;
@@ -169,6 +183,7 @@ const CardBoardField = (() => {
             if (!player) continue;
             const anchor = heading.getBoundingClientRect();
             const region = panel.getBoundingClientRect();
+            /** @type {[number, number][]} */
             const candidates = [
                 [anchor.left + (anchor.width - width) / 2, anchor.top + (anchor.height - height) / 2],
                 [region.left, region.top - height - 4],
@@ -187,13 +202,37 @@ const CardBoardField = (() => {
                     [region.left - width - gap, y], [region.right + gap, y],
                 );
             }
-            const position = candidates.find(([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
+            const ownCards = cardGroups.find(group => group.panel === panel)?.rects || [];
+            if (!ownCards.length) continue;
+            // Panel boxes include empty cells in ragged collections. Anchor to
+            // actual facility edges, so a label cannot float in that empty rim.
+            for (const card of ownCards) {
+                candidates.push([card.left, card.top - height - gap], [card.right - width, card.top - height - gap],
+                    [card.left, card.bottom + gap], [card.right - width, card.bottom + gap],
+                    [card.left - width - gap, card.top], [card.right + gap, card.top]);
+            }
+            const distance = (left, top, rect) => Math.hypot(
+                Math.max(rect.left - left - width, left - rect.right, 0),
+                Math.max(rect.top - top - height, top - rect.bottom, 0));
+            const nearest = (left, top, cards) => cards.length
+                ? Math.min(...cards.map(rect => distance(left, top, rect))) : Infinity;
+            const otherCards = cardGroups.filter(group => group.panel !== panel).flatMap(group => group.rects);
+            const centerX = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.left + rect.width / 2, 0) / ownCards.length : anchor.left;
+            const centerY = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.top + rect.height / 2, 0) / ownCards.length : anchor.top;
+            const available = candidates.filter(([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
                 top >= innerTop + gap && top + height <= innerBottom - gap &&
-                !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)));
+                !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)) &&
+                nearest(left, top, ownCards) <= nearest(left, top, otherCards) + 0.5);
+            const score = ([left, top]) => nearest(left, top, ownCards) +
+                Math.hypot(left + width / 2 - centerX, top + height / 2 - centerY) * 0.002;
+            const ranked = available.map(position => ({ position, score: score(position) }));
+            ranked.sort((a, b) => a.score - b.score);
+            const position = ranked[0]?.position;
             if (!position) continue;
             const [left, top] = position;
             const label = document.createElement('span');
             label.className = 'cardboard-owner-label';
+            label.dataset.playerIndex = String(index);
             label.textContent = `席${index + 1} · ${player.name}`;
             label.title = label.textContent;
             label.style.left = `${left - bounds.left - viewport.clientLeft}px`;
@@ -417,14 +456,26 @@ const CardBoardField = (() => {
 
     function revealInScrollport(target, scrollport) {
         if (!target || !scrollport) return;
-        const targetBounds = target.getBoundingClientRect();
-        const scrollBounds = scrollport.getBoundingClientRect();
-        if (targetBounds.left < scrollBounds.left) scrollport.scrollLeft += targetBounds.left - scrollBounds.left;
-        // Align to the card's start: a small nearest-edge scroll can snap back
-        // to the preceding card and leave the purchased facility clipped.
-        else if (targetBounds.right > scrollBounds.right) scrollport.scrollLeft += targetBounds.left - scrollBounds.left;
-        if (targetBounds.top < scrollBounds.top) scrollport.scrollTop += targetBounds.top - scrollBounds.top;
-        else if (targetBounds.bottom > scrollBounds.bottom) scrollport.scrollTop += targetBounds.bottom - scrollBounds.bottom;
+        // Scroll offsets use layout pixels. Screen rectangles are scaled and
+        // rotated by the table camera, so their deltas cannot be added here.
+        const origin = element => {
+            let left = 0, top = 0;
+            for (let current = element; current; current = current.offsetParent) {
+                left += current.offsetLeft;
+                top += current.offsetTop;
+            }
+            return { left, top };
+        };
+        const start = origin(target), container = origin(scrollport);
+        const left = start.left - container.left - scrollport.clientLeft;
+        const top = start.top - container.top - scrollport.clientTop;
+        if (left < scrollport.scrollLeft || left + target.offsetWidth > scrollport.scrollLeft + scrollport.clientWidth) {
+            scrollport.scrollLeft = left;
+        }
+        if (top < scrollport.scrollTop) scrollport.scrollTop = top;
+        else if (top + target.offsetHeight > scrollport.scrollTop + scrollport.clientHeight) {
+            scrollport.scrollTop = top + target.offsetHeight - scrollport.clientHeight;
+        }
     }
 
     function clearBuildFlight() {
@@ -475,42 +526,41 @@ const CardBoardField = (() => {
             !document.hidden && node('gameScreen')?.style.display !== 'none' && card.isConnected &&
             session === context.session && facts.game.turnCount === context.turn &&
             facts.game.currentPlayerIndex === context.actor && facts.game.log.includes(entry) && !reducedMotionEnabled();
-        // The existing focus operation may update scroll and world geometry.
-        // Two frames read its settled target without delaying any game action.
+        // focusCard has already measured and painted its destination. One frame
+        // lets native scrolling settle; another full frame only adds latency
+        // before the purchase can visibly arrive on slower renderers.
         buildFlightFrame = globalThis.requestAnimationFrame(() => {
-            buildFlightFrame = globalThis.requestAnimationFrame(() => {
-                buildFlightFrame = null;
-                if (!current()) return;
-                const viewport = node('cardboardTableViewport');
-                const clip = viewport?.getBoundingClientRect();
-                const target = card.getBoundingClientRect();
-                const angle = (Number(viewport?.dataset.tableAngle || 0) +
-                    Number(card.closest('.cardboard-player')?.dataset.tableAngle || 0)) % 360;
-                // Rotated inline seats retain their real-card cue. Do not land
-                // an upright ghost on an edge whose reading direction differs.
-                if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
-                        target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return;
-                const ghost = card.cloneNode(true);
-                ghost.id = 'cardboardBuildFlight';
-                ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
-                ghost.setAttribute('aria-hidden', 'true');
-                ghost.setAttribute('tabindex', '-1');
-                ghost.removeAttribute('data-action');
-                ghost.dataset.cardName = card.dataset.cardName;
-                ghost.dataset.session = String(context.session);
-                ghost.dataset.turn = String(context.turn);
-                ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
-                ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
-                node('cardboardBoard').appendChild(ghost);
-                buildFlight = ghost;
-                if (typeof ghost.animate !== 'function') { clearBuildFlight(); return; }
-                const animation = ghost.animate([
-                    { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
-                    { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
-                ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
-                buildFlightAnimation = animation;
-                animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
-            });
+            buildFlightFrame = null;
+            if (!current()) return;
+            const viewport = node('cardboardTableViewport');
+            const clip = viewport?.getBoundingClientRect();
+            const target = card.getBoundingClientRect();
+            const angle = (Number(viewport?.dataset.tableAngle || 0) +
+                Number(card.closest('.cardboard-player')?.dataset.tableAngle || 0)) % 360;
+            // Rotated inline seats retain their real-card cue. Do not land
+            // an upright ghost on an edge whose reading direction differs.
+            if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
+                    target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return;
+            const ghost = card.cloneNode(true);
+            ghost.id = 'cardboardBuildFlight';
+            ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
+            ghost.setAttribute('aria-hidden', 'true');
+            ghost.setAttribute('tabindex', '-1');
+            ghost.removeAttribute('data-action');
+            ghost.dataset.cardName = card.dataset.cardName;
+            ghost.dataset.session = String(context.session);
+            ghost.dataset.turn = String(context.turn);
+            ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
+            ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
+            node('cardboardBoard').appendChild(ghost);
+            buildFlight = ghost;
+            if (typeof ghost.animate !== 'function') { clearBuildFlight(); return; }
+            const animation = ghost.animate([
+                { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
+                { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
+            ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
+            buildFlightAnimation = animation;
+            animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
         });
     }
 
@@ -911,10 +961,16 @@ const CardBoardField = (() => {
         }
         if (revealDiceCandidateAfterMarketUpdate) {
             revealDiceCandidateAfterMarketUpdate = false;
-            const market = node('cardboardMarket');
-            const shelf = market?.querySelector('.compact-market-facilities');
-            const matchingCard = shelf?.querySelector('.compact-market-roll-match');
-            if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
+            const revealSession = session;
+            // Layout chooses the market's column count on the next frame.
+            // Reveal against that final shelf, not its previous dimensions.
+            globalThis.requestAnimationFrame(() => {
+                if (!mounted || session !== revealSession) return;
+                const shelf = node('cardboardMarket')?.querySelector('.compact-market-facilities');
+                const matchingCard = shelf?.querySelector('.compact-market-roll-match');
+                if (matchingCard && shelf) revealInScrollport(matchingCard, shelf);
+                updateMarketOverflow();
+            });
         }
         updateMarketOverflow();
     }
@@ -993,12 +1049,15 @@ const CardBoardField = (() => {
             event.preventDefault();
             shelf.scrollBy({ left: direction * step, behavior: /** @type {ScrollBehavior} */ (motion) });
         });
-        node('cardboardBoard').addEventListener('toggle', event => {
+        const onDisclosureToggle = event => {
             const details = /** @type {HTMLDetailsElement} */ (event.target);
             if (!details.matches?.(disclosureSelector) || !details.open) return;
             closeDisclosures(details);
             facts?.closeLog?.();
-        }, true);
+        };
+        for (const root of [node('cardboardBoard'), node('cardboardMarketDialog')]) {
+            root?.addEventListener('toggle', onDisclosureToggle, true);
+        }
         const clearHiddenFeedback = () => {
             if (document.hidden || node('gameScreen')?.style.display === 'none') {
                 closeTown(false);
@@ -1704,7 +1763,12 @@ const CardBoardField = (() => {
         draw();
         updatePlayerOverflow();
     }
-    return Object.freeze({ render, updateMarket, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory });
+    function syncViewport() {
+        const screen = node('gameScreen');
+        if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
+        return tableCamera?.syncViewport() === true;
+    }
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

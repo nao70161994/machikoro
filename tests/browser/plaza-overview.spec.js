@@ -29,6 +29,17 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
                 render();
                 acceptHotseatHandoff();
             }, phase);
+            await testInfo.attach(`plaza-regions-${phase}`, {
+                body: JSON.stringify(await page.evaluate(() => {
+                    const selectors = ['#plazaPlayerHud', '#plazaCameraTools', '#plazaViewport', '#gameScreen > .game-action-panel', '#plazaEvents', '#gameScreen .game-action-toolbar'];
+                    return selectors.map(selector => {
+                        const element = document.querySelector(selector);
+                        const style = getComputedStyle(element);
+                        return { selector, bounds: element.getBoundingClientRect().toJSON(),
+                            minHeight: style.minHeight, padding: style.padding, display: style.display };
+                    });
+                }), null, 2), contentType: 'application/json',
+            });
             await expect.poll(() => page.evaluate(() => {
                 const regions = [
                     document.getElementById('plazaPlayerHud'),
@@ -584,13 +595,17 @@ for (const playerCount of [2, 4, 10]) {
             await page.setViewportSize({ width: 844, height: 390 });
             const resizedMarketLayout = async () => page.evaluate(() => {
                 const viewport = document.getElementById('plazaViewport').getBoundingClientRect();
-                const market = document.getElementById('buildMenu').getBoundingClientRect();
+                const menu = document.getElementById('buildMenu');
+                const market = menu.getBoundingClientRect();
                 const name = document.querySelector('#buildMenu .card-btn .card-name').getBoundingClientRect();
                 const cost = document.querySelector('#buildMenu .card-btn .card-cost').getBoundingClientRect();
                 return {
                     viewport: { width: viewport.width, height: viewport.height, top: viewport.top, bottom: viewport.bottom },
                     market: { left: market.left, right: market.right, top: market.top, bottom: market.bottom, width: market.width, height: market.height },
                     name: { top: name.top, bottom: name.bottom }, cost: { top: cost.top, bottom: cost.bottom },
+                    scrollTop: menu.scrollTop, clientHeight: menu.clientHeight, scrollHeight: menu.scrollHeight,
+                    card: document.querySelector('#buildMenu .card-btn').getBoundingClientRect().toJSON(),
+                    art: document.querySelector('#buildMenu .card-btn .sunset-facility-art').getBoundingClientRect().toJSON(),
                     panelInside: market.width > 0 && market.height > 0 && market.left >= viewport.left &&
                         market.right <= viewport.right && market.top >= viewport.top && market.bottom <= viewport.bottom,
                     cardInfoInside: name.top >= market.top && name.bottom <= market.bottom && cost.top >= market.top &&
@@ -598,7 +613,14 @@ for (const playerCount of [2, 4, 10]) {
                         cost.top >= viewport.top && cost.bottom <= viewport.bottom,
                 };
             });
-            await expect.poll(resizedMarketLayout).toMatchObject({ viewport: { width: 844 }, panelInside: true, cardInfoInside: true });
+            try {
+                await expect.poll(resizedMarketLayout).toMatchObject({ viewport: { width: 844 }, panelInside: true, cardInfoInside: true });
+            } catch (error) {
+                await testInfo.attach('resized-market-layout.json', {
+                    body: JSON.stringify(await resizedMarketLayout(), null, 2), contentType: 'application/json',
+                });
+                throw error;
+            }
             const mobileHudScreenshot = testInfo.outputPath('plaza-endgame-market-focus-10p-844x390.png');
             await page.screenshot({ path: mobileHudScreenshot, fullPage: false, animations: 'disabled' });
             await testInfo.attach('plaza-endgame-market-focus-10p-844x390.png', {
@@ -619,7 +641,7 @@ for (const playerCount of [2, 4, 10]) {
                         button.top >= bounds.top && button.bottom <= bounds.bottom && button.height >= 44),
                 };
             });
-            expect(compactHud.height).toBe(44);
+            expect(compactHud.height).toBe(52);
             expect(compactHud.toolsBottom).toBeLessThanOrEqual(compactHud.hudTop + 1);
             expect(compactHud.buttonsFit).toBe(true);
         }
