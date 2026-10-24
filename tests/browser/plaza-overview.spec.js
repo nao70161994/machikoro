@@ -29,6 +29,17 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
                 render();
                 acceptHotseatHandoff();
             }, phase);
+            await testInfo.attach(`plaza-regions-${phase}`, {
+                body: JSON.stringify(await page.evaluate(() => {
+                    const selectors = ['#plazaPlayerHud', '#plazaCameraTools', '#plazaViewport', '#gameScreen > .game-action-panel', '#plazaEvents', '#gameScreen .game-action-toolbar'];
+                    return selectors.map(selector => {
+                        const element = document.querySelector(selector);
+                        const style = getComputedStyle(element);
+                        return { selector, bounds: element.getBoundingClientRect().toJSON(),
+                            minHeight: style.minHeight, padding: style.padding, display: style.display };
+                    });
+                }), null, 2), contentType: 'application/json',
+            });
             await expect.poll(() => page.evaluate(() => {
                 const regions = [
                     document.getElementById('plazaPlayerHud'),
