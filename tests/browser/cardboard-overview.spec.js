@@ -835,7 +835,11 @@ test('CPU処理通知で盤面が縮む最初の描画から施設とランド�
     });
     await cameraCommand(page, 'overview');
     await expectWholeTable(page, 2);
+    // Stage the real station choice before rendering it, so the next UI
+    // update grows both the choice row and the processing notification.
+    await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.rollDice());
     const before = await snapshot(page);
+    expect(await page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase === GAME_PHASES.SELECT_DICE)).toBe(true);
     const frames = [];
     for (const visible of [true]) {
         const frame = await page.evaluate(visible => new Promise(resolve => {
@@ -860,6 +864,7 @@ test('CPU処理通知で盤面が縮む最初の描画から施設とランド�
                 });
             });
             observer.observe(viewport);
+            render();
             UiGameStatusEffects.applyActivityStatus({ visible, kind:'checking', announceLabel:'CPUが処理中', detail:'次の行動を検討しています' }, {
                 container:document.getElementById('gameActivityStatus'), label:document.getElementById('gameActivityStatusLabel'),
                 elapsed:document.getElementById('gameActivityStatusElapsed'), detail:document.getElementById('gameActivityStatusDetail'),

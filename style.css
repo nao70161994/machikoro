@@ -9375,17 +9375,21 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     /* The highlighted seat already carries turn, name, and wallet information. */
     html[data-design="plaza"] body:not(.game-finished) #gameScreen > #status { display: none; }
     html[data-design="plaza"] #plazaPlayerHud {
+        --plaza-hud-seat-width: clamp(148px, calc((100vw - 32px) / 4), 204px);
         top: calc(var(--plaza-status, 30px) + var(--plaza-tools, 52px)); left: 0; right: 0; width: auto;
         height: 52px; max-height: 52px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 0 4px;
         overflow: hidden; background: #102c35;
     }
     html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
     html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: flex; flex: 0 0 auto; min-width: 0; gap: 4px; }
+    /* WebKit needs an explicit basis on the self wrapper as well as its
+       child; auto intrinsic sizing can let the opponents cover the wallet. */
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self { flex-basis: var(--plaza-hud-seat-width); }
     html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
         flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin;
     }
     html[data-design="plaza"] #plazaPlayerHud button {
-        display: grid; flex: 0 0 clamp(148px, calc((100vw - 32px) / 4), 204px); grid-template-columns: minmax(0, 1fr) auto;
+        display: grid; flex: 0 0 var(--plaza-hud-seat-width); grid-template-columns: minmax(0, 1fr) auto;
         grid-template-rows: 18px 18px; align-content: center; gap: 4px; width: auto; height: 52px; min-height: 52px;
         box-sizing: border-box; padding: 2px 6px; font-size: 12px;
     }

@@ -48,9 +48,11 @@ test('横持ちの4人戦は全席を読みやすく並べ、広場と操作域�
         const wallets = [...document.querySelectorAll('#plazaPlayerHud .plaza-player-coins')].map(wallet => {
             const bounds = wallet.getBoundingClientRect();
             const seat = wallet.closest('button').getBoundingClientRect();
+            const wrapper = wallet.closest('.plaza-hud-self, .plaza-hud-opponents').getBoundingClientRect();
             const self = wallet.querySelector('.plaza-wallet-self')?.getBoundingClientRect();
             return { inside:bounds.left >= seat.left && bounds.right <= seat.right &&
-                bounds.top >= seat.top && bounds.bottom <= seat.bottom,
+                bounds.top >= seat.top && bounds.bottom <= seat.bottom &&
+                    bounds.left >= wrapper.left && bounds.right <= wrapper.right,
                 selfInside:!self || self.left >= seat.left && self.right <= seat.right,
                 width:bounds.width, seatWidth:seat.width };
         });
