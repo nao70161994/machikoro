@@ -9394,6 +9394,14 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     html[data-design="plaza"] #plazaPlayerHud .plaza-kind-mark { display: none; }
     html[data-design="plaza"] #plazaPlayerHud .plaza-player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     html[data-design="plaza"] #plazaPlayerHud button > .plaza-player-coins { grid-column: 2; grid-row: 1; font-size: 11px; font-weight: 700; }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-player-coins {
+        display: inline-flex; align-items: center; gap: 2px; white-space: nowrap;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-player-coins::before {
+        content: ""; width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%;
+        border: 1px solid #cfa94a; background: #f2d878; box-shadow: inset 1px 1px 0 #fff3b6;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-wallet-unit { display: none; }
     html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type {
         display: flex; grid-column: 1; grid-row: 2; align-items: center; gap: 4px; font-size: 10px; white-space: nowrap;
     }
@@ -11385,6 +11393,22 @@ html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) .di
     padding: 10px;
     border-radius: 12px;
 }
+/* A shallow toss preserves a readable front face while giving the same die
+   the weight and rim used by the following result confirmation. */
+html[data-design="cardboard"] #cardboardActionSlot #diceResult .dice-face.rolling {
+    border: 1px solid #fff;
+    border-bottom: 5px solid #c3cfcd;
+    box-shadow: 4px 6px 0 #7d9692, 5px 9px 12px #244a4755, inset 0 2px 3px #fff;
+    transform-origin: 50% 70%;
+    animation: cardboard-die-toss 600ms cubic-bezier(.25, .65, .35, 1) both;
+}
+@keyframes cardboard-die-toss {
+    0% { transform: perspective(420px) translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(-8deg); }
+    24% { transform: perspective(420px) translateY(-8px) rotateX(20deg) rotateY(-22deg) rotateZ(14deg); }
+    52% { transform: perspective(420px) translateY(-3px) rotateX(-14deg) rotateY(18deg) rotateZ(-10deg); }
+    80% { transform: perspective(420px) translateY(1px) rotateX(8deg) rotateY(-8deg) rotateZ(4deg); }
+    100% { transform: perspective(420px) translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+}
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardActionSlot #diceResult:has(.rolling) {
     border-color: #ffe66d;
     background: #000;
@@ -11393,7 +11417,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardActionS
 }
 html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardActionSlot #diceResult .rolling { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-    html[data-design="cardboard"] #cardboardActionSlot #diceResult .rolling { animation: none; }
+    html[data-design="cardboard"] #cardboardActionSlot #diceResult .dice-face.rolling { animation: none; }
 }
 @media (orientation: landscape) and (max-height: 600px) {
     html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) { width: 180px; padding: 10px 8px 8px; }

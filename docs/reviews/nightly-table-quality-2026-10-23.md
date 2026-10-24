@@ -156,3 +156,13 @@ P1/P2評価は320/390縦、844×390横、1440 PC、2〜4人中心・5〜10人適
 - 独立実対局レビューで発見した縦中盤のランドマーク切れは、CPU通知でviewportが縮むROを80ms debounceしていたため、最初の描画に旧fitが残る経路があった。overviewだけRO配信中にfitし、free/readableの既存anchor/debounceは維持する。
 - 新たな通知レイアウト回帰は、製品のactivity表示＋親grid表示をfixtureで再現し、最初の描画で全所有施設・建設済5ランドマーク・全player・市場の四辺包含/正本不変を検査して成功。CPU行動そのもののテストとは区別する。復帰後も全体包含を確認した。初期test fixtureの親表示漏れ・非表示の未建設まで対象にした誤りを解消しており、製品不具合を許容する変更ではない。
 - 4件＋入力2件＋通知1件の最終関連ケースは成功。通常unit全件も再実行成功。変更後の固定WebKitでNightlyを再確認する。CSS操作帯8pxの意図変更があるplaza844基準は、候補再撮影・目視を経て更新する。
+
+### 最小の演出磨き込みと、横持ちの残高ラベル
+
+- にぎわい広場のrollingだけ、平面の360°spinから浅い浮遊・X/Y傾き・着地へ変更。出目の面を裏返さず、既存確認dieと同じ縁/固定影で重量感を揃える。600ms・JSの進行時刻・確認layer・再生guardは不変。transformのみを動かし、影は動かさない。
+- 320/844/1440の既存操作/表示/正本検査に、新600msとアプリ設定/OS両方のReduced Motionのanimation:noneを追加して成功。
+- 別途、実btnRollからbefore/afterをそれぞれ操作してbuild到達。clock/寿命は変更せず、実RAFでbefore99.93msの2D matrix、after99.94msのmatrix3dを観測、両方duration600msだった。撮影フレームの厳密な同時刻性は保証しない。
+- [実ロール前](assets/nightly-quality/dice-toss-before.png) / [実ロール後](assets/nightly-quality/dice-toss-after.png)。これは2別対局のロール画像で、静止16基準やfixture固定出目とは別。
+- plaza横HUDでは残高『11コイン・自分』の末尾が隣席境界で切れる残課題も修復。短横だけ単位を金色コイン記号へ置き換え、『数値・自分』を保持する。他幅の『コイン』とbutton aria-label全文は維持。wallet/selfの四辺包含を追加し、HUD52px/操作44px/盤面/縦復帰も既存検査で成功。
+- 独立レビューは上記diffと横HUD画像を採用可と評価。極端な大金/長名の全組合せと、人間の主観的な動的評価までは保証しない。
+- 最終UI変更前の`test:types`は全project成功。最新のCSS/財布span変更でルール/同期/保存形式は変更していない。

@@ -1248,6 +1248,11 @@ test('ロール中のサイコロは大きく見え操作を遮らず確定後�
         const stage = page.locator('#diceResult');
         await expect(stage).toHaveCSS('opacity', '1');
         await expect(stage).toHaveCSS('pointer-events', 'none');
+        await expect(stage.locator('.rolling')).toHaveCSS('animation-name', 'cardboard-die-toss');
+        await expect(stage.locator('.rolling')).toHaveCSS('animation-duration', '0.6s');
+        await page.evaluate(() => document.body.classList.add('accessibility-reduced-motion'));
+        await expect(stage.locator('.rolling')).toHaveCSS('animation-name', 'none');
+        await page.evaluate(() => document.body.classList.remove('accessibility-reduced-motion'));
         const box = await stage.boundingBox();
         expect(box.x).toBeGreaterThanOrEqual(0);
         expect(box.x + box.width).toBeLessThanOrEqual(width);
