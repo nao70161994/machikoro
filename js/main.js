@@ -569,6 +569,11 @@ function updateGameActivityStatus(now = Date.now()) {
             ? 'grid'
             : 'none';
     }
+    // Keep the overview fitted in the same task that changes the status row;
+    // waiting for ResizeObserver can briefly clip the bottom player's cards.
+    if (typeof CardBoardField !== 'undefined' && typeof CardBoardField.syncViewport === 'function') {
+        CardBoardField.syncViewport();
+    }
     return activity;
 }
 

@@ -1763,7 +1763,12 @@ const CardBoardField = (() => {
         draw();
         updatePlayerOverflow();
     }
-    return Object.freeze({ render, updateMarket, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory });
+    function syncViewport() {
+        const screen = node('gameScreen');
+        if (!mounted || !enabled() || document.hidden || !screen?.getClientRects().length) return false;
+        return tableCamera?.syncViewport() === true;
+    }
+    return Object.freeze({ render, updateMarket, syncViewport, detach, closeDisclosures, openMarket, closeMarket, suspendMarketForDetail, resumeMarketAfterDetail, closeTown, createScrollMemory });
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = CardBoardField;

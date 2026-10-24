@@ -434,6 +434,17 @@ const CardTableCamera = (() => {
             state = { ...state, ...nextState };
             if (!frame) frame = globalThis.requestAnimationFrame(layout);
         }
+        function syncViewport() {
+            if (destroyed || !mounted || !overviewMode || !viewportChanged() ||
+                !viewport.clientWidth || !viewport.clientHeight) return false;
+            // A caller that just changed a status/action row already knows
+            // the viewport changed. Fit in that same task, before RO delivery
+            // or a screenshot can expose the previous viewport's scale.
+            if (frame) globalThis.cancelAnimationFrame(frame);
+            frame = 0;
+            layout();
+            return true;
+        }
         function wheel(event) {
             cancelResizeAnchor();
             if (!event.ctrlKey && !event.metaKey) {
@@ -603,7 +614,7 @@ const CardTableCamera = (() => {
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }
-        return Object.freeze({ refresh, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
+        return Object.freeze({ refresh, syncViewport, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
     }
     return Object.freeze({ create });
 })();
