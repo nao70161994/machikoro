@@ -2,6 +2,14 @@ const { test, expect } = require('@playwright/test');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
+// Video and per-action trace snapshots can stall WebKit's rendering frames
+// beyond these real 480ms animations. Keep source traces, failure screenshots,
+// and explicit frame/geometry diagnostics without recording every repaint.
+test.use({
+    video: 'off',
+    trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true },
+});
+
 async function prepare(page, viewport, count = 4, controlledCards = true) {
     await page.setViewportSize(viewport);
     await page.addInitScript(() => { if (!localStorage.getItem('machikoroDesignTheme')) localStorage.setItem('machikoroDesignTheme', 'cardboard'); });
