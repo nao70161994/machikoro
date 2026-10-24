@@ -174,3 +174,7 @@ P1/P2評価は320/390縦、844×390横、1440 PC、2〜4人中心・5〜10人適
 - 中盤の撮影前後と非同期8RAFでmode/scale/expectedFit、worldとviewport寸法、全owner/builtランドマーク、CPU通知/操作欄/phaseを採取する診断を追加。撮影前にfit完了を待つ変更はせず、元画像の問題を隠さない。RAFはpaint前なので一瞬の測定だけで可視不具合とも断定しない。
 - ローカル部分実UI（60アクション打切り、2.2分）はmidgame turn21の人間rollで、viewport660px・scale0.497（期待0.496614）・8frameとも全所有群/ランドマーク包含で再現しなかった。これは未完走の診断runであり、WebKitのCPU処理中の問題を否定する証拠ではない。
 - 財布短縮後のWebKit候補も、自席wrapperのauto intrinsic幅がchild203pxより縮み、隣席が『自分』と目標を覆うことが判明したため不採用。Chromeだけの成功で採用しない。wrapperとchildへ同一のflex-basisを明示し、walletがbuttonだけでなくwrapper内にも収まる検査へ強化した。新WebKit画像の採用判断は次の生成・目視後とする。
+
+### WebKit自席候補の再採用
+
+source9a054f9fの固定候補では、自席walletと目標末尾が完全表示され、相手枠との重なりが解消したことをrootと独立レビュアーの両方で確認した。旧不良候補は採用せず、この844px一枚だけを更新する。他15枚は既採用PNGとバイト単位で完全一致。元の許容値で厳密な画像比較/Release/Nightlyを再実行する。縦中盤切れの解消とは別件であり、同問題はWebKitの追加診断待ちのまま。
