@@ -59,3 +59,24 @@ runTest('市場をnative dialogへ移した後も卓と市場の補助disclosure
         else global.document = previous;
     }
 });
+
+runTest('収支の内訳を開いても祖先の出目パネルは閉じない', () => {
+    const previous = global.document;
+    const inner = { open: true };
+    const outer = { open: true, contains: target => target === inner };
+    const other = { open: true };
+    global.document = { getElementById: id => id === 'cardboardBoard'
+        ? { querySelectorAll: () => [outer, inner, other] } : null };
+    try {
+        CardBoardField.closeDisclosures(inner);
+        assert.strictEqual(outer.open, true);
+        assert.strictEqual(inner.open, true);
+        assert.strictEqual(other.open, false);
+        CardBoardField.closeDisclosures();
+        assert.strictEqual(outer.open, false);
+        assert.strictEqual(inner.open, false);
+    } finally {
+        if (previous === undefined) delete global.document;
+        else global.document = previous;
+    }
+});

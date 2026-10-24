@@ -85,7 +85,7 @@ const CardBoardField = (() => {
         for (const root of [node('cardboardBoard'), node('cardboardMarketDialog')]) {
             root?.querySelectorAll(disclosureSelector).forEach(element => {
                 const details = /** @type {HTMLDetailsElement} */ (element);
-                if (details !== except) details.open = false;
+                if (details !== except && !details.contains?.(except)) details.open = false;
             });
         }
     }
@@ -135,8 +135,10 @@ const CardBoardField = (() => {
             const actions = node('cardboardActionSlot');
             const board = node('gameScreen');
             if (mounted && actions && board) {
-                const top = actions.getBoundingClientRect().top;
-                board.style.setProperty('--cardboard-receipt-bottom', `${Math.max(8, window.innerHeight - top + 8)}px`);
+                const actionBounds = actions.getBoundingClientRect();
+                if (actionBounds.height > 0) {
+                    board.style.setProperty('--cardboard-receipt-bottom', `${Math.max(8, window.innerHeight - actionBounds.top + 8)}px`);
+                }
             }
             updateOwnerLabels();
         });
@@ -181,6 +183,7 @@ const CardBoardField = (() => {
             if (!player) continue;
             const anchor = heading.getBoundingClientRect();
             const region = panel.getBoundingClientRect();
+            /** @type {[number, number][]} */
             const candidates = [
                 [anchor.left + (anchor.width - width) / 2, anchor.top + (anchor.height - height) / 2],
                 [region.left, region.top - height - 4],

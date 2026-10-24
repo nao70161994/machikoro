@@ -9376,7 +9376,7 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     html[data-design="plaza"] body:not(.game-finished) #gameScreen > #status { display: none; }
     html[data-design="plaza"] #plazaPlayerHud {
         top: calc(var(--plaza-status, 30px) + var(--plaza-tools, 52px)); left: 0; right: 0; width: auto;
-        height: 44px; max-height: 44px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 0 4px;
+        height: 52px; max-height: 52px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 0 4px;
         overflow: hidden; background: #102c35;
     }
     html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
@@ -9386,7 +9386,7 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     }
     html[data-design="plaza"] #plazaPlayerHud button {
         display: grid; flex: 0 0 clamp(148px, calc((100vw - 32px) / 4), 204px); grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-rows: 18px 18px; align-content: center; gap: 0 4px; width: auto; height: 44px; min-height: 44px;
+        grid-template-rows: 18px 18px; align-content: center; gap: 4px; width: auto; height: 52px; min-height: 52px;
         box-sizing: border-box; padding: 2px 6px; font-size: 12px;
     }
     html[data-design="plaza"] #plazaPlayerHud strong { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 3px; min-width: 0; white-space: nowrap; }
@@ -14021,6 +14021,18 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     font-weight: 700;
     line-height: 14px;
 }
+/* Keep the rest-state badge separate from the economic strip in a face-on
+   card, without shrinking the facility artwork or hiding its effect. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-card:not(.cardboard-card-activated) .cardboard-dormant {
+    top: 70px;
+    bottom: auto;
+    left: auto;
+    right: 3px;
+    width: auto;
+    max-width: calc(100% - 6px);
+    border-radius: 3px;
+}
+
 /* The actual resolved amount takes priority over a base-effect definition. */
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-card-activated .cardboard-effect {
     display: none;
@@ -14060,9 +14072,9 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     bottom: 12px;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-card:has(.cardboard-activation):has(.cardboard-dormant) .cardboard-art {
-    flex-basis: 50px;
-    height: 50px;
-    min-height: 50px;
+    flex-basis: 48px;
+    height: 48px;
+    min-height: 48px;
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-landmarks {

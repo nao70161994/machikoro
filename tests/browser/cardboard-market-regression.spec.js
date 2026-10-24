@@ -190,7 +190,14 @@ test('横卓の発動収支と休業枚数は上席でもカード内に収ま�
     await expect(top.locator('.cardboard-dormant')).toContainText('休業 1枚');
     expect(await top.evaluate(card => {
         const box = card.getBoundingClientRect();
-        return [...card.querySelectorAll('.cardboard-dice, .cardboard-name, .cardboard-count, .cardboard-dormant, .cardboard-activation')].flatMap(element => {
+        const bands = [...card.querySelectorAll('.cardboard-dice, .cardboard-name, .cardboard-dormant, .cardboard-activation')];
+        const overlap = bands.flatMap((first, index) => bands.slice(index + 1).flatMap(second => {
+            const a = first.getBoundingClientRect(), b = second.getBoundingClientRect();
+            return Math.min(a.right, b.right) > Math.max(a.left, b.left) + 0.25 &&
+                Math.min(a.bottom, b.bottom) > Math.max(a.top, b.top) + 0.25
+                ? [{ overlap: `${first.className}/${second.className}` }] : [];
+        }));
+        return overlap.concat([...card.querySelectorAll('.cardboard-dice, .cardboard-name, .cardboard-count, .cardboard-dormant, .cardboard-activation')].flatMap(element => {
             const rect = element.getBoundingClientRect();
             return rect.top >= box.top - 1 && rect.bottom <= box.bottom + 1 &&
                 element.scrollHeight <= element.clientHeight + 1 && element.scrollWidth <= element.clientWidth + 1 ? [] :
@@ -199,7 +206,7 @@ test('横卓の発動収支と休業枚数は上席でもカード内に収ま�
                     after: ['display', 'content', 'font-size', 'line-height', 'position', 'bottom'].map(name => [name, getComputedStyle(element, '::after').getPropertyValue(name)]),
                     scrollHeight: element.scrollHeight, clientHeight: element.clientHeight,
                     scrollWidth: element.scrollWidth, clientWidth: element.clientWidth }];
-        });
+        }));
     })).toEqual([]);
     const screenshot = testInfo.outputPath('card-table-income-dormant-landscape.png');
     await page.screenshot({ path: screenshot });
