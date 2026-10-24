@@ -820,3 +820,66 @@ test('高密度4人の再配置は閲覧中カードと倍率を保ち戻ると�
     expect(await snapshot(page)).toEqual(grown);
     await page.screenshot({ path: testInfo.outputPath('pinwheel-growth-overview.png') });
 });
+
+test('CPU処理通知で盤面が縮む最初の描画から施設とランドマークを俯瞰できる', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        const cards = ['麦畑', 'パン屋', 'カフェ', 'コンビニ', '貸金業', '出版社', 'ピザ屋', '家具工場', 'ITベンチャー'];
+        game.players.forEach((player, index) => {
+            player.cards = cards.slice(0, index ? 6 : 9).map(createCardByName);
+            Object.keys(player.landmarks).slice(0, index + 2).forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+        acceptHotseatHandoff();
+    });
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 2);
+    const before = await snapshot(page);
+    const frames = [];
+    for (const visible of [true]) {
+        const frame = await page.evaluate(visible => new Promise(resolve => {
+            const viewport = document.getElementById('cardboardTableViewport');
+            const previousHeight = viewport.clientHeight;
+            const observer = new ResizeObserver(() => {
+                if (viewport.clientHeight === previousHeight) return;
+                observer.disconnect();
+                // The product observer refits before paint. Inspect the first
+                // frame, rather than polling until a delayed refit masks a clip.
+                requestAnimationFrame(() => {
+                    const clip = viewport.getBoundingClientRect();
+                    const items = [...viewport.querySelectorAll('.cardboard-player, #cardboardCenter, .cardboard-card, .cardboard-landmark-built')];
+                    resolve({ visible, previousHeight, height:viewport.clientHeight,
+                        count:items.length, builtCount:viewport.querySelectorAll('.cardboard-landmark-built').length, failures:items.flatMap(element => {
+                            const bounds = element.getBoundingClientRect();
+                            return bounds.width <= 0 || bounds.height <= 0 || bounds.left < clip.left - 2 || bounds.top < clip.top - 2 ||
+                                bounds.right > clip.right + 2 || bounds.bottom > clip.bottom + 2
+                                ? [{ name:element.dataset.cardName || element.dataset.landmarkName || element.id,
+                                    bounds:bounds.toJSON(), clip:clip.toJSON() }] : [];
+                        }) });
+                });
+            });
+            observer.observe(viewport);
+            UiGameStatusEffects.applyActivityStatus({ visible, kind:'checking', announceLabel:'CPUが処理中', detail:'次の行動を検討しています' }, {
+                container:document.getElementById('gameActivityStatus'), label:document.getElementById('gameActivityStatusLabel'),
+                elapsed:document.getElementById('gameActivityStatusElapsed'), detail:document.getElementById('gameActivityStatusDetail'),
+            });
+            // updateGameActivityStatus applies both the effect and this parent
+            // visibility. Reproduce that presentation change without running CPU actions.
+            document.getElementById('gameConnectivityPanel').style.display = visible ? 'grid' : 'none';
+        }), visible);
+        expect(frame.count).toBeGreaterThan(15);
+        expect(frame.builtCount).toBe(5);
+        expect(frame.height).not.toBe(frame.previousHeight);
+        expect(frame.failures, JSON.stringify(frame)).toEqual([]);
+        expect(await snapshot(page)).toEqual(before);
+        frames.push(frame);
+    }
+    await page.evaluate(() => {
+        UiGameStatusEffects.applyActivityStatus({ visible:false }, { container:document.getElementById('gameActivityStatus') });
+        document.getElementById('gameConnectivityPanel').style.display = 'none';
+    });
+    await expectWholeTable(page, 2);
+    await testInfo.attach('cpu-notice-first-frames', { body:JSON.stringify(frames, null, 2), contentType:'application/json' });
+    await page.screenshot({ path:testInfo.outputPath('cpu-notice-overview.png') });
+});

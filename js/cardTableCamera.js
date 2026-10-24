@@ -565,7 +565,19 @@ const CardTableCamera = (() => {
         ];
         for (const [type, handler, options] of listeners) viewport.addEventListener(type, handler, options);
         const observer = typeof globalThis.ResizeObserver === 'function' ? new globalThis.ResizeObserver(() => {
+            if (destroyed) return;
             clearTimeout(resizeTimer);
+            resizeTimer = 0;
+            if (overviewMode) {
+                // CPU activity/status rows can shrink the table without a
+                // game redraw. Refit during resize delivery, before paint;
+                // a trailing debounce leaves edge cards clipped meanwhile.
+                // Painting transforms the world but not its native dimensions.
+                if (frame) globalThis.cancelAnimationFrame(frame);
+                frame = 0;
+                layout();
+                return;
+            }
             resizeTimer = setTimeout(() => { resizeTimer = 0; refresh(); }, 80);
         }) : null;
         observer?.observe(viewport);

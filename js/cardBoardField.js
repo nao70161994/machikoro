@@ -526,42 +526,41 @@ const CardBoardField = (() => {
             !document.hidden && node('gameScreen')?.style.display !== 'none' && card.isConnected &&
             session === context.session && facts.game.turnCount === context.turn &&
             facts.game.currentPlayerIndex === context.actor && facts.game.log.includes(entry) && !reducedMotionEnabled();
-        // The existing focus operation may update scroll and world geometry.
-        // Two frames read its settled target without delaying any game action.
+        // focusCard has already measured and painted its destination. One frame
+        // lets native scrolling settle; another full frame only adds latency
+        // before the purchase can visibly arrive on slower renderers.
         buildFlightFrame = globalThis.requestAnimationFrame(() => {
-            buildFlightFrame = globalThis.requestAnimationFrame(() => {
-                buildFlightFrame = null;
-                if (!current()) return;
-                const viewport = node('cardboardTableViewport');
-                const clip = viewport?.getBoundingClientRect();
-                const target = card.getBoundingClientRect();
-                const angle = (Number(viewport?.dataset.tableAngle || 0) +
-                    Number(card.closest('.cardboard-player')?.dataset.tableAngle || 0)) % 360;
-                // Rotated inline seats retain their real-card cue. Do not land
-                // an upright ghost on an edge whose reading direction differs.
-                if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
-                        target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return;
-                const ghost = card.cloneNode(true);
-                ghost.id = 'cardboardBuildFlight';
-                ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
-                ghost.setAttribute('aria-hidden', 'true');
-                ghost.setAttribute('tabindex', '-1');
-                ghost.removeAttribute('data-action');
-                ghost.dataset.cardName = card.dataset.cardName;
-                ghost.dataset.session = String(context.session);
-                ghost.dataset.turn = String(context.turn);
-                ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
-                ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
-                node('cardboardBoard').appendChild(ghost);
-                buildFlight = ghost;
-                if (typeof ghost.animate !== 'function') { clearBuildFlight(); return; }
-                const animation = ghost.animate([
-                    { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
-                    { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
-                ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
-                buildFlightAnimation = animation;
-                animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
-            });
+            buildFlightFrame = null;
+            if (!current()) return;
+            const viewport = node('cardboardTableViewport');
+            const clip = viewport?.getBoundingClientRect();
+            const target = card.getBoundingClientRect();
+            const angle = (Number(viewport?.dataset.tableAngle || 0) +
+                Number(card.closest('.cardboard-player')?.dataset.tableAngle || 0)) % 360;
+            // Rotated inline seats retain their real-card cue. Do not land
+            // an upright ghost on an edge whose reading direction differs.
+            if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
+                    target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return;
+            const ghost = card.cloneNode(true);
+            ghost.id = 'cardboardBuildFlight';
+            ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
+            ghost.setAttribute('aria-hidden', 'true');
+            ghost.setAttribute('tabindex', '-1');
+            ghost.removeAttribute('data-action');
+            ghost.dataset.cardName = card.dataset.cardName;
+            ghost.dataset.session = String(context.session);
+            ghost.dataset.turn = String(context.turn);
+            ghost.style.left = `${origin.left}px`; ghost.style.top = `${origin.top}px`;
+            ghost.style.width = `${origin.width}px`; ghost.style.height = `${origin.height}px`;
+            node('cardboardBoard').appendChild(ghost);
+            buildFlight = ghost;
+            if (typeof ghost.animate !== 'function') { clearBuildFlight(); return; }
+            const animation = ghost.animate([
+                { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
+                { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
+            ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
+            buildFlightAnimation = animation;
+            animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
         });
     }
 
