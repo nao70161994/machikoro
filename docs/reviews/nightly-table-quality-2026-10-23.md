@@ -213,3 +213,17 @@ source9a054f9fの固定候補では、自席walletと目標末尾が完全表示
 - 前回同期修正後の `npm test` 全体、今回の構文・型チェックと送金unitは成功。ローカルブラウザでの通知/ラベル・連鎖・4幅建設と、市場fixture修正後の確認をまとめて実行中。
 - 修正後ローカルは通知/ラベル1件・連鎖1件・建設4幅の6件が成功。市場1件はfixtureがcompact側にまだ存在しないボタンを読もうとして失敗したため、期待名称を変更前の共通プレイヤー状態と `Player.landmarkCost` から導き、実dialogのenabledボタンと一致することを検証する形へ修正。再実行は12秒で成功（`artifacts/nightly-quality-roundtrip-canonical`）。
 - `cardboard-view.spec.js` のケースは独立context/正本を持つため、file内parallel指定で6つのCI shardへ分散可能にした。各job worker1を維持し、巨大な1ファイルが1jobを占有する偏りを減らす。単独caseの時間制限・網羅性検査は維持する。
+
+### 012a3344の検証結果と横断fixture監査
+
+- 通常Release `40336779979`、16画面＋操作 `40336780098`、縦横実UI完走 `40336777929` は成功。
+- 実対局は縦55ターン/138操作/221クリック/206702ms、横77ターン/213操作/320クリック/428362ms、いずれもpageErrors0。縦横の中盤・終盤・正面・勝利の独立レビューで、旧ラベル遮蔽とランドマーク下切れの解消を確認。横の一時的な範囲外記録は透明な所有者箱だけで、実カード・ランドマークは切れていない。全時点全矩形0とは報告しない。
+- Nightly `40336770901` は334件すべての実行とcoverage検査に成功、最長browser shard15.5分で35分打切りは回避。しかし2失敗・3flaky・1承認済みopt-in skipが残り、安定成功とは扱わない。
+- hard失敗は発動帯のReduced Motion復帰とplaza同種施設1000枚。flakyは終了確認（空港false）、10人CPU状況UI、夕暮れ市場のresize直後スタイル採取。成功shardも全てログを確認してflakyを列挙した。
+- Reduced MotionはCSSの即反映とchange通知の配信に時差があり、CSSだけ確認して媒体を戻すとlive queryがfalseへ戻りcleanupを逃せる。製品はevent.matchesも尊重し、テストはreduce中の実cleanupを確認してから戻す追加assertを導入。queued true通知・アプリ設定併用のNode回帰と型検査は成功。
+- 制御fixtureのCPU配列だけを無効化してCPU設定を残す不整合を27箇所/18ファイルで横断監査。town/終了確認に加え、plaza比較scroll・ログ/ガイド2箇所・市場優先の4箇所も全人間設定と整合させた。CPU種類表示を意図的に検証するfixture、実UI・seeded・オンラインCPUは維持。
+- townは同じ5段階（1/2/6/7/1000枚）の累積描画を維持し、全slot属性とart可視性の逐次protocol確認を各段階の1回のまとめ読みに統合。配列の長さ・全属性・可視性を厳密に検証し、45秒・SVG/DOM上限・正本/枚数/summary検査は維持する。
+- 10人fixtureは実CPUの状況を観測した後、indexだけでなくphase/建設済みflag/turnlogも人間roll状態へ揃えてから凍結。夕暮れ市場はresizeで差し替わるDOMを再解決し、同じgradient/角丸16pxをpollで待つ。期待値は緩和しない。
+- 追加修正後のローカル結果: motion/終了確認4件成功、10人盤面・ログ/ガイド・town両テーマ・終盤比較7件成功（48.6秒）、市場優先2幅＋夕暮れ市場レスポンシブ3件成功（24.8秒）。townは同じ45秒制限のまま通過した。`artifacts/nightly-quality-motion-fixtures` の旧town失敗も記録を残し、修正後結果と区別する。
+- Nightlyのファイル単位分割に残っていた偏りを修正。独立contextを持つcase単位のnative shardingへ揃え、列挙と実実行の両方に同じfully-parallel指定を使用する。6job・各worker1は維持。334件のID集合は変更前後で完全一致（欠落0/追加0）、配分は58/61/49/81/83/2から56/56/56/56/55/55になった。ケース列挙・skip/中断検出・workflow契約の回帰も成功。
+- 最新状況と実対局の改善前後画像は [要約](nightly-quality-status.md) に整理。PNGは別対局の実ゲーム進行で撮影したものであり、同一fixtureの画素差比較と混同しない。
