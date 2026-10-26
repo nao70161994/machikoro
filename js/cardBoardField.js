@@ -126,22 +126,24 @@ const CardBoardField = (() => {
         }
     }
 
+    function syncOwnerLabels() {
+        if (ownerLabelFrame !== null) window.cancelAnimationFrame(ownerLabelFrame);
+        ownerLabelFrame = null;
+        // The action row changes height with phase, orientation and long names.
+        const actions = node('cardboardActionSlot');
+        const board = node('gameScreen');
+        if (mounted && actions && board) {
+            const actionBounds = actions.getBoundingClientRect();
+            if (actionBounds.height > 0) {
+                board.style.setProperty('--cardboard-receipt-bottom', `${Math.max(8, window.innerHeight - actionBounds.top + 8)}px`);
+            }
+        }
+        updateOwnerLabels();
+    }
+
     function scheduleOwnerLabels() {
         if (ownerLabelFrame !== null) return;
-        ownerLabelFrame = window.requestAnimationFrame(() => {
-            ownerLabelFrame = null;
-            // The action row changes height with phase, orientation and long
-            // names. Keep an open receipt above its actual hit targets.
-            const actions = node('cardboardActionSlot');
-            const board = node('gameScreen');
-            if (mounted && actions && board) {
-                const actionBounds = actions.getBoundingClientRect();
-                if (actionBounds.height > 0) {
-                    board.style.setProperty('--cardboard-receipt-bottom', `${Math.max(8, window.innerHeight - actionBounds.top + 8)}px`);
-                }
-            }
-            updateOwnerLabels();
-        });
+        ownerLabelFrame = window.requestAnimationFrame(syncOwnerLabels);
     }
 
     function updateOwnerLabels() {
@@ -328,6 +330,7 @@ const CardBoardField = (() => {
         }
         if (!tableCamera && typeof CardTableCamera !== 'undefined') {
             tableCamera = CardTableCamera.create({ viewport, canvas: node('cardboardTableCanvas'), world: seats,
+                onPaint: syncOwnerLabels,
                 onReadingChange: (index, minScale) => tableLayout?.setReadingSeat(index, minScale),
                 onContextChange: ({ label, pan, playerIndex, canReturn }) => {
                     ownerLabelsInspecting = playerIndex !== null;

@@ -848,7 +848,15 @@ test('CPU処理通知で盤面が縮む最初の描画から施設とランド�
             const measure = () => {
                 const clip = viewport.getBoundingClientRect();
                 const items = [...viewport.querySelectorAll('.cardboard-player, #cardboardCenter, .cardboard-card, .cardboard-landmark-built')];
-                return { visible, previousHeight, height:viewport.clientHeight,
+                const obstacles = [...viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter')]
+                    .map(element => element.getBoundingClientRect());
+                const labelFailures = [...viewport.querySelectorAll('.cardboard-owner-label')].flatMap(label => {
+                    const bounds = label.getBoundingClientRect();
+                    return obstacles.some(rect => Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
+                        Math.min(bounds.bottom, rect.bottom) > Math.max(bounds.top, rect.top))
+                        ? [{ owner:label.dataset.playerIndex, bounds:bounds.toJSON() }] : [];
+                });
+                return { visible, previousHeight, height:viewport.clientHeight, labelFailures,
                     count:items.length, builtCount:viewport.querySelectorAll('.cardboard-landmark-built').length, failures:items.flatMap(element => {
                         const bounds = element.getBoundingClientRect();
                         return bounds.width <= 0 || bounds.height <= 0 || bounds.left < clip.left - 2 || bounds.top < clip.top - 2 ||
@@ -882,10 +890,12 @@ test('CPU処理通知で盤面が縮む最初の描画から施設とランド�
         expect(frame.synchronous.builtCount).toBe(5);
         expect(frame.synchronous.height).not.toBe(frame.synchronous.previousHeight);
         expect(frame.synchronous.failures, JSON.stringify(frame.synchronous)).toEqual([]);
+        expect(frame.synchronous.labelFailures, JSON.stringify(frame.synchronous)).toEqual([]);
         expect(frame.count).toBeGreaterThan(15);
         expect(frame.builtCount).toBe(5);
         expect(frame.height).not.toBe(frame.previousHeight);
         expect(frame.failures, JSON.stringify(frame)).toEqual([]);
+        expect(frame.labelFailures, JSON.stringify(frame)).toEqual([]);
         expect(await snapshot(page)).toEqual(before);
         frames.push(frame);
     }

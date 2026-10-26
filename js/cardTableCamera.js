@@ -2,7 +2,7 @@
 
 // The camera changes presentation only; native scrolling remains the pan mechanism.
 const CardTableCamera = (() => {
-    function create({ viewport, canvas, world, onViewChange = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}), onReadingChange = /** @type {(index: number | null, minScale: number) => void} */ (() => {}) }) {
+    function create({ viewport, canvas, world, onViewChange = () => {}, onPaint = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}), onReadingChange = /** @type {(index: number | null, minScale: number) => void} */ (() => {}) }) {
         let scale = 0.85;
         let overviewMode = true;
         let angle = 0;
@@ -105,6 +105,9 @@ const CardTableCamera = (() => {
             viewport.dataset.tableAngle = String(normalizeAngle(angle));
             viewport.dataset.tableMode = overviewMode ? 'overview' : 'free';
             updateFocus();
+            // Screen-space labels must use the matrix written in this paint,
+            // rather than the previous view's rectangles in a later frame.
+            onPaint();
         }
         function scroll(left, top) {
             viewport.scrollTo({ left: Math.max(0, left), top: Math.max(0, top), behavior: 'instant' });
