@@ -2,6 +2,10 @@ const { test, expect } = require('@playwright/test');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
+// Every case owns its browser context and game. Let CI shard these independent
+// cases across workers instead of assigning this entire long file to one job.
+test.describe.configure({ mode: 'parallel' });
+
 // Video and per-action trace snapshots can stall WebKit's rendering frames
 // beyond these real 480ms animations. Keep source traces, failure screenshots,
 // and explicit frame/geometry diagnostics without recording every repaint.
@@ -530,53 +534,59 @@ test('にぎわい広場の高コントラストは市場・所有カード・�
     await expect(page.locator('#cardboardRoster [aria-current="true"] .cardboard-roster-turn-badge')).toHaveText('手番');
 });
 
-for (const roundTripBatch of [1, 2]) {
-    test(`専用市場との高速往復は正本とランドマーク操作のフォーカスを維持する (${roundTripBatch}/2)`, async ({ page }) => {
+const marketRoundTripCases = 10;
+const marketRoundTripThemes = ['plaza', 'cardboard'];
+for (let roundTripBatch = 1; roundTripBatch <= marketRoundTripCases; roundTripBatch++) {
+    test(`専用市場との高速往復は正本とランドマーク操作のフォーカスを維持する (${roundTripBatch}/${marketRoundTripCases})`, async ({ page }) => {
         await prepare(page, { width: 1440, height: 936 });
         await page.evaluate(() => { GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD; render(); acceptHotseatHandoff(); });
         const before = await state(page);
         await page.evaluate(() => { window.sharedMarketBeforeRoundTrips = document.getElementById('buildMenu'); });
-        let landmarkName;
+        const landmarkName = await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            const player = game.currentPlayer();
+            return Object.keys(player.landmarks).find(name => game.enabledLandmarks.has(name) &&
+                !player.landmarks[name] && Player.landmarkCost(name) <= player.coins);
+        });
+        expect(landmarkName).toBeTruthy();
         // A compact overview deliberately hides the landmark list. Exercise the
         // real native market, then verify focus returns to its visible launcher.
         // Theme detach closes disclosures, so a hidden landmark is not a valid
         // focus target across that separate presentation transition.
-        for (let index = 0; index < 5; index++) {
-            await camera(page, 'market');
-            const launcher = page.locator('#cardboardMarket .compact-market-expand');
-            await launcher.click();
-            const dialog = page.locator('#cardboardMarketDialog');
-            await expect(dialog).toBeVisible();
-            await dialog.locator('.compact-market-goal-disclosure > summary').click();
-            const landmark = dialog.locator('[data-action="buildLandmark"]:enabled').first();
-            await expect(landmark).toBeVisible();
-            const currentName = await landmark.getAttribute('data-landmark-name');
-            if (index === 0) landmarkName = currentName;
-            expect(currentName).toBe(landmarkName);
-            await landmark.focus();
-            await expect(landmark).toBeFocused();
-            await page.locator('#cardboardMarketClose').click();
-            await expect(dialog).toBeHidden();
-            await expect(launcher).toBeVisible();
-            await expect(launcher).toBeFocused();
-            // Both batches together retain twenty view changes and the shared-node contract.
-            // Do not focus a closed goal disclosure after the mode has detached.
-            const transitions = await page.evaluate(() => {
-                const snapshots = [];
-                const select = document.getElementById('gameDesignThemeSelect');
-                for (const theme of ['plaza', 'cardboard']) {
-                    select.value = theme;
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                    if (document.querySelectorAll('#buildMenu').length !== 1 ||
-                        document.getElementById('buildMenu') !== window.sharedMarketBeforeRoundTrips) {
-                        throw new Error('view transition replaced or duplicated the shared market');
-                    }
-                    snapshots.push(GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+        await camera(page, 'market');
+        const launcher = page.locator('#cardboardMarket .compact-market-expand');
+        await launcher.click();
+        const dialog = page.locator('#cardboardMarketDialog');
+        await expect(dialog).toBeVisible();
+        await dialog.locator('.compact-market-goal-disclosure > summary').click();
+        const landmark = dialog.locator('[data-action="buildLandmark"]:enabled').first();
+        await expect(landmark).toBeVisible();
+        const currentName = await landmark.getAttribute('data-landmark-name');
+        expect(currentName).toBe(landmarkName);
+        await landmark.focus();
+        await expect(landmark).toBeFocused();
+        await page.locator('#cardboardMarketClose').click();
+        await expect(dialog).toBeHidden();
+        await expect(launcher).toBeVisible();
+        await expect(launcher).toBeFocused();
+        // Ten isolated round trips retain all twenty theme changes without
+        // making five complete UI journeys share one 45-second deadline.
+        // Do not focus a closed goal disclosure after the mode has detached.
+        const transitions = await page.evaluate(themes => {
+            const snapshots = [];
+            const select = document.getElementById('gameDesignThemeSelect');
+            for (const theme of themes) {
+                select.value = theme;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                if (document.querySelectorAll('#buildMenu').length !== 1 ||
+                    document.getElementById('buildMenu') !== window.sharedMarketBeforeRoundTrips) {
+                    throw new Error('view transition replaced or duplicated the shared market');
                 }
-                return snapshots;
-            });
-            for (const snapshot of transitions) expect(snapshot).toEqual(before);
-        }
+                snapshots.push(GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER));
+            }
+            return snapshots;
+        }, marketRoundTripThemes);
+        for (const snapshot of transitions) expect(snapshot).toEqual(before);
         expect(await state(page)).toEqual(before);
     });
 }
@@ -1576,9 +1586,8 @@ test('中央市場の長い施設名をカード枠内で省略せず読める',
 });
 
 
-test('実ロール後の新規建設通知は4画面で読めて正本を変更しない', async ({ page }, testInfo) => {
-    test.setTimeout(120000);
-    for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844,height:390},{width:1440,height:936}]) {
+for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844,height:390},{width:1440,height:936}]) {
+    test(`実ロール後の新規建設通知は4画面で読めて正本を変更しない ${viewport.width}px`, async ({ page }, testInfo) => {
         await prepare(page, viewport, 2, false);
         await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
@@ -1727,5 +1736,5 @@ test('実ロール後の新規建設通知は4画面で読めて正本を変更�
         expect(await state(page)).toEqual(purchased);
         await page.evaluate(() => window.constructionTraceObserver.disconnect());
         await page.locator('.cardboard-activation-tag[hidden]').evaluateAll(elements => elements.forEach(element => element.remove()));
-    }
-});
+    });
+}
