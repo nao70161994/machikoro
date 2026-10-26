@@ -15423,6 +15423,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard #
 /* A purchased card travels only between visible, current screen locations. */
 html[data-design="cardboard"] #cardboardBoard #cardboardBuildFlight {
     position: fixed;
+    /* Only the short-lived moving card needs its own compositing surface. */
+    will-change: transform, opacity;
     z-index: 11;
     display: grid;
     grid-template-columns: minmax(0, 1fr);

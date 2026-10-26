@@ -10,6 +10,9 @@ test.describe.configure({ mode: 'parallel' });
 // beyond these real 480ms animations. Keep source traces, failure screenshots,
 // and explicit frame/geometry diagnostics without recording every repaint.
 test.use({
+    // Ordinary table fixtures are independent of asynchronous SW updates;
+    // explicit banner cases and the PWA suite keep notification coverage.
+    serviceWorkers: 'block',
     video: 'off',
     trace: { mode: 'retain-on-failure', screenshots: false, snapshots: false, sources: true },
 });
@@ -1589,8 +1592,9 @@ test('中央市場の長い施設名をカード枠内で省略せず読める',
 });
 
 
-for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844,height:390},{width:1440,height:936}]) {
-    test(`実ロール後の新規建設通知は4画面で読めて正本を変更しない ${viewport.width}px`, async ({ page }, testInfo) => {
+for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844,height:390},{width:1440,height:936},
+    {width:320,height:844,updateBanner:true}]) {
+    test(`実ロール後の新規建設通知は4画面で読めて正本を変更しない ${viewport.width}px${viewport.updateBanner ? ' 更新通知あり' : ''}`, async ({ page }, testInfo) => {
         await prepare(page, viewport, 2, false);
         await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
@@ -1598,6 +1602,10 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             game.players[0].coins = 30;
             render();
         });
+        if (viewport.updateBanner) {
+            await page.evaluate(() => setPwaBannerVisible('pwaUpdateBanner', true));
+            await expect(page.locator('#pwaUpdateBanner')).toBeVisible();
+        }
         await page.locator('#btnRoll').click();
         await expect.poll(() => page.evaluate(() => GameRuntimeState.runtime.snapshot().game.phase)).toBe('build');
         await expect(page.locator('#cardboardBoard')).not.toHaveClass(/cardboard-new-roll/);
@@ -1638,7 +1646,14 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
             window.constructionTraceObserver = new MutationObserver(records => {
                 for (const record of records) for (const [kind, nodes] of [['add',record.addedNodes],['remove',record.removedNodes]]) {
                     for (const node of nodes) if (node.id === 'cardboardBuildFlight' || node.id === 'cardboardBuildNotice') {
-                        window.constructionTrace.mutations.push({ kind, id:node.id, at:performance.now()-startedAt,
+                        let sameScrollRetained = null;
+                        if (kind === 'add' && node.id === 'cardboardBuildFlight') {
+                            // A focus command can deliver its native scroll event
+                            // after the new flight exists, without another move.
+                            document.getElementById('cardboardTableViewport').dispatchEvent(new Event('scroll'));
+                            sameScrollRetained = node.isConnected;
+                        }
+                        window.constructionTrace.mutations.push({ kind, id:node.id, at:performance.now()-startedAt, sameScrollRetained,
                             animations:node.getAnimations().map(animation => ({currentTime:animation.currentTime,playState:animation.playState,duration:animation.effect.getTiming().duration})) });
                     }
                 }
@@ -1718,6 +1733,8 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         const flightDiagnostic = await page.evaluate(() => ({ ...window.constructionTrace, current:window.constructionGuardSnapshot() }));
         await fs.writeFile(testInfo.outputPath(`facility-flight-diagnostic-${viewport.width}.json`), JSON.stringify({moving,flightDiagnostic}, null, 2));
         expect(moving.name, JSON.stringify({moving,flightDiagnostic})).toBe('麦畑');
+        expect(flightDiagnostic.mutations.filter(change => change.kind === 'add' && change.id === 'cardboardBuildFlight')
+            .every(change => change.sameScrollRetained === true)).toBe(true);
         expect(moving.duration).toBe(480);
         expect(moving.pointerEvents).toBe('none');
         expect(moving.insideScreen).toBe(true);

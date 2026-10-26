@@ -20,6 +20,8 @@ const CardTableCamera = (() => {
         let mounted = false;
         let destroyed = false;
         let frame = 0;
+        let observedScrollLeft = viewport.scrollLeft;
+        let observedScrollTop = viewport.scrollTop;
         /** @type {ReturnType<typeof setTimeout> | number} */
         let resizeTimer = 0;
         let lastWidth = 0;
@@ -111,6 +113,10 @@ const CardTableCamera = (() => {
         }
         function scroll(left, top) {
             viewport.scrollTo({ left: Math.max(0, left), top: Math.max(0, top), behavior: 'instant' });
+            // Native scroll events may arrive after this command has settled.
+            // They do not represent another move of the newly placed effects.
+            observedScrollLeft = viewport.scrollLeft;
+            observedScrollTop = viewport.scrollTop;
             updateFocus();
             cacheInspectionAnchor();
         }
@@ -569,7 +575,14 @@ const CardTableCamera = (() => {
             // Keep the same click bubbling to the existing card-detail handler.
         }
         const listeners = [
-            ['scroll', () => { updateFocus(true); cacheInspectionAnchor(); onViewChange(); }, { passive: true }],
+            ['scroll', () => {
+                const moved = observedScrollLeft !== viewport.scrollLeft || observedScrollTop !== viewport.scrollTop;
+                observedScrollLeft = viewport.scrollLeft;
+                observedScrollTop = viewport.scrollTop;
+                updateFocus(true);
+                cacheInspectionAnchor();
+                if (moved) onViewChange();
+            }, { passive: true }],
             ['wheel', wheel, { passive: false }], ['keydown', keydown, false],
             ['touchstart', touchstart, { passive: true }], ['touchmove', touchmove, { passive: false }],
             ['touchend', touchend, { passive: true }], ['touchcancel', touchend, { passive: true }],
