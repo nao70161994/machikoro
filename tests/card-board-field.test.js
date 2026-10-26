@@ -80,3 +80,36 @@ runTest('収支の内訳を開いても祖先の出目パネルは閉じない',
         else global.document = previous;
     }
 });
+
+runTest('遅延したOSのreduce通知は現在値が戻っていても演出を取り消す', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('        let wasReducedMotion = reducedMotionEnabled();');
+    const end = source.indexOf('        new MutationObserver(clearHiddenFeedback)', start);
+    assert.ok(start >= 0 && end > start, '実際に登録する設定監視処理を検証する');
+    let current = false, cleared = 0, mediaChanged;
+    const observers = [];
+    const context = {
+        reducedMotionEnabled: () => current,
+        clearFeedback: () => { cleared++; },
+        window: { matchMedia: () => ({ addEventListener: (type, listener) => { mediaChanged = listener; } }) },
+        document: { body: {} },
+        MutationObserver: class {
+            constructor(callback) { observers.push(callback); }
+            observe() {}
+        },
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    mediaChanged({ matches: true });
+    assert.strictEqual(cleared, 1, '現在値falseでも配信済みのreduce遷移を尊重する');
+    mediaChanged({ matches: false });
+    assert.strictEqual(cleared, 1, '設定を戻しても過去の演出を作らない');
+    current = true;
+    observers[0]([]);
+    assert.strictEqual(cleared, 2, 'アプリ設定でも取り消す');
+    mediaChanged({ matches: false });
+    assert.strictEqual(cleared, 2, 'OSを戻してもアプリ側のreduceは有効');
+    current = false;
+    observers[0]([]);
+    mediaChanged({ matches: true });
+    assert.strictEqual(cleared, 3, '次回のreduce遷移も取り消す');
+});

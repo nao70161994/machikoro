@@ -1520,6 +1520,9 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     expect(await page.locator('#cardboardSeats .cardboard-card-activated').evaluateAll(elements => elements.every(element => getComputedStyle(element).animationName === 'none'))).toBe(true);
     await expect(cards.first()).toBeHidden();
     await expect(page.locator('.cardboard-activation-tag')).toHaveCount(0);
+    // CSS reacts before the queued media-query change callback. Wait for the
+    // actual cancellation before restoring the preference, then verify no replay.
+    await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await expect(caption).not.toHaveClass(/cardboard-preview-playing/);
     await selectTheme(page, 'plaza');

@@ -1115,13 +1115,16 @@ const CardBoardField = (() => {
         });
         document.addEventListener('visibilitychange', clearHiddenFeedback);
         let wasReducedMotion = reducedMotionEnabled();
-        const updateMotionFeedback = () => {
-            const reduced = reducedMotionEnabled();
+        const updateMotionFeedback = (reduced = reducedMotionEnabled()) => {
             if (reduced && !wasReducedMotion) clearFeedback();
             wasReducedMotion = reduced;
         };
-        window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', updateMotionFeedback);
-        new MutationObserver(updateMotionFeedback).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', event => {
+            // A queued reduce event still cancels feedback if the OS preference
+            // has already changed back by the time this callback is delivered.
+            updateMotionFeedback(event.matches || reducedMotionEnabled());
+        });
+        new MutationObserver(() => updateMotionFeedback()).observe(document.body, { attributes: true, attributeFilter: ['class'] });
         new MutationObserver(clearHiddenFeedback).observe(node('gameScreen'), { attributes: true, attributeFilter: ['style'] });
         node('cardboardRoster').addEventListener('click', event => {
             const button = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (event.target).closest('[data-cardboard-player-index]'));
