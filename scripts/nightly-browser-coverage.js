@@ -74,7 +74,7 @@ function verifyReports(plan, reports, shard) {
 
 function discover(shard) {
     const cli = require.resolve('@playwright/test/cli');
-    const args = [cli, 'test', '--list', '--reporter=json', '--workers=1'];
+    const args = [cli, 'test', '--list', '--reporter=json', '--workers=1', '--fully-parallel'];
     if (shard) args.push('--shard=' + shard);
     const result = spawnSync(process.execPath, args, { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
         env: { ...process.env, CI: 'true' } });

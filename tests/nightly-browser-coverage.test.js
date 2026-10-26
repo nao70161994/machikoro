@@ -90,3 +90,12 @@ runTest('browser workflows share the exact package-matched preinstalled runtime 
     assert.throws(() => checkContainer(EXPECTED_VERSION, paths, () => false), /Missing preinstalled/);
     assert.throws(() => checkContainer(EXPECTED_VERSION, ['/tmp/chromium', paths[1]], () => true), /Missing preinstalled/);
 });
+
+runTest('nightly discoveryと実行は同じcase単位の分割を使いworkerは1を維持する', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const workflow = fs.readFileSync(path.join(__dirname, '../.github/workflows/nightly-release-test.yml'), 'utf8');
+    const inventory = fs.readFileSync(path.join(__dirname, '../scripts/nightly-browser-coverage.js'), 'utf8');
+    assert.ok(workflow.includes('--workers=1 --fully-parallel --shard='));
+    assert.ok(inventory.includes("'--workers=1', '--fully-parallel'"));
+});

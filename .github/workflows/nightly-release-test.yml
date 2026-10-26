@@ -135,9 +135,10 @@ jobs:
             - name: Verify pinned preinstalled browser runtime
               run: node scripts/check-playwright-container.js
             - name: Complete browser E2E shard
-              # Keep the same projects, retries and test settings as Release.
-              # Native sharding preserves file/serial groups; one worker per runner.
-              run: npm run test:browser-e2e -- --workers=1 --shard=${{ matrix.shard }}/6 --reporter=line,json,blob
+              # Keep the same tests, projects, retries and assertions as Release.
+              # Cases own their contexts; shard per case instead of leaving a
+              # large file on one runner. Each runner still uses one worker.
+              run: npm run test:browser-e2e -- --workers=1 --fully-parallel --shard=${{ matrix.shard }}/6 --reporter=line,json,blob
               env:
                   PLAYWRIGHT_JSON_OUTPUT_NAME: artifacts/report-${{ matrix.shard }}.json
                   PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report
