@@ -894,9 +894,17 @@ test('320pxから480pxで10人盤面を要約し次操作とCPU理由を表示�
     expect(cpuActivity).toMatch(/CPU/);
     await page.evaluate(() => {
         cancelCpuSchedule('mobile-review-freeze');
+        window.scheduleCPU = () => false;
         const state = GameRuntimeState.runtime.snapshot();
         state.game.currentPlayerIndex = state.cpuPlayers.findIndex(cpu => !cpu);
+        // The real CPU may already have rolled while its status was observed.
+        // Freeze a complete human roll state, not a human index in a CPU phase.
+        state.game.phase = GAME_PHASES.ROLL;
+        state.game.builtThisTurn = false;
+        state.game.log = [];
+        state.game.addLog(LOG_TYPES.SYSTEM, `👤 ${state.game.currentPlayer().name}のターン`);
         render();
+        acceptHotseatHandoff();
     });
     await expect(page.locator('#btnRoll')).toBeEnabled();
     await expect(page.locator('#playerNavigation .player-navigation-link.destination svg'))

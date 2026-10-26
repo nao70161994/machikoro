@@ -158,7 +158,7 @@ test('終盤の施設比較は行追加後も縦横の読み位置を維持す�
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
         startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
-            type: index ? 'cpu' : 'human', difficulty: 'normal', name: `街${index + 1}`,
+            type: 'human', name: `街${index + 1}`,
         })));
         GameRuntimeState.runtime.setCpuPlayers(Array.from({ length: 4 }, () => null));
         cancelCpuSchedule('plaza-comparison-scroll');

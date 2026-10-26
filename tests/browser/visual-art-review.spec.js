@@ -915,13 +915,16 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
 
     await page.setViewportSize({ width: 1440, height: 900 });
     const desktopMarket = page.locator('#buildMenu .build-card-section .card-grid');
-    const desktopMarketStyle = await desktopMarket.evaluate(element => ({
+    // Responsive rendering can replace this grid after resize. Re-resolve the
+    // locator until the actual desktop style is applied, rather than retaining
+    // a computed-style snapshot from a detached mobile grid.
+    await expect.poll(() => desktopMarket.evaluate(element => ({
         backgroundImage: getComputedStyle(element).backgroundImage,
         borderRadius: getComputedStyle(element).borderRadius,
-        padding: getComputedStyle(element).padding,
-    }));
-    expect(desktopMarketStyle.backgroundImage).toContain('radial-gradient');
-    expect(desktopMarketStyle.borderRadius).toBe('16px');
+    }))).toEqual({
+        backgroundImage: expect.stringContaining('radial-gradient'),
+        borderRadius: '16px',
+    });
     const desktopMarketPath = testInfo.outputPath('sunset-central-market-1440.png');
     // WebKit can replace responsive game markup for a frame after the viewport
     // change above. Let that resize render settle before asking Playwright to scroll.
