@@ -68,7 +68,12 @@ const CardTableLayout = (() => {
         }
         function layout() {
             frame = 0;
-            if (destroyed || !world.isConnected || !world.contains(market) || !viewport.clientWidth || !viewport.clientHeight) return;
+            if (destroyed || !world.isConnected || !world.contains(market)) return;
+            // Candidate shapes write styles below. Snapshot the unchanged
+            // viewport once so cache keys and scoring do not flush those writes.
+            const viewportWidth = viewport.clientWidth;
+            const viewportHeight = viewport.clientHeight;
+            if (!viewportWidth || !viewportHeight) return;
             const panels = [...world.children].filter(element => element.matches('.cardboard-player[data-player-index]'));
             if (!panels.length) return;
             const live = new Set([world, viewport, market, ...panels]);
@@ -79,8 +84,8 @@ const CardTableLayout = (() => {
                 }
             }
             panels.forEach(observe);
-            const wide = viewport.clientWidth > viewport.clientHeight;
-            const shallow = viewport.clientWidth / viewport.clientHeight > 2.2;
+            const wide = viewportWidth > viewportHeight;
+            const shallow = viewportWidth / viewportHeight > 2.2;
             const oppositeOnly = panels.length === 2;
             // Two opposite owners need no corner clearance. Reclaim that
             // empty rim on shallow screens before shrinking every card.
@@ -118,7 +123,7 @@ const CardTableLayout = (() => {
                 const key = [panel.querySelectorAll('.cardboard-card').length,
                     panel.querySelectorAll('.cardboard-landmark-built').length,
                     panel.querySelector('.cardboard-header')?.textContent,
-                    viewport.clientWidth, viewport.clientHeight].join(':');
+                    viewportWidth, viewportHeight].join(':');
                 let cache = ownerMeasurements.get(panel);
                 if (!cache || cache.key !== key) {
                     cache = { key, sizes: new Map() };
@@ -132,7 +137,7 @@ const CardTableLayout = (() => {
                 return cache.sizes.get(shapeKey);
             }
             function marketSize(columns, rows = rowsFor(columns)) {
-                const key = [viewport.clientWidth, viewport.clientHeight,
+                const key = [viewportWidth, viewportHeight,
                     market.querySelector('.compact-market-header')?.textContent,
                     market.querySelector('.market-rule-status')?.textContent,
                     market.querySelector('.compact-market-browse-note')?.textContent || '',
@@ -205,7 +210,7 @@ const CardTableLayout = (() => {
                             (strips.left.depth ? strips.left.depth + gap : 0) + (strips.right.depth ? strips.right.depth + gap : 0);
                         const height = padding * 2 + Math.max(marketBox.height, strips.left.along, strips.right.along) +
                             (strips.top.depth ? strips.top.depth + gap : 0) + (strips.bottom.depth ? strips.bottom.depth + gap : 0);
-                        const score = Math.min(viewport.clientWidth / width, viewport.clientHeight / height);
+                        const score = Math.min(viewportWidth / width, viewportHeight / height);
                         const plan = { market: marketColumns, rows: rowsFor(marketColumns), side: sideColumns, end: endColumns };
                         const previousPlan = marketPlans.get(marketColumns);
                         if (!previousPlan || score > previousPlan.score + 0.0001) marketPlans.set(marketColumns, { score, plan });
@@ -239,7 +244,7 @@ const CardTableLayout = (() => {
                     const boxes = panels.map(panel => ownerSize(panel, Math.min(columns, Math.max(1, countFor(panel))), rail));
                     const width = padding * 2 + Math.max(marketBox.width, ...boxes.map(box => box.nativeWidth));
                     const height = padding * 2 + marketBox.height + gap * 2 + boxes.reduce((sum, box) => sum + box.nativeHeight, 0);
-                    return Math.min(viewport.clientWidth / width, viewport.clientHeight / height);
+                    return Math.min(viewportWidth / width, viewportHeight / height);
                 };
                 const baseline = scoreFor(chosen.end, false);
                 let bestScore = baseline;
@@ -274,7 +279,7 @@ const CardTableLayout = (() => {
                     crossStrips.left.width + crossStrips.right.width + gap * 2;
                 const crossHeight = padding * 2 + Math.max(crossMarket.height, crossStrips.left.height, crossStrips.right.height) +
                     crossStrips.top.height + crossStrips.bottom.height + gap * 2;
-                const crossScore = Math.min(viewport.clientWidth / crossWidth, viewport.clientHeight / crossHeight);
+                const crossScore = Math.min(viewportWidth / crossWidth, viewportHeight / crossHeight);
                 for (const marketColumns of [6, 4]) {
                     const rows = rowsFor(marketColumns);
                     const marketBox = marketSize(marketColumns, rows);
@@ -291,7 +296,7 @@ const CardTableLayout = (() => {
                         }
                         const geometry = computePinwheelGeometry({ top: dimensions.top, right: dimensions.right, bottom: dimensions.bottom,
                             left: dimensions.left, market: marketBox, gap, padding });
-                        const score = Math.min(viewport.clientWidth / geometry.width, viewport.clientHeight / geometry.height);
+                        const score = Math.min(viewportWidth / geometry.width, viewportHeight / geometry.height);
                         if (!pinwheel || score > pinwheel.score + 0.0001) pinwheel = { score,
                             plan: { packing: 'pinwheel', market: marketColumns, rows, side: sideColumns, end: endColumns } };
                     }
@@ -308,9 +313,9 @@ const CardTableLayout = (() => {
             if (readingSeat) {
                 const owner = panels.find(panel => Number(panel.dataset.playerIndex) === readingSeat.playerIndex);
                 if (owner) {
-                    const inset = viewport.clientWidth <= 480 ? 12 : 20;
-                    const availableWidth = Math.max(1, viewport.clientWidth - inset * 2);
-                    const availableHeight = Math.max(1, viewport.clientHeight - inset * 2);
+                    const inset = viewportWidth <= 480 ? 12 : 20;
+                    const availableWidth = Math.max(1, viewportWidth - inset * 2);
+                    const availableHeight = Math.max(1, viewportHeight - inset * 2);
                     const maximum = Math.min(Math.max(1, countFor(owner)),
                         Math.max(1, Math.floor((availableWidth / readingSeat.minScale - 8) / 168)));
                     readingColumns = maximum;

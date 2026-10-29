@@ -594,6 +594,69 @@ for (let roundTripBatch = 1; roundTripBatch <= marketRoundTripCases; roundTripBa
     });
 }
 
+// Retain the original same-page five-cycle stress contract separately from
+// the ten detailed isolated cases above. Batch observations, not UI actions.
+test('同じ対局で市場と表示モードを5連続往復して共有DOMとフォーカスを保つ', async ({ page }) => {
+    await prepare(page, { width: 1440, height: 936 });
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.phase = GAME_PHASES.BUILD;
+        render();
+        acceptHotseatHandoff();
+        window.sharedMarketBeforeRoundTrips = document.getElementById('buildMenu');
+    });
+    const before = await state(page);
+    let expectedLandmark;
+    for (let cycle = 0; cycle < 5; cycle++) {
+        await camera(page, 'market');
+        await page.locator('#cardboardMarket .compact-market-expand').click();
+        const dialog = page.locator('#cardboardMarketDialog');
+        await dialog.locator('.compact-market-goal-disclosure > summary').click();
+        const opened = await dialog.evaluate(element => {
+            const landmark = element.querySelector('[data-action="buildLandmark"]:enabled');
+            landmark?.focus();
+            const bounds = landmark?.getBoundingClientRect();
+            return {
+                open: element.open && element.matches(':modal'),
+                goalOpen: element.querySelector('.compact-market-goal-disclosure').open,
+                name: landmark?.getAttribute('data-landmark-name'),
+                enabled: !!landmark && !landmark.disabled,
+                visible: !!bounds && bounds.width > 0 && bounds.height > 0 && getComputedStyle(landmark).visibility !== 'hidden',
+                focused: !!landmark && document.activeElement === landmark,
+            };
+        });
+        if (cycle === 0) expectedLandmark = opened.name;
+        expect(expectedLandmark).toBeTruthy();
+        expect(opened).toEqual({ open: true, goalOpen: true, name: expectedLandmark, enabled: true, visible: true, focused: true });
+        await page.locator('#cardboardMarketClose').click();
+        const closed = await page.evaluate(themes => {
+            const dialog = document.getElementById('cardboardMarketDialog');
+            const launcher = document.querySelector('#cardboardMarket .compact-market-expand');
+            const bounds = launcher.getBoundingClientRect();
+            const closed = !dialog.open;
+            const focused = document.activeElement === launcher;
+            const visible = bounds.width > 0 && bounds.height > 0 && getComputedStyle(launcher).visibility !== 'hidden';
+            const transitions = [];
+            const select = document.getElementById('gameDesignThemeSelect');
+            for (const theme of themes) {
+                select.value = theme;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+                transitions.push({
+                    theme: document.documentElement.dataset.design,
+                    shared: document.querySelectorAll('#buildMenu').length === 1 &&
+                        document.getElementById('buildMenu') === window.sharedMarketBeforeRoundTrips,
+                    snapshot: GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER),
+                });
+            }
+            return { closed, focused, visible, transitions };
+        }, marketRoundTripThemes);
+        expect({ closed: closed.closed, focused: closed.focused, visible: closed.visible }).toEqual({ closed: true, focused: true, visible: true });
+        expect(closed.transitions.map(item => ({ theme: item.theme, shared: item.shared })))
+            .toEqual(marketRoundTripThemes.map(theme => ({ theme, shared: true })));
+        for (const transition of closed.transitions) expect(transition.snapshot).toEqual(before);
+    }
+    expect(await state(page)).toEqual(before);
+});
+
 test('横持ちの建設操作は拡大市場を開き購入後は見える操作へフォーカスを戻す', async ({ page }) => {
     await prepare(page, { width: 844, height: 390 });
     await page.evaluate(() => {
