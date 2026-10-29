@@ -15230,6 +15230,7 @@ html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-la
     display: block;
     max-height: none;
     overflow: visible;
+    text-wrap: balance;
 }
 html[data-design="cardboard"] body.accessibility-high-contrast #status .cardboard-winner-collection {
     border-color: #fff;

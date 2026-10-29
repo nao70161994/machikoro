@@ -1799,6 +1799,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
                     if (flight && animation && elapsed >= 60 && elapsed < 400) {
                         const bounds = flight.getBoundingClientRect();
                         resolve({ name:flight.dataset.cardName, elapsed, duration:animation.effect.getTiming().duration,
+                            arrivalStarted:!!document.querySelector('#cardboardSeats .cardboard-card-newly-built'),
                             pointerEvents:getComputedStyle(flight).pointerEvents,
                             insideScreen:bounds.left>=0 && bounds.top>=0 && bounds.right<=innerWidth && bounds.bottom<=innerHeight });
                     } else if (closedAt !== null && performance.now() - closedAt >= 1500) {
@@ -1829,6 +1830,7 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         expect(flightDiagnostic.mutations.filter(change => change.kind === 'add' && change.id === 'cardboardBuildFlight')
             .every(change => change.sameScrollRetained === true)).toBe(true);
         expect(moving.duration).toBe(480);
+        expect(moving.arrivalStarted, '到着先の祝福はカードの飛行完了後に始まる').toBe(false);
         expect(moving.pointerEvents).toBe('none');
         expect(moving.insideScreen).toBe(true);
         await page.screenshot({path:testInfo.outputPath(`facility-flight-${viewport.width}.png`)});

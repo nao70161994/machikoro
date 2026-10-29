@@ -353,3 +353,19 @@ WebKit shard1はHUDの3RAF後cue=true期待が失敗。時間経過を考慮し�
 - 短期manual WebKit診断に既存の同一対局5往復ケースを加え、建設5条件と合わせて6件を同じ固定環境で検証する。通常Release/Nightlyの網羅性・実行条件は変更しない。
 
 - 背景比較の独立目視でも市場と戻る操作の主従、暗幕、モーダル境界を維持。新たな重なり/可読性低下なし。既存の市場下の余白と次段の一部表示は両画像共通で、今回の改善成果とは数えない。
+
+### 短期WebKit比較の結果と次の修正
+
+- [56a93bd5通常Release40882016327](https://github.com/nao70161994/machikoro/actions/runs/40882016327)は成功。共通main fixture修正とHUD時間判定を含む固定環境での結果であり、Nightly成功の代わりにはしない。
+- [3ad5a67e通常Release40883213175](https://github.com/nao70161994/machikoro/actions/runs/40883213175)も成功。
+- [3ad5a67e短期WebKit40883324988](https://github.com/nao70161994/machikoro/actions/runs/40883324988)は6件中4成功/2失敗。市場5往復は通常clickで完了したが約45秒で余裕は小さい。建設320/1440は依然失敗し、背景blurだけを根本原因/解消と断定しない。
+- 320の建設はclose+452msにlayout116ms、準備30ms、+1479msでpaused0、次の観測+2490msで自然終了。1440は+1028msにlayout75ms/準備54ms、+2146msでもpaused0。cameraの追加callback自体は0〜1ms。JavaScript callbackを省く一律最適化は採用しない。
+- 現在の演出は「飛行480ms」と「到着カードの祝福860ms」を同時開始していた。到着を先に祝う違和感と、飛行中に到着側の描画/cleanupが重なる点を見直し、正常な飛行終了→実カード祝福へ順序を揃える候補を実装。飛行480ms・観測期限は不変。移動経路なし/RMは即時の実カード表示。取消/Undo/復元/非表示/世代変更では過去の祝福を起動しない。
+- 祝福のcleanup期限1200msは到着開始から数えるため、飛行がある場合の全体経過時間は従来の並行1200msから480ms+最大1200ms（開始待ちを除く）になる。操作やゲーム進行は待たせず、建設noticeの1200msは延長しない。初期paint gapが解消するかは別に実測する。
+- 勝利landmark名だけにtext-wrap:balanceを適用。全字・文字サイズを維持し、ショッピングモールの末尾1字の孤立行を避ける。既存勝利4幅はlocalで4成功（23.8秒）。独立レビューでは新規欠落/重なりなし。ただし意味単位での改行ではなく、最終組版には改善余地がある。
+- 通常速度での実プレイ確認に向け、manual完走workflowはCPU 1500ms（製品既定）/100msの選択を追加し既定を1500msへ。既存の100ms完走証拠は加速検証として保持し、通常速度の結果と混同しない。
+
+- 一連化候補のlocal確認は購入/Undo/保存再開・RM・landmark・建設5条件の8件成功（1.8分）。建設5条件には「飛行中に到着祝福が始まっていない」判定を追加し、既存の480ms/動作フレーム/操作/正本判定も維持。
+- 編集JSのnode --check、ESLint、main/ui/storage/onlineのcheckJs全4rootが終了コード0。workflow固定環境/網羅性guardの既存6判定も成功。
+- source独立レビューで正常finished前のcurrent判定、cue世代、取消時の非再生、fallback1回を確認。初期描画停止の解消は未証明。[勝利844pxのfixture確認画像](assets/nightly-quality/winner-balanced-844-after.png)は全施設一覧を含むfullPage撮影であり、実機の一画面表示とは区別する。
+- 56a93bd5の16画面・操作40882016271と3ad5a67eの40883213215は両方成功。baselineの更新・許容値変更は行っていない。

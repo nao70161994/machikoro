@@ -53,6 +53,7 @@ const CardBoardField = (() => {
     let transferFrame = null;
     let transferSequence = 0;
     let buildCueTimer = null;
+    let buildCueGeneration = 0;
     let buildNoticeTimer = null;
     let buildNoticeContext = null;
     let purchaseOrigin = null;
@@ -544,9 +545,9 @@ const CardBoardField = (() => {
         }
     }
 
-    function startBuildFlight(card, origin, entry, destination = /** @type {DOMRect | null} */ (null)) {
+    function startBuildFlight(card, origin, entry, destination = /** @type {DOMRect | null} */ (null), onArrive = () => {}) {
         clearBuildFlight();
-        if (!origin || !entry || reducedMotionEnabled()) return;
+        if (!origin || !entry || reducedMotionEnabled()) return false;
         const generation = buildFlightGeneration;
         const context = { session, turn: facts?.game?.turnCount, actor: facts?.game?.currentPlayerIndex };
         const current = () => generation === buildFlightGeneration && enabled() && mounted && !facts?.replaying &&
@@ -556,7 +557,7 @@ const CardBoardField = (() => {
         // focusCard applies its layout, matrix and instant scroll synchronously.
         // Read that final geometry now: another RAF delays purchase feedback by
         // an entire frame on renderers already busy painting the returned table.
-        if (!current()) return;
+        if (!current()) return false;
         const viewport = node('cardboardTableViewport');
         const clip = viewport?.getBoundingClientRect();
         const target = destination || card.getBoundingClientRect();
@@ -565,7 +566,7 @@ const CardBoardField = (() => {
         // Rotated inline seats retain their real-card cue. Do not land
         // an upright ghost on an edge whose reading direction differs.
         if (angle !== 0 || !clip || !target.width || !target.height || target.left < clip.left ||
-                target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return;
+                target.top < clip.top || target.right > clip.right || target.bottom > clip.bottom) return false;
         const ghost = card.cloneNode(true);
         ghost.id = 'cardboardBuildFlight';
         ghost.className = ['cardboard-build-flight', ...Array.from(card.classList).filter(name => /^cardboard-card-(blue|green|red|purple)$/.test(String(name)))].join(' ');
@@ -580,7 +581,7 @@ const CardBoardField = (() => {
         node('cardboardBoard').appendChild(ghost);
         buildFlight = ghost;
         buildFlightScroll = { left: viewport.scrollLeft, top: viewport.scrollTop };
-        if (typeof ghost.animate !== 'function') { clearBuildFlight(); return; }
+        if (typeof ghost.animate !== 'function') { clearBuildFlight(); return false; }
         const animation = ghost.animate([
             { transform: 'translate(0, 0) scale(1)', opacity: 0.9 },
             { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
@@ -598,7 +599,12 @@ const CardBoardField = (() => {
                 animation.play();
             } else if (buildFlight === ghost) clearBuildFlight();
         });
-        animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
+        animation.finished.then(() => {
+            const arrived = buildFlight === ghost && current();
+            if (buildFlight === ghost) clearBuildFlight();
+            if (arrived) onArrive();
+        }).catch(() => {});
+        return true;
     }
 
     function clearBuildNotice() {
@@ -640,6 +646,7 @@ const CardBoardField = (() => {
     }
 
     function clearBuildCue() {
+        buildCueGeneration++;
         if (buildCueTimer !== null) clearTimeout(buildCueTimer);
         buildCueTimer = null;
         if (buildCueCard && buildCueListener) buildCueCard.removeEventListener('animationend', buildCueListener);
@@ -650,20 +657,32 @@ const CardBoardField = (() => {
 
     function showBuildCue(card, animate, origin = null, entry = null) {
         clearBuildCue();
+        const generation = buildCueGeneration;
         card.classList.remove('cardboard-card-newly-built');
-        if (animate) void card.offsetWidth;
         const destination = card.getBoundingClientRect();
-        card.classList.add('cardboard-card-newly-built');
         buildCueCard = card;
-        if (showBuildNotice(card)) startBuildFlight(card, origin, entry, destination);
-        else clearBuildFlight();
-        const clearArrival = event => {
-            if (event.target !== card || event.animationName !== 'cardboard-card-arrival') return;
-            clearBuildCue();
+        const beginArrival = () => {
+            if (generation !== buildCueGeneration || buildCueCard !== card || !card.isConnected) return;
+            if (animate) void card.offsetWidth;
+            card.classList.add('cardboard-card-newly-built');
+            const clearArrival = event => {
+                if (generation !== buildCueGeneration || event.target !== card || event.animationName !== 'cardboard-card-arrival') return;
+                clearBuildCue();
+            };
+            buildCueListener = clearArrival;
+            card.addEventListener('animationend', clearArrival);
+            buildCueTimer = setTimeout(clearBuildCue, 1200);
         };
-        buildCueListener = clearArrival;
-        card.addEventListener('animationend', clearArrival);
-        buildCueTimer = setTimeout(clearBuildCue, 1200);
+        // The destination celebrates the card's arrival, rather than pulsing
+        // while the same purchase is still travelling across the table.
+        // Cancellation never calls beginArrival; reduced motion and purchases
+        // without a visible route retain the immediate real-card feedback.
+        if (showBuildNotice(card)) {
+            if (!startBuildFlight(card, origin, entry, destination, beginArrival)) beginArrival();
+        } else {
+            clearBuildFlight();
+            beginArrival();
+        }
     }
 
     function clearLandmarkCue(landmark) {
