@@ -10906,7 +10906,13 @@ html[data-design="cardboard"] .cardboard-card {
 }
 html[data-design="cardboard"] .cardboard-card:focus-visible,
 html[data-design="cardboard"] .cardboard-landmark:focus-visible { z-index: 2; outline: 3px solid #123c67; outline-offset: 2px; }
-html[data-design="cardboard"] .cardboard-card-newly-built { z-index: 1; animation: cardboard-card-arrival 860ms cubic-bezier(.2, .8, .25, 1) both; }
+html[data-design="cardboard"] .cardboard-card-newly-built {
+    z-index: 1;
+    will-change: transform, opacity;
+    --cardboard-arrival-shadow: 0 0 0 3px #e8b92b, 0 4px 12px #72551c55;
+    box-shadow: var(--cardboard-arrival-shadow);
+    animation: cardboard-card-arrival 860ms cubic-bezier(.2, .8, .25, 1) both;
+}
 html[data-design="cardboard"] body.accessibility-reduced-motion .cardboard-card-newly-built { animation: none !important; outline: 3px solid #1766bd; outline-offset: -3px; }
 html[data-design="cardboard"] .cardboard-cards .cardboard-card { scroll-snap-align: start; }
 html[data-design="cardboard"] .cardboard-card-blue { --cardboard-card-color: var(--cardboard-blue); --cardboard-card-tint: #d4e7ff; }
@@ -11466,9 +11472,9 @@ html[data-design="cardboard"] #cardboardDiceReceipt > .cardboard-transfer-summar
     100% { transform: translateY(0); box-shadow: 0 0 0 4px #f4bc20, 0 0 18px #f4bc2066; }
 }
 @keyframes cardboard-card-arrival {
-    0% { opacity: .62; transform: translateY(8px) scale(.94); box-shadow: 0 0 0 0 #d89e1d00; }
-    58% { opacity: 1; transform: translateY(-2px) scale(1.035); box-shadow: 0 0 0 5px #e8b92b, 0 5px 16px #72551c55; }
-    100% { opacity: 1; transform: translateY(0) scale(1); box-shadow: 0 2px 3px #243a4120; }
+    0% { opacity: .62; transform: translateY(8px) scale(.94); }
+    58% { opacity: 1; transform: translateY(-2px) scale(1.035); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes cardboard-dice-land {
     0% { opacity: .45; transform: translateY(-12px) rotate(-14deg) scale(.78); }
@@ -13910,7 +13916,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     border-radius: 8px;
     background: #f2f5ed;
     color: #17394a;
-    box-shadow: 0 3px 0 #fff8, 0 5px 8px #082d4255;
+    box-shadow: var(--cardboard-arrival-shadow, 0 3px 0 #fff8, 0 5px 8px #082d4255);
     scroll-snap-align: none;
 }
 

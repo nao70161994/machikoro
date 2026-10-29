@@ -245,3 +245,21 @@ abc75cbaのWebKit shard4/5も建設で失敗。以前のpaused0待ちとは異�
 診断時だけ固定WebKitで建設5条件をretry0/worker1で実行し、PNG/trace/実frameとcancel stackをartifactへ保存する。全341件を原因調査ごとに再実行する待ち時間を減らすための補助で、完了ゲートの代替ではない。
 YAMLはPython yaml.safe_loadでparse成功。JS構文/diff確認成功、診断追加後の1440 local1件は17.0秒で成功。
 abc実UIは縦234操作/364click/index95/382094ms、横228操作/335click/index85/365139ms、両方completed/pageErrors0。最新6画像の独立再レビュー中。
+
+abc75cba Nightly40838711555の確定結果は338成功・2失敗・1許可済skip、flaky0。全341件/coverage成功、6分割は7.8〜15.7分。失敗は1440と320通知の建設のみ。
+最新abc6画像の独立レビューも完了：全geometry sample outside0、倍率fit一致、landmark切れ/ownerlabel被覆の新規退行なし。CPU勝利の結果画面も正しく明瞭。
+746492a7で取消診断とmanual専用5case jobをPush。40840644090で実行中。通常全件CIの代替ではない。
+
+## 取消診断で確定した事実と描画負荷の試案
+
+40840644090は建設5条件で3成功/2失敗（320/1440）。両失敗のcancel記録はcurrentTime480/playStatefinished、呼出元はfinished.thenのclearBuildFlight（594行）。
+途中の視点変更やscroll cancelではない。前回の『取消元未確定』を解消し、取消ガードは変更しない。
+RAF間隔は約500〜1300msとなり、飛行の全寿命が観測frame間に消費された。ready通知が実paintを保証しないという指摘と一致する。
+到着カードの860ms shadow補間がSVGを含む再描画を招く可能性を調べるため、shadowを一時classの固定gold ringにし、keyframeをtransform/opacityだけにする試案を検証する。
+一時classだけにwill-changeを付け、全カードへの恒久layerは追加しない。480ms飛行/860ms到着/1500ms観測期限は変更しない。これは仮説に対する検証で、WebKitの結果を見る前に根本原因と断定しない。
+
+到着compositing試案のlocal5条件は5/5成功（1.1分）。独立レビューは影補間削除の妥当性と、通常卓shadowの高特異性にgoldが負けるcascade問題を指摘。
+通常卓shadowをvar(--cardboard-arrival-shadow,既存紙shadow)で描き、到着classだけ同変数を定義するよう修正した。到着class除去で既存shadowへ戻る。
+860msの到着終了/最大1200msのcleanup、Reduced Motion/HCの既存outlineと他イベントのkeyframesは維持。固定ringはclass終了まで残る点が旧影補間との見た目の差。
+
+最終cascade修正後の844px localも15.0秒で成功。flight画像を目視し、所有カードの固定gold ringと移動ghostを確認。文字/アート/通知の欠落なし。WebKitの改善効果は次の短い診断で確認する。
