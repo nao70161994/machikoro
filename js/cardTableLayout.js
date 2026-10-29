@@ -120,21 +120,29 @@ const CardTableLayout = (() => {
                 setStyle(panel, 'width', `${nativeWidthFor(columns) + (railWidth && rail ? railWidth + 16 : 0)}px`);
             }
             function ownerSize(panel, columns, rail = false) {
-                const key = [panel.querySelectorAll('.cardboard-card').length,
+                const key = JSON.stringify([panel.querySelectorAll('.cardboard-card').length,
                     panel.querySelectorAll('.cardboard-landmark-built').length,
-                    panel.querySelector('.cardboard-header')?.textContent,
-                    viewportWidth, viewportHeight].join(':');
-                let cache = ownerMeasurements.get(panel);
-                if (!cache || cache.key !== key) {
-                    cache = { key, sizes: new Map() };
-                    ownerMeasurements.set(panel, cache);
+                    // The table hides the balance/turn HUD. Only the visible
+                    // heading can change this header's measured footprint.
+                    panel.querySelector('.cardboard-player-heading')?.textContent,
+                    viewportWidth, viewportHeight,
+                    world.ownerDocument.body?.className, world.ownerDocument.documentElement.className]);
+                let history = ownerMeasurements.get(panel);
+                if (!history) {
+                    history = new Map();
+                    ownerMeasurements.set(panel, history);
                 }
+                const sizes = history.get(key) || new Map();
+                // Retain only exact geometry/style contexts, most recently used last.
+                history.delete(key);
+                history.set(key, sizes);
+                if (history.size > 3) history.delete(history.keys().next().value);
                 const shapeKey = `${columns}:${rail}`;
-                if (!cache.sizes.has(shapeKey)) {
+                if (!sizes.has(shapeKey)) {
                     applyOwnerShape(panel, columns, rail);
-                    cache.sizes.set(shapeKey, { nativeWidth: panel.offsetWidth, nativeHeight: panel.offsetHeight });
+                    sizes.set(shapeKey, { nativeWidth: panel.offsetWidth, nativeHeight: panel.offsetHeight });
                 }
-                return cache.sizes.get(shapeKey);
+                return sizes.get(shapeKey);
             }
             function marketSize(columns, rows = rowsFor(columns)) {
                 const key = [viewportWidth, viewportHeight,

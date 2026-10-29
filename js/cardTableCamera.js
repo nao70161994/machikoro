@@ -351,10 +351,10 @@ const CardTableCamera = (() => {
             overviewMode = false;
             inspectionPadding = true;
             facePlayer(player);
-            paint();
-            const before = card.getBoundingClientRect();
-            const fitted = Math.min((viewport.clientWidth - 24) / (before.width / scale),
-                (viewport.clientHeight - 24) / (before.height / scale));
+            // The seat and camera rotations cancel in this face-on view.
+            // Native card dimensions avoid painting/measuring an intermediate matrix.
+            const fitted = Math.min((viewport.clientWidth - 24) / Math.max(1, card.offsetWidth),
+                (viewport.clientHeight - 24) / Math.max(1, card.offsetHeight));
             scale = clamp(Math.min(Math.max(scale, 0.85), fitted));
             paint();
             const bounds = card.getBoundingClientRect();

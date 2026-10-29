@@ -626,8 +626,11 @@ test('同じ対局で市場と表示モードを5連続往復して共有DOMと�
         });
         if (cycle === 0) expectedLandmark = opened.name;
         expect(expectedLandmark).toBeTruthy();
-        expect(opened).toEqual({ open: true, goalOpen: true, name: expectedLandmark, enabled: true, visible: true, focused: true });
+        expect(opened, `市場往復 ${cycle + 1}/5 の拡大市場`).toEqual({ open: true, goalOpen: true, name: expectedLandmark, enabled: true, visible: true, focused: true });
         await page.locator('#cardboardMarketClose').click();
+        // Closing restores launcher focus asynchronously after dialog teardown.
+        // Preserve the original retrying focus contract before batch observation.
+        await expect(page.locator('#cardboardMarket .compact-market-expand'), `市場往復 ${cycle + 1}/5 の起動ボタンへフォーカス復帰`).toBeFocused();
         const closed = await page.evaluate(themes => {
             const dialog = document.getElementById('cardboardMarketDialog');
             const launcher = document.querySelector('#cardboardMarket .compact-market-expand');
@@ -649,10 +652,10 @@ test('同じ対局で市場と表示モードを5連続往復して共有DOMと�
             }
             return { closed, focused, visible, transitions };
         }, marketRoundTripThemes);
-        expect({ closed: closed.closed, focused: closed.focused, visible: closed.visible }).toEqual({ closed: true, focused: true, visible: true });
-        expect(closed.transitions.map(item => ({ theme: item.theme, shared: item.shared })))
+        expect({ closed: closed.closed, focused: closed.focused, visible: closed.visible }, `市場往復 ${cycle + 1}/5 の閉じる操作`).toEqual({ closed: true, focused: true, visible: true });
+        expect(closed.transitions.map(item => ({ theme: item.theme, shared: item.shared })), `市場往復 ${cycle + 1}/5 のテーマ変更`)
             .toEqual(marketRoundTripThemes.map(theme => ({ theme, shared: true })));
-        for (const transition of closed.transitions) expect(transition.snapshot).toEqual(before);
+        for (const transition of closed.transitions) expect(transition.snapshot, `市場往復 ${cycle + 1}/5 の ${transition.theme} 正本`).toEqual(before);
     }
     expect(await state(page)).toEqual(before);
 });
