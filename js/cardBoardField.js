@@ -60,7 +60,6 @@ const CardBoardField = (() => {
     /** @type {{ left: number, top: number } | null} */
     let buildFlightScroll = null;
     let buildFlightAnimation = null;
-    let buildFlightFrame = null;
     let buildFlightGeneration = 0;
     let buildCueCard = null;
     let buildCueListener = null;
@@ -506,8 +505,6 @@ const CardBoardField = (() => {
 
     function clearBuildFlight() {
         buildFlightGeneration++;
-        if (buildFlightFrame !== null) globalThis.cancelAnimationFrame(buildFlightFrame);
-        buildFlightFrame = null;
         buildFlightAnimation?.cancel();
         buildFlightAnimation = null;
         buildFlight?.remove();
@@ -586,17 +583,14 @@ const CardBoardField = (() => {
             { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
         ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
         buildFlightAnimation = animation;
-        // Paint the restored table and the new compositing layer before its
-        // clock starts. Otherwise a slow first paint can consume the flight.
+        // Start after the browser has committed the pending pause, rather
+        // than spending two whole paints waiting on a fixed RAF sequence.
         animation.pause();
         animation.currentTime = 0;
-        buildFlightFrame = globalThis.requestAnimationFrame(() => {
-            buildFlightFrame = globalThis.requestAnimationFrame(() => {
-                buildFlightFrame = null;
-                if (current() && buildFlight === ghost) animation.play();
-                else if (buildFlight === ghost) clearBuildFlight();
-            });
-        });
+        animation.ready.then(() => {
+            if (current() && buildFlight === ghost) animation.play();
+            else if (buildFlight === ghost) clearBuildFlight();
+        }).catch(() => {});
         animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
     }
 

@@ -8,17 +8,18 @@
 
 ## 現在の確認対象
 
-最新製品修正: `9c70127b`。描画開始順・所属ラベル・構造変更直後の同期を追加修正。現在の固定環境再確認: [Nightly](https://github.com/nao70161994/machikoro/actions/runs/40808153550)、[Release](https://github.com/nao70161994/machikoro/actions/runs/40808154666)、[16画像](https://github.com/nao70161994/machikoro/actions/runs/40808154698)、[縦横実UI](https://github.com/nao70161994/machikoro/actions/runs/40808156172)。以下の確定結果表は前回e99f281c。
+固定環境で確認中の製品: `f253d15d`。所有者寸法の完全一致LRUと正面閲覧の中間描画削減、同一対局5往復の非同期focus観測を修正。詳細と経緯は下記の追記を参照。
 
 | 対象 | 根拠 | 状況 |
 | --- | --- | --- |
-| 最新mainとの差分 | リモートmain `a265ca7e`、PR #18までを基点 | 維持 |
-| Nightly全体 | [40348257029](https://github.com/nao70161994/machikoro/actions/runs/40348257029) | 337件を実行。331成功・3失敗・2再試行成功・許可済みopt-in skip 1。失敗は建設演出の動作中フレーム |
-| 通常Release | [40348234688](https://github.com/nao70161994/machikoro/actions/runs/40348234688) | 全ジョブ成功 |
-| 16画面・広場操作 | [40348234357](https://github.com/nao70161994/machikoro/actions/runs/40348234357) | 全ジョブ成功 |
-| 修正後の縦横実UI完走 | [40348261788](https://github.com/nao70161994/machikoro/actions/runs/40348261788) | 縦88ターン/243操作/372クリック/563780ms、横70ターン/172操作/278クリック/446941ms。両方pageErrors0 |
-| テスト列挙 | `nightly-browser-coverage.js plan` | 337件。欠落・重複・未完走なし。57/56/56/56/56/56件 |
-| ローカル関連検証 | e99の建設5幅・通知/終了確認4・広場操作2、構文・型・inventory unit | 成功。固定環境WebKitの代替とはしない |
+| 最新mainとの差分 | main `a265ca7e`、PR #18までを基点 | canonicalルール・CPU・online・storageの互換性を維持する方針 |
+| 最新Nightly | [40837091573](https://github.com/nao70161994/machikoro/actions/runs/40837091573) | 実行中。列挙・simulation・unit/PWA/online・online-soak成功。341件のWebKit等6分割は完了待ち |
+| 最新Release | [40837085876](https://github.com/nao70161994/machikoro/actions/runs/40837085876) | 全成功 |
+| 最新16画面・操作 | [40837085840](https://github.com/nao70161994/machikoro/actions/runs/40837085840) | 実行中 |
+| 最新縦横実UI完走 | [40837106936](https://github.com/nao70161994/machikoro/actions/runs/40837106936) | 全成功。縦201操作/横174操作、pageErrors0 |
+| 前回Nightly | [40810424216](https://github.com/nao70161994/machikoro/actions/runs/40810424216) | 341件完走。337成功・2失敗・1再試行成功・1許可済skip。未安定 |
+| 前回Release・16画像・実UI | `1fe3cfac` の3workflow | 全成功。縦234操作/横245操作、pageErrors0、6画像独立レビュー済 |
+| 最新ローカル関連検証 | 建設320/844+市場5往復、回転閲覧復帰/38施設/成長clip、構文・型 | ブラウザ計6件retry0成功。固定WebKitの代替とはしない |
 
 ## 今回の修正
 
@@ -41,7 +42,7 @@ assert削除・差分許容値の緩和・強制クリックで失敗を隠す�
 
 ## 実プレイと見た目
 
-直近の実UI完走は `012a3344`。縦は55ターン/138操作/221クリック/206702msで完走しpageErrors0。
+以下は過去 `012a3344` の実UI完走記録。最新の完走結果は上表と末尾の追記を参照。縦は55ターン/138操作/221クリック/206702msで完走しpageErrors0。
 縦画像の独立レビューでは、中盤の所有者ラベル重なりとランドマーク切れの解消を確認。
 撮影前後と8RAFすべて範囲外要素0、各時点の倍率とfit値が一致した。
 横は77ターン/213操作/320クリック/428362msで完走しpageErrors0。画像の独立レビューでも
@@ -203,3 +204,21 @@ seatとcameraの回転が相殺する正面閲覧に限定した経路で、最�
 Camera差分も独立静的レビューで採用可：正面化時の回転相殺、同期reading配置、最終center測定、Back状態を維持。
 一時的な到着/hover transformをfit基準へ混ぜず、最終paintでlabel/geometry通知は実行する。
 変更後の構文・型検査（main/ui/storage/online composition roots）もすべて成功。
+
+## f253d15d の固定環境結果と建設開始の追加調査
+
+Release40837085876と縦横実UI40837106936は成功。縦390×844は201操作/315click/最終turn index77/479757ms、横844×390は174操作/287click/index70/442203ms。両方completed=true、pageErrors=[]。
+Nightlyはshard4の1440pxとshard5の320px更新通知中で建設flightが両attempt失敗。
+1440pxはghost生成close+約690ms、RAF観測+1324/+1540msでいずれもpaused/currentTime0。
+320通知は+1082/+2354ms、retry+873/+1595msでpaused0。二重RAF開始待ち自体が期限を消費している。
+中間paint削減だけでは安定化に不十分だった。fixtureのfocus復元5往復は今回成功。
+追加修正ではpause/currentTime0直後のanimation.readyを待って、既存current/identity guard通過時のみplayすること。
+readyはpending pauseの完了通知であり、初期ghostの実paint/GPU表示の証明ではない。独立レビューもこの限界を指摘。
+ready/finishedのreject処理、Undo/session/hidden/reduced-motionの取消条件、480ms寿命・1500ms観測・60〜400ms実frame検証を維持し、同じ条件で再確認する。
+
+ready方式のlocal5条件はretry0で5/5成功（55.1秒）。実flight frameをclose後320=440.6ms、390=481.7ms、844=523.9ms、1440=597.2ms、320通知=516.3msで観測。
+各currentTime66〜83ms、duration480ms、pointer-events none、画面内を既存assertで確認。unit card-board-fieldも成功。
+f253実UI6画像とgeometryを独立レビュー：before/after/RAF1〜8すべてoutside0、倍率/fit一致。ラベル被覆/landmark切れ退行なし。
+残差は終盤俯瞰小字、手番bannerの一時的な市場遮蔽、モール名末尾の折返し。静止画像で連続flight可視性/音/人間体感は保証しない。
+
+ready方式は構文・関連unit・型検査成功後にコミット。固定WebKitでの再確認は未完了。
