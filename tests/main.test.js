@@ -79,6 +79,7 @@ function loadMainRuntime(options = {}) {
         updateResumeButton: 0,
         loadSettings: 0,
         drawCitySkyline: 0,
+        dismissTurnGreeting: 0,
         resumeGame: 0,
         render: 0,
     };
@@ -162,6 +163,7 @@ function loadMainRuntime(options = {}) {
         onToggleTutorial(enabled) { localStorage.setItem('tutorialEnabled', enabled ? 'true' : 'false'); },
         onChangeTutorialLevel(level) { localStorage.setItem('tutorialLevel', level); },
         render() { counters.render++; },
+        dismissTurnGreeting() { counters.dismissTurnGreeting++; },
         switchTab(tab) { context.switchedTab = tab; },
         switchOnlineTab(tab) { context.switchedOnlineTab = tab; },
         scheduleCPU() {},

@@ -8,19 +8,19 @@
 
 ## 現在の確認対象
 
-固定環境で確認中の製品: `167fd409`。飛行を単一RAFでstageし、再生直前に0へ戻す。到着は影の連続再描画を避け、transform/opacityだけを動かす。寿命・判定条件は維持。
+固定環境で確認中の製品: `4f767e9c`。建設の単一RAF/到着描画軽量化を維持し、手番通知を中央overlayから既存HUDへ移した。main isolated fixtureの共通UI依存を追加修正中。
 
 | 対象 | 根拠 | 状況 |
 | --- | --- | --- |
 | PR | #19 / feat/nightly-table-quality | Draft、マージ保留 |
-| 建設5条件WebKit | [40842356508](https://github.com/nao70161994/machikoro/actions/runs/40842356508) | 5件retry0成功（1.6分） |
-| 全Nightly | [40842869174](https://github.com/nao70161994/machikoro/actions/runs/40842869174) | 341件、6分割で実行中 |
-| 通常Release | [40842352022](https://github.com/nao70161994/machikoro/actions/runs/40842352022) | 確認中 |
-| 16画面・操作 | [40842352032](https://github.com/nao70161994/machikoro/actions/runs/40842352032) | 確認中 |
-| 最新縦横実UI完走 | [40842884323](https://github.com/nao70161994/machikoro/actions/runs/40842884323) | 実行中 |
-| 前回全Nightly | abc75cba / 40838711555 | 338成功・建設2失敗・1許可済skip、flaky0。全341件完走 |
-| 前回実UI | abc75cba / 40838893026 | 全成功。6画像/geometry独立確認、重大な新規退行なし |
-| ローカル関連検証 | 単一RAF建設5条件、unit/構文/型 | 成功。全WebKit回帰の代替ではない |
+| 全Nightly | [40878837788](https://github.com/nao70161994/machikoro/actions/runs/40878837788) | 344件の収集・網羅性確認は成功。unit fixture4失敗、ブラウザはHUD通知・建設・市場/表示モード往復の3ケース失敗 |
+| 通常Release | [40878828247](https://github.com/nao70161994/machikoro/actions/runs/40878828247) | main fixture依存不足で失敗。共通stub修正後local main163成功/0失敗 |
+| 16画面・操作 | [40878828367](https://github.com/nao70161994/machikoro/actions/runs/40878828367) | 成功 |
+| 最新縦横実UI完走 | [40878871130](https://github.com/nao70161994/machikoro/actions/runs/40878871130) | 縦横とも成功、画像/record取得済み。最新画像の独立確認は継続 |
+| 前回全Nightly | 167fd409 / 40842869174 | 339初回成功・1再試行成功・1許可済skip。全341件完走、未安定 |
+| 建設5条件WebKit | 167fd409 / 40842356508 | 5件retry0成功（1.6分）、全Nightlyの代替ではない |
+| HUD関連local | 4幅×5閲覧、ui/main/inventory unit、型、ESLint | 検証済。main成功の旧記録に4失敗が含まれた点は末尾で訂正 |
+| HUD独立レビュー | 実4PNGとsource | 採用可。中央遮蔽なし、1300ms/RM/HC/a11y/他3theme維持 |
 
 ## 今回の修正
 
@@ -313,3 +313,25 @@ mainのUI helper依存をcheckJs-main-globalsへvoid関数として明示。any�
 HUD finalの4composition-root型検査は成功。ESLintはmain→uiの新しいdismiss依存のglobal宣言不足を検出したため、main専用のreadonly globalsへ追加して再確認する。関連ui/main/inventory unitも成功。新しい全件CI・16基準画像・実UI完走はPush後にまとめて再確認する。
 
 readonly global宣言を追加した最終main/uiのESLintはexit0で成功。no-undefの無効化は行っていない。
+
+## 4f767e9c再確認とmain fixtureの訂正
+
+HUDの4画像とコードの独立再レビューは採用可。中央市場/カード/操作を覆わず、1300ms/両Reduced Motion/HC/読み上げ/他3テーマの通知を維持。狭幅でも名前/背景で手番を識別できる。
+最新実UI40878871130は縦横とも成功し、画像/実操作recordを取得中。Nightly40878837788/Release40878828247のunitはmain fixtureのdismissTurnGreeting未登録により画面復帰4ケースで失敗。
+前回はdice表示の個別stubだけを足したため、共通fixtureを使う遅延roll/選択の経路へ依存が渡っていなかった。共通loadMainRuntimeへcounter付きcollaboratorを追加し、製品コードをfallbackやtypeofで隠さず元の4ケースを再確認する。
+前回ローカルmain logにも同4失敗が含まれていた。node実行後のtailを同shellで呼んだ際にtailのexit0を成功と誤認した記録を訂正する。今後testコマンド単独の終了とログ全体の失敗数を確認する。
+既存assert削除/許容値緩和は行っていない。共通fixture修正後の実行を監視中。
+
+共通fixture修正後のmain実行は単独コマンドのexit0、ログ全体163成功/0失敗を確認。画面復帰4ケースも成功。
+
+4f WebKit shard5は1440建設で両attempt失敗：close+1107 noflight→+2610 paused0、retry+1010→+2109 paused0。開始方式を再調整せず、callback critical pathを計測する。
+既存建設testの診断へrequestAnimationFrame callbackの開始時刻/所要時間/登録stack/geometry key前後を最大120件追加。元rAFへ同callback this/時刻を委譲し、idを返すためcancelとclockは維持。記録はtestだけで、製品の実装は変更しない。
+静的独立調査の候補はclose通常Layout→focus用同期Layout→予約Camera.layout/ROの重複。Backの復帰状態を壊すためclose Layout丸ごと省略は採用しない。計測後に同geometryの不要な予約処理だけを対象にする。
+WebKit shard1はHUDの3RAF後cue=true期待が失敗。時間経過を考慮しないframe数の仮定を訂正し、各frameの実elapsedを記録、1300ms未満にcueが消えたら引き続き失敗とする。自然終了と自動配置による早期解除を区別し、明示閲覧は新しい1300ms通知でtimer/aria/current/stateを確認。寿命は延長せずclockも固定しない。
+
+### 計測とfixture修正の追加確認
+
+- 共通UI依存を補ったmain isolated unitは実プロセス終了コード0、163成功/0失敗。
+- HUDの寿命を実経過時間で検証する4幅と建設1440pxの計測ケースはlocal Chromiumで5成功（1.1分）。物理端末・WebKitの代替とはしない。
+- local計測では市場close後の通常layoutが75ms、続く正面閲覧/建設準備が190ms。native WebKitでも同じcallback計測を収集し、不要な重複描画の判断材料とする。
+- 最新Nightlyでは市場/表示モード5往復ケースも45秒で失敗。目標summaryの通常クリック待ちであり、traceから非表示・不安定・総時間消費を区別して調査する。強制クリックや期限延長は行わない。

@@ -1692,7 +1692,24 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         await page.evaluate(() => {
             let closedAt = null;
             const startedAt = performance.now();
-            window.constructionTrace = { frames: [], mutations: [], cancellations: [], beforeClose: null };
+            window.constructionTrace = { frames: [], mutations: [], cancellations: [], tasks: [], beforeClose: null };
+            // Observe callback cost without changing scheduling or animation time.
+            const requestFrame = window.requestAnimationFrame;
+            window.requestAnimationFrame = function (callback) {
+                const scheduledBy = closedAt !== null && window.constructionTrace.tasks.length < 120 ? new Error().stack : null;
+                return requestFrame.call(window, function (timestamp) {
+                    const begin = performance.now();
+                    const keyBefore = document.getElementById('cardboardSeats')?.dataset.tableLayoutKey;
+                    try { return callback.call(window, timestamp); }
+                    finally {
+                        if (closedAt !== null && window.constructionTrace.tasks.length < 120) {
+                            window.constructionTrace.tasks.push({ afterClose:begin-closedAt,
+                                duration:performance.now()-begin, callback:callback.name, scheduledBy,
+                                keyBefore, keyAfter:document.getElementById('cardboardSeats')?.dataset.tableLayoutKey });
+                        }
+                    }
+                });
+            };
             // Distinguish a flight that finishes between paints from one cancelled
             // by a later camera/scroll update; retain the normal animation clock.
             const cancelAnimation = Animation.prototype.cancel;

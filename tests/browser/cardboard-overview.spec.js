@@ -647,15 +647,30 @@ for (const viewport of [{ width: 320, height: 844 }, { width: 390, height: 844 }
                 // render queues the same automatic geometry work as a normal UI
                 // refresh. It must not be interpreted as deliberate inspection.
                 render();
+                const startedAt = performance.now();
                 showTurnAnnouncer(game.currentPlayer().name, false, game.currentPlayerIndex);
-                for (let frame = 0; frame < 3; frame++) await new Promise(resolve => requestAnimationFrame(resolve));
+                const hasCue = () => document.getElementById('cardboardBoard').classList.contains('cardboard-turn-cue');
+                const initialHudCue = hasCue();
+                const automaticFrames = [];
+                for (let frame = 0; frame < 3; frame++) {
+                    await new Promise(resolve => requestAnimationFrame(resolve));
+                    automaticFrames.push({ elapsed:performance.now()-startedAt, hudCue:hasCue() });
+                }
+                // A busy renderer can spend the full 1300ms lifetime in three
+                // frames. Test early dismissal separately from natural expiry,
+                // then start a fresh cue for the explicit inspection below.
+                showTurnAnnouncer(game.currentPlayer().name, false, game.currentPlayerIndex);
                 return { display: document.getElementById('turnAnnouncer').style.display,
-                    hudCue: document.getElementById('cardboardBoard').classList.contains('cardboard-turn-cue'),
+                    initialHudCue, automaticFrames, showDurationMs:UiTurnAnnouncer.showDurationMs,
+                    hudCue:hasCue(),
                     status: document.getElementById('turnStatusAnnouncer').textContent,
                     current: document.querySelector('#cardboardRoster [aria-current="true"]').textContent };
             });
             expect(status.display, `${action}: 中央通知でカード卓を隠さない`).toBe('none');
-            expect(status.hudCue, `${action}: 自動配置ではHUDの手番強調を消さない`).toBe(true);
+            expect(status.initialHudCue, `${action}: HUDの手番強調を開始する`).toBe(true);
+            expect(status.automaticFrames.filter(frame => frame.elapsed < status.showDurationMs && !frame.hudCue),
+                `${action}: 1300msの自然終了前に自動配置が通知を消さない ${JSON.stringify(status.automaticFrames)}`).toEqual([]);
+            expect(status.hudCue, `${action}: 明示的な閲覧の前に新しい通知が存在する`).toBe(true);
             if (action === 'roster') await page.locator('#cardboardRoster [data-cardboard-player-index="1"]').click();
             else if (action === 'self' || action === 'readable') await cameraCommand(page, action);
             else {
