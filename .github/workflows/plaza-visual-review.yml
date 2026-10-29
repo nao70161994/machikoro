@@ -30,7 +30,7 @@ on:
     workflow_dispatch:
         inputs:
             construction_diagnostic_only:
-                description: Diagnose market round trips and five construction flights; does not replace full PR gates
+                description: Diagnose market lifecycle and five construction flights; does not replace full PR gates
                 required: true
                 default: false
                 type: boolean
@@ -170,8 +170,8 @@ jobs:
             - run: npm ci
             - name: Verify pinned preinstalled browser runtime
               run: node scripts/check-playwright-container.js
-            - name: Observe market round trips and real construction flights
-              run: npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知|同じ対局で市場と表示モードを5連続往復' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/construction-diagnostic
+            - name: Observe market lifecycle and real construction flights
+              run: npx playwright test cardboard-view.spec.js --grep '実ロール後の新規建設通知|同じ対局で市場と表示モードを5連続往復|市場の即時再表示は古いcloseイベント' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/construction-diagnostic
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:

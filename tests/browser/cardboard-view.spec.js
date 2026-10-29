@@ -594,6 +594,35 @@ for (let roundTripBatch = 1; roundTripBatch <= marketRoundTripCases; roundTripBa
     });
 }
 
+test('市場の即時再表示は古いcloseイベントで共有DOMとフォーカスを失わない', async ({ page }) => {
+    await prepare(page, { width: 1440, height: 936 });
+    const before = await state(page);
+    const reopened = await page.evaluate(async () => {
+        const dialog = document.getElementById('cardboardMarketDialog');
+        const shared = document.getElementById('cardboardMarket');
+        const buildMenu = document.getElementById('buildMenu');
+        shared.querySelector('.compact-market-expand').focus({ preventScroll: true });
+        // Await the actual queued native event, rather than guessing when a
+        // timeout or a rendering frame will deliver it after the second open.
+        const closed = new Promise(resolve => dialog.addEventListener('close', () => resolve(), { once: true }));
+        CardBoardField.openMarket();
+        CardBoardField.closeMarket();
+        CardBoardField.openMarket();
+        await closed;
+        return {
+            modal: dialog.open && dialog.matches(':modal'),
+            shared: document.getElementById('cardboardMarket') === shared && document.getElementById('buildMenu') === buildMenu,
+            inside: dialog.contains(shared),
+            focused: dialog.contains(document.activeElement),
+        };
+    });
+    expect(reopened).toEqual({ modal: true, shared: true, inside: true, focused: true });
+    expect(await state(page)).toEqual(before);
+    await page.locator('#cardboardMarketClose').click();
+    await expect(page.locator('#cardboardMarketDialog')).toBeHidden();
+    await expect(page.locator('#cardboardMarket .compact-market-expand')).toBeFocused();
+});
+
 // Retain the original same-page five-cycle stress contract separately from
 // the ten detailed isolated cases above. Batch observations, not UI actions.
 test('同じ対局で市場と表示モードを5連続往復して共有DOMとフォーカスを保つ', async ({ page }) => {

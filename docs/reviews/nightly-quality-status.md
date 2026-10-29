@@ -8,7 +8,7 @@
 
 ## 現在の確認対象
 
-固定環境で確認中の製品: `4f767e9c`。建設の単一RAF/到着描画軽量化を維持し、手番通知を中央overlayから既存HUDへ移した。main isolated fixtureの共通UI依存を追加修正中。
+固定環境で確認中の製品: `eb289904`。手番通知のHUD化、main fixture修復、背景描画の整理、建設の移動→到着祝福、勝利名称の組版を含む。通常Releaseと16画面は56/3adで成功。最新の建設1440pxは未安定で、market close処理の同task完結を追加検証中。
 
 | 対象 | 根拠 | 状況 |
 | --- | --- | --- |
@@ -369,3 +369,14 @@ WebKit shard1はHUDの3RAF後cue=true期待が失敗。時間経過を考慮し�
 - 編集JSのnode --check、ESLint、main/ui/storage/onlineのcheckJs全4rootが終了コード0。workflow固定環境/網羅性guardの既存6判定も成功。
 - source独立レビューで正常finished前のcurrent判定、cue世代、取消時の非再生、fallback1回を確認。初期描画停止の解消は未証明。[勝利844pxのfixture確認画像](assets/nightly-quality/winner-balanced-844-after.png)は全施設一覧を含むfullPage撮影であり、実機の一画面表示とは区別する。
 - 56a93bd5の16画面・操作40882016271と3ad5a67eの40883213215は両方成功。baselineの更新・許容値変更は行っていない。
+
+### native close待ちを取り除く追加修正
+
+- [eb289904重点WebKit40885362135](https://github.com/nao70161994/machikoro/actions/runs/40885362135)は6件中5成功/1440pxのみ失敗。市場5往復は約32.5秒で完了。320/390/844/320通知ありの建設は成功。単発比較のため安定性/速度向上の保証にはしない。
+- 1440pxはclose+782msでlayout51ms→準備38ms、+1531msでghost paused0となり期限に達した。短いcallbackが遅れて予約される経路を追うと、closeMarketは市場DOMを直ちに戻す一方、focus/Layout/演出準備を非同期native closeイベントまで待っていた。
+- 明示closeは同task内でfinishMarketCloseまで完了し、先に予約したcloseイベントは既存のignored counterで1回だけ消費する候補へ変更。戻した未layout卓の中間描画待ちを減らし、高速reopen後に古いcloseが新しい市場を片付ける競合も防ぐ。EscapeはpreventDefaultから同じclose経路へ揃える。詳細modalの一時suspend、origin採取、restoreFocus=false時の保留破棄、外部native closeのfallbackは維持する。
+- source独立レビューでcounterのFIFO/非リセット・DOM復帰1回・focus非復元の契約を確認。layout処理自体の負荷を解消したとは扱わず、native結果を待つ。
+
+- 同task close候補はlocalで市場5往復・購入/Undo/保存/RM・建設5条件の7件成功（1.8分）。追加したnative close実イベントを待つ再表示検証も1成功（8.6秒）。初回の追加fixtureは誤ってbuildMenu自体をmodal内部と期待し、次はAPI起動のfocus初期条件を省いて失敗したため、実際に移動するcardboardMarketと本来の起動ボタンへ揃えた。期待する共有DOM/内部配置/focus条件は削除していない。
+- [同一再表示手順の比較JSON](assets/nightly-quality/market-reopen-before-after.json): eb289904の製品JSをrouteで読み込むbeforeはmodal=trueだがinside=false/focused=false、修正後は全てtrue。ローカルChromiumの同一4人fixture/1440pxで再現し、worktreeを旧コードへ書き換えてはいない。実ゲーム完走と区別する。
+- [eb289904 CPU1500ms縦横実UI40885367734](https://github.com/nao70161994/machikoro/actions/runs/40885367734)は両方成功、最新画像/summary取得中。通常Release40885307898も成功。最新16画面40885308007は確認中。

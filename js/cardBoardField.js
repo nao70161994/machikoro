@@ -885,9 +885,14 @@ const CardBoardField = (() => {
         setMarketExpanded(false);
         const wasOpen = dialog?.open === true;
         if (wasOpen && restoreFocus) refreshPendingBuildOrigins();
-        if (wasOpen) dialog.close();
-        restoreMarketNode();
-        if (!wasOpen) finishMarketClose();
+        if (wasOpen) {
+            // Native close is queued asynchronously. Complete this exit now,
+            // before the restored table paints with its old market geometry.
+            // The queued event must not tear down a market reopened meanwhile.
+            ignoredMarketCloseEvents++;
+            dialog.close();
+        }
+        finishMarketClose();
     }
 
     function openMarket() {
@@ -1144,7 +1149,10 @@ const CardBoardField = (() => {
             if (event.target === event.currentTarget) closeTown();
         });
         node('cardboardMarketClose')?.addEventListener('click', () => closeMarket());
-        node('cardboardMarketDialog')?.addEventListener('cancel', refreshPendingBuildOrigins);
+        node('cardboardMarketDialog')?.addEventListener('cancel', event => {
+            event.preventDefault();
+            closeMarket();
+        });
         node('cardboardMarketDialog')?.addEventListener('close', () => {
             if (ignoredMarketCloseEvents > 0) { ignoredMarketCloseEvents--; return; }
             finishMarketClose();
