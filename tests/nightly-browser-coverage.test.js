@@ -77,7 +77,7 @@ runTest('browser workflows share the exact package-matched preinstalled runtime 
     const fs = require('fs');
     const { EXPECTED_VERSION, EXPECTED_IMAGE, checkContainer } = require('../scripts/check-playwright-container');
     assert.strictEqual(require('../package.json').devDependencies['@playwright/test'], EXPECTED_VERSION);
-    for (const [file, count] of [['nightly-release-test.yml', 1], ['release-test.yml', 1], ['plaza-visual-review.yml', 2]]) {
+    for (const [file, count] of [['nightly-release-test.yml', 1], ['release-test.yml', 1], ['plaza-visual-review.yml', 3]]) {
         const source = fs.readFileSync(require('path').join(__dirname, '../.github/workflows', file), 'utf8');
         assert.strictEqual(source.split('image: ' + EXPECTED_IMAGE).length - 1, count, file);
         assert.strictEqual(source.split('node scripts/check-playwright-container.js').length - 1, count, file);
