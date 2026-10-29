@@ -1692,7 +1692,17 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         await page.evaluate(() => {
             let closedAt = null;
             const startedAt = performance.now();
-            window.constructionTrace = { frames: [], mutations: [], beforeClose: null };
+            window.constructionTrace = { frames: [], mutations: [], cancellations: [], beforeClose: null };
+            // Distinguish a flight that finishes between paints from one cancelled
+            // by a later camera/scroll update; retain the normal animation clock.
+            const cancelAnimation = Animation.prototype.cancel;
+            Animation.prototype.cancel = function () {
+                if (this.effect?.target?.id === 'cardboardBuildFlight') {
+                    window.constructionTrace.cancellations.push({ at:performance.now()-startedAt,
+                        currentTime:this.currentTime, playState:this.playState, stack:new Error().stack });
+                }
+                return cancelAnimation.call(this);
+            };
             window.constructionGuardSnapshot = () => {
                 const viewport = document.getElementById('cardboardTableViewport');
                 const card = document.querySelector('#cardboardSeats [data-player-index="0"] .cardboard-card[data-card-name="麦畑"]');

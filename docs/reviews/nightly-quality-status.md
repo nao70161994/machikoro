@@ -222,3 +222,26 @@ f253実UI6画像とgeometryを独立レビュー：before/after/RAF1〜8すべ�
 残差は終盤俯瞰小字、手番bannerの一時的な市場遮蔽、モール名末尾の折返し。静止画像で連続flight可視性/音/人間体感は保証しない。
 
 ready方式は構文・関連unit・型検査成功後にコミット。固定WebKitでの再確認は未完了。
+
+## 確定したf253全体結果とabc75cba確認待ち
+
+f253 Nightly40837091573は341件をすべて実行、338成功・2失敗・1許可済skip、flaky0。
+6shardは9.2/10.1/9.5/9.2/11.4/13.2分で終了し、35分未完走は解消。網羅性jobも成功。
+残る失敗2件は前記1440pxと320通知のflightのみ。通常Release40837085876、16画像40837085840、実UI40837106936は全成功。
+abc75cbaでready方式をPush。Nightly40838711555、Release40838705031、16画像40838705108を確認中。
+CI待ちの間に同一修正の再Push・同じCIの再起動は行わず、確定結果を待つ。
+
+手番bannerの既知残差の実装確認：共通.turn-announcerがfixed全画面中央へ配置され、cardboardの差分はcontentの装飾/横持ち縮小のみ。
+市場遮蔽は単なる文字サイズではなく配置上の問題。上/下へ固定移動するだけでは相手施設や主要操作を代わりに隠すため、未検証のCSS移動は採用していない。
+
+abc75cbaのRelease40838705031・縦横実UI完走40838893026は成功。Nightly shard1は57件すべて初回成功（7.8分）。他shard/16画像は確認待ち。最新完走画像を取得して再レビューする。
+
+abc75cbaのWebKit shard4/5も建設で失敗。以前のpaused0待ちとは異なり、今回はRAF観測にflightが現れる前にDOMから消えている。
+1440は生成後約600ms、320通知retryは約378msでremove。480ms完了と途中cancelを現ログだけで断定しない。
+次の調査用に既存testの診断へAnimation.cancelの時刻/currentTime/playState/呼出stack記録を追加。実cancelは元実装へそのまま委譲し、clock/期限/assertは変更しない。
+取消原因が未確定の段階でガードを除いたり寿命を延長しない。
+
+手動専用construction_diagnostic_onlyを既存visual workflowへ追加。default=false、PRでは既存全ゲートの条件を維持し、Nightly/Releaseのケース数は変更しない。
+診断時だけ固定WebKitで建設5条件をretry0/worker1で実行し、PNG/trace/実frameとcancel stackをartifactへ保存する。全341件を原因調査ごとに再実行する待ち時間を減らすための補助で、完了ゲートの代替ではない。
+YAMLはPython yaml.safe_loadでparse成功。JS構文/diff確認成功、診断追加後の1440 local1件は17.0秒で成功。
+abc実UIは縦234操作/364click/index95/382094ms、横228操作/335click/index85/365139ms、両方completed/pageErrors0。最新6画像の独立再レビュー中。
