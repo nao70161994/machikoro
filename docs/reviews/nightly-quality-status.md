@@ -335,3 +335,21 @@ WebKit shard1はHUDの3RAF後cue=true期待が失敗。時間経過を考慮し�
 - HUDの寿命を実経過時間で検証する4幅と建設1440pxの計測ケースはlocal Chromiumで5成功（1.1分）。物理端末・WebKitの代替とはしない。
 - local計測では市場close後の通常layoutが75ms、続く正面閲覧/建設準備が190ms。native WebKitでも同じcallback計測を収集し、不要な重複描画の判断材料とする。
 - 最新Nightlyでは市場/表示モード5往復ケースも45秒で失敗。目標summaryの通常クリック待ちであり、traceから非表示・不安定・総時間消費を区別して調査する。強制クリックや期限延長は行わない。
+
+### 56a93bd5の追加証拠
+
+- [建設WebKit短期検証40882014604](https://github.com/nao70161994/machikoro/actions/runs/40882014604)はretry0で5件成功（1.5分）。全Nightlyの安定成功とは区別し、callback計測artifactを解析中。
+- 市場/表示モード同一対局5往復はlocal Chromiumで1成功（31.1秒）。失敗したnative WebKitのtraceは取得中で、製品不具合/総時間超過を未確定とする。
+- 4f767e9c実UI完走のsummary: 390×844は55turn・126操作・214click・28key・321587ms、844×390は79turn・224操作・337click・42key・348439ms。双方completed=true/pageErrors=[]。人間席を自動操作したブラウザ対局であり、物理スマートフォンでの確認ではない。
+- 相手正面閲覧から戻る2clickは縦785ms/横566ms、倍率・角度・canonical state復帰を記録。
+- 別視点で最新8画像（縦横の序/中/終/勝利）を確認。中央手番toastの遮蔽解消、新規label被覆/landmark切れなし。終盤小字・左右空白・モール名称折返し・出目確認時の短い遮蔽は残る。HUD初期実装者による追跡レビューなので、その部分の完全独立保証とはしない。静止画で480ms建設flightの連続可視性を保証しない。
+
+### 背景描画の比較候補
+
+- 56a93bd5のnative WebKit計測では通常table layoutは35〜79ms、建設準備17〜32ms、その後のcamera layoutは0〜1ms。一方、callback間には約240〜660msの空白がある。予約camera削減は原因として弱いため採用せず、background描画/compositingを調べる。
+- 4fの市場5往復traceでは、目標summaryは非表示で止まったのではない。最初の4回は毎回約2.8秒のvisible/enabled/stable確認後に通常click成功、closeも約2.9秒、5回目で対局全体45秒の期限に達した。retryも同じ。期限やassertは変更しない。
+- 市場dialogのbackdropは回転SVG卓全体へblur(3px)を掛けていた。背景色#071820c9は保ち、blurだけを外す候補を実装。localは市場5往復＋建設1440の2件成功（36.9秒）。native速度改善は未確認。
+- 同一4人fixture/1440pxの[変更前](assets/nightly-quality/market-backdrop-1440-before.png)と[変更後](assets/nightly-quality/market-backdrop-1440-after.png)を撮影・目視。beforeは同一ページへ旧blurをCSSで復元した比較であり、別commitの実対局画像ではない。市場アート/ボタン/寸法と背景の暗さは保たれ、背後の卓だけ輪郭が明瞭になる。
+- 短期manual WebKit診断に既存の同一対局5往復ケースを加え、建設5条件と合わせて6件を同じ固定環境で検証する。通常Release/Nightlyの網羅性・実行条件は変更しない。
+
+- 背景比較の独立目視でも市場と戻る操作の主従、暗幕、モーダル境界を維持。新たな重なり/可読性低下なし。既存の市場下の余白と次段の一部表示は両画像共通で、今回の改善成果とは数えない。
