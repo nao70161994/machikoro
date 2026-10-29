@@ -59,6 +59,7 @@ const CardBoardField = (() => {
     let buildFlight = null;
     /** @type {{ left: number, top: number } | null} */
     let buildFlightScroll = null;
+    let buildFlightFrame = null;
     let buildFlightAnimation = null;
     let buildFlightGeneration = 0;
     let buildCueCard = null;
@@ -505,6 +506,8 @@ const CardBoardField = (() => {
 
     function clearBuildFlight() {
         buildFlightGeneration++;
+        if (buildFlightFrame !== null) globalThis.cancelAnimationFrame(buildFlightFrame);
+        buildFlightFrame = null;
         buildFlightAnimation?.cancel();
         buildFlightAnimation = null;
         buildFlight?.remove();
@@ -583,14 +586,18 @@ const CardBoardField = (() => {
             { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
         ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
         buildFlightAnimation = animation;
-        // Start after the browser has committed the pending pause, rather
-        // than spending two whole paints waiting on a fixed RAF sequence.
+        // Stage the layer for one rendering update before starting its clock.
+        // A ready promise can resolve before that update; a second RAF adds
+        // another full paint of latency on busy renderers.
         animation.pause();
         animation.currentTime = 0;
-        animation.ready.then(() => {
-            if (current() && buildFlight === ghost) animation.play();
-            else if (buildFlight === ghost) clearBuildFlight();
-        }).catch(() => {});
+        buildFlightFrame = globalThis.requestAnimationFrame(() => {
+            buildFlightFrame = null;
+            if (current() && buildFlight === ghost) {
+                animation.currentTime = 0;
+                animation.play();
+            } else if (buildFlight === ghost) clearBuildFlight();
+        });
         animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
     }
 

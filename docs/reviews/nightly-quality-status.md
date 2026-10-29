@@ -263,3 +263,14 @@ RAF間隔は約500〜1300msとなり、飛行の全寿命が観測frame間に消
 860msの到着終了/最大1200msのcleanup、Reduced Motion/HCの既存outlineと他イベントのkeyframesは維持。固定ringはclass終了まで残る点が旧影補間との見た目の差。
 
 最終cascade修正後の844px localも15.0秒で成功。flight画像を目視し、所有カードの固定gold ringと移動ghostを確認。文字/アート/通知の欠落なし。WebKitの改善効果は次の短い診断で確認する。
+
+15e13e50の短いWebKit診断40841416872は5/5失敗。影補間削除だけで改善したとは評価しない。
+320通知では初回flight観測時currentTime426ms→479ms→finished、ほかも初回観測前にfinished cleanup。取消元は引き続き通常終了。
+ready通知直後の再生が初回描画に寿命を使う問題が残る。二重RAFではpaused0待ちが1500msを越えた証拠と合わせ、次は単一RAFでguard後currentTime0を再設定しplayする。
+1回のrender更新へstageして開始し、2回分のpaint待ちは避ける。pendingRAFのcancelをclearBuildFlightへ復旧し、すべての現在状態guardを維持する。寿命/期限/実frame assertionは未変更。
+
+単一RAF版のlocal建設5条件は5/5成功（1.3分）。close後816〜1031msにcurrentTime約66.6msの実flightを確認。unit/構文/diffも成功、型確認中。
+独立レビューは取消安全性を確認した一方、RAF callbackはpaint前なので『初期paint完了保証』とは言えないと指摘。その説明を維持し、WebKit同条件で比較する。
+同じ症状が残れば開始方式の変更を繰り返さず、close/focus/ownerlabel同期のcritical pathを計測・削減する。
+
+単一RAF版のmain/ui/storage/online composition-root型検査はすべて成功。
