@@ -8,18 +8,19 @@
 
 ## 現在の確認対象
 
-固定環境で確認中の製品: `f253d15d`。所有者寸法の完全一致LRUと正面閲覧の中間描画削減、同一対局5往復の非同期focus観測を修正。詳細と経緯は下記の追記を参照。
+固定環境で確認中の製品: `167fd409`。飛行を単一RAFでstageし、再生直前に0へ戻す。到着は影の連続再描画を避け、transform/opacityだけを動かす。寿命・判定条件は維持。
 
 | 対象 | 根拠 | 状況 |
 | --- | --- | --- |
-| 最新mainとの差分 | main `a265ca7e`、PR #18までを基点 | canonicalルール・CPU・online・storageの互換性を維持する方針 |
-| 最新Nightly | [40837091573](https://github.com/nao70161994/machikoro/actions/runs/40837091573) | 実行中。列挙・simulation・unit/PWA/online・online-soak成功。341件のWebKit等6分割は完了待ち |
-| 最新Release | [40837085876](https://github.com/nao70161994/machikoro/actions/runs/40837085876) | 全成功 |
-| 最新16画面・操作 | [40837085840](https://github.com/nao70161994/machikoro/actions/runs/40837085840) | 実行中 |
-| 最新縦横実UI完走 | [40837106936](https://github.com/nao70161994/machikoro/actions/runs/40837106936) | 全成功。縦201操作/横174操作、pageErrors0 |
-| 前回Nightly | [40810424216](https://github.com/nao70161994/machikoro/actions/runs/40810424216) | 341件完走。337成功・2失敗・1再試行成功・1許可済skip。未安定 |
-| 前回Release・16画像・実UI | `1fe3cfac` の3workflow | 全成功。縦234操作/横245操作、pageErrors0、6画像独立レビュー済 |
-| 最新ローカル関連検証 | 建設320/844+市場5往復、回転閲覧復帰/38施設/成長clip、構文・型 | ブラウザ計6件retry0成功。固定WebKitの代替とはしない |
+| PR | #19 / feat/nightly-table-quality | Draft、マージ保留 |
+| 建設5条件WebKit | [40842356508](https://github.com/nao70161994/machikoro/actions/runs/40842356508) | 5件retry0成功（1.6分） |
+| 全Nightly | [40842869174](https://github.com/nao70161994/machikoro/actions/runs/40842869174) | 341件、6分割で実行中 |
+| 通常Release | [40842352022](https://github.com/nao70161994/machikoro/actions/runs/40842352022) | 確認中 |
+| 16画面・操作 | [40842352032](https://github.com/nao70161994/machikoro/actions/runs/40842352032) | 確認中 |
+| 最新縦横実UI完走 | [40842884323](https://github.com/nao70161994/machikoro/actions/runs/40842884323) | 実行中 |
+| 前回全Nightly | abc75cba / 40838711555 | 338成功・建設2失敗・1許可済skip、flaky0。全341件完走 |
+| 前回実UI | abc75cba / 40838893026 | 全成功。6画像/geometry独立確認、重大な新規退行なし |
+| ローカル関連検証 | 単一RAF建設5条件、unit/構文/型 | 成功。全WebKit回帰の代替ではない |
 
 ## 今回の修正
 
@@ -274,3 +275,41 @@ ready通知直後の再生が初回描画に寿命を使う問題が残る。二
 同じ症状が残れば開始方式の変更を繰り返さず、close/focus/ownerlabel同期のcritical pathを計測・削減する。
 
 単一RAF版のmain/ui/storage/online composition-root型検査はすべて成功。
+
+167fd409の短い固定WebKit診断40842356508は5条件すべてretry0で成功（1.6分）。
+この成功だけで全Nightly安定化とは扱わず、同commitの全341件40842869174と縦横実UI40842884323をdispatchした。通常Release/16画像も確認する。
+
+成功診断の実JSON確認：movingのcurrentTimeは1440=84ms、320=76ms、320通知=78ms、390=119ms、844=71ms（全duration480/画面内/pointer-events none/cancellations空）。
+close後の観測は1440=1575ms、320=1017ms、320通知=769ms、390=882ms、844=702ms。1440は遅さが残る。
+既存inspectはmoving条件をtimeout条件より先に評価するため、1575msの同frameで成功となる。この判定順序は今回変更していないが、『全画面1500ms以内』とは報告しない。
+短い5case成功を操作応答の十分さや安定性の完全証明にせず、全Nightly結果と実プレイで判断する。
+
+## 手番通知を盤面外の既存HUDへ統合（実装・検証中）
+
+cardboardの中央toastを出さず、既存roster手番席の内側枠/手番badgeとstatus名を1300ms強調する。新しい情報panelや盤面overlayは追加しない。
+既存aria-liveのturnStatusAnnouncerと他3テーマの通知は維持。roll/inspection/winnerの解除をdismissTurnGreetingへ集約し、theme離脱/hidden/gameScreen非表示でもcueを解除する。上流のturn/Undo/replay発火判定は変更しない。
+CSSはopacity pulseのみ、Reduced Motionでは静的枠、HC色を維持。既存4幅のHUD/卓寸法は変更しない。
+ui unitに中央非表示/HUD cue/1300ms解除/明示取消/読み上げの契約を追加。ui unit成功。main isolated unitはUI側dismiss collaborator不足で1失敗となったが、stubとrolling時1回呼出assertを追加してmain unit成功。製品のscript順はui.js→main.jsを維持。
+既存正面閲覧テストはflex期待からnone+HUD cueへ変更し、閲覧後解除・a11y/current/state不変assertを残して4幅に展開（旧844ケースを含む）。実ブラウザで4ケースを確認中。
+
+167fd409全Nightly40842869174は成功したが、339初回成功・1flaky（320更新通知建設）・1許可済skip。安定完了と扱わない。
+失敗attemptはclose+357 noflight→+1404 paused0→+2810 finished後、guard取消ではない。最大frame gap1.4秒が残る。
+通常Release40842352022はunitのworkflow runtime期待数が2のままという旧期待値で失敗（診断job追加後は3）。期待数を3へ更新し、3jobすべてのimage/guard/ipc一致検証を保持。関連unit成功。
+新HUDcue4幅ブラウザは3成功/320で解除timer残存1失敗。ロール/閲覧の解除契約は緩めず、action別診断を追加して再確認中。
+
+HUD cueの320単独再実行は成功したが、4幅再確認ではlandmark詳細後timer残存を320/390/844で再現。撮影位置の切離しだけでは解消しなかった。
+原因経路：cardboardSeatsに束ねた詳細actionの委譲処理がイベントを止めると、boardのclickによるinspection解除まで届かない。カメラ変更が発生しない既に読めるlandmarkで露呈した。
+showCardDetailで実際にmodalを開けたとき、cardboardに限りdismissTurnGreetingを呼ぶよう追加。拒否された詳細では解除せず、他3テーマのtoastは変更しない。
+既存field側の閲覧解除も保持し、timer falseのassertを削除/緩和せず4幅再確認する。
+
+HUD finalの全体俯瞰4幅ブラウザは4/4成功（1.4分）。全5閲覧経路・timer解除・aria-live保持・current席/正本不変を確認し、全体復帰後の通知画像4枚を保存・目視した。
+小画面でbadgeが隠れても名前と席背景の強調が残るようにした。中央のカード/市場を覆う通知はない。
+確認画像：[320](assets/nightly-quality/hud-turn-cue-320-after.png) / [390](assets/nightly-quality/hud-turn-cue-390-after.png) / [844](assets/nightly-quality/hud-turn-cue-844-after.png) / [1440](assets/nightly-quality/hud-turn-cue-1440-after.png)。
+これらは同じ4人fixtureの通知後画像で、旧実UI中盤の画面と同seed/stateの比較ではない。過去のcontrolled before/after画像は既存assetを維持する。
+844の4人俯瞰はカードの小字と左右の空間が残り、HUD改善だけで盤面の商用同等を証明しない。次の空間設計評価の対象として明示する。
+列挙344件（元341の閲覧検証1件を4幅へ展開して+3）、6shard配分58/58/57/57/57/57。Android上の初回discoveryはplatform判定で失敗したが、既存platform shim経由の列挙で成功した。
+mainのUI helper依存をcheckJs-main-globalsへvoid関数として明示。anyや型検査除外で回避しない。
+
+HUD finalの4composition-root型検査は成功。ESLintはmain→uiの新しいdismiss依存のglobal宣言不足を検出したため、main専用のreadonly globalsへ追加して再確認する。関連ui/main/inventory unitも成功。新しい全件CI・16基準画像・実UI完走はPush後にまとめて再確認する。
+
+readonly global宣言を追加した最終main/uiのESLintはexit0で成功。no-undefの無効化は行っていない。

@@ -3700,13 +3700,41 @@ html[data-design="cardboard"] body.accessibility-high-contrast .turn-announcer-c
     box-shadow: none;
 }
 
-/* A short landscape table needs the market visible during the turn cue. */
-@media (max-height: 500px) and (min-width: 600px) {
-    html[data-design="cardboard"] .turn-announcer-content {
-        max-width: min(460px, calc(100vw - 24px));
-        padding: 6px 14px;
-        font-size: 16px;
-    }
+/* A turn cue stays inside the existing HUD and never covers the card table. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] {
+    outline: 2px solid #b9902b;
+    outline-offset: -3px;
+    background: #fff0b8;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] .cardboard-roster-name,
+html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue .cardboard-roster-turn-badge {
+    animation: cardboard-turn-cue 320ms ease-in-out alternate 4;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue .cardboard-turn-status-name {
+    background: #fff0b8;
+    border-radius: 4px;
+    color: #234c47;
+}
+@keyframes cardboard-turn-cue {
+    from { opacity: .6; }
+    to { opacity: 1; }
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] {
+    outline-color: #ffe66d;
+    background: #000;
+    color: #ffe66d;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-turn-cue .cardboard-turn-status-name {
+    background: #000;
+    color: #ffe66d;
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] .cardboard-roster-name,
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-turn-cue .cardboard-roster-turn-badge {
+    animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] .cardboard-roster-name,
+    html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue .cardboard-roster-turn-badge { animation: none; }
 }
 
 html:is([data-design="sunset"], [data-design="plaza"]) .turn-announcer-kind-icon {

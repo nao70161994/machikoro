@@ -695,6 +695,10 @@ runTest('main storage helperは共通facadeでget/removeと例外fallbackを維�
 
 runTest('main dice displayはpure viewを既存DOMへ反映する', () => {
     const rt = loadMainRuntime();
+    let dismissCount = 0;
+    // ui.js is loaded before main.js in the product; supply its collaborator
+    // in this isolated main runtime and verify rolling uses the shared dismiss.
+    rt.dismissTurnGreeting = () => { dismissCount++; };
     rt.updateDiceDisplay([], false);
     assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '0.2');
     assert.strictEqual(
@@ -707,7 +711,9 @@ runTest('main dice displayはpure viewを既存DOMへ反映する', () => {
     assert.ok(rt.__test.elements.diceResult.innerHTML.includes(rt.renderDiceFace(2)));
     assert.ok(rt.__test.elements.diceResult.innerHTML.includes(rt.renderDiceFace(6)));
 
+    assert.strictEqual(dismissCount, 0);
     rt.updateDiceDisplay(null, true);
+    assert.strictEqual(dismissCount, 1);
     assert.ok(rt.__test.elements.diceResult.innerHTML.includes('dice-face rolling'));
     assert.strictEqual(rt.__test.elements.diceResult.style.opacity, '1');
 });

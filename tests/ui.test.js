@@ -340,6 +340,28 @@ runTest('tutorial control wrapperはpure viewをcheckbox・button・levelへ反�
     assert.strictEqual(elements.btnTutorialLevel.getAttribute('aria-label'), 'チュートリアルの詳しさ、現在 初心者向け');
 });
 
+runTest('cardboard手番通知は市場を覆わずHUDを強調し1300msと明示取消で解除する', () => {
+    const { context, elements } = loadUiRuntime();
+    context.document.documentElement = { dataset: { design: 'cardboard' } };
+    context.showTurnAnnouncer('街1', false, 0);
+    const board = elements.cardboardBoard;
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), true);
+    assert.strictEqual(elements.turnStatusAnnouncer.textContent, 'プレイヤー1、人間、街1 のターン');
+    assert.deepStrictEqual(context.timeoutDelays, [1300]);
+    context.lastTimeout();
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), false);
+    assert.deepStrictEqual(context.timeoutDelays, [1300, 400]);
+    context.lastTimeout();
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    context.showTurnAnnouncer('街2', true, 1);
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), true);
+    context.dismissTurnGreeting();
+    assert.strictEqual(board.classList.contains('cardboard-turn-cue'), false);
+    assert.strictEqual(elements.turnAnnouncer.style.display, 'none');
+    assert.strictEqual(elements.turnStatusAnnouncer.textContent, 'プレイヤー2、CPU、街2 のターン');
+});
+
 runTest('turn announcer wrapperはpure viewと既存timer/DOM順を維持する', () => {
     const { context, elements } = loadUiRuntime();
 
