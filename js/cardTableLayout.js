@@ -423,6 +423,12 @@ const CardTableLayout = (() => {
             state = { ...state, ...nextState };
             schedule();
         }
+        function syncLayout() {
+            if (destroyed) return;
+            if (frame) view.cancelAnimationFrame(frame);
+            frame = 0;
+            layout();
+        }
         function destroy() {
             if (destroyed) return;
             destroyed = true;
@@ -436,7 +442,7 @@ const CardTableLayout = (() => {
         observe(world);
         observe(viewport);
         observe(market);
-        return Object.freeze({ refresh, setReadingSeat, destroy });
+        return Object.freeze({ refresh, syncLayout, setReadingSeat, destroy });
     }
     return Object.freeze({ create, computePinwheelGeometry });
 })();

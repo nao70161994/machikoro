@@ -932,3 +932,62 @@ test('CPU処理通知で盤面が縮む最初の描画から施設とランド�
     expect(reading.after).toEqual(reading.before);
     expect(await snapshot(page)).toEqual(before);
 });
+
+
+for (const width of [390, 844]) test(`終盤の所属ラベルで通常の名前を全文読める ${width}px`, async ({ page }) => {
+    await prepare(page, { width, height: width === 844 ? 390 : 844 }, 4, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach((player, index) => {
+            player.name = `プレイヤー${index + 1}`;
+            player.cards = CARDS.slice(0, 18).map(card => createCardByName(card.name));
+            Object.keys(player.landmarks).forEach((name, landmarkIndex) => { player.landmarks[name] = landmarkIndex < 5; });
+        });
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    const labels = page.locator('#cardboardOwnerLabels .cardboard-owner-label');
+    await expect(labels).toHaveCount(4);
+    await expect.poll(() => labels.evaluateAll(elements => elements.every(label => {
+        const bounds = label.getBoundingClientRect();
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')];
+        return label.scrollWidth <= label.clientWidth && !obstacles.some(element => {
+            const rect = element.getBoundingClientRect();
+            return Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
+                Math.min(bounds.bottom, rect.bottom) > Math.max(bounds.top, rect.top);
+        });
+    })), '通常名は全文表示し施設と市場を覆わない').toBe(true);
+});
+
+// The DOM can grow a second card row before its queued ResizeObserver runs.
+// The same render must update world geometry, not briefly clip an opponent.
+test('所有施設が一行から増えた描画で相手のカードを卓上端に切らない', async ({ page }) => {
+    await prepare(page, { width: 844, height: 390 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].cards = CARDS.slice(0, 5).map(card => createCardByName(card.name));
+        game.players[1].cards = CARDS.slice(0, 7).map(card => createCardByName(card.name));
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 2);
+    const result = await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[1].cards.push(createCardByName(CARDS[7].name));
+        const before = GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
+        render();
+        const viewport = document.getElementById('cardboardTableViewport');
+        const clip = viewport.getBoundingClientRect();
+        const outside = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark')]
+            .filter(element => {
+                const rect = element.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0 && (rect.left < clip.left + viewport.clientLeft ||
+                    rect.top < clip.top + viewport.clientTop || rect.right > clip.left + viewport.clientLeft + viewport.clientWidth ||
+                    rect.bottom > clip.top + viewport.clientTop + viewport.clientHeight);
+            }).map(element => ({ name: element.getAttribute('data-card-name') || element.getAttribute('data-landmark-name'),
+                bounds: element.getBoundingClientRect().toJSON() }));
+        return { outside, before, after: GameSnapshot.serializeUndoState(game, SHOP_STOCK, Number.MAX_SAFE_INTEGER) };
+    });
+    expect(result.outside, '次のRAFを待たず全実カードを新しい盤面へ収める').toEqual([]);
+    expect(result.after).toEqual(result.before);
+});

@@ -3700,6 +3700,15 @@ html[data-design="cardboard"] body.accessibility-high-contrast .turn-announcer-c
     box-shadow: none;
 }
 
+/* A short landscape table needs the market visible during the turn cue. */
+@media (max-height: 500px) and (min-width: 600px) {
+    html[data-design="cardboard"] .turn-announcer-content {
+        max-width: min(460px, calc(100vw - 24px));
+        padding: 6px 14px;
+        font-size: 16px;
+    }
+}
+
 html:is([data-design="sunset"], [data-design="plaza"]) .turn-announcer-kind-icon {
     display: inline-block;
     width: 28px;

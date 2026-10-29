@@ -33,6 +33,8 @@ const CardBoardField = (() => {
     let tableCamera = null;
     let tableLayout = null;
     let ownerLabelFrame = null;
+    /** @type {CanvasRenderingContext2D | null} */
+    let ownerLabelMeasure = null;
     let ownerLabelsInspecting = false;
     let mounted = false;
     let actionOrigin = null;
@@ -58,6 +60,7 @@ const CardBoardField = (() => {
     /** @type {{ left: number, top: number } | null} */
     let buildFlightScroll = null;
     let buildFlightAnimation = null;
+    let buildFlightFrame = null;
     let buildFlightGeneration = 0;
     let buildCueCard = null;
     let buildCueListener = null;
@@ -169,74 +172,93 @@ const CardBoardField = (() => {
             .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
         const placed = [];
         const shallow = bounds.height < 340;
-        const width = shallow || bounds.width < 500 ? 96 : 124;
+        const fallbackWidth = shallow || bounds.width < 500 ? 96 : 124;
+        const maximumWidth = shallow || bounds.width < 500 ? 176 : 200;
         const height = shallow ? 18 : 22;
         const gap = shallow ? 2 : 4;
         const clearance = shallow ? 1 : 3;
         layer.style.setProperty('--owner-label-height', `${height}px`);
         layer.style.setProperty('--owner-label-font', shallow ? '11px' : '12px');
         layer.style.setProperty('--owner-label-padding', shallow ? '0px' : '2px');
-        const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
-            top < rect.bottom + clearance && top + height > rect.top - clearance;
+        if (!ownerLabelMeasure) {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 1;
+            ownerLabelMeasure = canvas.getContext('2d');
+        }
+        if (ownerLabelMeasure) ownerLabelMeasure.font = `800 ${shallow ? 11 : 12}px ${window.getComputedStyle(viewport).fontFamily}`;
         for (const panel of panels) {
             const heading = panel.querySelector('.cardboard-player-heading');
             if (!heading) continue;
             const index = Number(/** @type {HTMLElement} */ (panel).dataset.playerIndex);
             const player = facts?.game?.players?.[index];
             if (!player) continue;
+            const labelText = `席${index + 1} · ${player.name}`;
+            // Match the actual name rather than reserving a long empty badge.
+            const preferredWidth = Math.max(fallbackWidth, Math.min(maximumWidth,
+                Math.ceil(ownerLabelMeasure?.measureText(labelText).width || maximumWidth) + 16));
             const anchor = heading.getBoundingClientRect();
             const region = panel.getBoundingClientRect();
-            /** @type {[number, number][]} */
-            const candidates = [
-                [anchor.left + (anchor.width - width) / 2, anchor.top + (anchor.height - height) / 2],
-                [region.left, region.top - height - 4],
-                [region.right - width, region.top - height - 4],
-                [region.left, region.bottom + 4],
-                [region.right - width, region.bottom + 4],
-                [region.left - width - 4, region.top],
-                [region.right + 4, region.top],
-            ];
-            for (const fraction of [0.15, 0.35, 0.5, 0.65, 0.85]) {
-                const x = region.left + region.width * fraction - width / 2;
-                const y = region.top + region.height * fraction - height / 2;
-                candidates.push(
-                    [anchor.left + (anchor.width - width) * fraction, anchor.top + (anchor.height - height) * fraction],
-                    [x, region.top - height - gap], [x, region.bottom + gap],
-                    [region.left - width - gap, y], [region.right + gap, y],
-                );
+            let placement = null;
+            // Prefer readable names, retaining the compact search when space is tight.
+            for (const width of new Set([preferredWidth, fallbackWidth])) {
+                const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
+                    top < rect.bottom + clearance && top + height > rect.top - clearance;
+                /** @type {[number, number][]} */
+                const candidates = [
+                    [anchor.left + (anchor.width - width) / 2, anchor.top + (anchor.height - height) / 2],
+                    [region.left, region.top - height - 4],
+                    [region.right - width, region.top - height - 4],
+                    [region.left, region.bottom + 4],
+                    [region.right - width, region.bottom + 4],
+                    [region.left - width - 4, region.top],
+                    [region.right + 4, region.top],
+                ];
+                for (const fraction of [0.15, 0.35, 0.5, 0.65, 0.85]) {
+                    const x = region.left + region.width * fraction - width / 2;
+                    const y = region.top + region.height * fraction - height / 2;
+                    candidates.push(
+                        [anchor.left + (anchor.width - width) * fraction, anchor.top + (anchor.height - height) * fraction],
+                        [x, region.top - height - gap], [x, region.bottom + gap],
+                        [region.left - width - gap, y], [region.right + gap, y],
+                    );
+                }
+                const ownCards = cardGroups.find(group => group.panel === panel)?.rects || [];
+                if (!ownCards.length) continue;
+                // Panel boxes include empty cells in ragged collections. Anchor to
+                // actual facility edges, so a label cannot float in that empty rim.
+                for (const card of ownCards) {
+                    candidates.push([card.left, card.top - height - gap], [card.right - width, card.top - height - gap],
+                        [card.left, card.bottom + gap], [card.right - width, card.bottom + gap],
+                        [card.left - width - gap, card.top], [card.right + gap, card.top]);
+                }
+                const distance = (left, top, rect) => Math.hypot(
+                    Math.max(rect.left - left - width, left - rect.right, 0),
+                    Math.max(rect.top - top - height, top - rect.bottom, 0));
+                const nearest = (left, top, cards) => cards.length
+                    ? Math.min(...cards.map(rect => distance(left, top, rect))) : Infinity;
+                const otherCards = cardGroups.filter(group => group.panel !== panel).flatMap(group => group.rects);
+                const centerX = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.left + rect.width / 2, 0) / ownCards.length : anchor.left;
+                const centerY = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.top + rect.height / 2, 0) / ownCards.length : anchor.top;
+                const available = candidates.filter(([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
+                    top >= innerTop + gap && top + height <= innerBottom - gap &&
+                    !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)) &&
+                    nearest(left, top, ownCards) <= nearest(left, top, otherCards) + 0.5);
+                const score = ([left, top]) => nearest(left, top, ownCards) +
+                    Math.hypot(left + width / 2 - centerX, top + height / 2 - centerY) * 0.002;
+                const ranked = available.map(position => ({ position, score: score(position) }));
+                ranked.sort((a, b) => a.score - b.score);
+                if (ranked[0]) {
+                    placement = { width, position: ranked[0].position };
+                    break;
+                }
             }
-            const ownCards = cardGroups.find(group => group.panel === panel)?.rects || [];
-            if (!ownCards.length) continue;
-            // Panel boxes include empty cells in ragged collections. Anchor to
-            // actual facility edges, so a label cannot float in that empty rim.
-            for (const card of ownCards) {
-                candidates.push([card.left, card.top - height - gap], [card.right - width, card.top - height - gap],
-                    [card.left, card.bottom + gap], [card.right - width, card.bottom + gap],
-                    [card.left - width - gap, card.top], [card.right + gap, card.top]);
-            }
-            const distance = (left, top, rect) => Math.hypot(
-                Math.max(rect.left - left - width, left - rect.right, 0),
-                Math.max(rect.top - top - height, top - rect.bottom, 0));
-            const nearest = (left, top, cards) => cards.length
-                ? Math.min(...cards.map(rect => distance(left, top, rect))) : Infinity;
-            const otherCards = cardGroups.filter(group => group.panel !== panel).flatMap(group => group.rects);
-            const centerX = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.left + rect.width / 2, 0) / ownCards.length : anchor.left;
-            const centerY = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.top + rect.height / 2, 0) / ownCards.length : anchor.top;
-            const available = candidates.filter(([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
-                top >= innerTop + gap && top + height <= innerBottom - gap &&
-                !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)) &&
-                nearest(left, top, ownCards) <= nearest(left, top, otherCards) + 0.5);
-            const score = ([left, top]) => nearest(left, top, ownCards) +
-                Math.hypot(left + width / 2 - centerX, top + height / 2 - centerY) * 0.002;
-            const ranked = available.map(position => ({ position, score: score(position) }));
-            ranked.sort((a, b) => a.score - b.score);
-            const position = ranked[0]?.position;
-            if (!position) continue;
+            if (!placement) continue;
+            const { width, position } = placement;
             const [left, top] = position;
             const label = document.createElement('span');
             label.className = 'cardboard-owner-label';
             label.dataset.playerIndex = String(index);
-            label.textContent = `席${index + 1} · ${player.name}`;
+            label.textContent = labelText;
             label.title = label.textContent;
             label.style.left = `${left - bounds.left - viewport.clientLeft}px`;
             label.style.top = `${top - bounds.top - viewport.clientTop}px`;
@@ -484,6 +506,8 @@ const CardBoardField = (() => {
 
     function clearBuildFlight() {
         buildFlightGeneration++;
+        if (buildFlightFrame !== null) globalThis.cancelAnimationFrame(buildFlightFrame);
+        buildFlightFrame = null;
         buildFlightAnimation?.cancel();
         buildFlightAnimation = null;
         buildFlight?.remove();
@@ -562,6 +586,17 @@ const CardBoardField = (() => {
             { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
         ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
         buildFlightAnimation = animation;
+        // Paint the restored table and the new compositing layer before its
+        // clock starts. Otherwise a slow first paint can consume the flight.
+        animation.pause();
+        animation.currentTime = 0;
+        buildFlightFrame = globalThis.requestAnimationFrame(() => {
+            buildFlightFrame = globalThis.requestAnimationFrame(() => {
+                buildFlightFrame = null;
+                if (current() && buildFlight === ghost) animation.play();
+                else if (buildFlight === ghost) clearBuildFlight();
+            });
+        });
         animation.finished.then(() => { if (buildFlight === ghost) clearBuildFlight(); }).catch(() => {});
     }
 
@@ -1538,6 +1573,12 @@ const CardBoardField = (() => {
                 ?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: reducedMotionEnabled() ? 'auto' : 'smooth' });
         }
         const seats = node('cardboardSeats');
+        const ownerStructure = () => JSON.stringify(Array.from(seats.querySelectorAll('.cardboard-player')).map(panel => [
+            /** @type {HTMLElement} */ (panel).dataset.playerIndex,
+            Array.from(panel.querySelectorAll('.cardboard-card')).map(card => card.getAttribute('data-card-name')),
+            Array.from(panel.querySelectorAll('.cardboard-landmark-built')).map(card => card.getAttribute('data-landmark-name')),
+        ]));
+        const previousOwnerStructure = ownerStructure();
         seats.dataset.playerCount = String(game.players.length);
         const board = node('cardboardBoard');
         board.dataset.playerCount = String(game.players.length);
@@ -1609,6 +1650,12 @@ const CardBoardField = (() => {
         arrangeCompactStatus();
         tableLayout?.refresh({ selfIndex: selfIndex ?? 0, playerCount: game.players.length, session });
         tableCamera?.refresh({ selfIndex: selfIndex ?? currentIndex, currentIndex, session });
+        if (previousOwnerStructure !== ownerStructure()) {
+            // A new row on a rotated owner extends above its old world bounds.
+            // Commit the new footprint and camera together before the next paint.
+            tableLayout?.syncLayout();
+            tableCamera?.syncLayout();
+        }
         scheduleOwnerLabels();
         updateTown();
         const receipt = node('cardboardDiceReceipt');
