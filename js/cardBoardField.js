@@ -194,7 +194,10 @@ const CardBoardField = (() => {
             const index = Number(/** @type {HTMLElement} */ (panel).dataset.playerIndex);
             const player = facts?.game?.players?.[index];
             if (!player) continue;
-            const labelText = `席${index + 1} · ${player.name}`;
+            const displayName = player.name || `席${index + 1}`;
+            const seatLabelText = player.name ? `席${index + 1} · ${displayName}` : displayName;
+            const duplicateName = Boolean(player.name) && facts.game.players.some((other, otherIndex) => otherIndex !== index && other.name === player.name);
+            const labelText = duplicateName ? seatLabelText : displayName;
             // Match the actual name rather than reserving a long empty badge.
             const preferredWidth = Math.max(fallbackWidth, Math.min(maximumWidth,
                 Math.ceil(ownerLabelMeasure?.measureText(labelText).width || maximumWidth) + 16));
@@ -261,7 +264,8 @@ const CardBoardField = (() => {
             label.className = 'cardboard-owner-label';
             label.dataset.playerIndex = String(index);
             label.textContent = labelText;
-            label.title = label.textContent;
+            label.title = seatLabelText;
+            label.setAttribute('aria-label', seatLabelText);
             label.style.left = `${left - bounds.left - viewport.clientLeft}px`;
             label.style.top = `${top - bounds.top - viewport.clientTop}px`;
             label.style.width = `${width}px`;

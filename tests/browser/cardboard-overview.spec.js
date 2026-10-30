@@ -1100,7 +1100,35 @@ test('縦持ち2人戦の終盤は所有者名を市場と施設群の境界で�
         })), `所有者名は${width}pxでも施設群の市場側に置く`).toBe(true);
         await page.screenshot({ path: testInfo.outputPath(`owner-boundary-${width}.png`) });
     }
+    // A shorter viewport may place labels beside a ragged card row. Preserve
+    // the complete ordinary names there without demanding an absent header gap.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await cameraCommand(page, 'overview');
+    const labels = page.locator('#cardboardOwnerLabels .cardboard-owner-label');
+    await expect(labels).toHaveText(['プレイヤー1', 'プレイヤー2']);
+    await expect.poll(() => labels.evaluateAll(elements => elements.every(label => {
+        const index = Number(label.dataset.playerIndex);
+        const bounds = label.getBoundingClientRect();
+        const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        const obstacles = [...document.querySelectorAll('#cardboardSeats .cardboard-card, #cardboardSeats .cardboard-landmark, #cardboardCenter')];
+        return label.scrollWidth <= label.clientWidth && label.title === `席${index + 1} · プレイヤー${index + 1}` &&
+            label.getAttribute('aria-label') === label.title && bounds.left >= viewport.left && bounds.right <= viewport.right &&
+            bounds.top >= viewport.top && bounds.bottom <= viewport.bottom && !obstacles.some(element => {
+                const rect = element.getBoundingClientRect();
+                return Math.min(bounds.right, rect.right) > Math.max(bounds.left, rect.left) &&
+                    Math.min(bounds.bottom, rect.bottom) > Math.max(bounds.top, rect.top);
+            });
+    })), '320×568でも名前を全文表示し所有施設と市場を覆わない').toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('owner-name-320-568.png') });
     expect(await snapshot(page)).toEqual(before);
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.players.forEach(player => { player.name = '街'; });
+        render();
+    });
+    await cameraCommand(page, 'overview');
+    const duplicateBefore = await snapshot(page);
+    await expect(labels).toHaveText(['席1 · 街', '席2 · 街']);
+    expect(await snapshot(page)).toEqual(duplicateBefore);
 });
 
 for (const width of [390, 844]) test(`終盤の所属ラベルで通常の名前を全文読める ${width}px`, async ({ page }) => {
