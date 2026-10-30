@@ -3,6 +3,12 @@
 
 // Read-only card board. Rules, selected seats, and event boundaries belong to callers.
 const UiCardBoard = (() => {
+    const nameSegmenter = typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function'
+        ? new Intl.Segmenter('ja', { granularity: 'word' }) : null;
+    function winnerLandmarkNameHtml(name, escape) {
+        const words = nameSegmenter ? Array.from(nameSegmenter.segment(name), part => part.segment) : [name];
+        return words.map(word => `<span class="cardboard-name-word">${escape(word)}</span>`).join('<wbr>');
+    }
     const colors = new Set(['blue', 'green', 'red', 'purple']);
     const colorNames = Object.freeze({ blue: '青', green: '緑', red: '赤', purple: '紫' });
     const colorLabels = Object.freeze({ blue: '青：全員の手番に発動', green: '緑：自分の手番に発動',
@@ -203,7 +209,8 @@ const UiCardBoard = (() => {
         const names = landmarkNames(player, options);
         const landmarks = names.filter(name => options.winnerCollection !== true || player.landmarks?.[name] === true).map(name => {
             const built = player.landmarks?.[name] === true;
-            return `<button type="button" class="cardboard-landmark ${built ? 'cardboard-landmark-built' : 'cardboard-landmark-unbuilt'}" data-action="showLandmarkDetail" data-landmark-name="${escape(name)}" aria-label="${escape(name)}、${built ? '建設済' : '未建設'}。詳細を表示" title="${escape(name)}：${built ? '建設済' : '未建設'}"><span class="cardboard-art" aria-hidden="true">${art(name, true)}</span><span class="cardboard-landmark-copy"><span class="cardboard-name">${escape(name)}</span><span class="cardboard-landmark-status">${built ? '建設済' : '未建設'}</span></span></button>`;
+            const label = options.winnerCollection === true ? winnerLandmarkNameHtml(name, escape) : escape(name);
+            return `<button type="button" class="cardboard-landmark ${built ? 'cardboard-landmark-built' : 'cardboard-landmark-unbuilt'}" data-action="showLandmarkDetail" data-landmark-name="${escape(name)}" aria-label="${escape(name)}、${built ? '建設済' : '未建設'}。詳細を表示" title="${escape(name)}：${built ? '建設済' : '未建設'}"><span class="cardboard-art" aria-hidden="true">${art(name, true)}</span><span class="cardboard-landmark-copy"><span class="cardboard-name">${label}</span><span class="cardboard-landmark-status">${built ? '建設済' : '未建設'}</span></span></button>`;
         }).join('');
         const builtCount = names.filter(name => player.landmarks?.[name] === true).length;
         const ownedCardCount = Array.isArray(player.cards) ? player.cards.length : 0;

@@ -15220,7 +15220,7 @@ html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-na
 }
 html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-landmarks {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
     overflow: visible;
     gap: 8px;
 }
@@ -15240,6 +15240,13 @@ html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-la
     max-height: none;
     overflow: visible;
     text-wrap: balance;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-name-word {
+    display: inline-block;
+    max-width: 100%;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    vertical-align: top;
 }
 html[data-design="cardboard"] body.accessibility-high-contrast #status .cardboard-winner-collection {
     border-color: #fff;

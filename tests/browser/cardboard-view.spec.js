@@ -1062,6 +1062,20 @@ test(`にぎわい広場の勝利カードコレクション ${viewport.width}px
         expect(Math.abs(firstRow[1].y - firstRow[0].y)).toBeLessThanOrEqual(1);
     }
     await expect(page.locator('.cardboard-winner-collection .cardboard-landmark-built')).toHaveCount(6);
+    const landmarkNames = await page.locator('.cardboard-winner-collection .cardboard-landmark').evaluateAll(elements => elements.map(element => {
+        const name = element.querySelector('.cardboard-name');
+        const bounds = name.getBoundingClientRect();
+        const words = [...name.querySelectorAll('.cardboard-name-word')].map(word => word.getBoundingClientRect());
+        return { name: name.textContent, top: element.getBoundingClientRect().top,
+            complete: name.textContent === element.getAttribute('data-landmark-name'),
+            wordsFit: words.length > 0 && words.every(word => word.left >= bounds.left && word.right <= bounds.right + 1),
+            mallWords: element.getAttribute('data-landmark-name') === 'ショッピングモール'
+                ? [...name.querySelectorAll('.cardboard-name-word')].map(word => word.textContent) : null };
+    }));
+    expect(landmarkNames.every(name => name.complete && name.wordsFit), JSON.stringify(landmarkNames)).toBe(true);
+    expect(landmarkNames.find(name => name.mallWords).mallWords).toEqual(['ショッピング', 'モール']);
+    if (viewport.width === 1440) expect(new Set(landmarkNames.map(name => Math.round(name.top))).size).toBe(1);
+
     await expect(page.locator('.cardboard-winner-collection .town-street')).toHaveCount(0);
     const owned = page.locator('.cardboard-winner-collection [data-card-name="麦畑"]');
     await owned.click();
