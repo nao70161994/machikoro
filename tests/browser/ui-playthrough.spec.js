@@ -15,8 +15,12 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     test.setTimeout(25 * 60 * 1000);
     const stopAfter = Number(process.env.UI_PLAYTHROUGH_STOP_AFTER) || 0;
     if (!Number.isInteger(stopAfter) || stopAfter < 0) throw new Error('Invalid partial action limit');
-    const viewport = process.env.UI_PLAYTHROUGH_LANDSCAPE === '1'
-        ? { width: 844, height: 390 } : { width: 390, height: 844 };
+    const viewportWidth = Number(process.env.UI_PLAYTHROUGH_WIDTH ||
+        (process.env.UI_PLAYTHROUGH_LANDSCAPE === '1' ? 844 : 390));
+    const viewports = { 320: { width: 320, height: 568 }, 390: { width: 390, height: 844 },
+        844: { width: 844, height: 390 }, 1440: { width: 1440, height: 900 } };
+    if (!Object.hasOwn(viewports, viewportWidth)) throw new Error('Invalid UI playthrough viewport');
+    const viewport = viewports[viewportWidth];
     const cpuSpeedMs = Number(process.env.UI_PLAYTHROUGH_CPU_SPEED || 1500);
     if (!Number.isInteger(cpuSpeedMs) || cpuSpeedMs < 100 || cpuSpeedMs > 3000 || cpuSpeedMs % 100 !== 0) {
         throw new Error('Invalid CPU speed');

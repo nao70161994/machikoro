@@ -49,6 +49,14 @@ on:
                 required: true
                 default: false
                 type: boolean
+            ui_viewport_set:
+                description: Standard portrait/landscape or additional narrow phone/desktop full UI games
+                required: true
+                default: standard
+                type: choice
+                options:
+                    - standard
+                    - extended
             ui_cpu_speed_ms:
                 description: CPU delay for the full UI games (1500 is the normal product setting)
                 required: true
@@ -130,7 +138,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                landscape: ['0', '1']
+                viewport_width: ${{ fromJSON(inputs.ui_viewport_set == 'extended' && '[320,1440]' || '[390,844]') }}
         steps:
             - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
             - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
@@ -144,12 +152,12 @@ jobs:
               run: npx playwright test ui-playthrough.spec.js --project=mobile-webkit --workers=1 --retries=0 --output=test-results/ui-playthrough
               env:
                   RUN_UI_PLAYTHROUGH: '1'
-                  UI_PLAYTHROUGH_LANDSCAPE: ${{ matrix.landscape }}
+                  UI_PLAYTHROUGH_WIDTH: ${{ matrix.viewport_width }}
                   UI_PLAYTHROUGH_CPU_SPEED: ${{ inputs.ui_cpu_speed_ms || '1500' }}
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
-                  name: card-table-ui-playthrough-${{ matrix.landscape }}
+                  name: card-table-ui-playthrough-${{ matrix.viewport_width }}
                   path: test-results/ui-playthrough/
                   if-no-files-found: warn
 
