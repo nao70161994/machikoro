@@ -15280,6 +15280,11 @@ html[data-design="cardboard"] #status .winner-screen > .cardboard-winner-collect
 /* Measured seats share one paper-card grammar. The seat transform belongs to
    CardTableLayout, and the view transform to CardTableCamera. */
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-header { min-height: 28px; margin-bottom: 6px; }
+/* In a portrait two-seat table, reserve a readable name band at the shared
+   market edge. Without it, a late collection pushes its owner into a ragged tail. */
+@media (orientation: portrait) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"] .cardboard-header { min-height: 48px; }
+}
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-facility-heading { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player:not(:has(.cardboard-landmark-built)) .cardboard-landmark-heading { display: none; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-dormant { top: auto; border-radius: 3px; }

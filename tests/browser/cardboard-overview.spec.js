@@ -1032,6 +1032,36 @@ test('横持ちの通常CPU通知は無効な操作欄を使い復旧通知と�
     await testInfo.attach('cpu-inline-geometry', { body: JSON.stringify({ geometry, recovery }), contentType: 'application/json' });
 });
 
+test('縦持ち2人戦の終盤は所有者名を市場と施設群の境界で読める', async ({ page }, testInfo) => {
+    await prepare(page, { width: 390, height: 844 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players.forEach((player, index) => {
+            player.name = `プレイヤー${index + 1}`;
+            player.cards = CARDS.slice(0, index ? 16 : 14).map(card => createCardByName(card.name));
+            Object.keys(player.landmarks).forEach((name, landmarkIndex) => { player.landmarks[name] = landmarkIndex < (index ? 2 : 5); });
+        });
+        render();
+    });
+    const before = await snapshot(page);
+    for (const width of [320, 390]) {
+        await page.setViewportSize({ width, height: 844 });
+        await cameraCommand(page, 'overview');
+        await expectWholeTable(page, 2);
+        await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('#cardboardSeats > .cardboard-player')].every(panel => {
+            const label = document.querySelector(`.cardboard-owner-label[data-player-index="${panel.dataset.playerIndex}"]`);
+            if (!label || label.scrollWidth > label.clientWidth) return false;
+            const bounds = label.getBoundingClientRect();
+            const cards = [...panel.querySelectorAll('.cardboard-card')].map(card => card.getBoundingClientRect());
+            return panel.dataset.seatPosition === 'bottom'
+                ? bounds.bottom <= Math.min(...cards.map(card => card.top))
+                : bounds.top >= Math.max(...cards.map(card => card.bottom));
+        })), `所有者名は${width}pxでも施設群の市場側に置く`).toBe(true);
+        await page.screenshot({ path: testInfo.outputPath(`owner-boundary-${width}.png`) });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});
+
 for (const width of [390, 844]) test(`終盤の所属ラベルで通常の名前を全文読める ${width}px`, async ({ page }) => {
     await prepare(page, { width, height: width === 844 ? 390 : 844 }, 4, false);
     await page.evaluate(() => {
