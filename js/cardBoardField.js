@@ -304,7 +304,7 @@ const CardBoardField = (() => {
             const tools = document.createElement('nav');
             tools.id = 'cardboardCameraTools';
             tools.setAttribute('aria-label', 'カード卓の移動と拡大縮小');
-            tools.innerHTML = '<button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="back" aria-label="カード確認前の表示へ戻る">戻る</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button>';
+            tools.innerHTML = '<div id="cardboardCameraButtons"><button type="button" data-cardboard-camera="overview">全体</button><button type="button" data-cardboard-camera="back" aria-label="カード確認前の表示へ戻る">戻る</button><button type="button" data-cardboard-camera="market">市場</button><button type="button" data-cardboard-camera="self">自分</button><button type="button" data-cardboard-camera="readable">読みやすく</button><button type="button" data-cardboard-camera="out" aria-label="カード卓を縮小">−</button><button type="button" data-cardboard-camera="in" aria-label="カード卓を拡大">＋</button></div>';
             board.appendChild(tools);
         }
         if (!node('cardboardViewHint')) {

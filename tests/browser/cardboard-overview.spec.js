@@ -1032,6 +1032,47 @@ test('横持ちの通常CPU通知は無効な操作欄を使い復旧通知と�
     await testInfo.attach('cpu-inline-geometry', { body: JSON.stringify({ geometry, recovery }), contentType: 'application/json' });
 });
 
+test('狭幅でも収支操作は視点移動のスクロールに隠れない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 320, height: 568 }, 2, false);
+    await page.evaluate(() => setTutorialEnabled(true));
+    await expect(page.locator('#tutorialBox .plaza-guide-disclosure > summary')).toBeVisible();
+    const before = await snapshot(page);
+    const summary = page.locator('#cardboardEventDetails > summary');
+    const readable = () => summary.evaluate(element => {
+        const bounds = element.getBoundingClientRect();
+        const nav = document.getElementById('cardboardCameraTools').getBoundingClientRect();
+        return bounds.width >= 44 && bounds.height >= 44 && bounds.left >= nav.left && bounds.right <= nav.right &&
+            [0.15, 0.5, 0.85].every(fraction => {
+                const top = document.elementFromPoint(bounds.left + bounds.width * fraction, bounds.top + bounds.height / 2);
+                return top === element || element.contains(top);
+            });
+    });
+    for (const width of [320, 390, 844, 1440]) {
+        await page.setViewportSize({ width, height: width === 844 ? 390 : width === 1440 ? 900 : 568 });
+        await cameraCommand(page, 'overview');
+        await expect.poll(readable, `収支は${width}pxの初期位置で全文操作できる`).toBe(true);
+        await cameraCommand(page, 'market');
+        await expect.poll(readable, '戻る操作が有効でも収支を隠さない').toBe(true);
+        if (width === 320) {
+            const market = page.locator('[data-cardboard-camera="market"]');
+            const self = page.locator('[data-cardboard-camera="self"]');
+            await market.focus();
+            await market.press('Tab');
+            await expect(self).toBeFocused();
+            expect(await self.evaluate(element => {
+                const bounds = element.getBoundingClientRect();
+                return document.elementFromPoint(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2) === element;
+            }), 'スクロール後のfocus対象を固定の全体ボタンで覆わない').toBe(true);
+        }
+        await summary.click();
+        await expect(page.locator('#cardboardEventDetails')).toHaveAttribute('open', '');
+        await summary.click();
+        await cameraCommand(page, 'back');
+        if (width === 320) await page.screenshot({ path: testInfo.outputPath('receipt-controls-320.png') });
+    }
+    expect(await snapshot(page)).toEqual(before);
+});
+
 test('縦持ち2人戦の終盤は所有者名を市場と施設群の境界で読める', async ({ page }, testInfo) => {
     await prepare(page, { width: 390, height: 844 }, 2, false);
     await page.evaluate(() => {

@@ -13683,12 +13683,21 @@ html[data-design="cardboard"] #cardboardCameraTools {
     min-width: 0;
     gap: 3px;
     justify-content: flex-start;
+}
+
+/* Camera commands may scroll; the frequently used receipt stays beside them. */
+html[data-design="cardboard"] #cardboardCameraButtons {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 3px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-padding-inline: 2px;
 }
 
-html[data-design="cardboard"] #cardboardCameraTools > button,
+html[data-design="cardboard"] #cardboardCameraButtons > button,
 html[data-design="cardboard"] #cardboardEventDetails > summary {
     display: flex;
     align-items: center;
@@ -14572,11 +14581,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-la
         font-size: 10px;
     }
 
-    html[data-design="cardboard"] #cardboardCameraTools {
-        overflow-x: auto;
-    }
-
-    html[data-design="cardboard"] #cardboardCameraTools > button {
+    html[data-design="cardboard"] #cardboardCameraButtons > button {
         min-width: 40px;
         padding-inline: 5px;
         font-size: 11px;
@@ -14759,6 +14764,10 @@ html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-stat
     padding: 0 4px;
     font-size: 10px;
     line-height: 16px;
+}
+
+@media (max-width: 360px) {
+    html[data-design="cardboard"] #cardboardCameraButtons > [data-cardboard-camera="back"]:disabled { display: none; }
 }
 
 /* Keep the full result available to assistive technology without covering cards. */
@@ -15476,7 +15485,7 @@ html[data-design="cardboard"] #cardboardActionSlot #gameConnectivityPanel.cardbo
         white-space: nowrap;
     }
 }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardCameraTools > [data-cardboard-camera="overview"] {
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardCameraButtons > [data-cardboard-camera="overview"] {
     position: sticky;
     left: 0;
     z-index: 2;
