@@ -2458,6 +2458,11 @@ runTest('UiBuildMenu 建設shortcut effectは表示同期と既存menuへのfocu
     assert.strictEqual(button.style.display, 'none');
     assert.strictEqual(button.disabled, true);
     assert.strictEqual(button['aria-hidden'], 'true');
+    assert.strictEqual(button.hidden, true);
+    helper.applyBuildShortcutView(button, { display: 'block', disabled: false, ariaHidden: 'false' });
+    assert.strictEqual(button.hidden, false);
+    assert.strictEqual(button.style.display, 'block');
+    assert.strictEqual(button.disabled, false);
 
     const calls = [];
     const target = {

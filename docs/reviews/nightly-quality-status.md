@@ -8,19 +8,28 @@
 
 ## 現在の確認対象
 
-固定環境で確認中の製品: `eb289904`。手番通知のHUD化、main fixture修復、背景描画の整理、建設の移動→到着祝福、勝利名称の組版を含む。通常Releaseと16画面は56/3adで成功。最新の建設1440pxは未安定で、market close処理の同task完結を追加検証中。
+固定環境の最新完走対象は `437e65a9`。市場closeの同期化まで含む。Nightlyは全345件を収集し完走したが、初回343成功・1再試行成功・1許可済skipのため、安定成功とはまだ判定しない。
 
 | 対象 | 根拠 | 状況 |
 | --- | --- | --- |
 | PR | #19 / feat/nightly-table-quality | Draft、マージ保留 |
-| 全Nightly | [40878837788](https://github.com/nao70161994/machikoro/actions/runs/40878837788) | 344件の収集・網羅性確認は成功。unit fixture4失敗、ブラウザはHUD通知・建設・市場/表示モード往復の3ケース失敗 |
-| 通常Release | [40878828247](https://github.com/nao70161994/machikoro/actions/runs/40878828247) | main fixture依存不足で失敗。共通stub修正後local main163成功/0失敗 |
-| 16画面・操作 | [40878828367](https://github.com/nao70161994/machikoro/actions/runs/40878828367) | 成功 |
-| 最新縦横実UI完走 | [40878871130](https://github.com/nao70161994/machikoro/actions/runs/40878871130) | 縦横とも成功、画像/record取得済み。最新画像の独立確認は継続 |
-| 前回全Nightly | 167fd409 / 40842869174 | 339初回成功・1再試行成功・1許可済skip。全341件完走、未安定 |
-| 建設5条件WebKit | 167fd409 / 40842356508 | 5件retry0成功（1.6分）、全Nightlyの代替ではない |
-| HUD関連local | 4幅×5閲覧、ui/main/inventory unit、型、ESLint | 検証済。main成功の旧記録に4失敗が含まれた点は末尾で訂正 |
-| HUD独立レビュー | 実4PNGとsource | 採用可。中央遮蔽なし、1300ms/RM/HC/a11y/他3theme維持 |
+| 全Nightly | [40887636045](https://github.com/nao70161994/machikoro/actions/runs/40887636045) | 345件の網羅性確認成功。6分割の各ブラウザjobは8.9〜13.8分。SW二世代テストのみ再試行成功 |
+| 通常Release | [40887602108](https://github.com/nao70161994/machikoro/actions/runs/40887602108) | 成功 |
+| 16画面・操作 | [40887602130](https://github.com/nao70161994/machikoro/actions/runs/40887602130) | 成功 |
+| 建設・市場再表示 | [40887631096](https://github.com/nao70161994/machikoro/actions/runs/40887631096) | 固定WebKit、7件retry0成功 |
+| 通常速度の縦横実UI完走 | [40885367734](https://github.com/nao70161994/machikoro/actions/runs/40885367734) | eb289904、CPU1500ms。390縦70ターン/182actions、844横71ターン/184actions、双方errorsなし。最新変更の代替証拠ではない |
+
+### 次の候補で修正・確認中
+
+- **SWテストの観測競合**: タイトル復帰後の `waitForLoadState` が旧documentのloadで解決し、v2確認が実reloadと競合していた。確認クリック前に実navigation待機を登録する。v2/cache/controller/errorの検証は維持し、例外の握り潰し・時間延長は行わない。context closeの失敗時も世代serverを停止する。
+- **横持ちCPU待機**: 通常のローカルCPU通知を無効な操作欄へ移す。有効操作・復旧・接続通知は通常配置へ戻す。非表示ボタンのnative hidden属性と既存displayを同期する。
+- **長い手番名**: 横持ちCPU待機の固定高フッターだけ、名前の折り返しでフェーズを押し出さないようにする。人間手番の全文表示は維持。全文は既存title/ariaでも確認できる。
+
+[改善前](assets/nightly-quality/cpu-inline-844-before.png) / [改善後](assets/nightly-quality/cpu-inline-844-after.png) / [測定条件](assets/nightly-quality/cpu-inline-844-comparison.json)。844×390の同条件4CPU序盤fixtureで盤面高218→250px、双方撮影中の正本不変。比較は437e65a9のCSS/mainと候補の差。CPU予定を停止した表示fixtureであり、実対局・物理端末確認ではない。
+
+ローカル確認: ui/main単体、main/UI型、変更JSのESLint成功。ブラウザ5件中、SW・CPU・終盤ラベル2幅は成功し、人間手番名1件の回帰を検出。変更を横持ちCPUだけへ限定し、CPU・人間手番名2件を再実行して双方成功。assert・時間・許容値は変更していない。ローカルブラウザはTermux Chromiumであり、固定WebKitのCI結果とは区別する。
+
+独立レビューは比較前後PNGを目視しCPU通知の配置を採用可と評価。有効操作と復旧通知の退避条件も確認。終盤・native WebKitは別証拠が必要。通常速度の実UI画像では縦持ち終盤の所有者ラベルとカード群の対応、勝利画面の長いランドマーク名の組版に改善余地が残る。横持ち上端の切れという初見の指摘は原寸再確認で撤回され、製品不具合として扱わない。
 
 ## 今回の修正
 

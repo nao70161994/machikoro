@@ -111,6 +111,7 @@ const UiBuildMenu = (() => {
     function applyBuildShortcutView(button, view) {
         if (!button || !view) return false;
         button.style.display = view.display;
+        button.hidden = view.display === 'none';
         button.disabled = view.disabled;
         if (typeof button.setAttribute === 'function') {
             button.setAttribute('aria-hidden', view.ariaHidden);

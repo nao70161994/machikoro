@@ -967,6 +967,71 @@ test('CPU処理通知で盤面が縮む最初の描画から施設とランド�
 });
 
 
+test('横持ちの通常CPU通知は無効な操作欄を使い復旧通知と有効操作を隠さない', async ({ page }, testInfo) => {
+    await prepare(page, { width: 844, height: 390 }, 4, false);
+    await expect(page.locator('#btnRoll')).toBeEnabled();
+    await expect(page.locator('#btnRoll')).toBeVisible();
+    await page.evaluate(() => {
+        GameSetupState.runtime.setCpuSpeed(3000);
+        document.getElementById('cpuSpeed').value = '3000';
+        startGameNow(4, Array.from({ length: 4 }, (_, index) => ({
+            type: 'cpu', difficulty: 'weak', name: `にぎわう街の市長にぎわう街${index + 1}`,
+        })));
+        updateGameActivityStatus();
+    });
+    const panel = page.locator('#gameConnectivityPanel');
+    await expect(panel).toHaveClass(/is-local-cpu-activity/);
+    const geometry = await page.evaluate(() => {
+        const panel = document.getElementById('gameConnectivityPanel');
+        const viewport = document.getElementById('cardboardTableViewport');
+        const status = document.getElementById('status');
+        const buttons = document.querySelector('#cardboardActionSlot .buttons');
+        const phase = status.querySelector('.cardboard-phase-indicator');
+        const before = GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER);
+        const height = viewport.clientHeight;
+        const statusBounds = status.getBoundingClientRect();
+        const panelBounds = panel.getBoundingClientRect();
+        const phaseBounds = phase.getBoundingClientRect();
+        const hidden = getComputedStyle(buttons).visibility;
+        // Compare both arrangements in one task; CPU actions cannot run
+        // between these presentation-only measurements.
+        panel.classList.remove('is-local-cpu-activity');
+        CardBoardField.syncViewport();
+        const previousHeight = viewport.clientHeight;
+        panel.classList.add('is-local-cpu-activity');
+        CardBoardField.syncViewport();
+        // Even a stale CPU status must never cover an enabled action.
+        const roll = document.getElementById('btnRoll');
+        const disabled = roll.disabled;
+        roll.disabled = false;
+        const enabledVisibility = getComputedStyle(buttons).visibility;
+        roll.disabled = disabled;
+        CardBoardField.syncViewport();
+        return { height, previousHeight, hidden, enabledVisibility,
+            aligned: Math.abs(panelBounds.top - statusBounds.top) <= 1,
+            phaseVisible: phaseBounds.top >= statusBounds.top && phaseBounds.bottom <= statusBounds.bottom,
+            panelHeight: panelBounds.height,
+            stateUnchanged: JSON.stringify(before) === JSON.stringify(GameSnapshot.serializeUndoState(GameRuntimeState.runtime.snapshot().game, SHOP_STOCK, Number.MAX_SAFE_INTEGER)) };
+    });
+    expect(geometry.height - geometry.previousHeight, JSON.stringify(geometry)).toBeGreaterThanOrEqual(20);
+    expect(geometry).toMatchObject({ hidden: 'hidden', enabledVisibility: 'visible', aligned: true, phaseVisible: true, panelHeight: 44, stateUnchanged: true });
+    await expectWholeTable(page, 4);
+    await page.screenshot({ path: testInfo.outputPath('cpu-inline-844.png') });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('#cardboardActionSlot .buttons')).toHaveCSS('visibility', 'visible');
+    await page.setViewportSize({ width: 844, height: 390 });
+    const recovery = await page.evaluate(() => {
+        updateGameActivityWatchdogStatus({ stage: 'recovering' });
+        const panel = document.getElementById('gameConnectivityPanel');
+        return { compact: panel.classList.contains('is-local-cpu-activity'),
+            below: panel.getBoundingClientRect().top >= document.getElementById('status').getBoundingClientRect().bottom,
+            buttons: getComputedStyle(document.querySelector('#cardboardActionSlot .buttons')).visibility };
+    });
+    expect(recovery).toEqual({ compact: false, below: true, buttons: 'visible' });
+    await expect(page.locator('#gameActivityStatusLabel')).toContainText('自動復旧中');
+    await testInfo.attach('cpu-inline-geometry', { body: JSON.stringify({ geometry, recovery }), contentType: 'application/json' });
+});
+
 for (const width of [390, 844]) test(`終盤の所属ラベルで通常の名前を全文読める ${width}px`, async ({ page }) => {
     await prepare(page, { width, height: width === 844 ? 390 : 844 }, 4, false);
     await page.evaluate(() => {

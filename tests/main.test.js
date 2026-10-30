@@ -735,14 +735,17 @@ runTest('main 稼働状況は通常の人間手番を省略してCPU処理中だ
     assert.strictEqual(activity.kind, 'ready');
     assert.strictEqual(rt.__test.elements.gameActivityStatus.style.display, 'none');
     assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, '');
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.classList.contains('is-local-cpu-activity'), false);
 
     game.currentPlayerIndex = 1;
     activity = rt.__test.updateGameActivityStatus(2000);
     assert.strictEqual(activity.kind, 'waiting');
     assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, 'CPU 1が処理中');
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.classList.contains('is-local-cpu-activity'), true);
     activity = rt.__test.updateGameActivityStatus(13000);
     assert.strictEqual(activity.kind, 'checking');
     assert.strictEqual(rt.__test.elements.gameActivityStatus.classList.contains('is-checking'), true);
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.classList.contains('is-local-cpu-activity'), false);
     assert.strictEqual(rt.__test.elements.gameActivityStatusElapsed.textContent, '・11秒');
 });
 
@@ -787,6 +790,7 @@ runTest('main 稼働状況はオンライン対戦のオフラインと復帰案
     assert.strictEqual(activity.kind, 'offline');
     assert.strictEqual(rt.__test.elements.gameConnectivityPanel.style.display, 'grid');
     assert.strictEqual(rt.__test.elements.gameActivityStatusLabel.textContent, 'オフライン中');
+    assert.strictEqual(rt.__test.elements.gameConnectivityPanel.classList.contains('is-local-cpu-activity'), false);
     assert.strictEqual(rt.__test.elements.gameConnectionQuality.textContent, '通信：オフライン');
     assert.strictEqual(rt.__test.elements.gameConnectionQuality.classList.contains('is-offline'), true);
 });

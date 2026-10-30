@@ -593,6 +593,7 @@ function renderWinnerState(winner) {
             btnSkip.textContent = controls.skipText;
             const btnReroll = /** @type {HTMLButtonElement} */ (document.getElementById("btnReroll"));
             btnReroll.style.display = controls.rerollDisplay;
+            btnReroll.hidden = controls.rerollDisplay === 'none';
             document.getElementById("diceChoose").innerHTML = controls.diceChooseHtml;
             document.getElementById("buildMenu").innerHTML = controls.buildMenuHtml;
             renderBuildShortcut(true);
@@ -776,6 +777,7 @@ function renderActiveGameState(current) {
         hideReroll() {
             const btnReroll = /** @type {HTMLButtonElement} */ (document.getElementById("btnReroll"));
             btnReroll.style.display = "none";
+            btnReroll.hidden = true;
         },
         updateDiceDisplay(diceValues) {
             updateDiceDisplay(diceValues);
