@@ -3,6 +3,20 @@ const { test, expect } = require('@playwright/test');
 // Exercise updates deliberately, without an unrelated SW lifecycle racing clicks.
 test.use({ serviceWorkers: 'block' });
 
+// Preserve the failure state: a later successful retry cannot explain whether
+// an input gate, modal policy or recovery path consumed the original click.
+test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus || page.isClosed()) return;
+    const diagnostics = await page.evaluate(() => ({
+        app: typeof collectAppDiagnostics === 'function' ? collectAppDiagnostics() : null,
+        checkpoints: window.__machikoroClientCheckpoints || [],
+        modalViolations: window.__machikoroModalPolicyViolations || [],
+        confirm: ['display', 'visibility', 'pointerEvents'].map(property => [property,
+            getComputedStyle(document.getElementById('confirmModal'))[property]]),
+    }));
+    await testInfo.attach('skip-build-failure-state', { body: JSON.stringify(diagnostics), contentType: 'application/json' });
+});
+
 for (const withUpdateBanner of [false, true]) {
     for (const airport of [false, true]) {
         test(`建設を見送る終了は確認しキャンセルで手番を維持する 空港${airport}${withUpdateBanner ? ' 通知あり' : ''}`, async ({ page }) => {

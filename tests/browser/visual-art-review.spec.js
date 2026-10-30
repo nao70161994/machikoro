@@ -856,7 +856,13 @@ test('オンラインの作成・参加導線をスマホとデスクトップ�
 
 test('夕暮れ市場は出目・名称を主役にし価格を明確なチップで示す', async ({ page }, testInfo) => {
     await prepareSunset(page);
-    await page.locator('.setup-quick-play').click();
+    // This is a layout fixture. A live quick-play CPU can replace the market
+    // between locator collection and evaluation, leaving detached card nodes.
+    // Real CPU progression is covered by the unseeded UI playthroughs.
+    await page.evaluate(() => {
+        startGameNow(2, [{ type: 'human', name: '街1' }, { type: 'human', name: '街2' }]);
+        acceptHotseatHandoff();
+    });
     await expect(page.locator('#gameScreen')).toBeVisible();
     await expect(page.locator('#logSummary')).not.toContainText('👤');
     await expect(page.locator('#log')).not.toContainText('👤');
@@ -884,6 +890,7 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
             const detail = wrapper.querySelector('.card-detail-btn');
             const detailBounds = detail.getBoundingClientRect();
             return {
+                connected: card.isConnected,
                 cardFits: card.scrollWidth <= card.clientWidth && cardBounds.left >= 0 && cardBounds.right <= document.documentElement.clientWidth,
                 diceSize: parseFloat(styles('.card-dice-num').fontSize),
                 nameSize: parseFloat(styles('.card-name').fontSize),
@@ -900,6 +907,7 @@ test('夕暮れ市場は出目・名称を主役にし価格を明確なチッ�
         }));
 
         expect(cards.length).toBeGreaterThan(0);
+        expect(cards.every(card => card.connected), '描画中の市場カードを検証する').toBe(true);
         expect(cards.every(card => card.cardFits && card.costFits && card.costHasBadge &&
             card.stockFitsOnCardArt && card.detailTargetSize && card.detailHasAccessibleName)).toBe(true);
         expect(cards.every(card => card.diceSize > card.categorySize && card.nameSize > card.effectSize && card.effectSize > card.categorySize)).toBe(true);

@@ -69,6 +69,37 @@ Release40979677841、16画面40979677934、通常速度縦横完走40979697667�
 
 04の390縦実UIは61ターン・156actions・242クリック・435155ms、CPU1500ms、pageErrorsなし。閲覧→Back2クリック646msで正本/倍率/角度復帰。first-build/mid/late/winnerの独立目視で重大な新規退行なし。6eの名前帯・追加notice修正の証拠とは区別する。
 
+## 8514588aの固定環境結果と狭幅操作の追加修正
+
+[通常Release40981644006](https://github.com/nao70161994/machikoro/actions/runs/40981644006)、[16画面40981644175](https://github.com/nao70161994/machikoro/actions/runs/40981644175)、[重点WebKit40981661263](https://github.com/nao70161994/machikoro/actions/runs/40981661263)は成功。重点7件はretry0・2.7分。
+
+[Nightly40982123534](https://github.com/nao70161994/machikoro/actions/runs/40982123534)は347件を完走。346初回成功・0再試行・1許可済skip、網羅性確認成功。shardのテスト時間8.5〜12.1分、35分未完了を解消した。過去6e実行で別の2件（建設見送り確認、夕暮れ市場の幾何一括判定）も再試行になっていたため、最新成功だけで原因調査を省略しない。
+
+実UI完走は全4幅で成功（ゲームロジックは同じ6e/25）。CPU1500ms・非seedの人間席自動UI操作であり、物理端末・人間の感性評価ではない。
+
+|幅|commit|ターン|人間actions/クリック|経過ms|pageErrors|正面閲覧→復帰|
+|---|---|---|---|---|---|---|
+|320×568|25d83934|64|183/295|403603|0|2クリック613ms、正本/倍率/角度復帰|
+|390×844|6e778b87|82|234/344|756842|0|2クリック789ms、正本/倍率/角度復帰|
+|844×390|6e778b87|64|155/249|533505|0|2クリック764ms、正本/倍率/角度復帰|
+|1440×900|25d83934|83|193/298|929235|0|2クリック1936ms、正本/倍率/角度復帰|
+
+### 実対局画像から発見した320pxの収支操作
+
+独立レビューで、横スクロールするcamera navに収支も含まれ、固定メニューの手前で一部がクリップされることを確認。camera commandだけを内部スクロールへ分け、収支は同じ行で固定する。360px以下では無効な「戻る」だけを隠し、有効時には表示する。カード卓の高さや操作対象寸法を縮めない。
+
+[同fixture変更前](assets/nightly-quality/receipt-controls-320-before.png) / [変更後](assets/nightly-quality/receipt-controls-320-after.png) / [測定条件](assets/nightly-quality/receipt-controls-320-comparison.json)。ガイドONの320×568で収支右端220pxがnav右端202pxを越えていたが、修正後202pxに収まりhit-testも成功。卓高384px・撮影中正本は双方不変。実対局の新旧比較ではなく、同条件の表示fixture比較。
+
+ガイドON・戻る有効・Tabで市場→自分へのfocusとhit・通常click収支開閉を4幅で確認（12.3秒）。既存CPU通知と所属境界ケースも別バッチで成功。初回のガイド検証は誤った直下summary selectorで失敗したため、実DOMのdetails>summaryへ修正。製品不具合とfixture誤りを区別する。独立目視でもカード／市場／操作に新たな退行なし、型・ESLint・field単体成功。
+
+残る可視品質：320終盤の任意構成ではownerラベルの末尾配置と省略が残る。建設の一時通知が自分の施設を覆う場合もあり、操作は覆わないが視線誘導の改善余地として扱う。これらを直ったとは報告しない。
+
+## 残った6eのfixture競合と診断追加
+
+[夕暮れ市場のtrace集計](assets/nightly-quality/sunset-market-detached-fixture-evidence.json)では、最初の幅で38カードすべて正常、次幅では38カードすべてfont NaN・animationName空・詳細target寸法0となっていた。失敗snapshotはCPU手番。個別のカードCSSの欠けではなく、locator採取と評価の間にCPU再描画でDOMが差し替わったことと整合する。寸法専用caseだけ整合した人間2席として開始し、既存の寸法・文字・色・操作対象assertを維持し `isConnected` も追加した。CPU実進行は別の実UI完走で検証する。独立レビューでもfixture修正と分類する判断を支持。
+
+建設見送り確認の1回の失敗は、画面に自動復旧中の表示があったが、復旧が原因か結果かは旧traceで確定できない。元の操作／assertは変更せず、再発時にcheckpoint・modal policy・confirm状態を採取するafterEachを追加する。これを製品不具合の解決とは報告しない。追加後の見送り4条件＋夕暮れ市場のlocal5件は34秒で成功。現在348件、6分割58件ずつ。
+
 ## 完了判定の根拠と残差
 
 - 元main3回のログは[失敗監査JSON](nightly-main-failure-audit.json)に記録。23種類と現行検証契約を対応付けている。assert削除・差分許容値の緩和・強制クリック・時間延長で失敗を隠さない。
