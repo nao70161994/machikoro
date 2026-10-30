@@ -113,3 +113,53 @@ runTest('遅延したOSのreduce通知は現在値が戻っていても演出を
     mediaChanged({ matches: true });
     assert.strictEqual(cleared, 3, '次回のreduce遷移も取り消す');
 });
+
+runTest('建設通知の1200msは最初の描画更新から数え取消後に再開しない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const clearStart = source.indexOf('    function clearBuildNotice()');
+    const showStart = source.indexOf('    function showBuildNotice(card)', clearStart);
+    const scheduleStart = source.indexOf('        const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };', showStart);
+    const scheduleEnd = source.indexOf('        return true;', scheduleStart);
+    assert.ok(clearStart >= 0 && showStart > clearStart && scheduleStart > showStart && scheduleEnd > scheduleStart);
+    const frames = new Map(), timers = new Map();
+    let sequence = 0, removed = 0;
+    const context = {
+        buildNoticeFrame: null, buildNoticeTimer: null, buildNoticeContext: null,
+        notice: { isConnected: true }, session: 'game', mounted: true,
+        facts: { game: { turnCount: 3, currentPlayerIndex: 0, phase: 'build' } },
+        GAME_PHASES: { BUILD: 'build' }, document: { hidden: false }, enabled: () => true,
+        node: () => ({ remove: () => { removed++; } }),
+        requestAnimationFrame: callback => { frames.set(++sequence, callback); return sequence; },
+        cancelAnimationFrame: handle => frames.delete(handle),
+        setTimeout: (callback, delay) => { timers.set(++sequence, { callback, delay }); return sequence; },
+        clearTimeout: handle => timers.delete(handle),
+    };
+    require('vm').runInNewContext(source.slice(clearStart, showStart) +
+        `\nfunction scheduleNotice() { ${source.slice(scheduleStart, scheduleEnd)} }`, context);
+    const paint = () => {
+        const [handle, callback] = frames.entries().next().value;
+        frames.delete(handle);
+        callback();
+    };
+    context.scheduleNotice();
+    assert.strictEqual(timers.size, 0, '描画前に寿命を消費しない');
+    paint();
+    assert.strictEqual(timers.size, 1);
+    assert.strictEqual([...timers.values()][0].delay, 1200, '表示寿命を延長しない');
+    [...timers.values()][0].callback();
+    assert.strictEqual(removed, 1);
+    assert.strictEqual(timers.size, 0);
+    context.scheduleNotice();
+    const cancelledCallback = [...frames.values()][0];
+    context.clearBuildNotice();
+    assert.strictEqual(frames.size, 0);
+    cancelledCallback();
+    assert.strictEqual(timers.size, 0, '取消済み描画callbackは通知を復活させない');
+    context.scheduleNotice();
+    const currentFrame = context.buildNoticeFrame;
+    cancelledCallback();
+    assert.strictEqual(context.buildNoticeFrame, currentFrame, '古いcallbackは次の通知のRAFを消さない');
+    context.facts.game.phase = 'roll';
+    paint();
+    assert.strictEqual(timers.size, 0, '手番の状況が変わったら過去の通知を始めない');
+});

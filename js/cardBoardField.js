@@ -55,6 +55,7 @@ const CardBoardField = (() => {
     let buildCueTimer = null;
     let buildCueGeneration = 0;
     let buildNoticeTimer = null;
+    let buildNoticeFrame = null;
     let buildNoticeContext = null;
     let purchaseOrigin = null;
     let buildFlight = null;
@@ -608,6 +609,8 @@ const CardBoardField = (() => {
     }
 
     function clearBuildNotice() {
+        if (buildNoticeFrame !== null) globalThis.cancelAnimationFrame(buildNoticeFrame);
+        buildNoticeFrame = null;
         if (buildNoticeTimer !== null) clearTimeout(buildNoticeTimer);
         buildNoticeTimer = null;
         buildNoticeContext = null;
@@ -640,8 +643,21 @@ const CardBoardField = (() => {
         const bounds = viewport.getBoundingClientRect();
         notice.style.left = `${Math.max(bounds.left + 8, bounds.right - notice.offsetWidth - 8)}px`;
         notice.style.top = `${Math.max(bounds.top + 8, bounds.bottom - notice.offsetHeight - 8)}px`;
-        buildNoticeContext = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
-        buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
+        const context = { session, turn: facts.game.turnCount, actor: facts.game.currentPlayerIndex };
+        buildNoticeContext = context;
+        // Start the readable lifetime at the rendering update, like the flight.
+        // A busy first paint must not consume the whole notice before it appears.
+        buildNoticeFrame = globalThis.requestAnimationFrame(() => {
+            if (buildNoticeContext !== context) return;
+            buildNoticeFrame = null;
+            if (!notice.isConnected || !enabled() || !mounted || document.hidden || facts?.replaying ||
+                    session !== context.session || facts.game.turnCount !== context.turn ||
+                    facts.game.currentPlayerIndex !== context.actor || facts.game.phase !== GAME_PHASES.BUILD) {
+                clearBuildNotice();
+                return;
+            }
+            buildNoticeTimer = setTimeout(clearBuildNotice, 1200);
+        });
         return true;
     }
 

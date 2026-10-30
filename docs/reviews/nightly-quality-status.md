@@ -57,6 +57,18 @@
 
 ローカルの追加2幅は各6操作のpartial smokeで成功（320:23.5秒、1440:32.2秒）。開始から勝利までの証拠ではない。固定WebKitでの完走結果を別途取得する。
 
+## 04a9f83eの確定結果と建設通知の追加修正
+
+Release40979677841、16画面40979677934、通常速度縦横完走40979697667は成功。Nightly40979687526は全346件の網羅性確認まで完走したが、344初回成功・1再試行成功・1許可済skip。SW世代切替は初回成功した一方、320px更新通知ありの建設通知が再試行となったため、安定成功とはしない。
+
+[失敗時の描画記録](assets/nightly-quality/notice-expiry-before-first-frame-320.json)ではclose後232msにnotice追加、1430msに削除、次の観測RAFが1489ms。通知の1200ms寿命が最初の観測より先に終了した。flightは同RAFで再生開始し、1693msでcurrentTime205msの移動中フレームを観測できたため、カード移動と文字通知で開始時刻の扱いが異なっていた。
+
+追加修正はnoticeの最初の描画更新から1200msを数える。CSS180msの出現、カード480ms、既存1500/2500msの観測期限・全文・アート・非遮蔽のassertは維持。取消時はpending RAFも取り消し、callback内でsession/turn/actor/BUILD/可視状態/再生復元/接続を再検査する。独立レビューを受け、古いcallbackが新通知のRAF handleを消さない順序も採用。
+
+ローカルの建設5条件は51.5秒で成功。最初の更新までtimerを始めないこと、1200ms維持、取消後callbackとphase変更後に再開しないことを単体回帰で検証する。最初のRAFを「paint完了」と同一視せず、固定WebKitの既存可視性assertで効果を確認する。
+
+04の390縦実UIは61ターン・156actions・242クリック・435155ms、CPU1500ms、pageErrorsなし。閲覧→Back2クリック646msで正本/倍率/角度復帰。first-build/mid/late/winnerの独立目視で重大な新規退行なし。6eの名前帯・追加notice修正の証拠とは区別する。
+
 ## 完了判定の根拠と残差
 
 - 元main3回のログは[失敗監査JSON](nightly-main-failure-audit.json)に記録。23種類と現行検証契約を対応付けている。assert削除・差分許容値の緩和・強制クリック・時間延長で失敗を隠さない。
