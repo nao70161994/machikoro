@@ -10,8 +10,9 @@ const CardTableCamera = (() => {
         let focusPlayer = null;
         /** @type {{ playerIndex: number, minScale: number } | null} */
         let readingState = null;
-        /** @type {{ playerIndex: number, name: string, x: number, y: number } | null} */
+        /** @type {{ playerIndex: number, name: string, x: number, y: number, preservePosition: boolean } | null} */
         let inspectionAnchor = null;
+        let preserveInspectionPosition = false;
         let resizeAnchorFrame = 0;
         let previousContext = '';
         let matrix = { a: scale, b: 0, c: 0, d: scale, e: 0, f: 0 };
@@ -160,7 +161,16 @@ const CardTableCamera = (() => {
                         y: (bounds.top + bounds.height / 2 - clip.top) / viewport.clientHeight };
                 }
             }
-            inspectionAnchor = nearest ? { playerIndex: focusPlayer, ...nearest } : null;
+            inspectionAnchor = nearest ? { playerIndex: focusPlayer, ...nearest, preservePosition: preserveInspectionPosition } : null;
+        }
+        function preserveReadingPosition(active) {
+            preserveInspectionPosition = active === true;
+            if (preserveInspectionPosition) {
+                cacheInspectionAnchor();
+            }
+            // Saved return views own copies; release only the live anchor so a
+            // later ordinary resize cannot inherit a completed market policy.
+            if (inspectionAnchor) inspectionAnchor.preservePosition = preserveInspectionPosition;
         }
         function cancelResizeAnchor() {
             if (resizeAnchorFrame) globalThis.cancelAnimationFrame(resizeAnchorFrame);
@@ -175,11 +185,12 @@ const CardTableCamera = (() => {
             if (card) {
                 paint();
                 const bounds = card.getBoundingClientRect();
-                // Preserve the pan proportionally and retain a visible part of
-                // oversized or previously partially visible cards after resize.
+                // Market transitions retain the user's pan. Ordinary resize
+                // and collection reflow keep the established centered reading
+                // card, rather than carrying an arbitrary edge offset forward.
                 alignPoint(clientToWorld(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
-                    { x: Math.max(0, Math.min(1, anchor.x)) * viewport.clientWidth,
-                        y: Math.max(0, Math.min(1, anchor.y)) * viewport.clientHeight });
+                    { x: (anchor.preservePosition ? Math.max(0, Math.min(1, anchor.x)) : 0.5) * viewport.clientWidth,
+                        y: (anchor.preservePosition ? Math.max(0, Math.min(1, anchor.y)) : 0.5) * viewport.clientHeight });
             }
             updateFocus();
             cacheInspectionAnchor();
@@ -307,7 +318,7 @@ const CardTableCamera = (() => {
                 // Avoid inverse/forward floating-point roundoff: WebKit floors
                 // fractional scroll coordinates and otherwise drifts by 1px.
                 scroll(previous.left, previous.top);
-            } else if (previous.anchor && focusPlayer === previous.anchor.playerIndex) {
+            } else if (previous.anchor?.preservePosition && focusPlayer === previous.anchor.playerIndex) {
                 // Reading layout can move a card within the world. Its semantic
                 // anchor retains the visible position across that reflow; the
                 // old world-center point alone cannot account for the movement.
@@ -660,7 +671,7 @@ const CardTableCamera = (() => {
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }
-        return Object.freeze({ refresh, syncLayout, syncViewport, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
+        return Object.freeze({ refresh, syncLayout, syncViewport, preserveReadingPosition, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
     }
     return Object.freeze({ create });
 })();

@@ -550,6 +550,26 @@ const CardBoardField = (() => {
         }
     }
 
+    function stageBuildFlight(ghost, animation, generation, current) {
+        const schedule = remaining => {
+            buildFlightFrame = globalThis.requestAnimationFrame(() => {
+                // A cancelled callback must not clear a newer flight's handle.
+                if (generation !== buildFlightGeneration || buildFlight !== ghost) return;
+                buildFlightFrame = null;
+                if (!current()) { clearBuildFlight(); return; }
+                if (remaining > 0) schedule(remaining - 1);
+                else {
+                    animation.currentTime = 0;
+                    animation.play();
+                }
+            });
+        };
+        // Give the restored table/ghost a rendering opportunity while paused.
+        // Starting in its first RAF lets the following slow paint consume the
+        // 480ms before a subsequent rendering frame can show a moving card.
+        schedule(1);
+    }
+
     function startBuildFlight(card, origin, entry, destination = /** @type {DOMRect | null} */ (null), onArrive = () => {}) {
         clearBuildFlight();
         if (!origin || !entry || reducedMotionEnabled()) return false;
@@ -592,18 +612,9 @@ const CardBoardField = (() => {
             { transform: `translate(${target.left - origin.left}px, ${target.top - origin.top}px) scale(${target.width / origin.width}, ${target.height / origin.height})`, opacity: 1 },
         ], { duration: 480, easing: 'cubic-bezier(.2,.7,.25,1)', fill: 'both' });
         buildFlightAnimation = animation;
-        // Stage the layer for one rendering update before starting its clock.
-        // A ready promise can resolve before that update; a second RAF adds
-        // another full paint of latency on busy renderers.
         animation.pause();
         animation.currentTime = 0;
-        buildFlightFrame = globalThis.requestAnimationFrame(() => {
-            buildFlightFrame = null;
-            if (current() && buildFlight === ghost) {
-                animation.currentTime = 0;
-                animation.play();
-            } else if (buildFlight === ghost) clearBuildFlight();
-        });
+        stageBuildFlight(ghost, animation, generation, current);
         animation.finished.then(() => {
             const arrived = buildFlight === ghost && current();
             if (buildFlight === ghost) clearBuildFlight();
@@ -857,7 +868,7 @@ const CardBoardField = (() => {
             launcher?.focus({ preventScroll: true });
         }
         restoreMarketFocus = true;
-        if (pendingBuildCues.length && tableLayout && tableCamera) {
+        if (tableLayout && tableCamera) {
             // Capture the restored table, not the expanded market geometry, as
             // the inspection return view. Keep both layouts in this task so a
             // queued overview paint cannot delay the fresh purchase feedback.
@@ -869,6 +880,7 @@ const CardBoardField = (() => {
             if (tableLayout) globalThis.requestAnimationFrame(presentPendingBuildCues);
             else presentPendingBuildCues();
         }
+        tableCamera?.preserveReadingPosition(false);
     }
 
     function isMarketExpanded() {
@@ -931,6 +943,7 @@ const CardBoardField = (() => {
         if (!enabled() || !dialog || !market || !slot || typeof dialog.showModal !== 'function') return false;
         if (suspendedMarketDetail) return false;
         if (dialog.open) return true;
+        tableCamera?.preserveReadingPosition(true);
         marketLauncher = document.activeElement;
         marketLauncherSelector = marketLauncher?.closest?.('.compact-market-filter-disclosure')
             ? '.compact-market-filter-disclosure > summary'

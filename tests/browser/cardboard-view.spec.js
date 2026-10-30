@@ -1897,8 +1897,8 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
     });
 }
 
-test('相手正面を移動してから市場で購入しても元の視点へ戻れる', async ({ page }, testInfo) => {
-    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+    test(`相手正面を移動してから市場で購入しても元の視点へ戻れる ${viewport.width}px`, async ({ page }, testInfo) => {
         await prepare(page, viewport, 2, false);
         await page.evaluate(() => {
             const game = GameRuntimeState.runtime.snapshot().game;
@@ -1953,5 +1953,5 @@ test('相手正面を移動してから市場で購入しても元の視点へ�
         }
         expect(await state(page)).toEqual(purchased);
         await page.screenshot({ path: testInfo.outputPath(`purchase-return-${viewport.width}.png`) });
-    }
-});
+    });
+}

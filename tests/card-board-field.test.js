@@ -178,21 +178,24 @@ runTest('購入後の市場closeは復帰geometryを同期してから同taskで
         enabled: () => true, node: () => ({ style: { display: '' }, querySelector: () => null }),
         pendingBuildCues: [{}],
         tableLayout: { syncLayout: () => order.push('table'), refresh: () => order.push('refresh') },
-        tableCamera: { syncLayout: () => order.push('camera') },
+        tableCamera: { syncLayout: () => order.push('camera'), preserveReadingPosition: active => order.push(`preserve:${active}`) },
         presentPendingBuildCues: () => order.push('cue'),
         requestAnimationFrame: callback => frames.push(callback),
     };
     require('vm').runInNewContext(source.slice(start, end), context);
     context.finishMarketClose();
-    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'focus', 'table', 'camera', 'cue']);
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'focus', 'table', 'camera', 'cue', 'preserve:false']);
     assert.strictEqual(frames.length, 0, '購入演出を次のframeまで待たない');
     order.length = 0;
     context.pendingBuildCues = [];
     context.finishMarketClose();
-    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'refresh']);
-    assert.strictEqual(frames.length, 1, '購入しないcloseは通常のrefreshを維持する');
-    frames[0]();
-    assert.strictEqual(order.at(-1), 'cue');
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'table', 'camera', 'cue', 'preserve:false']);
+    assert.strictEqual(frames.length, 0, '購入しないcloseも位置を同期復元してから保持方針を解除する');
+    order.length = 0;
+    context.tableLayout = null;
+    context.tableCamera = null;
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'cue']);
 });
 
 runTest('閲覧カードの位置復元は対象消失を呼出元へ返し比例位置を可視範囲へ保つ', () => {
@@ -208,7 +211,7 @@ runTest('閲覧カードの位置復元は対象消失を呼出元へ返し比�
         clientToWorld: (x, y) => ({ x, y }), alignPoint: (point, target) => { destination = target; },
     };
     require('vm').runInNewContext(source.slice(start, end), context);
-    const anchor = { playerIndex: 1, name: '麦畑', x: 0.25, y: 0.75 };
+    const anchor = { playerIndex: 1, name: '麦畑', x: 0.25, y: 0.75, preservePosition: true };
     assert.strictEqual(context.restoreInspectionAnchor(anchor), false, '消失時はworld中心fallbackを可能にする');
     assert.strictEqual(destination, null);
     cards = [{ dataset: { cardName: '麦畑' }, getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 80 }) }];
@@ -218,9 +221,86 @@ runTest('閲覧カードの位置復元は対象消失を呼出元へ返し比�
     context.restoreInspectionAnchor({ ...anchor, x: -0.2, y: 1.2 });
     assert.strictEqual(destination.x, 0);
     assert.strictEqual(destination.y, 500);
+    context.restoreInspectionAnchor({ ...anchor, preservePosition: false });
+    assert.strictEqual(destination.x, 150, '通常のresize/reflowは閲覧カードを中央へ戻す');
+    assert.strictEqual(destination.y, 250);
     context.focusPlayer = 0;
     assert.strictEqual(context.restoreInspectionAnchor(anchor), false, '新しい閲覧対象を古いanchorで上書きしない');
     context.focusPlayer = 1;
     context.destroyed = true;
     assert.strictEqual(context.restoreInspectionAnchor(anchor), false);
+});
+
+runTest('建設flightの時計は二度目の描画更新で始まり古いcallbackは新しい待機を壊さない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function stageBuildFlight(');
+    const end = source.indexOf('    function startBuildFlight(', start);
+    assert.ok(start >= 0 && end > start);
+    const frames = new Map();
+    let sequence = 0, played = 0, cleared = 0, valid = true;
+    const ghost = {}, animation = { currentTime: 0, play: () => { played++; } };
+    const context = {
+        buildFlight: ghost, buildFlightGeneration: 1, buildFlightFrame: null,
+        requestAnimationFrame: callback => { frames.set(++sequence, callback); return sequence; },
+        clearBuildFlight: () => { cleared++; context.buildFlightGeneration++; context.buildFlightFrame = null; },
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    const flush = () => {
+        const [handle, callback] = frames.entries().next().value;
+        frames.delete(handle);
+        callback();
+    };
+    context.stageBuildFlight(ghost, animation, 1, () => valid);
+    flush();
+    assert.strictEqual(played, 0, '最初の更新中は静止したカードを保つ');
+    assert.strictEqual(frames.size, 1);
+    animation.currentTime = 100;
+    flush();
+    assert.strictEqual(played, 1);
+    assert.strictEqual(animation.currentTime, 0, '再生段階から時計を開始する');
+    context.stageBuildFlight(ghost, animation, 1, () => valid);
+    flush();
+    valid = false;
+    flush();
+    assert.strictEqual(played, 1, '二段階目でも現在の手番・表示条件を再検査する');
+    assert.strictEqual(cleared, 1);
+    valid = true;
+    context.stageBuildFlight(ghost, animation, 2, () => valid);
+    const stale = [...frames.values()][0];
+    frames.clear();
+    context.buildFlightGeneration++;
+    context.stageBuildFlight(ghost, animation, 3, () => valid);
+    const currentFrame = context.buildFlightFrame;
+    stale();
+    assert.strictEqual(context.buildFlightFrame, currentFrame);
+    assert.strictEqual(frames.size, 1);
+    flush();
+    assert.strictEqual(played, 1);
+    flush();
+    assert.strictEqual(played, 2);
+});
+
+runTest('市場の位置保持解除はlive anchorだけに適用し保存済み復帰viewを変えない', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
+    const start = source.indexOf('        function preserveReadingPosition(active)');
+    const end = source.indexOf('        function cancelResizeAnchor()', start);
+    assert.ok(start >= 0 && end > start);
+    let cached = 0;
+    const context = { preserveInspectionPosition: false,
+        inspectionAnchor: { playerIndex: 1, name: 'パン屋', x: 0.25, y: 0.75, preservePosition: false },
+        cacheInspectionAnchor: () => { cached++; },
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    context.preserveReadingPosition(true);
+    assert.strictEqual(cached, 1);
+    assert.strictEqual(context.inspectionAnchor.preservePosition, true);
+    const saved = { ...context.inspectionAnchor };
+    context.preserveReadingPosition(false);
+    assert.strictEqual(cached, 1, '解除時に移動後の座標を再採取しない');
+    assert.strictEqual(context.inspectionAnchor.preservePosition, false);
+    assert.strictEqual(saved.preservePosition, true);
+    context.inspectionAnchor = null;
+    context.preserveReadingPosition(true);
+    context.preserveReadingPosition(false);
+    assert.strictEqual(context.inspectionAnchor, null);
 });

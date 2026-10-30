@@ -16,9 +16,20 @@
 
 勝利ランドマークの語単位表示・PC一列配置は `0d8e68da` へpush済み。ローカル単体・4幅ブラウザ・main/UI型・ESLint成功、通常Release [41109174969](https://github.com/nao70161994/machikoro/actions/runs/41109174969)・16画面操作 [41109175145](https://github.com/nao70161994/machikoro/actions/runs/41109175145)も成功。後続のカメラ候補の結果とは区別する。
 
+## 743a9b5cの確定結果と後続候補
+
+- [全Nightly 41112650607](https://github.com/nao70161994/machikoro/actions/runs/41112650607)は349件の実行/和集合照合まで完了したが失敗。342初回成功・3再試行成功・3失敗・1許可済skip。時間上限での中断はない。通常Release [41112628743](https://github.com/nao70161994/machikoro/actions/runs/41112628743)も同じ通常カメラ2件で失敗、16画面操作 [41112628737](https://github.com/nao70161994/machikoro/actions/runs/41112628737)は成功。
+- カメラの2件は、通常resize/reflowでも比例位置へ戻す743の製品退行。元の「閲覧カードを中央へ戻す」assertを維持し、市場open〜closeだけpan保持へ限定する。live anchorはclose後false、保存したreturnViewのコピーだけtrueを維持。購入なしも同期復元してから解除する。テーマ離脱時のclose(false)も同じ解除経路、一時的な詳細modalへのsuspendは市場閲覧中として扱う。
+- 建設は[自然終了とframe間隔の記録](assets/nightly-quality/flight-finishes-between-frames-743.json)を採取。1440では173msのpaused0から889msの消失へ進み、finished480だった。320/844も最初の観測が407/424msで60..400msの元判定外。取り消しやscroll誤検出ではない。
+- 後続候補は二重RAFを経てからclockを開始し、最初の描画機会をpausedで待つ。両段階にgeneration/current/同一ghostを検査し、古callbackは新handleを消さない。480ms・1500ms・60..400ms判定を変えない。RAFはpaint完了の保証とは扱わない。
+- 残る[ローカル中間候補の失敗](assets/nightly-quality/local-staging-late-generation.json)では320の生成自体がclose後約1.3秒まで遅れ、1500msに間に合わなかった。別batchの4件はページloadが40.555秒かかるなどsetup/操作段階で45秒上限に達した。これをすべて同じ描画原因として扱わず、成功した再実行だけを報告しない。
+- 2viewportを同一caseで進めていた購入→Back検証は、390/844の独立caseへ分割。各caseの45秒上限・各軸1px・正本assertは維持し、両方成功。新規ケースを除く通常再配置2件も元assertでローカル成功。建設の全条件で6件成功したbatchと、後続の失敗batchは区別する。
+- focused WebKitの選択にoverviewファイルも明示し、通常再配置2件・購入復帰2件・建設5条件・市場往復2件を同じ候補で検証する。期待値緩和・強制clickは行わない。
+- 所属名は[表示整理とA/B](owner-name-readability.md)。カード/文字を縮めず普通名の末尾を読めるようにし、同名時の席番号は残す。境界配置の保証とはしない。
+
 ## P0の原因と修正
 
-- 元mainの3回は318件（WebKit316、Chromium2）を1 workerで実行し35分で未完了。[23種類と現在の検証契約](nightly-main-failure-audit.json)を対応付け、case単位6分割とID和集合照合で欠落/重複/未実行/中断を検出する。
+- 元mainの3回は318件（WebKit316、Chromium2）を1 workerで実行し35分で未完了。[23種類と現在の検証契約](nightly-main-failure-audit.json)を対応付け、case単位6分割とID和集合照合で欠落/重複/未実行/中断を検出する。`nightly-main-failure-audit.json`は9c70127b/340件時点の契約整理であり、最新実行結果は上のrun記録で区別する。
 - 製品の不具合：市場のnative dialog移動後の排他漏れ、回転カードの収支/休業競合、HUD名、変換後の市場スクロール座標、カード追加後のviewport同期、市場close/reopen競合等。時間延長・強制click・assert削除では修復しない。
 - 古いfixture：5/10人の旧3席期待値、正面閲覧と全体倍率の混同、非表示menu内の操作、CPU設定/roster不整合等。現仕様の操作・正本不変の検証へ更新。
 - SW二世代は旧documentのload待機と実reloadが競合。クリック前から実navigationを待ち、v2/cache/controller/error assertは維持。
@@ -77,3 +88,18 @@ CPU1500ms・非seed、人間席を自動UI操作。物理端末・人間によ�
 - 公式の静止画・PVとの比較で、大きな発動カード、卓面の光、プレイヤー反応、連鎖演出の一体感には差が残る。公式の画像・キャラクターを製品へ取り込まない。
 - 俯瞰終盤の細字は自然な拡大閲覧と併せて評価する。物理スマートフォンは未確認。
 - テスト成功・画像一致だけで商用品質へ到達したとはしない。実プレイ・比較画像・独立レビュー・重大問題の解消を照合して判定する。
+
+## 743の実UI完走（後続候補を含まない）
+
+[41112655865](https://github.com/nao70161994/machikoro/actions/runs/41112655865)、CPU1500ms・非seed・人間席の自動UI操作。
+
+|viewport|turn|人間actions/click|経過ms|閲覧→復帰|pageErrors|
+|---|---|---|---|---|---|
+|390×844|50|125/204|410789|2click/906ms、scale/angle/正本復帰|0|
+|844×390|62|151/240|531351|2click/834ms、scale/angle/正本復帰|0|
+
+序盤・中盤・終盤・first-build・winnerを保存し、縦横のmid/late/first-build/winner8枚を独立目視。新たな主要操作の重なり・重大な切れは見つからなかった。owner名の末尾配置、終盤の細字、横の広い余白は残る。diceの撮影target時刻とactualelapsedは一致しないため、この静止画列だけで演出の連続性を検証したとはしない。専用の実frame検証と併せて評価する。物理スマートフォン確認とは区別する。
+
+## 次候補の確認範囲
+
+所属名の3caseと同名確認を含む最終1case、通常再配置2case、独立化した購入復帰2caseはローカルで成功。stageの全建設条件を含む6case成功batchもあるが、後続batchの失敗は上記に残しており「関連ローカル全成功」とは報告しない。最終の構文・ESLint・main/UI型・関連単体は成功。テストの時間上限や許容値は変更していない。追加の固定WebKit重点検証を先に実行し、その結果から次の全Nightlyを判断する。
