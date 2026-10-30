@@ -853,9 +853,18 @@ const CardBoardField = (() => {
             launcher?.focus({ preventScroll: true });
         }
         restoreMarketFocus = true;
-        tableLayout?.refresh();
-        if (tableLayout) globalThis.requestAnimationFrame(presentPendingBuildCues);
-        else presentPendingBuildCues();
+        if (pendingBuildCues.length && tableLayout && tableCamera) {
+            // Capture the restored table, not the expanded market geometry, as
+            // the inspection return view. Keep both layouts in this task so a
+            // queued overview paint cannot delay the fresh purchase feedback.
+            tableLayout.syncLayout();
+            tableCamera.syncLayout();
+            presentPendingBuildCues();
+        } else {
+            tableLayout?.refresh();
+            if (tableLayout) globalThis.requestAnimationFrame(presentPendingBuildCues);
+            else presentPendingBuildCues();
+        }
     }
 
     function isMarketExpanded() {

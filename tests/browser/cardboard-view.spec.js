@@ -1896,3 +1896,62 @@ for (const viewport of [{width:320,height:844},{width:390,height:844},{width:844
         await page.locator('.cardboard-activation-tag[hidden]').evaluateAll(elements => elements.forEach(element => element.remove()));
     });
 }
+
+test('相手正面を移動してから市場で購入しても元の視点へ戻れる', async ({ page }, testInfo) => {
+    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
+        await prepare(page, viewport, 2, false);
+        await page.evaluate(() => {
+            const game = GameRuntimeState.runtime.snapshot().game;
+            game.players[0].cards = ['麦畑', '牧場', 'パン屋', '森林', '花畑', 'フラワーショップ'].map(createCardByName);
+            game.phase = GAME_PHASES.BUILD;
+            render();
+        });
+        await focusSeat(page, 1);
+        await camera(page, 'in');
+        const surface = page.locator('#cardboardTableViewport');
+        await surface.focus();
+        await surface.press('ArrowRight');
+        await surface.press('ArrowDown');
+        const view = (anchorName = null) => surface.evaluate((element, name) => {
+            const bounds = element.getBoundingClientRect();
+            const center = { x: bounds.left + element.clientLeft + element.clientWidth / 2,
+                y: bounds.top + element.clientTop + element.clientHeight / 2 };
+            const cards = [...document.querySelectorAll('#cardboardSeats [data-player-index="1"] .cardboard-card')];
+            const distance = card => {
+                const rect = card.getBoundingClientRect();
+                return (rect.left + rect.width / 2 - center.x) ** 2 + (rect.top + rect.height / 2 - center.y) ** 2;
+            };
+            const anchor = name ? cards.find(card => card.dataset.cardName === name)
+                : cards.sort((a, b) => distance(a) - distance(b))[0];
+            return { scale: element.dataset.tableScale, angle: element.dataset.tableAngle,
+                left: element.scrollLeft, top: element.scrollTop,
+                client: { left: element.clientLeft, top: element.clientTop, width: element.clientWidth, height: element.clientHeight },
+                viewport: bounds.toJSON(), anchorName: anchor.dataset.cardName,
+                anchor: anchor.getBoundingClientRect().toJSON(),
+                layout: document.getElementById('cardboardSeats').dataset.tableLayoutKey };
+        }, anchorName);
+        const before = await view();
+        expect(Number(before.angle)).not.toBe(0);
+        // The market may be outside this rotated, panned viewport. Open its
+        // production dialog API as a controlled camera fixture; purchase,
+        // closing and returning still use ordinary UI clicks.
+        await page.evaluate(() => CardBoardField.openMarket());
+        await page.locator('#cardboardMarketDialog [data-action="buildCard"][data-card-name="麦畑"]').click();
+        const purchased = await state(page);
+        await page.locator('#cardboardMarketClose').click();
+        await expect(surface).toHaveAttribute('data-table-angle', '0');
+        await camera(page, 'back');
+        const after = await view(before.anchorName);
+        await fs.writeFile(testInfo.outputPath(`purchase-return-${viewport.width}.json`), JSON.stringify({ before, after }, null, 2));
+        expect(after.scale).toBe(before.scale);
+        expect(after.angle).toBe(before.angle);
+        for (const [axis, size, border] of [['x', 'width', 'left'], ['y', 'height', 'top']]) {
+            const relative = (before.anchor[axis] + before.anchor[size] / 2 - before.viewport[axis] - before.client[border]) / before.client[size];
+            const expected = Math.max(0, Math.min(1, relative)) * after.client[size];
+            const actual = after.anchor[axis] + after.anchor[size] / 2 - after.viewport[axis] - after.client[border];
+            expect(Math.abs(actual - expected), `${viewport.width}pxの${axis}読み位置を新viewportへ比例復元`).toBeLessThanOrEqual(1);
+        }
+        expect(await state(page)).toEqual(purchased);
+        await page.screenshot({ path: testInfo.outputPath(`purchase-return-${viewport.width}.png`) });
+    }
+});

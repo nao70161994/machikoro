@@ -11,10 +11,10 @@
 |全Nightly|8514588a / [40982123534](https://github.com/nao70161994/machikoro/actions/runs/40982123534)|347件完走、346初回成功・0再試行・1許可済skip。網羅性照合成功。shard8.5〜12.1分|
 |重点WebKit|8514588a / [40981661263](https://github.com/nao70161994/machikoro/actions/runs/40981661263)|建設・市場7件、retry0成功、2.7分|
 |収支/fixture追加後Release|dedc82d2 / [41107097490](https://github.com/nao70161994/machikoro/actions/runs/41107097490)|成功|
-|同16画面・操作|dedc82d2 / [41107097606](https://github.com/nao70161994/machikoro/actions/runs/41107097606)|確認中|
-|同全Nightly|dedc82d2 / [41107113418](https://github.com/nao70161994/machikoro/actions/runs/41107113418)|348件・6分割58件ずつ。確認中|
+|同16画面・操作|dedc82d2 / [41107097606](https://github.com/nao70161994/machikoro/actions/runs/41107097606)|成功|
+|同全Nightly|dedc82d2 / [41107113418](https://github.com/nao70161994/machikoro/actions/runs/41107113418)|348件完走、346初回成功・1再試行成功・1許可済skip。網羅性照合成功。安定化は未完了|
 
-次候補は勝利ランドマークの語単位表示・PC一列配置。ローカル単体・4幅ブラウザ・main/UI型・ESLint成功、固定環境は未確認。前commitの成功を追加変更の成功と混同しない。
+勝利ランドマークの語単位表示・PC一列配置は `0d8e68da` へpush済み。ローカル単体・4幅ブラウザ・main/UI型・ESLint成功、通常Release [41109174969](https://github.com/nao70161994/machikoro/actions/runs/41109174969)・16画面操作 [41109175145](https://github.com/nao70161994/machikoro/actions/runs/41109175145)も成功。後続のカメラ候補の結果とは区別する。
 
 ## P0の原因と修正
 
@@ -52,9 +52,27 @@ CPU1500ms・非seed、人間席を自動UI操作。物理端末・人間によ�
 
 勝利名の語分割はwinnerCollectionだけ。Intl非対応は全文fallback、全segmentをescapeしaria/action/titleは完全名のまま。4幅の元詳細操作/フォーカス復帰に全文/語のfit/PC同一行を追加確認。単体で正本不変・escape・非対応fallbackを確認。fullPage画像は全操作が同時にviewport内へ入る証拠ではない。
 
+## dedc82d2で再発した描画待ち
+
+[390px建設flightの失敗記録](assets/nightly-quality/construction-render-gap-390.json)ではclose後約255msに生成済みだったが、次の描画更新は1487ms（paused0）、1518msでrunning31ms。1500ms以内に60ms以上進むframeを観測できず、再試行は成功。取消・寿命不足とは異なる。layoutの93〜227msとcueの227〜255msの後に約1.2秒のframe間隔があり、paint/合成負荷と観測負荷を調査中。前回347件の初回成功だけで安定化完了としない。期限・動作frame判定は維持する。単純なclose時refresh削除は復帰snapshotのgeometryを壊す恐れがあるため採用しない。
+
+## 採用しなかった狭幅所属ラベル案
+
+320pxで既存横持ち仕様の18px帯へ切り替え、市場側候補を優先する案を試したが、320×568の終盤fixtureでは市場境界の必要な空白を確保できなかった。2回の候補検証は失敗し、製品変更・テスト変更は撤回した。元の320/390×844境界assertは維持する。短い画面での改善を確認したとは報告しない。
+
+## 購入後の応答・閲覧位置の候補修正
+
+- 購入cueがある市場closeでは、戻した卓のlayout→cameraを同期してから同taskで演出を提示する。購入なしのcloseは従来経路。単純にlayoutを除く案は復帰snapshotが混在するため不採用。480ms flight、1200ms notice、1500/2500ms観測期限は不変。
+- 独立レビューで相手正面・pan後の購入→Backを追加確認し、修正前の `0d8e68da` でも横pan80pxを失う既存挙動を再現した。viewport高も616→668へ変わるためrawscroll一致だけは正しい指標ではない。
+- カメラが記録する閲覧カードにviewport内の比例位置を追加。通常resizeは二重RAF後、明示syncLayoutは確定済みの卓へその場で復元し、focusCardが復元前のsnapshotを保存しない。geometryが変わるBackはカード識別子も利用。完全表示を保証する仕様ではなく、centerのclampで一部可視を保つ。
+- 初期の新testは先頭カードを比較したが、実際に中央で閲覧していたのは別行のパン屋だった。異なる行のカードを同時に比例復元する要求は不適切なので、新caseを「中央に近い同一カードの追跡」に修正。既存テスト/assertは変更しない。390/844でscale/angle厳密一致・比例位置1px以内・正本不変を確認した。独立レビュー指摘に従い、保存したカードがUndo/交換等で消えていた場合は旧world中心のfallbackへ戻す。
+- 最終ローカル回帰は既存11件＋新1件（390/844の購入→復帰）で12件成功、2.5分・1worker。構文、main/UI型、ESLint、関連単体も成功。native CIは後続確認する。
+- [変更前画像](assets/nightly-quality/camera-return-390-before.png) / [変更後画像](assets/nightly-quality/camera-return-390-after.png)。[前の測定](assets/nightly-quality/camera-return-390-before.json) / [後の測定](assets/nightly-quality/camera-return-390-after.json)。同じ人間2席のcontrolled fixture。前は先頭の麦畑、後は実際の閲覧anchorである別行のパン屋を記録したため、縦の数値を直接比較しない。幅が変わらない横pan80pxの消失を修復。390のscrollLeft584→584、844は835→835。独立画像レビューで新しい操作の重なり・表示崩れなし。afterのカード名左側のclipは利用者が明示したpanを保持した結果で、全景fitの欠落とは区別する。
+- 今回の候補が約1.2秒の描画空白そのものを解消したかは未確認。ローカルChromiumの成功をnative WebKitの安定性の証明にはしない。
+
 ## 残課題と完了判定
 
-- 最新候補の固定環境を確認し、再試行/skip/中断を区別する。347件の初回成功が揃った後も過去の別失敗を調査し、未確定事項を隠さない。
+- 最新候補の固定環境を確認し、再試行/skip/中断を区別する。以前の全Nightlyが再試行0で完走した後も過去の別失敗を調査し、未確定事項を隠さない。
 - 320終盤の任意構成でowner名の末尾配置/省略が残る。建設の一時通知が自分の施設を覆う場合もあり、操作は覆わないが視線誘導の改善余地がある。
 - 公式の静止画・PVとの比較で、大きな発動カード、卓面の光、プレイヤー反応、連鎖演出の一体感には差が残る。公式の画像・キャラクターを製品へ取り込まない。
 - 俯瞰終盤の細字は自然な拡大閲覧と併せて評価する。物理スマートフォンは未確認。

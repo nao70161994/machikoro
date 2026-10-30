@@ -163,3 +163,64 @@ runTest('建設通知の1200msは最初の描画更新から数え取消後に�
     paint();
     assert.strictEqual(timers.size, 0, '手番の状況が変わったら過去の通知を始めない');
 });
+
+runTest('購入後の市場closeは復帰geometryを同期してから同taskで建設を示す', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('    function finishMarketClose()');
+    const end = source.indexOf('    function isMarketExpanded()', start);
+    assert.ok(start >= 0 && end > start);
+    const order = [], frames = [];
+    const context = {
+        restoreMarketNode: () => order.push('restore'),
+        setMarketExpanded: expanded => order.push(`expanded:${expanded}`),
+        marketLauncher: { isConnected: true, getClientRects: () => [1], focus: () => order.push('focus') },
+        marketLauncherSelector: null, restoreMarketFocus: true,
+        enabled: () => true, node: () => ({ style: { display: '' }, querySelector: () => null }),
+        pendingBuildCues: [{}],
+        tableLayout: { syncLayout: () => order.push('table'), refresh: () => order.push('refresh') },
+        tableCamera: { syncLayout: () => order.push('camera') },
+        presentPendingBuildCues: () => order.push('cue'),
+        requestAnimationFrame: callback => frames.push(callback),
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'focus', 'table', 'camera', 'cue']);
+    assert.strictEqual(frames.length, 0, '購入演出を次のframeまで待たない');
+    order.length = 0;
+    context.pendingBuildCues = [];
+    context.finishMarketClose();
+    assert.deepStrictEqual(order, ['restore', 'expanded:false', 'refresh']);
+    assert.strictEqual(frames.length, 1, '購入しないcloseは通常のrefreshを維持する');
+    frames[0]();
+    assert.strictEqual(order.at(-1), 'cue');
+});
+
+runTest('閲覧カードの位置復元は対象消失を呼出元へ返し比例位置を可視範囲へ保つ', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardTableCamera.js'), 'utf8');
+    const start = source.indexOf('        function restoreInspectionAnchor(anchor)');
+    const end = source.indexOf('        function retainInspectionOnResize(anchor)', start);
+    assert.ok(start >= 0 && end > start);
+    let cards = [], destination = null;
+    const context = {
+        destroyed: false, focusPlayer: 1, viewport: { clientWidth: 300, clientHeight: 500 },
+        seat: () => ({ querySelectorAll: () => cards }),
+        paint() {}, updateFocus() {}, cacheInspectionAnchor() {},
+        clientToWorld: (x, y) => ({ x, y }), alignPoint: (point, target) => { destination = target; },
+    };
+    require('vm').runInNewContext(source.slice(start, end), context);
+    const anchor = { playerIndex: 1, name: '麦畑', x: 0.25, y: 0.75 };
+    assert.strictEqual(context.restoreInspectionAnchor(anchor), false, '消失時はworld中心fallbackを可能にする');
+    assert.strictEqual(destination, null);
+    cards = [{ dataset: { cardName: '麦畑' }, getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 80 }) }];
+    assert.strictEqual(context.restoreInspectionAnchor(anchor), true);
+    assert.strictEqual(destination.x, 75);
+    assert.strictEqual(destination.y, 375);
+    context.restoreInspectionAnchor({ ...anchor, x: -0.2, y: 1.2 });
+    assert.strictEqual(destination.x, 0);
+    assert.strictEqual(destination.y, 500);
+    context.focusPlayer = 0;
+    assert.strictEqual(context.restoreInspectionAnchor(anchor), false, '新しい閲覧対象を古いanchorで上書きしない');
+    context.focusPlayer = 1;
+    context.destroyed = true;
+    assert.strictEqual(context.restoreInspectionAnchor(anchor), false);
+});

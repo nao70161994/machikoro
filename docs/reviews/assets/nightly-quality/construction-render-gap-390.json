@@ -1,0 +1,295 @@
+{
+  "moving": {
+    "error": "fresh purchase flight was not observed while moving"
+  },
+  "flightDiagnostic": {
+    "frames": [
+      {
+        "afterClose": 92,
+        "flight": false,
+        "animations": []
+      },
+      {
+        "afterClose": 1487,
+        "flight": true,
+        "animations": [
+          {
+            "currentTime": 0,
+            "playState": "paused",
+            "duration": 480
+          }
+        ]
+      },
+      {
+        "afterClose": 1518,
+        "flight": true,
+        "animations": [
+          {
+            "currentTime": 31,
+            "playState": "running",
+            "duration": 480
+          }
+        ]
+      }
+    ],
+    "mutations": [
+      {
+        "kind": "add",
+        "id": "cardboardBuildNotice",
+        "at": 2241,
+        "sameScrollRetained": null,
+        "animations": [
+          {
+            "currentTime": 0,
+            "playState": "running",
+            "duration": 180
+          }
+        ]
+      },
+      {
+        "kind": "add",
+        "id": "cardboardBuildFlight",
+        "at": 2242,
+        "sameScrollRetained": true,
+        "animations": [
+          {
+            "currentTime": 0,
+            "playState": "paused",
+            "duration": 480
+          }
+        ]
+      }
+    ],
+    "cancellations": [],
+    "tasks": [
+      {
+        "afterClose": 92,
+        "duration": 0,
+        "callback": "inspect",
+        "scheduledBy": null,
+        "keyBefore": "[\"cross\",3,2,24,245,512,348,[[0,24,617,512,329,0,\"3\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,348,[[0,24,617,512,329,0,\"3\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 92,
+        "duration": 1,
+        "callback": "inspect",
+        "scheduledBy": null,
+        "keyBefore": "[\"cross\",3,2,24,245,512,348,[[0,24,617,512,329,0,\"3\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,348,[[0,24,617,512,329,0,\"3\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 93,
+        "duration": 134,
+        "callback": "layout",
+        "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardTableLayout.js:53:73\nrefresh@http://127.0.0.1:3210/js/cardTableLayout.js:437:21\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:856:29\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:911:26",
+        "keyBefore": "[\"cross\",3,2,24,245,512,348,[[0,24,617,512,329,0,\"3\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,24,640,512,329,0,\"3\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 227,
+        "duration": 28,
+        "callback": "presentPendingBuildCues",
+        "scheduledBy": "@\nfinishMarketClose@http://127.0.0.1:3210/js/cardBoardField.js:857:58\ncloseMarket@http://127.0.0.1:3210/js/cardBoardField.js:911:26",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,24,640,512,329,0,\"3\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 1486,
+        "duration": 2,
+        "callback": "inspect",
+        "scheduledBy": "@\ninspect@\n@",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 1488,
+        "duration": 4,
+        "callback": "inspect",
+        "scheduledBy": "@\ninspect@\n@",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 1492,
+        "duration": 0,
+        "callback": "layout",
+        "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:444:65\nonLayout@http://127.0.0.1:3210/js/cardBoardField.js:354:55\nlayout@http://127.0.0.1:3210/js/cardTableLayout.js:417:21\n@",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 1492,
+        "duration": 0,
+        "callback": "",
+        "scheduledBy": "@\nshowBuildNotice@http://127.0.0.1:3210/js/cardBoardField.js:650:60\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:696:28\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:794:30\n@",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 1492,
+        "duration": 0,
+        "callback": "",
+        "scheduledBy": "@\nstartBuildFlight@http://127.0.0.1:3210/js/cardBoardField.js:596:60\nshowBuildCue@http://127.0.0.1:3210/js/cardBoardField.js:697:34\npresentPendingBuildCues@http://127.0.0.1:3210/js/cardBoardField.js:794:30\n@",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 1492,
+        "duration": 1,
+        "callback": "layout",
+        "scheduledBy": "@\nschedule@http://127.0.0.1:3210/js/cardTableLayout.js:53:73",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 1517,
+        "duration": 1,
+        "callback": "inspect",
+        "scheduledBy": "@\ninspect@\n@",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      },
+      {
+        "afterClose": 1518,
+        "duration": 0,
+        "callback": "layout",
+        "scheduledBy": "@\nrefresh@http://127.0.0.1:3210/js/cardTableCamera.js:444:65\nonLayout@http://127.0.0.1:3210/js/cardBoardField.js:354:55\nlayout@http://127.0.0.1:3210/js/cardTableLayout.js:417:21\n@",
+        "keyBefore": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]",
+        "keyAfter": "[\"cross\",3,2,24,245,512,371,[[0,108,640,344,461,0,\"2\"],[1,108,24,344,197,180,\"2\"]]]"
+      }
+    ],
+    "beforeClose": {
+      "at": 1986,
+      "hidden": false,
+      "reducedMotion": false,
+      "phase": "build",
+      "viewport": {
+        "x": 4,
+        "y": 116,
+        "width": 382,
+        "height": 667.984375,
+        "top": 116,
+        "right": 386,
+        "bottom": 783.984375,
+        "left": 4
+      },
+      "target": {
+        "x": 22,
+        "y": 475.75,
+        "width": 120,
+        "height": 93,
+        "top": 475.75,
+        "right": 142,
+        "bottom": 568.75,
+        "left": 22
+      },
+      "origin": {
+        "x": 24,
+        "y": 211.796875,
+        "width": 342,
+        "height": 236.375,
+        "top": 211.796875,
+        "right": 366,
+        "bottom": 448.171875,
+        "left": 24
+      },
+      "shelf": {
+        "x": 20,
+        "y": 207.796875,
+        "width": 350,
+        "height": 472.625,
+        "top": 207.796875,
+        "right": 370,
+        "bottom": 680.421875,
+        "left": 20
+      },
+      "cameraAngle": "0",
+      "ownerAngle": "0",
+      "suppressors": [
+        {
+          "className": "cardboard-activation-tag",
+          "display": "none",
+          "visibility": "visible",
+          "rects": 0
+        }
+      ],
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "screen": {
+        "left": 0,
+        "top": 0,
+        "width": 390,
+        "height": 844
+      }
+    },
+    "current": {
+      "at": 3512,
+      "hidden": false,
+      "reducedMotion": false,
+      "phase": "build",
+      "viewport": {
+        "x": 4,
+        "y": 116,
+        "width": 382,
+        "height": 667.984375,
+        "top": 116,
+        "right": 386,
+        "bottom": 783.984375,
+        "left": 4
+      },
+      "target": {
+        "x": 127.5999984741211,
+        "y": 397.625,
+        "width": 136,
+        "height": 105.39999389648438,
+        "top": 397.625,
+        "right": 263.5999984741211,
+        "bottom": 503.0249938964844,
+        "left": 127.5999984741211
+      },
+      "origin": {
+        "x": 56.20000076293945,
+        "y": 77.0023422241211,
+        "width": 136,
+        "height": 112.20000457763672,
+        "top": 77.0023422241211,
+        "right": 192.20000076293945,
+        "bottom": 189.2023468017578,
+        "left": 56.20000076293945
+      },
+      "shelf": {
+        "x": 56.20000076293945,
+        "y": 75.3023452758789,
+        "width": 421.5999755859375,
+        "height": 234.60000610351562,
+        "top": 75.3023452758789,
+        "right": 477.79997634887695,
+        "bottom": 309.90235137939453,
+        "left": 56.20000076293945
+      },
+      "cameraAngle": "0",
+      "ownerAngle": "0",
+      "suppressors": [
+        {
+          "className": "cardboard-activation-tag",
+          "display": "none",
+          "visibility": "visible",
+          "rects": 0
+        }
+      ],
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "screen": {
+        "left": 0,
+        "top": 0,
+        "width": 390,
+        "height": 844
+      }
+    }
+  }
+}

@@ -10,7 +10,7 @@ const CardTableCamera = (() => {
         let focusPlayer = null;
         /** @type {{ playerIndex: number, minScale: number } | null} */
         let readingState = null;
-        /** @type {{ playerIndex: number, name: string } | null} */
+        /** @type {{ playerIndex: number, name: string, x: number, y: number } | null} */
         let inspectionAnchor = null;
         let resizeAnchorFrame = 0;
         let previousContext = '';
@@ -153,35 +153,45 @@ const CardTableCamera = (() => {
                 const bounds = card.getBoundingClientRect();
                 if (bounds.right <= clip.left || bounds.left >= clip.right || bounds.bottom <= clip.top || bounds.top >= clip.bottom) continue;
                 const squared = (bounds.left + bounds.width / 2 - center.x) ** 2 + (bounds.top + bounds.height / 2 - center.y) ** 2;
-                if (squared < distance) { distance = squared; nearest = card.dataset.cardName; }
+                if (squared < distance) {
+                    distance = squared;
+                    nearest = { name: card.dataset.cardName,
+                        x: (bounds.left + bounds.width / 2 - clip.left) / viewport.clientWidth,
+                        y: (bounds.top + bounds.height / 2 - clip.top) / viewport.clientHeight };
+                }
             }
-            inspectionAnchor = nearest ? { playerIndex: focusPlayer, name: nearest } : null;
+            inspectionAnchor = nearest ? { playerIndex: focusPlayer, ...nearest } : null;
         }
         function cancelResizeAnchor() {
             if (resizeAnchorFrame) globalThis.cancelAnimationFrame(resizeAnchorFrame);
             resizeAnchorFrame = 0;
         }
+        function restoreInspectionAnchor(anchor) {
+            if (destroyed || focusPlayer !== anchor.playerIndex) return false;
+            const cards = /** @type {NodeListOf<HTMLElement> | undefined} */ (
+                seat(anchor.playerIndex)?.querySelectorAll('.cardboard-card[data-card-name]')
+            );
+            const card = Array.from(cards || []).find(element => element.dataset.cardName === anchor.name);
+            if (card) {
+                paint();
+                const bounds = card.getBoundingClientRect();
+                // Preserve the pan proportionally and retain a visible part of
+                // oversized or previously partially visible cards after resize.
+                alignPoint(clientToWorld(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
+                    { x: Math.max(0, Math.min(1, anchor.x)) * viewport.clientWidth,
+                        y: Math.max(0, Math.min(1, anchor.y)) * viewport.clientHeight });
+            }
+            updateFocus();
+            cacheInspectionAnchor();
+            return Boolean(card);
+        }
         function retainInspectionOnResize(anchor) {
             cancelResizeAnchor();
-            // The table layout has its own RAF. Wait through its placement,
-            // then resolve the card by identity rather than an obsolete point
-            // in the previous world geometry. No inspection/return view changes.
+            // Ordinary resize delivery must wait for the table's own placement.
             resizeAnchorFrame = globalThis.requestAnimationFrame(() => {
                 resizeAnchorFrame = globalThis.requestAnimationFrame(() => {
-                    if (destroyed || focusPlayer !== anchor.playerIndex) { resizeAnchorFrame = 0; return; }
-                    const cards = /** @type {NodeListOf<HTMLElement> | undefined} */ (
-                        seat(anchor.playerIndex)?.querySelectorAll('.cardboard-card[data-card-name]')
-                    );
-                    const card = Array.from(cards || []).find(element => element.dataset.cardName === anchor.name);
-                    if (card) {
-                        paint();
-                        const bounds = card.getBoundingClientRect();
-                        alignPoint(clientToWorld(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
-                            { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
-                    }
                     resizeAnchorFrame = 0;
-                    updateFocus();
-                    cacheInspectionAnchor();
+                    restoreInspectionAnchor(anchor);
                 });
             });
         }
@@ -260,7 +270,8 @@ const CardTableCamera = (() => {
                 y: viewport.scrollTop + viewport.clientHeight / 2 });
             const size = measure();
             return { scale, angle, overviewMode, inspectionPadding, focusPlayer,
-                readingState: readingState ? { ...readingState } : null, x: center.x, y: center.y,
+                readingState: readingState ? { ...readingState } : null,
+                anchor: inspectionAnchor ? { ...inspectionAnchor } : null, x: center.x, y: center.y,
                 left: viewport.scrollLeft, top: viewport.scrollTop,
                 viewportWidth: viewport.clientWidth, viewportHeight: viewport.clientHeight,
                 worldWidth: size.width, worldHeight: size.height,
@@ -296,6 +307,13 @@ const CardTableCamera = (() => {
                 // Avoid inverse/forward floating-point roundoff: WebKit floors
                 // fractional scroll coordinates and otherwise drifts by 1px.
                 scroll(previous.left, previous.top);
+            } else if (previous.anchor && focusPlayer === previous.anchor.playerIndex) {
+                // Reading layout can move a card within the world. Its semantic
+                // anchor retains the visible position across that reflow; the
+                // old world-center point alone cannot account for the movement.
+                if (!restoreInspectionAnchor(previous.anchor)) {
+                    alignPoint(previous, { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
+                }
             } else {
                 alignPoint(previous, { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
             }
@@ -448,6 +466,14 @@ const CardTableCamera = (() => {
             if (frame) globalThis.cancelAnimationFrame(frame);
             frame = 0;
             layout();
+            // The caller has already committed the table's layout. Resolve its
+            // reading anchor now, before a following focus command captures the
+            // return view and cancels any deferred resize restoration.
+            if (resizeAnchorFrame && inspectionAnchor) {
+                const anchor = { ...inspectionAnchor };
+                cancelResizeAnchor();
+                restoreInspectionAnchor(anchor);
+            }
             return true;
         }
         function syncViewport() {
