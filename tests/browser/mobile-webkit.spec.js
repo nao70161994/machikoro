@@ -312,8 +312,11 @@ test('mobile WebKitでapp shellとService Workerが実動作する', async ({ br
         expect(networkFallbackRequested).toBe(false);
         expect(errors).toEqual([]);
     } finally {
-        if (context) await context.close();
-        await stopGenerationServer(server);
+        try {
+            if (context) await context.close();
+        } finally {
+            await stopGenerationServer(server);
+        }
     }
 });
 
@@ -357,17 +360,24 @@ test('mobile WebKitでService Worker二世代の待機・適用・cache移行が
 
         await page.locator('#btnRestart').click();
         await expect(page.locator('#confirmModal')).toBeVisible();
-        await page.locator('#confirmOkBtn').click();
         // Returning to the title runs the production refresh path, which asks the
         // already-waiting worker to activate without test-only DOM mutation.
-        await page.waitForLoadState('load');
+        // Register for the actual reload before confirming. Waiting only for
+        // load can resolve against v1 and race the expected context destruction.
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'load' }),
+            page.locator('#confirmOkBtn').click(),
+        ]);
         await expect.poll(() => page.evaluate(() => window.MACHIKORO_CLIENT_VERSION)).toBe('webkit-e2e-v2');
         await expect.poll(() => page.evaluate(() => caches.keys())).toEqual(['machikoro-webkit-e2e-v2']);
         await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
         expect(errors).toEqual([]);
     } finally {
-        if (context) await context.close();
-        await stopGenerationServer(server);
+        try {
+            if (context) await context.close();
+        } finally {
+            await stopGenerationServer(server);
+        }
     }
 });
 
