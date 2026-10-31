@@ -205,3 +205,7 @@ CPU1500ms・非seed、人間席を自動UI操作。物理端末・人間によ�
 [41189002920](https://github.com/nao70161994/machikoro/actions/runs/41189002920)は18成功/2失敗・retry0・5.7分。844の第4送金は160ms/opacity1の後、次のRAFが終了600ms/opacity0で元の<500ms判定に失敗。1440建設はafterClose238msのpaused0から次が1610msのpaused0で、1500ms内の移動frameを観測できなかった。所有者非被覆の失敗ではない。320は4回ともowner/source非被覆・100×65アート・正本/再生guardの元assertを通過。新配置で描画待ちが解消したとは主張しない。
 
 次の診断はテスト側だけでtimeout callbackの処理時間を最大100件記録し、フレーム間隔との区別を可能にする。caption生記録も元frame判定より前に保存し、失敗で証拠が欠けないようにする。製品の時間軸・元assert・6500/1500ms期限を変えず、同じ条件で処理コストを採る。通常Release/16画面の同版結果を待ち、無変更で成功するまで再実行はしない。
+
+668ed718の通常Release [41189004547](https://github.com/nao70161994/machikoro/actions/runs/41189004547)は成功。16画面ジョブ41189004543は継続中。描画空白は原JS callbackの時間と同時刻のCPU/memory pressure・cgroup throttlingを診断専用ジョブで500ms毎に記録して切り分ける。Linux counterが読めない場合はnullを残し、同時1sample・callback最大100件・ファイル出力でメモリを制限。childコマンドのexit statusを維持することをローカルで終了code7のコマンドにより確認（3行のJSONL、ラッパーもcode7）。新規製品機能やテスト緩和ではない。通常Release/16画面の元実行が終わるまでPushを控え、途中取消を避ける。
+
+668ed718の16画面/表示操作 [41189004543](https://github.com/nao70161994/machikoro/actions/runs/41189004543)も成功。通常Releaseと併せて結果確定。重点20件の2失敗は別に保持する。診断コードの独立レビューで、採取障害によるchild終了コード上書き・直接childだけへのsignal転送・100件以降の計測継続を指摘され、child結果優先・POSIX process groupへ転送・100件以降はnative timerへ戻すよう修正。終了code0/7とSIGTERM143のsmoke成功、構文/ESLint成功。観測負荷はゼロではないため、圧力/処理時間の相関だけで原因確定とはしない。

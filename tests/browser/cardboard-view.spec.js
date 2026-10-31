@@ -1529,8 +1529,9 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
         window.activationTimerTasks = [];
         const originalSetTimeout = window.setTimeout;
         window.setTimeout = function(callback, delay, ...args) {
-            if (typeof callback !== 'function') return originalSetTimeout.call(window, callback, delay, ...args);
+            if (typeof callback !== 'function' || window.activationTimerTasks.length >= 100) return originalSetTimeout.call(window, callback, delay, ...args);
             return originalSetTimeout.call(window, function(...values) {
+                if (window.activationTimerTasks.length >= 100) return callback.apply(this, values);
                 const started = performance.now();
                 try { return callback.apply(this, values); }
                 finally {
@@ -1611,6 +1612,7 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
     // Preserve caption/JS-cost evidence even if the original live-frame
     // assertion fails. Do not change its deadline or movement threshold.
     require('fs').writeFileSync(testInfo.outputPath('activation-presentation.json'), JSON.stringify(await page.evaluate(() => ({
+        at: Date.now(), timeOrigin: performance.timeOrigin,
         records: window.boardTagRecords, timerTasks: window.activationTimerTasks,
     })), null, 2));
     await page.screenshot({ path: testInfo.outputPath('facility-chain-live-step-4.png') });
