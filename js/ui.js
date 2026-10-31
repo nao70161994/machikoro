@@ -478,12 +478,7 @@ function clearOnlineSessionAfterWin() {
 }
 
 function renderWinnerState(winner) {
-    turnAnnouncerTimerController.clear();
-    const turnAnnouncer = document.getElementById('turnAnnouncer');
-    if (turnAnnouncer) {
-        turnAnnouncer.style.display = 'none';
-        turnAnnouncer.classList.remove('hiding');
-    }
+    dismissTurnGreeting();
     plazaFeedback?.reset();
     if (typeof PlazaField !== 'undefined') PlazaField.toggleComparison(false);
     if (typeof CardBoardField !== 'undefined') {
@@ -598,6 +593,7 @@ function renderWinnerState(winner) {
             btnSkip.textContent = controls.skipText;
             const btnReroll = /** @type {HTMLButtonElement} */ (document.getElementById("btnReroll"));
             btnReroll.style.display = controls.rerollDisplay;
+            btnReroll.hidden = controls.rerollDisplay === 'none';
             document.getElementById("diceChoose").innerHTML = controls.diceChooseHtml;
             document.getElementById("buildMenu").innerHTML = controls.buildMenuHtml;
             renderBuildShortcut(true);
@@ -781,6 +777,7 @@ function renderActiveGameState(current) {
         hideReroll() {
             const btnReroll = /** @type {HTMLButtonElement} */ (document.getElementById("btnReroll"));
             btnReroll.style.display = "none";
+            btnReroll.hidden = true;
         },
         updateDiceDisplay(diceValues) {
             updateDiceDisplay(diceValues);
@@ -1904,6 +1901,7 @@ function bcSelectCard(btn, inputId) {
 
 function dismissTurnGreeting() {
     turnAnnouncerTimerController.clear();
+    document.getElementById('cardboardBoard')?.classList.remove('cardboard-turn-cue');
     const greeting = document.getElementById('turnAnnouncer');
     if (greeting) {
         greeting.style.display = 'none';
@@ -1915,9 +1913,13 @@ function showTurnAnnouncer(name, isCPU, playerIndex) {
     const el = document.getElementById("turnAnnouncer");
     const text = document.getElementById("turnAnnouncerText");
     if (!el || !text) return;
-    el.classList.remove("hiding");
+    dismissTurnGreeting();
     const view = UiTurnAnnouncer.buildView(name, isCPU);
-    el.style.display = view.display;
+    const cardboard = document.documentElement?.dataset?.design === 'cardboard';
+    // The table already has a persistent turn HUD; emphasize it without
+    // placing a second message over facilities or the central market.
+    el.style.display = cardboard ? 'none' : view.display;
+    if (cardboard) document.getElementById('cardboardBoard')?.classList.add('cardboard-turn-cue');
     const sunsetHtml = ['sunset', 'plaza'].includes(document.documentElement?.dataset?.design)
         ? UiTurnAnnouncer.buildSunsetHtml(name, isCPU, escapeHtml)
         : '';
@@ -1926,7 +1928,10 @@ function showTurnAnnouncer(name, isCPU, playerIndex) {
     const status = document.getElementById("turnStatusAnnouncer");
     if (status) status.textContent = UiTurnAnnouncer.buildStatusText(name, isCPU, playerIndex);
     turnAnnouncerTimerController.start(view, {
-        beginHide() { el.classList.add("hiding"); },
+        beginHide() {
+            document.getElementById('cardboardBoard')?.classList.remove('cardboard-turn-cue');
+            if (!cardboard) el.classList.add("hiding");
+        },
         finishHide() {
             el.style.display = "none";
             el.classList.remove("hiding");
@@ -2025,6 +2030,22 @@ const logHistoryController = UiLogDisplay.createHistoryController();
 const activeGameTurnStateController = UiGameStatusEffects.createTurnStateController();
 const hotseatHandoffController = UiTurnPrivacy.createHandoffController();
 const turnAnnouncerTimerController = UiTurnAnnouncer.createTimerController();
+// Presentation changes must not carry a previous turn cue into another theme
+// or a hidden/resumed game. They never trigger a new turn announcement.
+const dismissHiddenCardboardTurnCue = () => {
+    const board = document.getElementById('cardboardBoard');
+    if (!board?.classList.contains('cardboard-turn-cue')) return;
+    if (document.hidden || document.documentElement?.dataset?.design !== 'cardboard' ||
+            document.getElementById('gameScreen')?.style.display === 'none') dismissTurnGreeting();
+};
+document.addEventListener('design-theme-change', dismissHiddenCardboardTurnCue);
+document.addEventListener('visibilitychange', dismissHiddenCardboardTurnCue);
+if (typeof MutationObserver !== 'undefined') {
+    const screen = document.getElementById('gameScreen');
+    if (screen) new MutationObserver(dismissHiddenCardboardTurnCue)
+        .observe(screen, { attributes: true, attributeFilter: ['style'] });
+}
+
 const buildMenuFilterController = UiBuildMenu.createFilterController();
 const modalRuntimeController = UiModalPolicy.createRuntimeController();
 
@@ -2561,6 +2582,9 @@ function showCardDetail(name, isLandmark = false) {
     cardDetailReturnsToMarket = typeof CardBoardField !== 'undefined' &&
         typeof CardBoardField.suspendMarketForDetail === 'function' && CardBoardField.suspendMarketForDetail();
     const opened = openAccessibleModal('cardDetailModal');
+    // Delegated card actions can stop bubbling before the table's inspection
+    // handler. A successfully opened detail is itself explicit inspection.
+    if (opened && document.documentElement?.dataset?.design === 'cardboard') dismissTurnGreeting();
     if (!opened && cardDetailReturnsToMarket) {
         CardBoardField.resumeMarketAfterDetail(target);
         cardDetailReturnsToMarket = false;

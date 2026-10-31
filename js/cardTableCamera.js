@@ -2,7 +2,7 @@
 
 // The camera changes presentation only; native scrolling remains the pan mechanism.
 const CardTableCamera = (() => {
-    function create({ viewport, canvas, world, onViewChange = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}), onReadingChange = /** @type {(index: number | null, minScale: number) => void} */ (() => {}) }) {
+    function create({ viewport, canvas, world, onViewChange = () => {}, onPaint = () => {}, onContextChange = /** @type {(context: { label: string, pan: string, playerIndex: number | null, canReturn: boolean }) => void} */ (() => {}), onReadingChange = /** @type {(index: number | null, minScale: number) => void} */ (() => {}) }) {
         let scale = 0.85;
         let overviewMode = true;
         let angle = 0;
@@ -10,8 +10,9 @@ const CardTableCamera = (() => {
         let focusPlayer = null;
         /** @type {{ playerIndex: number, minScale: number } | null} */
         let readingState = null;
-        /** @type {{ playerIndex: number, name: string } | null} */
+        /** @type {{ playerIndex: number, name: string, x: number, y: number, preservePosition: boolean } | null} */
         let inspectionAnchor = null;
+        let preserveInspectionPosition = false;
         let resizeAnchorFrame = 0;
         let previousContext = '';
         let matrix = { a: scale, b: 0, c: 0, d: scale, e: 0, f: 0 };
@@ -20,6 +21,8 @@ const CardTableCamera = (() => {
         let mounted = false;
         let destroyed = false;
         let frame = 0;
+        let observedScrollLeft = viewport.scrollLeft;
+        let observedScrollTop = viewport.scrollTop;
         /** @type {ReturnType<typeof setTimeout> | number} */
         let resizeTimer = 0;
         let lastWidth = 0;
@@ -105,9 +108,16 @@ const CardTableCamera = (() => {
             viewport.dataset.tableAngle = String(normalizeAngle(angle));
             viewport.dataset.tableMode = overviewMode ? 'overview' : 'free';
             updateFocus();
+            // Screen-space labels must use the matrix written in this paint,
+            // rather than the previous view's rectangles in a later frame.
+            onPaint();
         }
         function scroll(left, top) {
             viewport.scrollTo({ left: Math.max(0, left), top: Math.max(0, top), behavior: 'instant' });
+            // Native scroll events may arrive after this command has settled.
+            // They do not represent another move of the newly placed effects.
+            observedScrollLeft = viewport.scrollLeft;
+            observedScrollTop = viewport.scrollTop;
             updateFocus();
             cacheInspectionAnchor();
         }
@@ -144,35 +154,55 @@ const CardTableCamera = (() => {
                 const bounds = card.getBoundingClientRect();
                 if (bounds.right <= clip.left || bounds.left >= clip.right || bounds.bottom <= clip.top || bounds.top >= clip.bottom) continue;
                 const squared = (bounds.left + bounds.width / 2 - center.x) ** 2 + (bounds.top + bounds.height / 2 - center.y) ** 2;
-                if (squared < distance) { distance = squared; nearest = card.dataset.cardName; }
+                if (squared < distance) {
+                    distance = squared;
+                    nearest = { name: card.dataset.cardName,
+                        x: (bounds.left + bounds.width / 2 - clip.left) / viewport.clientWidth,
+                        y: (bounds.top + bounds.height / 2 - clip.top) / viewport.clientHeight };
+                }
             }
-            inspectionAnchor = nearest ? { playerIndex: focusPlayer, name: nearest } : null;
+            inspectionAnchor = nearest ? { playerIndex: focusPlayer, ...nearest, preservePosition: preserveInspectionPosition } : null;
+        }
+        function preserveReadingPosition(active) {
+            preserveInspectionPosition = active === true;
+            if (preserveInspectionPosition) {
+                cacheInspectionAnchor();
+            }
+            // Saved return views own copies; release only the live anchor so a
+            // later ordinary resize cannot inherit a completed market policy.
+            if (inspectionAnchor) inspectionAnchor.preservePosition = preserveInspectionPosition;
         }
         function cancelResizeAnchor() {
             if (resizeAnchorFrame) globalThis.cancelAnimationFrame(resizeAnchorFrame);
             resizeAnchorFrame = 0;
         }
+        function restoreInspectionAnchor(anchor) {
+            if (destroyed || focusPlayer !== anchor.playerIndex) return false;
+            const cards = /** @type {NodeListOf<HTMLElement> | undefined} */ (
+                seat(anchor.playerIndex)?.querySelectorAll('.cardboard-card[data-card-name]')
+            );
+            const card = Array.from(cards || []).find(element => element.dataset.cardName === anchor.name);
+            if (card) {
+                paint();
+                const bounds = card.getBoundingClientRect();
+                // Market transitions retain the user's pan. Ordinary resize
+                // and collection reflow keep the established centered reading
+                // card, rather than carrying an arbitrary edge offset forward.
+                alignPoint(clientToWorld(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
+                    { x: (anchor.preservePosition ? Math.max(0, Math.min(1, anchor.x)) : 0.5) * viewport.clientWidth,
+                        y: (anchor.preservePosition ? Math.max(0, Math.min(1, anchor.y)) : 0.5) * viewport.clientHeight });
+            }
+            updateFocus();
+            cacheInspectionAnchor();
+            return Boolean(card);
+        }
         function retainInspectionOnResize(anchor) {
             cancelResizeAnchor();
-            // The table layout has its own RAF. Wait through its placement,
-            // then resolve the card by identity rather than an obsolete point
-            // in the previous world geometry. No inspection/return view changes.
+            // Ordinary resize delivery must wait for the table's own placement.
             resizeAnchorFrame = globalThis.requestAnimationFrame(() => {
                 resizeAnchorFrame = globalThis.requestAnimationFrame(() => {
-                    if (destroyed || focusPlayer !== anchor.playerIndex) { resizeAnchorFrame = 0; return; }
-                    const cards = /** @type {NodeListOf<HTMLElement> | undefined} */ (
-                        seat(anchor.playerIndex)?.querySelectorAll('.cardboard-card[data-card-name]')
-                    );
-                    const card = Array.from(cards || []).find(element => element.dataset.cardName === anchor.name);
-                    if (card) {
-                        paint();
-                        const bounds = card.getBoundingClientRect();
-                        alignPoint(clientToWorld(bounds.left + bounds.width / 2, bounds.top + bounds.height / 2),
-                            { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
-                    }
                     resizeAnchorFrame = 0;
-                    updateFocus();
-                    cacheInspectionAnchor();
+                    restoreInspectionAnchor(anchor);
                 });
             });
         }
@@ -251,7 +281,8 @@ const CardTableCamera = (() => {
                 y: viewport.scrollTop + viewport.clientHeight / 2 });
             const size = measure();
             return { scale, angle, overviewMode, inspectionPadding, focusPlayer,
-                readingState: readingState ? { ...readingState } : null, x: center.x, y: center.y,
+                readingState: readingState ? { ...readingState } : null,
+                anchor: inspectionAnchor ? { ...inspectionAnchor } : null, x: center.x, y: center.y,
                 left: viewport.scrollLeft, top: viewport.scrollTop,
                 viewportWidth: viewport.clientWidth, viewportHeight: viewport.clientHeight,
                 worldWidth: size.width, worldHeight: size.height,
@@ -287,6 +318,13 @@ const CardTableCamera = (() => {
                 // Avoid inverse/forward floating-point roundoff: WebKit floors
                 // fractional scroll coordinates and otherwise drifts by 1px.
                 scroll(previous.left, previous.top);
+            } else if (previous.anchor?.preservePosition && focusPlayer === previous.anchor.playerIndex) {
+                // Reading layout can move a card within the world. Its semantic
+                // anchor retains the visible position across that reflow; the
+                // old world-center point alone cannot account for the movement.
+                if (!restoreInspectionAnchor(previous.anchor)) {
+                    alignPoint(previous, { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
+                }
             } else {
                 alignPoint(previous, { x: viewport.clientWidth / 2, y: viewport.clientHeight / 2 });
             }
@@ -342,10 +380,10 @@ const CardTableCamera = (() => {
             overviewMode = false;
             inspectionPadding = true;
             facePlayer(player);
-            paint();
-            const before = card.getBoundingClientRect();
-            const fitted = Math.min((viewport.clientWidth - 24) / (before.width / scale),
-                (viewport.clientHeight - 24) / (before.height / scale));
+            // The seat and camera rotations cancel in this face-on view.
+            // Native card dimensions avoid painting/measuring an intermediate matrix.
+            const fitted = Math.min((viewport.clientWidth - 24) / Math.max(1, card.offsetWidth),
+                (viewport.clientHeight - 24) / Math.max(1, card.offsetHeight));
             scale = clamp(Math.min(Math.max(scale, 0.85), fitted));
             paint();
             const bounds = card.getBoundingClientRect();
@@ -433,6 +471,29 @@ const CardTableCamera = (() => {
             if (destroyed) return;
             state = { ...state, ...nextState };
             if (!frame) frame = globalThis.requestAnimationFrame(layout);
+        }
+        function syncLayout() {
+            if (destroyed || !viewport.clientWidth || !viewport.clientHeight) return false;
+            if (frame) globalThis.cancelAnimationFrame(frame);
+            frame = 0;
+            layout();
+            // The caller has already committed the table's layout. Resolve its
+            // reading anchor now, before a following focus command captures the
+            // return view and cancels any deferred resize restoration.
+            if (resizeAnchorFrame && inspectionAnchor) {
+                const anchor = { ...inspectionAnchor };
+                cancelResizeAnchor();
+                restoreInspectionAnchor(anchor);
+            }
+            return true;
+        }
+        function syncViewport() {
+            if (destroyed || !mounted || !overviewMode || !viewportChanged() ||
+                !viewport.clientWidth || !viewport.clientHeight) return false;
+            // A caller that just changed a status/action row already knows
+            // the viewport changed. Fit in that same task, before RO delivery
+            // or a screenshot can expose the previous viewport's scale.
+            return syncLayout();
         }
         function wheel(event) {
             cancelResizeAnchor();
@@ -555,7 +616,14 @@ const CardTableCamera = (() => {
             // Keep the same click bubbling to the existing card-detail handler.
         }
         const listeners = [
-            ['scroll', () => { updateFocus(true); cacheInspectionAnchor(); onViewChange(); }, { passive: true }],
+            ['scroll', () => {
+                const moved = observedScrollLeft !== viewport.scrollLeft || observedScrollTop !== viewport.scrollTop;
+                observedScrollLeft = viewport.scrollLeft;
+                observedScrollTop = viewport.scrollTop;
+                updateFocus(true);
+                cacheInspectionAnchor();
+                if (moved) onViewChange();
+            }, { passive: true }],
             ['wheel', wheel, { passive: false }], ['keydown', keydown, false],
             ['touchstart', touchstart, { passive: true }], ['touchmove', touchmove, { passive: false }],
             ['touchend', touchend, { passive: true }], ['touchcancel', touchend, { passive: true }],
@@ -565,7 +633,19 @@ const CardTableCamera = (() => {
         ];
         for (const [type, handler, options] of listeners) viewport.addEventListener(type, handler, options);
         const observer = typeof globalThis.ResizeObserver === 'function' ? new globalThis.ResizeObserver(() => {
+            if (destroyed) return;
             clearTimeout(resizeTimer);
+            resizeTimer = 0;
+            if (overviewMode) {
+                // CPU activity/status rows can shrink the table without a
+                // game redraw. Refit during resize delivery, before paint;
+                // a trailing debounce leaves edge cards clipped meanwhile.
+                // Painting transforms the world but not its native dimensions.
+                if (frame) globalThis.cancelAnimationFrame(frame);
+                frame = 0;
+                layout();
+                return;
+            }
             resizeTimer = setTimeout(() => { resizeTimer = 0; refresh(); }, 80);
         }) : null;
         observer?.observe(viewport);
@@ -591,7 +671,7 @@ const CardTableCamera = (() => {
             if (previousTabIndex === null) viewport.removeAttribute('tabindex');
             else viewport.setAttribute('tabindex', previousTabIndex);
         }
-        return Object.freeze({ refresh, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
+        return Object.freeze({ refresh, syncLayout, syncViewport, preserveReadingPosition, focusSeat, focusCard, focusMarket, fit, readable, zoomBy, restoreView, destroy });
     }
     return Object.freeze({ create });
 })();

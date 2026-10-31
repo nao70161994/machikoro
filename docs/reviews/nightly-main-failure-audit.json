@@ -1,0 +1,494 @@
+{
+  "sourceCommit": "a265ca7e99fa786191f633568ee89bb5fd190a27",
+  "runs": [
+    39859235094,
+    39681495562,
+    39502306142
+  ],
+  "distinctFailures": 23,
+  "currentProductCommit": "9c70127b237c2375451818977b8fdeedb3524291",
+  "items": [
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 横卓の5人戦でも自分・比較相手・主要操作を一画面に保つ",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).toHaveCount(expected) failed"
+      ],
+      "id": 1,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "横卓の5人戦でも全員の所有カード・中央市場・主要操作を同時に保つ"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "全席数・各index・施設名配列・最終席の実操作",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 横卓の10人戦でも自分・比較相手・主要操作を一画面に保つ",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).toHaveCount(expected) failed"
+      ],
+      "id": 2,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "横卓の10人戦でも全員の所有カード・中央市場・主要操作を同時に保つ"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "全席数・各index・施設名配列・最終席の実操作",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 適応盤面で所有施設と市場詳細へ到達できる 320px 4人",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toBeGreaterThanOrEqual(expected)"
+      ],
+      "id": 3,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "適応盤面で所有施設と市場詳細へ到達できる 320px 4人"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "俯瞰と正面閲覧を区別、実選択後カード70px以上・全席・詳細・正本不変",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 適応盤面で所有施設と市場詳細へ到達できる 320px 5人",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).toHaveCount(expected) failed"
+      ],
+      "id": 4,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "適応盤面で所有施設と市場詳細へ到達できる 320px 5人"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "3席制限の旧期待値から全席count/index/施設配列/詳細・正本不変へ更新",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 適応盤面で所有施設と市場詳細へ到達できる 320px 10人",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).toHaveCount(expected) failed"
+      ],
+      "id": 5,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "適応盤面で所有施設と市場詳細へ到達できる 320px 10人"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "3席制限の旧期待値から全席count/index/施設配列/詳細・正本不変へ更新",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 適応盤面で所有施設と市場詳細へ到達できる 390px 5人",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).toHaveCount(expected) failed"
+      ],
+      "id": 6,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "適応盤面で所有施設と市場詳細へ到達できる 390px 5人"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "3席制限の旧期待値から全席count/index/施設配列/詳細・正本不変へ更新",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 適応盤面で所有施設と市場詳細へ到達できる 390px 10人",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).toHaveCount(expected) failed"
+      ],
+      "id": 7,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "適応盤面で所有施設と市場詳細へ到達できる 390px 10人"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "3席制限の旧期待値から全席count/index/施設配列/詳細・正本不変へ更新",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 適応盤面で所有施設と市場詳細へ到達できる 1440px 5人",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).toHaveCount(expected) failed"
+      ],
+      "id": 8,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "適応盤面で所有施設と市場詳細へ到達できる 1440px 5人"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "3席制限の旧期待値から全席count/index/施設配列/詳細・正本不変へ更新",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 適応盤面で所有施設と市場詳細へ到達できる 1440px 10人",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).toHaveCount(expected) failed"
+      ],
+      "id": 9,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "適応盤面で所有施設と市場詳細へ到達できる 1440px 10人"
+        }
+      ],
+      "classification": "旧fixture",
+      "contract": "3席制限の旧期待値から全席count/index/施設配列/詳細・正本不変へ更新",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 専用市場と旧市場は各1つで4ビュー往復とログ開閉が正本を変えない",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "locator.click: Test timeout of 45000ms exceeded."
+      ],
+      "id": 10,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "専用市場と旧市場は各1つで4ビュー往復とログ開閉が正本を変えない"
+        }
+      ],
+      "classification": "製品/fixture",
+      "contract": "native市場復帰・実メニュー・各root唯一・4テーマ状態不変",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 市場の絞込・目標・ガイド・ログは補助パネルを重ねずに開く",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(locator).not.toHaveAttribute(expected) failed"
+      ],
+      "id": 11,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "市場の絞込・目標・ガイド・ログは補助パネルを重ねずに開く"
+        }
+      ],
+      "classification": "製品",
+      "contract": "native dialog内を含むfilter/goal/guide/log排他・focus復帰",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-market-regression.spec.js › 横卓の発動収支と休業枚数は上席でもカード内に収まる",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toEqual(expected) // deep equality"
+      ],
+      "id": 12,
+      "currentTests": [
+        {
+          "file": "cardboard-market-regression.spec.js",
+          "title": "横卓の発動収支と休業枚数は上席でもカード内に収まる"
+        }
+      ],
+      "classification": "製品",
+      "contract": "回転カードの収支と休業を別行にし文字Rangeの包含/非重複",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-purple-results.spec.js › 確定したスタジアムの実収支と発動をカード盤面へ表示する",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toContain(expected) // indexOf"
+      ],
+      "id": 13,
+      "currentTests": [
+        {
+          "file": "cardboard-purple-results.spec.js",
+          "title": "確定したスタジアムの実収支と発動をカード盤面へ表示する"
+        }
+      ],
+      "classification": "観測/fixture",
+      "contract": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-purple-results.spec.js › 確定したテレビ局の実収支と発動をカード盤面へ表示する",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toContain(expected) // indexOf"
+      ],
+      "id": 14,
+      "currentTests": [
+        {
+          "file": "cardboard-purple-results.spec.js",
+          "title": "確定したテレビ局の実収支と発動をカード盤面へ表示する"
+        }
+      ],
+      "classification": "観測/fixture",
+      "contract": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-purple-results.spec.js › 確定した出版社の実収支と発動をカード盤面へ表示する",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toContain(expected) // indexOf"
+      ],
+      "id": 15,
+      "currentTests": [
+        {
+          "file": "cardboard-purple-results.spec.js",
+          "title": "確定した出版社の実収支と発動をカード盤面へ表示する"
+        }
+      ],
+      "classification": "観測/fixture",
+      "contract": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-purple-results.spec.js › 確定した公園の実収支と発動をカード盤面へ表示する",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toContain(expected) // indexOf"
+      ],
+      "id": 16,
+      "currentTests": [
+        {
+          "file": "cardboard-purple-results.spec.js",
+          "title": "確定した公園の実収支と発動をカード盤面へ表示する"
+        }
+      ],
+      "classification": "観測/fixture",
+      "contract": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-state-combinations.spec.js › 横持ち更新通知と補助パネル併用でもSELECT_DICEを操作できる",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "locator.click: Test timeout of 45000ms exceeded."
+      ],
+      "id": 17,
+      "currentTests": [
+        {
+          "file": "cardboard-state-combinations.spec.js",
+          "title": "横持ち更新通知と補助パネル併用でもSELECT_DICEを操作できる"
+        }
+      ],
+      "classification": "製品/fixture",
+      "contract": "更新通知と補助panelを併用し実メニュー→選択→次phase・非clipを検証",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-state-combinations.spec.js › 横持ち更新通知と補助パネル併用でもREROLL_CONFIRMを操作できる",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "locator.click: Test timeout of 45000ms exceeded."
+      ],
+      "id": 18,
+      "currentTests": [
+        {
+          "file": "cardboard-state-combinations.spec.js",
+          "title": "横持ち更新通知と補助パネル併用でもREROLL_CONFIRMを操作できる"
+        }
+      ],
+      "classification": "製品/fixture",
+      "contract": "更新通知と補助panelを併用し実メニュー→選択→次phase・非clipを検証",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-state-combinations.spec.js › 横持ち更新通知と補助パネル併用でもHARBOR_CHOICEを操作できる",
+      "runs": [
+        39859235094,
+        39681495562,
+        39502306142
+      ],
+      "errors": [
+        "locator.click: Test timeout of 45000ms exceeded."
+      ],
+      "id": 19,
+      "currentTests": [
+        {
+          "file": "cardboard-state-combinations.spec.js",
+          "title": "横持ち更新通知と補助パネル併用でもHARBOR_CHOICEを操作できる"
+        }
+      ],
+      "classification": "製品/fixture",
+      "contract": "更新通知と補助panelを併用し実メニュー→選択→次phase・非clipを検証",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-table.spec.js › 卓上盤面で全員の所有カードと中央市場を同時に比較できる 1440px 3人",
+      "runs": [
+        39859235094,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toEqual(expected) // deep equality"
+      ],
+      "id": 20,
+      "currentTests": [
+        {
+          "file": "cardboard-table.spec.js",
+          "title": "卓上盤面で全員の所有カードと中央市場を同時に比較できる 1440px 3人"
+        }
+      ],
+      "classification": "製品",
+      "contract": "1440px3人の全席と市場、buy button親内寸と包含",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-view.spec.js › 844×390の手番HUDは長いプレイヤー名を省略せず表示する",
+      "runs": [
+        39859235094,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toBeLessThanOrEqual(expected)"
+      ],
+      "id": 21,
+      "currentTests": [
+        {
+          "file": "cardboard-view.spec.js",
+          "title": "844×390の手番HUDは長いプレイヤー名を省略せず表示する"
+        }
+      ],
+      "classification": "製品",
+      "contract": "長名全文・折返し・scrollWidth/clientWidth・操作領域",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-view.spec.js › 12の出目では建設候補を市場内の見える位置へ送る ──────",
+      "runs": [
+        39859235094,
+        39502306142
+      ],
+      "errors": [
+        "expect(received).toBeGreaterThan(expected)"
+      ],
+      "id": 22,
+      "currentTests": [
+        {
+          "file": "cardboard-view.spec.js",
+          "title": "12の出目では建設候補を市場内の見える位置へ送る 390px"
+        },
+        {
+          "file": "cardboard-view.spec.js",
+          "title": "12の出目では建設候補を市場内の見える位置へ送る 1440px"
+        }
+      ],
+      "classification": "製品/fixture",
+      "contract": "駅→2dice6+6、変換前座標reveal、overflow判定と候補完全可視",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    },
+    {
+      "test": "tests/browser/cardboard-view.spec.js › 施設比較は多人数の所有状況を横断して読めてゲーム状態を変えない",
+      "runs": [
+        39859235094
+      ],
+      "errors": [
+        "locator.click: Test timeout of 45000ms exceeded."
+      ],
+      "id": 23,
+      "currentTests": [
+        {
+          "file": "cardboard-view.spec.js",
+          "title": "施設比較は多人数の所有状況を横断して読めてゲーム状態を変えない"
+        }
+      ],
+      "classification": "製品/fixture",
+      "contract": "比較初回・全人数・横scroll・focus trap/Escape/呼出元focus・状態不変",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "run": 40980358246,
+  "commit": "6e778b87",
+  "test": "夕暮れ市場は出目・名称を主役にし価格を明確なチップで示す",
+  "traceSha256": "9343ba4dad61afc34f17d98639e5bd0a7f27e9489d67eee8ca9e49e54df4ac1d",
+  "observations": [
+    {
+      "callId": "call@1828",
+      "count": 38,
+      "badGeometry": {
+        "cardFits": 0,
+        "costFits": 0,
+        "stockFitsOnCardArt": 0,
+        "detailTargetSize": 0
+      },
+      "missingComputedFont": 0,
+      "emptyAnimationName": 0
+    },
+    {
+      "callId": "call@1832",
+      "count": 38,
+      "badGeometry": {
+        "cardFits": 0,
+        "costFits": 0,
+        "stockFitsOnCardArt": 38,
+        "detailTargetSize": 38
+      },
+      "missingComputedFont": 38,
+      "emptyAnimationName": 38
+    }
+  ],
+  "snapshot": "Failure DOM snapshot shows CPU（普通）・1 active. First viewport measurement is connected/styled; next measurement has empty computed styles, NaN fonts and zero detail size for all old card nodes. Layout-only fixture now uses consistent human seats; original layout/size assertions remain, plus isConnected."
+}

@@ -3700,6 +3700,43 @@ html[data-design="cardboard"] body.accessibility-high-contrast .turn-announcer-c
     box-shadow: none;
 }
 
+/* A turn cue stays inside the existing HUD and never covers the card table. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] {
+    outline: 2px solid #b9902b;
+    outline-offset: -3px;
+    background: #fff0b8;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] .cardboard-roster-name,
+html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue .cardboard-roster-turn-badge {
+    animation: cardboard-turn-cue 320ms ease-in-out alternate 4;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue .cardboard-turn-status-name {
+    background: #fff0b8;
+    border-radius: 4px;
+    color: #234c47;
+}
+@keyframes cardboard-turn-cue {
+    from { opacity: .6; }
+    to { opacity: 1; }
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] {
+    outline-color: #ffe66d;
+    background: #000;
+    color: #ffe66d;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-turn-cue .cardboard-turn-status-name {
+    background: #000;
+    color: #ffe66d;
+}
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] .cardboard-roster-name,
+html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardBoard.cardboard-turn-cue .cardboard-roster-turn-badge {
+    animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue #cardboardRoster [aria-current="true"] .cardboard-roster-name,
+    html[data-design="cardboard"] #cardboardBoard.cardboard-turn-cue .cardboard-roster-turn-badge { animation: none; }
+}
+
 html:is([data-design="sunset"], [data-design="plaza"]) .turn-announcer-kind-icon {
     display: inline-block;
     width: 28px;
@@ -9375,18 +9412,22 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     /* The highlighted seat already carries turn, name, and wallet information. */
     html[data-design="plaza"] body:not(.game-finished) #gameScreen > #status { display: none; }
     html[data-design="plaza"] #plazaPlayerHud {
+        --plaza-hud-seat-width: clamp(148px, calc((100vw - 32px) / 4), 204px);
         top: calc(var(--plaza-status, 30px) + var(--plaza-tools, 52px)); left: 0; right: 0; width: auto;
-        height: 44px; max-height: 44px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 0 4px;
+        height: 52px; max-height: 52px; display: flex; flex-wrap: nowrap; gap: 4px; padding: 0 4px;
         overflow: hidden; background: #102c35;
     }
     html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self,
     html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: flex; flex: 0 0 auto; min-width: 0; gap: 4px; }
+    /* WebKit needs an explicit basis on the self wrapper as well as its
+       child; auto intrinsic sizing can let the opponents cover the wallet. */
+    html[data-design="plaza"] #plazaPlayerHud .plaza-hud-self { flex-basis: var(--plaza-hud-seat-width); }
     html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents {
         flex: 1 1 auto; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: thin;
     }
     html[data-design="plaza"] #plazaPlayerHud button {
-        display: grid; flex: 0 0 clamp(148px, calc((100vw - 32px) / 4), 204px); grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-rows: 18px 18px; align-content: center; gap: 0 4px; width: auto; height: 44px; min-height: 44px;
+        display: grid; flex: 0 0 var(--plaza-hud-seat-width); grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: 18px 18px; align-content: center; gap: 4px; width: auto; height: 52px; min-height: 52px;
         box-sizing: border-box; padding: 2px 6px; font-size: 12px;
     }
     html[data-design="plaza"] #plazaPlayerHud strong { grid-column: 1; grid-row: 1; display: flex; align-items: center; gap: 3px; min-width: 0; white-space: nowrap; }
@@ -9394,20 +9435,30 @@ html[data-design="plaza"] #plazaPlayerHud .plaza-hud-opponents { display: conten
     html[data-design="plaza"] #plazaPlayerHud .plaza-kind-mark { display: none; }
     html[data-design="plaza"] #plazaPlayerHud .plaza-player-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     html[data-design="plaza"] #plazaPlayerHud button > .plaza-player-coins { grid-column: 2; grid-row: 1; font-size: 11px; font-weight: 700; }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-player-coins {
+        display: inline-flex; align-items: center; gap: 2px; white-space: nowrap;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-player-coins::before {
+        content: ""; width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%;
+        border: 1px solid #cfa94a; background: #f2d878; box-shadow: inset 1px 1px 0 #fff3b6;
+    }
+    html[data-design="plaza"] #plazaPlayerHud .plaza-wallet-unit { display: none; }
     html[data-design="plaza"] #plazaPlayerHud button > span:last-of-type {
         display: flex; grid-column: 1; grid-row: 2; align-items: center; gap: 4px; font-size: 10px; white-space: nowrap;
     }
     html[data-design="plaza"] #plazaPlayerHud small { grid-column: 2; grid-row: 2; align-self: center; font-size: 10px; white-space: nowrap; }
     html[data-design="plaza"] #plazaViewport { right: 0; }
     html[data-design="plaza"] #gameScreen > #plazaEvents { right: 0; height: 28px; max-height: 28px; box-sizing: border-box; padding-block: 2px; }
-    html[data-design="plaza"] #gameScreen > .game-action-panel {
+    /* Match the active-screen rule above so its portrait padding and auto height
+       cannot enlarge this 48px landscape dock and steal space from the field. */
+    html[data-design="plaza"] #gameScreen[style*="display: block"] > .game-action-panel {
         position: absolute; inset: auto 0 0; transform: none; width: 100%; height: calc(48px + env(safe-area-inset-bottom, 0px)); min-height: 44px;
         box-sizing: border-box; align-items: center; margin: 0; padding: 0 8px env(safe-area-inset-bottom, 0px); border-radius: 0;
         grid-template-columns: 80px minmax(0, 1fr); grid-template-rows: minmax(44px, 1fr); gap: 0 4px;
     }
     html[data-design="plaza"] #gameScreen > .game-action-panel > .buttons { margin-right: 220px; }
     html[data-design="plaza"] #gameScreen .game-action-panel > .buttons > button { min-height: 44px; padding: 4px; font-size: 13px; }
-    html[data-design="plaza"] .game-action-toolbar { position: absolute; right: 4px; bottom: 4px; width: 216px; min-height: 44px; box-sizing: border-box; padding: 0; background: transparent; }
+    html[data-design="plaza"] .game-action-toolbar { position: absolute; right: 4px; bottom: calc(1px + env(safe-area-inset-bottom, 0px)); width: 216px; min-height: 44px; box-sizing: border-box; padding: 0; background: transparent; }
     html[data-design="plaza"] #gameScreen:has(#diceChoose:not(:empty)) .game-action-toolbar { visibility: hidden; pointer-events: none; }
     html[data-design="plaza"] .game-action-toolbar > details { flex: 1; }
     html[data-design="plaza"] .game-action-toolbar > details > summary {
@@ -10883,7 +10934,13 @@ html[data-design="cardboard"] .cardboard-card {
 }
 html[data-design="cardboard"] .cardboard-card:focus-visible,
 html[data-design="cardboard"] .cardboard-landmark:focus-visible { z-index: 2; outline: 3px solid #123c67; outline-offset: 2px; }
-html[data-design="cardboard"] .cardboard-card-newly-built { z-index: 1; animation: cardboard-card-arrival 860ms cubic-bezier(.2, .8, .25, 1) both; }
+html[data-design="cardboard"] .cardboard-card-newly-built {
+    z-index: 1;
+    will-change: transform, opacity;
+    --cardboard-arrival-shadow: 0 0 0 3px #e8b92b, 0 4px 12px #72551c55;
+    box-shadow: var(--cardboard-arrival-shadow);
+    animation: cardboard-card-arrival 860ms cubic-bezier(.2, .8, .25, 1) both;
+}
 html[data-design="cardboard"] body.accessibility-reduced-motion .cardboard-card-newly-built { animation: none !important; outline: 3px solid #1766bd; outline-offset: -3px; }
 html[data-design="cardboard"] .cardboard-cards .cardboard-card { scroll-snap-align: start; }
 html[data-design="cardboard"] .cardboard-card-blue { --cardboard-card-color: var(--cardboard-blue); --cardboard-card-tint: #d4e7ff; }
@@ -11225,12 +11282,14 @@ html[data-design="cardboard"] body.accessibility-high-contrast #plazaComparison 
 html[data-design="cardboard"] body.accessibility-high-contrast #plazaComparison :is(th, td).is-turn { box-shadow: inset 0 0 0 2px #ffe66d; }
 html[data-design="cardboard"] body.accessibility-high-contrast #plazaComparison th > small { border-color: #fff; background: #000; color: #ffe66d; }
 html[data-design="cardboard"] body.accessibility-high-contrast #plazaComparisonClose { border: 2px solid #fff; background: #000; color: #fff; }
-html[data-design="cardboard"] #gameScreen > #gameLogContainer { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 8; width: auto; max-width: 600px; max-height: 55dvh; margin: 0 auto; overflow: auto; background: #fffdf5; color: var(--cardboard-ink); box-shadow: 0 5px 24px #18344755; }
+html[data-design="cardboard"] #gameScreen > #gameLogContainer { position: fixed; left: 8px; right: 8px; bottom: var(--cardboard-receipt-bottom, 8px); z-index: 8; width: auto; max-width: 600px; max-height: 55dvh; margin: 0 auto; overflow: auto; background: #fffdf5; color: var(--cardboard-ink); box-shadow: 0 5px 24px #18344755; }
 html[data-design="cardboard"] #gameLogContainer:not(.cardboard-panel-open) { display: none; }
-html[data-design="cardboard"] body.pwa-banner-open #gameScreen > #gameLogContainer { bottom: calc(128px + env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 180px); }
+html[data-design="cardboard"] body.pwa-banner-open #gameScreen > #gameLogContainer { bottom: var(--cardboard-receipt-bottom, calc(128px + env(safe-area-inset-bottom, 0px))); max-height: calc(100dvh - 180px); }
 html[data-design="cardboard"] #gameScreen :is(button, select, summary):focus-visible { outline: 3px solid #075b9e; outline-offset: 2px; }
 html[data-design="cardboard"] #cardboardMarketDialog { position: fixed; inset: max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) max(8px, env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); width: auto; height: auto; max-width: 1200px; max-height: 900px; margin: auto; padding: 10px; border: 2px solid #577866; border-radius: 14px; box-sizing: border-box; overflow: auto; background: #fffdf5; color: var(--cardboard-ink); box-shadow: 0 12px 40px #10251f80; }
-html[data-design="cardboard"] #cardboardMarketDialog::backdrop { background: #071820c9; backdrop-filter: blur(3px); }
+/* Keep the shared table visible under the modal without re-filtering its
+   rotated SVG cards on every market frame (notably expensive in WebKit). */
+html[data-design="cardboard"] #cardboardMarketDialog::backdrop { background: #071820c9; }
 html[data-design="cardboard"] .cardboard-market-dialog-header { position: sticky; top: -10px; z-index: 3; display: flex; align-items: center; gap: 8px; min-height: 48px; margin: -10px -10px 8px; padding: 6px 10px; border-bottom: 1px solid #b7a36d; background: #fffdf5; }
 html[data-design="cardboard"] .cardboard-market-dialog-header h2 { flex: 1; margin: 0; font-size: 18px; }
 html[data-design="cardboard"] #cardboardMarketClose { width: auto; min-width: 110px; min-height: 44px; margin: 0; padding: 6px 10px; border: 1px solid #7c6c43; background: #fff8df; color: var(--cardboard-ink); }
@@ -11383,6 +11442,22 @@ html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) .di
     padding: 10px;
     border-radius: 12px;
 }
+/* A shallow toss preserves a readable front face while giving the same die
+   the weight and rim used by the following result confirmation. */
+html[data-design="cardboard"] #cardboardActionSlot #diceResult .dice-face.rolling {
+    border: 1px solid #fff;
+    border-bottom: 5px solid #c3cfcd;
+    box-shadow: 4px 6px 0 #7d9692, 5px 9px 12px #244a4755, inset 0 2px 3px #fff;
+    transform-origin: 50% 70%;
+    animation: cardboard-die-toss 600ms cubic-bezier(.25, .65, .35, 1) both;
+}
+@keyframes cardboard-die-toss {
+    0% { transform: perspective(420px) translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(-8deg); }
+    24% { transform: perspective(420px) translateY(-8px) rotateX(20deg) rotateY(-22deg) rotateZ(14deg); }
+    52% { transform: perspective(420px) translateY(-3px) rotateX(-14deg) rotateY(18deg) rotateZ(-10deg); }
+    80% { transform: perspective(420px) translateY(1px) rotateX(8deg) rotateY(-8deg) rotateZ(4deg); }
+    100% { transform: perspective(420px) translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+}
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardActionSlot #diceResult:has(.rolling) {
     border-color: #ffe66d;
     background: #000;
@@ -11391,7 +11466,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardActionS
 }
 html[data-design="cardboard"] body.accessibility-reduced-motion #cardboardActionSlot #diceResult .rolling { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-    html[data-design="cardboard"] #cardboardActionSlot #diceResult .rolling { animation: none; }
+    html[data-design="cardboard"] #cardboardActionSlot #diceResult .dice-face.rolling { animation: none; }
 }
 @media (orientation: landscape) and (max-height: 600px) {
     html[data-design="cardboard"] #cardboardActionSlot #diceResult:has(.rolling) { width: 180px; padding: 10px 8px 8px; }
@@ -11427,9 +11502,9 @@ html[data-design="cardboard"] #cardboardDiceReceipt > .cardboard-transfer-summar
     100% { transform: translateY(0); box-shadow: 0 0 0 4px #f4bc20, 0 0 18px #f4bc2066; }
 }
 @keyframes cardboard-card-arrival {
-    0% { opacity: .62; transform: translateY(8px) scale(.94); box-shadow: 0 0 0 0 #d89e1d00; }
-    58% { opacity: 1; transform: translateY(-2px) scale(1.035); box-shadow: 0 0 0 5px #e8b92b, 0 5px 16px #72551c55; }
-    100% { opacity: 1; transform: translateY(0) scale(1); box-shadow: 0 2px 3px #243a4120; }
+    0% { opacity: .62; transform: translateY(8px) scale(.94); }
+    58% { opacity: 1; transform: translateY(-2px) scale(1.035); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes cardboard-dice-land {
     0% { opacity: .45; transform: translateY(-12px) rotate(-14deg) scale(.78); }
@@ -12132,6 +12207,20 @@ html[data-design="cardboard"] body.accessibility-high-contrast #onlineWaitingPan
         padding: 6px;
     }
     html[data-design="cardboard"] #onlineWaitingPanel .room-game-table-art { width: min(128px, 60%); }
+}
+
+/* On short phones, the participant list takes priority over the decorative
+   table. Keep the illustration available below the seats without shrinking
+   names, readiness states or touch controls. */
+@media (max-width: 380px) and (max-height: 640px) {
+    html[data-design="cardboard"] #onlineWaitingPanel .room-table-layout {
+        display: flex;
+        flex-direction: column;
+    }
+    html[data-design="cardboard"] #onlineWaitingPanel .room-table-layout .room-seat-list {
+        order: -1;
+        width: 100%;
+    }
 }
 
 /* Keep saved-game actions in the first view on short phones without shrinking
@@ -13498,6 +13587,11 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardCon
     border: 0;
 }
 
+/* A deliberate menu opening must remain above floating non-modal logs. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardControls:has(#cardboardMoreMenu[open]) {
+    z-index: 40;
+}
+
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardControls > p {
     display: none;
 }
@@ -13589,12 +13683,21 @@ html[data-design="cardboard"] #cardboardCameraTools {
     min-width: 0;
     gap: 3px;
     justify-content: flex-start;
+}
+
+/* Camera commands may scroll; the frequently used receipt stays beside them. */
+html[data-design="cardboard"] #cardboardCameraButtons {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 3px;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-padding-inline: 2px;
 }
 
-html[data-design="cardboard"] #cardboardCameraTools > button,
+html[data-design="cardboard"] #cardboardCameraButtons > button,
 html[data-design="cardboard"] #cardboardEventDetails > summary {
     display: flex;
     align-items: center;
@@ -13625,7 +13728,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardEve
     position: fixed;
     z-index: 32;
     right: 12px;
-    bottom: 72px;
+    bottom: var(--cardboard-receipt-bottom, 72px);
     width: min(440px, calc(100vw - 24px));
     max-height: 55dvh;
     margin: 0;
@@ -13852,7 +13955,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     border-radius: 8px;
     background: #f2f5ed;
     color: #17394a;
-    box-shadow: 0 3px 0 #fff8, 0 5px 8px #082d4255;
+    box-shadow: var(--cardboard-arrival-shadow, 0 3px 0 #fff8, 0 5px 8px #082d4255);
     scroll-snap-align: none;
 }
 
@@ -13877,17 +13980,19 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-card .cardboard-dice {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     position: static;
     width: 100%;
-    height: 20px;
-    min-height: 20px;
+    height: 24px;
+    min-height: 24px;
     padding: 0 5px;
     box-sizing: border-box;
     background: var(--table-card-accent);
     color: #fff;
     font-size: 18px;
-    line-height: 20px;
+    line-height: 24px;
     font-weight: 900;
     text-align: left;
 }
@@ -13900,7 +14005,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     display: block;
     position: absolute;
     left: 3px;
-    top: 21px;
+    top: 25px;
     z-index: 1;
     width: auto;
     min-height: 0;
@@ -14000,6 +14105,18 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     font-weight: 700;
     line-height: 14px;
 }
+/* Keep the rest-state badge separate from the economic strip in a face-on
+   card, without shrinking the facility artwork or hiding its effect. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-card:not(.cardboard-card-activated) .cardboard-dormant {
+    top: 70px;
+    bottom: auto;
+    left: auto;
+    right: 3px;
+    width: auto;
+    max-width: calc(100% - 6px);
+    border-radius: 3px;
+}
+
 /* The actual resolved amount takes priority over a base-effect definition. */
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-player-reading .cardboard-card-activated .cardboard-effect {
     display: none;
@@ -14010,7 +14127,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.c
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats :is(.cardboard-dormant, .cardboard-activation) {
-    display: block;
+    display: flex;
+    align-items: center;
     position: absolute;
     left: 0;
     right: 0;
@@ -14018,6 +14136,8 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     height: 12px;
     margin: 0;
     padding: 0 3px;
+    box-sizing: border-box;
+    white-space: nowrap;
     color: #573b0e;
     background: #ffe6a0;
     font-size: 0;
@@ -14026,7 +14146,19 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats :is(.cardboard-dormant, .cardboard-activation)::before {
     content: attr(data-short-label);
+    display: block;
     font-size: 10px;
+    line-height: 12px;
+}
+
+/* Income and closed copies are separate facts, including on rotated seats. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-card:has(.cardboard-activation) .cardboard-dormant {
+    bottom: 12px;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-card:has(.cardboard-activation):has(.cardboard-dormant) .cardboard-art {
+    flex-basis: 48px;
+    height: 48px;
+    min-height: 48px;
 }
 
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-landmarks {
@@ -14194,16 +14326,22 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     min-width: 0;
     min-height: 44px;
     height: auto;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px 8px;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market-header h2 {
-    flex: 1 1 100%;
+    flex: 1 1 0;
     margin: 0;
     min-width: 0;
     white-space: normal;
     font-size: 20px;
     line-height: 1.3;
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market-header h2::after {
+    display: block;
+    margin-left: 0;
+    font-size: 11px;
+    line-height: 14px;
 }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardCenter:is([data-market-columns="1"], [data-market-columns="2"]) #cardboardMarket .compact-market-header button {
     flex: 0 0 auto;
@@ -14282,8 +14420,8 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     position: relative;
     flex-direction: column;
     width: 100%;
-    height: 132px;
-    min-height: 132px;
+    height: 100%;
+    min-height: 0;
     padding: 0;
     box-sizing: border-box;
 }
@@ -14443,11 +14581,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table .cardboard-la
         font-size: 10px;
     }
 
-    html[data-design="cardboard"] #cardboardCameraTools {
-        overflow-x: auto;
-    }
-
-    html[data-design="cardboard"] #cardboardCameraTools > button {
+    html[data-design="cardboard"] #cardboardCameraButtons > button {
         min-width: 40px;
         padding-inline: 5px;
         font-size: 11px;
@@ -14621,6 +14755,8 @@ html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-stat
     width: 100%;
     font-size: 12px;
     line-height: 18px;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-status .cardboard-phase-indicator {
@@ -14628,6 +14764,10 @@ html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-stat
     padding: 0 4px;
     font-size: 10px;
     line-height: 16px;
+}
+
+@media (max-width: 360px) {
+    html[data-design="cardboard"] #cardboardCameraButtons > [data-cardboard-camera="back"]:disabled { display: none; }
 }
 
 /* Keep the full result available to assistive technology without covering cards. */
@@ -14698,7 +14838,7 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardEventDe
 /* Portrait uses the height of the screen: two owners above and below the market. */
 
 html[data-design="cardboard"] body.pwa-banner-open #cardboardBoard.cardboard-card-table #cardboardEventDetails #cardboardDiceReceipt {
-    bottom: calc(var(--cardboard-update-space, 128px) + 72px + env(safe-area-inset-bottom, 0px));
+    bottom: var(--cardboard-receipt-bottom, calc(var(--cardboard-update-space, 128px) + 72px + env(safe-area-inset-bottom, 0px)));
 }
 @media (min-width: 601px) and (max-height: 500px) {
     html[data-design="cardboard"] body { --cardboard-update-space: 72px; }
@@ -14931,6 +15071,7 @@ html[data-design="cardboard"] #cardboardCameraSettings { display: flex; flex-wra
 html[data-design="cardboard"] #cardboardCameraSettings > button { min-height: 44px; min-width: 44px; }
 @media (max-width: 999px) {
     html[data-design="cardboard"] #cardboardEventDetails > summary,
+    html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"] > summary,
     html[data-design="cardboard"] #cardboardEventDetails[data-activation-preview="true"] > summary { width: 44px; min-width: 44px; padding: 4px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardEventDetails > summary > span { display: none; }
     html[data-design="cardboard"] #cardboardEventDetails > summary::before { content: "収支"; }
@@ -14961,6 +15102,31 @@ html[data-design="cardboard"] .cardboard-activation-tag {
     font-size: 14px;
     line-height: 1.2;
     pointer-events: none;
+}
+/* The activation's original art faces the viewer, independently of seat rotation. */
+html[data-design="cardboard"] .cardboard-activation-tag:has(> .cardboard-activation-art) {
+    grid-template-columns: 100px minmax(0, 1fr);
+    column-gap: 8px;
+    max-width: min(280px, calc(100vw - 48px));
+    box-sizing: border-box;
+}
+html[data-design="cardboard"] .cardboard-activation-tag:has(> .cardboard-activation-art) > :not(.cardboard-activation-art) {
+    grid-column: 2;
+    min-width: 0;
+}
+html[data-design="cardboard"] .cardboard-activation-art {
+    grid-column: 1;
+    grid-row: 1 / span 4;
+    width: 100px;
+    height: 65px;
+    border-radius: 5px;
+    background: linear-gradient(#f6edca, #e8e6bb);
+    overflow: hidden;
+}
+html[data-design="cardboard"] .cardboard-activation-art > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 html[data-design="cardboard"] #cardboardSeats .cardboard-card.cardboard-resolving {
     outline: 3px solid #fff5a9;
@@ -15080,7 +15246,7 @@ html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-na
 }
 html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-landmarks {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
     overflow: visible;
     gap: 8px;
 }
@@ -15097,8 +15263,17 @@ html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-la
 }
 html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-landmark .cardboard-name {
     display: block;
+    padding: 0;
     max-height: none;
     overflow: visible;
+    text-wrap: balance;
+}
+html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-name-word {
+    display: inline-block;
+    max-width: 100%;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    vertical-align: top;
 }
 html[data-design="cardboard"] body.accessibility-high-contrast #status .cardboard-winner-collection {
     border-color: #fff;
@@ -15148,15 +15323,27 @@ html[data-design="cardboard"] #status .winner-screen > .cardboard-winner-collect
 /* Measured seats share one paper-card grammar. The seat transform belongs to
    CardTableLayout, and the view transform to CardTableCamera. */
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-header { min-height: 28px; margin-bottom: 6px; }
+/* In a portrait two-seat table, reserve a readable name band at the shared
+   market edge. Without it, a late collection pushes its owner into a ragged tail. */
+@media (orientation: portrait) {
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats[data-player-count="2"] .cardboard-header { min-height: 48px; }
+}
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-facility-heading { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player:not(:has(.cardboard-landmark-built)) .cardboard-landmark-heading { display: none; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-dormant { top: 34px; bottom: auto; left: auto; border-radius: 3px; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-dice { flex: 0 0 20px; min-height: 20px; padding: 0 5px; font-size: 18px; line-height: 20px; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-kind { position: absolute; top: 21px; left: 3px; z-index: 1; font-size: 8px; line-height: 1.2; background: #fff9e9c9; }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-art { flex: 0 0 54px; height: 54px; min-height: 54px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats .cardboard-dormant { top: auto; border-radius: 3px; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-dice { flex: 0 0 24px; min-height: 24px; padding: 0 5px; font-size: 18px; line-height: 24px; white-space: nowrap; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-kind { position: absolute; top: 25px; left: 3px; z-index: 1; font-size: 8px; line-height: 1.2; background: #fff9e9c9; }
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-art { flex: 0 0 50px; height: 50px; min-height: 50px; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-name { min-height: 24px; padding: 1px 4px; font-size: 13px; line-height: 1.05; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-price { min-height: 14px; font-size: 10px; line-height: 14px; padding: 0 4px; }
 html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-stock { font-size: 9px; line-height: 12px; padding: 0 4px; }
+/* Matching status belongs on the art, leaving long dice ranges intact. */
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSeats #cardboardMarket .compact-market-roll-match .compact-market-dice::after {
+    position: absolute;
+    top: 26px;
+    right: 3px;
+    bottom: auto;
+}
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard.cardboard-card-table #cardboardSeats > .cardboard-player { color: #fff; border-color: #fff; background: #000; }
 
 /* Victory keeps rematch beside a compact, fully scrollable card collection. */
@@ -15285,7 +15472,54 @@ html[data-design="cardboard"] #cardboardActionSlot #gameConnectivityPanel.cardbo
     padding: 2px 4px;
     font-size: 11px;
 }
-html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardCameraTools > [data-cardboard-camera="overview"] {
+
+/* During a healthy local CPU turn, use the disabled action area rather than
+   taking another row from the table. Enabled controls and recovery messages
+   always retain their ordinary layout. The owner and phase stay visible. */
+@media (orientation: landscape) and (min-width: 601px) and (max-height: 600px) {
+    html[data-design="cardboard"] #cardboardActionSlot .game-action-panel:has(> #gameConnectivityPanel.is-local-cpu-activity) #status.cardboard-docked-status .cardboard-turn-status-name {
+        white-space: nowrap;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardActionSlot .game-action-panel:has(> #gameConnectivityPanel.is-local-cpu-activity):not(:has(> .buttons :enabled:not([hidden]))) > #gameConnectivityPanel.cardboard-docked-connectivity {
+        grid-column: 3;
+        grid-row: 1;
+        align-self: stretch;
+        width: auto;
+        height: 44px;
+        max-height: 44px;
+        padding: 0;
+        overflow: hidden;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardActionSlot .game-action-panel:has(> #gameConnectivityPanel.is-local-cpu-activity):not(:has(> .buttons :enabled:not([hidden]))) > .buttons {
+        visibility: hidden;
+    }
+    html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardActionSlot .game-action-panel:has(> #gameConnectivityPanel.is-local-cpu-activity):not(:has(> .buttons :enabled:not([hidden]))) .game-activity-status {
+        box-sizing: border-box;
+        height: 44px;
+        min-height: 44px;
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: flex-start;
+        gap: 1px 4px;
+        padding: 3px 6px;
+        text-align: left;
+    }
+    html[data-design="cardboard"] #cardboardActionSlot #gameConnectivityPanel.is-local-cpu-activity #gameActivityStatusLabel {
+        flex: 1 1 0;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    html[data-design="cardboard"] #cardboardActionSlot #gameConnectivityPanel.is-local-cpu-activity .game-activity-detail {
+        flex: 0 0 100%;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardCameraButtons > [data-cardboard-camera="overview"] {
     position: sticky;
     left: 0;
     z-index: 2;
@@ -15330,6 +15564,8 @@ html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard #
 /* A purchased card travels only between visible, current screen locations. */
 html[data-design="cardboard"] #cardboardBoard #cardboardBuildFlight {
     position: fixed;
+    /* Only the short-lived moving card needs its own compositing surface. */
+    will-change: transform, opacity;
     z-index: 11;
     display: grid;
     grid-template-columns: minmax(0, 1fr);

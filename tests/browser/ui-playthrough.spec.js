@@ -15,8 +15,12 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     test.setTimeout(25 * 60 * 1000);
     const stopAfter = Number(process.env.UI_PLAYTHROUGH_STOP_AFTER) || 0;
     if (!Number.isInteger(stopAfter) || stopAfter < 0) throw new Error('Invalid partial action limit');
-    const viewport = process.env.UI_PLAYTHROUGH_LANDSCAPE === '1'
-        ? { width: 844, height: 390 } : { width: 390, height: 844 };
+    const viewportWidth = Number(process.env.UI_PLAYTHROUGH_WIDTH ||
+        (process.env.UI_PLAYTHROUGH_LANDSCAPE === '1' ? 844 : 390));
+    const viewports = { 320: { width: 320, height: 568 }, 390: { width: 390, height: 844 },
+        844: { width: 844, height: 390 }, 1440: { width: 1440, height: 900 } };
+    if (!Object.hasOwn(viewports, viewportWidth)) throw new Error('Invalid UI playthrough viewport');
+    const viewport = viewports[viewportWidth];
     const cpuSpeedMs = Number(process.env.UI_PLAYTHROUGH_CPU_SPEED || 1500);
     if (!Number.isInteger(cpuSpeedMs) || cpuSpeedMs < 100 || cpuSpeedMs > 3000 || cpuSpeedMs % 100 !== 0) {
         throw new Error('Invalid CPU speed');
@@ -29,6 +33,63 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     const capture = async stage => {
         if (stages.has(stage)) return;
         stages.add(stage);
+        if (stage === 'midgame') {
+            await page.evaluate(metadata => {
+                const frames = [];
+                window.midgameGeometrySample = (label, timestamp = performance.now()) => {
+                    const viewport = document.getElementById('cardboardTableViewport');
+                    const world = document.getElementById('cardboardSeats');
+                    const game = GameRuntimeState.runtime.snapshot().game;
+                    const rect = element => element?.getBoundingClientRect().toJSON() || null;
+                    const viewportRect = viewport.getBoundingClientRect();
+                    const clip = { left:viewportRect.left + viewport.clientLeft, top:viewportRect.top + viewport.clientTop };
+                    clip.right = clip.left + viewport.clientWidth;
+                    clip.bottom = clip.top + viewport.clientHeight;
+                    const entries = [...world.querySelectorAll('.cardboard-player, .cardboard-landmark-built')].map(element => {
+                        const bounds = element.getBoundingClientRect();
+                        const outside = [bounds.left < clip.left - 1 && 'left', bounds.top < clip.top - 1 && 'top',
+                            bounds.right > clip.right + 1 && 'right', bounds.bottom > clip.bottom + 1 && 'bottom'].filter(Boolean);
+                        return { kind:element.classList.contains('cardboard-player') ? 'owner' : 'landmark',
+                            owner:element.closest('.cardboard-player')?.dataset.playerIndex,
+                            name:element.dataset.landmarkName || element.querySelector('.cardboard-player-heading-name')?.textContent || element.textContent.trim(),
+                            angle:element.closest('.cardboard-player')?.dataset.tableAngle,
+                            rect:bounds.toJSON(), native:{left:element.offsetLeft,top:element.offsetTop,width:element.offsetWidth,height:element.offsetHeight},
+                            visible:element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden', outside };
+                    });
+                    const angle = Number(viewport.dataset.tableAngle || 0);
+                    const quarterTurn = Math.abs(angle % 180) === 90;
+                    const fit = (width, height) => Math.max(0.04, Math.min(1.8, viewport.clientWidth / Math.max(1,width), viewport.clientHeight / Math.max(1,height)));
+                    return { label, timestamp, metadata,
+                        game:{turn:game.turnCount,phase:game.phase,actor:game.currentPlayerIndex},
+                        viewport:{rect:viewportRect.toJSON(),clip,clientWidth:viewport.clientWidth,clientHeight:viewport.clientHeight,
+                            scrollLeft:viewport.scrollLeft,scrollTop:viewport.scrollTop,scrollWidth:viewport.scrollWidth,scrollHeight:viewport.scrollHeight,
+                            mode:viewport.dataset.tableMode,scale:viewport.dataset.tableScale,angle:viewport.dataset.tableAngle,
+                            focusPlayer:viewport.dataset.tableFocusPlayer},
+                        world:{width:world.offsetWidth,height:world.offsetHeight,rect:rect(world),transform:getComputedStyle(world).transform,
+                            packing:world.dataset.tablePacking,layoutKey:world.dataset.tableLayoutKey,readingSeat:world.dataset.tableReadingSeat},
+                        expectedFit:fit(world.offsetWidth,world.offsetHeight),
+                        expectedFitAtCurrentAngle:fit(quarterTurn ? world.offsetHeight : world.offsetWidth,quarterTurn ? world.offsetWidth : world.offsetHeight),
+                        panels:Object.fromEntries(['cardboardActionSlot','gameConnectivityPanel','gameActivityStatus','cardboardRoster','cardboardCameraTools'].map(id => {
+                            const element = document.getElementById(id);
+                            return [id,{rect:rect(element),display:element ? getComputedStyle(element).display : null,text:element?.textContent.trim()}];
+                        })),
+                        market:rect(document.getElementById('cardboardCenter')), entries,
+                        outside:entries.filter(entry => entry.visible && entry.outside.length) };
+                };
+                // RAF callbacks run before paint. These samples diagnose timing;
+                // one transient RAF alone does not prove a visible clipping bug.
+                // Start without awaiting eight frames, so the original screenshot
+                // timing is not delayed until a resize/fit has recovered.
+                window.midgameGeometryFrames = new Promise(resolve => {
+                    const sample = timestamp => {
+                        frames.push(window.midgameGeometrySample(`raf-${frames.length + 1}`, timestamp));
+                        if (frames.length === 8) resolve(frames);
+                        else requestAnimationFrame(sample);
+                    };
+                    requestAnimationFrame(sample);
+                });
+            }, { humanActions:report.humanActions, actionCount:report.actions.length, lastAction:report.actions.slice(-1) });
+        }
         const hud = await page.evaluate(() => {
             if (document.querySelector('.winner-screen')) return { overviewVisible: true, activityOverlapsRoster: false };
             const overview = document.querySelector('[data-cardboard-camera="overview"]').getBoundingClientRect();
@@ -46,7 +107,19 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         expect(hud.overviewVisible, `${stage}: 全体への入口を隠さない`).toBe(true);
         expect(hud.activityOverlapsRoster, `${stage}: 処理通知で所有者を覆わない`).toBe(false);
         const file = testInfo.outputPath(`ui-playthrough-${stage}.png`);
+        const beforeScreenshot = stage === 'midgame' ? await page.evaluate(() => window.midgameGeometrySample('before-screenshot')) : null;
         await page.screenshot({ path: file, fullPage: false });
+        if (stage === 'midgame') {
+            const geometry = await page.evaluate(async before => {
+                const afterScreenshot = window.midgameGeometrySample('after-screenshot');
+                // Read all eight diagnostic frames only after the original
+                // screenshot has been captured; never wait to make it fit.
+                return { beforeScreenshot:before, afterScreenshot, frames:await window.midgameGeometryFrames };
+            }, beforeScreenshot);
+            const diagnosticFile = testInfo.outputPath('ui-playthrough-midgame-geometry.json');
+            await fs.writeFile(diagnosticFile, JSON.stringify(geometry, null, 2));
+            await testInfo.attach('midgame-geometry', { path:diagnosticFile, contentType:'application/json' });
+        }
         await testInfo.attach(stage, { path: file, contentType: 'image/png' });
         report.screenshots.push(stage);
     };
