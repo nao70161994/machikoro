@@ -173,6 +173,8 @@ const CardBoardField = (() => {
         const cardGroups = panels.map(panel => ({ panel, rects: Array.from(panel.querySelectorAll('.cardboard-card'))
             .map(card => card.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0) }));
         const placed = [];
+        const marketBounds = node('cardboardCenter')?.getBoundingClientRect();
+        const preferMarketHeading = panels.length === 2 && bounds.width <= 500 && window.innerHeight >= window.innerWidth;
         const shallow = bounds.height < 340;
         const fallbackWidth = shallow || bounds.width < 500 ? 96 : 124;
         const maximumWidth = shallow || bounds.width < 500 ? 176 : 200;
@@ -250,8 +252,18 @@ const CardBoardField = (() => {
                     nearest(left, top, ownCards) <= nearest(left, top, otherCards) + 0.5);
                 const score = ([left, top]) => nearest(left, top, ownCards) +
                     Math.hypot(left + width / 2 - centerX, top + height / 2 - centerY) * 0.002;
+                const topEdge = Math.min(...ownCards.map(rect => rect.top));
+                const bottomEdge = Math.max(...ownCards.map(rect => rect.bottom));
+                const marketFacing = ([, top]) => {
+                    if (!preferMarketHeading || !marketBounds) return true;
+                    return centerY < marketBounds.top + marketBounds.height / 2
+                        ? top >= bottomEdge
+                        : top + height <= topEdge;
+                };
                 const ranked = available.map(position => ({ position, score: score(position) }));
-                ranked.sort((a, b) => a.score - b.score);
+                // Shorter names must not make a ragged row's tail outrank a free
+                // market-facing heading. Keep collision/owner-distance guards.
+                ranked.sort((a, b) => Number(marketFacing(b.position)) - Number(marketFacing(a.position)) || a.score - b.score);
                 if (ranked[0]) {
                     placement = { width, position: ranked[0].position };
                     break;
