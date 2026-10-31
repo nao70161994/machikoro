@@ -29,6 +29,6 @@ assert.match(workflow, /scripts\/rl\/run-self-only-4p-h256-lr2e5-5000\.sh/);
 assert.match(workflow, /--train-batch-size 1/);
 assert.match(workflow, /scripts\/rl\/eval-run\.sh/);
 assert.match(workflow, /scripts\/rl\/eval-run-4p\.sh/);
-assert.doesNotMatch(workflow, /models\/rl_model\/portfolio\/.replace(/\//g, '\/'));
+assert.ok(!workflow.includes('models/rl_model/portfolio/'));
 
 console.log('RL training workflow configuration: OK');
