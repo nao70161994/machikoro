@@ -15071,6 +15071,7 @@ html[data-design="cardboard"] #cardboardCameraSettings { display: flex; flex-wra
 html[data-design="cardboard"] #cardboardCameraSettings > button { min-height: 44px; min-width: 44px; }
 @media (max-width: 999px) {
     html[data-design="cardboard"] #cardboardEventDetails > summary,
+    html[data-design="cardboard"] #cardboardEventDetails[data-has-result="true"] > summary,
     html[data-design="cardboard"] #cardboardEventDetails[data-activation-preview="true"] > summary { width: 44px; min-width: 44px; padding: 4px; }
     html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardEventDetails > summary > span { display: none; }
     html[data-design="cardboard"] #cardboardEventDetails > summary::before { content: "収支"; }

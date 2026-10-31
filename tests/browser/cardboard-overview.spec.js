@@ -1036,7 +1036,6 @@ test('狭幅でも収支操作は視点移動のスクロールに隠れない',
     await prepare(page, { width: 320, height: 568 }, 2, false);
     await page.evaluate(() => setTutorialEnabled(true));
     await expect(page.locator('#tutorialBox .plaza-guide-disclosure > summary')).toBeVisible();
-    const before = await snapshot(page);
     const summary = page.locator('#cardboardEventDetails > summary');
     const readable = () => summary.evaluate(element => {
         const bounds = element.getBoundingClientRect();
@@ -1047,10 +1046,25 @@ test('狭幅でも収支操作は視点移動のスクロールに隠れない',
                 return top === element || element.contains(top);
             });
     });
+    await expect.poll(readable, '出目確定前にも収支を操作できる').toBe(true);
+    await page.evaluate(() => {
+        GameRuntimeState.runtime.snapshot().game.rollDice([1]);
+        render();
+    });
+    await expect(page.locator('#cardboardEventDetails')).toHaveAttribute('data-has-result', 'true');
+    const before = await snapshot(page);
     for (const width of [320, 390, 844, 1440]) {
         await page.setViewportSize({ width, height: width === 844 ? 390 : width === 1440 ? 900 : 568 });
         await cameraCommand(page, 'overview');
         await expect.poll(readable, `収支は${width}pxの初期位置で全文操作できる`).toBe(true);
+        if (width <= 999) await expect(summary).toHaveCSS('width', '44px');
+        if (width === 320) {
+            expect(await page.locator('[data-cardboard-camera="self"]').evaluate(element => {
+                const bounds = element.getBoundingClientRect();
+                const clip = document.getElementById('cardboardCameraButtons').getBoundingClientRect();
+                return bounds.left >= clip.left && bounds.right <= clip.right;
+            }), '出目確定後の全体表示でも自分ボタンを全文表示する').toBe(true);
+        }
         await cameraCommand(page, 'market');
         await expect.poll(readable, '戻る操作が有効でも収支を隠さない').toBe(true);
         if (width === 320) {
