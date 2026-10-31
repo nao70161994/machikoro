@@ -26,6 +26,14 @@
 - 遅いページloadの単独調査は6.710秒で終了し、過去の40.555秒を再現できなかった。JS資産の完了が約5秒遅れたが、元のタイムアウトの根本原因が確定したとは扱わない。テスト上限は変更していない。
 - [実UI対局320/1440](https://github.com/nao70161994/machikoro/actions/runs/41119150739)は両方勝利まで成功。CPU1500ms・非seed・人間席自動操作で、物理端末/人間による体験評価ではない。画像と操作集計の再レビューは後続で行う。
 
+## 終盤で欠ける所属名の端への配置
+
+- controlled320×568で11/19施設・5/2ランドマークにすると、自分の名前の98候補がすべて除外され、CPU名だけ表示されることを再現。診断初回の無効カード名/Set.slice誤記はfixture側で修正してから採取し、製品不具合とは区別。
+- 採取geometryでviewport内へ平行移動した候補を同じ条件で評価すると、右端(212,470.16)に有効候補が1つあった。既存のpreferred/compact両幅を先にすべて試し、配置不能のときだけ端へ収めた候補を試す。viewport・全障害物・既配置ラベル・所属距離の条件は緩和しない。名前/フォント/卓/カード寸法は不変。任意構成で全名を必ず置ける保証ではない。
+- [前](assets/nightly-quality/owner-edge-320-before.png) / [後](assets/nightly-quality/owner-edge-320-after.png) / [条件と候補数](assets/nightly-quality/owner-edge-320-comparison.json)。before残高23/after30のcontrolled比較で、同一正本/自然対局ではない。カード群構成とviewportは共通。afterは欠けた自分名を施設群右下の空白で全文表示し、CPU名位置を維持。独立原寸レビューで新しい重なり/誤所属なし。
+- 既存3case+追加1は最終4件27.7秒・retry0成功。初回batchは新testのspanをbutton指定した誤りで1失敗/3成功、selectorを正しい既存classへ修正（製品assertの緩和ではない）。その後新1件8秒成功、探索順修正後の最終4件も成功。構文・ESLint・main/UI型・関連単体も成功。
+- 直前b7f072a3の[重点WebKit17件](https://github.com/nao70161994/machikoro/actions/runs/41169846950)は再試行0・4.1分で成功。4幅勝利の語内部1行assertと結果後の収支操作も含む。今回の端fallbackは含まないため、追加して18件を確認する。
+
 ## 勝利の単語内部折返しに対する候補
 
 - 96のnative実対局画像ではモール名が3行。既存wordsFitはspan外枠のみの検査で内部折返しを検出できなかった。Intl分割の誤りとは断定しない。

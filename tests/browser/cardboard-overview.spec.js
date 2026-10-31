@@ -1202,3 +1202,44 @@ test('所有施設が一行から増えた描画で相手のカードを卓上�
     expect(result.outside, '次のRAFを待たず全実カードを新しい盤面へ収める').toEqual([]);
     expect(result.after).toEqual(result.before);
 });
+
+
+test('終盤の所属名は端の空白を使いカードを覆わず全文を表示する', async ({ page }, testInfo) => {
+    await prepare(page, { width: 320, height: 568 }, 2, false);
+    await page.evaluate(() => {
+        const game = GameRuntimeState.runtime.snapshot().game;
+        game.players[0].name = 'プレイヤー1';
+        game.players[1].name = 'CPU（弱）・1';
+        const cards = [
+            ['寿司屋', 'パン屋', 'フラワーショップ', 'ビジネスセンター', 'ブドウ園', 'ピザ屋', '清掃業', 'バーガーショップ', 'サンマ漁船', 'ワイナリー', '引越し屋'],
+            ['麦畑', '牧場', 'コンビニ', '森林', '家具工場', '鉱山', 'リンゴ園', 'パン屋', 'カフェ', 'フラワーショップ', '雑貨屋', 'ファミレス', 'ピザ屋', 'バーガーショップ', 'ビジネスセンター', '清掃業', '税務署', '貸金業', '引越し屋'],
+        ];
+        game.players.forEach((player, index) => {
+            player.cards = cards[index].map(createCardByName);
+            Array.from(getEnabledLandmarkSelection()).slice(0, index ? 2 : 5).forEach(name => { player.landmarks[name] = true; });
+        });
+        render();
+    });
+    const before = await snapshot(page);
+    await cameraCommand(page, 'overview');
+    await expectWholeTable(page, 2);
+    await expect.poll(() => page.locator('#cardboardOwnerLabels > .cardboard-owner-label').count()).toBe(2);
+    const geometry = await page.locator('#cardboardOwnerLabels > .cardboard-owner-label').evaluateAll(labels => {
+        const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+        const obstacles = [...document.querySelectorAll('#cardboardTableViewport .cardboard-card, #cardboardTableViewport .cardboard-landmark, #cardboardCenter')].map(element => element.getBoundingClientRect());
+        return labels.map(label => {
+            const bounds = label.getBoundingClientRect();
+            const range = document.createRange();
+            range.selectNodeContents(label);
+            const text = range.getBoundingClientRect();
+            return { name: label.textContent,
+                complete: text.left >= bounds.left && text.right <= bounds.right && text.top >= bounds.top && text.bottom <= bounds.bottom,
+                contained: bounds.left >= viewport.left && bounds.right <= viewport.right && bounds.top >= viewport.top && bounds.bottom <= viewport.bottom,
+                overlaps: obstacles.some(rect => bounds.left < rect.right && bounds.right > rect.left && bounds.top < rect.bottom && bounds.bottom > rect.top) };
+        });
+    });
+    expect(geometry.map(label => label.name).sort()).toEqual(['CPU（弱）・1', 'プレイヤー1'].sort());
+    expect(geometry.every(label => label.complete && label.contained && !label.overlaps), JSON.stringify(geometry)).toBe(true);
+    expect(await snapshot(page)).toEqual(before);
+    await page.screenshot({ path: testInfo.outputPath('owner-edge-320.png') });
+});

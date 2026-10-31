@@ -1,0 +1,56 @@
+{
+  "scope": "Controlled 320x568 with 11/19 facility groups and 5/2 landmarks; not a naturally played match. Before coins23, after30; not identical canonical game states.",
+  "before": {
+    "viewport": {
+      "x": 4,
+      "y": 116,
+      "width": 312,
+      "height": 392,
+      "top": 116,
+      "right": 316,
+      "bottom": 508,
+      "left": 4
+    },
+    "labels": [
+      {
+        "text": "CPU（弱）・1",
+        "index": "1",
+        "rect": {
+          "x": 63.171875,
+          "y": 125.546875,
+          "width": 96,
+          "height": 22,
+          "top": 125.546875,
+          "right": 159.171875,
+          "bottom": 147.546875,
+          "left": 63.171875
+        }
+      }
+    ],
+    "candidateCounts": [
+      {
+        "index": 0,
+        "width": 96,
+        "total": 98,
+        "available": 0
+      },
+      {
+        "index": 1,
+        "width": 96,
+        "total": 146,
+        "available": 2
+      }
+    ]
+  },
+  "afterEvidence": {
+    "test": "終盤の所属名は端の空白を使いカードを覆わず全文を表示する",
+    "assertions": [
+      "2 labels, complete expected names",
+      "full text and labels within bounds",
+      "no facility/landmark/market overlap",
+      "canonical snapshot unchanged by camera and labels"
+    ],
+    "localFinalRun": "4 passed (27.7s), retries0, workers1",
+    "independentVisualReview": "missing self name now occupies lower-right blank without covering cards, landmarks or controls; CPU name unchanged"
+  }
+}

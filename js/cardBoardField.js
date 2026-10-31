@@ -206,8 +206,10 @@ const CardBoardField = (() => {
             const anchor = heading.getBoundingClientRect();
             const region = panel.getBoundingClientRect();
             let placement = null;
-            // Prefer readable names, retaining the compact search when space is tight.
-            for (const width of new Set([preferredWidth, fallbackWidth])) {
+            // Keep both original width searches ahead of the edge fallback,
+            // including an existing compact placement for a longer name.
+            const widths = [...new Set([preferredWidth, fallbackWidth])];
+            for (const { width, inset } of [false, true].flatMap(inset => widths.map(width => ({ width, inset })))) {
                 const intersects = (left, top, rect) => left < rect.right + clearance && left + width > rect.left - clearance &&
                     top < rect.bottom + clearance && top + height > rect.top - clearance;
                 /** @type {[number, number][]} */
@@ -246,10 +248,21 @@ const CardBoardField = (() => {
                 const otherCards = cardGroups.filter(group => group.panel !== panel).flatMap(group => group.rects);
                 const centerX = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.left + rect.width / 2, 0) / ownCards.length : anchor.left;
                 const centerY = ownCards.length ? ownCards.reduce((sum, rect) => sum + rect.top + rect.height / 2, 0) / ownCards.length : anchor.top;
-                const available = candidates.filter(([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
+                const canPlace = ([left, top]) => left >= innerLeft + gap && left + width <= innerRight - gap &&
                     top >= innerTop + gap && top + height <= innerBottom - gap &&
                     !obstacles.some(rect => intersects(left, top, rect)) && !placed.some(rect => intersects(left, top, rect)) &&
-                    nearest(left, top, ownCards) <= nearest(left, top, otherCards) + 0.5);
+                    nearest(left, top, ownCards) <= nearest(left, top, otherCards) + 0.5;
+                const available = candidates.filter(canPlace);
+                if (inset && !available.length) {
+                    // Preserve existing placements. Only a missing label tries
+                    // the viewport's spare edge, with identical collision guards.
+                    /** @type {[number, number][]} */
+                    const insetCandidates = candidates.map(([left, top]) => [
+                        Math.max(innerLeft + gap, Math.min(left, innerRight - gap - width)),
+                        Math.max(innerTop + gap, Math.min(top, innerBottom - gap - height)),
+                    ]);
+                    available.push(...insetCandidates.filter(canPlace));
+                }
                 const score = ([left, top]) => nearest(left, top, ownCards) +
                     Math.hypot(left + width / 2 - centerX, top + height / 2 - centerY) * 0.002;
                 const topEdge = Math.min(...ownCards.map(rect => rect.top));
