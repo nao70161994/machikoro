@@ -1526,6 +1526,21 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
         acceptHotseatHandoff();
         document.getElementById('cardboardEventDetails').open = false;
         window.boardTagRecords = [];
+        window.activationTimerTasks = [];
+        const originalSetTimeout = window.setTimeout;
+        window.setTimeout = function(callback, delay, ...args) {
+            if (typeof callback !== 'function') return originalSetTimeout.call(window, callback, delay, ...args);
+            return originalSetTimeout.call(window, function(...values) {
+                const started = performance.now();
+                try { return callback.apply(this, values); }
+                finally {
+                    if (window.activationTimerTasks.length < 100) window.activationTimerTasks.push({
+                        started, duration: performance.now() - started, delay: Number(delay) || 0,
+                        callback: callback.name || 'anonymous',
+                    });
+                }
+            }, delay, ...args);
+        };
         window.boardTagObserver = new MutationObserver(records => {
             for (const record of records) for (const node of record.addedNodes) {
                 if (node.nodeType !== Node.ELEMENT_NODE || !node.classList.contains('cardboard-activation-tag')) continue;
@@ -1593,6 +1608,11 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
     }))).toEqual([0, 1, 2, 3].map(step => ({ step, delay: 500 + step * 700, duration: 600 })));
     await expect(page.locator('#turnAnnouncer')).toBeHidden();
     const sample = await page.evaluate(() => window.chainFlightSample);
+    // Preserve caption/JS-cost evidence even if the original live-frame
+    // assertion fails. Do not change its deadline or movement threshold.
+    require('fs').writeFileSync(testInfo.outputPath('activation-presentation.json'), JSON.stringify(await page.evaluate(() => ({
+        records: window.boardTagRecords, timerTasks: window.activationTimerTasks,
+    })), null, 2));
     await page.screenshot({ path: testInfo.outputPath('facility-chain-live-step-4.png') });
     require('fs').writeFileSync(testInfo.outputPath('facility-chain-flight-sample.json'), JSON.stringify(sample, null, 2));
     expect(sample.elapsedMs, JSON.stringify(sample)).toBeLessThan(500);
@@ -1640,7 +1660,6 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
     expect(tagRecords.every(record => !record.sourceCovered), JSON.stringify(tagRecords)).toBe(true);
     expect(tagRecords.every(record => !record.ownerCovered), JSON.stringify(tagRecords)).toBe(true);
     expect(tagRecords.some(record => record.presentation === 'illustrated' && record.artWidth === 100 && record.artHeight === 65), JSON.stringify(tagRecords)).toBe(true);
-    require('fs').writeFileSync(testInfo.outputPath('activation-presentation.json'), JSON.stringify(tagRecords, null, 2));
     await testInfo.attach('activation-presentation', { body: JSON.stringify(tagRecords), contentType: 'application/json' });
     expect(tagRecords.every(record => record.highlightedCards === 1 && record.highlightedOwners === 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });
