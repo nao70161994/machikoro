@@ -2,7 +2,11 @@
 
 対象: PR #19 / `feat/nightly-table-quality`。mainはPR #18の `a265ca7e`、マージ保留。商用品質への到達は未完了。過去の失敗・訂正・撤回案は[時系列記録](nightly-quality-history.md)、原mainの調査は[一次記録](nightly-table-quality-2026-10-23.md)を参照。
 
-## 検証済みと確認中の範囲
+## 最新候補の確定結果
+
+`7ecac7a4`: Release・16画面操作・全Nightly成功。Nightly352件=351初回成功/0retry成功/1既存許可skip、6分割8.1〜16.2分、実行ID照合一致。4幅の実UI対局も勝利まで成功。詳細は下記の7ec節と[達成確認表](quality-completion-audit.md)。商用品質の主観評価・ローカル描画遅延の原因には未確定事項が残る。
+
+## 先行候補の検証履歴
 
 |対象|commit・実行|結果|
 |---|---|---|
@@ -25,6 +29,15 @@
 - 修正候補は既存の境界/全文3ケースがローカル成功（1worker・1.3分）。320/390×844の元assert、320×568と同名の追加assertは変更なし。独立ソースレビュー指摘の縦持ち条件も追加。構文・ESLint・main/UI型は成功。固定WebKit重点に同境界ケースを加えて12件で再確認する。
 - 遅いページloadの単独調査は6.710秒で終了し、過去の40.555秒を再現できなかった。JS資産の完了が約5秒遅れたが、元のタイムアウトの根本原因が確定したとは扱わない。テスト上限は変更していない。
 - [実UI対局320/1440](https://github.com/nao70161994/machikoro/actions/runs/41119150739)は両方勝利まで成功。CPU1500ms・非seed・人間席自動操作で、物理端末/人間による体験評価ではない。画像と操作集計の再レビューは後続で行う。
+
+## 7ecac7a4のnative検証と同版実対局
+
+- [重点WebKit41171828691](https://github.com/nao70161994/machikoro/actions/runs/41171828691)は20件・retry0・3.5分で成功。新しい844/320連鎖ケースも、元の6500ms・第4送金frame<500ms・opacity>0.5を維持して成功。
+- [実frame](assets/nightly-quality/native-activation-7ecac.json)は320でelapsed210ms/opacity1、844で306ms/opacity1、delay2600ms/duration600ms。静止デザインposeとは異なる。各発動元の非被覆・実アート100×65px・全owner・再描画/テーマ復帰/RMの元assertも同caseで確認。localの期限失敗の原因が解消したとは断定しない。
+- 同版の[全Nightly41172214298](https://github.com/nao70161994/machikoro/actions/runs/41172214298)は成功。352件=351初回成功・0再試行成功・1既存許可skip、6分割59/59/59/59/58/58、実行ID和集合も352件で一致。各shard8.1〜16.2分、35分中断なし。単体/PWA/release/online/CPU simulation/soakも成功。
+- 同版の実UI対局は4幅とも勝利まで成功：[390/844](https://github.com/nao70161994/machikoro/actions/runs/41172005824)、[320/1440](https://github.com/nao70161994/machikoro/actions/runs/41172008495)。CPU1500ms・非seed・人間席自動操作。320/390/844のmid/late/first-build/winner計12枚を独立レビューし、新たな重大な切れ・操作の重なりなし。1440の4枚も独立確認し、計16枚で重大なclip/操作重なり/新規崩れなし。winnerのモール名は「ショッピング/モール」の2行・6ランドマーク一列で、旧版の語内部折返しは解消。終盤細字・広い余白は残る。
+- 同版の[通常Release](https://github.com/nao70161994/machikoro/actions/runs/41171833261)・[16画面操作](https://github.com/nao70161994/machikoro/actions/runs/41171833081)も成功。基準画像・許容値は変更しない。
+- [達成確認表](quality-completion-audit.md)で、過去と最新、共有状態互換と各テーマ全操作、静止姿勢と実時間、物理端末未確認を区別。独立レビューで、過去の見送り確認/自動復旧の未確定事象も明示するよう指摘を反映した。
 
 ## 発動施設の正面アートと市場スクロールによる誤取消
 
@@ -157,3 +170,20 @@ CPU1500ms・非seed、人間席を自動UI操作。物理端末・人間によ�
 ## 次候補の確認範囲
 
 所属名の3caseと同名確認を含む最終1case、通常再配置2case、独立化した購入復帰2caseはローカルで成功。stageの全建設条件を含む6case成功batchもあるが、後続batchの失敗は上記に残しており「関連ローカル全成功」とは報告しない。最終の構文・ESLint・main/UI型・関連単体は成功。テストの時間上限や許容値は変更していない。追加の固定WebKit重点検証を先に実行し、その結果から次の全Nightlyを判断する。
+
+## 7ecの4幅実UI完走と独立画像確認
+
+[操作集計](assets/nightly-quality/ui-playthrough-7ecac-summary.json)。人間席を通常のUIから自動操作し、CPU弱・1500ms・非seedで進行。全4幅で勝利、pageErrors0、相手正面閲覧→復帰は2clickでscale/angle/正本を維持。
+
+|viewport|turn|人間actions/click/keys|CPU待ちms|全経過ms|閲覧→復帰ms|
+|---|---:|---|---:|---:|---:|
+|320×568|77|180/290/38|287310|579788|802|
+|390×844|83|214/327/42|335146|638674|546|
+|844×390|75|174/269/37|277733|610222|1014|
+|1440×900|90|251/376/45|338699|1117530|1966|
+
+異なる非seed対局なので所要時間を変更前後の性能比較には使わない。action.elapsedMsはメニュー等の複数操作を含み入力遅延そのものではない。1440の最初のrollは10122ms、同じ区間で5枚の撮影actualelapsedは1701〜7909msとなり指定0〜1200msと一致しない。画像採取時間を含むため、この列からサイコロの連続動作や操作遅延を証明しない。
+
+[実発動320](assets/nightly-quality/activation-live-320-7ecac.png) / [実発動844](assets/nightly-quality/activation-live-844-7ecac.png)は時間固定しないnative実rollの第4送金付近。独立レビューは森林/街4/+1/銀行→街4/4/4が読め、HUD/操作への被覆なしと評価。320の市場上部、街4のownerラベルはpopupに隠れ、送金bubbleは実カードの一部に重なる。popupにもownerがあるので情報喪失ではないが、元施設との視覚対応と演出の重なりには改善余地。静止画で600msの読み取りや連鎖テンポを保証しない。
+
+[最新1440の実対局勝利画像](assets/nightly-quality/winner-live-1440-7ecac.png)。独立レビューで語内部折返し解消と6枚一列、操作の明瞭さを確認。下端の所有施設はスクロール領域なので全件同時表示の証明にはしない。
