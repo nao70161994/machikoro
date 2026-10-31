@@ -26,6 +26,22 @@
 - 遅いページloadの単独調査は6.710秒で終了し、過去の40.555秒を再現できなかった。JS資産の完了が約5秒遅れたが、元のタイムアウトの根本原因が確定したとは扱わない。テスト上限は変更していない。
 - [実UI対局320/1440](https://github.com/nao70161994/machikoro/actions/runs/41119150739)は両方勝利まで成功。CPU1500ms・非seed・人間席自動操作で、物理端末/人間による体験評価ではない。画像と操作集計の再レビューは後続で行う。
 
+## 勝利の単語内部折返しに対する候補
+
+- 96のnative実対局画像ではモール名が3行。既存wordsFitはspan外枠のみの検査で内部折返しを検出できなかった。Intl分割の誤りとは断定しない。
+- [ローカル測定](assets/nightly-quality/winner-word-inner-width.json)は同じ1440×900・controlled勝利fixture。card97.3125px、copy/name83.3125px、name左右padding計4px、ショッピング78.015625px。文字内幅79.3125pxで余裕は約1.3px。copyをwidth100%へ伸ばす試案は同値で改善なし。ローカルでは元から2行だったためnativeの3行を再現したとは言わない。
+- 勝利の縦カードだけ、横カードから継承していたnameの左右paddingを除き、文字の利用幅を4px増やす候補。カード幅・13px文字・6列・art寸法は不変。全名escape/Intl fallback/詳細操作は変えない。一律nowrapによる長名はみ出しは導入しない。
+- 既存の勝利4幅caseで全wordのRange.getClientRectsの行数も確認。元の全文・外枠fit・モール分割・1440同一行・詳細focus/正本assertは維持し、4件24.6秒で成功。独立ソースレビューは妥当と評価。nativeの再検証前に解消済みとはしない。
+- focused WebKitへこの4幅と結果後の収支操作1件もまとめ、従来12件と合わせ17件を同じ候補で確認する。既存全Nightlyの進行中実行は中断・やり直ししない。
+
+## 最新候補1d1153a1の進行中確認
+
+- 最新mainは `a265ca7e` のまま確認。PR #19はDraft・マージ保留。
+- [Release 41169297749](https://github.com/nao70161994/machikoro/actions/runs/41169297749)、[16画面41169297738](https://github.com/nao70161994/machikoro/actions/runs/41169297738)、[Nightly41169303901](https://github.com/nao70161994/machikoro/actions/runs/41169303901)を同じ版で確認中。Nightlyのinventory/online-soak/simulation/unit-PWA-releaseは成功し、6 browser shardが進行中。新しい全件成功はまだ主張しない。
+- 96の1440×900実UI完走は75turn/200actions/305click/39key、934481ms（CPU待機269493ms）、pageErrors0。閲覧復帰は2click/1973ms、scale/angle/正本復帰。320と同じ実行41119150739。非seed・CPU1500msで、物理端末/人間主観評価とは異なる。
+- 1440のmid/late/first-build/winner4枚とsummaryを選択取得し独立再レビュー完了。重大なclip/操作重なりなし。ただし勝利のモール名がnative画像で「ショッピン／グ／モール」の3行になる残差を発見。既存wordsFitは外枠fitのみを見ており、span内部の折返しを検出できないため、意味単位の改行は全環境で解消済みとはしない。ローカルでブラウザと型検査の同時実行は行っていない。関連テストの追加実行やPushはまとめて進める。
+- 320の片側owner overlayが欠ける場合は既存の非衝突候補が全滅し元見出しへfallbackする経路と整合。ただし各候補の除外理由をまだ採取しておらず、clamp候補追加案は未実装。衝突/全文/所属距離制約を緩和して名前を置くことはしない。
+
 ## 所属名候補2f88900fと結果後の狭幅操作
 
 - [重点WebKit 41168949776](https://github.com/nao70161994/machikoro/actions/runs/41168949776)は12件・再試行0・3.4分で成功。元の所有者名境界caseも含む。通常Releaseと16画面は確認中。

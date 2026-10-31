@@ -1065,15 +1065,23 @@ test(`にぎわい広場の勝利カードコレクション ${viewport.width}px
     const landmarkNames = await page.locator('.cardboard-winner-collection .cardboard-landmark').evaluateAll(elements => elements.map(element => {
         const name = element.querySelector('.cardboard-name');
         const bounds = name.getBoundingClientRect();
-        const words = [...name.querySelectorAll('.cardboard-name-word')].map(word => word.getBoundingClientRect());
+        const wordElements = [...name.querySelectorAll('.cardboard-name-word')];
+        const words = wordElements.map(word => word.getBoundingClientRect());
+        const wordLines = wordElements.map(word => {
+            const range = document.createRange();
+            range.selectNodeContents(word);
+            return { text: word.textContent, lines: new Set([...range.getClientRects()].map(rect => Math.round(rect.top))).size };
+        });
         return { name: name.textContent, top: element.getBoundingClientRect().top,
             complete: name.textContent === element.getAttribute('data-landmark-name'),
+            wordLines,
             wordsFit: words.length > 0 && words.every(word => word.left >= bounds.left && word.right <= bounds.right + 1),
             mallWords: element.getAttribute('data-landmark-name') === 'ショッピングモール'
                 ? [...name.querySelectorAll('.cardboard-name-word')].map(word => word.textContent) : null };
     }));
     expect(landmarkNames.every(name => name.complete && name.wordsFit), JSON.stringify(landmarkNames)).toBe(true);
     expect(landmarkNames.find(name => name.mallWords).mallWords).toEqual(['ショッピング', 'モール']);
+    expect(landmarkNames.every(name => name.wordLines.every(word => word.lines === 1)), JSON.stringify(landmarkNames)).toBe(true);
     if (viewport.width === 1440) expect(new Set(landmarkNames.map(name => Math.round(name.top))).size).toBe(1);
 
     await expect(page.locator('.cardboard-winner-collection .town-street')).toHaveCount(0);

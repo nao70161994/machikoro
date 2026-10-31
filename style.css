@@ -15238,6 +15238,7 @@ html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-la
 }
 html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-landmark .cardboard-name {
     display: block;
+    padding: 0;
     max-height: none;
     overflow: visible;
     text-wrap: balance;
