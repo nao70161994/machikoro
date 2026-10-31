@@ -1508,8 +1508,9 @@ test('建設可の絞り込みでもサイコロ前と購入後は市場を見�
     }
 });
 
-test('新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない', async ({ page }, testInfo) => {
-    await prepare(page, { width: 844, height: 390 });
+for (const viewport of [{ width: 844, height: 390 }, { width: 320, height: 568 }]) {
+test(`新しいロールの発動帯は全所有者を順に示し再描画とテーマ復帰で再生しない ${viewport.width}px`, async ({ page }, testInfo) => {
+    await prepare(page, viewport);
     await page.evaluate(() => {
         const game = GameRuntimeState.runtime.snapshot().game;
         game.players.forEach(player => { player.cards = [createCardByName('森林')]; });
@@ -1530,7 +1531,13 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
                 if (node.nodeType !== Node.ELEMENT_NODE || !node.classList.contains('cardboard-activation-tag')) continue;
                 const rect = node.getBoundingClientRect();
                 const viewport = document.getElementById('cardboardTableViewport').getBoundingClientRect();
+                const source = document.querySelector('#cardboardSeats .cardboard-card.cardboard-resolving').getBoundingClientRect();
+                const art = node.querySelector('.cardboard-activation-art');
+                const artBounds = art?.getBoundingClientRect();
                 window.boardTagRecords.push({ text: node.textContent, pointerEvents: getComputedStyle(node).pointerEvents,
+                    presentation: node.dataset.presentation,
+                    artWidth: artBounds?.width || 0, artHeight: artBounds?.height || 0,
+                    sourceCovered: rect.left < source.right && rect.right > source.left && rect.top < source.bottom && rect.bottom > source.top,
                     highlightedCards: document.querySelectorAll('#cardboardSeats .cardboard-card.cardboard-resolving').length,
                     highlightedOwners: document.querySelectorAll('.cardboard-roster-seat.cardboard-resolving').length,
                     contained: rect.left >= viewport.left - 1 && rect.right <= viewport.right + 1 &&
@@ -1626,6 +1633,9 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     expect(tagRecords.map(record => record.text)).toEqual(owners.map((owner, index) =>
         `森林${owner} · +1コイン銀行 → ${owner}施設発動 ${index + 1} / ${owners.length}`));
     expect(tagRecords.every(record => record.contained && record.pointerEvents === 'none')).toBe(true);
+    expect(tagRecords.every(record => !record.sourceCovered), JSON.stringify(tagRecords)).toBe(true);
+    expect(tagRecords.some(record => record.presentation === 'illustrated' && record.artWidth === 100 && record.artHeight === 65), JSON.stringify(tagRecords)).toBe(true);
+    await testInfo.attach('activation-presentation', { body: JSON.stringify(tagRecords), contentType: 'application/json' });
     expect(tagRecords.every(record => record.highlightedCards === 1 && record.highlightedOwners === 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });
     await page.evaluate(() => render());
@@ -1672,6 +1682,7 @@ test('新しいロールの発動帯は全所有者を順に示し再描画と�
     await expect(page.locator('#cardboardDiceConfirmation')).toHaveCount(0);
     await expect(caption.locator('.cardboard-result-heading')).toContainText('港10→12');
 });
+}
 
 test('中央市場の長い施設名をカード枠内で省略せず読める', async ({ page }, testInfo) => {
     await prepare(page, { width: 1440, height: 936 });

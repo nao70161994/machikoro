@@ -179,7 +179,7 @@ jobs:
             - name: Verify pinned preinstalled browser runtime
               run: node scripts/check-playwright-container.js
             - name: Observe market lifecycle and real construction flights
-              run: npx playwright test cardboard-view.spec.js cardboard-overview.spec.js --grep '実ロール後の新規建設通知|同じ対局で市場と表示モードを5連続往復|市場の即時再表示は古いcloseイベント|相手正面を移動してから市場で購入|正面の全38施設|高密度4人の再配置|縦持ち2人戦の終盤は所有者名|狭幅でも収支操作|にぎわい広場の勝利カードコレクション|終盤の所属名は端の空白' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/construction-diagnostic
+              run: npx playwright test cardboard-view.spec.js cardboard-overview.spec.js --grep '実ロール後の新規建設通知|同じ対局で市場と表示モードを5連続往復|市場の即時再表示は古いcloseイベント|相手正面を移動してから市場で購入|正面の全38施設|高密度4人の再配置|縦持ち2人戦の終盤は所有者名|狭幅でも収支操作|にぎわい広場の勝利カードコレクション|終盤の所属名は端の空白|新しいロールの発動帯' --project=mobile-webkit --workers=1 --retries=0 --output=test-results/construction-diagnostic
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:

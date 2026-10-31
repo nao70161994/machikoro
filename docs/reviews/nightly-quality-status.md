@@ -26,6 +26,18 @@
 - 遅いページloadの単独調査は6.710秒で終了し、過去の40.555秒を再現できなかった。JS資産の完了が約5秒遅れたが、元のタイムアウトの根本原因が確定したとは扱わない。テスト上限は変更していない。
 - [実UI対局320/1440](https://github.com/nao70161994/machikoro/actions/runs/41119150739)は両方勝利まで成功。CPU1500ms・非seed・人間席自動操作で、物理端末/人間による体験評価ではない。画像と操作集計の再レビューは後続で行う。
 
+## 発動施設の正面アートと市場スクロールによる誤取消
+
+- 490c9d65の[重点WebKit18件](https://github.com/nao70161994/machikoro/actions/runs/41170369778)は再試行0・3.7分で成功。[Release](https://github.com/nao70161994/machikoro/actions/runs/41170367635)・[16画面](https://github.com/nao70161994/machikoro/actions/runs/41170367645)も成功。全Nightlyの新実行は、この後続候補の重点結果を確認してからまとめて行う。
+- 1d1153a1の全Nightly350件は349初回成功・0再試行成功・1許可済skip。各shard7.4〜14.4分、網羅性照合成功、35分中断なし。後続候補へ結果を転用しない。
+- 発動tagに、実カードと同じSVGシンボルの100×65px正面アートを追加する候補。IDがないSVGだけを複製し、カードのaction/ボタンは複製しない。横に施設名/所有者/収支/経路、実カードとownerの強調を維持。600ms表示・700ms刻み・最大8・generation/session/replay/取消は維持、新しい拡縮animationは加えない。
+- 上下左右の候補をviewportへ収め、発動元被覆→他カード/市場被覆が小さい順で選択。元カード被覆、サイズ不足、他所有施設被覆がpopup面積1/3超なら文字表示へ戻す。市場は選択scoreへ含むが、収益表示中の一時的な被覆は許容。文字表示も従来どおりpointer-events:none。操作欄は卓外で覆わない。
+- 320でtagが出なかった原因を採取。play時も取消時もviewportのscrollLeft/Topは0、取消scrollのtargetはcompact-market-facilitiesだった。市場の自動スクロールをcapture listenerが卓移動として扱い、最初の500ms表示待ち中に全キューを取消していた。owned cardの位置が変わらない子領域scrollは無視し、viewport自体のscroll/resize/画面変更では従来どおり取消す。
+- [320前](assets/nightly-quality/activation-art-320-before.png) / [後](assets/nightly-quality/activation-art-320-after.png)、[844前](assets/nightly-quality/activation-art-844-before.png) / [後](assets/nightly-quality/activation-art-844-after.png)、[4幅測定](assets/nightly-quality/activation-art-comparison.json)。これは4席・森林1枚ずつ・銀行+1のcontrolled静止デザイン比較。画像だけexpiryをresponse内で60秒へ固定して撮影し、製品と実roll検証の600msは変更しない。自然対局/600ms中の快適さ/連続演出の証明とはしない。最初の600msのままの撮影は全8枚でcapturedLive:falseだったため比較証拠から除外した。
+- 独立原寸レビューは4幅で元カード/HUD/下部操作の被覆なし、施設と収支が文字だけより認識しやすいと評価。320/390は市場下段を広く覆うため、700ms刻みで長く隠れる印象と実可視時間はnative/実対局で再評価する。公式PVの大きい主役カード、卓面光、プレイヤー反応との差はまだある。
+- ローカル試作の失敗も保持。縦積み案は横持ちで全件文字fallback、320は市場scroll取消で非表示。横並びの中間案は844成功/320が全textで新art assert失敗。最終候補の2caseは元の6500ms/flight<500ms判定で両方失敗。[frame採取](assets/nightly-quality/activation-local-frame-comparison.json)では第4flightの開始が遅く、観測期限時もdelay内だった。旧490 moduleを使う別診断844は元のflight判定を通過（40.7秒）。これだけで環境原因や回帰なしとは断定しない。期限延長・判定緩和・成功するまで再実行は行わず、固定WebKitで重点20件を確認する。
+- 構文・ESLint・main/UI型・runtime依存順は成功。ローカルswapが上限へ達したためブラウザ連続実行を終了。常にbrowser1worker、型検査と同時実行しない。既存の実roll1caseを844/320の独立2caseへ分け、元の送金frame/全owner/再描画・テーマ復帰・ReducedMotion/正本assertは維持し、アート寸法・元カード非被覆を追加。
+
 ## 終盤で欠ける所属名の端への配置
 
 - controlled320×568で11/19施設・5/2ランドマークにすると、自分の名前の98候補がすべて除外され、CPU名だけ表示されることを再現。診断初回の無効カード名/Set.slice誤記はfixture側で修正してから採取し、製品不具合とは区別。

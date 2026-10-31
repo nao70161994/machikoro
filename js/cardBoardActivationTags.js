@@ -16,13 +16,18 @@ const CardBoardActivationTags = (() => {
             tag?.remove();
             tag = null;
         }
+        function onScroll(event) {
+            // The market scrolls inside the table to reveal matching facilities.
+            // That does not move the owned card anchoring this presentation.
+            if (event.target === viewport) clear();
+        }
         function clear() {
             generation++;
             for (const timer of timers) view?.clearTimeout(timer);
             timers.clear();
             removeTag();
             if (listening) {
-                viewport?.removeEventListener('scroll', clear, true);
+                viewport?.removeEventListener('scroll', onScroll, true);
                 view?.removeEventListener('resize', clear);
                 listening = false;
             }
@@ -85,6 +90,18 @@ const CardBoardActivationTags = (() => {
                 for (const color of ['blue', 'green', 'red', 'purple']) {
                     if (card.classList.contains(`cardboard-card-${color}`)) tag.dataset.category = color;
                 }
+                // Reuse the displayed SVG symbol reference; no duplicate card
+                // actions, IDs, or new image fetches belong in this event layer.
+                const originalArt = card.querySelector('.cardboard-art > svg');
+                let art = null;
+                if (originalArt && !originalArt.hasAttribute('id') && !originalArt.querySelector('[id]')) {
+                    art = documentRef.createElement('div');
+                    art.className = 'cardboard-activation-art';
+                    art.setAttribute('aria-hidden', 'true');
+                    const illustration = originalArt.cloneNode(true);
+                    art.appendChild(illustration);
+                    tag.appendChild(art);
+                }
                 const name = documentRef.createElement('strong');
                 name.textContent = group.name;
                 const income = documentRef.createElement('span');
@@ -112,21 +129,49 @@ const CardBoardActivationTags = (() => {
                     tag.appendChild(progress);
                 }
                 container.appendChild(tag);
-                const size = tag.getBoundingClientRect();
                 const inset = 4;
-                const x = Math.max(bounds.left + inset, Math.min(rect.left + rect.width / 2 - size.width / 2,
-                    bounds.right - size.width - inset));
-                const above = rect.top - size.height - 5;
-                const y = Math.max(bounds.top + inset, Math.min(above >= bounds.top + inset ? above : rect.bottom + 5,
-                    bounds.bottom - size.height - inset));
-                tag.style.left = `${x}px`;
-                tag.style.top = `${y}px`;
+                const market = viewport.querySelector('#cardboardCenter');
+                const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
+                    .filter(element => element !== card).map(element => ({ rect: element.getBoundingClientRect(), market: element === market }));
+                const overlap = (left, top, size, target) => Math.max(0, Math.min(left + size.width, target.right) - Math.max(left, target.left)) *
+                    Math.max(0, Math.min(top + size.height, target.bottom) - Math.max(top, target.top));
+                function placement(size) {
+                    const centerX = rect.left + rect.width / 2 - size.width / 2;
+                    const centerY = rect.top + rect.height / 2 - size.height / 2;
+                    const candidates = [
+                        [centerX, rect.top - size.height - 5], [centerX, rect.bottom + 5],
+                        [rect.left - size.width - 5, centerY], [rect.right + 5, centerY],
+                    ].map(([left, top]) => ({
+                        left: Math.max(bounds.left + inset, Math.min(left, bounds.right - size.width - inset)),
+                        top: Math.max(bounds.top + inset, Math.min(top, bounds.bottom - size.height - inset)),
+                    })).map(position => ({ ...position,
+                        sourceOverlap: overlap(position.left, position.top, size, rect),
+                        covered: obstacles.reduce((sum, obstacle) => sum + overlap(position.left, position.top, size, obstacle.rect), 0),
+                        ownedCovered: obstacles.reduce((sum, obstacle) => sum + (obstacle.market ? 0 : overlap(position.left, position.top, size, obstacle.rect)), 0),
+                    }));
+                    candidates.sort((a, b) => a.sourceOverlap - b.sourceOverlap || a.covered - b.covered);
+                    return candidates[0];
+                }
+                let size = tag.getBoundingClientRect();
+                let position = placement(size);
+                // Prefer empty space, including around the market. Income can
+                // briefly take its place; other owned facilities stay protected.
+                if (art && (size.height > bounds.height / 2 || size.width > bounds.width - inset * 2 ||
+                        position.sourceOverlap > 0 || position.ownedCovered > size.width * size.height / 3)) {
+                    art.remove();
+                    art = null;
+                    size = tag.getBoundingClientRect();
+                    position = placement(size);
+                }
+                tag.dataset.presentation = art ? 'illustrated' : 'text';
+                tag.style.left = `${position.left}px`;
+                tag.style.top = `${position.top}px`;
                 // Delayed timer delivery can bunch consecutive steps together.
                 // An older expiry must never remove a newer facility caption.
                 const shownTag = tag;
                 schedule(() => { if (tag === shownTag) removeTag(); }, 600);
             }
-            viewport.addEventListener('scroll', clear, true);
+            viewport.addEventListener('scroll', onScroll, true);
             view.addEventListener('resize', clear);
             listening = true;
             // Reduced motion keeps one static caption rather than cycling cards.
