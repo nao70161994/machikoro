@@ -2,6 +2,10 @@ name: RL Self-play Training
 
 # Manual runs only; avoid unexpected CPU consumption.
 on:
+  # Branch-only smoke trigger; main retains manual-only training.
+  push:
+    branches:
+      - 'run/rl-selfplay-smoke-20261101'
   workflow_dispatch:
     inputs:
       player_count:
@@ -50,12 +54,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 300
     env:
-      PLAYER_COUNT: ${{ inputs.player_count }}
-      GAMES: ${{ inputs.games }}
-      SEED: ${{ inputs.seed }}
-      LEARNING_RATE: ${{ inputs.learning_rate }}
+      PLAYER_COUNT: ${{ inputs.player_count || '2' }}
+      GAMES: ${{ inputs.games || '20' }}
+      SEED: ${{ inputs.seed || '107' }}
+      LEARNING_RATE: ${{ inputs.learning_rate || 'recommended' }}
       RESUME_RUN_ID: ${{ inputs.resume_run_id }}
-      RESUME_ATTEMPT: ${{ inputs.resume_attempt }}
+      RESUME_ATTEMPT: ${{ inputs.resume_attempt || '1' }}
       RUN_LABEL: gha-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -95,7 +99,7 @@ jobs:
           echo "RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
           echo "RL_RATE=$RL_RATE" >> "$GITHUB_ENV"
       - name: Download previous checkpoint artifact
-        if: ${{ inputs.resume_run_id != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.resume_run_id != '' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: rl-training-${{ inputs.resume_run_id }}-${{ inputs.resume_attempt }}
@@ -103,7 +107,7 @@ jobs:
           github-token: ${{ github.token }}
           path: models/rl_model/runs/imported
       - name: Validate checkpoint before resuming
-        if: ${{ inputs.resume_run_id != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.resume_run_id != '' }}
         shell: bash
         run: |
           set -euo pipefail
