@@ -1,7 +1,10 @@
 name: RL Self-play Training
 
-# Manual runs only; avoid unexpected CPU consumption.
+# Isolated one-time 5000-trained-game run; main stays manual only.
 on:
+  push:
+    branches:
+      - 'run/rl-selfplay-to-5000-20261101'
   workflow_dispatch:
     inputs:
       player_count:
@@ -48,14 +51,14 @@ concurrency:
 jobs:
   train:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 355
     env:
-      PLAYER_COUNT: ${{ inputs.player_count }}
-      GAMES: ${{ inputs.games }}
-      SEED: ${{ inputs.seed }}
-      LEARNING_RATE: ${{ inputs.learning_rate }}
-      RESUME_RUN_ID: ${{ inputs.resume_run_id }}
-      RESUME_ATTEMPT: ${{ inputs.resume_attempt }}
+      PLAYER_COUNT: ${{ inputs.player_count || '2' }}
+      GAMES: ${{ inputs.games || '4984' }}
+      SEED: ${{ inputs.seed || '108' }}
+      LEARNING_RATE: ${{ inputs.learning_rate || 'recommended' }}
+      RESUME_RUN_ID: ${{ inputs.resume_run_id || '41232225971' }}
+      RESUME_ATTEMPT: ${{ inputs.resume_attempt || '1' }}
       RUN_LABEL: gha-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -77,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           case "$PLAYER_COUNT" in 2|4) ;; *) exit 2;; esac
-          case "$GAMES" in 20|100|500|1000) ;; *) exit 2;; esac
+          case "$GAMES" in 20|100|500|1000|4984) ;; *) exit 2;; esac
           case "$LEARNING_RATE" in
             recommended)
               if [[ "$PLAYER_COUNT" == 2 ]]; then RL_RATE=0.00002; else RL_RATE=0.00001; fi ;;
@@ -95,29 +98,29 @@ jobs:
           echo "RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
           echo "RL_RATE=$RL_RATE" >> "$GITHUB_ENV"
       - name: Download previous checkpoint artifact
-        if: ${{ inputs.resume_run_id != '' }}
+        if: ${{ env.RESUME_RUN_ID != '' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rl-training-${{ inputs.resume_run_id }}-${{ inputs.resume_attempt }}
-          run-id: ${{ inputs.resume_run_id }}
+          name: rl-training-${{ env.RESUME_RUN_ID }}-${{ env.RESUME_ATTEMPT }}
+          run-id: ${{ env.RESUME_RUN_ID }}
           github-token: ${{ github.token }}
           path: models/rl_model/runs/imported
       - name: Validate checkpoint before resuming
-        if: ${{ inputs.resume_run_id != '' }}
+        if: ${{ env.RESUME_RUN_ID != '' }}
         shell: bash
         run: |
           set -euo pipefail
           test -s models/rl_model/runs/imported/model.progress.npz
           diff -q models/rl_model/runs/imported/player_count.txt "$RUN_DIR/player_count.txt"
-      - name: Self-play training (4 hour budget)
+      - name: Self-play training (330 minute budget)
         shell: bash
         run: |
           set -euo pipefail
           EVAL_EVERY=100
           if (( GAMES < EVAL_EVERY )); then EVAL_EVERY="$GAMES"; fi
           set -- --run-label "$RUN_LABEL" --games "$GAMES" --lr "$RL_RATE" \
-            --seed "$SEED" --eval-every "$EVAL_EVERY" --progress-every 10 \
-            --checkpoint-every 10 --js-eval-games 2 --initial-eval-games 0 \
+            --seed "$SEED" --eval-every "$EVAL_EVERY" --progress-every 100 \
+            --checkpoint-every 8 --js-eval-games 2 --initial-eval-games 0 \
             --eval-random-games 4 --eval-heuristic-games 2 --eval-pool-games 0 \
             --final-eval-random-games 8 --final-eval-heuristic-games 4 \
             --final-eval-pool-games 0 --pool-update-every 0 \
@@ -126,11 +129,11 @@ jobs:
             set -- "$@" --load-checkpoint models/rl_model/runs/imported/model.progress
           fi
           if [[ "$PLAYER_COUNT" == 2 ]]; then
-            timeout --signal=TERM --kill-after=45s 240m \
+            timeout --signal=TERM --kill-after=45s 330m \
               sh scripts/rl/run-self-only-h256-lr2e5-5000.sh "$@" \
               | tee "$RUN_DIR/train.log"
           else
-            timeout --signal=TERM --kill-after=45s 240m \
+            timeout --signal=TERM --kill-after=45s 330m \
               sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh "$@" \
                 --train-batch-size 1 | tee "$RUN_DIR/train.log"
           fi
