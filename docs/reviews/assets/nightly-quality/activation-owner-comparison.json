@@ -1,0 +1,207 @@
+{
+  "scope": "Controlled four-seat forest projection; no real dice roll or coin-flight. Four captions on normal timeline; expiry60s ONLY via screenshot response override. Before7ecac7a4 versus owner-aware position candidate. 320 already unoccluded and unchanged;844 owner no longer covered. Final code also protects visible fallback headings; overlay seats unchanged.",
+  "results": [
+    {
+      "width": 320,
+      "version": "before",
+      "capturedLive": true,
+      "tag": {
+        "x": 97.890625,
+        "y": 197.359375,
+        "width": 214.109375,
+        "height": 79,
+        "top": 197.359375,
+        "right": 312,
+        "bottom": 276.359375,
+        "left": 97.890625
+      },
+      "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+      "presentation": "illustrated",
+      "art": {
+        "x": 112.890625,
+        "y": 204.359375,
+        "width": 100,
+        "height": 65,
+        "top": 204.359375,
+        "right": 212.890625,
+        "bottom": 269.359375,
+        "left": 112.890625
+      },
+      "viewport": {
+        "x": 4,
+        "y": 116,
+        "width": 312,
+        "height": 392,
+        "top": 116,
+        "right": 316,
+        "bottom": 508,
+        "left": 4
+      },
+      "source": {
+        "x": 252.27203369140625,
+        "y": 281.3702697753906,
+        "width": 47.47607421875,
+        "height": 61.25946044921875,
+        "top": 281.3702697753906,
+        "right": 299.74810791015625,
+        "bottom": 342.6297302246094,
+        "left": 252.27203369140625
+      },
+      "sourceCovered": false,
+      "ownerCovered": [],
+      "stateUnchanged": true
+    },
+    {
+      "width": 320,
+      "version": "after",
+      "capturedLive": true,
+      "tag": {
+        "x": 97.890625,
+        "y": 197.359375,
+        "width": 214.109375,
+        "height": 79,
+        "top": 197.359375,
+        "right": 312,
+        "bottom": 276.359375,
+        "left": 97.890625
+      },
+      "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+      "presentation": "illustrated",
+      "art": {
+        "x": 112.890625,
+        "y": 204.359375,
+        "width": 100,
+        "height": 65,
+        "top": 204.359375,
+        "right": 212.890625,
+        "bottom": 269.359375,
+        "left": 112.890625
+      },
+      "viewport": {
+        "x": 4,
+        "y": 116,
+        "width": 312,
+        "height": 392,
+        "top": 116,
+        "right": 316,
+        "bottom": 508,
+        "left": 4
+      },
+      "source": {
+        "x": 252.27203369140625,
+        "y": 281.3702697753906,
+        "width": 47.47607421875,
+        "height": 61.25946044921875,
+        "top": 281.3702697753906,
+        "right": 299.74810791015625,
+        "bottom": 342.6297302246094,
+        "left": 252.27203369140625
+      },
+      "sourceCovered": false,
+      "ownerCovered": [],
+      "stateUnchanged": true
+    },
+    {
+      "width": 844,
+      "version": "before",
+      "capturedLive": true,
+      "tag": {
+        "x": 513.140625,
+        "y": 90.171875,
+        "width": 214.109375,
+        "height": 79,
+        "top": 90.171875,
+        "right": 727.25,
+        "bottom": 169.171875,
+        "left": 513.140625
+      },
+      "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+      "presentation": "illustrated",
+      "art": {
+        "x": 528.140625,
+        "y": 97.171875,
+        "width": 100,
+        "height": 65,
+        "top": 97.171875,
+        "right": 628.140625,
+        "bottom": 162.171875,
+        "left": 528.140625
+      },
+      "viewport": {
+        "x": 4,
+        "y": 68,
+        "width": 836,
+        "height": 262,
+        "top": 68,
+        "right": 840,
+        "bottom": 330,
+        "left": 4
+      },
+      "source": {
+        "x": 600.97021484375,
+        "y": 174.18609619140625,
+        "width": 38.4615478515625,
+        "height": 49.62779235839844,
+        "top": 174.18609619140625,
+        "right": 639.4317626953125,
+        "bottom": 223.8138885498047,
+        "left": 600.97021484375
+      },
+      "sourceCovered": false,
+      "ownerCovered": [
+        "街4"
+      ],
+      "stateUnchanged": true
+    },
+    {
+      "width": 844,
+      "version": "after",
+      "capturedLive": true,
+      "tag": {
+        "x": 600.96875,
+        "y": 228.8125,
+        "width": 214.109375,
+        "height": 79,
+        "top": 228.8125,
+        "right": 815.078125,
+        "bottom": 307.8125,
+        "left": 600.96875
+      },
+      "text": "森林街4 · +1コイン銀行 → 街4施設発動 4 / 4",
+      "presentation": "illustrated",
+      "art": {
+        "x": 615.96875,
+        "y": 235.8125,
+        "width": 100,
+        "height": 65,
+        "top": 235.8125,
+        "right": 715.96875,
+        "bottom": 300.8125,
+        "left": 615.96875
+      },
+      "viewport": {
+        "x": 4,
+        "y": 68,
+        "width": 836,
+        "height": 262,
+        "top": 68,
+        "right": 840,
+        "bottom": 330,
+        "left": 4
+      },
+      "source": {
+        "x": 600.97021484375,
+        "y": 174.18609619140625,
+        "width": 38.4615478515625,
+        "height": 49.62779235839844,
+        "top": 174.18609619140625,
+        "right": 639.4317626953125,
+        "bottom": 223.8138885498047,
+        "left": 600.97021484375
+      },
+      "sourceCovered": false,
+      "ownerCovered": [],
+      "stateUnchanged": true
+    }
+  ]
+}

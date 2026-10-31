@@ -187,3 +187,13 @@ CPU1500ms・非seed、人間席を自動UI操作。物理端末・人間によ�
 [実発動320](assets/nightly-quality/activation-live-320-7ecac.png) / [実発動844](assets/nightly-quality/activation-live-844-7ecac.png)は時間固定しないnative実rollの第4送金付近。独立レビューは森林/街4/+1/銀行→街4/4/4が読め、HUD/操作への被覆なしと評価。320の市場上部、街4のownerラベルはpopupに隠れ、送金bubbleは実カードの一部に重なる。popupにもownerがあるので情報喪失ではないが、元施設との視覚対応と演出の重なりには改善余地。静止画で600msの読み取りや連鎖テンポを保証しない。
 
 [最新1440の実対局勝利画像](assets/nightly-quality/winner-live-1440-7ecac.png)。独立レビューで語内部折返し解消と6枚一列、操作の明瞭さを確認。下端の所有施設はスクロール領域なので全件同時表示の証明にはしない。
+
+## 発動帯と所有者名の位置対応（後続候補）
+
+7ecの実発動画像の独立レビューで、発動帯がownerラベルを覆う点を発見。従来の位置評価は元カードと施設/市場だけを見ていた。元カード→表示中のowner名→その他の被覆面積の順で評価し、元カード辺沿い8候補を追加。overlayがない席では表示中の元見出しも対象にし、opacity0の見出しを除外する。ownerだけで文字fallbackへ戻さず、元のsource/サイズ/所有施設被覆によるfallbackを維持。100×65px・600ms・700ms刻み・取消guardを変えない。
+
+[844前](assets/nightly-quality/activation-owner-844-before.png) / [後](assets/nightly-quality/activation-owner-844-after.png)、[320前](assets/nightly-quality/activation-owner-320-before.png) / [後](assets/nightly-quality/activation-owner-320-after.png)、[測定](assets/nightly-quality/activation-owner-comparison.json)。4人森林の直接投影で4/4を撮影、撮影だけexpiry60秒固定。実roll/送金/600ms体感の証明ではない。844は街4名の被覆→非被覆、320はこの場面では元から非被覆で配置不変。いずれも元カード非被覆・アート100×65px・正本不変。任意場面で全owner非被覆を保証する変更ではない。
+
+既存844/320実rollケースの元判定を保ち、全発動でowner overlay非被覆の確認を追加。ローカルはbrowser1個の固定画像採取のみ実施し、終了後に構文/ESLint/mainUI型をまとめる。native20件と通常CIは後続確認。先行7ecの成功を候補の成功へ読み替えない。
+
+後続候補の構文・ESLint・main/UI型は成功。独立ソースレビューは辞書順と追加候補の安全性を確認し、overlay欠落時の元見出しも保護する補足を反映。追加の独立画像レビューはエージェント利用上限で未実施。実装者自身の844前後確認では街4名と市場見出しが現れ、操作/元カードへの新しい被覆なし。独立画像レビュー済みとは扱わない。

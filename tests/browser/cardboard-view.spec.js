@@ -1536,6 +1536,10 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
                 const artBounds = art?.getBoundingClientRect();
                 window.boardTagRecords.push({ text: node.textContent, pointerEvents: getComputedStyle(node).pointerEvents,
                     presentation: node.dataset.presentation,
+                    ownerCovered: [...document.querySelectorAll('.cardboard-owner-label')].some(label => {
+                        const owner = label.getBoundingClientRect();
+                        return rect.left < owner.right && rect.right > owner.left && rect.top < owner.bottom && rect.bottom > owner.top;
+                    }),
                     artWidth: artBounds?.width || 0, artHeight: artBounds?.height || 0,
                     sourceCovered: rect.left < source.right && rect.right > source.left && rect.top < source.bottom && rect.bottom > source.top,
                     highlightedCards: document.querySelectorAll('#cardboardSeats .cardboard-card.cardboard-resolving').length,
@@ -1634,7 +1638,9 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
         `森林${owner} · +1コイン銀行 → ${owner}施設発動 ${index + 1} / ${owners.length}`));
     expect(tagRecords.every(record => record.contained && record.pointerEvents === 'none')).toBe(true);
     expect(tagRecords.every(record => !record.sourceCovered), JSON.stringify(tagRecords)).toBe(true);
+    expect(tagRecords.every(record => !record.ownerCovered), JSON.stringify(tagRecords)).toBe(true);
     expect(tagRecords.some(record => record.presentation === 'illustrated' && record.artWidth === 100 && record.artHeight === 65), JSON.stringify(tagRecords)).toBe(true);
+    require('fs').writeFileSync(testInfo.outputPath('activation-presentation.json'), JSON.stringify(tagRecords, null, 2));
     await testInfo.attach('activation-presentation', { body: JSON.stringify(tagRecords), contentType: 'application/json' });
     expect(tagRecords.every(record => record.highlightedCards === 1 && record.highlightedOwners === 1)).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('facility-chain-real-card-tags.png') });

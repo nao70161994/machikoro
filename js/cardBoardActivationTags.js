@@ -133,6 +133,10 @@ const CardBoardActivationTags = (() => {
                 const market = viewport.querySelector('#cardboardCenter');
                 const obstacles = Array.from(viewport.querySelectorAll('.cardboard-card, .cardboard-landmark, #cardboardCenter'))
                     .filter(element => element !== card).map(element => ({ rect: element.getBoundingClientRect(), market: element === market }));
+                const ownerLabels = Array.from(viewport.querySelectorAll('.cardboard-owner-label, .cardboard-player-heading'))
+                    .filter(element => view.getComputedStyle(element).opacity !== '0')
+                    .map(element => element.getBoundingClientRect())
+                    .filter(label => label.width > 0 && label.height > 0);
                 const overlap = (left, top, size, target) => Math.max(0, Math.min(left + size.width, target.right) - Math.max(left, target.left)) *
                     Math.max(0, Math.min(top + size.height, target.bottom) - Math.max(top, target.top));
                 function placement(size) {
@@ -141,15 +145,25 @@ const CardBoardActivationTags = (() => {
                     const candidates = [
                         [centerX, rect.top - size.height - 5], [centerX, rect.bottom + 5],
                         [rect.left - size.width - 5, centerY], [rect.right + 5, centerY],
+                        // Shift along the source edge before falling back to a
+                        // caption over its owner. The seat label is the visual
+                        // link between the upright caption and rotated cards.
+                        ...[rect.left, rect.right - size.width].flatMap(left => [
+                            [left, rect.top - size.height - 5], [left, rect.bottom + 5],
+                        ]),
+                        ...[rect.top, rect.bottom - size.height].flatMap(top => [
+                            [rect.left - size.width - 5, top], [rect.right + 5, top],
+                        ]),
                     ].map(([left, top]) => ({
                         left: Math.max(bounds.left + inset, Math.min(left, bounds.right - size.width - inset)),
                         top: Math.max(bounds.top + inset, Math.min(top, bounds.bottom - size.height - inset)),
                     })).map(position => ({ ...position,
                         sourceOverlap: overlap(position.left, position.top, size, rect),
+                        ownerCovered: ownerLabels.reduce((sum, label) => sum + overlap(position.left, position.top, size, label), 0),
                         covered: obstacles.reduce((sum, obstacle) => sum + overlap(position.left, position.top, size, obstacle.rect), 0),
                         ownedCovered: obstacles.reduce((sum, obstacle) => sum + (obstacle.market ? 0 : overlap(position.left, position.top, size, obstacle.rect)), 0),
                     }));
-                    candidates.sort((a, b) => a.sourceOverlap - b.sourceOverlap || a.covered - b.covered);
+                    candidates.sort((a, b) => a.sourceOverlap - b.sourceOverlap || a.ownerCovered - b.ownerCovered || a.covered - b.covered);
                     return candidates[0];
                 }
                 let size = tag.getBoundingClientRect();
