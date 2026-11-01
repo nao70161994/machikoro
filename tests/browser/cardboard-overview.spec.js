@@ -1070,6 +1070,15 @@ test('狭幅でも収支操作は視点移動のスクロールに隠れない',
         if (width === 320) {
             const market = page.locator('[data-cardboard-camera="market"]');
             const self = page.locator('[data-cardboard-camera="self"]');
+            expect(await self.evaluate(element => {
+                const bounds = element.getBoundingClientRect();
+                const clip = document.getElementById('cardboardCameraButtons').getBoundingClientRect();
+                return bounds.left >= clip.left && bounds.right <= clip.right &&
+                    [0.15, 0.5, 0.85].every(fraction =>
+                        document.elementFromPoint(bounds.left + bounds.width * fraction, bounds.top + bounds.height / 2) === element);
+            }), '戻るが有効でも自分ボタンを横スクロールなしで全文表示する').toBe(true);
+            await expect(page.locator('#cardboardMoreMenu > summary')).toHaveAccessibleName('メニュー');
+            await page.screenshot({ path: testInfo.outputPath('receipt-controls-320-market.png') });
             await market.focus();
             await market.press('Tab');
             await expect(self).toBeFocused();

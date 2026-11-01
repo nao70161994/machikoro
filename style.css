@@ -14792,6 +14792,23 @@ html[data-design="cardboard"] #cardboardActionSlot #status.cardboard-docked-stat
 
 @media (max-width: 360px) {
     html[data-design="cardboard"] #cardboardCameraButtons > [data-cardboard-camera="back"]:disabled { display: none; }
+    /* Four camera commands, receipt and help fit without another HUD row.
+       Keep every command's touch size; compact only the secondary menu. */
+    html[data-design="cardboard"] #cardboardCameraTools,
+    html[data-design="cardboard"] #cardboardCameraButtons { gap: 1px; }
+    html[data-design="cardboard"] #cardboardMoreMenu > summary {
+        box-sizing: border-box;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        padding: 4px;
+        font-size: 0;
+    }
+    html[data-design="cardboard"] #cardboardMoreMenu > summary::before {
+        content: "…";
+        font-size: 20px;
+        line-height: 1;
+    }
 }
 
 /* Keep the full result available to assistive technology without covering cards. */
