@@ -13,6 +13,9 @@ test.use({
 test('人間席の実UI操作とCPU弱で開始から結果まで進める', async ({ page }, testInfo) => {
     test.skip(process.env.RUN_UI_PLAYTHROUGH !== '1', '任意実行のUI対局');
     test.setTimeout(25 * 60 * 1000);
+    const playerCountInput = process.env.UI_PLAYTHROUGH_PLAYER_COUNT ?? '2';
+    if (!/^(?:[2-9]|10)$/.test(playerCountInput)) throw new Error('Invalid UI playthrough player count');
+    const playerCount = Number(playerCountInput);
     const stopAfter = Number(process.env.UI_PLAYTHROUGH_STOP_AFTER) || 0;
     if (!Number.isInteger(stopAfter) || stopAfter < 0) throw new Error('Invalid partial action limit');
     const viewportWidth = Number(process.env.UI_PLAYTHROUGH_WIDTH ||
@@ -27,7 +30,7 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
     }
     const started = Date.now();
     const report = { mode: stopAfter ? 'partial-ui-smoke' : 'automated-human-seat-ui',
-        viewport, cpuSpeedMs, completed: false, humanActions: 0, clicks: 0, keyboardActions: 0, cpuWaitMs: 0, actions: [], screenshots: [], pageErrors: [] };
+        viewport, playerCount, cpuSpeedMs, completed: false, humanActions: 0, clicks: 0, keyboardActions: 0, cpuWaitMs: 0, actions: [], screenshots: [], pageErrors: [] };
     const stages = new Set();
     page.on('pageerror', error => report.pageErrors.push(error.message));
     const capture = async stage => {
@@ -246,8 +249,15 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         await page.locator('#designThemeSelect').selectOption('cardboard');
         await click(page.locator('#tabLocal'), 'ローカル対局設定へ');
         await click(page.locator('#customGameSetup > summary'), '対局設定');
+        await expect(page.locator('#playerCount')).toHaveText('2人');
+        for (let count = 2; count < playerCount; count++) {
+            await click(page.locator('[data-ui-action="changeCount"][data-delta="1"][aria-controls="playerCount"]'), 'プレイ人数を増やす');
+            await expect(page.locator('#playerCount')).toHaveText(`${count + 1}人`);
+        }
         await page.locator('[data-ui-change="localPlayerType"][data-player-index="0"]').selectOption('human');
-        await page.locator('[data-ui-change="localPlayerType"][data-player-index="1"]').selectOption('weak');
+        for (let index = 1; index < playerCount; index++) {
+            await page.locator(`[data-ui-change="localPlayerType"][data-player-index="${index}"]`).selectOption('weak');
+        }
         if (cpuSpeedMs !== 1500) {
             const flow = page.locator('#customGameSetup .play-flow-settings > summary');
             await click(flow, 'CPU速度の設定');
@@ -269,8 +279,9 @@ test('人間席の実UI操作とCPU弱で開始から結果まで進める', asy
         lastState = await read();
         expect(lastState.humanIndex).toBeGreaterThanOrEqual(0);
         const lineup = await page.evaluate(() => GameRuntimeState.runtime.snapshot().cpuPlayers.map(cpu => cpu ? cpu.difficulty : 'human'));
+        expect(lineup).toHaveLength(playerCount);
         expect(lineup.filter(kind => kind === 'human')).toHaveLength(1);
-        expect(lineup.filter(kind => kind === 'weak')).toHaveLength(1);
+        expect(lineup.filter(kind => kind === 'weak')).toHaveLength(playerCount - 1);
         await capture('start');
         for (let step = 0; step < 1200; step++) {
             lastState = await read();

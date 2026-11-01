@@ -62,6 +62,21 @@ on:
                 options:
                     - standard
                     - extended
+            ui_player_count:
+                description: Player count for the full UI games (one human seat and remaining weak CPUs)
+                required: false
+                default: '2'
+                type: choice
+                options:
+                    - '2'
+                    - '3'
+                    - '4'
+                    - '5'
+                    - '6'
+                    - '7'
+                    - '8'
+                    - '9'
+                    - '10'
             ui_cpu_speed_ms:
                 description: CPU delay for the full UI games (1500 is the normal product setting)
                 required: true
@@ -158,6 +173,7 @@ jobs:
               env:
                   RUN_UI_PLAYTHROUGH: '1'
                   UI_PLAYTHROUGH_WIDTH: ${{ matrix.viewport_width }}
+                  UI_PLAYTHROUGH_PLAYER_COUNT: ${{ inputs.ui_player_count || '2' }}
                   UI_PLAYTHROUGH_CPU_SPEED: ${{ inputs.ui_cpu_speed_ms || '1500' }}
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
@@ -189,7 +205,7 @@ jobs:
               run: |
                   render_diagnostic_grep='実ロール後の新規建設通知|同じ対局で市場と表示モードを5連続往復|市場の即時再表示は古いcloseイベント|相手正面を移動してから市場で購入|正面の全38施設|高密度4人の再配置|縦持ち2人戦の終盤は所有者名|狭幅でも収支操作|にぎわい広場の勝利カードコレクション|終盤の所属名は端の空白|新しいロールの発動帯'
                   if [ "$RENDER_PROFILE_ONLY" = "true" ]; then
-                      render_diagnostic_grep='新しいロールの発動帯|実ロール後の新規建設通知.*(390|1440)px|同じ対局で市場と表示モードを5連続往復|中央市場を拡大してカードを比較|購入とUndo'
+                      render_diagnostic_grep='新しいロールの発動帯|実ロール後の新規建設通知.*(390|1440)px|同じ対局で市場と表示モードを5連続往復|中央市場を拡大してカードを比較|購入とUndo|狭幅でも収支操作'
                   fi
                   node scripts/diagnostics/run-browser-with-resources.js --output=test-results/construction-resources.jsonl -- npx playwright test cardboard-view.spec.js cardboard-overview.spec.js --grep "$render_diagnostic_grep" --project=mobile-webkit --workers=1 --retries=0 --output=test-results/construction-diagnostic
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
