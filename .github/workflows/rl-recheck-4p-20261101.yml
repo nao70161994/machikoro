@@ -1,0 +1,58 @@
+name: RL Recheck 4p Diversity Candidates
+on:
+  push:
+    branches: [run/rl-diverse-eval-20261101]
+    paths: ['.github/workflows/rl-recheck-4p-20261101.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  evaluate:
+    name: Re-evaluate ${{ matrix.kind }} 4p model
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [four-engine, four-interaction]
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Retrieve already-trained 500-game candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rl-strategy-${{ matrix.kind }}-41269847600
+          run-id: '41269847600'
+          github-token: ${{ github.token }}
+          path: models/rl_model/runs/recheck-${{ matrix.kind }}
+      - name: Evaluate actual 4-player strength, style and head-to-head
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="models/rl_model/runs/recheck-${{ matrix.kind }}"
+          out="artifacts/rl-4p-recheck/${{ matrix.kind }}"
+          mkdir -p "$out"
+          test -s "$src/best_model.browser.json"
+          node scripts/eval-rl-models.js \
+            --model-paths "$src/best_model.browser.json" --games 80 \
+            --seed 20261101 --max-steps 1500 --paired-seats --allow-smoke \
+            --lineups 'rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal' \
+            --format json --output "$out/matched-lineups.json"
+          node scripts/eval-rl-head-to-head.js \
+            --candidate "$src/best_model.browser.json" \
+            --baseline models/rl_model/portfolio/seed103-4p.browser.json \
+            --games 100 --seed 20261101 --max-steps 1500 \
+            --lineups 'candidate,baseline,normal,strong' \
+            --format json --output "$out/vs-adopted.json"
+      - name: Preserve independent 4p evaluation
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rl-4p-verified-${{ matrix.kind }}-${{ github.run_id }}
+          path: artifacts/rl-4p-recheck/${{ matrix.kind }}/
+          if-no-files-found: warn
+          retention-days: 30
