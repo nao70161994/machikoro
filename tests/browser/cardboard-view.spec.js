@@ -1029,6 +1029,19 @@ test(`にぎわい広場の勝利カードコレクション ${viewport.width}px
     await expect(page.locator('.winner-stats-row').first()).toHaveClass(/highlight/);
     await expect(page.locator('.winner-stats-row').first().locator('.winner-result-progress')).toContainText('施設 36枚');
     expect(await page.evaluate(() => turnAnnouncerTimerController.snapshot().timerAttached)).toBe(false);
+    const achievementCaption = page.locator('.winner-card-achievement-caption');
+    await expect(achievementCaption).toHaveText('積み重ねた一枚が、勝利につながりました。');
+    const captionPhrases = await achievementCaption.locator(':scope > span').evaluateAll(elements => elements.map(element => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const lines = new Set(Array.from(range.getClientRects(), rect => Math.round(rect.top)));
+        return { text: element.textContent, lines: lines.size, width: element.getBoundingClientRect().width };
+    }));
+    expect(captionPhrases).toHaveLength(2);
+    for (const phrase of captionPhrases) {
+        expect(phrase.lines, phrase.text).toBe(1);
+        expect(phrase.width).toBeGreaterThan(0);
+    }
     const geometry = await page.evaluate(() => {
         const screen = document.querySelector('.winner-screen').getBoundingClientRect();
         const screenElement = document.querySelector('.winner-screen');

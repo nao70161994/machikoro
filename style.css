@@ -15380,6 +15380,12 @@ html[data-design="cardboard"] #status .winner-card-achievement-caption {
     grid-column: 1 / -1;
     font-size: 12px;
 }
+/* Keep phrases together without preventing wrapping at larger text sizes. */
+html[data-design="cardboard"] #status .winner-card-achievement-caption > span {
+    display: inline-block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
 html[data-design="cardboard"] #status .cardboard-winner-collection .cardboard-cards {
     grid-template-columns: repeat(auto-fit, minmax(min(108px, 100%), 1fr));
     gap: 8px;

@@ -239,3 +239,27 @@ render/RAF診断ラッパーは独立ソースレビュー済み。元handle/thi
 既存2実rollの元name/delay/frame/正本/再生guardを保ち、shadowがkeyframe補間へ戻らないassertを追加。通常CIやDPR3条件を緩和しない。構文/ESLint成功、独立レビューとnative3件で候補を比較する。
 
 83d14bb2の通常Release41300997156と16画面/操作41300997153は成功。工程診断3件の844失敗は別に保持。影候補は独立ソースレビューとnative比較を並行して進め、未検証候補として作業ブランチへ保存する。
+
+## ad5f90f2の固定影候補の実測
+
+[同3件41302816863](https://github.com/nao70161994/machikoro/actions/runs/41302816863)は3成功・retry0・1.0分。[生記録](assets/nightly-quality/render-profile-ad5.json)で320/844の第4送金329/339ms・opacity1、両幅4回owner/source非被覆・100×65アート。keyframeの影補間なしを元name/delayと共に確認。ただしRAF最大gap371/972msは残り、前の失敗との比較で速度改善/根本原因解消/安定化を証明していない。1回の成功を理由に失敗を除外しない。
+
+[実発動320](assets/nightly-quality/activation-static-shadow-320-ad5.png) / [844](assets/nightly-quality/activation-static-shadow-844-ad5.png)。撮影は時間固定しない実roll、取得時刻は同一A/Bではない。独立ソースレビューはcascade/arrival優先/ReducedMotion維持を承認、光が一定/brightness弱化の見た目を別途確認する。通信エラー後に同artifactの全ZIP6.7MBをghで取得しCRC検証、64KB単位で展開した。CI再起動は行わない。
+
+候補の[全Nightly41303280049](https://github.com/nao70161994/machikoro/actions/runs/41303280049)を起動。元の6分割・網羅性照合・高DPRを保持し、重複する重点20件の再実行を挟まない。現在unit/PWA/online/CPU simulation/soak/inventory成功、browser6分割進行中。
+
+## ad5の全件回帰と最新実UI対局
+
+全Nightly41303280049は成功。352件=351初回成功/0retry成功/既存任意UI対局skip1。分割59/59/59/59/58/58、各8.4/8.9/9.9/8.4/9.1/14.0分、全実行ID352件一致。simulation/CPU2〜10/online-soak/unit/PWA/復元も成功。通常Release41302492807・16画面/操作41302492793も成功。元DPR3/期限/opacity/移動frame条件の成功であり、以前の失敗や長いRAF gapを削除していない。
+
+固定影の実roll画像320/844は独立レビューで色/森林アート/金枠の判別性、新たなHUD/下部操作被覆なしを承認。844はowner/市場を避ける。送金bubbleの実カード一部被覆と320の市場被覆は残り、旧画像にもあるため今回固有の退行とは判断しない。静止画からテンポや性能改善は断定しない。
+
+最新4幅の実UI完走を[390/844:41304737355](https://github.com/nao70161994/machikoro/actions/runs/41304737355)と[320/1440:41304760519](https://github.com/nao70161994/machikoro/actions/runs/41304760519)で開始。ad5/CPU1500ms/非seed・人間席自動UI。結果と原寸画像確認は未完了。以降はこの同じ実行を追跡し、機能テストの追加再実行を挟まない。
+
+## ad5の4幅完走結果と独立再レビュー
+
+上記の実UI対局2実行は両方成功。320/390/844/1440の全幅で開始から勝利まで完走し、pageErrorsは全て0。[集計](assets/nightly-quality/ui-playthrough-ad5-summary.json)。最終turnは92/74/46/68、人間席操作246/184/109/201、所要597/627/368/634秒。CPU待ち290/274/145/248秒を含む。非seedの別対局なので幅による速度A/Bとは扱わない。各幅で相手正面への移動と全体復帰を2クリックで行い、ゲーム状態不変・元の倍率/角度への復帰を確認（662/714/773/1218ms）。連続動画ではないdice撮影時刻をアニメーションの滑らかさの証明に使わない。
+
+390/844の14画像、追加320/1440の10画像を独立目視。後者の[記録](ui-playthrough-ad5-image-review.md)。主要操作の重大な重なりは見当たらないが、狭幅終盤の細部判読、名前札の回り込み、特殊効果の文中折返し、結果画面の下方への到達案内は改善余地が残る。物理端末確認ではない。所有一覧の全体縮小だけでは細字を十分に読めない点を未達として保持する。
+
+320の勝利補足文が末尾「た。」だけ折り返す実例を修正。文章を2文節のinline-blockに分け、既存文字サイズと全文を維持。各文節はmax-width:100%とoverflow-wrapで文字拡大時には内部折返しも許す。既存4幅勝利ケースへ実テキストRangeの1行検証を追加し、assert削除や許容値変更は行わない。独立ソースレビュー承認、node構文/diff確認成功。変更後のnative描画検証はこれから実施する。ローカルswap残量が少ないためブラウザを追加起動せず、既存CIでまとめて確認する。
