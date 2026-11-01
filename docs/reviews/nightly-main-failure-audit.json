@@ -6,7 +6,6 @@
     39502306142
   ],
   "distinctFailures": 23,
-  "currentProductCommit": "9c70127b237c2375451818977b8fdeedb3524291",
   "items": [
     {
       "test": "tests/browser/cardboard-market-regression.spec.js › 横卓の5人戦でも自分・比較相手・主要操作を一画面に保つ",
@@ -236,8 +235,9 @@
         }
       ],
       "classification": "製品",
-      "contract": "native dialog内を含むfilter/goal/guide/log排他・focus復帰",
-      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+      "contract": "native dialog内filter/goalと公開操作経由guide/logの排他。focus復帰の全組合せはこの1件の保証ではない",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。",
+      "historicalContractSummary": "native dialog内を含むfilter/goal/guide/log排他・focus復帰"
     },
     {
       "test": "tests/browser/cardboard-market-regression.spec.js › 横卓の発動収支と休業枚数は上席でもカード内に収まる",
@@ -257,8 +257,9 @@
         }
       ],
       "classification": "製品",
-      "contract": "回転カードの収支と休業を別行にし文字Rangeの包含/非重複",
-      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+      "contract": "上席の回転カードにおける収支/休業/出目/名前の要素矩形非重複、countを含む縦包含。文字Rangeや全4方向の保証ではない",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。",
+      "historicalContractSummary": "回転カードの収支と休業を別行にし文字Rangeの包含/非重複"
     },
     {
       "test": "tests/browser/cardboard-purple-results.spec.js › 確定したスタジアムの実収支と発動をカード盤面へ表示する",
@@ -278,8 +279,9 @@
         }
       ],
       "classification": "観測/fixture",
-      "contract": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変",
-      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+      "contract": "GameManagerの実roll/効果処理と正本差額、施設/所有者/相手/金額、plaza→cardboardの2テーマ不変。全4テーマや全選択UIの証明ではない",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。",
+      "historicalContractSummary": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変"
     },
     {
       "test": "tests/browser/cardboard-purple-results.spec.js › 確定したテレビ局の実収支と発動をカード盤面へ表示する",
@@ -299,8 +301,9 @@
         }
       ],
       "classification": "観測/fixture",
-      "contract": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変",
-      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+      "contract": "GameManagerの実roll/効果処理と正本差額、施設/所有者/相手/金額、plaza→cardboardの2テーマ不変。全4テーマや全選択UIの証明ではない",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。",
+      "historicalContractSummary": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変"
     },
     {
       "test": "tests/browser/cardboard-purple-results.spec.js › 確定した出版社の実収支と発動をカード盤面へ表示する",
@@ -320,8 +323,9 @@
         }
       ],
       "classification": "観測/fixture",
-      "contract": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変",
-      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+      "contract": "GameManagerの実roll/効果処理と正本差額、施設/所有者/相手/金額、plaza→cardboardの2テーマ不変。全4テーマや全選択UIの証明ではない",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。",
+      "historicalContractSummary": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変"
     },
     {
       "test": "tests/browser/cardboard-purple-results.spec.js › 確定した公園の実収支と発動をカード盤面へ表示する",
@@ -341,8 +345,9 @@
         }
       ],
       "classification": "観測/fixture",
-      "contract": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変",
-      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+      "contract": "GameManagerの実roll/効果処理と正本差額、施設/所有者/相手/金額、plaza→cardboardの2テーマ不変。全4テーマや全選択UIの証明ではない",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。",
+      "historicalContractSummary": "実roll後の正本差額・施設・所有者・相手・金額・4テーマ不変"
     },
     {
       "test": "tests/browser/cardboard-state-combinations.spec.js › 横持ち更新通知と補助パネル併用でもSELECT_DICEを操作できる",
@@ -444,8 +449,9 @@
         }
       ],
       "classification": "製品",
-      "contract": "長名全文・折返し・scrollWidth/clientWidth・操作領域",
-      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+      "contract": "844×390・特定の長名全文、scrollWidth/clientWidth、コイン文言。文字Range/縦clip/他操作との非重複や任意長名の保証ではない",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。",
+      "historicalContractSummary": "長名全文・折返し・scrollWidth/clientWidth・操作領域"
     },
     {
       "test": "tests/browser/cardboard-view.spec.js › 12の出目では建設候補を市場内の見える位置へ送る ──────",
@@ -468,8 +474,9 @@
         }
       ],
       "classification": "製品/fixture",
-      "contract": "駅→2dice6+6、変換前座標reveal、overflow判定と候補完全可視",
-      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
+      "contract": "駅→2dice6+6、事前に候補が下方ならscrollTop増加、候補の市場/clip祖先/viewport内完全包含",
+      "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。",
+      "historicalContractSummary": "駅→2dice6+6、変換前座標reveal、overflow判定と候補完全可視"
     },
     {
       "test": "tests/browser/cardboard-view.spec.js › 施設比較は多人数の所有状況を横断して読めてゲーム状態を変えない",
@@ -490,5 +497,9 @@
       "contract": "比較初回・全人数・横scroll・focus trap/Escape/呼出元focus・状態不変",
       "verification": "340件planへの選択を確認。最新WebKit結果は別途確認。"
     }
-  ]
+  ],
+  "historicalProductCommit": "9c70127b237c2375451818977b8fdeedb3524291",
+  "currentContractReviewCommit": "4e83cf7a23788c6ffc6047c99f3f3db52540c641",
+  "currentContractReview": "p0-current-coverage-audit.md",
+  "verificationScope": "Original errors/runs and plan340 verification are historical. Current contract summaries below are source-reviewed, not a claim that all original assertions or meanings are unchanged. Current-plan ID coverage and old318 contract correspondence are separate audits. Latest4e runtime results must be inspected independently."
 }

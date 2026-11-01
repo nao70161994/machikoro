@@ -1,11 +1,12 @@
 # 品質Goalの達成確認表
 
-全体検証前の製品候補: `58e35b6d`（最小SVG面と小要素hint、限定4件/画像承認済み）、最新main統合: `83d14bb2`、main `7954fcd1`（RL学習CI #20を取り込み）。以下の先行確定検証対象は`7ecac7a4` / PR #19。**Goal未完了・マージ保留**。
-この表は確認範囲と不足を整理するもので、先行版の成功を最新候補の証明へ読み替えない。
+最新全体検証: `4e83cf7a`（製品コード58e35b6d）。main `7954fcd1` を統合済み。**Goal未完了・マージ保留**。
+通常Release 41330278049・16画面/操作 41330278024 は成功。Nightly 41330282749 は全件照合成功だが **349初回成功＋2再試行成功＋許可済skip1** であり、安定成功条件は未達。実UI4幅は開始から勝利まで完走し、画像を独立レビュー中。後述の7ec等の結果は先行版の履歴であり、最新候補の安定性証明に読み替えない。
+[最新の2件調査・分割方針](nightly-4e-follow-up.md) と [P0契約の独立監査](p0-current-coverage-audit.md) を参照。
 
 |要求|現在の根拠|判定・不足|
 |---|---|---|
-|最新mainと失敗3回を調査|[元mainの23種分類](nightly-main-failure-audit.json)、[一次調査](nightly-table-quality-2026-10-23.md)|旧fixture9、製品/fixture6、製品4、観測/fixture4。分類JSONのcurrentProductCommitは当時の9c70127bで、最新実行結果ではない|
+|最新mainと失敗3回を調査|[元mainの23種分類](nightly-main-failure-audit.json)、[一次調査](nightly-table-quality-2026-10-23.md)|旧fixture9、製品/fixture6、製品4、観測/fixture4。分類JSONのhistoricalProductCommitは当時の9c70127bで、最新実行結果ではない|
 |元318件の網羅性・再現性を維持|case単位6分割、`scripts/nightly-browser-coverage.js`のID和集合照合。1d1153a1の350件実行照合成功|途中終了や欠落を成功にしない。7ecの352件も実行ID和集合が一致|
 |Release/Nightlyが安定成功|[1d全Nightly](https://github.com/nao70161994/machikoro/actions/runs/41169303901):349初回成功/0retry成功/1許可済skip、7.4〜14.4分。490のRelease/16画面/重点18件も成功|7ecの重点20件はretry0・3.5分、Release/16画面/全Nightlyも成功。全352件=351初回成功/0retry成功/1既存許可skip、shard8.1〜16.2分|
 |指定の表示/操作不具合を修復|市場回帰・overview・4テーマ互換・PWA等のケースを維持、詳細は[最新状況](nightly-quality-status.md)|320のカード70px要求は読み取り時のassertを維持。7ecの全件実行でも確認|
@@ -52,3 +53,7 @@ ad5の4幅実UI対局はすべて完走・pageErrors0、各2クリックの相�
 ## 小要素hint候補の段階確認
 
 58eの元4条件はretry0で初回成功、10PNGの独立目視も承認。844のmaxRAF gap576msは残るため、一般的な滑らかさ/根本原因解消の証明ではない。全体CIはこれから実行し、705の1 flaky/重点3失敗や以前の反証を削除しない。マージ保留を維持する。
+
+## 独立P0監査による説明訂正
+
+[P0現行保証範囲](p0-current-coverage-audit.md)を独立監査。70pxは俯瞰から正面閲覧後へ測定時点が変わり、scrollTop>0は事前に下方だった場合だけへ条件化している。現仕様として合理的な変更であっても「元契約が完全同一」と説明しない。元失敗分類JSONの文字Range/4テーマ/長名操作領域など過大な要約を現検査範囲へ訂正し、元表現をhistoricalContractSummaryとして保存した。現planのID和集合照合だけでは旧318契約の意味保存を証明しないため、旧一覧と現一覧の対応を追加確認する。
