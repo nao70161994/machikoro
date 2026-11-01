@@ -103,7 +103,7 @@ jobs:
               --paired-seats --format json --output "$dir/strategy-eval.json"
           else
             node scripts/eval-rl-models.js --model-paths "$dir/best_model.browser.json" \
-              --games 40 --seed 20261101 \
+              --games 80 --seed 20261101 --allow-smoke \
               --lineups 'rl,weak,normal,strong;rl,normal,normal,strong' \
               --paired-seats --format json --output "$dir/strategy-eval.json"
           fi
