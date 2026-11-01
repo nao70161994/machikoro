@@ -11507,6 +11507,14 @@ html[data-design="cardboard"] .cardboard-transfer[data-large="true"] {
     font-size: 16px;
 }
 html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-transfer { border: 2px solid #fff; background: #000; color: #ffeb3b; }
+/* Prepare only the small animated actors, not a surface for the whole table.
+   Their presentation classes/nodes disappear when the roll is cleared. */
+@media (prefers-reduced-motion: no-preference) {
+    html[data-design="cardboard"] body:not(.accessibility-reduced-motion) .cardboard-transfer:not(.cardboard-transfer-static),
+    html[data-design="cardboard"] body:not(.accessibility-reduced-motion) .cardboard-card-activated {
+        will-change: transform, opacity;
+    }
+}
 html[data-design="cardboard"] .cardboard-transfer-static { left: 50%; top: 45%; max-width: calc(100% - 24px); transform: translate(-50%, -50%); white-space: normal; text-align: center; }
 html[data-design="cardboard"] .cardboard-transfer-summary { position: absolute; left: 50%; bottom: 8px; max-width: calc(100% - 24px); max-height: 3.75em; overflow: hidden; transform: translateX(-50%); padding: 4px 8px; border-radius: 6px; background: #fff9e8ee; color: #563a00; font-size: 12px; line-height: 1.25; text-align: left; white-space: pre-line; }
 html[data-design="cardboard"] #cardboardDiceReceipt > .cardboard-transfer-summary { position: static; left: auto; bottom: auto; width: 100%; max-width: none; max-height: 3.75em; margin: 2px 0 0; transform: none; overflow: auto; border: 1px solid #c6a85e; text-align: left; }

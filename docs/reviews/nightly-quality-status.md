@@ -291,3 +291,19 @@ DPR3やdriver queriesが遅延の必要条件だとは言えず、単純にDPR1�
 Release705のbrowser job124853388660を最後まで確認すると、全体successでも元320発動caseが初回失敗/retry1成功で**1 flaky**だった。初回第4送金は144ms/opacity1の次が終了600ms/opacity0で元<500条件に失敗。[失敗生記録](assets/nightly-quality/presentation-failures-705.json)。17/20重点失敗と併せ、CIの緑を安定性の証拠にしない。テスト期限や失敗assertを変更していない。
 
 勝利PNG4幅は独立レビュー承認。[320の修正後画像](assets/nightly-quality/winner-caption-320-705.png)では補足文が「積み重ねた一枚が、」「勝利につながりました。」の2行となり孤立末尾を解消。390/844/1440も全文・句・重なりに新しい問題なし。接続線SVG最小矩形化も独立ソース承認、画面上の端点を維持・Node幾何検証成功。ただしnativeでの性能効果は未測定。次のPushは演出タイミングの追加修正とまとめる。
+
+## 空画面・待機盤面・発動中の切り分け
+
+診断branch2db084edの41309843201を全取得・CRC検証。[生記録](assets/nightly-quality/idle-baseline-2db.json)。Desktop DPR1の対応する844×390条件では、空画面1200msで69frame/max26ms、準備済み盤面で36frame/max91ms（初回観測まで571ms）、発動中38frame/max723ms。空画面だけの常時低fpsでは説明できず、盤面準備/発動の描画も調べる根拠になる。ただし実行順・warmup・runner差が残り、paint箇所を特定した証明ではない。
+
+同実行のモバイル空画面はmeta viewportがなく980×452/実効DPR0.861または2.584だった。アプリの844×390/DPR1または3と直接比較してはいけない。診断branch f12b7248でmeta viewportと実寸/DPR検証を追加。元の製品・回帰テストは変更しない。
+
+次の探索実行41310645320は同mobile3 quietでABBA（hintなし→あり→あり→なし）を比較。移動送金と発動カードだけにwill-change:transform,opacityを診断内CSSで付け、全体卓や他表示を恒久layerにしない。各contextに同じbaselineを置き、元6500ms/第4送金条件は保持。通常CIの置換や許容値緩和ではない。追加hintは製品未採用であり、結果前に改善を宣言しない。
+
+## 小要素だけの描画hint候補
+
+f12b7248/41310645320のABBA診断完了。[生記録](assets/nightly-quality/compositor-hint-abba-f12.json)。全4contextでblank844×390/DPR3の一致を確認、blank75前後frame/max17〜20ms。発動中はnohint1=12frame/maxgap571ms/第4送金212ms、hint2=69/476/238ms、hint3=69/227/180ms、nohint4=53/325/427ms。対照も含め全frame条件成立。hint側のframe数増加は候補を試す根拠だが、先頭caseのwarmupや順序/runner差は除けず、根本原因解消や定量速度向上の証明ではない。
+
+製品候補として、送金表示（static除外）と発動カードにだけwill-change:transform,opacityを付ける。OSのReduced Motionとアプリ設定の両方を除外。盤面全体や無関係なカードを恒久layer化しない。影/見た目/元duration/delay/guardは変えない。独立ソースレビュー承認。追加レイヤーと重なり順への影響は元回帰ケースの実描画で確認する。
+
+通常PRのCIを候補ごとに重複起動しないため、まず別remote候補branchで元2roll+390/1440建設の4件をretry0で確認する。手動render_profile_onlyのsubsetを3→4件へ拡張、既定20件と通常Release/Nightlyは変更しない。YAML/選択一覧を確認済み。合格前にPRbranchへPushせず、未検証候補として扱う。
