@@ -7,6 +7,35 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { webkit, devices, expect } = require('@playwright/test');
 
+async function sampleIdleFrames(page, phase) {
+    return page.evaluate(({ phase, requestedMs }) => new Promise(resolve => {
+        const startedAt = performance.now();
+        const startedDateMs = Date.now();
+        const frames = [];
+        let frameId;
+        const measure = timestamp => {
+            frames.push({ timestamp, at: performance.now(), dateMs: Date.now() });
+            frameId = requestAnimationFrame(measure);
+        };
+        frameId = requestAnimationFrame(measure);
+        setTimeout(() => {
+            cancelAnimationFrame(frameId);
+            const endedAt = performance.now();
+            const gaps = frames.slice(1).map((frame, index) => frame.timestamp - frames[index].timestamp);
+            const observationTimes = [startedAt, ...frames.map(frame => frame.at), endedAt];
+            const observationGaps = observationTimes.slice(1).map((at, index) => at - observationTimes[index]);
+            resolve({ phase, requestedMs, startedAt, endedAt, startedDateMs, endedDateMs: Date.now(),
+                timeOrigin: performance.timeOrigin, actualElapsedMs: endedAt - startedAt,
+                timerDelayMs: endedAt - startedAt - requestedMs,
+                frameCount: frames.length, maxRafGapMs: gaps.length ? Math.max(...gaps) : null,
+                maxObservationGapMs: Math.max(...observationGaps), frames,
+                url: location.href, dpr: devicePixelRatio,
+                viewport: { width: innerWidth, height: innerHeight },
+                visibility: document.visibilityState });
+        }, requestedMs);
+    }), { phase, requestedMs: 1200 });
+}
+
 async function armRoll(page) {
     return page.evaluate(() => {
         window.rollProbeTags = [];
@@ -63,7 +92,7 @@ async function armRoll(page) {
     });
 }
 
-async function observe(browser, profile) {
+async function observe(browser, profile, idleBaseline) {
     const { defaultBrowserType: _browserType, ...device } = devices[profile.desktop ? 'Desktop Safari' : 'iPhone 13'];
     const context = await browser.newContext({ ...device,
         deviceScaleFactor: profile.dpr, serviceWorkers: 'block', reducedMotion: 'no-preference' });
@@ -72,6 +101,7 @@ async function observe(browser, profile) {
         const pageErrors = [];
         page.on('pageerror', error => pageErrors.push(error.message));
         await page.setViewportSize({ width: 844, height: 390 });
+        const baselines = idleBaseline ? { blank: await sampleIdleFrames(page, 'about:blank') } : null;
         await page.addInitScript(() => localStorage.setItem('machikoroDesignTheme', 'cardboard'));
         await page.route('https://pagead2.googlesyndication.com/**', route => route.fulfill({ status: 200, body: '' }));
         await page.goto('http://127.0.0.1:3210', { timeout: 45000 });
@@ -91,6 +121,7 @@ async function observe(browser, profile) {
         });
         await page.evaluate(() => document.fonts.ready);
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        if (idleBaseline) baselines.board = await sampleIdleFrames(page, 'prepared-board');
         const metadata = await armRoll(page);
         // Query assertions are observations here: their failures are preserved
         // as data and do not replace the unchanged release/nightly verdicts.
@@ -116,7 +147,7 @@ async function observe(browser, profile) {
             return { tags: window.rollProbeTags, dice: game.lastDiceResult, phase: game.phase,
                 players: game.players.map(player => ({ name: player.name, coins: player.coins })) };
         });
-        return { profile, metadata, sample, result, pageErrors, observationError,
+        return { profile, metadata, baselines, sample, result, pageErrors, observationError,
             setupValid: metadata.dpr === profile.dpr && result.dice === 5 &&
                 result.players.length === 4 && result.players.every(player => player.coins === 31) && pageErrors.length === 0,
             originalFrameCondition: sample.elapsedMs < 500 && sample.opacity > 0.5 };
@@ -128,6 +159,9 @@ async function main() {
     if (!output) throw new Error('--output=FILE is required');
     const order = process.argv.find(argument => argument.startsWith('--order='))?.slice(8) || 'forward';
     if (!['forward', 'reverse'].includes(order)) throw new Error('--order must be forward or reverse');
+    const idleBaselineOption = process.argv.find(argument => argument.startsWith('--idle-baseline='))?.slice(16) || 'false';
+    if (!['true', 'false'].includes(idleBaselineOption)) throw new Error('--idle-baseline must be true or false');
+    const idleBaseline = idleBaselineOption === 'true';
     let server;
     let browser;
     try {
@@ -151,13 +185,14 @@ async function main() {
         ];
         if (order === 'reverse') profiles.reverse();
         for (const profile of profiles) {
-            try { results.push(await observe(browser, profile)); }
+            try { results.push(await observe(browser, profile, idleBaseline)); }
             catch (error) { results.push({ profile, error: error.message }); }
         }
         await fs.mkdir(path.dirname(output), { recursive: true });
         await fs.writeFile(output, JSON.stringify({
             scope: 'Exploratory controlled forest roll, not a replacement for release/nightly or complete UI games. Sequential profiles have order/warmup bias; frame failures are data, not suppressed regression assertions.',
-            browser: browser.version(), order, results,
+            baselineScope: 'Optional 1200ms requested blank and prepared-board RAF windows. Timers may run late; actual elapsed and gaps are recorded. Baseline sampling may warm up the browser and confound comparisons with runs without baselines; blank/idle/active comparisons do not establish causality.',
+            browser: browser.version(), order, idleBaseline, results,
         }, null, 2));
         // The artifact contains observed conditions including failures. Success
         // means the diagnostic completed, never that every frame was correct.

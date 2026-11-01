@@ -47,6 +47,11 @@ on:
                 options:
                     - forward
                     - reverse
+            observation_idle_baseline:
+                description: Add blank and prepared-board RAF samples; may warm up the browser
+                required: true
+                default: false
+                type: boolean
             render_profile_only:
                 description: With construction diagnostics, profile only existing two activation cases and 1440px construction
                 required: true
@@ -230,7 +235,8 @@ jobs:
             - name: Observe query traffic and density without changing regression gates
               env:
                   OBSERVATION_PROFILE_ORDER: ${{ inputs.observation_profile_order || 'forward' }}
-              run: node scripts/diagnostics/run-browser-with-resources.js --output=test-results/observation-resources.jsonl -- node scripts/diagnostics/profile-cardboard-observation.js --output=test-results/observation-profiles.json --order="$OBSERVATION_PROFILE_ORDER"
+                  OBSERVATION_IDLE_BASELINE: ${{ inputs.observation_idle_baseline || false }}
+              run: node scripts/diagnostics/run-browser-with-resources.js --output=test-results/observation-resources.jsonl -- node scripts/diagnostics/profile-cardboard-observation.js --output=test-results/observation-profiles.json --order="$OBSERVATION_PROFILE_ORDER" --idle-baseline="$OBSERVATION_IDLE_BASELINE"
             - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
               if: always()
               with:
