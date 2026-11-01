@@ -1,0 +1,140 @@
+name: RL Natural Diversity - Fixed Reward Multi Seed
+# This run is isolated from main. No automatic promotion.
+on:
+  push:
+    branches: [run/rl-natural-seed-diversity-20261101]
+    paths: ['.github/workflows/rl-natural-diversity-run-20261101.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  train:
+    name: ${{ matrix.group }} seed ${{ matrix.seed }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - {group: 2p, players: 2, games: 5000, rate: '0.00002', seed: 72}
+          - {group: 2p, players: 2, games: 5000, rate: '0.00002', seed: 73}
+          - {group: 2p, players: 2, games: 5000, rate: '0.00002', seed: 74}
+          - {group: 2p, players: 2, games: 5000, rate: '0.00002', seed: 75}
+          - {group: 2p, players: 2, games: 5000, rate: '0.00002', seed: 76}
+          - {group: 2p, players: 2, games: 5000, rate: '0.00002', seed: 77}
+          - {group: 4p, players: 4, games: 2000, rate: '0.00001', seed: 104}
+          - {group: 4p, players: 4, games: 2000, rate: '0.00001', seed: 105}
+          - {group: 4p, players: 4, games: 2000, rate: '0.00001', seed: 106}
+    env:
+      GROUP: ${{ matrix.group }}
+      PLAYERS: ${{ matrix.players }}
+      GAMES: ${{ matrix.games }}
+      RATE: ${{ matrix.rate }}
+      SEED: ${{ matrix.seed }}
+      RUN_LABEL: natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/rl/requirements-ci.txt
+      - name: Install dependencies
+        run: |
+          npm ci
+          pip install -r scripts/rl/requirements-ci.txt
+      - name: Natural self-play without strategy shaping
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="models/rl_model/runs/$RUN_LABEL"
+          mkdir -p "$dir"
+          printf 'experiment=natural-diversity-v1\ngroup=%s\nplayers=%s\ngames=%s\nlr=%s\nseed=%s\nopponents=self=1\nreward=standard-terminal-capped\nimitation=0\nwarm_start=none\n' \
+            "$GROUP" "$PLAYERS" "$GAMES" "$RATE" "$SEED" > "$dir/experiment.txt"
+          set -- --run-label "$RUN_LABEL" --games "$GAMES" \
+            --seed "$SEED" --lr "$RATE" --hidden 256 \
+            --train-opponents self=1 --self-learn-both-sides \
+            --eval-every 250 --checkpoint-every 25 --progress-every 50 \
+            --best-checkpoint-top-k 3 --restore-best-at-end \
+            --js-eval-games 4 --initial-eval-games 0 \
+            --eval-random-games 4 --eval-heuristic-games 2 --eval-pool-games 0 \
+            --final-eval-random-games 8 --final-eval-heuristic-games 4 \
+            --final-eval-pool-games 0 --pool-update-every 0 \
+            --max-steps 1200 --eval-max-steps 1200 \
+            --imitation-games 0 --imitation-refresh-games 0 \
+            --reward-coin 0 --reward-opp-coin 0 \
+            --reward-asset 0 --reward-opp-asset 0 \
+            --reward-landmark 0 --reward-opp-landmark 0 \
+            --reward-interaction-build 0 --reward-harbor-build 0 \
+            --reward-engine-build 0 --build-pass-affordable-penalty 0 \
+            --loss-episode-replay-probability 0 \
+            --reward-clip 0 --terminal-win 1.0 --terminal-loss -1.0 \
+            --terminal-draw -0.2 --terminal-landmark-diff 0 \
+            --terminal-landmark-value-diff 0.004 \
+            --terminal-asset-diff 0.002 --terminal-coin-diff 0.001 \
+            --terminal-diff-clip 20
+          if [[ "$PLAYERS" == 2 ]]; then
+            timeout --signal=TERM --kill-after=45s 250m \
+              sh scripts/rl/run-self-only-h256-lr2e5-5000.sh "$@" \
+              | tee "$dir/train.log"
+          else
+            timeout --signal=TERM --kill-after=45s 250m \
+              sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh "$@" \
+                --player-count 4 --train-batch-size 1 \
+              | tee "$dir/train.log"
+          fi
+      - name: Independent evaluation: best ranks and latest weights
+        shell: bash
+        timeout-minutes: 60
+        run: |
+          set -euo pipefail
+          dir="models/rl_model/runs/$RUN_LABEL"
+          paths=()
+          for file in best_model.browser.json best_model.top2.browser.json best_model.top3.browser.json model.progress.browser.json; do
+            if [[ -s "$dir/$file" ]]; then paths+=("$dir/$file"); fi
+          done
+          if (( ${#paths[@]} == 0 )); then echo "No model to evaluate" >&2; exit 1; fi
+          model_paths="$(IFS=,; echo "${paths[*]}")"
+          if [[ "$PLAYERS" == 2 ]]; then
+            node scripts/eval-rl-models.js \
+              --model-paths "$model_paths" --games 100 \
+              --seed 20261101 --max-steps 1500 --paired-seats \
+              --opponents weak,normal,strong \
+              --format json --output "$dir/independent-evaluation.json"
+          else
+            node scripts/eval-rl-models.js \
+              --model-paths "$model_paths" --games 80 \
+              --seed 20261101 --max-steps 1500 --paired-seats \
+              --lineups 'rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal' \
+              --format json --output "$dir/independent-evaluation.json"
+          fi
+      - name: Summarize
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          dir="models/rl_model/runs/$RUN_LABEL"
+          echo "## Natural strategy emergence — $RUN_LABEL" >> "$GITHUB_STEP_SUMMARY"
+          echo "Same reward structure per player count, seed=$SEED, $GAMES games; no strategy-specific purchase bonuses." >> "$GITHUB_STEP_SUMMARY"
+          if [[ -s "$dir/model.progress.npz" ]]; then
+            echo "Checkpoint saved. Models not added to production." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Preserve candidate, progress checkpoint and strategy statistics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}
+          path: |
+            models/rl_model/runs/natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/experiment.txt
+            models/rl_model/runs/natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/best_model*.browser.json
+            models/rl_model/runs/natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/best_model.npz
+            models/rl_model/runs/natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/model.progress.*
+            models/rl_model/runs/natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/train_metrics.csv
+            models/rl_model/runs/natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/summary.json
+            models/rl_model/runs/natural-${{ matrix.group }}-seed${{ matrix.seed }}-${{ github.run_id }}/independent-evaluation.json
+          retention-days: 14
+          if-no-files-found: warn
