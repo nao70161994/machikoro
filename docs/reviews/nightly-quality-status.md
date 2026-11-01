@@ -209,3 +209,23 @@ CPU1500ms・非seed、人間席を自動UI操作。物理端末・人間によ�
 668ed718の通常Release [41189004547](https://github.com/nao70161994/machikoro/actions/runs/41189004547)は成功。16画面ジョブ41189004543は継続中。描画空白は原JS callbackの時間と同時刻のCPU/memory pressure・cgroup throttlingを診断専用ジョブで500ms毎に記録して切り分ける。Linux counterが読めない場合はnullを残し、同時1sample・callback最大100件・ファイル出力でメモリを制限。childコマンドのexit statusを維持することをローカルで終了code7のコマンドにより確認（3行のJSONL、ラッパーもcode7）。新規製品機能やテスト緩和ではない。通常Release/16画面の元実行が終わるまでPushを控え、途中取消を避ける。
 
 668ed718の16画面/表示操作 [41189004543](https://github.com/nao70161994/machikoro/actions/runs/41189004543)も成功。通常Releaseと併せて結果確定。重点20件の2失敗は別に保持する。診断コードの独立レビューで、採取障害によるchild終了コード上書き・直接childだけへのsignal転送・100件以降の計測継続を指摘され、child結果優先・POSIX process groupへ転送・100件以降はnative timerへ戻すよう修正。終了code0/7とSIGTERM143のsmoke成功、構文/ESLint成功。観測負荷はゼロではないため、圧力/処理時間の相関だけで原因確定とはしない。
+
+## DPRと代表端末条件の確認
+
+`mobile-webkit`は全viewportへiPhone13のDPR3を適用している。native320発動画像960×1704、844は2532×1170、1440×900実対局画像は4320×2700とPNGヘッダで確認。1440の約1166万pixelはDPR1の9倍。ただしこの事実だけで描画空白の原因とは確定しない。
+
+独立レビューはPC代表条件としてDesktop Safari/DPR1を追加する妥当性を支持したが、元DPR3の置換による成功扱いを否定。必要な比較は同じiPhone設定でDPRだけ1にした条件と、Desktop Safari/DPR1を分ける。元の高DPR・期限・opacity・動作frame条件は保持する。現時点では比較未実行で、現在のresource/JS時間診断41190117722の結果を優先する。
+
+## ceadc4e2の診断結果と採用しなかった旧景観省略案
+
+[重点WebKit41190117722](https://github.com/nao70161994/machikoro/actions/runs/41190117722)は20成功・retry0・5.8分。[記録](assets/nightly-quality/native-resources-cead.json)では4CPU/noCPUquota、692sample、採取最大19ms、throttle/OOM kill増分0。CPU pressure some avg10は1.57〜37.99%、memoryは最大1.84%。これは成功時の実行記録であり、先行失敗の原因解消や環境原因の証明ではない。
+
+320/844のcaption show callbackは6〜18ms、第4送金は394/203ms・opacity1で元判定成功、両幅4回ともowner/source非被覆・100×65px。一方600ms後のroll解決callbackは363/391ms、成功時にもRAF最大gap548/914msが残る。さらにcallback/描画の内訳が必要。通常Release41190118504も成功、16画面41190118369は継続中。
+
+[旧景観省略の採用しなかった比較](assets/nightly-quality/hidden-town-rejected.json)はTermux Chromium/DPR1・controlled4人/各12施設。cardboardの非表示legacy街景観を作らない案はDOM879→95要素だが、renderPlayers5回の時間はbefore265〜1001ms/after299〜1092msで改善を証明できなかった。helper自体はbefore0.4〜0.7ms。theme-changeは全renderPlayersを再実行しないため、切替後の街景観が欠ける退行も見つかった。UI候補と追加assertは撤回し、元の製品・テストを保持する。既存assertの削除や許容値変更ではない。ローカルswapが上限へ達したため追加ブラウザ比較は行わない。ゲーム正本は4テーマ切替で不変、pageErrorsなしだが、表示互換性の退行は採用理由にしない。
+
+次の診断差分は2つの既存実rollケースだけで、render/_render/renderPlayers/renderBuildMenu等の内訳とRAF callback処理時間を各最大100件記録する。native callbackの引数/this/handle・呼出順・例外を維持し、上限以降は計測しない。render時間は入れ子を含むため合計して全体時間にしない。新規ゲームテストや期限変更はなく、元の判定を通るまで繰り返す用途ではない。採用しなかった景観案は製品へ残さない。
+
+render/RAF診断ラッパーは独立ソースレビュー済み。元handle/this/引数/順序/例外を保つ一方、事前に捕捉された参照は計測されない場合があるため、記録なしを未実行としない。診断専用workflowへ任意のrender_profile_onlyを追加し、既存の発動844/320と建設1440の3件だけを選べるようにした。既定falseの20件・通常PR/全Nightlyの範囲とassertを維持し、原因特定時の待ち時間を減らす。
+
+最新main再確認で7954fcd1（RL学習CI #20）を検出。a265ca7eからの差分はRL workflow/README/専用docs/専用unit/テスト一覧の5ファイルで、ゲーム画面・ルールは変更なし。新しいテスト登録を保って作業ブランチへ取り込む。上記既存CIの証明対象は取り込み前のcommitであり、統合後の成功へ読み替えない。render_profile_onlyの--listは元の3件だけ選択することを確認、workflow YAML parseと抽出shellのsh -n、構文/ESLintも成功。

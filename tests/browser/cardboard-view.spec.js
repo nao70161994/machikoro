@@ -1527,6 +1527,40 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
         document.getElementById('cardboardEventDetails').open = false;
         window.boardTagRecords = [];
         window.activationTimerTasks = [];
+        window.activationRenderTasks = [];
+        window.activationFrameTasks = [];
+        // Attribute the slow roll-resolution task without changing rendering
+        // order or skipping any existing render phase.
+        for (const name of ['render', '_render', 'renderPlayers', 'renderBuildMenu',
+            'renderActiveGameState', 'renderLog', 'renderDiceChoose', 'renderPending']) {
+            const original = window[name];
+            if (typeof original !== 'function') continue;
+            window[name] = function(...args) {
+                if (window.activationRenderTasks.length >= 100) return original.apply(this, args);
+                const started = performance.now();
+                try { return original.apply(this, args); }
+                finally {
+                    if (window.activationRenderTasks.length < 100) window.activationRenderTasks.push({
+                        name, started, duration: performance.now() - started,
+                    });
+                }
+            };
+        }
+        const originalRequestAnimationFrame = window.requestAnimationFrame;
+        window.requestAnimationFrame = function(callback) {
+            if (typeof callback !== 'function' || window.activationFrameTasks.length >= 100) return originalRequestAnimationFrame.call(window, callback);
+            return originalRequestAnimationFrame.call(window, function(timestamp) {
+                if (window.activationFrameTasks.length >= 100) return callback.call(this, timestamp);
+                const started = performance.now();
+                try { return callback.call(this, timestamp); }
+                finally {
+                    if (window.activationFrameTasks.length < 100) window.activationFrameTasks.push({
+                        started, duration: performance.now() - started, timestamp,
+                        callback: callback.name || 'anonymous',
+                    });
+                }
+            });
+        };
         const originalSetTimeout = window.setTimeout;
         window.setTimeout = function(callback, delay, ...args) {
             if (typeof callback !== 'function' || window.activationTimerTasks.length >= 100) return originalSetTimeout.call(window, callback, delay, ...args);
@@ -1614,6 +1648,7 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
     require('fs').writeFileSync(testInfo.outputPath('activation-presentation.json'), JSON.stringify(await page.evaluate(() => ({
         at: Date.now(), timeOrigin: performance.timeOrigin,
         records: window.boardTagRecords, timerTasks: window.activationTimerTasks,
+        renderTasks: window.activationRenderTasks, frameTasks: window.activationFrameTasks,
     })), null, 2));
     await page.screenshot({ path: testInfo.outputPath('facility-chain-live-step-4.png') });
     require('fs').writeFileSync(testInfo.outputPath('facility-chain-flight-sample.json'), JSON.stringify(sample, null, 2));
