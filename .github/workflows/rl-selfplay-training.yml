@@ -1,0 +1,176 @@
+name: RL Self-play Training
+
+# Manual runs only; avoid unexpected CPU consumption.
+on:
+  workflow_dispatch:
+    inputs:
+      player_count:
+        description: 'Player count'
+        required: true
+        type: choice
+        options: ['2', '4']
+        default: '2'
+      games:
+        description: 'Additional self-play games'
+        required: true
+        type: choice
+        options: ['20', '100', '500', '1000']
+        default: '100'
+      learning_rate:
+        description: 'recommended: 2e-5 (2p), 1e-5 (4p)'
+        required: true
+        type: choice
+        options: [recommended, '0.00002', '0.00001', '0.000005', '0.000001']
+        default: recommended
+      seed:
+        description: 'Experiment seed (1 to 999999999)'
+        required: true
+        type: string
+        default: '107'
+      resume_run_id:
+        description: 'Previous training run ID (optional)'
+        required: false
+        type: string
+      resume_attempt:
+        description: 'Previous attempt, usually 1'
+        required: true
+        type: string
+        default: '1'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: rl-selfplay-training
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      PLAYER_COUNT: ${{ inputs.player_count }}
+      GAMES: ${{ inputs.games }}
+      SEED: ${{ inputs.seed }}
+      LEARNING_RATE: ${{ inputs.learning_rate }}
+      RESUME_RUN_ID: ${{ inputs.resume_run_id }}
+      RESUME_ATTEMPT: ${{ inputs.resume_attempt }}
+      RUN_LABEL: gha-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/rl/requirements-ci.txt
+      - name: Install dependencies
+        run: |
+          npm ci
+          pip install -r scripts/rl/requirements-ci.txt
+      - name: Validate inputs and prepare run directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$PLAYER_COUNT" in 2|4) ;; *) exit 2;; esac
+          case "$GAMES" in 20|100|500|1000) ;; *) exit 2;; esac
+          case "$LEARNING_RATE" in
+            recommended)
+              if [[ "$PLAYER_COUNT" == 2 ]]; then RL_RATE=0.00002; else RL_RATE=0.00001; fi ;;
+            0.00002|0.00001|0.000005|0.000001) RL_RATE="$LEARNING_RATE" ;;
+            *) exit 2 ;;
+          esac
+          [[ "$SEED" =~ ^[0-9]{1,9}$ ]] || exit 2
+          [[ "$RESUME_ATTEMPT" =~ ^[1-9][0-9]{0,4}$ ]] || exit 2
+          [[ -z "$RESUME_RUN_ID" || "$RESUME_RUN_ID" =~ ^[1-9][0-9]{0,17}$ ]] || exit 2
+          RUN_DIR="models/rl_model/runs/$RUN_LABEL"
+          mkdir -p "$RUN_DIR"
+          printf '%s\n' "$PLAYER_COUNT" > "$RUN_DIR/player_count.txt"
+          printf '%s\n' "$RL_RATE" > "$RUN_DIR/learning_rate.txt"
+          printf '%s\n' "$SEED" > "$RUN_DIR/seed.txt"
+          echo "RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
+          echo "RL_RATE=$RL_RATE" >> "$GITHUB_ENV"
+      - name: Download previous checkpoint artifact
+        if: ${{ inputs.resume_run_id != '' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rl-training-${{ inputs.resume_run_id }}-${{ inputs.resume_attempt }}
+          run-id: ${{ inputs.resume_run_id }}
+          github-token: ${{ github.token }}
+          path: models/rl_model/runs/imported
+      - name: Validate checkpoint before resuming
+        if: ${{ inputs.resume_run_id != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s models/rl_model/runs/imported/model.progress.npz
+          diff -q models/rl_model/runs/imported/player_count.txt "$RUN_DIR/player_count.txt"
+      - name: Self-play training (4 hour budget)
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVAL_EVERY=100
+          if (( GAMES < EVAL_EVERY )); then EVAL_EVERY="$GAMES"; fi
+          set -- --run-label "$RUN_LABEL" --games "$GAMES" --lr "$RL_RATE" \
+            --seed "$SEED" --eval-every "$EVAL_EVERY" --progress-every 10 \
+            --checkpoint-every 10 --js-eval-games 2 --initial-eval-games 0 \
+            --eval-random-games 4 --eval-heuristic-games 2 --eval-pool-games 0 \
+            --final-eval-random-games 8 --final-eval-heuristic-games 4 \
+            --final-eval-pool-games 0 --pool-update-every 0 \
+            --max-steps 1200 --eval-max-steps 1200
+          if [[ -n "$RESUME_RUN_ID" ]]; then
+            set -- "$@" --load-checkpoint models/rl_model/runs/imported/model.progress
+          fi
+          if [[ "$PLAYER_COUNT" == 2 ]]; then
+            timeout --signal=TERM --kill-after=45s 240m \
+              sh scripts/rl/run-self-only-h256-lr2e5-5000.sh "$@" \
+              | tee "$RUN_DIR/train.log"
+          else
+            timeout --signal=TERM --kill-after=45s 240m \
+              sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh "$@" \
+                --train-batch-size 1 | tee "$RUN_DIR/train.log"
+          fi
+      - name: Post-training JS CPU comparison (smoke, not promotion)
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          if [[ "$PLAYER_COUNT" == 2 ]]; then
+            sh scripts/rl/eval-run.sh "$RUN_LABEL" 20 weak,normal,strong \
+              | tee "$RUN_DIR/js-evaluation.log"
+          else
+            sh scripts/rl/eval-run-4p.sh "$RUN_LABEL" 20 \
+              | tee "$RUN_DIR/js-evaluation.log"
+          fi
+      - name: Summarize progress
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          {
+            echo "## RL Self-play Training"
+            echo "- Run: $RUN_LABEL"
+            echo "- Players: $PLAYER_COUNT; requested additional games: $GAMES"
+            echo "- Learning rate: $RL_RATE; seed: $SEED"
+            echo "- Resume source run ID: $RESUME_RUN_ID"
+            echo "- Artifact: rl-training-${{ github.run_id }}-${{ github.run_attempt }}"
+            if [[ -s "$RUN_DIR/model.progress.npz" ]]; then
+              echo "- Resumable progress checkpoint saved"
+            else
+              echo "- No progress checkpoint saved"
+            fi
+            if [[ -s "$RUN_DIR/best_model.browser.json" ]]; then
+              echo "- Candidate browser model produced; not auto-deployed"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload checkpoints and results even on failure
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rl-training-${{ github.run_id }}-${{ github.run_attempt }}
+          path: models/rl_model/runs/gha-${{ github.run_id }}-${{ github.run_attempt }}/
+          retention-days: 30
+          if-no-files-found: error

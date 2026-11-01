@@ -312,6 +312,8 @@ npm run train-expert-crowd -- --games 3 --rounds 4 --candidates 4 --seed 17 --pr
 
 ## RL 学習
 
+GitHub Actions で2人戦・4人戦の自己対戦学習を手動実行し、チェックポイントから継続できます。操作手順と評価・採用基準は [GitHub Actions RL学習ガイド](docs/RL_GITHUB_ACTIONS_TRAINING.md) を参照してください。学習成果物は自動採用しません。
+
 `expert` とは別に、`scripts/rl` 配下で RL 学習系を管理しています。現状は 2 人戦と多人数戦の学習・評価基盤が中心で、既存 `expert` を置き換えるのではなく、新しい CPU として段階的に導入する前提です。
 
 主な流れ:
