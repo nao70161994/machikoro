@@ -1,0 +1,131 @@
+name: RL Natural Candidates - Heldout Promotion Comparison
+on:
+  push:
+    branches: [run/rl-natural-candidate-comparison-20261102]
+    paths: ['.github/workflows/rl-natural-candidates-heldout-20261102.yml']
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  heldout:
+    name: ${{ matrix.name }} independent evaluation
+    runs-on: ubuntu-latest
+    timeout-minutes: 270
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - {name: '2p-seed72', players: 2, artifact: 'natural-2p-seed72-41281719490', checkpoint: 'best_model.browser.json'}
+          - {name: '2p-seed73', players: 2, artifact: 'natural-2p-seed73-41281719490', checkpoint: 'best_model.top3.browser.json'}
+          - {name: '2p-seed76', players: 2, artifact: 'natural-2p-seed76-41281719490', checkpoint: 'best_model.top2.browser.json'}
+          - {name: '4p-seed104', players: 4, artifact: 'natural-4p-seed104-41281719490', checkpoint: 'best_model.browser.json'}
+          - {name: '4p-seed106', players: 4, artifact: 'natural-4p-seed106-41281719490', checkpoint: 'best_model.browser.json'}
+    env:
+      LABEL: ${{ matrix.name }}
+      PLAYER_COUNT: ${{ matrix.players }}
+      CHECKPOINT: ${{ matrix.checkpoint }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Restore archived natural-learning checkpoint
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ matrix.artifact }}
+          run-id: '41281719490'
+          github-token: ${{ github.token }}
+          path: artifacts/natural-heldout/imported/${{ matrix.name }}
+      - name: Validate source and checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="artifacts/natural-heldout/imported/$LABEL"
+          test -s "$dir/$CHECKPOINT"
+          test -s "$dir/experiment.txt"
+          test -s "$dir/independent-evaluation.json"
+          echo "Original training metadata:"
+          cat "$dir/experiment.txt"
+          node - "$dir/independent-evaluation.json" "$CHECKPOINT" <<'NODE'
+          const fs=require('fs');
+          const [file,checkpoint]=process.argv.slice(2);
+          const models=JSON.parse(fs.readFileSync(file,'utf8'));
+          const selected=models.find(m=>m.path.endsWith('/'+checkpoint));
+          if (!selected) throw Error('selected checkpoint missing from original independent evaluation: '+checkpoint);
+          console.log(JSON.stringify({
+            selected:checkpoint, priorScore:selected.score,
+            priorStyle:selected.strategyProfile?.primary,
+            priorCardSignature:selected.buildSignature?.cards?.slice(0,5)
+          }));
+          NODE
+      - name: Evaluate candidate and adopted models on new unseen random seeds
+        shell: bash
+        timeout-minutes: 90
+        run: |
+          set -euo pipefail
+          dir="artifacts/natural-heldout/imported/$LABEL"
+          out="artifacts/natural-heldout/results/$LABEL"
+          mkdir -p "$out"
+          candidate="$dir/$CHECKPOINT"
+          if [[ "$PLAYER_COUNT" == 2 ]]; then
+            adopted="models/rl_model/portfolio/seed71-top3.browser.json"
+            node scripts/eval-rl-models.js \
+              --model-paths "$candidate,$adopted" \
+              --games 150 --seed 20261112 --max-steps 1500 \
+              --paired-seats --independent-seeds \
+              --opponents weak,normal,strong,expert \
+              --format json --output "$out/vs-js-cpus.json"
+          else
+            adopted="models/rl_model/portfolio/seed103-4p.browser.json"
+            node scripts/eval-rl-models.js \
+              --model-paths "$candidate,$adopted" \
+              --games 120 --seed 20261112 --max-steps 1500 \
+              --paired-seats --independent-seeds \
+              --lineups 'rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal' \
+              --format json --output "$out/vs-js-lineups.json"
+          fi
+      - name: Direct paired-seat candidate-versus-adopted evaluation
+        shell: bash
+        timeout-minutes: 130
+        run: |
+          set -euo pipefail
+          dir="artifacts/natural-heldout/imported/$LABEL"
+          out="artifacts/natural-heldout/results/$LABEL"
+          mkdir -p "$out"
+          candidate="$dir/$CHECKPOINT"
+          if [[ "$PLAYER_COUNT" == 2 ]]; then
+            node scripts/eval-rl-head-to-head.js \
+              --candidate "$candidate" \
+              --baseline models/rl_model/portfolio/seed71-top3.browser.json \
+              --games 300 --seed 20261212 --max-steps 1500 \
+              --format json --output "$out/direct-vs-adopted.json" \
+              --progress-every 50
+          else
+            node scripts/eval-rl-head-to-head.js \
+              --candidate "$candidate" \
+              --baseline models/rl_model/portfolio/seed103-4p.browser.json \
+              --lineups 'candidate,baseline,normal,strong;candidate,baseline,normal,normal' \
+              --games 150 --seed 20261212 --max-steps 1500 \
+              --format json --output "$out/direct-vs-adopted.json" \
+              --progress-every 50
+            node scripts/eval-rl-head-to-head.js \
+              --candidate "$candidate" \
+              --baseline models/rl_model/portfolio/seed145-4p-target-specialist.browser.json \
+              --lineups 'candidate,baseline,normal,strong;candidate,baseline,normal,normal' \
+              --games 150 --seed 20261212 --max-steps 1500 \
+              --format json --output "$out/direct-vs-4p-specialist.json" \
+              --progress-every 50
+          fi
+      - name: Preserve reports independently of success or failure
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: natural-heldout-${{ matrix.name }}-${{ github.run_id }}
+          path: artifacts/natural-heldout/results/${{ matrix.name }}/
+          if-no-files-found: warn
+          retention-days: 30
