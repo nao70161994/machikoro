@@ -1679,8 +1679,10 @@ test(`新しいロールの発動帯は全所有者を順に示し再描画と�
     expect(await cards.evaluateAll(elements => elements.map(element => {
         const owner = document.querySelector(`#cardboardSeats .cardboard-player[data-player-index="${element.dataset.playerIndex}"]`);
         const card = owner.querySelector('.cardboard-card[data-card-name="森林"]');
-        return { delay: parseFloat(getComputedStyle(card).animationDelay), name: getComputedStyle(card).animationName };
-    }))).toEqual([0.5,1.2,1.9,2.6].map(delay => ({delay,name:'cardboard-card-activate'})));
+        const animation = card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate');
+        return { delay: parseFloat(getComputedStyle(card).animationDelay), name: getComputedStyle(card).animationName,
+            shadowAnimated: animation.effect.getKeyframes().some(frame => frame.boxShadow !== undefined) };
+    }))).toEqual([0.5,1.2,1.9,2.6].map(delay => ({delay,name:'cardboard-card-activate',shadowAnimated:false})));
     await page.evaluate(() => {
         window.captionCardAnimations = [...document.querySelectorAll('#cardboardSeats .cardboard-card-activated')].map(card => card.getAnimations().find(animation => animation.animationName === 'cardboard-card-activate'));
     });

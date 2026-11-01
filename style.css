@@ -10986,11 +10986,17 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-focus-view .cardboard-pl
 html[data-design="cardboard"] body.accessibility-high-contrast #cardboardBoard .cardboard-effect { color: #fff; }
 html[data-design="cardboard"] .cardboard-dormant { display: block; margin: 2px 4px 0; padding: 2px; background: #f1e5d5; border-radius: 3px; color: #693b20; font-size: 10px; }
 html[data-design="cardboard"] .cardboard-card-dormant { border-style: dashed; }
-html[data-design="cardboard"] .cardboard-card-activated { outline: 2px solid #f4bc20; outline-offset: 1px; box-shadow: 0 0 0 4px #fff2b580; }
+html[data-design="cardboard"] .cardboard-card-activated {
+    --cardboard-activation-shadow: 0 0 0 4px #f4bc20, 0 0 18px #f4bc2066;
+    outline: 2px solid #f4bc20;
+    outline-offset: 1px;
+    box-shadow: var(--cardboard-activation-shadow);
+}
 html[data-design="cardboard"] .cardboard-card-activated.cardboard-card-major-income {
     outline: 3px solid #d59a16;
     outline-offset: 2px;
-    box-shadow: 0 0 0 5px #f8d67555, 0 0 16px #d59a1680;
+    --cardboard-activation-shadow: 0 0 0 5px #f8d67555, 0 0 16px #d59a1680;
+    box-shadow: var(--cardboard-activation-shadow);
 }
 html[data-design="cardboard"] .cardboard-card-major-income .cardboard-activation { background: #f8df83; color: #4c3500; }
 html[data-design="cardboard"] .cardboard-activation { display: block; padding: 2px 4px; background: #fff0ac; color: #563a00; font-size: 10px; font-weight: 800; }
@@ -11497,9 +11503,10 @@ html[data-design="cardboard"] .cardboard-transfer-summary { position: absolute; 
 html[data-design="cardboard"] #cardboardDiceReceipt > .cardboard-transfer-summary { position: static; left: auto; bottom: auto; width: 100%; max-width: none; max-height: 3.75em; margin: 2px 0 0; transform: none; overflow: auto; border: 1px solid #c6a85e; text-align: left; }
 @keyframes cardboard-roll-reveal { from { transform: scale(1.08); background: #ffe89c; } to { transform: scale(1); background: transparent; } }
 @keyframes cardboard-card-activate {
-    0% { transform: translateY(0); box-shadow: 0 0 0 4px #fff2b580; }
-    34% { transform: translateY(-3px); box-shadow: 0 0 0 8px #f4bc20, 0 0 24px #f4bc2099; }
-    100% { transform: translateY(0); box-shadow: 0 0 0 4px #f4bc20, 0 0 18px #f4bc2066; }
+    /* Keep SVG artwork and blur out of per-frame paint interpolation. */
+    0% { transform: translateY(0); }
+    34% { transform: translateY(-3px); }
+    100% { transform: translateY(0); }
 }
 @keyframes cardboard-card-arrival {
     0% { opacity: .62; transform: translateY(8px) scale(.94); }
@@ -13955,7 +13962,7 @@ html[data-design="cardboard"] #cardboardBoard.cardboard-card-table #cardboardSea
     border-radius: 8px;
     background: #f2f5ed;
     color: #17394a;
-    box-shadow: var(--cardboard-arrival-shadow, 0 3px 0 #fff8, 0 5px 8px #082d4255);
+    box-shadow: var(--cardboard-arrival-shadow, var(--cardboard-activation-shadow, 0 3px 0 #fff8, 0 5px 8px #082d4255));
     scroll-snap-align: none;
 }
 
@@ -15129,10 +15136,10 @@ html[data-design="cardboard"] .cardboard-activation-art > svg {
     height: 100%;
 }
 html[data-design="cardboard"] #cardboardSeats .cardboard-card.cardboard-resolving {
+    --cardboard-activation-shadow: 0 0 0 6px #e7ad3580, 0 5px 16px #142c3a66;
     outline: 3px solid #fff5a9;
     outline-offset: 3px;
-    filter: brightness(1.12);
-    box-shadow: 0 0 0 6px #e7ad3580, 0 5px 16px #142c3a66;
+    box-shadow: var(--cardboard-activation-shadow);
 }
 html[data-design="cardboard"] :is(.cardboard-header, .cardboard-roster-seat).cardboard-resolving {
     box-shadow: inset 0 0 0 2px #d79221;

@@ -1,8 +1,8 @@
 # 品質改善の最新確認状況
 
-対象: PR #19 / `feat/nightly-table-quality`。mainはPR #18の `a265ca7e`、マージ保留。商用品質への到達は未完了。過去の失敗・訂正・撤回案は[時系列記録](nightly-quality-history.md)、原mainの調査は[一次記録](nightly-table-quality-2026-10-23.md)を参照。
+対象: PR #19 / `feat/nightly-table-quality`。最新main `7954fcd1`（PR #20・RL学習CI）を83d14bb2で取り込み済み。UI比較の旧基点はPR #18のa265ca7e、マージ保留。商用品質への到達は未完了。過去の失敗・訂正・撤回案は[時系列記録](nightly-quality-history.md)、原mainの調査は[一次記録](nightly-table-quality-2026-10-23.md)を参照。
 
-## 最新候補の確定結果
+## 先行製品候補の確定結果
 
 `7ecac7a4`: Release・16画面操作・全Nightly成功。Nightly352件=351初回成功/0retry成功/1既存許可skip、6分割8.1〜16.2分、実行ID照合一致。4幅の実UI対局も勝利まで成功。詳細は下記の7ec節と[達成確認表](quality-completion-audit.md)。商用品質の主観評価・ローカル描画遅延の原因には未確定事項が残る。
 
@@ -229,3 +229,13 @@ CPU1500ms・非seed、人間席を自動UI操作。物理端末・人間によ�
 render/RAF診断ラッパーは独立ソースレビュー済み。元handle/this/引数/順序/例外を保つ一方、事前に捕捉された参照は計測されない場合があるため、記録なしを未実行としない。診断専用workflowへ任意のrender_profile_onlyを追加し、既存の発動844/320と建設1440の3件だけを選べるようにした。既定falseの20件・通常PR/全Nightlyの範囲とassertを維持し、原因特定時の待ち時間を減らす。
 
 最新main再確認で7954fcd1（RL学習CI #20）を検出。a265ca7eからの差分はRL workflow/README/専用docs/専用unit/テスト一覧の5ファイルで、ゲーム画面・ルールは変更なし。新しいテスト登録を保って作業ブランチへ取り込む。上記既存CIの証明対象は取り込み前のcommitであり、統合後の成功へ読み替えない。render_profile_onlyの--listは元の3件だけ選択することを確認、workflow YAML parseと抽出shellのsh -n、構文/ESLintも成功。
+
+## 83d14bb2の描画工程診断と発動影の候補
+
+[3件の実行41301011666](https://github.com/nao70161994/machikoro/actions/runs/41301011666)は2成功/1失敗・43.3秒、retry0。[生記録](assets/nightly-quality/render-profile-83d.json)。844送金は89ms/opacity約1の次が終了600msで元の<500ms判定に失敗。320発動と1440建設は成功。844のrender139ms（内renderPlayers80/build37ms）、RAF callback最大7ms、caption5〜7msなのに537〜934msのframe間隔が残る。期間のCPU some avg10約9%、memory pressure0、throttling0。JS callback・OOM・CPU quotaだけでは説明できず、paint/compositing側の負荷を調べる。
+
+候補は発動カードkeyframeのbox-shadow blur補間をやめ、同じgold影をclassの固定shadowへ移す。transformリフト/元の650ms連鎖/イベント遅延・送金600ms・期限は維持。resolvingのbrightness filterは外し、元アート色・outline・固定ringで識別する。大収益のshadow・到着shadowを区別し、table baseの高特異性に負けないようactivation変数をarrivalの次fallbackで参照。新しい恒久compositing layerは増やさない。これは描画負荷の仮説を検証する候補で、根本原因や改善を未測定のまま断定しない。
+
+既存2実rollの元name/delay/frame/正本/再生guardを保ち、shadowがkeyframe補間へ戻らないassertを追加。通常CIやDPR3条件を緩和しない。構文/ESLint成功、独立レビューとnative3件で候補を比較する。
+
+83d14bb2の通常Release41300997156と16画面/操作41300997153は成功。工程診断3件の844失敗は別に保持。影候補は独立ソースレビューとnative比較を並行して進め、未検証候補として作業ブランチへ保存する。
