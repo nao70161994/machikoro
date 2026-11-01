@@ -304,3 +304,35 @@ runTest('市場の位置保持解除はlive anchorだけに適用し保存済み
     context.preserveReadingPosition(false);
     assert.strictEqual(context.inspectionAnchor, null);
 });
+
+runTest('横へ回り込んだ所属札の接続線は自カードだけを結び障害物を避ける', () => {
+    const source = require('fs').readFileSync(require('path').join(__dirname, '../js/cardBoardField.js'), 'utf8');
+    const start = source.indexOf('            const ownRects = cardGroups.find');
+    const end = source.indexOf('            layer.appendChild(label);', start);
+    assert.ok(start >= 0 && end > start);
+    function renderLink(left, top, width, extraObstacles = []) {
+        const panel = {};
+        const target = { left: 10, right: 50, top: 10, bottom: 50 };
+        const appended = [];
+        const element = () => ({ classList: { add() {} }, dataset: {}, attributes: {}, children: [],
+            setAttribute(key, value) { this.attributes[key] = value; },
+            style: { setProperty() {} }, appendChild(child) { this.children.push(child); } });
+        const context = { panel, left, top, width, height: 22, index: 0,
+            cardGroups: [{ panel, rects: [target] }], obstacles: [{ ...target }, ...extraObstacles], placed: [],
+            innerLeft: 0, innerTop: 0, viewport: { clientWidth: 300, clientHeight: 200 },
+            document: { createElementNS: element },
+            window: { getComputedStyle: () => ({ getPropertyValue: () => '#1766bd' }) },
+            layer: { appendChild: svg => appended.push(svg) },
+        };
+        require('vm').runInNewContext(source.slice(start, end), context);
+        return appended;
+    }
+    const links = renderLink(60, 10, 96);
+    assert.strictEqual(links.length, 1);
+    assert.strictEqual(links[0].attributes['aria-hidden'], 'true');
+    assert.strictEqual(links[0].attributes.focusable, 'false');
+    assert.deepStrictEqual(links[0].children[0].attributes, { x1: '60', y1: '30', x2: '50', y2: '30' });
+    assert.strictEqual(renderLink(60, 10, 96, [{ left: 54, right: 56, top: 20, bottom: 40 }]).length, 0);
+    assert.strictEqual(renderLink(10, -22, 40).length, 0, '通常の上部見出しへ線を増やさない');
+    assert.strictEqual(renderLink(150, 10, 96).length, 0, '長い線を盤面に引かない');
+});

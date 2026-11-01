@@ -295,6 +295,64 @@ const CardBoardField = (() => {
             label.style.top = `${top - bounds.top - viewport.clientTop}px`;
             label.style.width = `${width}px`;
             label.style.setProperty('--cardboard-seat-accent', window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent'));
+            // A badge beside a ragged collection needs a visible owner link.
+            // Keep heading positions and every existing collision guard intact.
+            const ownRects = cardGroups.find(group => group.panel === panel)?.rects || [];
+            const labelRect = { left, top, right: left + width, bottom: top + height };
+            const clamp = (value, low, high) => Math.max(low, Math.min(value, high));
+            const links = ownRects.map(rect => {
+                let x = clamp((rect.left + rect.right) / 2, labelRect.left, labelRect.right);
+                let y = clamp((rect.top + rect.bottom) / 2, labelRect.top, labelRect.bottom);
+                const endX = clamp(x, rect.left, rect.right);
+                const endY = clamp(y, rect.top, rect.bottom);
+                x = clamp(endX, labelRect.left, labelRect.right);
+                y = clamp(endY, labelRect.top, labelRect.bottom);
+                return { rect, x, y, endX, endY, length: Math.hypot(endX - x, endY - y) };
+            }).sort((a, b) => a.length - b.length);
+            const link = links[0];
+            const crosses = rect => {
+                let enter = 0;
+                let exit = 1;
+                for (const [start, delta, low, high] of [
+                    [link.x, link.endX - link.x, rect.left - 1, rect.right + 1],
+                    [link.y, link.endY - link.y, rect.top - 1, rect.bottom + 1],
+                ]) {
+                    if (Math.abs(delta) < 0.001) {
+                        if (start < low || start > high) return false;
+                    } else {
+                        const a = (low - start) / delta;
+                        const b = (high - start) / delta;
+                        enter = Math.max(enter, Math.min(a, b));
+                        exit = Math.min(exit, Math.max(a, b));
+                        if (enter > exit) return false;
+                    }
+                }
+                return true;
+            };
+            // A ragged tail can leave the nearest card above the badge. Judge
+            // side placement against the collection, not that single card.
+            const groupLeft = Math.min(...ownRects.map(rect => rect.left));
+            const groupRight = Math.max(...ownRects.map(rect => rect.right));
+            const beside = link && (left + width / 2 < groupLeft || left + width / 2 > groupRight);
+            if (beside && link.length >= 3 && link.length <= 64 &&
+                !obstacles.some(rect => (rect.left !== link.rect.left || rect.top !== link.rect.top ||
+                    rect.right !== link.rect.right || rect.bottom !== link.rect.bottom) && crosses(rect)) && !placed.some(crosses)) {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.classList.add('cardboard-owner-link');
+                svg.dataset.playerIndex = String(index);
+                svg.setAttribute('aria-hidden', 'true');
+                svg.setAttribute('focusable', 'false');
+                svg.setAttribute('width', String(viewport.clientWidth));
+                svg.setAttribute('height', String(viewport.clientHeight));
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', String(link.x - innerLeft));
+                line.setAttribute('y1', String(link.y - innerTop));
+                line.setAttribute('x2', String(link.endX - innerLeft));
+                line.setAttribute('y2', String(link.endY - innerTop));
+                svg.style.setProperty('--cardboard-seat-accent', window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent'));
+                svg.appendChild(line);
+                layer.appendChild(svg);
+            }
             layer.appendChild(label);
             panel.classList.add('cardboard-owner-labeled');
             placed.push({ left, top, right: left + width, bottom: top + height });

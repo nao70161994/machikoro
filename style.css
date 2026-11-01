@@ -10861,6 +10861,16 @@ html[data-design="cardboard"] .cardboard-color-count-purple { background: var(--
 /* Screen-space owner labels remain upright while the table cards face seats.
    Field places them only in free space; inspection keeps its original heading. */
 html[data-design="cardboard"] #cardboardOwnerLabels { position: absolute; inset: 0; z-index: 3; overflow: hidden; pointer-events: none; }
+html[data-design="cardboard"] .cardboard-owner-link {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    fill: none;
+    stroke: var(--cardboard-seat-accent, #688768);
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+html[data-design="cardboard"] body.accessibility-high-contrast .cardboard-owner-link { stroke: #fff; }
 html[data-design="cardboard"] .cardboard-owner-label {
     position: absolute;
     display: block;
