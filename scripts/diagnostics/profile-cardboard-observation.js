@@ -126,6 +126,8 @@ async function observe(browser, profile) {
 async function main() {
     const output = process.argv.find(argument => argument.startsWith('--output='))?.slice(9);
     if (!output) throw new Error('--output=FILE is required');
+    const order = process.argv.find(argument => argument.startsWith('--order='))?.slice(8) || 'forward';
+    if (!['forward', 'reverse'].includes(order)) throw new Error('--order must be forward or reverse');
     let server;
     let browser;
     try {
@@ -141,19 +143,21 @@ async function main() {
         if (!ready) throw new Error('Diagnostic server did not start');
         browser = await webkit.launch();
         const results = [];
-        for (const profile of [
+        const profiles = [
             { name: 'mobile3-driver', dpr: 3, driverQueries: true },
             { name: 'mobile3-quiet', dpr: 3, driverQueries: false },
             { name: 'mobile1-quiet', dpr: 1, driverQueries: false },
             { name: 'desktop1-quiet', desktop: true, dpr: 1, driverQueries: false },
-        ]) {
+        ];
+        if (order === 'reverse') profiles.reverse();
+        for (const profile of profiles) {
             try { results.push(await observe(browser, profile)); }
             catch (error) { results.push({ profile, error: error.message }); }
         }
         await fs.mkdir(path.dirname(output), { recursive: true });
         await fs.writeFile(output, JSON.stringify({
             scope: 'Exploratory controlled forest roll, not a replacement for release/nightly or complete UI games. Sequential profiles have order/warmup bias; frame failures are data, not suppressed regression assertions.',
-            browser: browser.version(), results,
+            browser: browser.version(), order, results,
         }, null, 2));
         // The artifact contains observed conditions including failures. Success
         // means the diagnostic completed, never that every frame was correct.
