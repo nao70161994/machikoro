@@ -331,7 +331,9 @@ runTest('横へ回り込んだ所属札の接続線は自カードだけを結�
     assert.strictEqual(links.length, 1);
     assert.strictEqual(links[0].attributes['aria-hidden'], 'true');
     assert.strictEqual(links[0].attributes.focusable, 'false');
-    assert.deepStrictEqual(links[0].children[0].attributes, { x1: '60', y1: '30', x2: '50', y2: '30' });
+    assert.strictEqual(links[0].attributes.width, '14');
+    assert.strictEqual(links[0].attributes.height, '4');
+    assert.deepStrictEqual(links[0].children[0].attributes, { x1: '12', y1: '2', x2: '2', y2: '2' });
     assert.strictEqual(renderLink(60, 10, 96, [{ left: 54, right: 56, top: 20, bottom: 40 }]).length, 0);
     assert.strictEqual(renderLink(10, -22, 40).length, 0, '通常の上部見出しへ線を増やさない');
     assert.strictEqual(renderLink(150, 10, 96).length, 0, '長い線を盤面に引かない');

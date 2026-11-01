@@ -273,3 +273,21 @@ render/RAF診断ラッパーは独立ソースレビュー済み。元handle/thi
 7d85の通常Release41306799112と16画面/操作41306799149は両方成功。Releaseのoverview34件・勝利4件も成功。ただしartifact13084086192（214,971bytes）を全取得・CRC確認したところreport/index.htmlのみで、予定の勝利PNGは未収録だった。生成/アップロードのrunner.temp絶対パス依存を避けるため両方をworkspace相対のartifacts/release-reviewへ揃える。パス不一致が原因かは次回の実収録で確認し、現時点では仮説。YAML解析と生成/収集パスの一致は確認済み。
 
 接続線候補は独立ソースレビュー承認。横札の判定は最寄り1枚との左右関係ではなく、札中央が所有群全体の左右端より外側かで行う。これにより、右下の札の最寄りカードが上にある実例も対象にできる。既存Node suiteに接続先・別障害物回避・通常上部見出し省略・64px超の線省略を1ケース追加、全成功。まだ実線の見え方は未確認。表示テストの許容値や元assertは変更していない。
+
+## 705a7affの実描画と演出の未解決再現
+
+通常Release41308372738は成功。artifact13084581607（5,728,699bytes）を全取得・CRC検証し、勝利320/390/844/1440のPNG各1とgeometry各1の収録を確認。相対workspaceパス修正後の実収録が確認できた。画像内容の独立再レビューは別途進める。
+
+重点20件41308422743は17成功/3失敗・5.5分・retry0。844発動の第4送金は36ms/opacity0.62の次が553ms/0.70で元の<500ms条件に失敗。390建設は300ms/paused0から1867ms/paused0、1440は251ms/paused0から1560ms/paused0で、元1500ms内の移動観測に失敗。基準や期限を緩和せず記録を保持。名前札・勝利4幅は成功しているが、この結果を全演出の安定成功と読み替えない。
+
+[接続線320の実画像](assets/nightly-quality/owner-link-320-705.png)は独立目視で、自分の札から引越し屋外縁へ接続し、市場/相手カード/文字を横切らず所属を追いやすいと承認。これとは別に、線SVGを全viewport面積から線+2px余白の最小矩形に限定する未コミット候補を追加。高DPR卓全体の透明SVG面を作る必要をなくすが、旧ad5でも遅延があったため根本原因解消とは主張しない。関連Node suite/構文確認成功、線の画面上の両端は変えない。
+
+## 順序を逆にした探索診断
+
+診断専用branch bc82fc90、実行41308878997は完了。元ad5製品コードを固定し、既存順forward41305776379と逆順を比較。[全生記録](assets/nightly-quality/observation-order-comparison.json)。全setup有効/pageErrorsなし。forwardはmobile3-driver360ms、mobile3-quiet305ms、mobile1-quiet182ms、desktop1-quiet184msで元フレーム条件を満たす。reverseは先頭desktop1-quiet546msで不成立、後続mobile1-quiet195ms/mobile3-quiet374ms/mobile3-driver400msで成立。診断jobのsuccessは全フレーム条件成功という意味ではない。
+
+DPR3やdriver queriesが遅延の必要条件だとは言えず、単純にDPR1へ変更/操作監視を除去する根拠にはならない。先頭caseの起動/描画warmupやrunner差が交絡しており、順序依存の因果確定でもない。元回帰テスト・DPR・期限・opacity条件は引き続き保持する。起動直後の描画負荷と演出のrendering機会を次の調査対象とする。
+
+Release705のbrowser job124853388660を最後まで確認すると、全体successでも元320発動caseが初回失敗/retry1成功で**1 flaky**だった。初回第4送金は144ms/opacity1の次が終了600ms/opacity0で元<500条件に失敗。[失敗生記録](assets/nightly-quality/presentation-failures-705.json)。17/20重点失敗と併せ、CIの緑を安定性の証拠にしない。テスト期限や失敗assertを変更していない。
+
+勝利PNG4幅は独立レビュー承認。[320の修正後画像](assets/nightly-quality/winner-caption-320-705.png)では補足文が「積み重ねた一枚が、」「勝利につながりました。」の2行となり孤立末尾を解消。390/844/1440も全文・句・重なりに新しい問題なし。接続線SVG最小矩形化も独立ソース承認、画面上の端点を維持・Node幾何検証成功。ただしnativeでの性能効果は未測定。次のPushは演出タイミングの追加修正とまとめる。

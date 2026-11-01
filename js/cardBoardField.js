@@ -342,13 +342,18 @@ const CardBoardField = (() => {
                 svg.dataset.playerIndex = String(index);
                 svg.setAttribute('aria-hidden', 'true');
                 svg.setAttribute('focusable', 'false');
-                svg.setAttribute('width', String(viewport.clientWidth));
-                svg.setAttribute('height', String(viewport.clientHeight));
+                // Bound the SVG to its short stroke, not the high-DPR table.
+                const linkLeft = Math.min(link.x, link.endX) - 2;
+                const linkTop = Math.min(link.y, link.endY) - 2;
+                svg.style.left = `${linkLeft - innerLeft}px`;
+                svg.style.top = `${linkTop - innerTop}px`;
+                svg.setAttribute('width', String(Math.abs(link.endX - link.x) + 4));
+                svg.setAttribute('height', String(Math.abs(link.endY - link.y) + 4));
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', String(link.x - innerLeft));
-                line.setAttribute('y1', String(link.y - innerTop));
-                line.setAttribute('x2', String(link.endX - innerLeft));
-                line.setAttribute('y2', String(link.endY - innerTop));
+                line.setAttribute('x1', String(link.x - linkLeft));
+                line.setAttribute('y1', String(link.y - linkTop));
+                line.setAttribute('x2', String(link.endX - linkLeft));
+                line.setAttribute('y2', String(link.endY - linkTop));
                 svg.style.setProperty('--cardboard-seat-accent', window.getComputedStyle(panel).getPropertyValue('--cardboard-seat-accent'));
                 svg.appendChild(line);
                 layer.appendChild(svg);
