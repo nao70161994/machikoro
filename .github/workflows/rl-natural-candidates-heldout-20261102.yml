@@ -77,7 +77,7 @@ jobs:
             node scripts/eval-rl-models.js \
               --model-paths "$candidate,$adopted" \
               --games 150 --seed 20261112 --max-steps 1500 \
-              --paired-seats --independent-seeds \
+              --paired-seats \
               --opponents weak,normal,strong,expert \
               --format json --output "$out/vs-js-cpus.json"
           else
@@ -85,7 +85,7 @@ jobs:
             node scripts/eval-rl-models.js \
               --model-paths "$candidate,$adopted" \
               --games 120 --seed 20261112 --max-steps 1500 \
-              --paired-seats --independent-seeds \
+              --paired-seats \
               --lineups 'rl,weak,normal,strong;rl,normal,normal,strong;rl,weak,weak,normal' \
               --format json --output "$out/vs-js-lineups.json"
           fi
