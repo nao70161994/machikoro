@@ -1,0 +1,117 @@
+name: RL Strategy Diversity Research
+on:
+  push:
+    branches: [run/rl-diverse-eval-20261101]
+    paths: ['.github/workflows/rl-strategy-diversity-research.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  train:
+    name: ${{ matrix.kind }} / ${{ matrix.players }} players
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - {kind: landmark, players: 2, games: 2000, rate: '0.00002', seed: 201}
+          - {kind: economy, players: 2, games: 2000, rate: '0.00001', seed: 202}
+          - {kind: interaction, players: 2, games: 2000, rate: '0.00002', seed: 203}
+          - {kind: harbor, players: 2, games: 2000, rate: '0.00001', seed: 204}
+          - {kind: four-engine, players: 4, games: 500, rate: '0.00001', seed: 301}
+          - {kind: four-interaction, players: 4, games: 500, rate: '0.00001', seed: 302}
+    env:
+      KIND: ${{ matrix.kind }}
+      PLAYERS: ${{ matrix.players }}
+      GAMES: ${{ matrix.games }}
+      RATE: ${{ matrix.rate }}
+      SEED: ${{ matrix.seed }}
+      LABEL: diversity-${{ matrix.kind }}-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '20'
+          cache: npm
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/rl/requirements-ci.txt
+      - name: Install dependencies
+        run: |
+          npm ci
+          pip install -r scripts/rl/requirements-ci.txt
+      - name: Objective-specific self-play (new models, no adopted model change)
+        shell: bash
+        run: |
+          set -euo pipefail
+          dir="models/rl_model/runs/$LABEL"
+          mkdir -p "$dir"
+          printf 'kind=%s\nplayers=%s\ngames=%s\nlr=%s\nseed=%s\n' \
+            "$KIND" "$PLAYERS" "$GAMES" "$RATE" "$SEED" > "$dir/experiment.txt"
+          set -- --run-label "$LABEL" --games "$GAMES" --seed "$SEED" \
+            --hidden 256 --lr "$RATE" --train-opponents self=1 \
+            --self-learn-both-sides --eval-every 250 --checkpoint-every 25 \
+            --progress-every 50 --js-eval-games 2 --initial-eval-games 0 \
+            --eval-random-games 4 --eval-heuristic-games 2 --eval-pool-games 0 \
+            --final-eval-random-games 8 --final-eval-heuristic-games 4 \
+            --final-eval-pool-games 0 --pool-update-every 0 --max-steps 1200 \
+            --eval-max-steps 1200 --reward-clip 0.3 --terminal-diff-clip 20 \
+            --restore-best-at-end --best-checkpoint-top-k 3
+          case "$KIND" in
+            landmark)
+              set -- "$@" --reward-landmark 0.12 --reward-engine-build 0.003 \
+                --terminal-landmark-value-diff 0.010 --terminal-asset-diff 0.001 ;;
+            economy)
+              set -- "$@" --reward-coin 0.003 --reward-asset 0.005 \
+                --reward-engine-build 0.025 --terminal-asset-diff 0.006 \
+                --terminal-coin-diff 0.002 ;;
+            interaction)
+              set -- "$@" --reward-interaction-build 0.10 --reward-opp-coin 0.005 \
+                --reward-opp-asset 0.003 --reward-opp-landmark 0.03 ;;
+            harbor)
+              set -- "$@" --reward-harbor-build 0.11 --reward-coin 0.002 \
+                --terminal-coin-diff 0.004 ;;
+            four-engine)
+              set -- "$@" --reward-engine-build 0.075 --reward-asset 0.004 \
+                --terminal-asset-diff 0.006 ;;
+            four-interaction)
+              set -- "$@" --reward-interaction-build 0.075 --reward-opp-coin 0.004 \
+                --reward-opp-landmark 0.05 ;;
+            *) exit 2 ;;
+          esac
+          if [[ "$PLAYERS" == 2 ]]; then
+            timeout --signal=TERM --kill-after=45s 240m \
+              sh scripts/rl/run-self-only-h256-lr2e5-5000.sh "$@" | tee "$dir/train.log"
+          else
+            timeout --signal=TERM --kill-after=45s 240m \
+              sh scripts/rl/run-self-only-4p-h256-lr2e5-5000.sh "$@" \
+                --player-count 4 --train-batch-size 1 | tee "$dir/train.log"
+          fi
+      - name: Independent strength and card-style evaluation
+        shell: bash
+        timeout-minutes: 45
+        run: |
+          set -euo pipefail
+          dir="models/rl_model/runs/$LABEL"
+          if [[ "$PLAYERS" == 2 ]]; then
+            node scripts/eval-rl-models.js --model-paths "$dir/best_model.browser.json" \
+              --games 60 --seed 20261101 --opponents weak,normal,strong \
+              --paired-seats --format json --output "$dir/strategy-eval.json"
+          else
+            node scripts/eval-rl-models.js --model-paths "$dir/best_model.browser.json" \
+              --games 40 --seed 20261101 \
+              --lineups 'rl,weak,normal,strong;rl,normal,normal,strong' \
+              --paired-seats --format json --output "$dir/strategy-eval.json"
+          fi
+      - name: Save candidate weights, metrics and style profile even on failure
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rl-strategy-${{ matrix.kind }}-${{ github.run_id }}
+          path: models/rl_model/runs/diversity-${{ matrix.kind }}-${{ github.run_id }}/
+          retention-days: 30
+          if-no-files-found: warn
